@@ -459,11 +459,53 @@ template assumeTrusted(alias F) {
     import std.traits;
     static assert(isUnsafe!F);
 
-    alias ArgType = Parameters!F;
-    auto assumeTrusted(ArgType args) @trusted {
+    auto assumeTrusted(Args...)(Args args) @trusted {
         return F(args);
     }
 }
+
+version(none)
+template assumeTrusted1(alias F) {
+    import std.traits;
+//    static assert(isUnsafe!F);
+    pragma(msg, "assumeTrusted1 ", F.stringof);
+    pragma(msg, "assumeTrusted1 ", isCallable!F);
+    pragma(msg, "assumeTrusted1 ", is(F == function));
+    // alias Params=Parameters!(typeof(F));
+    // alias ParamNames=ParameterIdentifierTuple!F;
+
+    // writefln("code=%s", code);
+    // writefln("code=%s", code.splitter!("a == b",Yes.keepSeparators)(')'));
+    // writefln("part=%s", code.splitter!("a == b",Yes.keepSeparators)(')').front);
+
+    enum code=format!q{
+        auto %s @trusted {
+            %s
+        }
+    }(F.stringof, "x");
+    pragma(msg, code);
+    // auto assumeTrusted(Args...)(Args args) @trusted {
+    //     return F(args);
+    // }
+}
+
+T assumeTrusted1(T)(lazy T expr) @trusted {
+//     import std.traits;
+// //    pragma(msg, "assumeTrusted1 ", F.stringof);
+//     return (() @trusted => expr)();
+// //    static assert(isUnsafe!F);
+//     // pragma(msg, "assumeTrusted1 ", isCallable!F);
+//     // pragma(msg, "assumeTrusted1 ", is(F == function));
+//     // auto assumeTrusted(Args...)(Args args) @trusted {
+//     //     return F(args);
+//     // }
+    return T.init;
+}
+import std.concurrency;
+static int x_send(Args...)(Tid tid, Args args) @system {
+    return 42;
+}
+
 
 ///
 @safe
@@ -480,14 +522,34 @@ unittest  {
     // // It can be used for alias
     alias trustedBar = assumeTrusted!bar;
     alias trustedFoo = assumeTrusted!foo;
-    assert(is(typeof(trustedFoo) == function));
+//    assert(is(typeof(trustedFoo) == function));
 
     import core.stdc.stdlib;
 
-    const ptr=assumeTrusted!malloc(100);
+    auto ptr=assumeTrusted!malloc(100);
     assert(ptr !is null);
+    ptr.assumeTrusted!free;
+
+    ptr=assumeTrusted!calloc(10, 100);
+    ptr.assumeTrusted!free;
 
     alias lambda=assumeTrusted!((int a) @system => a*3);
 
     assert(lambda(42) == 3*42);
+
+    {
+        import std.concurrency;
+
+        static void task() @safe {
+            const result=2*assumeTrusted!(receiveOnly!int);
+            assumeTrusted!({ownerTid.send(result);});
+            alias trusted_owner=assumeTrusted!(ownerTid);
+            alias trusted_send=assumeTrusted!(send!(string));
+            trusted_send(trusted_owner, "Hello");
+        }
+        auto tid = assumeTrusted!({return spawn(&task);});
+        assumeTrusted!({send(tid, 21);});
+        assert(assumeTrusted!(receiveOnly!(const(int))) == 21*2);
+        assert(assumeTrusted!(receiveOnly!(string)) == "Hello");
+    }
 }
