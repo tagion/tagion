@@ -35,6 +35,7 @@ import tagion.basic.TagionExceptions;
 import tagion.services.DARTSynchronizeService;
 import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
+import tagion.dart.DARTSectorRange : SectorRange;
 import tagion.gossip.P2pGossipNet;
 import tagion.gossip.InterfaceNet;
 import tagion.gossip.EmulatorGossipNet;
@@ -122,7 +123,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
 
         import std.format;
 
-        auto sector_range = DART.SectorRange(opts.dart.from_ang, opts.dart.to_ang);
+        auto sector_range = SectorRange(opts.dart.from_ang, opts.dart.to_ang);
         shared(p2plib.Node) p2pnode;
         // string passpharse;
 

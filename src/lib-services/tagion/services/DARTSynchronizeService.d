@@ -20,6 +20,7 @@ import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
 import tagion.dart.BlockFile : BlockFile;
+import tagion.dart.DARTSectorRange : SectorRange;
 import tagion.basic.Basic;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
@@ -78,7 +79,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
     immutable(Options) opts,
     shared(p2plib.Node) node,
     shared(Net) master_net,
-    immutable(DART.SectorRange) sector_range) nothrow {
+    immutable(SectorRange) sector_range) nothrow {
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
@@ -142,8 +143,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         }
 
         auto journalReplayFiber = new ReplayPool!string((string journal) => dart.replay(journal));
-        auto recorderReplayFiber = new ReplayPool!(immutable(RecordFactory.Recorder))(
-                &recorderReplayFunc);
+        auto recorderReplayFiber =
+            new ReplayPool!(immutable(RecordFactory.Recorder))(&recorderReplayFunc);
 
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(
                 opts.dart.sync.host.timeout.msecs);
