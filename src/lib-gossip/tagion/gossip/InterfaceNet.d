@@ -1,0 +1,48 @@
+module tagion.gossip.InterfaceNet;
+
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
+import tagion.hibon.Document : Document;
+
+import tagion.basic.ConsensusExceptions;
+import tagion.basic.Basic;
+import tagion.communication.HiRPC;
+import tagion.utils.StdTime;
+
+import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
+import tagion.communication.HiRPC;
+
+alias check = consensusCheck!(GossipConsensusException);
+alias consensus = consensusCheckArguments!(GossipConsensusException);
+
+@safe
+interface P2pNet {
+    void send(const(Pubkey) channel, const(HiRPC.Sender) doc);
+    void close();
+}
+
+@safe
+interface GossipNet : P2pNet {
+    alias ChannelFilter = bool delegate(const(Pubkey) channel) @safe;
+    alias SenderCallBack = const(HiRPC.Sender) delegate() nothrow @safe;
+    const(sdt_t) time() pure const nothrow;
+
+    bool isValidChannel(const(Pubkey) channel) const pure nothrow;
+    void add_channel(const(Pubkey) channel);
+    void remove_channel(const(Pubkey) channel);
+    const(Pubkey) gossip(ChannelFilter channel_filter, SenderCallBack sender);
+    const(Pubkey) select_channel(ChannelFilter channel_filter);
+}
+
+@safe
+interface ScriptNet {
+    import std.concurrency;
+
+    @property void transcript_tid(Tid tid);
+
+    @property Tid transcript_tid() pure nothrow;
+
+    @property void scripting_engine_tid(Tid tid);
+
+    @property Tid scripting_engine_tid();
+}
