@@ -1,0 +1,2 @@
+%.way:
+	$(PRECMD)$(MKDIR) $(@D)
