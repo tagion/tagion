@@ -7,7 +7,7 @@ endif
 
 DC?=dmd
 #DFLAGS+=-betterC
-DFLAGS+=-I$(REPOROOT)
+DFLAGS+=-I$(BETTERCREPOROOT)
 
 TESTFLAGS+=$(DFLAGS)
 TESTFLAGS+=-unittest
@@ -18,6 +18,6 @@ TESTFLAGS+=-debug
 
 UNITTEST:=tests/unittest.d
 
-BIN:=$(REPOROOT)/bin/
+BIN:=$(BETTERCROOT)/bin/
 
 TEST:=$(BIN)/unittest
