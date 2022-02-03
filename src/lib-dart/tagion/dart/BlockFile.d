@@ -701,7 +701,7 @@ class BlockFile {
                 alias type = typeof(m);
                 static if (isStaticArray!type) {
                     assumeTrusted!({
-                            buffer[pos .. pos + type.sizeof] = cast(ubyte[])id;
+                            buffer[pos .. pos + type.sizeof] = (cast(ubyte*)id.ptr)[0 .. type.sizeof];
                             pos += type.sizeof;
                         });
                 }

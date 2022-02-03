@@ -38,7 +38,7 @@ include $(DTUB)/config/dirs.mk
 
 # Packages
 -include $(DBUILD)/dfiles.mk
-DFILES?=${shell find $(DSRC) -path "*/lib-*" -a -name "*.d"}
+DFILES?=${shell find $(DSRC) -path "*/lib-*" -a -not -path "*/test*" -a -name "*.d"}
 
 include $(DTUB)/config/compiler.mk
 include $(DTUB)/config/dstep.mk

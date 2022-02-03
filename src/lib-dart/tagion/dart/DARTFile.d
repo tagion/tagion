@@ -6,12 +6,12 @@ private {
 
     import std.algorithm.sorting : sort;
     import std.algorithm.iteration : filter, each, map;
-    import std.algorithm.searching : count, maxElement;
+    import std.algorithm.searching : count, maxElement, all;
     import std.algorithm.comparison : equal;
 
     import std.array : array;
 
-    import std.traits : ReturnType, TemplateOf;
+    import std.traits : ReturnType;
     import std.typecons;
     import std.conv : to;
     import core.thread : Fiber;
@@ -649,80 +649,22 @@ class DARTFile {
         return result;
     }
 
-    template RimKeyRange(Range) {
-
-        static assert(isInputRange!Range && is(ElementType!Range : const(Archive)));
-
-        alias ArchiveT = ElementType!Range;
-        alias RimKeyRangeType = RimKeyRangeT!ArchiveT;
-        static RimKeyRangeType RimKeyRange(ref Range range, const uint rim) {
-            return RimKeyRangeType(range, rim);
-        }
-    }
-
     // Range over a Range with the same key in the a specific rim
-    @safe
-    struct RimKeyRangeT(ArchiveT) {
-        static assert(is(ArchiveT : const(Archive)));
-        // @safe
-        // interface ForwardRange {
-        //     ArchiveT front();
-        //     void popFront();
-        //     bool empty();
-        //     ForwardRange save();
-        // }
-//        protected ForwardRange current;
-
-//        import std.range.interfaces : ForwardRange;
-
-//        static assert(is(ArchiveT : const(Archive));
-        protected ArchiveT[] current;
+    //    alias FilterRange=FilterResult!(unaryFun, RimKeyRange);
+    struct RimKeyRange {
+        protected Archive[] current;
         @disable this();
-        this(Range)(ref Range range, const uint rim) @trusted {
-            immutable key = range.front.fingerprint.rim_key(rim);
-            // const x=range
-            //     .filter!((a) => a.fingerprint.rim_key(rim) is key)
-            //     .array;
-
-            current=range
-                .filter!((a) => a.fingerprint.rim_key(rim) is key)
-                .array;
-            version(none) {
-            auto _key_select=range
-                .filter!((a) => a.fingerprint.rim_key(rim) is key);
-            alias KeySelect = typeof(_key_select);
-            pragma(msg, KeySelect);
-            @safe
-            class RimKeys : ForwardRange {
-                KeySelect key_select;
-                @disable this();
-                this(KeySelect key_select) {
-                    this.key_select = key_select;
-                }
-                ArchiveT front() {
-                    return key_select.front;
-                }
-                void popFront() {
-                    key_select.popFront;
-                }
-                bool empty() {
-                    return key_select.empty;
-                }
-                RimKeys save() {
-                    return key_select.save;
-                }
-            }
-            current = new RimKeys(_key_select);
-            }
-            version(none)
+        protected this(Archive[] current) {
+            this.current = current;
+        }
+        this(Range)(ref Range range, const uint rim) if (isInputRange!Range && is(ElementType!Range : Archive)) {
             if (!range.empty) {
-                ArchiveT[] list;
                 immutable key = range.front.fingerprint.rim_key(rim);
-                static if (is(Range == RimKeyRangeT)) {
+                static if (is(Range == RimKeyRange)) {
+                    import std.stdio;
                     auto reuse_current = range.current;
                     void build(ref Range range, const uint no = 0) {
                         if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
-                            auto a = range.front;
                             range.popFront;
                             build(range, no + 1);
                         }
@@ -730,69 +672,38 @@ class DARTFile {
                             // Reuse the parent current
                             current = reuse_current[0 .. no];
                         }
-                    }
 
+                    }
                     build(range);
                 }
                 else {
-                    // void build(ref Range range, const uint no = 0) {
-                    //     if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
-                    //         auto a = range.front;
-                    //         pragma(msg, "a ", typeof(a), "list[a] ", typeof(list[no]));
-                    //         range.popFront;
-                    //         build(range, no + 1);
-                    //         list[no] = a;
-                    //     }
-                    //     else {
-                    //         list = new ArchiveT[no];
-                    //     }
-                    // }
-
-                    // build(range);
-                    // current = list;
-                    pragma(msg, "Range ", typeof(range));
-                    pragma(msg, "Range.front ", typeof(range.front));
-                    auto key_select=range
-                          .filter!((a) => a.fingerprint.rim_key(rim) is key);
-                    pragma(msg, "key_select ", typeof(key_select.array), " current ", typeof(current));
-                    auto x =  key_select.array;
-                    pragma(msg, "x ", typeof(x)); //, " current ", typeof(current));
-
-                    // assumeTrusted!({
-                    //     current=range
-                    //         .filter!((a) => a.fingerprint.rim_key(rim) is key)
-                    //         .array;
-                    // });
-                    current = x;
-                        // .filter!((a) => a.fingerprint.rim_key(rim) is key)
-                        // .array;
+                    void build(ref Range range, const uint no = 0) {
+                        if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
+                            auto a = range.front;
+                            range.popFront;
+                            build(range, no + 1);
+                            current[no] = a;
+                        }
+                        else {
+                            current = new Archive[no];
+                        }
+                    }
+                    build(range);
                 }
             }
         }
 
         bool onlyRemove() pure const {
-            bool check(const(Archive[]) list) {
-                if (list.length > 1) {
-                    if (list[0].isRemove) {
-                        return check(list[1 .. $]);
-                    }
-                    else {
-                        return false;
-                    }
-                }
-                else {
-                    return list[0].isRemove;
-                }
-            }
-
-            return check(current);
+            return current
+                .all!((a) => a.isRemove);
         }
 
-        bool single() pure const nothrow {
+        @nogc pure nothrow {
+        bool single() const  {
             return current.length == 1;
         }
 
-        bool empty() pure const nothrow {
+        bool empty() const {
             return current.length == 0;
         }
 
@@ -802,20 +713,32 @@ class DARTFile {
             }
         }
 
-        ArchiveT front() {
+        Archive front() {
             if (empty) {
                 return null;
             }
             return current[0];
         }
 
-        void force_empty() pure nothrow {
+        const(Archive) front() const {
+            if (empty) {
+                return null;
+            }
+            return current[0];
+        }
+
+        void force_empty() {
             current = null;
         }
 
-        size_t length() pure const nothrow {
+        size_t length() const {
             return current.length;
         }
+    }
+        RimKeyRange save() {
+            return RimKeyRange(current);
+        }
+
     }
 
     enum RIMS_IN_SECTOR = 2;
@@ -840,8 +763,7 @@ class DARTFile {
      + If the function executes succesfully then the DART is update or else it does not affect the DART
      + The function return the bulleye of the dart
      +/
-    Buffer modify(inout(RecordFactory.Recorder) modify_records) {
-        alias ArchiveT=ElementType!(RecordFactory.Recorder);
+    Buffer modify(RecordFactory.Recorder modify_records) {
         Leave traverse_dart(R)(
                 ref R range,
                 const uint branch_index,
@@ -865,8 +787,7 @@ class DARTFile {
                     }
 
                     while (!range.empty) {
-                        pragma(msg, "rang ", typeof(range));
-                        auto sub_range = RimKeyRange!(typeof(range))(range, rim);
+                        auto sub_range = RimKeyRange(range, rim);
                         immutable rim_key = sub_range.front.fingerprint.rim_key(rim);
                         if (!branches[rim_key].empty || !sub_range.onlyRemove) {
                             branches[rim_key] = traverse_dart(sub_range,
@@ -883,12 +804,15 @@ class DARTFile {
                             branches.fingerprint(this));
                     }
                 }
-                else static if (is(R == RimKeyRangeT!ArchiveT)) {
+                else static if (is(R == RimKeyRange)) {
                     // if ( inRange(sector) ) {
                     uint lonely_rim_key;
                     if (branch_index !is INDEX_NULL) {
                         immutable data = blockfile.load(branch_index);
                         const doc = Document(data);
+
+
+
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
                         if (Branches.isRecord(doc)) {
                             branches = Branches(doc);

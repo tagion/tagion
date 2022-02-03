@@ -61,6 +61,7 @@ DFPIC := -relocation-model=pic
 DDEBUG_SYMBOLS := -g
 BETTERC := --betterC
 DCOMPILE_ONLY := -c
+DPREVIEW :=--preview
 NO_OBJ ?= --o-
 DJSON ?= --Xf
 else ifeq ($(COMPILER),gdc)
@@ -73,6 +74,7 @@ DIP := unknown-dip
 DDEBUG_SYMBOLS := -g
 BETTERC := --betterC
 DCOMPILE_ONLY := -c
+DPREVIEW :=-preview
 NO_OBJ ?= -o-
 else
 DVERSION = -version
@@ -85,6 +87,7 @@ DFPIC := -fPIC
 DDEBUG_SYMBOLS := -g
 BETTERC := -betterC
 DCOMPILE_ONLY := -c
+DPREVIEW :=-preview
 NO_OBJ ?= -o-
 DJSON ?= -Xf
 endif
@@ -128,32 +131,33 @@ INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep
 
 env-compiler:
 	$(PRECMD)
-	$(call log.header, $@ :: compiler)
+	${call log.header, $@ :: compiler}
 	$(DC) --version | head -4
-	$(call log.kvp, DC, $(DC))
-	$(call log.kvp, COMPILER, $(COMPILER))
-	$(call log.kvp, ARCH, $(ARCH))
-	$(call log.kvp, MODEL, $(MODEL))
-	$(call log.kvp, OUTPUT, $(OUTPUT))
-	$(call log.kvp, HF, $(HF))
-	$(call log.kvp, DF, $(DF))
-	$(call log.kvp, NO_OBJ, $(NO_OBJ))
-	$(call log.kvp, DJSON, $(DJSON))
-	$(call log.kvp, SONAME_FLAG, "$(SONAME_FLAG)")
-	$(call log.kvp, DVERSION, $(DVERSION))
-	$(call log.kvp, DDEBUG, $(DDEBUG))
-	$(call log.kvp, DUNITTEST, $(DUNITTEST))
-	$(call log.kvp, DMAIN, $(DMAIN))
-	$(call log.kvp, DIP, $(DIP))
-	$(call log.kvp, DIP25, $(DIP25))
-	$(call log.kvp, DIP1000, $(DIP1000))
-	$(call log.kvp, DFPIC, $(DFPIC))
-	$(call log.kvp, DCOMPILE_ONLY, $(DCOMPILE_ONLY))
-	$(call log.kvp, BETTERC, $(BETTERC))
-	$(call log.kvp, DDEBUG_SYMBOLS , $(DDEBUG_SYMBOLS))
-	$(call log.kvp, DFLAGS, "$(DFLAGS)")
-	$(call log.kvp, LDCFLAGS, "$(LDCFLAGS)")
-	$(call log.kvp, SOURCEFLAGS, "$(SOURCEFLAGS)")
-	$(call log.close)
+	${call log.kvp, DC, $(DC)}
+	${call log.kvp, COMPILER, $(COMPILER)}
+	${call log.kvp, ARCH, $(ARCH)}
+	${call log.kvp, MODEL, $(MODEL)}
+	${call log.kvp, OUTPUT, $(OUTPUT)}
+	${call log.kvp, HF, $(HF)}
+	${call log.kvp, DF, $(DF)}
+	${call log.kvp, NO_OBJ, $(NO_OBJ)}
+	${call log.kvp, DJSON, $(DJSON)}
+	${call log.kvp, SONAME_FLAG, "$(SONAME_FLAG)"}
+	${call log.kvp, DVERSION, $(DVERSION)}
+	${call log.kvp, DDEBUG, $(DDEBUG)}
+	${call log.kvp, DUNITTEST, $(DUNITTEST)}
+	${call log.kvp, DMAIN, $(DMAIN)}
+	${call log.kvp, DIP, $(DIP)}
+	${call log.kvp, DIP25, $(DIP25)}
+	${call log.kvp, DIP1000, $(DIP1000)}
+	${call log.kvp, DPREVIEW, $(DPREVIEW)}
+	${call log.kvp, DFPIC, $(DFPIC)}
+	${call log.kvp, DCOMPILE_ONLY, $(DCOMPILE_ONLY)}
+	${call log.kvp, BETTERC, $(BETTERC)}
+	${call log.kvp, DDEBUG_SYMBOLS , $(DDEBUG_SYMBOLS)}
+	${call log.kvp, DFLAGS, "$(DFLAGS)"}
+	${call log.kvp, LDCFLAGS, "$(LDCFLAGS)"}
+	${call log.kvp, SOURCEFLAGS, "$(SOURCEFLAGS)"}
+	$(call log.close}
 
 env: env-compiler

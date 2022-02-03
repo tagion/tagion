@@ -10,7 +10,7 @@ endif
 
 
 DEPS += wrap-openssl
-DSRC_SECP256K1 := ${call dir.resolve, src}
+DSRC_SECP256K1 := ${call dir.resolve, secp256k1}
 DTMP_SECP256K1 := $(DTMP)/secp256k1
 
 LIBSECP256K1:=$(DTMP_SECP256K1)/.libs/$(LIBSECP256K1_NAME)

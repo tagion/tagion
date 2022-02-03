@@ -1,5 +1,6 @@
 
 DFLAGS+=$(DIP25) $(DIP1000)
+DFLAGS+=$(DPREVIEW)=inclusiveincontracts
 #
 # D compiler
 #
@@ -91,3 +92,10 @@ clean-obj:
 	$(RM) $(DCIRALL)
 
 clean: clean-obj
+
+env-build:
+	$(PRECMD)
+	${call log.header, $@ :: env}
+	${call log.env, DINC, $(DINC)}
+
+env: env-build

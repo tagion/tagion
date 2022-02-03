@@ -1,4 +1,4 @@
-DSRC_P2PGOWRAPPER := ${call dir.resolve, src}
+DSRC_P2PGOWRAPPER := ${call dir.resolve, p2pwrapper}
 DTMP_P2PGOWRAPPER := $(DTMP)/p2pgowrapper
 
 CONFIGUREFLAGS_P2PGOWRAPPER :=

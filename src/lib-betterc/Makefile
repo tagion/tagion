@@ -24,6 +24,18 @@ android:
 	$(MAKE) -f $(ANDROIDMK) M64=yes SHARED=1
 	$(MAKE) -f $(ANDROIDMK) SHARED=1
 
+android-test:
+	# $(MAKE) -f $(ANDROIDMK) M64=yes all-test
+	# $(MAKE) -f $(ANDROIDMK) all-test
+	$(MAKE) -f $(ANDROIDMK) M64=yes SHARED=1 all-test
+	$(MAKE) -f $(ANDROIDMK) SHARED=1 all-test
+
+android-testc:
+	# $(MAKE) -f $(ANDROIDMK) M64=yes all-testc
+	# $(MAKE) -f $(ANDROIDMK) all-testc
+	$(MAKE) -f $(ANDROIDMK) M64=yes SHARED=1 all-testc
+	$(MAKE) -f $(ANDROIDMK) SHARED=1 all-testc
+
 include source.mk
 
 clean: $(CLEANER)

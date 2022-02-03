@@ -8,7 +8,8 @@ PLATFORMS+=$(LINUX_X86_64)
 
 ifeq ($(PLATFORM),$(LINUX_X86_64))
 
-DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*"}
+DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
+#DINC+=${shell find $(DSRC) -type d -path "*/p2p" }
 
 test37:
 	@echo $@ $(DIFILES)

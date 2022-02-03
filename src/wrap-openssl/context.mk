@@ -1,4 +1,4 @@
-DSRC_OPENSSL := ${call dir.resolve, src}
+DSRC_OPENSSL := ${call dir.resolve, openssl}
 DTMP_OPENSSL := $(DTMP)/openssl
 
 DPREFIX_OPENSSL := $(DTMP_OPENSSL)/install-lib
