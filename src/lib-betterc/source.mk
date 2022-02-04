@@ -6,4 +6,4 @@ dfiles.mk: ${WAYS}
 CLEANER+=clean-dfiles
 
 clean-dfiles:
-	rm -f dfiles.mk
+	rm -f gen.dfiles.mk
