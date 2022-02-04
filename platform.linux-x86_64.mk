@@ -11,13 +11,6 @@ ifeq ($(PLATFORM),$(LINUX_X86_64))
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 #DINC+=${shell find $(DSRC) -type d -path "*/p2p" }
 
-test37:
-	@echo $@ $(DIFILES)
-	@echo $@ $(DIFILES.p2p.cgo)
-	@echo HFILES.p2p.cgo $(HFILES.p2p.cgo)
-	@echo $@ $(LP2PGOWRAPPER_DIFILES)
-	@echo $@ $(DIFILES_tagion.crypto.secp256k1.c)
-
 ${call DDEPS,$(DBUILD),$(DFILES)}
 
 endif

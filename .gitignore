@@ -3,13 +3,17 @@
 .tmp
 build
 
+# Emacs
 *~
 *#
 .#*
-*~
+
+# Local setup file
 local.*
+# Auto generated file
 gen.*
 
+# Local backup
 *.parked
 
 # Root marker

@@ -158,6 +158,6 @@ env-compiler:
 	${call log.kvp, DFLAGS, "$(DFLAGS)"}
 	${call log.kvp, LDCFLAGS, "$(LDCFLAGS)"}
 	${call log.kvp, SOURCEFLAGS, "$(SOURCEFLAGS)"}
-	$(call log.close}
+	${call log.close}
 
 env: env-compiler

@@ -40,6 +40,8 @@ env-host:
 	$(call log.header, $@ :: host)
 	$(call log.kvp, OS, $(OS))
 	$(call log.kvp, ARCH, $(ARCH))
+	${call log.kvp, NATIVE_PLATFORM, $(NATIVE_PLATFORM)}
+	${call log.kvp, PLATFORM, $(PLATFORM)}
 	$(call log.close)
 
 env: env-host

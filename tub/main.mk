@@ -17,12 +17,12 @@ export DROOT := ${abspath ${DTUB}/../}
 include $(DTUB)/utilities/dir.mk
 
 # Root config
-#-include $(DROOT)/config.*.mk
+-include $(DROOT)/config.*.mk
 #-include $(DROOT)/config.mk
 
 # Local config, ignored by git
-#-include $(DROOT)/local.*.mk
-#-include $(DROOT)/local.mk
+-include $(DROOT)/local.*.mk
+-include $(DROOT)/local.mk
 
 
 
@@ -31,10 +31,11 @@ include $(DTUB)/ways.mk
 include $(DTUB)/gitconfig.mk
 include $(DTUB)/config/submake.mk
 include $(DTUB)/config/git.mk
-include $(DTUB)/config/host.mk
 include $(DTUB)/config/commands.mk
+include $(DTUB)/config/host.mk
 include $(DTUB)/config/cross.mk
 include $(DTUB)/config/dirs.mk
+include $(DTUB)/config/platform.mk
 
 # Packages
 -include $(DBUILD)/dfiles.mk
