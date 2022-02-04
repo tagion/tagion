@@ -1,4 +1,6 @@
-export DBUILD := ${abspath ${DROOT}}/build/$(MTRIPLE)
+export BUILD := ${abspath ${DROOT}}/build/
+
+export DBUILD := $(BUILD)/$(MTRIPLE)
 
 # New simplified flow directories
 export DBIN := $(DBUILD)/bin
@@ -9,6 +11,7 @@ export DLIB := $(DBUILD)/lib
 env-dirs:
 	$(PRECMD)
 	$(call log.header, $@ :: dirs)
+	$(call log.kvp, BUILD, $(BUILD))
 	$(call log.kvp, DBUILD, $(DBUILD))
 	$(call log.kvp, DBIN, $(DBIN))
 	$(call log.kvp, DOBJ, $(DOBJ))

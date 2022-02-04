@@ -7,4 +7,7 @@ endif
 
 #$(MAKE) $(GEN_DDEPS_MK)
 
-.PHONY: prebuild
+
+prebuild: prebuild1
+
+.PHONY: prebuild prebuild0 prebuild1 prebuild2

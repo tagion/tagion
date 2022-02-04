@@ -38,7 +38,7 @@ CROSS_LDFLAGS+=--eh-frame-hdr
 
 env-android:
 	$(PRECMD)
-	${call log.header, $@ :: android}
+	${call log.header, $@ :: env}
 	${call log.kvp, ANDROID_NDK, $(ANDROID_NDK)}
 	${call log.kvp, ANDROID_SDK_NO, $(ANDROID_SDK_NO)}
 	${call log.kvp, CROSS_LD, $(CROSS_LD)}
@@ -53,7 +53,7 @@ env: env-android
 
 help-android:
 	$(PRECMD)
-	${call log.header, $@ :: android}
+	${call log.header, $@ :: help}
 	${call log.help, "Configure", "The path to the NDK is by the ANDROID_NDK"}
 	${call log.help, "", "and the SDK version is set by the ANDROID_SDK_NO"}
 	${call log.help, "make env-android", "Will list the current setting"}

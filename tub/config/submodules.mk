@@ -11,7 +11,7 @@ pull-submodules:
 	$(PRECMD)
 	git pull --recurse-submodules
 
-prebuild: | $(SUBMODUELS_DEPS)
+prebuild0: $(SUBMODUELS_DEPS)
 
 env-submodules:
 	$(PRECMD)

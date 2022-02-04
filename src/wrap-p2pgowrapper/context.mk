@@ -15,7 +15,7 @@ endif
 
 $(UNITTEST_BIN): LIBS+=$(LIBP2PGOWRAPPER)
 
-prebuild: $(LIBP2PGOWRAPPER)
+prebuild1: $(LIBP2PGOWRAPPER)
 
 p2pgowrapper: $(LIBP2PGOWRAPPER)
 
@@ -42,14 +42,14 @@ $(LIBP2PGOWRAPPER): $(DTMP_P2PGOWRAPPER)/.way
 
 env-p2pgowrapper:
 	$(PRECMD)
-	${call log.header, $@ :: p2pgowrapper}
+	${call log.header, $@ :: env}
 	${call log.env, LIBP2PGOWRAPPER, $(LIBP2PGOWRAPPER)}
 
 env: env-p2pgowrapper
 
 help-p2pgowrapper:
 	$(PRECMD)
-	${call log.header, $@ :: p2pgowrapper}
+	${call log.header, $@ :: help}
 	${call log.help, "make p2pgowrapper", "Builds libp2pgowrapper library "}
 	${call log.help, "make clean-p2pgowrapper", "Cleans the library"}
 	${call log.help, "make prober-p2pgowrapper", "Erase all reletated to p2pgowrapper build"}

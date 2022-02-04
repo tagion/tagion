@@ -5,9 +5,12 @@ ${eval
 
 $$(PLATFORM)_DFILES = $2
 
-$1/dfiles.mk: DFILES=$$($$(PLATFORM)_DFILES)
+$1/gen.dfiles.mk: DFILES=$$($$(PLATFORM)_DFILES)
 
-#$1/gen.ddeps.json: $1/dfiles.mk
+$1/gen.ddeps.json: $(PREBUILD)
+
+
+$1/gen.ddeps.json: $1/gen.dfiles.mk
 
 $1/gen.ddeps.json: $1/.way
 
@@ -40,7 +43,7 @@ help-ddeps: help-ddeps-$$(PLATFORM)
 ifdef DOBJ
 env-ddeps-$$(PLATFORM):
 	$$(PRECMD)
-	$${call log.header, $$@ :: env-ddeps}
+	$${call log.header, $$@ :: env}
 	$${call log.kvp, DOBJ, $(DOBJ)}
 	$${call log.kvp, DSRC, $(DSRC)}
 	$${call log.line}
@@ -55,7 +58,7 @@ env-ddeps-$$(PLATFORM):
 else
 env-ddeps-$$(PLATFORM):
 	$$(PRECMD)
-	$${call log.header, $$@ :: env-ddeps}
+	$${call log.header, $$@ :: env}
 	$${call log.kvp, DBUILD, $(DBUILD)}
 	$${call log.kvp, DSRC, $(DSRC)}
 	$${call log.printf, "DFILES+= %s\n" $$($$(PLATFORM)_DFILES)}
@@ -84,7 +87,7 @@ env: env-ddeps
 
 help-ddeps:
 	$(PRECMD)
-	${call log.header, $@ :: ddeps}
+	${call log.header, $@ :: help}
 	${call log.help, "make help-ddeps", "Will display this part"}
 	${call log.help, "make ddeps", "Generated all .di via dstep"}
 	${call log.help, "make dstep-<platform>",
@@ -98,13 +101,19 @@ help-ddeps:
 
 help: help-ddeps
 
-prebuild: $(DBUILD)/dfiles.mk
+prebuild2: $(DBUILD)/gen.dfiles.mk
 
+dfiles: $(DBUILD)/gen.dfiles.mk
 
 .PHONY: env-ddeps help-ddeps
 
-ifdef DFILES
-$(DBUILD)/dfiles.mk:
+#ifdef DFILES
+$(DBUILD)/gen.dfiles.mk:
 	$(PRECMD)
-	printf "%s += %s\n" ${addprefix DFILES , $(DFILES)} | tee $@
-endif
+	printf "%s += %s\n" ${addprefix DFILES , $(DFILES)} > $@
+#endif
+
+.SECONDARY: $(DBUILD)/gen.dfiles.mk
+
+gen.test.mk:
+	echo "Hello" > $@

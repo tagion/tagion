@@ -3,6 +3,7 @@ TRIPLET = armv7a-linux-androideabi
 #aarch64-linux-android
 #SHARED=1
 
+PLATFORMS+=$(TRIPLET)
 DCCROSS_FLAGS+=-mtriple=$(TRIPLET)
 
 ifdef SHARED

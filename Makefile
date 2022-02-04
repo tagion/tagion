@@ -4,7 +4,7 @@
 .SECONDARY:
 .ONESHELL:
 
--include tub/main.mk
+include tub/main.mk
 
 # Hack to get tagionwave to build
 #include src/bin-wave/build.mk
@@ -35,8 +35,8 @@
 
 # endif
 
-test99:
-	@echo $@
+# test99:
+# 	@echo $@
 
 #test77: $(DOBJ)/lib-services/tagion/services/TagionFactory.o
 

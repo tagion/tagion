@@ -19,7 +19,7 @@ openssl: $(LIBOPENSSL)
 LIBOPENSSL+=$(DTMP)/libcrypto.a
 LIBOPENSSL+=$(DTMP)/libssl.a
 
-prebuild: $(LIBOPENSSL)
+prebuild1: $(LIBOPENSSL)
 
 $(UNITTEST_BIN): LIBS+=$(LIBOPENSSL)
 
