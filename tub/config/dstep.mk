@@ -49,7 +49,7 @@ env-dstep-$1:
 	$${call log.env, DIFILES.$1, $$(DIFILES.$1)}
 	$${call log.env, DSTEP_ATTRIBUTES, $$(DSTEP_ATTRIBUTES)}
 	$${call log.env, DSTEPFLAGS, $$(DSTEPFLAGS)}
-	$$(call log.close)
+	$${call log.close}
 
 env-dstep: env-dstep-$1
 
