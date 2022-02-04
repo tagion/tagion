@@ -1,0 +1,36 @@
+# System files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Local files
+local.mk
+
+# Generated directories
+src
+build
+__generated*
+*.log
+
+# Emacs
+*~
+*#
+.#*
+
+# Local setup file
+local.*
+# Auto generated file
+gen.*
+
+# Local backup
+*.parked
+
+# Root marker
+.root
+
+# Temporary directories
+bin
+
+#
+*.o
+

@@ -1,5 +1,5 @@
 # OS & ARCH
-OS ?= $(shell uname | tr A-Z a-z)
+OS ?= $(GETOS)
 
 ifndef ARCH
 ifeq ($(OS),"windows")
@@ -9,8 +9,19 @@ else
 ARCH = x86_64
 endif
 else
-ARCH = $(shell uname -m)
+ARCH = $(GETARCH)
 endif
+endif
+
+PLATFORM?=$(OS)-$(ARCH)
+
+#
+# Native platform
+#
+NATIVE_PLATFORM:=$(GETOS)-$(GETARCH)
+
+ifeq ($(PLATFORM),$(NATIVE_PLATFORM))
+NATIVE=yes
 endif
 
 # Version 3.81 is installed by default on macOS, but doesn't support ONESHELL
@@ -24,10 +35,13 @@ ${info Install newer version: http://ftp.gnu.org/gnu/make/}
 ${error Unsupported GNU Make version}
 endif
 
-MAKE_ENV += env-host
 env-host:
 	$(PRECMD)
-	$(call log.header, env :: host)
+	$(call log.header, $@ :: host)
 	$(call log.kvp, OS, $(OS))
 	$(call log.kvp, ARCH, $(ARCH))
+	${call log.kvp, NATIVE_PLATFORM, $(NATIVE_PLATFORM)}
+	${call log.kvp, PLATFORM, $(PLATFORM)}
 	$(call log.close)
+
+env: env-host
