@@ -4,8 +4,7 @@ PLATFORMS+=$(ANDROID_AARCH64)
 
 ifeq ($(PLATFORM),$(ANDROID_AARCH64))
 ANDROID_ARCH=$(ANDROID_AARCH64)
-
-TRIPLET = aarch64-linux-android
+TRIPLET = $(ANDROID_ARCH)
 #include $(DROOT)/config.android.mk
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-bettec*"}

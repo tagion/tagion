@@ -1,6 +1,6 @@
-export BUILD := ${abspath ${DROOT}}/build/
+export BUILD := ${abspath ${DROOT}/build/}
 
-export DBUILD := $(BUILD)/$(MTRIPLE)
+export DBUILD := ${abspath $(BUILD)/$(MTRIPLE)}
 
 # New simplified flow directories
 export DBIN := $(DBUILD)/bin

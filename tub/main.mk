@@ -14,17 +14,14 @@ export DSRC := $(realpath src)
 export DTUB := $(realpath tub)
 export DROOT := ${abspath ${DTUB}/../}
 
+# Local config, ignored by git
+-include $(DROOT)/local.*.mk
+-include $(DROOT)/local.mk
+
 # Platform
 -include $(DROOT)/platform.*.mk
 include $(DTUB)/utilities/dir.mk
 
-# Root config
--include $(DROOT)/config.*.mk
-#-include $(DROOT)/config.mk
-
-# Local config, ignored by git
--include $(DROOT)/local.*.mk
--include $(DROOT)/local.mk
 
 
 
@@ -94,3 +91,7 @@ include $(DTUB)/clean.mk
 include $(DTUB)/help.mk
 
 include $(DTUB)/config/prebuild.mk
+
+# Root config
+-include $(DROOT)/config.*.mk
+-include $(DROOT)/config.mk
