@@ -4,7 +4,12 @@
  */
 module hibon.Document;
 
+<<<<<<< HEAD
+extern(C)
+
+=======
 extern(C):
+>>>>>>> 4f386fd9a5d04e3a5776a225aa91fba2a399caaa
 @nogc:
 //import std.format;
 import std.meta : AliasSeq, Filter;
@@ -32,7 +37,11 @@ static assert(uint.sizeof == 4);
 /**
    Document is a lazy handler of HiBON serialized buffer
 */
+<<<<<<< HEAD
+//extern(C++, Document):
+=======
 
+>>>>>>> 4f386fd9a5d04e3a5776a225aa91fba2a399caaa
 struct Document {
     @nogc:
     alias Value=ValueT!(false, void, Document); /// HiBON Document value type
@@ -1282,3 +1291,25 @@ struct Document {
         }
     }
 }
+<<<<<<< HEAD
+
+//import std.stdio;
+// import core.demangle;
+// void main() {
+//     enum name=mangle!(Document)("");
+//     writefln("name=%s", name);
+//     writeln(demangle(name));
+
+// }
+
+
+// enum name=mangle!(Document)("");
+// pragma(msg, "name=", name);
+// pragma(msg, demangle(name));
+
+
+int test_func(int x) {
+    return 3*x;
+}
+=======
+>>>>>>> 4f386fd9a5d04e3a5776a225aa91fba2a399caaa

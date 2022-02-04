@@ -145,7 +145,7 @@ struct KeyRecover {
     /++
      Generates the quiz seed values from the privat key R and the quiz list
      +/
-    void quizSeed(scope ref const(ubyte[]) R, Buffer[] A, const uint confidence) {
+    void quizSeed(scope ref const(ubyte[]) R, scope Buffer[] A, const uint confidence) {
         scope (success) {
             generator.confidence = confidence;
             generator.S = checkHash(R);
@@ -156,29 +156,29 @@ struct KeyRecover {
             generator.confidence = 0;
         }
 
-
+        
 
         .check(A.length > 1, message("Number of questions must be more than one"));
 
-
+        
 
         .check(confidence <= A.length, message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
                 A.length, confidence));
 
-
+        
 
         .check(A.length <= MAX_QUESTION, message("Mumber of question is %d but it should not exceed %d",
                 A.length, MAX_QUESTION));
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, confidence);
 
-
+        
 
         .check(seeds <= MAX_SEEDS, message("Number quiz-seeds is %d which exceed that max value of %d",
                 seeds, MAX_SEEDS));
         generator.Y = new Buffer[seeds];
         uint count;
-        bool calculate_this_seeds(scope const(uint[]) indices) {
+        bool calculate_this_seeds(scope const(uint[]) indices) @safe {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
             generator.Y[count] = xor(R, xor(list_of_selected_answers_and_the_secret));
             count++;
@@ -194,11 +194,11 @@ struct KeyRecover {
 
     bool findSecret(scope ref ubyte[] R, Buffer[] A) const {
 
-
+        
 
             .check(A.length > 1, message("Number of questions must be more than one"));
 
-
+        
 
         .check(generator.confidence <= A.length,
                 message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
@@ -209,7 +209,7 @@ struct KeyRecover {
         // .check(generator.Y.length == seeds, message(
         //         "Number of answers does not match the number of quiz seeds"));
         bool result;
-        bool search_for_the_secret(scope const(uint[]) indices) {
+        bool search_for_the_secret(scope const(uint[]) indices) @safe {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
             const guess = xor(list_of_selected_answers_and_the_secret);
             foreach (y; generator.Y) {

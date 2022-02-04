@@ -3,54 +3,44 @@ module tagion.gossip.P2pGossipNet;
 import std.stdio;
 import std.concurrency;
 import std.format;
-import std.array: join;
-import std.conv: to;
+import std.array : join;
+import std.conv : to;
 import std.file;
-import std.file: fwrite = write;
+import std.file : fwrite = write;
 import std.typecons;
 
 pragma(msg, "fixme(cbr): Eliminated dependency of Services Options");
 import tagion.options.HostOptions;
 import tagion.dart.DARTOptions;
 
-import tagion.basic.Basic: EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType, Control;
+import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType, Control, assumeTrusted;
 
-//import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
-import tagion.utils.Miscellaneous: cutHex;
+import tagion.utils.Miscellaneous : cutHex;
 
-// import tagion.utils.Random;
 import tagion.utils.LRU;
 import tagion.utils.Queue;
 
-//import tagion.Keywords;
-
-import tagion.hibon.HiBON: HiBON;
-import tagion.hibon.Document: Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 import tagion.gossip.InterfaceNet;
-import tagion.hashgraph.HashGraph;
-import tagion.hashgraph.Event;
-import tagion.hashgraph.HashGraphBasic: convertState, ExchangeState;
 import tagion.basic.ConsensusExceptions;
 
 import tagion.basic.Logger;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
-//import tagion.services.MdnsDiscoveryService;
 import p2plib = p2p.node;
 import p2p.callback;
 
-//import p2p.cgo.helper;
 import std.array;
 import tagion.utils.StdTime;
 
-//import tagion.services.P2pTagionService;
-
-import tagion.dart.DART;
+import DART = tagion.dart.DARTSectorRange;
 import tagion.communication.HiRPC;
-import std.random: Random, unpredictableSeed, uniform;
+import std.random : Random, unpredictableSeed, uniform;
 
 import std.datetime;
 
+@safe
 synchronized
 class ConnectionPool(T : shared(p2plib.Stream), TKey) {
     private shared final class ActiveConnection {
@@ -188,9 +178,9 @@ unittest {
 
     log.push(LoggerType.NONE);
 
-    import p2p.node: Stream;
+    import p2p.node : Stream;
 
-    @trusted
+    @safe
     synchronized
     class FakeStream : Stream {
         protected bool _writeBytesCalled = false;
@@ -217,6 +207,7 @@ unittest {
         assert(result);
         assert(fakeStream.writeBytesCalled);
     }
+
     { //ConnectionPool: send to non-exist connection
         auto connectionPool = new shared(ConnectionPool!(shared FakeStream, uint))(10.seconds);
         auto fakeStream = new shared(FakeStream)();
@@ -253,15 +244,7 @@ alias ActiveNodeAddressBook = immutable(AddressBook!Pubkey);
 
 @safe
 immutable class AddressBook(TKey) {
-    this(const(NodeAddress[TKey]) addrs) @trusted {
-        // import std.algorithm.iteration : each;
-        // NodeAddress[TKey] duplicate;
-        // auto x=addrs.byKeyValue;
-        // pragma(msg, "x.front.key ", typeof(x.front.key));
-        // pragma(msg, "x.front.value ", typeof(x.front.value));
-        // duplicate[x.front.key] = x.front.value;
-        // addrs.byKeyValue.each!(n => duplicate[n.key] = n.value);
-
+    this(const(NodeAddress[TKey]) addrs) pure @trusted {
         this.data = cast(immutable) addrs.dup;
     }
 
@@ -277,15 +260,18 @@ struct NodeAddress {
     string id;
     uint port;
     DART.SectorRange sector;
-    version(none)
-    this(ref return scope const(NodeAddress) node_address) inout {
+    version (none) this(ref return scope const(NodeAddress) node_address) inout {
         address = node_address.address;
         is_marshal = is_marshal;
         id = node_address.id;
         port = node_address.port;
         sector = node_address.sector;
     }
-    this(string address, immutable(DARTOptions) dart_opts, const ulong port_base,  bool marshal = false) {
+
+    this(string address,
+            immutable(DARTOptions) dart_opts,
+            const ulong port_base,
+            bool marshal = false) {
         import std.string;
 
         try {
@@ -313,7 +299,7 @@ struct NodeAddress {
 
                 auto json = parseJSON(address);
                 this.id = json["ID"].str;
-                auto addr = (() @trusted => json["Addrs"].array()[0].str())();
+                auto addr = assumeTrusted!({return json["Addrs"].array.front.str;});
                 auto tcpIndex = addr.indexOf(tcp_token) + tcp_token.length;
                 this.port = to!uint(addr[tcpIndex .. tcpIndex + 4]);
             }
@@ -325,7 +311,7 @@ struct NodeAddress {
     }
 
     static Tuple!(ushort, ushort) calcAngleRange(immutable(DARTOptions) dart_opts, const ulong node_number, const ulong max_nodes) {
-        import std.math: ceil, floor;
+        import std.math : ceil, floor;
 
         float delta = (cast(float)(dart_opts.sync.netToAng - dart_opts.sync.netFromAng)) / max_nodes;
         auto from_ang = to!ushort(dart_opts.from_ang + floor(node_number * delta));
@@ -381,7 +367,7 @@ class StdP2pNet : P2pNet {
     @safe
     void close() {
         @trusted void send_stop() {
-            import std.concurrency: prioritySend, Tid, locate;
+            import std.concurrency : prioritySend, Tid, locate;
 
             auto sender = locate(internal_task_name);
             if (sender != Tid.init) {
@@ -394,32 +380,28 @@ class StdP2pNet : P2pNet {
         send_stop();
     }
 
-    @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
-        import std.concurrency: tsend = send, prioritySend, Tid, locate;
+        import std.concurrency : tsend = send, prioritySend, Tid, locate;
 
-        auto internal_sender = locate(internal_task_name);
+        auto internal_sender = assumeTrusted!locate(internal_task_name);
         log("send called");
-        if (internal_sender != Tid.init) {
+        if (internal_sender !is Tid.init) {
             counter++;
             log("sending to sender %s", internal_sender);
-            auto t = sender.toDoc;
-            tsend(internal_sender, channel, sender.toDoc, counter);
+            assumeTrusted!({tsend(internal_sender, channel, sender.toDoc, counter);});
         }
         else {
             log("sender not found");
         }
     }
 
-    @trusted
     protected void send_remove(Pubkey pk) {
-        import std.concurrency: tsend = send, Tid, locate;
+        import std.concurrency : tsend = send, Tid, locate;
 
-        auto sender = locate(internal_task_name);
-        if (sender != Tid.init) {
+        auto sender = assumeTrusted!locate(internal_task_name);
+        if (sender !is Tid.init) {
             counter++;
-            // log("sending close to sender %d", counter);
-            tsend(sender, pk, counter);
+            assumeTrusted!({tsend(sender, pk, counter);});
         }
         else {
             log("sender not found");
@@ -591,7 +573,7 @@ static void async_send(string task_name, string discovery_task_name, const(HostO
     }
 
     const(Pubkey) select_channel(ChannelFilter channel_filter) {
-        import std.range: dropExactly;
+        import std.range : dropExactly;
 
         foreach (count; 0 .. pks.length * 2) {
             const node_index = uniform(0, cast(uint) pks.length, random);

@@ -1,17 +1,17 @@
 module tagion.basic.Basic;
 
-private import std.string: format, join, strip;
+private import std.string : format, join, strip;
 private import std.traits;
-private import std.exception: assumeUnique;
-import std.bitmanip: BitArray;
-import std.meta: AliasSeq;
-import std.range.primitives: isInputRange;
+private import std.exception : assumeUnique;
+import std.bitmanip : BitArray;
+import std.meta : AliasSeq;
+import std.range.primitives : isInputRange;
 
 enum this_dot = "this.";
 
 import std.conv;
 
-import std.typecons: Typedef, TypedefType;
+import std.typecons : Typedef, TypedefType;
 
 enum BufferType {
     PUBKEY, /// Public key buffer type
@@ -87,6 +87,7 @@ enum BITARRAY_MESSAGE = "Use tagion.utils.BitMask instead";
 /++
  Creates a new clean bitarray
 +/
+version(none)
 deprecated(BITARRAY_MESSAGE) void bitarray_clear(out BitArray bits, const size_t length) @trusted pure nothrow {
     bits.length = length;
 }
@@ -94,10 +95,12 @@ deprecated(BITARRAY_MESSAGE) void bitarray_clear(out BitArray bits, const size_t
 /++
  Change the size of the bitarray
 +/
+version(none)
 deprecated(BITARRAY_MESSAGE) void bitarray_change(ref scope BitArray bits, const size_t length) @trusted {
     bits.length = length;
 }
 
+version(none)
 unittest {
     {
         BitArray test;
@@ -170,7 +173,7 @@ enum nameOf(alias nameType) = __traits(identifier, nameType);
  function name of the current function
 +/
 mixin template FUNCTION_NAME() {
-    import tagion.basic.Basic: basename;
+    import tagion.basic.Basic : basename;
 
     enum __FUNCTION_NAME__ = basename!(__FUNCTION__)[0 .. $ - 1];
 }
@@ -239,7 +242,7 @@ enum Control {
     if (n == 0) {
         return -1;
     }
-    import core.bitop: bsr;
+    import core.bitop : bsr;
 
     return bsr(n);
 }
@@ -259,7 +262,7 @@ unittest {
 +/
 @trusted
 string tempfile() {
-    import std.file: deleteme;
+    import std.file : deleteme;
 
     int dummy;
     return deleteme ~ (&dummy).to!string;
@@ -328,14 +331,14 @@ enum DataFormat {
     dartdb = "drt", // DART data-base
 }
 
-import std.typecons: Tuple;
+import std.typecons : Tuple;
 
 alias FileNames = Tuple!(string, "tempdir", string, "filename", string, "fullpath");
 const(FileNames) fileId(T)(string ext, string prefix = null) @safe {
-    import std.process: environment, thisProcessID;
+    import std.process : environment, thisProcessID;
     import std.file;
     import std.path;
-    import std.array: join;
+    import std.array : join;
 
     //import std.traits;
     FileNames names;
@@ -397,7 +400,8 @@ static unittest {
 */
 template doFront(Range) if (isInputRange!Range) {
     alias T = ForeachType!Range;
-    T doFront(Range r) {
+    import std.range;
+    T doFront(Range r) @safe {
         if (r.empty) {
             return T.init;
         }
@@ -406,12 +410,26 @@ template doFront(Range) if (isInputRange!Range) {
 }
 
 
+@safe
+unittest {
+    {
+        int[] a;
+        static assert(isInputRange!(typeof(a)));
+        assert(a.doFront is int.init);
+    }
+    {
+         const a=[1,2,3];
+         assert(a.doFront is a[0]);
+    }
+}
+
 enum isEqual(T1, T2) = is(T1 == T2);
 //enum isUnqualEqual(T1, T2) = is(Unqual!T1 == T2);
 
 unittest {
     import std.traits : Unqual;
     import std.meta : ApplyLeft, ApplyRight;
+
     static assert(isEqual!(int, int));
     static assert(!isEqual!(int, long));
     alias U = immutable(int);
@@ -421,8 +439,117 @@ unittest {
 }
 
 auto eatOne(R)(ref R r) if (isInputRange!R) {
-    scope(exit) {
+    import std.range;
+    scope (exit) {
         r.popFront;
     }
     return r.front;
+}
+
+unittest {
+    const(int)[] a=[1,2,3];
+    pragma(msg, typeof(a));
+    assert(eatOne(a) == 1);
+    assert(eatOne(a) == 2);
+    assert(eatOne(a) == 3);
+}
+
+/// Calling any system functions.
+template assumeTrusted(alias F) {
+    import std.traits;
+    static assert(isUnsafe!F);
+
+    auto assumeTrusted(Args...)(Args args) @trusted {
+        return F(args);
+    }
+}
+
+version(none)
+template assumeTrusted1(alias F) {
+    import std.traits;
+//    static assert(isUnsafe!F);
+    pragma(msg, "assumeTrusted1 ", F.stringof);
+    pragma(msg, "assumeTrusted1 ", isCallable!F);
+    pragma(msg, "assumeTrusted1 ", is(F == function));
+    // alias Params=Parameters!(typeof(F));
+    // alias ParamNames=ParameterIdentifierTuple!F;
+
+    // writefln("code=%s", code);
+    // writefln("code=%s", code.splitter!("a == b",Yes.keepSeparators)(')'));
+    // writefln("part=%s", code.splitter!("a == b",Yes.keepSeparators)(')').front);
+
+    enum code=format!q{
+        auto %s @trusted {
+            %s
+        }
+    }(F.stringof, "x");
+    pragma(msg, code);
+    // auto assumeTrusted(Args...)(Args args) @trusted {
+    //     return F(args);
+    // }
+}
+
+T assumeTrusted1(T)(lazy T expr) @trusted {
+//     import std.traits;
+// //    pragma(msg, "assumeTrusted1 ", F.stringof);
+//     return (() @trusted => expr)();
+// //    static assert(isUnsafe!F);
+//     // pragma(msg, "assumeTrusted1 ", isCallable!F);
+//     // pragma(msg, "assumeTrusted1 ", is(F == function));
+//     // auto assumeTrusted(Args...)(Args args) @trusted {
+//     //     return F(args);
+//     // }
+    return T.init;
+}
+import std.concurrency;
+static int x_send(Args...)(Tid tid, Args args) @system {
+    return 42;
+}
+
+
+///
+@safe
+unittest  {
+    auto bar(int b) @system { return b+1; }
+    const b = assumeTrusted!bar(5);
+    assert(b == 6);
+
+    // applicable to 0-ary function
+    static auto foo() @system { return 3; }
+    const a = assumeTrusted!foo;
+    assert(a == 3);
+
+    // // It can be used for alias
+    alias trustedBar = assumeTrusted!bar;
+    alias trustedFoo = assumeTrusted!foo;
+//    assert(is(typeof(trustedFoo) == function));
+
+    import core.stdc.stdlib;
+
+    auto ptr=assumeTrusted!malloc(100);
+    assert(ptr !is null);
+    ptr.assumeTrusted!free;
+
+    ptr=assumeTrusted!calloc(10, 100);
+    ptr.assumeTrusted!free;
+
+    alias lambda=assumeTrusted!((int a) @system => a*3);
+
+    assert(lambda(42) == 3*42);
+
+    {
+        import std.concurrency;
+
+        static void task() @safe {
+            const result=2*assumeTrusted!(receiveOnly!int);
+            assumeTrusted!({ownerTid.send(result);});
+            alias trusted_owner=assumeTrusted!(ownerTid);
+            alias trusted_send=assumeTrusted!(send!(string));
+            trusted_send(trusted_owner, "Hello");
+        }
+        auto tid = assumeTrusted!({return spawn(&task);});
+        assumeTrusted!({send(tid, 21);});
+        assert(assumeTrusted!(receiveOnly!(const(int))) == 21*2);
+        assert(assumeTrusted!(receiveOnly!(string)) == "Hello");
+    }
 }

@@ -1,11 +1,11 @@
 module tagion.utils.LEB128;
 
-import traits = std.traits: isSigned, isUnsigned, isIntegral;
+import traits = std.traits : isSigned, isUnsigned, isIntegral;
 import std.typecons;
 import std.format;
 import tagion.basic.TagionExceptions;
-import std.algorithm.comparison: min;
-import std.algorithm.iteration: map, sum;
+import std.algorithm.comparison : min;
+import std.algorithm.iteration : map, sum;
 
 //import std.stdio;
 
@@ -64,8 +64,7 @@ size_t calc_size(T)(const T v) pure nothrow if (isSigned!(T)) {
     // T nv=-v;
 
     ubyte d;
-    do
-    {
+    do {
         d = value & 0x7f;
         result++;
         value >>= 7;
@@ -125,7 +124,7 @@ enum ErrorValue(T) = DecodeLEB128!T(T.init, 0);
 +/
 @safe @nogc
 DecodeLEB128!T decode(T = ulong)(const(ubyte[]) data) pure nothrow
-        if (isUnsigned!T) {
+if (isUnsigned!T) {
     alias BaseT = TypedefType!T;
     ulong result;
     uint shift;
@@ -199,7 +198,7 @@ DecodeLEB128!T decode(T = long)(const(ubyte[]) data) pure nothrow if (isSigned!T
 
 ///
 unittest {
-    import std.algorithm.comparison: equal;
+    import std.algorithm.comparison : equal;
 
     void ok(T)(T x, const(ubyte[]) expected) {
         const encoded = encode(x);

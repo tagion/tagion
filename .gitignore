@@ -1,16 +1,7 @@
-# System files
 .DS_Store
-.AppleDouble
-.LSOverride
 
-# Local files
-local.mk
-
-# Generated directories
-src
+.tmp
 build
-__generated*
-*.log
 
 # Emacs
 *~
@@ -30,7 +21,3 @@ gen.*
 
 # Temporary directories
 bin
-
-#
-*.o
-

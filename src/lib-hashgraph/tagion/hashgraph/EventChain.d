@@ -1,17 +1,17 @@
 module tagion.hashgraph.EventChain;
 
-import std.algorithm: map;
-import std.array: array;
-import std.range: iota;
+import std.algorithm : map;
+import std.array : array;
+import std.range : iota;
 
-import tagion.basic.Basic: Buffer, Pubkey, Signature;
-import tagion.utils.StdTime: sdt_t;
+import tagion.basic.Basic : Buffer, Pubkey, Signature;
+import tagion.utils.StdTime : sdt_t;
 import tagion.hibon.HiBONRecord;
-import tagion.hibon.HiBON: HiBON;
-import tagion.hibon.Document: Document;
-import tagion.crypto.SecureInterfaceNet: SecureNet;
-import tagion.hashgraph.Event: Event;
-import tagion.hashgraph.HashGraphBasic: EventPackage, EventBody;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.hashgraph.Event : Event;
+import tagion.hashgraph.HashGraphBasic : EventPackage, EventBody;
 
 enum NIL = -1; // Defines an unconected Event
 
@@ -97,9 +97,7 @@ struct HashGraphRecorver {
             events
             .map!((e) => event_body_compact(e))
             .array;
-        return (() @trusted {
-            return cast(immutable) EventEpochChunk(epacks, chain);
-        })();
+        return (() @trusted { return cast(immutable) EventEpochChunk(epacks, chain); })();
     }
 
     const(immutable(EventPackage)*[]) opCall(const(EventEpochChunk) epoch_chunk) const {

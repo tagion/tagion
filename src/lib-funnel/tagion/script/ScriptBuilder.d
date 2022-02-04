@@ -3,20 +3,20 @@ module tagion.script.ScriptBuilder;
 import std.conv;
 
 import tagion.script.ScriptParser;
-import tagion.basic.TagionExceptions: Check;
-import tagion.script.ScriptBase: ScriptException, FunnelType;
+import tagion.basic.TagionExceptions : Check;
+import tagion.script.ScriptBase : ScriptException, FunnelType;
 
 import tagion.script.Script;
 import tagion.script.ScriptBlocks;
-import tagion.basic.Message: message;
+import tagion.basic.Message : message;
 
 //import std.format;
-import std.string: join;
+import std.string : join;
 
 //import std.stdio;
-import std.traits: hasMember, EnumMembers;
-import std.uni: toUpper;
-import std.range.primitives: isInputRange;
+import std.traits : hasMember, EnumMembers;
+import std.uni : toUpper;
+import std.range.primitives : isInputRange;
 import std.regex;
 
 @safe
@@ -34,9 +34,7 @@ ScriptBuilderT!(Range) ScriptBuilder(Range)(Range range) if (isInputRange!Range)
 
 immutable(Token) token(Range)(const Range range) {
     static if (hasMember!(Range, "line")) {
-        immutable(Token) token = {
-            name: range.front, line: range.line, pos: range.pos
-        };
+        immutable(Token) token = {name: range.front, line: range.line, pos: range.pos};
         return token;
     }
     else {
@@ -149,7 +147,7 @@ struct ScriptBuilderT(Range) {
             case NUM:
                 auto bound = var_type.match(Lexer.regex_bound);
                 if (!bound.empty && bound.front[2].length !is 0) {
-                    import tagion.script.ScriptBase: Number;
+                    import tagion.script.ScriptBase : Number;
 
                     const min = Number(bound.front[2]);
                     const max = Number(bound.front[3]);
@@ -519,7 +517,7 @@ struct ScriptBuilderT(Range) {
 }
 
 version (unittest) {
-    import tagion.script.ScriptBase: Number;
+    import tagion.script.ScriptBase : Number;
 }
 
 //version(none) {
@@ -582,7 +580,7 @@ unittest { // Simple function test
 }
 
 unittest { // Simple compare operator test
-    import tagion.basic.Basic: Buffer;
+    import tagion.basic.Basic : Buffer;
 
     string source = [
         ": test",

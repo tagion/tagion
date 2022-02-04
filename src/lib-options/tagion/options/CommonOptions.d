@@ -15,7 +15,6 @@ protected static shared {
     bool _common_options_set;
 }
 
-
 /++
 +  Sets the thread global options opt
 +/
@@ -25,7 +24,7 @@ in {
     assert(!_common_options_set, "Common options already set");
 }
 do {
-    _common_options_set =true;
+    _common_options_set = true;
     _common_options = opt;
 }
 
@@ -35,7 +34,5 @@ in {
     assert(_common_options_set, "Common options has not been set");
 }
 do {
-    return (() @trusted {
-        return cast(immutable)_common_options;
-        })();
+    return (() @trusted { return cast(immutable) _common_options; })();
 }

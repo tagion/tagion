@@ -10,7 +10,11 @@ BIN:=bin
 
 LDWFLAGS+=-O0
 MAIN?=hibon
+<<<<<<< HEAD
 -include dfiles.mk
+=======
+include dfiles.mk
+>>>>>>> 4f386fd9a5d04e3a5776a225aa91fba2a399caaa
 # ifeq ($(MAIN),test_array)
 DFILES+=tests/$(MAIN).d
 

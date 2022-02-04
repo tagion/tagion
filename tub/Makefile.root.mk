@@ -1,10 +1,12 @@
-# DO NOT MOFIFY
+# DO NOT MODIFY
 # This file is generated, and can be replaced at any moment
 
 .SECONDARY:
 
 -include tub/main.mk
-
+# Hack to get tagionwave to build
+#include src/bin-wave/build.mk
+#include src/lib-mobile/build.mk
 ifndef DTUB
 ifdef RECURSIVE
 define ERRORMSG
@@ -25,6 +27,7 @@ all: doit
 # The following replaces ./tub/setup:
 %:
 	@git submodule update --init --recursive
-	@$(MAKE) RECURSIVE=1 gitconfig
+	@$(MAKE) RECURSIVE=1 setup
 	@$(MAKE) RECURSIVE=1 $@
+
 endif

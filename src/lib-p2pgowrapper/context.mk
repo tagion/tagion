@@ -11,8 +11,14 @@ ifeq ($(OS),darwin)
 $(DBIN)/$(PROGRAM).test: LDCFLAGS += -L-framework -LCoreFoundation -L-framework -LSecurity
 endif
 
-$(PROGRAM).preconfigure: $(LP2PGOWRAPPER_DIFILES)
-$(PROGRAM).configure: SOURCE := p2p/*.d p2p/cgo/*.di
+LP2PGOWRAPPER_DIFILES:=${addprefix $(LIBP2PGOWRAPPER_DIROOT)/, c_helper.di libp2pgowrapper.di}
+#
+# D files requires c_helper.di libp2pgowrapper.di
+#
+$(LIBP2PGOWRAPPER_DFILES): ${addprefix $(LIBP2PGOWRAPPER_DIROOT)/, c_helper.di libp2pgowrapper.di}
 
-$(DBIN)/$(PROGRAM).test: $(DTMP)/libp2pgowrapper.a
 
+# $(PROGRAM).preconfigure: $(LP2PGOWRAPPER_DIFILES)
+# $(PROGRAM).configure: SOURCE := p2p/*.d p2p/cgo/*.di
+
+# $(DBIN)/$(PROGRAM).test: $(DTMP)/libp2pgowrapper.a
