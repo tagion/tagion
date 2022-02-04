@@ -107,11 +107,11 @@ dfiles: $(DBUILD)/gen.dfiles.mk
 
 .PHONY: env-ddeps help-ddeps
 
-#ifdef DFILES
+ifdef DFILES
 $(DBUILD)/gen.dfiles.mk:
 	$(PRECMD)
 	printf "%s += %s\n" ${addprefix DFILES , $(DFILES)} > $@
-#endif
+endif
 
 .SECONDARY: $(DBUILD)/gen.dfiles.mk
 

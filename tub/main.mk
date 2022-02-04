@@ -19,11 +19,8 @@ export DROOT := ${abspath ${DTUB}/../}
 -include $(DROOT)/local.mk
 
 # Platform
--include $(DROOT)/platform.*.mk
 include $(DTUB)/utilities/dir.mk
-
-
-
+-include $(DROOT)/platform.*.mk
 
 # Secondary tub functionality
 include $(DTUB)/ways.mk
@@ -36,6 +33,7 @@ include $(DTUB)/config/host.mk
 include $(DTUB)/config/cross.mk
 include $(DTUB)/config/dirs.mk
 include $(DTUB)/config/platform.mk
+include $(DTUB)/config/auxiliary.mk
 
 # Packages
 -include $(DBUILD)/gen.dfiles.mk
@@ -45,8 +43,8 @@ include $(DTUB)/config/compiler.mk
 include $(DTUB)/config/dstep.mk
 #include $(DTUB)/config/env.mk
 include $(DTUB)/utilities/log.mk
--include $(DBUILD)/gen.ddeps.mk
 include $(DTUB)/config/ddeps.mk
+-include $(DBUILD)/gen.ddeps.mk
 
 # Enable cloning, if BRANCH is known
 ifeq ($(findstring clone,$(MAKECMDGOALS)),clone)
@@ -84,14 +82,14 @@ include $(DTUB)/compile.mk
 
 
 
-# Enable cleaning
-include $(DTUB)/clean.mk
-
-# Help
-include $(DTUB)/help.mk
-
 include $(DTUB)/config/prebuild.mk
 
 # Root config
 -include $(DROOT)/config.*.mk
 -include $(DROOT)/config.mk
+
+# Enable cleaning
+include $(DTUB)/clean.mk
+
+# Help
+include $(DTUB)/help.mk

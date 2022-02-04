@@ -4,6 +4,10 @@
 .SECONDARY:
 .ONESHELL:
 
+test73:
+	@echo "$(MAKECMDGOALS)"
+	@echo "$(MAKEFLAGS)"
+
 include tub/main.mk
 
 # Hack to get tagionwave to build
@@ -70,6 +74,3 @@ include tub/main.mk
 #test78:
 #	echo $(DIFILES)
 #	echo DIFILES_DEPS=$(DIFILES_DEPS)
-
-#test73:
-#	@echo $(MAKECMDGOALS)

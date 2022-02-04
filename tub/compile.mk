@@ -4,12 +4,33 @@ DFLAGS+=$(DPREVIEW)=inclusiveincontracts
 #
 # D compiler
 #
-$(DOBJ)/%.o: $(PREBUILD)
+$(DOBJ)/%.$(OBJEXT): $(PREBUILD)
 
-$(DOBJ)/%.o: $(DSRC)/%.d
+$(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 	$(PRECMD)
-	${call log.kvp, compile$(MODE), $(DMODULE)}
+	${call log.kvp, compile, $(MODE)}
 	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $< $(DCOMPILE_ONLY) $(OUTPUT)$@
+
+ifdef SPLIT_LINKER
+$(DOBJ)/%.$(OBJEXT): $(PREBUILD)
+
+$(DOBJ)/%.$(OBJEXT):
+	$(PRECMD)
+	${call log.kvp, compile $(MODE)}
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${filter %.d,$(DFILES)} $(DCOMPILE_ONLY)  $(OUTPUT)$@
+
+$(DLIB)/%.$(DLLEXT): $(DOBJ)/%.$(OBJEXT)
+	$(PRECMD)
+	${call log.kvp, link, $(MODE)}
+	$(LD) ${addprefix -I,$(DINC)} ${} ${LDFLAGS} $(DCOMPILE_ONLY)  $(OUTPUT)$@
+else
+$(DOBJ)/%.$(DLLEXT): $(PREBUILD)
+
+$(DLIB)/%.$(DLLEXT):
+	$(PRECMD)
+	${call log.kvp, link$(MODE), $(DMODULE)}
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${filter %.d,$(DFILES)} ${LDFLAGS} $(DCOMPILE_ONLY)  $(OUTPUT)$@
+endif
 
 #
 # Unittest

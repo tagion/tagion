@@ -2,8 +2,10 @@
 env-platform:
 	$(PRECMD)
 	${call log.header, $@ :: env}
+	${call log.kvp, NATIVE_PLATFORM, $(NATIVE_PLATFORM)}
 	${call log.kvp, PLATFORM, $(PLATFORM)}
 	${call log.env, PLATFORMS, $(PLATFORMS)}
+	${call log.env, CROSS_ENABLED, $(CROSS_ENABLED)}
 	${call log.close}
 
 env: env-platform

@@ -35,6 +35,10 @@ ${info Install newer version: http://ftp.gnu.org/gnu/make/}
 ${error Unsupported GNU Make version}
 endif
 
+ifneq ($(PLATFORM),$(NATIVE_PLATFORM))
+CROSS_ENABLE?=yes
+endif
+
 env-host:
 	$(PRECMD)
 	$(call log.header, $@ :: host)

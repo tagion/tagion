@@ -374,6 +374,7 @@ int main(string[] args) {
         immutable inputfile=args[1];
         if (!inputfile.exists) {
             stderr.writefln("ERROR: %s not found", inputfile);
+            return 2;
         }
 
         if (!ddeps.sourcedir) {

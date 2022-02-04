@@ -7,7 +7,7 @@ include ${call dir.resolve, cross.mk}
 
 
 ifdef SHARED
-${error shared not implemented yet}
+#${error shared not implemented yet}
 LIBP2PGOWRAPPER:=$(DTMP)/libp2pgowrapper.$(DLLEXT)
 else
 LIBP2PGOWRAPPER:=$(DTMP)/libp2pgowrapper.$(LIBEXT)

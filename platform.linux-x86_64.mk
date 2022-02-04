@@ -9,7 +9,7 @@ PLATFORMS+=$(LINUX_X86_64)
 ifeq ($(PLATFORM),$(LINUX_X86_64))
 
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
-DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-bettec*"}
+DFILES+=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-*" -a -not -path "*/tests/*"}
 #DINC+=${shell find $(DSRC) -type d -path "*/p2p" }
 
 ${call DDEPS,$(DBUILD),$(DFILES)}

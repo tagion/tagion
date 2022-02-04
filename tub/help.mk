@@ -13,8 +13,6 @@ help-main:
 	${call log.help, "make help-main", "Will display this part"}
 	${call log.help, "make help", "Show all helps"}
 	${call log.line}
-	${call log.help, "make init", "First-time tub initialization (required)"}
-	${call log.line}
 	${call log.help, "make clean", "Cleans the generated files from the prime source"}
 	${call log.line}
 	${call log.help, "make prober-all", "Cleans all"}

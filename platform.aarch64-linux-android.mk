@@ -3,11 +3,13 @@ ANDROID_AARCH64=aarch64-linux-android
 PLATFORMS+=$(ANDROID_AARCH64)
 
 ifeq ($(PLATFORM),$(ANDROID_AARCH64))
+SHARED?=1
+SPLIT_LINK?=1
 ANDROID_ARCH=$(ANDROID_AARCH64)
 TRIPLET = $(ANDROID_ARCH)
 #include $(DROOT)/config.android.mk
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
-DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-bettec*"}
+DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc*" -not -path "*/tests/*"}
 
 CROSS_LIB=$(CROSS_SYSROOT)/usr/lib/$(ANDROID_ARCH)/$(ANDROID_NDK)
 OBJS+=$(CROSS_LIB)/crtbegin_so.o
