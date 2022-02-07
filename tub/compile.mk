@@ -30,12 +30,12 @@ $(DLIB)/lib%.$(DLLEXT): $(DOBJ)/lib%.$(OBJEXT)
 	$(PRECMD)
 	${call log.kvp, split-link$(MODE)}
 	echo ${filter %.$(OBJEXT),$?}
-	$(LD) ${LDFLAGS} ${filter %.$(OBJEXT),$?}  -o$@
+	$(LD) ${LDFLAGS} ${filter %.$(OBJEXT),$?} $(LIBS) $(OBJS) -o$@
 else
 $(DLIB)/%.$(DLLEXT):
 	$(PRECMD)
 	${call log.kvp, link$(MODE), $(DMODULE)}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) ${LDFLAGS} $(DCOMPILE_ONLY)  $(OUTPUT)$@
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) ${LDFLAGS} $(LIBS) $(OBJS) $(DCOMPILE_ONLY)  $(OUTPUT)$@
 endif
 
 #

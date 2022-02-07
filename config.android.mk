@@ -14,15 +14,25 @@ export ANDROID_SYSROOT=${abspath $(ANDROID_TOOLCHAIN)/../sysroot}
 
 export ANDROID_CLANG_VER?=${shell ${ANDROID_CC} --version | $(DTUB)/clang_version.pl}
 
-export ANDROID_LDFLAGS+=-z noexecstack
-export ANDROID_LDFLAGS+=-EL
-export ANDROID_LDFLAGS+=--warn-shared-textrel
-export ANDROID_LDFLAGS+=-z now
-export ANDROID_LDFLAGS+=-z relro
-export ANDROID_LDFLAGS+=-z max-page-size=4096
-export ANDROID_LDFLAGS+=--hash-style=gnu
-export ANDROID_LDFLAGS+=--enable-new-dtags
-export ANDROID_LDFLAGS+=--eh-frame-hdr
+#
+# Android link flags
+#
+export ANDROID_LDFLAGS
+ANDROID_LDFLAGS+=-z noexecstack
+ANDROID_LDFLAGS+=-EL
+ANDROID_LDFLAGS+=--warn-shared-textrel
+ANDROID_LDFLAGS+=-z now
+ANDROID_LDFLAGS+=-z relro
+ANDROID_LDFLAGS+=-z max-page-size=4096
+ANDROID_LDFLAGS+=--hash-style=gnu
+ANDROID_LDFLAGS+=--enable-new-dtags
+ANDROID_LDFLAGS+=--eh-frame-hdr
+#
+#
+#
+export ANDROID_DFLAGS
+ANDROID_DFLAGS+=-mtriple=$(TRIPLET)
+ANDROID_DFLAGS+=-Xcc=--sysroot=$(ANDROID_SYSROOT)
 
 ANDROID_CONFIG_MK:=$(DBUILD)/gen.android.mk
 

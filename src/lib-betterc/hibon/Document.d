@@ -1282,3 +1282,16 @@ struct Document {
         }
     }
 }
+/**
+ * HiBON Document
+ *
+ */
+// module libtest;
+
+extern(C):
+
+@nogc:
+pragma(msg, "fixme(cbr): This is a simple link test, should be removed when the code links correctly");
+int test_func(int x) {
+    return 3*x;
+}
