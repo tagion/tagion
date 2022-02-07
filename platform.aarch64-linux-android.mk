@@ -53,7 +53,6 @@ endif
 # OBJS+=$(CROSS_LIB)/crtbegin_so.o
 
 ANDROID_LDFLAGS+=--fix-cortex-a53-843419
-
 #
 # Link all into one library
 #
@@ -61,11 +60,13 @@ ANDROID_LDFLAGS+=--fix-cortex-a53-843419
 ANDROID_DFLAGS+=--defaultlib=libdruntime-ldc.a,libphobos2-ldc.a
 
 ANDROID_DFLAGS+=-L/home/carsten/work/ldc-runtime/ldc-build-runtime.tmp/lib/
-ANDROID_DFLAGS+=-L/home/carsten/work/ldc-runtime/ldc-build-runtime.tmp/lib/
+#ANDROID_DFLAGS+=-L/home/carsten/work/ldc-runtime/ldc-build-runtime.tmp/lib/
 ANDROID_DFLAGS+=-I/home/carsten/work/ldc-runtime/ldc-build-runtime.tmp/ldc-src/runtime/phobos/
 ANDROID_DFLAGS+=-I/home/carsten/work/ldc-runtime/ldc-build-runtime.tmp/ldc-src/runtime/druntime/src/
 ANDROID_DFLAGS+=--conf=
 ANDROID_DFLAGS+=--flto=thin
+ANDROID_DFLAGS+=--Oz
+
 #ANDROID_DFLAGS+=--static
 
 target-android: LD=$(ANDROID_LD)
@@ -73,6 +74,9 @@ target-android: CC=$(ANDROID_CC)
 target-android: CPP=$(ANDROID_CPP)
 #target-android: LDFLAGS=$(ANDROID_LDFLAGS)
 target-android: DFLAGS+=$(ANDROID_DFLAGS)
+target-android: LIBS+=/home/carsten/work/ldc-runtime/ldc-build-runtime.tmp/lib/libdruntime-ldc.a
+target-android: LIBS+=/home/carsten/work/ldc-runtime/ldc-build-runtime.tmp/lib/libphobos2-ldc.a
+
 
 #target-android: DFLAGS+=--static
 # target-android: DFILES+=/usr/lib/ldc/x86_64-linux-gnu/include/d/core/internal/array/equality.d
@@ -107,9 +111,9 @@ target-android: DFLAGS+=$(ANDROID_DFLAGS)
 # target-android: DFILES+=/usr/lib/ldc/x86_64-linux-gnu/include/d/ldc/internal/vararg.di
 # target-android: DFILES+=/usr/lib/ldc/x86_64-linux-gnu/include/d/std/range/primitives.d
 # target-android: DFLAGS+=--singleobj
-target-android: LDFLAGS+=$(ANDROID_LDFLAGS)
 
 target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30/crtbegin_so.o
+target-android: LDFLAGS+=$(ANDROID_LDFLAGS)
 target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/aarch64
 target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../lib/gcc/aarch64-linux-android/4.9.x
 target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30
@@ -120,15 +124,15 @@ target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/
 target-android: LDFLAGS+=-l:libunwind.a
 target-android: LDFLAGS+=-ldl
 target-android: LDFLAGS+=-lc
-target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a
-target-android: LDFLAGS+=-l:libunwind.a
-target-android: LDFLAGS+=-ldl
+target-android: LDFLAGS+=-lm
+# target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a
+# target-android: LDFLAGS+=-l:libunwind.a
+# target-android: LDFLAGS+=-ldl
 target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30/crtend_so.o
 
-#target-android: LIBS+=$(LIBSECP256K1)
+# target-android: LIBS+=$(LIBSECP256K1_STATIC)
 
-
-target-android: | secp256k1
+# target-android: | secp256k1
 
 # To make sure that the all has been defined correctly
 # The library must be expanded on the second pass

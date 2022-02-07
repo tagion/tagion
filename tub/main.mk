@@ -24,6 +24,7 @@ export DROOT := ${abspath ${DTUB}/../}
 #
 -include $(DROOT)/local.*.mk
 -include $(DROOT)/local.mk
+include $(DTUB)/tools/*.mk
 
 #
 # Platform
