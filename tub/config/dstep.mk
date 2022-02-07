@@ -21,8 +21,6 @@ DIFILES+=$$(DIFILES.$1)
 
 DIFILES_DEPS+=$4
 
-.SECONDARY: $$(DESTROOT.$1)/%.di
-
 $$(DESTROOT.$1)/%.di: $$(HPATH.$1)/%.h | $$(DESTROOT.$1) prebuild
 	$$(PRECMD)${call log.kvp, dstep, $$(@F)}
 	$$(DSTEP) $$(DSTEP_ATTRIBUTES) $$(DSTEPFLAGS) --package $1 $$< -o $$@
@@ -31,9 +29,6 @@ $$(DESTROOT.$1):
 	$$(PRECMD)mkdir -p $$@
 
 $4: $$(DIFILES.$1)
-
-.SECONDARY: $$(DIFILES.$1)
-
 
 dstep-$1: $$(DIFILES.$1)
 

@@ -1,35 +1,36 @@
 # machine-vendor-operatingsystem
-TRIPLET ?= $(ARCH)-unknown-$(OS)
+#TRIPLET ?= $(ARCH)-unknown-$(OS)
 
-TRIPLET_SPACED := ${subst -, ,$(TRIPLET)}
+#TRIPLET_SPACED := ${subst -, ,$(TRIPLET)}
 
 # If TRIPLET specified with 2 words
 # fill the VENDOR as unknown
-CROSS_ARCH := ${word 1, $(TRIPLET_SPACED)}
-ifeq (${words $(TRIPLET_SPACED)},2)
-CROSS_VENDOR := unknown
-CROSS_OS := ${word 2, $(TRIPLET_SPACED)}
-else
-CROSS_VENDOR := ${word 2, $(TRIPLET_SPACED)}
-CROSS_OS := ${word 3, $(TRIPLET_SPACED)}
-endif
+# CROSS_ARCH := ${word 1, $(TRIPLET_SPACED)}
+# ifeq (${words $(TRIPLET_SPACED)},2)
+# CROSS_VENDOR := unknown
+# CROSS_OS := ${word 2, $(TRIPLET_SPACED)}
+# else
+# CROSS_VENDOR := ${word 2, $(TRIPLET_SPACED)}
+# CROSS_OS := ${word 3, $(TRIPLET_SPACED)}
+# endif
 
-CROSS_ENABLED := 1
+#CROSS_ENABLED := 1
 
 # If same as host - reset vars not to trigger
 # cross-compilation logic
-ifeq ($(CROSS_ARCH),$(ARCH))
-ifeq ($(CROSS_OS),$(OS))
-CROSS_ARCH :=
-CROSS_VENDOR :=
-CROSS_OS :=
-CROSS_ENABLED :=
-endif
-endif
+# ifeq ($(CROSS_ARCH),$(ARCH))
+# ifeq ($(CROSS_OS),$(OS))
+# CROSS_ARCH :=
+# CROSS_VENDOR :=
+# CROSS_OS :=
+# CROSS_ENABLED :=
+# endif
+# endif
 
-MTRIPLE := $(CROSS_ARCH)-$(CROSS_VENDOR)-$(CROSS_OS)
+#MTRIPLE := $(CROSS_ARCH)-$(CROSS_VENDOR)-$(CROSS_OS)
+
 ifeq ($(MTRIPLE),--)
-MTRIPLE := $(TRIPLET)
+MTRIPLE := $$(TRIPLET)
 endif
 
 ifdef CROSS_ENABLED
@@ -49,6 +50,10 @@ CROSS_SYSROOT=$(XCODE_SIMULATOR_SDK)
 endif
 endif
 endif
+
+define cross.setup
+"${shell env | grep ANDROID_CROSS_}"
+endef
 
 # ---
 # Android
@@ -70,18 +75,20 @@ endif
 
 CROSS_ANDROID_API = 30
 
-CROSS_ROOT=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(ANDROID_NDK_HOST_TAG)
+CROSS_ROOT=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(HOST_PLATFORM)
 CROSS_TOOLCHAIN=$(CROSS_ROOT)/bin
 CROSS_SYSROOT=$(CROSS_ROOT)/sysroot
 endif
 endif
 
 
-
 env-cross:
 	$(PRECMD)
 	$(call log.header, $@ :: cross)
 	$(call log.kvp, MTRIPLE, $(MTRIPLE))
+	$(call log.kvp, TRIPLE, $(TRIPLE))
+	$(call log.kvp, HOST_PLATFORM, $(HOST_PLATFORM))
+	$(call log.kvp, PLATFORM, $(PLATFORM))
 	$(call log.kvp, CROSS_ENABLED, $(CROSS_ENABLED))
 	$(call log.kvp, CROSS_ARCH, $(CROSS_ARCH))
 	$(call log.kvp, CROSS_VENDOR, $(CROSS_VENDOR))
@@ -93,3 +100,9 @@ env-cross:
 	$(call log.close)
 
 env: env-cross
+
+
+TEST89=${shell env | grep ANDROID}
+
+test89:
+	@echo "$(TEST89)"

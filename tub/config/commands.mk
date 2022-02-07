@@ -6,10 +6,11 @@ CP ?= copy /Y
 MKDIR ?= mkdir
 MV ?= move
 LN ?= mklink
-GETOS?=Unknow-get-os
+GETHOSTOS?=Unknow-get-os
 GETARCH?=Unknow-get-arch
 DLLEXT ?= dll
 OBJEXT ?= obj
+
 else ifeq ($(OS),linux)
 
 else ifeq ($(OS),freebsd)
@@ -22,7 +23,7 @@ DLLEXT ?= dylib
 endif
 
 # Default posix commands
-GETOS?=${shell uname | tr A-Z a-z}
+GETHOSTOS?=${shell uname | tr A-Z a-z}
 GETARCH?=${shell uname -m}
 RM ?= rm -f
 RMDIR ?= rm -rf
@@ -32,7 +33,7 @@ MV ?= mv
 LN ?= ln -s
 TOUCH ?= touch
 DLLEXT ?= so
-LIBEXT ?= a
+STAEXT ?= a
 OBJEXT ?= o
 
 CD ?= cd
@@ -64,3 +65,11 @@ env-commands:
 	$(call log.close)
 
 env: env-commands
+
+# A literal space.
+space :=
+space +=
+# Joins elements of the list in arg 2 with the given separator.
+#   1. Element separator.
+#   2. The list.
+join-with = $(subst $(space),$1,$(strip $2))

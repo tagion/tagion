@@ -74,3 +74,5 @@ include tub/main.mk
 #test78:
 #	echo $(DIFILES)
 #	echo DIFILES_DEPS=$(DIFILES_DEPS)
+
+myprog: .EXTRA_PREREQS = $(CC)

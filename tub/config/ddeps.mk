@@ -16,8 +16,6 @@ $1/gen.ddeps.json: $1/.way
 
 $1/gen.ddeps.json: DFILES=$$($$(PLATFORM)_DFILES)
 
-.SECONDARY: $1/gen.ddeps.json $1/gen.ddeps.mk
-
 proper-ddeps-$$(PLATFORM):
 	$(PRECMD)
 	$${call log.header, $$@ :: proper}
@@ -105,15 +103,24 @@ prebuild2: $(DBUILD)/gen.dfiles.mk
 
 dfiles: $(DBUILD)/gen.dfiles.mk
 
-.PHONY: env-ddeps help-ddeps
+.PHONY: env-ddeps help-ddeps dfiles
 
-ifdef DFILES
+ifdef ${strip DFILES}
 $(DBUILD)/gen.dfiles.mk:
 	$(PRECMD)
-	printf "%s += %s\n" ${addprefix DFILES , $(DFILES)} > $@
+	echo ifdef load.$@ > $@
+	echo load.$@=1 >> $@
+	printf "%s += %s\n" ${addprefix DFILES , $(DFILES)} >> $@
+	echo endif >>$@
 endif
 
-.SECONDARY: $(DBUILD)/gen.dfiles.mk
+
+
+# echo ifdef load.$@ > $@
+
+# echo load.$@=1 >> $@
+
+# echo endif >>$@
 
 gen.test.mk:
 	echo "Hello" > $@

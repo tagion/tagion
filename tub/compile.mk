@@ -1,6 +1,12 @@
 
 DFLAGS+=$(DIP25) $(DIP1000)
 DFLAGS+=$(DPREVIEW)=inclusiveincontracts
+
+#
+# Change extend of the LIB
+#
+LIBEXT=${if $(SHARED),$(DLLEXT),$(STAEXT)}
+
 #
 # D compiler
 #
@@ -12,24 +18,24 @@ $(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $< $(DCOMPILE_ONLY) $(OUTPUT)$@
 
 ifdef SPLIT_LINKER
-$(DOBJ)/%.$(OBJEXT): $(PREBUILD)
+#$(DOBJ)/%.$(OBJEXT): $(PREBUILD)
 
-$(DOBJ)/%.$(OBJEXT):
+$(DOBJ)/lib%.$(OBJEXT): $(DOBJ)/.way
 	$(PRECMD)
-	${call log.kvp, compile $(MODE)}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${filter %.d,$(DFILES)} $(DCOMPILE_ONLY)  $(OUTPUT)$@
+	${call log.kvp, compile$(MODE)}
+	echo ${DFILES}
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(DCOMPILE_ONLY)  $(OUTPUT)$@
 
-$(DLIB)/%.$(DLLEXT): $(DOBJ)/%.$(OBJEXT)
+$(DLIB)/lib%.$(DLLEXT): $(DOBJ)/lib%.$(OBJEXT)
 	$(PRECMD)
-	${call log.kvp, link, $(MODE)}
-	$(LD) ${addprefix -I,$(DINC)} ${} ${LDFLAGS} $(DCOMPILE_ONLY)  $(OUTPUT)$@
+	${call log.kvp, split-link$(MODE)}
+	echo ${filter %.$(OBJEXT),$?}
+	$(LD) ${LDFLAGS} ${filter %.$(OBJEXT),$?}  -o$@
 else
-$(DOBJ)/%.$(DLLEXT): $(PREBUILD)
-
 $(DLIB)/%.$(DLLEXT):
 	$(PRECMD)
 	${call log.kvp, link$(MODE), $(DMODULE)}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${filter %.d,$(DFILES)} ${LDFLAGS} $(DCOMPILE_ONLY)  $(OUTPUT)$@
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) ${LDFLAGS} $(DCOMPILE_ONLY)  $(OUTPUT)$@
 endif
 
 #

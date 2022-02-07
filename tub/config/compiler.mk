@@ -59,7 +59,7 @@ DMAIN := --main
 DIP := --dip
 DFPIC := -relocation-model=pic
 DDEBUG_SYMBOLS := -g
-BETTERC := --betterC
+DBETTERC := --betterC
 DCOMPILE_ONLY := -c
 DPREVIEW :=--preview
 NO_OBJ ?= --o-
@@ -72,7 +72,7 @@ DUNITTEST := -f-d-unittest
 DMAIN := -f-d-main
 DIP := unknown-dip
 DDEBUG_SYMBOLS := -g
-BETTERC := --betterC
+DBETTERC := --betterC
 DCOMPILE_ONLY := -c
 DPREVIEW :=-preview
 NO_OBJ ?= -o-
@@ -85,7 +85,7 @@ DMAIN := -main
 DIP := -dip
 DFPIC := -fPIC
 DDEBUG_SYMBOLS := -g
-BETTERC := -betterC
+DBETTERC := -betterC
 DCOMPILE_ONLY := -c
 DPREVIEW :=-preview
 NO_OBJ ?= -o-
@@ -153,7 +153,7 @@ env-compiler:
 	${call log.kvp, DPREVIEW, $(DPREVIEW)}
 	${call log.kvp, DFPIC, $(DFPIC)}
 	${call log.kvp, DCOMPILE_ONLY, $(DCOMPILE_ONLY)}
-	${call log.kvp, BETTERC, $(BETTERC)}
+	${call log.kvp, DBETTERC, $(DBETTERC)}
 	${call log.kvp, DDEBUG_SYMBOLS , $(DDEBUG_SYMBOLS)}
 	${call log.kvp, DFLAGS, "$(DFLAGS)"}
 	${call log.kvp, LDCFLAGS, "$(LDCFLAGS)"}

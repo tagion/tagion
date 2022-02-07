@@ -1,24 +1,50 @@
-ANDROID_SDK_NO?=30
+ANDROID_API?=30
 ANDROID_NDK = $(ANDROID_TOOLS)/android-ndk-r23b
 
-CROSS_BIN=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(NATIVE_PLATFORM)/bin
-CROSS_LD=$(CROSS_BIN)/ld
-CROSS_CC=$(CROSS_BIN)/clang
-CROSS_CPP=$(CROSS_BIN)/clang++
+ANDROID_OS=android
+export ANDROID_ROOT=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(HOST)
+export ANDROID_TOOLCHAIN=$(ANDROID_ROOT)/bin
 
-CROSS_SYSROOT=${abspath $(CROSS_BIN)/../sysroot}
+export ANDROID_LD=$(ANDROID_TOOLCHAIN)/ld
+export ANDROID_CC=$(ANDROID_TOOLCHAIN)/clang
+export ANDROID_CPP=$(ANDROID_TOOLCHAIN)/clang++
+export ANDROID_CROSS_CC=$(ANDROID_TOOLCHAIN)/$(TRIPPLE)
 
-CROSS_CLANG_VER?=${shell ${CROSS_CC} --version | $(DTUB)/clang_version.pl}
+export ANDROID_SYSROOT=${abspath $(ANDROID_TOOLCHAIN)/../sysroot}
 
-CROSS_LDFLAGS+=-z noexecstack
-CROSS_LDFLAGS+=-EL
-CROSS_LDFLAGS+=--warn-shared-textrel
-CROSS_LDFLAGS+=-z now
-CROSS_LDFLAGS+=-z relro
-CROSS_LDFLAGS+=-z max-page-size=4096
-CROSS_LDFLAGS+=--hash-style=gnu
-CROSS_LDFLAGS+=--enable-new-dtags
-CROSS_LDFLAGS+=--eh-frame-hdr
+export ANDROID_CLANG_VER?=${shell ${ANDROID_CC} --version | $(DTUB)/clang_version.pl}
+
+export ANDROID_LDFLAGS+=-z noexecstack
+export ANDROID_LDFLAGS+=-EL
+export ANDROID_LDFLAGS+=--warn-shared-textrel
+export ANDROID_LDFLAGS+=-z now
+export ANDROID_LDFLAGS+=-z relro
+export ANDROID_LDFLAGS+=-z max-page-size=4096
+export ANDROID_LDFLAGS+=--hash-style=gnu
+export ANDROID_LDFLAGS+=--enable-new-dtags
+export ANDROID_LDFLAGS+=--eh-frame-hdr
+
+ANDROID_CONFIG_MK:=$(DBUILD)/gen.android.mk
+
+android-target: $(DBUILD)
+android-target: $(ANDROID_CONFIG_MK)
+
+
+$(ANDROID_CONFIG_MK): $(DBUILD)
+	env | $(DTUB)/copy_env.d -r "^ANDROID_" -w "CROSS_" -t android-target -e ANDROID_ENABLED >  $(ANDROID_CONFIG_MK)
+
+-include $(ANDROID_CONFIG_MK)
+
+#ifdef ANDROID_ENABLED
+android-target:
+	@echo $(CROSS_OS)
+	@echo $(CROSS_CC)
+# else
+# android-target:
+# 	@echo make $(MAKECMDGOALS)
+# endif
+
+
 # -m aarch64linux
 # -shared
 # -l:libunwind.a
@@ -40,13 +66,15 @@ env-android:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.kvp, ANDROID_NDK, $(ANDROID_NDK)}
-	${call log.kvp, ANDROID_SDK_NO, $(ANDROID_SDK_NO)}
-	${call log.kvp, CROSS_LD, $(CROSS_LD)}
-	${call log.kvp, CROSS_CC, $(CROSS_CC)}
-	${call log.kvp, CROSS_CPP, $(CROSS_CPP)}
-	${call log.kvp, CROSS_SYSROOT, $(CROSS_SYSROOT)}
-	${call log.kvp, CROSS_CLANG_VER, $(CROSS_CLANG_VER)}
-	${call log.env, CROSS_LDFLAGS, $(CROSS_LDFLAGS)}
+	${call log.kvp, ANDROID_API, $(ANDROID_API)}
+	${call log.kvp, ANDROID_ROOT, $(ANDROID_ROOT)}
+	${call log.kvp, ANDROID_TOOLCHAIN, $(ANDROID_TOOLCHAIN)}
+	${call log.kvp, ANDROID_LD, $(ANDROID_LD)}
+	${call log.kvp, ANDROID_CC, $(ANDROID_CC)}
+	${call log.kvp, ANDROID_CPP, $(ANDROID_CPP)}
+	${call log.kvp, ANDROID_SYSROOT, $(ANDROID_SYSROOT)}
+	${call log.kvp, ANDROID_CLANG_VER, $(ANDROID_CLANG_VER)}
+	${call log.env, ANDROID_LDFLAGS, $(ANDROID_LDFLAGS)}
 	${call log.close}
 
 env: env-android

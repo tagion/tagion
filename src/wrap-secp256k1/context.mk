@@ -4,7 +4,7 @@ ifdef SHARED
 LIBSECP256K1_NAME:=libsecp256k1.$(DLLEXT)
 CONFIGUREFLAGS_SECP256K1 += --enable-shared=yes
 else
-LIBSECP256K1_NAME:=libsecp256k1.$(LIBEXT)
+LIBSECP256K1_NAME:=libsecp256k1.$(STAEXT)
 CONFIGUREFLAGS_SECP256K1 += --enable-shared=on
 endif
 
@@ -24,8 +24,6 @@ CONFIGUREFLAGS_SECP256K1 += --enable-module-schnorrsig
 CONFIGUREFLAGS_SECP256K1 += CRYPTO_LIBS=$(DTMP)/ CRYPTO_CFLAGS=$(DSRC_OPENSSL)/include/
 CONFIGUREFLAGS_SECP256K1 += --prefix=$(DLIB)
 include ${call dir.resolve, cross.mk}
-
-prebuild1: $(LIBSECP256K1)
 
 secp256k1: $(LIBSECP256K1)
 	@
