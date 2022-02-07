@@ -12,7 +12,7 @@ run: $(TEST) hibon.valgrind
 hibon.valgrind:
 	valgrind $(TEST) | tee $@
 
-$(TEST): dfiles.mk
+$(TEST): gen.dfiles.mk
 	$(DC) $(TESTFLAGS) $(DFILES) $(UNITTEST) -of=$@
 
 wasm:

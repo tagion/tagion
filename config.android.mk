@@ -36,23 +36,18 @@ ANDROID_DFLAGS+=-Xcc=--sysroot=$(ANDROID_SYSROOT)
 
 ANDROID_CONFIG_MK:=$(DBUILD)/gen.android.mk
 
-android-target: $(DBUILD)
-android-target: $(ANDROID_CONFIG_MK)
+target-android: $(DBUILD)
+target-android: $(ANDROID_CONFIG_MK)
 
 
 $(ANDROID_CONFIG_MK): $(DBUILD)
-	env | $(DTUB)/copy_env.d -r "^ANDROID_" -w "CROSS_" -t android-target -e ANDROID_ENABLED >  $(ANDROID_CONFIG_MK)
+	env | $(DTUB)/copy_env.d -r "^ANDROID_" -w "CROSS_" -t target-android -e ANDROID_ENABLED >  $(ANDROID_CONFIG_MK)
 
 -include $(ANDROID_CONFIG_MK)
 
-#ifdef ANDROID_ENABLED
-android-target:
+target-android:
 	@echo $(CROSS_OS)
 	@echo $(CROSS_CC)
-# else
-# android-target:
-# 	@echo make $(MAKECMDGOALS)
-# endif
 
 
 # -m aarch64linux
