@@ -71,14 +71,4 @@ help-druntime:
 	${call log.help, "make druntime", "Will build druntime and phobos"}
 	${call log.close}
 
-
 help: help-druntime
-
-# show:
-# 	@echo CMAKE_TOOLCHAIN_FILE $(CMAKE_TOOLCHAIN_FILE)
-#ANDROID_PLATFORM=30
-
-#	__ANDROID_API__=30
-
-
-#                  BUILD_SHARED_LIBS=ON
