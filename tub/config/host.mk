@@ -13,15 +13,7 @@ ARCH = $(GETARCH)
 endif
 endif
 
-#HOST_PLATFORM?=$(ARCH)-$(OS)
 
-
-#
-# Native platform
-#
-# This is the HOST target platform
-#
-HOST_PLATFORM=${call join-with,-,$(GETARCH) $(GETHOSTOS) $(GETOS)}
 # This is the host name
 HOST:=${call join-with,-,$(GETHOSTOS) $(GETARCH)}
 

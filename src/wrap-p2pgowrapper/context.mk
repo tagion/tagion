@@ -29,8 +29,9 @@ p2pgowrapper: $(LIBP2PGOWRAPPER)
 
 proper-p2pgowrapper:
 	$(PRECMD)
-	${call log.header, $@ :: p2pgowrapper}
-	$(RMDIR) $(LIBP2PGOWRAPPER)
+	${call log.header, $@ :: proper}
+	$(RMDIR) $(DTMP_P2PGOWRAPPER)
+
 
 .PHONY: proper-p2pgowrapper
 
@@ -38,11 +39,13 @@ proper: proper-p2pgowrapper
 
 ${addprefix $(DTMP_P2PGOWRAPPER)/, c_helper.h libp2pgowrapper.h}: $(LIBP2PGOWRAPPER)
 
-$(LIBP2PGOWRAPPER): $(DTMP_P2PGOWRAPPER)/.way
+$(LIBP2PGOWRAPPER): | $(DTMP_P2PGOWRAPPER)/.way
 	$(PRECMD)
 	${call log.kvp, build, $(@F)}
 	$(CP) $(DSRC_P2PGOWRAPPER)/* $(DTMP_P2PGOWRAPPER)
 	$(CD) $(DTMP_P2PGOWRAPPER); $(GO) $(GO_FLAGS) -o $(LIBP2PGOWRAPPER)
+#	$(CD) $(DTMP_P2PGOWRAPPER); $(MV) $(DTMP_P2PGOWRAPPER)/libp2pgowrapper.a $(LIBP2PGOWRAPPER)
+
 
 #		echo $(DTMP_P2PGOWRAPPER)
 #	echo $@
@@ -57,6 +60,8 @@ env-p2pgowrapper:
 	${call log.header, $@ :: env}
 	${call log.kvp, GOOS, $(GOOS)}
 	${call log.kvp, GOARCH, $(GOARCH)}
+	${call log.kvp, DSRC_P2PGOWRAPPER, $(DSRC_P2PGOWRAPPER)}
+	${call log.kvp, DTMP_P2PGOWRAPPER, $(DTMP_P2PGOWRAPPER)}
 	${call log.env, LIBP2PGOWRAPPER, $(LIBP2PGOWRAPPER)}
 	${call log.close}
 

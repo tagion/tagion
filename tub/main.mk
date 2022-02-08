@@ -26,6 +26,9 @@ export DROOT := ${abspath ${DTUB}/../}
 -include $(DROOT)/local.mk
 include $(DTUB)/tools/*.mk
 
+include $(DTUB)/config/git.mk
+include $(DTUB)/config/commands.mk
+
 #
 # Platform
 #
@@ -40,8 +43,6 @@ include $(DTUB)/gitconfig.mk
 include $(DTUB)/config/submodules.mk
 include $(DTUB)/config/druntime.mk
 include $(DTUB)/config/submake.mk
-include $(DTUB)/config/git.mk
-include $(DTUB)/config/commands.mk
 include $(DTUB)/config/host.mk
 include $(DTUB)/config/cross.mk
 include $(DTUB)/config/dirs.mk

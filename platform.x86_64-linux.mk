@@ -16,6 +16,9 @@ endif
 
 ${call DDEPS,$(DBUILD),$(DFILES)}
 
+test44:
+	@echo $(PLATFORM)
+
 endif
 
 # $(LINUX_X86_64)-%:
