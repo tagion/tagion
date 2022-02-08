@@ -24,15 +24,25 @@ export DROOT := ${abspath ${DTUB}/../}
 #
 -include $(DROOT)/local.*.mk
 -include $(DROOT)/local.mk
+include $(DTUB)/utilities/dir.mk
 include $(DTUB)/tools/*.mk
-
 include $(DTUB)/config/git.mk
 include $(DTUB)/config/commands.mk
+
+
+
+#
+# Native platform
+#
+# This is the HOST target platform
+#
+HOST_PLATFORM=${call join-with,-,$(GETARCH) $(GETHOSTOS) $(GETOS)}
+PLATFORM?=$(HOST_PLATFORM)
 
 #
 # Platform
 #
-include $(DTUB)/utilities/dir.mk
+include $(DTUB)/config/dirs.mk
 -include $(DROOT)/platform.*.mk
 
 #
@@ -45,7 +55,6 @@ include $(DTUB)/config/druntime.mk
 include $(DTUB)/config/submake.mk
 include $(DTUB)/config/host.mk
 include $(DTUB)/config/cross.mk
-include $(DTUB)/config/dirs.mk
 include $(DTUB)/config/platform.mk
 include $(DTUB)/config/auxiliary.mk
 

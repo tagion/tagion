@@ -2,7 +2,7 @@
 #
 # Linux x86_64
 #
-LINUX_X86_64:=linux-x86_64
+LINUX_X86_64:=x86_64-linux
 
 PLATFORMS+=$(LINUX_X86_64)
 ifeq ($(PLATFORM),$(LINUX_X86_64))
