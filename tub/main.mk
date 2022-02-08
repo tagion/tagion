@@ -38,6 +38,7 @@ include $(DTUB)/utilities/dir.mk
 include $(DTUB)/ways.mk
 include $(DTUB)/gitconfig.mk
 include $(DTUB)/config/submodules.mk
+include $(DTUB)/config/druntime.mk
 include $(DTUB)/config/submake.mk
 include $(DTUB)/config/git.mk
 include $(DTUB)/config/commands.mk
@@ -61,7 +62,6 @@ include $(DTUB)/config/ddeps.mk
 
 include $(DTUB)/compile.mk
 
-
 #
 # Include all unit make files
 #
@@ -78,9 +78,12 @@ include $(DTUB)/compile.mk
 
 include $(DTUB)/config/prebuild.mk
 
-
+#
 # Enable cleaning
+#
 include $(DTUB)/clean.mk
 
+#
 # Help
+#
 include $(DTUB)/help.mk
