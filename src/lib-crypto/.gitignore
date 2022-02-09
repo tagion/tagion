@@ -2,9 +2,11 @@
 *.o
 *#
 .#*
+*~
 *.parked
-bin/
-*.bak
-build
-dfiles.mk
-revision.di
+local.mk
+gen.*
+tagion/crypto/aes/tiny_aes/tiny_aes
+*.di
+**/*.di
+

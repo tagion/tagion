@@ -8,6 +8,7 @@ import hibon.utils.Stack;
 import hibon.utils.RBTree;
 import hibon.utils.BinBuffer;
 import hibon.utils.Memory;
+import hibon.utils.LEB128;
 import Bailout=hibon.utils.Bailout;
 import hibon.utils.Text;
 import hibon.HiBON;
@@ -45,6 +46,7 @@ static void callUnittest(alias Module)() {
     alias Members=__traits(allMembers, Module);
     printf("%s\n", Module.stringof.ptr);
     static foreach(u; __traits(getUnitTests, Module)) {
+        import Bailout=hibon.utils.Bailout;
         Bailout.clear;
         printf("\t%s\n", u.stringof.ptr);
         u();

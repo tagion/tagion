@@ -1,10 +1,11 @@
 module tagion.basic.ConsensusExceptions;
 
-import std.format : format;
-import tagion.basic.TagionExceptions : TagionException;
+import std.format: format;
+import tagion.basic.TagionExceptions: TagionException;
 
 @safe
-void Check(E)(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure if (is(E:ConsensusException)) {
+void Check(E)(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
+        if (is(E : ConsensusException)) {
     if (!flag) {
         throw new E(code, file, line);
     }
@@ -43,14 +44,14 @@ enum ConsensusFailCode {
     GOSSIPNET_EXPECTED_EXCHANGE_STATE,
     GOSSIPNET_EXPECTED_OR_EXCHANGE_STATE,
     GOSSIPNET_EXPECTED_3_EXCHANGE_STATE,
-//    GOSSIPNET_BAD_EXCHNAGE_STATE,
+    //    GOSSIPNET_BAD_EXCHNAGE_STATE,
     GOSSIPNET_REPLICATED_PUBKEY,
     GOSSIPNET_EVENTPACKAGE_NOT_FOUND,
     GOSSIPNET_MISSING_EVENTS,
     GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS,
     GOSSIPNET_ILLEGAL_CHANNEL,
     GOSSIPNET_FIRST_EVENT_MUST_BE_EVA,
-//    EVENT_MISSING_BODY,
+    //    EVENT_MISSING_BODY,
 
     SECURITY_SIGN_FAULT,
     SECURITY_PUBLIC_KEY_CREATE_FAULT,
@@ -66,8 +67,13 @@ enum ConsensusFailCode {
     SECURITY_PUBLIC_KEY_COMPRESS_SIZE_FAULT,
     SECURITY_PUBLIC_KEY_UNCOMPRESS_SIZE_FAULT,
 
+    SECURITY_EDCH_FAULT,
+
     SECURITY_MASK_VECTOR_IS_ZERO,
     SECURITY_MESSAGE_HASH_KEY,
+
+    CIPHER_DECRYPT_CRC_ERROR,
+    CIPHER_DECRYPT_ERROR,
 
     DART_ARCHIVE_ALREADY_ADDED,
     DART_ARCHIVE_DOES_NOT_EXIST,
@@ -90,89 +96,88 @@ enum ConsensusFailCode {
 @safe
 class ConsensusException : TagionException {
     immutable ConsensusFailCode code;
-    this(string msg, ConsensusFailCode code=ConsensusFailCode.NON, string file = __FILE__, size_t line = __LINE__ ) pure {
-        this.code=code;
-        super( msg, file, line );
+    this(string msg, ConsensusFailCode code = ConsensusFailCode.NON,
+            string file = __FILE__, size_t line = __LINE__) pure {
+        this.code = code;
+        super(msg, file, line);
     }
 
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
-        super( consensus_error_messages[code], file, line );
-        this.code=code;
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
+        super(consensus_error_messages[code], file, line);
+        this.code = code;
     }
 }
 
 @safe
 class EventConsensusException : GossipConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
-        super( code, file, line );
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
+        super(code, file, line);
     }
 }
 
 @safe
 class SecurityConsensusException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
-        super( code, file, line );
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
+        super(code, file, line);
     }
 }
 
 @safe
 class GossipConsensusException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
-        super( code, file, line );
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
+        super(code, file, line);
     }
-    this( string msg, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
-        super( msg, code, file, line );
+
+    this(string msg, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
+        super(msg, code, file, line);
     }
 }
 
 @safe
 class HashGraphConsensusException : EventConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
-        super( code, file, line );
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
+        super(code, file, line);
     }
 }
-
 
 @safe
 class DARTConsensusException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
-        super( code, file, line );
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
+        super(code, file, line);
     }
 }
 
-
 @safe
 class ScriptingEngineConsensusException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
-        super( code, file, line );
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
+        super(code, file, line);
     }
 }
 
 @safe
 class SSLSocketFiberConsensusException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure{
-        super( code, file, line );
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
+        super(code, file, line);
     }
 }
 
 @safe
 class SocketFiberConsensusException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
-        super( code, file, line );
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
+        super(code, file, line);
     }
 }
-
 
 @safe
 class SmartScriptException : ConsensusException {
-    this( ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__ ) pure {
-        super( code, file, line );
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
+        super(code, file, line);
     }
 }
 
-@trusted
-shared static this() {
+@trusted shared static this() {
     with (ConsensusFailCode) {
+        // dfmt off
         string[ConsensusFailCode] _consensus_error_messages=[
             NON                                         : "Non",
             NO_MOTHER                                   : "If an event has no mother it can not have a father",
@@ -222,6 +227,8 @@ shared static this() {
             SECURITY_PUBLIC_KEY_COMPRESS_SIZE_FAULT     : "Wrong size of compressed Public key",
             SECURITY_PUBLIC_KEY_UNCOMPRESS_SIZE_FAULT   : "Wrong size of uncompressed Public key",
 
+            SECURITY_EDCH_FAULT                         : "EDCH failed",
+
             SECURITY_PRIVATE_KEY_TWEAK_ADD_FAULT        : "Failed to tweak add private key",
             SECURITY_PRIVATE_KEY_TWEAK_MULT_FAULT       : "Failed to tweak mult private key",
             SECURITY_PUBLIC_KEY_TWEAK_ADD_FAULT         : "Failed to tweak add public key",
@@ -229,6 +236,9 @@ shared static this() {
 
             SECURITY_MASK_VECTOR_IS_ZERO                : "Mask vector must be different from zero",
             SECURITY_MESSAGE_HASH_KEY                   : "A message containg a hash-kye can not be signed",
+
+            CIPHER_DECRYPT_CRC_ERROR                    : "Decrypt CRC checksum failure",
+            CIPHER_DECRYPT_ERROR                        : "Decrypt failure",
 
             DART_ARCHIVE_ALREADY_ADDED                  : "DART Failed archive is already added",
             DART_ARCHIVE_DOES_NOT_EXIST                 : "DART Failed archive does not exist",
@@ -247,57 +257,57 @@ shared static this() {
             SMARTSCRIPT_NOT_ENOUGH_MONEY                : "Smart script not enough money in the account"
 
             ];
-        import std.exception : assumeUnique;
+        // dfmt on
+        import std.exception: assumeUnique;
+
         consensus_error_messages = assumeUnique(_consensus_error_messages);
-        assert(
-            ConsensusFailCode.max+1 == consensus_error_messages.length,
-            "Some error messages in "~consensus_error_messages.stringof~" is missing");
+        assert(ConsensusFailCode.max + 1 == consensus_error_messages.length,
+                "Some error messages in " ~ consensus_error_messages.stringof ~ " is missing");
     }
 }
 
-
 static public immutable(string[ConsensusFailCode]) consensus_error_messages;
 
-@safe
-template consensusCheck(Consensus) {
-    static if ( is(Consensus:ConsensusException) ) {
-        void consensusCheck(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
+@safe template consensusCheck(Consensus) {
+    static if (is(Consensus : ConsensusException)) {
+        void consensusCheck(bool flag, ConsensusFailCode code,
+                string file = __FILE__, size_t line = __LINE__) pure {
             if (!flag) {
                 throw new Consensus(code, file, line);
             }
         }
     }
     else {
-        static assert(0, "Type "~Consensus.stringof~" not supported");
+        static assert(0, "Type " ~ Consensus.stringof ~ " not supported");
     }
 }
 
-@safe
-template consensusCheckArguments(Consensus) {
-    static if ( is(Consensus:ConsensusException) ) {
+@safe template consensusCheckArguments(Consensus) {
+    static if (is(Consensus : ConsensusException)) {
         ref auto consensusCheckArguments(A...)(A args) pure {
             struct Arguments {
                 A args;
-                void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) const {
-                    if ( !flag ) {
-                        immutable msg=format(consensus_error_messages[code], args);
+                void check(bool flag, ConsensusFailCode code,
+                        string file = __FILE__, size_t line = __LINE__) const {
+                    if (!flag) {
+                        immutable msg = format(consensus_error_messages[code], args);
                         throw new Consensus(msg, code, file, line);
                     }
                 }
             }
+
             return const(Arguments)(args);
         }
     }
     else {
-        static assert(0, "Type "~Consensus.stringof~" not supported");
+        static assert(0, "Type " ~ Consensus.stringof ~ " not supported");
     }
 }
 
-@safe
-template convertEnum(Enum, Consensus) {
+@safe template convertEnum(Enum, Consensus) {
     const(Enum) convertEnum(uint enum_number, string file = __FILE__, size_t line = __LINE__) pure {
-        if ( enum_number <= Enum.max) {
-            return cast(Enum)enum_number;
+        if (enum_number <= Enum.max) {
+            return cast(Enum) enum_number;
         }
         throw new Consensus(ConsensusFailCode.NETWORK_BAD_PACKAGE_TYPE, file, line);
         assert(0);

@@ -1,220 +1,398 @@
 module tagion.services.ServerFileDiscoveryService;
 
+import std.stdio;
 import core.time;
 import std.datetime;
-import tagion.Options;
 import std.typecons;
 import std.conv;
-import tagion.basic.Logger;
 import std.concurrency;
-import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
-import std.stdio;
-//import tagion.services.MdnsDiscoveryService;
-import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress;
-
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
 import std.file;
-import std.file: fwrite = write;
+import std.file : fwrite = write;
 import std.array;
 import p2plib = p2p.node;
 import std.net.curl;
-import tagion.hibon.HiBONJSON;
 
-enum ServerRequestCommand{
+// import tagion.services.LoggerService;
+import tagion.basic.Logger;
+import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
+import tagion.basic.TagionExceptions : fatal;
+import tagion.services.Options;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONJSON;
+import tagion.gossip.P2pGossipNet;
+
+enum DiscoveryRequestCommand
+{
     BecomeOnline = 1,
     RequestTable = 2,
-    BecomeOffline =3,
+    BecomeOffline = 3,
+    UpdateTable = 4 // on epoch
 }
 
-void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node, immutable(Options) opts){  //TODO: for test
-    try{
-        scope(exit){
+enum DiscoveryState
+{
+    READY = 1,
+    ONLINE = 2,
+    OFFLINE = 3
+}
+
+void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
+        string taskName, immutable(Options) opts) nothrow
+{ //TODO: for test
+    try
+    {
+        scope (exit)
+        {
             log("exit");
             ownerTid.prioritySend(Control.END);
         }
 
-        log.register(opts.discovery.task_name);
+        log.register(taskName);
 
-        if(opts.serverFileDiscovery.url.length == 0){
+        if (opts.serverFileDiscovery.url.length == 0)
+        {
             log.error("Server url is missing");
             ownerTid.send(Control.STOP);
             return;
         }
 
-        bool checkTimestamp(SysTime time, Duration duration){
-            return (Clock.currTime - time) > duration;
-        }
-        void updateTimestamp(ref SysTime time){
-            time = Clock.currTime;
-        }
-
-        SysTime start_timestamp;
-
         auto stop = false;
         NodeAddress[Pubkey] node_addresses;
 
-        void recordOwnInfo(string addrs){
-            if(opts.serverFileDiscovery.token){
+        void recordOwnInfo(string addrs)
+        {
+            if (opts.serverFileDiscovery.token)
+            {
+                addrs = addrs.replace("[", "[\"" ~ opts.hostbootrap.bootstrapNodes.split("\n")[0] ~ "/p2p-circuit\",");
                 auto params = new HiBON;
                 params["pkey"] = pubkey;
                 params["address"] = addrs;
                 auto doc = Document(params.serialize);
                 auto json = doc.toJSON().toString();
-                log("posting info to %s \n %s", opts.serverFileDiscovery.url ~ "/node/record", json);
-                try{
-                    post(opts.serverFileDiscovery.url ~ "/node/record", ["value": json, "token": opts.serverFileDiscovery.token]);
-                }catch(Exception e){
-                    log("ERROR on sending: %s", e.msg);
+                log("posting info to %s \n %s \n with token :%s", opts.serverFileDiscovery.url ~ "/node/record", json, opts.serverFileDiscovery.tag);
+                try
+                {
+                    post(opts.serverFileDiscovery.url ~ "/node/record",
+                            [
+                                "value": json,
+                                "token": opts.serverFileDiscovery.token
+                            ]);
                 }
-            }else{
+                catch (Exception e)
+                {
+                    log("ERROR on sending: %s", e.msg);
+                    ownerTid.send(cast(immutable) e);
+                }
+            }
+            else
+            {
                 log("Token missing.. Cannot record own info");
             }
         }
 
-        void eraseOwnInfo(){
-            // auto params = new HiBON;
-            // params["pkey"] = pubkey;
+        void eraseOwnInfo()
+        {
             log("posting info to %s", opts.serverFileDiscovery.url ~ "/node/erase");
-            // post(opts.serverFileDiscovery.url ~ "/node/erase", ["value":(cast(string)params.serialize)]);
-            post(opts.serverFileDiscovery.url ~ "/node/erase", ["value":(cast(string)pubkey), "tag": opts.serverFileDiscovery.tag]);
+            post(opts.serverFileDiscovery.url ~ "/node/erase",
+                    [
+                        "value": (cast(string) pubkey),
+                        "tag": opts.serverFileDiscovery.tag
+                    ]);
         }
 
-        scope(exit){
+        scope (exit)
+        {
             eraseOwnInfo();
         }
 
-        void initialize(){
-            try{
-                auto read_buff = get(opts.serverFileDiscovery.url ~ "/node/storage?tag=" ~ opts.serverFileDiscovery.tag);
-                // log("%s", cast(char[])read_buff);
+        void initialize() nothrow
+        {
+            try
+            {
+                auto read_buff = get(
+                        opts.serverFileDiscovery.url ~ "/node/storage?tag="
+                        ~ opts.serverFileDiscovery.tag);
                 auto splited_read_buff = read_buff.split("\n");
-                // log("%d", splited_read_buff.length);
-                foreach(node_info_buff; splited_read_buff){
-                    if(node_info_buff.length>0){
+                foreach (node_info_buff; splited_read_buff)
+                {
+                    if (node_info_buff.length > 0)
+                    {
                         import std.json;
-                        auto json = (cast(string)node_info_buff).parseJSON;
+
+                        auto json = (cast(string) node_info_buff).parseJSON;
                         auto hibon = json.toHiBON;
                         auto doc = Document(hibon.serialize);
                         import tagion.hibon.HiBONJSON;
-                        auto pkey_buff=doc["pkey"].get!Buffer;
-                        auto pkey = cast(Pubkey)pkey_buff;
+
+                        auto pkey_buff = doc["pkey"].get!Buffer;
+                        auto pkey = cast(Pubkey) pkey_buff;
                         auto addr = doc["address"].get!string;
                         import tagion.utils.Miscellaneous : toHexString, cutHex;
-                        auto node_addr = NodeAddress(addr, opts, true);
-                        node_addresses[pkey]= node_addr;
+
+                        auto node_addr = NodeAddress(addr, opts.dart, true);
+                        node_addresses[pkey] = node_addr;
                     }
                 }
                 log("initialized %d", node_addresses.length);
-            }catch(Exception e){
-                writeln("Er:", e.msg);
-                log.fatal(e.msg);
+            }
+            catch (Exception e)
+            {
+                fatal(e);
             }
         }
-        spawn(&handleAddrChanedEvent, node);
-        spawn(&handleRechabilityChanged, node);
-        auto substoaddrupdate = node.SubscribeToAddressUpdated("addr_changed_handler");
-        auto substorechability = node.SubscribeToRechabilityEvent("rechability_handler");
-        scope(exit){
-            substoaddrupdate.close();
-            substorechability.close();
-        }
-        updateTimestamp(start_timestamp);
-        bool is_online = false;
-        string last_seen_addr = "";
 
+        // auto addr_changed_tid = spawn(&handleAddrChanedEvent, node);
+        // receive((Control ctrl) { assert(ctrl == Control.LIVE); });
+
+        // auto rechability_changed_tid = spawn(&handleRechabilityChanged, node);
+        // receive((Control ctrl) { assert(ctrl == Control.LIVE); });
+        scope (exit)
+        {
+            // {
+            //     addr_changed_tid.send(Control.STOP);
+            //     auto ctrl = receiveOnly!Control;
+            //     assert(ctrl == Control.END);
+            // }
+            // {
+            //     rechability_changed_tid.send(Control.STOP);
+            //     auto ctrl = receiveOnly!Control;
+            //     assert(ctrl == Control.END);
+            // }
+        }
+
+        // auto substoaddrupdate = node.SubscribeToAddressUpdated("addr_changed_handler");
+        // auto substorechability = node.SubscribeToRechabilityEvent("rechability_handler");
+        log("subscribed");
+        scope (exit)
+        {
+            // substoaddrupdate.close();
+            // substorechability.close();
+        }
+
+        if (opts.hostbootrap.enabled)
+        {
+            if (opts.hostbootrap.bootstrapNodes.length)
+            {
+                auto bootsraps = opts.hostbootrap.bootstrapNodes.split("\n");
+                foreach (bootsrap; bootsraps)
+                {
+                    log("Connection to %s", bootsrap);
+                    node.connect(bootsrap);
+                }
+            }
+            else
+            {
+                throw new OptionException("Bootstrap nodes list is empty");
+            }
+        }
+
+        string last_seen_addr = "";
+        bool is_online = false;
         bool is_ready = false;
-        do{
-            receiveTimeout(
-                500.msecs,
-                (immutable(Pubkey) key, Tid tid){
-                    log("looking for key: %s", key);
-                    tid.send(node_addresses[key]);
-                },
-                (Control control){
-                    if(control == Control.STOP){
-                        log("stop");
-                        stop = true;
+
+        bool checkTimestamp(SysTime time, Duration duration)
+        {
+            return (Clock.currTime - time) > duration;
+        }
+
+        void updateTimestamp(ref SysTime time)
+        {
+            time = Clock.currTime;
+        }
+
+        SysTime mdns_start_timestamp;
+        updateTimestamp(mdns_start_timestamp);
+
+        SysTime update_timestamp;
+        updateTimestamp(update_timestamp);
+
+        auto owner_notified = false;
+
+        void notifyReadyAfterDelay()
+        {
+            if (!owner_notified)
+            {
+                const after_delay = checkTimestamp(mdns_start_timestamp,
+                        opts.discovery.delay_before_start.msecs);
+                if (after_delay && is_ready)
+                {
+                    ownerTid.send(DiscoveryState.READY);
+                    owner_notified = true;
+                }
+            }else{
+                const after_delay = checkTimestamp(update_timestamp,
+                        opts.discovery.interval.msecs);
+                if (after_delay && is_ready)
+                {
+                    updateTimestamp(update_timestamp);
+                    thisTid.send(DiscoveryRequestCommand.RequestTable);
+                }
+            }
+        }
+
+        ownerTid.send(Control.LIVE);
+        log("listened");
+
+        do
+        {
+            receiveTimeout(500.msecs, (immutable(Pubkey) key, Tid tid) {
+                import tagion.utils.Miscellaneous : toHexString, cutHex;
+
+                log("looking for key: %s", key.cutHex);
+                tid.send(node_addresses[key]);
+            }, (Control control) {
+                if (control == Control.STOP)
+                {
+                    log("stop");
+                    stop = true;
+                }
+            }, (string updated_address) {
+                last_seen_addr = updated_address;
+                updateTimestamp(mdns_start_timestamp);
+                is_ready = true;
+                if (is_online)
+                {
+                    recordOwnInfo(updated_address);
+                }
+            }, (DiscoveryRequestCommand cmd) {
+                switch (cmd)
+                {
+                case DiscoveryRequestCommand.BecomeOnline:
+                    {
+                        log("Becoming online..");
+                        is_online = true;
+                        if (last_seen_addr != "")
+                        {
+                            recordOwnInfo(last_seen_addr);
+                            updateTimestamp(mdns_start_timestamp);
+                            is_ready = true;
+                        }
+                        break;
                     }
-                },
-                (string updated_address){
-                    last_seen_addr = updated_address;
-                    if(is_online){
-                        recordOwnInfo(updated_address);
+                case DiscoveryRequestCommand.RequestTable:
+                    {
+                        initialize();
+                        auto address_book = new ActiveNodeAddressBook(node_addresses);
+                        ownerTid.send(address_book);
+                        break;
                     }
-                },
-                (ServerRequestCommand cmd){
-                    switch(cmd){
-                        case ServerRequestCommand.BecomeOnline: {
-                            is_online = true;
-                            log("Becoming online..");
-                            updateTimestamp(start_timestamp);
-                            if(last_seen_addr!=""){
-                                recordOwnInfo(last_seen_addr);
-                            }
-                            break;
-                        }
-                        case ServerRequestCommand.RequestTable: {
-                            initialize();
-                            auto address_book = new immutable AddressBook!Pubkey(node_addresses);
-                            ownerTid.send(address_book);
-                            break;
-                        }
-                        case ServerRequestCommand.BecomeOffline: {
-                            eraseOwnInfo();
-                            break;
-                        }
-                        default:
-                            pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
+                case DiscoveryRequestCommand.BecomeOffline:
+                    {
+                        eraseOwnInfo();
+                        break;
+                    }
+                default:
+                    pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
+                }
+            });
+            notifyReadyAfterDelay();
+            auto pub_addr = node.PublicAddress;
+            // log("PUB ADDR: %s", pub_addr);
+            if (pub_addr.length > 0)
+            {
+                auto addrinfo = node.AddrInfo();
+                // log("ADDR info: %s", addrinfo);
+                if (last_seen_addr != addrinfo)
+                {
+                    writefln("Addr changed %s", addrinfo);
+                    last_seen_addr = addrinfo;
+                    updateTimestamp(mdns_start_timestamp);
+                    is_ready = true;
+                    if (is_online)
+                    {
+                        recordOwnInfo(addrinfo);
                     }
                 }
-            );
-            if(!is_ready && checkTimestamp(start_timestamp, opts.serverFileDiscovery.delay_before_start.msecs) && is_online){
-                log("initializing");
-                updateTimestamp(start_timestamp);
-                is_ready = true;
-                initialize();
-                auto address_book = new immutable AddressBook!Pubkey(node_addresses);
-                ownerTid.send(address_book);
             }
-            if(is_ready && checkTimestamp(start_timestamp, opts.serverFileDiscovery.update.msecs)){
-                log("updating");
-                updateTimestamp(start_timestamp);
-                initialize();
-                auto address_book = new immutable AddressBook!Pubkey(node_addresses);
-                ownerTid.send(address_book);
-            }
-        }while(!stop);
-    }catch(Exception e){
-        log("Exception: %s", e.msg);
-        ownerTid.send(cast(immutable) e);
+        }
+        while (!stop);
+    }
+    catch (Throwable t)
+    {
+        fatal(t);
     }
 }
 
-void handleAddrChanedEvent(shared p2plib.Node node){
-    register("addr_changed_handler", thisTid);
-
-    do{
-        receive(
-            (immutable(ubyte)[] data){
+void handleAddrChanedEvent(shared p2plib.Node node) nothrow
+{
+    try
+    {
+        register("addr_changed_handler", thisTid);
+        ownerTid.send(Control.LIVE);
+        scope (exit)
+        {
+            writeln("stop");
+            ownerTid.prioritySend(Control.END);
+        }
+        auto stop = false;
+        do
+        {
+            writeln("addr changed waiting ", thisTid);
+            receive((immutable(ubyte)[] data) {
                 auto pub_addr = node.PublicAddress;
-                writeln("Addr changed %s", pub_addr);
-                if(pub_addr.length > 0){
+                writefln("Addr changed %s", pub_addr);
+                if (pub_addr.length > 0)
+                {
                     auto addrinfo = node.AddrInfo();
                     ownerTid.send(addrinfo);
                 }
-            }
-        );
-    }while(true);
+            }, (Control control) {
+                if (control == Control.STOP)
+                {
+                    log("stop");
+                    stop = true;
+                }
+            });
+        }
+        while (!stop);
+    }
+    catch (Throwable t)
+    {
+        log("ERROR: %s", t.msg);
+        fatal(t);
+    }
+
 }
 
-void handleRechabilityChanged(shared p2plib.Node node){
-    register("rechability_handler", thisTid);
-    do{
-        receive(
-            (immutable(ubyte)[] data){
-                writeln("RECHABILITY CHANGED: %s", cast(string) data);
-            }
-        );
-    }while(true);
+void handleRechabilityChanged(shared p2plib.Node node) nothrow
+{
+    try
+    {
+
+        register("rechability_handler", thisTid);
+        ownerTid.send(Control.LIVE);
+        scope (exit)
+        {
+            writeln("stop");
+            ownerTid.prioritySend(Control.END);
+        }
+        auto stop = false;
+        do
+        {
+            writeln("rech changed waiting");
+            receive((immutable(ubyte)[] data) {
+                writefln("RECHABILITY CHANGED: %s", cast(string) data);
+                auto pub_addr = node.PublicAddress;
+                writefln("Addr changed %s", pub_addr);
+                if (pub_addr.length > 0)
+                {
+                    auto addrinfo = node.AddrInfo();
+                    ownerTid.send(addrinfo);
+                }
+            }, (Control control) {
+                if (control == Control.STOP)
+                {
+                    log("stop");
+                    stop = true;
+                }
+            });
+        }
+        while (!stop);
+    }
+    catch (Throwable t)
+    {
+        log("ERROR: %s", t.msg);
+        fatal(t);
+    }
 }

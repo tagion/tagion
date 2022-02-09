@@ -4,7 +4,7 @@ import std.exception;
 
 @safe
 interface TagionExceptionInterface {
-// Empty
+    // Empty
 }
 
 /++
@@ -12,9 +12,9 @@ interface TagionExceptionInterface {
  +/
 @safe
 class TagionException : Exception, TagionExceptionInterface {
-//    string task_name; /// Contains the name of the task when the execption has throw
-    this(string msg, string file = __FILE__, size_t line = __LINE__ ) pure nothrow {
-        super( msg, file, line );
+    //    string task_name; /// Contains the name of the task when the execption has throw
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
+        super(msg, file, line);
     }
 
     /++
@@ -24,16 +24,15 @@ class TagionException : Exception, TagionExceptionInterface {
      Returns:
      The immutable version of the Exception
      +/
-    version(none)
-    @trusted
-    final immutable(TaskException) taskException() {
+    version (none) @trusted final immutable(TaskException) taskException() {
         // version(LOGGER) {
         import tagion.basic.Logger;
+
         // if (task_name.length > 0) {
         //     task_name=log.task_name;
         // }
         // }
-        return immutable(TaskException)(cast(immutable)this, log.task_name);
+        return immutable(TaskException)(cast(immutable) this, log.task_name);
     }
 }
 
@@ -42,7 +41,7 @@ class TagionException : Exception, TagionExceptionInterface {
  +/
 @safe
 void Check(E)(bool flag, lazy string msg, string file = __FILE__, size_t line = __LINE__) pure {
-    static assert(is(E:TagionExceptionInterface));
+    static assert(is(E : TagionExceptionInterface));
     if (!flag) {
         throw new E(msg, file, line);
     }
@@ -53,7 +52,6 @@ struct TaskFailure {
     string task_name;
 }
 
-
 /++
  This function set the taskname set by the logger
  The version LOGGER must be enabled for this to work
@@ -62,9 +60,10 @@ struct TaskFailure {
  The immutable version of the Exception
  +/
 @trusted
-static immutable(TaskFailure) taskException(const(Throwable) e) nothrow  { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
+static immutable(TaskFailure) taskException(const(Throwable) e) @nogc nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
     import tagion.basic.Logger;
-    return immutable(TaskFailure)(cast(immutable)e, log.task_name);
+
+    return immutable(TaskFailure)(cast(immutable) e, log.task_name);
 }
 
 // @trusted
@@ -82,15 +81,18 @@ static void fatal(const(Throwable) e) nothrow {
     try {
         task_e.taskfailure;
     }
-    catch (Exception e) {
-        log.fatal(e.msg);
+    catch (Exception t) {
+        log.fatal(t.msg);
     }
 }
 
 @trusted
-static void taskfailure(immutable(TaskFailure) t) {
+static void taskfailure(immutable(TaskFailure) t) nothrow {
     import std.concurrency;
-    if (ownerTid != Tid.init) {
-        ownerTid.send(t);
-    }
+
+    assumeWontThrow({
+            if (ownerTid != Tid.init) {
+                ownerTid.send(t);
+            }
+        });
 }
