@@ -29,7 +29,6 @@ CONFIGUREFLAGS_SECP256K1 += --prefix=$(DLIB)
 include ${call dir.resolve, cross.mk}
 
 secp256k1: $(LIBSECP256K1)
-	@
 
 proper-secp256k1:
 	$(PRECMD)
@@ -51,8 +50,9 @@ env-secp256k1:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.env, CONFIGUREFLAGS_SECP256K1, $(CONFIGUREFLAGS_SECP256K1)}
-	${call log.env, LIBSECP256K1, $(LIBSECP256K1)}
-	${call log.env, DTMP_SECP256K1, $(DTMP_SECP256K1)}
+	${call log.kvp, LIBSECP256K1, $(LIBSECP256K1)}
+	${call log.kvp, DTMP_SECP256K1, $(DTMP_SECP256K1)}
+	${call log.kvp, DSRC_SECP256K1, $(DSRC_SECP256K1)}
 	${call log.close}
 
 env: env-secp256k1

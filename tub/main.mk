@@ -6,11 +6,12 @@
 
 #MTRIPLE=$$(TRIPLE)
 
-main: help
 
 # Common variables
 # Override PRECMD= to see output of all commands
 PRECMD ?= @
+
+main: help
 
 #
 # Defining absolute Root and Tub directories
@@ -25,6 +26,8 @@ export DROOT := ${abspath ${DTUB}/../}
 -include $(DROOT)/local.*.mk
 -include $(DROOT)/local.mk
 include $(DTUB)/utilities/dir.mk
+include $(DTUB)/utilities/log.mk
+
 include $(DTUB)/tools/*.mk
 include $(DTUB)/config/git.mk
 include $(DTUB)/config/commands.mk
@@ -43,6 +46,9 @@ PLATFORM?=$(HOST_PLATFORM)
 # Platform
 #
 include $(DTUB)/config/dirs.mk
+-include $(DBUILD)/gen.dfiles.mk
+-include $(DBUILD)/gen.ddeps.mk
+
 -include $(DROOT)/platform.*.mk
 
 #
@@ -61,14 +67,10 @@ include $(DTUB)/config/auxiliary.mk
 #
 # Packages
 #
--include $(DBUILD)/gen.dfiles.mk
 
 include $(DTUB)/config/compiler.mk
 include $(DTUB)/config/dstep.mk
-#include $(DTUB)/config/env.mk
-include $(DTUB)/utilities/log.mk
 include $(DTUB)/config/ddeps.mk
--include $(DBUILD)/gen.ddeps.mk
 
 include $(DTUB)/compile.mk
 
