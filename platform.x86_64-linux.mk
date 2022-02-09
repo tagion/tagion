@@ -26,6 +26,9 @@ traget-linux: prebuild-linux
 # target-linux: $(DBUILD)/gen.ddeps.mk
 #traget-linux: $(DBUILD)/gen.dfiles.mk
 
+unittest: LIBS+=$(LIBOPENSSL)
+unittest: LIBS+=$(LIBSECP256K1)
+unittest: LIBS+=$(LIBP2PGOWRAPPER)
 unittest: prebuild-linux
 unittest: $(DFILES)
 unittest: proto-unittest-run
