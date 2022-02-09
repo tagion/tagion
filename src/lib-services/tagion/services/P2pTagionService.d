@@ -35,7 +35,6 @@ import tagion.basic.TagionExceptions;
 import tagion.services.DARTSynchronizeService;
 import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
-import tagion.dart.DARTSectorRange : SectorRange;
 import tagion.gossip.P2pGossipNet;
 import tagion.gossip.InterfaceNet;
 import tagion.gossip.EmulatorGossipNet;
@@ -123,7 +122,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
 
         import std.format;
 
-        auto sector_range = SectorRange(opts.dart.from_ang, opts.dart.to_ang);
+        auto sector_range = DART.SectorRange(opts.dart.from_ang, opts.dart.to_ang);
         shared(p2plib.Node) p2pnode;
         // string passpharse;
 
@@ -263,7 +262,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         scope (exit) {
             discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
         }
-        receive((DiscoveryState state) { assert(state == DiscoveryState.ONLINE); });
+        // receive((DiscoveryState state) { assert(state == DiscoveryState.ONLINE); });
 
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
         receive((ActiveNodeAddressBook address_book) {
@@ -431,17 +430,24 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
 
         Random!size_t random;
         random.seed(123456789);
+        auto empty_hirpc = HiRPC(null);
         while (!stop && !abort) {
             immutable message_received = receiveTimeout(opts.timeout.msecs, &receive_payload, &controller,
-                &receive_wavefront, &taskfailure, (ActiveNodeAddressBook address_book) {
+                &receive_wavefront, &taskfailure, 
+                (ActiveNodeAddressBook address_book) {
                     log("Update address book");
                     update_pkeys(address_book.data.keys);
-                    if (dart_sync_tid != Tid.init) {
-                        send(dart_sync_tid, address_book);
-                    }
-                    else {
-                        log("DART sync not found");
-                    }
+                },
+                (string respond_task_name, Buffer data){
+                    import tagion.hibon.HiBONJSON;
+                    const doc = Document(data);
+                    const receiver = empty_hirpc.receive(doc);
+                    auto respond = new HiBON();
+                    respond["rounds"] = hashgraph.rounds.length;
+                    respond["inGraph"] = hashgraph.areWeInGraph;
+                    auto response = empty_hirpc.result(receiver, respond);
+                    log("Healthcheck: %s", response.toDoc.toJSON);
+                    locate(respond_task_name).send(response.toDoc.serialize);
                 });
             log("ROUNDS: %d AreWeInGraph: %s", hashgraph.rounds.length, hashgraph.areWeInGraph);
             if (!message_received || !hashgraph.areWeInGraph) {
@@ -457,3 +463,4 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         fatal(t);
     }
 }
+

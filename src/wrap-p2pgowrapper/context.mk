@@ -44,7 +44,7 @@ $(LIBP2PGOWRAPPER): | $(DTMP_P2PGOWRAPPER)/.way
 	${call log.kvp, build, $(@F)}
 	$(CP) $(DSRC_P2PGOWRAPPER)/* $(DTMP_P2PGOWRAPPER)
 	$(CD) $(DTMP_P2PGOWRAPPER); $(GO) $(GO_FLAGS) -o $(LIBP2PGOWRAPPER)
-	$(MV) $(DTMP)/libp2pgowrapper.h $(LIBP2PGOWRAPPER)
+	$(MV) $(DTMP)/libp2pgowrapper.h $(DTMP_P2PGOWRAPPER)
 
 
 #		echo $(DTMP_P2PGOWRAPPER)
