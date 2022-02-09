@@ -15,8 +15,8 @@ help-main:
 	${call log.line}
 	${call log.help, "make clean", "Cleans the generated files from the prime source"}
 	${call log.line}
-	${call log.help, "make prober-all", "Cleans all"}
-	${call log.help, "make prober", "Cleans the current platform"}
+	${call log.help, "make proper-all", "Cleans all"}
+	${call log.help, "make proper", "Cleans the current platform"}
 	${call log.line}
 	${call log.help, "make prebuild", "Executes the prebuild"}
 	${call log.line}

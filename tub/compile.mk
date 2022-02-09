@@ -10,13 +10,15 @@ LIBEXT=${if $(SHARED),$(DLLEXT),$(STAEXT)}
 #
 # D compiler
 #
-$(DOBJ)/%.$(OBJEXT): $(PREBUILD)
-
 $(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 	$(PRECMD)
 	${call log.kvp, compile, $(MODE)}
 	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $< $(DCOMPILE_ONLY) $(OUTPUT)$@
 
+
+#
+# Compile and link or split link
+#
 ifdef SPLIT_LINKER
 #$(DOBJ)/%.$(OBJEXT): $(PREBUILD)
 
@@ -42,47 +44,18 @@ endif
 # Unittest
 #
 UNITTEST_FLAGS?=$(DUNITTEST) $(DDEBUG) $(DDEBUG_SYMBOLS)
-UNITTEST_DOBJ=$(DOBJ)/unittest/
+UNITTEST_DOBJ=$(DOBJ)/unittest
 UNITTEST_BIN?=$(DBIN)/unittest
 
-unittest: $(UNITTEST_DOBJ)/.way
-
-ifndef DEVMODE
-$(UNITTEST_BIN): $(DFILES)
+proto-unittest-run: $(UNITTEST_BIN)
 	$(PRECMD)
-	@echo $<
-	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) ${addprefix -I,$(DINC)} ${filter %.d,${sort $?}} $(LIBS) $(OUTPUT)$@
-
-unittest-%:
-	@echo
-	$(MAKE) UNITTEST_BIN=$(DBIN)/$@ DSRCALL="$(DSRCS.$*)" $(DBIN)/$@
-endif
-
-ifdef UNITTEST
-
-$(DOBJALL): MODE=-unittest
-
-unittest: $(UNITTEST_BIN)
 	$(UNITTEST_BIN)
 
-.PHONY: unittest
-
-$(DOBJALL):DFLAGS+=$(UNITTEST_FLAGS)
-
-ifdef DEVMODE
-$(UNITTEST_BIN): $(DOBJALL)
+$(UNITTEST_BIN):
 	$(PRECMD)
-	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) ${addprefix -I,$(DINC)} ${filter %.o,${sort $?}} $(LIBS) $(OUTPUT)$@
+	@echo deps $?
+	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OUTPUT)$@
 
-endif
-
-else
-
-unittest:
-	mkdir -p $(DOBJ)/$@
-	$(MAKE) UNITTEST=1 DOBJ=$(UNITTEST_DOBJ) $@
-
-endif
 
 clean-unittest:
 	$(PRECMD)

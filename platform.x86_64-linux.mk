@@ -14,13 +14,22 @@ else
 DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-*" -a -not -path "*/tests/*"}
 endif
 
+prebuild-linux: $(DBUILD)/.way
+prebuild-linux: secp256k1 openssl p2pgowrapper
+prebuild-linux: dstep
+prebuild-linux: $(DBUILD)/gen.ddeps.mk
 
-traget-linux: | $(DBUILD)/.way
+traget-linux: prebuild-linux
 #target-linux: | secp256k1 openssl p2pgowrapper
-target-linux: | secp256k1 p2pgowrapper
-target-linux: dstep
-target-linux: $(DBUILD)/gen.ddeps.mk
+# target-linux: | secp256k1 p2pgowrapper
+# target-linux: dstep
+# target-linux: $(DBUILD)/gen.ddeps.mk
 #traget-linux: $(DBUILD)/gen.dfiles.mk
+
+unittest: prebuild-linux
+unittest: $(DFILES)
+unittest: proto-unittest-run
+
 
 target-linux:
 	@echo DBUILD $(DBUILD)

@@ -44,7 +44,7 @@ $(LIBP2PGOWRAPPER): | $(DTMP_P2PGOWRAPPER)/.way
 	${call log.kvp, build, $(@F)}
 	$(CP) $(DSRC_P2PGOWRAPPER)/* $(DTMP_P2PGOWRAPPER)
 	$(CD) $(DTMP_P2PGOWRAPPER); $(GO) $(GO_FLAGS) -o $(LIBP2PGOWRAPPER)
-#	$(CD) $(DTMP_P2PGOWRAPPER); $(MV) $(DTMP_P2PGOWRAPPER)/libp2pgowrapper.a $(LIBP2PGOWRAPPER)
+	$(MV) $(DTMP)/libp2pgowrapper.h $(LIBP2PGOWRAPPER)
 
 
 #		echo $(DTMP_P2PGOWRAPPER)
@@ -71,7 +71,7 @@ help-p2pgowrapper:
 	$(PRECMD)
 	${call log.header, $@ :: help}
 	${call log.help, "make p2pgowrapper", "Builds libp2pgowrapper library "}
-	${call log.help, "make prober-p2pgowrapper", "Erase all reletated to p2pgowrapper build"}
+	${call log.help, "make proper-p2pgowrapper", "Erase all reletated to p2pgowrapper build"}
 	${call log.help, "make env-p2pgowrapper", " List all p2pgowrapper build environment"}
 	${call log.close}
 
