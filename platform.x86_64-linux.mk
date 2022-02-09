@@ -30,8 +30,6 @@ unittest: prebuild-linux
 unittest: $(DFILES)
 unittest: proto-unittest-run
 
-
-
 hibonutil: prebuild-linux
 hibonutil: target-hibonutil
 bin: hibonutil

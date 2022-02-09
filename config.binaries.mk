@@ -14,7 +14,8 @@ target-tagionwave: $(DBIN)/tagionwave
 
 clean-tagionwave:
 	$(PRECMD)
-	$(call log.kvp, $@ :: clean}
+	${call log.header, $@ :: clean}
+	$(RM) $(DBIN)/tagionwave
 
 clean: clean-tagionwave
 
@@ -32,7 +33,8 @@ target-hibonutil: $(DBIN)/hibonutil
 
 clean-hibonutil:
 	$(PRECMD)
-	$(call log.kvp, $@ :: clean}
+	${call log.header, $@ :: clean}
+	$(RM) $(DBIN)/hibonutil
 
 clean: clean-hibonutil
 
@@ -50,7 +52,8 @@ target-dartutil: $(DBIN)/dartutil
 
 clean-dartutil:
 	$(PRECMD)
-	$(call log.kvp, $@ :: clean}
+	${call log.header, $@ :: clean}
+	$(RM) $(DBIN)/dartutil
 
 clean: clean-dartutil
 
@@ -68,7 +71,8 @@ target-wasmutil: $(DBIN)/wasmutil
 
 clean-wasmutil:
 	$(PRECMD)
-	$(call log.kvp, $@ :: clean}
+	${call log.header, $@ :: clean}
+	$(RM) $(DBIN)/wasmutil
 
 clean: clean-wasmutil
 
@@ -87,7 +91,8 @@ target-wallet: $(DBIN)/wallet
 
 clean-wallet:
 	$(PRECMD)
-	$(call log.kvp, $@ :: clean}
+	${call log.header, $@ :: clean}
+	$(RM) $(DBIN)/wallet
 
 clean: clean-wallet
 
