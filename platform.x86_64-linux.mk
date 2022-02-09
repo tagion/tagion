@@ -31,24 +31,33 @@ unittest: $(DFILES)
 unittest: proto-unittest-run
 
 
+
+hibonutil: prebuild-linux
+hibonutil: target-hibonutil
+bin: hibonutil
+
+dartutil: prebuild-linux
+dartutil: target-dartutil
+bin: dartutil
+
+wasnutil: prebuild-linux
+wasmutil: target-wasmutil
+bin: wasmutil
+
+wallet: prebuild-linux
+wallet: target-wallet
+bin: wallet
+
+
+tagionwave: prebuild-linux
+tagionwave: target-tagionwave
+bin: tagionwave
+
 target-linux:
 	@echo DBUILD $(DBUILD)
 
 .PHONY: traget-linux
 
 test-linux:
-	@echo $(DBUILD)
-	@echo $(GEN_DFILES_MK)
-	@echo $(DFILES)
-#${call DDEPS,$(DBUILD),$(DFILES)}
-
-# test44:
-# 	@echo $(PLATFORM)
 
 endif
-
-# $(LINUX_X86_64)-%:
-# 	$(MAKE) PLATFORM=$(LINUX_X86_64) $@
-
-# $(LINUX_X86_64):
-# 	$(MAKE) PLATFORM=$(LINUX_X86_64)

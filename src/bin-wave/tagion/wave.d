@@ -1,12 +1,5 @@
 module tagion.wave;
 
-// Inner dependency
-import tagion.dart.DARTFakeNet;
-import tagion.crypto.aes.tiny_aes.tiny_aes;
-import tagion.basic.TagionExceptions;
-import tagion.utils.Gene;
-import tagion.script.ScriptException;
-
 import std.stdio;
 import core.thread;
 import std.getopt;
@@ -25,6 +18,10 @@ import tagion.services.TagionFactory;
 import tagion.GlobalSignals;
 import tagion.network.SSLOptions;
 import tagion.gossip.EmulatorGossipNet;
+import tagion.dart.DARTFakeNet;
+import tagion.basic.TagionExceptions;
+import tagion.utils.Gene;
+import tagion.script.ScriptException;
 //import tagion.Keywords: NetworkMode, ValidNetwrokModes;
 pragma(msg, "Fixme(cbr): Rename the tagion Node to Prime");
 // import tagion.revision;
