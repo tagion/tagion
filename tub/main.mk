@@ -16,9 +16,16 @@ main: help
 #
 # Defining absolute Root and Tub directories
 #
-export DSRC := $(realpath src)
-export DTUB := $(realpath tub)
-export DROOT := ${abspath ${DTUB}/../}
+export DSRC := $(abspath $(DROOT)/src)
+export DTUB := $(abspath $(DROOT)/tub)
+ifndef DROOT
+${error DROOT must be defined}
+endif
+#export DROOT := ${abspath ${DTUB}/../}
+
+ifeq (prebuild,$(MAKECMDGOALS))
+PREBUILD=1
+endif
 
 #
 # Local config, ignored by git
@@ -32,8 +39,56 @@ include $(DTUB)/tools/*.mk
 include $(DTUB)/config/git.mk
 include $(DTUB)/config/commands.mk
 
+# NONEPREBUILD+=proper
+# NONEPREBUILD+=clean
+# NONEPREBUILD+=env-p2pgowrapper
+# NOPREBUILD:=${findstring $(MAKECMDGOALS),$(NONEPREBUILD)}
+
+# files.exists:=${strip ${foreach file,$1, ${wildcard $(file)}}}
+
+prebuild:
+	$(PRECMD)
+	$(MAKE) $(MAIN_FLAGS) secp256k1 -f $(PREBUILD_MK)
+	$(MAKE) $(MAIN_FLAGS) p2pgowrapper -f $(PREBUILD_MK)
+	$(MAKE) $(MAIN_FLAGS) openssl -f $(PREBUILD_MK)
+	$(MAKE) $(MAIN_FLAGS) dstep -f $(PREBUILD_MK)
+	$(MAKE) $(MAIN_FLAGS) ddeps -f $(PREBUILD_MK)
 
 
+
+# PREBUILDS+=$(LIBSECP256K1)
+# PREBUILDS+=$(LIBP2PGOWRAPPER)
+# PREBUILDS+=$(LIBOPENSSL)
+# PREBUILDS+=$(DIFILES)
+# ifeq (,${call files.exists,$(PREBUILDS)})
+# .NOTPARALLEL:
+# endif
+
+# MAKES=${addprefix make-,$(PREBUILDS)}
+# ifndef SECOND
+# ifeq (,$(NOPREBUILD))
+# ifeq (,${call files.exists,$(PREBUILDS)})
+# .NOTPARALLEL:
+# test11:
+# 	@echo X$(MAKES)X
+
+# %: $(MAKES)
+# 	@
+
+# dump:
+# 	$(PRECMD)
+# 	echo MAKEFLAGS=$(MAKEFLAGS)
+# 	echo MAKECMDGOALS=$(MAKECMDGOALS)
+# 	echo NOPREBUILD=$(NOPREBUILD)
+# 	echo findstring X${findstring $(MAKECMDGOALS),$(NONEPREBUILD)}X
+# 	echo Y${call files.exists,$(PREBUIDS)}Y
+# 	$(MAKE) RECURSIVE=1 $(MAKEFLAGS) $(PREBUILDS)
+
+# make-%:
+# 	$(MAKE) SECOND=1 $(MAKEFLAGS) $*
+# endif
+# endif
+# endif
 #
 # Native platform
 #
@@ -46,8 +101,14 @@ PLATFORM?=$(HOST_PLATFORM)
 # Platform
 #
 include $(DTUB)/config/dirs.mk
--include $(DBUILD)/gen.dfiles.mk
--include $(DBUILD)/gen.ddeps.mk
+#
+# Prebuild
+#
+include $(DTUB)/config/prebuild.mk
+# ifdef $(DFILES)
+# -include $(DBUILD)/gen.dfiles.mk
+# -include $(DBUILD)/gen.ddeps.mk
+# endif
 
 -include $(DROOT)/platform.*.mk
 
@@ -87,8 +148,6 @@ include $(DTUB)/compile.mk
 -include $(DROOT)/config.*.mk
 -include $(DROOT)/config.mk
 
-
-include $(DTUB)/config/prebuild.mk
 
 #
 # Enable cleaning

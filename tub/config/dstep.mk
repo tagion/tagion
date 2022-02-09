@@ -75,4 +75,11 @@ help-dstep:
 	${call log.help, "make env-dstep", "List all dstep parameters"}
 	${call log.close}
 
+
+env-dstep:
+	$(PRECMD)
+	$(call log.header, $@ :: env)
+	${call log.env, DIFILES, $(DIFILES)}
+	${call log.close}
+
 help: help-dstep

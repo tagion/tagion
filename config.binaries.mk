@@ -11,6 +11,7 @@ target-tagionwave: LIBS+=$(LIBSECP256K1)
 target-tagionwave: LIBS+=$(LIBP2PGOWRAPPER)
 target-tagionwave: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wave/*"}
 target-tagionwave: $(DBIN)/tagionwave
+.PHONY: target-tagionwave
 
 clean-tagionwave:
 	$(PRECMD)
