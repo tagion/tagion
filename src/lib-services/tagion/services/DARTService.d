@@ -21,7 +21,7 @@ import tagion.dart.DARTFile;
 import tagion.dart.DART;
 import tagion.dart.DARTSynchronization;
 import tagion.dart.Recorder : RecordFactory;
-import tagion.dart.DARTSectorRange : SectorRange;
+import tagion.dart.DARTSectorRange : SectorRange, Rims;
 
 version (unittest) {
     import tagion.dart.BlockFile : fileId;
@@ -190,7 +190,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                     bufArr[NodeAddress] remote_fp_requests;
                     Buffer[] local_fp;
                     fpIterator: foreach (fp; fingerprints) {
-                        const rims = DART.Rims(fp);
+                        const rims = Rims(fp);
                         if (sector_range.inRange(rims)) {
                             local_fp ~= fp;
                             continue fpIterator;

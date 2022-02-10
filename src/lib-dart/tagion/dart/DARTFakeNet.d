@@ -178,22 +178,23 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
     do {
         receive(
                 (Control control) {
-            if (control == Control.STOP) {
-                stop = true;
-                send(ownerTid, Control.END);
-            }
-        },
+                    if (control == Control.STOP) {
+                        stop = true;
+                        send(ownerTid, Control.END);
+                    }
+                },
                 (bool flag, shared RecordFactory.Recorder recorder) {
-            active_threads--;
-            auto non_shared_recorder = cast(RecordFactory.Recorder) recorder;
-            last_result = dart.modify(non_shared_recorder);
-        },
+                    pragma(msg, "fixme(cbr): Why is the Recorder here shared can't it be immutable because dart.modify takes a const");
+                    active_threads--;
+                    auto non_shared_recorder = cast(RecordFactory.Recorder) recorder;
+                    last_result = dart.modify(non_shared_recorder);
+                },
                 (shared RecordFactory.Recorder recorder, Tid sender) {
-            auto non_shared_recorder = cast(RecordFactory.Recorder) recorder;
-            dart.modify(non_shared_recorder);
-            non_shared_recorder.clear();
-            send(sender, true);
-        }
+                    auto non_shared_recorder = cast(RecordFactory.Recorder) recorder;
+                    dart.modify(non_shared_recorder);
+                    non_shared_recorder.clear();
+                    send(sender, true);
+                }
         );
     }
     while (active_threads > 0 && !stop);

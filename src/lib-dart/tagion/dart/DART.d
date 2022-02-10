@@ -545,14 +545,15 @@ class DART : DARTFile { //, HiRPC.Supports {
                     //
                     const request_archives = dartRead(foreign_branches.fingerprints, hirpc, id);
                     const result_archives = sync.query(request_archives);
-                    scope foreign_recoder = manufactor.recorder(result_archives.response.result);
+                    const foreign_recoder = manufactor.recorder(result_archives.response.result);
                     //
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
                     // The archive fingerprints is removed from the branches
-                    Archive[Buffer] set_of_archives;
-                    foreach (a; foreign_recoder.archives[]) {
-                        set_of_archives[a.fingerprint] = a;
-                    }
+                    auto set_of_archives=foreign_recoder.getSet;
+                    // const(Archive)[Buffer] set_of_archives;
+                    // foreach (a; foreign_recoder.archives[]) {
+                    //     set_of_archives[a.fingerprint] = a;
+                    // }
                     //                    sync.record(foreign_recoder);
 
                     auto foreign_fingerprints = foreign_branches.fingerprints.dup;

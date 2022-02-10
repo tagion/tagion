@@ -180,16 +180,17 @@ import core.thread;
 
 @safe
 class ReplayPool(T) {
+    alias ReplayFuntion = void delegate(T) @safe;
     protected {
-        void delegate(T) @safe replayFunc;
+        const ReplayFuntion replayFunc;
         uint current_index;
         T[] modifications;
     }
-    this(void delegate(T) @safe replayFunc) {
+    this(const ReplayFuntion replayFunc) {
         this.replayFunc = replayFunc;
     }
 
-    void execute() {
+    void execute() nothrow {
         try {
             if (!empty) {
                 log("%d i: %d", modifications.length, current_index);
@@ -202,12 +203,12 @@ class ReplayPool(T) {
         }
     }
 
-    void insert(T value) {
+    void insert(T value) pure nothrow {
         modifications ~= value;
     }
 
-    void clear() {
-        modifications = [];
+    void clear() pure nothrow {
+        modifications = null;
         current_index = 0;
     }
 
