@@ -43,7 +43,7 @@ target-android: $(ANDROID_CONFIG_MK)
 $(ANDROID_CONFIG_MK): $(DBUILD)
 	env | $(DTUB)/copy_env.d -r "^ANDROID_" -w "CROSS_" -t target-android -e ANDROID_ENABLED >  $(ANDROID_CONFIG_MK)
 
--include $(ANDROID_CONFIG_MK)
+#-include $(ANDROID_CONFIG_MK)
 
 target-android:
 	@echo $(CROSS_OS)

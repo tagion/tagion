@@ -1,7 +1,7 @@
 
-ifndef DOBJALL
-PREBUILD:=prebuild
-endif
+#ifndef DOBJALL
+#PREBUILD:=prebuild
+#endif
 
 #prebuild: $(PREBUILDS)
 

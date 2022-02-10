@@ -41,7 +41,16 @@ $(DLIB)/%.$(DLLEXT):
 endif
 
 #
-# Unittest
+# proto targets for binaries
+#
+
+$(DBIN)/%:
+	$(PRECMD)
+	${call log.kvp, bin$(MOD), $*}
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) ${LDFLAGS} $(LIBS) $(OBJS) $(OUTPUT)$@
+
+#
+# Proto targets for unittest
 #
 UNITTEST_FLAGS?=$(DUNITTEST) $(DDEBUG) $(DDEBUG_SYMBOLS)
 UNITTEST_DOBJ=$(DOBJ)/unittest
@@ -51,7 +60,7 @@ proto-unittest-run: $(UNITTEST_BIN)
 	$(PRECMD)
 	$(UNITTEST_BIN)
 
-$(UNITTEST_BIN):
+$(UNITTEST_BIN): $$(DFILES)
 	$(PRECMD)
 	@echo deps $?
 	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OUTPUT)$@

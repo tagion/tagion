@@ -419,13 +419,11 @@ struct BitMask {
                 BitMask a;
                 a[63]=true;
                 a[64]=true;
-                writefln("a[]=%s", a[]);
                 assert(equal(a[], [63, 64]));
             }
 
             { // Simple range test
                 auto a=BitMask(bit_list);
-                writefln("a[]=%s", a[]);
                 assert(equal(a[], bit_list.dup.sort));
             }
         }
@@ -591,7 +589,6 @@ struct BitMask {
             { // Empty Or=
                 BitMask y;
                 y |= a;
-                writefln("%.16s", y);
                 assert(y == a);
                 assert(a.count is y.count);
             }

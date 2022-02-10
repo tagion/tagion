@@ -14,16 +14,14 @@ $(DBUILD)/gen.dfiles.mk:
 
 $(DBUILD)/gen.ddeps.json:
 	$(PRECMD)
-	${call log.env, DFILES, $(DFILES)}
 	if [ ! -f "$@" ]; then
 	${call log.kvp, $(@F), $(PLATFORM)}
 	$(DC) $(DFLAGS) $(UNITTEST_FLAGS) ${addprefix -I,$(DINC)} --o- $(NO_OBJ)  $(DJSON)=$@ $(DFILES)
 	fi
 
 $(DBUILD)/gen.ddeps.mk:
-	@echo ddeps $@
-	if [ ! -f "$@" ]; then
 	$(PRECMD)
+	if [ ! -f "$@" ]; then
 	${call log.kvp, $(@F), $(PLATFORM)}
 	$(DTUB)/ddeps.d  --srcdir=DSRC --objdir=DOBJ $< -o$@
 	fi
@@ -43,19 +41,19 @@ proper-dfiles: proper-ddeps
 .PHONY: proper-ddeps proper-dfiles
 
 env-ddeps:
-	$$(PRECMD)
-	$${call log.header, $@ :: env}
-	$${call log.kvp, DOBJ, $(DOBJ)}
-	$${call log.kvp, DSRC, $(DSRC)}
-	$${call log.line}
-	$${call log.env, DCIRALL, $$(DCIRSALL)}
-	$${call log.line}
-	$${call log.env, DWAYSALL, $$(DWAYSALL)}
-	$${call log.line}
-	$${call log.env, DSRCALL, $$(DSRCALL)}
-	$${call log.line}
-	$${call log.env, DOBJALL, $$(DOBJALL)}
-	$${call log.close}
+	$(PRECMD)
+	${call log.header, $@ :: env}
+	${call log.kvp, DOBJ, $(DOBJ)}
+	${call log.kvp, DSRC, $(DSRC)}
+	${call log.line}
+	${call log.env, DCIRALL, $(DCIRSALL)}
+	${call log.line}
+	${call log.env, DWAYSALL, $(DWAYSALL)}
+	${call log.line}
+	${call log.env, DSRCALL, $(DSRCALL)}
+	${call log.line}
+	${call log.env, DOBJALL, $(DOBJALL)}
+	${call log.close}
 
 env: env-ddeps
 
