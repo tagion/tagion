@@ -1,0 +1,25 @@
+.DS_Store
+
+#
+.tmp
+build
+*.log
+
+# Emacs
+*~
+*#
+.#*
+
+# Local setup file
+local.*
+# Auto generated file
+gen.*
+
+# Local backup
+*.parked
+
+# Root marker
+.root
+
+# Temporary directories
+bin

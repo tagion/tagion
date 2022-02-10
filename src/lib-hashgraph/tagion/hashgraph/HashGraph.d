@@ -293,7 +293,7 @@ class HashGraph {
                 .fingerprint.toHexString));
     }
     do {
-        if (valid_channel(event_pack.pubkey)) {
+        if (event_pack.pubkey == channel || valid_channel(event_pack.pubkey)) {
             auto event = new Event(event_pack, this);
             _event_cache[event.fingerprint] = event;
             event.connect(this);

@@ -1,84 +1,117 @@
+
+.SUFFIXES:
 .SECONDARY:
 .ONESHELL:
-
-main: help
+.SECONDEXPANSION:
 
 # Common variables
 # Override PRECMD= to see output of all commands
 PRECMD ?= @
 
+main: help
+
+#
 # Defining absolute Root and Tub directories
-DSRC := $(realpath src)
-DTUB := $(realpath tub)
-DROOT := ${abspath ${DTUB}/../}
+#
+export DSRC := $(abspath $(DROOT)/src)
+export DTUB := $(abspath $(DROOT)/tub)
+ifndef DROOT
+${error DROOT must be defined}
+endif
+#export DROOT := ${abspath ${DTUB}/../}
 
-include $(DTUB)/utilities/dir.mk
+ifeq (prebuild,$(MAKECMDGOALS))
+PREBUILD=1
+endif
 
-# Root config
--include $(DROOT)/config.*.mk
--include $(DROOT)/config.mk
-
+#
 # Local config, ignored by git
+#
 -include $(DROOT)/local.*.mk
 -include $(DROOT)/local.mk
+include $(DTUB)/utilities/dir.mk
+include $(DTUB)/utilities/log.mk
 
+include $(DTUB)/tools/*.mk
+include $(DTUB)/config/git.mk
+include $(DTUB)/config/commands.mk
+
+prebuild:
+	$(PRECMD)
+	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) secp256k1
+	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) p2pgowrapper
+	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) openssl
+	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) dstep
+	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) ddeps
+
+
+
+#
+# Native platform
+#
+# This is the HOST target platform
+#
+HOST_PLATFORM=${call join-with,-,$(GETARCH) $(GETHOSTOS) $(GETOS)}
+PLATFORM?=$(HOST_PLATFORM)
+
+#
+# Platform
+#
+include $(DTUB)/config/dirs.mk
+#
+# Prebuild
+#
+include $(DTUB)/config/prebuild.mk
+# ifdef $(DFILES)
+# -include $(DBUILD)/gen.dfiles.mk
+# -include $(DBUILD)/gen.ddeps.mk
+# endif
+
+-include $(DROOT)/platform.*.mk
+
+#
 # Secondary tub functionality
+#
 include $(DTUB)/ways.mk
 include $(DTUB)/gitconfig.mk
+include $(DTUB)/config/submodules.mk
+include $(DTUB)/config/druntime.mk
 include $(DTUB)/config/submake.mk
-include $(DTUB)/config/git.mk
 include $(DTUB)/config/host.mk
-include $(DTUB)/config/commands.mk
 include $(DTUB)/config/cross.mk
-include $(DTUB)/config/dirs.mk
+include $(DTUB)/config/platform.mk
+include $(DTUB)/config/auxiliary.mk
+
+#
+# Packages
+#
+
 include $(DTUB)/config/compiler.mk
-include $(DTUB)/config/env.mk
-include $(DTUB)/utilities/log.mk # TODO: Deprecate
+include $(DTUB)/config/dstep.mk
+include $(DTUB)/config/ddeps.mk
 
-# Help
-include $(DTUB)/help.mk
+include $(DTUB)/compile.mk
 
-# Enable cloning, if BRANCH is known
-ifeq ($(findstring clone,$(MAKECMDGOALS)),clone)
-ifdef BRANCH
--include $(DSRC)/**/context.mk
-
-include $(DTUB)/clone/clone.mk
-else
-$(call warning, Can not clone when BRANCH is not defined, make branch-<branch>)
-endif
-else
-include $(DTUB)/config/units.mk
-
+#
 # Include all unit make files
+#
 -include $(DSRC)/wrap-*/context.mk
 -include $(DSRC)/lib-*/context.mk
 -include $(DSRC)/bin-*/context.mk
 
-# Enable configuration compilation
-ifeq ($(findstring configure,$(MAKECMDGOALS)),configure)
-include $(DTUB)/configure.mk
-else
--include $(DSRC)/lib-*/gen.*.mk
--include $(DSRC)/bin-*/gen.*.mk
-include $(DTUB)/compile.mk
-endif
-endif
+#
+# Root config
+#
+-include $(DROOT)/config.*.mk
+-include $(DROOT)/config.mk
 
+
+#
 # Enable cleaning
+#
 include $(DTUB)/clean.mk
 
-
-setup: alias
-	$(PRECMD)
-	echo "Updating submodules..."
-	touch $(DROOT)/.root
-	git move ${shell git rev-parse --abbrev-ref HEAD}
-	echo "Git branches:"
-	git sbranch
-
-alias:
-	$(PRECMD)
-	echo "Installing local git aliases..."
-	$(DTUB)/scripts/gitconfig
-	echo
+#
+# Help
+#
+include $(DTUB)/help.mk

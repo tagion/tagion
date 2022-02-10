@@ -82,7 +82,7 @@ struct Text {
         str[new_index]='\0';
     }
 
-    ref Text opCall(const(char[]) cat) {
+    ref Text opCall(const(char[]) cat) return {
         opOpAssign!"~"(cat);
         return this;
     }

@@ -464,16 +464,17 @@ static void async_send(string task_name, string discovery_task_name, const(HostO
                 // auto node_address = receiveOnly!(NodeAddress);
                 receive(
                         (NodeAddress node_address) {
-                    auto stream = node.connect(node_address.address, node_address.is_marshal, [internal_task_name]);
-                    streamId = stream.Identifier;
-                    import p2p.callback;
+                            log("addr: %s, ismarshal: %s", node_address.address, node_address.is_marshal);
+                            auto stream = node.connect(node_address.address, true, [internal_task_name]);
+                            streamId = stream.Identifier;
+                            import p2p.callback;
 
-                    connectionPool.add(streamId, stream, true);
-                    stream.listen(&StdHandlerCallback, internal_task_name, host.timeout.msecs, host
-                        .max_size);
-                    // log("add stream to connection pool %d", streamId);
-                    connectionPoolBridge.lookup[channel] = streamId;
-                }
+                            connectionPool.add(streamId, stream, true);
+                            stream.listen(&StdHandlerCallback, internal_task_name, host.timeout.msecs, host
+                                .max_size);
+                            // log("add stream to connection pool %d", streamId);
+                            connectionPoolBridge.lookup[channel] = streamId;
+                        }
                 );
             }
             else {

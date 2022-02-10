@@ -1,24 +1,22 @@
 module tagion.services.NetworkRecordDiscoveryService;
 
 import core.time;
+import tagion.utils.StdTime;
 import std.datetime;
+import tagion.services.Options;
 import std.typecons;
 import std.conv;
 import std.concurrency;
-import std.stdio;
-import std.array;
-import std.algorithm.iteration;
-
-import tagion.services.Options;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
 import tagion.logger.Logger;
-import tagion.utils.StdTime;
+import std.stdio;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import p2plib = p2p.node;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 
+import std.array;
 import tagion.gossip.P2pGossipNet;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
@@ -30,14 +28,12 @@ import tagion.services.FileDiscoveryService;
 import tagion.services.MdnsDiscoveryService;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.hibon.HiBONJSON;
-//import tagion.Keywords : NetworkMode;
-import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
+import tagion.basic.TagionExceptions : fatal, TagionException;
+import std.algorithm.iteration;
 import tagion.crypto.SecureNet;
 
 void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
-        string task_name, immutable(Options) opts) nothrow {
-    try {
-
+        string task_name, immutable(Options) opts) {
     scope (exit) {
         log("exit");
         ownerTid.prioritySend(Control.END);
@@ -51,7 +47,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
 
     auto rec_factory = RecordFactory(net);
     log("net created");
-    RecordFactory.Recorder loadFromDART(Buffer[] fp) {
+    RecordFactory.Recorder loadFromDart(Buffer[] fp) {
         try {
             auto dart_sync_tid = locate(opts.dart.sync.task_name);
             if (dart_sync_tid != Tid.init) {
@@ -83,21 +79,21 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
     immutable(NodeAddress[Pubkey]) request_addr_table() {
         log("start: request_addr_table");
         const addr_table_fp = net.calcHash(cast(Buffer) ADDR_TABLE);
-        auto addr_table_recorder = loadFromDART([addr_table_fp]);
+        auto addr_table_recorder = loadFromDart([addr_table_fp]);
         if (addr_table_recorder.length > 0) {
             assert(addr_table_recorder.length == 1);
             auto ncl = NetworkNameCard(addr_table_recorder[].front.filed);
-            auto ncr_recorder = loadFromDART([ncl.record]);
+            auto ncr_recorder = loadFromDart([ncl.record]);
             assert(ncr_recorder.length == 1);
             const prev_ncr = NetworkNameRecord(ncr_recorder[].front.filed);
             auto range = prev_ncr.payload[];
             auto active_pubkeys = range.map!(a => cast(Buffer) net.calcHash(a.get!Buffer));
-            const addresses_recorder = loadFromDART(active_pubkeys.array);
+            const addresses_recorder = loadFromDart(active_pubkeys.array);
             NodeAddress[Pubkey] node_addresses;
             foreach (archive; addresses_recorder[]) {
                 auto nnr = NetworkNodeRecord(archive.filed);
                 if (nnr.state == NetworkNodeRecord.State.ACTIVE) {
-                    auto node_addr = NodeAddress(nnr.address, opts.dart, opts.port_base, true);
+                    auto node_addr = NodeAddress(nnr.address, opts.dart, true);
                     auto pk = cast(Pubkey) nnr.node;
                     node_addresses[pk] = node_addr;
                 }
@@ -131,7 +127,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
 
         const addr_table_fp = net.calcHash(cast(Buffer) ADDR_TABLE);
 
-        auto addr_table_recorder = loadFromDART([addr_table_fp]);
+        auto addr_table_recorder = loadFromDart([addr_table_fp]);
 
         auto insert_recorder = rec_factory.recorder;
         auto remove_recorder = rec_factory.recorder;
@@ -147,7 +143,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
             assert(addr_table_recorder.length == 1);
             ncl = NetworkNameCard(addr_table_recorder[].front.filed);
             remove_recorder.remove(Document(ncl.toHiBON.serialize));
-            auto ncr_recorder = loadFromDART([ncl.record]);
+            auto ncr_recorder = loadFromDart([ncl.record]);
             if (ncr_recorder.length != 0) {
                 assert(ncr_recorder.length == 1);
                 const prev_ncr = NetworkNameRecord(ncr_recorder[].front.filed);
@@ -161,9 +157,9 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
         ncl.record = net.hashOf(ncr.toDoc);
 
         /// Removing previous node addresses
-        pragma(msg, "fixme(Alex): Why not just use the maps range instead",
-            " of copying the keys to an array");
-        const prev_addresses_recorder = loadFromDART(node_addresses.keys.map!(
+        pragma(msg,
+                "fixme(Alex) Why not just use the maps range instead of copying the keys to an array");
+        const prev_addresses_recorder = loadFromDart(node_addresses.keys.map!(
                 a => cast(Buffer) net.calcHash(cast(Buffer) a)).array);
         if (prev_addresses_recorder.length > 0) {
             foreach (archive; prev_addresses_recorder[]) {
@@ -185,7 +181,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
         }
         insert_recorder.add(Document(ncr.toHiBON.serialize));
         insert_recorder.add(Document(ncl.toHiBON.serialize));
-        void updateDART(RecordFactory.Recorder recorder) {
+        void updateDart(RecordFactory.Recorder recorder) {
             auto dart_sync_tid = locate(opts.dart.sync.task_name);
             if (dart_sync_tid != Tid.init) {
                 log("modifying dart with: %d archives", recorder.length);
@@ -202,18 +198,18 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
             }
         }
 
-        updateDART(remove_recorder);
-        updateDART(insert_recorder);
+        updateDart(remove_recorder);
+        updateDart(insert_recorder);
     }
 
     auto is_ready = false;
     void receiveAddrBook(ActiveNodeAddressBook address_book) {
         log("updated addr book: %d", address_book.data.length);
-        if (is_ready) {
-            log("updated addr book internal: %d", address_book.data.length);
-            update_internal_table(address_book.data);
-            update_dart(address_book.data);
-        }
+        // if (is_ready) {
+        //     log("updated addr book internal: %d", address_book.data.length);
+        //     update_internal_table(address_book.data);
+        //     update_dart(address_book.data);
+        // }
         ownerTid.send(address_book);
     }
 
@@ -250,12 +246,13 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
     auto stop = false;
     do {
         receive(&receiveAddrBook, (immutable(Pubkey) key, Tid tid) {
-            log("looking for key: %s HASH: %s", key.cutHex, net.calcHash(cast(Buffer) key).cutHex);
-            auto result_addr = internal_nodeaddr_table.get(key, NodeAddress.init);
-            if (result_addr == NodeAddress.init) {
-                log("Address not found in internal nodeaddr table");
-            }
-            tid.send(result_addr);
+            // log("looking for key: %s HASH: %s", key.cutHex, net.calcHash(cast(Buffer) key).cutHex);
+            // auto result_addr = internal_nodeaddr_table.get(key, NodeAddress.init);
+            // if (result_addr == NodeAddress.init) {
+            //     log("Address not found in internal nodeaddr table");
+            // }
+            // tid.send(result_addr);
+            bootstrap_tid.send(key, tid);
         }, (DiscoveryRequestCommand request) {
             log("send request: %s", request);
             switch (request) {
@@ -280,8 +277,4 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
         });
     }
     while (!stop);
-    }
-    catch (Throwable t) {
-        fatal(t);
-    }
 }

@@ -55,6 +55,7 @@ interface SSLFiber {
     void unlock() nothrow;
 
     Buffer response(); /// Response from the service
+    bool available(); 
     @property uint id();
     immutable(ubyte[]) receive(); /// Recives from the service socket
     void send(immutable(ubyte[]) buffer); /// Send to the service socket
@@ -69,9 +70,6 @@ class SSLFiberService {
     immutable(SSLOption) ssl_options;
     @safe interface Relay {
         bool agent(SSLFiber sslfiber);
-        void terminate(uint id);
-        //    bool doActive(); ///
-        //    SSLFiberService create(); //
     }
     //alias Relay = bool delegate(SSLRelay) @safe;
 
@@ -277,6 +275,7 @@ class SSLFiberService {
      SSL Socket service fiber
      +/
     class SSLSocketFiber : Fiber, SSLFiber {
+        version(none)
         @trusted
         static uint buffer_to_uint(const ubyte[] buffer) pure {
             return *cast(uint*)(buffer.ptr)[0 .. uint.sizeof];
@@ -289,7 +288,7 @@ class SSLFiberService {
             uint fiber_id;
         }
 
-        @property uint id() {
+        @property uint id() const pure nothrow {
             return fiber_id;
         }
 
@@ -363,63 +362,57 @@ class SSLFiberService {
          +/
         @trusted
         immutable(ubyte[]) receive() {
+            import std.stdio;
             ubyte[] buffer;
             ubyte[] current;
-            ptrdiff_t size;
-            for (;;) {
-                if (buffer is null) {
-                    // The length of the buffer is in leb128 format
-                    enum LEN_MAX = LEB128.calc_size(uint.max);
-                    auto leb128_len_data = new ubyte[LEN_MAX];
-                    current = leb128_len_data;
-                    uint leb128_index;
-                    leb128_loop: for (;;) {
-                        const rec_data_size = client.receive(current);
-                        log("curr: %s", leb128_len_data);
-                        if (rec_data_size < 0) {
-                            // Not ready yet
-                            yield;
-                        }
-                        else if (rec_data_size == 0) {
-                            // Error
-                            return null;
-                        }
-                        else {
-                            size += rec_data_size;
-                            while (leb128_index < size) {
-
-                                    .check(leb128_index < LEN_MAX, message("Invalid size of len128 length field %d", leb128_index));
-                                if ((leb128_len_data[leb128_index++] & 0x80) is 0) {
-                                    // End of LEB128 size when bit 7 is 0
-                                    break leb128_loop;
-                                }
-                            }
-                            current = current[size .. $];
-
-                            checkTimeout;
-                            yield;
-                        }
-                    }
-                    const leb128_len = LEB128.decode!uint(leb128_len_data);
-                    const buffer_size = leb128_len.value;
-                    //const buffer_size=buffer_to_uint(len_data);
-                    if (buffer_size > ssl_options.max_buffer_size) {
-                        return null;
-                    }
-                    buffer = new ubyte[leb128_len.size + leb128_len.value];
-                    buffer[0 .. leb128_len.size] = leb128_len_data[0 .. leb128_len.size];
-                    current = buffer[leb128_len.size .. $];
+            ptrdiff_t rec_data_size;
+            // The length of the buffer is in leb128 format
+            enum LEN_MAX = LEB128.calc_size(uint.max);
+            auto leb128_len_data = new ubyte[LEN_MAX];
+            current = leb128_len_data;
+            uint leb128_index;
+            leb128_loop: for (;;) {
+                rec_data_size = client.receive(current);
+                log("curr: %s %d %s", leb128_len_data, rec_data_size, LEB128.decode!(uint)(current));
+                if (rec_data_size < 0) {
+                    // Not ready yet
+                    yield;
                 }
-                current = current[size .. $];
-                if (current.length == 0) {
-                    return assumeUnique(buffer);
+                else if (rec_data_size == 0) {
+                    // Error
+                    return null;
                 }
                 else {
+                        .check(leb128_index < LEN_MAX, message("Invalid size of len128 length field %d", leb128_index));
+                    break leb128_loop;
+                    }
                     checkTimeout;
+                    yield;
+            }
+            // receive data
+            const leb128_len = LEB128.decode!uint(leb128_len_data);
+            const buffer_size = leb128_len.value;
+            //const buffer_size=buffer_to_uint(len_data);
+            if (buffer_size > ssl_options.max_buffer_size) {
+                return null;
+            }
+            buffer = new ubyte[leb128_len.size + leb128_len.value];
+            buffer[0 .. rec_data_size] = leb128_len_data[0 .. rec_data_size];
+            current = buffer[rec_data_size .. $];
+            log("curr: %s %d", buffer[0 .. leb128_len.size], buffer.length);
+            while(current.length) {
+                rec_data_size = client.receive(current);
+                if (rec_data_size < 0) {
+                    // Not ready yet
+                    writeln("Timeout");
+                    checkTimeout;
+                }
+                else {
+                    current = current[rec_data_size .. $];
                 }
                 yield;
             }
-            assert(0);
+            return assumeUnique(buffer);
         }
 
         /++
@@ -543,6 +536,7 @@ class SSLFiberService {
             const doc = Document(data);
             const hirpc_received = hirpc.receive(doc);
             shared shared_data = cast(shared) data;
+            log("handler - set %d ", hirpc_received.response.id);
             handler.set(hirpc_received.response.id, shared_data);
         }
 

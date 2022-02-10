@@ -1,4 +1,4 @@
-include git.mk
+#include git.mk
 #REPOROOT?=${shell git rev-parse --show-toplevel}
 TOOLS_DIR?=$(REPOROOT)/../tools/
 DC:=ldc2
@@ -10,7 +10,7 @@ BIN:=bin
 
 LDWFLAGS+=-O0
 MAIN?=hibon
-include dfiles.mk
+-include gen.dfiles.mk
 # ifeq ($(MAIN),test_array)
 DFILES+=tests/$(MAIN).d
 

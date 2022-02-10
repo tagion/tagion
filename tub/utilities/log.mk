@@ -32,7 +32,19 @@ echo -e ${word 1, $1} ${foreach LINE, ${filter-out ${word 1, $1}, $1}, "\n${stri
 endef
 
 define log.kvp
-echo "$(strip $1): $(strip $2)";
+printf "%-23s: %s\n" $(strip $1) $(strip $2);
+endef
+
+define log.env
+[ -z "$(strip $2)" ] || printf "%-23s += %s\n" ${addprefix $(strip $1) ,$(strip $2)} && echo;
+endef
+
+define log.printf
+printf $1
+endef
+
+define log.help
+printf "  %-20s : %s\n" $1 $2;
 endef
 
 define log.info

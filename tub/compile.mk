@@ -1,98 +1,110 @@
-LOGS = 1
 
-lib%.test.o: $(DTMP)/lib%.test.o
-	@
+#DFLAGS+=$(DIP25) $(DIP1000)
+DFLAGS+=$(DPREVIEW)=inclusiveincontracts
 
-lib%.test: $(DBIN)/lib%.test
-	$(DBIN)/lib$*.test
+#
+# Change extend of the LIB
+#
+LIBEXT=${if $(SHARED),$(DLLEXT),$(STAEXT)}
 
-$(DTMP)/lib%.test.o: $(DTMP)/lib%.way
+#
+# D compiler
+#
+$(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 	$(PRECMD)
-	${eval $*DCFLAGS := -c -unittest -g -of$@}
-	${eval $*INFILES := ${filter $(DSRC)/lib-$*/%.d,$^}}
-	${eval $*INFILES += ${filter $(DSRC)/lib-$*/%.di,$^}}
-	${if $(LOGS),${call details.compile}}
-	$(DC) $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
-	${call log.kvp, Compiled, $@}
+	${call log.kvp, compile, $(MODE)}
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $< $(DCOMPILE_ONLY) $(OUTPUT)$@
 
-$(DBIN)/lib%.test: $(DBIN)/lib%.test.way
+
+#
+# Compile and link or split link
+#
+ifdef SPLIT_LINKER
+#$(DOBJ)/%.$(OBJEXT): $(PREBUILD)
+
+$(DOBJ)/lib%.$(OBJEXT): $(DOBJ)/.way
 	$(PRECMD)
-	${eval $*DCFLAGS := -main -of$@}
-	${eval $*INFILES := ${filter %.o,$^}}
-	${eval $*INFILES += ${filter %.a,$^}}
-	${if $(LOGS),${call details.compile}}
-	$(DC) $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
-	${call log.kvp, Compiled, $@}
+	${call log.kvp, compile$(MODE)}
+	echo ${DFILES}
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(DCOMPILE_ONLY)  $(OUTPUT)$@
 
-lib%.o: $(DTMP)/lib%.o
-	@
-
-lib%: $(DBIN)/lib%.a
-	@
-
-lib%.a: $(DBIN)/lib%.a
-	@
-
-$(DTMP)/lib%.o: $(DTMP)/lib%.way
+$(DLIB)/lib%.$(DLLEXT): $(DOBJ)/lib%.$(OBJEXT)
 	$(PRECMD)
-	${eval $*DCFLAGS := -c -of$@}
-	${eval $*INFILES := ${filter $(DSRC)/lib-$*/%.d,$^}}
-	${eval $*INFILES += ${filter $(DSRC)/lib-$*/%.di,$^}}
-	${if $(LOGS),${call details.compile}}
-	$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
-	${call log.kvp, Compiled, $@}
-
-$(DBIN)/lib%.a: $(DBIN)/lib%.way
+	${call log.kvp, split-link$(MODE)}
+	echo ${filter %.$(OBJEXT),$?}
+	$(LD) ${LDFLAGS} ${filter %.$(OBJEXT),$?} $(LIBS) $(OBJS) -o$@
+else
+$(DLIB)/%.$(DLLEXT):
 	$(PRECMD)
-	${eval $*INFILES := ${filter %.o,$^}}
-	${if $(LOGS),${call details.archive}}
-	$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} -lib $(INFILES) $($*INFILES) -of$@
-	${call log.kvp, Archived, $@}
+	${call log.kvp, link$(MODE), $(DMODULE)}
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) ${LDFLAGS} $(LIBS) $(OBJS) $(DCOMPILE_ONLY)  $(OUTPUT)$@
+endif
 
-tagion%.o: $(DTMP)/tagion%.o
-	@
+#
+# proto targets for binaries
+#
 
-tagion%: $(DBIN)/tagion%
-	@
-
-$(DTMP)/tagion%.o: $(DTMP)/%.way
+$(DBIN)/%:
 	$(PRECMD)
-	${eval $*DCFLAGS := -c -of$@}
-	${eval $*INFILES := ${filter $(DSRC)/bin-$*/%.d,$^}}
-	${eval $*INFILES += ${filter $(DSRC)/bin-$*/%.di,$^}}
-	${if $(LOGS),${call details.compile}}
-	$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
-	${call log.kvp, Compiled, $@}
+	${call log.kvp, bin$(MOD), $*}
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) ${LDFLAGS} $(LIBS) $(OBJS) $(OUTPUT)$@
 
-$(DBIN)/tagion%: $(DBIN)/%.way
+#
+# Proto targets for unittest
+#
+UNITTEST_FLAGS?=$(DUNITTEST) $(DDEBUG) $(DDEBUG_SYMBOLS)
+UNITTEST_DOBJ=$(DOBJ)/unittest
+UNITTEST_BIN?=$(DBIN)/unittest
+
+proto-unittest-run: $(UNITTEST_BIN)
 	$(PRECMD)
-	${eval $*DCFLAGS := -of$@}
-	${eval $*INFILES := ${filter $(DSRC)%.d,$^}}
-	${eval $*INFILES += ${filter %.a,$^}}
-	${if $(LOGS),${call details.compile}}
-	$(DC) ${if $(CROSS_ENABLED),-mtriple=$(MTRIPLE)} $(DCFLAGS) $($*DCFLAGS) $($*INFILES) $(INFILES) $(INCLFLAGS) $(LDCFLAGS)
-	${call log.kvp, Compiled, $@}
+	$(UNITTEST_BIN)
 
-# Logs
-define details.compile
-${call log.header, Compile $(@F)}
-${call log.kvp, DC, $(DC)}
-${call log.kvp, DCFLAGS, $(DCFLAGS) $($*DCFLAGS)}
-${call log.kvp, LDCFLAGS, $(LDCFLAGS)}
-${if $(INCLFLAGS),${call log.kvp, INCLFLAGS}}
-${if $(INCLFLAGS),${call log.lines, $(INCLFLAGS)}}
-${if $(LINKFILES),${call log.kvp, LINKFILES}}
-${if $(LINKFILES),${call log.lines, $(LINKFILES)}}
-${call log.kvp, INFILES}
-${call log.lines, $($*INFILES)}
-${call log.lines, $(INFILES)}
-${call log.close}
-endef
+$(UNITTEST_BIN):
+	$(PRECMD)
+	@echo deps $?
+	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OUTPUT)$@
 
-define details.archive
-${call log.header, Archive $(@F)}
-${call log.kvp, INFLILES}
-${call log.lines, $($*INFILES)}
-${call log.lines, $(INFILES)}
-${call log.close}
-endef
+
+clean-unittest:
+	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RMDIR) $(UNITTEST_DOBJ)
+	$(RM) $(UNITTEST_BIN)
+
+clean: clean-unittest
+
+help-unittest:
+	$(PRECMD)
+	${call log.header, $@ :: help}
+	${call log.help, "make help-unittest", "Will display this part"}
+	${call log.help, "make clean-unittest", "Clean unittest files"}
+	${call log.help, "make env-uintest", "List all unittest parameters"}
+	${call log.close}
+
+help: help-unittest
+
+env-unittest:
+	$(PRECMD)
+	${call log.header, $@ :: env}
+	${call log.env, UNITTEST_DOBJ, $(UNITTEST_DOBJ)}
+	${call log.env, UNITTEST_FLAGS, $(UNITTEST_FLAGS)}
+	${call log.env, UNITTEST_BIN, $(UNITTEST_BIN)}
+
+env: env-unittest
+
+# Object Clear"
+clean-obj:
+	$(PRECMD)
+	${call log.header, $@ :: obj}
+	$(RM) $(DOBJALL)
+	$(RM) $(DCIRALL)
+
+clean: clean-obj
+
+env-build:
+	$(PRECMD)
+	${call log.header, $@ :: env}
+	${call log.env, DINC, $(DINC)}
+
+env: env-build

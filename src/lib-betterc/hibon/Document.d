@@ -1282,3 +1282,18 @@ struct Document {
         }
     }
 }
+/**
+ * HiBON Document
+ *
+ */
+// module libtest;
+
+extern(C):
+
+import core.stdc.math : log10;
+@nogc:
+pragma(msg, "fixme(cbr): This is a simple link test, should be removed when the code links correctly");
+int test_func(int x) {
+    const y=cast(int)log10(10);
+    return 3*x*y;
+}

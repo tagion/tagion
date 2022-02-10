@@ -15,5 +15,9 @@ __generated*
 # Emacs
 *~
 *#
+.#*
+
 gits.o
 gits
+ddeps.o
+ddeps

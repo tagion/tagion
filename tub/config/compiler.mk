@@ -30,7 +30,7 @@ endif
 
 # Define flags for gdc other
 ifeq ($(COMPILER),gdc)
-DCFLAGS	= -O2
+DOPT	= -O2
 LINKERFLAG= -Xlinker
 OUTPUT	= -o
 HF		= -fintfc-file=
@@ -38,7 +38,7 @@ DF		= -fdoc-file=
 NO_OBJ	= -fsyntax-only
 DDOC_MACRO= -fdoc-inc=
 else
-DCFLAGS	= -O
+DOPT	= -O
 LINKERFLAG= -L
 OUTPUT	= -of
 HF		= -Hf
@@ -50,30 +50,50 @@ endif
 
 # Define version statement / soname flag
 ifeq ($(COMPILER),ldc)
-DVERSION = -d-version
-SONAME_FLAG = -soname
-DEBUG ?= -d-debug
+DVERSION := -d-version
+SONAME_FLAG := -soname
+DDEBUG := -d-debug
+DMAIN := -f-d-main
+DUNITTEST := --unittest
+DMAIN := --main
 DIP := --dip
+DFPIC := -relocation-model=pic
+DDEBUG_SYMBOLS := -g
+DBETTERC := --betterC
+DCOMPILE_ONLY := -c
+DPREVIEW :=--preview
+NO_OBJ ?= --o-
+DJSON ?= --Xf
 else ifeq ($(COMPILER),gdc)
-DVERSION = -fversion
-SONAME_FLAG = $(LINKERFLAG)-soname
-DEBUG ?= -f-d-debug
+DVERSION := -fversion
+SONAME_FLAG := $(LINKERFLAG)-soname
+DDEBUG := -f-d-debug
+DUNITTEST := -f-d-unittest
+DMAIN := -f-d-main
 DIP := unknown-dip
+DDEBUG_SYMBOLS := -g
+DBETTERC := --betterC
+DCOMPILE_ONLY := -c
+DPREVIEW :=-preview
+NO_OBJ ?= -o-
 else
 DVERSION = -version
 SONAME_FLAG = $(LINKERFLAG)-soname
-DEBUG ?= -debug
+DDEBUG := -debug
+DUNITTEST := -unittest
+DMAIN := -main
 DIP := -dip
+DFPIC := -fPIC
+DDEBUG_SYMBOLS := -g
+DBETTERC := -betterC
+DCOMPILE_ONLY := -c
+DPREVIEW :=-preview
+NO_OBJ ?= -o-
+DJSON ?= -Xf
 endif
 
 DIP25 := $(DIP)25
 DIP1000 := $(DIP)1000
-
-# Define D Improvement Proposals
-ifeq ($(COMPILER),ldc)
-DCFLAGS += $(DIP25)
-DCFLAGS += $(DIP1000)
-endif
 
 # Define relocation model for ldc or other
 ifeq ($(COMPILER),ldc)
@@ -96,43 +116,48 @@ MODEL = 32
 endif
 endif
 
-# D step
-# TODO: Clone local dstep
-DSTEP:=dstep
-
 # -m32 and -m64 switches cannot be used together with -march and -mtriple switches
 ifndef CROSS_OS
 ifeq ($(MODEL), 64)
-DCFLAGS  += -m64
+DFLAGS  += -m64
 LDCFLAGS += -m64
 else
-DCFLAGS  += -m32
+DFLAGS  += -m32
 LDCFLAGS += -m32
 endif
 endif
 
 INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}
 
-MAKE_ENV += env-compiler
 env-compiler:
 	$(PRECMD)
-	$(call log.header, env :: compiler)
-	$(call log.kvp, DC, $(DC))
-	$(call log.kvp, COMPILER, $(COMPILER))
-	$(call log.kvp, ARCH, $(ARCH))
-	$(call log.kvp, MODEL, $(MODEL))
-	$(call log.kvp, OUTPUT, $(OUTPUT))
-	$(call log.kvp, HF, $(HF))
-	$(call log.kvp, DF, $(DF))
-	$(call log.kvp, NO_OBJ, $(NO_OBJ))
-	$(call log.kvp, SONAME_FLAG, $(SONAME_FLAG))
-	$(call log.kvp, DVERSION, $(DVERSION))
-	$(call log.kvp, DEBUG, $(DEBUG))
-	$(call log.kvp, DIP, $(DIP))
-	$(call log.kvp, DIP25, $(DIP25))
-	$(call log.kvp, DIP1000, $(DIP1000))
-	$(call log.kvp, FPIC, $(FPIC))
-	$(call log.kvp, DCFLAGS (Complier), $(DCFLAGS))
-	$(call log.kvp, LDCFLAGS (Linker), $(LDCFLAGS))
-	$(call log.kvp, SOURCEFLAGS, $(SOURCEFLAGS))
-	$(call log.close)
+	${call log.header, $@ :: compiler}
+	$(DC) --version | head -4
+	${call log.kvp, DC, $(DC)}
+	${call log.kvp, COMPILER, $(COMPILER)}
+	${call log.kvp, ARCH, $(ARCH)}
+	${call log.kvp, MODEL, $(MODEL)}
+	${call log.kvp, OUTPUT, $(OUTPUT)}
+	${call log.kvp, HF, $(HF)}
+	${call log.kvp, DF, $(DF)}
+	${call log.kvp, NO_OBJ, $(NO_OBJ)}
+	${call log.kvp, DJSON, $(DJSON)}
+	${call log.kvp, SONAME_FLAG, "$(SONAME_FLAG)"}
+	${call log.kvp, DVERSION, $(DVERSION)}
+	${call log.kvp, DDEBUG, $(DDEBUG)}
+	${call log.kvp, DUNITTEST, $(DUNITTEST)}
+	${call log.kvp, DMAIN, $(DMAIN)}
+	${call log.kvp, DIP, $(DIP)}
+	${call log.kvp, DIP25, $(DIP25)}
+	${call log.kvp, DIP1000, $(DIP1000)}
+	${call log.kvp, DPREVIEW, $(DPREVIEW)}
+	${call log.kvp, DFPIC, $(DFPIC)}
+	${call log.kvp, DCOMPILE_ONLY, $(DCOMPILE_ONLY)}
+	${call log.kvp, DBETTERC, $(DBETTERC)}
+	${call log.kvp, DDEBUG_SYMBOLS , $(DDEBUG_SYMBOLS)}
+	${call log.kvp, DFLAGS, "$(DFLAGS)"}
+	${call log.kvp, LDCFLAGS, "$(LDCFLAGS)"}
+	${call log.kvp, SOURCEFLAGS, "$(SOURCEFLAGS)"}
+	${call log.close}
+
+env: env-compiler
