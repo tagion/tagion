@@ -4,9 +4,6 @@
 .ONESHELL:
 .SECONDEXPANSION:
 
-#MTRIPLE=$$(TRIPLE)
-
-
 # Common variables
 # Override PRECMD= to see output of all commands
 PRECMD ?= @
@@ -39,13 +36,6 @@ include $(DTUB)/tools/*.mk
 include $(DTUB)/config/git.mk
 include $(DTUB)/config/commands.mk
 
-# NONEPREBUILD+=proper
-# NONEPREBUILD+=clean
-# NONEPREBUILD+=env-p2pgowrapper
-# NOPREBUILD:=${findstring $(MAKECMDGOALS),$(NONEPREBUILD)}
-
-# files.exists:=${strip ${foreach file,$1, ${wildcard $(file)}}}
-
 prebuild:
 	$(PRECMD)
 	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) secp256k1
@@ -56,39 +46,6 @@ prebuild:
 
 
 
-# PREBUILDS+=$(LIBSECP256K1)
-# PREBUILDS+=$(LIBP2PGOWRAPPER)
-# PREBUILDS+=$(LIBOPENSSL)
-# PREBUILDS+=$(DIFILES)
-# ifeq (,${call files.exists,$(PREBUILDS)})
-# .NOTPARALLEL:
-# endif
-
-# MAKES=${addprefix make-,$(PREBUILDS)}
-# ifndef SECOND
-# ifeq (,$(NOPREBUILD))
-# ifeq (,${call files.exists,$(PREBUILDS)})
-# .NOTPARALLEL:
-# test11:
-# 	@echo X$(MAKES)X
-
-# %: $(MAKES)
-# 	@
-
-# dump:
-# 	$(PRECMD)
-# 	echo MAKEFLAGS=$(MAKEFLAGS)
-# 	echo MAKECMDGOALS=$(MAKECMDGOALS)
-# 	echo NOPREBUILD=$(NOPREBUILD)
-# 	echo findstring X${findstring $(MAKECMDGOALS),$(NONEPREBUILD)}X
-# 	echo Y${call files.exists,$(PREBUIDS)}Y
-# 	$(MAKE) RECURSIVE=1 $(MAKEFLAGS) $(PREBUILDS)
-
-# make-%:
-# 	$(MAKE) SECOND=1 $(MAKEFLAGS) $*
-# endif
-# endif
-# endif
 #
 # Native platform
 #
