@@ -43,19 +43,19 @@ proper-dfiles: proper-ddeps
 .PHONY: proper-ddeps proper-dfiles
 
 env-ddeps:
-	$$(PRECMD)
-	$${call log.header, $@ :: env}
-	$${call log.kvp, DOBJ, $(DOBJ)}
-	$${call log.kvp, DSRC, $(DSRC)}
-	$${call log.line}
-	$${call log.env, DCIRALL, $$(DCIRSALL)}
-	$${call log.line}
-	$${call log.env, DWAYSALL, $$(DWAYSALL)}
-	$${call log.line}
-	$${call log.env, DSRCALL, $$(DSRCALL)}
-	$${call log.line}
-	$${call log.env, DOBJALL, $$(DOBJALL)}
-	$${call log.close}
+	$(PRECMD)
+	${call log.header, $@ :: env}
+	${call log.kvp, DOBJ, $(DOBJ)}
+	${call log.kvp, DSRC, $(DSRC)}
+	${call log.line}
+	${call log.env, DCIRALL, $(DCIRSALL)}
+	${call log.line}
+	${call log.env, DWAYSALL, $(DWAYSALL)}
+	${call log.line}
+	${call log.env, DSRCALL, $(DSRCALL)}
+	${call log.line}
+	${call log.env, DOBJALL, $(DOBJALL)}
+	${call log.close}
 
 env: env-ddeps
 
