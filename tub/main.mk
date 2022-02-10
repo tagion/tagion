@@ -4,9 +4,6 @@
 .ONESHELL:
 .SECONDEXPANSION:
 
-#MTRIPLE=$$(TRIPLE)
-
-
 # Common variables
 # Override PRECMD= to see output of all commands
 PRECMD ?= @
@@ -16,9 +13,16 @@ main: help
 #
 # Defining absolute Root and Tub directories
 #
-export DSRC := $(realpath src)
-export DTUB := $(realpath tub)
-export DROOT := ${abspath ${DTUB}/../}
+export DSRC := $(abspath $(DROOT)/src)
+export DTUB := $(abspath $(DROOT)/tub)
+ifndef DROOT
+${error DROOT must be defined}
+endif
+#export DROOT := ${abspath ${DTUB}/../}
+
+ifeq (prebuild,$(MAKECMDGOALS))
+PREBUILD=1
+endif
 
 #
 # Local config, ignored by git
@@ -31,6 +35,14 @@ include $(DTUB)/utilities/log.mk
 include $(DTUB)/tools/*.mk
 include $(DTUB)/config/git.mk
 include $(DTUB)/config/commands.mk
+
+prebuild:
+	$(PRECMD)
+	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) secp256k1
+	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) p2pgowrapper
+	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) openssl
+	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) dstep
+	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) ddeps
 
 
 
@@ -46,8 +58,14 @@ PLATFORM?=$(HOST_PLATFORM)
 # Platform
 #
 include $(DTUB)/config/dirs.mk
--include $(DBUILD)/gen.dfiles.mk
--include $(DBUILD)/gen.ddeps.mk
+#
+# Prebuild
+#
+include $(DTUB)/config/prebuild.mk
+# ifdef $(DFILES)
+# -include $(DBUILD)/gen.dfiles.mk
+# -include $(DBUILD)/gen.ddeps.mk
+# endif
 
 -include $(DROOT)/platform.*.mk
 
@@ -87,8 +105,6 @@ include $(DTUB)/compile.mk
 -include $(DROOT)/config.*.mk
 -include $(DROOT)/config.mk
 
-
-include $(DTUB)/config/prebuild.mk
 
 #
 # Enable cleaning

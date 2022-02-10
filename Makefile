@@ -1,78 +1,35 @@
-# DO NOT MODIFY
-# This file is generated, and can be replaced at any moment
-
-.SECONDARY:
+#
+# This makefile call the tub/main.mk
+# and controlles the prebuild
+#
+.SUFFIXES:
 .ONESHELL:
+.NOTPARALLEL:
 
-test73:
-	@echo "$(MAKECMDGOALS)"
-	@echo "$(MAKEFLAGS)"
+DROOT:=${shell git rev-parse --show-toplevel}
+SCRIPT:=$(DROOT)/tub
+MAIN_MK:=$(DROOT)/tub/main.mk
+MAIN_FLAGS+=MAIN_FLAGS=$(MAKEFLAGS) DROOT=$(DROOT)
+MAIN_FLAGS+=RECURSIVE=1
+MAIN_FLAGS+=PREBUILD_MK=$(MAIN_MK)
+MAIN_FLAGS+=-f $(MAIN_MK)
+MAIN_FLAGS+=--no-print-directory
 
-include tub/main.mk
+ifeq (,${stript $(MAKECMDGOALS)})
+help:
+	$(MAKE) $(MAIN_FLAGS) $@
+endif
 
-# Hack to get tagionwave to build
-#include src/bin-wave/build.mk
-#include src/lib-mobile/build.mk
 
-# ifndef DTUB
-# ifdef RECURSIVE
-# define ERRORMSG
-# Error:
-# The build tools tub has not been installed
-# Try to run
+match=${shell $(SCRIPT)/check_regex.d $@ -r'^(env-\w+|env|help-\w+|help|clean-\w+|clean|proper-\w+|proper)$$'}
 
-# git submodule update --init --recursive
-# tub/gits.d --config
+ifdef RECURSIVE
+${error This makefile should to be call recursive}
+endif
 
-# endef
-# ${error $(ERRORMSG)}
-
-# endif
-
-# # all: doit
-
-# # The following replaces ./tub/setup:
-# # %:
-# # 	@git submodule update --init --recursive
-# # 	@$(MAKE) RECURSIVE=1 setup
-# # 	@$(MAKE) RECURSIVE=1 $@
-
-# endif
-
-# test99:
-# 	@echo $@
-
-#test77: $(DOBJ)/lib-services/tagion/services/TagionFactory.o
-
-#test88: 	/home/carsten/work/cross_regression/build/x86_64-unknown-linux/tmp/libsecp256k1.a
-
-#test75: /home/carsten/work/cross_regression/src/lib-p2pgowrapper/p2p/connection.d
-
-#GEN_DDEPS_MK:=$(DBUILD)/gen.ddeps.mk
-# $(GEN_DDEPS_MK): /home/carsten/work/cross_regression/src/lib-p2pgowrapper/p2p/node.d | $(DIFILES)
-
-#$(GEN_DDEPS_MK): $(DIFILES_DEPS)
-
-# ifndef DOBJALL
-# PREBUILD:=prebuild
-# endif
-
-# prebuild:
-# 	$(MAKE) $(GEN_DDEPS_MK)
-
-# .phony: prebuild
-
-# ifndef DOBJALL
-# test76:
-# 	$(MAKE) $(GEN_DDEPS_MK)
-# 	$(MAKE) test76
-# else
-#test76: $(PREBUILD)
-#test76: $(DOBJALL)
-# endif
-
-#test78:
-#	echo $(DIFILES)
-#	echo DIFILES_DEPS=$(DIFILES_DEPS)
-
-#myprog: .EXTRA_PREREQS = $(CC)
+%:
+	@
+	if [ -z "${call match,$@}" ]; then
+	make $(MAIN_FLAGS) prebuild
+	fi
+	make $(MAIN_FLAGS) $@
