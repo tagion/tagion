@@ -99,3 +99,23 @@ clean: clean-wallet
 
 
 BIN_TARGETS+=target-wallet
+
+#
+# Logservicetest utility
+#
+# FIXME(IB) should be removed when ddeps works correctly
+target-tagionlogservicetest: LIBS+=$(LIBOPENSSL)
+target-tagionlogservicetest: LIBS+=$(LIBSECP256K1)
+target-tagionlogservicetest: LIBS+=$(LIBP2PGOWRAPPER)
+
+target-tagionlogservicetest: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-logservicetest/*"}
+target-tagionlogservicetest: $(DBIN)/tagionlogservicetest
+
+clean-tagionlogservicetest:
+	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RM) $(DBIN)/tagionlogservicetest
+
+clean: clean-tagionlogservicetest
+
+BIN_TARGETS+=target-tagionlogservicetest

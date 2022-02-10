@@ -60,6 +60,10 @@ tagionwave: |prebuild-linux
 tagionwave: target-tagionwave
 bin: tagionwave
 
+tagionlogservicetest: prebuild-linux
+tagionlogservicetest: target-tagionlogservicetest
+bin: tagionlogservicetest
+
 target-linux:
 	@echo DBUILD $(DBUILD)
 
