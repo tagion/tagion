@@ -1,7 +1,0 @@
-*.o
-*#
-.#*
-*~
-*.parked
-local.mk
-gen.*
