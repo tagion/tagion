@@ -1,5 +1,5 @@
 # OS & ARCH
-OS ?= $(shell uname | tr A-Z a-z)
+OS ?= $(GETHOSTOS)
 
 ifndef ARCH
 ifeq ($(OS),"windows")
@@ -9,8 +9,16 @@ else
 ARCH = x86_64
 endif
 else
-ARCH = $(shell uname -m)
+ARCH = $(GETARCH)
 endif
+endif
+
+
+# This is the host name
+HOST:=${call join-with,-,$(GETHOSTOS) $(GETARCH)}
+
+ifneq ($(PLATFORM),$(HOST_PLATFORM))
+CROSS_ENABLED?=1
 endif
 
 # Version 3.81 is installed by default on macOS, but doesn't support ONESHELL
@@ -24,10 +32,21 @@ ${info Install newer version: http://ftp.gnu.org/gnu/make/}
 ${error Unsupported GNU Make version}
 endif
 
-MAKE_ENV += env-host
+# ifneq ($(PLATFORM),$(HOST_PLATFORM))
+# CROSS_ENABLE?=yes
+# endif
+
 env-host:
 	$(PRECMD)
-	$(call log.header, env :: host)
+	$(call log.header, $@ :: host)
 	$(call log.kvp, OS, $(OS))
 	$(call log.kvp, ARCH, $(ARCH))
+	${call log.kvp, HOST, $(HOST)}
+	${call log.kvp, HOST_PLATFORM, $(HOST_PLATFORM)}
+	${call log.kvp, PLATFORM, $(PLATFORM)}
+	${call log.kvp, CROSS_ENABLED, $(CROSS_ENABLED)}
 	$(call log.close)
+
+env: env-host
+
+#PLATFORM1?=$(call join-with,:,)
