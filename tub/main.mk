@@ -62,10 +62,10 @@ include $(DTUB)/config/dirs.mk
 # Prebuild
 #
 include $(DTUB)/config/prebuild.mk
-ifndef PREBUILD
-include $(DBUILD)/gen.dfiles.mk
-include $(DBUILD)/gen.ddeps.mk
-endif
+# ifdef $(DFILES)
+# -include $(DBUILD)/gen.dfiles.mk
+# -include $(DBUILD)/gen.ddeps.mk
+# endif
 
 -include $(DROOT)/platform.*.mk
 
