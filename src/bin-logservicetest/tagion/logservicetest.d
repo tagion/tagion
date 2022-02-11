@@ -165,34 +165,29 @@ int recorderCliTest(string[] args) {
         // BlockFile.create(dartfilename, DARTFile.stringof, BLOCK_SIZE);
 
 
-        // import tagion.dart.Recorder : RecordFactory;  
-        // import tagion.crypto.SecureNet : StdHashNet;
+        import tagion.dart.Recorder : RecordFactory;  
+        import tagion.crypto.SecureNet : StdHashNet;
+        import tagion.services.RecorderService : recorderTask;
 
-
-        // ==========================================================
-        // import tagion.services.RecorderService : recorderTask;
-
-        // writeln("init called\n");
-        // auto recorder_service_tid=spawn(&recorderTask, options);
-        // scope(exit){
-        //     recorder_service_tid.send(Control.STOP);
-        //     writeln("exit bin init; control=", receiveOnly!Control);
-        // }
+        auto recorder_service_tid=spawn(&recorderTask, options);
+        scope(exit){
+            recorder_service_tid.send(Control.STOP);
+            writeln("exit bin init; control=", receiveOnly!Control);
+        }
         
-        // const net = new StdHashNet;
-        // auto factory = RecordFactory(net);
-        // RecordFactory.Recorder recorder = factory.recorder;
+        const net = new StdHashNet;
+        auto factory = RecordFactory(net);
+        RecordFactory.Recorder recorder = factory.recorder;
 
-        // string filename = "filename";
+        string filename = "filename";
 
-        // import core.thread;
-        // while(true) {
-        //     recorder_service_tid.send("aaa   bbb   ccc", filename);
-        //     writeln("while sleep 5 seconds...");
-        //     filename ~= "a";
-        //     Thread.sleep(5.seconds);
-        // }
-        // ==========================================================
+        import core.thread;
+        while(true) {
+            recorder_service_tid.send("aaa   bbb   ccc", filename);
+            writeln("while sleep 5 seconds...");
+            filename ~= "_a";
+            Thread.sleep(5.seconds);
+        }
     }
 
     void onDump() {

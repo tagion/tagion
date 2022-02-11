@@ -200,6 +200,14 @@ struct Options {
 
     Logger logger;
 
+    struct Recorder {
+        string task_name; /// Name of the recorder task
+        string folder_path; /// Folder used for the recorder service files
+        mixin JSONCommon;
+    }
+
+    Recorder recorder;
+
     struct Message {
         string language; /// Language used to print message
         bool update; /// Update the translation tabel
@@ -514,6 +522,11 @@ static setDefaultOption(ref Options options) {
         flush = true;
         to_console = true;
         mask = LoggerType.ALL;
+    }
+    // Recorder
+    with (options.recorder) {
+        task_name = "recorder";
+        folder_path = "/tmp/records/";
     }
     // Discovery
     with (options.discovery) {
