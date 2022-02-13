@@ -299,7 +299,7 @@ struct NodeAddress {
 
                 auto json = parseJSON(address);
                 this.id = json["ID"].str;
-                auto addr = assumeTrusted!({return json["Addrs"].array.front.str;});
+                auto addr = assumeTrusted!({ return json["Addrs"].array.front.str; });
                 auto tcpIndex = addr.indexOf(tcp_token) + tcp_token.length;
                 this.port = to!uint(addr[tcpIndex .. tcpIndex + 4]);
             }
@@ -388,7 +388,7 @@ class StdP2pNet : P2pNet {
         if (internal_sender !is Tid.init) {
             counter++;
             log("sending to sender %s", internal_sender);
-            assumeTrusted!({tsend(internal_sender, channel, sender.toDoc, counter);});
+            assumeTrusted!({ tsend(internal_sender, channel, sender.toDoc, counter); });
         }
         else {
             log("sender not found");
@@ -401,7 +401,7 @@ class StdP2pNet : P2pNet {
         auto sender = assumeTrusted!locate(internal_task_name);
         if (sender !is Tid.init) {
             counter++;
-            assumeTrusted!({tsend(sender, pk, counter);});
+            assumeTrusted!({ tsend(sender, pk, counter); });
         }
         else {
             log("sender not found");

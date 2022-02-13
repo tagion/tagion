@@ -53,7 +53,9 @@ interface SecureNet : HashNet {
     Signature sign(immutable(ubyte[]) message) const;
 
     final Signed sign(const Document doc) const {
+
         
+
             .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
                     .SECURITY_MESSAGE_HASH_KEY);
         immutable fingerprint = rawCalcHash(doc.serialize);

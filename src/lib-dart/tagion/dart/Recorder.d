@@ -109,6 +109,7 @@ class RecordFactory {
 
         private this(Document doc) {
 
+            
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             this.archives = new Archives;
@@ -172,8 +173,8 @@ class RecordFactory {
 
         const(Archive)[Buffer] getSet() const @trusted {
             Archive[Buffer] result;
-            foreach(const a; archives[]) {
-                result[a.fingerprint] = cast(Archive)a;
+            foreach (const a; archives[]) {
+                result[a.fingerprint] = cast(Archive) a;
             }
             return result;
         }
@@ -275,7 +276,7 @@ class RecordFactory {
     }
 }
 
-alias GetType=Archive.Type delegate(const(Archive)) @safe;
+alias GetType = Archive.Type delegate(const(Archive)) @safe;
 
 @safe class Archive {
     enum Type : int {
@@ -381,9 +382,9 @@ alias GetType=Archive.Type delegate(const(Archive)) @safe;
      An Archive is only allowed to be done once
      +/
     final void doit() const pure nothrow @trusted
-        in {
-            assert(!_done, "An Archive can only be done once");
-        }
+    in {
+        assert(!_done, "An Archive can only be done once");
+    }
     do {
         auto force_done = cast(bool*)(&_done);
         *force_done = true;

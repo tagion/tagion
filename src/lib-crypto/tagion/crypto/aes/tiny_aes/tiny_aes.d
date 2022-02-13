@@ -104,6 +104,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC) {
                 state.buf_p = buf.ptr;
                 return *state.state_p;
             }
+
             @trusted
             static ref state_t opCall(ref return scope ubyte[BLOCK_SIZE] buf) {
                 State state;

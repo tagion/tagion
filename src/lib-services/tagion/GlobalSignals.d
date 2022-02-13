@@ -100,10 +100,11 @@ shared static this() {
     signal(SIGPIPE, &ignore);
     version (linux) {
         import core.sys.posix.signal;
+
         //        import core.runtime;
 
         sigaction_t sa = void;
-        (cast(byte*) &sa)[0 .. sa.sizeof] = 0;
+        (cast(byte*)&sa)[0 .. sa.sizeof] = 0;
         /// sigfillset( &action.sa_mask ); // block other signals
 
         sa.sa_sigaction = &segment_fault;

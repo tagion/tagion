@@ -384,7 +384,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         enum recorderName = GetLabel!(recorder).name;
         this(RecordFactory manufactor, const Document doc) {
 
-
+            
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!uint;
@@ -457,9 +457,9 @@ class DART : DARTFile { //, HiRPC.Supports {
         }
 
         void set(
-            DART owner,
-            SynchronizationFiber fiber,
-            HiRPC hirpc) @trusted nothrow {
+                DART owner,
+                SynchronizationFiber fiber,
+                HiRPC hirpc) @trusted nothrow {
             import std.conv : emplace;
 
             this.fiber = fiber;
@@ -549,7 +549,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     //
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
                     // The archive fingerprints is removed from the branches
-                    auto set_of_archives=foreign_recoder.getSet;
+                    auto set_of_archives = foreign_recoder.getSet;
                     // const(Archive)[Buffer] set_of_archives;
                     // foreach (a; foreign_recoder.archives[]) {
                     //     set_of_archives[a.fingerprint] = a;
@@ -785,7 +785,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                         auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                         // D!(sector, "%x");
                         while (!dart_A_synchronizer.empty) {
-                            assumeTrusted!({dart_A_synchronizer.call;});
+                            assumeTrusted!({ dart_A_synchronizer.call; });
                         }
                     }
                     foreach (journal_filename; journal_filenames) {
