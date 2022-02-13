@@ -664,7 +664,7 @@ class DART : DARTFile { //, HiRPC.Supports {
             assert(blockfile);
         }
         do {
-            void iterate(const Rims params) {
+            void iterate(const Rims params) @trusted {
                 //
                 // Request Branches or Recorder at rims from the foreign DART.
                 //
@@ -761,7 +761,7 @@ class DART : DARTFile { //, HiRPC.Supports {
             journalfile.close;
         }
         // Adding and Removing archives
-        void local_replay(bool remove)() {
+        void local_replay(bool remove)() @trusted {
             for (uint index = journalfile.masterBlock.root_index; index !is INDEX_NULL;
                     ) {
                 immutable data = journalfile.load(index);
