@@ -1,6 +1,6 @@
 module tagion.utils.Statistic;
 
-import std.typecons: Tuple;
+import std.typecons : Tuple;
 
 struct Statistic(T) {
     //    enum Limits : double { MEAN=10, SUM=100 }
@@ -12,7 +12,7 @@ struct Statistic(T) {
     }
 
     ref Statistic opCall(const T value) {
-        import std.algorithm.comparison: min, max;
+        import std.algorithm.comparison : min, max;
 
         _min = min(_min, value);
         _max = max(_max, value);
@@ -28,14 +28,13 @@ struct Statistic(T) {
         immutable mx = sum / N;
         immutable mx2 = mx * mx;
         immutable M = sum2 + N * mx2 - 2 * mx * sum;
-        import std.math: sqrt;
+        import std.math : sqrt;
 
         return Result(sqrt(M / (N - 1)), mx, N, _min, _max);
     }
 }
 
-unittest
-{
+unittest {
     Statistic!uint s;
     foreach (size; [10, 15, 17, 6, 8, 12, 18]) {
         s(size);

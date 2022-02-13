@@ -2,7 +2,7 @@
 .SUFFIXES:
 .SECONDARY:
 .ONESHELL:
-#.SECONDEXPANSION:
+.SECONDEXPANSION:
 
 # Common variables
 # Override PRECMD= to see output of all commands
@@ -117,3 +117,8 @@ include $(DTUB)/clean.mk
 # Help
 #
 include $(DTUB)/help.mk
+
+run: tagionwave
+	cd $(DBIN);
+	rm -fR data; mkdir data;
+	./tagionwave -N 7

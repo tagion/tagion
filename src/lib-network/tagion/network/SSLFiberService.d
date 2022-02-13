@@ -1,21 +1,22 @@
 module tagion.network.SSLFiberService;
 
-import std.string: format;
-import core.thread: Thread, Fiber;
+import std.string : format;
+import core.thread : Thread, Fiber;
 import core.time; // : dur, Duration, MonoTime;
-import std.socket: SocketSet, SocketException, Socket, AddressFamily;
+import std.socket : SocketSet, SocketException, Socket, AddressFamily;
 import std.exception;
-import std.socket: SocketShutdown;
+import std.socket : SocketShutdown;
 import std.concurrency;
 
 import tagion.network.SSLSocket;
 import tagion.network.SSLOptions;
 import tagion.network.NetworkExceptions : check;
 import tagion.basic.Message;
-import tagion.basic.Basic: Buffer;
+import tagion.basic.Basic : Buffer;
 import tagion.basic.Logger;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.TagionExceptions : taskfailure, fatal;
+
 //import tagion.services.LoggerService;
 import LEB128 = tagion.utils.LEB128;
 
@@ -224,7 +225,7 @@ class SSLFiberService {
      +/
     @trusted
     void execute(ref SocketSet socket_set) {
-        import std.socket: SocketOSException;
+        import std.socket : SocketOSException;
 
         foreach (key, ref fiber; active_fibers) {
             void removeFiber() {
@@ -377,6 +378,8 @@ class SSLFiberService {
                             size += rec_data_size;
                             while (leb128_index < size) {
 
+                                
+
                                     .check(leb128_index < LEN_MAX, message("Invalid size of len128 length field %d", leb128_index));
                                 if ((leb128_len_data[leb128_index++] & 0x80) is 0) {
                                     // End of LEB128 size when bit 7 is 0
@@ -462,7 +465,7 @@ class SSLFiberService {
          shutdown the service socket
          +/
         void shutdown() {
-            import std.socket: SocketShutdown;
+            import std.socket : SocketShutdown;
 
             if (client) {
                 client.shutdown(SocketShutdown.BOTH);
@@ -495,45 +498,45 @@ class SSLFiberService {
     @trusted
     static void responseService(immutable(string) task_name, shared Response handler) nothrow {
         try {
-        import tagion.basic.Basic: Control;
-        import tagion.communication.HiRPC;
-        import tagion.hibon.Document;
+            import tagion.basic.Basic : Control;
+            import tagion.communication.HiRPC;
+            import tagion.hibon.Document;
 
-        log.register(task_name);
-        ownerTid.send(Control.LIVE);
-        bool stop;
-        scope (exit) {
-            ownerTid.send(Control.END);
-        }
+            log.register(task_name);
+            ownerTid.send(Control.LIVE);
+            bool stop;
+            scope (exit) {
+                ownerTid.send(Control.END);
+            }
 
-        void handleState(Control ts) {
-            with (Control) {
-                switch (ts) {
-                case STOP:
-                    stop = true;
-                    break;
-                default:
-                    log.error("Bad Control command %s", ts);
+            void handleState(Control ts) {
+                with (Control) {
+                    switch (ts) {
+                    case STOP:
+                        stop = true;
+                        break;
+                    default:
+                        log.error("Bad Control command %s", ts);
+                    }
                 }
             }
-        }
 
-        HiRPC hirpc = HiRPC(null);
+            HiRPC hirpc = HiRPC(null);
 
-        void serviceResponse(Buffer data) {
-            const doc = Document(data);
-            const hirpc_received = hirpc.receive(doc);
-            shared shared_data = cast(shared) data;
-            handler.set(hirpc_received.response.id, shared_data);
-        }
+            void serviceResponse(Buffer data) {
+                const doc = Document(data);
+                const hirpc_received = hirpc.receive(doc);
+                shared shared_data = cast(shared) data;
+                handler.set(hirpc_received.response.id, shared_data);
+            }
 
-        while (!stop) {
-            receive(
-                    &handleState,
-                    &serviceResponse,
-                    &taskfailure
-            );
-        }
+            while (!stop) {
+                receive(
+                        &handleState,
+                        &serviceResponse,
+                        &taskfailure
+                );
+            }
         }
         catch (Throwable t) {
             fatal(t);

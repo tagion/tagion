@@ -1,34 +1,34 @@
 module tagion.dart.DART;
 
 import std.stdio;
-import core.thread: Fiber;
-import core.exception: RangeError;
-import std.conv: ConvException;
+import core.thread : Fiber;
+import core.exception : RangeError;
+import std.conv : ConvException;
 
 //import std.stdio;
 
-import std.traits: EnumMembers;
-import std.format: format;
+import std.traits : EnumMembers;
+import std.format : format;
 
-import tagion.basic.Basic: Buffer, FUNCTION_NAME, nameOf;
+import tagion.basic.Basic : Buffer, FUNCTION_NAME, nameOf;
 import tagion.Keywords;
-import tagion.hibon.HiBON: HiBON;
-import tagion.hibon.Document: Document;
-import tagion.hibon.HiBONRecord: HiBONRecord, RecordType, GetLabel;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, GetLabel;
 import tagion.hibon.HiBONJSON;
 
 import tagion.dart.DARTFile;
-import tagion.crypto.SecureInterfaceNet: HashNet, SecureNet;
-import tagion.communication.HiRPC: HiRPC, HiRPCMethod, Callers;
-import tagion.basic.Basic: EnumText;
+import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
+import tagion.communication.HiRPC : HiRPC, HiRPCMethod, Callers;
+import tagion.basic.Basic : EnumText;
 
-import tagion.utils.Miscellaneous: toHexString, cutHex;
-import tagion.Keywords: isValid;
+import tagion.utils.Miscellaneous : toHexString, cutHex;
+import tagion.Keywords : isValid;
 
 //import tagion.Base : Check;
-import tagion.basic.TagionExceptions: Check;
-import tagion.dart.BlockFile: BlockFile;
-import tagion.dart.Recorder: RecordFactory, Archive;
+import tagion.basic.TagionExceptions : Check;
+import tagion.dart.BlockFile : BlockFile;
+import tagion.dart.Recorder : RecordFactory, Archive;
 
 alias hex = toHexString;
 
@@ -462,7 +462,7 @@ class DART : DARTFile { //, HiRPC.Supports {
      +     else the response return is marked empty
      +/
     const(HiRPCSender) opCall(ref scope const(HiRPCReceiver) received, const bool read_only = true) {
-        import std.conv: to;
+        import std.conv : to;
 
         const scope method = received.method;
         switch (method.name) {
@@ -518,6 +518,8 @@ class DART : DARTFile { //, HiRPC.Supports {
         enum indexName = GetLabel!(index).name;
         enum recorderName = GetLabel!(recorder).name;
         this(RecordFactory manufactor, const Document doc) {
+
+            
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!uint;
@@ -602,7 +604,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         }
 
         @trusted void set(DART owner, SynchronizationFiber fiber, HiRPC hirpc) nothrow {
-            import std.conv: emplace;
+            import std.conv : emplace;
 
             this.fiber = fiber;
             this.owner = owner;
@@ -762,7 +764,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         // Adding and Removing archives
         void local_replay(bool remove)() {
             for (uint index = journalfile.masterBlock.root_index; index !is INDEX_NULL;
-                    ) {
+                ) {
                 immutable data = journalfile.load(index);
                 scope doc = Document(data);
                 // index=doc[Params.index].get!uint;
@@ -826,9 +828,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                 }
 
                 immutable foreign_doc = request.toDoc;
-                (() @trusted {
-                    fiber.yield;
-                })();
+                (() @trusted { fiber.yield; })();
                 // Here a yield loop should be implement to poll for response from the foriegn DART
                 // A timeout should also be implemented in this poll loop
                 const response_doc = send_request_to_foreign_dart(foreign_doc);
@@ -845,8 +845,8 @@ class DART : DARTFile { //, HiRPC.Supports {
     unittest {
         import tagion.utils.Random;
         import tagion.dart.BlockFile;
-        import tagion.basic.Basic: tempfile;
-        import tagion.dart.DARTFakeNet: DARTFakeNet;
+        import tagion.basic.Basic : tempfile;
+        import tagion.dart.DARTFakeNet : DARTFakeNet;
 
         auto net = new DARTFakeNet("very_secret");
 
@@ -857,7 +857,7 @@ class DART : DARTFile { //, HiRPC.Supports {
 
         { // Remote Synchronization test
 
-            import std.file: remove;
+            import std.file : remove;
 
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 1000;
@@ -935,9 +935,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                         auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                         // D!(sector, "%x");
                         while (!dart_A_synchronizer.empty) {
-                            (() @trusted {
-                                dart_A_synchronizer.call;
-                            })();
+                            (() @trusted { dart_A_synchronizer.call; })();
                         }
                     }
                     foreach (journal_filename; journal_filenames) {
@@ -999,9 +997,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted {
-                            dart_A_synchronizer.call;
-                        })();
+                        (() @trusted { dart_A_synchronizer.call; })();
                     }
                 }
                 foreach (journal_filename; journal_filenames) {
@@ -1057,9 +1053,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted {
-                            dart_A_synchronizer.call;
-                        })();
+                        (() @trusted { dart_A_synchronizer.call; })();
                     }
                 }
                 foreach (journal_filename; journal_filenames) {
@@ -1110,9 +1104,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted {
-                            dart_A_synchronizer.call;
-                        })();
+                        (() @trusted { dart_A_synchronizer.call; })();
                     }
                 }
 
@@ -1165,9 +1157,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted {
-                            dart_A_synchronizer.call;
-                        })();
+                        (() @trusted { dart_A_synchronizer.call; })();
                     }
                 }
 
@@ -1221,9 +1211,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted {
-                            dart_A_synchronizer.call;
-                        })();
+                        (() @trusted { dart_A_synchronizer.call; })();
                     }
                 }
 
@@ -1277,9 +1265,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted {
-                            dart_A_synchronizer.call;
-                        })();
+                        (() @trusted { dart_A_synchronizer.call; })();
                     }
                 }
 
@@ -1332,9 +1318,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted {
-                            dart_A_synchronizer.call;
-                        })();
+                        (() @trusted { dart_A_synchronizer.call; })();
                     }
                 }
 

@@ -77,14 +77,14 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                 log("Send stop to %s", opts.transcript.task_name);
                 net.transcript_tid.send(Control.STOP);
                 receive((Control ctrl) {
-                        if (ctrl is Control.END) {
-                            log("Closed monitor");
-                        }
-                        else {
-                            log.warning("Unexpected control code %s", ctrl);
-                        }
+                    if (ctrl is Control.END) {
+                        log("Closed monitor");
+                    }
+                    else {
+                        log.warning("Unexpected control code %s", ctrl);
+                    }
 
-                    }, (immutable(TaskFailure) t) { ownerTid.send(t); });
+                }, (immutable(TaskFailure) t) { ownerTid.send(t); });
             }
 
             if (net.callbacks) {
@@ -96,13 +96,13 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
                 transaction_socket_tid.send(Control.STOP);
                 receive((Control ctrl) {
-                        if (ctrl is Control.END) {
-                            log("Closed monitor");
-                        }
-                        else {
-                            log.warning("Unexpected control code %s", ctrl);
-                        }
-                    }, (immutable(TaskFailure) t) { ownerTid.send(t); });
+                    if (ctrl is Control.END) {
+                        log("Closed monitor");
+                    }
+                    else {
+                        log.warning("Unexpected control code %s", ctrl);
+                    }
+                }, (immutable(TaskFailure) t) { ownerTid.send(t); });
             }
 
             if (monitor_socket_tid != monitor_socket_tid.init) {
@@ -110,13 +110,13 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                 monitor_socket_tid.send(Control.STOP);
 
                 receive((Control ctrl) {
-                        if (ctrl is Control.END) {
-                            log("Closed monitor");
-                        }
-                        else {
-                            log.warning("Unexpected control code %s", ctrl);
-                        }
-                    }, (immutable(TaskFailure) t) { ownerTid.send(t); });
+                    if (ctrl is Control.END) {
+                        log("Closed monitor");
+                    }
+                    else {
+                        log.warning("Unexpected control code %s", ctrl);
+                    }
+                }, (immutable(TaskFailure) t) { ownerTid.send(t); });
             }
 
         }
@@ -145,10 +145,10 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         // getTids(tids);
         net.set(pkeys);
         if (((opts.node_id < opts.monitor.max) || (opts.monitor.max == 0))
-            && (opts.monitor.port >= opts.min_port)) {
+                && (opts.monitor.port >= opts.min_port)) {
             monitor_socket_tid = spawn(&monitorServiceTask, opts);
             Event.callbacks = new MonitorCallBacks(monitor_socket_tid, opts.node_id,
-                net.globalNodeId(net.pubkey), opts.monitor.dataformat);
+                    net.globalNodeId(net.pubkey), opts.monitor.dataformat);
 
             if (receiveOnly!Control is Control.LIVE) {
                 log("Monitor started");
@@ -187,7 +187,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         }
 
         Event.scriptcallbacks = new ScriptCallbacks(&transcriptServiceTask,
-            opts.transcript.task_name, opts.dart.task_name);
+                opts.transcript.task_name, opts.dart.task_name);
         scope (exit) {
             Event.scriptcallbacks.stop;
         }
@@ -223,7 +223,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             timeout_count = 0;
             net.time = net.time + 100;
             log("\n*\n*\n*\n******* receive %s [%s] %s", opts.node_name,
-                opts.node_id, doc.data.length);
+                    opts.node_id, doc.data.length);
             net.receive(doc);
         }
 
@@ -242,7 +242,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                     auto mother = own_node.event;
                     immutable mother_hash = mother.fingerprint;
                     immutable ebody = immutable(EventBody)(payload,
-                        mother_hash, null, net.time, mother.altitude + 1);
+                            mother_hash, null, net.time, mother.altitude + 1);
                     immutable epack = buildEventPackage(net, ebody);
                     event = hashgraph.registerEvent(epack);
                 }
@@ -275,13 +275,13 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
         void controller(Control ctrl) {
             with (Control) switch (ctrl) {
-                case STOP:
-                    stop = true;
-                    log("##### Stop %s", opts.node_name);
-                    break;
-                default:
-                    log.error("Unsupported control %s", ctrl);
-                }
+            case STOP:
+                stop = true;
+                log("##### Stop %s", opts.node_name);
+                break;
+            default:
+                log.error("Unsupported control %s", ctrl);
+            }
         }
 
         void _taskfailure(immutable(TaskFailure) t) {
@@ -293,9 +293,9 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
 
         static if (has_random_seed) {
             void sequential(uint time, uint random)
-                in {
-                    assert(opts.sequential);
-                }
+            in {
+                assert(opts.sequential);
+            }
             do {
                 net_random.random.seed(random);
                 net_random.time = time;
@@ -309,7 +309,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
         while (!stop) {
             if (opts.sequential) {
                 immutable message_received = receiveTimeout(opts.timeout.msecs, &receive_payload,
-                    &controller, &sequential, &receive_buffer, &_taskfailure,);
+                        &controller, &sequential, &receive_buffer, &_taskfailure,);
                 if (!message_received) {
                     log("TIME OUT");
                     timeout_count++;
@@ -320,7 +320,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
             }
             else {
                 immutable message_received = receiveTimeout(opts.timeout.msecs,
-                    &receive_payload, &controller, &receive_buffer, &_taskfailure,);
+                        &receive_payload, &controller, &receive_buffer, &_taskfailure,);
                 if (!message_received) {
                     log("TIME OUT");
                     timeout_count++;

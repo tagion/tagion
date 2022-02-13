@@ -17,10 +17,10 @@ size_t word_bitindex(const size_t i) pure nothrow @nogc @safe {
 @safe
 struct BitMask {
     import std.format;
-    import std.algorithm: filter, each, max;
-    import std.range: enumerate;
-    import std.range.primitives: isInputRange;
-    import std.traits: isSomeString;
+    import std.algorithm : filter, each, max;
+    import std.range : enumerate;
+    import std.range.primitives : isInputRange;
+    import std.traits : isSomeString;
 
     enum absolute_mask = 0x1000;
     private size_t[] mask;
@@ -179,7 +179,7 @@ struct BitMask {
 
     BitMask opBinary(string op)(scope const BitMask rhs) const pure nothrow
     if (op == "-" || op == "&" || op == "|" || op == "^") {
-        import std.algorithm.comparison: max, min;
+        import std.algorithm.comparison : max, min;
 
         BitMask result;
         const max_length = max(mask.length, rhs.mask.length);
@@ -344,9 +344,9 @@ struct BitMask {
 
     @trusted
     unittest {
-        import std.algorithm: equal;
-        import std.algorithm.sorting: merge, sort;
-        import std.algorithm.iteration: uniq, fold;
+        import std.algorithm : equal;
+        import std.algorithm.sorting : merge, sort;
+        import std.algorithm.iteration : uniq, fold;
 
         { // Bit assign
             BitMask a;

@@ -1,11 +1,9 @@
 module tagion.utils.Queue;
 
-@safe class Queue(T)
-{
+@safe class Queue(T) {
     private Element _head;
     private Element _tail;
-    static class Element
-    {
+    static class Element {
         Element _next;
         Element _previous;
         private T data;
@@ -25,8 +23,7 @@ module tagion.utils.Queue;
             _head._previous = element;
             _head = element;
         }
-        else
-        {
+        else {
             _head = element;
             _tail = element;
         }
@@ -84,18 +81,15 @@ module tagion.utils.Queue;
         }
     }
 
-    @nogc bool empty() const pure nothrow
-    {
+    @nogc bool empty() const pure nothrow {
         return _head is null;
     }
 
-    Range opSlice()
-    {
+    Range opSlice() {
         return Range(this);
     }
 
-    struct Range
-    {
+    struct Range {
         private Element entry;
         private Queue owner;
         this(Queue owner) pure nothrow {
@@ -119,16 +113,14 @@ module tagion.utils.Queue;
             }
         }
 
-        Range save() nothrow
-        {
+        Range save() nothrow {
             Range result;
             result.owner = owner;
             result.entry = entry;
             return result;
         }
 
-        void remove()
-        {
+        void remove() {
             owner.remove(entry);
         }
     }

@@ -1,17 +1,17 @@
 module tagion.basic.Basic;
 
-private import std.string: format, join, strip;
+private import std.string : format, join, strip;
 private import std.traits;
-private import std.exception: assumeUnique;
-import std.bitmanip: BitArray;
-import std.meta: AliasSeq;
-import std.range.primitives: isInputRange;
+private import std.exception : assumeUnique;
+import std.bitmanip : BitArray;
+import std.meta : AliasSeq;
+import std.range.primitives : isInputRange;
 
 enum this_dot = "this.";
 
 import std.conv;
 
-import std.typecons: Typedef, TypedefType;
+import std.typecons : Typedef, TypedefType;
 
 enum BufferType {
     PUBKEY, /// Public key buffer type
@@ -170,7 +170,7 @@ enum nameOf(alias nameType) = __traits(identifier, nameType);
  function name of the current function
 +/
 mixin template FUNCTION_NAME() {
-    import tagion.basic.Basic: basename;
+    import tagion.basic.Basic : basename;
 
     enum __FUNCTION_NAME__ = basename!(__FUNCTION__)[0 .. $ - 1];
 }
@@ -239,7 +239,7 @@ enum Control {
     if (n == 0) {
         return -1;
     }
-    import core.bitop: bsr;
+    import core.bitop : bsr;
 
     return bsr(n);
 }
@@ -259,7 +259,7 @@ unittest {
 +/
 @trusted
 string tempfile() {
-    import std.file: deleteme;
+    import std.file : deleteme;
 
     int dummy;
     return deleteme ~ (&dummy).to!string;
@@ -328,14 +328,14 @@ enum DataFormat {
     dartdb = "drt", // DART data-base
 }
 
-import std.typecons: Tuple;
+import std.typecons : Tuple;
 
 alias FileNames = Tuple!(string, "tempdir", string, "filename", string, "fullpath");
 const(FileNames) fileId(T)(string ext, string prefix = null) @safe {
-    import std.process: environment, thisProcessID;
+    import std.process : environment, thisProcessID;
     import std.file;
     import std.path;
-    import std.array: join;
+    import std.array : join;
 
     //import std.traits;
     FileNames names;
@@ -405,13 +405,13 @@ template doFront(Range) if (isInputRange!Range) {
     }
 }
 
-
 enum isEqual(T1, T2) = is(T1 == T2);
 //enum isUnqualEqual(T1, T2) = is(Unqual!T1 == T2);
 
 unittest {
     import std.traits : Unqual;
     import std.meta : ApplyLeft, ApplyRight;
+
     static assert(isEqual!(int, int));
     static assert(!isEqual!(int, long));
     alias U = immutable(int);
@@ -421,7 +421,7 @@ unittest {
 }
 
 auto eatOne(R)(ref R r) if (isInputRange!R) {
-    scope(exit) {
+    scope (exit) {
         r.popFront;
     }
     return r.front;

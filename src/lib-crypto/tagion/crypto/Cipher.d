@@ -16,6 +16,7 @@ struct Cipher {
     import tagion.crypto.aes.AESCrypto : AESCrypto;
     import tagion.basic.ConsensusExceptions : ConsensusFailCode, SecurityConsensusException;
     import std.digest.crc : crc32Of;
+
     alias AES = AESCrypto!256;
     enum CRC_SIZE = crc32Of.length;
 
@@ -37,10 +38,10 @@ struct Cipher {
 
     static const(CipherDocument) encrypt(const(SecureNet) net, const(Pubkey) pubkey, const(Document) msg) {
 
-//        immutable(ubyte[]) create_secret_key() {
+        //        immutable(ubyte[]) create_secret_key() {
         scope ubyte[32] secret_key_alloc;
-        scope ubyte[] secret_key=secret_key_alloc;
-        scope(exit) {
+        scope ubyte[] secret_key = secret_key_alloc;
+        scope (exit) {
             scramble(secret_key);
         }
         do {
@@ -55,16 +56,16 @@ struct Cipher {
         scramble(nonce);
         result.nonce = nonce.idup;
         // Appand CRC
-        auto ciphermsg = new ubyte[AES.enclength(msg.data.length+CRC_SIZE)];
+        auto ciphermsg = new ubyte[AES.enclength(msg.data.length + CRC_SIZE)];
 
         // writefln("msg.size = %d", msg.size);
         // Put random padding to in the last block
-        auto last_block =ciphermsg[$-AES.BLOCK_SIZE+CRC_SIZE..$];
+        auto last_block = ciphermsg[$ - AES.BLOCK_SIZE + CRC_SIZE .. $];
         scramble(last_block);
-        ciphermsg[0..msg.data.length] = msg.data;
+        ciphermsg[0 .. msg.data.length] = msg.data;
         const crc = msg.data.crc32Of;
-//        writefln("crc %s", crc);
-        ciphermsg[msg.data.length..msg.data.length+CRC_SIZE] = crc;
+        //        writefln("crc %s", crc);
+        ciphermsg[msg.data.length .. msg.data.length + CRC_SIZE] = crc;
 
         scope sharedECCKey = net.ECDHSecret(secret_key, pubkey);
 
@@ -74,6 +75,7 @@ struct Cipher {
         Buffer get_ciphermsg() @trusted {
             return assumeUnique(ciphermsg);
         }
+
         result.ciphermsg = get_ciphermsg;
         return result;
     }
@@ -81,7 +83,6 @@ struct Cipher {
     static const(CipherDocument) encrypt(const(SecureNet) net, const(Document) msg) {
         return encrypt(net, net.pubkey, msg);
     }
-
 
     static const(Document) decrypt(const(SecureNet) net, const(CipherDocument) cipher_doc) {
         scope sharedECCKey = net.ECDHSecret(cipher_doc.cipherPubkey);
@@ -92,29 +93,30 @@ struct Cipher {
         Buffer get_clearmsg() @trusted {
             return assumeUnique(clearmsg);
         }
-//        import LEB128 = tagion.utils.LEB128;
+        //        import LEB128 = tagion.utils.LEB128;
         immutable data = get_clearmsg;
         const result = Document(data);
         immutable full_size = result.full_size;
-//        writefln("full_size=%d data.length=%d", full_size, data.length);
-        check(full_size+CRC_SIZE <= data.length && full_size !is 0, ConsensusFailCode.CIPHER_DECRYPT_ERROR);
+        //        writefln("full_size=%d data.length=%d", full_size, data.length);
+        check(full_size + CRC_SIZE <= data.length && full_size !is 0, ConsensusFailCode.CIPHER_DECRYPT_ERROR);
 
-        const crc = data[0..full_size].crc32Of;
+        const crc = data[0 .. full_size].crc32Of;
         // writefln("crc calc   %s", crc);
         // writefln("crc result %s", data[full_size..full_size+CRC_SIZE]);
 
-        check(data[0..full_size].crc32Of == crc, ConsensusFailCode.CIPHER_DECRYPT_CRC_ERROR);
+        check(data[0 .. full_size].crc32Of == crc, ConsensusFailCode.CIPHER_DECRYPT_CRC_ERROR);
 
         // writefln("data size %d",  LEB128.decode!uint(data).value);
         return result;
     }
 
     unittest {
-        import tagion.utils.Miscellaneous: toHexString, decode;
+        import tagion.utils.Miscellaneous : toHexString, decode;
         import tagion.crypto.SecureNet : StdSecureNet;
         import tagion.hibon.HiBON : HiBON;
         import tagion.hibon.Document : Document;
-        import std.algorithm.searching: all, any;
+        import std.algorithm.searching : all, any;
+
         immutable passphrase = "Secret pass word";
         auto net = new StdSecureNet;
         net.generateKeyPair(passphrase);
@@ -126,7 +128,7 @@ struct Cipher {
         const secret_doc = Document(hibon);
 
         { // Encrypt and Decrypt secrte message
-//            writeln("Good");
+            //            writeln("Good");
             auto dummy_net = new StdSecureNet;
             const secret_cipher_doc = Cipher.encrypt(dummy_net, net.pubkey, secret_doc);
             const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
@@ -135,36 +137,37 @@ struct Cipher {
         }
 
         { // You of the wrong privat-key
-//            writeln("Bad");
+            //            writeln("Bad");
             auto dummy_net = new StdSecureNet;
             auto wrong_net = new StdSecureNet;
             immutable wrong_passphrase = "wrong word";
             wrong_net.generateKeyPair(wrong_passphrase);
             bool[3] passed;
             do {
-            try {
-            const secret_cipher_doc = Cipher.encrypt(dummy_net, wrong_net.pubkey, secret_doc);
-                const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
-//                writefln("encrypted_doc.full_size %d", encrypted_doc.full_size);
-                passed[0] = true;
-                assert(!encrypted_doc.isInorder);
-                passed[1] = true;
-                // assert(encrypted_doc.full_size != secret_doc.full_size);
-                // passed[2] = true;
+                try {
+                    const secret_cipher_doc = Cipher.encrypt(dummy_net, wrong_net.pubkey, secret_doc);
+                    const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
+                    //                writefln("encrypted_doc.full_size %d", encrypted_doc.full_size);
+                    passed[0] = true;
+                    assert(!encrypted_doc.isInorder);
+                    passed[1] = true;
+                    // assert(encrypted_doc.full_size != secret_doc.full_size);
+                    // passed[2] = true;
+                }
+                catch (SecurityConsensusException e) {
+                    passed[2] = true;
+                    //                passed = true;
+                }
+                //            writefln("any %s ", passed); //(a => !a));
+                //            writefln("any %s ", passed[].any!(a => !a));
             }
-            catch (SecurityConsensusException e) {
-                passed[2] = true;
-//                passed = true;
-            }
-//            writefln("any %s ", passed); //(a => !a));
-//            writefln("any %s ", passed[].any!(a => !a));
-            } while (passed[].any!q{!a});
+            while (passed[].any!q{!a});
 
-//            assert(passed);
+            //            assert(passed);
         }
 
         { // Encrypt and Decrypt secrte message with owner privat-key
-//            writeln("Good 2");
+            //            writeln("Good 2");
             const secret_cipher_doc = Cipher.encrypt(net, secret_doc);
             const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
             assert(encrypted_doc["text"].get!string == some_secret_message);

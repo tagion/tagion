@@ -343,11 +343,13 @@ int main(string[] args) {
         bool git_repos;
         auto main_args = getopt(gits_flags,
                 std.getopt.config.caseSensitive,
-                std.getopt.config.bundling,// "version",   "display the version",     &version_switch,
+                std.getopt.config.bundling, // "version",   "display the version",     &version_switch,
                 //  "gitlog:g", format("Git log file %s", git_log_json_file), &git_log_json_file,
                 "config", "Add the git aliases to all the submodules", &git_config_flags,
-                "repos", format("List the submodules included in the %s", program), &git_repos,//        "date|d", format("Recorde the date in the checkout default %s", set_date), &set_date
-        
+                "repos", format("List the submodules included in the %s", program), &git_repos, //        "date|d", format("Recorde the date in the checkout default %s", set_date), &set_date
+
+                
+
         );
 
         if (main_args.helpWanted) {
