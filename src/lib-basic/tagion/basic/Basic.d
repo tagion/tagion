@@ -87,18 +87,18 @@ enum BITARRAY_MESSAGE = "Use tagion.utils.BitMask instead";
 /++
  Creates a new clean bitarray
 +/
-deprecated(BITARRAY_MESSAGE) void bitarray_clear(out BitArray bits, const size_t length) @trusted pure nothrow {
+version (none) deprecated(BITARRAY_MESSAGE) void bitarray_clear(out BitArray bits, const size_t length) @trusted pure nothrow {
     bits.length = length;
 }
 
 /++
  Change the size of the bitarray
 +/
-deprecated(BITARRAY_MESSAGE) void bitarray_change(ref scope BitArray bits, const size_t length) @trusted {
+version (none) deprecated(BITARRAY_MESSAGE) void bitarray_change(ref scope BitArray bits, const size_t length) @trusted {
     bits.length = length;
 }
 
-unittest {
+version (none) unittest {
     {
         BitArray test;
         immutable uint size = 7;
@@ -397,11 +397,26 @@ static unittest {
 */
 template doFront(Range) if (isInputRange!Range) {
     alias T = ForeachType!Range;
-    T doFront(Range r) {
+    import std.range;
+
+    T doFront(Range r) @safe {
         if (r.empty) {
             return T.init;
         }
         return r.front;
+    }
+}
+
+@safe
+unittest {
+    {
+        int[] a;
+        static assert(isInputRange!(typeof(a)));
+        assert(a.doFront is int.init);
+    }
+    {
+        const a = [1, 2, 3];
+        assert(a.doFront is a[0]);
     }
 }
 
@@ -421,8 +436,127 @@ unittest {
 }
 
 auto eatOne(R)(ref R r) if (isInputRange!R) {
+    import std.range;
+
     scope (exit) {
         r.popFront;
     }
     return r.front;
+}
+
+unittest {
+    const(int)[] a = [1, 2, 3];
+    pragma(msg, typeof(a));
+    assert(eatOne(a) == 1);
+    assert(eatOne(a) == 2);
+    assert(eatOne(a) == 3);
+}
+
+/// Calling any system functions.
+template assumeTrusted(alias F) {
+    import std.traits;
+
+    static assert(isUnsafe!F);
+
+    auto assumeTrusted(Args...)(Args args) @trusted {
+        return F(args);
+    }
+}
+
+version (none) template assumeTrusted1(alias F) {
+    import std.traits;
+
+    //    static assert(isUnsafe!F);
+    pragma(msg, "assumeTrusted1 ", F.stringof);
+    pragma(msg, "assumeTrusted1 ", isCallable!F);
+    pragma(msg, "assumeTrusted1 ", is(F == function));
+    // alias Params=Parameters!(typeof(F));
+    // alias ParamNames=ParameterIdentifierTuple!F;
+
+    // writefln("code=%s", code);
+    // writefln("code=%s", code.splitter!("a == b",Yes.keepSeparators)(')'));
+    // writefln("part=%s", code.splitter!("a == b",Yes.keepSeparators)(')').front);
+
+    enum code = format!q{
+        auto %s @trusted {
+            %s
+        }
+    }(F.stringof, "x");
+    pragma(msg, code);
+    // auto assumeTrusted(Args...)(Args args) @trusted {
+    //     return F(args);
+    // }
+}
+
+T assumeTrusted1(T)(lazy T expr) @trusted {
+    //     import std.traits;
+    // //    pragma(msg, "assumeTrusted1 ", F.stringof);
+    //     return (() @trusted => expr)();
+    // //    static assert(isUnsafe!F);
+    //     // pragma(msg, "assumeTrusted1 ", isCallable!F);
+    //     // pragma(msg, "assumeTrusted1 ", is(F == function));
+    //     // auto assumeTrusted(Args...)(Args args) @trusted {
+    //     //     return F(args);
+    //     // }
+    return T.init;
+}
+
+import std.concurrency;
+
+static int x_send(Args...)(Tid tid, Args args) @system {
+    return 42;
+}
+
+///
+@safe
+unittest {
+    auto bar(int b) @system {
+        return b + 1;
+    }
+
+    const b = assumeTrusted!bar(5);
+    assert(b == 6);
+
+    // applicable to 0-ary function
+    static auto foo() @system {
+        return 3;
+    }
+
+    const a = assumeTrusted!foo;
+    assert(a == 3);
+
+    // // It can be used for alias
+    alias trustedBar = assumeTrusted!bar;
+    alias trustedFoo = assumeTrusted!foo;
+    //    assert(is(typeof(trustedFoo) == function));
+
+    import core.stdc.stdlib;
+
+    auto ptr = assumeTrusted!malloc(100);
+    assert(ptr !is null);
+    ptr.assumeTrusted!free;
+
+    ptr = assumeTrusted!calloc(10, 100);
+    ptr.assumeTrusted!free;
+
+    alias lambda = assumeTrusted!((int a) @system => a * 3);
+
+    assert(lambda(42) == 3 * 42);
+
+    {
+        import std.concurrency;
+
+        static void task() @safe {
+            const result = 2 * assumeTrusted!(receiveOnly!int);
+            assumeTrusted!({ ownerTid.send(result); });
+            alias trusted_owner = assumeTrusted!(ownerTid);
+            alias trusted_send = assumeTrusted!(send!(string));
+            trusted_send(trusted_owner, "Hello");
+        }
+
+        auto tid = assumeTrusted!({ return spawn(&task); });
+        assumeTrusted!({ send(tid, 21); });
+        assert(assumeTrusted!(receiveOnly!(const(int))) == 21 * 2);
+        assert(assumeTrusted!(receiveOnly!(string)) == "Hello");
+    }
 }
