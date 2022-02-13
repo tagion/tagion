@@ -1,16 +1,19 @@
 module tagion.utils.Miscellaneous;
 
-import tagion.basic.Basic: Buffer, isBufferType;
+import tagion.basic.Basic : Buffer, isBufferType;
 import std.exception;
+import std.range.primitives : isInputRange;
+import std.algorithm : map;
+import std.array : array;
+import std.algorithm.iteration : fold, cumulativeFold;
 
 @trusted
-string toHexString(bool UCASE = false, BUF)(BUF buffer) pure nothrow 
-        if (isBufferType!BUF) {
+string toHexString(bool UCASE = false, BUF)(BUF buffer) pure nothrow
+if (isBufferType!BUF) {
     static if (UCASE) {
         enum hexdigits = "0123456789ABCDEF";
     }
-    else
-    {
+    else {
         enum hexdigits = "0123456789abcdef";
     }
     uint i = 0;
@@ -25,8 +28,7 @@ string toHexString(bool UCASE = false, BUF)(BUF buffer) pure nothrow
 
 alias hex = toHexString;
 
-unittest
-{
+unittest {
     {
         enum value = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90";
         auto buf = decode(value);
@@ -43,8 +45,7 @@ unittest
 }
 
 @safe immutable(ubyte[]) decode(const(char[]) hex) pure nothrow
-in
-{
+in {
     assert(hex.length % 2 == 0);
 }
 do {
@@ -106,13 +107,27 @@ string cutHex(bool UCASE = false, BUF)(BUF buf) pure if (isBufferType!BUF) {
 }
 
 @safe
-Buffer xor(const(ubyte[]) a, const(ubyte[]) b) pure nothrow
+protected Buffer _xor(const(ubyte[]) a, const(ubyte[]) b) pure nothrow
 in {
     assert(a.length == b.length);
     assert(a.length % ulong.sizeof == 0);
 }
 do {
-    import tagion.utils.Gene: gene_xor;
+    import tagion.utils.Gene : gene_xor;
+
+    const _a = cast(const(ulong[])) a;
+    const _b = cast(const(ulong[])) b;
+    return cast(Buffer) gene_xor(_a, _b);
+}
+
+@safe
+const(Buffer) xor(scope const(ubyte[]) a, scope const(ubyte[]) b) pure nothrow
+in {
+    assert(a.length == b.length);
+    assert(a.length % ulong.sizeof == 0);
+}
+do {
+    import tagion.utils.Gene : gene_xor;
 
     const _a = cast(const(ulong[])) a;
     const _b = cast(const(ulong[])) b;
@@ -126,7 +141,7 @@ in {
     assert(a.length % ulong.sizeof == 0);
 }
 do {
-    import tagion.utils.Gene: gene_xor;
+    import tagion.utils.Gene : gene_xor;
 
     const _a = cast(const(ulong[])) a;
     const _b = cast(const(ulong[])) b;
@@ -135,8 +150,49 @@ do {
 }
 
 @safe
-Buffer xor(Range)(Range range) pure {
-    import std.algorithm.iteration: fold;
+Buffer xor(Range)(scope Range range) pure if (isInputRange!Range) {
+    import std.array : array;
+    import std.range : tail;
 
-    return range.fold!((a, b) => xor(a, b));
+    // ubyte[] result;
+    // foreach(b; range) {
+    //     if (result) {
+    //         result.length = b.length;
+    //     }
+    //     result = xor(result, b);
+    // }
+    // return result;
+    //     if (!range.empty) {
+    //         result.length = range.front.length;
+
+    //         import std.algorithm.iteration : fold;
+
+    //     //pragma(msg, "xor Range ", Range);
+    //     // auto test(scope const(ubyte[]) a, scope const(ubyte[]) b) @safe {
+    //     //     return xor(a, b);
+    //     // }
+    //     import tagion.utils.Gene: gene_xor;
+
+    //     auto x=range
+    //         .map!((a) => cast(ulong[])a)
+    //         .fold!((a, b) => gene_xor(a, b));
+    // //        .array;
+
+    //     const y=xor(range.front, range.front);
+    return range
+        .cumulativeFold!((a, b) => _xor(a, b))
+        .tail(1)
+        .front;
+    // pragma(msg, "typeof(x) ", typeof(x));
+    //     pragma(msg, "#################################### typeof(x) ", typeof(x));
+    //     // pragma(msg, "typeof(range) ", typeof(range));
+    //     pragma(msg, "typeof(range.front) ", typeof(range.front));
+    //    xxx;
+
+    // return
+    //     null;
+    //    return range.fold!((scope a, scope b) => xor(a, b)).array;
 }
+
+// import std.compiler;
+// pragma(msg, "### VERSION ", version_major, ".", version_minor);
