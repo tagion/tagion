@@ -20,7 +20,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.dart.DARTFile;
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.communication.HiRPC : HiRPC, HiRPCMethod, Callers;
-import tagion.basic.Basic : EnumText;
+import tagion.basic.Basic : EnumText, assumeTrusted;
 
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.Keywords : isValid;
@@ -52,10 +52,15 @@ uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure not
  +/
 @safe
 class DART : DARTFile { //, HiRPC.Supports {
+    import tagion.dart.DARTSectorRange;
+
     immutable ushort from_sector;
     immutable ushort to_sector;
-    HiRPC hirpc;
-    this(const SecureNet net, string filename, const ushort from_sector = 0, const ushort to_sector = 0) {
+    const HiRPC hirpc;
+    this(const SecureNet net,
+            string filename,
+            const ushort from_sector = 0,
+            const ushort to_sector = 0) @safe {
         super(net, filename);
         this.from_sector = from_sector;
         this.to_sector = to_sector;
@@ -66,172 +71,20 @@ class DART : DARTFile { //, HiRPC.Supports {
         return SectorRange.sectorInRange(sector, from_sector, to_sector);
     }
 
-    // override Buffer modify(Recorder modify_records) {
-    //     modify_records.removeOutOfRange(from_sector, to_sector);
-    //     return super.modify(modify_records);
-    // }
-
-    SectorRange sectors() {
+    SectorRange sectors() pure nothrow @safe {
         return SectorRange(from_sector, to_sector);
     }
 
-    static struct SectorRange {
-        private ushort _sector;
-        private ushort _from_sector;
-        private ushort _to_sector;
-        @property ushort from_sector() inout {
-            return _from_sector;
-        }
-
-        @property ushort to_sector() inout {
-            return _to_sector;
-        }
-
-        protected bool flag;
-        this(const ushort from_sector, const ushort to_sector) {
-            _from_sector = from_sector;
-            _to_sector = to_sector;
-            _sector = from_sector;
-        }
-
-        bool isFullRange() const pure nothrow {
-            return _from_sector == _to_sector;
-        }
-
-        bool inRange(const ushort sector) const pure nothrow {
-            return sectorInRange(sector, _from_sector, _to_sector);
-        }
-
-        bool inRange(const Rims rims) const pure nothrow {
-            return sectorInRange(rims.sector, _from_sector, _to_sector);
-        }
-
-        static bool sectorInRange(const ushort sector, const ushort from_sector, const ushort to_sector) pure nothrow {
-            if (to_sector == from_sector) {
-                return true;
-            }
-            else {
-                immutable ushort sector_origin = (sector - from_sector) & ushort.max;
-                immutable ushort to_origin = (to_sector - from_sector) & ushort.max;
-                return (sector_origin < to_origin);
-            }
-        }
-
-        bool empty() const pure nothrow {
-            return !inRange(_sector) || flag;
-        }
-
-        void popFront() {
-            if (!empty) {
-                _sector++;
-                if (_sector == _from_sector)
-                    flag = true;
-            }
-        }
-
-        ushort front() const pure nothrow {
-            return _sector;
-        }
-
-        string toString() inout {
-            import std.string;
-
-            return format("(%d, %d)", _from_sector, _to_sector);
-        }
-
-        unittest {
-            enum full_dart_sectors_count = ushort.max + 1;
-            { //SectorRange: full sector iterator
-                auto sector_range = SectorRange(0, 0);
-                auto iteration = 0;
-                foreach (sector; sector_range) {
-                    iteration++;
-
-                    if (iteration > full_dart_sectors_count)
-                        assert(0, "Range overflow");
-                }
-                assert(iteration == full_dart_sectors_count);
-            }
-            { //SectorRange: full sector iterator
-                auto sector_range = SectorRange(5, 5);
-                auto iteration = 0;
-                foreach (sector; sector_range) {
-                    iteration++;
-
-                    if (iteration > full_dart_sectors_count)
-                        assert(0, "Range overflow");
-                }
-                assert(iteration == full_dart_sectors_count);
-            }
-            { //SectorRange:
-                auto sector_range = SectorRange(1, 10);
-                auto iteration = 0;
-                foreach (sector; sector_range) {
-                    iteration++;
-
-                    if (iteration > 9)
-                        assert(0, "Range overflow");
-                }
-                assert(iteration == 9);
-            }
-        }
-    }
-
-    //protected enum _quries = Callers!DART;
-    //     nameOf!dartRead,
-    //     nameOf!dartRim,
-    //     nameOf!dartModify,
-    //     nameOf!dartFullRead
-    //     ];
-
     mixin(EnumText!(q{Quries}, Callers!DART));
-
-    // mixin Support!Quries;
 
     alias HiRPCSender = HiRPC.Sender;
     alias HiRPCReceiver = HiRPC.Receiver;
 
-    @RecordType("Rims")
-    struct Rims {
-        Buffer rims;
-        protected enum root_rim = [];
-        static immutable root = Rims(root_rim);
-        ushort sector() const pure nothrow
-        in {
-            //log("%s %s %b",rims, root_rim, rims is root_rim);
-
-            pragma(msg, "fixme(vp) have to be check: rims is root_rim");
-
-            assert(rims.length >= ushort.sizeof || rims.length == 0,
-                    format("Rims size must be %d or more ubytes contain a sector but contains %d", ushort.sizeof, rims
-                    .length));
-        }
-        do {
-            if (rims.length == 0)
-                return ushort.init;
-            ushort result = ushort(rims[0]) + ushort(rims[1] << ubyte.sizeof * 8);
-            return result;
-        }
-
-        mixin HiBONRecord!(
-                q{
-                this(Buffer r) {
-                    rims=r;
-                }
-
-                this(const ushort sector)
-                out {
-                    assert(rims.length is ushort.sizeof);
-                }
-                do  {
-                    rims=[sector >> 8*ubyte.sizeof, sector & ubyte.max];
-                }
-            });
-    }
-
     static {
-        @HiRPCMethod() const(HiRPCSender) dartRead(Range)(scope Range fingerprints, HiRPC hirpc = HiRPC(
-                null), uint id = 0) { //if (is(ForeachType!Range : Buffer)) {
+        @HiRPCMethod() const(HiRPCSender) dartRead(Range)(
+                Range fingerprints,
+                HiRPC hirpc = HiRPC(null),
+                uint id = 0) @safe { //if (is(ForeachType!Range : Buffer)) {
             auto params = new HiBON;
             auto params_fingerprints = new HiBON;
             foreach (i, b; fingerprints) {
@@ -243,29 +96,32 @@ class DART : DARTFile { //, HiRPC.Supports {
             return hirpc.dartRead(params, id);
         }
 
-        @HiRPCMethod() const(HiRPCSender) dartRim(scope const Rims rims, HiRPC hirpc = HiRPC(null), uint id = 0) {
-            // auto params=new HiBON;
-            // params[Params.rims]=rims;
+        @HiRPCMethod() const(HiRPCSender) dartRim(
+                const Rims rims,
+                HiRPC hirpc = HiRPC(null),
+                uint id = 0) @safe {
             return hirpc.dartRim(rims, id);
         }
 
-        @HiRPCMethod() const(HiRPCSender) dartModify(scope const RecordFactory.Recorder recorder, HiRPC hirpc = HiRPC(
-                null), uint id = 0) {
-            // auto params=new HiBON;
-            // params[Params.recorder]=recorder.toDoc;
+        @HiRPCMethod() const(HiRPCSender) dartModify(
+                const RecordFactory.Recorder recorder,
+                HiRPC hirpc = HiRPC(
+                null), uint id = 0) @safe {
             return hirpc.dartModify(recorder, id);
         }
     }
 
     pragma(msg, "fixme(alex): Remove dartFullRead");
-    private const(HiRPCSender) dartFullRead(ref const(HiRPCReceiver) received, const bool read_only)
+    private const(HiRPCSender) dartFullRead(
+            ref const(HiRPCReceiver) received,
+            const bool read_only) @safe
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
     }
     do {
         // HiRPC.check_element!Document(received.params, Params.fingerprints);
-        scope result = loadAll(Archive.Type.ADD);
+        const result = loadAll(Archive.Type.ADD);
         return hirpc.result(received, result);
     }
     /++
@@ -310,16 +166,18 @@ class DART : DARTFile { //, HiRPC.Supports {
      +   }
      ---
      +/
-    private const(HiRPCSender) dartRead(ref const(HiRPCReceiver) received, const bool read_only)
+    private const(HiRPCSender) dartRead(
+            ref const(HiRPCReceiver) received,
+            const bool read_only) @safe
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
     }
     do {
         // HiRPC.check_element!Document(received.params, Params.fingerprints);
-        scope doc_fingerprints = received.method.params[Params.fingerprints].get!(Document);
-        scope fingerprints = doc_fingerprints.range!(Buffer[]);
-        scope recorder = loads(fingerprints, Archive.Type.ADD);
+        const doc_fingerprints = received.method.params[Params.fingerprints].get!(Document);
+        auto fingerprints = doc_fingerprints.range!(Buffer[]);
+        const recorder = loads(fingerprints, Archive.Type.ADD);
         return hirpc.result(received, recorder.toDoc);
     }
     /++
@@ -360,7 +218,9 @@ class DART : DARTFile { //, HiRPC.Supports {
      +
      + ----
      +/
-    private const(HiRPCSender) dartRim(ref const(HiRPCReceiver) received, const bool read_only)
+    private const(HiRPCSender) dartRim(
+            ref const(HiRPCReceiver) received,
+            const bool read_only) @safe
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -369,7 +229,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         //HiRPC.check_element!Buffer(received.params, Params.rims);
         immutable params = received.params!Rims;
 
-        scope rim_branches = branches(params.rims);
+        const rim_branches = branches(params.rims);
         HiBON hibon_params;
         if (!rim_branches.empty) {
             //            hibon_params=new HiBON;
@@ -379,7 +239,7 @@ class DART : DARTFile { //, HiRPC.Supports {
             hibon_params = new HiBON;
             // It not branches so maybe it is an archive
             immutable key = params.rims[$ - 1];
-            scope super_branches = branches(params.rims[0 .. $ - 1]);
+            const super_branches = branches(params.rims[0 .. $ - 1]);
             if (!super_branches.empty) {
                 immutable index = super_branches.indices[key];
                 if (index !is INDEX_NULL) {
@@ -433,7 +293,9 @@ class DART : DARTFile { //, HiRPC.Supports {
      ---
      +/
 
-    @HiRPCMethod private const(HiRPCSender) dartModify(ref const(HiRPCReceiver) received, const bool read_only)
+    @HiRPCMethod private const(HiRPCSender) dartModify(
+            ref const(HiRPCReceiver) received,
+            const bool read_only) @safe
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -442,7 +304,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         HiRPC.check(!read_only, "The DART is read only");
         //HiRPC.check_element!Document(received.params, Params.recorder);
         //        scope recorder_doc=received.method.params[Params.recorder].get!Document;
-        scope recorder = manufactor.recorder(received.method.params);
+        auto recorder = manufactor.recorder(received.method.params);
         immutable bullseye = modify(recorder);
         auto hibon_params = new HiBON;
         hibon_params[Params.bullseye] = bullseye;
@@ -461,10 +323,12 @@ class DART : DARTFile { //, HiRPC.Supports {
      +     The response from HPRC if the method is supported
      +     else the response return is marked empty
      +/
-    const(HiRPCSender) opCall(ref scope const(HiRPCReceiver) received, const bool read_only = true) {
+    const(HiRPCSender) opCall(
+            ref const(HiRPCReceiver) received,
+            const bool read_only = true) @safe {
         import std.conv : to;
 
-        const scope method = received.method;
+        const method = received.method;
         switch (method.name) {
             static foreach (call; Callers!DART) {
         case call:
@@ -478,11 +342,12 @@ class DART : DARTFile { //, HiRPC.Supports {
         return hirpc.error(received, message, 22);
     }
 
+    @safe
     interface Synchronizer {
         /++
          + Recommend to put a yield the SynchronizationFiber between send and receive between the DART's
          +/
-        const(HiRPCReceiver) query(scope ref const(HiRPCSender) request);
+        const(HiRPCReceiver) query(ref const(HiRPCSender) request);
         /++
          + Stores the add and remove actions in the journal replay log file
          +/
@@ -512,7 +377,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         bool empty() const pure nothrow;
     }
 
-    @RecordType("Journal") struct Journal {
+    @safe @RecordType("Journal") struct Journal {
         uint index;
         RecordFactory.Recorder recorder;
         enum indexName = GetLabel!(index).name;
@@ -527,10 +392,16 @@ class DART : DARTFile { //, HiRPC.Supports {
             recorder = manufactor.recorder(recorder_doc);
         }
 
+        this(const RecordFactory.Recorder recorder, const uint index) const pure nothrow @nogc {
+            this.recorder = recorder;
+            this.index = index;
+        }
+
         mixin HiBONRecord!"{}";
     }
 
     //            import std.stdio;
+    @safe
     static abstract class StdSynchronizer : Synchronizer {
 
         protected SynchronizationFiber fiber; /// Contains the reference to SynchronizationFiber
@@ -554,16 +425,10 @@ class DART : DARTFile { //, HiRPC.Supports {
             this.chunck_size = chunck_size;
         }
 
-        void record(RecordFactory.Recorder recorder) {
-            //            writefln("RECORD %s", recorder.empty);
+        void record(const RecordFactory.Recorder recorder) @safe {
             if (!recorder.empty) {
-                Journal journal;
+                const journal = const(Journal)(recorder, index);
                 auto hibon = new HiBON;
-                journal.index = index;
-                journal.recorder = recorder;
-                // auto data=hibon.serialize;
-                // auto doc=Document(data);
-                //                writefln("--->%s", doc.toText);
                 const allocated = journalfile.save(journal.toDoc.serialize);
                 index = allocated.begin_index;
                 journalfile.root_index = index;
@@ -571,45 +436,35 @@ class DART : DARTFile { //, HiRPC.Supports {
                     journalfile.store;
                 }
             }
-            //            writeln("END RECORD");
         }
 
-        void remove_recursive(const Rims params) {
-            scope rim_walker = owner.rimWalkerRange(params.rims);
+        void remove_recursive(const Rims params) @safe {
+            auto rim_walker = owner.rimWalkerRange(params.rims);
             uint count = 0;
-            scope recorder_worker = owner.recorder;
-            //            writefln("Recursive remove %s", rims.cutHex);
+            auto recorder_worker = owner.recorder;
             foreach (archive_data; rim_walker) {
                 const archive_doc = Document(archive_data);
 
                 recorder_worker.remove(archive_doc);
-                //                writefln("\tremove archive %s", archive_doc.toText);
-                //                scope archive=new Recorder.Archive(owner.net, archive_doc);
-                // immutable print=owner.net.calcHash(archive_data);
-                // auto doc=Document(archive_data);
-
-                //recorder_worker.remove_by_print(archive.fingerprint);
                 count++;
                 if (count > chunck_size) {
-                    // Remove the collected archives
-                    //owner.modify(recorder_worker);
                     record(recorder_worker);
                     count = 0;
-                    // journalfile.save(recorder_worker.toHiBON.serialize);
-                    // journalfile.store;
                     recorder_worker.clear;
                 }
             }
             record(recorder_worker);
         }
 
-        @trusted void set(DART owner, SynchronizationFiber fiber, HiRPC hirpc) nothrow {
+        void set(
+                DART owner,
+                SynchronizationFiber fiber,
+                HiRPC hirpc) @trusted nothrow {
             import std.conv : emplace;
 
             this.fiber = fiber;
             this.owner = owner;
             emplace(&this.hirpc, hirpc);
-            //            this.hirpc = HiRPC(hirpc.net);
         }
 
         void finish() {
@@ -631,14 +486,15 @@ class DART : DARTFile { //, HiRPC.Supports {
         }
     }
 
-    SynchronizationFiber synchronizer(Synchronizer synchonizer, const Rims rims) {
+    SynchronizationFiber synchronizer(Synchronizer synchonizer, const Rims rims) @safe {
         return new SynchronizationFiber(rims, synchonizer);
     }
 
-    private DART that() {
+    private DART that() pure nothrow @nogc @safe {
         return this;
     }
 
+    @safe
     class SynchronizationFiber : Fiber {
         protected Synchronizer sync;
 
@@ -652,7 +508,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         }
 
         protected uint _id;
-        @property uint id() {
+        @property uint id() @safe {
             if (_id == 0) {
                 _id = hirpc.generateId();
             }
@@ -665,16 +521,16 @@ class DART : DARTFile { //, HiRPC.Supports {
             assert(blockfile);
         }
         do {
-            void iterate(const Rims params) {
+            void iterate(const Rims params) @safe {
                 //
                 // Request Branches or Recorder at rims from the foreign DART.
                 //
-                scope local_branches = branches(params.rims);
-                scope request_branches = dartRim(params, hirpc, id);
-                scope result_branches = sync.query(request_branches);
+                const local_branches = branches(params.rims);
+                const request_branches = dartRim(params, hirpc, id);
+                const result_branches = sync.query(request_branches);
                 if (!Branches.isRecord(result_branches.response.result)) {
                     if (result_branches.isRecord!(RecordFactory.Recorder)) {
-                        scope foreign_recoder = manufactor.recorder(result_branches.method.params);
+                        auto foreign_recoder = manufactor.recorder(result_branches.method.params);
                         sync.record(foreign_recoder);
                     }
                     //
@@ -683,20 +539,21 @@ class DART : DARTFile { //, HiRPC.Supports {
                     sync.remove_recursive(params);
                 }
                 else {
-                    scope foreign_branches = result_branches.result!Branches;
+                    const foreign_branches = result_branches.result!Branches;
                     //
                     // Read all the archives from the foreign DART
                     //
-                    scope request_archives = dartRead(foreign_branches.fingerprints, hirpc, id);
-                    scope result_archives = sync.query(request_archives);
-                    scope foreign_recoder = manufactor.recorder(result_archives.response.result);
+                    const request_archives = dartRead(foreign_branches.fingerprints, hirpc, id);
+                    const result_archives = sync.query(request_archives);
+                    const foreign_recoder = manufactor.recorder(result_archives.response.result);
                     //
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
                     // The archive fingerprints is removed from the branches
-                    Archive[Buffer] set_of_archives;
-                    foreach (a; foreign_recoder.archives[]) {
-                        set_of_archives[a.fingerprint] = a;
-                    }
+                    auto set_of_archives = foreign_recoder.getSet;
+                    // const(Archive)[Buffer] set_of_archives;
+                    // foreach (a; foreign_recoder.archives[]) {
+                    //     set_of_archives[a.fingerprint] = a;
+                    // }
                     //                    sync.record(foreign_recoder);
 
                     auto foreign_fingerprints = foreign_branches.fingerprints.dup;
@@ -718,7 +575,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                         else if (foreign_print) {
                             // Foreign is poits to branches
                             if (local_print) {
-                                scope possible_branches_data = load(local_branches, key);
+                                const possible_branches_data = load(local_branches, key);
                                 if (!Branches.isRecord(Document(possible_branches_data))) {
                                     // If branch is an archive then it is removed because if it exists in foreign DART
                                     // this archive will be added later
@@ -756,27 +613,19 @@ class DART : DARTFile { //, HiRPC.Supports {
      + Throws:
      +     The function will throw an exception if something went wrong in the process.
      +/
-    void replay(const(string) journal_filename) {
+    void replay(const(string) journal_filename) @safe {
         auto journalfile = BlockFile(journal_filename, true);
         scope (exit) {
             journalfile.close;
         }
         // Adding and Removing archives
-        void local_replay(bool remove)() {
-            for (uint index = journalfile.masterBlock.root_index; index !is INDEX_NULL;
-                ) {
+        void local_replay(bool remove)() @safe {
+            for (uint index = journalfile.masterBlock.root_index; index !is INDEX_NULL;) {
                 immutable data = journalfile.load(index);
-                scope doc = Document(data);
-                // index=doc[Params.index].get!uint;
-
-                //scope replay_recorder_doc=doc[Params.recorder].get!Document;
-
-                // scope replay_recorder=manufactor.recorder(replay_recorder_doc);
-                // writefln("replay_recorder_doc=%s", replay_recorder_doc);
-                // writefln("doc.keys=%s", doc.keys);
+                const doc = Document(data);
                 auto journal_replay = Journal(manufactor, doc);
                 index = journal_replay.index;
-                scope action_recorder = recorder;
+                auto action_recorder = recorder;
                 foreach (a; journal_replay.recorder.archives[]) {
                     static if (remove) {
                         if (a.type is Archive.Type.REMOVE) {
@@ -802,6 +651,7 @@ class DART : DARTFile { //, HiRPC.Supports {
     }
 
     version (unittest) {
+        @safe
         static class TestSynchronizer : StdSynchronizer {
             protected DART foreign_dart;
             protected DART owner;
@@ -815,8 +665,8 @@ class DART : DARTFile { //, HiRPC.Supports {
             // This function emulates the connection between two DART's
             // in a single thread
             //
-            const(HiRPCReceiver) query(ref scope const(HiRPCSender) request) {
-                Document send_request_to_foreign_dart(const Document foreign_doc) {
+            const(HiRPCReceiver) query(ref const(HiRPCSender) request) @safe {
+                Document send_request_to_foreign_dart(const Document foreign_doc) @safe {
                     //
                     // Remote excution
                     // Receive on the foreign end
@@ -827,8 +677,8 @@ class DART : DARTFile { //, HiRPC.Supports {
                     return foreign_response.toDoc;
                 }
 
-                immutable foreign_doc = request.toDoc;
-                (() @trusted { fiber.yield; })();
+                const foreign_doc = request.toDoc;
+                assumeTrusted!(fiber.yield)();
                 // Here a yield loop should be implement to poll for response from the foriegn DART
                 // A timeout should also be implemented in this poll loop
                 const response_doc = send_request_to_foreign_dart(foreign_doc);
@@ -932,10 +782,10 @@ class DART : DARTFile { //, HiRPC.Supports {
                         journal_filenames ~= journal_filename;
                         BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                         auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
-                        auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                        auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                         // D!(sector, "%x");
                         while (!dart_A_synchronizer.empty) {
-                            (() @trusted { dart_A_synchronizer.call; })();
+                            assumeTrusted!({ dart_A_synchronizer.call; });
                         }
                     }
                     foreach (journal_filename; journal_filenames) {
@@ -994,10 +844,10 @@ class DART : DARTFile { //, HiRPC.Supports {
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        assumeTrusted!({ dart_A_synchronizer.call; });
                     }
                 }
                 foreach (journal_filename; journal_filenames) {
@@ -1050,10 +900,10 @@ class DART : DARTFile { //, HiRPC.Supports {
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        assumeTrusted!({ dart_A_synchronizer.call; });
                     }
                 }
                 foreach (journal_filename; journal_filenames) {
@@ -1101,10 +951,10 @@ class DART : DARTFile { //, HiRPC.Supports {
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        assumeTrusted!({ dart_A_synchronizer.call; });
                     }
                 }
 
@@ -1154,10 +1004,10 @@ class DART : DARTFile { //, HiRPC.Supports {
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        assumeTrusted!({ dart_A_synchronizer.call; });
                     }
                 }
 
@@ -1208,10 +1058,10 @@ class DART : DARTFile { //, HiRPC.Supports {
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        assumeTrusted!({ dart_A_synchronizer.call; });
                     }
                 }
 
@@ -1262,10 +1112,10 @@ class DART : DARTFile { //, HiRPC.Supports {
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        assumeTrusted!({ dart_A_synchronizer.call; });
                     }
                 }
 
@@ -1315,10 +1165,10 @@ class DART : DARTFile { //, HiRPC.Supports {
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        assumeTrusted!({ dart_A_synchronizer.call; });
                     }
                 }
 

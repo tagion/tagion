@@ -13,6 +13,7 @@ import tagion.hibon.HiBONRecord : HiBONPrefix;
 import tagion.hibon.HiBON : HiBON;
 import tagion.dart.DARTBasic;
 import tagion.dart.Recorder;
+import tagion.dart.DARTSectorRange;
 
 import std.stdio;
 import std.concurrency;
@@ -94,7 +95,7 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
     static __gshared ulong iteration = 0;
     static ulong local_iteration = 0;
 
-    alias Sector = DART.SectorRange;
+    //    alias Sector = SectorRange;
     import std.math : pow;
     import std.algorithm : count;
 
@@ -151,11 +152,11 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
         }
     }
 
-    static void setSectors(immutable Sector sector, ubyte rw, int rings, shared RecordFactory
+    static void setSectors(immutable SectorRange sector, ubyte rw, int rings, shared RecordFactory
             .Recorder rec) {
         ubyte[ulong.sizeof] buf;
-        foreach (j; cast(Sector) sector) {
-            buf[0 .. ushort.sizeof] = DART.Rims(j).rims;
+        foreach (j; cast(SectorRange) sector) {
+            buf[0 .. ushort.sizeof] = Rims(j).rims;
             setRings(2, rings, buf.dup, rw, cast(RecordFactory.Recorder) rec);
         }
         if (!stop)
@@ -165,7 +166,7 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
     for (int i = 0; i < cores; i++) {
         auto recorder = dart.recorder();
 
-        immutable sector = Sector(
+        immutable sector = SectorRange(
                 cast(ushort)(dart_range.from_sector + floor(angDiff * i)),
                 cast(ushort)(dart_range.from_sector + floor(angDiff * (i + 1)))
         );
@@ -183,6 +184,7 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
             }
         },
                 (bool flag, shared RecordFactory.Recorder recorder) {
+            pragma(msg, "fixme(cbr): Why is the Recorder here shared can't it be immutable because dart.modify takes a const");
             active_threads--;
             auto non_shared_recorder = cast(RecordFactory.Recorder) recorder;
             last_result = dart.modify(non_shared_recorder);
