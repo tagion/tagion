@@ -357,7 +357,11 @@ class HashGraph {
         if (_register) {
             return _register.register(fingerprint);
         }
-        return _event_cache.get(fingerprint, null);
+        scope event_ptr = fingerprint in _event_cache;
+        if (event_ptr) {
+            return *event_ptr;
+        }
+        return null;
     }
 
     /++

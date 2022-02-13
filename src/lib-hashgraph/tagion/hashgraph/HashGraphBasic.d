@@ -162,25 +162,6 @@ struct EventView {
 }
 
 @safe
-interface Authorising {
-
-    const(sdt_t) time() pure const nothrow;
-
-    bool isValidChannel(const(Pubkey) channel) const pure nothrow;
-
-    void send(const(Pubkey) channel, const(Document) doc);
-
-    alias ChannelFilter = bool delegate(const(Pubkey) channel) @safe;
-    alias SenderCallBack = const(HiRPC.Sender) delegate() nothrow @safe;
-    const(Pubkey) select_channel(ChannelFilter channel_filter);
-
-    const(Pubkey) gossip(ChannelFilter channel_filter, SenderCallBack sender);
-
-    void add_channel(const(Pubkey) channel);
-    void remove_channel(const(Pubkey) channel);
-}
-
-@safe
 struct EventBody {
     enum int eva_altitude = -77;
     import tagion.basic.ConsensusExceptions;
