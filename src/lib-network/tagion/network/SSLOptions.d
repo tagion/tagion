@@ -5,43 +5,46 @@ import tagion.utils.JSONCommon;
 struct OpenSSL {
     string certificate; /// Certificate file name
     string private_key; /// Private key
-    uint key_size;      /// Key size (RSA 1024,2048,4096)
-    uint days;          /// Number of days the certificate is valid
-    string country;     /// Country Name two letters
-    string state;       /// State or Province Name (full name)
-    string city;        /// Locality Name (eg, city)
+    uint key_size; /// Key size (RSA 1024,2048,4096)
+    uint days; /// Number of days the certificate is valid
+    string country; /// Country Name two letters
+    string state; /// State or Province Name (full name)
+    string city; /// Locality Name (eg, city)
     string organisation; /// Organization Name (eg, company)
-    string unit;        /// Organizational Unit Name (eg, section)
-    string name;        /// Common Name (e.g. server FQDN or YOUR name)
-    string email;       /// Email Address
+    string unit; /// Organizational Unit Name (eg, section)
+    string name; /// Common Name (e.g. server FQDN or YOUR name)
+    string email; /// Email Address
     import std.range : zip, repeat, only;
     import std.format;
+
     auto config() const pure nothrow @nogc {
         return only(
-            country,
-            state,
-            city,
-            organisation,
-            name,
-            email);
-//                "\n".repeat);
+                country,
+                state,
+                city,
+                organisation,
+                name,
+                email);
+        //                "\n".repeat);
 
     }
+
     auto command() const pure {
         return only(
-            "openssl",
-            "req",
-            "-newkey",
-            format!"rsa:%d"(key_size),
-            "-nodes",
-            "-keyout",
-            private_key,
-            "-x509",
-            "-days",
-            days.to!string,
-            "-out",
-            certificate);
+                "openssl",
+                "req",
+                "-newkey",
+                format!"rsa:%d"(key_size),
+                "-nodes",
+                "-keyout",
+                private_key,
+                "-x509",
+                "-days",
+                days.to!string,
+                "-out",
+                certificate);
     }
+
     mixin JSONCommon;
 }
 
@@ -60,6 +63,6 @@ struct SSLOption {
     // string certificate; /// Certificate file name
     // string private_key; /// Private key
     uint client_timeout; /// Client timeout
-    OpenSSL openssl;     ///
+    OpenSSL openssl; ///
     mixin JSONCommon;
 }
