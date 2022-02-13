@@ -166,6 +166,21 @@ import tagion.script.TagionCurrency;
         @Label("$active") bool[Pubkey] activated; /// Actived bills
         import std.algorithm : map, sum, filter, any, each;
 
+        bool remove_bill(Pubkey pk) {
+            import std.algorithm : remove, countUntil;
+
+            const index = countUntil!"a.owner == b"(bills, pk);
+            if (index > 0) {
+                bills = bills.remove(index);
+                return true;
+            }
+            return false;
+        }
+
+        void add_bill(StandardBill bill) {
+            bills ~= bill;
+        }
+
         /++
          Clear up the Account
          Remove used bills

@@ -201,7 +201,7 @@ struct TagionCurrency {
             {
                 enum code = format!q{
                 static assert(!__traits(compiles,
-                () =>
+                ()
                 {
                     TagionCurrency x;
                     x %s x;
