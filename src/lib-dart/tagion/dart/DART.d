@@ -574,9 +574,9 @@ class DART : DARTFile { //, HiRPC.Supports {
         }
 
         void remove_recursive(const Rims params) {
-            scope rim_walker = owner.rimWalkerRange(params.rims);
+            auto rim_walker = owner.rimWalkerRange(params.rims);
             uint count = 0;
-            scope recorder_worker = owner.recorder;
+            auto recorder_worker = owner.recorder;
             //            writefln("Recursive remove %s", rims.cutHex);
             foreach (archive_data; rim_walker) {
                 const archive_doc = Document(archive_data);
