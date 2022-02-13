@@ -19,9 +19,6 @@ import tagion.basic.TagionExceptions;
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
-import tagion.dart.DARTSynchronization;
-import tagion.dart.Recorder : RecordFactory;
-import tagion.dart.DARTSectorRange : SectorRange, Rims;
 
 version (unittest) {
     import tagion.dart.BlockFile : fileId;
@@ -30,6 +27,8 @@ import tagion.basic.Basic;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.dart.DARTSynchronization;
+import tagion.dart.Recorder : RecordFactory;
 
 import tagion.services.Options;
 import tagion.hibon.HiBONJSON;
@@ -43,11 +42,12 @@ import tagion.services.DARTSynchronizeService;
 //import tagion.services.MdnsDiscoveryService;
 import tagion.gossip.P2pGossipNet : NodeAddress, ConnectionPool;
 
+
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
 void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Node) node,
-        shared(Net) master_net, immutable(SectorRange) sector_range) nothrow {
+        shared(Net) master_net, immutable(DART.SectorRange) sector_range) nothrow {
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
@@ -189,7 +189,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                     bufArr[NodeAddress] remote_fp_requests;
                     Buffer[] local_fp;
                     fpIterator: foreach (fp; fingerprints) {
-                        const rims = Rims(fp);
+                        const rims = DART.Rims(fp);
                         if (sector_range.inRange(rims)) {
                             local_fp ~= fp;
                             continue fpIterator;
@@ -278,8 +278,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                     //     stop=true;
                     //     ownerTid.send(t);
                     // }
-                    
-            );
+                    );
             requestPool.tick();
         }
     }

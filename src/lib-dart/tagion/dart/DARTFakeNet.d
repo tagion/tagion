@@ -3,17 +3,16 @@ module tagion.dart.DARTFakeNet;
 import std.random;
 
 //import tagion.gossip.InterfaceNet : SecureNet, HashNet;
-import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.basic.Basic : Buffer, Control;
+import tagion.crypto.SecureNet: StdSecureNet;
+import tagion.basic.Basic: Buffer, Control;
 import tagion.dart.DART;
-import tagion.dart.DARTFile : DARTFile;
-import tagion.dart.Recorder : RecordFactory;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord : HiBONPrefix;
-import tagion.hibon.HiBON : HiBON;
+import tagion.dart.DARTFile: DARTFile;
+import tagion.dart.Recorder: RecordFactory;
+import tagion.hibon.Document: Document;
+import tagion.hibon.HiBONRecord: HiBONPrefix;
+import tagion.hibon.HiBON: HiBON;
 import tagion.dart.DARTBasic;
 import tagion.dart.Recorder;
-import tagion.dart.DARTSectorRange;
 
 import std.stdio;
 import std.concurrency;
@@ -65,12 +64,12 @@ class DARTFakeNet : StdSecureNet {
 
     @trusted
     override immutable(Buffer) hashOf(scope const(Document) doc) const {
-        import tagion.hibon.HiBONBase : Type;
-        import std.exception : assumeUnique;
+        import tagion.hibon.HiBONBase: Type;
+        import std.exception: assumeUnique;
 
         if (doc.hasMember(FAKE) && (doc[FAKE].type is Type.UINT64)) {
             const x = doc[FAKE].get!ulong;
-            import std.bitmanip : nativeToBigEndian;
+            import std.bitmanip: nativeToBigEndian;
 
             ubyte[] fingerprint;
             fingerprint.length = hashSize;
@@ -88,16 +87,16 @@ class DARTFakeNet : StdSecureNet {
 }
 
 Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
-    import std.math : floor, ceil;
+    import std.math: floor, ceil;
 
     static __gshared bool stop = false;
     static __gshared ulong all_iterations = 0;
     static __gshared ulong iteration = 0;
     static ulong local_iteration = 0;
 
-    //    alias Sector = SectorRange;
-    import std.math : pow;
-    import std.algorithm : count;
+    alias Sector = DART.SectorRange;
+    import std.math: pow;
+    import std.algorithm: count;
 
     auto dart_range = dart.sectors;
     all_iterations = count(dart_range) * pow(ringWidth, (rings - 2));
@@ -152,11 +151,11 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
         }
     }
 
-    static void setSectors(immutable SectorRange sector, ubyte rw, int rings, shared RecordFactory
+    static void setSectors(immutable Sector sector, ubyte rw, int rings, shared RecordFactory
             .Recorder rec) {
         ubyte[ulong.sizeof] buf;
-        foreach (j; cast(SectorRange) sector) {
-            buf[0 .. ushort.sizeof] = Rims(j).rims;
+        foreach (j; cast(Sector) sector) {
+            buf[0 .. ushort.sizeof] = DART.Rims(j).rims;
             setRings(2, rings, buf.dup, rw, cast(RecordFactory.Recorder) rec);
         }
         if (!stop)
@@ -166,7 +165,7 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
     for (int i = 0; i < cores; i++) {
         auto recorder = dart.recorder();
 
-        immutable sector = SectorRange(
+        immutable sector = Sector(
                 cast(ushort)(dart_range.from_sector + floor(angDiff * i)),
                 cast(ushort)(dart_range.from_sector + floor(angDiff * (i + 1)))
         );
@@ -184,7 +183,6 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
             }
         },
                 (bool flag, shared RecordFactory.Recorder recorder) {
-            pragma(msg, "fixme(cbr): Why is the Recorder here shared can't it be immutable because dart.modify takes a const");
             active_threads--;
             auto non_shared_recorder = cast(RecordFactory.Recorder) recorder;
             last_result = dart.modify(non_shared_recorder);
@@ -198,7 +196,7 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
         );
     }
     while (active_threads > 0 && !stop);
-    import core.stdc.stdlib : exit;
+    import core.stdc.stdlib: exit;
 
     if (stop)
         exit(0); //TODO: bad solution

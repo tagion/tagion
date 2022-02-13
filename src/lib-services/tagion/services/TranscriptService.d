@@ -176,7 +176,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
         ownerTid.send(Control.LIVE);
         while (!stop) {
             receive(&receive_epoch, &controller, &taskfailure,
-            );
+                    );
         }
     }
     catch (Throwable t) {

@@ -85,7 +85,9 @@ struct RBTreeT(K) {
                 _dispose(current.right);
                 if (owns) {
                     static if (isPointer!K) {
+
                         
+
                             .dispose(current.item);
                     }
                     else static if (__traits(compiles, current.item.dispose)) {
@@ -470,7 +472,9 @@ struct RBTreeT(K) {
         scope (exit) {
             if (owns) {
                 static if (isPointer!K) {
+
                     
+
                         .dispose(z.item);
                 }
                 else static if (__traits(compiles, z.item.dispose)) {

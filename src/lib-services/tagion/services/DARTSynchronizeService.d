@@ -20,7 +20,6 @@ import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
 import tagion.dart.BlockFile : BlockFile;
-import tagion.dart.DARTSectorRange : SectorRange;
 import tagion.basic.Basic;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
@@ -75,12 +74,8 @@ struct ServiceState(T) {
     }
 }
 
-pragma(msg, "fixme(): This is a task so the task wrapper should be used here");
-void dartSynchronizeServiceTask(Net : SecureNet)(
-        immutable(Options) opts,
-        shared(p2plib.Node) node,
-        shared(Net) master_net,
-        immutable(SectorRange) sector_range) nothrow {
+void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
+        shared(p2plib.Node) node, shared(Net) master_net, immutable(DART.SectorRange) sector_range) nothrow {
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
@@ -139,13 +134,13 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
             }
         }
 
-        void recorderReplayFunc(const(RecordFactory.Recorder) recorder) @safe {
+        void recorderReplayFunc(const(RecordFactory.Recorder) recorder) @safe  {
             dart.modify(recorder);
         }
 
         auto journalReplayFiber = new ReplayPool!string((string journal) => dart.replay(journal));
-        auto recorderReplayFiber =
-            new ReplayPool!(immutable(RecordFactory.Recorder))(&recorderReplayFunc);
+        auto recorderReplayFiber = new ReplayPool!(immutable(RecordFactory.Recorder))(
+                &recorderReplayFunc);
 
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(
                 opts.dart.sync.host.timeout.msecs);
@@ -185,16 +180,13 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     (immutable(RecordFactory.Recorder) recorder) {
                 log("DSS: recorder received");
                 recorderReplayFiber.insert(recorder);
-            },
-                    (Response!(ControlCode.Control_Connected) resp) {
+            }, (Response!(ControlCode.Control_Connected) resp) {
                 log("DSS: Client Connected key: %d", resp.key);
                 connectionPool.add(resp.key, resp.stream, true);
-            },
-                    (Response!(ControlCode.Control_Disconnected) resp) {
+            }, (Response!(ControlCode.Control_Disconnected) resp) {
                 log("DSS: Client Disconnected key: %d", resp.key);
                 connectionPool.close(cast(void*) resp.key);
-            },
-                    (Response!(ControlCode.Control_RequestHandled) resp) {
+            }, (Response!(ControlCode.Control_RequestHandled) resp) {
                 // log("DSS: Received request from p2p: %s", resp.key);
                 scope (exit) {
                     if (resp.stream !is null) {
@@ -232,8 +224,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                 else {
                     closeConnection();
                 }
-            },
-                    (string taskName, Buffer data) {
+            }, (string taskName, Buffer data) {
                 log("DSS: Received request from service: %s %d", taskName, data.length);
                 Document loadAll(HiRPC hirpc) {
                     return Document(dart.loadAll().serialize);
@@ -298,18 +289,15 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     auto response = empty_hirpc.result(receiver, params);
                     sendResult(response.toDoc.serialize);
                 }
-            },
-                    (ActiveNodeAddressBook update) {
+            }, (ActiveNodeAddressBook update) {
                 node_addrses = cast(NodeAddress[Pubkey]) update.data;
                 // log("node addresses %s", node_addrses);
-            },
-                    (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); },// (immutable(Throwable) t) {
+            }, (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); }, // (immutable(Throwable) t) {
                     //     //log.fatal(t.msg);
                     //     stop=true;
                     //     ownerTid.send(t);
                     // }
-            
-            );
+                    );
             try {
                 connectionPool.tick();
                 if (opts.dart.synchronize) {
@@ -472,11 +460,9 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
                 if (cntrl == Control.STOP) {
                     stop = true;
                 }
-            },
-                    (Response!(ControlCode.Control_Disconnected) resp) {
+            }, (Response!(ControlCode.Control_Disconnected) resp) {
                 writeln("Subscribe Disconnected key: ", resp.key);
-            },
-                    (Response!(ControlCode.Control_RequestHandled) response) {
+            }, (Response!(ControlCode.Control_RequestHandled) response) {
                 writeln("Subscribe recorder received");
                 auto doc = Document(response.data);
                 immutable recorder = cast(immutable) manufactor.recorder(doc);
@@ -487,25 +473,25 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
 }
 
 /+
- Error: constructor
- tagion.dart.DARTSynchronization.P2pSynchronizationFactory.this(
- DART dart,
- shared(Node) node,
- shared(ConnectionPool!(shared(Stream), ulong)) connection_pool,
- immutable(Options) opts,
- immutable(Typedef!(immutable(ubyte)[], null, "PUBKEY")) pkey)
+Error: constructor
+tagion.dart.DARTSynchronization.P2pSynchronizationFactory.this(
+    DART dart,
+    shared(Node) node,
+    shared(ConnectionPool!(shared(Stream), ulong)) connection_pool,
+    immutable(Options) opts,
+    immutable(Typedef!(immutable(ubyte)[], null, "PUBKEY")) pkey)
 
 
- DART,
- shared(Node),
- shared(ConnectionPool!(shared(Stream), ulong)),
- immutable(Options),
- Typedef!(immutable(ubyte)[], null, "PUBKEY"))
- +/
+    DART,
+    shared(Node),
+    shared(ConnectionPool!(shared(Stream), ulong)),
+    immutable(Options),
+    Typedef!(immutable(ubyte)[], null, "PUBKEY"))
++/
 
 /+
- cannot pass argument `connectionPool` of type
- shared(tagion.gossip.P2pGossipNet.ConnectionPool!(shared(Stream), ulong))
- to parameter
- shared(p2p.connection.ConnectionPool!(shared(Stream), ulong)) connection_pool
- +/
+     cannot pass argument `connectionPool` of type
+shared(tagion.gossip.P2pGossipNet.ConnectionPool!(shared(Stream), ulong))
+     to parameter
+shared(p2p.connection.ConnectionPool!(shared(Stream), ulong)) connection_pool
++/

@@ -63,13 +63,13 @@ void loggerTask(immutable(Options) opts) {
 
         void controller(Control ctrl) @safe {
             with (Control) switch (ctrl) {
-            case STOP:
-                stop = true;
-                file.writefln("%s Stopped ", opts.logger.task_name);
-                break;
-            default:
-                file.writefln("%s: Unsupported control %s", opts.logger.task_name, ctrl);
-            }
+                case STOP:
+                    stop = true;
+                    file.writefln("%s Stopped ", opts.logger.task_name);
+                    break;
+                default:
+                    file.writefln("%s: Unsupported control %s", opts.logger.task_name, ctrl);
+                }
         }
 
         @trusted void receiver(LoggerType type, string label, string text) {
@@ -109,7 +109,7 @@ void loggerTask(immutable(Options) opts) {
             }
         }
     }
-    catch (Throwable t) {
+    catch(Throwable t) {
         fatal(t);
     }
 }

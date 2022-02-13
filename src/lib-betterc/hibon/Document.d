@@ -375,7 +375,9 @@ struct Document {
      +/
     const(Element) opIndex(in string key) const {
         auto result = key in this;
+
         
+
         .check(!result.isEod, message("Member named '%s' not found", key));
         return result;
     }
@@ -979,7 +981,9 @@ struct Document {
                 default:
                     //empty
                 }
+
                 
+
                 .check(0, message("Invalid type %s", type));
                 return Value.init;
                 //                assert(0);
@@ -992,9 +996,13 @@ struct Document {
              if the element does not contain the type E and HiBONException is thrown
              +/
             auto by(Type E)() const {
+
                 
+
                     .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
+
                 
+
                 .check(E !is Type.NONE, message("Type is not supported %s the actual type is %s", E, type));
                 return value.by!E;
 
@@ -1047,7 +1055,9 @@ struct Document {
                 uint result;
                 Text key_text;
                 const _key = key(key_text);
+
                 
+
                 .check(is_index(_key, result), message("Key '%s' is not an index", _key));
                 return result;
             }
