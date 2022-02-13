@@ -380,7 +380,7 @@ class DART : DARTFile { //, HiRPC.Supports {
             hibon_params = new HiBON;
             // It not branches so maybe it is an archive
             immutable key = params.rims[$ - 1];
-            scope super_branches = branches(params.rims[0 .. $ - 1]);
+            const super_branches = branches(params.rims[0 .. $ - 1]);
             if (!super_branches.empty) {
                 immutable index = super_branches.indices[key];
                 if (index !is INDEX_NULL) {
@@ -443,7 +443,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         HiRPC.check(!read_only, "The DART is read only");
         //HiRPC.check_element!Document(received.params, Params.recorder);
         //        scope recorder_doc=received.method.params[Params.recorder].get!Document;
-        scope recorder = manufactor.recorder(received.method.params);
+        const recorder = manufactor.recorder(received.method.params);
         immutable bullseye = modify(recorder);
         auto hibon_params = new HiBON;
         hibon_params[Params.bullseye] = bullseye;
@@ -462,10 +462,10 @@ class DART : DARTFile { //, HiRPC.Supports {
      +     The response from HPRC if the method is supported
      +     else the response return is marked empty
      +/
-    const(HiRPCSender) opCall(ref scope const(HiRPCReceiver) received, const bool read_only = true) {
+    const(HiRPCSender) opCall(ref const(HiRPCReceiver) received, const bool read_only = true) {
         import std.conv: to;
 
-        const scope method = received.method;
+        const method = received.method;
         switch (method.name) {
             static foreach (call; Callers!DART) {
         case call:
