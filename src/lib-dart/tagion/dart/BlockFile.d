@@ -28,7 +28,7 @@ import tagion.dart.DARTException : BlockFileException;
 // version(unittest) {
 import std.math : rint;
 
-version(unittest) {
+version (unittest) {
     import Basic = tagion.basic.Basic;
 
     const(Basic.FileNames) fileId(T = BlockFile)(string prefix = null) @safe {
@@ -38,12 +38,6 @@ version(unittest) {
     }
 }
 
-// static this() {
-//     // Activate unittest
-//     immutable filename=fileId("dummy");
-//     //    auto dummy=new BlockFile(filename, SMALL_BLOCK_SIZE);
-// }
-// }
 extern (C) {
     int ftruncate(int fd, long length);
 }
@@ -146,7 +140,6 @@ class BlockFile {
             return index in indices;
         }
 
-        @trusted
         void reclaim(const uint index) {
             if (index in indices) {
                 do_save(index);
@@ -156,8 +149,9 @@ class BlockFile {
         }
 
         void write() {
-
-            uint order_blocks(ref Range range, const uint previous_index = INDEX_NULL) {
+            uint order_blocks(
+                    ref Range range,
+                    const uint previous_index = INDEX_NULL) {
                 if (!range.empty) {
                     immutable index = range.front;
                     if (index < owner.last_block_index) {
@@ -203,8 +197,7 @@ class BlockFile {
             build_segments;
         }
 
-        @trusted
-        void dump() {
+        void dump() @trusted {
             import std.stdio;
 
             auto s = recycle_segments[];
@@ -274,7 +267,7 @@ class BlockFile {
         }
 
         const(uint) reserve_segment(bool random = false)(const uint size) {
-            void remove_segment(const(Segment) segment_to_be_removed, const uint size) @trusted
+            void remove_segment(const(Segment) segment_to_be_removed, const uint size)
             in {
                 assert(segment_to_be_removed.size >= size);
             }
@@ -440,14 +433,12 @@ class BlockFile {
         File file;
         import std.stdio;
 
-        // writeln("before open ", filename);
         if (read_only) {
             file.open(filename, "r");
         }
         else {
             file.open(filename, "r+");
         }
-        // writeln("opened ", filename);
         this(file, SIZE);
     }
 
@@ -469,7 +460,6 @@ class BlockFile {
          $(LREF BLOCK_SIZE)  = Set the block size of the underlining BlockFile
 
          +/
-    @trusted
     static void create(string filename, string description, immutable uint BLOCK_SIZE) {
         File file;
         file.open(filename, "w+");
@@ -509,7 +499,6 @@ class BlockFile {
      +     filename  = Name of the blockfile
      +     read_only = If `true` the file is opened as read-only
      +/
-    @trusted
     static BlockFile opCall(string filename, const bool read_only = false) {
         auto temp_file = new BlockFile(filename, 0x40, read_only);
         immutable SIZE = temp_file.headerblock.block_size;
@@ -553,8 +542,6 @@ class BlockFile {
 
     private void readInitial() {
         if (file.size > 0) {
-            import std.stdio;
-
             // writeln("read header ", file.name);
             readHeaderBlock;
             last_block_index--;
@@ -567,6 +554,8 @@ class BlockFile {
             // writeln("end reading ", file.name);
         }
     }
+
+    pragma(msg, "fixme(cbr): The Statistic here should use tagion.utils.Statistic");
 
     struct Statistic {
         enum Limits : double {
@@ -618,7 +607,6 @@ class BlockFile {
             return hibon;
         }
 
-        @trusted
         immutable(Buffer) serialize() const {
             return toHiBON.serialize;
         }
@@ -757,7 +745,9 @@ class BlockFile {
         uint first_index; /// Points to the first block of data
         uint root_index; /// Point the root of the database
         uint statistic_index; /// Points to the statistic data
-        final void write(ref File file, immutable uint BLOCK_SIZE) const @trusted {
+        final void write(
+                ref File file,
+                immutable uint BLOCK_SIZE) const @trusted {
             scope buffer = new ubyte[BLOCK_SIZE];
             size_t pos;
             foreach (i, m; this.tupleof) {
@@ -1244,9 +1234,6 @@ class BlockFile {
 
     void fromDoc(const(Document) doc) {
         allocated_chains = null;
-
-
-
         .check(doc.isArray, "Document should be an array");
         foreach (a; doc[]) {
             const sub_doc = a.get!Document;
