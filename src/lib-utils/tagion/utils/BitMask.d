@@ -1,5 +1,7 @@
 module tagion.utils.BitMask;
 
+//import std.stdio;
+
 enum WORD_SIZE = size_t(size_t.sizeof * 8);
 
 size_t bitsize(const size_t[] mask) pure nothrow @nogc @safe {
@@ -25,10 +27,17 @@ struct BitMask {
     enum absolute_mask = 0x1000;
     private size_t[] mask;
 
+    // this(const BitMask bits) pure nothrow {
+    //     mask=bits.mask;
+    // }
+
     void opAssign(const BitMask rhs) pure nothrow {
         mask = rhs.mask.dup;
     }
 
+    // void opAssign(const BitMask rhs) pure nothrow {
+    //     mask=rhs.mask.dup;
+    // }
     /++
      This set the mask as bit stream with LSB first
      +/
@@ -65,6 +74,7 @@ struct BitMask {
     void toString(scope void delegate(scope const(char)[]) @trusted sink,
             const FormatSpec!char fmt) const {
         enum separator = '_';
+        import std.stdio;
 
         @nogc @safe struct BitRange {
             size_t index;
@@ -107,6 +117,7 @@ struct BitMask {
         case 's':
             auto bit_range = BitRange(this, fmt.width);
             scope char[] str;
+            //auto max_size=mask.length*(8*size_t.sizeof+((fmt.precision is )?0:(size_t.sizeof/fmt.precision+1)));
             auto max_size = bit_range.width + (bit_range.width) / fmt.precision + 1;
             str.length = max_size;
             size_t index;
@@ -198,7 +209,7 @@ struct BitMask {
             auto rest = (mask.length > rhs.mask.length) ? mask : rhs.mask;
             static if (op == "|" || op == "^") {
                 enum code = format(q{result.mask[min_length..$] %s= rest[min_length..$];}, op);
-                //pragma(msg, code);
+                pragma(msg, code);
                 mixin(code);
             }
         }
@@ -239,8 +250,7 @@ struct BitMask {
                 }
                 enum HALF_SIZE = BIT_SIZE >> 1;
                 enum MASK = (size_t(1) << HALF_SIZE) - 1;
-                return local_count!HALF_SIZE(x & MASK) + local_count!HALF_SIZE(
-                        (x >> HALF_SIZE) & MASK);
+                return local_count!HALF_SIZE(x & MASK) + local_count!HALF_SIZE((x >> HALF_SIZE) & MASK);
             }
         }
 
@@ -310,8 +320,7 @@ struct BitMask {
         pure nothrow {
             const {
                 size_t rest() {
-                    return (bit_pos < WORD_SIZE - 1) ? (
-                            mask[index] & ~((size_t(1) << (bit_pos + 1)) - 1)) : 0;
+                    return (bit_pos < WORD_SIZE - 1) ? (mask[index] & ~((size_t(1) << (bit_pos + 1)) - 1)) : 0;
                 }
 
                 bool empty() {
@@ -347,6 +356,7 @@ struct BitMask {
         import std.algorithm : equal;
         import std.algorithm.sorting : merge, sort;
         import std.algorithm.iteration : uniq, fold;
+        import std.stdio;
 
         { // Bit assign
             BitMask a;
