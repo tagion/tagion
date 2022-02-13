@@ -243,13 +243,14 @@ class DART : DARTFile { //, HiRPC.Supports {
             return hirpc.dartRead(params, id);
         }
 
-        @HiRPCMethod() const(HiRPCSender) dartRim(scope const Rims rims, HiRPC hirpc = HiRPC(null), uint id = 0) {
+        @HiRPCMethod() const(HiRPCSender) dartRim(ref const Rims rims, HiRPC hirpc = HiRPC(null), uint id = 0) {
             // auto params=new HiBON;
             // params[Params.rims]=rims;
             return hirpc.dartRim(rims, id);
+            //   return hirpc.opDispatch!"dartRim"(rims, id);
         }
 
-        @HiRPCMethod() const(HiRPCSender) dartModify(scope const RecordFactory.Recorder recorder, HiRPC hirpc = HiRPC(
+        @HiRPCMethod() const(HiRPCSender) dartModify(ref const RecordFactory.Recorder recorder, HiRPC hirpc = HiRPC(
                 null), uint id = 0) {
             // auto params=new HiBON;
             // params[Params.recorder]=recorder.toDoc;
@@ -265,7 +266,7 @@ class DART : DARTFile { //, HiRPC.Supports {
     }
     do {
         // HiRPC.check_element!Document(received.params, Params.fingerprints);
-        scope result = loadAll(Archive.Type.ADD);
+        const result = loadAll(Archive.Type.ADD);
         return hirpc.result(received, result);
     }
     /++
@@ -317,9 +318,9 @@ class DART : DARTFile { //, HiRPC.Supports {
     }
     do {
         // HiRPC.check_element!Document(received.params, Params.fingerprints);
-        scope doc_fingerprints = received.method.params[Params.fingerprints].get!(Document);
-        scope fingerprints = doc_fingerprints.range!(Buffer[]);
-        scope recorder = loads(fingerprints, Archive.Type.ADD);
+        const doc_fingerprints = received.method.params[Params.fingerprints].get!(Document);
+        auto fingerprints = doc_fingerprints.range!(Buffer[]);
+        const recorder = loads(fingerprints, Archive.Type.ADD);
         return hirpc.result(received, recorder.toDoc);
     }
     /++
@@ -369,7 +370,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         //HiRPC.check_element!Buffer(received.params, Params.rims);
         immutable params = received.params!Rims;
 
-        scope rim_branches = branches(params.rims);
+        const rim_branches = branches(params.rims);
         HiBON hibon_params;
         if (!rim_branches.empty) {
             //            hibon_params=new HiBON;
