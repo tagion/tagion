@@ -17,7 +17,6 @@ import std.exception : assumeUnique;
 //import std.stdio;
 
 import tagion.hibon.HiBONException : check;
-import tagion.hibon.BigNumber;
 
 /++
  BigNumber used in the HiBON format
