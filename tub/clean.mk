@@ -11,5 +11,6 @@ proper-all:
 clean:
 	$(PRECMD)
 	${call log.header, $@ :: main}
+	$(RMDIR) $(DBIN)
 
 .PHONY: proper clean
