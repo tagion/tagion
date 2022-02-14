@@ -1275,7 +1275,11 @@ class BlockFile {
 
         void allocate_and_chain(SortedSegments)(const(AllocatedChain[]) allocate, ref scope SortedSegments sorted_segments) @safe {
             if (allocate.length > 0) {
-                uint chain(immutable(ubyte[]) data, const uint current_index, const uint previous_index, const bool head) @trusted {
+                uint chain(
+                    immutable(ubyte[]) data,
+                    const uint current_index,
+                    const uint previous_index,
+                    const bool head) @trusted {
                     scope (success) {
                         recycle_indices.reclaim(current_index);
                     }
@@ -1338,13 +1342,13 @@ class BlockFile {
                     if (current_segment.begin_index > 1) {
                         // Block before the segments need to be rewired
                         immutable begin_block_index = current_segment.begin_index - 1;
-                        scope const begin_block = local_read(begin_block_index);
+                        const begin_block = local_read(begin_block_index);
                         if (begin_block.next !is current_segment.end_index) {
                             blocks[begin_block_index] = block(begin_block.previous, current_segment.end_index,
                                     begin_block.size, begin_block.data, begin_block.head);
                         }
                     }
-                    scope const end_block = local_read(current_segment.end_index);
+                    const end_block = local_read(current_segment.end_index);
                     immutable previous_index = (current_segment.begin_index > 0) ? current_segment.begin_index - 1 : INDEX_NULL;
                     if (end_block.previous !is previous_index) {
                         blocks[current_segment.end_index] = block(previous_index, end_block.next, end_block.size, end_block
@@ -1379,13 +1383,12 @@ class BlockFile {
         allocate_and_chain(allocated_chains, segments_needs_saving);
         recycle_indices.trim_last_block_index(blocks);
 
-        //        console.writefln("owner.last_block_index=%d", last_block_index);
         recycle_indices.write;
         //
         // Write new allocated blocks to the file
         //
 
-        void write_blocks_in_sorted_order() @trusted {
+        void write_blocks_in_sorted_order() {
             scope sorted_indices = blocks.keys.dup.sort;
             sorted_indices.each!(index => write(index, blocks[index]));
         }
