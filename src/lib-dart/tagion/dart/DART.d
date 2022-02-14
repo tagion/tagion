@@ -134,8 +134,6 @@ class DART : DARTFile { //, HiRPC.Supports {
         }
 
         string toString() inout {
-            import std.string;
-
             return format("(%d, %d)", _from_sector, _to_sector);
         }
 
@@ -227,6 +225,10 @@ class DART : DARTFile { //, HiRPC.Supports {
                     rims=[sector >> 8*ubyte.sizeof, sector & ubyte.max];
                 }
             });
+
+        string toString() const pure nothrow {
+            return rims.toHexString;
+        }
     }
 
     static {

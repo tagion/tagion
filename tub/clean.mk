@@ -11,6 +11,12 @@ proper-all:
 clean:
 	$(PRECMD)
 	${call log.header, $@ :: main}
+
+clean-bin:
+	$(PRECMD)
+	${call log.header, $@ :: main}
 	$(RMDIR) $(DBIN)
 
-.PHONY: proper clean
+clean: clean-bin
+
+.PHONY: proper clean clean-bin
