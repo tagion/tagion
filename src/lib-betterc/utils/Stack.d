@@ -1,10 +1,10 @@
 /// \file Stack.d
 
-module tagion.BetterC.utils.Stack;
+module tagion.betterC.utils.Stack;
 
 @nogc:
 
-import tagion.BetterC.utils.Memory;
+import tagion.betterC.utils.Memory;
 //import core.stdc.stdio;
 
 struct Stack(T) {

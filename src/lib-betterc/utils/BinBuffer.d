@@ -1,9 +1,9 @@
 /// \file BinBuffer.d
 
-module tagion.BetterC.utils.BinBuffer;
+module tagion.betterC.utils.BinBuffer;
 
 @nogc:
-import tagion.BetterC.utils.platform;
+import tagion.betterC.utils.platform;
 //import core.stdc.stdlib : calloc, malloc, realloc, free;
 version(WebAssembly) {
 }
@@ -11,8 +11,8 @@ else {
     import std.bitmanip : nativeToLittleEndian, nativeToBigEndian;
 }
 import std.traits : isNumeric, isArray, Unqual;
-import tagion.BetterC.utils.Memory;
-import tagion.BetterC.utils.sdt;
+import tagion.betterC.utils.Memory;
+import tagion.betterC.utils.sdt;
 
 struct BinBuffer {
     @nogc:

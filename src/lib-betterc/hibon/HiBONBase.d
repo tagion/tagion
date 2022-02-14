@@ -1,6 +1,6 @@
 /// \file HiBONBase.d
 
-module tagion.BetterC.hibon.HiBONBase;
+module tagion.betterC.hibon.HiBONBase;
 
 @nogc:
 
@@ -16,16 +16,16 @@ else {
     import core.stdc.stdio;
 }
 
-import tagion.BetterC.hibon.HiBON;
-import tagion.BetterC.hibon.Document;
-import tagion.BetterC.utils.BinBuffer;
-import tagion.BetterC.utils.Basic;
-import tagion.BetterC.hibon.BigNumber;
-import tagion.BetterC.utils.Bailout;
-import tagion.BetterC.utils.Memory;
-import tagion.BetterC.utils.Text;
-import tagion.BetterC.utils.sdt;
-import LEB128=tagion.BetterC.utils.LEB128;
+import tagion.betterC.hibon.HiBON;
+import tagion.betterC.hibon.Document;
+import tagion.betterC.utils.BinBuffer;
+import tagion.betterC.utils.Basic;
+import tagion.betterC.hibon.BigNumber;
+import tagion.betterC.utils.Bailout;
+import tagion.betterC.utils.Memory;
+import tagion.betterC.utils.Text;
+import tagion.betterC.utils.sdt;
+import LEB128=tagion.betterC.utils.LEB128;
 
 enum HIBON_VERSION=0;
 
