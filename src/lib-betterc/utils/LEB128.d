@@ -1,6 +1,6 @@
 /// \file LEB128.d
 
-module tagion.BetterC.utils.LEB128;
+module tagion.betterC.utils.LEB128;
 
 @nogc:
 
@@ -11,8 +11,8 @@ import std.format;
 import std.algorithm.comparison : min;
 import std.algorithm.iteration : map, sum;
 
-import tagion.BetterC.utils.Bailout;
-import tagion.BetterC.utils.BinBuffer;
+import tagion.betterC.utils.Bailout;
+import tagion.betterC.utils.BinBuffer;
 
 //import std.stdio;
 

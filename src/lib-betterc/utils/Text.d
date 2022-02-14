@@ -1,12 +1,12 @@
 /// \file Text.d
 
-module tagion.BetterC.utils.Text;
+module tagion.betterC.utils.Text;
 
 @nogc:
 
 import std.traits : isIntegral, isSigned, Unqual;
-import tagion.BetterC.utils.Memory;
-import tagion.BetterC.utils.platform : calloc;
+import tagion.betterC.utils.Memory;
+import tagion.betterC.utils.platform : calloc;
 //import core.stdc.stdio;
 
 struct Text {

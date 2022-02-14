@@ -1,7 +1,7 @@
-module tagion.BetterC.utils.Memory;
+module tagion.betterC.utils.Memory;
 
 import std.traits : isArray, ForeachType, isPointer, PointerTarget, Unqual;
-import tagion.BetterC.utils.platform;
+import tagion.betterC.utils.platform;
 
 import std.conv : emplace;
 @nogc:
@@ -97,7 +97,7 @@ T create(T)(string file=__FILE__, size_t line=__LINE__) if (isPointer!T) {
 void resize(T)(ref T data, const size_t len, string file=__FILE__, size_t line=__LINE__) if(isArray!T) {
     alias BaseT=ForeachType!T;
     const size=len*BaseT.sizeof;
-    auto mem=realloc(data.ptr, size);
+    auto mem=realloc(cast(void*)data.ptr, size);
     version(memtrace) {
         printf(memfree_trace,  &data, block, 'R', T.stringof.ptr);
         printf(memalloc_trace,  mem, size, block, 'R', T.stringof.ptr);

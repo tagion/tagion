@@ -1,6 +1,6 @@
 /// \file RBTree.d
 
-module tagion.BetterC.utils.RBTree;
+module tagion.betterC.utils.RBTree;
 /*
  * [PROG]               : Red Black Tree
  * [AUTHOR]             : Ashfaqur Rahman <sajib.finix@gmail.com>
@@ -22,8 +22,8 @@ module tagion.BetterC.utils.RBTree;
  */
 
 @nogc:
-import tagion.BetterC.utils.Memory;
-import tagion.BetterC.utils.Stack;
+import tagion.betterC.utils.Memory;
+import tagion.betterC.utils.Stack;
 //import hibon.HiBONBase : Key;
 import std.traits : isPointer;
 //import core.stdc.stdio;

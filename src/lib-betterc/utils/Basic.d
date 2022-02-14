@@ -1,6 +1,6 @@
 /// \file Basic.d
 
-module tagion.BetterC.utils.Basic;
+module tagion.betterC.utils.Basic;
 
 template suffix(string name, size_t index) {
     static if ( index is 0 ) {
