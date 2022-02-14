@@ -1,6 +1,6 @@
 //// \file Document.d
 
-module tagion.BetterC.hibon.Document;
+module tagion.betterC.hibon.Document;
 
 @nogc:
 //import std.format;
@@ -12,15 +12,15 @@ import std.algorithm.searching : count;
 //import core.stdc.stdio;
 //import std.range.primitives : walkLength;
 
-import tagion.BetterC.utils.BinBuffer;
-import tagion.BetterC.utils.sdt;
-import tagion.BetterC.utils.Text;
-import tagion.BetterC.utils.Bailout;
-import tagion.BetterC.utils.Memory;
-import tagion.BetterC.hibon.HiBON;
-import LEB128=tagion.BetterC.utils.LEB128;
-import tagion.BetterC.hibon.BigNumber;
-import tagion.BetterC.hibon.HiBONBase;
+import tagion.betterC.utils.BinBuffer;
+import tagion.betterC.utils.sdt;
+import tagion.betterC.utils.Text;
+import tagion.betterC.utils.Bailout;
+import tagion.betterC.utils.Memory;
+import tagion.betterC.hibon.HiBON;
+import LEB128=tagion.betterC.utils.LEB128;
+import tagion.betterC.hibon.BigNumber;
+import tagion.betterC.hibon.HiBONBase;
 
 // import std.stdio;
 // import std.exception;
@@ -655,7 +655,7 @@ unittest { // Document with residual data
 
     version(unittest) {
         import std.typecons : Tuple, isTuple;
-        import tagion.BetterC.utils.Basic : basename;
+        import tagion.betterC.utils.Basic : basename;
         static private void make(S)(ref BinBuffer buffer, S _struct, size_t count=size_t.max) if (is(S==struct)) {
             //size_t temp_index;
 

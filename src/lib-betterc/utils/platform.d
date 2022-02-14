@@ -1,6 +1,6 @@
 /// \file platform.d
 
-module tagion.BetterC.utils.platform;
+module tagion.betterC.utils.platform;
 
 
 public {

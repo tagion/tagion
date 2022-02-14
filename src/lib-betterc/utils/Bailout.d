@@ -1,12 +1,12 @@
 /// \file Bailout.d
 
-module tagion.BetterC.utils.Bailout;
+module tagion.betterC.utils.Bailout;
 
 @nogc:
-import tagion.BetterC.utils.platform;
+import tagion.betterC.utils.platform;
 // import core.stdc.string;
 // import core.stdc.stdio;
-import tagion.BetterC.utils.Text;
+import tagion.betterC.utils.Text;
 
 enum MESSAGE_BUFFER_SIZE=0x80;
 

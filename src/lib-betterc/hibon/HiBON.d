@@ -8,7 +8,7 @@
  * @see
  * <a href="http://bsonspec.org/">BSON - Binary JSON</a> 
  */
-module tagion.BetterC.hibon.HiBON;
+module tagion.betterC.hibon.HiBON;
 
 @nogc:
 //import std.container : RedBlackTree;
@@ -22,18 +22,18 @@ import std.meta : AliasSeq;
 //import std.conv : to;
 //import std.typecons : TypedefType;
 
-import tagion.BetterC.hibon.BigNumber;
-import tagion.BetterC.hibon.Document;
-import tagion.BetterC.hibon.HiBONBase;
-import tagion.BetterC.utils.Bailout;
-import tagion.BetterC.utils.RBTree;
-import tagion.BetterC.utils.Memory;
-import tagion.BetterC.utils.Text;
-import tagion.BetterC.utils.BinBuffer;
-import tagion.BetterC.utils.Basic;
-import LEB128=tagion.BetterC.utils.LEB128;
+import tagion.betterC.hibon.BigNumber;
+import tagion.betterC.hibon.Document;
+import tagion.betterC.hibon.HiBONBase;
+import tagion.betterC.utils.Bailout;
+import tagion.betterC.utils.RBTree;
+import tagion.betterC.utils.Memory;
+import tagion.betterC.utils.Text;
+import tagion.betterC.utils.BinBuffer;
+import tagion.betterC.utils.Basic;
+import LEB128=tagion.betterC.utils.LEB128;
 
-import tagion.BetterC.utils.platform;
+import tagion.betterC.utils.platform;
 //import core.stdc.stdio;
 
 HiBONT HiBON() {

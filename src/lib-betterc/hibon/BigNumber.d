@@ -1,8 +1,8 @@
 /// \file BigNumber.d
 
-module tagion.BetterC.hibon.BigNumber;
+module tagion.betterC.hibon.BigNumber;
 
-import LEB128 = tagion.BetterC.utils.LEB128;
+import LEB128 = tagion.betterC.utils.LEB128;
 
 /***
  * @brief Is is a wrapper of the std.bigint
