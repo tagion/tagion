@@ -38,11 +38,13 @@ include $(DTUB)/config/commands.mk
 
 prebuild:
 	$(PRECMD)
-	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) secp256k1
-	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) p2pgowrapper
-	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) openssl
-	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) dstep
-	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) ddeps
+	echo "******************************* " $@ K$(MAKELEVEL)K
+	echo "******************************* " $@ $(MAKELEVEL)
+	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) secp256k1
+	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) p2pgowrapper
+	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) openssl
+	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep
+	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) ddeps
 
 
 
@@ -62,10 +64,10 @@ include $(DTUB)/config/dirs.mk
 # Prebuild
 #
 include $(DTUB)/config/prebuild.mk
-# ifdef $(DFILES)
-# -include $(DBUILD)/gen.dfiles.mk
-# -include $(DBUILD)/gen.ddeps.mk
-# endif
+ifndef PREBUILD
+-include $(DBUILD)/gen.dfiles.mk
+-include $(DBUILD)/gen.ddeps.mk
+endif
 
 -include $(DROOT)/platform.*.mk
 
@@ -115,3 +117,8 @@ include $(DTUB)/clean.mk
 # Help
 #
 include $(DTUB)/help.mk
+
+run: tagionwave
+	cd $(DBIN);
+	rm -fR data; mkdir data;
+	./tagionwave -N 7

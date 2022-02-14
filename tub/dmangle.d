@@ -16,14 +16,14 @@ import std.format;
 int main(string[] args) {
     bool mangle_split;
     bool version_switch;
-    immutable program="dmangle";
+    immutable program = "dmangle";
     auto main_args = getopt(
-        args,
-        std.getopt.config.caseSensitive,
-        std.getopt.config.bundling,
-        "version", "display the version", &version_switch,
-        "split|s", "Split both mange and demangle", &mangle_split,
-        );
+            args,
+            std.getopt.config.caseSensitive,
+            std.getopt.config.bundling,
+            "version", "display the version", &version_switch,
+            "split|s", "Split both mange and demangle", &mangle_split,
+    );
     if (version_switch) {
         import std.process;
 
@@ -43,28 +43,28 @@ int main(string[] args) {
 
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
-            [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <in-file> <out-file>", program),
-                format("%s [<option>...] # for stdin", program),
-                "",
-                "Where:",
-                "<in-file>           Is an input file of dmangles",
-                "",
+                [
+            // format("%s version %s", program, REVNO),
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s [<option>...] <in-file> <out-file>", program),
+            format("%s [<option>...] # for stdin", program),
+            "",
+            "Where:",
+            "<in-file>           Is an input file of dmangles",
+            "",
 
-                "<option>:",
+            "<option>:",
 
-                ].join("\n"),
-            main_args.options);
+        ].join("\n"),
+        main_args.options);
         return 0;
     }
 
     File fin;
     if (args.length == 1) {
-        fin=stdin;
+        fin = stdin;
     }
     else if (args.length == 2) {
         if (args[1] == "-h") {
@@ -72,24 +72,24 @@ int main(string[] args) {
             return 0;
         }
         else if (args[1].exists) {
-            fin=File(args[1], "r");
+            fin = File(args[1], "r");
         }
     }
     if (fin is File.init) {
-        foreach(arg; args[1..$]) {
+        foreach (arg; args[1 .. $]) {
             writeln;
             writefln("%s", arg);
             writefln("%s", arg.demangle);
         }
     }
     else {
-        auto filter_mangle=fin
+        auto filter_mangle = fin
             .byLineCopy
             .map!(
-                l => l.chunkBy!(a => isAlphaNum(a) || a == '_')
-                .map!(a => a[1].pipe!(to!string, demangle)).joiner
-                );
-
+                    l => l.chunkBy!(a => isAlphaNum(a) || a == '_')
+                    .map!(a => a[1].pipe!(to!string, demangle))
+                    .joiner
+            );
 
         // filter_mangle
         //     .each!((a) => writeln(a[1]));
@@ -101,16 +101,16 @@ int main(string[] args) {
             filter_mangle
                 .each!writeln;
         }
-//            .each!(writefln!"%-(%s \\\n %)");
-//            .each!(writefln!"%-(%s \\\n %)");
-//        fin.byLine.each!writeln;
+        //            .each!(writefln!"%-(%s \\\n %)");
+        //            .each!(writefln!"%-(%s \\\n %)");
+        //        fin.byLine.each!writeln;
         // fin.byLineCopy
         //     .map!(
         //         l => l.chunkBy!(a => isAlphaNum(a) || a == '_')
         //         .map!(a => a[1].pipe!(to!string, demangle)).joiner
         //         )
         //     .each!writeln;
-//            .copy(stdout.lockingTextWriter);
+        //            .copy(stdout.lockingTextWriter);
     }
     return 0;
 }
