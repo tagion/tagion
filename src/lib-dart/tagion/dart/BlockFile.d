@@ -17,7 +17,7 @@ import std.conv : to;
 import std.traits;
 import std.exception : assumeUnique;
 import std.container.rbtree : RedBlackTree, redBlackTree;
-import tagion.basic.Basic : basename, Buffer, log2;
+import tagion.basic.Basic : basename, Buffer, log2, assumeTrusted;
 import tagion.basic.TagionExceptions : Check;
 
 import tagion.hibon.HiBON : HiBON;
@@ -695,7 +695,7 @@ class BlockFile {
             assert(block_size >= HeaderBlock.sizeof);
         }
         do {
-            scope buffer = new ubyte[block_size];
+            auto buffer = new ubyte[block_size];
             size_t pos;
             foreach (i, m; this.tupleof) {
                 alias type = typeof(m);
@@ -716,8 +716,8 @@ class BlockFile {
         }
         do {
 
-            scope buffer = new ubyte[BLOCK_SIZE];
-            scope ubyte[] buf = file.rawRead(buffer);
+            auto buffer = new ubyte[BLOCK_SIZE];
+            auto buf = file.rawRead(buffer);
             foreach (i, ref m; this.tupleof) {
                 alias type = typeof(m);
                 static if (isStaticArray!type && is(type : U[], U)) {
@@ -740,6 +740,7 @@ class BlockFile {
      + This block maintains the indices to of other block
      +/
 
+    @safe
     static struct MasterBlock {
         uint recycle_header_index; /// Points to the root of recycle block list
         uint first_index; /// Points to the first block of data
@@ -748,7 +749,7 @@ class BlockFile {
         final void write(
                 ref File file,
                 immutable uint BLOCK_SIZE) const @trusted {
-            scope buffer = new ubyte[BLOCK_SIZE];
+            auto buffer = new ubyte[BLOCK_SIZE];
             size_t pos;
             foreach (i, m; this.tupleof) {
                 buffer.binwrite(m, &pos);
@@ -762,7 +763,7 @@ class BlockFile {
 
         final void read(ref File file, immutable uint BLOCK_SIZE) {
             scope buffer = new ubyte[BLOCK_SIZE];
-            scope ubyte[] buf = file.rawRead(buffer);
+            scope buf = file.rawRead(buffer);
             foreach (i, ref m; this.tupleof) {
                 alias type = typeof(m);
                 m = buf.binread!type;
@@ -814,6 +815,7 @@ class BlockFile {
     /++
      + Block handler
      +/
+    @safe
     static class Block {
         immutable uint previous; /// Points to the previous block
         immutable uint next; /// Points to the next block
@@ -852,9 +854,8 @@ class BlockFile {
         do {
 
             scope buffer = new ubyte[BLOCK_SIZE];
-            scope ubyte[] buf = file.rawRead(buffer);
+            scope buf = file.rawRead(buffer);
             foreach (i, m; this.tupleof) {
-                //enum name=basename!(this.tupleof[i]);
                 alias type = typeof(m);
                 enum name = this.tupleof[i].stringof;
                 static if (name != this.data.stringof) {
