@@ -682,6 +682,7 @@ class BlockFile {
     /++
      + The HeaderBlock is the first block in the BlockFile
      +/
+    @safe
     struct HeaderBlock {
         enum ID_SIZE = 32;
         enum LABEL_SIZE = 16;
@@ -762,8 +763,8 @@ class BlockFile {
         }
 
         final void read(ref File file, immutable uint BLOCK_SIZE) {
-            scope buffer = new ubyte[BLOCK_SIZE];
-            scope buf = file.rawRead(buffer);
+            auto buffer = new ubyte[BLOCK_SIZE];
+            auto buf = file.rawRead(buffer);
             foreach (i, ref m; this.tupleof) {
                 alias type = typeof(m);
                 m = buf.binread!type;
@@ -873,8 +874,12 @@ class BlockFile {
             data = buf[0 .. data_size].idup;
         }
 
-        private this(immutable uint previous, immutable uint next, immutable uint size, immutable(
-                Buffer) buf, const bool head) {
+        private this(
+            immutable uint previous,
+            immutable uint next,
+            immutable uint size,
+            immutable(Buffer) buf,
+            const bool head) {
             this.previous = previous;
             this.next = next;
             this.size = size;
@@ -1056,7 +1061,7 @@ class BlockFile {
         scope const first_block = read(index);
         // Check if this is the first block is the start of a block sequency
         check(first_block.head, format("Block @ index %d is not the head of block sequency", index));
-        @safe void build_sequency(scope const Block block, ubyte[] cache) {
+        void build_sequency(scope const Block block, ubyte[] cache) @safe {
             if (block.size > DATA_SIZE) {
                 cache[0 .. DATA_SIZE] = block.data;
                 scope const next_block = read(block.next);
