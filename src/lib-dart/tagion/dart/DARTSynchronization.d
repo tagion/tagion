@@ -283,7 +283,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
 
             try {
                 auto stream_id = (() @trusted => connect())();
-                auto filename = tempfile ~ (std.conv.to!string(sector));
+                auto filename = format("%s_%s", tempfile, sector);
                 pragma(msg, "fixme(alex): Why 0x80");
                 enum BLOCK_SIZE = 0x80;
                 BlockFile.create(filename, DART.stringof, BLOCK_SIZE);
