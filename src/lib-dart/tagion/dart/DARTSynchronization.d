@@ -7,6 +7,10 @@ import p2p.callback;
 import p2p.cgo.c_helper;
 import std.random;
 import std.concurrency;
+import core.time;
+import std.datetime;
+import std.typecons;
+import std.format;
 
 import tagion.gossip.P2pGossipNet: NodeAddress, ConnectionPool;
 import tagion.dart.DART;
@@ -15,10 +19,7 @@ import tagion.dart.BlockFile;
 import tagion.dart.DARTBasic;
 import tagion.dart.Recorder;
 
-import core.time;
-import std.datetime;
 import tagion.dart.DARTOptions : DARTOptions;
-import std.typecons;
 import tagion.basic.Basic;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
@@ -107,7 +108,7 @@ class ReadRequestHandler : ResponseHandler {
         const doc = Document(response); //TODO: check response
         pragma(msg, "fixme(alex): Add the Document check here (Comment abow)");
         auto received = hirpc.receive(doc);
-        scope foreign_recoder = manufactor.recorder(received.method.params);
+        const foreign_recoder = manufactor.recorder(received.method.params);
         foreach (archive; foreign_recoder[]) {
             fp_result[archive.fingerprint] = archive.toDoc;
             import std.algorithm: arrRemove = remove, countUntil;
@@ -282,7 +283,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
 
             try {
                 auto stream_id = (() @trusted => connect())();
-                auto filename = tempfile ~ (std.conv.to!string(sector));
+                auto filename = format("%s_%s", tempfile, sector);
                 pragma(msg, "fixme(alex): Why 0x80");
                 enum BLOCK_SIZE = 0x80;
                 BlockFile.create(filename, DART.stringof, BLOCK_SIZE);

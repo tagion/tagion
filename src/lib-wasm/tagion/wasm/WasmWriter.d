@@ -414,7 +414,7 @@ import tagion.wasm.WasmException;
 
                     mixin Serialize;
                 }
-              
+
                 protected union {
                     @(IndexType.FUNC) FuncDesc _funcdesc;
                     @(IndexType.TABLE) TableDesc _tabledesc;
@@ -463,7 +463,7 @@ import tagion.wasm.WasmException;
                 }
 
                 this(T)(ref const(T) desc) {
-                    with(IndexType) {
+                    with (IndexType) {
                         static if (is(T : const(FuncDesc))) {
                             _desc = FUNC;
                             _funcdesc = desc;

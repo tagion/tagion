@@ -134,7 +134,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
             }
         }
 
-        void recorderReplayFunc(const(RecordFactory.Recorder) recorder) @safe  {
+        void recorderReplayFunc(const(RecordFactory.Recorder) recorder) @safe {
             dart.modify(recorder);
         }
 
@@ -297,7 +297,10 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
                     //     stop=true;
                     //     ownerTid.send(t);
                     // }
-                    );
+
+                    
+
+            );
             try {
                 connectionPool.tick();
                 if (opts.dart.synchronize) {
@@ -460,9 +463,8 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
                 if (cntrl == Control.STOP) {
                     stop = true;
                 }
-            }, (Response!(ControlCode.Control_Disconnected) resp) {
-                writeln("Subscribe Disconnected key: ", resp.key);
-            }, (Response!(ControlCode.Control_RequestHandled) response) {
+            }, (Response!(ControlCode.Control_Disconnected) resp) { writeln("Subscribe Disconnected key: ", resp.key); }, (
+                    Response!(ControlCode.Control_RequestHandled) response) {
                 writeln("Subscribe recorder received");
                 auto doc = Document(response.data);
                 immutable recorder = cast(immutable) manufactor.recorder(doc);

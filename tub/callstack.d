@@ -157,9 +157,11 @@ int main(string[] args) {
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
-            "version", "display the version", &version_switch,//        "gitlog:g", format("Git log file %s", git_log_json_file), &git_log_json_file,
-            "trace|t", "Name of callstack file", &call_stack_file,//        "date|d", format("Recorde the date in the checkout default %s", set_date), &set_date
-    
+            "version", "display the version", &version_switch, //        "gitlog:g", format("Git log file %s", git_log_json_file), &git_log_json_file,
+            "trace|t", "Name of callstack file", &call_stack_file, //        "date|d", format("Recorde the date in the checkout default %s", set_date), &set_date
+
+            
+
     );
 
     version (none)

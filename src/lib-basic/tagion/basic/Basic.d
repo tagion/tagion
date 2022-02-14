@@ -87,18 +87,18 @@ enum BITARRAY_MESSAGE = "Use tagion.utils.BitMask instead";
 /++
  Creates a new clean bitarray
 +/
-deprecated(BITARRAY_MESSAGE) void bitarray_clear(out BitArray bits, const size_t length) @trusted pure nothrow {
+version (none) deprecated(BITARRAY_MESSAGE) void bitarray_clear(out BitArray bits, const size_t length) @trusted pure nothrow {
     bits.length = length;
 }
 
 /++
  Change the size of the bitarray
 +/
-deprecated(BITARRAY_MESSAGE) void bitarray_change(ref scope BitArray bits, const size_t length) @trusted {
+version (none) deprecated(BITARRAY_MESSAGE) void bitarray_change(ref scope BitArray bits, const size_t length) @trusted {
     bits.length = length;
 }
 
-unittest {
+version (none) unittest {
     {
         BitArray test;
         immutable uint size = 7;

@@ -134,8 +134,6 @@ class DART : DARTFile { //, HiRPC.Supports {
         }
 
         string toString() inout {
-            import std.string;
-
             return format("(%d, %d)", _from_sector, _to_sector);
         }
 
@@ -227,6 +225,10 @@ class DART : DARTFile { //, HiRPC.Supports {
                     rims=[sector >> 8*ubyte.sizeof, sector & ubyte.max];
                 }
             });
+
+        string toString() const pure nothrow {
+            return rims.toHexString;
+        }
     }
 
     static {
@@ -243,13 +245,14 @@ class DART : DARTFile { //, HiRPC.Supports {
             return hirpc.dartRead(params, id);
         }
 
-        @HiRPCMethod() const(HiRPCSender) dartRim(scope const Rims rims, HiRPC hirpc = HiRPC(null), uint id = 0) {
+        @HiRPCMethod() const(HiRPCSender) dartRim(ref const Rims rims, HiRPC hirpc = HiRPC(null), uint id = 0) {
             // auto params=new HiBON;
             // params[Params.rims]=rims;
             return hirpc.dartRim(rims, id);
+            //   return hirpc.opDispatch!"dartRim"(rims, id);
         }
 
-        @HiRPCMethod() const(HiRPCSender) dartModify(scope const RecordFactory.Recorder recorder, HiRPC hirpc = HiRPC(
+        @HiRPCMethod() const(HiRPCSender) dartModify(ref const RecordFactory.Recorder recorder, HiRPC hirpc = HiRPC(
                 null), uint id = 0) {
             // auto params=new HiBON;
             // params[Params.recorder]=recorder.toDoc;
@@ -265,7 +268,7 @@ class DART : DARTFile { //, HiRPC.Supports {
     }
     do {
         // HiRPC.check_element!Document(received.params, Params.fingerprints);
-        scope result = loadAll(Archive.Type.ADD);
+        const result = loadAll(Archive.Type.ADD);
         return hirpc.result(received, result);
     }
     /++
@@ -317,9 +320,9 @@ class DART : DARTFile { //, HiRPC.Supports {
     }
     do {
         // HiRPC.check_element!Document(received.params, Params.fingerprints);
-        scope doc_fingerprints = received.method.params[Params.fingerprints].get!(Document);
-        scope fingerprints = doc_fingerprints.range!(Buffer[]);
-        scope recorder = loads(fingerprints, Archive.Type.ADD);
+        const doc_fingerprints = received.method.params[Params.fingerprints].get!(Document);
+        auto fingerprints = doc_fingerprints.range!(Buffer[]);
+        const recorder = loads(fingerprints, Archive.Type.ADD);
         return hirpc.result(received, recorder.toDoc);
     }
     /++
@@ -369,7 +372,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         //HiRPC.check_element!Buffer(received.params, Params.rims);
         immutable params = received.params!Rims;
 
-        scope rim_branches = branches(params.rims);
+        const rim_branches = branches(params.rims);
         HiBON hibon_params;
         if (!rim_branches.empty) {
             //            hibon_params=new HiBON;
@@ -379,7 +382,7 @@ class DART : DARTFile { //, HiRPC.Supports {
             hibon_params = new HiBON;
             // It not branches so maybe it is an archive
             immutable key = params.rims[$ - 1];
-            scope super_branches = branches(params.rims[0 .. $ - 1]);
+            const super_branches = branches(params.rims[0 .. $ - 1]);
             if (!super_branches.empty) {
                 immutable index = super_branches.indices[key];
                 if (index !is INDEX_NULL) {
@@ -442,7 +445,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         HiRPC.check(!read_only, "The DART is read only");
         //HiRPC.check_element!Document(received.params, Params.recorder);
         //        scope recorder_doc=received.method.params[Params.recorder].get!Document;
-        scope recorder = manufactor.recorder(received.method.params);
+        const recorder = manufactor.recorder(received.method.params);
         immutable bullseye = modify(recorder);
         auto hibon_params = new HiBON;
         hibon_params[Params.bullseye] = bullseye;
@@ -461,10 +464,10 @@ class DART : DARTFile { //, HiRPC.Supports {
      +     The response from HPRC if the method is supported
      +     else the response return is marked empty
      +/
-    const(HiRPCSender) opCall(ref scope const(HiRPCReceiver) received, const bool read_only = true) {
+    const(HiRPCSender) opCall(ref const(HiRPCReceiver) received, const bool read_only = true) {
         import std.conv: to;
 
-        const scope method = received.method;
+        const method = received.method;
         switch (method.name) {
             static foreach (call; Callers!DART) {
         case call:
@@ -573,9 +576,9 @@ class DART : DARTFile { //, HiRPC.Supports {
         }
 
         void remove_recursive(const Rims params) {
-            scope rim_walker = owner.rimWalkerRange(params.rims);
+            auto rim_walker = owner.rimWalkerRange(params.rims);
             uint count = 0;
-            scope recorder_worker = owner.recorder;
+            auto recorder_worker = owner.recorder;
             //            writefln("Recursive remove %s", rims.cutHex);
             foreach (archive_data; rim_walker) {
                 const archive_doc = Document(archive_data);
@@ -663,7 +666,7 @@ class DART : DARTFile { //, HiRPC.Supports {
             assert(blockfile);
         }
         do {
-            void iterate(const Rims params) {
+            void iterate(const Rims params) @trusted {
                 //
                 // Request Branches or Recorder at rims from the foreign DART.
                 //
@@ -760,7 +763,7 @@ class DART : DARTFile { //, HiRPC.Supports {
             journalfile.close;
         }
         // Adding and Removing archives
-        void local_replay(bool remove)() {
+        void local_replay(bool remove)() @trusted {
             for (uint index = journalfile.masterBlock.root_index; index !is INDEX_NULL;
                     ) {
                 immutable data = journalfile.load(index);
