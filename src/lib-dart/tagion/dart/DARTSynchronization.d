@@ -107,7 +107,7 @@ class ReadRequestHandler : ResponseHandler {
         const doc = Document(response); //TODO: check response
         pragma(msg, "fixme(alex): Add the Document check here (Comment abow)");
         auto received = hirpc.receive(doc);
-        scope foreign_recoder = manufactor.recorder(received.method.params);
+        const foreign_recoder = manufactor.recorder(received.method.params);
         foreach (archive; foreign_recoder[]) {
             fp_result[archive.fingerprint] = archive.toDoc;
             import std.algorithm: arrRemove = remove, countUntil;
