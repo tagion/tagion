@@ -6,7 +6,8 @@ private {
 
     import std.algorithm.sorting : sort;
     import std.algorithm.iteration : filter, each;
-    import std.algorithm.searching : count, maxElement;
+
+    import std.algorithm.searching : count, maxElement, all;
     import std.algorithm.comparison : equal;
 
     import std.array : array;
@@ -97,21 +98,11 @@ alias check = Check!DARTException;
     protected {
         BlockFile blockfile;
         Buffer _fingerprint;
-
-        //    Archives archives;
     }
 
     protected enum _params = [
-            "fingerprints", //        "branches",
-            //        "rims",
-            //        "limit",
-            "bullseye", //        "recorder",
-            //        "archives",
-            //        "archive",
-            //        "remove_rims",
-            //        "fingerprint",
-            //        "index",
-            //        "type"
+            "fingerprints",
+            "bullseye",
         ];
 
     mixin(EnumText!("Params", _params));
@@ -480,8 +471,7 @@ alias check = Check!DARTException;
         protected Buffer data;
         protected bool _finished;
         protected DARTFile owner;
-        @trusted
-        this(DARTFile owner, const(Buffer) rims) {
+        this(DARTFile owner, const(Buffer) rims) @trusted {
             this.rims = rims;
             this.owner = owner;
             super(&run);
@@ -713,22 +703,15 @@ alias check = Check!DARTException;
             }
         }
 
-        bool onlyRemove() pure const {
-            bool check(const(Archive[]) list) {
-                if (list.length > 1) {
-                    if (list[0].isRemove) {
-                        return check(list[1 .. $]);
-                    }
-                    else {
-                        return false;
-                    }
-                }
-                else {
-                    return list[0].isRemove;
-                }
+        bool onlyRemove(GetType get_type) const {
+            if (get_type) {
+                return current
+                    .all!((const(Archive) a) => a.type is Archive.Type.REMOVE);
             }
-
-            return check(current);
+            return current
+                .all!((const(Archive) a) => a.type is Archive.Type.REMOVE);
+            // return current
+            //     .all!((a) => a.isRemove);
         }
 
         bool single() pure const nothrow {
@@ -783,7 +766,10 @@ alias check = Check!DARTException;
      + If the function executes succesfully then the DART is update or else it does not affect the DART
      + The function return the bulleye of the dart
      +/
-    Buffer modify(const(RecordFactory.Recorder) modify_records) {
+    Buffer modify(const(RecordFactory.Recorder) modify_records, GetType get_type = null) {
+        if (get_type is null) {
+            get_type = (a) => a.type;
+        }
         Leave traverse_dart(R)(
                 scope ref R range,
                 const uint branch_index,
@@ -811,7 +797,8 @@ alias check = Check!DARTException;
                     while (!range.empty) {
                         scope sub_range = RimKeyRange(range, rim);
                         immutable rim_key = sub_range.front.fingerprint.rim_key(rim);
-                        if (!branches[rim_key].empty || !sub_range.onlyRemove) {
+                        if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
+
                             branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
                         }
                     }
@@ -843,7 +830,7 @@ alias check = Check!DARTException;
                                 scope sub_range = RimKeyRange(range, rim);
                                 scope sub_archive = sub_range.front;
                                 immutable rim_key = sub_archive.fingerprint.rim_key(rim);
-                                if (!branches[rim_key].empty || !sub_range.onlyRemove) {
+                                if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
                                 }
                             }
@@ -865,8 +852,8 @@ alias check = Check!DARTException;
                                 if (!single_archive.done) {
                                     range.popFront;
                                     if (single_archive.fingerprint == archive_in_dart.fingerprint) {
-                                        if (single_archive.isRemove) {
-                                            single_archive.done = true;
+                                        if (single_archive.isRemove(get_type)) {
+                                            single_archive.doit;
                                             return Leave(INDEX_NULL, null);
                                         }
                                         else {
@@ -885,7 +872,8 @@ alias check = Check!DARTException;
                                             scope sub_archive = sub_range.front;
                                             immutable rim_key = sub_archive.fingerprint.rim_key(
                                                     rim);
-                                            if (!branches[rim_key].empty || !sub_range.onlyRemove) {
+
+                                            if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                                                 branches[rim_key] = traverse_dart(sub_range, INDEX_NULL, rim + 1);
                                             }
                                         }
@@ -901,8 +889,8 @@ alias check = Check!DARTException;
                                 if (!equal_range.empty) {
                                     scope equal_archive = equal_range.front;
                                     if (!equal_archive.done) {
-                                        if (equal_archive.isRemove) {
-                                            equal_archive.done = true;
+                                        if (equal_archive.isRemove(get_type)) {
+                                            equal_archive.doit;
                                         }
                                     }
                                 }
@@ -914,7 +902,7 @@ alias check = Check!DARTException;
                                     scope sub_range = RimKeyRange(archive_range, rim);
                                     scope sub_archive = sub_range.front;
                                     immutable rim_key = sub_archive.fingerprint.rim_key(rim);
-                                    if (!branches[rim_key].empty || !sub_range.onlyRemove) {
+                                    if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                                         branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
                                     }
                                 }
@@ -928,11 +916,11 @@ alias check = Check!DARTException;
                             auto single_archive = range.front;
                             if (!single_archive.done) {
                                 range.popFront;
-                                if (single_archive.isRemove) {
+                                if (single_archive.isRemove(get_type)) {
                                     return Leave(INDEX_NULL, null);
                                 }
                                 else {
-                                    single_archive.done = true;
+                                    single_archive.doit;
                                     lonely_rim_key = single_archive.fingerprint.rim_key(rim);
                                     if (rim is RIMS_IN_SECTOR) {
                                         // Return a branch with as single leave when the leave is on the on
@@ -954,7 +942,8 @@ alias check = Check!DARTException;
                                 auto sub_archive = range.front;
                                 immutable rim_key = sub_archive.fingerprint.rim_key(rim);
                                 scope sub_range = RimKeyRange(range, rim);
-                                if (!branches[rim_key].empty || !sub_range.onlyRemove) {
+
+                                if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
                                 }
                             }
