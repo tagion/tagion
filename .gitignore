@@ -23,6 +23,8 @@ build
 local.*
 # Auto generated file
 gen.*
+*.di
+
 
 # Local backup
 *.parked

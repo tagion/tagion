@@ -2,6 +2,7 @@
 
 module tagion.betterC.hibon.Document;
 
+import std.stdio;
 /*@nogc:*/
 //import std.format;
 import std.meta : AliasSeq, Filter;
@@ -249,12 +250,14 @@ unittest { // Empty doc
      * Range of the Document
      */
     struct Range {
+        static int count=10;
+
         /*@nogc:*/
         /**
          * Buffer with data
          */
         immutable(ubyte)[] data;
-        
+
         /**
          * Version
          */
@@ -277,6 +280,8 @@ unittest { // Empty doc
          */
         this(immutable(ubyte[]) data) {
             this.data = data;
+
+            writefln("data.length=%d data is null=%s", data.length, data is null);
             if (data.length == 0) {
                 _index = ubyte.sizeof;
             }
@@ -332,10 +337,16 @@ unittest { // Empty doc
          * InputRange primitive operation that advances the range to its next element.
          */
         void popFront() {
+            count--;
+            if (count < 0) {
+                int* x;
+                *x=42;
+            }
             import std.stdio;
             // writeln(data.length);
             if (data.length) {
-                // writeln(Element(data).size);
+                writefln("data=%s element.size=%s", data, Element(data).size);
+
                 data = data[Element(data).size .. $];
                 // writeln(data);
                 // foreach (immutable(ubyte) key; data)
@@ -1279,7 +1290,9 @@ unittest { // Empty doc
                             break TypeCase;
                         }
                     default:
-                       return 0;
+                        assert(data == [0]);
+//                        writefln("data=%s LEB128=%s", data, LEB128.calc_size(data));
+                        return LEB128.calc_size(data);
                     }
                 }
                 return 0;
