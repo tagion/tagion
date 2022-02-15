@@ -18,7 +18,7 @@ private {
     import core.thread : Fiber;
     import std.range.primitives : isInputRange;
 
-    import tagion.basic.Basic : Buffer, EnumText;
+    import tagion.basic.Basic : Buffer, EnumText, assumeTrusted;
     import tagion.Keywords;
 
     import tagion.hibon.HiBON : HiBON;
@@ -478,13 +478,15 @@ alias check = Check!DARTException;
         }
 
         final private void run() {
-            void treverse(immutable uint index, immutable uint rim = 0) @trusted {
+            void treverse(
+                immutable uint index,
+                immutable uint rim = 0) @safe {
                 if (index !is INDEX_NULL) {
                     data = owner.blockfile.load(index);
-                    scope doc = Document(data);
+                    const doc = Document(data);
                     if (rim < rims.length) {
                         if (Branches.isRecord(doc)) {
-                            scope branches = Branches(doc);
+                            const branches = Branches(doc);
                             // This branches
                             immutable key = rim_key(rims, rim);
                             immutable next_index = branches.indices[key];
@@ -493,13 +495,13 @@ alias check = Check!DARTException;
                     }
                     else {
                         if (Branches.isRecord(doc)) {
-                            scope branches = Branches(doc);
+                            const branches = Branches(doc);
                             foreach (next_index; branches.indices) {
                                 treverse(next_index, rim + 1);
                             }
                         }
                         else {
-                            yield;
+                            assumeTrusted!yield;
                         }
                     }
                 }
