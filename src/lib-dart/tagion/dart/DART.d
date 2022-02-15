@@ -605,7 +605,10 @@ class DART : DARTFile { //, HiRPC.Supports {
             record(recorder_worker);
         }
 
-        @trusted void set(DART owner, SynchronizationFiber fiber, HiRPC hirpc) nothrow {
+        void set(
+            DART owner,
+            SynchronizationFiber fiber,
+            HiRPC hirpc) nothrow @trusted {
             import std.conv: emplace;
 
             this.fiber = fiber;
@@ -667,16 +670,16 @@ class DART : DARTFile { //, HiRPC.Supports {
             assert(blockfile);
         }
         do {
-            void iterate(const Rims params) @trusted {
+            void iterate(const Rims params) @safe {
                 //
                 // Request Branches or Recorder at rims from the foreign DART.
                 //
                 scope local_branches = branches(params.rims);
-                scope request_branches = dartRim(params, hirpc, id);
-                scope result_branches = sync.query(request_branches);
+                const request_branches = dartRim(params, hirpc, id);
+                const result_branches = sync.query(request_branches);
                 if (!Branches.isRecord(result_branches.response.result)) {
                     if (result_branches.isRecord!(RecordFactory.Recorder)) {
-                        scope foreign_recoder = manufactor.recorder(result_branches.method.params);
+                        auto foreign_recoder = manufactor.recorder(result_branches.method.params);
                         sync.record(foreign_recoder);
                     }
                     //
@@ -685,12 +688,12 @@ class DART : DARTFile { //, HiRPC.Supports {
                     sync.remove_recursive(params);
                 }
                 else {
-                    scope foreign_branches = result_branches.result!Branches;
+                    const foreign_branches = result_branches.result!Branches;
                     //
                     // Read all the archives from the foreign DART
                     //
-                    scope request_archives = dartRead(foreign_branches.fingerprints, hirpc, id);
-                    scope result_archives = sync.query(request_archives);
+                    const request_archives = dartRead(foreign_branches.fingerprints, hirpc, id);
+                    const result_archives = sync.query(request_archives);
                     scope foreign_recoder = manufactor.recorder(result_archives.response.result);
                     //
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
