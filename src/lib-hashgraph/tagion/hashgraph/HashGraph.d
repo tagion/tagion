@@ -1120,7 +1120,7 @@ class HashGraph {
         const channels = network.channels;
 
         try {
-            foreach (i; 0 .. 3276) {
+            foreach (i; 0 .. 550) {
                 const channel_number = network.random.value(0, channels.length);
                 const channel = channels[channel_number];
                 auto current = network.networks[channel];

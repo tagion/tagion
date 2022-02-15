@@ -1252,7 +1252,7 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
     { // None standard Keys
         import std.typecons: Typedef;
         import std.algorithm: map, each;
-        import std.bitmanip: binwrite = write;
+        import std.range : tee;
         import std.algorithm: sort;
         import std.array: array;
         import std.typecons: tuple;
@@ -1260,8 +1260,13 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
         import std.stdio;
 
         import tagion.basic.Basic: Buffer;
-
+        static void binwrite(Args...)(ubyte[] buf, Args args) @trusted {
+            import std.bitmanip : write;
+            write(buf, args);
+        }
+//        alias binwrite=assumeTrusted!(bitmanip.write!Buffer);
         { // Typedef on HiBON.type is used as key in an associative-array
+            pragma(msg, "fixme(cbr): make sure that the assoicated array is hash invariant");
             alias Bytes = Typedef!(immutable(ubyte)[], null, "Bytes");
             alias Tabel = int[Bytes];
             static struct StructBytes {
@@ -1277,7 +1282,7 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
             auto list = [-17, 117, 3, 17, 42];
             auto buffer = new ubyte[int.sizeof];
             foreach (i; list) {
-                (() @trusted { buffer.binwrite(i, 0); })();
+                binwrite(buffer, i, 0);
                 tabel[Bytes(buffer.idup)] = i;
             }
 
@@ -1286,23 +1291,56 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
             const s_doc = s.toDoc;
             const result = StructBytes(s_doc);
 
-
-            (() @trusted {
-                import std.range : tee;
-                assert(
-                    equal(
+            import std.stdio;
+            // writefln("sort=%s",
+            //     list
+            //     .tee!(i => binwrite(buffer, i, 0))
+            //     .map!(i => tuple(buffer.idup, i))
+            //     .array
+            //     .sort!((a, b) => a[0] < b[0])
+            //     );
+            //     // })
+            //     // .map!(q{a()})
+            //     // .array
+            //     // .sort);
+            //     writeln("**************");
+            // writefln("s_doc=%s",
+            //     s_doc["tabel"]
+            //     .get!Document[]
+            //     .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
+            assert(equal(
                     list
-                    .tee!(i => buffer.binwrite(i, 0))
+                    .tee!(i => binwrite(buffer, i, 0))
                     .map!(i => tuple(buffer.idup, i))
-                    // })
-                    // .map!(q{a()})
                     .array
-                    .sort,
+                    .sort!((a, b) => a[0] < b[0])
+                    ,
                     s_doc["tabel"]
                     .get!Document[]
                     .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
-                ));
-            })();
+                    )
+                );
+
+                // .array
+                // .sort!((a, b) => a[1] < b[1])
+            //     );
+
+            // (() @trusted {
+            //     import std.range : tee;
+            //     assert(
+            //         equal(
+            //         list
+            //         .tee!(i => binwrite(buffer, i, 0))
+            //         .map!(i => tuple(buffer.idup, i))
+            //         // })
+            //         // .map!(q{a()})
+            //         .array
+            //         .sort,
+            //         s_doc["tabel"]
+            //         .get!Document[]
+            //         .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
+            //     ));
+            // })();
 
             assert(s_doc == result.toDoc);
         }
