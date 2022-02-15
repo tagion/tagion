@@ -232,8 +232,10 @@ class DART : DARTFile { //, HiRPC.Supports {
     }
 
     static {
-        @HiRPCMethod() const(HiRPCSender) dartRead(Range)(scope Range fingerprints, HiRPC hirpc = HiRPC(
-                null), uint id = 0) { //if (is(ForeachType!Range : Buffer)) {
+        @HiRPCMethod() const(HiRPCSender) dartRead(Range)(
+            Range fingerprints,
+            HiRPC hirpc = HiRPC(null),
+            uint id = 0) { //if (is(ForeachType!Range : Buffer)) {
             auto params = new HiBON;
             auto params_fingerprints = new HiBON;
             foreach (i, b; fingerprints) {
@@ -674,7 +676,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                 //
                 // Request Branches or Recorder at rims from the foreign DART.
                 //
-                scope local_branches = branches(params.rims);
+                const local_branches = branches(params.rims);
                 const request_branches = dartRim(params, hirpc, id);
                 const result_branches = sync.query(request_branches);
                 if (!Branches.isRecord(result_branches.response.result)) {
@@ -723,7 +725,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                         else if (foreign_print) {
                             // Foreign is poits to branches
                             if (local_print) {
-                                scope possible_branches_data = load(local_branches, key);
+                                const possible_branches_data = load(local_branches, key);
                                 if (!Branches.isRecord(Document(possible_branches_data))) {
                                     // If branch is an archive then it is removed because if it exists in foreign DART
                                     // this archive will be added later
