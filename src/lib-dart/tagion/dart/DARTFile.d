@@ -415,20 +415,19 @@ alias check = Check!DARTException;
             return true;
         }
 
-        private immutable(Buffer) fingerprint(DARTFile dartfile, scope bool[uint] index_used = null) @trusted {
+        private immutable(Buffer) fingerprint(
+                DARTFile dartfile,
+                scope bool[uint] index_used = null) {
             if (merkleroot is null) {
                 foreach (key, index; _indices) {
                     if ((index !is INDEX_NULL) && (_fingerprints[key] is null)) {
-
-
-
-                            .check((index in index_used) is null, format(
-                                    "The DART contains a recursive tree @ index %d", index));
+                            .check((index in index_used) is null,
+                                    format("The DART contains a recursive tree @ index %d", index));
                         index_used[index] = true;
-                        scope data = dartfile.blockfile.load(index);
-                        scope doc = Document(data);
+                        immutable data = dartfile.blockfile.load(index);
+                        const doc = Document(data);
                         if (doc.hasMember(indicesName)) {
-                            scope subbranch = Branches(doc);
+                            auto subbranch = Branches(doc);
                             _fingerprints[key] = subbranch.fingerprint(dartfile, index_used);
                         }
                         // else if ( doc.hasMember(Keywords.stub) ) {
@@ -1000,12 +999,12 @@ alias check = Check!DARTException;
 
     RecordFactory.Recorder readStubs() { //RIMS_IN_SECTOR
         RecordFactory.Recorder rec = manufactor.recorder();
-        void iterate(const uint branch_index, immutable uint rim = 0) @trusted {
+        void iterate(const uint branch_index, immutable uint rim = 0) @safe {
             if (branch_index !is INDEX_NULL) {
-                scope data = blockfile.load(branch_index);
-                scope doc = Document(data);
+                immutable data = blockfile.load(branch_index);
+                const doc = Document(data);
                 if (Branches.isRecord(doc)) {
-                    scope branches = Branches(doc);
+                    auto branches = Branches(doc);
                     if (rim == RIMS_IN_SECTOR) {
                         // writeln("ADD BRANCH FP", branches.fingerprint(this).toHex);
                         rec.stub(branches.fingerprint(this));

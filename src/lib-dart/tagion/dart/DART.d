@@ -769,11 +769,11 @@ class DART : DARTFile { //, HiRPC.Supports {
             journalfile.close;
         }
         // Adding and Removing archives
-        void local_replay(bool remove)() @trusted {
+        void local_replay(bool remove)() @safe {
             for (uint index = journalfile.masterBlock.root_index; index !is INDEX_NULL;
                     ) {
                 immutable data = journalfile.load(index);
-                scope doc = Document(data);
+                const doc = Document(data);
                 // index=doc[Params.index].get!uint;
 
                 //scope replay_recorder_doc=doc[Params.recorder].get!Document;
@@ -783,7 +783,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                 // writefln("doc.keys=%s", doc.keys);
                 auto journal_replay = Journal(manufactor, doc);
                 index = journal_replay.index;
-                scope action_recorder = recorder;
+                auto action_recorder = recorder;
                 foreach (a; journal_replay.recorder.archives[]) {
                     static if (remove) {
                         if (a.type is Archive.Type.REMOVE) {
