@@ -359,7 +359,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             super(journal_filename);
         }
 
-        const(HiRPCReceiver) query(ref scope const(HiRPCSender) request) {
+        const(HiRPCReceiver) query(ref const(HiRPCSender) request) {
             scope (failure) {
                 close();
             }

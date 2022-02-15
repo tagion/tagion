@@ -481,11 +481,12 @@ class DART : DARTFile { //, HiRPC.Supports {
         return hirpc.error(received, message, 22);
     }
 
+    @safe
     interface Synchronizer {
         /++
          + Recommend to put a yield the SynchronizationFiber between send and receive between the DART's
          +/
-        const(HiRPCReceiver) query(scope ref const(HiRPCSender) request);
+        const(HiRPCReceiver) query(ref const(HiRPCSender) request);
         /++
          + Stores the add and remove actions in the journal replay log file
          +/
@@ -816,7 +817,7 @@ class DART : DARTFile { //, HiRPC.Supports {
             // This function emulates the connection between two DART's
             // in a single thread
             //
-            const(HiRPCReceiver) query(ref scope const(HiRPCSender) request) {
+            const(HiRPCReceiver) query(ref const(HiRPCSender) request) {
                 Document send_request_to_foreign_dart(const Document foreign_doc) {
                     //
                     // Remote excution

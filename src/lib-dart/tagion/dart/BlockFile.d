@@ -1127,7 +1127,8 @@ class BlockFile {
         @safe uint search(const uint index) {
             if (index !is INDEX_NULL) {
                 const block = read(index);
-                check(block.size > 0, format("Bad data block @ %d the size is zero", index));
+                check(block.size > 0,
+                    format("Bad data block @ %d the size is zero", index));
                 if (block.size > DATA_SIZE) {
                     return search(block.next);
                 }
@@ -1264,7 +1265,7 @@ class BlockFile {
         //
         // Sortes the blocks in order
         //
-        scope Block[uint] blocks;
+        Block[uint] blocks;
         const(Block) local_read(const uint index) {
             if (index in blocks) {
                 return blocks[index];
@@ -1392,7 +1393,8 @@ class BlockFile {
         //
 
         { //write_blocks_in_sorted_order
-            scope sorted_indices = blocks.keys.dup.sort;
+            pragma(msg, "Block ", Block);
+            auto sorted_indices = blocks.keys.dup.sort;
             sorted_indices.each!(index => write(index, blocks[index]));
         }
 
