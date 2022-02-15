@@ -556,10 +556,13 @@ alias check = Check!DARTException;
         // auto result=Recorder(net);
         //RecordFactory.Recorder.Archive[] archives;
         auto recorder = manufactor.recorder;
-        void local_load(const uint branch_index, const ubyte rim_key = 0, const uint rim = 0) @trusted {
+        void local_load(
+            const uint branch_index,
+            const ubyte rim_key = 0,
+            const uint rim = 0) @safe {
             if (branch_index !is INDEX_NULL) {
-                scope data = blockfile.load(branch_index);
-                scope doc = Document(data);
+                immutable data = blockfile.load(branch_index);
+                const doc = Document(data);
                 if (Branches.isRecord(doc)) {
                     const branches = Branches(doc);
                     if (branches.indices.length) {
@@ -610,7 +613,7 @@ alias check = Check!DARTException;
         auto result = recorder;
         void traverse_dart(
                 const uint branch_index,
-                Buffer[] ordered_fingerprints, //            const(Buffer[]) selected_fingerprints=null,
+                Buffer[] ordered_fingerprints,
                 immutable uint rim = 0) @trusted {
             if ((ordered_fingerprints) && (branch_index !is INDEX_NULL)) {
                 scope data = blockfile.load(branch_index);
