@@ -83,9 +83,7 @@ void monitorServiceTask(immutable(Options) opts) nothrow {
         ownerTid.send(Control.LIVE);
         while (!stop) {
             receiveTimeout(500.msecs, //Control the thread
-                    &handleState, (string json) {
-                listener_socket.broadcast(json);
-            }, (immutable(ubyte)[] hibon_bytes) {
+                    &handleState, (string json) { listener_socket.broadcast(json); }, (immutable(ubyte)[] hibon_bytes) {
                 listener_socket.broadcast(hibon_bytes);
             }, (Document doc) { listener_socket.broadcast(doc); }, &taskfailure // (immutable(TagionException) e) {
                     //     // log.error(e.msg);
@@ -105,6 +103,9 @@ void monitorServiceTask(immutable(Options) opts) nothrow {
                     //     ownerTid.send(t);
                     //     // throw t;
                     // }
+
+            
+
             );
             //        log("Running");
         }

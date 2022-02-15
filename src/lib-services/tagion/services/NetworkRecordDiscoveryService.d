@@ -189,9 +189,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
                 auto sender = DART.dartModify(recorder, internal_hirpc);
                 auto tosend = sender.toDoc.serialize;
                 send(dart_sync_tid, task_name, tosend);
-                receive((Buffer result) {
-                    log("Update dart result: %s", cast(string) result);
-                });
+                receive((Buffer result) { log("Update dart result: %s", cast(string) result); });
             }
             else {
                 log("dart sync not located");

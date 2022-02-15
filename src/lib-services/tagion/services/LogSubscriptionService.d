@@ -20,8 +20,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.basic.TagionExceptions : fatal, taskfailure;
 
-struct LogSubscriptionFilters
-{
+struct LogSubscriptionFilters {
     LogFilter[][uint] filters;
 
     void addSubscription(uint listener_id, LogFilter[] filters_array) {
@@ -41,7 +40,7 @@ struct LogSubscriptionFilters
     }
 
     bool matchListenerFilter(uint listener_id, string task_name, LoggerType log_level) {
-        foreach(filter; filters[listener_id]) {
+        foreach (filter; filters[listener_id]) {
             if (filter.match(task_name, log_level)) {
                 return true;
             }
@@ -61,9 +60,9 @@ void logSubscriptionServiceTask(immutable(Options) opts) nothrow {
         LogSubscriptionFilters subscription_filters;
 
         setOptions(opts);
- 
+
         log.register(opts.logSubscription.task_name);
-        logger_service_tid=ownerTid;
+        logger_service_tid = ownerTid;
 
         // TODO: this call is for testing purposes,
         // remove when it will be able to add real subscription
@@ -134,7 +133,7 @@ void logSubscriptionServiceTask(immutable(Options) opts) nothrow {
         }
 
         void receiveLogs(string task_name, LoggerType log_level, string log_output) {
-            foreach(listener_id; subscription_filters.filters.keys) {
+            foreach (listener_id; subscription_filters.filters.keys) {
                 if (subscription_filters.matchListenerFilter(listener_id, task_name, log_level)) {
                     writeln(format("sent {%s} to %d", log_output, listener_id));
                     //immutable log_buffer = log_output.seliaze();
@@ -146,15 +145,13 @@ void logSubscriptionServiceTask(immutable(Options) opts) nothrow {
         ownerTid.send(Control.LIVE);
         while (!stop) {
             receiveTimeout(500.msecs, //Control the thread
-                &handleState,
-                &taskfailure,
-                &receiveLogs,
-                );
+                    &handleState,
+                    &taskfailure,
+                    &receiveLogs,
+            );
         }
     }
     catch (Throwable t) {
         fatal(t);
     }
 }
-
-

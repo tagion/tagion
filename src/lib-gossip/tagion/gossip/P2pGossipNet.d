@@ -3,20 +3,20 @@ module tagion.gossip.P2pGossipNet;
 import std.stdio;
 import std.concurrency;
 import std.format;
-import std.array: join;
-import std.conv: to;
+import std.array : join;
+import std.conv : to;
 import std.file;
-import std.file: fwrite = write;
+import std.file : fwrite = write;
 import std.typecons;
 
 pragma(msg, "fixme(cbr): Eliminated dependency of Services Options");
 import tagion.options.HostOptions;
 import tagion.dart.DARTOptions;
 
-import tagion.basic.Basic: EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType, Control;
+import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType, Control;
 
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
-import tagion.utils.Miscellaneous: cutHex;
+import tagion.utils.Miscellaneous : cutHex;
 
 // import tagion.utils.Random;
 import tagion.utils.LRU;
@@ -24,12 +24,12 @@ import tagion.utils.Queue;
 
 //import tagion.Keywords;
 
-import tagion.hibon.HiBON: HiBON;
-import tagion.hibon.Document: Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
-import tagion.hashgraph.HashGraphBasic: convertState, ExchangeState;
+import tagion.hashgraph.HashGraphBasic : convertState, ExchangeState;
 import tagion.basic.ConsensusExceptions;
 
 import tagion.logger.Logger;
@@ -47,7 +47,7 @@ import tagion.utils.StdTime;
 
 import tagion.dart.DART;
 import tagion.communication.HiRPC;
-import std.random: Random, unpredictableSeed, uniform;
+import std.random : Random, unpredictableSeed, uniform;
 
 import std.datetime;
 
@@ -188,7 +188,7 @@ unittest {
 
     log.push(LoggerType.NONE);
 
-    import p2p.node: Stream;
+    import p2p.node : Stream;
 
     @trusted
     synchronized
@@ -277,15 +277,15 @@ struct NodeAddress {
     string id;
     uint port;
     DART.SectorRange sector;
-    version(none)
-    this(ref return scope const(NodeAddress) node_address) inout {
+    version (none) this(ref return scope const(NodeAddress) node_address) inout {
         address = node_address.address;
-        is_marshal = node_address.is_marshal; 
+        is_marshal = node_address.is_marshal;
         id = node_address.id;
         port = node_address.port;
         sector = node_address.sector;
     }
-    this(string address, immutable(DARTOptions) dart_opts, const ulong port_base,  bool marshal = false) {
+
+    this(string address, immutable(DARTOptions) dart_opts, const ulong port_base, bool marshal = false) {
         import std.string;
 
         try {
@@ -325,7 +325,7 @@ struct NodeAddress {
     }
 
     static Tuple!(ushort, ushort) calcAngleRange(immutable(DARTOptions) dart_opts, const ulong node_number, const ulong max_nodes) {
-        import std.math: ceil, floor;
+        import std.math : ceil, floor;
 
         float delta = (cast(float)(dart_opts.sync.netToAng - dart_opts.sync.netFromAng)) / max_nodes;
         auto from_ang = to!ushort(dart_opts.from_ang + floor(node_number * delta));
@@ -381,7 +381,7 @@ class StdP2pNet : P2pNet {
     @safe
     void close() {
         @trusted void send_stop() {
-            import std.concurrency: prioritySend, Tid, locate;
+            import std.concurrency : prioritySend, Tid, locate;
 
             auto sender = locate(internal_task_name);
             if (sender != Tid.init) {
@@ -396,7 +396,7 @@ class StdP2pNet : P2pNet {
 
     @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
-        import std.concurrency: tsend = send, prioritySend, Tid, locate;
+        import std.concurrency : tsend = send, prioritySend, Tid, locate;
 
         auto internal_sender = locate(internal_task_name);
         log("send called");
@@ -413,7 +413,7 @@ class StdP2pNet : P2pNet {
 
     @trusted
     protected void send_remove(Pubkey pk) {
-        import std.concurrency: tsend = send, Tid, locate;
+        import std.concurrency : tsend = send, Tid, locate;
 
         auto sender = locate(internal_task_name);
         if (sender != Tid.init) {
@@ -464,17 +464,17 @@ static void async_send(string task_name, string discovery_task_name, const(HostO
                 // auto node_address = receiveOnly!(NodeAddress);
                 receive(
                         (NodeAddress node_address) {
-                            log("addr: %s, ismarshal: %s", node_address.address, node_address.is_marshal);
-                            auto stream = node.connect(node_address.address, true, [internal_task_name]);
-                            streamId = stream.Identifier;
-                            import p2p.callback;
+                    log("addr: %s, ismarshal: %s", node_address.address, node_address.is_marshal);
+                    auto stream = node.connect(node_address.address, true, [internal_task_name]);
+                    streamId = stream.Identifier;
+                    import p2p.callback;
 
-                            connectionPool.add(streamId, stream, true);
-                            stream.listen(&StdHandlerCallback, internal_task_name, host.timeout.msecs, host
-                                .max_size);
-                            // log("add stream to connection pool %d", streamId);
-                            connectionPoolBridge.lookup[channel] = streamId;
-                        }
+                    connectionPool.add(streamId, stream, true);
+                    stream.listen(&StdHandlerCallback, internal_task_name, host.timeout.msecs, host
+                        .max_size);
+                    // log("add stream to connection pool %d", streamId);
+                    connectionPoolBridge.lookup[channel] = streamId;
+                }
                 );
             }
             else {
@@ -592,7 +592,7 @@ static void async_send(string task_name, string discovery_task_name, const(HostO
     }
 
     const(Pubkey) select_channel(ChannelFilter channel_filter) {
-        import std.range: dropExactly;
+        import std.range : dropExactly;
 
         foreach (count; 0 .. pks.length * 2) {
             const node_index = uniform(0, cast(uint) pks.length, random);

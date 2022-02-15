@@ -39,7 +39,7 @@ void loggerTask(immutable(Options) opts) {
 
         LogFilter[] log_filters;
         bool matchAnyFilter(string task_name, LoggerType log_level) const nothrow {
-            foreach(filter; log_filters) {
+            foreach (filter; log_filters) {
                 if (filter.match(task_name, log_level)) {
                     return true;
                 }
@@ -50,11 +50,11 @@ void loggerTask(immutable(Options) opts) {
         task_register;
         log.set_logger_task(opts.logger.task_name);
 
-        auto log_subscription_tid=spawn(&logSubscriptionServiceTask, opts);
-        scope(exit){
+        auto log_subscription_tid = spawn(&logSubscriptionServiceTask, opts);
+        scope (exit) {
             log_subscription_tid.send(Control.STOP);
             auto respond_control = receiveOnly!Control;
-        }        
+        }
 
         File file;
         const logging = opts.logger.file_name.length != 0;
@@ -78,19 +78,19 @@ void loggerTask(immutable(Options) opts) {
 
         void controller(Control ctrl) @safe {
             with (Control) switch (ctrl) {
-                case STOP:
-                    writeln("Stopping LoggerService...");
-                    stop = true;
-                    file.writefln("%s Stopped ", opts.logger.task_name);
-                    break;
-                case END:
-                    // LoggerService shouldn't run without LogSubscriptionService
-                    stop = true;
-                    file.writefln("%s: LogSubscriptionService stopped %s", opts.logger.task_name, ctrl);
-                    break;
-                default:
-                    file.writefln("%s: Unsupported control %s", opts.logger.task_name, ctrl);
-                }
+            case STOP:
+                writeln("Stopping LoggerService...");
+                stop = true;
+                file.writefln("%s Stopped ", opts.logger.task_name);
+                break;
+            case END:
+                // LoggerService shouldn't run without LogSubscriptionService
+                stop = true;
+                file.writefln("%s: LogSubscriptionService stopped %s", opts.logger.task_name, ctrl);
+                break;
+            default:
+                file.writefln("%s: Unsupported control %s", opts.logger.task_name, ctrl);
+            }
         }
 
         @trusted void receiver(LoggerType type, string label, string text) {
@@ -136,7 +136,7 @@ void loggerTask(immutable(Options) opts) {
             }
         }
     }
-    catch(Throwable t) {
+    catch (Throwable t) {
         fatal(t);
     }
 }

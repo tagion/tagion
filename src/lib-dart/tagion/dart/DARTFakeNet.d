@@ -3,14 +3,14 @@ module tagion.dart.DARTFakeNet;
 import std.random;
 
 //import tagion.gossip.InterfaceNet : SecureNet, HashNet;
-import tagion.crypto.SecureNet: StdSecureNet;
-import tagion.basic.Basic: Buffer, Control;
+import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.basic.Basic : Buffer, Control;
 import tagion.dart.DART;
-import tagion.dart.DARTFile: DARTFile;
-import tagion.dart.Recorder: RecordFactory;
-import tagion.hibon.Document: Document;
-import tagion.hibon.HiBONRecord: HiBONPrefix;
-import tagion.hibon.HiBON: HiBON;
+import tagion.dart.DARTFile : DARTFile;
+import tagion.dart.Recorder : RecordFactory;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONRecord : HiBONPrefix;
+import tagion.hibon.HiBON : HiBON;
 import tagion.dart.DARTBasic;
 import tagion.dart.Recorder;
 
@@ -64,12 +64,12 @@ class DARTFakeNet : StdSecureNet {
 
     @trusted
     override immutable(Buffer) hashOf(scope const(Document) doc) const {
-        import tagion.hibon.HiBONBase: Type;
-        import std.exception: assumeUnique;
+        import tagion.hibon.HiBONBase : Type;
+        import std.exception : assumeUnique;
 
         if (doc.hasMember(FAKE) && (doc[FAKE].type is Type.UINT64)) {
             const x = doc[FAKE].get!ulong;
-            import std.bitmanip: nativeToBigEndian;
+            import std.bitmanip : nativeToBigEndian;
 
             ubyte[] fingerprint;
             fingerprint.length = hashSize;
@@ -87,7 +87,7 @@ class DARTFakeNet : StdSecureNet {
 }
 
 Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
-    import std.math: floor, ceil;
+    import std.math : floor, ceil;
 
     static __gshared bool stop = false;
     static __gshared ulong all_iterations = 0;
@@ -95,8 +95,8 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
     static ulong local_iteration = 0;
 
     alias Sector = DART.SectorRange;
-    import std.math: pow;
-    import std.algorithm: count;
+    import std.math : pow;
+    import std.algorithm : count;
 
     auto dart_range = dart.sectors;
     all_iterations = count(dart_range) * pow(ringWidth, (rings - 2));
@@ -196,7 +196,7 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
         );
     }
     while (active_threads > 0 && !stop);
-    import core.stdc.stdlib: exit;
+    import core.stdc.stdlib : exit;
 
     if (stop)
         exit(0); //TODO: bad solution

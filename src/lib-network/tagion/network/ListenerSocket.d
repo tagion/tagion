@@ -5,24 +5,25 @@ import std.socket;
 import std.concurrency;
 import std.format;
 import core.thread;
-import std.array: join;
-import std.conv: to;
-import std.bitmanip: binwrite = write;
+import std.array : join;
+import std.conv : to;
+import std.bitmanip : binwrite = write;
 
-import tagion.basic.Basic: Buffer;
+import tagion.basic.Basic : Buffer;
+
 //import tagion.services.Options: Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
 import tagion.hibon.Document;
 import tagion.logger.Logger;
 import tagion.network.NetworkExceptions;
-import tagion.basic.TagionExceptions: TagionException, taskException;
+import tagion.basic.TagionExceptions : TagionException, taskException;
 
 struct ListenerSocket {
     immutable ushort port;
     immutable(string) address;
     immutable uint timeout;
     immutable(string) listen_task_name;
-//    immutable(Options) opts;
+    //    immutable(Options) opts;
     protected {
         shared(bool) stop_listener;
         Tid masterTid;
@@ -101,8 +102,7 @@ struct ListenerSocket {
          + This function send a Document directly, because the buffer length is included in the HIBON from
          + the length is not instead in front of the package
          +/
-        protected void send(T)(ref Socket client, T arg)
-                if (is(T : const(Buffer)) || is(T : const(Document)) || is(T : string)) {
+        protected void send(T)(ref Socket client, T arg) if (is(T : const(Buffer)) || is(T : const(Document)) || is(T : string)) {
             static if (is(T : const(Buffer)) || is(T : string)) {
                 enum include_size = true;
                 immutable data = cast(Buffer) arg;
@@ -119,14 +119,13 @@ struct ListenerSocket {
             }
 
             for (size_t start_pos = 0; start_pos < data.length; start_pos += socket_buffer_size) {
-                immutable end_pos = (start_pos + socket_buffer_size < data.length) ? start_pos + socket_buffer_size
-                    : data.length;
+                immutable end_pos = (start_pos + socket_buffer_size < data.length) ? start_pos + socket_buffer_size : data
+                    .length;
                 client.send(data[start_pos .. end_pos]);
             }
         }
 
-        void broadcast(T)(T arg)
-                if (is(T : const(Buffer)) || is(T : const(Document)) || is(T : string)) {
+        void broadcast(T)(T arg) if (is(T : const(Buffer)) || is(T : const(Document)) || is(T : string)) {
             auto clients = cast(Socket[uint])*locate_clients;
             static if (is(T : const(Buffer)) || is(T : string)) {
                 immutable size = arg.length;
@@ -148,8 +147,7 @@ struct ListenerSocket {
             }
         }
 
-        void send(T)(const uint socket_id, T arg)
-                if (is(T : const(Buffer)) || is(T : const(Document))) {
+        void send(T)(const uint socket_id, T arg) if (is(T : const(Buffer)) || is(T : const(Document))) {
             auto clients = cast(Socket[uint])*locate_clients;
             auto client = clients.get(socket_id, null);
             check(clinet !is null, message("Socket with the id %d is not avaible", socket_id));
@@ -180,15 +178,13 @@ struct ListenerSocket {
         }
     }
 
-    void broadcast(T)(T arg)
-            if (is(T : const(Buffer)) || is(T : const(Document)) || is(T : string)) {
+    void broadcast(T)(T arg) if (is(T : const(Buffer)) || is(T : const(Document)) || is(T : string)) {
         if (active) {
             shared_clients.broadcast(arg);
         }
     }
 
-    void send(T)(const uint socket_id, T arg)
-            if (is(T : const(Buffer)) || is(T : const(Document))) {
+    void send(T)(const uint socket_id, T arg) if (is(T : const(Buffer)) || is(T : const(Document))) {
         if (active) {
             shared_clients.send(socket_id, arg);
         }
@@ -240,7 +236,7 @@ struct ListenerSocket {
     protected shared(SharedClients) shared_clients;
 
     void run() {
-//        setOptions(opts);
+        //        setOptions(opts);
         // log.push(LoggerType.ALL);
         // scope(exit) {
         //     log.pop;

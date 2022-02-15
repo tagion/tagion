@@ -17,65 +17,68 @@ struct Task(alias Func) {
     import std.exception;
     import std.concurrency;
 
-    alias Params=Parameters!Func;
-    alias ParamNames=ParameterIdentifierTuple!Func;
+    alias Params = Parameters!Func;
+    alias ParamNames = ParameterIdentifierTuple!Func;
 
     private Tid _tid;
     immutable(string) task_name;
 
     this(string task_name, Params args) {
-        this.task_name=task_name;
+        this.task_name = task_name;
         _tid = spawn(&run, task_name, args);
         // TODO add table
-        version(none) {
-        // Should we do the check and log if there is error but not stop the execution? 
-        check(receiveOnly!Control is Control.LIVE);
+        version (none) {
+            // Should we do the check and log if there is error but not stop the execution? 
+            check(receiveOnly!Control is Control.LIVE);
         }
     }
 
     static if (is(Func == struct)) {
         static string generateSendFunctions() {
             import std.array : join;
+
             string[] result;
-            static foreach(m; __traits(allMembers, Func)) {{
-                    enum code=format!(q{alias Type=Func.%s;})(m);
+            static foreach (m; __traits(allMembers, Func)) {
+                {
+                    enum code = format!(q{alias Type=Func.%s;})(m);
                     mixin(code);
                     static if (isCallable!Type && hasUDA!(Type, TaskMethod)) {
-                        enum method_code=format!q{
+                        enum method_code = format!q{
                             alias FuncParams_%1$s=AliasSeq!%2$s;
                             void %1$s(FuncParams_%1$s args) {
                                 _tid.send(args);
                                     }}(m, Parameters!(Type).stringof);
-                        result~=method_code;
+                        result ~= method_code;
                     }
-                         }}
+                }
+            }
             return result.join("\n");
         }
-        enum send_methods=generateSendFunctions;
+
+        enum send_methods = generateSendFunctions;
         mixin(send_methods);
     }
-    
-    version(none)
-    void stop() const {
+
+    version (none) void stop() const {
         _tid.send(Control.STOP);
         receive((Control control) =>
                 check(control is Control.END, "Bad something")
-            );
+        );
     }
 
     static void run(string task_name, Params args) nothrow {
         try {
-            scope(success) {
+            scope (success) {
                 assumeWontThrow(writefln("Success"));
             }
-            scope(failure) {
+            scope (failure) {
                 assumeWontThrow(writefln("Fail"));
                 // Send logs?
             }
-            scope(exit) {
+            scope (exit) {
                 ownerTid.prioritySend(Control.END);
             }
-            
+
             log.register(task_name);
 
             Func task;
@@ -89,7 +92,8 @@ struct Task(alias Func) {
 }
 
 mixin template TaskBasic() {
-    import concurrency=std.concurrency;
+    import concurrency = std.concurrency;
+
     bool stop;
     // TODO Do we need handle also "abort"? 
 
@@ -109,13 +113,16 @@ mixin template TaskBasic() {
     }
 
     @TaskMethod void control(immutable(Control) control) {
-        with(Control) {
-            final switch(control) {
-            case STOP: onSTOP;
+        with (Control) {
+            final switch (control) {
+            case STOP:
+                onSTOP;
                 break;
-            case LIVE: onLIVE;
+            case LIVE:
+                onLIVE;
                 break;
-            case END: onEND;
+            case END:
+                onEND;
                 break;
             }
         }
@@ -125,6 +132,7 @@ mixin template TaskBasic() {
 struct FakeTask {
     import std.concurrency;
     import std.string : StringException;
+
     mixin TaskBasic;
 
     @TaskMethod void echo_string(string test_string) {
@@ -137,11 +145,11 @@ struct FakeTask {
 
     void opCall(int x, uint y) {
         ownerTid.send(Control.LIVE);
-        while(!stop) {
+        while (!stop) {
             receive(
-                &control,
-                &echo_string,
-                &throwing_method);
+                    &control,
+                    &echo_string,
+                    &throwing_method);
         }
     }
 }
@@ -152,22 +160,22 @@ unittest {
 
     // Spawn fake task
     enum fake_task_name = "fake_task_name";
-    alias fake_task=Task!FakeTask;
-    auto task=fake_task(fake_task_name, 10, 20);
+    alias fake_task = Task!FakeTask;
+    auto task = fake_task(fake_task_name, 10, 20);
     assert(receiveOnly!Control == Control.LIVE);
-    
+
     // Check sending some string back and forth
     enum test_string = "send some text";
     task.echo_string(test_string);
     assert(receiveOnly!string == test_string);
-    
+
     // Check handling exceptions
-    task.throwing_method(10); 
+    task.throwing_method(10);
     assert(receiveOnly!Control == Control.END);
 
     // Check stopping task using Control.STOP
     enum another_fake_task_name = "another_fake_task_name";
-    auto task2=fake_task(another_fake_task_name, 10, 20);
+    auto task2 = fake_task(another_fake_task_name, 10, 20);
     assert(receiveOnly!Control == Control.LIVE);
     task2.control(Control.STOP);
     assert(receiveOnly!Control == Control.END);

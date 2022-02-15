@@ -2,34 +2,33 @@ module tagion.dart.BlockFile;
 
 import console = std.stdio;
 
-import std.bitmanip: binwrite = write, binread = read;
-import std.stdio: File;
-import std.file: remove;
+import std.bitmanip : binwrite = write, binread = read;
+import std.stdio : File;
+import std.file : remove;
 import std.typecons;
-import std.algorithm.sorting: sort;
-import std.algorithm.mutation: SwapStrategy;
-import std.algorithm.iteration: filter, each;
+import std.algorithm.sorting : sort;
+import std.algorithm.mutation : SwapStrategy;
+import std.algorithm.iteration : filter, each;
 
-import std.array: array;
-import std.datetime: Clock;
+import std.array : array;
+import std.datetime : Clock;
 import std.format;
-import std.conv: to;
+import std.conv : to;
 import std.traits;
-import std.exception: assumeUnique;
-import std.container.rbtree: RedBlackTree, redBlackTree;
-import tagion.basic.Basic: basename, Buffer, log2;
-import tagion.basic.TagionExceptions: Check;
+import std.exception : assumeUnique;
+import std.container.rbtree : RedBlackTree, redBlackTree;
+import tagion.basic.Basic : basename, Buffer, log2;
+import tagion.basic.TagionExceptions : Check;
 
-import tagion.hibon.HiBON: HiBON;
-import tagion.hibon.Document: Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
-import tagion.dart.DARTException: BlockFileException;
+import tagion.dart.DARTException : BlockFileException;
 
 // version(unittest) {
-import std.math: rint;
+import std.math : rint;
 
-@safe
-version (unittest) {
+@safeversion(unittest) {
     import Basic = tagion.basic.Basic;
 
     const(Basic.FileNames) fileId(T = BlockFile)(string prefix = null) @safe {
@@ -483,8 +482,8 @@ class BlockFile {
     }
 
     static BlockFile reset(string filename) {
-        import std.file: rename;
-        import std.path: setExtension;
+        import std.file : rename;
+        import std.path : setExtension;
 
         immutable old_filename = filename.setExtension("old");
         filename.rename(old_filename);
@@ -640,7 +639,7 @@ class BlockFile {
             immutable mx = sum / N;
             immutable mx2 = mx * mx;
             immutable M = sum2 + N * mx2 - 2 * mx * sum;
-            import std.math: sqrt;
+            import std.math : sqrt;
 
             return Result(sqrt(M / (N - 1)), mx, N);
         }
@@ -1246,6 +1245,8 @@ class BlockFile {
     void fromDoc(const(Document) doc) {
         allocated_chains = null;
 
+        
+
         .check(doc.isArray, "Document should be an array");
         foreach (a; doc[]) {
             const sub_doc = a.get!Document;
@@ -1351,8 +1352,7 @@ class BlockFile {
                         }
                     }
                     scope const end_block = local_read(current_segment.end_index);
-                    immutable previous_index = (current_segment.begin_index > 0) ? current_segment.begin_index - 1
-                        : INDEX_NULL;
+                    immutable previous_index = (current_segment.begin_index > 0) ? current_segment.begin_index - 1 : INDEX_NULL;
                     if (end_block.previous !is previous_index) {
                         blocks[current_segment.end_index] = block(previous_index, end_block.next, end_block.size, end_block
                                 .data, end_block.head);
@@ -1366,8 +1366,7 @@ class BlockFile {
                         chain(ablock.data, ablock.begin_index, sorted_segments.front.begin_index, true);
                     }
                     else {
-                        immutable previous_index = (ablock.begin_index > 1) ? ablock.begin_index - 1
-                            : INDEX_NULL;
+                        immutable previous_index = (ablock.begin_index > 1) ? ablock.begin_index - 1 : INDEX_NULL;
                         chain(ablock.data, ablock.begin_index, previous_index, true);
                     }
                     allocate_and_chain(allocate[1 .. $], sorted_segments);
@@ -1767,7 +1766,7 @@ class BlockFile {
         version (none) { // Check the recycle list
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
             // blockfile.dump;
-            import std.algorithm.comparison: equal;
+            import std.algorithm.comparison : equal;
 
             assert(equal(blockfile.recycle_indices[], [
                         1, 2, 3, 4, 5, 6,

@@ -91,8 +91,8 @@ static void taskfailure(immutable(TaskFailure) t) nothrow {
     import std.concurrency;
 
     assumeWontThrow({
-            if (ownerTid != Tid.init) {
-                ownerTid.send(t);
-            }
-        });
+        if (ownerTid != Tid.init) {
+            ownerTid.send(t);
+        }
+    });
 }

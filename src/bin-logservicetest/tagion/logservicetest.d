@@ -16,44 +16,46 @@ int loggerServiceTest(string[] args) {
     import tagion.options.CommonOptions : setCommonOptions;
     import tagion.services.LoggerService : loggerTask;
 
-    enum main_task="tagionlogservicetest";
+    enum main_task = "tagionlogservicetest";
 
     Options service_options;
     setDefaultOption(service_options);
 
-    auto logger_tid=spawn(&loggerTask, service_options);
-    scope(exit){
+    auto logger_tid = spawn(&loggerTask, service_options);
+    scope (exit) {
         logger_tid.send(Control.STOP);
         auto respond_control = receiveOnly!Control;
     }
- 
+
     import std.stdio : stderr;
+
     stderr.writeln("Waiting for logger");
 
-    const response=receiveOnly!Control;
+    const response = receiveOnly!Control;
     stderr.writeln("Logger started");
-    if ( response !is Control.LIVE ) {
+    if (response !is Control.LIVE) {
         stderr.writeln("ERROR:Logger %s", response);
     }
 
     log.register(main_task);
 
     import core.thread;
+
     int counter = 0;
-    while(true) {
+    while (true) {
         if (counter == 5) {
             logger_tid.send(Control.STOP);
         }
 
-        switch(counter%3) {
-            case 0:
-                log.error(format("My custom error {%d}", counter));
-                break;
-            case 1:
-                log.warning(format("My custom warning {%d}", counter));
-                break;
-            default:
-                log.trace(format("My custom trace {%d}", counter));
+        switch (counter % 3) {
+        case 0:
+            log.error(format("My custom error {%d}", counter));
+            break;
+        case 1:
+            log.warning(format("My custom warning {%d}", counter));
+            break;
+        default:
+            log.trace(format("My custom trace {%d}", counter));
         }
 
         writeln("--------");
@@ -92,25 +94,25 @@ import tagion.dart.BlockFile;
 import tagion.hibon.Document;
 import tagion.dart.DARTFile;
 
-void addRecToDB(ref DART db, immutable(RecordFactory.Recorder) rec, HiRPC hirpc){
+void addRecToDB(ref DART db, immutable(RecordFactory.Recorder) rec, HiRPC hirpc) {
     writeln("addRecToDB run...");
     const sent = hirpc.dartModify(rec);
     const received = hirpc.receive(sent.toDoc);
     const result = db(received, false);
 }
 
-immutable(RecordFactory.Recorder) testFlipRecorderAdd(){
+immutable(RecordFactory.Recorder) testFlipRecorderAdd() {
     const net = new StdHashNet;
     auto factory = RecordFactory(net);
     auto rec = factory.recorder;
 
     HiBON[10] HIB;
 
-    foreach (i; 0..HIB.length) {
+    foreach (i; 0 .. HIB.length) {
         HIB[i] = new HiBON;
     }
 
-    for(int i = 0; i < HIB.length; i++){
+    for (int i = 0; i < HIB.length; i++) {
         HIB[i]["test1"] = i * 35 - 46;
         HIB[i]["test2"] = i * 35 - 45;
         HIB[i]["test3"] = i * 35 - 44;
@@ -123,8 +125,7 @@ immutable(RecordFactory.Recorder) testFlipRecorderAdd(){
         HIB[i]["test10"] = i * 35 - 37;
     }
 
-
-    foreach (i; 0..HIB.length) {
+    foreach (i; 0 .. HIB.length) {
         rec.add(Document(HIB[i]));
     }
 
@@ -132,7 +133,7 @@ immutable(RecordFactory.Recorder) testFlipRecorderAdd(){
     return rec_im;
 }
 
-immutable(RecordFactory.Recorder) testFlipRecorderDel(){
+immutable(RecordFactory.Recorder) testFlipRecorderDel() {
 
     const net = new StdHashNet;
     auto factory = RecordFactory(net);
@@ -140,12 +141,11 @@ immutable(RecordFactory.Recorder) testFlipRecorderDel(){
 
     HiBON[5] HIB;
 
-    foreach (i; 0..HIB.length) {
+    foreach (i; 0 .. HIB.length) {
         HIB[i] = new HiBON;
     }
 
-
-    for (int i = 0; i < HIB.length;i++) {
+    for (int i = 0; i < HIB.length; i++) {
         HIB[i]["test1"] = i * 35 - 46;
         HIB[i]["test2"] = i * 35 - 45;
         HIB[i]["test3"] = i * 35 - 44;
@@ -158,7 +158,7 @@ immutable(RecordFactory.Recorder) testFlipRecorderDel(){
         HIB[i]["test10"] = i * 35 - 37;
     }
 
-    foreach (i; 0..5){
+    foreach (i; 0 .. 5) {
         rec.remove(Document(HIB[i]));
     }
 
@@ -170,19 +170,18 @@ immutable(RecordFactory.Recorder) testFlipRecorderDel(){
     return rec_im;
 }
 
-immutable(RecordFactory.Recorder) testNewRecorder(){
+immutable(RecordFactory.Recorder) testNewRecorder() {
     const net = new StdHashNet;
     auto factory = RecordFactory(net);
     auto rec = factory.recorder;
 
     HiBON[3] H;
 
-    foreach (i; 0..H.length)
-    {
+    foreach (i; 0 .. H.length) {
         H[i] = new HiBON;
     }
 
-    for(int i = 0; i < H.length; i ++){
+    for (int i = 0; i < H.length; i++) {
         H[i]["Otest1"] = i * 350 - 46;
         H[i]["Otest2"] = i * 350 - 45;
         H[i]["Otest3"] = i * 350 - 44;
@@ -195,8 +194,7 @@ immutable(RecordFactory.Recorder) testNewRecorder(){
         H[i]["Otest10"] = i * 350 - 37;
     }
 
-    foreach (i; 0..3)
-    {
+    foreach (i; 0 .. 3) {
         rec.add(Document(H[i]));
     }
 
@@ -209,19 +207,19 @@ int recorderCliTest(string[] args) {
     const auto EXEC_NAME = baseName(args[0]);
 
     if (args.length == 1) {
-        writeln("Error: No arguments provided for ", EXEC_NAME,"!");
+        writeln("Error: No arguments provided for ", EXEC_NAME, "!");
         return 1;
     }
 
     Options options;
     setDefaultOption(options);
-    
+
     // ===================================================================================
 
     // Dummy inits
     string passphrase = "verysecret";
     string file_for_blocks = "tmp/EpochBlocks_files/";
-    string dartfilename = file_for_blocks~"A";
+    string dartfilename = file_for_blocks ~ "A";
 
     // Default inits for cli
     uint rollback = 0;
@@ -250,45 +248,45 @@ int recorderCliTest(string[] args) {
     auto recordFactory = RecordFactory(hashnet_);
     auto rec = recordFactory.recorder;
     rec.add(Document(hibon_));
-    immutable(RecordFactory.Recorder) rec_im = cast(immutable)rec;
+    immutable(RecordFactory.Recorder) rec_im = cast(immutable) rec;
     addRecToDB(db_, rec_im, hirpc_);
 
-    writeln("1 step: ", db_.fingerprint.cutHex);   //for test
+    writeln("1 step: ", db_.fingerprint.cutHex); //for test
 
-	auto rec1 = testFlipRecorderAdd;   //create recorder
-	auto block1 = epBlockFactory(rec1, noHash, db_.fingerprint);  //create block
-	blocks_.addBlock(block1);  //save block
-	addRecToDB(db_, block1.recorder, hirpc_);	//add to DB
+    auto rec1 = testFlipRecorderAdd; //create recorder
+    auto block1 = epBlockFactory(rec1, noHash, db_.fingerprint); //create block
+    blocks_.addBlock(block1); //save block
+    addRecToDB(db_, block1.recorder, hirpc_); //add to DB
 
-	writeln("2 step: ", db_.fingerprint.cutHex, " (add 1-st -> ", block1.fingerprint.cutHex, ")");
+    writeln("2 step: ", db_.fingerprint.cutHex, " (add 1-st -> ", block1.fingerprint.cutHex, ")");
 
-	auto rec2 = testFlipRecorderDel;
-	auto block2 = epBlockFactory(rec2, block1.fingerprint, db_.fingerprint);
-	blocks_.addBlock(block2);
-	addRecToDB(db_, block2.recorder, hirpc_);
+    auto rec2 = testFlipRecorderDel;
+    auto block2 = epBlockFactory(rec2, block1.fingerprint, db_.fingerprint);
+    blocks_.addBlock(block2);
+    addRecToDB(db_, block2.recorder, hirpc_);
 
-	writeln("3 step: ", db_.fingerprint.cutHex, " (add 2-nd -> ", block2.fingerprint.cutHex, ")");
+    writeln("3 step: ", db_.fingerprint.cutHex, " (add 2-nd -> ", block2.fingerprint.cutHex, ")");
 
-	auto rec3 = testNewRecorder;
-	auto block3 = epBlockFactory(rec3, block2.fingerprint, db_.fingerprint);
-	blocks_.addBlock(block3);
-	addRecToDB(db_, block3.recorder, hirpc_);
+    auto rec3 = testNewRecorder;
+    auto block3 = epBlockFactory(rec3, block2.fingerprint, db_.fingerprint);
+    blocks_.addBlock(block3);
+    addRecToDB(db_, block3.recorder, hirpc_);
 
-	writeln("4 step: ", db_.fingerprint.cutHex, " (add 3-rd -> ", block3.fingerprint.cutHex, ")");
+    writeln("4 step: ", db_.fingerprint.cutHex, " (add 3-rd -> ", block3.fingerprint.cutHex, ")");
 
-	addRecToDB(db_, blocks_.flipRecorder(block3), hirpc_);
+    addRecToDB(db_, blocks_.flipRecorder(block3), hirpc_);
 
-	writeln("5 step: ", db_.fingerprint.cutHex);
+    writeln("5 step: ", db_.fingerprint.cutHex);
 
-	//auto block_flip_1 = blocks.rollBack();
-	addRecToDB(db_, blocks_.flipRecorder(block2), hirpc_);
+    //auto block_flip_1 = blocks.rollBack();
+    addRecToDB(db_, blocks_.flipRecorder(block2), hirpc_);
 
-	writeln("6 step: ", db_.fingerprint.cutHex);
+    writeln("6 step: ", db_.fingerprint.cutHex);
 
-	//auto block_flip_2 = blocks.rollBack();
-	addRecToDB(db_, blocks_.flipRecorder(block1), hirpc_);
+    //auto block_flip_2 = blocks.rollBack();
+    addRecToDB(db_, blocks_.flipRecorder(block1), hirpc_);
 
-	writeln("7 step: ", db_.fingerprint.cutHex);
+    writeln("7 step: ", db_.fingerprint.cutHex);
     // ===================================================================================
 
     // auto logger_tid=spawn(&loggerTask, options);
@@ -298,20 +296,21 @@ int recorderCliTest(string[] args) {
     // }
 
     auto cliArgsConfig = getopt(
-        args,
-        std.getopt.config.caseSensitive,
-        std.getopt.config.bundling,
-        // Explicitly declare noPassThrough for considering command argument as error
-        // std.getopt.config.noPassThrough,
-        "init|i", "Init db for tests", &init,
-        "rollback|r", "Rollback database on n steps backward", &rollback,
-        "dump|d", "Make a dump of current database's state", &dump,
-        // "version", "display the version", &version_switch,
-        // "pathToBlocks|p", "Path to blocks", &file_for_blocks,
-        // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
-        //"dartfilename|dart", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
-        // "from", format("Sets from angle: default %s", (fromAngle == toAngle) ? "full" : fromAngle.to!string), &fromAngle,
-        // "to", format("Sets to angle: default %s", (fromAngle == toAngle) ? "full" : toAngle.to!string), &toAngle,
+            args,
+            std.getopt.config.caseSensitive,
+            std.getopt.config.bundling, // Explicitly declare noPassThrough for considering command argument as error
+            // std.getopt.config.noPassThrough,
+            "init|i", "Init db for tests", &init,
+            "rollback|r", "Rollback database on n steps backward", &rollback,
+            "dump|d", "Make a dump of current database's state", &dump, // "version", "display the version", &version_switch,
+            // "pathToBlocks|p", "Path to blocks", &file_for_blocks,
+            // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
+            //"dartfilename|dart", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
+            // "from", format("Sets from angle: default %s", (fromAngle == toAngle) ? "full" : fromAngle.to!string), &fromAngle,
+            // "to", format("Sets to angle: default %s", (fromAngle == toAngle) ? "full" : toAngle.to!string), &toAngle,
+
+            
+
     );
 
     // /*
@@ -327,7 +326,7 @@ int recorderCliTest(string[] args) {
 
     int onHelp() {
         defaultGetoptPrinter(
-            [
+                [
             //format("%s version %s", program, REVNO),
             "Documentation: https://tagion.org/",
             "",
@@ -335,8 +334,9 @@ int recorderCliTest(string[] args) {
             format("%s <command> [<option>...]\n", EXEC_NAME),
             "Where:",
             "<command> one of [--init, --dump, --rollback]\n",
-            "<options>:"].join("\n"),
-            cliArgsConfig.options
+            "<options>:"
+        ].join("\n"),
+        cliArgsConfig.options
         );
         return 0;
     }
@@ -351,17 +351,16 @@ int recorderCliTest(string[] args) {
         // enum BLOCK_SIZE = 0x80;
         // BlockFile.create(dartfilename, DARTFile.stringof, BLOCK_SIZE);
 
-
-        import tagion.dart.Recorder : RecordFactory;  
+        import tagion.dart.Recorder : RecordFactory;
         import tagion.crypto.SecureNet : StdHashNet;
         import tagion.services.RecorderService : recorderTask;
 
-        auto recorder_service_tid=spawn(&recorderTask, options);
-        scope(exit){
+        auto recorder_service_tid = spawn(&recorderTask, options);
+        scope (exit) {
             recorder_service_tid.send(Control.STOP);
             writeln("exit bin init; control=", receiveOnly!Control);
         }
-        
+
         const net = new StdHashNet;
         auto factory = RecordFactory(net);
         RecordFactory.Recorder recorder = factory.recorder;
@@ -369,7 +368,8 @@ int recorderCliTest(string[] args) {
         string filename = "filename";
 
         import core.thread;
-        while(true) {
+
+        while (true) {
             recorder_service_tid.send("aaa   bbb   ccc", filename);
             writeln("while sleep 5 seconds...");
             filename ~= "_a";
@@ -383,24 +383,21 @@ int recorderCliTest(string[] args) {
 
     void onRollback() {
         writeln("rollback called for ", rollback, " steps\n");
-        while(rollback > 0)
-        {
+        while (rollback > 0) {
             writefln("Current rollback: %d", rollback);
             //const flip_rec = blocks_.rollBack();
 
             // function `tagion.dart.DARTFile.DARTFile.modify(Recorder modify_records)`
             // is not callable using argument types `(immutable(EpochBlock))`
             // db.modify(flip_rec);
-            if(dump)
-            {
-                writefln("Rollback on %d step: %s", rollback, "dummy.db");//db.fingerprint);
+            if (dump) {
+                writefln("Rollback on %d step: %s", rollback, "dummy.db"); //db.fingerprint);
             }
-            rollback --;
+            rollback--;
         }
     }
 
-    try
-    {
+    try {
         // Calling --help or -h
         if (cliArgsConfig.helpWanted) {
             return onHelp;
@@ -421,8 +418,7 @@ int recorderCliTest(string[] args) {
             onRollback;
         }
     }
-    catch(Exception e)
-    {
+    catch (Exception e) {
         // Might be:
         // std.getopt.GetOptException for unrecoginzed option
         // std.conv.ConvException for unexpected values for option recognized

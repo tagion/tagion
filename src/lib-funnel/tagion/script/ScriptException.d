@@ -1,6 +1,6 @@
 module tagion.script.ScriptException;
 
-import tagion.basic.TagionExceptions: TagionException, Check;
+import tagion.basic.TagionExceptions : TagionException, Check;
 
 /**
  * Exception type used in the Script package

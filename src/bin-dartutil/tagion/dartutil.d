@@ -23,6 +23,7 @@ import tagion.hibon.HiBON;
 
 import tagion.utils.Miscellaneous;
 import tagion.Keywords;
+
 // import tagion.revision;
 
 pragma(msg, "fixme(cbr): This import is dummy force the tub to link liboption");
@@ -60,10 +61,8 @@ int main(string[] args) {
             "initialize", "Create a dart file", &initialize,
             "inputfile|i", "Sets the HiBON input file name", &inputfilename,
             "outputfile|o", "Sets the output file name", &outputfilename,
-            "from", format("Sets from angle: default %s", (fromAngle == toAngle) ? "full"
-            : fromAngle.to!string), &fromAngle,
-            "to", format("Sets to angle: default %s", (fromAngle == toAngle) ? "full"
-            : toAngle.to!string), &toAngle,
+            "from", format("Sets from angle: default %s", (fromAngle == toAngle) ? "full" : fromAngle.to!string), &fromAngle,
+            "to", format("Sets to angle: default %s", (fromAngle == toAngle) ? "full" : toAngle.to!string), &toAngle,
             "useFakeNet|fn", format("Enables fake hash test-mode: default %s", useFakeNet), &useFakeNet,
             "read|r", format("Excutes a DART read sequency: default %s", dartread), &dartread,
             "modify|m", format("Excutes a DART modify sequency: default %s", dartmodify), &dartmodify,
@@ -84,20 +83,20 @@ int main(string[] args) {
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s <command> [<option>...]", program),
-                "",
-                "Where:",
-                "<command>           one of [--read, --rim, --modify, --rpc]",
-                "",
+            // format("%s version %s", program, REVNO),
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s <command> [<option>...]", program),
+            "",
+            "Where:",
+            "<command>           one of [--read, --rim, --modify, --rpc]",
+            "",
 
-                "<option>:",
+            "<option>:",
 
-                ].join("\n"),
-                main_args.options);
+        ].join("\n"),
+        main_args.options);
         return 0;
     }
 
@@ -105,6 +104,7 @@ int main(string[] args) {
         SecureNet result;
         if (useFakeNet) {
             import tagion.dart.DARTFakeNet;
+
             result = new DARTFakeNet;
         }
         else {
@@ -113,6 +113,7 @@ int main(string[] args) {
         result.generateKeyPair(passphrase);
         return result;
     }
+
     const net = createNet;
     // else net = new StdSecureNet(crypt);
     const hirpc = HiRPC(net);
@@ -171,17 +172,17 @@ int main(string[] args) {
             writeln("No input file");
         }
         else {
-            auto inputBuffer = cast(immutable(ubyte)[])fread(inputfilename);
-            auto params=new HiBON;
-            auto params_fingerprints=new HiBON;
-            foreach(i, b; (cast(string)inputBuffer).split("\n")) {
+            auto inputBuffer = cast(immutable(ubyte)[]) fread(inputfilename);
+            auto params = new HiBON;
+            auto params_fingerprints = new HiBON;
+            foreach (i, b; (cast(string) inputBuffer).split("\n")) {
                 auto fp = decode(b);
-                if ( b.length !is 0 ) {
-                    params_fingerprints[i]=fp;
+                if (b.length !is 0) {
+                    params_fingerprints[i] = fp;
                 }
             }
-            
-            params[DARTFile.Params.fingerprints]=params_fingerprints;
+
+            params[DARTFile.Params.fingerprints] = params_fingerprints;
             auto sended = hirpc.dartRead(params).toDoc;
             auto received = hirpc.receive(sended);
             auto result = db(received);

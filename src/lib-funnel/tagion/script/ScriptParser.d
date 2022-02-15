@@ -1,8 +1,8 @@
 module tagion.script.ScriptParser;
 
-import std.uni: toUpper;
-import std.traits: EnumMembers;
-import tagion.basic.Message: message;
+import std.uni : toUpper;
+import std.traits : EnumMembers;
+import tagion.basic.Message : message;
 
 struct Token {
     string name;
@@ -178,7 +178,7 @@ struct ScriptParser {
 }
 
 unittest {
-    import std.string: join;
+    import std.string : join;
 
     immutable src = [
         ": test_comment ( a b -- )", // 1
@@ -226,15 +226,11 @@ unittest {
             {line: 3, pos: 0, token: "( line comment -- )"},
             {line: 4, pos: 0, token: "X"},
             {line: 5, pos: 0, token: ["( newline", "  comment )"].join("\n")},
-            {
-                line: 7, pos: 2, token: ["( multi line  ", " 0x1222 XX 122 test", ")"].join("\n")
-            },
+            {line: 7, pos: 2, token: ["( multi line  ", " 0x1222 XX 122 test", ")"].join("\n")},
             {line: 9, pos: 2, token: "&"},
             {line: 10, pos: 0, token: "___"},
-            {
-                line: 10, pos: 4, token: ["( multi line  ", "\t 0xA-- XX 122 test", "  )"].join(
-                        "\n")
-            },
+            {line: 10, pos: 4, token: ["( multi line  ", "\t 0xA-- XX 122 test", "  )"].join(
+                    "\n")},
             {line: 12, pos: 4, token: "&&&"},
             {line: 13, pos: 0, token: ";"},
             {line: 13, pos: 2, token: "( end function )"},
@@ -365,7 +361,7 @@ protected enum _scripttype = [
         "HIBON"
     ];
 
-private import tagion.basic.Basic: EnumText;
+private import tagion.basic.Basic : EnumText;
 
 mixin(EnumText!("ScriptType", _scripttype));
 

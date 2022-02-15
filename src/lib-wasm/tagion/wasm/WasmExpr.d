@@ -94,7 +94,7 @@ struct WasmExpr {
                         case I32_CONST:
                             assert(is(BaseArg0 == int) || is(BaseArg0 == uint),
                                     format("Bad type %s for the %s instruction",
-                                        BaseArg0.stringof, instr.name));
+                                    BaseArg0.stringof, instr.name));
                             static if (is(BaseArg0 == int) || is(BaseArg0 == uint)) {
                                 bout.write(encode(args[0]));
                             }
