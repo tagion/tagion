@@ -53,10 +53,17 @@ struct Document {
      */
     @nogc immutable(ubyte[]) data() const {
         if (_data.length) {
-            return _data[0..full_size];
+            ubyte[] result;
+            result.create(full_size);
+            foreach (i; 0..full_size) {
+                result[i] = _data[i];
+            }
+            return cast(immutable)(result);
         }
-        //shit
-        return _data[0..0];
+        ubyte[] empty_doc;
+        empty_doc.create(1);
+
+        return cast(immutable)(empty_doc);
     }
 
      /**
@@ -113,7 +120,7 @@ struct Document {
 
     @property const {
         bool empty() {
-            return data.length < 1;
+            return data.length <= ubyte.sizeof;
         }
 
         @nogc uint size() {
@@ -131,7 +138,7 @@ struct Document {
 
 unittest { // Empty doc
     {
-        const doc = Document();
+        Document doc;
         assert(doc._data.length is 0);
         assert(doc.data.length is 1);
         assert(doc.empty);
@@ -155,6 +162,10 @@ unittest { // Empty doc
     }
 }
 
+// version(D_BETTERC) {
+//   // empty
+// }
+// else {
 unittest { // Document with residual data
     import tagion.hibon.HiBON;
     import std.algorithm.comparison : equal;
@@ -166,8 +177,8 @@ unittest { // Document with residual data
     assert(doc.full_size == h.serialize.length);
     assert(doc.length == 1);
     assert(equal(doc.keys, ["test"]));
-
     }
+// }
 
     /**
      * Counts the number of members in a Document
@@ -239,7 +250,7 @@ unittest { // Document with residual data
         /**
          * Buffer with data
          */
-        immutable(ubyte[]) data;
+        immutable(ubyte)[] data;
         
         /**
          * Version
@@ -300,7 +311,7 @@ unittest { // Document with residual data
              * @return true if data length = 0
              */
             bool empty() {
-                return _index > data.length;
+                return data.length is 0;
             }
 
 
@@ -318,12 +329,13 @@ unittest { // Document with residual data
          * InputRange primitive operation that advances the range to its next element.
          */
         void popFront() {
-            if (_index >= data.length) {
-                _index = data.length+1;
-            }
-            else {
-                emplace!Element(&_element, data[_index..$]);
-                _index += _element.size;
+            import std.stdio;
+            if (data.length) {
+                data = data[Element(data).size .. $];
+                foreach (immutable(ubyte) key; data)
+                {
+                    writeln(key);
+                }
             }
         }
     }
@@ -1195,11 +1207,17 @@ unittest { // Document with residual data
             uint dataSize() {
                 return LEB128.decode!uint(data[valuePos..$]).value;
             }
-
             /**
              * @return the size of the element in bytes
              */
             size_t size() {
+                // static int count=42;
+                // count--;
+                // if (count<0) {
+                //     int* x=null;
+                //     *x=42;
+                // }
+                //assert(count>0);
                 with(Type) {
                 TypeCase:
                     switch(type) {
@@ -1245,13 +1263,14 @@ unittest { // Document with residual data
                             break TypeCase;
                         }
                     default:
-                        // empty
+                    //    return 0;
                     }
                 }
+                // return 0;
                 // import std.format;
                 // assert(0, format("Bad type %s", type));
                 Text error;
-                error("Bad type ")(type);
+                error("Bad type")(type);
                 assert(0, error.serialize);
             }
 

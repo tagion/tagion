@@ -1,201 +1,201 @@
-module tagion.wave;
+// module tagion.wave;
 
-// Inner dependency
-import tagion.dart.DARTFakeNet;
-import tagion.crypto.aes.tiny_aes.tiny_aes;
-import tagion.basic.TagionExceptions;
-import tagion.utils.Gene;
-import tagion.script.ScriptException;
+// // Inner dependency
+// import tagion.dart.DARTFakeNet;
+// import tagion.crypto.aes.tiny_aes.tiny_aes;
+// import tagion.basic.TagionExceptions;
+// import tagion.utils.Gene;
+// import tagion.script.ScriptException;
 
-import std.stdio;
-import core.thread;
-import std.getopt;
-import std.format;
-import std.concurrency;
-import std.array : join;
+// import std.stdio;
+// import core.thread;
+// import std.getopt;
+// import std.format;
+// import std.concurrency;
+// import std.array : join;
 
-import tagion.basic.Basic : Control;
-import tagion.logger.Logger;
-import tagion.services.Options;
-import tagion.options.CommonOptions : setCommonOptions;
-//import tagion.services.HeartBeatService;
-import tagion.services.P2pTagionService;
-import tagion.services.LoggerService;
-import tagion.services.TagionFactory;
-import tagion.GlobalSignals;
-import tagion.network.SSLOptions;
-import tagion.gossip.EmulatorGossipNet;
-//import tagion.Keywords: NetworkMode, ValidNetwrokModes;
-pragma(msg, "Fixme(cbr): Rename the tagion Node to Prime");
-// import tagion.revision;
+// import tagion.basic.Basic : Control;
+// import tagion.logger.Logger;
+// import tagion.services.Options;
+// import tagion.options.CommonOptions : setCommonOptions;
+// //import tagion.services.HeartBeatService;
+// import tagion.services.P2pTagionService;
+// import tagion.services.LoggerService;
+// import tagion.services.TagionFactory;
+// import tagion.GlobalSignals;
+// import tagion.network.SSLOptions;
+// import tagion.gossip.EmulatorGossipNet;
+// //import tagion.Keywords: NetworkMode, ValidNetwrokModes;
+// pragma(msg, "Fixme(cbr): Rename the tagion Node to Prime");
+// // import tagion.revision;
 
-enum main_task="tagionwave";
+// enum main_task="tagionwave";
 
-/// Creates ssl certificate if it doesn't exist
-void create_ssl(const(OpenSSL) openssl) {
-    import std.algorithm.iteration :each;
-    import std.file : exists, mkdirRecurse ;
-    import std.process : pipeProcess, wait, Redirect;
-    import std.array : array;
-    import std.path : dirName;
-    if (!openssl.certificate.exists || !openssl.private_key.exists) {
-        openssl.certificate.dirName.mkdirRecurse;
-        openssl.private_key.dirName.mkdirRecurse;
-        auto pipes = pipeProcess(openssl.command.array);
-        scope(exit) {
-            wait(pipes.pid);
-        }
-        openssl.config.each!(a => pipes.stdin.writeln(a));
-        pipes.stdin.writeln(".");
-        pipes.stdin.flush;
-        foreach(s; pipes.stderr.byLine) {
-            stderr.writeln(s);
-        }
-        foreach(s; pipes.stdout.byLine) {
-            writeln(s);
-        }
-        assert (openssl.certificate.exists && openssl.private_key.exists);
-    }
-}
+// /// Creates ssl certificate if it doesn't exist
+// void create_ssl(const(OpenSSL) openssl) {
+//     import std.algorithm.iteration :each;
+//     import std.file : exists, mkdirRecurse ;
+//     import std.process : pipeProcess, wait, Redirect;
+//     import std.array : array;
+//     import std.path : dirName;
+//     if (!openssl.certificate.exists || !openssl.private_key.exists) {
+//         openssl.certificate.dirName.mkdirRecurse;
+//         openssl.private_key.dirName.mkdirRecurse;
+//         auto pipes = pipeProcess(openssl.command.array);
+//         scope(exit) {
+//             wait(pipes.pid);
+//         }
+//         openssl.config.each!(a => pipes.stdin.writeln(a));
+//         pipes.stdin.writeln(".");
+//         pipes.stdin.flush;
+//         foreach(s; pipes.stderr.byLine) {
+//             stderr.writeln(s);
+//         }
+//         foreach(s; pipes.stdout.byLine) {
+//             writeln(s);
+//         }
+//         assert (openssl.certificate.exists && openssl.private_key.exists);
+//     }
+// }
 
-int main(string[] args) {
-    immutable program=args[0];
-    bool version_switch;
-    bool overwrite_switch;
+// int main(string[] args) {
+//     immutable program=args[0];
+//     bool version_switch;
+//     bool overwrite_switch;
 
-    scope Options local_options;
-    import std.getopt;
-    auto net_opts = getopt(args, std.getopt.config.passThrough, "net-mode", &(local_options.net_mode));
+//     scope Options local_options;
+//     import std.getopt;
+//     auto net_opts = getopt(args, std.getopt.config.passThrough, "net-mode", &(local_options.net_mode));
 
-    setDefaultOption(local_options);
+//     setDefaultOption(local_options);
 
-    auto config_file = "tagionwave.json";
+//     auto config_file = "tagionwave.json";
 
-    local_options.load(config_file);
+//     local_options.load(config_file);
 
-    bool set_token = false;
-    bool set_tag = false;
-    void setToken(string option, string value){
-        if(option == "server-token"){
-            local_options.serverFileDiscovery.token = value;
-            set_token = true;
-        }
-        if(option == "server-tag"){
-            local_options.serverFileDiscovery.tag = value;
-            set_tag = true;
-        }
-    }
+//     bool set_token = false;
+//     bool set_tag = false;
+//     void setToken(string option, string value){
+//         if(option == "server-token"){
+//             local_options.serverFileDiscovery.token = value;
+//             set_token = true;
+//         }
+//         if(option == "server-tag"){
+//             local_options.serverFileDiscovery.tag = value;
+//             set_tag = true;
+//         }
+//     }
 
-    auto token_opts = getopt(args, std.getopt.config.passThrough,
-        "server-token", format("Token to access shared server"), &setToken,
-        "server-tag", format("Group tag(should be the same as in token payload)"), &setToken);
-    if(set_token && set_tag){
-        local_options.save(config_file);
-        writeln("Group token and tag provided.. (remove it from parameters and run the network)");
-        return 0;
-    }
+//     auto token_opts = getopt(args, std.getopt.config.passThrough,
+//         "server-token", format("Token to access shared server"), &setToken,
+//         "server-tag", format("Group tag(should be the same as in token payload)"), &setToken);
+//     if(set_token && set_tag){
+//         local_options.save(config_file);
+//         writeln("Group token and tag provided.. (remove it from parameters and run the network)");
+//         return 0;
+//     }
 
-    try {
-        auto main_args=all_getopt(args, version_switch, overwrite_switch, local_options);
+//     try {
+//         auto main_args=all_getopt(args, version_switch, overwrite_switch, local_options);
 
-        if (version_switch) {
-            // writefln("version %s", REVNO);
-            // writefln("Git handle %s", HASH);
-            return 0;
-        }
+//         if (version_switch) {
+//             // writefln("version %s", REVNO);
+//             // writefln("Git handle %s", HASH);
+//             return 0;
+//         }
 
-        if ( main_args.helpWanted || net_opts.helpWanted ) {
-            defaultGetoptPrinter(
-                [
-                    // format("%s version %s", program, REVNO),
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] ", program),
-                    format("%s <config.json>", program),
-                    ].join("\n"),
+//         if ( main_args.helpWanted || net_opts.helpWanted ) {
+//             defaultGetoptPrinter(
+//                 [
+//                     // format("%s version %s", program, REVNO),
+//                     "Documentation: https://tagion.org/",
+//                     "",
+//                     "Usage:",
+//                     format("%s [<option>...] ", program),
+//                     format("%s <config.json>", program),
+//                     ].join("\n"),
 
-//                "This program run a hashwave tagion test net.",
-                main_args.options);
-            return 0;
-        }
+// //                "This program run a hashwave tagion test net.",
+//                 main_args.options);
+//             return 0;
+//         }
 
-//        local_options=getOptions();
-        if ( overwrite_switch ) {
+// //        local_options=getOptions();
+//         if ( overwrite_switch ) {
 
-            local_options.save(config_file);
-        }
+//             local_options.save(config_file);
+//         }
 
-        local_options.infinity=( local_options.loops == 0 );
-    }
-    catch ( Exception e) {
-        import std.stdio;
-        stderr.writefln(e.msg);
-        return 1;
-    }
+//         local_options.infinity=( local_options.loops == 0 );
+//     }
+//     catch ( Exception e) {
+//         import std.stdio;
+//         stderr.writefln(e.msg);
+//         return 1;
+//     }
 
-    if (args.length == 2) {
-        config_file=args[1];
-        local_options.load(config_file);
-    }
+//     if (args.length == 2) {
+//         config_file=args[1];
+//         local_options.load(config_file);
+//     }
 
-    setOptions(local_options);
+//     setOptions(local_options);
 
-    writeln("----- Start tagion service task -----");
-    immutable service_options=getOptions();
-    // Set the shared common options for all services
-    setCommonOptions(service_options.common);
+//     writeln("----- Start tagion service task -----");
+//     immutable service_options=getOptions();
+//     // Set the shared common options for all services
+//     setCommonOptions(service_options.common);
 
 
-    // with (service_options.transaction.service) { // Check ssl certificate
-    //     if (service_options.transaction.service
-    // }
+//     // with (service_options.transaction.service) { // Check ssl certificate
+//     //     if (service_options.transaction.service
+//     // }
 
-    create_ssl(service_options.transaction.service.openssl);
+//     create_ssl(service_options.transaction.service.openssl);
 
-    auto logger_tid=spawn(&loggerTask, service_options);
+//     auto logger_tid=spawn(&loggerTask, service_options);
 
-    scope(exit){
-        logger_tid.send(Control.STOP);
-        auto respond_control = receiveOnly!Control;
-    }
+//     scope(exit){
+//         logger_tid.send(Control.STOP);
+//         auto respond_control = receiveOnly!Control;
+//     }
 
-    import std.stdio : stderr;
-    stderr.writeln("Waiting for logger");
+//     import std.stdio : stderr;
+//     stderr.writeln("Waiting for logger");
 
-    const response=receiveOnly!Control;
-    stderr.writeln("Logger started");
-    if ( response !is Control.LIVE ) {
-        stderr.writeln("ERROR:Logger %s", response);
-    }
-    log.register(main_task);
+//     const response=receiveOnly!Control;
+//     stderr.writeln("Logger started");
+//     if ( response !is Control.LIVE ) {
+//         stderr.writeln("ERROR:Logger %s", response);
+//     }
+//     log.register(main_task);
 
-//    Control response;
-    Tid tagion_service_tid = spawn(&tagionServiceWrapper, service_options);
-    scope(exit){
-        tagion_service_tid.send(Control.STOP);
-        auto respond_control = receiveOnly!Control;
-    }
-    writeln("Wait for join");
+// //    Control response;
+//     Tid tagion_service_tid = spawn(&tagionServiceWrapper, service_options);
+//     scope(exit){
+//         tagion_service_tid.send(Control.STOP);
+//         auto respond_control = receiveOnly!Control;
+//     }
+//     writeln("Wait for join");
 
-    int result;
-    receive(
-        (Control response) {
-            if ( response is Control.END) {
-                writeln("Slut!");
-            }
-            else {
-                result=1;
-                stderr.writefln("Unexpected signal %s", response);
-            }
-        },
-        (immutable(Exception) e) {
-            const print_e=e;
-            result=2;
-        },
-        (immutable(Throwable) t) {
-            const print_t=t;
-            result=3;
-        });
-    return result;
-}
+//     int result;
+//     receive(
+//         (Control response) {
+//             if ( response is Control.END) {
+//                 writeln("Slut!");
+//             }
+//             else {
+//                 result=1;
+//                 stderr.writefln("Unexpected signal %s", response);
+//             }
+//         },
+//         (immutable(Exception) e) {
+//             const print_e=e;
+//             result=2;
+//         },
+//         (immutable(Throwable) t) {
+//             const print_t=t;
+//             result=3;
+//         });
+//     return result;
+// }
