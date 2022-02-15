@@ -614,13 +614,13 @@ alias check = Check!DARTException;
         void traverse_dart(
                 const uint branch_index,
                 Buffer[] ordered_fingerprints,
-                immutable uint rim = 0) @trusted {
+                immutable uint rim = 0) @safe {
             if ((ordered_fingerprints) && (branch_index !is INDEX_NULL)) {
-                scope data = blockfile.load(branch_index);
-                scope doc = Document(data);
+                immutable data = blockfile.load(branch_index);
+                const doc = Document(data);
                 if (Branches.isRecord(doc)) {
-                    scope branches = Branches(doc);
-                    scope selected_fingerprints = ordered_fingerprints;
+                    const branches = Branches(doc);
+                    auto selected_fingerprints = ordered_fingerprints;
                     foreach (rim_key, index; branches._indices) {
                         uint pos;
                         while ((pos < selected_fingerprints.length) &&
@@ -649,7 +649,7 @@ alias check = Check!DARTException;
 
         auto root_index = blockfile.masterBlock.root_index;
 
-        scope sorted_fingerprints = fingerprints.filter!(a => a.length !is 0).array.dup;
+        auto sorted_fingerprints = fingerprints.filter!(a => a.length !is 0).array.dup;
         sorted_fingerprints.sort;
         traverse_dart(blockfile.masterBlock.root_index, sorted_fingerprints);
         // writefln("Trying to load..\nresult:%d", result.length);
