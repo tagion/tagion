@@ -431,10 +431,7 @@ alias check = Check!DARTException;
                             auto subbranch = Branches(doc);
                             _fingerprints[key] = subbranch.fingerprint(dartfile, index_used);
                         }
-                        // else if ( doc.hasMember(Keywords.stub) ) {
-                        //     _fingerprints[key]=doc[Keywords.stub].get!Buffer;
-                        // }
-                    else {
+                        else {
                             _fingerprints[key] = dartfile.manufactor.net.hashOf(doc);
                         }
                     }
@@ -553,8 +550,6 @@ alias check = Check!DARTException;
 
     pragma(msg, "fixme(alex); Remove loadAll function");
     HiBON loadAll(Archive.Type type = Archive.Type.ADD) {
-        // auto result=Recorder(net);
-        //RecordFactory.Recorder.Archive[] archives;
         auto recorder = manufactor.recorder;
         void local_load(
             const uint branch_index,
@@ -665,6 +660,9 @@ alias check = Check!DARTException;
     struct RimKeyRange {
         protected Archive[] current;
         @disable this();
+        protected this(Archive[] current) pure nothrow @nogc {
+            this.current=current;
+        }
         this(Range)(ref Range range, const uint rim) @trusted {
             pragma(msg, "RimKeyRange Range ", Range);
             pragma(msg, "RimKeyRange  ", RimKeyRange);
@@ -719,29 +717,40 @@ alias check = Check!DARTException;
             //     .all!((a) => a.isRemove);
         }
 
-        bool single() pure const nothrow {
-            return current.length == 1;
-        }
+        @nogc pure nothrow {
+            bool single() const {
+                return current.length == 1;
+            }
 
-        bool empty() pure const nothrow {
-            return current.length == 0;
-        }
+            bool empty() const {
+                return current.length == 0;
+            }
 
-        void popFront() {
-            if (!empty) {
-                current = current[1 .. $];
+            void popFront() {
+                if (!empty) {
+                    current = current[1 .. $];
+                }
+            }
+
+
+            inout(Archive) front() inout {
+                if (empty) {
+                    return null;
+                }
+                return current[0];
+            }
+
+            void force_empty() {
+                current = null;
+            }
+
+            size_t length() const {
+                return current.length;
             }
         }
 
-        inout(Archive) front() inout {
-            if (empty) {
-                return null;
-            }
-            return current[0];
-        }
-
-        void force_empty() {
-            current = null;
+        RimKeyRange save() {
+            return RimKeyRange(current);
         }
 
         size_t length() pure const nothrow {
@@ -817,12 +826,8 @@ alias check = Check!DARTException;
                     // if ( inRange(sector) ) {
                     uint lonely_rim_key;
                     if (branch_index !is INDEX_NULL) {
-                        //assert(0);
-
-                        //                        erase_block_index=root_index;
                         immutable data = blockfile.load(branch_index);
                         const doc = Document(data);
-
 
 
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
@@ -1464,10 +1469,10 @@ alias check = Check!DARTException;
             //dart_B.dump;
             auto remove_recorder = records(manufactor, table[8 .. 10]);
 
-            foreach (ref a; remove_recorder.archives) {
-                a.type = Archive.Type.REMOVE;
-            }
-            auto bulleye_A = dart_A.modify(remove_recorder);
+            // foreach (ref a; remove_recorder.archives) {
+            //     a.type = Archive.Type.REMOVE;
+            // }
+            auto bulleye_A = dart_A.modify(remove_recorder, (a) => Archive.Type.REMOVE);
             //dart_A.dump;
             assert(bulleye_A == bulleye_B);
         }
@@ -1491,10 +1496,10 @@ alias check = Check!DARTException;
             auto bulleye_B = write(dart_B, random_table[0 .. N - 100], recorder_B);
             auto remove_recorder = records(manufactor, random_table[N - 100 .. N]);
 
-            foreach (ref a; remove_recorder.archives) {
-                a.type = Archive.Type.REMOVE;
-            }
-            bulleye_A = dart_A.modify(remove_recorder);
+            // foreach (ref a; remove_recorder.archives) {
+            //     a.type = Archive.Type.REMOVE;
+            // }
+            bulleye_A = dart_A.modify(remove_recorder, (a) => Archive.Type.REMOVE);
             // dart_A.dump;
 
             // The bull eye of the two DART must be the same
@@ -1552,10 +1557,10 @@ alias check = Check!DARTException;
             auto bulleye_B = write(dart_B, random_table[0 .. N - 100], recorder_B);
             auto remove_recorder = records(manufactor, random_table[N - 100 .. N]);
 
-            foreach (ref a; remove_recorder.archives) {
-                a.type = Archive.Type.REMOVE;
-            }
-            bulleye_A = dart_A.modify(remove_recorder);
+            // foreach (ref a; remove_recorder.archives) {
+            //     a.type = Archive.Type.REMOVE;
+            // }
+            bulleye_A = dart_A.modify(remove_recorder, (a) => Archive.Type.REMOVE);
             // dart_A.dump;
 
             // writefln("bulleye_A=%s bulleye_B=%s", bulleye_A.cutHex,  bulleye_B.cutHex);
