@@ -2,7 +2,7 @@ module tagion.services.RecorderService;
 
 import std.concurrency;
 import std.stdio : writeln;
-import std.file : exists, mkdir, write, read;
+import std.file : exists, mkdirRecurse, write, read;
 
 import tagion.basic.Basic : Control;
 import tagion.logger.Logger;
@@ -126,6 +126,11 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface{
 
     this(string file_for_blocks){
         this.file_for_blocks = file_for_blocks;
+        
+        import std.file : write;
+        if (!exists(this.file_for_blocks))
+            mkdirRecurse(this.file_for_blocks);
+
         if(getFiles.length) {
             auto info = findFirstLastAmountBlock;
             this.first_block = info.first;
@@ -286,12 +291,10 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface{
         import std.file;
         string[] files_name;
 
-        string dir = this.file_for_blocks;
-        auto files = dirEntries(dir, SpanMode.shallow).
+        auto files = dirEntries(this.file_for_blocks, SpanMode.shallow).
                            filter!(a => a.isFile()).
                         map!(a => baseName(a)).array();
-
-        foreach (f; files){
+        foreach (f; files) {
             if(f.length == FileName_Len){
                 files_name~=f;
             }
@@ -385,9 +388,9 @@ void recorderTask(immutable(Options) opts) {
         log.register(opts.recorder.task_name);
 
         auto records_folder = opts.recorder.folder_path;
-        if (!records_folder.exists) {
-            records_folder.mkdir;
-        }
+        // if (!records_folder.exists) {
+        //     records_folder.mkdir;
+        // }
 
         bool stop;
         void control(Control ctrl) @safe {
