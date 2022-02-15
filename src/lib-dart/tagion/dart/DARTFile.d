@@ -166,12 +166,14 @@ alias check = Check!DARTException;
         return manufactor.recorder(archives);
     }
 
-    static immutable(Buffer) sparsed_merkletree(const HashNet net, scope Buffer[] tabel)
+    static immutable(Buffer) sparsed_merkletree(const HashNet net, const(Buffer[]) tabel)
     in {
         assert(tabel.length == KEY_SPAN);
     }
     do {
-        immutable(Buffer) merkletree(return scope Buffer[] left, return scope Buffer[] right) {
+        immutable(Buffer) merkletree(
+            const(Buffer[]) left,
+            const(Buffer[]) right) {
             Buffer _left_fingerprint;
             Buffer _right_fingerprint;
             if ((left.length == 1) && (right.length == 1)) {
@@ -196,8 +198,7 @@ alias check = Check!DARTException;
         }
 
         immutable mid = tabel.length >> 1;
-        scope result = merkletree(tabel[0 .. mid], tabel[mid .. $]);
-        return result.idup;
+        return merkletree(tabel[0 .. mid], tabel[mid .. $]);
     }
 
     // alias Leave=Tuple!(uint, "index", Buffer, "fingerprint");
