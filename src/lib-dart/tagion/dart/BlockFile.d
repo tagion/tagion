@@ -306,7 +306,7 @@ class BlockFile {
             else {
                 if (!recycle_segments.empty) {
                     enum dummy_begin_index = 1;
-                    scope const search_segment = Segment(dummy_begin_index, dummy_begin_index + size);
+                    const search_segment = Segment(dummy_begin_index, dummy_begin_index + size);
                     auto equal = recycle_segments.equalRange(search_segment);
                     if (!equal.empty) {
                         auto found = equal.front;
@@ -319,8 +319,9 @@ class BlockFile {
                         if (!upper.empty) {
                             auto found = upper.front;
                             //                            assert(found.size > 0);
-                            .check(found.end_index < owner.last_block_index, format("recylce blocks=%d extends beond last_block_index=%d", found
-                                        .end_index, owner.last_block_index));
+                            .check(found.end_index < owner.last_block_index,
+                                format("recylce blocks=%d extends beond last_block_index=%d",
+                                    found.end_index, owner.last_block_index));
                             assert(found.end_index < owner.last_block_index);
                             if ((size * 2 <= found.size) || owner.check_statistic(found.size, size)) {
                                 remove_segment(found, size);
@@ -1273,7 +1274,9 @@ class BlockFile {
             }
         }
 
-        void allocate_and_chain(SortedSegments)(const(AllocatedChain[]) allocate, ref scope SortedSegments sorted_segments) @safe {
+        void allocate_and_chain(SortedSegments)(
+            const(AllocatedChain[]) allocate,
+            ref scope SortedSegments sorted_segments) @safe {
             if (allocate.length > 0) {
                 uint chain(
                     immutable(ubyte[]) data,
@@ -1388,12 +1391,11 @@ class BlockFile {
         // Write new allocated blocks to the file
         //
 
-        void write_blocks_in_sorted_order() {
+        { //write_blocks_in_sorted_order
             scope sorted_indices = blocks.keys.dup.sort;
             sorted_indices.each!(index => write(index, blocks[index]));
         }
 
-        write_blocks_in_sorted_order;
         writeMasterBlock;
         recycle_indices.build_segments;
     }
