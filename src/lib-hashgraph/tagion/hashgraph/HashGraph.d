@@ -72,12 +72,12 @@ class HashGraph {
 
     package HiRPC hirpc;
     //    protected bool _in_graph;
-    @nogc
+    /*@nogc*/
     bool active() pure const nothrow {
         return true;
     }
 
-    @nogc
+    /*@nogc*/
     const(BitMask) excluded_nodes_mask() const pure nothrow {
         return _excluded_nodes_mask;
     }
@@ -162,7 +162,7 @@ class HashGraph {
         return result;
     }
 
-    @nogc
+    /*@nogc*/
     const(Round.Rounder) rounds() const pure nothrow {
         return _rounds;
     }
@@ -258,12 +258,12 @@ class HashGraph {
         _event_cache.remove(fingerprint);
     }
 
-    @nogc
+    /*@nogc*/
     size_t number_of_registered_event() const pure nothrow {
         return _event_cache.length;
     }
 
-    @nogc
+    /*@nogc*/
     bool isRegistered(scope const(ubyte[]) fingerprint) const pure nothrow {
         return (fingerprint in _event_cache) !is null;
     }
@@ -589,7 +589,7 @@ class HashGraph {
         ExchangeState state;
         immutable size_t node_id;
         immutable(Pubkey) channel;
-        @nogc
+        /*@nogc*/
         this(const Pubkey channel, const size_t node_id) pure nothrow {
             this.node_id = node_id;
             this.channel = channel;
@@ -615,22 +615,22 @@ class HashGraph {
 
         private Event _event; /// This is the last event in this Node
 
-        @nogc
+        /*@nogc*/
         void asleep() pure nothrow {
             awake = (awake is 0) ? 0 : awake - 1;
         }
 
-        @nogc
+        /*@nogc*/
         bool sleeping() const pure nothrow {
             return awake is 0;
         }
 
-        @nogc
+        /*@nogc*/
         const(Event) event() const pure nothrow {
             return _event;
         }
 
-        @nogc pure nothrow {
+        /*@nogc*/ pure nothrow {
             package final Event event() {
                 return _event;
             }
@@ -670,17 +670,17 @@ class HashGraph {
 
     alias NodeRange = typeof((cast(const) nodes).byValue);
 
-    @nogc
+    /*@nogc*/
     NodeRange opSlice() const pure nothrow {
         return nodes.byValue;
     }
 
-    @nogc
+    /*@nogc*/
     size_t active_nodes() const pure nothrow {
         return nodes.length;
     }
 
-    @nogc
+    /*@nogc*/
     const(SecureNet) net() const pure nothrow {
         return hirpc.net;
     }
@@ -696,7 +696,7 @@ class HashGraph {
     //     return node.state is ExchangeState.NONE;
     // }
 
-    @nogc
+    /*@nogc*/
     bool isMajority(const uint voting) const pure nothrow {
         return .isMajority(voting, node_size);
     }
@@ -718,7 +718,7 @@ class HashGraph {
         return false;
     }
 
-    @nogc
+    /*@nogc*/
     uint next_event_id() pure nothrow {
         event_id++;
         if (event_id is event_id.init) {

@@ -30,7 +30,7 @@ enum {
     return result.idup;
 }
 
-@nogc @safe bool isHexPrefix(const(char[]) str) pure nothrow {
+/*@nogc*/ @safe bool isHexPrefix(const(char[]) str) pure nothrow {
     if (str.length >= hex_prefix.length) {
         return (str[0 .. hex_prefix.length] == hex_prefix)
             || (str[0 .. HEX_PREFIX.length] == HEX_PREFIX);
@@ -38,7 +38,7 @@ enum {
     return false;
 }
 
-@nogc @safe bool isBase64Prefix(const(char[]) str) pure nothrow {
+/*@nogc*/ @safe bool isBase64Prefix(const(char[]) str) pure nothrow {
     return (str.length > 0) && (str[0] is BASE64Indetifyer);
 }
 

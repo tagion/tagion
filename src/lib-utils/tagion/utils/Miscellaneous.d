@@ -134,7 +134,7 @@ do {
     return cast(Buffer) gene_xor(_a, _b);
 }
 
-@nogc @safe
+/*@nogc*/ @safe
 void xor(ref scope ubyte[] result, scope const(ubyte[]) a, scope const(ubyte[]) b) pure nothrow
 in {
     assert(a.length == b.length);

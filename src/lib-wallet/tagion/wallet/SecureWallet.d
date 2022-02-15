@@ -57,18 +57,18 @@ import tagion.wallet.WalletException : check;
         this(__pin, __wallet);
     }
 
-    @nogc const(RecoverGenerator) wallet() pure const nothrow {
+    /*@nogc*/ const(RecoverGenerator) wallet() pure const nothrow {
         return _wallet;
     }
 
-    @nogc const(DevicePIN) pin() pure const nothrow {
+    /*@nogc*/ const(DevicePIN) pin() pure const nothrow {
         return _pin;
     }
     // final Document toDoc() const {
     //     return wallet.toDoc;
     // }
 
-    @nogc uint confidence() pure const nothrow {
+    /*@nogc*/ uint confidence() pure const nothrow {
         return _wallet.confidence;
     }
 
@@ -197,7 +197,7 @@ import tagion.wallet.WalletException : check;
         return false;
     }
 
-    @nogc bool isLoggedin() pure const nothrow {
+    /*@nogc*/ bool isLoggedin() pure const nothrow {
         pragma(msg, "fixme(cbr): Yam the net");
         return net !is null;
     }

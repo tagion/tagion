@@ -7,11 +7,11 @@ import core.stdc.string : strlen;
 import tagion.logger.Logger;
 
 //import core.internal.execinfo;
-// The declaration of the backtrace function in the execinfo.d is not declared @nogc
-// so they are declared here with @nogc because signal needs a @nogc function
+// The declaration of the backtrace function in the execinfo.d is not declared /*@nogc*/
+// so they are declared here with /*@nogc*/ because signal needs a /*@nogc*/ function
 version (linux) {
     extern (C) {
-        nothrow @nogc {
+        nothrow /*@nogc*/ {
             int backtrace(void** buffer, int size);
             char** backtrace_symbols(const(void*)* buffer, int size);
             void backtrace_symbols_fd(const(void*)* buffer, int size, int fd);
@@ -21,7 +21,7 @@ version (linux) {
 
 shared bool abort = false;
 private shared bool fault;
-static extern (C) void shutdown(int sig) @nogc nothrow {
+static extern (C) void shutdown(int sig) /*@nogc*/ nothrow {
     if (!fault) {
         printf("Shutdown sig %d about=%d\n", sig, abort);
         if (sig is SIGINT || sig is SIGTERM) {
@@ -40,7 +40,7 @@ version (linux) {
     import core.sys.posix.signal;
 
     enum BACKTRACE_SIZE = 0x80; /// Just big enough to hold the call stack
-    static extern (C) void segment_fault(int sig, siginfo_t* ctx, void* ptr) @nogc nothrow {
+    static extern (C) void segment_fault(int sig, siginfo_t* ctx, void* ptr) /*@nogc*/ nothrow {
         if (fault) {
             return;
         }
@@ -86,7 +86,7 @@ version (linux) {
 import core.stdc.signal;
 
 enum SIGPIPE = 13; // SIGPIPE is not defined in the module core.stdc.signal
-static extern (C) void ignore(int sig) @nogc nothrow {
+static extern (C) void ignore(int sig) /*@nogc*/ nothrow {
     printf("Ignore sig %d\n", sig);
 }
 

@@ -2,7 +2,7 @@
 
 module tagion.betterC.utils.LEB128;
 
-@nogc:
+/*@nogc:*/
 
 import traits=std.traits : isSigned, isUnsigned, isIntegral;
 import std.typecons;

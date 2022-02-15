@@ -180,7 +180,7 @@ struct HiRPC {
         @Label("$msg") Document message;
         @Label("") immutable Type type;
 
-        @nogc const pure nothrow {
+        /*@nogc*/ const pure nothrow {
             bool isMethod() {
                 return type is Type.method;
             }
@@ -394,7 +394,7 @@ struct HiRPC {
              Returns:
              True if the message has been signed
              +/
-            @nogc bool isSigned() const pure nothrow {
+            /*@nogc*/ bool isSigned() const pure nothrow {
                 return (signature.length !is 0);
             }
         }

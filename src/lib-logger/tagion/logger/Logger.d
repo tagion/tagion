@@ -105,7 +105,7 @@ static struct Logger {
         log("Register: %s logger", _task_name);
     }
 
-    @trusted @nogc
+    @trusted /*@nogc*/
     void set_logger_task(string logger_task_name) nothrow
     in {
         assert(this.logger_task_name.length == 0);
@@ -114,7 +114,7 @@ static struct Logger {
         this.logger_task_name = logger_task_name;
     }
 
-    @property @nogc
+    @property /*@nogc*/
     string task_name() pure const nothrow {
         return _task_name;
     }
@@ -130,7 +130,7 @@ static struct Logger {
         masks ~= mask;
     }
 
-    @nogc
+    /*@nogc*/
     uint pop() nothrow {
         uint result = masks[$ - 1];
         if (masks.length > 1) {

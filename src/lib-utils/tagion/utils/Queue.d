@@ -81,7 +81,7 @@ module tagion.utils.Queue;
         }
     }
 
-    @nogc bool empty() const pure nothrow {
+    /*@nogc*/ bool empty() const pure nothrow {
         return _head is null;
     }
 

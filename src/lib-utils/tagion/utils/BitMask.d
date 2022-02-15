@@ -4,15 +4,15 @@ module tagion.utils.BitMask;
 
 enum WORD_SIZE=size_t(size_t.sizeof*8);
 
-size_t bitsize(const size_t[] mask) pure nothrow @nogc @safe {
+size_t bitsize(const size_t[] mask) pure nothrow /*@nogc*/ @safe {
     return mask.length*WORD_SIZE;
 }
 
-size_t wordindex(const size_t i) pure nothrow @nogc @safe {
+size_t wordindex(const size_t i) pure nothrow /*@nogc*/ @safe {
     return i / WORD_SIZE;
 }
 
-size_t word_bitindex(const size_t i) pure nothrow @nogc @safe {
+size_t word_bitindex(const size_t i) pure nothrow /*@nogc*/ @safe {
     return i % WORD_SIZE;
 }
 
@@ -65,7 +65,7 @@ struct BitMask {
     }
 
     version(none)
-    @nogc
+    /*@nogc*/
     bool opEquals(const BitMask rhs) const pure nothrow {
         return mask == rhs.mask;
     }
@@ -75,7 +75,7 @@ struct BitMask {
         const FormatSpec!char fmt) const {
         enum separator='_';
         import std.stdio;
-        @nogc @safe struct BitRange {
+        /*@nogc*/ @safe struct BitRange {
             size_t index;
             const size_t width;
             const(size_t[]) mask;
@@ -137,7 +137,7 @@ struct BitMask {
         }
     }
 
-    bool opIndex(size_t i) const pure nothrow @nogc
+    bool opIndex(size_t i) const pure nothrow /*@nogc*/
         in {
             assert(i < absolute_mask);
         }
@@ -240,7 +240,7 @@ struct BitMask {
         mask[$-1] &= (1 << bit_len.word_bitindex) - 1;
     }
 
-    size_t count() const pure nothrow @nogc {
+    size_t count() const pure nothrow /*@nogc*/ {
         static size_t local_count(size_t BIT_SIZE)(const size_t x) pure nothrow {
             static if (BIT_SIZE is 1) {
                 return x & 1;
@@ -265,7 +265,7 @@ struct BitMask {
         return Range(mask);
     }
 
-    @nogc
+    /*@nogc*/
     struct Range {
         private {
             const(size_t[]) mask;

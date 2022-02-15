@@ -105,7 +105,7 @@ struct TagionCurrency {
         mixin(code);
     }
 
-    pure const nothrow @nogc {
+    pure const nothrow /*@nogc*/ {
 
         bool opEquals(const TagionCurrency x) {
             return _axions == x._axions;

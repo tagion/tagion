@@ -28,7 +28,7 @@ import tagion.basic.TagionExceptions : Check, TagionException;
 import tagion.wallet.WalletRecords : RecoverGenerator;
 
 @safe
-@nogc
+/*@nogc*/
 struct KeyRecover {
     enum MAX_QUESTION = 10;
     enum MAX_SEEDS = 64;
@@ -71,7 +71,7 @@ struct KeyRecover {
         return results;
     }
 
-    @nogc
+    /*@nogc*/
     static uint numberOfSeeds(const uint M, const uint N) pure nothrow
     in {
         assert(M >= N);
@@ -81,7 +81,7 @@ struct KeyRecover {
         return (M - N) * N + 1;
     }
 
-    @nogc
+    /*@nogc*/
     static unittest {
         assert(numberOfSeeds(10, 5) is 26);
     }

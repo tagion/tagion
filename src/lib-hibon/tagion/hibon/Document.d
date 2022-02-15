@@ -47,8 +47,8 @@ static assert(uint.sizeof == 4);
      Returns:
      The buffer of the HiBON document
      +/
-    //    @nogc
-    immutable(ubyte[]) data() const pure nothrow {
+    //    /*@nogc*/
+    immutable(ubyte[]) data() const pure /*nothrow*/ {
         if (_data.length) {
             return _data[0 .. full_size];
         }
@@ -59,7 +59,7 @@ static assert(uint.sizeof == 4);
     /++
      Creates a HiBON Document from a buffer
      +/
-    @nogc this(immutable(ubyte[]) data) pure nothrow {
+    /*@nogc*/ this(immutable(ubyte[]) data) pure /*nothrow*/ {
         this._data = data;
     }
 
@@ -69,7 +69,7 @@ static assert(uint.sizeof == 4);
      Params:
      doc is the Document which is replicated
      +/
-    @nogc this(const Document doc) pure nothrow {
+    /*@nogc*/ this(const Document doc) pure /*nothrow*/ {
         this._data = doc._data;
     }
 
@@ -99,7 +99,7 @@ static assert(uint.sizeof == 4);
         return 0;
     }
 
-    @property @nogc const pure nothrow {
+    @property /*@nogc*/ const pure /*nothrow*/ {
         @safe bool empty() {
             return _data.length <= ubyte.sizeof;
         }
@@ -111,7 +111,7 @@ static assert(uint.sizeof == 4);
             return 0;
         }
 
-        size_t full_size() @nogc {
+        size_t full_size() /*@nogc*/ {
             if (_data.length) {
                 const len = LEB128.decode!uint(_data);
                 return len.size + len.value;
@@ -146,20 +146,20 @@ static assert(uint.sizeof == 4);
         }
     }
 
-    unittest { // Document with residual data
-        import tagion.hibon.HiBON;
-        import std.algorithm.comparison : equal;
+    // unittest { // Document with residual data
+    //     import tagion.hibon.HiBON;
+    //     import std.algorithm.comparison : equal;
 
-        auto h = new HiBON;
-        h["test"] = 42;
-        immutable(ubyte[]) residual = [42, 14, 217];
-        immutable data = h.serialize ~ residual;
-        const doc = Document(data);
-        assert(doc.full_size == h.serialize.length);
-        assert(doc.length == 1);
-        assert(equal(doc.keys, ["test"]));
+    //     auto h = new HiBON;
+    //     h["test"] = 42;
+    //     immutable(ubyte[]) residual = [42, 14, 217];
+    //     immutable data = h.serialize ~ residual;
+    //     const doc = Document(data);
+    //     assert(doc.full_size == h.serialize.length);
+    //     assert(doc.length == 1);
+    //     assert(equal(doc.keys, ["test"]));
 
-    }
+    // }
     /++
      Counts the number of members in a Document
      Returns:
@@ -173,7 +173,7 @@ static assert(uint.sizeof == 4);
      The deligate used by the valid function to report errors
      +/
     alias ErrorCallback = bool delegate(const Document main_doc,
-            const Element.ErrorCode error_code, const(Element) current, const(Element) previous) nothrow @safe;
+            const Element.ErrorCode error_code, const(Element) current, const(Element) previous) /*nothrow*/ @safe;
 
     /++
      This function check's if the Document is a valid HiBON format
@@ -182,9 +182,9 @@ static assert(uint.sizeof == 4);
      Returns:
      Error code of the validation
      +/
-    Element.ErrorCode valid(ErrorCallback error_callback = null) const nothrow {
+    Element.ErrorCode valid(ErrorCallback error_callback = null) const /*nothrow*/ {
         Element.ErrorCode inner_valid(const Document sub_doc,
-                ErrorCallback error_callback = null) const nothrow {
+                ErrorCallback error_callback = null) const /*nothrow*/ {
             import tagion.basic.TagionExceptions : TagionException;
 
             auto previous = sub_doc[];
@@ -250,7 +250,7 @@ static assert(uint.sizeof == 4);
      true if the Document is inorder
      +/
     // @trusted
-    bool isInorder() const nothrow {
+    bool isInorder() const /*nothrow*/ {
         return valid() is Element.ErrorCode.NONE;
     }
 
@@ -258,11 +258,11 @@ static assert(uint.sizeof == 4);
      Range of the Document
      +/
     @safe struct Range {
-    @nogc:
+    /*@nogc:*/
         private immutable(ubyte)[] _data;
         immutable uint ver;
     public:
-        this(immutable(ubyte[]) data) pure nothrow {
+        this(immutable(ubyte[]) data) pure /*nothrow*/ {
             if (data.length) {
                 const _index = LEB128.calc_size(data);
                 _data = data[_index .. $];
@@ -276,15 +276,15 @@ static assert(uint.sizeof == 4);
             }
         }
 
-        this(const Document doc) pure nothrow {
+        this(const Document doc) pure /*nothrow*/ {
             this(doc._data);
         }
 
-        immutable(ubyte[]) data() const pure nothrow {
+        immutable(ubyte[]) data() const pure /*nothrow*/ {
             return _data;
         }
 
-        pure nothrow const {
+        pure /*nothrow*/ const {
             bool empty() {
                 return _data.length is 0;
             }
@@ -299,10 +299,20 @@ static assert(uint.sizeof == 4);
         /**
          * InputRange primitive operation that advances the range to its next element.
          */
-        void popFront() nothrow {
+        void popFront() /*nothrow*/ {
+            // if (_data.length) {
+            //     _data = _data[Element(_data).size .. $];
+            // }
+        import std.stdio;
+            // writeln(_data.length);
             if (_data.length) {
+                // writeln(Element(_data).size);
                 _data = _data[Element(_data).size .. $];
+                // foreach (immutable(ubyte) key; data)
+                // {
+                // }
             }
+        // }
         }
     }
 
@@ -310,7 +320,7 @@ static assert(uint.sizeof == 4);
      Returns:
      A range of Element's
      +/
-    @nogc Range opSlice() const pure nothrow {
+    /*@nogc*/ Range opSlice() const pure /*nothrow*/ {
         if (full_size < _data.length) {
             return Range(_data[0 .. full_size]);
         }
@@ -321,7 +331,7 @@ static assert(uint.sizeof == 4);
      Returns:
      A range of the member keys in the document
      +/
-    @nogc auto keys() const nothrow {
+    /*@nogc*/ auto keys() const /*nothrow*/ {
         return map!"a.key"(this[]);
     }
 
@@ -341,7 +351,7 @@ static assert(uint.sizeof == 4);
      Returns:
      Is true if all the keys in ordred numbers
      +/
-    bool isArray() const nothrow {
+    bool isArray() const /*nothrow*/ {
         return .isArray(keys);
     }
 
@@ -432,7 +442,7 @@ static assert(uint.sizeof == 4);
      Retruns:
      The number of bytes taken up by the key in the HiBON serialized stream
      +/
-    @nogc static size_t sizeKey(const(char[]) key) pure nothrow {
+    /*@nogc*/ static size_t sizeKey(const(char[]) key) pure /*nothrow*/ {
         uint index;
         if (is_index(key, index)) {
             return sizeKey(index);
@@ -440,17 +450,17 @@ static assert(uint.sizeof == 4);
         return Type.sizeof + LEB128.calc_size(key.length) + key.length;
     }
 
-    @nogc static size_t sizeKey(uint key) pure nothrow {
+    /*@nogc*/ static size_t sizeKey(uint key) pure /*nothrow*/ {
         return Type.sizeof + ubyte.sizeof + LEB128.calc_size(key);
     }
 
-    @nogc unittest {
-        // Key is an index
-        assert(sizeKey("0") is 3);
-        assert(sizeKey("1000") is 4);
-        // Key is a labelw
-        assert(sizeKey("01000") is 7);
-    }
+    // /*@nogc*/ unittest {
+    //     // Key is an index
+    //     assert(sizeKey("0") is 3);
+    //     assert(sizeKey("1000") is 4);
+    //     // Key is a labelw
+    //     assert(sizeKey("01000") is 7);
+    // }
 
     /++
      Calculates the number of bytes taken up by an element in the HiBON serialized stream
@@ -461,7 +471,7 @@ static assert(uint.sizeof == 4);
      Returns:
      The number of bytes taken up by the element
      +/
-    @nogc static size_t sizeT(T, Key)(Type type, Key key, const(T) x) pure
+    /*@nogc*/ static size_t sizeT(T, Key)(Type type, Key key, const(T) x) pure
     if (is(Key : const(char[])) || is(Key == uint)) {
         size_t size = sizeKey(key);
         static if (is(T : U[], U)) {
@@ -591,7 +601,7 @@ static assert(uint.sizeof == 4);
             }
 
             const pure {
-                @nogc bool empty() nothrow {
+                /*@nogc*/ bool empty() /*nothrow*/ {
                     return range.empty;
                 }
 
@@ -603,280 +613,280 @@ static assert(uint.sizeof == 4);
         }
     }
 
-    version (unittest) {
-        import std.typecons : Tuple, isTuple;
+    // version (unittest) {
+    //     import std.typecons : Tuple, isTuple;
 
-        static private size_t make(R)(ref ubyte[] buffer, R range, size_t count = size_t.max) if (isTuple!R) {
-            size_t temp_index;
-            auto temp_buffer = buffer.dup;
-            foreach (i, t; range) {
-                if (i is count) {
-                    break;
-                }
-                enum name = range.fieldNames[i];
-                alias U = range.Types[i];
-                enum E = Value.asType!U;
-                static if (name.length is 0) {
-                    build(temp_buffer, E, cast(uint) i, t, temp_index);
-                }
-                else {
-                    build(temp_buffer, E, name, t, temp_index);
-                }
-            }
-            auto leb128_size_buffer = LEB128.encode(temp_index);
-            size_t index;
-            buffer.array_write(leb128_size_buffer, index);
-            buffer.array_write(temp_buffer[0 .. temp_index], index);
-            return index;
-        }
-    }
+    //     static private size_t make(R)(ref ubyte[] buffer, R range, size_t count = size_t.max) if (isTuple!R) {
+    //         size_t temp_index;
+    //         auto temp_buffer = buffer.dup;
+    //         foreach (i, t; range) {
+    //             if (i is count) {
+    //                 break;
+    //             }
+    //             enum name = range.fieldNames[i];
+    //             alias U = range.Types[i];
+    //             enum E = Value.asType!U;
+    //             static if (name.length is 0) {
+    //                 build(temp_buffer, E, cast(uint) i, t, temp_index);
+    //             }
+    //             else {
+    //                 build(temp_buffer, E, name, t, temp_index);
+    //             }
+    //         }
+    //         auto leb128_size_buffer = LEB128.encode(temp_index);
+    //         size_t index;
+    //         buffer.array_write(leb128_size_buffer, index);
+    //         buffer.array_write(temp_buffer[0 .. temp_index], index);
+    //         return index;
+    //     }
+    // }
 
-    unittest {
-        import std.algorithm.sorting : isSorted;
+    // unittest {
+    //     import std.algorithm.sorting : isSorted;
 
-        auto buffer = new ubyte[0x200];
+    //     auto buffer = new ubyte[0x200];
 
-        size_t index;
-        @trusted size_t* index_ptr() {
-            return &index;
-        }
+    //     size_t index;
+    //     @trusted size_t* index_ptr() {
+    //         return &index;
+    //     }
 
-        //import std.stdio;
-        { // Test of null document
-            const doc = Document();
-            assert(doc.length is 0);
-            assert(doc[].empty);
-        }
+    //     //import std.stdio;
+    //     { // Test of null document
+    //         const doc = Document();
+    //         assert(doc.length is 0);
+    //         assert(doc[].empty);
+    //     }
 
-        { // Test of empty Document
+    //     { // Test of empty Document
 
-            buffer.binwrite(ubyte.init, index_ptr);
-            immutable data = buffer[0 .. index].idup;
-            const doc = Document(data);
-            assert(doc.length is 0);
-            assert(doc[].empty);
+    //         buffer.binwrite(ubyte.init, index_ptr);
+    //         immutable data = buffer[0 .. index].idup;
+    //         const doc = Document(data);
+    //         assert(doc.length is 0);
+    //         assert(doc[].empty);
 
-        }
+    //     }
 
-        // dfmt off
-        alias Tabel = Tuple!(
-            BigNumber, Type.BIGINT.stringof,
-            bool,   Type.BOOLEAN.stringof,
-            float,  Type.FLOAT32.stringof,
-            double, Type.FLOAT64.stringof,
-            int,    Type.INT32.stringof,
-            long,   Type.INT64.stringof,
-            sdt_t,  Type.TIME.stringof,
-            uint,   Type.UINT32.stringof,
-            ulong,  Type.UINT64.stringof,
+    //     // dfmt off
+    //     alias Tabel = Tuple!(
+    //         BigNumber, Type.BIGINT.stringof,
+    //         bool,   Type.BOOLEAN.stringof,
+    //         float,  Type.FLOAT32.stringof,
+    //         double, Type.FLOAT64.stringof,
+    //         int,    Type.INT32.stringof,
+    //         long,   Type.INT64.stringof,
+    //         sdt_t,  Type.TIME.stringof,
+    //         uint,   Type.UINT32.stringof,
+    //         ulong,  Type.UINT64.stringof,
 
-            );
-        // dfmt on
+    //         );
+    //     // dfmt on
 
-        Tabel test_tabel;
-        test_tabel.FLOAT32 = 1.23;
-        test_tabel.FLOAT64 = 1.23e200;
-        test_tabel.INT32 = -42;
-        test_tabel.INT64 = -0x0123_3456_789A_BCDF;
-        test_tabel.UINT32 = 42;
-        test_tabel.UINT64 = 0x0123_3456_789A_BCDF;
-        test_tabel.BIGINT = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
-        test_tabel.BOOLEAN = true;
-        test_tabel.TIME = 1001;
+    //     Tabel test_tabel;
+    //     test_tabel.FLOAT32 = 1.23;
+    //     test_tabel.FLOAT64 = 1.23e200;
+    //     test_tabel.INT32 = -42;
+    //     test_tabel.INT64 = -0x0123_3456_789A_BCDF;
+    //     test_tabel.UINT32 = 42;
+    //     test_tabel.UINT64 = 0x0123_3456_789A_BCDF;
+    //     test_tabel.BIGINT = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
+    //     test_tabel.BOOLEAN = true;
+    //     test_tabel.TIME = 1001;
 
-        alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof, // Credential,          Type.CREDENTIAL.stringof,
-                // CryptDoc,            Type.CRYPTDOC.stringof,
-                DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
+    //     alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof, // Credential,          Type.CREDENTIAL.stringof,
+    //             // CryptDoc,            Type.CRYPTDOC.stringof,
+    //             DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
 
-        TabelArray test_tabel_array;
-        test_tabel_array.BINARY = [1, 2, 3];
-        test_tabel_array.STRING = "Text";
-        test_tabel_array.HASHDOC = DataBlock(27, [3, 4, 5]);
+    //     TabelArray test_tabel_array;
+    //     test_tabel_array.BINARY = [1, 2, 3];
+    //     test_tabel_array.STRING = "Text";
+    //     test_tabel_array.HASHDOC = DataBlock(27, [3, 4, 5]);
 
-        { // Document with simple types
-            //test_tabel.UTC      = 1234;
+    //     { // Document with simple types
+    //         //test_tabel.UTC      = 1234;
 
-            index = 0;
+    //         index = 0;
 
-            { // Document with a single value
-                index = make(buffer, test_tabel, 1);
-                immutable data = buffer[0 .. index].idup;
-                const doc = Document(data);
-                assert(doc.length is 1);
-                // assert(doc[Type.FLOAT32.stringof].get!float == test_tabel[0]);
-            }
+    //         { // Document with a single value
+    //             index = make(buffer, test_tabel, 1);
+    //             immutable data = buffer[0 .. index].idup;
+    //             const doc = Document(data);
+    //             assert(doc.length is 1);
+    //             // assert(doc[Type.FLOAT32.stringof].get!float == test_tabel[0]);
+    //         }
 
-            { // Document with a single value
-                index = make(buffer, test_tabel, 1);
-                immutable data = buffer[0 .. index].idup;
-                const doc = Document(data);
-                //                writefln("doc.length=%d", doc.length);
-                assert(doc.length is 1);
-                // assert(doc[Type.FLOAT32.stringof].get!BigNumber == test_tabel[0]);
-            }
+    //         { // Document with a single value
+    //             index = make(buffer, test_tabel, 1);
+    //             immutable data = buffer[0 .. index].idup;
+    //             const doc = Document(data);
+    //             //                writefln("doc.length=%d", doc.length);
+    //             assert(doc.length is 1);
+    //             // assert(doc[Type.FLOAT32.stringof].get!BigNumber == test_tabel[0]);
+    //         }
 
-            { // Document including basic types
-                index = make(buffer, test_tabel);
-                immutable data = buffer[0 .. index].idup;
-                const doc = Document(data);
-                assert(doc.keys.is_key_ordered);
+    //         { // Document including basic types
+    //             index = make(buffer, test_tabel);
+    //             immutable data = buffer[0 .. index].idup;
+    //             const doc = Document(data);
+    //             assert(doc.keys.is_key_ordered);
 
-                auto keys = doc.keys;
-                foreach (i, t; test_tabel) {
-                    enum name = test_tabel.fieldNames[i];
-                    alias U = test_tabel.Types[i];
-                    enum E = Value.asType!U;
-                    assert(doc.hasMember(name));
-                    const e = doc[name];
-                    assert(e.get!U == test_tabel[i]);
-                    assert(keys.front == name);
-                    keys.popFront;
+    //             auto keys = doc.keys;
+    //             foreach (i, t; test_tabel) {
+    //                 enum name = test_tabel.fieldNames[i];
+    //                 alias U = test_tabel.Types[i];
+    //                 enum E = Value.asType!U;
+    //                 assert(doc.hasMember(name));
+    //                 const e = doc[name];
+    //                 assert(e.get!U == test_tabel[i]);
+    //                 assert(keys.front == name);
+    //                 keys.popFront;
 
-                    auto e_in = name in doc;
-                    assert(e.get!U == test_tabel[i]);
+    //                 auto e_in = name in doc;
+    //                 assert(e.get!U == test_tabel[i]);
 
-                    assert(e.type is E);
-                    assert(e.isType!U);
+    //                 assert(e.type is E);
+    //                 assert(e.isType!U);
 
-                    static if (E !is Type.BIGINT && E !is Type.TIME) {
-                        assert(e.isThat!isBasicType);
-                    }
-                }
-            }
+    //                 static if (E !is Type.BIGINT && E !is Type.TIME) {
+    //                     assert(e.isThat!isBasicType);
+    //                 }
+    //             }
+    //         }
 
-            { // Document which includes basic arrays and string
-                index = make(buffer, test_tabel_array);
-                immutable data = buffer[0 .. index].idup;
-                const doc = Document(data);
-                assert(doc.keys.is_key_ordered);
+    //         { // Document which includes basic arrays and string
+    //             index = make(buffer, test_tabel_array);
+    //             immutable data = buffer[0 .. index].idup;
+    //             const doc = Document(data);
+    //             assert(doc.keys.is_key_ordered);
 
-                foreach (i, t; test_tabel_array) {
-                    enum name = test_tabel_array.fieldNames[i];
-                    alias U = test_tabel_array.Types[i];
-                    const v = doc[name].get!U;
+    //             foreach (i, t; test_tabel_array) {
+    //                 enum name = test_tabel_array.fieldNames[i];
+    //                 alias U = test_tabel_array.Types[i];
+    //                 const v = doc[name].get!U;
 
-                    assert(v == test_tabel_array[i]);
-                    import traits = std.traits; // : isArray;
-                    const e = doc[name];
-                }
-            }
+    //                 assert(v == test_tabel_array[i]);
+    //                 import traits = std.traits; // : isArray;
+    //                 const e = doc[name];
+    //             }
+    //         }
 
-            { // Document which includes sub-documents
-                auto buffer_subdoc = new ubyte[0x200];
-                index = make(buffer_subdoc, test_tabel);
-                immutable data_sub_doc = buffer_subdoc[0 .. index].idup;
-                const sub_doc = Document(data_sub_doc);
+    //         { // Document which includes sub-documents
+    //             auto buffer_subdoc = new ubyte[0x200];
+    //             index = make(buffer_subdoc, test_tabel);
+    //             immutable data_sub_doc = buffer_subdoc[0 .. index].idup;
+    //             const sub_doc = Document(data_sub_doc);
 
-                index = 0;
+    //             index = 0;
 
-                enum size_guess = 151;
-                uint size;
-                buffer.array_write(LEB128.encode(size_guess), index);
-                const start_index = index;
-                enum doc_name = "KDOC";
+    //             enum size_guess = 151;
+    //             uint size;
+    //             buffer.array_write(LEB128.encode(size_guess), index);
+    //             const start_index = index;
+    //             enum doc_name = "KDOC";
 
-                immutable index_before = index;
-                build(buffer, Type.INT32, Type.INT32.stringof, int(42), index);
-                immutable data_int32 = buffer[index_before .. index].idup;
+    //             immutable index_before = index;
+    //             build(buffer, Type.INT32, Type.INT32.stringof, int(42), index);
+    //             immutable data_int32 = buffer[index_before .. index].idup;
 
-                build(buffer, Type.DOCUMENT, doc_name, sub_doc, index);
-                build(buffer, Type.STRING, Type.STRING.stringof, "Text", index);
+    //             build(buffer, Type.DOCUMENT, doc_name, sub_doc, index);
+    //             build(buffer, Type.STRING, Type.STRING.stringof, "Text", index);
 
-                size = cast(uint)(index - start_index);
-                assert(size == size_guess);
+    //             size = cast(uint)(index - start_index);
+    //             assert(size == size_guess);
 
-                size_t dummy_index = 0;
-                buffer.array_write(LEB128.encode(size), dummy_index);
+    //             size_t dummy_index = 0;
+    //             buffer.array_write(LEB128.encode(size), dummy_index);
 
-                immutable data = buffer[0 .. index].idup;
-                const doc = Document(data);
-                assert(doc.keys.is_key_ordered);
+    //             immutable data = buffer[0 .. index].idup;
+    //             const doc = Document(data);
+    //             assert(doc.keys.is_key_ordered);
 
-                { // Check int32 in doc
-                    const int32_e = doc[Type.INT32.stringof];
-                    assert(int32_e.type is Type.INT32);
-                    assert(int32_e.get!int  is int(42));
-                    assert(int32_e.by!(Type.INT32) is int(42));
-                }
+    //             { // Check int32 in doc
+    //                 const int32_e = doc[Type.INT32.stringof];
+    //                 assert(int32_e.type is Type.INT32);
+    //                 assert(int32_e.get!int  is int(42));
+    //                 assert(int32_e.by!(Type.INT32) is int(42));
+    //             }
 
-                { // Check string in doc )
-                    const string_e = doc[Type.STRING.stringof];
-                    assert(string_e.type is Type.STRING);
-                    const text = string_e.get!string;
-                    assert(text.length is "Text".length);
-                    assert(text == "Text");
-                    assert(text == string_e.by!(Type.STRING));
-                }
+    //             { // Check string in doc )
+    //                 const string_e = doc[Type.STRING.stringof];
+    //                 assert(string_e.type is Type.STRING);
+    //                 const text = string_e.get!string;
+    //                 assert(text.length is "Text".length);
+    //                 assert(text == "Text");
+    //                 assert(text == string_e.by!(Type.STRING));
+    //             }
 
-                { // Check the sub/under document
-                    const under_e = doc[doc_name];
-                    assert(under_e.key == doc_name);
-                    assert(under_e.type == Type.DOCUMENT);
-                    assert(
-                            under_e.size == data_sub_doc.length + Type.sizeof
-                            + ubyte.sizeof + doc_name.length);
+    //             { // Check the sub/under document
+    //                 const under_e = doc[doc_name];
+    //                 assert(under_e.key == doc_name);
+    //                 assert(under_e.type == Type.DOCUMENT);
+    //                 assert(
+    //                         under_e.size == data_sub_doc.length + Type.sizeof
+    //                         + ubyte.sizeof + doc_name.length);
 
-                    const under_doc = doc[doc_name].get!Document;
-                    assert(under_doc.data.length == data_sub_doc.length);
+    //                 const under_doc = doc[doc_name].get!Document;
+    //                 assert(under_doc.data.length == data_sub_doc.length);
 
-                    auto keys = under_doc.keys;
-                    foreach (i, t; test_tabel) {
-                        enum name = test_tabel.fieldNames[i];
-                        alias U = test_tabel.Types[i];
-                        enum E = Value.asType!U;
-                        assert(under_doc.hasMember(name));
-                        const e = under_doc[name];
-                        assert(e.get!U == test_tabel[i]);
-                        assert(keys.front == name);
-                        keys.popFront;
+    //                 auto keys = under_doc.keys;
+    //                 foreach (i, t; test_tabel) {
+    //                     enum name = test_tabel.fieldNames[i];
+    //                     alias U = test_tabel.Types[i];
+    //                     enum E = Value.asType!U;
+    //                     assert(under_doc.hasMember(name));
+    //                     const e = under_doc[name];
+    //                     assert(e.get!U == test_tabel[i]);
+    //                     assert(keys.front == name);
+    //                     keys.popFront;
 
-                        auto e_in = name in doc;
-                        assert(e.get!U == test_tabel[i]);
-                    }
-                }
+    //                     auto e_in = name in doc;
+    //                     assert(e.get!U == test_tabel[i]);
+    //                 }
+    //             }
 
-                { // Check opEqual
-                    const data_int32_e = Element(data_int32);
-                    assert(doc[Type.INT32.stringof] == data_int32_e);
-                }
-            }
+    //             { // Check opEqual
+    //                 const data_int32_e = Element(data_int32);
+    //                 assert(doc[Type.INT32.stringof] == data_int32_e);
+    //             }
+    //         }
 
-            { // Test opCall!(string[])
-                enum size_guess = 27;
+    //         { // Test opCall!(string[])
+    //             enum size_guess = 27;
 
-                index = 0;
-                uint size;
-                buffer.array_write(LEB128.encode(size_guess), index);
-                const start_index = index;
+    //             index = 0;
+    //             uint size;
+    //             buffer.array_write(LEB128.encode(size_guess), index);
+    //             const start_index = index;
 
-                //buffer.binwrite(uint.init, &index);
-                auto texts = ["Text1", "Text2", "Text3"];
-                foreach (i, text; texts) {
-                    build(buffer, Type.STRING, i.to!string, text, index);
-                }
-                //buffer.binwrite(Type.NONE, &index);
-                size = cast(uint)(index - start_index);
-                assert(size == size_guess);
+    //             //buffer.binwrite(uint.init, &index);
+    //             auto texts = ["Text1", "Text2", "Text3"];
+    //             foreach (i, text; texts) {
+    //                 build(buffer, Type.STRING, i.to!string, text, index);
+    //             }
+    //             //buffer.binwrite(Type.NONE, &index);
+    //             size = cast(uint)(index - start_index);
+    //             assert(size == size_guess);
 
-                //size = cast(uint)(index - uint.sizeof);
-                //buffer.binwrite(size, 0);
-                size_t dummy_index = 0;
-                buffer.array_write(LEB128.encode(size), dummy_index);
+    //             //size = cast(uint)(index - uint.sizeof);
+    //             //buffer.binwrite(size, 0);
+    //             size_t dummy_index = 0;
+    //             buffer.array_write(LEB128.encode(size), dummy_index);
 
-                immutable data = buffer[0 .. index].idup;
-                const doc = Document(data);
+    //             immutable data = buffer[0 .. index].idup;
+    //             const doc = Document(data);
 
-                auto typed_range = doc.range!(string[])();
-                foreach (i, text; texts) {
-                    assert(!typed_range.empty);
-                    assert(typed_range.key == i.to!string);
-                    assert(typed_range.index == i);
-                    assert(typed_range.front == text);
-                    typed_range.popFront;
-                }
-            }
-        }
-    }
+    //             auto typed_range = doc.range!(string[])();
+    //             foreach (i, text; texts) {
+    //                 assert(!typed_range.empty);
+    //                 assert(typed_range.key == i.to!string);
+    //                 assert(typed_range.index == i);
+    //                 assert(typed_range.front == text);
+    //                 typed_range.popFront;
+    //             }
+    //         }
+    //     }
+    // }
 
     /**
  * HiBON Element representation
@@ -897,7 +907,7 @@ static assert(uint.sizeof == 4);
          */
         immutable(ubyte[]) data;
     public:
-        @nogc this(immutable(ubyte[]) data) pure nothrow {
+        /*@nogc*/ this(immutable(ubyte[]) data) pure /*nothrow*/ {
             // In this time, Element does not parse a binary data.
             // This is lazy initialization for some efficient.
             this.data = data;
@@ -1063,7 +1073,7 @@ static assert(uint.sizeof == 4);
              Returns:
              true if the function succeeds
              +/
-            bool as(T)(ref T result) pure nothrow {
+            bool as(T)(ref T result) pure /*nothrow*/ {
                 switch (type) {
                     static foreach (E; EnumMembers!Type) {
                         static if (isHiBONType(E)) {
@@ -1101,7 +1111,7 @@ static assert(uint.sizeof == 4);
 
         }
 
-        @property @nogc const pure nothrow {
+        @property /*@nogc*/ const pure /*nothrow*/ {
             /++
              Retruns:
              true if the elemnt is of T
@@ -1146,7 +1156,7 @@ static assert(uint.sizeof == 4);
             }
         }
 
-        @property @nogc const pure nothrow {
+        @property /*@nogc*/ const pure /*nothrow*/ {
             /++
              Returns:
              the key length
@@ -1296,8 +1306,8 @@ static assert(uint.sizeof == 4);
          ErrorCode.NONE means that the element is valid
 
          +/
-        //            @nogc
-        @trusted ErrorCode valid() const pure nothrow {
+        //            /*@nogc*/
+        @trusted ErrorCode valid() const pure /*nothrow*/ {
             enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
 
             with (ErrorCode) {
@@ -1347,7 +1357,7 @@ static assert(uint.sizeof == 4);
             }
         }
 
-        @property const pure nothrow {
+        @property const pure /*nothrow*/ {
 
             /++
              Returns:
@@ -1365,16 +1375,16 @@ static assert(uint.sizeof == 4);
     }
 }
 
-unittest { // Bugfix (Fails in isInorder);
-    //    import std.stdio;
-    {
-        immutable(ubyte[]) data = [
-            220, 252, 73, 35, 27, 55, 228, 198, 34, 5, 5, 13, 153, 209, 212,
-            161, 82, 232, 239, 91, 103, 93, 26, 163, 205, 99, 121, 104, 172, 161,
-            131, 175
-        ];
-        const doc = Document(data);
-        assert(!doc.isInorder);
-        assert(doc.valid is Document.Element.ErrorCode.DOCUMENT_OVERFLOW);
-    }
-}
+// unittest { // Bugfix (Fails in isInorder);
+//     //    import std.stdio;
+//     {
+//         immutable(ubyte[]) data = [
+//             220, 252, 73, 35, 27, 55, 228, 198, 34, 5, 5, 13, 153, 209, 212,
+//             161, 82, 232, 239, 91, 103, 93, 26, 163, 205, 99, 121, 104, 172, 161,
+//             131, 175
+//         ];
+//         const doc = Document(data);
+//         assert(!doc.isInorder);
+//         assert(doc.valid is Document.Element.ErrorCode.DOCUMENT_OVERFLOW);
+//     }
+// }

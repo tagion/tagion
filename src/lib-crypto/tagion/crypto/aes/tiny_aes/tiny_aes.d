@@ -47,7 +47,7 @@ enum Mode {
 
 }
 
-@safe @nogc
+@safe /*@nogc*/
 struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC) {
     pure nothrow {
         enum KEY_SIZE = KEY_LENGTH >> 3;

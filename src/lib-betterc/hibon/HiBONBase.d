@@ -2,7 +2,7 @@
 
 module tagion.betterC.hibon.HiBONBase;
 
-@nogc:
+/*@nogc:*/
 
 
 import std.meta : AliasSeq;
@@ -66,7 +66,7 @@ enum Type : ubyte {
 
 
 struct DataBlock {
-    @nogc:
+    /*@nogc:*/
     protected {
         uint _type;
         immutable(ubyte)[] _data;
@@ -106,7 +106,7 @@ enum isDataBlock(T)=is(T : const(DataBlock));
 
 version(none)
 struct Key {
-    @nogc:
+    /*@nogc:*/
     enum KeyType {
         NONE,
         DATA,
@@ -328,7 +328,7 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
  */
 //@safe
 union ValueT(bool NATIVE=false, HiBON,  Document) {
-    @nogc:
+    /*@nogc:*/
     @Type(Type.FLOAT32)   float     float32;
     @Type(Type.FLOAT64)   double    float64;
     // @Type(Type.FLOAT128)  decimal_t float128;
@@ -557,58 +557,58 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
 };
 
 
-unittest {
-    alias Value = ValueT!(false, void, void);
-    Value test;
-    with(Type) {
-        test=Value(int(-42)); assert(test.by!INT32 == -42);
-        test=Value(long(-42)); assert(test.by!INT64 == -42);
-        test=Value(uint(42)); assert(test.by!UINT32 == 42);
-        test=Value(ulong(42)); assert(test.by!UINT64 == 42);
-        test=Value(float(42.42)); assert(test.by!FLOAT32 == float(42.42));
-        test=Value(double(17.42)); assert(test.by!FLOAT64 == double(17.42));
-        sdt_t time=1001;
-        test=Value(time); assert(test.by!TIME == time);
-        test=Value("Hello"); assert(test.by!STRING == "Hello");
-    }
-}
+// unittest {
+//     alias Value = ValueT!(false, void, void);
+//     Value test;
+//     with(Type) {
+//         test=Value(int(-42)); assert(test.by!INT32 == -42);
+//         test=Value(long(-42)); assert(test.by!INT64 == -42);
+//         test=Value(uint(42)); assert(test.by!UINT32 == 42);
+//         test=Value(ulong(42)); assert(test.by!UINT64 == 42);
+//         test=Value(float(42.42)); assert(test.by!FLOAT32 == float(42.42));
+//         test=Value(double(17.42)); assert(test.by!FLOAT64 == double(17.42));
+//         sdt_t time=1001;
+//         test=Value(time); assert(test.by!TIME == time);
+//         test=Value("Hello"); assert(test.by!STRING == "Hello");
+//     }
+// }
 
-unittest {
-    import std.typecons;
-    alias Value = ValueT!(false, void, void);
+// unittest {
+//     import std.typecons;
+//     alias Value = ValueT!(false, void, void);
 
-    { // Check invalid type
-        Value value;
-        static assert(!__traits(compiles, value='x'));
-    }
+//     { // Check invalid type
+//         Value value;
+//         static assert(!__traits(compiles, value='x'));
+//     }
 
-    { // Simple data type
-        auto test_tabel=tuple(
-            float(-1.23), double(2.34), "Text", true, ulong(0x1234_5678_9ABC_DEF0),
-            int(-42), uint(42), long(-0x1234_5678_9ABC_DEF0)
-            );
-        foreach(i, t; test_tabel) {
-            Value v;
-            v=test_tabel[i];
-            alias U = test_tabel.Types[i];
-            enum E  = Value.asType!U;
-            assert(test_tabel[i] == v.by!E);
-        }
-    }
+//     { // Simple data type
+//         auto test_tabel=tuple(
+//             float(-1.23), double(2.34), "Text", true, ulong(0x1234_5678_9ABC_DEF0),
+//             int(-42), uint(42), long(-0x1234_5678_9ABC_DEF0)
+//             );
+//         foreach(i, t; test_tabel) {
+//             Value v;
+//             v=test_tabel[i];
+//             alias U = test_tabel.Types[i];
+//             enum E  = Value.asType!U;
+//             assert(test_tabel[i] == v.by!E);
+//         }
+//     }
 
-    version(none)
-    { // utc test,
-        static assert(Value.asType!sdt_t is Type.TIME);
-        sdt_t time = 1234;
-        Value v;
-        v = time;
-        assert(v.by!(Type.TIME) == 1234);
-        alias U = Value.TypeT!(Type.TIME);
-        static assert(is(U == const sdt_t));
-        static assert(!is(U == const ulong));
-    }
+//     version(none)
+//     { // utc test,
+//         static assert(Value.asType!sdt_t is Type.TIME);
+//         sdt_t time = 1234;
+//         Value v;
+//         v = time;
+//         assert(v.by!(Type.TIME) == 1234);
+//         alias U = Value.TypeT!(Type.TIME);
+//         static assert(is(U == const sdt_t));
+//         static assert(!is(U == const ulong));
+//     }
 
-}
+// }
 
 /**
  * Converts from a text to a index
@@ -682,26 +682,26 @@ bool isArray(R)(R keys) {
     return false;
 }
 
-///
-unittest { // check is_index
-    uint index;
-    assert(is_index("0", index));
-    assert(index is 0);
-    assert(!is_index("-1", index));
+// ///
+// unittest { // check is_index
+//     uint index;
+//     assert(is_index("0", index));
+//     assert(index is 0);
+//     assert(!is_index("-1", index));
 
-    assert(is_index(uint.max.stringof[0..$-1], index));
-    assert(index is uint.max);
+//     assert(is_index(uint.max.stringof[0..$-1], index));
+//     assert(index is uint.max);
 
-    enum overflow=((cast(ulong)uint.max)+1);
-    assert(!is_index(overflow.stringof, index));
+//     enum overflow=((cast(ulong)uint.max)+1);
+//     assert(!is_index(overflow.stringof, index));
 
-    assert(is_index("42", index));
-    assert(index is 42);
+//     assert(is_index("42", index));
+//     assert(index is 42);
 
-    assert(!is_index("0x0", index));
-    assert(!is_index("00", index));
-    assert(!is_index("01", index));
-}
+//     assert(!is_index("0x0", index));
+//     assert(!is_index("00", index));
+//     assert(!is_index("01", index));
+// }
 
 /**
  * This function decides the order of the HiBON keys
@@ -750,17 +750,17 @@ bool is_key_ordered(R)(R range) if (isInputRange!R) {
     return true;
 }
 
-///
-unittest { // Check less_than
-    assert(key_compare("a", "b") < 0);
-    assert(key_compare("0", "1") < 0);
-    assert(key_compare("00", "0") > 0);
-    assert(key_compare("0", "abe") < 0);
-    assert(key_compare("42", "abe") < 0);
-    assert(key_compare("42", "17") > 0);
-    assert(key_compare("42", "42") == 0);
-    assert(key_compare("abc", "abc") == 0);
-}
+// ///
+// unittest { // Check less_than
+//     assert(key_compare("a", "b") < 0);
+//     assert(key_compare("0", "1") < 0);
+//     assert(key_compare("00", "0") > 0);
+//     assert(key_compare("0", "abe") < 0);
+//     assert(key_compare("42", "abe") < 0);
+//     assert(key_compare("42", "17") > 0);
+//     assert(key_compare("42", "42") == 0);
+//     assert(key_compare("abc", "abc") == 0);
+// }
 
 /**
  * @return true if the key is a valid HiBON key
@@ -789,33 +789,33 @@ unittest { // Check less_than
 }
 
 ///
-unittest { // Check is_key_valid
-    assert(!is_key_valid(""));
-    string text=" "; // SPACE
-    assert(!is_key_valid(text));
-    text="\x80"; // Only simple ASCII
-    assert(!is_key_valid(text));
-    text=`"`; // Double quote
-    assert(!is_key_valid(text));
-    text="'"; // Sigle quote
-    assert(!is_key_valid(text));
-    text="`"; // Back quote
-    assert(!is_key_valid(text));
-    text="\0";
-    assert(!is_key_valid(text));
+// unittest { // Check is_key_valid
+//     assert(!is_key_valid(""));
+//     string text=" "; // SPACE
+//     assert(!is_key_valid(text));
+//     text="\x80"; // Only simple ASCII
+//     assert(!is_key_valid(text));
+//     text=`"`; // Double quote
+//     assert(!is_key_valid(text));
+//     text="'"; // Sigle quote
+//     assert(!is_key_valid(text));
+//     text="`"; // Back quote
+//     assert(!is_key_valid(text));
+//     text="\0";
+//     assert(!is_key_valid(text));
 
 
-    assert(is_key_valid("abc"));
-    assert(is_key_valid("42"));
+//     assert(is_key_valid("abc"));
+//     assert(is_key_valid("42"));
 
-    text="";
-    char[ubyte.max+1] max_key_size;
-    foreach(ref a; max_key_size) {
-        a='a';
-    }
-    assert(is_key_valid(max_key_size[0..$-1]));
-    assert(is_key_valid(max_key_size));
-}
+//     text="";
+//     char[ubyte.max+1] max_key_size;
+//     foreach(ref a; max_key_size) {
+//         a='a';
+//     }
+//     assert(is_key_valid(max_key_size[0..$-1]));
+//     assert(is_key_valid(max_key_size));
+// }
 
 
 template isOneOf(T, TList...) {

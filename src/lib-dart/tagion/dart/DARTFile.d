@@ -242,7 +242,7 @@ class DARTFile {
             }
         }
 
-        @nogc
+        /*@nogc*/
         bool hasIndices() const pure nothrow {
             return _indices.length !is 0;
         }
@@ -698,7 +698,7 @@ class DARTFile {
                 .all!((a) => a.isRemove);
         }
 
-        @nogc pure nothrow {
+        /*@nogc*/ pure nothrow {
         bool single() const  {
             return current.length == 1;
         }

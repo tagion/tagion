@@ -17,7 +17,7 @@ struct OpenSSL {
     import std.range : zip, repeat, only;
     import std.format;
 
-    auto config() const pure nothrow @nogc {
+    auto config() const pure nothrow /*@nogc*/ {
         return only(
                 country,
                 state,

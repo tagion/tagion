@@ -18,7 +18,7 @@ protected static shared {
 /++
 +  Sets the thread global options opt
 +/
-@safe @nogc
+@safe /*@nogc*/
 static void setCommonOptions(const(CommonOptions) opt)
 in {
     assert(!_common_options_set, "Common options already set");
@@ -28,7 +28,7 @@ do {
     _common_options = opt;
 }
 
-@safe @nogc
+@safe /*@nogc*/
 immutable(CommonOptions) commonOptions() nothrow
 in {
     assert(_common_options_set, "Common options has not been set");

@@ -137,7 +137,7 @@ import std.format;
         protected size_t _index;
         immutable(string) magic;
         immutable(uint) vernum;
-        this(immutable(ubyte[]) data) pure nothrow @nogc @trusted {
+        this(immutable(ubyte[]) data) pure nothrow /*@nogc*/ @trusted {
             this.data = data;
             magic = cast(string)(data[0 .. uint.sizeof]);
             _index = uint.sizeof;
@@ -147,21 +147,21 @@ import std.format;
         }
 
         pure nothrow {
-            bool empty() const @nogc {
+            bool empty() const /*@nogc*/ {
                 return _index >= data.length;
             }
 
-            WasmSection front() const @nogc {
+            WasmSection front() const /*@nogc*/ {
                 return WasmSection(data[_index .. $]);
             }
 
-            void popFront() @nogc {
+            void popFront() /*@nogc*/ {
                 _index += Section.sizeof;
                 const size = u32(data, _index);
                 _index += size;
             }
 
-            WasmRange save() @nogc {
+            WasmRange save() /*@nogc*/ {
                 WasmRange result = this;
                 return result;
             }
@@ -184,13 +184,13 @@ import std.format;
                 return WasmSection.emptySection(index);
             }
 
-            size_t index() const @nogc {
+            size_t index() const /*@nogc*/ {
                 return _index;
             }
 
         }
 
-        @nogc struct WasmSection {
+        /*@nogc*/ struct WasmSection {
             immutable(ubyte[]) data;
             immutable(Section) section;
 
@@ -199,7 +199,7 @@ import std.format;
                 return WasmSection(data);
             }
 
-            this(immutable(ubyte[]) data) @nogc pure nothrow {
+            this(immutable(ubyte[]) data) /*@nogc*/ pure nothrow {
                 section = cast(Section) data[0];
                 size_t index = Section.sizeof;
                 const size = u32(data, index);
@@ -215,7 +215,7 @@ import std.format;
                 return new T(data);
             }
 
-            @nogc struct VectorRange(ModuleSection, Element) {
+            /*@nogc*/ struct VectorRange(ModuleSection, Element) {
                 const ModuleSection owner;
                 protected size_t pos;
                 protected uint index;
@@ -262,7 +262,7 @@ import std.format;
             static class SectionT(SecType) {
                 immutable uint length;
                 immutable(ubyte[]) data;
-                this(immutable(ubyte[]) data) @nogc pure nothrow {
+                this(immutable(ubyte[]) data) /*@nogc*/ pure nothrow {
                     size_t index;
                     length = u32(data, index);
                     this.data = data[index .. $];

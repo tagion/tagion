@@ -12,7 +12,7 @@ import tagion.basic.TagionExceptions;
     V value;
     immutable(UtilException) e;
     @disable this();
-    @nogc this(V value) pure nothrow {
+    /*@nogc*/ this(V value) pure nothrow {
         this.value = value;
         e = null;
     }
@@ -26,7 +26,7 @@ import tagion.basic.TagionExceptions;
         this(V.init, msg, file, line);
     }
 
-    @nogc bool error() pure const nothrow {
+    /*@nogc*/ bool error() pure const nothrow {
         return e !is null;
     }
 

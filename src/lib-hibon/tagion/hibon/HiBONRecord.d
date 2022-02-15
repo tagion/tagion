@@ -381,7 +381,7 @@ mixin template HiBONRecord(string CTOR = "") {
         static if (HAS_TYPE) {
             hibon[TYPENAME] = type_name;
         }
-        @nogc @trusted inout(HiBON) result() inout pure nothrow {
+        /*@nogc*/ @trusted inout(HiBON) result() inout pure nothrow {
             return cast(inout) hibon;
         }
 
@@ -1026,11 +1026,11 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
         @safe static struct Range(T) {
             alias UnqualT = Unqual!T;
             protected T[] array;
-            @nogc this(T[] array) {
+            /*@nogc*/ this(T[] array) {
                 this.array = array;
             }
 
-            @nogc @property nothrow {
+            /*@nogc*/ @property nothrow {
                 const(T) front() const pure {
                     return array[0];
                 }

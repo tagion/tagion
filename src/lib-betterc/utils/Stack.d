@@ -2,13 +2,13 @@
 
 module tagion.betterC.utils.Stack;
 
-@nogc:
+/*@nogc:*/
 
 import tagion.betterC.utils.Memory;
 //import core.stdc.stdio;
 
 struct Stack(T) {
-    @nogc:
+    /*@nogc:*/
     struct Element {
         Element* next;
         T value;

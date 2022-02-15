@@ -47,7 +47,7 @@ import tagion.utils.LEB128;
     static assert(isInputRange!Range);
     static assert(isForwardRange!Range);
 
-    @nogc @safe struct Range {
+    /*@nogc*/ @safe struct Range {
         immutable(string) source;
         protected {
             size_t _begin_pos; /// Begin position of a token
@@ -190,7 +190,7 @@ import tagion.utils.LEB128;
             }
         }
 
-        Range save() pure const nothrow @nogc {
+        Range save() pure const nothrow /*@nogc*/ {
             auto result = this;
             //assert(result is this);
             return result;
