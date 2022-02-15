@@ -228,7 +228,7 @@ alias check = Check!DARTException;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
 
-            
+
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if (doc.hasMember(indicesName)) {
@@ -316,7 +316,7 @@ alias check = Check!DARTException;
                     if (index !is INDEX_NULL) {
                         hibon_indices[key] = index;
 
-                        
+
 
                         .check(_fingerprints[key]!is null, format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
@@ -420,7 +420,7 @@ alias check = Check!DARTException;
                 foreach (key, index; _indices) {
                     if ((index !is INDEX_NULL) && (_fingerprints[key] is null)) {
 
-                        
+
 
                             .check((index in index_used) is null, format(
                                     "The DART contains a recursive tree @ index %d", index));
@@ -660,7 +660,7 @@ alias check = Check!DARTException;
     struct RimKeyRange {
         protected Archive[] current;
         @disable this();
-        this(Range)(scope ref Range range, const uint rim) @trusted {
+        this(Range)(ref Range range, const uint rim) @trusted {
             pragma(msg, "RimKeyRange Range ", Range);
             pragma(msg, "RimKeyRange  ", RimKeyRange);
             pragma(msg, "Foreach(Range)  ", RimKeyRange);
@@ -686,7 +686,7 @@ alias check = Check!DARTException;
                 else {
                     void build(ref Range range, const uint no = 0) {
                         if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
-                            pragma(msg, "build range ", typeof(range), " a ", typeof(range.front), " Elem ", Range.Elem);
+                            // pragma(msg, "build range ", typeof(range), " a ", typeof(range.front), " Elem ", Range.Elem);
                             auto a = range.front;
                             range.popFront;
                             build(range, no + 1);
@@ -703,7 +703,7 @@ alias check = Check!DARTException;
             }
         }
 
-        bool onlyRemove(GetType get_type) const {
+        bool onlyRemove(const GetType get_type) const {
             if (get_type) {
                 return current
                     .all!((const(Archive) a) => a.type is Archive.Type.REMOVE);
@@ -771,9 +771,9 @@ alias check = Check!DARTException;
             get_type = (a) => a.type;
         }
         Leave traverse_dart(R)(
-                scope ref R range,
+                ref R range,
                 const uint branch_index,
-                immutable uint rim = 0) @trusted {
+                immutable uint rim = 0) @safe {
             pragma(msg, "traverse_dart R ", R);
             if (!range.empty) {
                 auto archive = range.front;
@@ -782,23 +782,20 @@ alias check = Check!DARTException;
                     blockfile.erase(erase_block_index);
                 }
                 immutable sector = root_sector(archive.fingerprint);
-                scope Branches branches;
+                Branches branches;
                 if (rim < RIMS_IN_SECTOR) {
                     if (branch_index !is INDEX_NULL) {
-                        scope data = blockfile.load(branch_index);
-                        scope doc = Document(data);
+                        immutable data = blockfile.load(branch_index);
+                        const doc = Document(data);
                         branches = Branches(doc);
-
-                        
-
-                        .check(branches.hasIndices, "DART failure within the sector rims the DART should contain a branch");
+                        .check(branches.hasIndices,
+                            "DART failure within the sector rims the DART should contain a branch");
                     }
 
                     while (!range.empty) {
-                        scope sub_range = RimKeyRange(range, rim);
+                        auto sub_range = RimKeyRange(range, rim);
                         immutable rim_key = sub_range.front.fingerprint.rim_key(rim);
                         if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-
                             branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
                         }
                     }
@@ -818,17 +815,17 @@ alias check = Check!DARTException;
                         //assert(0);
 
                         //                        erase_block_index=root_index;
-                        scope data = blockfile.load(branch_index);
-                        scope doc = Document(data);
+                        immutable data = blockfile.load(branch_index);
+                        const doc = Document(data);
 
-                        
+
 
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
                         if (Branches.isRecord(doc)) {
                             branches = Branches(doc);
                             do {
-                                scope sub_range = RimKeyRange(range, rim);
-                                scope sub_archive = sub_range.front;
+                                auto sub_range = RimKeyRange(range, rim);
+                                const sub_archive = sub_range.front;
                                 immutable rim_key = sub_archive.fingerprint.rim_key(rim);
                                 if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
@@ -840,7 +837,7 @@ alias check = Check!DARTException;
                             // DART does not store a branch this means that it contains a leave.
                             // Leave means and archive
                             // The new Archives is constructed to include the archive which is already in the DART
-                            scope archive_in_dart = new Archive(manufactor.net, doc);
+                            auto archive_in_dart = new Archive(manufactor.net, doc);
                             scope (success) {
                                 // The archive is erased and it will be added again to the DART
                                 // if it not removed by and action in the record
@@ -863,13 +860,13 @@ alias check = Check!DARTException;
                                         }
                                     }
                                     else {
-                                        scope recorder = manufactor.recorder;
+                                        auto recorder = manufactor.recorder;
                                         recorder.insert(archive_in_dart);
                                         recorder.insert(single_archive);
                                         scope archives_range = recorder.archives[];
                                         do {
-                                            scope sub_range = RimKeyRange(archives_range, rim);
-                                            scope sub_archive = sub_range.front;
+                                            auto sub_range = RimKeyRange(archives_range, rim);
+                                            const sub_archive = sub_range.front;
                                             immutable rim_key = sub_archive.fingerprint.rim_key(
                                                     rim);
 
@@ -887,7 +884,7 @@ alias check = Check!DARTException;
                                 //                                    assert(range.empty);
                                 scope equal_range = archives.equalRange(archive_in_dart);
                                 if (!equal_range.empty) {
-                                    scope equal_archive = equal_range.front;
+                                    const equal_archive = equal_range.front;
                                     if (!equal_archive.done) {
                                         if (equal_archive.isRemove(get_type)) {
                                             equal_archive.doit;
@@ -899,8 +896,8 @@ alias check = Check!DARTException;
                                 }
                                 scope archive_range = archives[];
                                 do {
-                                    scope sub_range = RimKeyRange(archive_range, rim);
-                                    scope sub_archive = sub_range.front;
+                                    auto sub_range = RimKeyRange(archive_range, rim);
+                                    const sub_archive = sub_range.front;
                                     immutable rim_key = sub_archive.fingerprint.rim_key(rim);
                                     if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                                         branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
@@ -939,9 +936,9 @@ alias check = Check!DARTException;
                         }
                         else {
                             do {
-                                auto sub_archive = range.front;
+                                const sub_archive = range.front;
                                 immutable rim_key = sub_archive.fingerprint.rim_key(rim);
-                                scope sub_range = RimKeyRange(range, rim);
+                                auto sub_range = RimKeyRange(range, rim);
 
                                 if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
