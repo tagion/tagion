@@ -10,7 +10,7 @@ import std.stdio;
 
 // import tagion.services.LoggerService;
 import tagion.services.Options;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
 import tagion.basic.TagionExceptions : TagionException, taskException, fatal;
 import tagion.services.MdnsDiscoveryService;
@@ -140,38 +140,38 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name,
 
         while (!stop) {
             receiveTimeout(
-                    500.msecs,
-                    (immutable(Pubkey) key, Tid tid) { log("looking for key: %s", key); tid.send(node_addresses[key]); },
-                    (Control control) {
-                if (control == Control.STOP) {
-                    log("stop");
-                    stop = true;
-                }
-            },
-                    (DiscoveryRequestCommand request) {
-                with (DiscoveryRequestCommand) {
-                    final switch (request) {
-                    case BecomeOnline:
-                        log("Becoming online..");
-                        recordOwnInfo();
-                        is_ready = true;
-                        break;
-                    case RequestTable:
-                        initialize();
-                        auto address_book = new ActiveNodeAddressBook(
-                            node_addresses);
-                        ownerTid.send(address_book);
-                        break;
-                    case BecomeOffline:
-                        eraseOwnInfo();
-                        break;
-                    case UpdateTable:
-                        throw new TagionException(format("DiscoveryRequestCommand %s has not function", request));
-                        break;
-
+                500.msecs,
+                (immutable(Pubkey) key, Tid tid) {
+                    log("looking for key: %s", key);
+                    tid.send(node_addresses[key]);
+                },
+                (Control control) {
+                    if (control == Control.STOP) {
+                        log("stop"); stop = true;
                     }
-                }
-            });
+                },
+                (DiscoveryRequestCommand request) {
+                    with (DiscoveryRequestCommand) {
+                        final switch (request) {
+                        case BecomeOnline :
+                            log("Becoming online.."); recordOwnInfo(); is_ready = true;
+                            break;
+                        case RequestTable :
+                            initialize();
+                            auto address_book = new ActiveNodeAddressBook(
+                                node_addresses);
+                            ownerTid.send(address_book);
+                            break;
+                        case BecomeOffline :
+                            eraseOwnInfo();
+                            break;
+                        case UpdateTable:
+                            throw new TagionException(format("DiscoveryRequestCommand %s has not function", request));
+                            break;
+
+                        }
+                    }
+                });
             notifyReadyAfterDelay();
 
         }

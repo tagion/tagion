@@ -3,24 +3,24 @@ module tagion.dart.Recorder;
 //import std.stdio;
 import tagion.hibon.HiBONJSON;
 
-import std.container.rbtree : RedBlackTree;
-import std.range.primitives : isInputRange;
+import std.container.rbtree: RedBlackTree;
+import std.range.primitives: isInputRange;
 import std.format;
 
-import tagion.crypto.SecureInterfaceNet : HashNet;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : Label, STUB, isHiBONRecord, GetLabel, isStub, RecordType;
-import tagion.basic.Basic : Buffer;
+import tagion.crypto.SecureInterfaceNet: HashNet;
+import tagion.hibon.Document: Document;
+import tagion.hibon.HiBON: HiBON;
+import tagion.hibon.HiBONRecord: Label, STUB, isHiBONRecord, GetLabel, isStub, RecordType;
+import tagion.basic.Basic: Buffer;
 import tagion.basic.Message;
 
-import tagion.dart.DARTException : DARTRecorderException;
+import tagion.dart.DARTException: DARTRecorderException;
 
-import tagion.basic.TagionExceptions : Check;
+import tagion.basic.TagionExceptions: Check;
 
 //import tagion.utils.Miscellaneous : toHex=toHexString;
 
-import tagion.utils.Miscellaneous : toHexString;
+import tagion.utils.Miscellaneous: toHexString;
 
 alias hex = toHexString;
 
@@ -77,10 +77,10 @@ class RecordFactory {
         alias Archives = RedBlackTree!(Archive, (a, b) @safe => a.fingerprint < b.fingerprint);
         package Archives archives;
 
-        import tagion.hibon.HiBONJSON : JSONString;
+        import tagion.hibon.HiBONJSON: JSONString;
 
         mixin JSONString;
-        import tagion.hibon.HiBONRecord : HiBONRecordType;
+        import tagion.hibon.HiBONRecord: HiBONRecordType;
 
         mixin HiBONRecordType;
         /++
@@ -107,10 +107,7 @@ class RecordFactory {
         }
 
         private this(Document doc) {
-
-            
-
-                .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
+            .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             this.archives = new Archives;
             foreach (e; doc[]) {
                 if (e.key != TYPENAME) {
@@ -184,7 +181,8 @@ class RecordFactory {
             return archive;
         }
 
-        const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE) if (isHiBONRecord!T) {
+        const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE)
+                if (isHiBONRecord!T) {
             return insert(pack.toDoc, type);
         }
 
@@ -204,7 +202,7 @@ class RecordFactory {
         const(Archive) remove(T)(T pack) {
             return insert(pack, Archive.Type.REMOVE);
         }
-        //        alias add(T) = insert!T(
+//        alias add(T) = insert!T(
         // const(Archive) add(const(Document) doc) {
         //     auto archive = new Archive(net, doc, Archive.Type.ADD);
         //     archives.insert(archive);
@@ -385,8 +383,8 @@ unittest { // Archive
     import std.format;
     import tagion.hibon.HiBONJSON;
     import tagion.dart.DARTFakeNet;
-    import tagion.utils.Miscellaneous : toHex = toHexString;
-    import std.string : representation;
+    import tagion.utils.Miscellaneous: toHex = toHexString;
+    import std.string: representation;
 
     auto net = new DARTFakeNet;
     auto manufactor = RecordFactory(net);

@@ -13,7 +13,7 @@ import p2plib = p2p.node;
 import std.net.curl;
 
 // import tagion.services.LoggerService;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
 import tagion.basic.TagionExceptions : fatal;
 import tagion.services.Options;
@@ -56,6 +56,11 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
 
         void recordOwnInfo(string addrs) {
             if (opts.serverFileDiscovery.token) {
+
+                writeln(addrs);
+                auto firstrelay = opts.hostbootrap.bootstrapNodes.split("\n")[0];
+                addrs = addrs.replace("[", "[\"" ~ firstrelay ~ "/p2p-circuit\",");
+                writeln(addrs);
                 auto params = new HiBON;
                 params["pkey"] = pubkey;
                 params["address"] = addrs;
@@ -65,8 +70,8 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
                 try {
                     post(opts.serverFileDiscovery.url ~ "/node/record",
                             [
-                            "value": json,
-                            "token": opts.serverFileDiscovery.token
+                                "value": json,
+                                "token": opts.serverFileDiscovery.token
                             ]);
                 }
                 catch (Exception e) {
@@ -83,8 +88,8 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
             log("posting info to %s", opts.serverFileDiscovery.url ~ "/node/erase");
             post(opts.serverFileDiscovery.url ~ "/node/erase",
                     [
-                    "value": (cast(string) pubkey),
-                    "tag": opts.serverFileDiscovery.tag
+                        "value": (cast(string) pubkey),
+                        "tag": opts.serverFileDiscovery.tag
                     ]);
         }
 

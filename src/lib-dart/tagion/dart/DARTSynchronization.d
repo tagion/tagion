@@ -7,10 +7,6 @@ import p2p.callback;
 import p2p.cgo.c_helper;
 import std.random;
 import std.concurrency;
-import core.time;
-import std.datetime;
-import std.typecons;
-import std.format;
 
 import tagion.gossip.P2pGossipNet: NodeAddress, ConnectionPool;
 import tagion.dart.DART;
@@ -19,14 +15,17 @@ import tagion.dart.BlockFile;
 import tagion.dart.DARTBasic;
 import tagion.dart.Recorder;
 
+import core.time;
+import std.datetime;
 import tagion.dart.DARTOptions : DARTOptions;
+import std.typecons;
 import tagion.basic.Basic;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON: HiBON;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 
 import tagion.communication.HiRPC;
 import tagion.communication.HandlerPool;
@@ -283,7 +282,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
 
             try {
                 auto stream_id = (() @trusted => connect())();
-                auto filename = format("%s_%s", tempfile, sector);
+                immutable filename = tempfile ~ sector.to!string;
                 pragma(msg, "fixme(alex): Why 0x80");
                 enum BLOCK_SIZE = 0x80;
                 BlockFile.create(filename, DART.stringof, BLOCK_SIZE);

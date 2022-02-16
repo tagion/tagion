@@ -2,9 +2,9 @@ module tagion.crypto.SecureNet;
 
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.aes.AESCrypto;
-import tagion.basic.Basic : Buffer, Signature;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
+import tagion.basic.Basic: Buffer, Signature;
+import tagion.hibon.Document: Document;
+import tagion.hibon.HiBONRecord: HiBONPrefix, STUB;
 import tagion.basic.ConsensusExceptions;
 
 void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) @safe if (T.sizeof is 1) {
@@ -33,7 +33,7 @@ class StdHashNet : HashNet {
     }
 
     immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const {
-        import std.digest.sha : SHA256;
+        import std.digest.sha: SHA256;
         import std.digest;
 
         return digest!SHA256(data).idup;
@@ -48,9 +48,9 @@ class StdHashNet : HashNet {
 
     @trusted
     final immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure {
-        import std.exception : assumeUnique;
-        import std.digest.sha : SHA256;
-        import std.digest.hmac : digestHMAC = HMAC;
+        import std.exception: assumeUnique;
+        import std.digest.sha: SHA256;
+        import std.digest.hmac: digestHMAC = HMAC;
 
         scope hmac = digestHMAC!SHA256(data);
         auto result = hmac.finish.dup;
@@ -103,14 +103,14 @@ class StdHashNet : HashNet {
 @safe
 class StdSecureNet : StdHashNet, SecureNet {
     import tagion.crypto.secp256k1.NativeSecp256k1;
-    import tagion.basic.Basic : Pubkey;
+    import tagion.basic.Basic: Pubkey;
     import tagion.crypto.aes.AESCrypto;
 
     //    import tagion.gossip.GossipNet : scramble;
     import tagion.basic.ConsensusExceptions;
 
     import std.format;
-    import std.string : representation;
+    import std.string: representation;
 
     private Pubkey _pubkey;
     /**
@@ -218,8 +218,8 @@ class StdSecureNet : StdHashNet, SecureNet {
         assert(_secret is null);
     }
     do {
-        import std.digest.sha : SHA256;
-        import std.string : representation;
+        import std.digest.sha: SHA256;
+        import std.string: representation;
 
         alias AES = AESCrypto!256;
         _pubkey = _crypt.computePubkey(privkey);
@@ -269,7 +269,9 @@ class StdSecureNet : StdHashNet, SecureNet {
         @safe class LocalSecret : SecretMethods {
             immutable(ubyte[]) sign(const(ubyte[]) message) const {
                 immutable(ubyte)[] result;
-                do_secret_stuff((const(ubyte[]) privkey) { result = _crypt.sign(message, privkey); });
+                do_secret_stuff((const(ubyte[]) privkey) {
+                    result = _crypt.sign(message, privkey);
+                });
                 return result;
             }
 
@@ -288,18 +290,18 @@ class StdSecureNet : StdHashNet, SecureNet {
             immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const {
                 Buffer result;
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
-                    result = _crypt.createECDHSecret(privkey, cast(Buffer) pubkey);
+                        result = _crypt.createECDHSecret(privkey, cast(Buffer)pubkey);
                 });
                 return result;
             }
 
             Buffer mask(const(ubyte[]) _mask) const {
-                import std.algorithm.iteration : sum;
+                import std.algorithm.iteration: sum;
 
                 check(sum(_mask) != 0, ConsensusFailCode.SECURITY_MASK_VECTOR_IS_ZERO);
                 Buffer result;
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
-                    import tagion.utils.Miscellaneous : xor;
+                    import tagion.utils.Miscellaneous: xor;
 
                     auto data = xor(privkey, _mask);
                     result = calcHash(calcHash(data));
@@ -316,9 +318,9 @@ class StdSecureNet : StdHashNet, SecureNet {
         assert(_secret is null);
     }
     do {
-        import std.digest.sha : SHA256;
-        import std.digest.hmac : digestHMAC = HMAC;
-        import std.string : representation;
+        import std.digest.sha: SHA256;
+        import std.digest.hmac: digestHMAC = HMAC;
+        import std.string: representation;
 
         alias AES = AESCrypto!256;
 
@@ -336,7 +338,7 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     immutable(ubyte[]) ECDHSecret(scope const(ubyte[]) seckey, scope const(
             Pubkey) pubkey) const {
-        return _crypt.createECDHSecret(seckey, cast(Buffer) pubkey);
+        return _crypt.createECDHSecret(seckey, cast(Buffer)pubkey);
     }
 
     immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const {
@@ -359,8 +361,8 @@ class StdSecureNet : StdHashNet, SecureNet {
         import tagion.hibon.HiBONJSON;
 
         import tagion.hibon.HiBON;
-        import std.exception : assertThrown;
-        import tagion.basic.ConsensusExceptions : SecurityConsensusException;
+        import std.exception: assertThrown;
+        import tagion.basic.ConsensusExceptions: SecurityConsensusException;
 
         SecureNet net = new StdSecureNet;
         net.generateKeyPair("Secret password");
@@ -393,10 +395,10 @@ class StdSecureNet : StdHashNet, SecureNet {
 
 unittest { // StdHashNet
     //import tagion.utils.Miscellaneous : toHex=toHexString;
-    import tagion.hibon.HiBONRecord : isStub, hasHashKey;
-    import std.string : representation;
-    import std.exception : assertThrown;
-    import core.exception : AssertError;
+    import tagion.hibon.HiBONRecord: isStub, hasHashKey;
+    import std.string: representation;
+    import std.exception: assertThrown;
+    import core.exception: AssertError;
 
     // import std.stdio;
 

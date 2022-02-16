@@ -134,6 +134,8 @@ class DART : DARTFile { //, HiRPC.Supports {
         }
 
         string toString() inout {
+            import std.string;
+
             return format("(%d, %d)", _from_sector, _to_sector);
         }
 
@@ -189,7 +191,7 @@ class DART : DARTFile { //, HiRPC.Supports {
     alias HiRPCSender = HiRPC.Sender;
     alias HiRPCReceiver = HiRPC.Receiver;
 
-    @RecordType("Rims")
+    @safe @RecordType("Rims")
     struct Rims {
         Buffer rims;
         protected enum root_rim = [];
@@ -211,6 +213,11 @@ class DART : DARTFile { //, HiRPC.Supports {
             return result;
         }
 
+        string toString() const pure nothrow {
+            import tagion.utils.Miscellaneous : hex;
+            return rims.hex;
+        }
+
         mixin HiBONRecord!(
                 q{
                 this(Buffer r) {
@@ -225,10 +232,6 @@ class DART : DARTFile { //, HiRPC.Supports {
                     rims=[sector >> 8*ubyte.sizeof, sector & ubyte.max];
                 }
             });
-
-        string toString() const pure nothrow {
-            return rims.toHexString;
-        }
     }
 
     static {
@@ -245,18 +248,19 @@ class DART : DARTFile { //, HiRPC.Supports {
             return hirpc.dartRead(params, id);
         }
 
-        @HiRPCMethod() const(HiRPCSender) dartRim(ref const Rims rims, HiRPC hirpc = HiRPC(null), uint id = 0) {
+        @HiRPCMethod() const(HiRPCSender) dartRim(const Rims rims, HiRPC hirpc = HiRPC(null), uint id = 0) {
             // auto params=new HiBON;
             // params[Params.rims]=rims;
-            return hirpc.dartRim(rims, id);
-            //   return hirpc.opDispatch!"dartRim"(rims, id);
+            return hirpc.opDispatch!"dartRim"(rims, id);
+            //return hirpc.dartRim(rims, id);
         }
 
-        @HiRPCMethod() const(HiRPCSender) dartModify(ref const RecordFactory.Recorder recorder, HiRPC hirpc = HiRPC(
+        @HiRPCMethod() const(HiRPCSender) dartModify(const RecordFactory.Recorder recorder, HiRPC hirpc = HiRPC(
                 null), uint id = 0) {
             // auto params=new HiBON;
             // params[Params.recorder]=recorder.toDoc;
-            return hirpc.dartModify(recorder, id);
+            return hirpc.opDispatch!"dartModify"(recorder, id);
+            //return hirpc.dartModify(recorder, id);
         }
     }
 
@@ -486,11 +490,11 @@ class DART : DARTFile { //, HiRPC.Supports {
         /++
          + Recommend to put a yield the SynchronizationFiber between send and receive between the DART's
          +/
-        const(HiRPCReceiver) query(ref const(HiRPCSender) request);
+        const(HiRPCReceiver) query(scope ref const(HiRPCSender) request);
         /++
          + Stores the add and remove actions in the journal replay log file
          +/
-        void record(RecordFactory.Recorder recorder);
+        void record(const RecordFactory.Recorder recorder);
         /++
          + This function is call when hole branches doesn't exist in the foreign DART
          + and need to be removed in the local DART
@@ -529,6 +533,11 @@ class DART : DARTFile { //, HiRPC.Supports {
             recorder = manufactor.recorder(recorder_doc);
         }
 
+        this(const RecordFactory.Recorder recorder, const uint index) const pure nothrow @nogc {
+            this.recorder=recorder;
+            this.index=index;
+        }
+
         mixin HiBONRecord!"{}";
     }
 
@@ -556,16 +565,17 @@ class DART : DARTFile { //, HiRPC.Supports {
             this.chunck_size = chunck_size;
         }
 
-        void record(RecordFactory.Recorder recorder) {
+        void record(const RecordFactory.Recorder recorder) {
             //            writefln("RECORD %s", recorder.empty);
             if (!recorder.empty) {
-                Journal journal;
+                const journal=const(Journal)(recorder, index);
                 auto hibon = new HiBON;
-                journal.index = index;
-                journal.recorder = recorder;
+                // journal.index = index;
+                // journal.recorder = recorder;
                 // auto data=hibon.serialize;
                 // auto doc=Document(data);
                 //                writefln("--->%s", doc.toText);
+                pragma(msg, "fixme(cbr): The journalfile.save should be a Document or a HiBONRecord not a buffer");
                 const allocated = journalfile.save(journal.toDoc.serialize);
                 index = allocated.begin_index;
                 journalfile.root_index = index;
@@ -641,6 +651,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         return this;
     }
 
+    @safe
     class SynchronizationFiber : Fiber {
         protected Synchronizer sync;
 
@@ -667,16 +678,17 @@ class DART : DARTFile { //, HiRPC.Supports {
             assert(blockfile);
         }
         do {
-            void iterate(const Rims params) @trusted {
+
+            void iterate(const Rims params) @safe {
                 //
                 // Request Branches or Recorder at rims from the foreign DART.
                 //
-                scope local_branches = branches(params.rims);
+                const local_branches = branches(params.rims);
                 scope request_branches = dartRim(params, hirpc, id);
-                scope result_branches = sync.query(request_branches);
+                const result_branches = sync.query(request_branches);
                 if (!Branches.isRecord(result_branches.response.result)) {
                     if (result_branches.isRecord!(RecordFactory.Recorder)) {
-                        scope foreign_recoder = manufactor.recorder(result_branches.method.params);
+                        const foreign_recoder = manufactor.recorder(result_branches.method.params);
                         sync.record(foreign_recoder);
                     }
                     //
@@ -685,12 +697,12 @@ class DART : DARTFile { //, HiRPC.Supports {
                     sync.remove_recursive(params);
                 }
                 else {
-                    scope foreign_branches = result_branches.result!Branches;
+                    const foreign_branches = result_branches.result!Branches;
                     //
                     // Read all the archives from the foreign DART
                     //
                     scope request_archives = dartRead(foreign_branches.fingerprints, hirpc, id);
-                    scope result_archives = sync.query(request_archives);
+                    const result_archives = sync.query(request_archives);
                     scope foreign_recoder = manufactor.recorder(result_archives.response.result);
                     //
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
@@ -720,7 +732,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                         else if (foreign_print) {
                             // Foreign is poits to branches
                             if (local_print) {
-                                scope possible_branches_data = load(local_branches, key);
+                                const possible_branches_data = load(local_branches, key);
                                 if (!Branches.isRecord(Document(possible_branches_data))) {
                                     // If branch is an archive then it is removed because if it exists in foreign DART
                                     // this archive will be added later
@@ -764,11 +776,11 @@ class DART : DARTFile { //, HiRPC.Supports {
             journalfile.close;
         }
         // Adding and Removing archives
-        void local_replay(bool remove)() @trusted {
+        void local_replay(bool remove)() @safe {
             for (uint index = journalfile.masterBlock.root_index; index !is INDEX_NULL;
                     ) {
                 immutable data = journalfile.load(index);
-                scope doc = Document(data);
+                const doc = Document(data);
                 // index=doc[Params.index].get!uint;
 
                 //scope replay_recorder_doc=doc[Params.recorder].get!Document;
@@ -778,7 +790,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                 // writefln("doc.keys=%s", doc.keys);
                 auto journal_replay = Journal(manufactor, doc);
                 index = journal_replay.index;
-                scope action_recorder = recorder;
+                auto action_recorder = recorder;
                 foreach (a; journal_replay.recorder.archives[]) {
                     static if (remove) {
                         if (a.type is Archive.Type.REMOVE) {
@@ -817,7 +829,7 @@ class DART : DARTFile { //, HiRPC.Supports {
             // This function emulates the connection between two DART's
             // in a single thread
             //
-            const(HiRPCReceiver) query(ref const(HiRPCSender) request) {
+            const(HiRPCReceiver) query(ref scope const(HiRPCSender) request) {
                 Document send_request_to_foreign_dart(const Document foreign_doc) {
                     //
                     // Remote excution

@@ -1,0 +1,10 @@
+{
+    "accountfile": "account.hibon",
+    "addr": "localhost",
+    "contractfile": "contract.hibon",
+    "devicefile": "device.hibon",
+    "paymentrequestsfile": "paymentrequests.hibon",
+    "port": 10800,
+    "quizfile": "quiz.hibon",
+    "walletfile": "tagionwallet.hibon"
+}

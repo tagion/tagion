@@ -5,4 +5,3 @@
 *.parked
 local.mk
 gen.*
-p2p/cgo/

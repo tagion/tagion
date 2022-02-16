@@ -11,14 +11,6 @@ endif
 
 ifeq ($(findstring android,$(CROSS_OS)),android)
 include ${call dir.resolve, cross.android.mk}
-test50:
-	@echo cross $(CROSS_OS)
 endif
 
 endif
-
-test51:
-	@echo cross included
-	@echo $(CROSS_OS)
-	@echo $(CROSS_ARCH)
-	@echo $(findstring android,$(CROSS_OS))

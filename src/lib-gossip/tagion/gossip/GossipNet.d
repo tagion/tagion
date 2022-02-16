@@ -2,24 +2,24 @@ module tagion.gossip.GossipNet;
 
 import std.concurrency;
 import std.format;
-import std.exception : assumeUnique;
-import std.string : representation;
-import core.time : MonoTime;
+import std.exception: assumeUnique;
+import std.string: representation;
+import core.time: MonoTime;
 
-import tagion.basic.Basic : Pubkey;
+import tagion.basic.Basic: Pubkey;
 
 //import tagion.basic.ConsensusExceptions : convertEnum;
 //, consensusCheck, consensusCheckArguments;
 //import tagion.utils.Miscellaneous: cutHex;
 //import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
+import tagion.hibon.Document: Document;
 
 //import tagion.hibon.HiBONRecord : HiBONPrefix, STUB, isStub;
 
 // import tagion.utils.LRU;
 // import tagion.utils.Queue;
 
-import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.SecureNet: StdSecureNet;
 import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
@@ -29,7 +29,7 @@ import tagion.hashgraph.HashGraphBasic;
 //import tagion.crypto.aes.AESCrypto;
 //import tagion.crypto.secp256k1.NativeSecp256k1;
 
-//import tagion.basic.Logger;
+//import tagion.logger.Logger;
 
 @safe
 abstract class StdGossipNet : StdSecureNet, GossipNet {

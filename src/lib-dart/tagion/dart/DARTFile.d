@@ -2,39 +2,39 @@ module tagion.dart.DARTFile;
 
 private {
     import std.format;
-    import std.stdio : File;
+    import std.stdio: File;
 
-    import std.algorithm.sorting : sort;
-    import std.algorithm.iteration : filter, each;
-    import std.algorithm.searching : count, maxElement;
-    import std.algorithm.comparison : equal;
+    import std.algorithm.sorting: sort;
+    import std.algorithm.iteration: filter, each;
+    import std.algorithm.searching: count, maxElement;
+    import std.algorithm.comparison: equal;
 
-    import std.array : array;
+    import std.array: array;
 
-    import std.traits : ReturnType;
+    import std.traits: ReturnType;
     import std.typecons;
-    import std.conv : to;
-    import core.thread : Fiber;
-    import std.range.primitives : isInputRange;
+    import std.conv: to;
+    import core.thread: Fiber;
+    import std.range.primitives: isInputRange;
 
-    import tagion.basic.Basic : Buffer, EnumText;
+    import tagion.basic.Basic: Buffer, EnumText;
     import tagion.Keywords;
 
-    import tagion.hibon.HiBON : HiBON;
+    import tagion.hibon.HiBON: HiBON;
 
     //    import tagion.hibon.HiBONRecord : GetLabel, Label, HiBONPrefix, isStub, STUB;
-    import tagion.hibon.HiBONRecord : isStub, Label, Filter, GetLabel, RecordType;
-    import tagion.hibon.Document : Document;
+    import tagion.hibon.HiBONRecord: isStub, Label, Filter, GetLabel, RecordType;
+    import tagion.hibon.Document: Document;
 
     import tagion.dart.BlockFile;
     import tagion.dart.Recorder;
-    import tagion.dart.DARTException : DARTException;
+    import tagion.dart.DARTException: DARTException;
 
-    import tagion.crypto.SecureInterfaceNet : HashNet;
+    import tagion.crypto.SecureInterfaceNet: HashNet;
 
     //import tagion.basic.Basic;
-    import tagion.basic.TagionExceptions : Check;
-    import tagion.utils.Miscellaneous : toHex = toHexString;
+    import tagion.basic.TagionExceptions: Check;
+    import tagion.utils.Miscellaneous: toHex = toHexString;
 
 }
 
@@ -102,10 +102,10 @@ alias check = Check!DARTException;
     }
 
     protected enum _params = [
-            "fingerprints", //        "branches",
+            "fingerprints",//        "branches",
             //        "rims",
             //        "limit",
-            "bullseye", //        "recorder",
+            "bullseye",//        "recorder",
             //        "archives",
             //        "archive",
             //        "remove_rims",
@@ -225,6 +225,7 @@ alias check = Check!DARTException;
     /++
 
 +/
+
     @RecordType("Branches") struct Branches {
         import std.stdio;
         import tagion.hibon.HiBONJSON;
@@ -236,8 +237,6 @@ alias check = Check!DARTException;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
-
-            
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if (doc.hasMember(indicesName)) {
@@ -325,8 +324,6 @@ alias check = Check!DARTException;
                     if (index !is INDEX_NULL) {
                         hibon_indices[key] = index;
 
-                        
-
                         .check(_fingerprints[key]!is null, format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
                     }
@@ -350,11 +347,11 @@ alias check = Check!DARTException;
             return Document(toHiBON);
         }
 
-        import tagion.hibon.HiBONJSON : JSONString;
+        import tagion.hibon.HiBONJSON: JSONString;
 
         mixin JSONString;
 
-        import tagion.hibon.HiBONRecord : HiBONRecordType;
+        import tagion.hibon.HiBONRecord: HiBONRecordType;
 
         mixin HiBONRecordType;
 
@@ -417,7 +414,7 @@ alias check = Check!DARTException;
          +/
         bool empty() pure const {
             if (_indices !is null) {
-                import std.algorithm.searching : any;
+                import std.algorithm.searching: any;
 
                 return !_indices.any!("a != 0");
             }
@@ -428,8 +425,6 @@ alias check = Check!DARTException;
             if (merkleroot is null) {
                 foreach (key, index; _indices) {
                     if ((index !is INDEX_NULL) && (_fingerprints[key] is null)) {
-
-                        
 
                             .check((index in index_used) is null, format(
                                     "The DART contains a recursive tree @ index %d", index));
@@ -610,15 +605,16 @@ alias check = Check!DARTException;
         return result;
     }
     // Loads all the archives in the list of fingerprints
-    RecordFactory.Recorder loads(Range)(Range fingerprints, Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range) {
+    RecordFactory.Recorder loads(Range)(Range fingerprints, Archive.Type type = Archive.Type.REMOVE)
+            if (isInputRange!Range) {
 
         pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
-        import std.algorithm.comparison : min;
+        import std.algorithm.comparison: min;
 
         auto result = recorder;
         void traverse_dart(
                 const uint branch_index,
-                Buffer[] ordered_fingerprints, //            const(Buffer[]) selected_fingerprints=null,
+                Buffer[] ordered_fingerprints,//            const(Buffer[]) selected_fingerprints=null,
                 immutable uint rim = 0) @trusted {
             if ((ordered_fingerprints) && (branch_index !is INDEX_NULL)) {
                 scope data = blockfile.load(branch_index);
@@ -700,7 +696,7 @@ alias check = Check!DARTException;
                             auto a = range.front;
                             range.popFront;
                             build(range, no + 1);
-                            list[no] = cast(Archive) a;
+                            list[no] = cast(Archive)a;
                         }
                         else {
                             list = new Archive[no];
@@ -803,8 +799,6 @@ alias check = Check!DARTException;
                         scope doc = Document(data);
                         branches = Branches(doc);
 
-                        
-
                         .check(branches.hasIndices, "DART failure within the sector rims the DART should contain a branch");
                     }
 
@@ -834,7 +828,7 @@ alias check = Check!DARTException;
                         scope data = blockfile.load(branch_index);
                         scope doc = Document(data);
 
-                        
+
 
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
                         if (Branches.isRecord(doc)) {
@@ -1258,13 +1252,13 @@ alias check = Check!DARTException;
     unittest {
         pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
 
-        import std.algorithm.sorting : sort;
+        import std.algorithm.sorting: sort;
 
         //    import tagion.basic.Basic;
         import std.typecons;
         import tagion.utils.Random;
-        import std.bitmanip : BitArray;
-        import tagion.utils.Miscellaneous : cutHex;
+        import std.bitmanip: BitArray;
+        import tagion.utils.Miscellaneous: cutHex;
 
         //        import tagion.dart.DARTFakeNet : DARTFakeNet;
 
@@ -1297,7 +1291,7 @@ alias check = Check!DARTException;
             0x20_21_22_32_40_50_80_90, // Insert between in rim 3
 
             // Add in first rim again
-            0x20_21_11_33_40_50_80_90, // Rim 4 test
+            0x20_21_11_33_40_50_80_90,// Rim 4 test
             0x20_21_20_32_30_40_50_80,
             0x20_21_20_32_31_40_50_80,
             0x20_21_20_32_34_40_50_80,

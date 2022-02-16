@@ -1,5 +1,5 @@
 DEPS += lib-utils
 
-${call config.lib, wasm}: LOOKUP := tagion/vm/wasm/*.d
+PROGRAM := libwasm
 
-# TODO: fix compilation
+$(PROGRAM).configure: SOURCE := tagion/wasm/*.d
