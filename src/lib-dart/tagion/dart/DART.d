@@ -69,12 +69,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         return SectorRange.sectorInRange(sector, from_sector, to_sector);
     }
 
-    // override Buffer modify(Recorder modify_records) {
-    //     modify_records.removeOutOfRange(from_sector, to_sector);
-    //     return super.modify(modify_records);
-    // }
-
-    SectorRange sectors() {
+    SectorRange sectors() pure nothrow {
         return SectorRange(from_sector, to_sector);
     }
 
@@ -91,7 +86,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         }
 
         protected bool flag;
-        this(const ushort from_sector, const ushort to_sector) {
+        this(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
             _from_sector = from_sector;
             _to_sector = to_sector;
             _sector = from_sector;
@@ -178,16 +173,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         }
     }
 
-    //protected enum _quries = Callers!DART;
-    //     nameOf!dartRead,
-    //     nameOf!dartRim,
-    //     nameOf!dartModify,
-    //     nameOf!dartFullRead
-    //     ];
-
     mixin(EnumText!(q{Quries}, Callers!DART));
-
-    // mixin Support!Quries;
 
     alias HiRPCSender = HiRPC.Sender;
     alias HiRPCReceiver = HiRPC.Receiver;
@@ -538,12 +524,17 @@ class DART : DARTFile { //, HiRPC.Supports {
         enum recorderName = GetLabel!(recorder).name;
         this(RecordFactory manufactor, const Document doc) {
 
-            
+
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!uint;
             const recorder_doc = doc[recorderName].get!Document;
             recorder = manufactor.recorder(recorder_doc);
+        }
+
+        this(const RecordFactory.Recorder recorder, const uint index) const pure nothrow @nogc {
+            this.recorder = recorder;
+            this.index = index;
         }
 
         mixin HiBONRecord!"{}";
@@ -573,16 +564,10 @@ class DART : DARTFile { //, HiRPC.Supports {
             this.chunck_size = chunck_size;
         }
 
-        void record(RecordFactory.Recorder recorder) {
-            //            writefln("RECORD %s", recorder.empty);
+        void record(const RecordFactory.Recorder recorder) @safe {
             if (!recorder.empty) {
-                Journal journal;
+                const journal = const(Journal)(recorder, index);
                 auto hibon = new HiBON;
-                journal.index = index;
-                journal.recorder = recorder;
-                // auto data=hibon.serialize;
-                // auto doc=Document(data);
-                //                writefln("--->%s", doc.toText);
                 const allocated = journalfile.save(journal.toDoc.serialize);
                 index = allocated.begin_index;
                 journalfile.root_index = index;
@@ -590,7 +575,6 @@ class DART : DARTFile { //, HiRPC.Supports {
                     journalfile.store;
                 }
             }
-            //            writeln("END RECORD");
         }
 
         void remove_recursive(const Rims params) {
