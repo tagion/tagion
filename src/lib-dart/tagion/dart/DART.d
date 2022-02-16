@@ -538,6 +538,7 @@ class DART : DARTFile { //, HiRPC.Supports {
     }
 
     //            import std.stdio;
+    @safe
     static abstract class StdSynchronizer : Synchronizer {
 
         protected SynchronizationFiber fiber; /// Contains the reference to SynchronizationFiber
@@ -578,25 +579,14 @@ class DART : DARTFile { //, HiRPC.Supports {
             auto rim_walker = owner.rimWalkerRange(params.rims);
             uint count = 0;
             auto recorder_worker = owner.recorder;
-            //            writefln("Recursive remove %s", rims.cutHex);
             foreach (archive_data; rim_walker) {
                 const archive_doc = Document(archive_data);
 
                 recorder_worker.remove(archive_doc);
-                //                writefln("\tremove archive %s", archive_doc.toText);
-                //                scope archive=new Recorder.Archive(owner.net, archive_doc);
-                // immutable print=owner.net.calcHash(archive_data);
-                // auto doc=Document(archive_data);
-
-                //recorder_worker.remove_by_print(archive.fingerprint);
                 count++;
                 if (count > chunck_size) {
-                    // Remove the collected archives
-                    //owner.modify(recorder_worker);
                     record(recorder_worker);
                     count = 0;
-                    // journalfile.save(recorder_worker.toHiBON.serialize);
-                    // journalfile.store;
                     recorder_worker.clear;
                 }
             }
@@ -612,7 +602,6 @@ class DART : DARTFile { //, HiRPC.Supports {
             this.fiber = fiber;
             this.owner = owner;
             emplace(&this.hirpc, hirpc);
-            //            this.hirpc = HiRPC(hirpc.net);
         }
 
         void finish() {
