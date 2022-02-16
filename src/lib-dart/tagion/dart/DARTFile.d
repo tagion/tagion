@@ -228,10 +228,7 @@ alias check = Check!DARTException;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
-
-
-
-                .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
+               .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if (doc.hasMember(indicesName)) {
                 _indices = new uint[KEY_SPAN];
                 foreach (e; doc[indicesName].get!Document[]) {
@@ -316,9 +313,6 @@ alias check = Check!DARTException;
                 foreach (key, index; _indices) {
                     if (index !is INDEX_NULL) {
                         hibon_indices[key] = index;
-
-
-
                         .check(_fingerprints[key]!is null, format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
                     }
@@ -422,9 +416,6 @@ alias check = Check!DARTException;
             if (merkleroot is null) {
                 foreach (key, index; _indices) {
                     if ((index !is INDEX_NULL) && (_fingerprints[key] is null)) {
-
-
-
                             .check((index in index_used) is null,
                                     format("The DART contains a recursive tree @ index %d", index));
                         index_used[index] = true;
@@ -669,11 +660,7 @@ alias check = Check!DARTException;
         }
 
         this(Range)(ref Range range, const uint rim) {
-            pragma(msg, "RimKeyRange Range ", Range);
-            pragma(msg, "RimKeyRange  ", RimKeyRange);
-            pragma(msg, "Foreach(Range)  ", RimKeyRange);
             if (!range.empty) {
-                Archive[] list;
                 immutable key = range.front.fingerprint.rim_key(rim);
                 static if (is(Range == RimKeyRange)) {
                     auto reuse_current = range.current;
@@ -699,16 +686,15 @@ alias check = Check!DARTException;
                             range.popFront;
                             build(range, no + 1);
                             (() @trusted {
-                                list[no] = cast(Archive) a;
-                            })();
+                                current[no] = cast(Archive) a;
+                                })();
                         }
                         else {
-                            list = new Archive[no];
+                            current = new Archive[no];
                         }
                     }
 
                     build(range);
-                    current = list;
                 }
             }
         }
@@ -754,7 +740,6 @@ alias check = Check!DARTException;
                 return current.length;
             }
         }
-
         RimKeyRange save() {
             return RimKeyRange(current);
         }
@@ -794,7 +779,6 @@ alias check = Check!DARTException;
                 ref R range,
                 const uint branch_index,
                 immutable uint rim = 0) @safe {
-            pragma(msg, "traverse_dart R ", R);
             if (!range.empty) {
                 auto archive = range.front;
                 uint erase_block_index;
@@ -808,10 +792,7 @@ alias check = Check!DARTException;
                         immutable data = blockfile.load(branch_index);
                         const doc = Document(data);
                         branches = Branches(doc);
-
-
-
-                        .check(branches.hasIndices,
+                       .check(branches.hasIndices,
                                 "DART failure within the sector rims the DART should contain a branch");
                     }
 
@@ -837,9 +818,6 @@ alias check = Check!DARTException;
                     if (branch_index !is INDEX_NULL) {
                         immutable data = blockfile.load(branch_index);
                         const doc = Document(data);
-
-
-
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
                         if (Branches.isRecord(doc)) {
                             branches = Branches(doc);
@@ -993,7 +971,6 @@ alias check = Check!DARTException;
         }
         else {
             scope range = modify_records.archives[];
-            pragma(msg, "scope range ", typeof(range));
             immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
 
             scope (success) {
@@ -1057,11 +1034,9 @@ alias check = Check!DARTException;
 
     // Reads out a branch for rims path
     Branches branches(const(ubyte[]) rims) {
-        Branches search(const(ubyte[]) rims, const uint index, const uint rim = 0) @trusted {
-            scope data = blockfile.load(index);
-            scope doc = Document(data);
-            //            writefln("data.length=%d keys=%s", data.length, branches_doc.keys);
-            //            Branches branches;
+        Branches search(const(ubyte[]) rims, const uint index, const uint rim = 0) {
+            immutable data = blockfile.load(index);
+            const doc = Document(data);
             if (Branches.isRecord(doc)) {
                 Branches branches = Branches(doc);
                 if (rim < rims.length) {
