@@ -682,7 +682,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     //
                     const request_archives = dartRead(foreign_branches.fingerprints, hirpc, id);
                     const result_archives = sync.query(request_archives);
-                    scope foreign_recoder = manufactor.recorder(result_archives.response.result);
+                    auto foreign_recoder = manufactor.recorder(result_archives.response.result);
                     //
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
                     // The archive fingerprints is removed from the branches
