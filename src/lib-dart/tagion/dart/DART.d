@@ -627,10 +627,11 @@ class DART : DARTFile { //, HiRPC.Supports {
         return new SynchronizationFiber(rims, synchonizer);
     }
 
-    private DART that() {
+    private DART that() pure nothrow @nogc {
         return this;
     }
 
+    @safe
     class SynchronizationFiber : Fiber {
         protected Synchronizer sync;
 
