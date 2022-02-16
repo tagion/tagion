@@ -1081,17 +1081,17 @@ alias check = Check!DARTException;
         }
 
         protected final void run() {
-            void local_iterator(const(ubyte[]) rims, const uint index, const uint rim = 0) @trusted {
+            void local_iterator(const(ubyte[]) rims, const uint index, const uint rim = 0) {
                 if (index !is INDEX_NULL) {
                     data = blockfile.load(index);
-                    scope doc = Document(data);
+                    const doc = Document(data);
                     if (Branches.isRecord(doc)) {
                         Branches branches = Branches(doc);
                         foreach (key, sub_index; branches._indices) {
                             local_iterator(rims ~ cast(ubyte) key, sub_index, rim + 1);
                         }
                     }
-                    yield;
+                    assumeTrusted!yield;
                 }
             }
 
