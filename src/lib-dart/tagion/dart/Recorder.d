@@ -171,8 +171,6 @@ class RecordFactory {
         }
 
         unittest { // Check find
-            import std.stdio;
-            import tagion.hibon.HiBONJSON;
             import tagion.crypto.SecureNet : StdHashNet;
             const hash_net=new StdHashNet;
 
@@ -197,27 +195,8 @@ class RecordFactory {
                 recorder.insert(a);
             }
 
-            import core.stdc.stdio;
-
-            scope archive = new Archive(set_of_archives.byKey.front, Archive.Type.NONE);
-            scope range = recorder.archives.equalRange(archive);
-
-            writefln("range.empty = %s", range.empty);
-            writefln("range.front = %s", range.front.store.toPretty);
-            writefln("range.print = %s", archive.fingerprint == range.front.fingerprint);
-            writefln("!fingerprint %s", !archive.fingerprint);
-            writefln("fingerprint !is 0 %s", archive.fingerprint.length !is 0);
-            writefln("!!recorder.archives %s", !!recorder.archives );
-            writefln("recorder.archives !is null %s", recorder.archives !is null );
-            writefln("!fingerprint && archives %s", !archive.fingerprint && recorder.archives );
-
             foreach(a; set_of_archives) {
                 auto archive_found = recorder.find(a.fingerprint);
-                writefln("archive_found is null %s", archive_found is null);
-                (() @trusted {
-                    printf("archive_found %p\n", archive_found);
-                    printf("            a %p\n", a);
-                })();
                 assert(archive_found);
                 assert(archive_found is a);
             }
@@ -227,8 +206,6 @@ class RecordFactory {
                 hibon["text"] = "Does not exist in the recoder";
                 auto none_existing_archive = new Archive(hash_net, Document(hibon));
                 assert(recorder.find(none_existing_archive.fingerprint) is null);
-
-//                set_of_archives[archive.fingerprint] = archive;
             }
         }
         /+
