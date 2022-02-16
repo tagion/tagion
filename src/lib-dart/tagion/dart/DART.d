@@ -761,13 +761,6 @@ class DART : DARTFile { //, HiRPC.Supports {
                 ) {
                 immutable data = journalfile.load(index);
                 const doc = Document(data);
-                // index=doc[Params.index].get!uint;
-
-                //scope replay_recorder_doc=doc[Params.recorder].get!Document;
-
-                // scope replay_recorder=manufactor.recorder(replay_recorder_doc);
-                // writefln("replay_recorder_doc=%s", replay_recorder_doc);
-                // writefln("doc.keys=%s", doc.keys);
                 auto journal_replay = Journal(manufactor, doc);
                 index = journal_replay.index;
                 auto action_recorder = recorder;
