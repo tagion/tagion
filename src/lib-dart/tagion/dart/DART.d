@@ -686,10 +686,10 @@ class DART : DARTFile { //, HiRPC.Supports {
                     //
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
                     // The archive fingerprints is removed from the branches
-                    Archive[Buffer] set_of_archives;
-                    foreach (a; foreign_recoder.archives[]) {
-                        set_of_archives[a.fingerprint] = a;
-                    }
+                    // Archive[Buffer] set_of_archives;
+                    // foreach (a; foreign_recoder.archives[]) {
+                    //     set_of_archives[a.fingerprint] = a;
+                    // }
                     //                    sync.record(foreign_recoder);
 
                     auto foreign_fingerprints = foreign_branches.fingerprints.dup;
@@ -701,10 +701,11 @@ class DART : DARTFile { //, HiRPC.Supports {
                         immutable key = cast(ubyte) k;
                         immutable sub_rims = Rims(params.rims ~ key);
                         immutable local_print = local_branches.fingerprint(key);
-                        auto foreign_archive = (foreign_print in set_of_archives);
+                        // auto foreign_archive = (foreign_print in set_of_archives);
+                        auto foreign_archive = foreign_recoder.find(foreign_print);
                         if (foreign_archive) {
                             if (local_print != foreign_print) {
-                                local_recorder.insert(*foreign_archive);
+                                local_recorder.insert(foreign_archive);
                                 sync.remove_recursive(sub_rims);
                             }
                         }
