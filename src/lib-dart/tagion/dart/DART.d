@@ -832,7 +832,7 @@ class DART : DARTFile { //, HiRPC.Supports {
     unittest {
         import tagion.utils.Random;
         import tagion.dart.BlockFile;
-        import tagion.basic.Basic : tempfile;
+        import tagion.basic.Basic : tempfile, assumeTrusted;
         import tagion.dart.DARTFakeNet : DARTFakeNet;
 
         auto net = new DARTFakeNet("very_secret");
@@ -922,7 +922,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                         auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                         // D!(sector, "%x");
                         while (!dart_A_synchronizer.empty) {
-                            (() @trusted { dart_A_synchronizer.call; })();
+                            (() @trusted => dart_A_synchronizer.call)();
                         }
                     }
                     foreach (journal_filename; journal_filenames) {
@@ -984,7 +984,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        (() @trusted => dart_A_synchronizer.call)();
                     }
                 }
                 foreach (journal_filename; journal_filenames) {
@@ -1040,7 +1040,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        (() @trusted => dart_A_synchronizer.call)();
                     }
                 }
                 foreach (journal_filename; journal_filenames) {

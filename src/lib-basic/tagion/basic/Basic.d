@@ -463,50 +463,6 @@ template assumeTrusted(alias F) {
     }
 }
 
-version (none) template assumeTrusted1(alias F) {
-    import std.traits;
-
-    //    static assert(isUnsafe!F);
-    pragma(msg, "assumeTrusted1 ", F.stringof);
-    pragma(msg, "assumeTrusted1 ", isCallable!F);
-    pragma(msg, "assumeTrusted1 ", is(F == function));
-    // alias Params=Parameters!(typeof(F));
-    // alias ParamNames=ParameterIdentifierTuple!F;
-
-    // writefln("code=%s", code);
-    // writefln("code=%s", code.splitter!("a == b",Yes.keepSeparators)(')'));
-    // writefln("part=%s", code.splitter!("a == b",Yes.keepSeparators)(')').front);
-
-    enum code = format!q{
-        auto %s @trusted {
-            %s
-        }
-    }(F.stringof, "x");
-    pragma(msg, code);
-    // auto assumeTrusted(Args...)(Args args) @trusted {
-    //     return F(args);
-    // }
-}
-
-T assumeTrusted1(T)(lazy T expr) @trusted {
-    //     import std.traits;
-    // //    pragma(msg, "assumeTrusted1 ", F.stringof);
-    //     return (() @trusted => expr)();
-    // //    static assert(isUnsafe!F);
-    //     // pragma(msg, "assumeTrusted1 ", isCallable!F);
-    //     // pragma(msg, "assumeTrusted1 ", is(F == function));
-    //     // auto assumeTrusted(Args...)(Args args) @trusted {
-    //     //     return F(args);
-    //     // }
-    return T.init;
-}
-
-import std.concurrency;
-
-static int x_send(Args...)(Tid tid, Args args) @system {
-    return 42;
-}
-
 ///
 @safe
 unittest {
