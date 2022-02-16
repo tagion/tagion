@@ -229,7 +229,7 @@ alias check = Check!DARTException;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
 
-            
+
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if (doc.hasMember(indicesName)) {
@@ -317,7 +317,7 @@ alias check = Check!DARTException;
                     if (index !is INDEX_NULL) {
                         hibon_indices[key] = index;
 
-                        
+
 
                         .check(_fingerprints[key]!is null, format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
@@ -423,7 +423,7 @@ alias check = Check!DARTException;
                 foreach (key, index; _indices) {
                     if ((index !is INDEX_NULL) && (_fingerprints[key] is null)) {
 
-                        
+
 
                             .check((index in index_used) is null,
                                     format("The DART contains a recursive tree @ index %d", index));
@@ -660,6 +660,7 @@ alias check = Check!DARTException;
 
     // Range over a Range with the same key in the a specific rim
     //    alias FilterRange=FilterResult!(unaryFun, RimKeyRange);
+    @safe
     struct RimKeyRange {
         protected Archive[] current;
         @disable this();
@@ -667,7 +668,7 @@ alias check = Check!DARTException;
             this.current = current;
         }
 
-        this(Range)(ref Range range, const uint rim) @trusted {
+        this(Range)(ref Range range, const uint rim) {
             pragma(msg, "RimKeyRange Range ", Range);
             pragma(msg, "RimKeyRange  ", RimKeyRange);
             pragma(msg, "Foreach(Range)  ", RimKeyRange);
@@ -676,7 +677,7 @@ alias check = Check!DARTException;
                 immutable key = range.front.fingerprint.rim_key(rim);
                 static if (is(Range == RimKeyRange)) {
                     auto reuse_current = range.current;
-                    void build(ref Range range, const uint no = 0) {
+                    void build(ref Range range, const uint no = 0)  @safe {
                         if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
                             auto a = range.front;
                             range.popFront;
@@ -691,13 +692,15 @@ alias check = Check!DARTException;
                     build(range);
                 }
                 else {
-                    void build(ref Range range, const uint no = 0) {
+                    void build(ref Range range, const uint no = 0) @safe {
                         if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
                             // pragma(msg, "build range ", typeof(range), " a ", typeof(range.front), " Elem ", Range.Elem);
                             auto a = range.front;
                             range.popFront;
                             build(range, no + 1);
-                            list[no] = cast(Archive) a;
+                            (() @trusted {
+                                list[no] = cast(Archive) a;
+                            })();
                         }
                         else {
                             list = new Archive[no];
@@ -806,7 +809,7 @@ alias check = Check!DARTException;
                         const doc = Document(data);
                         branches = Branches(doc);
 
-                        
+
 
                         .check(branches.hasIndices,
                                 "DART failure within the sector rims the DART should contain a branch");
@@ -835,7 +838,7 @@ alias check = Check!DARTException;
                         immutable data = blockfile.load(branch_index);
                         const doc = Document(data);
 
-                        
+
 
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
                         if (Branches.isRecord(doc)) {
