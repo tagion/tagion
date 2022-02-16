@@ -1095,10 +1095,10 @@ alias check = Check!DARTException;
                 }
             }
 
-            uint search(const(ubyte[]) rims, const uint index, const uint rim = 0) @trusted {
+            uint search(const(ubyte[]) rims, const uint index, const uint rim = 0) @safe {
                 if (index !is INDEX_NULL) {
-                    scope local_data = owner.blockfile.load(index);
-                    scope doc = Document(local_data);
+                    immutable local_data = owner.blockfile.load(index);
+                    const doc = Document(local_data);
                     if (Branches.isRecord(doc)) {
                         Branches branches = Branches(doc);
                         if (rim < rims.length) {
