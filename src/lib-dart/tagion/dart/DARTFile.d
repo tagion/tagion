@@ -127,7 +127,6 @@ alias check = Check!DARTException;
      +/
     this(const HashNet net, string filename) {
         blockfile = BlockFile(filename);
-        //        this.net=net;
         this.manufactor = RecordFactory(net);
         this.filename = filename;
     }
@@ -937,7 +936,6 @@ alias check = Check!DARTException;
                                 const sub_archive = range.front;
                                 immutable rim_key = sub_archive.fingerprint.rim_key(rim);
                                 auto sub_range = RimKeyRange(range, rim);
-
                                 if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
                                 }
@@ -1014,14 +1012,7 @@ alias check = Check!DARTException;
                     }
                 }
                 else {
-                    // if(doc.hasMember(Keywords.stub)){
-                    //     // writeln("ADD STUB FP");
-                    //     rec.stub(doc[Keywords.stub].get!Buffer);
-                    // }
-                    // else{
-                    // writeln("ADD SINGLE EL FP");
                     rec.stub(manufactor.net.hashOf(doc));
-                    // }
                 }
             }
         }
@@ -1140,11 +1131,10 @@ alias check = Check!DARTException;
         import std.stdio;
 
         writeln("!!!EYE!!!: ", _fingerprint.hex);
-        void local_dump(const uint branch_index, const ubyte rim_key = 0, const uint rim = 0, string indent = null) @trusted {
-            //            writefln("index=%d rim=%d rim_key=%d", branch_index, rim, rim_key);
+        void local_dump(const uint branch_index, const ubyte rim_key = 0, const uint rim = 0, string indent = null) @safe {
             if (branch_index !is INDEX_NULL) {
-                scope data = blockfile.load(branch_index);
-                scope doc = Document(data);
+                immutable data = blockfile.load(branch_index);
+                const doc = Document(data);
                 if (Branches.isRecord(doc)) {
                     auto branches = Branches(doc);
                     string _indent;
@@ -1156,11 +1146,6 @@ alias check = Check!DARTException;
                         local_dump(index, cast(ubyte) key, rim + 1, _indent);
                     }
                 }
-                // else if ( doc.hasMember(Keywords.stub) ) {
-                //     immutable fingerprint=doc[Keywords.stub].get!(Buffer);
-                //     auto lastRing = full ? fingerprint.length : rim+1;
-                //     writefln("%s>%s [%d]", indent, fingerprint[0..lastRing].hex, branch_index);
-                // }
             else {
                     immutable fingerprint = manufactor.net.hashOf(doc);
                     auto lastRing = full ? fingerprint.length : rim + 1;
