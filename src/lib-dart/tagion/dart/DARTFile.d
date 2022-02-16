@@ -172,8 +172,8 @@ alias check = Check!DARTException;
     }
     do {
         immutable(Buffer) merkletree(
-            const(Buffer[]) left,
-            const(Buffer[]) right) {
+                const(Buffer[]) left,
+                const(Buffer[]) right) {
             Buffer _left_fingerprint;
             Buffer _right_fingerprint;
             if ((left.length == 1) && (right.length == 1)) {
@@ -229,7 +229,7 @@ alias check = Check!DARTException;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
 
-
+            
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if (doc.hasMember(indicesName)) {
@@ -317,7 +317,7 @@ alias check = Check!DARTException;
                     if (index !is INDEX_NULL) {
                         hibon_indices[key] = index;
 
-
+                        
 
                         .check(_fingerprints[key]!is null, format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
@@ -422,6 +422,9 @@ alias check = Check!DARTException;
             if (merkleroot is null) {
                 foreach (key, index; _indices) {
                     if ((index !is INDEX_NULL) && (_fingerprints[key] is null)) {
+
+                        
+
                             .check((index in index_used) is null,
                                     format("The DART contains a recursive tree @ index %d", index));
                         index_used[index] = true;
@@ -477,8 +480,8 @@ alias check = Check!DARTException;
 
         final private void run() {
             void treverse(
-                immutable uint index,
-                immutable uint rim = 0) @safe {
+                    immutable uint index,
+                    immutable uint rim = 0) @safe {
                 if (index !is INDEX_NULL) {
                     data = owner.blockfile.load(index);
                     const doc = Document(data);
@@ -552,9 +555,9 @@ alias check = Check!DARTException;
     HiBON loadAll(Archive.Type type = Archive.Type.ADD) {
         auto recorder = manufactor.recorder;
         void local_load(
-            const uint branch_index,
-            const ubyte rim_key = 0,
-            const uint rim = 0) @safe {
+                const uint branch_index,
+                const ubyte rim_key = 0,
+                const uint rim = 0) @safe {
             if (branch_index !is INDEX_NULL) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
@@ -661,8 +664,9 @@ alias check = Check!DARTException;
         protected Archive[] current;
         @disable this();
         protected this(Archive[] current) pure nothrow @nogc {
-            this.current=current;
+            this.current = current;
         }
+
         this(Range)(ref Range range, const uint rim) @trusted {
             pragma(msg, "RimKeyRange Range ", Range);
             pragma(msg, "RimKeyRange  ", RimKeyRange);
@@ -731,7 +735,6 @@ alias check = Check!DARTException;
                     current = current[1 .. $];
                 }
             }
-
 
             inout(Archive) front() inout {
                 if (empty) {
@@ -802,8 +805,11 @@ alias check = Check!DARTException;
                         immutable data = blockfile.load(branch_index);
                         const doc = Document(data);
                         branches = Branches(doc);
+
+                        
+
                         .check(branches.hasIndices,
-                            "DART failure within the sector rims the DART should contain a branch");
+                                "DART failure within the sector rims the DART should contain a branch");
                     }
 
                     while (!range.empty) {
@@ -829,6 +835,7 @@ alias check = Check!DARTException;
                         immutable data = blockfile.load(branch_index);
                         const doc = Document(data);
 
+                        
 
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
                         if (Branches.isRecord(doc)) {

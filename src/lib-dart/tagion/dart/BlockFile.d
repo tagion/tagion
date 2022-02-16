@@ -320,8 +320,8 @@ class BlockFile {
                             auto found = upper.front;
                             //                            assert(found.size > 0);
                             .check(found.end_index < owner.last_block_index,
-                                format("recylce blocks=%d extends beond last_block_index=%d",
-                                    found.end_index, owner.last_block_index));
+                                        format("recylce blocks=%d extends beond last_block_index=%d",
+                                        found.end_index, owner.last_block_index));
                             assert(found.end_index < owner.last_block_index);
                             if ((size * 2 <= found.size) || owner.check_statistic(found.size, size)) {
                                 remove_segment(found, size);
@@ -876,11 +876,11 @@ class BlockFile {
         }
 
         private this(
-            immutable uint previous,
-            immutable uint next,
-            immutable uint size,
-            immutable(Buffer) buf,
-            const bool head) {
+                immutable uint previous,
+                immutable uint next,
+                immutable uint size,
+                immutable(Buffer) buf,
+                const bool head) {
             this.previous = previous;
             this.next = next;
             this.size = size;
@@ -1128,7 +1128,7 @@ class BlockFile {
             if (index !is INDEX_NULL) {
                 const block = read(index);
                 check(block.size > 0,
-                    format("Bad data block @ %d the size is zero", index));
+                        format("Bad data block @ %d the size is zero", index));
                 if (block.size > DATA_SIZE) {
                     return search(block.next);
                 }
@@ -1242,6 +1242,9 @@ class BlockFile {
 
     void fromDoc(const(Document) doc) {
         allocated_chains = null;
+
+        
+
         .check(doc.isArray, "Document should be an array");
         foreach (a; doc[]) {
             const sub_doc = a.get!Document;
@@ -1276,14 +1279,14 @@ class BlockFile {
         }
 
         void allocate_and_chain(SortedSegments)(
-            const(AllocatedChain[]) allocate,
-            ref scope SortedSegments sorted_segments) @safe {
+                const(AllocatedChain[]) allocate,
+                ref scope SortedSegments sorted_segments) @safe {
             if (allocate.length > 0) {
                 uint chain(
-                    immutable(ubyte[]) data,
-                    const uint current_index,
-                    const uint previous_index,
-                    const bool head) @trusted {
+                        immutable(ubyte[]) data,
+                        const uint current_index,
+                        const uint previous_index,
+                        const bool head) @trusted {
                     scope (success) {
                         recycle_indices.reclaim(current_index);
                     }
