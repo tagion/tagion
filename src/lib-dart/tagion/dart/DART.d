@@ -250,23 +250,25 @@ class DART : DARTFile { //, HiRPC.Supports {
             return hirpc.dartRead(params, id);
         }
 
-        @HiRPCMethod() const(HiRPCSender) dartRim(ref const Rims rims, HiRPC hirpc = HiRPC(null), uint id = 0) {
-            // auto params=new HiBON;
-            // params[Params.rims]=rims;
+        @HiRPCMethod() const(HiRPCSender) dartRim(
+                ref const Rims rims,
+                HiRPC hirpc = HiRPC(null),
+                uint id = 0) {
             return hirpc.dartRim(rims, id);
-            //   return hirpc.opDispatch!"dartRim"(rims, id);
         }
 
-        @HiRPCMethod() const(HiRPCSender) dartModify(ref const RecordFactory.Recorder recorder, HiRPC hirpc = HiRPC(
-                null), uint id = 0) {
-            // auto params=new HiBON;
-            // params[Params.recorder]=recorder.toDoc;
+        @HiRPCMethod() const(HiRPCSender) dartModify(
+                ref const RecordFactory.Recorder recorder,
+                HiRPC hirpc = HiRPC(null),
+                uint id = 0) {
             return hirpc.dartModify(recorder, id);
         }
     }
 
     pragma(msg, "fixme(alex): Remove dartFullRead");
-    private const(HiRPCSender) dartFullRead(ref const(HiRPCReceiver) received, const bool read_only)
+    private const(HiRPCSender) dartFullRead(
+            ref const(HiRPCReceiver) received,
+            const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -318,7 +320,9 @@ class DART : DARTFile { //, HiRPC.Supports {
      +   }
      ---
      +/
-    private const(HiRPCSender) dartRead(ref const(HiRPCReceiver) received, const bool read_only)
+    private const(HiRPCSender) dartRead(
+            ref const(HiRPCReceiver) received,
+            const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -368,7 +372,9 @@ class DART : DARTFile { //, HiRPC.Supports {
      +
      + ----
      +/
-    private const(HiRPCSender) dartRim(ref const(HiRPCReceiver) received, const bool read_only)
+    private const(HiRPCSender) dartRim(
+            ref const(HiRPCReceiver) received,
+            const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -441,7 +447,9 @@ class DART : DARTFile { //, HiRPC.Supports {
      ---
      +/
 
-    @HiRPCMethod private const(HiRPCSender) dartModify(ref const(HiRPCReceiver) received, const bool read_only)
+    @HiRPCMethod private const(HiRPCSender) dartModify(
+            ref const(HiRPCReceiver) received,
+            const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -469,7 +477,9 @@ class DART : DARTFile { //, HiRPC.Supports {
      +     The response from HPRC if the method is supported
      +     else the response return is marked empty
      +/
-    const(HiRPCSender) opCall(ref const(HiRPCReceiver) received, const bool read_only = true) {
+    const(HiRPCSender) opCall(
+            ref const(HiRPCReceiver) received,
+            const bool read_only = true) {
         import std.conv : to;
 
         const method = received.method;
