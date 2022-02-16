@@ -32,7 +32,7 @@ import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraphBasic: convertState, ExchangeState;
 import tagion.basic.ConsensusExceptions;
 
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
 //import tagion.services.MdnsDiscoveryService;
@@ -184,7 +184,7 @@ class ConnectionPool(T : shared(p2plib.Stream), TKey) {
 }
 // version(none)
 unittest {
-    import tagion.basic.Logger;
+    import tagion.logger.Logger;
 
     log.push(LoggerType.NONE);
 

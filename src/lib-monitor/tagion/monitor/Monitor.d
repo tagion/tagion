@@ -21,7 +21,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.basic.TagionExceptions : TagionException;
 import tagion.utils.BitMask;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 
 // import tagion.Keywords;
 

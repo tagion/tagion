@@ -8,7 +8,7 @@ import std.concurrency;
 import std.array : join;
 
 import tagion.basic.Basic : Control;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.services.Options;
 import tagion.options.CommonOptions : setCommonOptions;
 

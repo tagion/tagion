@@ -21,7 +21,7 @@ import tagion.utils.Queue;
 import tagion.GlobalSignals : abort;
 
 import tagion.basic.Basic : Pubkey, Control, nameOf, Buffer;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : EventBody, ExchangeState, Wavefront;

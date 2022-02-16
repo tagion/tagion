@@ -5,6 +5,7 @@ import core.sys.posix.pthread;
 import std.string;
 import tagion.basic.Basic : Control;
 import tagion.basic.TagionExceptions;
+import tagion.hibon.HiBONRecord;
 
 extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
 
@@ -17,6 +18,48 @@ enum LoggerType {
     FATAL = ERROR << 1,
     ALL = INFO | TRACE | WARNING | ERROR | FATAL,
     STDERR = WARNING | ERROR | FATAL
+}
+
+struct LogFilter {
+    string task_name;
+    LoggerType log_level;
+
+    // is there any reason to use alias instead of enum?
+    enum any_task_name = "";
+
+    mixin HiBONRecord!(q{
+        this(string task_name, LoggerType log_level) nothrow {
+            this.task_name = task_name;
+            this.log_level = log_level;
+        }
+    });
+
+    bool match(string task_name, LoggerType log_level) pure const nothrow {
+        if ((this.task_name == any_task_name || this.task_name == task_name) && this.log_level & log_level) {
+            return true;
+        }
+        return false;
+    }
+}
+
+unittest {
+    enum some_task_name = "sometaskname";
+    enum another_task_name = "anothertaskname";
+
+    assert(LogFilter("", LoggerType.ERROR).match(some_task_name, LoggerType.STDERR));
+    assert(LogFilter(some_task_name, LoggerType.ALL).match(some_task_name, LoggerType.INFO));
+    assert(LogFilter(some_task_name, LoggerType.ERROR).match(some_task_name, LoggerType.ERROR));
+
+    assert(!LogFilter(some_task_name, LoggerType.STDERR).match(some_task_name, LoggerType.INFO));
+    assert(!LogFilter(some_task_name, LoggerType.ERROR).match(another_task_name, LoggerType.ERROR));
+}
+
+immutable struct LogFilterArray {
+    LogFilter[] filters;
+
+    this(immutable LogFilter[] filters_array) {
+        this.filters = filters_array;
+    }
 }
 
 private static Tid logger_tid;

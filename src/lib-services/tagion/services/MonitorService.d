@@ -6,7 +6,7 @@ import std.socket;
 import core.thread;
 import std.concurrency;
 
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
 import tagion.basic.Basic : Control, basename, Pubkey;

@@ -14,7 +14,7 @@ import tagion.basic.Basic : Buffer;
 //import tagion.services.Options: Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
 import tagion.hibon.Document;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.network.NetworkExceptions;
 import tagion.basic.TagionExceptions : TagionException, taskException;
 
