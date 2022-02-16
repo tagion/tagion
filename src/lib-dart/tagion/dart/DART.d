@@ -54,8 +54,11 @@ uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure not
 class DART : DARTFile { //, HiRPC.Supports {
     immutable ushort from_sector;
     immutable ushort to_sector;
-    HiRPC hirpc;
-    this(const SecureNet net, string filename, const ushort from_sector = 0, const ushort to_sector = 0) {
+    const HiRPC hirpc;
+    this(const SecureNet net,
+            string filename,
+            const ushort from_sector = 0,
+            const ushort to_sector = 0) @safe {
         super(net, filename);
         this.from_sector = from_sector;
         this.to_sector = to_sector;
