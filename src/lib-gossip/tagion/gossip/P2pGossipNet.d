@@ -438,9 +438,10 @@ class StdP2pNet : P2pNet {
         send_stop();
     }
 
-    @trusted
+//    @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
-        import std.concurrency : tsend = send;
+        alias tsend = .send;
+//        import std.concurrency : tsend = send, prioritySend, Tid;
 
         auto internal_sender = locate(internal_task_name);
         log("send called");
