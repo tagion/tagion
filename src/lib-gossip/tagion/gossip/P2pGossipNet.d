@@ -215,6 +215,7 @@ class ConnectionPool(T : shared(p2plib.StreamI), TKey) {
     }
 }
 // version(none)
+@safe
 unittest {
     import tagion.basic.Logger;
 
@@ -222,7 +223,7 @@ unittest {
 
     import p2p.node : Stream;
 
-    @trusted
+    @safe
     synchronized
     class FakeStream : Stream {
         protected bool _writeBytesCalled = false;
@@ -439,7 +440,7 @@ class StdP2pNet : P2pNet {
 
     @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
-        import std.concurrency : tsend = send, prioritySend, Tid, locate;
+        import std.concurrency : tsend = send;
 
         auto internal_sender = locate(internal_task_name);
         log("send called");
