@@ -1258,6 +1258,7 @@ class BlockFile {
      + Stores the list of AllocatedChain to the disk
      +
      +/
+    @trusted
     void store() {
         import std.stdio;
 
@@ -1394,7 +1395,7 @@ class BlockFile {
         //
         // Write new allocated blocks to the file
         //
-
+        
         { //write_blocks_in_sorted_order
             pragma(msg, "Block ", Block);
             auto sorted_indices = blocks.keys.dup.sort;

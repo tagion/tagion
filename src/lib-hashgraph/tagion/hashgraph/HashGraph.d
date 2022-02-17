@@ -25,7 +25,7 @@ import tagion.basic.Basic : Pubkey, Signature, Privkey, Buffer, countVotes;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
 
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.utils.Miscellaneous : toHex = toHexString;
 import tagion.gossip.InterfaceNet;
 

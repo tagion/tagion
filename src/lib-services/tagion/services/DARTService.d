@@ -12,7 +12,7 @@ import std.stdio;
 import std.conv;
 import std.array;
 
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.basic.Basic : Buffer, Control;
 import tagion.basic.TagionExceptions;
 

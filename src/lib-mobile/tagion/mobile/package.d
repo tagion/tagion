@@ -14,5 +14,5 @@ module tagion.mobile;
 
 import tagion.mobile.DocumentWrapperApi;
 import tagion.utils.Gene;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import core.thread.fiber;
