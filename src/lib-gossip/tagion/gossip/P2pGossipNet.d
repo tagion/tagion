@@ -444,7 +444,7 @@ class StdP2pNet : P2pNet {
 
         auto internal_sender = locate(internal_task_name);
         log("send called");
-        if (internal_sender != Tid.init) {
+        if (internal_sender !is Tid.init) {
             counter++;
             log("sending to sender %s", internal_sender);
             auto t = sender.toDoc;
