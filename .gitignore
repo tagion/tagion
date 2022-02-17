@@ -25,7 +25,7 @@ local.*
 gen.*
 
 # Local backup
-*.parked
+*.parked*
 
 # Root marker
 .root
