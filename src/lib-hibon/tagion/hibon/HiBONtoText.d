@@ -13,7 +13,7 @@ module tagion.hibon.HiBONtoText;
 
 */
 
-import tagion.utils.Miscellaneous: toHex = toHexString, decode;
+import tagion.utils.Miscellaneous : toHex = toHexString, decode;
 import tagion.hibon.HiBONException;
 import std.format;
 import std.base64;

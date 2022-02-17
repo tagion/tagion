@@ -2,18 +2,18 @@ module tagion.communication.HiRPC;
 
 //import std.stdio;
 import std.format;
-import std.traits: EnumMembers;
+import std.traits : EnumMembers;
 
-import tagion.hibon.HiBON: HiBON;
+import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONException;
-import tagion.hibon.Document: Document;
+import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
 
-import tagion.basic.Basic: Buffer, Pubkey, Signature;
-import tagion.basic.TagionExceptions: Check;
+import tagion.basic.Basic : Buffer, Pubkey, Signature;
+import tagion.basic.TagionExceptions : Check;
 import tagion.Keywords;
-import tagion.crypto.SecureInterfaceNet: SecureNet;
-import tagion.utils.Miscellaneous: toHexString;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.utils.Miscellaneous : toHexString;
 
 @safe
 class HiRPCException : HiBONException {
@@ -27,7 +27,7 @@ struct HiRPCMethod {
 }
 
 private static string[] _Callers(T)() {
-    import std.traits: isCallable, hasUDA, getUDAs;
+    import std.traits : isCallable, hasUDA, getUDAs;
 
     string[] result;
     static foreach (name; __traits(derivedMembers, T)) {
@@ -52,7 +52,7 @@ private static string[] _Callers(T)() {
 enum Callers(T) = _Callers!T();
 
 private static string[] _Methods(T)() {
-    import std.traits: isCallable, hasUDA, getUDAs;
+    import std.traits : isCallable, hasUDA, getUDAs;
 
     string[] result;
     static foreach (name; __traits(derivedMembers, T)) {
@@ -152,7 +152,7 @@ struct HiRPC {
     }
 
     static Type getType(const Document doc) {
-        import std.conv: to;
+        import std.conv : to;
 
         enum messageName = GetLabel!(Sender.message).name;
         const message_doc = doc[messageName].get!Document;
@@ -195,7 +195,7 @@ struct HiRPC {
         }
 
         bool supports(T)() const {
-            import std.traits: isCallable, hasUDA, getUDAs;
+            import std.traits : isCallable, hasUDA, getUDAs;
 
             if (type is Type.method) {
             CaseMethod:
@@ -348,8 +348,7 @@ struct HiRPC {
             }
         }
         else {
-            this(T)(const SecureNet net, const T post)
-                    if (isHiBONRecord!T || is(T : const Document)) {
+            this(T)(const SecureNet net, const T post) if (isHiBONRecord!T || is(T : const Document)) {
                 static if (isHiBONRecord!T) {
                     message = post.toDoc;
                 }
@@ -422,7 +421,7 @@ struct HiRPC {
         return id;
     }
 
-    const(Sender) opDispatch(string method, T)(const T params, const uint id = uint.max) const {
+    const(Sender) opDispatch(string method, T)(ref auto const T params, const uint id = uint.max) const {
         return action(method, params, id);
     }
 
@@ -439,7 +438,7 @@ struct HiRPC {
     }
 
     const(Sender) action(T)(string method, T params, const uint id = uint.max) const
-            if (isHiBONRecord!T) {
+    if (isHiBONRecord!T) {
         return action(method, params.toDoc, id);
     }
 
@@ -458,7 +457,7 @@ struct HiRPC {
     }
 
     const(Sender) result(T)(ref const(Receiver) receiver, T params) const
-            if (isHiBONRecord!T) {
+    if (isHiBONRecord!T) {
         return result(receiver, params.toDoc);
     }
 
@@ -496,11 +495,10 @@ struct HiRPC {
     }
 }
 
-
 ///
 unittest {
     import tagion.hibon.HiBONRecord;
-    import tagion.crypto.SecureNet: StdSecureNet, BadSecureNet;
+    import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
     import tagion.crypto.secp256k1.NativeSecp256k1;
 
     class HiRPCNet : StdSecureNet {

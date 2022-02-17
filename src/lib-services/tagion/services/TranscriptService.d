@@ -7,13 +7,12 @@ import std.array : join;
 import std.exception : assumeUnique;
 
 import tagion.services.Options;
-// import tagion.services.TRTService;
 import tagion.basic.Basic : Control, Buffer;
 import tagion.hashgraph.HashGraphBasic : EventBody;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 
-import tagion.logger.Logger;
+import tagion.basic.Logger;
 
 //import tagion.utils.Random;
 import tagion.basic.TagionExceptions;
@@ -27,8 +26,6 @@ import tagion.dart.DARTFile;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONJSON;
 
-
-import tagion.services.TRTService;
 // This function performs Smart contract executions
 void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
     try {
@@ -161,22 +158,6 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                     log("Sending to dart len: %d", recorder.length);
                     recorder.dump;
                     modifyDART(recorder);
-
-                    immutable opt = (() @trusted {
-                        Options opt;
-
-                        opt.trt = Options.TRT(
-                            "trt_service",
-                            "secret",
-                            "DART.drt"
-                        );
-                        return cast(immutable)opt;
-                    })();
-
-                    auto trt_tid = spawn(&TRTService, opt);
-
-                    immutable rec = cast(immutable)recorder;
-                    trt_tid.send(rec);
                 }
                 else {
                     log("Empty epoch");
@@ -195,7 +176,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
         ownerTid.send(Control.LIVE);
         while (!stop) {
             receive(&receive_epoch, &controller, &taskfailure,
-                    );
+            );
         }
     }
     catch (Throwable t) {

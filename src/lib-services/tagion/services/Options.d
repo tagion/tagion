@@ -5,12 +5,12 @@ import std.format;
 import std.traits;
 import std.file;
 import std.getopt;
-import std.array: join;
-import std.string: strip;
+import std.array : join;
+import std.string : strip;
 
-import tagion.basic.Basic: basename, DataFormat;
+import tagion.basic.Basic : basename, DataFormat;
 import tagion.basic.TagionExceptions;
-import tagion.basic.Logger: LoggerType;
+import tagion.basic.Logger : LoggerType;
 import tagion.utils.JSONCommon;
 
 /++
@@ -30,7 +30,6 @@ enum NetworkMode {
     local,
     pub
 }
-
 
 /++
  Options for the network
@@ -70,11 +69,10 @@ struct Options {
 
     NetworkMode net_mode;
     import tagion.options.CommonOptions;
+
     CommonOptions common;
 
     mixin JSONCommon;
-
-
 
     struct HostBootstrap {
         bool enabled;
@@ -117,7 +115,6 @@ struct Options {
     }
 
     Heatbeat heartbeat;
-
 
     //SSLService scripting_engine;
 
@@ -163,6 +160,7 @@ struct Options {
         string prefix;
         uint timeout; /// Socket listerne timeout in msecs
         import tagion.network.SSLOptions;
+
         SSLOption service; /// SSL Service used by the transaction service
         HostOptions host;
         ushort max; // max == 0 means all
@@ -172,6 +170,7 @@ struct Options {
     Transaction transaction;
 
     import tagion.dart.DARTOptions;
+
     DARTOptions dart;
 
     struct Logger {
@@ -185,15 +184,6 @@ struct Options {
 
     Logger logger;
 
-    struct TRT {
-        string task_name;
-        string pass; 
-        string dart_file_name;
-        mixin JSONCommon;
-    }
-
-    TRT trt;
-
     struct Message {
         string language; /// Language used to print message
         bool update; /// Update the translation tabel
@@ -204,25 +194,25 @@ struct Options {
     Message message;
 
     mixin JSONConfig;
-    version(none) {
-    void parseJSON(string json_text) {
-        auto json = JSON.parseJSON(json_text);
-        parse(json);
-    }
-
-    void load(string config_file) {
-        if (config_file.exists) {
-            auto json_text = readText(config_file);
-            parseJSON(json_text);
+    version (none) {
+        void parseJSON(string json_text) {
+            auto json = JSON.parseJSON(json_text);
+            parse(json);
         }
-        else {
-            save(config_file);
-        }
-    }
 
-    void save(string config_file) {
-        config_file.write(stringify);
-    }
+        void load(string config_file) {
+            if (config_file.exists) {
+                auto json_text = readText(config_file);
+                parseJSON(json_text);
+            }
+            else {
+                save(config_file);
+            }
+        }
+
+        void save(string config_file) {
+            config_file.write(stringify);
+        }
     }
 }
 
@@ -356,7 +346,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
 //        "help!h", "Display the help text",    &help_switch,
         // dfmt on
 
-
+    
 
     );
 };
@@ -442,7 +432,7 @@ static setDefaultOption(ref Options options) {
             //            max_number_of_fiber_reuse = 1000;
             //            min_number_of_fibers = 10;
             //            min_duration_for_accept_ms = 3000;
-            with(openssl) {
+            with (openssl) {
                 certificate = "pem_files/domain.pem";
                 private_key = "pem_files/domain.key.pem";
                 days = 365;
@@ -550,7 +540,7 @@ static setDefaultOption(ref Options options) {
     // if (options.net_mode.length == 0) {
     //     options.net_mode = NetworkMode.internal;
     // }
-    with(NetworkMode) {
+    with (NetworkMode) {
         final switch (options.net_mode) {
         case internal:
             options.dart.fast_load = true;

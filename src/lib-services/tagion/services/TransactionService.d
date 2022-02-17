@@ -9,7 +9,7 @@ import std.exception : assumeUnique, assumeWontThrow;
 
 import tagion.network.SSLServiceAPI;
 import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
-import tagion.logger.Logger;
+import tagion.basic.Logger;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
 import tagion.basic.Basic : Control, Buffer;
@@ -27,7 +27,6 @@ import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
 import tagion.dart.DART;
 import tagion.dart.Recorder : RecordFactory;
 
-import tagion.services.TRTService;
 @safe class HiRPCNet : StdSecureNet {
     this(string passphrase) {
         super();
@@ -76,16 +75,11 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
         @trusted void search(Document doc, uint id) {
             import tagion.hibon.HiBONJSON;
 
-            Buffer[] owners;
-            foreach (owner; doc[]) {
-                owners ~= owner.get!Buffer; 
-            }
-
-            string trt_task_name = "trt_service";
-            auto trt_tid = locate(trt_task_name); 
-
-            OwnerHashes owner_hashes = OwnerHashes(cast(immutable)owners);
-            send(trt_tid, trt_task_name, owner_hashes); 
+            auto n_params = new HiBON;
+            n_params["owners"] = doc;
+            auto sender = internal_hirpc.search(n_params, id);
+            auto tosend = sender.toDoc.serialize;
+            send(dart_sync_tid, opts.transaction.service.response_task_name, tosend);
         }
 
         @safe class TransactionRelay : SSLFiberService.Relay {
@@ -116,7 +110,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                     return Document();
                 }
 
-                const doc=receivessl();
+                const doc = receivessl();
                 log("%s", doc.toJSON);
                 const hirpc_received = hirpc.receive(doc);
                 {
@@ -137,54 +131,54 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         // Should be EXTERNAL
                         try {
                             auto signed_contract = SignedContract(params);
-                            //  if (signed_contract.valid) {
-                                //
-                                // Load inputs to the contract from the DART
-                                //
+                            //                            if (signed_contract.valid) {
+                            //
+                            // Load inputs to the contract from the DART
+                            //
 
-                                auto inputs = signed_contract.contract.input;
-                                requestInputs(inputs, ssl_relay.id);
-                                yield;
-                                //() @trusted => Fiber.yield; // Expect an Recorder resonse for the DART service
-                                const response = ssl_relay.response;
-                                const received = internal_hirpc.receive(Document(response));
-                                //log("%s", Document(response).toJSON);
-                                const foreign_recorder = rec_factory.recorder(
-                                        received.response.result);
-                                //return recorder;
-                                log("constructed");
+                            auto inputs = signed_contract.contract.input;
+                            requestInputs(inputs, ssl_relay.id);
+                            yield;
+                            //() @trusted => Fiber.yield; // Expect an Recorder resonse for the DART service
+                            const response = ssl_relay.response;
+                            const received = internal_hirpc.receive(Document(response));
+                            //log("%s", Document(response).toJSON);
+                            const foreign_recorder = rec_factory.recorder(
+                                    received.response.result);
+                            //return recorder;
+                            log("constructed");
 
-                                import tagion.script.StandardRecords : StandardBill;
+                            import tagion.script.StandardRecords : StandardBill;
 
-                                // writefln("input loaded %d", foreign_recoder.archive);
-                                PayContract payment;
+                            // writefln("input loaded %d", foreign_recoder.archive);
+                            PayContract payment;
 
-                                //signed_contract.input.bills = [];
-                                foreach (archive; foreign_recorder[]) {
-                                    auto std_bill = StandardBill(archive.filed);
-                                    payment.bills ~= std_bill;
-                                }
-                                signed_contract.input = payment.toDoc;
-                                // Send the contract as payload to the HashGraph
-                                // The data inside HashGraph is pure payload not an HiRPC
-                                SmartScript.check(hirpc.net, signed_contract);
-                                //log("checked");
-                                const payload = Document(signed_contract.toHiBON.serialize);
-                                {
-                                    immutable data = signed_contract.toHiBON.serialize;
-                                    const json_doc = Document(data);
-                                    auto json = json_doc.toJSON;
+                            //signed_contract.input.bills = [];
+                            foreach (archive; foreign_recorder[]) {
+                                auto std_bill = StandardBill(archive.filed);
+                                payment.bills ~= std_bill;
+                            }
+                            signed_contract.input = payment.toDoc;
+                            // Send the contract as payload to the HashGraph
+                            // The data inside HashGraph is pure payload not an HiRPC
+                            SmartScript.check(hirpc.net, signed_contract);
+                            //log("checked");
+                            const payload = Document(signed_contract.toHiBON.serialize);
+                            {
+                                immutable data = signed_contract.toHiBON.serialize;
+                                const json_doc = Document(data);
+                                auto json = json_doc.toJSON;
 
-                                    //log("Contract:\n%s", json.toPrettyString);
-                                }
-                                log("before send payload");
-                                sendPayload(payload);
-                                auto empty_params = new HiBON;
-                                auto empty_response = internal_hirpc.result(hirpc_received,
-                                        empty_params);
-                                log("before send");
-                                ssl_relay.send(empty_response.toDoc.serialize);
-                                //  }
+                                //log("Contract:\n%s", json.toPrettyString);
+                            }
+                            log("before send payload");
+                            sendPayload(payload);
+                            auto empty_params = new HiBON;
+                            auto empty_response = internal_hirpc.result(hirpc_received,
+                                    empty_params);
+                            log("before send");
+                            ssl_relay.send(empty_response.toDoc.serialize);
+                            //  }
                         }
                         catch (TagionException e) {
                             log.error("Bad contract: %s", e.msg);
@@ -206,15 +200,6 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         yield; /// Expects a response from the DART service
                         const response = ssl_relay.response;
                         ssl_relay.send(response);
-                        // search(params, ssl_relay.id); //epoch number?
-                        // yield; /// Expects a response from the DART service
-                        // const hashes = ssl_relay.response;
-
-                        // requestInputs(hashes, ssl_relay.id);
-                        // yield;
-                        // const response = ssl_relay.response;
-                        // ssl_relay.send(response);
-                        // break;
                         break;
                     default:
                         return true;
@@ -266,23 +251,25 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
         ownerTid.send(Control.LIVE);
         while (!stop) {
             receiveTimeout(500.msecs, //Control the thread
-                &handleState,
-                &taskfailure,
-                // &reportTagionExceptionFromChild,
-                // &reportExceptionFromChild
-// //                &reportException,
-//                 &reportExceptionFromChild
-//                 );
-            //     (immutable(TagionException) e) {
-            //     log.fatal(e.msg);
-            //     ownerTid.send(e);
-            // },
-            //     (immutable(Exception) e) { log.fatal(e.msg); ownerTid.send(e); },
-            //         (immutable(Throwable) t) {
-            //     log.fatal(t.msg);
-            //     ownerTid.send(t);
-            // }
-                );
+                    &handleState,
+                    &taskfailure, // &reportTagionExceptionFromChild,
+                    // &reportExceptionFromChild
+                    // //                &reportException,
+                    //                 &reportExceptionFromChild
+                    //                 );
+                    //     (immutable(TagionException) e) {
+                    //     log.fatal(e.msg);
+                    //     ownerTid.send(e);
+                    // },
+                    //     (immutable(Exception) e) { log.fatal(e.msg); ownerTid.send(e); },
+                    //         (immutable(Throwable) t) {
+                    //     log.fatal(t.msg);
+                    //     ownerTid.send(t);
+                    // }
+
+                    
+
+            );
         }
     }
     catch (Throwable t) {

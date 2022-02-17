@@ -1,3 +1,5 @@
+module tagion.hibonutil;
+
 import std.getopt;
 import std.stdio;
 import std.file : fread = read, fwrite = write, exists;
@@ -6,29 +8,36 @@ import std.path : extension;
 import std.traits : EnumMembers;
 import std.exception : assumeUnique, assumeWontThrow;
 import std.json;
+
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.Basic : basename, Buffer, Pubkey;
 import tagion.hibon.HiBONJSON;
+
 //import tagion.script.StandardRecords;
 import std.array : join;
 
 // import tagion.revision; 
+
 enum fileextensions {
     HIBON = ".hibon",
     JSON = ".json"
 };
+
 int main(string[] args) {
     immutable program = args[0];
     bool version_switch;
+
     string inputfilename;
     string outputfilename;
     //    StandardBill bill;
     bool binary;
+
     //    string passphrase="verysecret";
     ulong value = 1000_000_000;
     bool pretty;
     //    bill.toHiBON;
+
     //   pragma(msg, "bill_type ", GetLabel!(StandardBill.bill_type));
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
@@ -38,31 +47,38 @@ int main(string[] args) {
             "outputfile|o", "Sets the output file name", &outputfilename,
             "bin|b", "Use HiBON or else use JSON", &binary,
             "value|V", format("Bill value : default: %d", value), &value,
-            "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,//        "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
+            "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty, //        "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
+
+            
+
     );
+
     if (version_switch) {
         // writefln("version %s", REVNO);
         // writefln("Git handle %s", HASH);
         return 0;
     }
+
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <in-file> <out-file>", program),
-                format("%s [<option>...] <in-file>", program),
-                "",
-                "Where:",
-                "<in-file>           Is an input file in .json or .hibon format",
-                "<out-file>          Is an output file in .json or .hibon format",
-                "                    stdout is used of the output is not specifed the",
-                "",
-                "<option>:",
-                ].join("\n"),
-                main_args.options);
+            // format("%s version %s", program, REVNO),
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s [<option>...] <in-file> <out-file>", program),
+            format("%s [<option>...] <in-file>", program),
+            "",
+            "Where:",
+            "<in-file>           Is an input file in .json or .hibon format",
+            "<out-file>          Is an output file in .json or .hibon format",
+            "                    stdout is used of the output is not specifed the",
+            "",
+
+            "<option>:",
+
+        ].join("\n"),
+        main_args.options);
         return 0;
     }
     //    writefln("args=%s", args);
@@ -81,6 +97,7 @@ int main(string[] args) {
         stderr.writefln("Input file missing");
         return 1;
     }
+
     immutable standard_output = (outputfilename.length == 0);
     //    auto input_extension=inputfilename.extension;
     //    string output_extension;
@@ -96,14 +113,11 @@ int main(string[] args) {
         const doc = Document(data);
         //        version(none) {
         const error_code = doc.valid(
-            (
+                (
                 const(Document) sub_doc,
                 const Document.Element.ErrorCode error_code,
                 const(Document.Element) current, const(
-                    Document.Element) previous) nothrow {
-                assumeWontThrow(writefln("%s", current));
-                return true;
-            });
+                Document.Element) previous) nothrow{ assumeWontThrow(writefln("%s", current)); return true; });
         if (error_code !is Document.Element.ErrorCode.NONE) {
             writefln("Errorcode %s", error_code);
             return 1;
@@ -133,5 +147,6 @@ int main(string[] args) {
         stderr.writefln("File extensions %s not valid (only %s)",
                 input_extension, [EnumMembers!fileextensions]);
     }
+
     return 0;
 }

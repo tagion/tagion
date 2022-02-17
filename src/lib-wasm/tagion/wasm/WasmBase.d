@@ -335,24 +335,24 @@ enum IR : ubyte {
 
 }
 
-
 Instr getInstr(IR ir)() {
     enum code = format!q{enum result = getUDAs!(%s, Instr)[0];}(ir.stringof);
     mixin(code);
     return result;
 }
 
-version(none)
-shared static this() {
-    static foreach(ir; EnumMembers!IR) {{
+version (none) shared static this() {
+    static foreach (ir; EnumMembers!IR) {
+        {
             enum irInstr = getInstr!ir;
-        }}
+        }
+    }
 }
 //enum getInstr(alias ir) = getUDAs!(ir, Instr)[0];
 
 static unittest {
     // pragma(msg, getInstr!(IR.UNREACHABLE));
-    enum InstrUnreachable =Instr("unreachable", 1, IRType.CODE);
+    enum InstrUnreachable = Instr("unreachable", 1, IRType.CODE);
     static assert(getInstr!(IR.UNREACHABLE) == InstrUnreachable); //Instr("unreachable", 1, IRType.CODE));
     enum ir = IR.UNREACHABLE;
     static assert(getInstr!(ir) == InstrUnreachable); //Instr("unreachable", 1, IRType.CODE));
@@ -363,10 +363,12 @@ shared static immutable(IR[string]) instrLookupTable;
 
 protected immutable(Instr[IR]) generate_instrTable() {
     Instr[IR] result;
-    static foreach(E; EnumMembers!IR) {{
-        enum code = format!q{result[E]=getUDAs!(%s, Instr)[0];}(E.stringof);
-        mixin(code);
-        }}
+    static foreach (E; EnumMembers!IR) {
+        {
+            enum code = format!q{result[E]=getUDAs!(%s, Instr)[0];}(E.stringof);
+            mixin(code);
+        }
+    }
     return assumeUnique(result);
 }
 
@@ -374,11 +376,12 @@ shared static this() {
     instrTable = generate_instrTable;
     immutable(IR[string]) generateLookupTable() {
         IR[string] result;
-        foreach(ir, ref instr; instrTable) {
+        foreach (ir, ref instr; instrTable) {
             result[instr.name] = ir;
         }
         return assumeUnique(result);
     }
+
     instrLookupTable = generateLookupTable;
 }
 
@@ -393,23 +396,23 @@ enum IR_TRUNC_SAT : ubyte {
     @Instr("i64.trunc_sat_f64_u", 3, IRType.CODE, 1, 1) I64_F64_U,
 }
 
-version(none) {
-shared static immutable(string[IR_TRUNC_SAT]) trunc_sat_mnemonic;
+version (none) {
+    shared static immutable(string[IR_TRUNC_SAT]) trunc_sat_mnemonic;
 
-shared static this() {
-    with (IR_TRUNC_SAT) {
-        trunc_sat_mnemonic = [
-            I32_F32_S: "i32.trunc_sat_f32_s",
-            I32_F32_U: "i32.trunc_sat_f32_u",
-            I32_F64_S: "i32.trunc_sat_f64_s",
-            I32_F64_U: "i32.trunc_sat_f64_u",
-            I64_F32_S: "i64.trunc_sat_f32_s",
-            I64_F32_U: "i64.trunc_sat_f32_u",
-            I64_F64_S: "i64.trunc_sat_f64_s",
-            I64_F64_U: "i64.trunc_sat_f64_u",
-        ];
+    shared static this() {
+        with (IR_TRUNC_SAT) {
+            trunc_sat_mnemonic = [
+                I32_F32_S: "i32.trunc_sat_f32_s",
+                I32_F32_U: "i32.trunc_sat_f32_u",
+                I32_F64_S: "i32.trunc_sat_f64_s",
+                I32_F64_U: "i32.trunc_sat_f64_u",
+                I64_F32_S: "i64.trunc_sat_f32_s",
+                I64_F32_U: "i64.trunc_sat_f32_u",
+                I64_F64_S: "i64.trunc_sat_f64_s",
+                I64_F64_U: "i64.trunc_sat_f64_u",
+            ];
+        }
     }
-}
 }
 
 unittest {
@@ -463,8 +466,8 @@ template toWasmType(T) {
 }
 
 unittest {
-    static assert(toWasmType!int is Types.I32);
-    static assert(toWasmType!void is Types.EMPTY);
+    static assert(toWasmType!int  is Types.I32);
+    static assert(toWasmType!void  is Types.EMPTY);
 }
 
 template toDType(Types t) {
@@ -495,16 +498,16 @@ template toDType(Types t) {
     final switch (type) {
         foreach (E; EnumMembers!Types) {
     case E:
-        return toLower(E.to!string);
+            return toLower(E.to!string);
         }
     }
 }
 
 enum IndexType : ubyte {
-    @string("func")    FUNC = 0x00, /// func x:typeidx
-        @string("table") TABLE = 0x01, /// func  tt:tabletype
-        @string("memory") MEMORY = 0x02, /// mem mt:memtype
-        @string("global") GLOBAL = 0x03, /// global gt:globaltype
+    @string("func") FUNC = 0x00, /// func x:typeidx
+    @string("table") TABLE = 0x01, /// func  tt:tabletype
+    @string("memory") MEMORY = 0x02, /// mem mt:memtype
+    @string("global") GLOBAL = 0x03, /// global gt:globaltype
 }
 
 @safe static string indexName(const IndexType idx) pure {

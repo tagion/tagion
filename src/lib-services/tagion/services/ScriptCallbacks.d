@@ -13,7 +13,7 @@ import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.Keywords;
 import tagion.basic.TagionExceptions : fatal;
-import tagion.logger.Logger;
+import tagion.basic.Logger;
 
 @safe class ScriptCallbacks {
     import std.datetime;

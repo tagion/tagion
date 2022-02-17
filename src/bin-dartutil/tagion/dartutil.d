@@ -23,6 +23,7 @@ import tagion.hibon.HiBON;
 
 import tagion.utils.Miscellaneous;
 import tagion.Keywords;
+
 // import tagion.revision;
 
 int main(string[] args) {
@@ -57,10 +58,8 @@ int main(string[] args) {
             "initialize", "Create a dart file", &initialize,
             "inputfile|i", "Sets the HiBON input file name", &inputfilename,
             "outputfile|o", "Sets the output file name", &outputfilename,
-            "from", format("Sets from angle: default %s", (fromAngle == toAngle) ? "full"
-            : fromAngle.to!string), &fromAngle,
-            "to", format("Sets to angle: default %s", (fromAngle == toAngle) ? "full"
-            : toAngle.to!string), &toAngle,
+            "from", format("Sets from angle: default %s", (fromAngle == toAngle) ? "full" : fromAngle.to!string), &fromAngle,
+            "to", format("Sets to angle: default %s", (fromAngle == toAngle) ? "full" : toAngle.to!string), &toAngle,
             "useFakeNet|fn", format("Enables fake hash test-mode: default %s", useFakeNet), &useFakeNet,
             "read|r", format("Excutes a DART read sequency: default %s", dartread), &dartread,
             "rim", format("Performs DART rim read: default %s", dartrim), &dartrim,
@@ -82,20 +81,20 @@ int main(string[] args) {
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s <command> [<option>...]", program),
-                "",
-                "Where:",
-                "<command>           one of [--read, --rim, --modify, --rpc]",
-                "",
+            // format("%s version %s", program, REVNO),
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s <command> [<option>...]", program),
+            "",
+            "Where:",
+            "<command>           one of [--read, --rim, --modify, --rpc]",
+            "",
 
-                "<option>:",
+            "<option>:",
 
-                ].join("\n"),
-                main_args.options);
+        ].join("\n"),
+        main_args.options);
         return 0;
     }
 
@@ -103,6 +102,7 @@ int main(string[] args) {
         SecureNet result;
         if (useFakeNet) {
             import tagion.dart.DARTFakeNet;
+
             result = new DARTFakeNet;
         }
         else {
@@ -111,6 +111,7 @@ int main(string[] args) {
         result.generateKeyPair(passphrase);
         return result;
     }
+
     const net = createNet;
     // else net = new StdSecureNet(crypt);
     const hirpc = HiRPC(net);

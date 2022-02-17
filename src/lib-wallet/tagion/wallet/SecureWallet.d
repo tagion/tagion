@@ -29,13 +29,10 @@ import tagion.communication.HiRPC;
 import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 import tagion.wallet.WalletException : check;
-import tagion.crypto.Cipher;
 
-alias CiphDoc = Cipher.CipherDocument; 
 //alias StdSecureWallet = SecureWallet!StdSecureNet;
 
-@trusted struct SecureWallet(Net)
-{
+@safe struct SecureWallet(Net) {
     static assert(is(Net : SecureNet));
     protected RecoverGenerator _wallet;
     protected DevicePIN _pin;
@@ -44,44 +41,34 @@ alias CiphDoc = Cipher.CipherDocument;
     protected SecureNet net;
 
     //    @disable this();
-    
-    // this(SecureNet net){
-    //     this.net = net;
-    // }
 
-    this(DevicePIN pin, RecoverGenerator wallet = RecoverGenerator.init, AccountDetails account = AccountDetails.init)
-    { //nothrow {
+    this(DevicePIN pin, RecoverGenerator wallet = RecoverGenerator.init, AccountDetails account = AccountDetails.init) { //nothrow {
         _wallet = wallet;
         _pin = pin;
         this.account = account;
     }
 
-    this(const Document wallet_doc, const Document pin_doc = Document.init)
-    {
+    this(const Document wallet_doc, const Document pin_doc = Document.init) {
         auto __wallet = RecoverGenerator(wallet_doc);
         DevicePIN __pin;
-        if (!pin_doc.empty)
-        {
+        if (!pin_doc.empty) {
             __pin = DevicePIN(pin_doc);
         }
         this(__pin, __wallet);
     }
 
-    @nogc const(RecoverGenerator) wallet() pure const nothrow
-    {
+    @nogc const(RecoverGenerator) wallet() pure const nothrow {
         return _wallet;
     }
 
-    @nogc const(DevicePIN) pin() pure const nothrow
-    {
+    @nogc const(DevicePIN) pin() pure const nothrow {
         return _pin;
     }
     // final Document toDoc() const {
     //     return wallet.toDoc;
     // }
 
-    @nogc uint confidence() pure const nothrow
-    {
+    @nogc uint confidence() pure const nothrow {
         return _wallet.confidence;
     }
 
@@ -138,19 +125,16 @@ alias CiphDoc = Cipher.CipherDocument;
 
     static SecureWallet createWallet(scope const(string[]) questions,
             scope const(char[][]) answers, uint confidence, const(char[]) pincode)
-    in
-    {
+    in {
         assert(questions.length > 3, "Minimal amount of answers is 3");
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
     }
-    do
-    {
+    do {
         auto net = new Net;
         //        auto hashnet = new StdHashNet;
         auto recover = KeyRecover(net);
 
-        if (confidence == questions.length)
-        {
+        if (confidence == questions.length) {
             pragma(msg, "fixme(cbr): Due to some bug in KeyRecover");
             // Due to some bug in KeyRecover
             confidence--;
@@ -178,19 +162,16 @@ alias CiphDoc = Cipher.CipherDocument;
     // }
 
     protected void set_pincode(const KeyRecover recover, scope const(ubyte[]) R,
-            const(ubyte[]) pinhash)
-    {
+            const(ubyte[]) pinhash) {
         _pin.Y = xor(R, pinhash);
         _pin.check = recover.checkHash(R);
     }
 
     bool correct(const(string[]) questions, const(char[][]) answers)
-    in
-    {
+    in {
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
     }
-    do
-    {
+    do {
         net = new Net;
         auto recover = KeyRecover(net, _wallet);
         scope R = new ubyte[net.hashSize];
@@ -198,18 +179,15 @@ alias CiphDoc = Cipher.CipherDocument;
     }
 
     bool recover(const(string[]) questions, const(char[][]) answers, const(char[]) pincode)
-    in
-    {
+    in {
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
     }
-    do
-    {
+    do {
         net = new Net;
         auto recover = KeyRecover(net, _wallet);
         auto R = new ubyte[net.hashSize];
         const result = recover.findSecret(R, questions, answers);
-        if (result)
-        {
+        if (result) {
             auto pinhash = recover.checkHash(pincode.representation);
             set_pincode(recover, R, pinhash);
             net.createKeyPair(R);
@@ -219,33 +197,24 @@ alias CiphDoc = Cipher.CipherDocument;
         return false;
     }
 
-    @nogc bool isLoggedin() pure const nothrow
-    {
+    @nogc bool isLoggedin() pure const nothrow {
         pragma(msg, "fixme(cbr): Yam the net");
         return net !is null;
     }
 
-    protected void checkLogin() pure const
-    {
+    protected void checkLogin() pure const {
         check(isLoggedin(), "Need login first");
     }
 
-    bool login(const(char[]) pincode)
-    {
-        import std.stdio;
-        writeln(" --->>> Start login");
-        if (_pin.Y)
-        {
-            writeln(" --->>> Login");
+    bool login(const(char[]) pincode) {
+        if (_pin.Y) {
             logout;
             auto hashnet = new Net;
             auto recover = KeyRecover(hashnet);
             auto pinhash = recover.checkHash(pincode.representation);
             auto R = new ubyte[hashnet.hashSize];
             xor(R, _pin.Y, pinhash);
-            if (_pin.check == recover.checkHash(R))
-            {
-                writeln(" --->>> Finish login");
+            if (_pin.check == recover.checkHash(R)) {
                 net = new Net;
                 net.createKeyPair(R);
                 return true;
@@ -254,13 +223,11 @@ alias CiphDoc = Cipher.CipherDocument;
         return false;
     }
 
-    void logout() pure nothrow
-    {
+    void logout() pure nothrow {
         net = null;
     }
 
-    bool check_pincode(const(char[]) pincode)
-    {
+    bool check_pincode(const(char[]) pincode) {
         const hashnet = new Net;
         auto recover = KeyRecover(hashnet);
         const pinhash = recover.checkHash(pincode.representation);
@@ -269,15 +236,13 @@ alias CiphDoc = Cipher.CipherDocument;
         return _pin.check == recover.checkHash(R);
     }
 
-    bool change_pincode(const(char[]) pincode, const(char[]) new_pincode)
-    {
+    bool change_pincode(const(char[]) pincode, const(char[]) new_pincode) {
         const hashnet = new Net;
         auto recover = KeyRecover(hashnet);
         const pinhash = recover.checkHash(pincode.representation);
         auto R = new ubyte[hashnet.hashSize];
         xor(R, _pin.Y, pinhash);
-        if (_pin.check == recover.checkHash(R))
-        {
+        if (_pin.check == recover.checkHash(R)) {
             const new_pinhash = recover.checkHash(new_pincode.representation);
             set_pincode(recover, R, new_pinhash);
             logout;
@@ -286,8 +251,7 @@ alias CiphDoc = Cipher.CipherDocument;
         return false;
     }
 
-    void registerInvoice(ref Invoice invoice)
-    {
+    void registerInvoice(ref Invoice invoice) {
         checkLogin;
         string current_time = MonoTime.currTime.toString;
         scope seed = new ubyte[net.hashSize];
@@ -304,8 +268,7 @@ alias CiphDoc = Cipher.CipherDocument;
     //     invoices.each!((ref invoice) => registerInvoice(invoice));
     // }
 
-    static Invoice createInvoice(string label, TagionCurrency amount, Document info = Document.init)
-    {
+    static Invoice createInvoice(string label, TagionCurrency amount, Document info = Document.init) {
         Invoice new_invoice;
         new_invoice.name = label;
         new_invoice.amount = amount;
@@ -313,13 +276,11 @@ alias CiphDoc = Cipher.CipherDocument;
         return new_invoice;
     }
 
-    bool payment(const(Invoice[]) orders, ref SignedContract result)
-    {
+    bool payment(const(Invoice[]) orders, ref SignedContract result) {
         checkLogin;
         const topay = orders.map!(b => b.amount).sum;
 
-        if (topay > 0)
-        {
+        if (topay > 0) {
             const size_in_bytes = 500;
             pragma(msg, "fixme(cbr): Storage fee needs to be estimated");
             const fees = globals.fees(topay, size_in_bytes);
@@ -339,36 +300,33 @@ alias CiphDoc = Cipher.CipherDocument;
             //     .array;
             StandardBill[] contract_bills;
             const enough = collect_bills(amount, contract_bills);
-            if (enough)
-            {
+            if (enough) {
                 const total = contract_bills.map!(b => b.value).sum;
                 // pragma(msg, "isHiBONRecord ",isHiBONRecord!(typeof(result.contract.input[0])));
                 // pragma(msg, "isHiBONRecord ",typeof(contract_bills));
 
                 result.contract.input = contract_bills.map!(b => net.hashOf(b.toDoc)).array;
                 const rest = total - amount;
-                if (rest > 0)
-                {
+                if (rest > 0) {
                     Invoice money_back;
                     money_back.amount = rest;
                     registerInvoice(money_back);
                     result.contract.output[money_back.pkey] = rest.toDoc;
                 }
-                orders.each!((o) {
-                    result.contract.output[o.pkey] = o.amount.toDoc;
-                });
+                orders.each!((o) { result.contract.output[o.pkey] = o.amount.toDoc; });
                 result.contract.script = Script("pay");
 
                 immutable message = net.hashOf(result.contract.toDoc);
                 auto shared_net = (() @trusted { return cast(shared) net; })();
                 auto bill_net = new Net;
                 // Sign all inputs
-                result.signs = contract_bills.filter!(b => b.owner in account.derives)
-                    .map!(b => {
+                result.signs = contract_bills
+                    .filter!(b => b.owner in account.derives)
+                    .map!((b) {
                         immutable tweak_code = account.derives[b.owner];
                         bill_net.derive(tweak_code, shared_net);
                         return bill_net.sign(message);
-                    }())
+                    })
                     .array;
                 return true;
             }
@@ -379,37 +337,31 @@ alias CiphDoc = Cipher.CipherDocument;
         return false;
     }
 
-    TagionCurrency available_balance() const pure
-    {
+    TagionCurrency available_balance() const pure {
         return account.available;
     }
 
-    TagionCurrency active_balance() const pure
-    {
+    TagionCurrency active_balance() const pure {
         return account.active;
     }
 
-    TagionCurrency total_balance() const pure
-    {
+    TagionCurrency total_balance() const pure {
         return account.total;
     }
 
-    const(HiRPC.Sender) get_request_update_wallet() const
-    {
+    const(HiRPC.Sender) get_request_update_wallet() const {
         HiRPC hirpc;
         auto h = new HiBON;
         h = account.derives.byKey.map!(p => cast(Buffer) p);
         return hirpc.search(h);
     }
 
-    bool collect_bills(const TagionCurrency amount, out StandardBill[] active_bills)
-    {
+    bool collect_bills(const TagionCurrency amount, out StandardBill[] active_bills) {
         import std.algorithm.sorting : isSorted, sort;
         import std.algorithm.iteration : cumulativeFold;
         import std.range : takeOne, tee;
 
-        if (!account.bills.isSorted!"a.value > b.value")
-        {
+        if (!account.bills.isSorted!"a.value > b.value") {
             account.bills.sort!"a.value > b.value";
         }
 
@@ -422,15 +374,13 @@ alias CiphDoc = Cipher.CipherDocument;
             .filter!(a => a >= amount)
             .takeOne
             .empty;
-        if (enough)
-        {
+        if (enough) {
             TagionCurrency rest = amount;
             active_bills = none_active.filter!(b => b.value <= rest)
                 .until!(b => rest <= 0)
-                .tee!(b => { rest -= b.value; account.activated[b.owner] = true; })
+                .tee!((b) { rest -= b.value; account.activated[b.owner] = true; })
                 .array;
-            if (rest > 0)
-            {
+            if (rest > 0) {
                 // Take an extra larger bill if not enough
                 StandardBill extra_bill;
                 none_active.each!(b => extra_bill = b);
@@ -445,18 +395,14 @@ alias CiphDoc = Cipher.CipherDocument;
         return false;
     }
 
-    bool set_response_update_wallet(const(HiRPC.Receiver) receiver) nothrow
-    {
-        if (receiver.isResponse)
-        {
-            try
-            {
+    bool set_response_update_wallet(const(HiRPC.Receiver) receiver) nothrow {
+        if (receiver.isResponse) {
+            try {
                 account.bills = receiver.method.params[].map!(e => StandardBill(e.get!Document))
                     .array;
                 return true;
             }
-            catch (Exception e)
-            {
+            catch (Exception e) {
                 // Ingore
             }
         }
@@ -467,48 +413,11 @@ alias CiphDoc = Cipher.CipherDocument;
     //     return calcTotal(account.bills);
     // }
 
-    static TagionCurrency calcTotal(const(StandardBill[]) bills) pure
-    {
+    static TagionCurrency calcTotal(const(StandardBill[]) bills) pure {
         return bills.map!(b => b.value).sum;
     }
-    
-    immutable(ubyte)[] getPubKey(){ 
-        import std.typecons;
-        const pkey = net.pubkey;
-        const p_key = cast(TypedefType!Pubkey)(pkey);
-        
-        const hash_ = net.rawCalcHash(p_key);
-        import std.stdio;
-        return hash_;
-    }
-    struct DeriverState {
-        Buffer[Pubkey] derives;
-        Buffer derive_state;
-        mixin HiBONRecord;
-    }
-    @trusted
-    const(CiphDoc) getEncrDerivesList(){
-        Cipher cipher;
-        DeriverState derive_state;
-        derive_state.derives = this.account.derives;
-        derive_state.derive_state = this.account.derive_state;
-        import std.stdio;
-        return cipher.encrypt(this.net, derive_state.toDoc);
-    }
 
-    void setEncrDerivesList(const(CiphDoc) cipher_doc){
-        Cipher cipher;
-        const derive_state_doc = cipher.decrypt(this.net, cipher_doc); //this.net, getEncrDerivesList(
-        DeriverState derive_state = DeriverState(derive_state_doc);
-        this.account.derives = derive_state.derives;
-        this.account.derive_state = derive_state.derive_state;
-    }
-
-   
-
-    pragma(msg, "+++++");
-    unittest
-    {
+    unittest {
         import std.stdio;
         import tagion.hibon.HiBONJSON;
         import std.range : iota;
@@ -517,8 +426,7 @@ alias CiphDoc = Cipher.CipherDocument;
         const pin_code = "1234";
 
         // Create a new Wallet
-        enum
-        {
+        enum {
             num_of_questions = 5,
             confidence = 3
         }
@@ -589,17 +497,10 @@ alias CiphDoc = Cipher.CipherDocument;
             assert(secure_wallet.isLoggedin);
         }
 
-        writeln("here");
-        writeln(secure_wallet.getEncrDerivesList);
         writeln("END unittest");
-
-        
-        //std.file.write(path_contract, s_contract);
-
     }
 
-    unittest
-    { // Test for account
+    unittest { // Test for account
         import std.stdio;
         import std.range : zip;
 
@@ -624,8 +525,7 @@ alias CiphDoc = Cipher.CipherDocument;
             import tagion.utils.Miscellaneous : hex;
 
             // Add the bulls to the account with the derive keys
-            with (sender_wallet.account)
-            {
+            with (sender_wallet.account) {
                 bills = zip(bill_amounts, derives.byKey).map!(bill_derive => StandardBill(bill_derive[0],
                         epoch, bill_derive[1], gene)).array;
             }
@@ -667,9 +567,9 @@ alias CiphDoc = Cipher.CipherDocument;
     }
 }
 
-unittest
-{
+unittest {
     import tagion.crypto.SecureNet;
+
     alias StdSecureWallet = SecureWallet!StdSecureNet;
 
 }

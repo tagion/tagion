@@ -1,6 +1,6 @@
 module tagion.network.NetworkExceptions;
 
-import tagion.basic.TagionExceptions: TagionException, Check;
+import tagion.basic.TagionExceptions : TagionException, Check;
 
 @safe
 class SocketMaxDataSize : TagionException {

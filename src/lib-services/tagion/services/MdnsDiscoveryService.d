@@ -12,7 +12,7 @@ import tagion.services.Options;
 
 //import std.typecons;
 import std.conv;
-import tagion.logger.Logger;
+import tagion.basic.Logger;
 import std.concurrency;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
 import std.stdio;

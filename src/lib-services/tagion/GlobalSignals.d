@@ -4,7 +4,7 @@ import core.stdc.signal;
 import core.stdc.stdio;
 import core.stdc.stdlib : exit, system;
 import core.stdc.string : strlen;
-import tagion.logger.Logger;
+import tagion.basic.Logger;
 
 //import core.internal.execinfo;
 // The declaration of the backtrace function in the execinfo.d is not declared @nogc
@@ -98,21 +98,22 @@ shared static this() {
     call_stack_file = setExtension(thisExePath, backtrace_ext);
 
     signal(SIGPIPE, &ignore);
-    //     version (linux) {
-    //         import core.sys.posix.signal;
-    // //        import core.runtime;
+    version (linux) {
+        import core.sys.posix.signal;
 
-    //         sigaction_t sa = void;
-    //         (cast(byte*) &sa)[0 .. sa.sizeof] = 0;
-    //         /// sigfillset( &action.sa_mask ); // block other signals
+        //        import core.runtime;
 
-    //         sa.sa_sigaction = &segment_fault;
-    //         sigemptyset(&sa.sa_mask);
-    //         sa.sa_flags = SA_RESTART;
-    //         // sa.sa_flags = SA_SIGINFO | SA_RESETHAND;
-    //         sigaction(SIGSEGV, &sa, null);
-    //         //signal(SIGSEGV, &segment_fault);   // Segment fault handler
-    //     }
+        sigaction_t sa = void;
+        (cast(byte*)&sa)[0 .. sa.sizeof] = 0;
+        /// sigfillset( &action.sa_mask ); // block other signals
+
+        sa.sa_sigaction = &segment_fault;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_RESTART;
+        // sa.sa_flags = SA_SIGINFO | SA_RESETHAND;
+        sigaction(SIGSEGV, &sa, null);
+        //signal(SIGSEGV, &segment_fault);   // Segment fault handler
+    }
 
     signal(SIGINT, &shutdown);
     signal(SIGTERM, &shutdown);

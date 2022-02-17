@@ -122,15 +122,15 @@ import std.format;
         auto range = opSlice;
         auto sec = range[S];
         import std.exception;
+
         debug {
             assumeWontThrow(
-                {writefln("sec.data=%s", sec.data);}
-                );
+            { writefln("sec.data=%s", sec.data); }
+            );
         }
 
         return new T(sec.data);
     }
-
 
     @safe struct WasmRange {
         immutable(ubyte[]) data;
@@ -172,8 +172,8 @@ import std.format;
             }
             do {
                 auto index_range = WasmRange(data);
-//                (() @trusted {
-                foreach(ref sec; index_range) {
+                //                (() @trusted {
+                foreach (ref sec; index_range) {
                     if (index == sec.section) {
                         return sec;
                     }
@@ -246,8 +246,8 @@ import std.format;
                 const(Element) opIndex(const size_t index) const pure {
                     auto range = VectorRange(owner);
                     size_t i;
-                    while(!range.empty) {
-//                    foreach (i, ref e; range.enumerate) {
+                    while (!range.empty) {
+                        //                    foreach (i, ref e; range.enumerate) {
                         if (i is index) {
                             return range.front;
                         }
