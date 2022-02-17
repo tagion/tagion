@@ -1572,6 +1572,7 @@ alias check = Check!DARTException;
             create_dart(filename_A);
             create_dart(filename_B);
             RecordFactory.Recorder recorder_A;
+            // Recorder recorder_B;
             auto dart_A = new DARTFile(net, filename_A);
             auto dart_B = new DARTFile(net, filename_B);
 
