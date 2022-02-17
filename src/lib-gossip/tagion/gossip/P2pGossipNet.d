@@ -51,6 +51,7 @@ import std.random : Random, unpredictableSeed, uniform;
 
 import std.datetime;
 
+@safe
 synchronized
 class ConnectionPool(T : shared(p2plib.StreamI), TKey) {
     private shared final class ActiveConnection {

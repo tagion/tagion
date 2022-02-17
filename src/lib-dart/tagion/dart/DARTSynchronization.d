@@ -281,7 +281,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
         SyncSectorResponse syncWith(NodeAddress address) @safe {
             import p2p.go_helper;
 
-            ulong connect() {
+            ulong connect() @safe {
                 if (address.address in synchronizing) {
                     return synchronizing[address.address];
                 }
@@ -294,7 +294,8 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             }
 
             try {
-                auto stream_id = (() @trusted => connect())();
+                // auto stream_id = (() @trusted => connect())();
+                const stream_id=connect;
                 auto filename = format("%s_%s", tempfile, sector);
                 pragma(msg, "fixme(alex): Why 0x80");
                 enum BLOCK_SIZE = 0x80;
