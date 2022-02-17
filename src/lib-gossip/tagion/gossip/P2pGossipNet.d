@@ -244,13 +244,14 @@ unittest {
         }
     }
 
+    Buffer one_byte=[0];
     { //ConnectionPool: send to exist connection
         auto connectionPool = new shared(ConnectionPool!(shared FakeStream, uint))(10.seconds);
         auto fakeStream = new shared(FakeStream)();
 
         connectionPool.add(0, fakeStream);
 
-        auto result = connectionPool.send(0, cast(Buffer)[0]);
+        auto result = connectionPool.send(0, one_byte);
         assert(result);
         assert(fakeStream.writeBytesCalled);
     }
@@ -260,7 +261,7 @@ unittest {
 
         connectionPool.add(0, fakeStream);
 
-        auto result = connectionPool.send(1, cast(Buffer)[0]);
+        auto result = connectionPool.send(1, one_byte);
         assert(!result);
         assert(!fakeStream.writeBytesCalled);
     }
