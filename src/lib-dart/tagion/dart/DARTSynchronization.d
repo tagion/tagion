@@ -226,8 +226,13 @@ class ReplayPool(T) {
 @safe
 interface SynchronizationFactory {
     alias OnFailure = void delegate(const DART.Rims sector);
+    alias SyncSectorResponse = Tuple!(uint, ResponseHandler);
+pragma(msg, "SyncSectorResponse :", SyncSectorResponse);
     bool canSynchronize();
-    Tuple!(uint, ResponseHandler) syncSector(const DART.Rims sector, void delegate(string) oncomplete, OnFailure onfailure);
+    SyncSectorResponse syncSector(
+	const DART.Rims sector,
+	void delegate(string) oncomplete,
+	OnFailure onfailure);
 }
 
 alias ConnectionPoolT=ConnectionPool!(shared p2plib.StreamI, ulong);
@@ -269,11 +274,11 @@ class P2pSynchronizationFactory : SynchronizationFactory {
         return node_address !is null && node_address.length > 0;
     }
 
-    Tuple!(uint, ResponseHandler) syncSector(
+    SyncSectorResponse syncSector(
         const DART.Rims sector,
         void delegate(string) @safe oncomplete,
         OnFailure onfailure) {
-        Tuple!(uint, ResponseHandler) syncWith(NodeAddress address) @safe {
+        SyncSectorResponse syncWith(NodeAddress address) @safe {
             import p2p.go_helper;
 
             ulong connect() {
@@ -305,7 +310,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             catch (Exception e) {
                 log("Error: %s", e);
             }
-            return Tuple!(uint, ResponseHandler)(0, null);
+            return SyncSectorResponse(0, null);
         }
 
         auto iteration = 0;
@@ -336,7 +341,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             pragma(msg, "fixme(alex): Why 20?");
         }
         while (iteration < 20);
-        return Tuple!(uint, ResponseHandler)(0, null);
+        return SyncSectorResponse(0, null);
     }
 
     @safe
@@ -748,9 +753,9 @@ unittest {
             return _canSynchronize;
         }
 
-        private Tuple!(uint, ResponseHandler) mockReturn;
+        private SyncSectorResponse mockReturn;
         private uint sync_counter = 0;
-        Tuple!(uint, ResponseHandler) syncSector(const DART.Rims sector, void delegate(string) oncomplete, OnFailure onfailure) {
+        SyncSectorResponse syncSector(const DART.Rims sector, void delegate(string) oncomplete, OnFailure onfailure) {
             sync_counter++;
             return mockReturn;
         }
