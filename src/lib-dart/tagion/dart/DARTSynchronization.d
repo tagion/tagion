@@ -255,7 +255,8 @@ class P2pSynchronizationFactory : SynchronizationFactory {
         const ulong port,
         shared p2plib.NodeI node,
         shared ConnectionPoolT connection_pool,
-        immutable(DARTOptions) dart_opts, immutable(Pubkey) pkey) {
+        immutable(DARTOptions) dart_opts,
+        immutable(Pubkey) pkey) {
         this.dart = dart;
         this.rnd = Random(unpredictableSeed);
         this.node = node;
@@ -303,7 +304,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                 auto sync = new P2pSynchronizer(filename, stream_id, oncomplete, onfailure);
                 auto db_sync = dart.synchronizer(sync, sector);
                 (() @trusted { db_sync.call; })();
-                return tuple(db_sync.id, cast(ResponseHandler) sync);
+                return SyncSectorResponse(db_sync.id, sync);
             }
             catch (GoException e) {
                 log("Error, connection failed with code: %s", e.Code); //TODO: add address to blacklist

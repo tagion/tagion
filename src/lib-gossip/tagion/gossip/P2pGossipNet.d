@@ -94,7 +94,10 @@ class ConnectionPool(T : shared(p2plib.StreamI), TKey) {
         this.timeout = cast(immutable) timeout;
     }
 
-    void add(const TKey key, shared T connection, const bool long_lived = false)
+    void add(
+        const TKey key,
+        shared T connection,
+        const bool long_lived = false)
     in {
         assert(connection.alive);
     }
@@ -103,9 +106,9 @@ class ConnectionPool(T : shared(p2plib.StreamI), TKey) {
             auto activeConnection = new shared ActiveConnection(connection, long_lived);
             shared_connections[key] = activeConnection;
         }
-        else {
-            // log("ignore key: ", key);
-        }
+        // else {
+        //     // log("ignore key: ", key);
+        // }
     }
 
     void close(const TKey key) {
