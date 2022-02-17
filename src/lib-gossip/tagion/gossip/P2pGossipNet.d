@@ -36,9 +36,9 @@ import tagion.basic.Logger;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
 //import tagion.services.MdnsDiscoveryService;
-import p2plib = p2p.node;
+//import p2plib = p2p.node;
 import p2p.callback;
-
+import p2plib=p2p.interfaces;
 //import p2p.cgo.helper;
 import std.array;
 import tagion.utils.StdTime;
@@ -52,7 +52,7 @@ import std.random : Random, unpredictableSeed, uniform;
 import std.datetime;
 
 synchronized
-class ConnectionPool(T : shared(p2plib.Stream), TKey) {
+class ConnectionPool(T : shared(p2plib.StreamI), TKey) {
     private shared final class ActiveConnection {
         protected T connection; //TODO: try immutable/const
         protected SysTime last_timestamp;
@@ -359,14 +359,17 @@ private static string convert_to_net_task_name(string task_name) {
 
 @safe
 class StdP2pNet : P2pNet {
-    shared p2plib.Node node;
+    shared p2plib.NodeI node;
     Tid sender_tid;
     static uint counter;
     protected string owner_task_name;
     protected string internal_task_name;
 
-    this(string owner_task_name, string discovery_task_name, const(HostOptions) host, shared p2plib
-            .Node node) {
+    this(
+        string owner_task_name,
+        string discovery_task_name,
+        const(HostOptions) host,
+        shared p2plib.NodeI node) {
         //        super(hashgraph);
         this.owner_task_name = owner_task_name;
         this.internal_task_name = convert_to_net_task_name(owner_task_name);
@@ -427,8 +430,11 @@ class StdP2pNet : P2pNet {
     }
 }
 
-static void async_send(string task_name, string discovery_task_name, const(HostOptions) host, shared p2plib
-        .Node node) {
+static void async_send(
+    string task_name,
+    string discovery_task_name,
+    const(HostOptions) host,
+    shared p2plib.NodeI node) {
     scope (exit) {
         // log("SENDER CLOSED!!");
         ownerTid.send(Control.END);
@@ -438,7 +444,7 @@ static void async_send(string task_name, string discovery_task_name, const(HostO
     const internal_task_name = convert_to_net_task_name(task_name);
     log.register(internal_task_name);
 
-    auto connectionPool = new shared ConnectionPool!(shared p2plib.Stream, ulong)();
+    auto connectionPool = new shared ConnectionPool!(shared p2plib.StreamI, ulong)();
     auto connectionPoolBridge = new ConnectionPoolBridge();
 
     log("start listening");
@@ -465,7 +471,7 @@ static void async_send(string task_name, string discovery_task_name, const(HostO
                 receive(
                         (NodeAddress node_address) {
                     auto stream = node.connect(node_address.address, node_address.is_marshal, [internal_task_name]);
-                    streamId = stream.Identifier;
+                    streamId = stream.identifier;
                     import p2p.callback;
 
                     connectionPool.add(streamId, stream, true);
@@ -498,17 +504,17 @@ static void async_send(string task_name, string discovery_task_name, const(HostO
     do {
         log("handling %s", thisTid);
         receive(
-                (const(Pubkey) channel, const(Document) doc, uint id) {
-            log("received sender %d", id);
-            try {
-                send_to_channel(channel, doc);
-            }
-            catch (Exception e) {
-                log("Error on sending to channel: %s", e.msg);
-                ownerTid.send(channel);
-            }
-        },
-                (Pubkey channel, uint id) {
+            (const(Pubkey) channel, const(Document) doc, uint id) {
+                log("received sender %d", id);
+                try {
+                    send_to_channel(channel, doc);
+                }
+                catch (Exception e) {
+                    log("Error on sending to channel: %s", e.msg);
+                    ownerTid.send(channel);
+                }
+            },
+            (Pubkey channel, uint id) {
             log("Closing connection: %s", channel.cutHex);
             try {
                 auto streamIdPtr = channel in connectionPoolBridge.lookup;
@@ -525,9 +531,9 @@ static void async_send(string task_name, string discovery_task_name, const(HostO
         },
 
                 (Response!(p2plib.ControlCode.Control_Connected) resp) {
-            log("Client Connected key: %d", resp.key);
-            connectionPool.add(resp.key, resp.stream, true);
-        }, (Response!(p2plib.ControlCode.Control_Disconnected) resp) {
+                    log("Client Connected key: %d", resp.key);
+                    connectionPool.add(resp.key, resp.stream, true);
+                }, (Response!(p2plib.ControlCode.Control_Disconnected) resp) {
             synchronized (connectionPoolBridge) {
                 log("Client Disconnected key: %d", resp.key);
                 connectionPool.close(cast(void*) resp.key);
@@ -541,13 +547,13 @@ static void async_send(string task_name, string discovery_task_name, const(HostO
             Pubkey received_pubkey = receiver.pubkey;
             if ((received_pubkey in connectionPoolBridge.lookup) !is null) {
                 log("previous cpb: %d, now: %d",
-                    connectionPoolBridge.lookup[received_pubkey], resp.stream.Identifier);
+                    connectionPoolBridge.lookup[received_pubkey], resp.stream.identifier);
             }
             else {
-                connectionPoolBridge.lookup[received_pubkey] = resp.stream.Identifier;
+                connectionPoolBridge.lookup[received_pubkey] = resp.stream.identifier;
             }
             // log("response: %s", doc.toJSON);у
-            log("received in: %s", resp.stream.Identifier);
+            log("received in: %s", resp.stream.identifier);
             ownerTid.send(receiver.toDoc);
         },
                 (Control control) {
@@ -569,8 +575,12 @@ static void async_send(string task_name, string discovery_task_name, const(HostO
     }
     Random random;
 
-    this(Pubkey pk, string owner_task_name, string discovery_task_name, const(HostOptions) host, shared p2plib
-            .Node node) {
+    this(
+        Pubkey pk,
+        string owner_task_name,
+        string discovery_task_name,
+        const(HostOptions) host,
+        shared p2plib.NodeI node) {
         super(owner_task_name, discovery_task_name, host, node);
         this.random = Random(unpredictableSeed);
         this.mypk = pk;

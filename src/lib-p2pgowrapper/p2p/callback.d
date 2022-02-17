@@ -5,6 +5,7 @@ import std.concurrency;
 import p2p.cgo.libp2pgowrapper;
 import p2p.cgo.c_helper;
 import p2p.node;
+import p2p.interfaces;
 
 struct CopyCallback {
     immutable(ubyte)[] buffer;

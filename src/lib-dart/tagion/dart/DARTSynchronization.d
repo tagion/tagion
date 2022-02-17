@@ -2,7 +2,7 @@ module tagion.dart.DARTSynchronization;
 
 import std.conv;
 import std.stdio;
-import p2plib = p2p.node;
+import p2plib = p2p.interfaces;
 import p2p.callback;
 import p2p.cgo.c_helper;
 import std.random;
@@ -230,14 +230,14 @@ interface SynchronizationFactory {
     Tuple!(uint, ResponseHandler) syncSector(const DART.Rims sector, void delegate(string) oncomplete, OnFailure onfailure);
 }
 
+alias ConnectionPoolT=ConnectionPool!(shared p2plib.StreamI, ulong);
 @safe
 class P2pSynchronizationFactory : SynchronizationFactory {
     import tagion.dart.DARTOptions;
-
     protected {
         DART dart;
-        shared ConnectionPool!(shared p2plib.Stream, ulong) connection_pool;
-        shared p2plib.Node node;
+        shared ConnectionPoolT connection_pool;
+        shared p2plib.NodeI node;
         Random rnd;
         ulong[string] synchronizing;
         string task_name;
@@ -246,8 +246,11 @@ class P2pSynchronizationFactory : SynchronizationFactory {
     immutable(ulong) own_port;
     immutable(Pubkey) pkey;
 
-    this(DART dart, const ulong port, shared p2plib.Node node, shared ConnectionPool!(shared p2plib.Stream, ulong) connection_pool, immutable(
-            DARTOptions) dart_opts, immutable(Pubkey) pkey) {
+    this(DART dart,
+        const ulong port,
+        shared p2plib.NodeI node,
+        shared ConnectionPoolT connection_pool,
+        immutable(DARTOptions) dart_opts, immutable(Pubkey) pkey) {
         this.dart = dart;
         this.rnd = Random(unpredictableSeed);
         this.node = node;
@@ -266,7 +269,10 @@ class P2pSynchronizationFactory : SynchronizationFactory {
         return node_address !is null && node_address.length > 0;
     }
 
-    Tuple!(uint, ResponseHandler) syncSector(const DART.Rims sector, void delegate(string) @safe oncomplete, OnFailure onfailure) {
+    Tuple!(uint, ResponseHandler) syncSector(
+        const DART.Rims sector,
+        void delegate(string) @safe oncomplete,
+        OnFailure onfailure) {
         Tuple!(uint, ResponseHandler) syncWith(NodeAddress address) @safe {
             import p2p.go_helper;
 
@@ -275,11 +281,11 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                     return synchronizing[address.address];
                 }
                 auto stream = node.connect(address.address, address.is_marshal, [dart_opts.sync.protocol_id]);
-                connection_pool.add(stream.Identifier, stream, true);
+                connection_pool.add(stream.identifier, stream, true);
                 stream.listen(&StdHandlerCallback,
                         dart_opts.sync.task_name, dart_opts.sync.host.timeout.msecs, dart_opts.sync.host.max_size);
-                synchronizing[address.address] = stream.Identifier;
-                return stream.Identifier;
+                synchronizing[address.address] = stream.identifier;
+                return stream.identifier;
             }
 
             try {
@@ -496,7 +502,7 @@ version (none) unittest {
 
     { //P2pSynchronizationFactory: can synchronize after address table is set
         auto node = new shared FakeNode();
-        auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(10.msecs);
+        auto connectionPool = new shared(ConnectionPoolT)(10.msecs);
         auto sync_factory = new P2pSynchronizationFactory(dart, node, connectionPool, opts, pkey);
         assert(!sync_factory.canSynchronize);
 
@@ -507,7 +513,7 @@ version (none) unittest {
     }
     { //P2pSynchronizationFactory: connect and start synchronization if node found
         auto node = new shared FakeNode();
-        auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(10.msecs);
+        auto connectionPool = new shared(ConnectionPoolT)(10.msecs);
         auto sync_factory = new P2pSynchronizationFactory(dart, node, connectionPool, opts, pkey);
         sync_factory.setNodeTable(address_table);
         mixin controlFuncs;
@@ -519,7 +525,7 @@ version (none) unittest {
     }
     { //P2pSynchronizationFactory: return null if synchronize node not found
         auto node = new shared FakeNode();
-        auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(10.msecs);
+        auto connectionPool = new shared(ConnectionPoolT)(10.msecs);
         auto sync_factory = new P2pSynchronizationFactory(dart, node, connectionPool, opts, pkey);
 
         sync_factory.setNodeTable(address_table);
@@ -650,7 +656,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
 
     void start(SynchronizationFactory factory) //restart with new factory
 
-    
+
 
     in {
         assert(checkState(State.STOP, State.READY, State.ERROR));
