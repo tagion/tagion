@@ -2,7 +2,7 @@
 
 module tagion.betterC.utils.BinBuffer;
 
-/*@nogc:*/
+@nogc:
 import tagion.betterC.utils.platform;
 //import core.stdc.stdlib : calloc, malloc, realloc, free;
 version(WebAssembly) {
@@ -15,7 +15,7 @@ import tagion.betterC.utils.Memory;
 import tagion.betterC.utils.sdt;
 
 struct BinBuffer {
-    /*@nogc:*/
+    @nogc:
     protected {
         ubyte[] _data;
         size_t _index;

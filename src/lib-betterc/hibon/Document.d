@@ -2,7 +2,7 @@
 
 module tagion.betterC.hibon.Document;
 
-/*@nogc:*/
+@nogc:
 //import std.format;
 import std.meta : AliasSeq, Filter;
 import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, getUDAs, EnumMembers, Unqual, ForeachType;
@@ -22,7 +22,6 @@ import LEB128=tagion.betterC.utils.LEB128;
 import tagion.betterC.hibon.BigNumber;
 import tagion.betterC.hibon.HiBONBase;
 
-import std.stdio;
 // import std.exception;
 
 static assert(uint.sizeof == 4);
@@ -36,7 +35,7 @@ static assert(uint.sizeof == 4);
  * possibility to read and analyze data
  */
 struct Document {
-    // /*@nogc:*/
+    // @nogc:
     /**
      * HiBON Document value type
      */
@@ -51,7 +50,7 @@ struct Document {
      * Gets the internal buffer
      * @return the buffer of the HiBON document
      */
-    /*@nogc*/ immutable(ubyte[]) data() const {
+    @nogc immutable(ubyte[]) data() const {
         if (_data.length) {
             ubyte[] result;
             result.create(full_size);
@@ -70,7 +69,7 @@ struct Document {
       * Creates a HiBON Document from a buffer
       * @param data - buffer
       */
-    /*@nogc*/ this(immutable(ubyte[]) data) pure {
+    @nogc this(immutable(ubyte[]) data) pure {
         this._data = data;
     }
 
@@ -79,7 +78,7 @@ struct Document {
      * The buffer reused not copied
      * @param doc - Document which is replicated
      */
-    /*@nogc*/ this(const Document doc) pure {
+    @nogc this(const Document doc) pure {
         this._data = doc._data;
     }
 
@@ -123,11 +122,11 @@ struct Document {
             return data.length <= ubyte.sizeof;
         }
 
-        /*@nogc*/ uint size() {
+        @nogc uint size() {
             return LEB128.decode!uint(data).value;
         }
 
-        /*@nogc*/ size_t full_size() {
+        @nogc size_t full_size() {
             if (_data.length) {
                 const len = LEB128.decode!uint(_data);
                 return len.size + len.value;
@@ -172,15 +171,13 @@ unittest { // Document with residual data
     const doc = Document(data);
     assert(doc.full_size == h.serialize.length);
     assert(doc.length == 1);
-    // writeln(doc.keys.range.data);
-    // assert(equal(doc.keys, ["test"]));
     }
 
     /**
      * Counts the number of members in a Document
      * @return number of members in in the Document
      */
-    /*@nogc*/ @property uint length() const {
+    @nogc @property uint length() const {
         uint count;
         foreach(e; this[]) {
             count++;
@@ -242,7 +239,7 @@ unittest { // Document with residual data
      * Range of the Document
      */
     struct Range {
-        /*@nogc:*/
+        @nogc:
         /**
          * Buffer with data
          */
@@ -294,13 +291,6 @@ unittest { // Document with residual data
             this(doc.data);
         }
 
-        /**
-         * Destructor for Range
-         */
-        ~this() {
-            emplace(&data, data.init);
-        }
-
         @property pure const {
             /**
              * Checks is Range empty
@@ -315,10 +305,10 @@ unittest { // Document with residual data
              * InputRange primitive operation
              * @return currently iterated element
              */
-            const(Element) front() {
-                return _element;
-            }
         }
+            const(Element) front() {
+                return Element(data);
+            }
 
 
         /**
@@ -334,8 +324,11 @@ unittest { // Document with residual data
     /**
      * @return range of Element's
      */
-    /*@nogc*/ Range opSlice() const {
-        return Range(data);
+    @nogc Range opSlice() const {
+        if (full_size < _data.length) {
+            return Range(_data[0 .. full_size]);
+        }
+        return Range(_data);
     }
 
 
@@ -347,7 +340,7 @@ unittest { // Document with residual data
     }
 
     protected struct KeyRange {
-        /*@nogc:*/
+        @nogc:
         Text work_key;
         Range range;
         this(immutable(ubyte[]) data) {
@@ -381,7 +374,7 @@ unittest { // Document with residual data
     }
 
     protected struct IndexRange {
-        /*@nogc:*/
+        @nogc:
         private {
             Range range;
             bool _error;
@@ -432,14 +425,14 @@ unittest { // Document with residual data
     /**
      * @return true if the key exist in the Document
      */
-    bool hasElement(in string key) const {
+    bool hasElement(scope string key) const {
         return !opBinaryRight!("in")(key).isEod();
     }
 
     /**
      * @return true if the index exist in the Document
      */
-    bool hasElement(Index)(in Index index) const if (isIntegral!Index) {
+    bool hasElement(Index)(scope Index index) const if (isIntegral!Index) {
         return hasElement(index.to!string);
     }
 
@@ -447,12 +440,27 @@ unittest { // Document with residual data
      * Find the element with key
      * @return the element with the key, if on element with this key has been found an empty element is returned
      */
-    const(Element) opBinaryRight(string op)(in string key) const if(op == "in") {
-        foreach (ref element; this[]) {
+    const(Element) opBinaryRight(string op)(in string key) const if (op == "in") {
+        foreach (element; this[]) {
             Text work_key;
             if (element.key(work_key) == key) {
-                writeln("found elem");
                 return element;
+            }
+            else if (element.key(work_key) > key) {
+                break;
+            }
+        }
+        return Element();
+    }
+
+    const(Element) opBinaryRight(string op, Index)(const Index key) const
+    if ((op == "in") && (isIntegral!Index)) {
+        foreach (ref element; this[]) {
+            if (element.isIndex && (element.index == key)) {
+                return element;
+            }
+            else if (element.key[0] > '9') {
+                break;
             }
         }
         return Element();
@@ -462,9 +470,8 @@ unittest { // Document with residual data
      * @return the element with the key
      * @throw if the element with the key is not found then and HiBONException is thrown
      */
-    /*@nogc*/ const(Element) opIndex(in string key) const {
-        auto result=key in this;
-        .check(!result.isEod, message("Member named '%s' not found", key));
+    @nogc const(Element) opIndex(in string key) const {
+        auto result = key in this;
         return result;
     }
 
@@ -473,7 +480,8 @@ unittest { // Document with residual data
      * @throw if the element with the key is not found then and HiBONException is thrown
        Or of the key is not an index a std.conv.ConvException is thrown
      */
-    /*@nogc*/ const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
+    @nogc const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
+        import std.conv;
         return opIndex(index.to!string);
     }
 
@@ -486,7 +494,7 @@ unittest { // Document with residual data
      * @param key, which size needs to be calculated
      * @return the number of bytes taken up by the key in the HiBON serialized stream
      */
-    /*@nogc*/ static size_t sizeKey(const(char[]) key) pure {
+    @nogc static size_t sizeKey(const(char[]) key) pure {
         uint index;
         if (is_index(key, index)) {
             return sizeKey(index);
@@ -498,7 +506,7 @@ unittest { // Document with residual data
      * @param key, which size needs to be calculated
      * @return the number of bytes taken up by the key in the HiBON serialized stream
      */
-    /*@nogc*/ static size_t sizeKey(uint key) pure {
+    @nogc static size_t sizeKey(uint key) pure {
         return Type.sizeof +  ubyte.sizeof + LEB128.calc_size(key);
     }
 
@@ -517,7 +525,7 @@ unittest { // Document with residual data
      * @param x = is the value
      * @return the number of bytes taken up by the element
      */
-    /*@nogc*/ static size_t sizeT(T, K)(Type type, K key, const(T) x) {
+    @nogc static size_t sizeT(T, K)(Type type, K key, const(T) x) {
         size_t size = sizeKey(key);
         static if ( is(T: U[], U) ) {
             const _size=x.length*U.sizeof;
@@ -618,7 +626,7 @@ unittest { // Document with residual data
     }
 
     struct RangeT(T) {
-        /*@nogc:*/
+        @nogc:
         Range range;
         enum EType=Value.asType!T;
         static assert(EType !is Type.NONE, format("Range type %s not supported", T.stringof));
@@ -709,7 +717,7 @@ unittest { // Document with residual data
     * HiBON Element representation
     */
     struct Element {
-        /*@nogc:*/
+        @nogc:
         /*
          * -----
          * //data image:
@@ -745,8 +753,6 @@ unittest { // Document with residual data
             if (isIndex) {
                 return Type.sizeof+ubyte.sizeof;
             }
-            writeln("key_pos", data.length);
-            writeln("size ", Type.sizeof);
             return cast(uint)(Type.sizeof+LEB128.calc_size(data[Type.sizeof..$]));
         }
 
@@ -815,7 +821,6 @@ unittest { // Document with residual data
                 default:
                     //empty
                 }
-                .check(0, message("Invalid type %s", type));
                 return Value.init;
 //                assert(0);
             }
@@ -825,10 +830,7 @@ unittest { // Document with residual data
              * @throw if the element does not contain the type E and HiBONException is thrown
              */
             auto by(Type E)() const {
-                .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
-                .check(E !is Type.NONE, message("Type is not supported %s the actual type is %s", E, type));
                 return value.by!E;
-
             }
 
             /**
@@ -869,11 +871,7 @@ unittest { // Document with residual data
              * @throw if the key is not an index an HiBONException is thrown
              */
             uint index() {
-                uint result;
-                Text key_text;
-                const _key=key(key_text);
-                .check(is_index(_key, result), message("Key '%s' is not an index", _key));
-                return result;
+                return LEB128.decode!uint(data[keyPos .. $]).value;
             }
 
         }
@@ -901,12 +899,7 @@ unittest { // Document with residual data
              */
         }
             bool isIndex() const {
-                bool res = false;
-                if (data.length >= Type.sizeof) {
-                    res =  data[Type.sizeof] is 0;
-                    writeln(res);
-                }
-                return res;
+                return data[Type.sizeof] is 0;
             }
 
         @property const {
@@ -928,12 +921,6 @@ unittest { // Document with residual data
                     key_index(LEB128.decode!uint(data[keyPos..$]).value);
                     return key_index.serialize;
                 }
-                writeln("do not call isindex");
-                writeln(data.length);
-                // auto pos = valuePos;
-                // writeln(pos);
-                writeln(keyPos);
-                // return "";
                 return cast(string)data[keyPos..valuePos];
             }
 
@@ -941,7 +928,7 @@ unittest { // Document with residual data
              * @return the position of the value inside the element buffer
              */
             uint valuePos() {
-                return keyPos+keyLen;
+                return keyPos + keyLen;
             }
 
             uint dataPos() {

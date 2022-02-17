@@ -4,7 +4,7 @@ import std.traits : isArray, ForeachType, isPointer, PointerTarget, Unqual;
 import tagion.betterC.utils.platform;
 
 import std.conv : emplace;
-/*@nogc:*/
+@nogc:
 
 version(memtrace) {
     enum memalloc_format="#%p:%06d\t\t\t\t%04d %c %s\n";

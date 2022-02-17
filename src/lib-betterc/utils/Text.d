@@ -2,7 +2,7 @@
 
 module tagion.betterC.utils.Text;
 
-/*@nogc:*/
+@nogc:
 
 import std.traits : isIntegral, isSigned, Unqual;
 import tagion.betterC.utils.Memory;
@@ -10,7 +10,7 @@ import tagion.betterC.utils.platform : calloc;
 //import core.stdc.stdio;
 
 struct Text {
-    /*@nogc:*/
+    @nogc:
     protected {
         char[] str;
         size_t index;

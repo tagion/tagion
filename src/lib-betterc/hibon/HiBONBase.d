@@ -2,7 +2,7 @@
 
 module tagion.betterC.hibon.HiBONBase;
 
-/*@nogc:*/
+@nogc:
 
 
 import std.meta : AliasSeq;
@@ -66,7 +66,7 @@ enum Type : ubyte {
 
 
 struct DataBlock {
-    /*@nogc:*/
+    @nogc:
     protected {
         uint _type;
         immutable(ubyte)[] _data;
@@ -106,7 +106,7 @@ enum isDataBlock(T)=is(T : const(DataBlock));
 
 version(none)
 struct Key {
-    /*@nogc:*/
+    @nogc:
     enum KeyType {
         NONE,
         DATA,
@@ -328,7 +328,7 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
  */
 //@safe
 union ValueT(bool NATIVE=false, HiBON,  Document) {
-    /*@nogc:*/
+    @nogc:
     @Type(Type.FLOAT32)   float     float32;
     @Type(Type.FLOAT64)   double    float64;
     // @Type(Type.FLOAT128)  decimal_t float128;

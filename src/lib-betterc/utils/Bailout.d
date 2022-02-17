@@ -2,7 +2,7 @@
 
 module tagion.betterC.utils.Bailout;
 
-/*@nogc:*/
+@nogc:
 import tagion.betterC.utils.platform;
 // import core.stdc.string;
 // import core.stdc.stdio;

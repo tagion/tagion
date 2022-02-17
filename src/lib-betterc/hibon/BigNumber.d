@@ -8,12 +8,12 @@ import LEB128 = tagion.betterC.utils.LEB128;
  * @brief Is is a wrapper of the std.bigint
  */
 
-/*@nogc:*/
+@nogc:
 /**
  * BigNumber used in the HiBON format
  */
 struct BigNumber {
-    /*@nogc:*/
+    @nogc:
     /**
      * Store actual number, which is split into array
      */

@@ -21,7 +21,7 @@ module tagion.betterC.utils.RBTree;
 
  */
 
-/*@nogc:*/
+@nogc:
 import tagion.betterC.utils.Memory;
 import tagion.betterC.utils.Stack;
 //import hibon.HiBONBase : Key;
@@ -40,10 +40,10 @@ RBTreeT!(K) RBTree(K)(const bool owns=true) {
 }
 
 struct RBTreeT(K) {
-    /*@nogc:*/
+    @nogc:
     enum Color { RED, BLACK };
     struct Node {
-        /*@nogc:*/
+        @nogc:
         K item;
         Color color;
         Node* parent;
@@ -137,7 +137,7 @@ struct RBTreeT(K) {
         void dump(int iter_max=20) const {
             import core.stdc.stdio;
             const(char[4]) INDENT="  ->";
-            void _dump(const(Node*) current, const uint level=1) /*@nogc*/ {
+            void _dump(const(Node*) current, const uint level=1) @nogc {
                 if (current !is nill) {
                     _dump(current.left, level+1);
                     foreach(i;0..level) {
