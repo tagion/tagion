@@ -428,11 +428,9 @@ class StdP2pNet : P2pNet {
 
     @safe
     void close() {
-        @trusted void send_stop() {
-            import std.concurrency : prioritySend, Tid, locate;
-
+       void send_stop() {
             auto sender = locate(internal_task_name);
-            if (sender != Tid.init) {
+            if (sender !is Tid.init) {
                 // log("sending stop to gossip net");
                 sender.prioritySend(Control.STOP);
                 receiveOnly!Control;
