@@ -14,14 +14,10 @@ import tagion.dart.DARTOptions;
 
 import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType, Control, assumeTrusted;
 
-//import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous : cutHex;
 
-// import tagion.utils.Random;
 import tagion.utils.LRU;
 import tagion.utils.Queue;
-
-//import tagion.Keywords;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
@@ -34,16 +30,11 @@ import tagion.basic.ConsensusExceptions;
 import tagion.basic.Logger;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 
-//import tagion.services.MdnsDiscoveryService;
-//import p2plib = p2p.node;
 import p2p.callback;
 import p2plib = p2p.interfaces;
 
-//import p2p.cgo.helper;
 import std.array;
 import tagion.utils.StdTime;
-
-//import tagion.services.P2pTagionService;
 
 import tagion.dart.DART;
 import tagion.communication.HiRPC;
@@ -55,12 +46,7 @@ private {
     import concurrency = std.concurrency;
 
     alias ownerTid = assumeTrusted!(concurrency.ownerTid);
-    //alias Tid=assumeTrusted!(concurrency.ownerTid);
     alias locate = assumeTrusted!(concurrency.locate);
-    //alias receive=assumeTrusted!(concurrency.receive);
-    //alias send=assumeTrusted!(concurrency.send);
-    //alias spawn(=assumeTrusted!(concurrency.spawn);
-    //alias receiveOnly=assumeTrusted!(concurrency.receiveOnly);
 
     Tid spawn(Args...)(Args args) @trusted {
         return concurrency.spawn(args);
@@ -113,9 +99,7 @@ class ConnectionPool(T : shared(p2plib.StreamI), TKey) {
         }
 
         void close() {
-            // log("CLOSING EXPIRED STREAM");
             connection.close();
-            // destroy(connection);
         }
     }
 
@@ -138,13 +122,9 @@ class ConnectionPool(T : shared(p2plib.StreamI), TKey) {
             auto activeConnection = new shared ActiveConnection(connection, long_lived);
             shared_connections[key] = activeConnection;
         }
-        // else {
-        //     // log("ignore key: ", key);
-        // }
     }
 
     void close(const TKey key) {
-        // log("CONNECTION!! Close stream: key: ", key);
         auto connection = get(key);
         if (connection) {
             shared_connections.remove(key);
@@ -188,11 +168,9 @@ class ConnectionPool(T : shared(p2plib.StreamI), TKey) {
         auto connection = this.get(key);
         if (connection !is null) {
             (*connection).send(data);
-            // log("LIBP2P: SENDED");
             return true;
         }
         else {
-            // log("LIBP2P: Connection not found");
             return false;
         }
     }
@@ -211,14 +189,13 @@ class ConnectionPool(T : shared(p2plib.StreamI), TKey) {
         if (timeout != Duration.zero) {
             foreach (key, connection; shared_connections) {
                 if (connection.isExpired(timeout)) {
-                    // writeln("STREAM EXPIRED");
                     close(key);
                 }
             }
         }
     }
 }
-// version(none)
+
 @safe
 unittest {
     import tagion.basic.Logger;
@@ -293,14 +270,6 @@ alias ActiveNodeAddressBook = immutable(AddressBook!Pubkey);
 @safe
 immutable class AddressBook(TKey) {
     this(const(NodeAddress[TKey]) addrs) @trusted {
-        // import std.algorithm.iteration : each;
-        // NodeAddress[TKey] duplicate;
-        // auto x=addrs.byKeyValue;
-        // pragma(msg, "x.front.key ", typeof(x.front.key));
-        // pragma(msg, "x.front.value ", typeof(x.front.value));
-        // duplicate[x.front.key] = x.front.value;
-        // addrs.byKeyValue.each!(n => duplicate[n.key] = n.value);
-
         this.data = cast(immutable) addrs.dup;
     }
 
@@ -316,13 +285,6 @@ struct NodeAddress {
     string id;
     uint port;
     DART.SectorRange sector;
-    // version (none) this(ref return scope const(NodeAddress) node_address) inout {
-    //     address = node_address.address;
-    //     is_marshal = is_marshal;
-    //     id = node_address.id;
-    //     port = node_address.port;
-    //     sector = node_address.sector;
-    // }
 
     this(
             string address,
@@ -387,8 +349,6 @@ struct NodeAddress {
         auto secondpartAddr = addr.indexOf(']');
         auto firstpartId = addr.indexOf('{') + 1;
         auto secondpartId = addr.indexOf(':');
-        // writefln("addr %s len: %d\naddress from %d to %d\nid from %d to %d", addr,
-        // addr.length, firstpartAddr, secondpartAddr, firstpartId, secondpartId);
         result = addr[firstpartAddr .. secondpartAddr] ~ p2p_token ~ addr[firstpartId .. secondpartId];
         return result;
     }
@@ -416,7 +376,6 @@ class StdP2pNet : P2pNet {
             string discovery_task_name,
             const(HostOptions) host,
             shared p2plib.NodeI node) {
-        //        super(hashgraph);
         this.owner_task_name = owner_task_name;
         this.internal_task_name = convert_to_net_task_name(owner_task_name);
         this.node = node;
@@ -432,7 +391,6 @@ class StdP2pNet : P2pNet {
        void send_stop() {
             auto sender = locate(internal_task_name);
             if (sender !is Tid.init) {
-                // log("sending stop to gossip net");
                 sender.prioritySend(Control.STOP);
                 receiveOnly!Control;
             }
@@ -441,11 +399,8 @@ class StdP2pNet : P2pNet {
         send_stop();
     }
 
-//    @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
         alias tsend = .send;
-//        import std.concurrency : tsend = send, prioritySend, Tid;
-
         auto internal_sender = locate(internal_task_name);
         log("send called");
         if (internal_sender !is Tid.init) {
@@ -461,12 +416,9 @@ class StdP2pNet : P2pNet {
 
     protected void send_remove(Pubkey pk) {
         alias tsend = .send;
-//        import std.concurrency : tsend = send, Tid, locate;
-
         auto sender = locate(internal_task_name);
         if (sender !is Tid.init) {
             counter++;
-            // log("sending close to sender %d", counter);
             tsend(sender, pk, counter);
         }
         else {
@@ -482,10 +434,8 @@ static void async_send(
         const(HostOptions) host,
         shared p2plib.NodeI node) {
     scope (exit) {
-        // log("SENDER CLOSED!!");
         ownerTid.send(Control.END);
     }
-    // const net = new StdSecureNet();
     const hirpc = new HiRPC(null);
     const internal_task_name = convert_to_net_task_name(task_name);
     log.register(internal_task_name);
@@ -507,13 +457,10 @@ static void async_send(
         log("sending to: %s TIME: %s", channel.cutHex, Clock.currTime().toUTC());
         auto streamIdPtr = channel in connectionPoolBridge.lookup;
         auto streamId = streamIdPtr is null ? 0 : *streamIdPtr;
-        // log("stream id: %d", streamId);
         if (streamId == 0 || !connectionPool.contains(streamId)) {
             auto discovery_tid = locate(discovery_task_name);
             if (discovery_tid != Tid.init) {
                 discovery_tid.send(channel, thisTid);
-                // writeln("waiting for response");
-                // auto node_address = receiveOnly!(NodeAddress);
                 receive(
                         (NodeAddress node_address) {
                     auto stream = node.connect(node_address.address, node_address.is_marshal, [internal_task_name]);
@@ -523,7 +470,6 @@ static void async_send(
                     connectionPool.add(streamId, stream, true);
                     stream.listen(&StdHandlerCallback, internal_task_name, host.timeout.msecs, host
                         .max_size);
-                    // log("add stream to connection pool %d", streamId);
                     connectionPoolBridge.lookup[channel] = streamId;
                 }
                 );
@@ -599,12 +545,10 @@ static void async_send(
             else {
                 connectionPoolBridge.lookup[received_pubkey] = resp.stream.identifier;
             }
-            // log("response: %s", doc.toJSON);у
             log("received in: %s", resp.stream.identifier);
             ownerTid.send(receiver.toDoc);
         },
                 (Control control) {
-            // log("received control");
             if (control == Control.STOP) {
                 stop = true;
             }

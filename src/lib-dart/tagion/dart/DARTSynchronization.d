@@ -31,8 +31,6 @@ import tagion.basic.Logger;
 import tagion.communication.HiRPC;
 import tagion.communication.HandlerPool;
 
-//import tagion.services.MdnsDiscoveryService;
-
 alias HiRPCSender = HiRPC.Sender;
 alias HiRPCReceiver = HiRPC.Receiver;
 
@@ -71,7 +69,6 @@ class ModifyRequestHandler : ResponseHandler {
     void close() @trusted {
         if (alive) {
             log("ModifyRequestHandler: Close alive");
-            // onFailed()?
         }
         else {
             auto tid = locate(task_name);
@@ -172,8 +169,6 @@ version (none) unittest {
         assert(readSync.fp_result[testfp] == archive.toHiBON.serialize);
     }
 }
-
-// import tagion.gossip.GossipNet;
 
 import core.thread;
 
@@ -296,7 +291,6 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             }
 
             try {
-                // auto stream_id = (() @trusted => connect())();
                 const stream_id = connect;
                 auto filename = format("%s_%s", tempfile, sector);
                 pragma(msg, "fixme(alex): Why 0x80");
@@ -319,14 +313,12 @@ class P2pSynchronizationFactory : SynchronizationFactory {
         auto iteration = 0;
         do {
             iteration++;
-            // writeln(node_address.length);
             import std.range : dropExactly;
 
             const random_key_index = uniform(0, node_address.length, rnd);
-            const node_addr = node_address.byKeyValue.dropExactly(random_key_index).front; //uniform(0, node_address.length, rnd)];
+            const node_addr = node_address.byKeyValue.dropExactly(random_key_index).front;
             if (node_addr.value.sector.inRange(sector)) {
                 const node_port = node_addr.value.port;
-                //const own_port = opts.port;
                 if (node_addr.key == pkey)
                     continue;
                 if (dart_opts.master_from_port) {
@@ -384,7 +376,6 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                     close();
                 }
             }
-            //immutable foreign_data = hirpc.toHiBON(request).serialize;
             const foreign_doc = request.toDoc;
             import p2p.go_helper;
 
@@ -629,7 +620,6 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
         if (fast_load) {
             auto result = sync_factory.syncSector(DART.Rims.root, &onComplete, &onFailure);
             if (result[1] is null) {
-                // log("Couldn't synchronize root");
                 onFailure(root); //TODO: or just ignore?
             }
             else {
@@ -641,10 +631,8 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
             foreach (sector, is_synchronized; sync_sectors) {
                 if (is_synchronized)
                     continue;
-                // writef("\rSync: %d%%", (reduce!((a,b)=>a+b?0:1)(0,sync_sectors.byValue)*100)/sync_sectors.length);
                 auto result = sync_factory.syncSector(sector, &onComplete, &onFailure);
                 if (result[1] is null) {
-                    // log("Couldn't synchronize sector: %d", sector);
                     onFailure(sector); //TODO: or just ignore?
                 }
                 else {
@@ -664,7 +652,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
 
     void start(SynchronizationFactory factory) //restart with new factory
 
-    
+
 
     in {
         assert(checkState(State.STOP, State.READY, State.ERROR));
@@ -704,7 +692,6 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     }
 
     private void onFailure(const DART.Rims sector) {
-        // writeln("Failed synchronize sector");
         if (checkState(State.FIBER_RUNNING)) {
             failed_sync_sectors ~= sector;
         }
@@ -725,7 +712,6 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
         }
         if (checkState(State.RUNNING)) {
             if (handlerPool.empty) {
-                // writeln("Synchronization pool over");
                 _state = State.OVER;
             }
         }
