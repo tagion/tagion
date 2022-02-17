@@ -70,6 +70,10 @@ private {
         concurrency.send(args);
     }
 
+    void prioritySend(Args...)(Args args) @trusted {
+        concurrency.prioritySend(args);
+    }
+
     void receive(Args...)(Args args) @trusted {
         concurrency.receive(args);
     }
@@ -415,7 +419,7 @@ class StdP2pNet : P2pNet {
         this.owner_task_name = owner_task_name;
         this.internal_task_name = convert_to_net_task_name(owner_task_name);
         this.node = node;
-        @trusted void spawn_sender() {
+        void spawn_sender() {
             this.sender_tid = spawn(&async_send, owner_task_name, discovery_task_name, host, node);
         }
 
