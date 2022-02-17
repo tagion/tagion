@@ -1,5 +1,5 @@
 
-#DFLAGS+=$(DIP25) $(DIP1000)
+DFLAGS+=$(DIP25) $(DIP1000)
 DFLAGS+=$(DPREVIEW)=inclusiveincontracts
 
 #
