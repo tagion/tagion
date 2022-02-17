@@ -98,11 +98,11 @@ static void EnableLogger() {
     }
 
     void listen(
-        string pid,
-        HandlerCallback handler,
-        string tid,
-        Duration timeout = DefaultOptions.timeout,
-        int maxSize = DefaultOptions.maxSize) { //TODO: check if disposed
+            string pid,
+            HandlerCallback handler,
+            string tid,
+            Duration timeout = DefaultOptions.timeout,
+            int maxSize = DefaultOptions.maxSize) { //TODO: check if disposed
         DBuffer pidStr = pid.ToDString();
         DBuffer tidStr = tid.ToDString();
         lib.listenApi(cast(void*) node, pidStr, handler, tidStr,
@@ -110,11 +110,11 @@ static void EnableLogger() {
     }
 
     void listenMatch(
-        string pid,
-        HandlerCallback handler,
-        string tid,
-        string[] pids,
-        Duration timeout = DefaultOptions.timeout, int maxSize = DefaultOptions.maxSize) { //TODO: check if disposed
+            string pid,
+            HandlerCallback handler,
+            string tid,
+            string[] pids,
+            Duration timeout = DefaultOptions.timeout, int maxSize = DefaultOptions.maxSize) { //TODO: check if disposed
         DBuffer pidStr = pid.ToDString();
         DBuffer tidStr = tid.ToDString();
         DBuffer[] pidsStr = pids.map!(protocolId => protocolId.ToDString).array;
@@ -128,9 +128,9 @@ static void EnableLogger() {
     }
 
     shared(RequestStreamI) connect(
-        string addr,
-        bool addrInfo,
-        string[] pids...) {
+            string addr,
+            bool addrInfo,
+            string[] pids...) {
         DBuffer addrStr = addr.ToDString();
         DBuffer[] pidStr = pids.map!(pid => pid.ToDString).array;
         auto listenerResponse = lib.handleApi(cast(void*) node, addrStr,
@@ -139,16 +139,16 @@ static void EnableLogger() {
     }
 
     void connect(
-        string addr,
-        bool addrInfo = false) {
+            string addr,
+            bool addrInfo = false) {
         DBuffer addrStr = addr.ToDString();
         lib.connectApi(cast(void*) node, cast(void*) context, addrStr, addrInfo);
     }
 
     MdnsService startMdns(
-        string randezvous,
-        Duration interval =
-        DefaultOptions.mdnsInterval) {
+            string randezvous,
+            Duration interval =
+            DefaultOptions.mdnsInterval) {
         DBuffer randezvousStr = randezvous.ToDString();
         return new MdnsService(lib.createMdnsApi(cast(void*) context,
                 cast(void*) node, cast(int)(interval.total!"msecs"), randezvousStr).cgocheck);
@@ -295,17 +295,17 @@ static void EnableLogger() {
     }
 }
 
-@trusted synchronized class RequestStream : Stream,  RequestStreamI  {
+@trusted synchronized class RequestStream : Stream, RequestStreamI {
     @disable this();
     private this(const void* ptr, const ulong id) {
         super(ptr, id);
     }
 
     void listen(
-        HandlerCallback handler,
-        string tid,
-        Duration timeout = DefaultOptions.timeout,
-        int maxSize = DefaultOptions.maxSize) {
+            HandlerCallback handler,
+            string tid,
+            Duration timeout = DefaultOptions.timeout,
+            int maxSize = DefaultOptions.maxSize) {
         DBuffer tidStr = tid.ToDString();
         lib.listenStreamApi(cast(void*) stream, cast(int) _identifier, handler,
                 tidStr, cast(int)(timeout.total!"msecs"), maxSize).cgocheck;
@@ -341,8 +341,8 @@ static void EnableLogger() {
     }
 
     MdnsNotifee registerNotifee(
-        HandlerCallback callback,
-        string tid) {
+            HandlerCallback callback,
+            string tid) {
         DBuffer tidStr = tid.ToDString();
         auto notifee = lib.registerNotifeeApi(cast(void*) service, callback, tidStr).cgocheck;
         return new MdnsNotifee(notifee, this);

@@ -139,6 +139,7 @@ synchronized class ConnectionPool(T : shared(StreamI), TKey) {
 // version(none)
 unittest {
     import p2p.node : Stream;
+
     @trusted synchronized class FakeStream : Stream {
         protected bool _writeBytesCalled = false;
         @property bool writeBytesCalled() {

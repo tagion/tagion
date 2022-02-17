@@ -27,42 +27,41 @@ synchronized interface StreamI {
 synchronized interface RequestStreamI : StreamI {
     void reset();
     void listen(
-        HandlerCallback handler,
-        string tid,
-        Duration timeout = DefaultOptions.timeout,
-        int maxSize = DefaultOptions.maxSize);
+            HandlerCallback handler,
+            string tid,
+            Duration timeout = DefaultOptions.timeout,
+            int maxSize = DefaultOptions.maxSize);
 }
-
 
 @safe synchronized interface NodeI {
     // this(string addr, int seed);
     void listen(
-        string pid,
-        HandlerCallback handler,
-        string tid,
-        Duration timeout = DefaultOptions.timeout,
-        int maxSize = DefaultOptions.maxSize);
+            string pid,
+            HandlerCallback handler,
+            string tid,
+            Duration timeout = DefaultOptions.timeout,
+            int maxSize = DefaultOptions.maxSize);
     void listenMatch(
-        string pid,
-        HandlerCallback handler,
-        string tid,
-        string[] pids,
-        Duration timeout = DefaultOptions.timeout,
-        int maxSize = DefaultOptions.maxSize);
+            string pid,
+            HandlerCallback handler,
+            string tid,
+            string[] pids,
+            Duration timeout = DefaultOptions.timeout,
+            int maxSize = DefaultOptions.maxSize);
     void closeListener(string pid);
     shared(RequestStreamI) connect(
-        string addr,
-        bool addrInfo,
-        string[] pids...);
+            string addr,
+            bool addrInfo,
+            string[] pids...);
 
     void connect(
-        string addr,
-        bool addrInfo = false);
+            string addr,
+            bool addrInfo = false);
 
     MdnsServiceI startMdns(
-        string randezvous,
-        Duration interval = DefaultOptions.mdnsInterval);
-//    AutoNatInterface startAutoNAT();
+            string randezvous,
+            Duration interval = DefaultOptions.mdnsInterval);
+    //    AutoNatInterface startAutoNAT();
     @property string Id();
     @property string Addresses();
     @property string PublicAddress();
@@ -82,8 +81,8 @@ interface MdnsNotifeeI {
 @safe
 interface MdnsServiceI {
     MdnsNotifeeI registerNotifee(
-        HandlerCallback callback,
-        string tid);
+            HandlerCallback callback,
+            string tid);
     void close();
 }
 

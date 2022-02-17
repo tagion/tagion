@@ -463,6 +463,16 @@ template assumeTrusted(alias F) {
     }
 }
 
+// auto assumeTrusted1(F)(lazy F func) {
+// }
+
+// template assumeTrusted(alias T) {
+//     import std.traits;
+//     static assert(isUnsafe!T);
+//     T assumeTrusted(T)(lazy T expr) @trusted {
+//         return expr;
+//     }
+// }
 ///
 @safe
 unittest {

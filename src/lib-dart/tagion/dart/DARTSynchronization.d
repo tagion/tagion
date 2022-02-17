@@ -227,18 +227,19 @@ class ReplayPool(T) {
 interface SynchronizationFactory {
     alias OnFailure = void delegate(const DART.Rims sector);
     alias SyncSectorResponse = Tuple!(uint, ResponseHandler);
-pragma(msg, "SyncSectorResponse :", SyncSectorResponse);
+    pragma(msg, "SyncSectorResponse :", SyncSectorResponse);
     bool canSynchronize();
     SyncSectorResponse syncSector(
-	const DART.Rims sector,
-	void delegate(string) oncomplete,
-	OnFailure onfailure);
+            const DART.Rims sector,
+            void delegate(string) oncomplete,
+            OnFailure onfailure);
 }
 
-alias ConnectionPoolT=ConnectionPool!(shared p2plib.StreamI, ulong);
+alias ConnectionPoolT = ConnectionPool!(shared p2plib.StreamI, ulong);
 @safe
 class P2pSynchronizationFactory : SynchronizationFactory {
     import tagion.dart.DARTOptions;
+
     protected {
         DART dart;
         shared ConnectionPoolT connection_pool;
@@ -252,11 +253,11 @@ class P2pSynchronizationFactory : SynchronizationFactory {
     immutable(Pubkey) pkey;
 
     this(DART dart,
-        const ulong port,
-        shared p2plib.NodeI node,
-        shared ConnectionPoolT connection_pool,
-        immutable(DARTOptions) dart_opts,
-        immutable(Pubkey) pkey) {
+            const ulong port,
+            shared p2plib.NodeI node,
+            shared ConnectionPoolT connection_pool,
+            immutable(DARTOptions) dart_opts,
+            immutable(Pubkey) pkey) {
         this.dart = dart;
         this.rnd = Random(unpredictableSeed);
         this.node = node;
@@ -276,9 +277,9 @@ class P2pSynchronizationFactory : SynchronizationFactory {
     }
 
     SyncSectorResponse syncSector(
-        const DART.Rims sector,
-        void delegate(string) @safe oncomplete,
-        OnFailure onfailure) {
+            const DART.Rims sector,
+            void delegate(string) @safe oncomplete,
+            OnFailure onfailure) {
         SyncSectorResponse syncWith(NodeAddress address) @safe {
             import p2p.go_helper;
 
@@ -296,7 +297,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
 
             try {
                 // auto stream_id = (() @trusted => connect())();
-                const stream_id=connect;
+                const stream_id = connect;
                 auto filename = format("%s_%s", tempfile, sector);
                 pragma(msg, "fixme(alex): Why 0x80");
                 enum BLOCK_SIZE = 0x80;
@@ -663,7 +664,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
 
     void start(SynchronizationFactory factory) //restart with new factory
 
-
+    
 
     in {
         assert(checkState(State.STOP, State.READY, State.ERROR));

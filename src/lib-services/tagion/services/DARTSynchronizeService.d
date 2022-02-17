@@ -75,10 +75,10 @@ struct ServiceState(T) {
 }
 
 void dartSynchronizeServiceTask(Net : SecureNet)(
-    immutable(Options) opts,
-    shared(p2plib.NodeI) node,
-    shared(Net) master_net,
-    immutable(DART.SectorRange) sector_range) nothrow {
+        immutable(Options) opts,
+        shared(p2plib.NodeI) node,
+        shared(Net) master_net,
+        immutable(DART.SectorRange) sector_range) nothrow {
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
@@ -148,8 +148,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         auto connectionPool = new shared(ConnectionPoolT)(
                 opts.dart.sync.host.timeout.msecs);
         auto sync_factory = new P2pSynchronizationFactory(
-            dart, opts.port, node,
-            connectionPool, opts.dart, net.pubkey);
+                dart, opts.port, node,
+                connectionPool, opts.dart, net.pubkey);
         auto syncPool = new DARTSynchronizationPool!(StdHandlerPool!(ResponseHandler, uint))(dart.sectors,
                 journalReplayFiber, opts.dart);
         bool request_handling = false;
@@ -302,7 +302,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     //     ownerTid.send(t);
                     // }
 
-
+                    
 
             );
             try {

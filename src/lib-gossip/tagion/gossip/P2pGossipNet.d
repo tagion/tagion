@@ -1,7 +1,7 @@
 module tagion.gossip.P2pGossipNet;
 
 import std.stdio;
-import std.concurrency;
+import std.concurrency : Tid, thisTid;
 import std.format;
 import std.array : join;
 import std.conv : to;
@@ -12,7 +12,7 @@ import std.typecons;
 import tagion.options.HostOptions;
 import tagion.dart.DARTOptions;
 
-import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType, Control;
+import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType, Control, assumeTrusted;
 
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous : cutHex;
@@ -37,7 +37,8 @@ import tagion.crypto.secp256k1.NativeSecp256k1;
 //import tagion.services.MdnsDiscoveryService;
 //import p2plib = p2p.node;
 import p2p.callback;
-import p2plib=p2p.interfaces;
+import p2plib = p2p.interfaces;
+
 //import p2p.cgo.helper;
 import std.array;
 import tagion.utils.StdTime;
@@ -49,6 +50,34 @@ import tagion.communication.HiRPC;
 import std.random : Random, unpredictableSeed, uniform;
 
 import std.datetime;
+
+private {
+    import concurrency = std.concurrency;
+
+    alias ownerTid = assumeTrusted!(concurrency.ownerTid);
+    //alias Tid=assumeTrusted!(concurrency.ownerTid);
+    alias locate = assumeTrusted!(concurrency.locate);
+    //alias receive=assumeTrusted!(concurrency.receive);
+    //alias send=assumeTrusted!(concurrency.send);
+    //alias spawn(=assumeTrusted!(concurrency.spawn);
+    //alias receiveOnly=assumeTrusted!(concurrency.receiveOnly);
+
+    Tid spawn(Args...)(Args args) @trusted {
+        return concurrency.spawn(args);
+    }
+
+    void send(Args...)(Args args) @trusted {
+        concurrency.send(args);
+    }
+
+    void receive(Args...)(Args args) @trusted {
+        concurrency.receive(args);
+    }
+
+    T receiveOnly(T)() @trusted {
+        return concurrency.receiveOnly!T;
+    }
+}
 
 @safe
 synchronized
@@ -94,9 +123,9 @@ class ConnectionPool(T : shared(p2plib.StreamI), TKey) {
     }
 
     void add(
-        const TKey key,
-        shared T connection,
-        const bool long_lived = false)
+            const TKey key,
+            shared T connection,
+            const bool long_lived = false)
     in {
         assert(connection.alive);
     }
@@ -232,6 +261,7 @@ unittest {
     }
 }
 
+@safe
 class ConnectionPoolBridge {
     ulong[Pubkey] lookup;
 
@@ -289,10 +319,10 @@ struct NodeAddress {
     // }
 
     this(
-        string address,
-        immutable(DARTOptions) dart_opts,
-        const ulong port_base,
-        bool marshal = false) {
+            string address,
+            immutable(DARTOptions) dart_opts,
+            const ulong port_base,
+            bool marshal = false) {
         import std.string;
 
         try {
@@ -332,9 +362,9 @@ struct NodeAddress {
     }
 
     static Tuple!(ushort, ushort) calcAngleRange(
-        immutable(DARTOptions) dart_opts,
-        const ulong node_number,
-        const ulong max_nodes) {
+            immutable(DARTOptions) dart_opts,
+            const ulong node_number,
+            const ulong max_nodes) {
         import std.math : ceil, floor;
 
         float delta = (cast(float)(dart_opts.sync.netToAng - dart_opts.sync.netFromAng)) / max_nodes;
@@ -376,10 +406,10 @@ class StdP2pNet : P2pNet {
     protected string internal_task_name;
 
     this(
-        string owner_task_name,
-        string discovery_task_name,
-        const(HostOptions) host,
-        shared p2plib.NodeI node) {
+            string owner_task_name,
+            string discovery_task_name,
+            const(HostOptions) host,
+            shared p2plib.NodeI node) {
         //        super(hashgraph);
         this.owner_task_name = owner_task_name;
         this.internal_task_name = convert_to_net_task_name(owner_task_name);
@@ -442,10 +472,10 @@ class StdP2pNet : P2pNet {
 
 @safe
 static void async_send(
-    string task_name,
-    string discovery_task_name,
-    const(HostOptions) host,
-    shared p2plib.NodeI node) {
+        string task_name,
+        string discovery_task_name,
+        const(HostOptions) host,
+        shared p2plib.NodeI node) {
     scope (exit) {
         // log("SENDER CLOSED!!");
         ownerTid.send(Control.END);
@@ -515,17 +545,17 @@ static void async_send(
     do {
         log("handling %s", thisTid);
         receive(
-            (const(Pubkey) channel, const(Document) doc, uint id) {
-                log("received sender %d", id);
-                try {
-                    send_to_channel(channel, doc);
-                }
-                catch (Exception e) {
-                    log("Error on sending to channel: %s", e.msg);
-                    ownerTid.send(channel);
-                }
-            },
-            (Pubkey channel, uint id) {
+                (const(Pubkey) channel, const(Document) doc, uint id) {
+            log("received sender %d", id);
+            try {
+                send_to_channel(channel, doc);
+            }
+            catch (Exception e) {
+                log("Error on sending to channel: %s", e.msg);
+                ownerTid.send(channel);
+            }
+        },
+                (Pubkey channel, uint id) {
             log("Closing connection: %s", channel.cutHex);
             try {
                 auto streamIdPtr = channel in connectionPoolBridge.lookup;
@@ -542,15 +572,16 @@ static void async_send(
         },
 
                 (Response!(p2plib.ControlCode.Control_Connected) resp) {
-                    log("Client Connected key: %d", resp.key);
-                    connectionPool.add(resp.key, resp.stream, true);
-                }, (Response!(p2plib.ControlCode.Control_Disconnected) resp) {
+            log("Client Connected key: %d", resp.key);
+            connectionPool.add(resp.key, resp.stream, true);
+        }, (Response!(p2plib.ControlCode.Control_Disconnected) resp) {
             synchronized (connectionPoolBridge) {
                 log("Client Disconnected key: %d", resp.key);
                 connectionPool.close(cast(void*) resp.key);
                 connectionPoolBridge.removeConnection(resp.key);
             }
-        }, (Response!(p2plib.ControlCode.Control_RequestHandled) resp) {
+        },
+                (Response!(p2plib.ControlCode.Control_RequestHandled) resp) {
             import tagion.hibon.Document;
 
             auto doc = Document(resp.data);
@@ -578,7 +609,8 @@ static void async_send(
     while (!stop);
 }
 
-@safe class P2pGossipNet : StdP2pNet, GossipNet {
+@safe
+class P2pGossipNet : StdP2pNet, GossipNet {
     protected {
         sdt_t _current_time;
         bool[Pubkey] pks;
@@ -586,12 +618,11 @@ static void async_send(
     }
     Random random;
 
-    this(
-        Pubkey pk,
-        string owner_task_name,
-        string discovery_task_name,
-        const(HostOptions) host,
-        shared p2plib.NodeI node) {
+    this(Pubkey pk,
+            string owner_task_name,
+            string discovery_task_name,
+            const(HostOptions) host,
+            shared p2plib.NodeI node) {
         super(owner_task_name, discovery_task_name, host, node);
         this.random = Random(unpredictableSeed);
         this.mypk = pk;
