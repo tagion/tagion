@@ -9,7 +9,6 @@ import std.file;
 import std.file : fwrite = write;
 import std.typecons;
 
-pragma(msg, "fixme(cbr): Eliminated dependency of Services Options");
 import tagion.options.HostOptions;
 import tagion.dart.DARTOptions;
 
@@ -281,15 +280,19 @@ struct NodeAddress {
     string id;
     uint port;
     DART.SectorRange sector;
-    version (none) this(ref return scope const(NodeAddress) node_address) inout {
-        address = node_address.address;
-        is_marshal = is_marshal;
-        id = node_address.id;
-        port = node_address.port;
-        sector = node_address.sector;
-    }
+    // version (none) this(ref return scope const(NodeAddress) node_address) inout {
+    //     address = node_address.address;
+    //     is_marshal = is_marshal;
+    //     id = node_address.id;
+    //     port = node_address.port;
+    //     sector = node_address.sector;
+    // }
 
-    this(string address, immutable(DARTOptions) dart_opts, const ulong port_base, bool marshal = false) {
+    this(
+        string address,
+        immutable(DARTOptions) dart_opts,
+        const ulong port_base,
+        bool marshal = false) {
         import std.string;
 
         try {
@@ -328,7 +331,10 @@ struct NodeAddress {
         }
     }
 
-    static Tuple!(ushort, ushort) calcAngleRange(immutable(DARTOptions) dart_opts, const ulong node_number, const ulong max_nodes) {
+    static Tuple!(ushort, ushort) calcAngleRange(
+        immutable(DARTOptions) dart_opts,
+        const ulong node_number,
+        const ulong max_nodes) {
         import std.math : ceil, floor;
 
         float delta = (cast(float)(dart_opts.sync.netToAng - dart_opts.sync.netFromAng)) / max_nodes;
@@ -434,6 +440,7 @@ class StdP2pNet : P2pNet {
     }
 }
 
+@safe
 static void async_send(
     string task_name,
     string discovery_task_name,
