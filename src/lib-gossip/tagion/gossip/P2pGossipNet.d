@@ -458,12 +458,12 @@ class StdP2pNet : P2pNet {
         }
     }
 
-    @trusted
     protected void send_remove(Pubkey pk) {
-        import std.concurrency : tsend = send, Tid, locate;
+        alias tsend = .send;
+//        import std.concurrency : tsend = send, Tid, locate;
 
         auto sender = locate(internal_task_name);
-        if (sender != Tid.init) {
+        if (sender !is Tid.init) {
             counter++;
             // log("sending close to sender %d", counter);
             tsend(sender, pk, counter);
