@@ -64,6 +64,7 @@ DCOMPILE_ONLY := -c
 DPREVIEW :=--preview
 NO_OBJ ?= --o-
 DJSON ?= --Xf
+DEXPORT_DYN?=-L-export-dynamic
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -129,6 +130,11 @@ endif
 
 INCLFLAGS := ${addprefix -I,${shell ls -d $(DSRC)/*/ 2> /dev/null || true | grep -v wrap-}}
 
+DEBUG_FLAGS+=$(DDEBUG)
+DEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
+DEBUG_FLAGS+=$(DEXPORT_DYN)
+
+DEBUGFLAG+=
 env-compiler:
 	$(PRECMD)
 	${call log.header, $@ :: compiler}
@@ -155,6 +161,8 @@ env-compiler:
 	${call log.kvp, DCOMPILE_ONLY, $(DCOMPILE_ONLY)}
 	${call log.kvp, DBETTERC, $(DBETTERC)}
 	${call log.kvp, DDEBUG_SYMBOLS , $(DDEBUG_SYMBOLS)}
+	${call log.kvp, DEXPORT_DYN, $(DEXPORT_DYN)}
+	${call log.kvp, DEBUG_FLAGS, "$(DEBUG_FLAGS)"}
 	${call log.kvp, DFLAGS, "$(DFLAGS)"}
 	${call log.kvp, LDCFLAGS, "$(LDCFLAGS)"}
 	${call log.kvp, SOURCEFLAGS, "$(SOURCEFLAGS)"}
