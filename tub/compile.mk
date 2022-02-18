@@ -55,10 +55,12 @@ $(DBIN)/%:
 UNITTEST_FLAGS?=$(DUNITTEST) $(DDEBUG) $(DDEBUG_SYMBOLS)
 UNITTEST_DOBJ=$(DOBJ)/unittest
 UNITTEST_BIN?=$(DBIN)/unittest
+UNITTEST_LOG?=$(DLOG)/unittest.log
 
+proto-unittest-run: $(DLOG)/.way
 proto-unittest-run: $(UNITTEST_BIN)
 	$(PRECMD)
-	$(UNITTEST_BIN)
+	$(SCRIPT_LOG) $(UNITTEST_BIN) $(UNITTEST_LOG)
 
 $(UNITTEST_BIN): $$(DFILES)
 	$(PRECMD)
