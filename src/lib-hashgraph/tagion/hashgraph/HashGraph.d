@@ -532,7 +532,8 @@ class HashGraph {
                         received_node.state = NONE;
                         return buildWavefront(BREAKING_WAVE);
                     }
-                    check(received_wave.epacks.length is 0, ConsensusFailCode.GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
+                    check(received_wave.epacks.length is 0, ConsensusFailCode
+                            .GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
                     received_node.state = received_wave.state;
 
                     immutable epack = event_pack(time, null, payload());
@@ -704,7 +705,8 @@ class HashGraph {
     private void remove_node(Node n) nothrow
     in {
         assert(n !is null);
-        assert(n.channel in nodes, format("Node id %d is not removable because it does not exist", n.node_id));
+        assert(n.channel in nodes, format("Node id %d is not removable because it does not exist", n
+                .node_id));
     }
     do {
         nodes.remove(n.channel);
@@ -824,10 +826,12 @@ class HashGraph {
             bool ok = true;
 
             foreach (ref h1_events, ref h2_events; lockstep(h1_nodes, h2_nodes)) {
-                while (!h1_events.empty && higher(h1_events.front.altitude, h2_events.front.altitude)) {
+                while (!h1_events.empty && higher(h1_events.front.altitude, h2_events
+                        .front.altitude)) {
                     h1_events.popFront;
                 }
-                while (!h2_events.empty && higher(h2_events.front.altitude, h1_events.front.altitude)) {
+                while (!h2_events.empty && higher(h2_events.front.altitude, h1_events
+                        .front.altitude)) {
                     h2_events.popFront;
                 }
                 bool check(bool ok, const ErrorCode code) {
@@ -1024,7 +1028,8 @@ class HashGraph {
 
                     while (!stop) {
                         while (!authorising.empty(_hashgraph.channel)) {
-                            const received = _hashgraph.hirpc.receive(authorising.receive(_hashgraph.channel));
+                            const received = _hashgraph.hirpc.receive(
+                                    authorising.receive(_hashgraph.channel));
                             _hashgraph.wavefront(
                                     received,
                                     time,

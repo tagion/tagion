@@ -1,9 +1,12 @@
 module tagion.gossip.InterfaceNet;
 
+import tagion.hashgraph.HashGraphBasic;
+import tagion.hashgraph.Event;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.Document : Document;
 
+//import tagion.utils.Queue;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.Basic;
 import tagion.communication.HiRPC;
@@ -14,6 +17,18 @@ import tagion.communication.HiRPC;
 
 alias check = consensusCheck!(GossipConsensusException);
 alias consensus = consensusCheckArguments!(GossipConsensusException);
+
+//import tagion.hashgraph.HashGraphBasic : Tides;
+version (none) @safe
+interface NetCallbacks : EventMonitorCallbacks {
+
+    //    void sent_tidewave(immutable(Pubkey) receiving_channel, const(Tides) tides);
+
+    void receive(const(Document) doc);
+    void send(const Pubkey channel, const(HiRPC.Sender) sender);
+
+    void consensus_failure(const(ConsensusException) e);
+}
 
 @safe
 interface P2pNet {

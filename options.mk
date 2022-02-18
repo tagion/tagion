@@ -5,6 +5,12 @@
 #
 
 #
+# BetterC
+# Only like part for better C
+#
+# BETTERC=1
+
+#
 # Platforms
 #
 

@@ -1,3 +1,12 @@
+# Ignore all
+*
+
+# Unignore all with extensions
+!*.*
+
+# Unignore all dirs
+!*/
+
 .DS_Store
 
 #
@@ -16,7 +25,7 @@ local.*
 gen.*
 
 # Local backup
-*.parked
+*.parked*
 
 # Root marker
 .root

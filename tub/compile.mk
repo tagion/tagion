@@ -1,61 +1,70 @@
 
-DFLAGS+=$(DIP25) $(DIP1000)
+#DFLAGS+=$(DIP25) $(DIP1000)
 DFLAGS+=$(DPREVIEW)=inclusiveincontracts
+
+#
+# Change extend of the LIB
+#
+LIBEXT=${if $(SHARED),$(DLLEXT),$(STAEXT)}
+
 #
 # D compiler
 #
-$(DOBJ)/%.o: $(PREBUILD)
-
-$(DOBJ)/%.o: $(DSRC)/%.d
+$(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 	$(PRECMD)
-	${call log.kvp, compile$(MODE), $(DMODULE)}
+	${call log.kvp, compile, $(MODE)}
 	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $< $(DCOMPILE_ONLY) $(OUTPUT)$@
 
+
 #
-# Unittest
+# Compile and link or split link
+#
+ifdef SPLIT_LINKER
+#$(DOBJ)/%.$(OBJEXT): $(PREBUILD)
+
+$(DOBJ)/lib%.$(OBJEXT): $(DOBJ)/.way
+	$(PRECMD)
+	${call log.kvp, compile$(MODE)}
+	echo ${DFILES}
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(DCOMPILE_ONLY)  $(OUTPUT)$@
+
+$(DLIB)/lib%.$(DLLEXT): $(DOBJ)/lib%.$(OBJEXT)
+	$(PRECMD)
+	${call log.kvp, split-link$(MODE)}
+	echo ${filter %.$(OBJEXT),$?}
+	$(LD) ${LDFLAGS} ${filter %.$(OBJEXT),$?} $(LIBS) $(OBJS) -o$@
+else
+$(DLIB)/%.$(DLLEXT):
+	$(PRECMD)
+	${call log.kvp, link$(MODE), $(DMODULE)}
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) ${LDFLAGS} $(LIBS) $(OBJS) $(DCOMPILE_ONLY)  $(OUTPUT)$@
+endif
+
+#
+# proto targets for binaries
+#
+
+$(DBIN)/%:
+	$(PRECMD)
+	${call log.kvp, bin$(MOD), $*}
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) ${LDFLAGS} $(LIBS) $(OBJS) $(OUTPUT)$@
+
+#
+# Proto targets for unittest
 #
 UNITTEST_FLAGS?=$(DUNITTEST) $(DDEBUG) $(DDEBUG_SYMBOLS)
-UNITTEST_DOBJ=$(DOBJ)/unittest/
+UNITTEST_DOBJ=$(DOBJ)/unittest
 UNITTEST_BIN?=$(DBIN)/unittest
 
-unittest: $(UNITTEST_DOBJ)/.way
-
-ifndef DEVMODE
-$(UNITTEST_BIN): $(DFILES)
+proto-unittest-run: $(UNITTEST_BIN)
 	$(PRECMD)
-	@echo $<
-	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) ${addprefix -I,$(DINC)} ${filter %.d,${sort $?}} $(LIBS) $(OUTPUT)$@
-
-unittest-%:
-	@echo
-	$(MAKE) UNITTEST_BIN=$(DBIN)/$@ DSRCALL="$(DSRCS.$*)" $(DBIN)/$@
-endif
-
-ifdef UNITTEST
-
-$(DOBJALL): MODE=-unittest
-
-unittest: $(UNITTEST_BIN)
 	$(UNITTEST_BIN)
 
-.PHONY: unittest
-
-$(DOBJALL):DFLAGS+=$(UNITTEST_FLAGS)
-
-ifdef DEVMODE
-$(UNITTEST_BIN): $(DOBJALL)
+$(UNITTEST_BIN): $$(DFILES)
 	$(PRECMD)
-	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) ${addprefix -I,$(DINC)} ${filter %.o,${sort $?}} $(LIBS) $(OUTPUT)$@
+	@echo deps $?
+	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OUTPUT)$@
 
-endif
-
-else
-
-unittest:
-	mkdir -p $(DOBJ)/$@
-	$(MAKE) UNITTEST=1 DOBJ=$(UNITTEST_DOBJ) $@
-
-endif
 
 clean-unittest:
 	$(PRECMD)

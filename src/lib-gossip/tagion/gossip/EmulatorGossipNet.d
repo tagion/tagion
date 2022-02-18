@@ -6,17 +6,26 @@ import std.format;
 import std.array : join;
 import std.conv : to;
 
-import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType, assumeTrusted;
+// import tagion.revision;
+//import tagion.services.Options;
+import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType;
 
+//import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous : cutHex;
 
+// import tagion.utils.Random;
 import tagion.utils.LRU;
 import tagion.utils.Queue;
+
+//import tagion.Keywords;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.gossip.InterfaceNet;
 
+// import tagion.gossip.GossipNet;
+//import tagion.hashgraph.HashGraph;
+import tagion.hashgraph.Event;
 import tagion.basic.ConsensusExceptions;
 
 import tagion.basic.Logger;
@@ -32,12 +41,13 @@ import core.time;
 import std.datetime;
 import core.thread;
 
-static uint getTids(Tid[] tids) @safe {
+@trusted
+static uint getTids(Tid[] tids) {
     uint result = uint.max;
     foreach (i, ref tid; tids) {
         immutable uint_i = cast(uint) i;
         immutable taskname = uint_i.get_node_name;
-        tid = assumeTrusted!locate(taskname);
+        tid = locate(taskname);
         if (tid is thisTid) {
             result = uint_i;
         }
@@ -49,10 +59,11 @@ static uint getTids(Tid[] tids) @safe {
 class EmulatorGossipNet : GossipNet {
     private uint node_counter = 0;
     private Duration duration;
+    @trusted
     static Tid getTidByNodeNumber(const uint i) {
         immutable taskname = i.get_node_name;
         log("trying to locate: %s", taskname);
-        auto tid = assumeTrusted!locate(taskname);
+        auto tid = locate(taskname);
         return tid;
     }
 
@@ -126,14 +137,39 @@ class EmulatorGossipNet : GossipNet {
         return send_channel;
     }
 
+    //     void dump(const(HiBON[]) events) const {
+    //         foreach(e; events) {
+    //             auto pack_doc=Document(e.serialize);
+    //             immutable pack=buildEventPackage(this, pack_doc);
+    // //            immutable fingerprint=pack.event_body.fingerprint;
+    //             log("\tsending %s f=%s a=%d", pack.pubkey.cutHex, pack.fingerprint.cutHex, pack.event_body.altitude);
+    //         }
+    //     }
+
+    version (none) void dump(const(HiBON[]) events) const {
+        foreach (e; events) {
+            auto pack_doc = Document(e.serialize);
+            immutable pack = buildEventPackage(this, pack_doc);
+            //            immutable fingerprint=pack.event_body.fingerprint;
+            log("\tsending %s f=%s a=%d", pack.pubkey.cutHex, pack.fingerprint.cutHex, pack
+                    .event_body.altitude);
+        }
+    }
+
+    @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
         import std.algorithm.searching : countUntil;
         import tagion.hibon.HiBONJSON;
 
         log.trace("send to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
                 .toDoc.serialize.length);
-        assumeTrusted!(Thread.sleep)(duration);
-        assumeTrusted!({_tids[channel].send(sender.toDoc);});
+        // log("%s", sender.toDoc.toJSON);
+        // if ( callbacks ) {
+        //     callbacks.send(channel, sender.toDoc);
+        // }
+        // log(_tids)
+        Thread.sleep(duration);
+        _tids[channel].send(sender.toDoc);
         log.trace("sended");
     }
 }

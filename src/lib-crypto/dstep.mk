@@ -25,3 +25,8 @@ test57:
 	@echo DIFILES.tagion.crypto.secp256k1.c=$(DIFILES.tagion.crypto.secp256k1.c)
 	@echo LCRYPTO_DIROOT=$(LCRYPTO_DIROOT)
 	@echo CRYPTO_DFILES $(CRYPTO_DFILES)
+
+#env-crypto:
+# 	$(PRECMD)
+# 	${call log.header, $@ :: env}
+# 	${call $(DSRC_SECP256K1)

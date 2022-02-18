@@ -1,13 +1,13 @@
 
 SOURCE:=hibon
--include get.dfiles.mk
+-include $(BETTERCROOT)/gen.dfiles.mk
 ifndef DFILES
 prepare: gen.dfiles.mk
 endif
 
 DC?=dmd
 #DFLAGS+=-betterC
-DFLAGS+=-I$(BETTERCREPOROOT)
+DFLAGS+=-I$(BETTERCROOT)
 
 TESTFLAGS+=$(DFLAGS)
 TESTFLAGS+=-unittest

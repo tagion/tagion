@@ -421,7 +421,7 @@ struct HiRPC {
         return id;
     }
 
-    const(Sender) opDispatch(string method, T)(const T params, const uint id = uint.max) const {
+    const(Sender) opDispatch(string method, T)(ref auto const T params, const uint id = uint.max) const {
         return action(method, params, id);
     }
 

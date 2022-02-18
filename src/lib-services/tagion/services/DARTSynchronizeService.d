@@ -5,7 +5,7 @@ import std.concurrency;
 
 import tagion.services.Options;
 
-import p2plib = p2p.node;
+import p2plib = p2p.interfaces;
 
 //import p2p.connection;
 import p2p.callback;
@@ -74,8 +74,11 @@ struct ServiceState(T) {
     }
 }
 
-void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
-        shared(p2plib.Node) node, shared(Net) master_net, immutable(DART.SectorRange) sector_range) nothrow {
+void dartSynchronizeServiceTask(Net : SecureNet)(
+        immutable(Options) opts,
+        shared(p2plib.NodeI) node,
+        shared(Net) master_net,
+        immutable(DART.SectorRange) sector_range) nothrow {
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
@@ -134,7 +137,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
             }
         }
 
-        void recorderReplayFunc(const(RecordFactory.Recorder) recorder) @safe  {
+        void recorderReplayFunc(const(RecordFactory.Recorder) recorder) @safe {
             dart.modify(recorder);
         }
 
@@ -142,9 +145,10 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
         auto recorderReplayFiber = new ReplayPool!(immutable(RecordFactory.Recorder))(
                 &recorderReplayFunc);
 
-        auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(
+        auto connectionPool = new shared(ConnectionPoolT)(
                 opts.dart.sync.host.timeout.msecs);
-        auto sync_factory = new P2pSynchronizationFactory(dart, opts.port, node,
+        auto sync_factory = new P2pSynchronizationFactory(
+                dart, opts.port, node,
                 connectionPool, opts.dart, net.pubkey);
         auto syncPool = new DARTSynchronizationPool!(StdHandlerPool!(ResponseHandler, uint))(dart.sectors,
                 journalReplayFiber, opts.dart);
@@ -297,7 +301,10 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
                     //     stop=true;
                     //     ownerTid.send(t);
                     // }
-                    );
+
+                    
+
+            );
             try {
                 connectionPool.tick();
                 if (opts.dart.synchronize) {
@@ -389,7 +396,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
 
 private struct ActiveNodeSubscribtion(Net : HashNet) {
     protected Tid handlerTid;
-    protected shared(p2plib.RequestStream) stream;
+    protected shared(p2plib.RequestStreamI) stream;
     protected bool subscribed;
     @disable this();
     // protected Net net;
@@ -402,7 +409,7 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
         this.opts = opts;
     }
 
-    void tryToSubscribe(NodeAddress[Pubkey] node_addreses, shared(p2plib.Node) node) {
+    void tryToSubscribe(NodeAddress[Pubkey] node_addreses, shared(p2plib.NodeI) node) {
         bool subscribeTo(NodeAddress address) {
             try {
                 stream = node.connect(address.address, address.is_marshal,
@@ -460,9 +467,8 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
                 if (cntrl == Control.STOP) {
                     stop = true;
                 }
-            }, (Response!(ControlCode.Control_Disconnected) resp) {
-                writeln("Subscribe Disconnected key: ", resp.key);
-            }, (Response!(ControlCode.Control_RequestHandled) response) {
+            }, (Response!(ControlCode.Control_Disconnected) resp) { writeln("Subscribe Disconnected key: ", resp.key); }, (
+                    Response!(ControlCode.Control_RequestHandled) response) {
                 writeln("Subscribe recorder received");
                 auto doc = Document(response.data);
                 immutable recorder = cast(immutable) manufactor.recorder(doc);
