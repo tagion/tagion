@@ -53,8 +53,8 @@ prebuild:
 #
 # This is the HOST target platform
 #
-HOST_PLATFORM=${call join-with,-,$(GETARCH) $(GETHOSTOS) $(GETOS)}
-PLATFORM?=$(HOST_PLATFORM)
+HOST=${call join-with,-,$(GETARCH) $(GETHOSTOS) $(GETOS)}
+PLATFORM?=$(HOST)
 
 #
 # Platform

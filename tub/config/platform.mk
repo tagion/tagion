@@ -2,7 +2,10 @@
 env-platform:
 	$(PRECMD)
 	${call log.header, $@ :: env}
-	${call log.kvp, HOST_PLATFORM, $(HOST_PLATFORM)}
+	${call log.kvp, GETARHC, $(GETARCH)}
+	${call log.kvp, GETHOSTOS, $(GETHOSTOS)}
+	${call log.kvp, GETOS, $(GETOS)}
+	${call log.kvp, HOST, $(HOST)}
 	${call log.kvp, PLATFORM, $(PLATFORM)}
 	${call log.env, PLATFORMS, $(PLATFORMS)}
 	${call log.env, CROSS_ENABLED, $(CROSS_ENABLED)}
