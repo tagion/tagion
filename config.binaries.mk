@@ -120,3 +120,24 @@ clean-tagionlogservicetest:
 clean: clean-tagionlogservicetest
 
 BIN_TARGETS+=target-tagionlogservicetest
+
+
+#
+# Subscription utility
+#
+# FIXME(IB) should be removed when ddeps works correctly
+target-tagionsubscription: LIBS+=$(LIBOPENSSL)
+target-tagionsubscription: LIBS+=$(LIBSECP256K1)
+target-tagionsubscription: LIBS+=$(LIBP2PGOWRAPPER)
+
+target-tagionsubscription: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-subscription/*"}
+target-tagionsubscription: $(DBIN)/tagionsubscription
+
+clean-tagionsubscription:
+	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RM) $(DBIN)/tagionsubscription
+
+clean: clean-tagionsubscription
+
+BIN_TARGETS+=target-tagionsubscription

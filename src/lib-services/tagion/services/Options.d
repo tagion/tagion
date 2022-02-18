@@ -219,24 +219,24 @@ struct Options {
 
     mixin JSONConfig;
     version (none) {
-        void parseJSON(string json_text) {
-            auto json = JSON.parseJSON(json_text);
-            parse(json);
-        }
+    void parseJSON(string json_text) {
+        auto json = JSON.parseJSON(json_text);
+        parse(json);
+    }
 
-        void load(string config_file) {
-            if (config_file.exists) {
-                auto json_text = readText(config_file);
-                parseJSON(json_text);
-            }
-            else {
-                save(config_file);
-            }
+    void load(string config_file) {
+        if (config_file.exists) {
+            auto json_text = readText(config_file);
+            parseJSON(json_text);
         }
+        else {
+            save(config_file);
+        }
+    }
 
-        void save(string config_file) {
-            config_file.write(stringify);
-        }
+    void save(string config_file) {
+        config_file.write(stringify);
+    }
     }
 }
 
@@ -370,7 +370,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
 //        "help!h", "Display the help text",    &help_switch,
         // dfmt on
 
-    
+
 
     );
 };
@@ -476,12 +476,12 @@ static setDefaultOption(ref Options options) {
         prefix = "logsubscription";
         task_name = prefix;
         net_task_name = "logsubscription_net";
-        timeout = 250;
+        timeout = 10000;
         with (service) {
             prefix = "logsubscriptionservice";
             task_name = prefix;
             response_task_name = "respose";
-            address = "0.0.0.1";
+            address = "0.0.0.0";
             port = 10_700;
             select_timeout = 300;
             client_timeout = 4000; // msecs
@@ -499,7 +499,6 @@ static setDefaultOption(ref Options options) {
                 days = 365;
                 key_size = 4096;
             }
-            task_name = "logsubscription.service";
         }
         with (host) {
             timeout = 3000;

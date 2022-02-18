@@ -324,6 +324,7 @@ class SSLSocket : Socket {
             static if (in_debugging_mode) {
                 printDebugInformation("Accepting new client");
             }
+            writeln("client Alive = ", client.isAlive);
             // Socket client = super.accept();
             if (!client.isAlive) {
                 client.close;
@@ -344,6 +345,7 @@ class SSLSocket : Socket {
 
         const ssl_error = cast(SSLErrorCodes) SSL_get_error(c_ssl, res);
 
+        writeln("ssl error = ", ssl_error);
         with (SSLErrorCodes) switch (ssl_error) {
         case SSL_ERROR_NONE:
             accepted = true;

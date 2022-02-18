@@ -60,6 +60,10 @@ tagionlogservicetest: prebuild-linux
 tagionlogservicetest: target-tagionlogservicetest
 bin: tagionlogservicetest
 
+tagionsubscription: prebuild-linux
+tagionsubscription: target-tagionsubscription
+bin: tagionsubscription
+
 target-linux:
 	@echo DBUILD $(DBUILD)
 

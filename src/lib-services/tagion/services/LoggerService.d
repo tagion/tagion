@@ -1,3 +1,11 @@
+/// \file LoggerService.d
+
+
+/// \page LoggerService
+
+/** @brief Service for logging everythinh
+ */
+
 module tagion.services.LoggerService;
 
 import std.stdio;
@@ -13,10 +21,50 @@ import tagion.basic.Basic : Control;
 import tagion.logger.Logger;
 import tagion.services.LogSubscriptionService : logSubscriptionServiceTask;
 
+import tagion.hibon.HiBONRecord;
+
 import tagion.services.Options : Options, setOptions, options;
 import tagion.basic.TagionExceptions;
 import tagion.GlobalSignals : abort;
 
+/** Struct with log filter
+ */
+@safe struct LogFilter {
+    enum any_task_name = "";
+
+    string task_name;
+    LoggerType log_level;
+    mixin HiBONRecord!(q{
+        this(string task_name, LoggerType log_level) nothrow {
+            this.task_name = task_name;
+            this.log_level = log_level;
+        }
+    });
+
+    bool match(string task_name, LoggerType log_level) pure const nothrow {
+        if ((this.task_name == any_task_name || this.task_name == task_name) && this.log_level & log_level) {
+            return true;
+        }
+        return false;
+    }
+}
+
+unittest {
+    enum some_task_name = "sometaskname";
+    enum another_task_name = "anothertaskname";
+
+    assert(LogFilter("", LoggerType.ERROR).match(some_task_name, LoggerType.STDERR));
+    assert(LogFilter(some_task_name, LoggerType.ALL).match(some_task_name, LoggerType.INFO));
+    assert(LogFilter(some_task_name, LoggerType.ERROR).match(some_task_name, LoggerType.ERROR));
+
+    assert(!LogFilter(some_task_name, LoggerType.STDERR).match(some_task_name, LoggerType.INFO));
+    assert(!LogFilter(some_task_name, LoggerType.ERROR).match(another_task_name, LoggerType.ERROR));
+}
+
+/**
+ * Main function of LoggerService
+ * @param optiions
+ */
 void loggerTask(immutable(Options) opts) {
     try {
         scope (success) {
@@ -50,11 +98,8 @@ void loggerTask(immutable(Options) opts) {
         task_register;
         log.set_logger_task(opts.logger.task_name);
 
-        auto log_subscription_tid = spawn(&logSubscriptionServiceTask, opts);
-        scope (exit) {
-            log_subscription_tid.send(Control.STOP);
-            auto respond_control = receiveOnly!Control;
-        }
+        // TODO: spawn log_sub_tid here?
+        Tid log_subscription_tid;
 
         File file;
         const logging = opts.logger.file_name.length != 0;
@@ -78,19 +123,15 @@ void loggerTask(immutable(Options) opts) {
 
         void controller(Control ctrl) @safe {
             with (Control) switch (ctrl) {
-            case STOP:
-                writeln("Stopping LoggerService...");
-                stop = true;
-                file.writefln("%s Stopped ", opts.logger.task_name);
-                break;
-            case END:
-                // LoggerService shouldn't run without LogSubscriptionService
-                stop = true;
-                file.writefln("%s: LogSubscriptionService stopped %s", opts.logger.task_name, ctrl);
-                break;
-            default:
-                file.writefln("%s: Unsupported control %s", opts.logger.task_name, ctrl);
-            }
+                case STOP:
+                    stop = true;
+                    file.writefln("%s Stopped ", opts.logger.task_name);
+                    break;
+                    // TODO: if spawn logger from here handle END    
+                    //case END:
+                default:
+                    file.writefln("%s: Unsupported control %s", opts.logger.task_name, ctrl);
+                }
         }
 
         @trusted void receiver(LoggerType type, string label, string text) {
@@ -124,8 +165,8 @@ void loggerTask(immutable(Options) opts) {
             }
         }
 
-        void filterReceiver(LogFilterArray array) {
-            log_filters = array.filters.dup;
+        void filterReceiver(LogFilter[] log_info) {
+            log_filters = log_info;
         }
 
         ownerTid.send(Control.LIVE);

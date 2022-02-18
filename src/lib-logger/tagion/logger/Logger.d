@@ -10,56 +10,14 @@ import tagion.hibon.HiBONRecord;
 extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
 
 enum LoggerType {
-    NONE = 0,
-    INFO = 1,
-    TRACE = INFO << 1,
-    WARNING = TRACE << 1,
-    ERROR = WARNING << 1,
-    FATAL = ERROR << 1,
-    ALL = INFO | TRACE | WARNING | ERROR | FATAL,
-    STDERR = WARNING | ERROR | FATAL
-}
-
-struct LogFilter {
-    string task_name;
-    LoggerType log_level;
-
-    // is there any reason to use alias instead of enum?
-    enum any_task_name = "";
-
-    mixin HiBONRecord!(q{
-        this(string task_name, LoggerType log_level) nothrow {
-            this.task_name = task_name;
-            this.log_level = log_level;
-        }
-    });
-
-    bool match(string task_name, LoggerType log_level) pure const nothrow {
-        if ((this.task_name == any_task_name || this.task_name == task_name) && this.log_level & log_level) {
-            return true;
-        }
-        return false;
-    }
-}
-
-unittest {
-    enum some_task_name = "sometaskname";
-    enum another_task_name = "anothertaskname";
-
-    assert(LogFilter("", LoggerType.ERROR).match(some_task_name, LoggerType.STDERR));
-    assert(LogFilter(some_task_name, LoggerType.ALL).match(some_task_name, LoggerType.INFO));
-    assert(LogFilter(some_task_name, LoggerType.ERROR).match(some_task_name, LoggerType.ERROR));
-
-    assert(!LogFilter(some_task_name, LoggerType.STDERR).match(some_task_name, LoggerType.INFO));
-    assert(!LogFilter(some_task_name, LoggerType.ERROR).match(another_task_name, LoggerType.ERROR));
-}
-
-immutable struct LogFilterArray {
-    LogFilter[] filters;
-
-    this(immutable LogFilter[] filters_array) {
-        this.filters = filters_array;
-    }
+    NONE    = 0,
+    INFO    = 1,
+    TRACE   = INFO<<1,
+    WARNING = TRACE<<1,
+    ERROR   = WARNING <<1,
+    FATAL   = ERROR<<1,
+    ALL     = INFO|TRACE|WARNING|ERROR|FATAL,
+    STDERR  = WARNING|ERROR|FATAL
 }
 
 private static Tid logger_tid;
@@ -85,9 +43,9 @@ static struct Logger {
 
     @trusted
     void register(string task_name) nothrow
-    in {
-        assert(logger_tid == logger_tid.init);
-    }
+        in {
+            assert(logger_tid == logger_tid.init);
+        }
     do {
         push(LoggerType.ALL);
         scope (exit) {
@@ -95,9 +53,6 @@ static struct Logger {
         }
         try {
             logger_tid = locate(logger_task_name);
-
-            
-
             .register(task_name, thisTid);
             _task_name = task_name;
             setThreadName(task_name);
@@ -113,9 +68,9 @@ static struct Logger {
 
     @property @trusted
     void task_name(string task_name)
-    in {
-        assert(logger_tid == logger_tid.init);
-    }
+        in {
+            assert(logger_tid == logger_tid.init);
+        }
     do {
         _task_name = task_name;
         setThreadName(task_name);
@@ -124,9 +79,9 @@ static struct Logger {
 
     @trusted @nogc
     void set_logger_task(string logger_task_name) nothrow
-    in {
-        assert(this.logger_task_name.length == 0);
-    }
+        in {
+            assert(this.logger_task_name.length == 0);
+        }
     do {
         this.logger_task_name = logger_task_name;
     }
@@ -171,9 +126,9 @@ static struct Logger {
                     printf("ERROR: Logger not register for '%.*s'\n", cast(int) _task_name.length, _task_name.ptr);
                 }
                 printf("%.*s:%.*s: %s\n",
-                        cast(int) _task_name.length, _task_name.ptr,
-                        cast(int) _type.length, _type.ptr,
-                        _text);
+                    cast(int) _task_name.length, _task_name.ptr,
+                    cast(int) _type.length, _type.ptr,
+                    _text);
             }
             else {
                 try {
@@ -291,7 +246,7 @@ static struct Logger {
     void close() const nothrow {
         if (isTask) {
             import std.exception : assumeWontThrow;
-
+            
             assumeWontThrow(logger_tid.send(Control.STOP));
         }
     }
