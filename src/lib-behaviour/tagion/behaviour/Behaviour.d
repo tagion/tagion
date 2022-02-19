@@ -90,31 +90,24 @@ static unittest { // Test of getAllCallable
 
 template hasBehaviour(alias T) if (isCallable!T) {
     alias hasProperty=ApplyLeft!(hasUDA, T);
-    pragma(msg, "hasProperty ", hasUDA!(T, Given));
-//    pragma(msg, "hasProperty ", hasUDA!(T, Given));
-    pragma(msg, "hasProperty ", hasProperty!(Given));
     enum hasBehaviour=anySatisfy!(hasProperty, BehaviourProperties);
-    pragma(msg, "_has ", hasBehaviour);
-//    enum hasBehaviour=false;
 }
 
-unittest {
-//    alias is_valid=FunctionTypeOf!(Some_awesome_feature.is_valid);
-//    pragma(msg, "is_valid ", is_valid);
-    pragma(msg, "is_valid attr ", hasUDA!(Some_awesome_feature.is_valid, Given));
+///
+static unittest {
     static assert(hasBehaviour!(Some_awesome_feature.is_valid));
     static assert(!hasBehaviour!(Some_awesome_feature.helper_function));
-    //Some_awesome_feature.is_valid);
 }
 
 template getBehaviour(T) if (is(T==class) || is(T==struct)) {
     alias get_all_callable = getAllCallable!T;
-    alias hasProperty=ApplyLeft!(hasUDA, T);
+//    alias hasProperty=ApplyLeft!(hasUDA, T);
 //    alias one=get_all_callable[0]);
     pragma(msg, "get_all_callable ", get_all_callable);
 //    pragma(msg, one);
     pragma(msg, hasUDA!(get_all_callable[0], Given));
-
+    alias members_with_behaviour = Filter!(hasBehaviour, get_all_callable);
+    pragma(msg, "members_with_behaviour ", members_with_behaviour);
     alias getBehaviour=Filter!(hasProperty, BehaviourProperties);
     pragma(msg, "getBehaviour ", getBehaviour);
 }
