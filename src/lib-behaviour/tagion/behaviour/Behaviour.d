@@ -1,6 +1,7 @@
 module tagion.behaviour.Behaviour;
 
 import std.traits;
+import std.meta : AliasSeq, Filter;
 import std.format;
 import std.typecons;
 
@@ -25,14 +26,18 @@ struct Then {
     string description;
 }
 
+alias BehaviourProperties = AliasSeq!(Given, And, When, Then);
+
 alias MemberSequency=Tuple!(string, "member", string, "goal");
+alias PropertyFormat(T)=format!(T.stringof~".%s", string);
+
 const(MemberSequency[]) memberSequency(T)() if (is(T==class) || is(T==struct)) {
 //    string[] result;
     MemberSequency[] result;
-    alias getMemberType(alias Type, string name) = typeof(__traits(getMember, T, name));
-    alias member1=getMemberType!(T, "request_cash");
-    pragma(msg, "member1 ", member1);
-//    T
+//     alias getMemberType(alias Type, string name) = typeof(__traits(getMember, T, name));
+//     alias member1=getMemberType!(T, "request_cash");
+//     pragma(msg, "member1 ", member1);
+// //    T
     static foreach(name; __traits(allMembers, T)) {{
             enum code=format!q{alias member=%s.%s;}(T.stringof, name);
             pragma(msg,code);
@@ -43,19 +48,31 @@ const(MemberSequency[]) memberSequency(T)() if (is(T==class) || is(T==struct)) {
             static if (__traits(compiles, typeof(member))) {
 //                alias memberType=typeof(member);
 //                pragma(msg, "member ", name, " ", typeof(member));
-                static if (hasUDA!(member, Given)) {
-                    result~=MemberSequency(name, Given);
-                    pragma(msg, name, " has ", Given);
+                alias hasProperty(Property) =hasUDA!(member, Property);
+                alias filterProperty=Filter!(hasProperty, BehaviourProperties);
+                pragma(msg, "filterProperty : ", filterProperty);
+                static if (filterProperty.length == 1) {
+                    result~=MemberSequency(
+                        PropertyFormat!T(name),
+                        filterProperty[0].stringof);
                 }
-                else static if (hasUDA!(member, And)) {
-                    pragma(msg, name, " has ", And);
-                }
-                else static if (hasUDA!(member, When)) {
-                    pragma(msg, name, " has ", When);
-                }
-                else static if (hasUDA!(member, Then)) {
-                    pragma(msg, name, " has ", Then);
-                }
+//                 static if (hasProperty!Given) {
+// //                    GivenhasUDA!(member, Given)) {
+//                     result~=MemberSequency(PropertyFormat!T(name), Given.stringof);
+//                     pragma(msg, name, " has ", Given);
+//                 }
+//                 else static if (hasUDA!(member, And)) {
+//                     result~=MemberSequency(name, And.stringof);
+//                     pragma(msg, name, " has ", And);
+//                 }
+//                 else static if (hasUDA!(member, When)) {
+//                     result~=MemberSequency(name, When.stringof);
+//                     pragma(msg, name, " has ", When);
+//                 }
+//                 else static if (hasUDA!(member, Then)) {
+//                     result~=MemberSequency(name, Then.stringof);
+//                     pragma(msg, name, " has ", Then);
+//                 }
             }
         }}
     return result;
@@ -119,36 +136,47 @@ version(unittest) {
         }
 }
 
-
-
-
-unittest {
+version(unittest) {
     import std.stdio;
     import std.algorithm.iteration : map, joiner;
     import std.algorithm.comparison : equal;
     import std.range : zip, only;
     import std.typecons;
     import std.array;
-    pragma(msg, __traits(allMembers, Some_awesome_feature));
-    alias member=typeof(__traits(getMember, Some_awesome_feature, "is_debited"));
+}
 
-    pragma(msg, "member ", member);
+
+unittest {
+    // pragma(msg, __traits(allMembers, Some_awesome_feature));
+    // alias member=typeof(__traits(getMember, Some_awesome_feature, "is_debited"));
+
+    // pragma(msg, "member ", member);
 //    alias monitor=typeof(__traits(getMember, Some_awesome_feature, "Monitor"));
 //    pragma(msg, "member ", getUDAs!member);
 //    pragma(msg, __traits(GetM
+//    writeln(SomeFormat("Hugo"));
     alias SomeFormat=format!(Some_awesome_feature.stringof~".%s", string);
-    writeln(SomeFormat("Hugo"));
+
     const expected=
         zip(
             ["is_valid", "in_credit", "contains_cash", "request_cash", "is_debited", "is_dispensed"],
-            ["Given", "And", "And", "When", "And", "Then"]
+            ["Given", "And", "And", "When", "Then", "And"]
         )
         .map!(a => tuple(SomeFormat(a[0]), a[1]))
 //        .joiner
         .array;
+    writefln("memberSequency!Some_awesome_feature=%s", memberSequency!Some_awesome_feature);
     writefln("expected=%s", expected);
+    foreach(a, e; zip(memberSequency!Some_awesome_feature, expected)) {
+        writefln("-----------");
+        writefln("a=%s", a);
+        writefln("e=%s", e);
+        writefln("equal %s", (a[0] == e[0]) && (a[1] == e[1]));
+    }
+
     assert(equal(memberSequency!Some_awesome_feature,
             expected));
+
         // ["is_valid", "in_credit", "contains_cash", "request_cash", "is_debited", "is_dispensed"]);
 
 

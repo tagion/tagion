@@ -62,6 +62,7 @@ proto-unittest-run: $(UNITTEST_BIN)
 	$(PRECMD)
 	$(SCRIPT_LOG) $(UNITTEST_BIN) $(UNITTEST_LOG)
 
+$(UNITTEST_BIN):DFLAGS+=$(DIP25) $(DIP1000)
 $(UNITTEST_BIN): $$(DFILES)
 	$(PRECMD)
 	@echo deps $?
