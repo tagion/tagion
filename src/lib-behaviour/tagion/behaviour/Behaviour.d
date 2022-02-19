@@ -1,7 +1,7 @@
 module tagion.behaviour.Behaviour;
 
 import std.traits;
-import std.meta : AliasSeq, Filter;
+import std.meta : AliasSeq, Filter, aliasSeqOf, ApplyLeft, allSatisfy, anySatisfy, Alias;
 import std.format;
 import std.typecons;
 
@@ -77,30 +77,84 @@ static unittest {
 }
 
 template getAllCallable(T) if (is(T==class) || is(T==struct)) {
-    alias getAllCallable=void;
+    alias all_members = aliasSeqOf!([__traits(allMembers, T)]);
+    alias all_members_as_aliases=staticMap!(ApplyLeft!(getMemberAlias, T), all_members);
+    pragma(msg, "all_members_as_aliases ", all_members_as_aliases);
+    alias getAllCallable=Filter!(isCallable, all_members_as_aliases);
+    pragma(msg, "only_callable_members ", getAllCallable);
+}
+
+static unittest { // Test of getAllCallable
+    static assert(allSatisfy!(isCallable, getAllCallable!Some_awesome_feature));
+}
+
+template hasBehaviour(alias T) if (isCallable!T) {
+    alias hasProperty=ApplyLeft!(hasUDA, T);
+    pragma(msg, "hasProperty ", hasUDA!(T, Given));
+//    pragma(msg, "hasProperty ", hasUDA!(T, Given));
+    pragma(msg, "hasProperty ", hasProperty!(Given));
+    enum hasBehaviour=anySatisfy!(hasProperty, BehaviourProperties);
+    pragma(msg, "_has ", hasBehaviour);
+//    enum hasBehaviour=false;
 }
 
 unittest {
-    static assert(isCallable!(getAllCallable!Some_awesome_feature));
+//    alias is_valid=FunctionTypeOf!(Some_awesome_feature.is_valid);
+//    pragma(msg, "is_valid ", is_valid);
+    pragma(msg, "is_valid attr ", hasUDA!(Some_awesome_feature.is_valid, Given));
+    static assert(hasBehaviour!(Some_awesome_feature.is_valid));
+    static assert(!hasBehaviour!(Some_awesome_feature.helper_function));
+    //Some_awesome_feature.is_valid);
 }
+
+template getBehaviour(T) if (is(T==class) || is(T==struct)) {
+    alias get_all_callable = getAllCallable!T;
+    alias hasProperty=ApplyLeft!(hasUDA, T);
+//    alias one=get_all_callable[0]);
+    pragma(msg, "get_all_callable ", get_all_callable);
+//    pragma(msg, one);
+    pragma(msg, hasUDA!(get_all_callable[0], Given));
+
+    alias getBehaviour=Filter!(hasProperty, BehaviourProperties);
+    pragma(msg, "getBehaviour ", getBehaviour);
+}
+
+static unittest { // Test of getBehaviour
+    alias get_behaviour=getBehaviour!Some_awesome_feature;
+    pragma(msg, "get_behaviour ", get_behaviour);
+    pragma(msg, "get_behaviour.length ", get_behaviour.length);
+
+    static assert(allSatisfy!(isCallable, get_behaviour));
+    static assert(allSatisfy!(ApplyLeft!(hasUDA, Some_awesome_feature), get_behaviour));
+}
+
 //alias hasProperty(Property) =hasUDA!(member, Property);
 
-template Should(T, alias Property) if (is(T==class) || is(T==struct)) {
-    pragma(msg, "T ", T, "Property ", Property);
-    alias allMemberNames = aliasSeqOf!([__traits(allMembers, S)]);
+template Should(T, Property) if (is(T==class) || is(T==struct)) {
+    alias get_behaviour=getBehaviour!T;
+    pragma(msg, "T ", T, " Property ", Property);
+    pragma(msg, "get_behaviour ", get_behaviour);
+    alias get_property_behaviour=Filter!(ApplyLeft!(hasUDA, Property), get_behaviour);
+    pragma(msg, "get_property_behaviour ", get_property_behaviour);
+//    "T ", T, "Property ", Property);
+
+//    alias allMemberNames = aliasSeqOf!([__traits(allMembers, S)]);
 
     //  alias filterProperty=Filter!(hasProperty, BehaviourProperties);
 //    pragma(msg, "T ", T, "Property ", Property);
-    static if (hasUDA!(T, Property)) {
-        alias Should = int;
-    }
-    else {
-        alias Should = void;
-    }
+    // static if (hasUDA!(T, Property)) {
+    //     alias Should = int;
+    // }
+    // else {
+    //     alias Should = void;
+    // }
+    alias Should = void;
 }
 
 unittest {
-    static assert(isCallable!(Should!(Some_awesome_feature, Given)));
+    alias behaviour_with_given = Should!(Some_awesome_feature, Given);
+    static assert(isCallable!(behaviour_with_given));
+    static assert(hasUDA!(behaviour_with_given, Given));
 }
 // template memberPropertyToAlias(MemberProperty M) {
 //     pragma(msg, "MemberProperty.member ", M.member);
@@ -155,35 +209,63 @@ version(unittest) {
             bool is_dispensed() {
                 return false;
             }
+            void helper_function() {
+            }
         }
 
     @Feature("Some awesome feature should print some cash out of the blue")
-        class Some_awesome_feature_not_ordered {
+        class Some_awesome_feature_bad_format_double_propery {
+            @Given("the card is valid")
+            bool is_valid() {
+                return false;
+            }
+            @Given("the card is valid (should not have two Given)")
+            bool is_valid_bad_one() {
+                return false;
+            }
+            @When("the Customer request cash")
+            bool request_cash() {
+                return false;
+            }
+            @When("the Customer request cash (Should not have two When)")
+            bool request_cash_bad_one() {
+                return false;
+            }
             @Then("the account is debited")
             bool is_debited() {
+                return false;
+            }
+            @Then("the account is debited (Should not have two Then)")
+            bool is_debited_bad_one() {
                 return false;
             }
             @And("the cash is dispensed")
             bool is_dispensed() {
                 return false;
             }
-            @When("the Constumer request cash")
-            bool request_cash() {
+        }
+
+    @Feature("Some awesome feature should print some cash out of the blue")
+        class Some_awesome_feature_bad_format_missing_given {
+            @Then("the account is debited (Should not have two Then)")
+            bool is_debited_bad_one() {
                 return false;
             }
-            @Given("that the card is valid")
-            bool is_valid() {
-                return false;
-            }
-            @And("the account is in credit")
-            bool in_credit() {
-                return false;
-            }
-            @And("the dispenser contains cash")
-            bool contains_cash() {
+            @And("the cash is dispensed")
+            bool is_dispensed() {
                 return false;
             }
         }
+
+    @Feature("Some awesome feature should print some cash out of the blue")
+        class Some_awesome_feature_bad_format_missing_then {
+            @Given("the card is valid")
+            bool is_valid() {
+                return false;
+            }
+        }
+
+
 }
 
 version(unittest) {
