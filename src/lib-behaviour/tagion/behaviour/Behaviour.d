@@ -106,10 +106,12 @@ template getBehaviour(T) if (is(T==class) || is(T==struct)) {
     pragma(msg, "get_all_callable ", get_all_callable);
 //    pragma(msg, one);
     pragma(msg, hasUDA!(get_all_callable[0], Given));
-    alias members_with_behaviour = Filter!(hasBehaviour, get_all_callable);
-    pragma(msg, "members_with_behaviour ", members_with_behaviour);
-    alias getBehaviour=Filter!(hasProperty, BehaviourProperties);
-    pragma(msg, "getBehaviour ", getBehaviour);
+    alias getBehaviour = Filter!(hasBehaviour, get_all_callable);
+    pragma(msg, "members_with_behaviour ", getBehaviour);//members_with_behaviour);
+//    alias getBehaviour=AliasSeq!();//void];
+    // alias getBehaviour=Filter!(hasProperty, BehaviourProperties);
+    // pragma(msg, "getBehaviour ", getBehaviour);
+
 }
 
 static unittest { // Test of getBehaviour
@@ -118,7 +120,7 @@ static unittest { // Test of getBehaviour
     pragma(msg, "get_behaviour.length ", get_behaviour.length);
 
     static assert(allSatisfy!(isCallable, get_behaviour));
-    static assert(allSatisfy!(ApplyLeft!(hasUDA, Some_awesome_feature), get_behaviour));
+    static assert(allSatisfy!(hasBehaviour, get_behaviour));
 }
 
 //alias hasProperty(Property) =hasUDA!(member, Property);
