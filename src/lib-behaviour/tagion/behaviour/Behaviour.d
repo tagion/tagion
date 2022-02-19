@@ -108,9 +108,6 @@ template getBehaviours(T) if (is(T==class) || is(T==struct)) {
 
 static unittest { // Test of getBehaviours
     alias get_behaviour=getBehaviours!Some_awesome_feature;
-    pragma(msg, "get_behaviour ", get_behaviour);
-    pragma(msg, "get_behaviour.length ", get_behaviour.length);
-
     static assert(allSatisfy!(isCallable, get_behaviour));
     static assert(allSatisfy!(hasBehaviours, get_behaviour));
 }
@@ -123,11 +120,7 @@ static unittest { // Test of getBehaviours
  */
 template getBehaviour(T, Property) if (is(T==class) || is(T==struct)) {
     alias behaviours=getBehaviours!T;
-    pragma(msg, "T ", T, " Property ", Property);
-    pragma(msg, "behaviours ", behaviours);
-
     alias get_property_behaviour=Filter!(ApplyRight!(hasUDA, Property), behaviours);
-    pragma(msg, "get_property_behaviour ", get_property_behaviour);
     static assert(get_property_behaviour.length <= 1,
         format!"More than 1 behaviour %s has been declared in %s"(Property.stringof, T.stringof));
     static if (get_property_behaviour.length is 1) {
@@ -153,24 +146,12 @@ unittest {
 }
 
 template getBehaviour(alias T) {
-    pragma(msg, "***** getBehaviour ", hasUDA!(T, When));
     alias getProperty = ApplyLeft!(getUDAs, T);
-    pragma(msg, getProperty!(When));
     alias all_behaviour_properties=staticMap!(getProperty, BehaviourProperties);
-    pragma(msg, "list ", all_behaviour_properties);
     static assert(all_behaviour_properties.length <= 1,
         format!"The behaviour %s has more than one property %s"(T.strinof, all_behaviour_properties.stringof));
     static if (all_behaviour_properties.length is 1) {
-        // alias Type=all_behaviour_properties[0];
-        // pragma(msg, "all_behaviour_properties[0] ", all_behaviour_properties[0]);
-        // static if (all_behaviour_properties[0].length is 1) {
         alias getBehaviour=all_behaviour_properties[0];
-        // }
-        // else {
-        // static assert(0,
-        //     format!"The behaviour %s has more than one behaviour-property of the same type %s"
-        //     (T.stringof, all_behaviour_properties[0].stringof));
-        // }
     }
     else {
         alias getBehaviour=void;
@@ -179,10 +160,7 @@ template getBehaviour(alias T) {
 
 unittest {
     alias behaviour=getBehaviour!(Some_awesome_feature.request_cash);
-    pragma(msg, "behaviour ", behaviour);
-    pragma(msg, "behaviour ", typeof(behaviour));
     static assert(is(typeof(behaviour) == When));
-
     static assert(is(getBehaviour!(Some_awesome_feature.helper_function) == void));
 }
 
