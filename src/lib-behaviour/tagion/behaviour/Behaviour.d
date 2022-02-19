@@ -76,11 +76,18 @@ static unittest {
     static assert(isCallable!(getMemberAlias!(Some_awesome_feature, "is_debited")));
 }
 
+template getAllCallable(T) if (is(T==class) || is(T==struct)) {
+    alias getAllCallable=void;
+}
+
+unittest {
+    static assert(isCallable!(getAllCallable!Some_awesome_feature));
+}
 //alias hasProperty(Property) =hasUDA!(member, Property);
 
 template Should(T, alias Property) if (is(T==class) || is(T==struct)) {
     pragma(msg, "T ", T, "Property ", Property);
-//    alias allMemberNames = aliasSeqOf!([__traits(allMembers, S)]);
+    alias allMemberNames = aliasSeqOf!([__traits(allMembers, S)]);
 
     //  alias filterProperty=Filter!(hasProperty, BehaviourProperties);
 //    pragma(msg, "T ", T, "Property ", Property);
