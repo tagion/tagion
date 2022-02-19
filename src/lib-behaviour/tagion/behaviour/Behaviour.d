@@ -1,7 +1,7 @@
 module tagion.behaviour.Behaviour;
 
 import std.traits;
-import std.meta : AliasSeq, Filter, aliasSeqOf, ApplyLeft, ApplyRight, allSatisfy, anySatisfy, Alias, Erase;
+import std.meta : AliasSeq, Filter, aliasSeqOf, ApplyLeft, ApplyRight, allSatisfy, anySatisfy, Alias, Erase, aliasSeqOf;
 import std.format;
 import std.typecons;
 import tagion.basic.Basic : isOneOf, staticSearchIndexOf;
@@ -136,9 +136,14 @@ unittest {
     static assert(isCallable!(behaviour_with_given));
     static assert(hasUDA!(behaviour_with_given, Given));
     static assert(is(getBehaviour!(Some_awesome_feature_bad_format_missing_given, Given) == void));
+
+    alias behaviour_with_when = getBehaviour!(Some_awesome_feature, When);
+    static assert(isCallable!(behaviour_with_when));
+    static assert(hasUDA!(behaviour_with_when, When));
+
 }
 
-enum hasBehaviour(T, Property) = !is(getBehaviour!(T, Property) == void);
+enum hasBehaviour(alias T, Property) = !is(getBehaviour!(T, Property) == void);
 
 unittest {
     static assert(hasBehaviour!(Some_awesome_feature, Then));
@@ -164,76 +169,72 @@ unittest {
     static assert(is(getBehaviour!(Some_awesome_feature.helper_function) == void));
 }
 
-alias hasBehaviour(T) = !is(getBehaviour!T == void);
+enum hasBehaviour(alias T) = !is(getBehaviour!(T) == void);
 
 unittest {
     static assert(hasBehaviour!(Some_awesome_feature.request_cash));
-    static assert(!hasBehaviour!(Some_awesome_feature.helper_function));
+    static assert(!(hasBehaviour!(Some_awesome_feature.helper_function)));
 }
 
-version(none)
+//alias isEqual(T,S) =is(T == S);
+
 protected template _getUnderBehaviour(bool property_found, Property, L...) {
-    static if (L.length is 0) {
+    // pragma(msg, "L ", L);
+    // pragma(msg, "L ", L[1..$]);
+    // pragma(msg, "L ", L.length);
+    // pragma(msg, "L ", L.length == 0);
+    static if (L.length == 0) {
         alias _getUnderBehaviour=AliasSeq!();
     }
     else static if(property_found) {
-//        alias
+        alias behavior_property = getBehaviour!(L[0]);
         alias other_unique_propeties = Erase!(Property, UniqueBehaviourProperties);
-//        enum is_other=anySatisfy!(;
+        alias behavior_property_type = typeof(behavior_property);
+        // alias isOne = isOneOf!(behavior_property_type, other_unique_propeties);
+        // pragma(msg, "isOne ", isOne);
+        pragma(msg, Property, " behavior_property ",behavior_property );
+        static if (isOneOf!(behavior_property_type, other_unique_propeties)) {
+            alias _getUnderBehaviour=AliasSeq!();
+        }
+        else {
+            alias _getUnderBehaviour=AliasSeq!(
+                L[0],
+                _getUnderBehaviour!(property_found, Property, L[1..$])
+                );
+        }
     }
-    // else static if(hasBehavior!(L[0], Property)) {
-    //     alias _getUnderBehaviour = _getUnderBehaviour(true, Property, L[1..$]);
-    // }
-    // else {
-    //     alias _getUnderBehaviour = _getUnderBehaviour(false, Property, L[1..$]);
-    // }
+    else static if(is(typeof(getBehaviour!(L[0])) == Property)) {
+        alias _getUnderBehaviour = _getUnderBehaviour!(true, Property, L[1..$]);
+    }
+    else {
+        alias _getUnderBehaviour = _getUnderBehaviour!(property_found, Property, L[1..$]);
+    }
 }
 
 template getUnderBehaviour(T, Property) if (is(T==class) || is(T==struct)) {
-    alias hasProperty =ApplyRight!(hasBehaviour,Property);
-
-//    static assert(hasProperty!(T[0]));
     alias behaviours=getBehaviours!T;
-    static assert(hasProperty!(behaviours[0]));
-    alias get_property_behaviour=Filter!(hasProperty, behaviours);
-    pragma(msg, " getUnderBehaviour get_property_behaviour ", get_property_behaviour);
-    enum property_index_1=staticSearchIndexOf!(Given, behaviours); //BehaviourProperties);
-    pragma(msg, "index_1 ", property_index_1);
-    enum property_index=staticSearchIndexOf!(hasProperty, behaviours); //BehaviourProperties);
-    pragma(msg, "index ", property_index);
-    static if (property_index < 0) {
-        alias getUnderBehaviour=AliasSeq!();
-    }
-    else {
-        alias other_unique_propeties = Erase!(Property, UniqueBehaviourProperties);
-        pragma(msg, " other_unique_propeties ", other_unique_propeties);
-        static assert(isOneOf!(Then, other_unique_propeties));
 
-        alias isOther=ApplyRight!(isOneOf, other_unique_propeties);
-        pragma(msg, "isOther!Then " ,isOther!Then);
-        // static assert(isOther!Then);
-//         alias rest = get_behaviour[property_index+1..$];
-//         pragma(msg, "rest ", rest);
-//         pragma(msg, "isOther!(rest[0]) ", isOther!(rest[0]));
-//         enum end_index = staticSearchIndexOf!(isOther, rest);
-//         pragma(msg, "end_index ", end_index);
-//         // static if (end_index < 0) {
-//         //     alias getUnderBehaviour = get_behaviour[property_index+1..$];
-//         // }
-//         // else {
-//         //     alias getUnderBehaviour = get_behaviour[property_index+1..end_index];
-//         // }
-// //    static assert(isOther!Property);
-//     // pragma(msg, "T ", T, " Property ", Property);
-//     // pragma(msg, "get_behaviour ", get_behaviour);
-        alias getUnderBehaviour=AliasSeq!(void);
-        pragma(msg, "getUnderBehaviour ", getUnderBehaviour);
-    }
+    alias getUnderBehaviour = _getUnderBehaviour!(false, Property, behaviours);
 }
 
 unittest {
     alias under_behaviour_of_given = getUnderBehaviour!(Some_awesome_feature, Given);
+    pragma(msg, under_behaviour_of_given);
+    pragma(msg, "under_behaviour_of_given ", under_behaviour_of_given);
     static assert(under_behaviour_of_given.length is 2);
+    pragma(msg, getBehaviour!(under_behaviour_of_given[0]));
+    pragma(msg, getBehaviour!(under_behaviour_of_given[1]));
+    static assert(getBehaviour!(under_behaviour_of_given[0]) == And("the account is in credit"));
+    static assert(getBehaviour!(under_behaviour_of_given[1]) == And("the dispenser contains cash"));
+
+    alias under_behaviour_of_when = getUnderBehaviour!(Some_awesome_feature, When);
+    pragma(msg, "under_behaviour_of_when ", under_behaviour_of_when);
+    static assert(under_behaviour_of_when.length is 0);
+
+    alias under_behaviour_of_then = getUnderBehaviour!(Some_awesome_feature, Then);
+    pragma(msg, "under_behaviour_of_then ", under_behaviour_of_then);
+    static assert(under_behaviour_of_then.length is 1);
+
 }
 
 version(unittest) {
