@@ -164,6 +164,13 @@ unittest {
     static assert(is(getBehaviour!(Some_awesome_feature.helper_function) == void));
 }
 
+alias hasBehaviour(T) = !is(getBehaviour!T == void);
+
+unittest {
+    static assert(hasBehaviour!(Some_awesome_feature.request_cash));
+    static assert(!hasBehaviour!(Some_awesome_feature.helper_function));
+}
+
 version(none)
 protected template _getUnderBehaviour(bool property_found, Property, L...) {
     static if (L.length is 0) {
