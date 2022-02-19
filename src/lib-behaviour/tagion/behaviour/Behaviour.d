@@ -143,56 +143,47 @@ unittest {
 
 }
 
-enum hasBehaviour(alias T, Property) = !is(getBehaviour!(T, Property) == void);
+enum hasProperty(alias T, Property) = !is(getBehaviour!(T, Property) == void);
 
 unittest {
-    static assert(hasBehaviour!(Some_awesome_feature, Then));
-    static assert(!hasBehaviour!(Some_awesome_feature_bad_format_missing_given, Given));
+    static assert(hasProperty!(Some_awesome_feature, Then));
+    static assert(!hasProperty!(Some_awesome_feature_bad_format_missing_given, Given));
 }
 
-template getBehaviour(alias T) {
-    alias getProperty = ApplyLeft!(getUDAs, T);
-    alias all_behaviour_properties=staticMap!(getProperty, BehaviourProperties);
+template getProperty(alias T) {
+    alias getUDAsProperty = ApplyLeft!(getUDAs, T);
+    alias all_behaviour_properties=staticMap!(getUDAsProperty, BehaviourProperties);
     static assert(all_behaviour_properties.length <= 1,
         format!"The behaviour %s has more than one property %s"(T.strinof, all_behaviour_properties.stringof));
     static if (all_behaviour_properties.length is 1) {
-        alias getBehaviour=all_behaviour_properties[0];
+        alias getProperty=all_behaviour_properties[0];
     }
     else {
-        alias getBehaviour=void;
+        alias getProperty=void;
     }
 }
 
 unittest {
-    alias behaviour=getBehaviour!(Some_awesome_feature.request_cash);
-    static assert(is(typeof(behaviour) == When));
-    static assert(is(getBehaviour!(Some_awesome_feature.helper_function) == void));
+    alias properties=getProperty!(Some_awesome_feature.request_cash);
+    static assert(is(typeof(properties) == When));
+    static assert(is(getProperty!(Some_awesome_feature.helper_function) == void));
 }
 
-enum hasBehaviour(alias T) = !is(getBehaviour!(T) == void);
+enum hasProperty(alias T) = !is(getProperty!(T) == void);
 
 unittest {
-    static assert(hasBehaviour!(Some_awesome_feature.request_cash));
-    static assert(!(hasBehaviour!(Some_awesome_feature.helper_function)));
+    static assert(hasProperty!(Some_awesome_feature.request_cash));
+    static assert(!(hasProperty!(Some_awesome_feature.helper_function)));
 }
 
-//alias isEqual(T,S) =is(T == S);
-
 protected template _getUnderBehaviour(bool property_found, Property, L...) {
-    // pragma(msg, "L ", L);
-    // pragma(msg, "L ", L[1..$]);
-    // pragma(msg, "L ", L.length);
-    // pragma(msg, "L ", L.length == 0);
     static if (L.length == 0) {
         alias _getUnderBehaviour=AliasSeq!();
     }
     else static if(property_found) {
-        alias behavior_property = getBehaviour!(L[0]);
+        alias behavior_property = getProperty!(L[0]);
         alias other_unique_propeties = Erase!(Property, UniqueBehaviourProperties);
         alias behavior_property_type = typeof(behavior_property);
-        // alias isOne = isOneOf!(behavior_property_type, other_unique_propeties);
-        // pragma(msg, "isOne ", isOne);
-        pragma(msg, Property, " behavior_property ",behavior_property );
         static if (isOneOf!(behavior_property_type, other_unique_propeties)) {
             alias _getUnderBehaviour=AliasSeq!();
         }
@@ -203,7 +194,7 @@ protected template _getUnderBehaviour(bool property_found, Property, L...) {
                 );
         }
     }
-    else static if(is(typeof(getBehaviour!(L[0])) == Property)) {
+    else static if(is(typeof(getProperty!(L[0])) == Property)) {
         alias _getUnderBehaviour = _getUnderBehaviour!(true, Property, L[1..$]);
     }
     else {
@@ -222,10 +213,8 @@ unittest {
     pragma(msg, under_behaviour_of_given);
     pragma(msg, "under_behaviour_of_given ", under_behaviour_of_given);
     static assert(under_behaviour_of_given.length is 2);
-    pragma(msg, getBehaviour!(under_behaviour_of_given[0]));
-    pragma(msg, getBehaviour!(under_behaviour_of_given[1]));
-    static assert(getBehaviour!(under_behaviour_of_given[0]) == And("the account is in credit"));
-    static assert(getBehaviour!(under_behaviour_of_given[1]) == And("the dispenser contains cash"));
+    static assert(getProperty!(under_behaviour_of_given[0]) == And("the account is in credit"));
+    static assert(getProperty!(under_behaviour_of_given[1]) == And("the dispenser contains cash"));
 
     alias under_behaviour_of_when = getUnderBehaviour!(Some_awesome_feature, When);
     pragma(msg, "under_behaviour_of_when ", under_behaviour_of_when);
@@ -233,9 +222,32 @@ unittest {
 
     alias under_behaviour_of_then = getUnderBehaviour!(Some_awesome_feature, Then);
     pragma(msg, "under_behaviour_of_then ", under_behaviour_of_then);
+    pragma(msg, "under_behaviour_of_then ", getProperty!(under_behaviour_of_then[0]));
+    assert(getProperty!(under_behaviour_of_then[0]) == And("the cash is dispensed"));
     static assert(under_behaviour_of_then.length is 1);
 
 }
+
+enum isFeature(T) = hasUDA!(T, Feature);
+
+static unittest {
+    static assert(isFeature!Some_awesome_feature);
+}
+
+/**
+   Returns:
+   true if all the behavios has been runned
+ */
+bool behaviour(T)(T test) if (isFeature!T) {
+
+    return false;
+}
+
+unittest {
+    auto awesome = new Some_awesome_feature;
+    assert(behaviour(awesome));
+}
+
 
 version(unittest) {
     // Behavioral examples
