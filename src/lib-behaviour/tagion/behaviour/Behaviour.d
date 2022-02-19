@@ -101,17 +101,7 @@ static unittest {
 
 template getBehaviours(T) if (is(T==class) || is(T==struct)) {
     alias get_all_callable = getAllCallable!T;
-//    alias hasProperty=ApplyLeft!(hasUDA, T);
-//    alias one=get_all_callable[0]);
-    pragma(msg, "get_all_callable ", get_all_callable);
-//    pragma(msg, one);
-    pragma(msg, hasUDA!(get_all_callable[0], Given));
     alias getBehaviours = Filter!(hasBehaviours, get_all_callable);
-    pragma(msg, "members_with_behaviour ", getBehaviours);//members_with_behaviour);
-//    alias getBehaviour=AliasSeq!();//void];
-    // alias getBehaviour=Filter!(hasProperty, BehaviourProperties);
-    // pragma(msg, "getBehaviour ", getBehaviour);
-
 }
 
 static unittest { // Test of getBehaviours
@@ -122,8 +112,6 @@ static unittest { // Test of getBehaviours
     static assert(allSatisfy!(isCallable, get_behaviour));
     static assert(allSatisfy!(hasBehaviours, get_behaviour));
 }
-
-//alias hasProperty(Property) =hasUDA!(member, Property);
 
 /**
    This template get the behaviour with the behaviour-Property from a Behaviour object
@@ -144,19 +132,7 @@ template getBehaviour(T, Property) if (is(T==class) || is(T==struct)) {
         alias getBehaviour=get_property_behaviour[0];
     }
     else {
-//    "T ", T, "Property ", Property);
-
-//    alias allMemberNames = aliasSeqOf!([__traits(allMembers, S)]);
-
-    //  alias filterProperty=Filter!(hasProperty, BehaviourProperties);
-//    pragma(msg, "T ", T, "Property ", Property);
-    // static if (hasUDA!(T, Property)) {
-    //     alias Should = int;
-    // }
-    // else {
-    //     alias Should = void;
-    // }
-    alias getBehaviour= void;
+        alias getBehaviour= void;
     }
 }
 
@@ -166,31 +142,6 @@ unittest {
     static assert(hasUDA!(behaviour_with_given, Given));
     static assert(is(Should!(Some_awesome_feature_bad_format_missing_given, Given) == void));
 }
-
-// template memberPropertyToAlias(MemberProperty M) {
-//     pragma(msg, "MemberProperty.member ", M.member);
-//     enum code=format!q{alias memberPropertyToAlias=%s;}(M.member);
-//     pragma(msg, memberPropertyToAlias);
-//     mixin(code);
-// }
-
-// static unittest {
-//     // enum members=memberSequency!Some_awesome_feature;
-//     // pragma(msg, members);
-//     alias propertyFunc=memberPropertyToAlias!(MemberProperty("Some_awesome_feature.request_cash", "When"));
-//     static assert(isCallable!propertyFunc);
-// }
-
-// template executionList(alias T) {
-//     enum member_sequency=memberSequency!T;
-// //    alias executionList=staticMap!(memberPropertyToAlias, member_sequency);
-
-// }
-
-// unittest { // Test of ExecutionSequency
-//     pragma(msg, executionList!Some_awesome_feature);
-//     static assert(isCallable!(executionList[0]));
-// }
 
 version(unittest) {
     // Behavioral examples
