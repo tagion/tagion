@@ -1,7 +1,7 @@
 module tagion.behaviour.Behaviour;
 
 import std.traits;
-import std.meta : AliasSeq, Filter, aliasSeqOf, ApplyLeft, allSatisfy, anySatisfy, Alias;
+import std.meta : AliasSeq, Filter, aliasSeqOf, ApplyLeft, ApplyRight, allSatisfy, anySatisfy, Alias;
 import std.format;
 import std.typecons;
 
@@ -88,49 +88,62 @@ static unittest { // Test of getAllCallable
     static assert(allSatisfy!(isCallable, getAllCallable!Some_awesome_feature));
 }
 
-template hasBehaviour(alias T) if (isCallable!T) {
+template hasBehaviours(alias T) if (isCallable!T) {
     alias hasProperty=ApplyLeft!(hasUDA, T);
-    enum hasBehaviour=anySatisfy!(hasProperty, BehaviourProperties);
+    enum hasBehaviours=anySatisfy!(hasProperty, BehaviourProperties);
 }
 
 ///
 static unittest {
-    static assert(hasBehaviour!(Some_awesome_feature.is_valid));
-    static assert(!hasBehaviour!(Some_awesome_feature.helper_function));
+    static assert(hasBehaviours!(Some_awesome_feature.is_valid));
+    static assert(!hasBehaviours!(Some_awesome_feature.helper_function));
 }
 
-template getBehaviour(T) if (is(T==class) || is(T==struct)) {
+template getBehaviours(T) if (is(T==class) || is(T==struct)) {
     alias get_all_callable = getAllCallable!T;
 //    alias hasProperty=ApplyLeft!(hasUDA, T);
 //    alias one=get_all_callable[0]);
     pragma(msg, "get_all_callable ", get_all_callable);
 //    pragma(msg, one);
     pragma(msg, hasUDA!(get_all_callable[0], Given));
-    alias getBehaviour = Filter!(hasBehaviour, get_all_callable);
-    pragma(msg, "members_with_behaviour ", getBehaviour);//members_with_behaviour);
+    alias getBehaviours = Filter!(hasBehaviours, get_all_callable);
+    pragma(msg, "members_with_behaviour ", getBehaviours);//members_with_behaviour);
 //    alias getBehaviour=AliasSeq!();//void];
     // alias getBehaviour=Filter!(hasProperty, BehaviourProperties);
     // pragma(msg, "getBehaviour ", getBehaviour);
 
 }
 
-static unittest { // Test of getBehaviour
-    alias get_behaviour=getBehaviour!Some_awesome_feature;
+static unittest { // Test of getBehaviours
+    alias get_behaviour=getBehaviours!Some_awesome_feature;
     pragma(msg, "get_behaviour ", get_behaviour);
     pragma(msg, "get_behaviour.length ", get_behaviour.length);
 
     static assert(allSatisfy!(isCallable, get_behaviour));
-    static assert(allSatisfy!(hasBehaviour, get_behaviour));
+    static assert(allSatisfy!(hasBehaviours, get_behaviour));
 }
 
 //alias hasProperty(Property) =hasUDA!(member, Property);
 
-template Should(T, Property) if (is(T==class) || is(T==struct)) {
-    alias get_behaviour=getBehaviour!T;
+/**
+   This template get the behaviour with the behaviour-Property from a Behaviour object
+   Returns: The function with the behaviour-Property
+   The function fails if there is more than one behaviour with this behaviour
+   and returns void if no behaviour-Property has been found
+ */
+template getBehaviour(T, Property) if (is(T==class) || is(T==struct)) {
+    alias get_behaviour=getBehaviours!T;
     pragma(msg, "T ", T, " Property ", Property);
     pragma(msg, "get_behaviour ", get_behaviour);
-    alias get_property_behaviour=Filter!(ApplyLeft!(hasUDA, Property), get_behaviour);
+
+    alias get_property_behaviour=Filter!(ApplyRight!(hasUDA, Property), get_behaviour);
     pragma(msg, "get_property_behaviour ", get_property_behaviour);
+    static assert(get_property_behaviour.length <= 1,
+        format!"More than 1 behaviour %s has been declared in %s"(Property.stringof, T.stringof));
+    static if (get_property_behaviour.length is 1) {
+        alias getBehaviour=get_property_behaviour[0];
+    }
+    else {
 //    "T ", T, "Property ", Property);
 
 //    alias allMemberNames = aliasSeqOf!([__traits(allMembers, S)]);
@@ -143,14 +156,17 @@ template Should(T, Property) if (is(T==class) || is(T==struct)) {
     // else {
     //     alias Should = void;
     // }
-    alias Should = void;
+    alias getBehaviour= void;
+    }
 }
 
 unittest {
     alias behaviour_with_given = Should!(Some_awesome_feature, Given);
     static assert(isCallable!(behaviour_with_given));
     static assert(hasUDA!(behaviour_with_given, Given));
+    static assert(is(Should!(Some_awesome_feature_bad_format_missing_given, Given) == void));
 }
+
 // template memberPropertyToAlias(MemberProperty M) {
 //     pragma(msg, "MemberProperty.member ", M.member);
 //     enum code=format!q{alias memberPropertyToAlias=%s;}(M.member);
