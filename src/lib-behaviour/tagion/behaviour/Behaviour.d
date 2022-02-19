@@ -1,9 +1,10 @@
 module tagion.behaviour.Behaviour;
 
 import std.traits;
-import std.meta : AliasSeq, Filter, aliasSeqOf, ApplyLeft, ApplyRight, allSatisfy, anySatisfy, Alias;
+import std.meta : AliasSeq, Filter, aliasSeqOf, ApplyLeft, ApplyRight, allSatisfy, anySatisfy, Alias, Erase;
 import std.format;
 import std.typecons;
+import tagion.basic.Basic : isOneOf, staticSearchIndexOf;
 
 struct Feature {
     string description;
@@ -26,7 +27,10 @@ struct Then {
     string description;
 }
 
+/// All behaviour-properties of a Feature
 alias BehaviourProperties = AliasSeq!(Given, And, When, Then);
+/// The behaviour-properties which only occurrences once in a Feature
+alias UniqueBehaviourProperties = Erase!(And, BehaviourProperties);
 
 alias MemberProperty=Tuple!(string, "member", string, "goal");
 alias PropertyFormat(T)=format!(T.stringof~".%s", string);
@@ -35,9 +39,7 @@ const(MemberProperty[]) memberSequency(T)() if (is(T==class) || is(T==struct)) {
     MemberProperty[] result;
     static foreach(name; __traits(allMembers, T)) {{
             enum code=format!q{alias member=%s.%s;}(T.stringof, name);
-            //pragma(msg,code);
             mixin(code);
-            //T elem;
             static if (__traits(compiles, typeof(member))) {
                 alias hasProperty(Property) =hasUDA!(member, Property);
                 alias filterProperty=Filter!(hasProperty, BehaviourProperties);
@@ -137,10 +139,53 @@ template getBehaviour(T, Property) if (is(T==class) || is(T==struct)) {
 }
 
 unittest {
-    alias behaviour_with_given = Should!(Some_awesome_feature, Given);
+    alias behaviour_with_given = getBehaviour!(Some_awesome_feature, Given);
     static assert(isCallable!(behaviour_with_given));
     static assert(hasUDA!(behaviour_with_given, Given));
-    static assert(is(Should!(Some_awesome_feature_bad_format_missing_given, Given) == void));
+    static assert(is(getBehaviour!(Some_awesome_feature_bad_format_missing_given, Given) == void));
+}
+
+enum hasBehaviour(T, Property) = !is(getBehaviour!(T, Property) == void);
+
+unittest {
+    static assert(hasBehaviour!(Some_awesome_feature, Then));
+    static assert(!hasBehaviour!(Some_awesome_feature_bad_format_missing_given, Given));
+}
+
+
+template getUnderBehaviour(T, Property) if (is(T==class) || is(T==struct)) {
+    alias hasProperty =ApplyRight!(hasBehaviour,Property);
+//    static assert(hasProperty!(T[0]));
+    alias get_behaviour=getBehaviours!T;
+    enum property_index=staticIndexOf!(hasProperty, BehaviourProperties);
+    pragma(msg, "index ", property_index);
+    static if (property_index < 0) {
+        alias getUnderBehaviour=AliasSeq!();
+    }
+    else {
+        alias other_unique_propeties = Erase!(Property, UniqueBehaviourProperties);
+        pragma(msg, " other_unique_propeties ", other_unique_propeties);
+        alias isOther=ApplyRight!(isOneOf, other_unique_propeties);
+        static assert(isOther!Then);
+        enum end_index = staticIndexOf!(Given, get_behaviour[property_index+1..$]);
+        pragma(msg, "end_index ", end_index);
+        static if (end_index < 0) {
+            alias getUnderBehaviour = get_behaviour[property_index+1..$];
+        }
+        else {
+            alias getUnderBehaviour = get_behaviour[property_index+1..end_index];
+        }
+//    static assert(isOther!Property);
+    // pragma(msg, "T ", T, " Property ", Property);
+    // pragma(msg, "get_behaviour ", get_behaviour);
+//        alias getUnderBehaviour=AliasSeq!(void);
+        pragma(msg, "getUnderBehaviour ", getUnderBehaviour);
+    }
+}
+
+unittest {
+    alias under_behaviour_of_given = getUnderBehaviour!(Some_awesome_feature, Given);
+    static assert(under_behaviour_of_given.length is 2);
 }
 
 version(unittest) {

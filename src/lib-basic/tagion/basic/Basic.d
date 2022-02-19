@@ -515,3 +515,47 @@ unittest {
         assert(assumeTrusted!(receiveOnly!(string)) == "Hello");
     }
 }
+
+protected template _staticSearchIndexOf(int index, alias find, L...) {
+    import std.meta : staticIndexOf;
+    static if (isType!find) {
+        enum _staticSearchIndexOf=staticIndexOf!(find, L);
+    }
+    else {
+        static if (L.length is index) {
+            enum _staticSearchIndexOf = -1;
+        }
+        else {
+            enum found=find!(L[index]);
+            pragma(msg, "found ", found);
+            static if (found) {
+                enum _staticSearchIndexOf = index;
+            }
+            else {
+                enum _staticSearchIndexOf = _staticSearchIndexOf!(index+1, find, L);
+            }
+        }
+    }
+}
+
+/**
+This template finds the index of find in the AliasSeq L.
+If find is a type it works the same as traits.staticIndexOf,
+ but if func is a templeate function it will use this function as a filter
+Returns:
+First index where find has been found
+If nothing has been found the template returns -1
+ */
+
+template staticSearchIndexOf(alias find, L...) {
+    enum staticSearchIndexOf=_staticSearchIndexOf!(0, find, L);
+}
+
+static unittest {
+    import std.traits : isIntegral, isFloatingPoint;
+    alias seq=AliasSeq!(string, int, long, char);
+    pragma(msg, "staticSearchIndexOf ", staticSearchIndexOf!(long, seq));
+    static assert(staticSearchIndexOf!(long, seq) is 2);
+    static assert(staticSearchIndexOf!(isIntegral, seq) is 1);
+    static assert(staticSearchIndexOf!(isFloatingPoint, seq) is -1);
+}
