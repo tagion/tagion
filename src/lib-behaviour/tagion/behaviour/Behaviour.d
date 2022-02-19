@@ -28,11 +28,11 @@ struct Then {
 
 alias BehaviourProperties = AliasSeq!(Given, And, When, Then);
 
-alias MemberSequency=Tuple!(string, "member", string, "goal");
+alias MemberProperty=Tuple!(string, "member", string, "goal");
 alias PropertyFormat(T)=format!(T.stringof~".%s", string);
 
-const(MemberSequency[]) memberSequency(T)() if (is(T==class) || is(T==struct)) {
-    MemberSequency[] result;
+const(MemberProperty[]) memberSequency(T)() if (is(T==class) || is(T==struct)) {
+    MemberProperty[] result;
     static foreach(name; __traits(allMembers, T)) {{
             enum code=format!q{alias member=%s.%s;}(T.stringof, name);
             //pragma(msg,code);
@@ -42,7 +42,7 @@ const(MemberSequency[]) memberSequency(T)() if (is(T==class) || is(T==struct)) {
                 alias hasProperty(Property) =hasUDA!(member, Property);
                 alias filterProperty=Filter!(hasProperty, BehaviourProperties);
                 static if (filterProperty.length == 1) {
-                    result~=MemberSequency(
+                    result~=MemberProperty(
                         PropertyFormat!T(name),
                         filterProperty[0].stringof);
                 }
@@ -50,6 +50,75 @@ const(MemberSequency[]) memberSequency(T)() if (is(T==class) || is(T==struct)) {
         }}
     return result;
 }
+
+
+unittest { // Test of memberSequency
+    alias SomeFormat=format!(Some_awesome_feature.stringof~".%s", string);
+
+    const expected=
+        zip(
+            ["is_valid", "in_credit", "contains_cash", "request_cash", "is_debited", "is_dispensed"],
+            ["Given", "And", "And", "When", "Then", "And"]
+        )
+        .map!(a => tuple(SomeFormat(a[0]), a[1]))
+        .array;
+
+    assert(equal(memberSequency!Some_awesome_feature,
+            expected));
+}
+
+template getMemberAlias(T, string name) if (is(T==class) || is(T==struct)) {
+    enum code=format!q{alias getMemberAlias=%s.%s;}(T.stringof, name);
+    mixin(code);
+}
+
+static unittest {
+    static assert(isCallable!(getMemberAlias!(Some_awesome_feature, "is_debited")));
+}
+
+//alias hasProperty(Property) =hasUDA!(member, Property);
+
+template Should(T, alias Property) if (is(T==class) || is(T==struct)) {
+    pragma(msg, "T ", T, "Property ", Property);
+//    alias allMemberNames = aliasSeqOf!([__traits(allMembers, S)]);
+
+    //  alias filterProperty=Filter!(hasProperty, BehaviourProperties);
+//    pragma(msg, "T ", T, "Property ", Property);
+    static if (hasUDA!(T, Property)) {
+        alias Should = int;
+    }
+    else {
+        alias Should = void;
+    }
+}
+
+unittest {
+    static assert(isCallable!(Should!(Some_awesome_feature, Given)));
+}
+// template memberPropertyToAlias(MemberProperty M) {
+//     pragma(msg, "MemberProperty.member ", M.member);
+//     enum code=format!q{alias memberPropertyToAlias=%s;}(M.member);
+//     pragma(msg, memberPropertyToAlias);
+//     mixin(code);
+// }
+
+// static unittest {
+//     // enum members=memberSequency!Some_awesome_feature;
+//     // pragma(msg, members);
+//     alias propertyFunc=memberPropertyToAlias!(MemberProperty("Some_awesome_feature.request_cash", "When"));
+//     static assert(isCallable!propertyFunc);
+// }
+
+// template executionList(alias T) {
+//     enum member_sequency=memberSequency!T;
+// //    alias executionList=staticMap!(memberPropertyToAlias, member_sequency);
+
+// }
+
+// unittest { // Test of ExecutionSequency
+//     pragma(msg, executionList!Some_awesome_feature);
+//     static assert(isCallable!(executionList[0]));
+// }
 
 version(unittest) {
     // Behavioral examples
@@ -117,20 +186,4 @@ version(unittest) {
     import std.range : zip, only;
     import std.typecons;
     import std.array;
-}
-
-
-unittest {
-    alias SomeFormat=format!(Some_awesome_feature.stringof~".%s", string);
-
-    const expected=
-        zip(
-            ["is_valid", "in_credit", "contains_cash", "request_cash", "is_debited", "is_dispensed"],
-            ["Given", "And", "And", "When", "Then", "And"]
-        )
-        .map!(a => tuple(SomeFormat(a[0]), a[1]))
-        .array;
-
-    assert(equal(memberSequency!Some_awesome_feature,
-            expected));
 }
