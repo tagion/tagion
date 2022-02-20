@@ -33,7 +33,7 @@ struct Then {
 }
 
 version(unittest) {
-    import tagion.behaviour.BehaviourUnittest;
+    private import tagion.behaviour.BehaviourUnittest;
 }
 /// All behaviour-properties of a Scenario
 alias BehaviourProperties = AliasSeq!(Given, And, When, Then);
@@ -89,9 +89,7 @@ static unittest {
 template getAllCallable(T) if (is(T==class) || is(T==struct)) {
     alias all_members = aliasSeqOf!([__traits(allMembers, T)]);
     alias all_members_as_aliases=staticMap!(ApplyLeft!(getMemberAlias, T), all_members);
-    pragma(msg, "all_members_as_aliases ", all_members_as_aliases);
     alias getAllCallable=Filter!(isCallable, all_members_as_aliases);
-    pragma(msg, "only_callable_members ", getAllCallable);
 }
 
 static unittest { // Test of getAllCallable
@@ -242,6 +240,53 @@ static unittest {
     static assert(isScenario!Some_awesome_feature);
 }
 
+enum feature_name="feature";
+
+template hasFeature(alias M)  if (__traits(isModule, M)) {
+    import std.algorithm.searching : any;
+    enum feature_found = [__traits(allMembers, M)].any!(a => a == feature_name);
+    pragma(msg, "feature_found ", feature_found);
+    static if (feature_found) {
+        enum obtainFeature = __traits(getMember, M, feature_name);
+        pragma(msg, "obtainFeature ", obtainFeature);
+        pragma(msg, "obtainFeature ", typeof(obtainFeature));
+        enum hasFeature = is(typeof(obtainFeature) == Feature);
+    }
+    else {
+        enum hasFeature=false;
+    }
+}
+
+unittest {
+    static assert(hasFeature!(tagion.behaviour.BehaviourUnittest));
+    static assert(!hasFeature!(tagion.behaviour.BehaviourBase));
+}
+
+template obtainFeature(alias M) if (__traits(isModule, M)) {
+    pragma(msg, `__traits(getMember, M, "feature") `, __traits(getMember, M, "feature"));
+//    enum feature="feature";
+    enum obtainFeature = __traits(getMember, M, "feature");
+}
+
+///
+unittest { // Obtain the
+    static assert(obtainFeature!(tagion.behaviour.BehaviourUnittest) ==
+            Feature("Some awesome feature should print some cash out of the blue", null));
+    pragma(msg, "allMembers ", __traits(allMembers, tagion.behaviour.BehaviourBase));
+
+    pragma(msg, "obtainFeature!(tagion.behaviour.BehaviourBase) ", obtainFeature!(tagion.behaviour.BehaviourBase));
+}
+
+
+template Senarious(alias M) if (__traits(isModule, M)) {
+    pragma(msg, __traits(allMembers, M));
+    alias Senarious = void;
+}
+
+
+static unittest { //
+    static assert(is(Senarious!(tagion.behaviour.BehaviourUnittest) == int));
+}
 
 version(unittest) {
     import std.stdio;
