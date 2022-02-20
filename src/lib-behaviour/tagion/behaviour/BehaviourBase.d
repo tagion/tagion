@@ -74,7 +74,7 @@ struct Then {
 
 struct Info(Property) {
     Property property;
-    string member_name; /// Name of the function member
+    @Label("name") string member_name; /// Name of the function member
     mixin HiBONRecord!();
 }
 
