@@ -60,8 +60,8 @@ To archive this core team will work on the following
 
    1. The source should be have external code reviews.
    
-      
 
+![Alt text](figs/BDD_TDD.png?raw=true)
 
 ## The Business Goal for the core project for 2022
 
