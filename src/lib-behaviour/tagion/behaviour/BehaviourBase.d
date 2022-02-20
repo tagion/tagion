@@ -160,7 +160,7 @@ template getAllCallables(T) if (is(T==class) || is(T==struct)) {
 
 static unittest { // Test of getAllCallable
     alias all_callables = getAllCallables!Some_awesome_feature;
-    static assert(all_callables.length == 12);
+    static assert(all_callables.length == 13);
     static assert(allSatisfy!(isCallable, all_callables));
 }
 
@@ -386,7 +386,6 @@ static unittest { //
     alias scenarios  = Scenarios!(tagion.behaviour.BehaviourUnittest);
     alias expected_scenarios =AliasSeq!(
         Some_awesome_feature,
-        Some_awesome_feature_all_implemented,
         Some_awesome_feature_bad_format_double_propery,
         Some_awesome_feature_bad_format_missing_given,
         Some_awesome_feature_bad_format_missing_then);
