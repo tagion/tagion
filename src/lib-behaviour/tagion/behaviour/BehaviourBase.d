@@ -259,6 +259,11 @@ unittest {
     static assert(!hasFeature!(tagion.behaviour.BehaviourBase));
 }
 
+/**
+   Returns:
+   The Feature of a Module
+   If the Modules does not contain a feature then a false is returned
+ */
 template obtainFeature(alias M) if (__traits(isModule, M)) {
     static if (hasFeature!M) {
     pragma(msg, `__traits(getMember, M, "feature") `, __traits(getMember, M, "feature"));
@@ -266,8 +271,7 @@ template obtainFeature(alias M) if (__traits(isModule, M)) {
     enum obtainFeature = __traits(getMember, M, "feature");
     }
     else {
-        pragma(msg);
-        alias obtainFeature=void;
+        enum obtainFeature=false;
     }
 }
 
@@ -278,6 +282,8 @@ unittest { // Obtain the
     pragma(msg, "allMembers ", __traits(allMembers, tagion.behaviour.BehaviourBase));
 
     pragma(msg, "obtainFeature!(tagion.behaviour.BehaviourBase) ", obtainFeature!(tagion.behaviour.BehaviourBase));
+    static assert(!obtainFeature!(tagion.behaviour.BehaviourBase));
+
 }
 
 
