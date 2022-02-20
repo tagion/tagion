@@ -129,15 +129,16 @@ static unittest { // Test of getBehaviours
  */
 template getBehaviour(T, Property) if (is(T==class) || is(T==struct)) {
     alias behaviours=getBehaviours!T;
-    alias get_property_behaviour=Filter!(ApplyRight!(hasUDA, Property), behaviours);
-    static assert(get_property_behaviour.length <= 1,
+    alias behaviour_with_property=Filter!(ApplyRight!(hasUDA, Property), behaviours);
+    static assert(behaviour_with_property.length <= 1,
         format!"More than 1 behaviour %s has been declared in %s"(Property.stringof, T.stringof));
-    static if (get_property_behaviour.length is 1) {
-        alias getBehaviour=get_property_behaviour[0];
+    static if (behaviour_with_property.length is 1) {
+        alias getBehaviour=behaviour_with_property[0];
     }
     else {
         alias getBehaviour= void;
     }
+
 }
 
 unittest {
@@ -319,6 +320,7 @@ static unittest { //
     alias scenarios  = Scenarios!(tagion.behaviour.BehaviourUnittest);
     alias expected_scenarios =AliasSeq!(
         Some_awesome_feature,
+        Some_awesome_feature_all_implemented,
         Some_awesome_feature_bad_format_double_propery,
         Some_awesome_feature_bad_format_missing_given,
         Some_awesome_feature_bad_format_missing_then);

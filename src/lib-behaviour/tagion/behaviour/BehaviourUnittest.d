@@ -6,34 +6,45 @@ version(unittest) {
     enum feature = Feature("Some awesome feature should print some cash out of the blue");
     // Behavioral examples
     @Scenario("Some awesome money printer")
-        class Some_awesome_feature {
+        class Some_awesome_featureT(bool[6] returns) {
+            uint count;
             @Given("the card is valid")
             bool is_valid() {
-                return false;
+                count++;
+                return returns[0];
             }
             @And("the account is in credit")
             bool in_credit() {
-                return false;
+                count++;
+                return returns[1];
             }
             @And("the dispenser contains cash")
             bool contains_cash() {
-                return false;
+                count++;
+                return returns[2];
             }
             @When("the Customer request cash")
             bool request_cash() {
-                return false;
+                count++;
+                return returns[3];
             }
             @Then("the account is debited")
             bool is_debited() {
-                return false;
+                count++;
+                return returns[4];
             }
             @And("the cash is dispensed")
             bool is_dispensed() {
-                return false;
+                count++;
+                return returns[5];
             }
             void helper_function() {
             }
         }
+
+    alias Some_awesome_feature = Some_awesome_featureT!([false, false, false, false, false, false]);
+
+    alias Some_awesome_feature_all_implemented = Some_awesome_featureT!([true, true, true, true, true, true]);
 
     @Scenario("Some money printer which is controlled by a bankster")
         class Some_awesome_feature_bad_format_double_propery {
