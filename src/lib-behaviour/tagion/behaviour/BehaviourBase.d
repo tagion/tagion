@@ -11,6 +11,11 @@ struct Feature {
     string[] comments;
 }
 
+struct Scenario {
+    string description;
+    string[] comments;
+}
+
 struct Given {
     string description;
 }
@@ -30,9 +35,9 @@ struct Then {
 version(unittest) {
     import tagion.behaviour.BehaviourUnittest;
 }
-/// All behaviour-properties of a Feature
+/// All behaviour-properties of a Scenario
 alias BehaviourProperties = AliasSeq!(Given, And, When, Then);
-/// The behaviour-properties which only occurrences once in a Feature
+/// The behaviour-properties which only occurrences once in a Scenario
 alias UniqueBehaviourProperties = Erase!(And, BehaviourProperties);
 
 alias MemberProperty=Tuple!(string, "member", string, "goal");
@@ -231,10 +236,10 @@ unittest {
 
 }
 
-enum isFeature(T) = hasUDA!(T, Feature);
+enum isScenario(T) = hasUDA!(T, Scenario);
 
 static unittest {
-    static assert(isFeature!Some_awesome_feature);
+    static assert(isScenario!Some_awesome_feature);
 }
 
 

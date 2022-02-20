@@ -3,8 +3,9 @@ module tagion.behaviour.BehaviourUnittest;
 import tagion.behaviour.BehaviourBase;
 /// This module is only use to support the unittest
 version(unittest) {
+    enum feature = Feature("Some awesome feature should print some cash out of the blue");
     // Behavioral examples
-    @Feature("Some awesome feature should print some cash out of the blue")
+    @Scenario("Some awesome money printer")
         class Some_awesome_feature {
             @Given("the card is valid")
             bool is_valid() {
@@ -34,7 +35,7 @@ version(unittest) {
             }
         }
 
-    @Feature("Some awesome feature should print some cash out of the blue")
+    @Scenario("Some money printer which is controlled by a bankster")
         class Some_awesome_feature_bad_format_double_propery {
             @Given("the card is valid")
             bool is_valid() {
@@ -66,7 +67,7 @@ version(unittest) {
             }
         }
 
-    @Feature("Some awesome feature should print some cash out of the blue")
+    @Scenario("Some money printer which has run out of paper")
         class Some_awesome_feature_bad_format_missing_given {
             @Then("the account is debited (Should not have two Then)")
             bool is_debited_bad_one() {
@@ -78,7 +79,7 @@ version(unittest) {
             }
         }
 
-    @Feature("Some awesome feature should print some cash out of the blue")
+    @Scenario("Some money print which is gone wild and prints toilet paper")
         class Some_awesome_feature_bad_format_missing_then {
             @Given("the card is valid")
             bool is_valid() {

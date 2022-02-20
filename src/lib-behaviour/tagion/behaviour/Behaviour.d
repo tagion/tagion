@@ -9,7 +9,7 @@ version(unittest) {
    Returns:
    true if all the behavios has been runned
  */
-bool behaviour(T)(T test) if (isFeature!T) {
+bool behaviour(T)(T test) if (isScenario!T) {
 
     return false;
 }
