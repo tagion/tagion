@@ -6,30 +6,96 @@ import std.format;
 import std.typecons;
 import tagion.basic.Basic : isOneOf, staticSearchIndexOf;
 
+import tagion.hibon.HiBONRecord;
+
+@RecordType("Feature")
 struct Feature {
     string description;
-    string[] comments;
+    @Label(VOID, true) string[] comments;
+    mixin HiBONRecord!(q{
+            this(string description, string[] comments=null ) {
+                this.description = description;
+                this.comments = comments;
+            }
+        });
 }
 
+@RecordType("Scenario")
 struct Scenario {
     string description;
-    string[] comments;
+    @Label(VOID, true) string[] comments;
+    mixin HiBONRecord!(q{
+            this(string description, string[] comments=null ) {
+                this.description = description;
+                this.comments = comments;
+            }
+        });
 }
 
+@RecordType("Give")
 struct Given {
     string description;
+    mixin HiBONRecord!(q{
+            this(string description) {
+                this.description = description;
+            }
+        });
 }
 
+@RecordType("And")
 struct And {
     string description;
+    mixin HiBONRecord!(q{
+            this(string description) {
+                this.description = description;
+            }
+        });
 }
 
+@RecordType("When")
 struct When {
     string description;
+    mixin HiBONRecord!(q{
+            this(string description) {
+                this.description = description;
+            }
+        });
 }
 
+@RecordType("Then")
 struct Then {
     string description;
+    mixin HiBONRecord!(q{
+            this(string description) {
+                this.description = description;
+            }
+        });
+}
+
+struct Info(Property) {
+    Property property;
+    string member_name; /// Name of the function member
+    mixin HiBONRecord!();
+}
+
+struct BehaviourGrope(Property) if (isOneOf!(Property, UniqueBehaviourProperties)) {
+    Info!Property info;
+    @Label(VOID, true) Info!And[] ands_info;
+    mixin HiBONRecord!();
+}
+
+struct ScenarioInfo {
+    Info!Scenario scenario;
+    BehaviourGrope!(Given) given;
+    @Label(VOID, true) BehaviourGrope!(Then) then;
+    BehaviourGrope!(When) when;
+    mixin HiBONRecord!();
+}
+
+struct FeatureInfo {
+    Info!Feature feature;
+    ScenarioInfo[] scenarios;
+    mixin HiBONRecord!();
 }
 
 version(unittest) {
