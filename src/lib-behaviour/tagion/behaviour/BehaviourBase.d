@@ -27,6 +27,9 @@ struct Then {
     string description;
 }
 
+version(unittest) {
+    import tagion.behaviour.BehaviourUnittest;
+}
 /// All behaviour-properties of a Feature
 alias BehaviourProperties = AliasSeq!(Given, And, When, Then);
 /// The behaviour-properties which only occurrences once in a Feature
@@ -234,21 +237,8 @@ static unittest {
     static assert(isFeature!Some_awesome_feature);
 }
 
-/**
-   Returns:
-   true if all the behavios has been runned
- */
-bool behaviour(T)(T test) if (isFeature!T) {
 
-    return false;
-}
-
-unittest {
-    auto awesome = new Some_awesome_feature;
-    assert(behaviour(awesome));
-}
-
-
+version(none)
 version(unittest) {
     // Behavioral examples
     @Feature("Some awesome feature should print some cash out of the blue")
