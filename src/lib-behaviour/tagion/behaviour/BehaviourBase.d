@@ -1,4 +1,4 @@
-module tagion.behaviour.Behaviour;
+module tagion.behaviour.BehaviourBase;
 
 import std.traits;
 import std.meta : AliasSeq, Filter, aliasSeqOf, ApplyLeft, ApplyRight, allSatisfy, anySatisfy, Alias, Erase, aliasSeqOf;
