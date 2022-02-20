@@ -279,11 +279,6 @@ unittest { // Obtain the
 
 }
 
-// template getModuleM(T, string name) if (is(T==class) || is(T==struct)) {
-//     enum code=format!q{alias getMemberAlias=%s.%s;}(T.stringof, name);
-//     mixin(code);
-// }
-
 protected template _Scenarios(alias M, string[] names) {
     pragma(msg, "Inside _Scenarios");
     pragma(msg, "Inside _Scenarios ", names);
@@ -291,11 +286,8 @@ protected template _Scenarios(alias M, string[] names) {
         pragma(msg, "End !!!!");
         alias _Scenarios = AliasSeq!();
     }
-    else { //static if (compiles) { //static if (__traits(compiles, {
+    else {
         enum  compiles=__traits(compiles, getMemberAlias!(moduleName!M, names[0]));
-        // alias member = Select!(compiles,
-        //     getMemberAlias!(moduleName!M, names[0]),
-        //     void)
         static if (compiles) {
             enum is_scenario = hasUDA!(member, Scenario);
 
@@ -305,22 +297,13 @@ protected template _Scenarios(alias M, string[] names) {
             enum is_scenario = false;
             alias member =void;
         }
-
-
-        // pragma(msg, "member ", moduleName!M);
-        // //    enum compiles =__traits(compiles, getMemberAlias!(moduleName!M, names[0]));
-        // pragma(msg, names[0], " compiles ", compiles);
-        // pragma(msg, "Compiles ///////");
         static if (is_scenario && (is(member  == class) || is(member == struct))) {
-            pragma(msg, "\tCall __Scenarios");
             alias _Scenarios =
                 AliasSeq!(
                     member,
                     _Scenarios!(M, names[1..$])
                     );
-            pragma(msg, "_Scenarios ", _Scenarios);
         }
-
         else {
             alias _Scenarios = _Scenarios!(M, names[1..$]);
         }
@@ -328,19 +311,12 @@ protected template _Scenarios(alias M, string[] names) {
 }
 
 template Scenarios(alias M) if (__traits(isModule, M)) {
-//    enum list =["feature", "Some_awesome_feature", "Some_awesome_feature_bad_format_double_propery", "Some_awesome_feature_bad_format_missing_given", "Some_awesome_feature_bad_format_missing_then"];
-    // enum list = [__traits(allMembers, M)];
-    // pragma(msg, "list ", list);
     alias Scenarios= _Scenarios!(M, [__traits(allMembers, M)]);
-//    alias Scenarios= _Scenarios!(M,  [__traits(allMembers, M)]);
 }
 
 
 static unittest { //
     alias scenarios  = Scenarios!(tagion.behaviour.BehaviourUnittest);
-    pragma(msg, "Scenarios ", scenarios.length);
-    pragma(msg, "Scenarios ", scenarios);
-
     alias expected_scenarios =AliasSeq!(
         Some_awesome_feature,
         Some_awesome_feature_bad_format_double_propery,
