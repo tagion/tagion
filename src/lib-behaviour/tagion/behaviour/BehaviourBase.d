@@ -245,11 +245,8 @@ enum feature_name="feature";
 template hasFeature(alias M)  if (__traits(isModule, M)) {
     import std.algorithm.searching : any;
     enum feature_found = [__traits(allMembers, M)].any!(a => a == feature_name);
-    pragma(msg, "feature_found ", feature_found);
     static if (feature_found) {
         enum obtainFeature = __traits(getMember, M, feature_name);
-        pragma(msg, "obtainFeature ", obtainFeature);
-        pragma(msg, "obtainFeature ", typeof(obtainFeature));
         enum hasFeature = is(typeof(obtainFeature) == Feature);
     }
     else {
@@ -263,9 +260,15 @@ unittest {
 }
 
 template obtainFeature(alias M) if (__traits(isModule, M)) {
+    static if (hasFeature!M) {
     pragma(msg, `__traits(getMember, M, "feature") `, __traits(getMember, M, "feature"));
 //    enum feature="feature";
     enum obtainFeature = __traits(getMember, M, "feature");
+    }
+    else {
+        pragma(msg);
+        alias obtainFeature=void;
+    }
 }
 
 ///
