@@ -216,19 +216,14 @@ template getUnderBehaviour(T, Property) if (is(T==class) || is(T==struct)) {
 
 unittest {
     alias under_behaviour_of_given = getUnderBehaviour!(Some_awesome_feature, Given);
-    pragma(msg, under_behaviour_of_given);
-    pragma(msg, "under_behaviour_of_given ", under_behaviour_of_given);
     static assert(under_behaviour_of_given.length is 2);
     static assert(getProperty!(under_behaviour_of_given[0]) == And("the account is in credit"));
     static assert(getProperty!(under_behaviour_of_given[1]) == And("the dispenser contains cash"));
 
     alias under_behaviour_of_when = getUnderBehaviour!(Some_awesome_feature, When);
-    pragma(msg, "under_behaviour_of_when ", under_behaviour_of_when);
     static assert(under_behaviour_of_when.length is 0);
 
     alias under_behaviour_of_then = getUnderBehaviour!(Some_awesome_feature, Then);
-    pragma(msg, "under_behaviour_of_then ", under_behaviour_of_then);
-    pragma(msg, "under_behaviour_of_then ", getProperty!(under_behaviour_of_then[0]));
     assert(getProperty!(under_behaviour_of_then[0]) == And("the cash is dispensed"));
     static assert(under_behaviour_of_then.length is 1);
 
@@ -266,9 +261,7 @@ unittest {
  */
 template obtainFeature(alias M) if (__traits(isModule, M)) {
     static if (hasFeature!M) {
-    pragma(msg, `__traits(getMember, M, "feature") `, __traits(getMember, M, "feature"));
-//    enum feature="feature";
-    enum obtainFeature = __traits(getMember, M, "feature");
+        enum obtainFeature = __traits(getMember, M, feature_name);
     }
     else {
         enum obtainFeature=false;
@@ -279,9 +272,6 @@ template obtainFeature(alias M) if (__traits(isModule, M)) {
 unittest { // Obtain the
     static assert(obtainFeature!(tagion.behaviour.BehaviourUnittest) ==
             Feature("Some awesome feature should print some cash out of the blue", null));
-    pragma(msg, "allMembers ", __traits(allMembers, tagion.behaviour.BehaviourBase));
-
-    pragma(msg, "obtainFeature!(tagion.behaviour.BehaviourBase) ", obtainFeature!(tagion.behaviour.BehaviourBase));
     static assert(!obtainFeature!(tagion.behaviour.BehaviourBase));
 
 }
