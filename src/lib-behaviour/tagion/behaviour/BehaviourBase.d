@@ -77,23 +77,25 @@ unittest { // Test of memberSequency
             expected));
 }
 
-template getMemberAlias(T, string name) if (is(T==class) || is(T==struct)) {
-    enum code=format!q{alias getMemberAlias=%s.%s;}(T.stringof, name);
+template getMemberAlias(string main, string name) {
+    enum code=format!q{alias getMemberAlias=%s.%s;}(main, name);
     mixin(code);
 }
 
 static unittest {
-    static assert(isCallable!(getMemberAlias!(Some_awesome_feature, "is_debited")));
+    static assert(isCallable!(getMemberAlias!(Some_awesome_feature.stringof, "is_debited")));
 }
 
-template getAllCallable(T) if (is(T==class) || is(T==struct)) {
+template getAllCallables(T) if (is(T==class) || is(T==struct)) {
     alias all_members = aliasSeqOf!([__traits(allMembers, T)]);
-    alias all_members_as_aliases=staticMap!(ApplyLeft!(getMemberAlias, T), all_members);
-    alias getAllCallable=Filter!(isCallable, all_members_as_aliases);
+    alias all_members_as_aliases=staticMap!(ApplyLeft!(getMemberAlias, T.stringof), all_members);
+    alias getAllCallables=Filter!(isCallable, all_members_as_aliases);
 }
 
 static unittest { // Test of getAllCallable
-    static assert(allSatisfy!(isCallable, getAllCallable!Some_awesome_feature));
+    alias all_callables = getAllCallables!Some_awesome_feature;
+    static assert(all_callables.length == 12);
+    static assert(allSatisfy!(isCallable, all_callables));
 }
 
 template hasBehaviours(alias T) if (isCallable!T) {
@@ -108,14 +110,15 @@ static unittest {
 }
 
 template getBehaviours(T) if (is(T==class) || is(T==struct)) {
-    alias get_all_callable = getAllCallable!T;
+    alias get_all_callable = getAllCallables!T;
     alias getBehaviours = Filter!(hasBehaviours, get_all_callable);
 }
 
 static unittest { // Test of getBehaviours
-    alias get_behaviour=getBehaviours!Some_awesome_feature;
-    static assert(allSatisfy!(isCallable, get_behaviour));
-    static assert(allSatisfy!(hasBehaviours, get_behaviour));
+    alias behaviours=getBehaviours!Some_awesome_feature;
+    static assert(behaviours.length == 6);
+    static assert(allSatisfy!(isCallable, behaviours));
+    static assert(allSatisfy!(hasBehaviours, behaviours));
 }
 
 /**
@@ -276,15 +279,76 @@ unittest { // Obtain the
 
 }
 
+// template getModuleM(T, string name) if (is(T==class) || is(T==struct)) {
+//     enum code=format!q{alias getMemberAlias=%s.%s;}(T.stringof, name);
+//     mixin(code);
+// }
 
-template Senarious(alias M) if (__traits(isModule, M)) {
-    pragma(msg, __traits(allMembers, M));
-    alias Senarious = void;
+protected template _Scenarios(alias M, string[] names) {
+    pragma(msg, "Inside _Scenarios");
+    pragma(msg, "Inside _Scenarios ", names);
+    static if (names.length is 0) {
+        pragma(msg, "End !!!!");
+        alias _Scenarios = AliasSeq!();
+    }
+    else { //static if (compiles) { //static if (__traits(compiles, {
+        enum  compiles=__traits(compiles, getMemberAlias!(moduleName!M, names[0]));
+        // alias member = Select!(compiles,
+        //     getMemberAlias!(moduleName!M, names[0]),
+        //     void)
+        static if (compiles) {
+            enum is_scenario = hasUDA!(member, Scenario);
+
+            alias member = getMemberAlias!(moduleName!M, names[0]);
+        }
+        else {
+            enum is_scenario = false;
+            alias member =void;
+        }
+
+
+        // pragma(msg, "member ", moduleName!M);
+        // //    enum compiles =__traits(compiles, getMemberAlias!(moduleName!M, names[0]));
+        // pragma(msg, names[0], " compiles ", compiles);
+        // pragma(msg, "Compiles ///////");
+        static if (is_scenario && (is(member  == class) || is(member == struct))) {
+            pragma(msg, "\tCall __Scenarios");
+            alias _Scenarios =
+                AliasSeq!(
+                    member,
+                    _Scenarios!(M, names[1..$])
+                    );
+            pragma(msg, "_Scenarios ", _Scenarios);
+        }
+
+        else {
+            alias _Scenarios = _Scenarios!(M, names[1..$]);
+        }
+    }
+}
+
+template Scenarios(alias M) if (__traits(isModule, M)) {
+//    enum list =["feature", "Some_awesome_feature", "Some_awesome_feature_bad_format_double_propery", "Some_awesome_feature_bad_format_missing_given", "Some_awesome_feature_bad_format_missing_then"];
+    // enum list = [__traits(allMembers, M)];
+    // pragma(msg, "list ", list);
+    alias Scenarios= _Scenarios!(M, [__traits(allMembers, M)]);
+//    alias Scenarios= _Scenarios!(M,  [__traits(allMembers, M)]);
 }
 
 
 static unittest { //
-    static assert(is(Senarious!(tagion.behaviour.BehaviourUnittest) == int));
+    alias scenarios  = Scenarios!(tagion.behaviour.BehaviourUnittest);
+    pragma(msg, "Scenarios ", scenarios.length);
+    pragma(msg, "Scenarios ", scenarios);
+
+    alias expected_scenarios =AliasSeq!(
+        Some_awesome_feature,
+        Some_awesome_feature_bad_format_double_propery,
+        Some_awesome_feature_bad_format_missing_given,
+        Some_awesome_feature_bad_format_missing_then);
+
+    static assert(scenarios.length == expected_scenarios.length);
+    static assert(__traits(isSame, scenarios, expected_scenarios));
 }
 
 version(unittest) {
