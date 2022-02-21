@@ -6,10 +6,10 @@
 .ONESHELL:
 .NOTPARALLEL:
 
-DROOT:=${shell git rev-parse --show-toplevel}
-SCRIPT:=$(DROOT)/tub
-MAIN_MK:=$(DROOT)/tub/main.mk
-MAIN_FLAGS+=DROOT=$(DROOT)
+REPOROOT:=${shell git rev-parse --show-toplevel}
+SCRIPT:=$(REPOROOT)/tub
+MAIN_MK:=$(REPOROOT)/tub/main.mk
+MAIN_FLAGS+=REPOROOT=$(REPOROOT)
 MAIN_FLAGS+=RECURSIVE=1
 MAIN_FLAGS+=PREBUILD_MK=$(MAIN_MK)
 MAIN_FLAGS+=-f $(MAIN_MK)

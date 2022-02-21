@@ -5,6 +5,13 @@ import tagion.behaviour.BehaviourBase;
 version(unittest) {
     import tagion.hibon.HiBON;
     import tagion.hibon.Document;
+    import std.format;
+    import std.process;
+    immutable(string) REPOROOT;
+    shared static this() {
+        REPOROOT=environment.get(REPOROOT.stringof, null);
+        assert(REPOROOT, format!"%s must be defined"(REPOROOT.stringof));
+    }
     enum feature = Feature("Some awesome feature should print some cash out of the blue");
     // Behavioral examples
     @Scenario("Some awesome money printer")
