@@ -348,15 +348,7 @@ unittest { // The obtainFeature of a module
 
 template isFeature(alias M) {
     alias obtained_feature=obtainFeature!M;
-    pragma(msg, "obtained_feature ", obtained_feature);
-    static if (isType!obtained_feature) {
-        enum isFeature = is(typeof(obtained_feature) == Feature);
-    }
-    else {
-        enum isFeature = false;
-    }
-    pragma(msg, "isFeature ", isFeature);
-
+    enum isFeature = is(typeof(obtained_feature) == Feature);
 }
 
 unittest { // Test isFeature
@@ -365,10 +357,7 @@ unittest { // Test isFeature
 }
 
 protected template _Scenarios(alias M, string[] names) {
-    pragma(msg, "Inside _Scenarios");
-    pragma(msg, "Inside _Scenarios ", names);
     static if (names.length is 0) {
-        pragma(msg, "End !!!!");
         alias _Scenarios = AliasSeq!();
     }
     else {
