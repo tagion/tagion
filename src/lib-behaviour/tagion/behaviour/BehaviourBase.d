@@ -75,6 +75,7 @@ struct Then {
 struct Info(Property) {
     Property property;
     string name; /// Name of the function member
+    Document result;
     mixin HiBONRecord!();
 }
 
