@@ -7,6 +7,9 @@ import std.typecons;
 import tagion.basic.Basic : isOneOf, staticSearchIndexOf;
 
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.Document;
+
+@safe:
 
 @RecordType("Feature")
 struct Feature {
@@ -72,7 +75,7 @@ struct Then {
         });
 }
 
-struct Info(Property) {
+struct Info(alias Property) {
     Property property;
     string name; /// Name of the function member
     Document result;
