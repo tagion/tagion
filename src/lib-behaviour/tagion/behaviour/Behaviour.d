@@ -71,10 +71,43 @@ unittest {
     assert(equal(result, expected));
 }
 
-// @safe
-// void genBehaviourCode(Stream, M)(ref Stream bout, M _module) if (__traits(isModule, M)) {
-// }
+@safe
+FeatureGroup getFeature(alias M)() if (isFeature!M) {
+    FeatureGroup result;
+    result.feature.property = obtainFeature!M;
+    result.feature.name = moduleName!M;
+    static foreach(_Scenario; Scenarios!M) {
+//        ScenarioGroup scenario;
+//        scenario.info.
+        pragma(msg, "_Scenario ", _Scenario);
+    // static foreach(Property; UniqueBehaviourProperties) {
+    //     alias behaviour = getBehaviour!Property;
+
+    // }
+    }
+    return result;
+}
 
 unittest {
+    import std.stdio;
+    FeatureGroup expected;
+    expected.feature.name= "tagion.behaviour.BehaviourUnittest";
+    expected.feature.property = Feature("Some awesome feature should print some cash out of the blue");
+    const feature = getFeature!(tagion.behaviour.BehaviourUnittest);
+    writefln("expected=%J", expected);
+    writefln("feature=%J", feature);
 
+    assert(feature == expected);
+}
+@safe
+void genBehaviourCode(alias M, Stream)(Stream bout) if(isFeature!M) {
+
+}
+
+unittest {
+    import std.outbuffer;
+    auto bout=new OutBuffer;
+    genBehaviourCode!(tagion.behaviour.BehaviourUnittest)(bout);
+
+    assert(bout.toString == "Not code");
 }

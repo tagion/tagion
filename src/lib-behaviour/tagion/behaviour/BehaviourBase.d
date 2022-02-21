@@ -74,7 +74,7 @@ struct Then {
 
 struct Info(Property) {
     Property property;
-    @Label("name") string member_name; /// Name of the function member
+    string name; /// Name of the function member
     mixin HiBONRecord!();
 }
 
@@ -84,17 +84,17 @@ struct BehaviourGrope(Property) if (isOneOf!(Property, UniqueBehaviourProperties
     mixin HiBONRecord!();
 }
 
-struct ScenarioInfo {
-    Info!Scenario scenario;
+struct ScenarioGroup {
+    Info!Scenario info;
     BehaviourGrope!(Given) given;
     @Label(VOID, true) BehaviourGrope!(Then) then;
     BehaviourGrope!(When) when;
     mixin HiBONRecord!();
 }
 
-struct FeatureInfo {
+struct FeatureGroup {
     Info!Feature feature;
-    ScenarioInfo[] scenarios;
+    ScenarioGroup[] scenarios;
     mixin HiBONRecord!();
 }
 
@@ -106,42 +106,42 @@ alias BehaviourProperties = AliasSeq!(Given, And, When, Then);
 /// The behaviour-properties which only occurrences once in a Scenario
 alias UniqueBehaviourProperties = Erase!(And, BehaviourProperties);
 
-alias MemberProperty=Tuple!(string, "member", string, "goal");
-alias PropertyFormat(T)=format!(T.stringof~".%s", string);
+// alias MemberProperty=Tuple!(string, "member", string, "goal");
+// alias PropertyFormat(T)=format!(T.stringof~".%s", string);
 
-const(MemberProperty[]) memberSequency(T)() if (is(T==class) || is(T==struct)) {
-    MemberProperty[] result;
-    static foreach(name; __traits(allMembers, T)) {{
-            enum code=format!q{alias member=%s.%s;}(T.stringof, name);
-            mixin(code);
-            static if (__traits(compiles, typeof(member))) {
-                alias hasProperty(Property) =hasUDA!(member, Property);
-                alias filterProperty=Filter!(hasProperty, BehaviourProperties);
-                static if (filterProperty.length == 1) {
-                    result~=MemberProperty(
-                        PropertyFormat!T(name),
-                        filterProperty[0].stringof);
-                }
-            }
-        }}
-    return result;
-}
+// const(MemberProperty[]) memberSequency(T)() if (is(T==class) || is(T==struct)) {
+//     MemberProperty[] result;
+//     static foreach(name; __traits(allMembers, T)) {{
+//             enum code=format!q{alias member=%s.%s;}(T.stringof, name);
+//             mixin(code);
+//             static if (__traits(compiles, typeof(member))) {
+//                 alias hasProperty(Property) =hasUDA!(member, Property);
+//                 alias filterProperty=Filter!(hasProperty, BehaviourProperties);
+//                 static if (filterProperty.length == 1) {
+//                     result~=MemberProperty(
+//                         PropertyFormat!T(name),
+//                         filterProperty[0].stringof);
+//                 }
+//             }
+//         }}
+//     return result;
+// }
 
 
-unittest { // Test of memberSequency
-    alias SomeFormat=format!(Some_awesome_feature.stringof~".%s", string);
+// unittest { // Test of memberSequency
+//     alias SomeFormat=format!(Some_awesome_feature.stringof~".%s", string);
 
-    const expected=
-        zip(
-            ["is_valid", "in_credit", "contains_cash", "request_cash", "is_debited", "is_dispensed"],
-            ["Given", "And", "And", "When", "Then", "And"]
-        )
-        .map!(a => tuple(SomeFormat(a[0]), a[1]))
-        .array;
+//     const expected=
+//         zip(
+//             ["is_valid", "in_credit", "contains_cash", "request_cash", "is_debited", "is_dispensed"],
+//             ["Given", "And", "And", "When", "Then", "And"]
+//         )
+//         .map!(a => tuple(SomeFormat(a[0]), a[1]))
+//         .array;
 
-    assert(equal(memberSequency!Some_awesome_feature,
-            expected));
-}
+//     assert(equal(memberSequency!Some_awesome_feature,
+//             expected));
+// }
 
 template getMemberAlias(string main, string name) {
     enum code=format!q{alias getMemberAlias=%s.%s;}(main, name);
@@ -307,13 +307,31 @@ static unittest {
 
 enum feature_name="feature";
 
+template isFeature(alias M)  if (__traits(isModule, M)) {
+    import std.algorithm.searching : any;
+    enum feature_found = [__traits(allMembers, M)].any!(a => a == feature_name);
+    static if (feature_found) {
+        enum obtainFeature = __traits(getMember, M, feature_name);
+        enum isFeature = is(typeof(obtainFeature) == Feature);
+    }
+    else {
+        enum isFeature=false;
+    }
+}
+
+//
+unittest {
+    static assert(isFeature!(tagion.behaviour.BehaviourUnittest));
+    static assert(!isFeature!(tagion.behaviour.BehaviourBase));
+}
+
 /**
    Returns:
    The Feature of a Module
    If the Modules does not contain a feature then a false is returned
  */
 template obtainFeature(alias M) if (__traits(isModule, M)) {
-    static if (hasFeature!M) {
+    static if (isFeature!M) {
         enum obtainFeature = __traits(getMember, M, feature_name);
     }
     else {
@@ -327,16 +345,6 @@ unittest { // The obtainFeature of a module
             Feature("Some awesome feature should print some cash out of the blue", null));
     static assert(!obtainFeature!(tagion.behaviour.BehaviourBase));
 
-}
-
-template isFeature(alias M) {
-    alias obtained_feature=obtainFeature!M;
-    enum isFeature = is(typeof(obtained_feature) == Feature);
-}
-
-unittest { // Test isFeature
-    static assert(isFeature!(tagion.behaviour.BehaviourUnittest));
-    static assert(!isFeature!(tagion.behaviour.BehaviourBase));
 }
 
 protected template _Scenarios(alias M, string[] names) {
