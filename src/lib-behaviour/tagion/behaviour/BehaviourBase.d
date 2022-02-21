@@ -339,11 +339,29 @@ template obtainFeature(alias M) if (__traits(isModule, M)) {
 }
 
 ///
-unittest { // Obtain the
+unittest { // The obtainFeature of a module
     static assert(obtainFeature!(tagion.behaviour.BehaviourUnittest) ==
             Feature("Some awesome feature should print some cash out of the blue", null));
     static assert(!obtainFeature!(tagion.behaviour.BehaviourBase));
 
+}
+
+template isFeature(alias M) {
+    alias obtained_feature=obtainFeature!M;
+    pragma(msg, "obtained_feature ", obtained_feature);
+    static if (isType!obtained_feature) {
+        enum isFeature = is(typeof(obtained_feature) == Feature);
+    }
+    else {
+        enum isFeature = false;
+    }
+    pragma(msg, "isFeature ", isFeature);
+
+}
+
+unittest { // Test isFeature
+    static assert(isFeature!(tagion.behaviour.BehaviourUnittest));
+    static assert(!isFeature!(tagion.behaviour.BehaviourBase));
 }
 
 protected template _Scenarios(alias M, string[] names) {

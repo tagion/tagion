@@ -67,12 +67,14 @@ unittest {
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_dispensed"
         ]
         .map!(a => Some_awesome_feature.result(a));
-    // writefln("%-( %s \n%)", expected);
-    // writefln("%-( %s \n%)", result.map!(a => a.toPretty));
     assert(awesome.count == 6);
     assert(equal(result, expected));
-    // auto awesome_implemeted = new Some_awesome_feature_all_implemented;
-    // const run_awesome_implemeted=scenario(awesome_implemeted);
-    // assert(run_awesome_implemeted());
-    // assert(awesome_implemeted.count == 6);
+}
+
+// @safe
+// void genBehaviourCode(Stream, M)(ref Stream bout, M _module) if (__traits(isModule, M)) {
+// }
+
+unittest {
+
 }
