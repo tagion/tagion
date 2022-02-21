@@ -307,23 +307,6 @@ static unittest {
 
 enum feature_name="feature";
 
-template hasFeature(alias M)  if (__traits(isModule, M)) {
-    import std.algorithm.searching : any;
-    enum feature_found = [__traits(allMembers, M)].any!(a => a == feature_name);
-    static if (feature_found) {
-        enum obtainFeature = __traits(getMember, M, feature_name);
-        enum hasFeature = is(typeof(obtainFeature) == Feature);
-    }
-    else {
-        enum hasFeature=false;
-    }
-}
-
-unittest {
-    static assert(hasFeature!(tagion.behaviour.BehaviourUnittest));
-    static assert(!hasFeature!(tagion.behaviour.BehaviourBase));
-}
-
 /**
    Returns:
    The Feature of a Module
@@ -388,7 +371,7 @@ template Scenarios(alias M) if (__traits(isModule, M)) {
     alias Scenarios= _Scenarios!(M, [__traits(allMembers, M)]);
 }
 
-
+///
 static unittest { //
     alias scenarios  = Scenarios!(tagion.behaviour.BehaviourUnittest);
     alias expected_scenarios =AliasSeq!(
