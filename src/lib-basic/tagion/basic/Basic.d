@@ -559,3 +559,13 @@ static unittest {
     static assert(staticSearchIndexOf!(isIntegral, seq) is 1);
     static assert(staticSearchIndexOf!(isFloatingPoint, seq) is -1);
 }
+
+enum unitdata="unitdata";
+/**
+   Returns:
+   unittest data filename
+ */
+string unitfile(string filename, string file=__FILE__) {
+    import std.path;
+    return buildPath(file.dirName, unitdata, filename);
+}

@@ -84,7 +84,7 @@ struct Info(alias Property) {
 
 struct BehaviourGrope(Property) if (isOneOf!(Property, UniqueBehaviourProperties)) {
     Info!Property info;
-    @Label(VOID, true) Info!And[] ands_info;
+    @Label(VOID, true) Info!And[] ands;
     mixin HiBONRecord!();
 }
 
@@ -388,12 +388,32 @@ static unittest { //
     alias scenarios  = Scenarios!(tagion.behaviour.BehaviourUnittest);
     alias expected_scenarios =AliasSeq!(
         Some_awesome_feature,
-        Some_awesome_feature_bad_format_double_propery,
+        Some_awesome_feature_bad_format_double_property,
         Some_awesome_feature_bad_format_missing_given,
         Some_awesome_feature_bad_format_missing_then);
 
     static assert(scenarios.length == expected_scenarios.length);
     static assert(__traits(isSame, scenarios, expected_scenarios));
+}
+
+template getScenario(T) if (is(T == class) || is(T == struct)) {
+    enum scenario_attr = getUDAs!(T, Scenario);
+    pragma(msg, "scenario_attr ", scenario_attr);
+    static assert(scenario_attr.length <= 1,
+        format!"%s is not a %s"(T.stringof, Scenario.stringof));
+    static if (scenario_attr.length is 1) {
+        enum getScenario=scenario_attr[0];
+    }
+    else {
+        enum getScenario=false;
+    }
+    pragma(msg, "getScenario ", getScenario);
+}
+
+static unittest {
+    enum scenario = getScenario!Some_awesome_feature;
+    static assert(is(typeof(scenario) == Scenario));
+    static assert(scenario is Scenario("Some awesome money printer", null));
 }
 
 version(unittest) {

@@ -682,12 +682,8 @@ mixin template HiBONRecord(string CTOR = "") {
     return doc;
 }
 
-const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
-    import tagion.hibon.HiBONException : check;
-
-    immutable data = assumeUnique(cast(ubyte[]) file.read(filename));
-    const doc = Document(data);
-    check(doc.isInorder, "HiBON Document format failed");
+const(T) fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
+    const doc = filename.fread;
     return T(doc, args);
 }
 

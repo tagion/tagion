@@ -57,29 +57,17 @@ version(unittest) {
         }
 
     @Scenario("Some money printer which is controlled by a bankster")
-        class Some_awesome_feature_bad_format_double_propery {
+        class Some_awesome_feature_bad_format_double_property {
             @Given("the card is valid")
             Document is_valid() {
-                return Document();
-            }
-            @Given("the card is valid (should not have two Given)")
-            Document is_valid_bad_one() {
                 return Document();
             }
             @When("the Customer request cash")
             Document request_cash() {
                 return Document();
             }
-            @When("the Customer request cash (Should not have two When)")
-            Document request_cash_bad_one() {
-                return Document();
-            }
             @Then("the account is debited")
             Document is_debited() {
-                return Document();
-            }
-            @Then("the account is debited (Should not have two Then)")
-            Document is_debited_bad_one() {
                 return Document();
             }
             @And("the cash is dispensed")
@@ -90,8 +78,10 @@ version(unittest) {
 
     @Scenario("Some money printer which has run out of paper")
         class Some_awesome_feature_bad_format_missing_given {
-            @Then("the account is debited (Should not have two Then)")
+            @Then("the account is debited ")
             Document is_debited_bad_one() {
+                import std.exception;
+                throw new Exception("Bad debit");
                 return Document();
             }
             @And("the cash is dispensed")
@@ -100,10 +90,11 @@ version(unittest) {
             }
         }
 
-    @Scenario("Some money print which is gone wild and prints toilet paper")
+    @Scenario("Some money printer which is gone wild and prints toilet paper")
         class Some_awesome_feature_bad_format_missing_then {
             @Given("the card is valid")
             Document is_valid() {
+                assert(0);
                 return Document();
             }
         }
