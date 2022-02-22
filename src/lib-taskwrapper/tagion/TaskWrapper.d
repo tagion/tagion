@@ -3,23 +3,24 @@ module tagion.utils.TaskWrapper;
 import std.stdio;
 import std.format;
 import std.traits : isCallable;
-import tagion.basic.Basic : Control;
+import tagion.basic.Basic : Control, TrustedConcurrency;
 import tagion.logger.Logger;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
 
-struct TaskMethod {
+mixin TrustedConcurrency;
+
+@safe struct TaskMethod {
 }
 
-struct Task(alias Func) {
+@safe struct Task(alias Func) {
     static assert(is(Func == struct));
     import std.traits : Parameters, ParameterIdentifierTuple, isFunction, isDelegate, isFunctionPointer, hasUDA, getUDAs;
     import std.meta : AliasSeq;
     import std.exception;
-    import std.concurrency;
 
     alias Params = Parameters!Func;
     alias ParamNames = ParameterIdentifierTuple!Func;
-
+    
     private Tid _tid;
     immutable(string) task_name;
 
@@ -46,7 +47,7 @@ struct Task(alias Func) {
                         enum method_code = format!q{
                             alias FuncParams_%1$s=AliasSeq!%2$s;
                             void %1$s(FuncParams_%1$s args) {
-                                _tid.send(args);
+                                send(_tid, args);
                                     }}(m, Parameters!(Type).stringof);
                         result ~= method_code;
                     }
@@ -76,7 +77,7 @@ struct Task(alias Func) {
                 // Send logs?
             }
             scope (exit) {
-                ownerTid.prioritySend(Control.END);
+                prioritySend(ownerTid, Control.END);
             }
 
             log.register(task_name);
@@ -91,9 +92,7 @@ struct Task(alias Func) {
     }
 }
 
-mixin template TaskBasic() {
-    import concurrency = std.concurrency;
-
+@safe mixin template TaskBasic() {
     bool stop;
     // TODO Do we need handle also "abort"? 
 
@@ -129,14 +128,13 @@ mixin template TaskBasic() {
     }
 }
 
-struct FakeTask {
-    import std.concurrency;
+@safe struct FakeTask {
     import std.string : StringException;
 
     mixin TaskBasic;
-
+    
     @TaskMethod void echo_string(string test_string) {
-        ownerTid.send(test_string);
+        send(ownerTid, test_string);
     }
 
     @TaskMethod void throwing_method(int n) {
@@ -144,7 +142,7 @@ struct FakeTask {
     }
 
     void opCall(int x, uint y) {
-        ownerTid.send(Control.LIVE);
+        send(ownerTid, Control.LIVE);
         while (!stop) {
             receive(
                     &control,
@@ -154,10 +152,9 @@ struct FakeTask {
     }
 }
 
-unittest {
-    import std.concurrency : receiveOnly, receive, locate, Tid;
+@safe unittest {
     import std.variant : Variant;
-
+    
     // Spawn fake task
     enum fake_task_name = "fake_task_name";
     alias fake_task = Task!FakeTask;
@@ -172,6 +169,7 @@ unittest {
     // Check handling exceptions
     task.throwing_method(10);
     assert(receiveOnly!Control == Control.END);
+    pragma(msg, "fixme(ib): check for 'locate(task_name)' after adding application tests");
 
     // Check stopping task using Control.STOP
     enum another_fake_task_name = "another_fake_task_name";
@@ -179,7 +177,7 @@ unittest {
     assert(receiveOnly!Control == Control.LIVE);
     task2.control(Control.STOP);
     assert(receiveOnly!Control == Control.END);
-    // TODO: check locate(task name)
+    pragma(msg, "fixme(ib): check for 'locate(task_name)' after adding application tests");
 
     // TODO: add tests for tasks table
 }
