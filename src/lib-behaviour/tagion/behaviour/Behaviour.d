@@ -34,8 +34,6 @@ auto scenario(T)(T test) if (isScenario!T) {
             auto and = %3$s.%4$s;
             %1$s.%2$s.ands[%5$d].result = and;
         },string, string, string, string, size_t);
-//    auto
-//    Document[] results;
     auto scenario_group=getScenarioGroup!T;
     ScenarioGroup run(S...)() {
         static if (S.length is 0) {
@@ -53,24 +51,18 @@ auto scenario(T)(T test) if (isScenario!T) {
             static if (!is(behaviour == void)) {
                 import std.uni : toLower;
                 enum group_name = __traits(identifier, typeof(getProperty!(behaviour))).toLower;
-                pragma(msg, "group_name ", group_name);
                 enum code = memberCode(
                     scenario_group.stringof, group_name,
                     test.stringof, __traits(identifier, behaviour));
-                pragma(msg, "code ", code);
                 mixin(code);
                 static foreach(i, under_behaviour; getUnderBehaviour!(T, S[0])) {{
-                        // enum under_group_name = __traits(identifier, typeof(getProperty!(under_behaviour))).toLower;
-                        // pragma(msg, "unde_group_name ", under_group_name);
                         enum under_code = underMemberCode(
                             scenario_group.stringof, group_name,
                             test.stringof, __traits(identifier, under_behaviour), i);
-                        pragma(msg, "under_code ", under_code);
                         mixin(under_code);
                     }}
             }
             return run!(S[1..$])();
-//            return scenario_group;
         }
     }
     return &run!UniqueBehaviourProperties;
@@ -81,7 +73,6 @@ unittest {
     import std.algorithm.iteration : map;
     import std.algorithm.comparison : equal;
     import std.array;
-    import std.stdio;
     auto awesome = new Some_awesome_feature;
     const run_awesome=scenario(awesome);
     ScenarioGroup scenario=getScenarioGroup!Some_awesome_feature;
@@ -109,18 +100,11 @@ unittest {
     results~=result.then.ands
         .map!(a => a.result)
         .array;
-
-    writefln("expected =%-(%s \n%)", expected.map!(a => a.toPretty));
-    writefln("results =%-(%s \n%)", results.map!(a => a.toPretty));
-
     assert(equal(results, expected));
 }
 
 ScenarioGroup getScenarioGroup(T)() if (isScenario!T) {
     ScenarioGroup scenario_group;
-    // scope(exit) {
-    //     result.scenarios~=scenario;
-    // }
     scenario_group.info.property = getScenario!T;
     scenario_group.info.name = T.stringof;
     static foreach(_Property; UniqueBehaviourProperties) {{
@@ -145,9 +129,9 @@ ScenarioGroup getScenarioGroup(T)() if (isScenario!T) {
 }
 
 
-//@safe
+@safe
 FeatureGroup getFeature(alias M)() if (isFeature!M) {
-    import std.stdio;
+//    import std.stdio;
     FeatureGroup result;
     result.feature.property = obtainFeature!M;
     result.feature.name = moduleName!M;
