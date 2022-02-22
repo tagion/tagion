@@ -31,23 +31,23 @@ import tagion.utils.Miscellaneous : cutHex;
  + Returns:
  +     Returns `true` if the votes are more thna 2/3
  +/
-@safe /*@nogc*/
+@safe @nogc
 bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }
 
-@safe /*@nogc*/
+@safe @nogc
 bool isMajority(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
     return isMajority(mask.count, hashgraph.node_size);
 }
 
-@safe /*@nogc*/
+@safe @nogc
 bool isAllVotes(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
     return mask.count is hashgraph.node_size;
 }
 
 enum int eva_altitude = -77;
-@safe /*@nogc*/
+@safe @nogc
 int nextAltitide(const Event event) pure nothrow {
     return (event) ? event.altitude + 1 : eva_altitude;
 }
@@ -217,7 +217,7 @@ struct EventBody {
         }
     }
 
-    /*@nogc*/
+    @nogc
     bool isEva() pure const nothrow {
         return (mother.length == 0);
     }
@@ -364,7 +364,7 @@ struct Wavefront {
         }
     }
 
-    /*@nogc*/
+    @nogc
     const(Tides) tides() const pure nothrow {
         return _tides;
     }

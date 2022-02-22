@@ -118,7 +118,7 @@ struct Document {
     }
 
     @property const {
-        bool empty() {
+        @trusted bool empty() {
             return data.length <= ubyte.sizeof;
         }
 
@@ -261,6 +261,7 @@ unittest { // Document with residual data
         Element           _element;
 
     public:
+        @disable this();
         /**
          * Construct Range based on buffer
          * @param data - buffer of data
@@ -425,15 +426,15 @@ unittest { // Document with residual data
     /**
      * @return true if the key exist in the Document
      */
-    bool hasElement(scope string key) const {
+    @trusted bool hasMember(scope string key) const {
         return !opBinaryRight!("in")(key).isEod();
     }
 
     /**
      * @return true if the index exist in the Document
      */
-    bool hasElement(Index)(scope Index index) const if (isIntegral!Index) {
-        return hasElement(index.to!string);
+    @trusted bool hasMember(Index)(scope Index index) const if (isIntegral!Index) {
+        return hasMember(index.to!string);
     }
 
     /**
@@ -470,7 +471,7 @@ unittest { // Document with residual data
      * @return the element with the key
      * @throw if the element with the key is not found then and HiBONException is thrown
      */
-    @nogc const(Element) opIndex(in string key) const {
+    @trusted @nogc const(Element) opIndex(in string key) const {
         auto result = key in this;
         return result;
     }
@@ -480,7 +481,7 @@ unittest { // Document with residual data
      * @throw if the element with the key is not found then and HiBONException is thrown
        Or of the key is not an index a std.conv.ConvException is thrown
      */
-    @nogc const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
+    @trusted @nogc const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
         import std.conv;
         return opIndex(index.to!string);
     }
@@ -488,7 +489,7 @@ unittest { // Document with residual data
     /**
      * Same as data
      */
-    alias serialize=data;
+    alias serialize = data;
 
     /**
      * @param key, which size needs to be calculated
@@ -837,7 +838,7 @@ unittest { // Document with residual data
              * @return the value as the type T
              * @throw if the element does not contain the type and HiBONException is thrown
              */
-            const(T) get(T)() const {
+            @trusted const(T) get(T)() const {
                 enum E = Value.asType!T;
                 static assert(E !is Type.NONE, "Unsupported type "~T.stringof);
                 return by!E;

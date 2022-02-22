@@ -1,6 +1,6 @@
 /// \file SecureWallet.d
 
-module tagion.wallet.BetterC.SecureWallet;
+module tagion.betterC.wallet.SecureWallet;
 
 import std.format;
 import std.string : representation;
@@ -62,12 +62,12 @@ import tagion.wallet.WalletException : check;
         this(__pin, __wallet);
     }
 
-    /*@nogc*/ const(RecoverGenerator) wallet() pure const nothrow
+    @nogc const(RecoverGenerator) wallet() pure const nothrow
     {
         return _wallet;
     }
 
-    /*@nogc*/ const(DevicePIN) pin() pure const nothrow
+    @nogc const(DevicePIN) pin() pure const nothrow
     {
         return _pin;
     }
@@ -75,7 +75,7 @@ import tagion.wallet.WalletException : check;
     //     return wallet.toDoc;
     // }
 
-    /*@nogc*/ uint confidence() pure const nothrow
+    @nogc uint confidence() pure const nothrow
     {
         return _wallet.confidence;
     }
@@ -168,7 +168,7 @@ import tagion.wallet.WalletException : check;
         return false;
     }
 
-    /*@nogc*/ bool isLoggedin() pure const nothrow
+    @nogc bool isLoggedin() pure const nothrow
     {
         // pragma(msg, "fixme(cbr): Yam the net");
         // return net !is null;
@@ -582,9 +582,4 @@ import tagion.wallet.WalletException : check;
             //writefln("contract_2=%s", contract_2.toPretty);
         }
     }
-}
-
-unittest
-{
-
 }

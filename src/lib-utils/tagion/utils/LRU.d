@@ -21,7 +21,7 @@ class LRU(K, V) {
                     "%s must have a static member named 'undefined'", V.stringof));
             }
 
-            @safe /*@nogc*/ struct Entry {
+            @safe @nogc struct Entry {
                 K key;
                 V value;
                 this(K key, ref V value) pure nothrow {
@@ -124,7 +124,7 @@ class LRU(K, V) {
 
             // Check if a key is in the cache, without updating the recent-ness
             // or deleting it for being stale.
-            /*@nogc*/
+            @nogc
             bool contains(scope const(K) key) const pure nothrow {
                 return (key in items) !is null;
             }
@@ -132,7 +132,7 @@ class LRU(K, V) {
             // Returns the key value (or undefined if not found) without updating
             // the "recently used"-ness of the key.
             static if (does_not_have_immutable_members) {
-                /*@nogc*/
+                @nogc
                 bool peek(const(K) key, ref V value) pure nothrow {
                     auto ent = key in items;
                     if (ent !is null) {
@@ -175,7 +175,7 @@ class LRU(K, V) {
                 return false;
             }
 
-            /*@nogc*/
+            @nogc
             void setEvict(EvictCallback evict) nothrow {
                 onEvict = evict;
             }
@@ -194,7 +194,7 @@ class LRU(K, V) {
             }
 
             // GetOldest returns the oldest entry
-            /*@nogc*/
+            @nogc
             const(Entry)* getOldest() const pure nothrow {
                 auto last = evictList.last;
                 if (last) {
@@ -206,18 +206,18 @@ class LRU(K, V) {
             }
 
             /// keys returns a slice of the keys in the cache, from oldest to newest.
-            /*@nogc*/
+            @nogc
             auto keys() pure nothrow {
                 return evictList.revert.map!(a => a.key);
             }
 
             // length returns the number of items in the cache.
-            /*@nogc*/
+            @nogc
             uint length() pure const nothrow {
                 return evictList.length;
             }
 
-            /*@nogc*/ EvictList.Range!false opSlice() nothrow {
+            @nogc EvictList.Range!false opSlice() nothrow {
                 return evictList[];
             }
 

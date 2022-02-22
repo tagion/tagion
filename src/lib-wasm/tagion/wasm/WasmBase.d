@@ -643,7 +643,7 @@ static assert(isInputRange!ExprRange);
         WasmException wasm_exception;
     }
 
-    const(WasmException) exception() const pure nothrow /*@nogc*/ {
+    const(WasmException) exception() const pure nothrow @nogc {
         return wasm_exception;
     }
 

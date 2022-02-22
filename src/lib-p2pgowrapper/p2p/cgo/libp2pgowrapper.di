@@ -76,7 +76,7 @@ struct optAddressApi_return
     ErrorCode r1; /* code */
 }
 
-optAddressApi_return optAddressApi (DBuffer p0);
+optAddressApi_return optAddressApi (DBuffer addr);
 
 /* Return type for optNoListenAddrsApi */
 struct optNoListenAddrsApi_return
@@ -121,7 +121,7 @@ struct optIdentityApi_return
     ErrorCode r1; /* code */
 }
 
-optIdentityApi_return optIdentityApi (int p0);
+optIdentityApi_return optIdentityApi (int seed);
 
 /* Return type for subscribeToRechabiltyEventApi */
 struct subscribeToRechabiltyEventApi_return
@@ -130,7 +130,7 @@ struct subscribeToRechabiltyEventApi_return
     ErrorCode r1; /* code */
 }
 
-subscribeToRechabiltyEventApi_return subscribeToRechabiltyEventApi (void* p0, void* p1, DBuffer p2);
+subscribeToRechabiltyEventApi_return subscribeToRechabiltyEventApi (void* h, void* handler, DBuffer tid);
 
 /* Return type for subscribeToAddressUpdatedEventApi */
 struct subscribeToAddressUpdatedEventApi_return
@@ -139,9 +139,8 @@ struct subscribeToAddressUpdatedEventApi_return
     ErrorCode r1; /* code */
 }
 
-subscribeToAddressUpdatedEventApi_return subscribeToAddressUpdatedEventApi (void* p0, void* p1, DBuffer p2);
-
-ErrorCode unsubscribeApi (void* p0);
+subscribeToAddressUpdatedEventApi_return subscribeToAddressUpdatedEventApi (void* h, void* handler, DBuffer tid);
+ErrorCode unsubscribeApi (void* subsPtr);
 
 /* Return type for createBackgroundContextApi */
 struct createBackgroundContextApi_return
@@ -159,7 +158,7 @@ struct createMdnsApi_return
     ErrorCode r1; /* code */
 }
 
-createMdnsApi_return createMdnsApi (void* p0, void* p1, GoInt32 p2, DBuffer p3);
+createMdnsApi_return createMdnsApi (void* ctxPtr, void* nodePtr, GoInt32 time, DBuffer rendezvous);
 
 /* Return type for registerNotifeeApi */
 struct registerNotifeeApi_return
@@ -168,11 +167,9 @@ struct registerNotifeeApi_return
     ErrorCode r1; /* code */
 }
 
-registerNotifeeApi_return registerNotifeeApi (void* p0, void* p1, DBuffer p2);
-
-ErrorCode unregisterNotifeeApi (void* p0, void* p1);
-
-ErrorCode stopMdnsApi (void* p0);
+registerNotifeeApi_return registerNotifeeApi (void* servicePtr, void* handler, DBuffer tid);
+ErrorCode unregisterNotifeeApi (void* servicePtr, void* notifeePtr);
+ErrorCode stopMdnsApi (void* servicePtr);
 
 /* Return type for createNodeApi */
 struct createNodeApi_return
@@ -181,19 +178,13 @@ struct createNodeApi_return
     ErrorCode r1; /* code */
 }
 
-createNodeApi_return createNodeApi (void* p0, GoSlice p1);
-
-ErrorCode closeNodeApi (void* p0);
-
-ErrorCode getNodeIdApi (void* p0, void* p1, void* p2);
-
-ErrorCode getNodeAddrInfoMarshalApi (void* p0, void* p1, void* p2);
-
-ErrorCode getNodeAddressesApi (void* p0, void* p1, void* p2);
-
-ErrorCode getNodePublicAddressApi (void* p0, void* p1, void* p2);
-
-ErrorCode getAddrInfoMarshalApi (void* p0, void* p1, void* p2);
+createNodeApi_return createNodeApi (void* ctx, GoSlice opts);
+ErrorCode closeNodeApi (void* node);
+ErrorCode getNodeIdApi (void* node, void* callback, void* context);
+ErrorCode getNodeAddrInfoMarshalApi (void* node, void* callback, void* context);
+ErrorCode getNodeAddressesApi (void* node, void* callback, void* context);
+ErrorCode getNodePublicAddressApi (void* node, void* callback, void* context);
+ErrorCode getAddrInfoMarshalApi (void* node, void* callback, void* context);
 
 /* Return type for handleApi */
 struct handleApi_return
@@ -203,25 +194,16 @@ struct handleApi_return
     ErrorCode r2; /* code */
 }
 
-handleApi_return handleApi (void* p0, DBuffer p1, GoSlice p2, GoUint8 p3);
-
-ErrorCode connectApi (void* p0, void* p1, DBuffer p2, GoUint8 p3);
-
-ErrorCode listenStreamApi (void* p0, GoUint64 p1, void* p2, DBuffer p3, GoInt32 p4, GoInt32 p5);
-
-ErrorCode listenApi (void* p0, DBuffer p1, void* p2, DBuffer p3, GoInt32 p4, GoInt32 p5);
-
-ErrorCode listenMatchApi (void* p0, DBuffer p1, void* p2, DBuffer p3, GoInt32 p4, GoInt32 p5, GoSlice p6);
-
-ErrorCode closeListenerApi (void* p0, DBuffer p1);
-
-ErrorCode writeApi (void* p0, void* p1, int p2);
-
-ErrorCode closeStreamApi (void* p0);
-
-ErrorCode resetStreamApi (void* p0);
-
-ErrorCode destroyApi (void* p0);
+handleApi_return handleApi (void* node, DBuffer addr, GoSlice pids, GoUint8 marshal);
+ErrorCode connectApi (void* node, void* ctx, DBuffer addr, GoUint8 marshal);
+ErrorCode listenStreamApi (void* stream, GoUint64 id, void* handler, DBuffer tid, GoInt32 timeout, GoInt32 maxLength);
+ErrorCode listenApi (void* node, DBuffer pid, void* handler, DBuffer tid, GoInt32 timeout, GoInt32 maxLength);
+ErrorCode listenMatchApi (void* node, DBuffer pid, void* handler, DBuffer tid, GoInt32 timeout, GoInt32 maxLength, GoSlice pids);
+ErrorCode closeListenerApi (void* node, DBuffer pid);
+ErrorCode writeApi (void* stream, void* data, int dataLen);
+ErrorCode closeStreamApi (void* stream);
+ErrorCode resetStreamApi (void* stream);
+ErrorCode destroyApi (void* ptr);
 
 /* Return type for createAutoNATApi */
 struct createAutoNATApi_return
@@ -230,7 +212,7 @@ struct createAutoNATApi_return
     ErrorCode r1; /* code */
 }
 
-createAutoNATApi_return createAutoNATApi (void* p0, void* p1, GoSlice p2);
+createAutoNATApi_return createAutoNATApi (void* host, void* ctx, GoSlice opts);
 
 /* Return type for optEnableServiceApi */
 struct optEnableServiceApi_return
@@ -239,7 +221,7 @@ struct optEnableServiceApi_return
     ErrorCode r1; /* code */
 }
 
-optEnableServiceApi_return optEnableServiceApi (void* p0);
+optEnableServiceApi_return optEnableServiceApi (void* host);
 
 /* Return type for optWithoutStartupDelayApi */
 struct optWithoutStartupDelayApi_return
@@ -257,9 +239,8 @@ struct optWithScheduleApi_return
     ErrorCode r1; /* code */
 }
 
-optWithScheduleApi_return optWithScheduleApi (GoInt32 p0, GoInt32 p1);
-
-ErrorCode getPublicAddress (void* p0, void* p1, void* p2);
+optWithScheduleApi_return optWithScheduleApi (GoInt32 retryInterval, GoInt32 refreshInterval);
+ErrorCode getPublicAddress (void* nat, void* callback, void* context);
 
 /* Return type for getNATStatus */
 struct getNATStatus_return
@@ -268,7 +249,6 @@ struct getNATStatus_return
     ErrorCode r1; /* code */
 }
 
-getNATStatus_return getNATStatus (void* p0);
-
+getNATStatus_return getNATStatus (void* nat);
 void callGCApi ();
 

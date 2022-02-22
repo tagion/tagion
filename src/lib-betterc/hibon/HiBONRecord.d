@@ -1,4 +1,4 @@
-module tagion.hibon.HiBONRecord;
+module tagion.betterC.hibon.HiBONRecord;
 
 import std.stdio;
 import tagion.hibon.HiBONJSON;
@@ -9,26 +9,26 @@ import std.typecons : Tuple;
 import std.traits : hasMember, ReturnType, isArray, ForeachType, isUnsigned;
 
 import tagion.basic.Basic : basename, EnumContinuousSequency;
-import tagion.hibon.HiBONBase : ValueT;
+import tagion.betterC.hibon.HiBONBase : ValueT;
 
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONException : HiBONRecordException;
+import tagion.betterC.hibon.HiBON : HiBONT;
+import tagion.betterC.hibon.Document : Document;
+// import tagion.betterC.hibon.HiBONException : HiBONRecordException;
 
 alias DocResult = Tuple!(Document.Element.ErrorCode, "error", string, "key");
 
 ///  Returns: true if struct or class supports toHiBON
-enum isHiBON(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
-            "toHiBON") && (is(ReturnType!(T.toHiBON) : const(HiBON)));
+enum isHiBON(T) = (is(T == struct)) && hasMember!(T,
+            "toHiBON") && (is(ReturnType!(T.toHiBON) : const(HiBONT)));
 
 ///  Returns: true if struct or class supports toDoc
-enum isHiBONRecord(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
+enum isHiBONRecord(T) = (is(T == struct)) && hasMember!(T,
             "toDoc") && (is(ReturnType!(T.toDoc) : const(Document)));
 
 enum isHiBONRecordArray(T) = isArray!T && isHiBONRecord!(ForeachType!T);
 
 enum STUB = HiBONPrefix.HASH ~ "";
-@safe bool isStub(const Document doc) {
+@trusted bool isStub(const Document doc) {
     return !doc.empty && doc.keys.front == STUB;
 }
 
@@ -37,17 +37,18 @@ enum HiBONPrefix {
     PARAM = '$'
 }
 
-bool hasHashKey(T)(T doc) if (is(T : const(HiBON)) || is(T : const(Document))) {
+bool hasHashKey(T)(T doc) if (is(T : const(HiBONT)) || is(T : const(Document))) {
     return !doc.empty && doc.keys.front[0] is HiBONPrefix.HASH && doc.keys.front != STUB;
 }
 
 unittest {
+    import tagion.betterC.hibon.HiBON;
     import std.range : iota;
     import std.array : array;
 
     Document doc;
     { // Define stub
-        auto h = new HiBON;
+        auto h = HiBON();
         h[STUB] = iota(ubyte(5)).array.idup;
         doc = Document(h);
     }
@@ -56,7 +57,7 @@ unittest {
     assert(!hasHashKey(doc));
 
     { // Define document with hash key
-        auto h = new HiBON;
+        auto h = HiBON();
         h["#key"] = "some data";
         doc = Document(h);
     }
@@ -145,8 +146,8 @@ enum TYPENAME = HiBONPrefix.PARAM ~ "@";
 enum VOID = "*";
 
 mixin template HiBONRecordType() {
-    import tagion.hibon.Document : Document;
-    import tagion.hibon.HiBONRecord : TYPENAME;
+    import tagion.betterC.hibon.Document : Document;
+    import tagion.betterC.hibon.HiBONRecord : TYPENAME;
     import std.traits : getUDAs, hasUDA;
 
     alias ThisType = typeof(this);
@@ -209,20 +210,15 @@ mixin template HiBONRecord(string CTOR = "") {
 
     import tagion.basic.Basic : basename, EnumContinuousSequency;
 
-    //    import tagion.hibon.HiBONException : check;
     import tagion.basic.Message : message;
     import tagion.basic.Basic : basename, CastTo;
-    import tagion.basic.TagionExceptions : Check;
-    import tagion.hibon.HiBONException : HiBONRecordException;
-    import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,
+    import tagion.betterC.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,
         Label, GetLabel, Filter, Default, Inspect, VOID;
 
-    protected alias check = Check!(HiBONRecordException);
+    // import tagion.hibon.HiBONJSON : JSONString;
+    import tagion.betterC.hibon.HiBON : HiBONT;
 
-    import tagion.hibon.HiBONJSON : JSONString;
-    import tagion.hibon.HiBON : HiBON;
-
-    mixin JSONString;
+    // mixin JSONString;
 
     alias ThisType = typeof(this);
 
@@ -231,7 +227,7 @@ mixin template HiBONRecord(string CTOR = "") {
     enum HAS_TYPE = hasMember!(ThisType, "type_name");
     static bool less_than(Key)(Key a, Key b) if (!is(Key : string)) {
         alias BaseKey = TypedefType!Key;
-        static if (HiBON.Value.hasType!BaseKey || is(BaseKey == enum)) {
+        static if (HiBONT.Value.hasType!BaseKey || is(BaseKey == enum)) {
             return Key(a) < Key(b);
         }
         else static if (isHiBONRecord!BaseKey) {
@@ -242,16 +238,16 @@ mixin template HiBONRecord(string CTOR = "") {
         }
     }
 
-    @trusted final inout(HiBON) toHiBON() inout {
-        auto hibon = new HiBON;
-        static HiBON toList(L)(L list) {
+    @trusted final inout(HiBONT) toHiBON() inout {
+        auto hibon = HiBON();
+        static HiBONT toList(L)(L list) {
             import std.array : byPair, array;
             import std.algorithm : sort;
             import std.range : refRange;
             import std.algorithm.iteration : map;
             import std.typecons : tuple;
 
-            auto result = new HiBON;
+            auto result = HiBON();
             alias UnqualL = Unqual!L;
             alias ElementT = Unqual!(TypedefType!(ForeachType!L));
             static if (isArray!L || isAssociativeArray!L) {
@@ -261,7 +257,7 @@ mixin template HiBONRecord(string CTOR = "") {
                     static struct SwapAble {
                         Pair elm;
                     }
-
+                    // not sure
                     auto range = list.byPair
                         .map!(pair => new SwapAble(pair))
                         .array
@@ -278,9 +274,9 @@ mixin template HiBONRecord(string CTOR = "") {
             foreach (index, e; range) {
                 void set(Index, Value)(Index key, Value value) {
                     static if (isSpecialKeyType!L) {
-                        auto element = new HiBON;
+                        auto element = HiBON();
                         alias BaseIndex = TypedefType!Index;
-                        static if (HiBON.Value.hasType!BaseIndex || is(BaseIndex == enum)) {
+                        static if (HiBONT.Value.hasType!BaseIndex || is(BaseIndex == enum)) {
                             element[0] = Index(key);
                         }
                         else static if (isHiBONRecord!BaseIndex) {
@@ -297,7 +293,7 @@ mixin template HiBONRecord(string CTOR = "") {
                     }
                 }
 
-                static if (HiBON.Value.hasType!ElementT || is(ElementT == enum)) {
+                static if (HiBONT.Value.hasType!ElementT || is(ElementT == enum)) {
                     set(index, e);
                 }
                 else static if (isHiBON!ElementT) {
@@ -340,7 +336,7 @@ mixin template HiBONRecord(string CTOR = "") {
                     alias UnqualT = Unqual!BaseT;
                     // writefln("name=%s BaseT=%s isInputRange!BaseT=%s isInputRange!UnqualT=%s",
                     //     name, BaseT.stringof, isInputRange!BaseT, isInputRange!UnqualT);
-                    static if (HiBON.Value.hasType!UnqualT) {
+                    static if (HiBONT.Value.hasType!UnqualT) {
                         hibon[name] = cast(BaseT) m;
                     }
                     else static if (isHiBON!BaseT) {
@@ -352,17 +348,17 @@ mixin template HiBONRecord(string CTOR = "") {
                     else static if (is(MemberT == enum)) {
                         hibon[name] = cast(OriginalType!MemberT) m;
                     }
-                    else static if (is(BaseT == class) || is(BaseT == struct)) {
+                    else static if (is(BaseT == struct)) {
                         static if (isInputRange!UnqualT) {
                             alias ElementT = ForeachType!UnqualT;
-                            static assert((HiBON.Value.hasType!ElementT) || isHiBON!ElementT,
+                            static assert((HiBONT.Value.hasType!ElementT) || isHiBON!ElementT,
                                     format("The sub element '%s' of type %s is not supported",
                                     name, BaseT.stringof));
 
                             hibon[name] = toList(cast(UnqualT) m);
                         }
                         else {
-                            static assert(is(BaseT == HiBON) || is(BaseT : const(Document)), format(`A sub class/struct '%s' of type %s must have a toHiBON or must be ingnored with @Label("") UDA tag`,
+                            static assert(is(BaseT == HiBONT) || is(BaseT : const(Document)), format(`A sub class/struct '%s' of type %s must have a toHiBON or must be ingnored with @Label("") UDA tag`,
                                     name, BaseT.stringof));
                             hibon[name] = cast(BaseT) m;
                         }
@@ -381,7 +377,7 @@ mixin template HiBONRecord(string CTOR = "") {
         static if (HAS_TYPE) {
             hibon[TYPENAME] = type_name;
         }
-        @nogc @trusted inout(HiBON) result() inout pure nothrow {
+        @nogc @trusted inout(HiBONT) result() inout pure nothrow {
             return cast(inout) hibon;
         }
 
@@ -416,8 +412,9 @@ mixin template HiBONRecord(string CTOR = "") {
     protected static string[] _keys() pure nothrow {
         string[] result;
         alias ThisTuple = typeof(ThisType.tupleof);
+        result.create(ThisTuple.length);
         static foreach (i; 0 .. ThisTuple.length) {
-            result ~= GetKeyName!i;
+            result[i] = GetKeyName!i;
         }
         return result;
     }
@@ -425,15 +422,13 @@ mixin template HiBONRecord(string CTOR = "") {
     enum keys = _keys;
 
     static if (!NO_DEFAULT_CTOR) {
-        @safe this(const HiBON hibon) {
+        @safe this(const HiBONT hibon) {
             this(Document(hibon.serialize));
         }
 
         @safe this(const Document doc) {
             static if (HAS_TYPE) {
                 string _type = doc[TYPENAME].get!string;
-                check(_type == type_name, format("Wrong %s type %s should be %s",
-                        TYPENAME, _type, type_name));
             }
             static if (hasUDA!(ThisType, RecordType)) {
                 enum record = getUDAs!(ThisType, RecordType)[0];
@@ -448,9 +443,8 @@ mixin template HiBONRecord(string CTOR = "") {
                 alias BaseU = TypedefType!MemberU;
                 static if (isArray!R) {
                     alias UnqualU = Unqual!MemberU;
-                    check(doc.isArray, format("Document is expected to be an array"));
                     UnqualU[] result;
-                    result.length = doc.length;
+                    result.create(doc.length);
                     enum do_foreach = true;
                 }
                 else static if (isSpecialKeyType!R) {
@@ -494,9 +488,6 @@ mixin template HiBONRecord(string CTOR = "") {
                             static if (is(BaseU == struct)) {
                                 auto value = BaseU(sub_doc);
                             }
-                            else static if (is(BaseU == class)) {
-                                auto value = new BaseU(sub_doc);
-                            }
                             else static if (isInputRange!BaseU) {
                                 auto value = toList!BaseU(sub_doc);
                             }
@@ -523,22 +514,9 @@ mixin template HiBONRecord(string CTOR = "") {
 
             enum do_valid = hasMember!(ThisType, "valid")
                 && isCallable!(valid) && __traits(compiles, valid(doc));
-            static if (do_valid) {
-                check(valid(doc),
-                        format("Document verification faild for HiBONRecord %s",
-                        ThisType.stringof));
-            }
 
             enum do_verify = hasMember!(ThisType, "verify")
                 && isCallable!(verify) && __traits(compiles, this.verify);
-
-            static if (do_verify) {
-                scope (exit) {
-                    check(this.verify,
-                            format("Document verification faild for HiBONRecord %s",
-                            ThisType.stringof));
-                }
-            }
 
             alias ThisTuple = typeof(ThisType.tupleof);
             ForeachTuple: foreach (i, ref m; this.tupleof) {
@@ -591,9 +569,6 @@ mixin template HiBONRecord(string CTOR = "") {
                                 static foreach (F; Inspects) {
                                     {
                                         alias inspectFun = unaryFun!(F.code);
-                                        check(inspectFun(m),
-                                                message("Member %s faild on inspection %s with %s",
-                                                name, F.code, m));
                                     }
                                 }
                             }
@@ -609,10 +584,6 @@ mixin template HiBONRecord(string CTOR = "") {
                         else static if (is(BaseT == struct)) {
                             auto sub_doc = doc[name].get!Document;
                             m = BaseT(sub_doc);
-                        }
-                        else static if (is(BaseT == class)) {
-                            const sub_doc = Document(doc[name].get!Document);
-                            m = new BaseT(sub_doc);
                         }
                         else static if (isInputRange!BaseT || isAssociativeArray!BaseT) {
                             Document sub_doc;
@@ -648,7 +619,7 @@ mixin template HiBONRecord(string CTOR = "") {
  filename = is the name of the file
  hibon = is the HiBON object
  +/
-@safe void fwrite(string filename, const HiBON hibon) {
+@trusted void fwrite(string filename, const HiBONT hibon) {
     file.write(filename, hibon.serialize);
 }
 
@@ -674,20 +645,16 @@ mixin template HiBONRecord(string CTOR = "") {
  The Document read from the file
  +/
 @trusted const(Document) fread(string filename) {
-    import tagion.hibon.HiBONException : check;
 
     immutable data = assumeUnique(cast(ubyte[]) file.read(filename));
     const doc = Document(data);
-    check(doc.isInorder, "HiBON Document format failed");
     return doc;
 }
 
 const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
-    import tagion.hibon.HiBONException : check;
 
     immutable data = assumeUnique(cast(ubyte[]) file.read(filename));
     const doc = Document(data);
-    check(doc.isInorder, "HiBON Document format failed");
     return T(doc, args);
 }
 
@@ -809,7 +776,7 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
         alias WithLabel = SimpelOption!("LBL");
 
         { // Empty document
-            auto h = new HiBON;
+            auto h = HiBON();
             const doc = Document(h.serialize);
             //            writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
             assertThrown!HiBONException(NoLabel(doc));
@@ -817,7 +784,7 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
         }
 
         {
-            auto h = new HiBON;
+            auto h = HiBON();
             h["not_an_option"] = 42;
             const doc = Document(h.serialize);
             //          writefln("docS=\n%s", doc.toJSON(true).toPrettyString);
@@ -826,7 +793,7 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
         }
 
         {
-            auto h = new HiBON;
+            auto h = HiBON();
             h["not_an_option"] = 42;
             h[TYPENAME] = "LBL";
             const doc = Document(h.serialize);
@@ -952,30 +919,6 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
     }
 
     {
-        @safe static class SuperClass {
-            Simpel sub;
-            string class_some_text;
-            mixin HiBONRecord!(q{
-                    this(string some_text, int s, string text) @safe {
-                        this.class_some_text=some_text;
-                        sub=Simpel(s, text);
-                    }
-                });
-        }
-
-        const s = new SuperClass("some_text", 42, "text");
-        const doc = s.toDoc;
-        const s_converted = new SuperClass(doc);
-        assert(doc == s_converted.toDoc);
-
-        // For some reason SuperClass because is a class format is not @safe
-        (() @trusted {
-            assert(doc.toJSON.toString == format("%j", s_converted));
-            assert(doc.toJSON.toPrettyString == format("%J", s_converted));
-        })();
-    }
-
-    {
         static struct Test {
             @Inspect(q{a < 42}) @Inspect(q{a > 3}) int x;
             mixin HiBONRecord;
@@ -998,6 +941,7 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
         }
 
         Array s;
+        s.a.create(3);
         s.a = [17, 42, 17];
 
         const doc = s.toDoc;
@@ -1014,6 +958,7 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
         }
 
         StringArray s;
+        s.texts.create(3);
         s.texts = ["one", "two", "three"];
 
         const doc = s.toDoc;
@@ -1027,7 +972,10 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
             alias UnqualT = Unqual!T;
             protected T[] array;
             @nogc this(T[] array) {
-                this.array = array;
+                this.array.create(array.length);
+                foreach (i, key; array) {
+                    this.array[i] = key;
+                }
             }
 
             @nogc @property nothrow {
@@ -1047,7 +995,8 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
             }
 
             @trusted this(const Document doc) {
-                auto result = new UnqualT[doc.length];
+                UnqualT[] result;
+                result.create(doc.lenght);
                 foreach (ref a, e; lockstep(result, doc[])) {
                     a = e.get!T;
                 }
@@ -1071,7 +1020,9 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
         }
 
         { // Simple Range
-            const(int)[] array = [-42, 3, 17];
+            int[] array;
+            array.create(3);
+            array = [-42, 3, 17];
             const s = StructWithRangeTest(array);
 
             const doc = s.toDoc;
@@ -1085,14 +1036,15 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
 
         { // Range of structs
             Simpel[] simpels;
-            simpels ~= Simpel(1, "one");
-            simpels ~= Simpel(2, "two");
-            simpels ~= Simpel(3, "three");
+            simpels.create(3);
+            simpels[0] = Simpel(1, "one");
+            simpels[1] = Simpel(2, "two");
+            simpels[2] = Simpel(3, "three");
             {
                 auto s = StructWithRangeTest(simpels);
                 alias StructWithRange = typeof(s);
                 {
-                    auto h = new HiBON;
+                    auto h = HiBON();
                     h["s"] = s;
 
                     const s_get = h["s"].get!StructWithRange;
@@ -1108,7 +1060,7 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
 
                 { // SimpelArray with empty array
                     SimpelArray s;
-                    auto h = new HiBON;
+                    auto h = HiBON();
                     h["s"] = s;
                     const s_get = h["s"].get!SimpelArray;
                     assert(s_get == s);
@@ -1116,7 +1068,7 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
                 {
                     SimpelArray s;
                     s.array = simpels;
-                    auto h = new HiBON;
+                    auto h = HiBON();
                     h["s"] = s;
 
                     const s_get = h["s"].get!SimpelArray;
@@ -1133,55 +1085,55 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
             }
         }
 
-        { // Jagged Array
-            @safe static struct Jagged {
-                Simpel[][] y;
-                mixin HiBONRecord;
-            }
+        // { // Jagged Array
+        //     @safe static struct Jagged {
+        //         Simpel[][] y;
+        //         mixin HiBONRecord;
+        //     }
 
-            Simpel[][] ragged = [
-                [Simpel(1, "one"), Simpel(2, "one")],
-                [Simpel(1, "two"), Simpel(2, "two"), Simpel(3, "two")],
-                [Simpel(1, "three")]
-            ];
+        //     Simpel[][] ragged = [
+        //         [Simpel(1, "one"), Simpel(2, "one")],
+        //         [Simpel(1, "two"), Simpel(2, "two"), Simpel(3, "two")],
+        //         [Simpel(1, "three")]
+        //     ];
 
-            Jagged jagged;
-            jagged.y = ragged;
+        //     Jagged jagged;
+        //     jagged.y = ragged;
 
-            const jagged_doc = jagged.toDoc;
+        //     const jagged_doc = jagged.toDoc;
 
-            const result = Jagged(jagged_doc);
+        //     const result = Jagged(jagged_doc);
 
-            assert(jagged == result);
+        //     assert(jagged == result);
 
-            assert(jagged_doc.toJSON.toString == format("%j", jagged));
+        //     assert(jagged_doc.toJSON.toString == format("%j", jagged));
 
-        }
+        // }
 
-        {
-            @safe static struct Associative {
-                Simpel[string] a;
-                mixin HiBONRecord;
-            }
+        // {
+        //     @safe static struct Associative {
+        //         Simpel[string] a;
+        //         mixin HiBONRecord;
+        //     }
 
-            Associative associative;
-            associative.a["$one"] = Simpel(1, "one");
-            associative.a["$two"] = Simpel(1, "two");
-            associative.a["$three"] = Simpel(1, "three");
+        //     Associative associative;
+        //     associative.a["$one"] = Simpel(1, "one");
+        //     associative.a["$two"] = Simpel(1, "two");
+        //     associative.a["$three"] = Simpel(1, "three");
 
-            // writefln("%J", associative);
+        //     // writefln("%J", associative);
 
-            const associative_doc = associative.toDoc;
+        //     const associative_doc = associative.toDoc;
 
-            const result = Associative(associative_doc);
-            (() @trusted {
-                assert(equal(result.a.keys, associative.a.keys));
-                assert(equal(result.a.byValue, associative.a.byValue));
-            })();
+        //     const result = Associative(associative_doc);
+        //     (() @trusted {
+        //         assert(equal(result.a.keys, associative.a.keys));
+        //         assert(equal(result.a.byValue, associative.a.byValue));
+        //     })();
 
-            assert(associative_doc.toJSON.toString == format("%j", associative));
+        //     assert(associative_doc.toJSON.toString == format("%j", associative));
 
-        }
+        // }
 
         { // Test of enum
             enum Count : uint {
@@ -1213,6 +1165,7 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
                 }
 
                 CountArray s;
+                s.count.create(3);
                 s.count = [Count.one, Count.two, Count.three];
 
                 const s_doc = s.toDoc;
@@ -1237,6 +1190,7 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
             }
 
             TextArray s;
+            s.texts.create(3);
             s.texts = [Text("one"), Text("two"), Text("three")];
 
             const s_doc = s.toDoc;
@@ -1274,7 +1228,9 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
 
             Tabel tabel;
             auto list = [-17, 117, 3, 17, 42];
-            auto buffer = new ubyte[int.sizeof];
+            ubyte[] buffer;
+            buffer.create(int.sizeof);
+            // auto buffer = new ubyte[int.sizeof];
             foreach (i; list) {
                 (() @trusted { buffer.binwrite(i, 0); })();
                 tabel[Bytes(buffer.idup)] = i;

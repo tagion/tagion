@@ -60,7 +60,7 @@ struct TaskFailure {
  The immutable version of the Exception
  +/
 @trusted
-static immutable(TaskFailure) taskException(const(Throwable) e) /*@nogc*/ nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
+static immutable(TaskFailure) taskException(const(Throwable) e) @nogc nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
     import tagion.logger.Logger;
 
     return immutable(TaskFailure)(cast(immutable) e, log.task_name);

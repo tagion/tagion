@@ -4,7 +4,7 @@ import std.exception : assumeUnique;
 import std.range : lockstep;
 import std.algorithm.iteration : fold;
 
-/*@nogc*/ @safe
+@nogc @safe
 uint gene_count(const ulong bitstring) pure nothrow {
     static uint count_ones(ulong BITS = ulong.sizeof * 8)(const ulong x) pure nothrow {
         static if (BITS == 1) {
@@ -42,7 +42,7 @@ unittest {
     }
 }
 
-/*@nogc*/ @safe
+@nogc @safe
 uint gene_count(scope const(ulong[]) bitstream) pure nothrow {
     return bitstream
         .fold!((a, b) => a + gene_count(b))(uint(0));
@@ -55,7 +55,7 @@ immutable(ulong[]) gene_xor(scope const(ulong[]) a, scope const(ulong[]) b) pure
     return assumeUnique(result);
 }
 
-/*@nogc*/ @safe
+@nogc @safe
 void gene_xor(ref scope ulong[] result, scope const(ulong[]) a, scope const(ulong[]) b) pure nothrow
 in {
     assert(a.length == b.length);

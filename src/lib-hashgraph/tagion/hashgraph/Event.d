@@ -34,7 +34,7 @@ import tagion.utils.BitMask: BitMask;
 
 /// check function used in the Event package
 // Returns the highest altitude
-@safe /*@nogc*/
+@safe @nogc
 int highest(int a, int b) pure nothrow {
     if (higher(a, b)) {
         return a;
@@ -45,7 +45,7 @@ int highest(int a, int b) pure nothrow {
 }
 
 // Is a higher or equal to b
-@safe /*@nogc*/
+@safe @nogc
 bool higher(int a, int b) pure nothrow {
     return a - b > 0;
 }
@@ -73,11 +73,11 @@ class Round {
 
     private Event[] _events;
 
-    /*@nogc*/ bool lessOrEqual(const Round rhs) pure const nothrow {
+    @nogc bool lessOrEqual(const Round rhs) pure const nothrow {
         return (number - rhs.number) <= 0;
     }
 
-    /*@nogc*/ const(uint) node_size() pure const nothrow {
+    @nogc const(uint) node_size() pure const nothrow {
         return cast(uint) _events.length;
     }
 
@@ -93,12 +93,12 @@ class Round {
         _events = new Event[node_size];
     }
 
-    /*@nogc*/
+    @nogc
     const(Event[]) events() const pure nothrow {
         return _events;
     }
 
-    ///*@nogc*/
+    //@nogc
     package void add(Event event) pure nothrow
     in {
         assert(_events[event.node_id] is null, "Event at node_id " ~ event.node_id.to!string ~ " should only be added once");
@@ -108,17 +108,17 @@ class Round {
         event._round = this;
     }
 
-    /*@nogc*/
+    @nogc
     bool empty() const pure nothrow {
         return !_events.any!((e) => e !is null);
     }
 
-    /*@nogc*/
+    @nogc
     size_t event_count() const pure nothrow {
         return _events.count!((e) => e !is null);
     }
 
-    /*@nogc*/
+    @nogc
     private void remove(const(Event) event) nothrow
     in {
         assert(event.isEva || _events[event.node_id] is event,
@@ -159,16 +159,16 @@ class Round {
         }
     }
 
-    /*@nogc*/ bool decided() const pure nothrow {
+    @nogc bool decided() const pure nothrow {
         return _decided;
     }
 
-    /*@nogc*/
+    @nogc
     inout(Event) event(const size_t node_id) pure inout {
         return _events[node_id];
     }
 
-    /*@nogc*/
+    @nogc
     package inout(Round) previous() inout pure nothrow {
         return _previous;
     }
@@ -232,7 +232,7 @@ class Round {
             }
         }
 
-        /*@nogc*/
+        @nogc
         size_t length() const pure nothrow {
             return this[].walkLength;
         }
@@ -271,7 +271,7 @@ class Round {
             }
         }
 
-        /*@nogc*/
+        @nogc
         bool decided(const Round test_round) pure const nothrow {
             bool _decided(const Round r) pure nothrow {
                 if (r) {
@@ -286,12 +286,12 @@ class Round {
             return _decided(last_decided_round);
         }
 
-        /*@nogc*/
+        @nogc
         int coin_round_distance() pure const nothrow {
             return last_round.number - last_decided_round.number;
         }
 
-        /*@nogc*/
+        @nogc
         uint cached_decided_count() pure const nothrow {
             uint _cached_decided_count(const Round r, const uint i = 0) pure nothrow {
                 if (r) {
@@ -303,7 +303,7 @@ class Round {
             return _cached_decided_count(last_round);
         }
 
-        /*@nogc*/
+        @nogc
         bool check_decided_round_limit() pure const nothrow {
             return cached_decided_count > total_limit;
         }
@@ -413,17 +413,17 @@ class Round {
             }
         }
 
-        /*@nogc*/
+        @nogc
         package Range!false opSlice() pure nothrow {
             return Range!false(last_round);
         }
 
-        /*@nogc*/
+        @nogc
         Range!true opSlice() const pure nothrow {
             return Range!true(last_round);
         }
 
-        /*@nogc*/
+        @nogc
         struct Range(bool CONST = true) {
             private Round round;
             @trusted
@@ -480,7 +480,7 @@ class Event {
 
     alias check = Check!EventConsensusException;
     protected static uint _count;
-    /*@nogc*/
+    @nogc
     static uint count() nothrow {
         return _count;
     }
@@ -525,7 +525,7 @@ class Event {
     @safe
     class Witness {
         protected static uint _count;
-        /*@nogc*/ static uint count() nothrow {
+        @nogc static uint count() nothrow {
             return _count;
         }
 
@@ -551,12 +551,12 @@ class Event {
         }
 
         pure nothrow final {
-            /*@nogc*/
+            @nogc
             const(BitMask) strong_seeing_mask() const {
                 return _strong_seeing_mask;
             }
 
-            /*@nogc*/
+            @nogc
             ref const(BitMask) round_seen_mask() const {
                 return _seeing_witness_in_previous_round_mask;
             }
@@ -565,7 +565,7 @@ class Event {
                 return _famous;
             }
 
-            /*@nogc*/
+            @nogc
             private bool famous(const HashGraph hashgraph) {
                 if (!_famous) {
                     _famous = _strong_seeing_mask.isMajority(hashgraph);
@@ -837,7 +837,7 @@ class Event {
         return _father;
     }
 
-    /*@nogc*/ pure nothrow const final {
+    @nogc pure nothrow const final {
         ref const(EventBody) event_body() {
             return event_package.event_body;
         }
@@ -965,12 +965,12 @@ class Event {
         }
     }
 
-    /*@nogc*/
+    @nogc
     package Range!false opSlice() pure nothrow {
         return Range!false(this);
     }
 
-    /*@nogc*/
+    @nogc
     struct Range(bool CONST = true) {
         private Event current;
         @trusted

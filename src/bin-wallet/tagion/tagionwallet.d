@@ -867,7 +867,7 @@ struct WalletInterface {
 enum REVNO = 0;
 enum HASH = "xxx";
 
-const(char[]) trim(return scope const(char)[] word) pure nothrow @safe /*@nogc*/ {
+const(char[]) trim(return scope const(char)[] word) pure nothrow @safe @nogc {
     import std.ascii : isWhite;
     while (word.length && word[0].isWhite) {
         word=word[1..$];
@@ -878,7 +878,7 @@ const(char[]) trim(return scope const(char)[] word) pure nothrow @safe /*@nogc*/
     return word;
 }
 
-void word_strip(scope ref char[] word_strip) pure nothrow @safe /*@nogc*/ {
+void word_strip(scope ref char[] word_strip) pure nothrow @safe @nogc {
     import std.ascii : isWhite;
     scope not_change = word_strip;
     scope(exit) {

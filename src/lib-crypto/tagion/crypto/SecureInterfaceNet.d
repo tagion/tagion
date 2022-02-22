@@ -31,7 +31,7 @@ interface SecureNet : HashNet {
     import std.typecons : Tuple;
 
     alias Signed = Tuple!(Signature, "signature", Buffer, "message");
-    /*@nogc*/ Pubkey pubkey() pure const nothrow;
+    @nogc Pubkey pubkey() pure const nothrow;
     bool verify(immutable(ubyte[]) message, const Signature signature, const Pubkey pubkey) const;
     final bool verify(const Document doc, const Signature signature, const Pubkey pubkey) const {
 

@@ -9,7 +9,7 @@ import std.algorithm.iteration : map, sum;
 
 //import std.stdio;
 
-@safe /*@nogc*/
+@safe @nogc
 class LEB128Exception : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
         super(msg, file, line);
@@ -23,7 +23,7 @@ alias check = Check!LEB128Exception;
  The size in bytes of the LEB128
  No error size 0 is returned
 +/
-@safe /*@nogc*/
+@safe @nogc
 size_t calc_size(const(ubyte[]) data) pure nothrow {
     foreach (i, d; data) {
         if ((d & 0x80) == 0) {
@@ -36,7 +36,7 @@ size_t calc_size(const(ubyte[]) data) pure nothrow {
     return data.length;
 }
 
-@safe /*@nogc*/
+@safe @nogc
 size_t calc_size(T)(const T v) pure nothrow if (isUnsigned!(T)) {
     size_t result;
     ulong value = v;
@@ -48,7 +48,7 @@ size_t calc_size(T)(const T v) pure nothrow if (isUnsigned!(T)) {
     return result;
 }
 
-@safe /*@nogc*/
+@safe @nogc
 size_t calc_size(T)(const T v) pure nothrow if (isSigned!(T)) {
     if (v == T.min) {
         return T.sizeof + (is(T == int) ? 1 : 2);
@@ -122,7 +122,7 @@ enum ErrorValue(T) = DecodeLEB128!T(T.init, 0);
  The value and the size
  In case of an error this size is set to zero
 +/
-@safe /*@nogc*/
+@safe @nogc
 DecodeLEB128!T decode(T = ulong)(const(ubyte[]) data) pure nothrow
 if (isUnsigned!T) {
     alias BaseT = TypedefType!T;
@@ -161,7 +161,7 @@ if (isUnsigned!T) {
  The value and the size
  In case of an error this size is set to zero
 +/
-@safe /*@nogc*/
+@safe @nogc
 DecodeLEB128!T decode(T = long)(const(ubyte[]) data) pure nothrow if (isSigned!T) {
     alias BaseT = TypedefType!T;
     long result;

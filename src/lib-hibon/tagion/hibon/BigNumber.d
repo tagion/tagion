@@ -37,7 +37,7 @@ import tagion.hibon.HiBONException : check;
      Returns:
      the BigNumber as BigDigit array
      +/
-    @trusted /*@nogc*/ const(BigDigit[]) data() const pure nothrow {
+    @trusted @nogc const(BigDigit[]) data() const pure nothrow {
         return _data;
     }
 
@@ -45,7 +45,7 @@ import tagion.hibon.HiBONException : check;
      Returns:
      the sign of the BigNumber
      +/
-    @trusted /*@nogc*/ bool sign() const pure nothrow {
+    @trusted @nogc bool sign() const pure nothrow {
         return _sign;
     }
 
@@ -65,7 +65,7 @@ import tagion.hibon.HiBONException : check;
     /++
      Construct an number for a BigInt
      +/
-    /*@nogc*/ @trusted this(const(BigInt) x) pure nothrow {
+    @nogc @trusted this(const(BigInt) x) pure nothrow {
         this.x = x;
     }
 
@@ -187,12 +187,12 @@ import tagion.hibon.HiBONException : check;
      Returns:
      true if the values are equal
      +/
-    @trusted /*@nogc*/ bool opEquals()(auto ref const BigNumber y) const pure {
+    @trusted @nogc bool opEquals()(auto ref const BigNumber y) const pure {
         return x == y.x;
     }
 
     /// ditto
-    @trusted /*@nogc*/ bool opEquals(T)(T y) const pure nothrow if (isIntegral!T) {
+    @trusted @nogc bool opEquals(T)(T y) const pure nothrow if (isIntegral!T) {
         return x == y;
     }
 
@@ -203,17 +203,17 @@ import tagion.hibon.HiBONException : check;
      Returns:
      true if the values are equal
      +/
-    @trusted /*@nogc*/ int opCmp(ref const BigNumber y) pure nothrow const {
+    @trusted @nogc int opCmp(ref const BigNumber y) pure nothrow const {
         return x.opCmp(y.x);
     }
 
     /// ditto
-    @trusted /*@nogc*/ int opCmp(T)(T y) pure nothrow const if (isIntegral!T) {
+    @trusted @nogc int opCmp(T)(T y) pure nothrow const if (isIntegral!T) {
         return x.opCmp(x);
     }
 
     /// ditto
-    @trusted /*@nogc*/ int opCmp(T : BigNumber)(const T y) pure nothrow const {
+    @trusted @nogc int opCmp(T : BigNumber)(const T y) pure nothrow const {
         return x.opCmp(y.x);
     }
 
@@ -227,7 +227,7 @@ import tagion.hibon.HiBONException : check;
         return cast(T) x;
     }
 
-    @trusted /*@nogc*/ @property size_t ulongLength() const pure nothrow {
+    @trusted @nogc @property size_t ulongLength() const pure nothrow {
         return x.ulongLength;
     }
 
@@ -276,7 +276,7 @@ import tagion.hibon.HiBONException : check;
      Returns:
      Range of two complement
      +/
-    /*@nogc*/ TwoComplementRange two_complement() pure const nothrow {
+    @nogc TwoComplementRange two_complement() pure const nothrow {
         static assert(BigDigit.sizeof is int.sizeof);
         return TwoComplementRange(this);
     }
@@ -291,7 +291,7 @@ import tagion.hibon.HiBONException : check;
     }
 
     struct TwoComplementRange {
-    /*@nogc:*/
+    @nogc:
         protected {
             bool overflow;
             const(BigDigit)[] data;
@@ -439,7 +439,7 @@ import tagion.hibon.HiBONException : check;
         }
     }
 
-    /*@nogc*/ static size_t calc_size(const(ubyte[]) data) pure nothrow {
+    @nogc static size_t calc_size(const(ubyte[]) data) pure nothrow {
         size_t result;
         foreach (d; data) {
             result++;
@@ -480,7 +480,7 @@ import tagion.hibon.HiBONException : check;
         assert(0);
     }
 
-    /*@nogc*/ size_t calc_size() const pure {
+    @nogc size_t calc_size() const pure {
         immutable DATA_SIZE = (BigDigit.sizeof * data.length * 8) / 7 + 1;
         enum DIGITS_BIT_SIZE = BigDigit.sizeof * 8;
         size_t index;

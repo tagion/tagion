@@ -1,9 +1,9 @@
 /// \file KeyRecover.d
 
-module tagion.wallet.BetterC.KeyRecover;
+module tagion.betterC.wallet.KeyRecover;
 
 //use net directly
-import tagion.wallet.BetterC.Net;
+import tagion.betterC.wallet.Net;
 
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.SecureNet : scramble, StdSecureNet;
@@ -12,10 +12,11 @@ import tagion.basic.Basic : Buffer;
 import tagion.basic.Message;
 import tagion.betterC.utils.Memory;
 
-// use better C doc, hibon, hibon record
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord;
+// use better C doc, hibon, hibon record 
+import tagion.betterC.hibon.HiBON : HiBONT;
+import tagion.betterC.hibon.Document : Document;
+// import tagion.betterC.hibon.HiBONRecord;
+// import tagion.hibon.HiBONRecord;
 
 import std.exception : assumeUnique;
 import std.string : representation;
@@ -25,10 +26,10 @@ import std.algorithm.iteration : map, filter;
 import std.array : array;
 
 import tagion.basic.TagionExceptions : Check, TagionException;
-import tagion.wallet.WalletRecords : RecoverGenerator;
+import tagion.betterC.wallet.WalletRecords : RecoverGenerator;
 
 @safe
-/*@nogc*/
+@nogc
 struct KeyRecover {
     enum MAX_QUESTION = 10;
     enum MAX_SEEDS = 64;
@@ -38,11 +39,11 @@ struct KeyRecover {
         this.generator = generator;
     }
 
-    inout(HiBON) toHiBON() inout {
+    inout(HiBONT) toHiBON() inout {
         return generator.toHiBON;
     }
 
-    const(Document) toDoc() const {
+    const(Document) toDoc() {
         return generator.toDoc;
     }
 
@@ -71,7 +72,7 @@ struct KeyRecover {
         return results;
     }
 
-    /*@nogc*/
+    @nogc
     static uint numberOfSeeds(const uint M, const uint N) pure nothrow
     in {
         assert(M >= N);
@@ -81,7 +82,7 @@ struct KeyRecover {
         return (M - N) * N + 1;
     }
 
-    /*@nogc*/
+    @nogc
     static unittest {
         assert(numberOfSeeds(10, 5) is 26);
     }

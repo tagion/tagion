@@ -392,7 +392,7 @@ class DART : DARTFile { //, HiRPC.Supports {
             recorder = manufactor.recorder(recorder_doc);
         }
 
-        this(const RecordFactory.Recorder recorder, const uint index) const pure nothrow /*@nogc*/ {
+        this(const RecordFactory.Recorder recorder, const uint index) const pure nothrow @nogc {
             this.recorder = recorder;
             this.index = index;
         }
@@ -490,7 +490,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         return new SynchronizationFiber(rims, synchonizer);
     }
 
-    private DART that() pure nothrow /*@nogc*/ @safe {
+    private DART that() pure nothrow @nogc @safe {
         return this;
     }
 

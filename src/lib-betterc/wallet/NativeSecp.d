@@ -1,4 +1,4 @@
-module tagion.wallet.BetterC.NativeSecp;
+module tagion.betterC.wallet.NativeSecp;
 
 private import tagion.crypto.secp256k1.c.secp256k1;
 private import tagion.crypto.secp256k1.c.secp256k1_ecdh;

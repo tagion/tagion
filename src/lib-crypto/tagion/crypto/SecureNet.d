@@ -28,7 +28,7 @@ class StdHashNet : HashNet {
 
     //    import std.stdio;
     protected enum HASH_SIZE = 32;
-    /*@nogc*/ final uint hashSize() const pure nothrow {
+    @nogc final uint hashSize() const pure nothrow {
         return HASH_SIZE;
     }
 
@@ -130,7 +130,7 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     protected SecretMethods _secret;
 
-    /*@nogc*/ final Pubkey pubkey() pure const nothrow {
+    @nogc final Pubkey pubkey() pure const nothrow {
         return _pubkey;
     }
 

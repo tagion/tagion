@@ -3,7 +3,7 @@ module tagion.utils.DList;
 import tagion.utils.Result;
 
 @safe class DList(E) {
-    /*@nogc*/ struct Element {
+    @nogc struct Element {
         E entry;
         protected Element* next;
         protected Element* prev;
@@ -80,7 +80,7 @@ import tagion.utils.Result;
     /**
        Returns; true if the element was not found
      */
-    /*@nogc*/
+    @nogc
     bool remove(Element* e) nothrow
     in {
         assert(e !is null);
@@ -128,7 +128,7 @@ import tagion.utils.Result;
         return false;
     }
 
-    /*@nogc*/
+    @nogc
     void moveToFront(Element* e) nothrow
     in {
         assert(e !is null);
@@ -150,7 +150,7 @@ import tagion.utils.Result;
         }
     }
 
-    /*@nogc*/
+    @nogc
     uint length() pure const nothrow
     out (result) {
         uint internal_count(const(Element)* e, uint i = 0) pure {
@@ -169,23 +169,23 @@ import tagion.utils.Result;
         return count;
     }
 
-    /*@nogc*/ inout(Element*) first() inout pure nothrow {
+    @nogc inout(Element*) first() inout pure nothrow {
         return _head;
     }
 
-    /*@nogc*/ inout(Element*) last() inout pure nothrow {
+    @nogc inout(Element*) last() inout pure nothrow {
         return _tail;
     }
 
-    /*@nogc*/ Range!false opSlice() pure nothrow {
+    @nogc Range!false opSlice() pure nothrow {
         return Range!false(this);
     }
 
-    /*@nogc*/ Range!true revert() pure nothrow {
+    @nogc Range!true revert() pure nothrow {
         return Range!true(this);
     }
 
-    /*@nogc*/ struct Range(bool revert) {
+    @nogc struct Range(bool revert) {
         private Element* cursor;
         this(DList l) pure nothrow {
             static if (revert) {
