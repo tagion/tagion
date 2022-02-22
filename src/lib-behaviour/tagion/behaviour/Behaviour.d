@@ -74,9 +74,9 @@ unittest {
     import std.algorithm.comparison : equal;
     import std.array;
     auto awesome = new Some_awesome_feature;
-    const run_awesome=scenario(awesome);
-    ScenarioGroup scenario=getScenarioGroup!Some_awesome_feature;
-    const result = run_awesome();
+    const runner_awesome=scenario(awesome);
+//    ScenarioGroup scenario=getScenarioGroup!Some_awesome_feature;
+    const result = runner_awesome();
     auto expected = [
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_valid",
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.in_credit",
@@ -103,6 +103,7 @@ unittest {
     assert(equal(results, expected));
 }
 
+@safe
 ScenarioGroup getScenarioGroup(T)() if (isScenario!T) {
     ScenarioGroup scenario_group;
     scenario_group.info.property = getScenario!T;
@@ -128,13 +129,12 @@ ScenarioGroup getScenarioGroup(T)() if (isScenario!T) {
     return scenario_group;
 }
 
-
 @safe
 FeatureGroup getFeature(alias M)() if (isFeature!M) {
 //    import std.stdio;
     FeatureGroup result;
-    result.feature.property = obtainFeature!M;
-    result.feature.name = moduleName!M;
+    result.info.property = obtainFeature!M;
+    result.info.name = moduleName!M;
     static foreach(_Scenario; Scenarios!M) {{
             ScenarioGroup scenario_group=getScenarioGroup!_Scenario;
             scope(exit) {
@@ -166,6 +166,7 @@ FeatureGroup getFeature(alias M)() if (isFeature!M) {
     return result;
 }
 
+@safe
 unittest { //
     import tagion.hibon.HiBONRecord;
     import tagion.basic.Basic : unitfile;
@@ -178,17 +179,4 @@ unittest { //
     const feature = getFeature!(Module);
     const expected = filename.fread!FeatureGroup;
     assert(feature.toDoc == expected.toDoc);
-}
-
-@safe
-void genBehaviourCode(alias M, Stream)(Stream bout) if(isFeature!M) {
-
-}
-
-unittest {
-    import std.outbuffer;
-    auto bout=new OutBuffer;
-    genBehaviourCode!(tagion.behaviour.BehaviourUnittest)(bout);
-
-    assert(bout.toString == "Not code");
 }

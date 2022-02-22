@@ -569,3 +569,8 @@ string unitfile(string filename, string file=__FILE__) {
     import std.path;
     return buildPath(file.dirName, unitdata, filename);
 }
+
+template mangleFunc(alias T) if (isCallable!T) {
+    import core.demangle : mangle;
+    alias mangleFunc=mangle!(FunctionTypeOf!(T));
+}

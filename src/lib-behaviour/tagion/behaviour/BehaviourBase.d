@@ -75,6 +75,8 @@ struct Then {
         });
 }
 
+enum isDescriptor(T) =hasMember!(T, "description");
+
 struct Info(alias Property) {
     Property property;
     string name; /// Name of the function member
@@ -82,22 +84,26 @@ struct Info(alias Property) {
     mixin HiBONRecord!();
 }
 
-struct BehaviourGrope(Property) if (isOneOf!(Property, UniqueBehaviourProperties)) {
+enum isInfo(alias I) = __traits(isSame, TemplateOf!I, Info);
+
+struct BehaviourGroup(Property) if (isOneOf!(Property, UniqueBehaviourProperties)) {
     Info!Property info;
     @Label(VOID, true) Info!And[] ands;
     mixin HiBONRecord!();
 }
 
+enum isBehaviourGroup(alias I) = __traits(isSame, TemplateOf!I, BehaviourGroup);
+
 struct ScenarioGroup {
     Info!Scenario info;
-    BehaviourGrope!(Given) given;
-    @Label(VOID, true) BehaviourGrope!(Then) then;
-    BehaviourGrope!(When) when;
+    BehaviourGroup!(Given) given;
+    @Label(VOID, true) BehaviourGroup!(Then) then;
+    BehaviourGroup!(When) when;
     mixin HiBONRecord!();
 }
 
 struct FeatureGroup {
-    Info!Feature feature;
+    Info!Feature info;
     ScenarioGroup[] scenarios;
     mixin HiBONRecord!();
 }
