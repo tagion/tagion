@@ -62,7 +62,7 @@ struct MarkdownT(Stream) {
 
     void issue(I)(const(I) info, string indent, string fmt) if (isInfo!I) {
         issue(info.property, indent, fmt);
-        bout.writeln;
+        bout.write("\n");
         bout.writefln(master.name, indent~master.indent, info.name); //
     }
 
@@ -84,7 +84,7 @@ struct MarkdownT(Stream) {
     void issue(const(FeatureGroup) feature_group, string indent=null) {
         issue(feature_group.info, indent, master.feature);
         feature_group.scenarios
-            .tee!(a => bout.writeln)
+            .tee!(a => bout.write("\n"))
             .each!(a => issue(a, indent~master.indent));
     }
 }
@@ -109,7 +109,7 @@ unittest { // Markdown scenario test
             .unitfile
             .setExtension(EXT.Markdown);
         markdown.issue(scenario_result.given.info, null, markdown.master.property);
-        writefln("bout=%s", bout);
+        io.writefln("bout=%s", bout);
         filename.fwrite(bout.toString);
     }
     {
@@ -120,8 +120,8 @@ unittest { // Markdown scenario test
             .unitfile
             .setExtension(EXT.Markdown);
         markdown.issue(scenario_result);
-        writefln("bout=%s", bout);
-        filename.write(bout.toString);
+        io.writefln("bout=%s", bout);
+        filename.fwrite(bout.toString);
     }
 //    assert(bout.toString == "Not code");
 }
@@ -230,10 +230,10 @@ struct DlangT(Stream) {
         // issue(feature_group.info, indent, master.feature);
         feature_group.scenarios
             .map!(a => issue(a, indent~master.indent))
-            .each!(a => bout.writeln(a));
-        bout.writeln("// End");
+            .each!(a => bout.write(a));
+        bout.writefln("// End");
 
-        writefln("End of %s", __FUNCTION__);
+        bout.writefln("End of %s", __FUNCTION__);
              // .tee!(a => bout.writeln)
              // .each!(a => issue(a, indent~master.indent));
     }
@@ -252,7 +252,7 @@ unittest {
             .unitfile
             .setExtension(EXT.Dlang);
         dlang.issue(feature_group);
-        bout.writeln("End of file %s", );
+        bout.writefln("End of file %s", filename);
         filename.fwrite(bout.toString);
     }
 }
@@ -266,7 +266,8 @@ version(unittest) {
     alias DlangU=Dlang!OutBuffer;
 
     import std.file : fwrite=write, fread=read;
-    import std.stdio;
+//    import std.stdio;
     import std.path;
     import std.outbuffer;
+    import io =std.stdio;
 }
