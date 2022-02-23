@@ -9,7 +9,7 @@
 DROOT:=${shell git rev-parse --show-toplevel}
 SCRIPT:=$(DROOT)/tub
 MAIN_MK:=$(DROOT)/tub/main.mk
-MAIN_FLAGS+=DROOT=$(DROOT)
+MAIN_FLAGS+=MAIN_FLAGS=$(MAKEFLAGS) DROOT=$(DROOT)
 MAIN_FLAGS+=RECURSIVE=1
 MAIN_FLAGS+=PREBUILD_MK=$(MAIN_MK)
 MAIN_FLAGS+=-f $(MAIN_MK)
@@ -21,7 +21,7 @@ help:
 endif
 
 
-match=${shell $(SCRIPT)/check_regex.d $@ -r'^(env-\w+|env|help-\w+|help|clean-\w+|clean|proper-\w+|proper|ddeps|dfiles|dstep)$$'}
+match=${shell $(SCRIPT)/check_regex.d $@ -r'^(env-\w+|env|help-\w+|help|clean-\w+|clean|proper-\w+|proper)$$'}
 
 ifdef RECURSIVE
 ${error This makefile should to be call recursive}
@@ -30,6 +30,6 @@ endif
 %:
 	@
 	if [ -z "${call match,$@}" ]; then
-	$(MAKE) $(MAIN_FLAGS) prebuild
+	make $(MAIN_FLAGS) prebuild
 	fi
-	$(MAKE) $(MAIN_FLAGS) $@
+	make $(MAIN_FLAGS) $@

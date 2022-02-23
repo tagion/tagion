@@ -3,34 +3,34 @@ module tagion.hashgraph.Event;
 //import std.stdio;
 
 import std.datetime; // Date, DateTime
-import std.exception : assumeWontThrow;
+import std.exception: assumeWontThrow;
 import std.conv;
 
 import std.format;
 import std.typecons;
-import std.traits : Unqual, ReturnType;
-import std.array : array;
+import std.traits: Unqual, ReturnType;
+import std.array: array;
 
-import std.algorithm.sorting : sort;
-import std.algorithm.iteration : map, each, filter, cache, fold, joiner;
-import std.algorithm.searching : count, any, all, until;
-import std.range.primitives : walkLength, isInputRange, isForwardRange, isBidirectionalRange;
-import std.range : enumerate, tee;
+import std.algorithm.sorting: sort;
+import std.algorithm.iteration: map, each, filter, cache, fold, joiner;
+import std.algorithm.searching: count, any, all, until;
+import std.range.primitives: walkLength, isInputRange, isForwardRange, isBidirectionalRange;
+import std.range: enumerate, chain, tee;
 
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON: HiBON;
+import tagion.hibon.Document: Document;
 import tagion.hibon.HiBONRecord;
 
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
 
-import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, EnumText, buf_idup;
-import tagion.Keywords : Keywords;
+import tagion.basic.Basic: this_dot, basename, Pubkey, Buffer, bitarray_clear, bitarray_change, EnumText, buf_idup;
+import tagion.Keywords: Keywords;
 
 import tagion.logger.Logger;
-import tagion.hashgraph.HashGraphBasic : isMajority, isAllVotes, EventBody, EventPackage, EvaPayload, Tides, EventMonitorCallbacks;
-import tagion.hashgraph.HashGraph : HashGraph;
-import tagion.utils.BitMask : BitMask;
+import tagion.hashgraph.HashGraphBasic: isMajority, isAllVotes, EventBody, EventPackage, EvaPayload, Tides, EventMonitorCallbacks;
+import tagion.hashgraph.HashGraph: HashGraph;
+import tagion.utils.BitMask: BitMask;
 
 /// check function used in the Event package
 // Returns the highest altitude
@@ -365,12 +365,12 @@ class Round {
                     bool rare_less(Buffer a, Buffer b) {
                         const ab = hashgraph.hirpc.net.calcHash(a ~ b);
                         const ba = hashgraph.hirpc.net.calcHash(b ~ a);
-                        // const A = (BitMask(ab).count);
-                        // const B = (BitMask(ba).count);
-                        // if (A is B) {
-                        //     return rare_less(ab, ba);
-                        // }
-                        return ab < ba;
+                        const A = (BitMask(ab).count);
+                        const B = (BitMask(ba).count);
+                        if (A is B) {
+                            return rare_less(ab, ba);
+                        }
+                        return A < B;
                     }
 
                     return rare_less(a.fingerprint, b.fingerprint);

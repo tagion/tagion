@@ -1,9 +1,9 @@
 # D ddeps macro function
-# $(DBUILD)/gen.ddeps.json: $(DBUILD)/.way
+$(DBUILD)/gen.ddeps.json: $(DBUILD)/.way
 
-# $(DBUILD)/gen.ddeps.json: $(DBUILD)/gen.dfiles.mk
+$(DBUILD)/gen.ddeps.json: $(DBUILD)/gen.dfiles.mk
 
-# $(DBUILD)/gen.ddeps.mk: $(DBUILD)/gen.ddeps.json
+$(DBUILD)/gen.ddeps.mk: $(DBUILD)/gen.ddeps.json
 
 $(DBUILD)/gen.dfiles.mk:
 	@echo dfiles $@
@@ -12,18 +12,20 @@ $(DBUILD)/gen.dfiles.mk:
 	printf "%s += %s\n" ${addprefix DFILES , $(DFILES)} >> $@
 	fi
 
-$(DBUILD)/gen.ddeps.json: $(DBUILD)/gen.dfiles.mk
+$(DBUILD)/gen.ddeps.json:
 	$(PRECMD)
+	${call log.env, DFILES, $(DFILES)}
 	if [ ! -f "$@" ]; then
 	${call log.kvp, $(@F), $(PLATFORM)}
 	$(DC) $(DFLAGS) $(UNITTEST_FLAGS) ${addprefix -I,$(DINC)} --o- $(NO_OBJ)  $(DJSON)=$@ $(DFILES)
 	fi
 
-ddeps: $(DBUILD)/gen.ddeps.json
-	$(PRECMD)
+$(DBUILD)/gen.ddeps.mk:
+	@echo ddeps $@
 	if [ ! -f "$@" ]; then
+	$(PRECMD)
 	${call log.kvp, $(@F), $(PLATFORM)}
-	$(DTUB)/ddeps.d  --srcdir=DSRC --objdir=DOBJ $< -o$(DBUILD)/gen.ddeps.mk
+	$(DTUB)/ddeps.d  --srcdir=DSRC --objdir=DOBJ $< -o$@
 	fi
 
 proper-ddeps:
@@ -69,7 +71,7 @@ help-ddeps:
 
 help: help-ddeps
 
-# ddeps: $(DBUILD)/gen.ddeps.mk
+ddeps: $(DBUILD)/gen.ddeps.mk
 
 dfiles: $(DBUILD)/gen.dfiles.mk
 

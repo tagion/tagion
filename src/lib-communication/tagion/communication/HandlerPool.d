@@ -3,7 +3,7 @@ module tagion.communication.HandlerPool;
 import core.time;
 import std.datetime;
 import std.stdio;
-import tagion.basic.Basic : Buffer;
+import tagion.basic.Basic: Buffer;
 
 @safe
 interface ResponseHandler {
@@ -17,11 +17,10 @@ interface ResponseHandler {
         Buffer data;
         this(const TKey key, Buffer data) inout {
             import std.traits : isBasicType, isArray;
-
             static if (isBasicType!TKey) {
                 this.key = key;
             }
-            else if (isArray!TKey) {
+            else if(isArray!TKey) {
                 static if (is(ForeachType!Tkey == immutable)) {
                     this.key = key;
                 }
@@ -29,11 +28,11 @@ interface ResponseHandler {
                     this.key = key.idup;
                 }
             }
-            else if (is(key == immutable)) {
+            else if(is(key == immutable)) {
                 this.key = key;
             }
             else {
-                static assert(0, "TKey " ~ TKey.stringof ~ " not supported");
+                static assert(0, "TKey "~TKey.stringof~" not supported");
             }
             this.data = data;
         }

@@ -1,24 +1,22 @@
 module tagion.network.SSLFiberService;
 
 import std.stdio;
-
-import std.string : format;
-import core.thread : Thread, Fiber;
+import std.string: format;
+import core.thread: Thread, Fiber;
 import core.time; // : dur, Duration, MonoTime;
-import std.socket : SocketSet, SocketException, Socket, AddressFamily;
+import std.socket: SocketSet, SocketException, Socket, AddressFamily;
 import std.exception;
-import std.socket : SocketShutdown;
+import std.socket: SocketShutdown;
 import std.concurrency;
 
 import tagion.network.SSLSocket;
 import tagion.network.SSLOptions;
 import tagion.network.NetworkExceptions : check;
 import tagion.basic.Message;
-import tagion.basic.Basic : Buffer;
+import tagion.basic.Basic: Buffer;
 import tagion.logger.Logger;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.TagionExceptions : taskfailure, fatal;
-
 //import tagion.services.LoggerService;
 import LEB128 = tagion.utils.LEB128;
 
@@ -58,6 +56,7 @@ interface SSLFiber {
     void unlock() nothrow;
 
     Buffer response(); /// Response from the service
+    bool available();
     @property uint id();
     immutable(ubyte[]) receive(); /// Recives from the service socket
     void send(immutable(ubyte[]) buffer); /// Send to the service socket
@@ -226,7 +225,7 @@ class SSLFiberService {
      +/
     @trusted
     void execute(ref SocketSet socket_set) {
-        import std.socket : SocketOSException;
+        import std.socket: SocketOSException;
 
         foreach (key, ref fiber; active_fibers) {
             void removeFiber() {
@@ -365,7 +364,6 @@ class SSLFiberService {
             ubyte[] buffer;
             ubyte[] current;
             ptrdiff_t rec_data_size;
-
             // The length of the buffer is in leb128 format
             enum LEN_MAX = LEB128.calc_size(uint.max);
             auto leb128_len_data = new ubyte[LEN_MAX];
@@ -386,7 +384,6 @@ class SSLFiberService {
                         .check(leb128_index < LEN_MAX, message("Invalid size of len128 length field %d", leb128_index));
                     break leb128_loop;
                     }
-
                     checkTimeout;
                     yield;
             }
@@ -398,11 +395,9 @@ class SSLFiberService {
                 return null;
             }
             buffer = new ubyte[leb128_len.size + leb128_len.value];
-
             buffer[0 .. rec_data_size] = leb128_len_data[0 .. rec_data_size];
             current = buffer[rec_data_size .. $];
             log("curr: %s %d", buffer[0 .. leb128_len.size], buffer.length);
-
             while(current.length) {
                 rec_data_size = client.receive(current);
                 if (rec_data_size < 0) {
@@ -477,7 +472,7 @@ class SSLFiberService {
          shutdown the service socket
          +/
         void shutdown() {
-            import std.socket : SocketShutdown;
+            import std.socket: SocketShutdown;
 
             if (client) {
                 client.shutdown(SocketShutdown.BOTH);
@@ -510,7 +505,7 @@ class SSLFiberService {
     @trusted
     static void responseService(immutable(string) task_name, shared Response handler) nothrow {
         try {
-        import tagion.basic.Basic : Control;
+        import tagion.basic.Basic: Control;
         import tagion.communication.HiRPC;
         import tagion.hibon.Document;
 

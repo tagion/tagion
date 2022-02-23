@@ -60,7 +60,7 @@ proto-unittest-run: $(UNITTEST_BIN)
 	$(PRECMD)
 	$(UNITTEST_BIN)
 
-$(UNITTEST_BIN): $$(DFILES)
+$(UNITTEST_BIN):
 	$(PRECMD)
 	@echo deps $?
 	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OUTPUT)$@

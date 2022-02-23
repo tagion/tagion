@@ -22,17 +22,21 @@ prebuild-extern-linux: $(DBUILD)/.way
 #prebuild-linux: dstep
 #.PHONY: prebuild-extern-linux
 
+#$(DBUILD)/gen.ddeps.mk: dstep
 #prebuild-linux: $(DBUILD)/gen.ddeps.mk
 .PHONY: prebuild-linux
 
 #traget-linux: prebuild-linux
 #target-linux: | secp256k1 openssl p2pgowrapper
 # target-linux: | secp256k1 p2pgowrapper
-$(UNITTEST_BIN): $(DFILES)
+# target-linux: dstep
+# target-linux: $(DBUILD)/gen.ddeps.mk
+#traget-linux: $(DBUILD)/gen.dfiles.mk
 
 unittest: LIBS+=$(LIBOPENSSL)
 unittest: LIBS+=$(LIBSECP256K1)
 unittest: LIBS+=$(LIBP2PGOWRAPPER)
+unittest: $(DFILES)
 unittest: proto-unittest-run
 
 hibonutil: prebuild-linux
