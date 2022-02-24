@@ -3,7 +3,9 @@ module tagion.behaviour.BehaviourIssue;
 import tagion.behaviour.BehaviourBase;
 import std.traits;
 import std.algorithm : each, map;
-import std.range : tee;
+// std.algorithm.iteration.joiner
+import std.range : tee, chain;
+import std.array : join, array;
 import std.format;
 
 MarkdownT!(Stream) Markdown(Stream)(Stream bout) {
@@ -173,36 +175,63 @@ struct DlangT(Stream) {
         bout.writefln(fmt, indent, Descriptor.stringof, descriptor.description);
     }
 
-    void issue(I)(const(I) info, string indent, string fmt) if (isInfo!I) {
-        issue(info.property, indent, fmt);
-        bout.writeln;
-        bout.writefln(master.name, indent~master.indent, info.name); //
+    string issue(I)(const(I) info) if (isInfo!I) {
+        return format(q{
+                @%2$s(%3$s)
+                Document %1$s() {
+                    return Document();
+                }
+            },
+            info.name,
+            "Property",
+            "Params");
+//        issue(info.property, indent, fmt);
+        // bout.writeln;
+        // bout.writefln(master.name, indent~master.indent, info.name); //
     }
 
-    void issue(Group)(const(Group) group, string indent, string fmt) if (isBehaviourGroup!Group) {
+    string[] issue(Group)(const(Group) group) if (isBehaviourGroup!Group) {
         if (group !is group.init) {
-            issue(group.info, indent, master.property);
-            group.ands
-                .each!(a => issue(a, indent~master.indent, fmt));
+
+            return [issue(group.info)];
+            // group.ands
+            //     .each!(a => issue(a, indent~master.indent, fmt));
         }
+        return null;
     }
 
-    string issue(const(ScenarioGroup) scenario_group, string indent=null) {
+    // @trusted
+    string issue(const(ScenarioGroup) scenario_group) {
         immutable scenario_param=format(
-            `"%s",\n[%-("%3$s"%,\n%)]`,
+            `"%s",\n[%-("%3$s"%,`~"\n"~`%)]`,
             scenario_group.info.property.description,
             scenario_group.info.property.comments
             );
+        auto behaviour_groups =chain(
+            issue(scenario_group.given),
+            issue(scenario_group.then),
+            issue(scenario_group.when)
+            );
+        // bout.writefln("%s",
+        //     behaviour_groups);
+//            .map!(a=> a));
         return format(q{
-                @safe
-                    @Scenario(%1$s)
+                @safe @Scenario(%1$s)
                     class %2$s {
                     %3$s
                         }
             },
             scenario_param,
             scenario_group.info.name,
-            "// code");
+            behaviour_groups
+            .array
+            .map!(a => format("<%s>", a))
+            );
+//            ["// groups"]);
+
+            // behaviour_groups
+            // .array
+            // .join("\n"));
 //        issue(scenario_group.info, indent, master.scenario);
         // issue(scenario_group.given, indent~master.indent, master.property);
         // issue(scenario_group.then, indent~master.indent, master.property);
@@ -229,7 +258,7 @@ struct DlangT(Stream) {
 
         // issue(feature_group.info, indent, master.feature);
         feature_group.scenarios
-            .map!(a => issue(a, indent~master.indent))
+            .map!(s => issue(s))
             .each!(a => bout.write(a));
         bout.writefln("// End");
 
