@@ -3,9 +3,8 @@ module tagion.behaviour.BehaviourIssue;
 import tagion.behaviour.BehaviourBase;
 import std.traits;
 import std.algorithm : each, map;
-// std.algorithm.iteration.joiner
 import std.range : tee, chain;
-import std.array : join, array;
+import std.array : join;
 import std.format;
 
 MarkdownT!(Stream) Markdown(Stream)(Stream bout) {
@@ -17,7 +16,6 @@ MarkdownT!(Stream) Markdown(Stream)(Stream bout) {
 DlangT!(Stream) Dlang(Stream)(Stream bout) {
     alias MasterT=DlangT!Stream;
     auto result=MasterT(bout);
-//    result.master=masterDlang;g
     return result;
 }
 
@@ -110,9 +108,12 @@ unittest { // Markdown scenario test
         immutable filename=unit_mangle("descriptor")
             .unitfile
             .setExtension(EXT.Markdown);
+        immutable expected = filename.freadText;
         markdown.issue(scenario_result.given.info, null, markdown.master.property);
-        io.writefln("bout=%s", bout);
-        filename.fwrite(bout.toString);
+        assert(bout.toString == expected);
+        // io.writefln("bout=%s", bout);
+
+        // filename.fwrite(bout.toString);
     }
     {
         scope(exit) {
@@ -121,9 +122,12 @@ unittest { // Markdown scenario test
         immutable filename=unit_mangle("scenario")
             .unitfile
             .setExtension(EXT.Markdown);
+        immutable expected = filename.freadText;
         markdown.issue(scenario_result);
-        io.writefln("bout=%s", bout);
-        filename.fwrite(bout.toString);
+        assert(bout.toString == expected);
+        //io.writefln("bout=%s", bout);
+//        filename.fwrite(bout.toString);
+//        im
     }
 //    assert(bout.toString == "Not code");
 }
@@ -141,9 +145,11 @@ unittest {
         immutable filename=unit_mangle("feature")
             .unitfile
             .setExtension(EXT.Markdown);
+        immutable expected = filename.freadText;
         markdown.issue(feature_group);
+        assert(bout.toString == expected);
 //        writefln("bout=%s", bout);
-        filename.fwrite(bout.toString);
+        // filename.fwrite(bout.toString);
     }
 
 }
@@ -297,7 +303,12 @@ unittest {
             .setExtension(EXT.Dlang);
         dlang.issue(feature_group);
 //        bout.writefln("End of file %s", filename);
-        filename.fwrite(bout.toString);
+        immutable result=bout.toString
+            .splitLines
+            .map!(a => a.strip)
+            .join("\n");
+        filename.fwrite(result);
+//        bout.toString);
     }
 }
 
@@ -306,10 +317,11 @@ version(unittest) {
     import tagion.behaviour.BehaviourUnittest;
     import tagion.behaviour.Behaviour;
     import tagion.hibon.Document;
+    import std.string : strip, splitLines;
     alias MarkdownU=Markdown!OutBuffer;
     alias DlangU=Dlang!OutBuffer;
 
-    import std.file : fwrite=write, fread=read;
+    import std.file : fwrite=write, freadText = readText;
 //    import std.stdio;
     import std.path;
     import std.outbuffer;

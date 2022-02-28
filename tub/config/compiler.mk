@@ -65,6 +65,7 @@ DPREVIEW :=--preview
 NO_OBJ ?= --o-
 DJSON ?= --Xf
 DEXPORT_DYN?=-L-export-dynamic
+DCOV=--cov
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -77,6 +78,7 @@ DBETTERC := --betterC
 DCOMPILE_ONLY := -c
 DPREVIEW :=-preview
 NO_OBJ ?= -o-
+DCOV ?=-cov
 else
 DVERSION = -version
 SONAME_FLAG = $(LINKERFLAG)-soname
@@ -91,6 +93,7 @@ DCOMPILE_ONLY := -c
 DPREVIEW :=-preview
 NO_OBJ ?= -o-
 DJSON ?= -Xf
+DCOV ?=-cov
 endif
 
 DIP25 := $(DIP)25
@@ -134,7 +137,9 @@ DEBUG_FLAGS+=$(DDEBUG)
 DEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
 DEBUG_FLAGS+=$(DEXPORT_DYN)
 
-DEBUGFLAG+=
+COVOPT=--DRT-covopt="merge:1 dstpath:$(DBUILD)"
+
+#DEBUGFLAG+=
 env-compiler:
 	$(PRECMD)
 	${call log.header, $@ :: compiler}
@@ -162,10 +167,15 @@ env-compiler:
 	${call log.kvp, DBETTERC, $(DBETTERC)}
 	${call log.kvp, DDEBUG_SYMBOLS , $(DDEBUG_SYMBOLS)}
 	${call log.kvp, DEXPORT_DYN, $(DEXPORT_DYN)}
+	${call log.kvp, DCOV, $(DCOV)}
 	${call log.kvp, DEBUG_FLAGS, "$(DEBUG_FLAGS)"}
 	${call log.kvp, DFLAGS, "$(DFLAGS)"}
 	${call log.kvp, LDCFLAGS, "$(LDCFLAGS)"}
 	${call log.kvp, SOURCEFLAGS, "$(SOURCEFLAGS)"}
+	${call log.line}
+	${call log.help, "Runtime --DRT options"}
+	${call log.env, COVOPT, "$(COVOPT)"}
+
 	${call log.close}
 
 env: env-compiler

@@ -1,4 +1,8 @@
 
+ifdef COV
+DFLAGS+=$(DCOV)
+DRTFALGS+=
+endif
 #DFLAGS+=$(DIP25) $(DIP1000)
 DFLAGS+=$(DPREVIEW)=inclusiveincontracts
 
@@ -93,6 +97,8 @@ env-unittest:
 	${call log.env, UNITTEST_DOBJ, $(UNITTEST_DOBJ)}
 	${call log.env, UNITTEST_FLAGS, $(UNITTEST_FLAGS)}
 	${call log.env, UNITTEST_BIN, $(UNITTEST_BIN)}
+	${call log.close}
+
 
 env: env-unittest
 
@@ -111,3 +117,21 @@ env-build:
 	${call log.env, DINC, $(DINC)}
 
 env: env-build
+
+help-cov:
+	$(PRECMD)
+	${call log.header, $@ :: help}
+	${call log.help, "make <target> COV=1", "Enable <target> with code covarage"}
+	${call log.close}
+
+help: help-cov
+
+env-cov:
+	$(PRECMD)
+	${call log.header, $@ :: env}
+	${call log.env, COVOPT, $(COVOPT)}
+	${call log.close}
+
+env: env-cov
+
+.PHONY: env-cov help-cov
