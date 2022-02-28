@@ -9,6 +9,7 @@ export DBIN := $(DBUILD)/bin
 export DTMP := $(DBUILD)/tmp
 export DOBJ := $(DBUILD)/obj
 export DLIB := $(DBUILD)/lib
+export DLOGCOV := $(DLOG)/cov/
 
 env-dirs:
 	$(PRECMD)

@@ -177,6 +177,7 @@ unittest { //
         .unitfile
         .setExtension("hibon");
     const feature = getFeature!(Module);
+//    filename.fwrite(feature);
     const expected = filename.fread!FeatureGroup;
     assert(feature.toDoc == expected.toDoc);
 }

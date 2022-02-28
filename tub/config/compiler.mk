@@ -137,7 +137,7 @@ DEBUG_FLAGS+=$(DDEBUG)
 DEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
 DEBUG_FLAGS+=$(DEXPORT_DYN)
 
-COVOPT=--DRT-covopt="merge:1 dstpath:$(DBUILD)"
+COVOPT=--DRT-covopt=\"merge:1\ dstpath:$(DLOG)\"
 
 #DEBUGFLAG+=
 env-compiler:
@@ -172,10 +172,6 @@ env-compiler:
 	${call log.kvp, DFLAGS, "$(DFLAGS)"}
 	${call log.kvp, LDCFLAGS, "$(LDCFLAGS)"}
 	${call log.kvp, SOURCEFLAGS, "$(SOURCEFLAGS)"}
-	${call log.line}
-	${call log.help, "Runtime --DRT options"}
-	${call log.env, COVOPT, "$(COVOPT)"}
-
 	${call log.close}
 
 env: env-compiler

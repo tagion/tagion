@@ -1,7 +1,8 @@
 
 ifdef COV
 DFLAGS+=$(DCOV)
-DRTFALGS+=
+DRTFALGS+=$(COVOPT)
+COVWAY=$(DLOGCOV)/.way
 endif
 #DFLAGS+=$(DIP25) $(DIP1000)
 DFLAGS+=$(DPREVIEW)=inclusiveincontracts
@@ -67,10 +68,10 @@ proto-unittest-run: $(UNITTEST_BIN)
 	$(SCRIPT_LOG) $(UNITTEST_BIN) $(UNITTEST_LOG)
 
 $(UNITTEST_BIN):DFLAGS+=$(DIP25) $(DIP1000)
-$(UNITTEST_BIN): $$(DFILES)
+$(UNITTEST_BIN): $(COVWAY) $$(DFILES)
 	$(PRECMD)
 	@echo deps $?
-	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OUTPUT)$@
+	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) $(DRTFALGS) ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OUTPUT)$@
 
 
 clean-unittest:
@@ -129,7 +130,7 @@ help: help-cov
 env-cov:
 	$(PRECMD)
 	${call log.header, $@ :: env}
-	${call log.env, COVOPT, $(COVOPT)}
+	${call log.kvp, COVOPT, $(COVOPT)}
 	${call log.close}
 
 env: env-cov
