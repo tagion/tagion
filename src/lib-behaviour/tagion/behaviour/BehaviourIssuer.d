@@ -154,6 +154,7 @@ unittest {
 
 }
 
+version(none)
 unittest {
     auto bout=new OutBuffer;
     auto dlang = Dlang(bout);
@@ -303,11 +304,14 @@ unittest {
             .setExtension(EXT.Dlang);
         dlang.issue(feature_group);
 //        bout.writefln("End of file %s", filename);
+        immutable expected = filename.freadText;
         immutable result=bout.toString
             .splitLines
             .map!(a => a.strip)
             .join("\n");
-        filename.fwrite(result);
+        assert(result == expected);
+
+//        filename.setExtension("dtest").fwrite(result);
 //        bout.toString);
     }
 }
