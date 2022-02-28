@@ -169,22 +169,36 @@ unittest {
 struct DlangT(Stream) {
     Stream bout;
     //  enum property_fmt="%s*%s* %s"; //=function(string indent, string propery, string description);
-    static MarkdownFMT master;
+    // static MarkdownFMT master;
 
-    void issue(Descriptor)(const(Descriptor) descriptor, string indent, string fmt) if(isDescriptor!Descriptor) {
-        bout.writefln(fmt, indent, Descriptor.stringof, descriptor.description);
+    // void issue(Descriptor)(const(Descriptor) descriptor, string indent, string fmt) if(isDescriptor!Descriptor) {
+    //     bout.writefln(fmt, indent, Descriptor.stringof, descriptor.description);
+    // }
+
+    static string[] preparations;
+    static this() {
+        preparations~=
+            q{
+            // Auto generated imports
+            import tagion.behaviour.BehaviourBase;
+            import tagion.behaviour.BehaviourException;
+        };
     }
-
     string issue(I)(const(I) info) if (isInfo!I) {
+        alias Property=TemplateArgsOf!(I)[0];
         return format(q{
-                @%2$s(%3$s)
+                @%2$s(`%3$s`)
                 Document %1$s() {
+                    check(false, "Check for '%1$s' not implemented");
                     return Document();
                 }
             },
             info.name,
-            "Property",
-            "Params");
+            Property.stringof,
+            info.property.description
+            );
+//            I.stringof,
+//            "Params");
 //        issue(info.property, indent, fmt);
         // bout.writeln;
         // bout.writefln(master.name, indent~master.indent, info.name); //
@@ -203,7 +217,7 @@ struct DlangT(Stream) {
     // @trusted
     string issue(const(ScenarioGroup) scenario_group) {
         immutable scenario_param=format(
-            `"%s",\n[%-("%3$s"%,`~"\n"~`%)]`,
+            "%s,\n[%-(`%3$s`%,\n%)",
             scenario_group.info.property.description,
             scenario_group.info.property.comments
             );
@@ -224,8 +238,9 @@ struct DlangT(Stream) {
             scenario_param,
             scenario_group.info.name,
             behaviour_groups
-            .array
-            .map!(a => format("<%s>", a))
+//            .
+            .join
+//            .map!(a => format("<%s>", a))
             );
 //            ["// groups"]);
 
@@ -239,20 +254,20 @@ struct DlangT(Stream) {
     }
 
     void issue(const(FeatureGroup) feature_group, string indent=null) {
-        immutable comments=format(`[%-("%3$s"%,\n%)]`, feature_group.info.property.comments);
+        immutable comments=format("[%-(`%3$s`%,\n%)]", feature_group.info.property.comments);
         bout.writefln(q{
                 module %1$s;
-                // Auto generated imports
-                import tagion.behaviour.BehaviourBase;
-
+                %4$s
                 enum feature = Feature(
-                    "%2$s",
+                    `%2$s`,
                     %3$s);
 
             },
             feature_group.info.name,
             feature_group.info.property.description,
-            comments);
+            comments,
+            preparations.join
+            );
 //            feature_group.property.descriptions);
 
 
@@ -260,9 +275,9 @@ struct DlangT(Stream) {
         feature_group.scenarios
             .map!(s => issue(s))
             .each!(a => bout.write(a));
-        bout.writefln("// End");
+        // bout.writefln("// End");
 
-        bout.writefln("End of %s", __FUNCTION__);
+        // bout.writefln("End of %s", __FUNCTION__);
              // .tee!(a => bout.writeln)
              // .each!(a => issue(a, indent~master.indent));
     }
@@ -281,7 +296,7 @@ unittest {
             .unitfile
             .setExtension(EXT.Dlang);
         dlang.issue(feature_group);
-        bout.writefln("End of file %s", filename);
+//        bout.writefln("End of file %s", filename);
         filename.fwrite(bout.toString);
     }
 }
