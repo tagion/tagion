@@ -1,0 +1,3 @@
+
+EMPTY=
+SPACE=$(EMPTY) $(EMPTY)
