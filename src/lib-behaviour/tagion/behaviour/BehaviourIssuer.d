@@ -4,7 +4,7 @@ import tagion.behaviour.BehaviourBase;
 import std.traits;
 import std.algorithm : each, map;
 import std.range : tee, chain;
-import std.array : join;
+import std.array : join, array;
 import std.format;
 
 MarkdownT!(Stream) Markdown(Stream)(Stream bout) {
@@ -213,10 +213,13 @@ struct DlangT(Stream) {
 
     string[] issue(Group)(const(Group) group) if (isBehaviourGroup!Group) {
         if (group !is group.init) {
-
-            return [issue(group.info)];
-            // group.ands
-            //     .each!(a => issue(a, indent~master.indent, fmt));
+          // string[] result;
+          // result~=
+            return chain([issue(group.info)],
+                group.ands
+                .map!(a => issue(a)))
+                .array;
+//          return result;
         }
         return null;
     }
