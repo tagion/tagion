@@ -376,6 +376,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                     close();
                 }
             }
+
             const foreign_doc = request.toDoc;
             import p2p.go_helper;
 
@@ -652,7 +653,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
 
     void start(SynchronizationFactory factory) //restart with new factory
 
-
+    
 
     in {
         assert(checkState(State.STOP, State.READY, State.ERROR));

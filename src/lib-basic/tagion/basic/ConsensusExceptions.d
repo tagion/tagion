@@ -91,7 +91,7 @@ enum ConsensusFailCode {
     SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT,
     SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY,
     SMARTSCRIPT_NOT_ENOUGH_MONEY,
-};
+}
 
 @safe
 class ConsensusException : TagionException {

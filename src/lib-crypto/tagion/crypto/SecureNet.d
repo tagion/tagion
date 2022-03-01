@@ -41,7 +41,7 @@ class StdHashNet : HashNet {
     immutable(Buffer) calcHash(scope const(ubyte[]) data) const {
         version (unittest) {
             assert(!Document(data.idup).isInorder,
-                "calcHash should not be use on a Document use hashOf instead");
+                    "calcHash should not be use on a Document use hashOf instead");
         }
         return rawCalcHash(data);
     }

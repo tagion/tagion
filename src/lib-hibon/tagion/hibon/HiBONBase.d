@@ -437,7 +437,7 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
         }
     }
 
-};
+}
 
 unittest {
     alias Value = ValueT!(false, void, void);

@@ -153,6 +153,7 @@ do {
 Buffer xor(Range)(scope Range range) pure if (isInputRange!Range) {
     import std.array : array;
     import std.range : tail;
+
     return range
         .cumulativeFold!((a, b) => _xor(a, b))
         .tail(1)

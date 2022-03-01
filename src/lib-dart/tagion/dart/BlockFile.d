@@ -1236,7 +1236,7 @@ class BlockFile {
     void fromDoc(const(Document) doc) {
         allocated_chains = null;
 
-
+        
 
         .check(doc.isArray, "Document should be an array");
         foreach (a; doc[]) {

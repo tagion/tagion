@@ -349,7 +349,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
     
 
     );
-};
+}
 
 static setDefaultOption(ref Options options) {
     // Main

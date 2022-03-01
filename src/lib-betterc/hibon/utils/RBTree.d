@@ -45,7 +45,8 @@ struct RBTreeT(K) {
     enum Color {
         RED,
         BLACK
-    };
+    }
+
     struct Node {
     @nogc:
         K item;
@@ -53,7 +54,7 @@ struct RBTreeT(K) {
         Node* parent;
         Node* left;
         Node* right;
-    };
+    }
 
     private {
         static Node NILL;
