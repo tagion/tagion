@@ -1,0 +1,4 @@
+[submodule "src"]
+	path = src
+	url = git@github.com:tagion/fork-secp256k1.git
+	shallow = true
