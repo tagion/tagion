@@ -74,7 +74,7 @@
 //         // pincode.create(pincodeLen);
 //         // foreach (i, a; pincode)
 //         // {
-            
+
 //         // }
 
 //         const aes_key_data = recyclerDoc(aes_doc_id);
@@ -252,7 +252,7 @@
 //     export ulong get_balance_locked(const uint32_t wallet_doc_id)
 //     {
 //         const wallet_doc = recyclerDoc(wallet_doc_id);
-        
+
 //         auto secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN.init,
 //             RecoverGenerator.init, AccountDetails(wallet_doc));
 

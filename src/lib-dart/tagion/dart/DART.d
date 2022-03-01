@@ -384,7 +384,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         enum recorderName = GetLabel!(recorder).name;
         this(RecordFactory manufactor, const Document doc) {
 
-
+            
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!uint;
@@ -457,9 +457,9 @@ class DART : DARTFile { //, HiRPC.Supports {
         }
 
         void set(
-            DART owner,
-            SynchronizationFiber fiber,
-            HiRPC hirpc) @trusted nothrow {
+                DART owner,
+                SynchronizationFiber fiber,
+                HiRPC hirpc) @trusted nothrow {
             import std.conv : emplace;
 
             this.fiber = fiber;
@@ -784,7 +784,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                         auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                         // D!(sector, "%x");
                         while (!dart_A_synchronizer.empty) {
-                            assumeTrusted!({dart_A_synchronizer.call;});
+                            assumeTrusted!({ dart_A_synchronizer.call; });
                         }
                     }
                     foreach (journal_filename; journal_filenames) {

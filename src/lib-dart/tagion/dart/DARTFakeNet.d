@@ -95,7 +95,7 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
     static __gshared ulong iteration = 0;
     static ulong local_iteration = 0;
 
-//    alias Sector = SectorRange;
+    //    alias Sector = SectorRange;
     import std.math : pow;
     import std.algorithm : count;
 

@@ -3,37 +3,37 @@ module tagion.betterC.wallet.NativeSecp;
 private import tagion.crypto.secp256k1.c.secp256k1;
 private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
 
-import std.exception: assumeUnique;
+import std.exception : assumeUnique;
 import tagion.basic.ConsensusExceptions;
 
-import tagion.utils.Miscellaneous: toHexString;
+import tagion.utils.Miscellaneous : toHexString;
 import tagion.betterC.utils.Memory;
 
 enum SECP256K1 : uint {
     FLAGS_TYPE_MASK = SECP256K1_FLAGS_TYPE_MASK,
-        FLAGS_TYPE_CONTEXT = SECP256K1_FLAGS_TYPE_CONTEXT,
-        FLAGS_TYPE_COMPRESSION =  SECP256K1_FLAGS_TYPE_COMPRESSION,
-        /** The higher bits contain the actual data. Do not use directly. */
-        FLAGS_BIT_CONTEXT_VERIFY = SECP256K1_FLAGS_BIT_CONTEXT_VERIFY,
-        FLAGS_BIT_CONTEXT_SIGN = SECP256K1_FLAGS_BIT_CONTEXT_SIGN,
-        FLAGS_BIT_COMPRESSION =  FLAGS_BIT_CONTEXT_SIGN,
+    FLAGS_TYPE_CONTEXT = SECP256K1_FLAGS_TYPE_CONTEXT,
+    FLAGS_TYPE_COMPRESSION = SECP256K1_FLAGS_TYPE_COMPRESSION,
+    /** The higher bits contain the actual data. Do not use directly. */
+    FLAGS_BIT_CONTEXT_VERIFY = SECP256K1_FLAGS_BIT_CONTEXT_VERIFY,
+    FLAGS_BIT_CONTEXT_SIGN = SECP256K1_FLAGS_BIT_CONTEXT_SIGN,
+    FLAGS_BIT_COMPRESSION = FLAGS_BIT_CONTEXT_SIGN,
 
-        /** Flags to pass to secp256k1_context_create. */
-        CONTEXT_VERIFY = SECP256K1_CONTEXT_VERIFY,
-        CONTEXT_SIGN = SECP256K1_CONTEXT_SIGN,
-        CONTEXT_NONE = SECP256K1_CONTEXT_NONE,
+    /** Flags to pass to secp256k1_context_create. */
+    CONTEXT_VERIFY = SECP256K1_CONTEXT_VERIFY,
+    CONTEXT_SIGN = SECP256K1_CONTEXT_SIGN,
+    CONTEXT_NONE = SECP256K1_CONTEXT_NONE,
 
-        /** Flag to pass to secp256k1_ec_pubkey_serialize and secp256k1_ec_privkey_export. */
-        EC_COMPRESSED = SECP256K1_EC_COMPRESSED,
-        EC_UNCOMPRESSED =  SECP256K1_EC_UNCOMPRESSED,
+    /** Flag to pass to secp256k1_ec_pubkey_serialize and secp256k1_ec_privkey_export. */
+    EC_COMPRESSED = SECP256K1_EC_COMPRESSED,
+    EC_UNCOMPRESSED = SECP256K1_EC_UNCOMPRESSED,
 
-        /** Prefix byte used to tag various encoded curvepoints for specific purposes */
-        TAG_PUBKEY_EVEN = SECP256K1_TAG_PUBKEY_EVEN,
-        TAG_PUBKEY_ODD = SECP256K1_TAG_PUBKEY_ODD,
-        TAG_PUBKEY_UNCOMPRESSED = SECP256K1_TAG_PUBKEY_UNCOMPRESSED,
-        TAG_PUBKEY_HYBRID_EVEN = SECP256K1_TAG_PUBKEY_HYBRID_EVEN,
-        TAG_PUBKEY_HYBRID_ODD = SECP256K1_TAG_PUBKEY_HYBRID_ODD
-    };
+    /** Prefix byte used to tag various encoded curvepoints for specific purposes */
+    TAG_PUBKEY_EVEN = SECP256K1_TAG_PUBKEY_EVEN,
+    TAG_PUBKEY_ODD = SECP256K1_TAG_PUBKEY_ODD,
+    TAG_PUBKEY_UNCOMPRESSED = SECP256K1_TAG_PUBKEY_UNCOMPRESSED,
+    TAG_PUBKEY_HYBRID_EVEN = SECP256K1_TAG_PUBKEY_HYBRID_EVEN,
+    TAG_PUBKEY_HYBRID_ODD = SECP256K1_TAG_PUBKEY_HYBRID_ODD
+};
 
 struct NativeSecp256k1 {
 
@@ -99,7 +99,7 @@ struct NativeSecp256k1 {
         }
 
         if ((_format_verify & Format.RAW) || (_format_verify == 0)) {
-            import core.stdc.string: memcpy;
+            import core.stdc.string : memcpy;
 
             memcpy(&(sig.data), sigdata, siglen);
         }
@@ -121,7 +121,7 @@ struct NativeSecp256k1 {
      + @param sig byte array of signature
      +/
     @trusted
-        immutable(ubyte[]) sign(const(ubyte[]) data, const(ubyte[]) sec) const
+    immutable(ubyte[]) sign(const(ubyte[]) data, const(ubyte[]) sec) const
     in {
         assert(data.length == 32);
         assert(sec.length <= 32);
@@ -145,7 +145,7 @@ struct NativeSecp256k1 {
                 foreach (i, a; outputSer_array.dup) {
                     result[i] = a;
                 }
-                return cast(immutable)result;
+                return cast(immutable) result;
             }
         }
         if (_format_sign is Format.COMPACT) {
@@ -161,18 +161,18 @@ struct NativeSecp256k1 {
                 foreach (i, a; outputSer_array.dup) {
                     result[i] = a;
                 }
-                return cast(immutable)result;
+                return cast(immutable) result;
             }
         }
         //        writefln("Format=%s", _format_sign);
         // immutable(ubyte[]) result = sig.data[0 .. SIGNATURE_SIZE].idup;
-        
+
         ubyte[] result;
         result.create(SIGNATURE_SIZE);
         foreach (i, a; sig.data.dup) {
             result[i] = a;
         }
-        return cast(immutable)result;
+        return cast(immutable) result;
     }
 
     /++
@@ -245,7 +245,7 @@ struct NativeSecp256k1 {
         foreach (i, a; outputSer_array.dup) {
             result[i] = a;
         }
-        return cast(immutable)result;
+        return cast(immutable) result;
     }
 
     /++

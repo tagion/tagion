@@ -20,8 +20,8 @@ import tagion.gossip.InterfaceNet;
 import tagion.basic.ConsensusExceptions;
 
 import tagion.logger.Logger;
-import tagion.options.ServiceNames: get_node_name;
-import tagion.options.CommonOptions: CommonOptions;
+import tagion.options.ServiceNames : get_node_name;
+import tagion.options.CommonOptions : CommonOptions;
 
 import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
@@ -133,7 +133,7 @@ class EmulatorGossipNet : GossipNet {
         log.trace("send to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
                 .toDoc.serialize.length);
         assumeTrusted!(Thread.sleep)(duration);
-        assumeTrusted!({_tids[channel].send(sender.toDoc);});
+        assumeTrusted!({ _tids[channel].send(sender.toDoc); });
         log.trace("sended");
     }
 }

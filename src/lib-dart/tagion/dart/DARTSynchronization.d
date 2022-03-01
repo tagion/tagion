@@ -25,7 +25,7 @@ import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
-import tagion.hibon.HiBON: HiBON;
+import tagion.hibon.HiBON : HiBON;
 import tagion.logger.Logger;
 
 import tagion.communication.HiRPC;
@@ -144,8 +144,7 @@ class ReadRequestHandler : ResponseHandler {
     }
 }
 
-version (none)
-unittest {
+version (none) unittest {
     pragma(msg, "Fixme(Alex); Why doesn't this unittest not compile anymore!!!");
     import std.bitmanip : nativeToBigEndian;
     import tagion.dart.DARTFakeNet;
@@ -298,7 +297,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                 BlockFile.create(filename, DART.stringof, BLOCK_SIZE);
                 auto sync = new P2pSynchronizer(filename, stream_id, oncomplete, onfailure);
                 auto db_sync = dart.synchronizer(sync, sector);
-                assumeTrusted!({db_sync.call; });
+                assumeTrusted!({ db_sync.call; });
                 return tuple(db_sync.id, cast(ResponseHandler) sync);
             }
             catch (GoException e) {
@@ -407,7 +406,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             if (alive) {
                 log("P2pSynchronizer: close alive. Sector: %d", convertFromBuffer!ushort(fiber.root_rims.rims));
                 onfailure(fiber.root_rims);
-                assumeTrusted!({fiber.reset;});
+                assumeTrusted!({ fiber.reset; });
             }
             else {
                 log("P2pSynchronizer: Synchronization Completed! Sector: %d", convertFromBuffer!ushort(fiber.root_rims
@@ -663,7 +662,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
 
     void start(SynchronizationFactory factory) //restart with new factory
 
-
+    
 
     in {
         assert(checkState(State.STOP, State.READY, State.ERROR));
@@ -681,7 +680,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
                 failed_sync_sectors = [];
             }
             _state = State.FIBER_RUNNING;
-            assumeTrusted!({call;});
+            assumeTrusted!({ call; });
         }
     }
 
@@ -719,7 +718,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
         }
         if (checkState(State.FIBER_RUNNING)) {
             if (handlerPool.size <= dart_opts.sync.max_handlers || dart_opts.sync.max_handlers == 0) {
-                assumeTrusted!({call; });
+                assumeTrusted!({ call; });
             }
         }
         if (checkState(State.RUNNING)) {

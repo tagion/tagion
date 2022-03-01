@@ -46,7 +46,7 @@ static assert(uint.sizeof == 4);
      The buffer of the HiBON document
      +/
     //    @nogc
-    immutable(ubyte[]) data() const pure /*nothrow*/ {
+    immutable(ubyte[]) data() const pure  /*nothrow*/ {
         if (_data.length) {
             return _data[0 .. full_size];
         }
@@ -57,7 +57,7 @@ static assert(uint.sizeof == 4);
     /++
      Creates a HiBON Document from a buffer
      +/
-    @nogc this(immutable(ubyte[]) data) pure /*nothrow*/ {
+    @nogc this(immutable(ubyte[]) data) pure  /*nothrow*/ {
         this._data = data;
     }
 
@@ -67,7 +67,7 @@ static assert(uint.sizeof == 4);
      Params:
      doc is the Document which is replicated
      +/
-    @nogc this(const Document doc) pure /*nothrow*/ {
+    @nogc this(const Document doc) pure  /*nothrow*/ {
         this._data = doc._data;
     }
 
@@ -97,7 +97,7 @@ static assert(uint.sizeof == 4);
         return 0;
     }
 
-    @property @nogc const pure /*nothrow*/ {
+    @property @nogc const pure  /*nothrow*/ {
         @safe bool empty() {
             return _data.length <= ubyte.sizeof;
         }
@@ -171,7 +171,7 @@ static assert(uint.sizeof == 4);
      The deligate used by the valid function to report errors
      +/
     alias ErrorCallback = bool delegate(const Document main_doc,
-            const Element.ErrorCode error_code, const(Element) current, const(Element) previous) /*nothrow*/ @safe;
+            const Element.ErrorCode error_code, const(Element) current, const(Element) previous)  /*nothrow*/ @safe;
 
     /++
      This function check's if the Document is a valid HiBON format
@@ -180,9 +180,9 @@ static assert(uint.sizeof == 4);
      Returns:
      Error code of the validation
      +/
-    Element.ErrorCode valid(ErrorCallback error_callback = null) const /*nothrow*/ {
+    Element.ErrorCode valid(ErrorCallback error_callback = null) const  /*nothrow*/ {
         Element.ErrorCode inner_valid(const Document sub_doc,
-                ErrorCallback error_callback = null) const /*nothrow*/ {
+                ErrorCallback error_callback = null) const  /*nothrow*/ {
             import tagion.basic.TagionExceptions : TagionException;
 
             auto previous = sub_doc[];
@@ -248,7 +248,7 @@ static assert(uint.sizeof == 4);
      true if the Document is inorder
      +/
     // @trusted
-    bool isInorder() const /*nothrow*/ {
+    bool isInorder() const  /*nothrow*/ {
         return valid() is Element.ErrorCode.NONE;
     }
 
@@ -260,7 +260,7 @@ static assert(uint.sizeof == 4);
         private immutable(ubyte)[] _data;
         immutable uint ver;
     public:
-        this(immutable(ubyte[]) data) pure /*nothrow*/ {
+        this(immutable(ubyte[]) data) pure  /*nothrow*/ {
             if (data.length) {
                 const _index = LEB128.calc_size(data);
                 _data = data[_index .. $];
@@ -274,15 +274,15 @@ static assert(uint.sizeof == 4);
             }
         }
 
-        this(const Document doc) pure /*nothrow*/ {
+        this(const Document doc) pure  /*nothrow*/ {
             this(doc._data);
         }
 
-        immutable(ubyte[]) data() const pure /*nothrow*/ {
+        immutable(ubyte[]) data() const pure  /*nothrow*/ {
             return _data;
         }
 
-        pure /*nothrow*/ const {
+        pure  /*nothrow*/ const {
             bool empty() {
                 return _data.length is 0;
             }
@@ -301,7 +301,8 @@ static assert(uint.sizeof == 4);
             // if (_data.length) {
             //     _data = _data[Element(_data).size .. $];
             // }
-        import std.stdio;
+            import std.stdio;
+
             // writeln(_data.length);
             if (_data.length) {
                 // writeln(Element(_data).size);
@@ -310,7 +311,7 @@ static assert(uint.sizeof == 4);
                 // {
                 // }
             }
-        // }
+            // }
         }
     }
 
@@ -318,7 +319,7 @@ static assert(uint.sizeof == 4);
      Returns:
      A range of Element's
      +/
-    @nogc Range opSlice() const pure /*nothrow*/ {
+    @nogc Range opSlice() const pure  /*nothrow*/ {
         if (full_size < _data.length) {
             return Range(_data[0 .. full_size]);
         }
@@ -329,7 +330,7 @@ static assert(uint.sizeof == 4);
      Returns:
      A range of the member keys in the document
      +/
-    @nogc auto keys() const /*nothrow*/ {
+    @nogc auto keys() const  /*nothrow*/ {
         return map!"a.key"(this[]);
     }
 
@@ -349,7 +350,7 @@ static assert(uint.sizeof == 4);
      Returns:
      Is true if all the keys in ordred numbers
      +/
-    bool isArray() const /*nothrow*/ {
+    bool isArray() const  /*nothrow*/ {
         return .isArray(keys);
     }
 
@@ -408,6 +409,7 @@ static assert(uint.sizeof == 4);
      +/
     const(Element) opIndex(in string key) const {
         auto result = key in this;
+        
         .check(!result.isEod, message("Member named '%s' not found", key));
         return result;
     }
@@ -421,6 +423,7 @@ static assert(uint.sizeof == 4);
      +/
     const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
         auto result = index in this;
+        
         .check(!result.isEod, message("Member index %d not found", index));
         return result;
     }
@@ -434,7 +437,7 @@ static assert(uint.sizeof == 4);
      Retruns:
      The number of bytes taken up by the key in the HiBON serialized stream
      +/
-    @nogc static size_t sizeKey(const(char[]) key) pure /*nothrow*/ {
+    @nogc static size_t sizeKey(const(char[]) key) pure  /*nothrow*/ {
         uint index;
         if (is_index(key, index)) {
             return sizeKey(index);
@@ -442,7 +445,7 @@ static assert(uint.sizeof == 4);
         return Type.sizeof + LEB128.calc_size(key.length) + key.length;
     }
 
-    @nogc static size_t sizeKey(uint key) pure /*nothrow*/ {
+    @nogc static size_t sizeKey(uint key) pure  /*nothrow*/ {
         return Type.sizeof + ubyte.sizeof + LEB128.calc_size(key);
     }
 
@@ -899,7 +902,7 @@ static assert(uint.sizeof == 4);
          */
         immutable(ubyte[]) data;
     public:
-        @nogc this(immutable(ubyte[]) data) pure /*nothrow*/ {
+        @nogc this(immutable(ubyte[]) data) pure  /*nothrow*/ {
             // In this time, Element does not parse a binary data.
             // This is lazy initialization for some efficient.
             this.data = data;
@@ -982,6 +985,7 @@ static assert(uint.sizeof == 4);
              if the element does not contain the type E and HiBONException is thrown
              +/
             auto by(Type E)() {
+                
                     .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
 
                 
@@ -1062,7 +1066,7 @@ static assert(uint.sizeof == 4);
              Returns:
              true if the function succeeds
              +/
-            bool as(T)(ref T result) pure /*nothrow*/ {
+            bool as(T)(ref T result) pure  /*nothrow*/ {
                 switch (type) {
                     static foreach (E; EnumMembers!Type) {
                         static if (isHiBONType(E)) {
@@ -1100,7 +1104,7 @@ static assert(uint.sizeof == 4);
 
         }
 
-        @property @nogc const pure /*nothrow*/ {
+        @property @nogc const pure  /*nothrow*/ {
             /++
              Retruns:
              true if the elemnt is of T
@@ -1145,7 +1149,7 @@ static assert(uint.sizeof == 4);
             }
         }
 
-        @property @nogc const pure /*nothrow*/ {
+        @property @nogc const pure  /*nothrow*/ {
             /++
              Returns:
              the key length
@@ -1296,7 +1300,7 @@ static assert(uint.sizeof == 4);
 
          +/
         //            @nogc
-        @trusted ErrorCode valid() const pure /*nothrow*/ {
+        @trusted ErrorCode valid() const pure  /*nothrow*/ {
             enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
 
             with (ErrorCode) {
@@ -1346,7 +1350,7 @@ static assert(uint.sizeof == 4);
             }
         }
 
-        @property const pure /*nothrow*/ {
+        @property const pure  /*nothrow*/ {
 
             /++
              Returns:

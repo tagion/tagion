@@ -150,8 +150,8 @@ class BlockFile {
 
         void write() {
             uint order_blocks(
-                ref Range range,
-                const uint previous_index = INDEX_NULL) {
+                    ref Range range,
+                    const uint previous_index = INDEX_NULL) {
                 if (!range.empty) {
                     immutable index = range.front;
                     if (index < owner.last_block_index) {
@@ -701,9 +701,9 @@ class BlockFile {
                 alias type = typeof(m);
                 static if (isStaticArray!type) {
                     assumeTrusted!({
-                            buffer[pos .. pos + type.sizeof] = (cast(ubyte*)id.ptr)[0 .. type.sizeof];
-                            pos += type.sizeof;
-                        });
+                        buffer[pos .. pos + type.sizeof] = (cast(ubyte*) id.ptr)[0 .. type.sizeof];
+                        pos += type.sizeof;
+                    });
                 }
                 else {
                     buffer.binwrite(m, &pos);
@@ -723,7 +723,7 @@ class BlockFile {
             foreach (i, ref m; this.tupleof) {
                 alias type = typeof(m);
                 static if (isStaticArray!type && is(type : U[], U)) {
-                    assumeTrusted!({m = (cast(U*) buf.ptr)[0 .. m.sizeof];});
+                    assumeTrusted!({ m = (cast(U*) buf.ptr)[0 .. m.sizeof]; });
                     buf = buf[m.sizeof .. $];
                 }
                 else {
@@ -748,16 +748,14 @@ class BlockFile {
         uint root_index; /// Point the root of the database
         uint statistic_index; /// Points to the statistic data
         final void write(
-            ref File file,
-            immutable uint BLOCK_SIZE) const {
+                ref File file,
+                immutable uint BLOCK_SIZE) const {
             scope buffer = new ubyte[BLOCK_SIZE];
             size_t pos;
             foreach (i, m; this.tupleof) {
                 buffer.binwrite(m, &pos);
             }
-            assumeTrusted!({
-                    buffer[$ - FILE_LABEL.length .. $] = cast(ubyte[]) FILE_LABEL;
-                });
+            assumeTrusted!({ buffer[$ - FILE_LABEL.length .. $] = cast(ubyte[]) FILE_LABEL; });
             file.rawWrite(buffer);
             // Truncate the file after the master block
             file.truncate(file.size);
@@ -1239,7 +1237,7 @@ class BlockFile {
     void fromDoc(const(Document) doc) {
         allocated_chains = null;
 
-
+        
 
         .check(doc.isArray, "Document should be an array");
         foreach (a; doc[]) {

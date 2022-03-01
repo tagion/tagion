@@ -12,7 +12,7 @@ import tagion.network.SSLSocket;
 import tagion.network.SSLOptions;
 import tagion.network.NetworkExceptions : check;
 import tagion.basic.Message;
-import tagion.basic.Basic: Buffer;
+import tagion.basic.Basic : Buffer;
 import tagion.logger.Logger;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.TagionExceptions : taskfailure, fatal;
@@ -270,8 +270,9 @@ class SSLFiberService {
     void send(uint id, immutable(ubyte[]) buffer)
     in {
         assert(id in active_fibers);
-    } do{
-            active_fibers[id].raw_send(buffer);
+    }
+    do {
+        active_fibers[id].raw_send(buffer);
     }
 
     /++
