@@ -221,7 +221,7 @@ unittest {
         }
     }
 
-    Buffer one_byte=[0];
+    Buffer one_byte = [0];
     { //ConnectionPool: send to exist connection
         auto connectionPool = new shared(ConnectionPool!(shared FakeStream, uint))(10.seconds);
         auto fakeStream = new shared(FakeStream)();
@@ -388,7 +388,7 @@ class StdP2pNet : P2pNet {
 
     @safe
     void close() {
-       void send_stop() {
+        void send_stop() {
             auto sender = locate(internal_task_name);
             if (sender !is Tid.init) {
                 sender.prioritySend(Control.STOP);

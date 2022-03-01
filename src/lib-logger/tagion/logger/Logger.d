@@ -23,7 +23,7 @@ enum LoggerType {
 struct LogFilter {
     string task_name;
     LoggerType log_level;
-    
+
     mixin HiBONRecord!(q{
         this(string task_name, LoggerType log_level) {
             this.task_name = task_name;
@@ -80,7 +80,9 @@ static struct Logger {
         }
         try {
             logger_tid = locate(logger_task_name);
+
             
+
             .register(task_name, thisTid);
             _task_name = task_name;
             setThreadName(task_name);
@@ -160,8 +162,10 @@ static struct Logger {
             }
             else {
                 try {
-                    LogFilter[] ff = [LogFilter("tagionlogservicetest", LoggerType.WARNING),
-                                        LogFilter("tagionlogservicetest", LoggerType.INFO)];
+                    LogFilter[] ff = [
+                        LogFilter("tagionlogservicetest", LoggerType.WARNING),
+                        LogFilter("tagionlogservicetest", LoggerType.INFO)
+                    ];
                     logger_tid.send(LogFilterArray(ff.idup));
 
                     logger_tid.send(type, _task_name, text);

@@ -30,7 +30,6 @@
 
 // /// Functions called from d-lang through dart:ffi
 
-
 // /// Creating Document by ubyte array
 // export uint32_t create_test_doc()
 // {
@@ -435,10 +434,10 @@
 //         hib1["test"] = "test";
 //         hib["doc3"] = Document(hib1);
 //         const expected = hib1.serialize;
-        
+
 //         const data = hib.serialize;
 //         auto index = create_doc(data.ptr, cast(uint) data.length);
-        
+
 //         const docLen = doc_get_docLen_by_key(index, "test", 4);
 //         immutable docPtr = cast(immutable) doc_get_docPtr_by_key(index, "test", 4);
 //         const doc = Document(docPtr[0..cast(uint)docLen]);

@@ -518,21 +518,22 @@ unittest {
 
 protected template _staticSearchIndexOf(int index, alias find, L...) {
     import std.meta : staticIndexOf;
+
     static if (isType!find) {
-        enum _staticSearchIndexOf=staticIndexOf!(find, L);
+        enum _staticSearchIndexOf = staticIndexOf!(find, L);
     }
     else {
         static if (L.length is index) {
             enum _staticSearchIndexOf = -1;
         }
         else {
-            enum found=find!(L[index]);
+            enum found = find!(L[index]);
             pragma(msg, "found ", found);
             static if (found) {
                 enum _staticSearchIndexOf = index;
             }
             else {
-                enum _staticSearchIndexOf = _staticSearchIndexOf!(index+1, find, L);
+                enum _staticSearchIndexOf = _staticSearchIndexOf!(index + 1, find, L);
             }
         }
     }
@@ -548,29 +549,32 @@ If nothing has been found the template returns -1
  */
 
 template staticSearchIndexOf(alias find, L...) {
-    enum staticSearchIndexOf=_staticSearchIndexOf!(0, find, L);
+    enum staticSearchIndexOf = _staticSearchIndexOf!(0, find, L);
 }
 
 static unittest {
     import std.traits : isIntegral, isFloatingPoint;
-    alias seq=AliasSeq!(string, int, long, char);
+
+    alias seq = AliasSeq!(string, int, long, char);
     pragma(msg, "staticSearchIndexOf ", staticSearchIndexOf!(long, seq));
     static assert(staticSearchIndexOf!(long, seq) is 2);
     static assert(staticSearchIndexOf!(isIntegral, seq) is 1);
     static assert(staticSearchIndexOf!(isFloatingPoint, seq) is -1);
 }
 
-enum unitdata="unitdata";
+enum unitdata = "unitdata";
 /**
    Returns:
    unittest data filename
  */
-string unitfile(string filename, string file=__FILE__) {
+string unitfile(string filename, string file = __FILE__) {
     import std.path;
+
     return buildPath(file.dirName, unitdata, filename);
 }
 
 template mangleFunc(alias T) if (isCallable!T) {
     import core.demangle : mangle;
-    alias mangleFunc=mangle!(FunctionTypeOf!(T));
+
+    alias mangleFunc = mangle!(FunctionTypeOf!(T));
 }

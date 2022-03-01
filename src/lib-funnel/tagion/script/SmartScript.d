@@ -45,17 +45,17 @@ class SmartScript {
     }
     do {
 
-
+        
 
             .check(signed_contract.signs.length > 0, ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE);
         const message = net.hashOf(signed_contract.contract.toDoc);
 
-
+        
 
         .check(signed_contract.signs.length >= signed_contract.input.length,
                 ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE);
 
-
+        
 
         .check(signed_contract.contract.input.length == signed_contract.input.length,
                 ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
@@ -66,13 +66,13 @@ class SmartScript {
 
             immutable fingerprint = net.hashOf(input.toDoc);
 
-
+            
 
             .check(print == fingerprint, ConsensusFailCode
                     .SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
             Pubkey pkey = input.owner;
 
-
+            
 
             .check(net.verify(message, signature, pkey),
                     ConsensusFailCode.SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY);
@@ -116,7 +116,7 @@ class SmartScript {
             _output_bills ~= bill;
         }
 
-
+        
 
         .check(total_output <= total_input, ConsensusFailCode.SMARTSCRIPT_NOT_ENOUGH_MONEY);
     }

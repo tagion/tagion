@@ -24,8 +24,7 @@ import tagion.crypto.SecureNet : StdSecureNet;
 
 import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
 
-struct LogSubscriptionFilters
-{
+struct LogSubscriptionFilters {
     LogFilter[][uint] filters;
 
     void addSubscription(uint listener_id, Document doc) nothrow {
@@ -41,7 +40,7 @@ struct LogSubscriptionFilters
 
     LogFilter[] collectAllFilters() const {
         LogFilter[] all_filters;
-        foreach(filter_arr; filters) {
+        foreach (filter_arr; filters) {
             all_filters ~= filter_arr;
         }
         return all_filters;
@@ -52,7 +51,7 @@ struct LogSubscriptionFilters
     }
 
     bool matchListenerFilter(uint listener_id, string task_name, LoggerType log_level) {
-        foreach(filter; filters[listener_id]) {
+        foreach (filter; filters[listener_id]) {
             if (filter.match(task_name, log_level)) {
                 return true;
             }
@@ -135,9 +134,8 @@ void logSubscriptionServiceTask(immutable(Options) opts) nothrow {
             }
         }
 
-        void receiveLogs(string task_name, LoggerType log_level, string log_output)
-        {
-            foreach(listener_id; subscription_filters.filters.keys) {
+        void receiveLogs(string task_name, LoggerType log_level, string log_output) {
+            foreach (listener_id; subscription_filters.filters.keys) {
                 if (subscription_filters.matchListenerFilter(listener_id, task_name, log_level)) {
                     writeln("sent logs to ", listener_id);
                     //immutable log_buffer = log_output.seliaze();
@@ -149,15 +147,13 @@ void logSubscriptionServiceTask(immutable(Options) opts) nothrow {
         ownerTid.send(Control.LIVE);
         while (!stop) {
             receiveTimeout(500.msecs, //Control the thread
-                &handleState,
-                &taskfailure,
-                &receiveLogs,
-                );
+                    &handleState,
+                    &taskfailure,
+                    &receiveLogs,
+            );
         }
     }
     catch (Throwable t) {
         fatal(t);
     }
 }
-
-

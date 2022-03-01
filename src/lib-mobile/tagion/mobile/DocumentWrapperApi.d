@@ -264,9 +264,8 @@ unittest {
     }
 
     // Tests for delete_doc_by_id()
-    pragma(msg, "fixme(cbr): This unittest does not pass (", __FILE__, ":",__LINE__,")");
-    version(none)
-    {
+    pragma(msg, "fixme(cbr): This unittest does not pass (", __FILE__, ":", __LINE__, ")");
+    version (none) {
 
         assert(recyclerDoc.exists(1));
         assert(recyclerDoc.exists(2));
@@ -283,16 +282,15 @@ unittest {
         writefln("doc_id_0=%d", doc_id_data_a);
         assert(recyclerDoc.exists(doc_id_data_a));
 
-        const doc_id_data_b  = create_doc(data.ptr, cast(uint) data.length);
+        const doc_id_data_b = create_doc(data.ptr, cast(uint) data.length);
         writefln("doc_id_1=%d", doc_id_data_b);
         assert(recyclerDoc.exists(doc_id_data_b));
     }
     // Range of Document' indexes in RecyclerDoc [0 .. 3]
 
     // Tests for doc_get_int_by_key()
-    pragma(msg, "fixme(cbr): This unittest does not pass (", __FILE__, ":",__LINE__,")");
-    version(none)
-    {
+    pragma(msg, "fixme(cbr): This unittest does not pass (", __FILE__, ":", __LINE__, ")");
+    version (none) {
 
         assert(doc_get_int_by_key(0, "doc1", 4) is 100);
         assert(doc_get_int_by_key(1, "doc1", 4) is 100);
@@ -319,9 +317,8 @@ unittest {
     }
 
     // Tests for doc_get_int_by_id()
-    pragma(msg, "fixme(cbr): This unittest does not pass (", __FILE__, ":",__LINE__,")");
-    version(none)
-    {
+    pragma(msg, "fixme(cbr): This unittest does not pass (", __FILE__, ":", __LINE__, ")");
+    version (none) {
         assert(doc_get_int_by_id(0, 1) is 101);
         assert(doc_get_int_by_id(1, 1) is 101);
         assert(doc_get_int_by_id(2, 1) is 101);
@@ -335,9 +332,8 @@ unittest {
     }
 
     // Tests for doc_get_str_by_id()
-    pragma(msg, "fixme(cbr): This unittest does not pass (", __FILE__, ":",__LINE__,")");
-    version(none)
-    {
+    pragma(msg, "fixme(cbr): This unittest does not pass (", __FILE__, ":", __LINE__, ")");
+    version (none) {
         const(char)[] expected_str = "test_str_with_id";
 
         assert(fromStringz(doc_get_str_by_id(0, 2)) == expected_str);

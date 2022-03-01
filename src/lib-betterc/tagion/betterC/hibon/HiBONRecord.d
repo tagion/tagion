@@ -13,6 +13,7 @@ import tagion.betterC.hibon.HiBONBase : ValueT;
 
 import tagion.betterC.hibon.HiBON : HiBONT;
 import tagion.betterC.hibon.Document : Document;
+
 // import tagion.betterC.hibon.HiBONException : HiBONRecordException;
 
 alias DocResult = Tuple!(Document.Element.ErrorCode, "error", string, "key");

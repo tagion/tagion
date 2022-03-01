@@ -5,6 +5,7 @@ import tagion.betterC.hibon.HiBON : HiBONT;
 import tagion.betterC.hibon.Document : Document;
 import tagion.betterC.wallet.KeyRecover : KeyRecover;
 import tagion.basic.Basic : Buffer, Pubkey;
+
 // import tagion.script.TagionCurrency;
 // import tagion.script.StandardRecords : StandardBill;
 
@@ -21,10 +22,11 @@ struct Label {
 @trusted {
     import std.algorithm;
     import std.array;
+
     @RecordType("Quiz")
     struct Quiz {
         @Label("$Q") string[] questions;
-        this(Document doc){
+        this(Document doc) {
             auto mydata = doc["$Q"].get!Document;
             questions = mydata[]
                 .map!(a => a.get!string)
@@ -59,12 +61,12 @@ struct Label {
             // hibon["Y"] = Y;
             // hibon["S"] = S;
             hibon["N"] = confidence;
-            return cast(inout)hibon;
+            return cast(inout) hibon;
         }
 
         const(Document) toDoc() {
             auto doc = Document(toHiBON.serialize);
-            return cast(const)doc;
+            return cast(const) doc;
         }
 
         this(Document doc) {

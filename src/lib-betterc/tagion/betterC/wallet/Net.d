@@ -2,9 +2,9 @@ module tagion.betterC.wallet.Net;
 
 import tagion.crypto.aes.AESCrypto;
 import tagion.crypto.secp256k1.NativeSecp256k1;
-import tagion.basic.Basic: Buffer;
+import tagion.basic.Basic : Buffer;
 import std.format;
-import std.string: representation;
+import std.string : representation;
 private import tagion.crypto.secp256k1.c.secp256k1;
 private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
 import tagion.betterC.utils.Memory;
@@ -26,13 +26,12 @@ void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) @safe if (
     }
 }
 
-
 @trusted uint hashSize() pure nothrow {
     return HASH_SIZE;
 }
 
 @trusted immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) {
-    import std.digest.sha: SHA256;
+    import std.digest.sha : SHA256;
     import std.digest;
 
     return digest!SHA256(data).idup;
@@ -76,12 +75,12 @@ do {
 }
 
 @safe struct SecureNet {
-    import tagion.basic.Basic: Pubkey;
-    import std.digest.hmac: digestHMAC = HMAC;
+    import tagion.basic.Basic : Pubkey;
+    import std.digest.hmac : digestHMAC = HMAC;
+
     protected NativeSecp256k1 _crypt;
 
     private Pubkey _pubkey;
-
 
     bool secKeyVerify(scope const(ubyte[]) privkey) const {
         return _crypt.secKeyVerify(privkey);
@@ -92,8 +91,8 @@ do {
         assert(_crypt.secKeyVerify(privkey));
     }
     do {
-        import std.digest.sha: SHA256;
-        import std.string: representation;
+        import std.digest.sha : SHA256;
+        import std.string : representation;
 
         alias AES = AESCrypto!256;
         _pubkey = _crypt.computePubkey(privkey);
@@ -149,38 +148,32 @@ do {
 
         immutable(ubyte[]) sign(const(ubyte[]) message) const {
             immutable(ubyte)[] result;
-            do_secret_stuff((const(ubyte[]) privkey) {
-                result = _crypt.sign(message, privkey);
-            });
+            do_secret_stuff((const(ubyte[]) privkey) { result = _crypt.sign(message, privkey); });
             return result;
         }
 
         void tweakMul(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) {
-            do_secret_stuff((const(ubyte[]) privkey) @safe {
-                _crypt.privKeyTweakMul(privkey, tweak_code, tweak_privkey);
-            });
+            do_secret_stuff((const(ubyte[]) privkey) @safe { _crypt.privKeyTweakMul(privkey, tweak_code, tweak_privkey); });
         }
 
         void tweakAdd(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) {
-            do_secret_stuff((const(ubyte[]) privkey) @safe {
-                _crypt.privKeyTweakAdd(privkey, tweak_code, tweak_privkey);
-            });
+            do_secret_stuff((const(ubyte[]) privkey) @safe { _crypt.privKeyTweakAdd(privkey, tweak_code, tweak_privkey); });
         }
 
         immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const {
             Buffer result;
             do_secret_stuff((const(ubyte[]) privkey) @safe {
-                    result = _crypt.createECDHSecret(privkey, cast(Buffer)pubkey);
+                result = _crypt.createECDHSecret(privkey, cast(Buffer) pubkey);
             });
             return result;
         }
 
         Buffer mask(const(ubyte[]) _mask) const {
-            import std.algorithm.iteration: sum;
+            import std.algorithm.iteration : sum;
 
             Buffer result;
             do_secret_stuff((const(ubyte[]) privkey) @safe {
-                import tagion.utils.Miscellaneous: xor;
+                import tagion.utils.Miscellaneous : xor;
 
                 auto data = xor(privkey, _mask);
                 result = calcHash(calcHash(data));
@@ -188,10 +181,11 @@ do {
             return result;
         }
     }
+
     @trusted immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure {
-        import std.exception: assumeUnique;
-        import std.digest.sha: SHA256;
-        import std.digest.hmac: digestHMAC = HMAC;
+        import std.exception : assumeUnique;
+        import std.digest.sha : SHA256;
+        import std.digest.hmac : digestHMAC = HMAC;
 
         scope hmac = digestHMAC!SHA256(data);
         auto result = hmac.finish.dup;
@@ -219,4 +213,3 @@ do {
     }
 
 }
-
