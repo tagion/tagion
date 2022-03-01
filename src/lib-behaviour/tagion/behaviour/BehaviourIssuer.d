@@ -151,7 +151,7 @@ struct DlangT(Stream) {
     string issue(I)(const(I) info) if (isInfo!I) {
         alias Property=TemplateArgsOf!(I)[0];
         return format(q{
-                @%2$s(`%3$s`)
+                @%2$s("%3$s")
                 Document %1$s() {
                     check(false, "Check for '%1$s' not implemented");
                     return Document();
@@ -175,7 +175,7 @@ struct DlangT(Stream) {
 
     string issue(const(ScenarioGroup) scenario_group) {
         immutable scenario_param=format(
-            "%s,\n[%-(`%3$s`%,\n%)",
+            "\"%s\",\n[%-(\"%3$s\"%,\n%)]",
             scenario_group.info.property.description,
             scenario_group.info.property.comments
             );
@@ -198,12 +198,12 @@ struct DlangT(Stream) {
     }
 
     void issue(const(FeatureGroup) feature_group, string indent=null) {
-        immutable comments=format("[%-(`%3$s`%,\n%)]", feature_group.info.property.comments);
+        immutable comments=format("[%-(\"%3$s\"%,\n%)]", feature_group.info.property.comments);
         bout.writefln(q{
                 module %1$s;
                 %4$s
                 enum feature = Feature(
-                    `%2$s`,
+                    "%2$s",
                     %3$s);
 
             },
@@ -236,6 +236,7 @@ unittest {
             .splitLines
             .map!(a => a.strip)
             .join("\n");
+//        filename.setExtension("dtest").fwrite(result);
         assert(result == expected);
     }
 }
