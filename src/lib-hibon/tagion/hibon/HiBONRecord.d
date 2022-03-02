@@ -1290,77 +1290,18 @@ const(T) fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
             const s_doc = s.toDoc;
             const result = StructBytes(s_doc);
 
-            import std.stdio;
-
-            writefln("tabel=%J", s);
-            writefln("sort=%s",
-                list
-//                .tee!(i => binwrite(buffer, i, 0))
-                .map!((i) {binwrite(buffer, i, 0); return tuple(buffer.idup, i);})
-                .array
-                .sort!((a, b) => a[0] < b[0])
-                );
-            //     // })
-            //     // .map!(q{a()})
-            //     // .array
-            //     // .sort);
-            //     writeln("**************");
-            writefln("s_doc=%s",
-                s_doc["tabel"]
-                .get!Document[]
-                .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int)));
-            // assert(equal(
-            //         list
-            //         .tee!(i => binwrite(buffer, i, 0))
-            //         .map!(i => tuple(buffer.idup, i))
-            //         .array
-            //         .sort!((a, b) => a[0] < b[0]),
-            //         s_doc["tabel"]
-            //         .get!Document[]
-            //         .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
-            // )
-            // );
-
-            // .array
-            // .sort!((a, b) => a[1] < b[1])
-            //     );
-
-            // (() @trusted {
-            //     import std.range : tee;
-                assert(
-                    equal(
+            assert(
+                equal(
                     list
-//                    .tee!(i => binwrite(buffer, i, 0))
                     .map!((i) {binwrite(buffer, i, 0); return tuple(buffer.idup, i);})
-                    // })
-                    // .map!(q{a()})
                     .array
                     .sort,
                     s_doc["tabel"]
                     .get!Document[]
                     .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
                 ));
-            // })();
-
             assert(s_doc == result.toDoc);
         }
-
-        // {
-        //     alias Bytes = Typedef!(immutable(ubyte)[], null, "Bytes");
-        //     alias Tabel = Document[Bytes];
-        //     static struct StructDocument {
-        //         Tabel tabel;
-        //         mixin HiBONRecord;
-        //     }
-
-        //     static assert(isSpecialKeyType!Tabel)
-
-        //     StructDocument s;
-        //     {
-
-        //     }
-
-        // }
 
         { // Typedef of a HiBONRecord is used as key in an associative-array
             static struct KeyStruct {
