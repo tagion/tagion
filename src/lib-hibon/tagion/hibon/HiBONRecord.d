@@ -195,6 +195,8 @@ mixin template HiBONRecordType() {
  --------------------
 
  +/
+pragma(msg, "The less_than function in this mixin is used for none string key (Should be added to the HiBON spec)");
+
 mixin template HiBONRecord(string CTOR = "") {
 
     import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember, isCallable,
@@ -1290,33 +1292,34 @@ const(T) fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
 
             import std.stdio;
 
-            // writefln("sort=%s",
-            //     list
-            //     .tee!(i => binwrite(buffer, i, 0))
-            //     .map!(i => tuple(buffer.idup, i))
-            //     .array
-            //     .sort!((a, b) => a[0] < b[0])
-            //     );
+            writefln("tabel=%J", s);
+            writefln("sort=%s",
+                list
+//                .tee!(i => binwrite(buffer, i, 0))
+                .map!((i) {binwrite(buffer, i, 0); return tuple(buffer.idup, i);})
+                .array
+                .sort!((a, b) => a[0] < b[0])
+                );
             //     // })
             //     // .map!(q{a()})
             //     // .array
             //     // .sort);
             //     writeln("**************");
-            // writefln("s_doc=%s",
-            //     s_doc["tabel"]
-            //     .get!Document[]
-            //     .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
-            assert(equal(
-                    list
-                    .tee!(i => binwrite(buffer, i, 0))
-                    .map!(i => tuple(buffer.idup, i))
-                    .array
-                    .sort!((a, b) => a[0] < b[0]),
-                    s_doc["tabel"]
-                    .get!Document[]
-                    .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
-            )
-            );
+            writefln("s_doc=%s",
+                s_doc["tabel"]
+                .get!Document[]
+                .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int)));
+            // assert(equal(
+            //         list
+            //         .tee!(i => binwrite(buffer, i, 0))
+            //         .map!(i => tuple(buffer.idup, i))
+            //         .array
+            //         .sort!((a, b) => a[0] < b[0]),
+            //         s_doc["tabel"]
+            //         .get!Document[]
+            //         .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
+            // )
+            // );
 
             // .array
             // .sort!((a, b) => a[1] < b[1])
@@ -1324,19 +1327,19 @@ const(T) fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
 
             // (() @trusted {
             //     import std.range : tee;
-            //     assert(
-            //         equal(
-            //         list
-            //         .tee!(i => binwrite(buffer, i, 0))
-            //         .map!(i => tuple(buffer.idup, i))
-            //         // })
-            //         // .map!(q{a()})
-            //         .array
-            //         .sort,
-            //         s_doc["tabel"]
-            //         .get!Document[]
-            //         .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
-            //     ));
+                assert(
+                    equal(
+                    list
+//                    .tee!(i => binwrite(buffer, i, 0))
+                    .map!((i) {binwrite(buffer, i, 0); return tuple(buffer.idup, i);})
+                    // })
+                    // .map!(q{a()})
+                    .array
+                    .sort,
+                    s_doc["tabel"]
+                    .get!Document[]
+                    .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
+                ));
             // })();
 
             assert(s_doc == result.toDoc);
