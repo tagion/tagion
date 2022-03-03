@@ -11,7 +11,7 @@ import std.algorithm.iteration;
 
 import tagion.services.Options;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.utils.StdTime;
 
 import tagion.hibon.HiBON : HiBON;

@@ -28,7 +28,7 @@ import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.Event;
 import tagion.basic.ConsensusExceptions;
 
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.options.ServiceNames : get_node_name;
 import tagion.options.CommonOptions : CommonOptions;
 

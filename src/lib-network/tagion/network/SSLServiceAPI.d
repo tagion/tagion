@@ -11,7 +11,7 @@ import tagion.network.SSLSocket;
 import tagion.network.SSLFiberService;
 import tagion.network.SSLOptions;
 
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.basic.Basic : Control;
 import tagion.basic.TagionExceptions : TagionException, fatal;
 

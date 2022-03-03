@@ -10,7 +10,7 @@ import p2plib = p2p.interfaces;
 //import p2p.connection;
 import p2p.callback;
 import p2p.cgo.c_helper;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.basic.Basic : Buffer, Control;
 import std.getopt;
 import std.stdio;

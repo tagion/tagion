@@ -29,7 +29,7 @@ import tagion.hashgraph.HashGraphBasic;
 //import tagion.crypto.aes.AESCrypto;
 //import tagion.crypto.secp256k1.NativeSecp256k1;
 
-//import tagion.basic.Logger;
+//import tagion.logger.Logger;
 
 @safe
 abstract class StdGossipNet : StdSecureNet, GossipNet {

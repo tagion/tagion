@@ -26,7 +26,7 @@ import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 
 import tagion.communication.HiRPC;
 import tagion.communication.HandlerPool;
