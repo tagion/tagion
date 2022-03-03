@@ -13,12 +13,12 @@ main: help
 #
 # Defining absolute Root and Tub directories
 #
-export DSRC := $(abspath $(DROOT)/src)
-export DTUB := $(abspath $(DROOT)/tub)
-ifndef DROOT
-${error DROOT must be defined}
+export DSRC := $(abspath $(REPOROOT)/src)
+export DTUB := $(abspath $(REPOROOT)/tub)
+ifndef REPOROOT
+${error REPOROOT must be defined}
 endif
-#export DROOT := ${abspath ${DTUB}/../}
+#export REPOROOT := ${abspath ${DTUB}/../}
 
 ifeq (prebuild,$(MAKECMDGOALS))
 PREBUILD=1
@@ -27,8 +27,8 @@ endif
 #
 # Local config, ignored by git
 #
--include $(DROOT)/local.*.mk
--include $(DROOT)/local.mk
+-include $(REPOROOT)/local.*.mk
+-include $(REPOROOT)/local.mk
 include $(DTUB)/utilities/dir.mk
 include $(DTUB)/utilities/log.mk
 
@@ -51,8 +51,8 @@ prebuild:
 #
 # This is the HOST target platform
 #
-HOST_PLATFORM=${call join-with,-,$(GETARCH) $(GETHOSTOS) $(GETOS)}
-PLATFORM?=$(HOST_PLATFORM)
+HOST=${call join-with,-,$(GETARCH) $(GETHOSTOS) $(GETOS)}
+PLATFORM?=$(HOST)
 
 #
 # Platform
@@ -67,7 +67,7 @@ include $(DTUB)/config/prebuild.mk
 # -include $(DBUILD)/gen.ddeps.mk
 # endif
 
--include $(DROOT)/platform.*.mk
+-include $(REPOROOT)/platform.*.mk
 
 #
 # Secondary tub functionality
@@ -102,8 +102,8 @@ include $(DTUB)/compile.mk
 #
 # Root config
 #
--include $(DROOT)/config.*.mk
--include $(DROOT)/config.mk
+-include $(REPOROOT)/config.*.mk
+-include $(REPOROOT)/config.mk
 
 
 #
@@ -115,3 +115,8 @@ include $(DTUB)/clean.mk
 # Help
 #
 include $(DTUB)/help.mk
+
+run: tagionwave
+	cd $(DBIN);
+	rm -fR data; mkdir data;
+	script -c "./tagionwave $(DRTFALGS) -N 7" tagionwave_script.log

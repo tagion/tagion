@@ -48,7 +48,7 @@ static uint getTids(Tid[] tids) {
         immutable uint_i = cast(uint) i;
         immutable taskname = uint_i.get_node_name;
         tid = locate(taskname);
-        if (tid == thisTid) {
+        if (tid is thisTid) {
             result = uint_i;
         }
     }

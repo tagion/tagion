@@ -9,7 +9,7 @@ import io = std.stdio;
 enum EndpointType {
     Client,
     Server
-};
+}
 
 @safe
 class SSLSocketException : SocketException {

@@ -348,14 +348,12 @@ shared static this() {
             enum irInstr = getInstr!ir;
         }}
 }
-//enum getInstr(alias ir) = getUDAs!(ir, Instr)[0];
 
 static unittest {
-    // pragma(msg, getInstr!(IR.UNREACHABLE));
-    enum InstrUnreachable =Instr("unreachable", 1, IRType.CODE);
-    static assert(getInstr!(IR.UNREACHABLE) == InstrUnreachable); //Instr("unreachable", 1, IRType.CODE));
+    enum InstrUnreachable = Instr("unreachable", 1, IRType.CODE);
+    static assert(getInstr!(IR.UNREACHABLE) == InstrUnreachable);
     enum ir = IR.UNREACHABLE;
-    static assert(getInstr!(ir) == InstrUnreachable); //Instr("unreachable", 1, IRType.CODE));
+    static assert(getInstr!(ir) == InstrUnreachable);
 }
 
 shared static immutable(Instr[IR]) instrTable;
@@ -654,12 +652,6 @@ static assert(isInputRange!ExprRange);
         }
 
         enum unreachable = IRElement(IR.UNREACHABLE);
-        //static const(IRElement) unreachable;
-
-        // void unreachable() nothorw {
-        //     unreachable.code = IR.UNREACHABLE;
-        //     unreachable._warg = WasmArg.undefine;
-        // };
 
         const(WasmArg) warg() const pure nothrow {
             return _warg;

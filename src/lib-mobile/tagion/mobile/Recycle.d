@@ -1,6 +1,7 @@
 module tagion.mobile.Recycle;
 
 struct Recycle(T) {
+    pragma(msg, "fixme(cbr): Why is it offset by one with (START_INDEX = 1) ?");
     enum START_INDEX = 1;
 
     enum to_index = (uint i) => cast(const(uint))(i + START_INDEX);
