@@ -9,7 +9,7 @@ import std.exception : assumeUnique, assumeWontThrow;
 
 import tagion.network.SSLServiceAPI;
 import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
 import tagion.basic.Basic : Control, Buffer;

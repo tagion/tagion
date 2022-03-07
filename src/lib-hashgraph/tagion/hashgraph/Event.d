@@ -27,7 +27,7 @@ import tagion.utils.StdTime;
 import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, EnumText, buf_idup;
 import tagion.Keywords : Keywords;
 
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.hashgraph.HashGraphBasic : isMajority, isAllVotes, EventBody, EventPackage, EvaPayload, Tides, EventMonitorCallbacks;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.utils.BitMask : BitMask;

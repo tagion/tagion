@@ -14,7 +14,7 @@ import tagion.script.Script : Script, ScriptContext;
 import tagion.script.ScriptParser : ScriptParser;
 import tagion.script.ScriptBuilder : ScriptBuilder;
 import tagion.script.ScriptBase : Number;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 

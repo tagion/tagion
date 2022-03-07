@@ -10,7 +10,7 @@ import std.stdio;
 
 // import tagion.services.LoggerService;
 import tagion.services.Options;
-import tagion.basic.Logger;
+import tagion.logger.Logger;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
 import tagion.basic.TagionExceptions : TagionException, taskException, fatal;
 import tagion.services.MdnsDiscoveryService;

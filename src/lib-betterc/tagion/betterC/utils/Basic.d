@@ -1,4 +1,6 @@
-module hibon.utils.Basic;
+/// \file Basic.d
+
+module tagion.betterC.utils.Basic;
 
 template suffix(string name, size_t index) {
     static if (index is 0) {
@@ -13,9 +15,9 @@ template suffix(string name, size_t index) {
     }
 }
 
-/++
-  + Template function returns the suffux name after the last '.'
-  +/
+/**
+  * Template function returns the suffix name after the last '.'
+  */
 template basename(alias K) {
     static if (is(K == string)) {
         enum name = K;
@@ -27,9 +29,8 @@ template basename(alias K) {
 }
 
 /**
-   Finds the type in the TList which T can be typecast to
-   Returns:
-   void if not type is found
+ * Finds the type in the TList which T can be typecast to
+ * return void if not type is found
  */
 template CastTo(T, TList...) {
     static if (TList.length is 0) {

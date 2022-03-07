@@ -1,12 +1,13 @@
-module hibon.utils.Bailout;
+/// \file Bailout.d
 
-extern (C):
+module tagion.betterC.utils.Bailout;
+
 @nogc:
-import hibon.utils.platform;
+import tagion.betterC.utils.platform;
 
 // import core.stdc.string;
 // import core.stdc.stdio;
-import hibon.utils.Text;
+import tagion.betterC.utils.Text;
 
 enum MESSAGE_BUFFER_SIZE = 0x80;
 
@@ -15,6 +16,16 @@ protected __gshared char[MESSAGE_BUFFER_SIZE] _message_buffer;
 protected __gshared size_t _line;
 protected __gshared const(char)[] _file;
 
+/**
+ * @brief File created for providing base functionality for messages
+ */
+
+/**
+ * Function create buffer based on unout string with data and arguments
+ * @param text - input data
+ * @param args - arguments which can be set for every message
+ * @return buffer based on input data and arguments
+ */
 const(char[]) message(Args...)(string text, Args args) {
     auto temp = Text(_message_buffer.length);
     enum {
@@ -80,7 +91,7 @@ version (WebAssembly) {
 else {
     void dump() {
         if (message) {
-            printf("%s:%d:%s\n", file.ptr, cast(uint) line, message.ptr);
+            printf("%s:%d:%s\n", file.ptr, line, message.ptr);
         }
         else {
             printf("No error\n");

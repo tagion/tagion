@@ -14,6 +14,8 @@ else
 DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
 endif
 
+WRAPS+=secp256k1 p2pgowrapper openssl
+
 prebuild-extern-linux: $(DBUILD)/.way
 #prebuild-extern-linux: secp256k1 openssl p2pgowrapper
 #dstep: prebuild-extern-linux
