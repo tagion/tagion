@@ -7,11 +7,13 @@ LINUX_X86_64_BETTERC:=x86_64-linux-betterC
 PLATFORMS+=$(LINUX_X86_64_BETTERC)
 ifeq ($(PLATFORM),$(LINUX_X86_64_BETTERC))
 MTRIPLE:=x86_64-linux
+UNITTEST_FLAGS:=$(DDEBUG) $(DDEBUG_SYMBOLS)
 DFLAGS+=$(DBETTERC)
 
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
-DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
+DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc/*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
 
+#DFILES+=src/lib-betterc/tests/unittest.d
 WRAPS+=secp256k1
 
 prebuild-extern-linux: $(DBUILD)/.way
