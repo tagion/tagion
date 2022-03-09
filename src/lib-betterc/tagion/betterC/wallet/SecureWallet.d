@@ -24,9 +24,8 @@ import tagion.utils.Miscellaneous;
 import tagion.Keywords;
 import tagion.script.TagionCurrency;
 import tagion.communication.HiRPC;
-import tagion.wallet.KeyRecover;
-import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
-import tagion.wallet.WalletException : check;
+import tagion.betterC.wallet.KeyRecover;
+import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 
 //alias StdSecureWallet = SecureWallet!StdSecureNet;
 
