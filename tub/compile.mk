@@ -70,7 +70,8 @@ proto-unittest-run: $(UNITTEST_BIN)
 $(UNITTEST_BIN):DFLAGS+=$(DIP25) $(DIP1000)
 $(UNITTEST_BIN): $(COVWAY) $$(DFILES)
 	$(PRECMD)
-	@echo deps $?
+	echo deps $?
+	echo LIBS=$(LIBS)
 	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) $(DRTFALGS) ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OUTPUT)$@
 
 
