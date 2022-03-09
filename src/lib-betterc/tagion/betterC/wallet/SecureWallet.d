@@ -12,11 +12,8 @@ import core.time : MonoTime;
 
 //import std.stdio;
 //use hibon betterc
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONException : HiBONRecordException;
+import tagion.betterC.hibon.HiBON : HiBON;
+import tagion.betterC.hibon.Document : Document;
 
 import tagion.basic.Basic : basename, Buffer, Pubkey;
 import tagion.script.StandardRecords;
@@ -386,7 +383,6 @@ import tagion.wallet.WalletException : check;
 
     unittest {
         import std.stdio;
-        import tagion.hibon.HiBONJSON;
         import std.range : iota;
         import std.format;
 
