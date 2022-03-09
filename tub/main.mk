@@ -42,9 +42,6 @@ prebuild:
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) ddeps
 
-# $(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) secp256k1
-# $(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) p2pgowrapper
-# $(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) openssl
 
 
 #

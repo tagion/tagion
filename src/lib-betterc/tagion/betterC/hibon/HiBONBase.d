@@ -554,7 +554,7 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
         }
     }
 
-};
+}
 
 // unittest {
 //     alias Value = ValueT!(false, void, void);

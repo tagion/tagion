@@ -228,7 +228,7 @@ enum Control {
     STOP, /// Send when the child task to stop task
     //    FAIL,   /// This if a something failed other than an exception
     END /// Send for the child to the ownerTid when the task ends
-};
+}
 
 /++
  Calculates log2

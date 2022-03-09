@@ -11,19 +11,19 @@ To archive this core team will work on the following
    1. Should be able to run unittest.
    2. Should be able to build all programs in a simple manner.
    3. Should be able to enable debugging in an easy manner.
-   4. Should be able to execute regression tests on.
+   4. Should be able to execute regression tests on system level.
    5. Should be able enable and disable part of the regression. 
    6. The develop should be able get easy readable feedback on the test results.
    
-2. Qualification methodic.
+2. Qualification methodical.
 
    1. On the module level. The development strategic should adopt TDD (Test driver development).
 
       1. The test should be written in unittest in source file and should primarily include the function in the source code of concern.
       2. An unittest should be written such that it can be used as an example in the  documentation.
-   2. For system level test BDD(Behaviour driven development) should be used.
+   2. For system level test BDD (Behavior driven development) should be used.
       1. The specification in the BDD should include a text to explain the function of a test
-      2. The BDD should follow the (Should,Given, And, When, Then) methodic.
+      2. The BDD should follow the (Should, Given, And, When, Then) methodical.
    3. The develop should merge with the daily branch everyday. 
    4. If the code passes the TDD and BDD the code should be merge in to the daily branch
    5. If the part of the code is work in progress the develop can disable this with a version flag and if it code passes the code can be push.

@@ -1470,7 +1470,7 @@ enum Dot {
     L = ".L",
     V = ".V",
     S = ".S"
-};
+}
 
 @safe
 class ScriptDebugPrint(Dot O) : ScriptElement {
