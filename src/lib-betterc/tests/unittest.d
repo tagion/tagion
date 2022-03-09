@@ -4,14 +4,14 @@ import tagion.betterC.hibon.HiBONBase;
 
 //import tagion.betterC.hibon.HiBONRecord;
 import tagion.betterC.hibon.BigNumber;
-import tagion.betterC.hibon.utils.sdt;
-import tagion.betterC.hibon.utils.Stack;
-import tagion.betterC.hibon.utils.RBTree;
-import tagion.betterC.hibon.utils.BinBuffer;
-import tagion.betterC.hibon.utils.Memory;
-import tagion.betterC.hibon.utils.LEB128;
-import Bailout = tagion.betterC.hibon.utils.Bailout;
-import tagion.betterC.hibon.utils.Text;
+import tagion.betterC.utils.sdt;
+import tagion.betterC.utils.Stack;
+import tagion.betterC.utils.RBTree;
+import tagion.betterC.utils.BinBuffer;
+import tagion.betterC.utils.Memory;
+import tagion.betterC.utils.LEB128;
+import Bailout = tagion.betterC.utils.Bailout;
+import tagion.betterC.utils.Text;
 import tagion.betterC.hibon.HiBON;
 import tagion.betterC.hibon.Document;
 
@@ -47,7 +47,7 @@ static void callUnittest(alias Module)() {
     alias Members = __traits(allMembers, Module);
     printf("%s\n", Module.stringof.ptr);
     static foreach (u; __traits(getUnitTests, Module)) {
-        import Bailout = tagion.betterC.hibon.utils.Bailout;
+        import Bailout = tagion.betterC.utils.Bailout;
 
         Bailout.clear;
         printf("\t%s\n", u.stringof.ptr);
@@ -59,7 +59,7 @@ static void callUnittest(alias Module)() {
 
 }
 
-version (unittest) {
+//version (unittest) {
     static if (!__traits(compiles, main())) {
         extern (C) int main() {
             printf("Unittest\n");
@@ -80,4 +80,4 @@ version (unittest) {
             return 0;
         }
     }
-}
+//}

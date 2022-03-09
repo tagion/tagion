@@ -8,19 +8,19 @@ PLATFORMS+=$(LINUX_X86_64_BETTERC)
 ifeq ($(PLATFORM),$(LINUX_X86_64_BETTERC))
 DFLAGS+=$(DVERSION)=TINY_AES
 MTRIPLE:=x86_64-linux
-UNITTEST_FLAGS+=$(DDEBUG) $(DDEBUG_SYMBOLS)
+UNITTEST_FLAGS:=$(DDEBUG) $(DDEBUG_SYMBOLS)
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 ifdef BETTERC
 DFLAGS+=$(DBETTERC)
 DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc/*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
 else
 DFILES?=${shell find $(DSRC) -type f -name "*.d" \( -path "*src/lib-betterC/*" -o -path "*src/lib-crypto/*" -o -path "*src/lib-hibon/*"  -o -path "*src/lib-utils/*" -o -path "*src/lib-basic/*"  -o -path "*src/lib-logger/*" \) -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
-UNITTEST_FLAGS+=$(DUNITTEST) $(DMAIN)
+#UNITTEST_FLAGS+=$(DUNITTEST) $(DMAIN)
 #$(DDEBUG) $(DDEBUG_SYMBOLS)
 endif
 
 
-#DFILES+=src/lib-betterc/tests/unittest.d
+DFILES+=src/lib-betterc/tests/unittest.d
 WRAPS+=secp256k1
 
 prebuild-extern-linux: $(DBUILD)/.way
