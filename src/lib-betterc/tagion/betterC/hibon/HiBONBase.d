@@ -709,7 +709,7 @@ in {
     assert(a.length > 0);
     assert(b.length > 0);
 }
-body {
+do {
     uint a_index;
     uint b_index;
     if (is_index(a, a_index) && is_index(b, b_index)) {

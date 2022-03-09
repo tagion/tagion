@@ -285,7 +285,7 @@ import tagion.wallet.WalletException : check;
                 SecureNet bill_net;
                 // Sign all inputs
                 result.signs = contract_bills.filter!(b => b.owner in account.derives)
-                    .map!(b => {
+                    .map!((b) {
                         immutable tweak_code = account.derives[b.owner];
                         bill_net.derive(tweak_code, shared_net);
                         return bill_net.sign(message);
@@ -342,7 +342,7 @@ import tagion.wallet.WalletException : check;
             TagionCurrency rest = amount;
             active_bills = none_active.filter!(b => b.value <= rest)
                 .until!(b => rest <= 0)
-                .tee!(b => { rest -= b.value; account.activated[b.owner] = true; })
+                .tee!((b) { rest -= b.value; account.activated[b.owner] = true; })
                 .array;
             if (rest > 0) {
                 // Take an extra larger bill if not enough

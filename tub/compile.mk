@@ -57,7 +57,7 @@ $(DBIN)/%:
 #
 # Proto targets for unittest
 #
-UNITTEST_FLAGS?=$(DUNITTEST) $(DDEBUG) $(DDEBUG_SYMBOLS)
+UNITTEST_FLAGS?=$(DUNITTEST) $(DDEBUG) $(DDEBUG_SYMBOLS) $(DMAIN)
 UNITTEST_DOBJ=$(DOBJ)/unittest
 UNITTEST_BIN?=$(DBIN)/unittest
 UNITTEST_LOG?=$(DLOG)/unittest.log
@@ -72,7 +72,7 @@ $(UNITTEST_BIN): $(COVWAY) $$(DFILES)
 	$(PRECMD)
 	echo deps $?
 	echo LIBS=$(LIBS)
-	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) $(DRTFALGS) ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OUTPUT)$@
+	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFALGS) ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OUTPUT)$@
 
 
 clean-unittest:
