@@ -16,8 +16,12 @@ import tagion.hibon.HiBONJSON;
 
 //import tagion.script.StandardRecords;
 import std.array : join;
-
+ 
 // import tagion.revision; 
+
+pragma(msg, "fixme(cbr): This import is dummy force the tub to link liboption");
+import tagion.utils.Gene;
+import tagion.logger.Logger;
 
 enum fileextensions {
     HIBON = ".hibon",
@@ -47,9 +51,7 @@ int main(string[] args) {
             "outputfile|o", "Sets the output file name", &outputfilename,
             "bin|b", "Use HiBON or else use JSON", &binary,
             "value|V", format("Bill value : default: %d", value), &value,
-            "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty, //        "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
-
-            
+            "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,//        "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
 
     );
 
@@ -62,23 +64,23 @@ int main(string[] args) {
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 [
-            // format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...] <in-file> <out-file>", program),
-            format("%s [<option>...] <in-file>", program),
-            "",
-            "Where:",
-            "<in-file>           Is an input file in .json or .hibon format",
-            "<out-file>          Is an output file in .json or .hibon format",
-            "                    stdout is used of the output is not specifed the",
-            "",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <in-file> <out-file>", program),
+                format("%s [<option>...] <in-file>", program),
+                "",
+                "Where:",
+                "<in-file>           Is an input file in .json or .hibon format",
+                "<out-file>          Is an output file in .json or .hibon format",
+                "                    stdout is used of the output is not specifed the",
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
-        main_args.options);
+                ].join("\n"),
+                main_args.options);
         return 0;
     }
     //    writefln("args=%s", args);
@@ -113,11 +115,14 @@ int main(string[] args) {
         const doc = Document(data);
         //        version(none) {
         const error_code = doc.valid(
-                (
+            (
                 const(Document) sub_doc,
                 const Document.Element.ErrorCode error_code,
                 const(Document.Element) current, const(
-                Document.Element) previous) nothrow{ assumeWontThrow(writefln("%s", current)); return true; });
+                    Document.Element) previous) nothrow {
+                assumeWontThrow(writefln("%s", current));
+                return true;
+            });
         if (error_code !is Document.Element.ErrorCode.NONE) {
             writefln("Errorcode %s", error_code);
             return 1;

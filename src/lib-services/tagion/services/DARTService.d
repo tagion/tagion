@@ -42,6 +42,7 @@ import tagion.services.DARTSynchronizeService;
 //import tagion.services.MdnsDiscoveryService;
 import tagion.gossip.P2pGossipNet : NodeAddress, ConnectionPool;
 
+
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
@@ -277,10 +278,7 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                     //     stop=true;
                     //     ownerTid.send(t);
                     // }
-
-                    
-
-            );
+                    );
             requestPool.tick();
         }
     }

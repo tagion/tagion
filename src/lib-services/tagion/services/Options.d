@@ -5,12 +5,12 @@ import std.format;
 import std.traits;
 import std.file;
 import std.getopt;
-import std.array : join;
-import std.string : strip;
+import std.array: join;
+import std.string: strip;
 
-import tagion.basic.Basic : basename, DataFormat;
+import tagion.basic.Basic: basename, DataFormat;
 import tagion.basic.TagionExceptions;
-import tagion.logger.Logger : LoggerType;
+import tagion.basic.Logger: LoggerType;
 import tagion.utils.JSONCommon;
 
 /++
@@ -30,6 +30,7 @@ enum NetworkMode {
     local,
     pub
 }
+
 
 /++
  Options for the network
@@ -69,10 +70,11 @@ struct Options {
 
     NetworkMode net_mode;
     import tagion.options.CommonOptions;
-
     CommonOptions common;
 
     mixin JSONCommon;
+
+
 
     struct HostBootstrap {
         bool enabled;
@@ -115,6 +117,7 @@ struct Options {
     }
 
     Heatbeat heartbeat;
+
 
     //SSLService scripting_engine;
 
@@ -160,7 +163,6 @@ struct Options {
         string prefix;
         uint timeout; /// Socket listerne timeout in msecs
         import tagion.network.SSLOptions;
-
         SSLOption service; /// SSL Service used by the transaction service
         HostOptions host;
         ushort max; // max == 0 means all
@@ -186,7 +188,6 @@ struct Options {
     LogSubscription logSubscription;
 
     import tagion.dart.DARTOptions;
-
     DARTOptions dart;
 
     struct Logger {
@@ -218,7 +219,7 @@ struct Options {
     Message message;
 
     mixin JSONConfig;
-    version (none) {
+    version(none) {
     void parseJSON(string json_text) {
         auto json = JSON.parseJSON(json_text);
         parse(json);
@@ -373,7 +374,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
 
 
     );
-}
+};
 
 static setDefaultOption(ref Options options) {
     // Main
@@ -456,7 +457,7 @@ static setDefaultOption(ref Options options) {
             //            max_number_of_fiber_reuse = 1000;
             //            min_number_of_fibers = 10;
             //            min_duration_for_accept_ms = 3000;
-            with (openssl) {
+            with(openssl) {
                 certificate = "pem_files/domain.pem";
                 private_key = "pem_files/domain.key.pem";
                 days = 365;
@@ -469,7 +470,7 @@ static setDefaultOption(ref Options options) {
             max_size = 1024 * 100;
         }
     }
-    // LogSubscription
+        // LogSubscription
     with (options.logSubscription) {
         //        port=10700;
         max = 0;
@@ -605,7 +606,7 @@ static setDefaultOption(ref Options options) {
     // if (options.net_mode.length == 0) {
     //     options.net_mode = NetworkMode.internal;
     // }
-    with (NetworkMode) {
+    with(NetworkMode) {
         final switch (options.net_mode) {
         case internal:
             options.dart.fast_load = true;

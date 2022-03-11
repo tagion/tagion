@@ -23,8 +23,11 @@ import tagion.hibon.HiBON;
 
 import tagion.utils.Miscellaneous;
 import tagion.Keywords;
-
 // import tagion.revision;
+
+pragma(msg, "fixme(cbr): This import is dummy force the tub to link liboption");
+import tagion.utils.Gene;
+import tagion.utils.Miscellaneous;
 
 int main(string[] args) {
     immutable program = args[0];
@@ -41,7 +44,6 @@ int main(string[] args) {
 
     bool dartread = false;
     bool dartmodify = false;
-    bool dartrim = false;
     bool dartrpc = false;
     bool generate = false;
 
@@ -58,17 +60,18 @@ int main(string[] args) {
             "initialize", "Create a dart file", &initialize,
             "inputfile|i", "Sets the HiBON input file name", &inputfilename,
             "outputfile|o", "Sets the output file name", &outputfilename,
-            "from", format("Sets from angle: default %s", (fromAngle == toAngle) ? "full" : fromAngle.to!string), &fromAngle,
-            "to", format("Sets to angle: default %s", (fromAngle == toAngle) ? "full" : toAngle.to!string), &toAngle,
+            "from", format("Sets from angle: default %s", (fromAngle == toAngle) ? "full"
+            : fromAngle.to!string), &fromAngle,
+            "to", format("Sets to angle: default %s", (fromAngle == toAngle) ? "full"
+            : toAngle.to!string), &toAngle,
             "useFakeNet|fn", format("Enables fake hash test-mode: default %s", useFakeNet), &useFakeNet,
             "read|r", format("Excutes a DART read sequency: default %s", dartread), &dartread,
-            "rim", format("Performs DART rim read: default %s", dartrim), &dartrim,
             "modify|m", format("Excutes a DART modify sequency: default %s", dartmodify), &dartmodify,
             "rpc", format("Excutes a HiPRC on the DART: default %s", dartrpc), &dartrpc,
             "generate", "Generate a fake test dart (recomended to use with --useFakeNet)", &generate,
             "dump", "Dumps all the arcvives with in the given angle", &dump,
             "width|w", "Sets the rings width and is used in combination with the generate", &ringWidth,
-            "rings|r", "Sets the rings height and is used in  combination with the generate", &rings,
+            "rings", "Sets the rings height and is used in  combination with the generate", &rings,
             "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
     );
 
@@ -81,20 +84,20 @@ int main(string[] args) {
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 [
-            // format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s <command> [<option>...]", program),
-            "",
-            "Where:",
-            "<command>           one of [--read, --rim, --modify, --rpc]",
-            "",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s <command> [<option>...]", program),
+                "",
+                "Where:",
+                "<command>           one of [--read, --rim, --modify, --rpc]",
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
-        main_args.options);
+                ].join("\n"),
+                main_args.options);
         return 0;
     }
 
@@ -102,7 +105,6 @@ int main(string[] args) {
         SecureNet result;
         if (useFakeNet) {
             import tagion.dart.DARTFakeNet;
-
             result = new DARTFakeNet;
         }
         else {
@@ -111,7 +113,6 @@ int main(string[] args) {
         result.generateKeyPair(passphrase);
         return result;
     }
-
     const net = createNet;
     // else net = new StdSecureNet(crypt);
     const hirpc = HiRPC(net);
@@ -142,10 +143,10 @@ int main(string[] args) {
     if (dump)
         db.dump(true);
 
-    const onehot = dartrpc + dartread + dartrim + dartmodify;
+    const onehot = dartrpc + dartread + dartmodify;
 
     if (onehot > 1) {
-        stderr.writeln("Only one of the dartrpc, dartread, dartrim and dartmodify switched alowed");
+        stderr.writeln("Only one of the dartrpc, dartread and dartmodify switched alowed");
         return 1;
     }
     if (!inputfilename.exists) {
@@ -170,59 +171,24 @@ int main(string[] args) {
             writeln("No input file");
         }
         else {
-            // auto inputBuffer = cast(immutable(ubyte)[])fread(inputfilename);
-            // auto params=new HiBON;
-            // auto params_fingerprints=new HiBON;
-            // auto input_doc = Document(inputBuffer);
-            // if(input_doc.isInorder){
-            //     auto fps = (input_doc[DARTFile.Params.branches].get!Document)[DARTFile.Params.fingerprints].get!Document;
-            //     auto i = 0;
-            //     foreach(fp; fps[]){
-            //         params_fingerprints[i] = fp.get!Buffer;
-            //         i++;
-            //     }
-            // }else{
-            // writeln(3);
-            //     foreach(i, b; (cast(string)inputBuffer).split("\n")) {
-            //         auto fp = decode(b);
-            //         if ( b.length !is 0 ) {
-            //             params_fingerprints[i]=fp;
-            //         }
-            //     }
-            // }
-            // params[DARTFile.Params.fingerprints]=params_fingerprints;
-            // auto sended = hirpc.dartRead(params).toHiBON(net).serialize;
-            // auto doc = Document(sended);
-            // auto received = hirpc.receive(doc);
-            // auto result = db(received);
-            // auto tosend = hirpc.toHiBON(result);
-            // auto tosendResult = (tosend[Keywords.message].get!Document)[Keywords.result].get!Document;
-            // writeResponse(tosendResult.serialize);
+            auto inputBuffer = cast(immutable(ubyte)[])fread(inputfilename);
+            auto params=new HiBON;
+            auto params_fingerprints=new HiBON;
+            foreach(i, b; (cast(string)inputBuffer).split("\n")) {
+                auto fp = decode(b);
+                if ( b.length !is 0 ) {
+                    params_fingerprints[i]=fp;
+                }
+            }
+            
+            params[DARTFile.Params.fingerprints]=params_fingerprints;
+            auto sended = hirpc.dartRead(params).toDoc;
+            auto received = hirpc.receive(sended);
+            auto result = db(received);
+            auto tosend = hirpc.toHiBON(result);
+            auto tosendResult = tosend.method.params;
+            writeResponse(tosendResult.serialize);
         }
-    }
-    else if (dartrim) {
-        // Buffer root_rims;
-        // auto params=new HiBON;
-        // if(!inputfilename.exists) {
-        //     writefln("Input file: %s not exists", inputfilename);
-        //     root_rims = [];
-        // }else{
-        //     auto inputBuffer = cast(immutable(char)[])fread(inputfilename);
-        //     if(inputBuffer.length){
-        //         root_rims = decode(inputBuffer);
-        //         writeln(root_rims);
-        //     }else{
-        //         root_rims = [];
-        //     }
-        // }
-        // params[DARTFile.Params.rims]=root_rims;
-        // auto sended = hirpc.dartRim(params).toHiBON(net).serialize;
-        // auto doc = Document(sended);
-        // auto received = hirpc.receive(doc);
-        // auto result = db(received);
-        // auto tosend = hirpc.toHiBON(result);
-        // auto tosendResult = (tosend[Keywords.message].get!Document)[Keywords.result].get!Document;
-        // writeResponse(tosendResult.serialize);
     }
     else if (dartmodify) {
         auto inputBuffer = cast(immutable(ubyte)[]) fread(inputfilename);

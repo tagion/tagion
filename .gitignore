@@ -1,13 +1,9 @@
-# Ignore all
-*
-
-# Unignore all with extensions
-!*.*
-
-# Unignore all dirs
-!*/
-
 .DS_Store
+
+#
+.tmp
+build
+*.log
 
 # Emacs
 *~
@@ -16,21 +12,14 @@
 
 # Local setup file
 local.*
-# Auto generated files
+# Auto generated file
 gen.*
-# Auto generated D interface files
-*.di
-# Auto generated C interface files
-*.i
 
 # Local backup
-*.parked*
+*.parked
 
 # Root marker
 .root
 
-# Temporary files and directories
-.tmp
-build
-logs
-*.log
+# Temporary directories
+bin

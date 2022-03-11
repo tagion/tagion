@@ -9,7 +9,7 @@
 target-tagionwave: LIBS+=$(LIBOPENSSL)
 target-tagionwave: LIBS+=$(LIBSECP256K1)
 target-tagionwave: LIBS+=$(LIBP2PGOWRAPPER)
-target-tagionwave: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wave/*" -a -not -path "*/unitdata/*" }
+target-tagionwave: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wave/*"}
 target-tagionwave: $(DBIN)/tagionwave
 .PHONY: target-tagionwave
 
@@ -29,7 +29,7 @@ target-hibonutil: LIBS+=$(LIBOPENSSL)
 target-hibonutil: LIBS+=$(LIBSECP256K1)
 target-hibonutil: LIBS+=$(LIBP2PGOWRAPPER)
 
-target-hibonutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-hibonutil/*" -a -not -path "*/unitdata/*"}
+target-hibonutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-hibonutil/*"}
 target-hibonutil: $(DBIN)/hibonutil
 
 clean-hibonutil:
@@ -48,7 +48,7 @@ BIN_TARGETS+=target-hibonutil
 target-dartutil: LIBS+=$(LIBOPENSSL)
 target-dartutil: LIBS+=$(LIBSECP256K1)
 target-dartutil: LIBS+=$(LIBP2PGOWRAPPER)
-target-dartutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-dartutil/*" -a -not -path "*/unitdata/*"}
+target-dartutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-dartutil/*"}
 target-dartutil: $(DBIN)/dartutil
 
 clean-dartutil:
@@ -67,7 +67,7 @@ BIN_TARGETS+=target-dartutil
 target-wasmutil: LIBS+=$(LIBOPENSSL)
 target-wasmutil: LIBS+=$(LIBSECP256K1)
 target-wasmutil: LIBS+=$(LIBP2PGOWRAPPER)
-target-wasmutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wasmutil/*" -a -not -path "*/unitdata/*"}
+target-wasmutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wasmutil/*"}
 target-wasmutil: $(DBIN)/wasmutil
 
 clean-wasmutil:
@@ -87,7 +87,7 @@ BIN_TARGETS+=target-wasmutil
 target-wallet: LIBS+=$(LIBOPENSSL)
 target-wallet: LIBS+=$(LIBSECP256K1)
 target-wallet: LIBS+=$(LIBP2PGOWRAPPER)
-target-wallet: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wallet/*" -a -not -path "*/unitdata/*"}
+target-wallet: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wallet/*"}
 target-wallet: $(DBIN)/wallet
 
 clean-wallet:

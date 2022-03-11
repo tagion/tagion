@@ -1,3 +1,0 @@
-
-EMPTY=
-SPACE=$(EMPTY) $(EMPTY)

@@ -1,12 +1,12 @@
 module p2p.connection;
 
 import lib = p2p.cgo.libp2pgowrapper;
-import p2p.interfaces;
+import p2p.node;
 import core.time;
 import std.datetime;
 import std.stdio;
 
-synchronized class ConnectionPool(T : shared(StreamI), TKey) {
+synchronized class ConnectionPool(T : shared(Stream), TKey) {
     private shared final class ActiveConnection {
         protected T connection; //TODO: try immutable/const
         protected SysTime last_timestamp;
@@ -138,8 +138,6 @@ synchronized class ConnectionPool(T : shared(StreamI), TKey) {
 }
 // version(none)
 unittest {
-    import p2p.node : Stream;
-
     @trusted synchronized class FakeStream : Stream {
         protected bool _writeBytesCalled = false;
         @property bool writeBytesCalled() {

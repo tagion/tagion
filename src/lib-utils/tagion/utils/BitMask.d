@@ -33,6 +33,7 @@ struct BitMask {
      This set the mask as bit stream with LSB first
      +/
     this(T)(T bitstring) if (isSomeString!T) {
+        //mask.length=wordindex(bitsting)+1;
         auto bitrange = bitstring.filter!((c) => (c == '0' || c == '1')).enumerate;
         foreach (i, c; bitrange) {
             if (c == '1') {
@@ -94,6 +95,15 @@ struct BitMask {
         }
 
         switch (fmt.spec) {
+            // case 'j':
+            //     // Normal stringefied JSON
+            //     sink(doc.toJSON.toString);
+            //     break;
+            // case 'J':
+            //     // Normal stringefied JSON
+            //     sink(doc.toJSON.toPrettyString);
+            //     break;
+
         case 's':
             auto bit_range = BitRange(this, fmt.width);
             scope char[] str;
@@ -156,6 +166,7 @@ struct BitMask {
         else if (mask.length < rhs.mask.length) {
             mask.length = rhs.mask.length;
         }
+        //            foreach(i, ref m; mask[0..rhs.mask.length]) {
         static if (op == "-") {
             mask[0 .. rhs.mask.length] &= ~rhs.mask[0 .. rhs.mask.length];
         }

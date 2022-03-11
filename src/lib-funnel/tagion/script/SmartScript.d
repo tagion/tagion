@@ -80,8 +80,9 @@ class SmartScript {
         // immutable source=signed_contract.contract.script;
         enum transactions_name = "#trans";
         immutable source = (() @trusted =>
-                format(": %s %s ;", transactions_name, signed_contract.contract.script)
-        )();
+            format(": %s %s ;", transactions_name, signed_contract.contract.script)
+            )();
+//        pragma(msg, typeof(source));
         auto src = ScriptParser(source);
         Script script;
         auto builder = ScriptBuilder(src[]);

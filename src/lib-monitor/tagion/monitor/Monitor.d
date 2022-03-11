@@ -4,22 +4,22 @@ module tagion.monitor.Monitor;
 
 import tagion.network.ListenerSocket;
 
-import tagion.hashgraph.Event : Event, Round;
-import tagion.hashgraph.HashGraph : HashGraph;
-import tagion.hashgraph.HashGraphBasic : Tides, EventMonitorCallbacks;
+import tagion.hashgraph.Event: Event, Round;
+import tagion.hashgraph.HashGraph: HashGraph;
+import tagion.hashgraph.HashGraphBasic: Tides, EventMonitorCallbacks;
 
 //import tagion.hashg : EventMonitorCallbacks; //NetCallbacks;
 //import tagion.gossip.GossipNet : StdGossipNet;
-import tagion.basic.ConsensusExceptions : ConsensusException;
+import tagion.basic.ConsensusExceptions: ConsensusException;
 
 //import tagion.basic.Basic : Control, basename, Pubkey, DataFormat;
-import tagion.basic.Basic : EnumText, Pubkey, DataFormat, basename;
+import tagion.basic.Basic: EnumText, Pubkey, DataFormat, basename;
 import tagion.basic.Message;
 
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
-import tagion.basic.TagionExceptions : TagionException;
+import tagion.basic.TagionExceptions: TagionException;
 import tagion.utils.BitMask;
 import tagion.logger.Logger;
 
@@ -43,8 +43,8 @@ HiBON bitarray2bool(const(BitMask) bits) @trusted {
 
 //import core.thread : dur, msecs, seconds;
 import std.concurrency;
-import std.stdio : writeln, writefln;
-import std.exception : assumeWontThrow;
+import std.stdio: writeln, writefln;
+import std.exception: assumeWontThrow;
 
 // import std.format : format;
 // import std.bitmanip : write;
@@ -108,7 +108,10 @@ class MonitorCallBacks : EventMonitorCallbacks {
 
     static HiBON createHiBON(const(Event) e) nothrow {
         auto hibon = new HiBON;
-        assumeWontThrow({ hibon[basename!(e.id)] = e.id; hibon[basename!(e.node_id)] = e.node_id; });
+        assumeWontThrow({
+            hibon[basename!(e.id)] = e.id;
+            hibon[basename!(e.node_id)] = e.node_id;
+        });
         return hibon;
     }
 
@@ -150,7 +153,9 @@ class MonitorCallBacks : EventMonitorCallbacks {
         void witness_mask(const(Event) e) {
 
             auto hibon = createHiBON(e);
-            assumeWontThrow({ hibon[Params.witness_mask] = bitarray2bool(e.witness_mask); });
+            assumeWontThrow({
+                hibon[Params.witness_mask] = bitarray2bool(e.witness_mask);
+            });
             socket_send(hibon);
         }
 
@@ -162,7 +167,9 @@ class MonitorCallBacks : EventMonitorCallbacks {
 
         void round_received(const(Event) e) {
             auto hibon = createHiBON(e);
-            assumeWontThrow({ hibon[Params.received_number] = e.round_received.number; });
+            assumeWontThrow({
+                hibon[Params.received_number] = e.round_received.number;
+            });
             socket_send(hibon);
         }
 
@@ -182,7 +189,11 @@ class MonitorCallBacks : EventMonitorCallbacks {
         void coin_round(const(Round) r) {
             auto hibon = new HiBON;
             auto round = new HiBON;
-            assumeWontThrow({ round[Params.number] = r.number; round[Params.coin] = true; hibon[Params.round] = round; });
+            assumeWontThrow({
+                round[Params.number] = r.number;
+                round[Params.coin] = true;
+                hibon[Params.round] = round;
+            });
             socket_send(hibon);
         }
 
@@ -252,7 +263,10 @@ class MonitorCallBacks : EventMonitorCallbacks {
         void remove(const(Round) r) {
             auto hibon = new HiBON;
             auto round = new HiBON;
-            assumeWontThrow({ round[Params.number] = r.number; round[Params.remove] = true; });
+            assumeWontThrow({
+                round[Params.number] = r.number;
+                round[Params.remove] = true;
+            });
             // hibon[Keywords.round]=round;
             socket_send(hibon);
         }
@@ -327,7 +341,7 @@ class MonitorCallBacks : EventMonitorCallbacks {
 
     @trusted
     this(Tid socket_thread_id,
-            const uint local_node_id, // const uint global_node_id,
+            const uint local_node_id,// const uint global_node_id,
             const DataFormat dataformat) {
         this._socket_thread_id = socket_thread_id;
         this._network_socket_tread_id = locate("network_socket_thread");

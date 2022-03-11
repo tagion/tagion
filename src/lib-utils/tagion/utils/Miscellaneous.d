@@ -135,12 +135,8 @@ do {
 }
 
 @safe
-Buffer xor(Range)(scope Range range) pure if (isInputRange!Range) {
-    import std.array : array;
-    import std.range : tail;
+Buffer xor(Range)(Range range) pure {
+    import std.algorithm.iteration: fold;
 
-    return range
-        .cumulativeFold!((a, b) => _xor(a, b))
-        .tail(1)
-        .front;
+    return range.fold!((a, b) => xor(a, b));
 }

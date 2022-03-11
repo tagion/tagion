@@ -11,7 +11,7 @@ DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 ifdef BETTERC
 DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc*" -a -not -path "*/tests/*"}
 else
-DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
+DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-*" -a -not -path "*/tests/*"}
 endif
 
 prebuild-extern-linux: $(DBUILD)/.way

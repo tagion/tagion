@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+ROOT=$(pwd)
+SCRIPTS=$ROOT/tub/scripts
+SETUP=$ROOT/tub/.setup
+GITCONFIG=$ROOT/.gitconfig
+
+if [[ -f "$GITCONFIG" ]]; then
+    GITCONFIG_CONTENT=$(cat $GITCONFIG)
+    if [[ -z "$GITCONFIG_CONTENT" ]]; then
+        echo "$ROOT/.gitconfig is empty, aliases will not be installed"
+        exit
+    fi
+else
+    echo "$ROOT/.gitconfig does not exist, aliases will not be installed"
+    exit
+fi
+
+ALIAS_NAMES=$(perl -pe 's/=.+//' $GITCONFIG | grep -wv alias)
+GITDIRS=$(git submodule foreach pwd | grep -wv Entering)
+GITDIRS="$GITDIRS $(pwd)"
+
+echo "Using git aliases from $ROOT/.gitconfig..."
+for GITDIR in $GITDIRS; do
+    cd $GITDIR
+    ALIASES_LOCAL=$(
+        git config --local --list | grep alias.
+    )
+    for ALIAS_LOCAL in $ALIASES_LOCAL; do
+        if [[ $ALIAS_LOCAL =~ "alias." ]]; then
+            ALIAS_LOCAL_PURE=${ALIAS_LOCAL%=*}
+            git config --local --unset-all $ALIAS_LOCAL_PURE
+        fi
+    done
+
+    git config --local --add alias.short "!bash $SCRIPTS/execute sum"
+    git config --local --add alias.all "!bash $SCRIPTS/execute all"
+    git config --local --add alias.drt "!bash $SCRIPTS/execute dirty"
+    for ALIAS_NAME in $ALIAS_NAMES; do
+        ALIAS_VALUE=$(git config -f $GITCONFIG --get alias.$ALIAS_NAME)
+        git config --local --add alias.$ALIAS_NAME "$ALIAS_VALUE"
+    done
+done
+
+echo "Successfully installed!"
+echo
+cat $GITCONFIG
+echo "\tgit all = !bash $SCRIPTS/execute all # Executes in all submodules"
+echo "\tgit drt = !bash $SCRIPTS/execute dirty # Executes only in dirty submodules"
+echo

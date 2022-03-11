@@ -11,7 +11,7 @@ void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) @safe if (
     import std.random;
 
     auto gen = Mt19937(unpredictableSeed);
-    foreach (ref s; data) {
+    foreach (ref s; data) { //, gen1, StoppingPolicy.shortest)) {
         s = gen.front & ubyte.max;
         gen.popFront;
     }
@@ -26,6 +26,7 @@ package alias check = Check!SecurityConsensusException;
 class StdHashNet : HashNet {
     import std.format;
 
+    //    import std.stdio;
     protected enum HASH_SIZE = 32;
     @nogc final uint hashSize() const pure nothrow {
         return HASH_SIZE;
@@ -40,8 +41,7 @@ class StdHashNet : HashNet {
 
     immutable(Buffer) calcHash(scope const(ubyte[]) data) const {
         version (unittest) {
-            assert(!Document(data.idup).isInorder,
-                    "calcHash should not be use on a Document use hashOf instead");
+            assert(!Document(data.idup).isInorder, "calcHash should not be use on a Document use hashOf instead");
         }
         return rawCalcHash(data);
     }
@@ -106,6 +106,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     import tagion.basic.Basic: Pubkey;
     import tagion.crypto.aes.AESCrypto;
 
+    //    import tagion.gossip.GossipNet : scramble;
     import tagion.basic.ConsensusExceptions;
 
     import std.format;

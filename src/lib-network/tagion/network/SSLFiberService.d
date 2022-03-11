@@ -1,6 +1,5 @@
 module tagion.network.SSLFiberService;
 
-import std.stdio;
 import std.string: format;
 import core.thread: Thread, Fiber;
 import core.time; // : dur, Duration, MonoTime;
@@ -56,7 +55,7 @@ interface SSLFiber {
     void unlock() nothrow;
 
     Buffer response(); /// Response from the service
-    bool available();
+    bool available(); 
     @property uint id();
     immutable(ubyte[]) receive(); /// Recives from the service socket
     void send(immutable(ubyte[]) buffer); /// Send to the service socket
@@ -361,6 +360,7 @@ class SSLFiberService {
          +/
         @trusted
         immutable(ubyte[]) receive() {
+            import std.stdio;
             ubyte[] buffer;
             ubyte[] current;
             ptrdiff_t rec_data_size;
@@ -534,6 +534,7 @@ class SSLFiberService {
             const doc = Document(data);
             const hirpc_received = hirpc.receive(doc);
             shared shared_data = cast(shared) data;
+            log("handler - set %d ", hirpc_received.response.id);
             handler.set(hirpc_received.response.id, shared_data);
         }
 

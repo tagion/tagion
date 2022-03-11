@@ -32,7 +32,6 @@ MKDIR ?= mkdir -p
 MV ?= mv
 LN ?= ln -s
 TOUCH ?= touch
-SCRIPT_LOG ?= script -c
 DLLEXT ?= so
 STAEXT ?= a
 OBJEXT ?= o

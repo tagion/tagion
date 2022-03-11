@@ -155,7 +155,7 @@ struct Ddeps {
 
     void objectName() {
         foreach(name, ref mod; modules) {
-            mod.file=mod.file.replace(sourcedir, "");
+            mod.file =mod.file.replace(sourcedir, "");
             mod.srcname=buildNormalizedPath(DSRCDIR.envFormat, mod.file);
             mod.obj = mod.file.setExtension(DOBJEXT);
             mod.objname=buildNormalizedPath(DOBJDIR.envFormat, mod.obj);

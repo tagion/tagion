@@ -1081,7 +1081,7 @@ class HashGraph {
         import std.conv;
         import std.datetime;
         import tagion.hibon.HiBONJSON;
-        import tagion.logger.Logger: log, LoggerType;
+        import tagion.basic.Logger: log, LoggerType;
 
         log.push(LoggerType.NONE);
 

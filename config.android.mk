@@ -1,10 +1,8 @@
 ANDROID_API?=30
 ANDROID_NDK = $(ANDROID_TOOLS)/android-ndk-r23b
 
-ANDROID_HOST=${call join-with,-,$(GETHOSTOS) $(GETARCH)}
-
 ANDROID_OS=android
-export ANDROID_ROOT=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(ANDROID_HOST)
+export ANDROID_ROOT=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(HOST)
 export ANDROID_TOOLCHAIN=$(ANDROID_ROOT)/bin
 
 export ANDROID_LD=$(ANDROID_TOOLCHAIN)/ld

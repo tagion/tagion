@@ -33,7 +33,7 @@ import tagion.dart.Recorder : RecordFactory;
     }
 }
 
-void transactionServiceTask(immutable(Options) opts) nothrow {
+void transactionServiceTask(immutable(Options) opts) nothrow  {
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
@@ -104,7 +104,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                     return Document();
                 }
 
-                const doc = receivessl();
+                const doc=receivessl();
                 log("%s", doc.toJSON);
                 const hirpc_received = hirpc.receive(doc);
                 {

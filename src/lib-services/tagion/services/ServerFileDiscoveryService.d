@@ -75,8 +75,8 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
                 {
                     post(opts.serverFileDiscovery.url ~ "/node/record",
                             [
-                            "value": json,
-                            "token": opts.serverFileDiscovery.token
+                                "value": json,
+                                "token": opts.serverFileDiscovery.token
                             ]);
                 }
                 catch (Exception e)
@@ -96,8 +96,8 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
             log("posting info to %s", opts.serverFileDiscovery.url ~ "/node/erase");
             post(opts.serverFileDiscovery.url ~ "/node/erase",
                     [
-                    "value": (cast(string) pubkey),
-                    "tag": opts.serverFileDiscovery.tag
+                        "value": (cast(string) pubkey),
+                        "tag": opts.serverFileDiscovery.tag
                     ]);
         }
 
