@@ -12,7 +12,7 @@ import tagion.network.SSLSocket;
 import tagion.network.SSLOptions;
 import tagion.network.NetworkExceptions : check;
 import tagion.basic.Message;
-import tagion.basic.Basic: Buffer;
+import tagion.basic.Basic : Buffer;
 import tagion.logger.Logger;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.TagionExceptions : taskfailure, fatal;

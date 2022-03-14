@@ -38,11 +38,9 @@ include $(DTUB)/config/commands.mk
 
 prebuild:
 	$(PRECMD)
-	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) secp256k1
-	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) p2pgowrapper
-	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) openssl
-	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) dstep
-	$(MAKE) $(MAIN_FLAGS) -f $(PREBUILD_MK) ddeps
+	${foreach wrap,$(WRAPS),$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) $(wrap);}
+	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep
+	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) ddeps
 
 
 

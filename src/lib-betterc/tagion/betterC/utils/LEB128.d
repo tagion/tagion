@@ -1,6 +1,7 @@
-module hibon.utils.LEB128;
+/// \file LEB128.d
 
-extern(C):
+module tagion.betterC.utils.LEB128;
+
 @nogc:
 
 import traits=std.traits : isSigned, isUnsigned, isIntegral;
@@ -10,8 +11,8 @@ import std.format;
 import std.algorithm.comparison : min;
 import std.algorithm.iteration : map, sum;
 
-import hibon.utils.Bailout;
-import hibon.utils.BinBuffer;
+import tagion.betterC.utils.Bailout;
+import tagion.betterC.utils.BinBuffer;
 
 //import std.stdio;
 
@@ -31,7 +32,7 @@ size_t calc_size(const(ubyte[]) data) {
             return i+1;
         }
     }
-    check(0, "LEB128 bad format");
+    // check(0, "LEB128 bad format");
     assert(0);
 }
 
@@ -109,7 +110,7 @@ void encode(T)(ref BinBuffer buffer,  const T v) if(isSigned!T && isIntegral!T) 
         }
         d |= 0x80;
     }
-    check(0, "Bad LEB128 format");
+    // check(0, "Bad LEB128 format");
     assert(0);
 }
 
@@ -121,9 +122,9 @@ DecodeLEB128!T decode(T=ulong)(const(ubyte[]) data) if (isUnsigned!T) {
     uint shift;
     enum MAX_LIMIT=T.sizeof*8;
     size_t len;
-    foreach(i, d; data) {
-        check(shift < MAX_LIMIT,
-            message("LEB128 decoding buffer over limit of %d %d", MAX_LIMIT, shift));
+    foreach (i, d; data) {
+        // check(shift < MAX_LIMIT,
+        //     message("LEB128 decoding buffer over limit of %d %d", MAX_LIMIT, shift));
 
         result |= (d & 0x7FUL) << shift;
         if ((d & 0x80) == 0) {
@@ -135,7 +136,7 @@ DecodeLEB128!T decode(T=ulong)(const(ubyte[]) data) if (isUnsigned!T) {
         }
         shift+=7;
     }
-    check(0, message("Bad LEB128 format for type %s", T.stringof));
+    // check(0, message("Bad LEB128 format for type %s", T.stringof));
     assert(0);
 }
 
@@ -145,23 +146,23 @@ DecodeLEB128!T decode(T=long)(const(ubyte[]) data) if (isSigned!T) {
     uint shift;
     enum MAX_LIMIT=T.sizeof*8;
     size_t len;
-    foreach(i, d; data) {
-        check(shift < MAX_LIMIT, "LEB128 decoding buffer over limit");
+    foreach (i, d; data) {
+        // check(shift < MAX_LIMIT, "LEB128 decoding buffer over limit");
         result |= (d & 0x7FL) << shift;
         shift+=7;
         if ((d & 0x80) == 0 ) {
             if ((shift < long.sizeof*8) && ((d & 0x40) != 0)) {
                 result |= (~0L << shift);
             }
-            len=i+1;
-            static if (!is(BaseT==long)) {
-                check((T.min <= result) && (result <= T.max),
-                    message("LEB128 out of range %d for %s", result, T.stringof));
-            }
-            return DecodeLEB128!T(cast(BaseT)result, len);
+            len = i + 1;
+            // static if (!is(BaseT==long)) {
+            //     // check((T.min <= result) && (result <= T.max),
+            //     //     message("LEB128 out of range %d for %s", result, T.stringof));
+            // }
+            return DecodeLEB128!T(cast(BaseT) result, len);
         }
     }
-    check(0, message("Bad LEB128 format for type %s", T.stringof));
+    // check(0, message("Bad LEB128 format for type %s", T.stringof));
     assert(0);
 }
 

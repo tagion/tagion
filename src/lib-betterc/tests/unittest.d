@@ -1,18 +1,19 @@
-module test;
+module tests;
 
-import hibon.HiBONBase;
-//import hibon.HiBONRecord;
-import hibon.BigNumber;
-import hibon.utils.sdt;
-import hibon.utils.Stack;
-import hibon.utils.RBTree;
-import hibon.utils.BinBuffer;
-import hibon.utils.Memory;
-import hibon.utils.LEB128;
-import Bailout=hibon.utils.Bailout;
-import hibon.utils.Text;
-import hibon.HiBON;
-import hibon.Document;
+import tagion.betterC.hibon.HiBONBase;
+
+//import tagion.betterC.hibon.HiBONRecord;
+import tagion.betterC.hibon.BigNumber;
+import tagion.betterC.hibon.utils.sdt;
+import tagion.betterC.hibon.utils.Stack;
+import tagion.betterC.hibon.utils.RBTree;
+import tagion.betterC.hibon.utils.BinBuffer;
+import tagion.betterC.hibon.utils.Memory;
+import tagion.betterC.hibon.utils.LEB128;
+import Bailout = tagion.betterC.hibon.utils.Bailout;
+import tagion.betterC.hibon.utils.Text;
+import tagion.betterC.hibon.HiBON;
+import tagion.betterC.hibon.Document;
 
 import core.stdc.stdio;
 
@@ -45,8 +46,9 @@ static void callUnittest(string parent, Members...)() {
 static void callUnittest(alias Module)() {
     alias Members=__traits(allMembers, Module);
     printf("%s\n", Module.stringof.ptr);
-    static foreach(u; __traits(getUnitTests, Module)) {
-        import Bailout=hibon.utils.Bailout;
+    static foreach (u; __traits(getUnitTests, Module)) {
+        import Bailout = tagion.betterC.hibon.utils.Bailout;
+
         Bailout.clear;
         printf("\t%s\n", u.stringof.ptr);
         u();
@@ -63,17 +65,18 @@ version(unittest) {
         {
             printf("Unittest\n");
             import core.stdc.stdlib;
-            callUnittest!(hibon.utils.Memory)();
-            callUnittest!(hibon.utils.BinBuffer)();
-            callUnittest!(hibon.utils.Text)();
-            callUnittest!(hibon.utils.Stack)();
 
-            callUnittest!(hibon.utils.RBTree)();
-            callUnittest!(hibon.HiBONBase)();
+            callUnittest!(tagion.betterC.utils.Memory)();
+            callUnittest!(tagion.betterC.utils.BinBuffer)();
+            callUnittest!(tagion.betterC.utils.Text)();
+            callUnittest!(tagion.betterC.utils.Stack)();
 
-            callUnittest!(hibon.Document)();
-            callUnittest!(hibon.HiBON);
-            callUnittest!(hibon.utils.LEB128);
+            callUnittest!(tagion.betterC.utils.RBTree)();
+            callUnittest!(tagion.betterC.hibon.HiBONBase)();
+
+            callUnittest!(tagion.betterC.hibon.Document)();
+            callUnittest!(tagion.betterC.hibon.HiBON);
+            callUnittest!(tagion.betterC.utils.LEB128);
             printf("Passed\n");
             return 0;
         }

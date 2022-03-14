@@ -10,7 +10,7 @@ import std.string: strip;
 
 import tagion.basic.Basic: basename, DataFormat;
 import tagion.basic.TagionExceptions;
-import tagion.basic.Logger: LoggerType;
+import tagion.logger.Logger : LoggerType;
 import tagion.utils.JSONCommon;
 
 /++
@@ -470,7 +470,7 @@ static setDefaultOption(ref Options options) {
             max_size = 1024 * 100;
         }
     }
-        // LogSubscription
+    // LogSubscription
     with (options.logSubscription) {
         //        port=10700;
         max = 0;

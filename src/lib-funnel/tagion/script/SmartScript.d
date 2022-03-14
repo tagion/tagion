@@ -10,10 +10,10 @@ import tagion.basic.ConsensusExceptions: SmartScriptException, ConsensusFailCode
 import tagion.script.StandardRecords: SignedContract, StandardBill, PayContract;
 import tagion.basic.Basic: Pubkey;
 import tagion.script.TagionCurrency;
-import tagion.script.Script: Script, ScriptContext;
-import tagion.script.ScriptParser: ScriptParser;
-import tagion.script.ScriptBuilder: ScriptBuilder;
-import tagion.script.ScriptBase: Number;
+import tagion.script.Script : Script, ScriptContext;
+import tagion.script.ScriptParser : ScriptParser;
+import tagion.script.ScriptBuilder : ScriptBuilder;
+import tagion.script.ScriptBase : Number;
 import tagion.logger.Logger;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;

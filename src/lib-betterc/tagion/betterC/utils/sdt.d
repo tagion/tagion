@@ -1,4 +1,6 @@
-module hibon.utils.sdt;
+/// \file sdt.d
+
+module tagion.betterC.utils.sdt;
 //import std.typecons : Typedef;
 enum TIME = "TIME";
 struct sdt_t {

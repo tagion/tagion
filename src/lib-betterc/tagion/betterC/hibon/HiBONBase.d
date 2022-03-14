@@ -1,6 +1,7 @@
-module hibon.HiBONBase;
+/// \file HiBONBase.d
 
-extern(C):
+module tagion.betterC.hibon.HiBONBase;
+
 @nogc:
 
 
@@ -15,53 +16,52 @@ else {
     import core.stdc.stdio;
 }
 
-
-import hibon.utils.BinBuffer;
-import hibon.utils.Basic;
-import hibon.BigNumber;
-import hibon.utils.Bailout;
-import hibon.utils.Memory;
-import hibon.utils.Text;
-import hibon.utils.sdt;
-import LEB128=hibon.utils.LEB128;
+import tagion.betterC.hibon.HiBON;
+import tagion.betterC.hibon.Document;
+import tagion.betterC.utils.BinBuffer;
+import tagion.betterC.utils.Basic;
+import tagion.betterC.hibon.BigNumber;
+import tagion.betterC.utils.Bailout;
+import tagion.betterC.utils.Memory;
+import tagion.betterC.utils.Text;
+import tagion.betterC.utils.sdt;
+import LEB128 = tagion.betterC.utils.LEB128;
 
 enum HIBON_VERSION=0;
 
-/++
- HiBON Type codes
-+/
+/**
+ * HiBON Type codes
+ */
 enum Type : ubyte {
-    NONE            = 0x00,      /// End Of Document
-        FLOAT64         = 0x01,  /// Floating point
-        STRING          = 0x02,  /// UTF8 STRING
-        DOCUMENT        = 0x03,  /// Embedded document (Both Object and Documents)
-        BINARY          = 0x05,  /// Binary data
+    NONE = 0x00, /// End Of Document
+    FLOAT64 = 0x01, /// Floating point
+    STRING = 0x02, /// UTF8 STRING
+    DOCUMENT = 0x03, /// Embedded document (Both Object and Documents)
+    BINARY = 0x05, /// Binary data
 
-        BOOLEAN         = 0x08,  /// Boolean - true or false
-        TIME            = 0x09,  /// Standard Time counted as the total 100nsecs from midnight, January 1st, 1 A.D. UTC.
-        INT32           = 0x10,  /// 32-bit integer
-        INT64           = 0x12,  /// 64-bit integer,
-        //       FLOAT128        = 0x13, /// Decimal 128bits
-        BIGINT          = 0x1B,  /// Signed Bigint
+    BOOLEAN = 0x08, /// Boolean - true or false
+    TIME = 0x09, /// Standard Time counted as the total 100nsecs from midnight, January 1st, 1 A.D. UTC.
+    INT32 = 0x10, /// 32-bit integer
+    INT64 = 0x12, /// 64-bit integer,
+    //       FLOAT128        = 0x13, /// Decimal 128bits
+    BIGINT = 0x1B, /// Signed Bigint
 
-        UINT32          = 0x20,  /// 32 bit unsigend integer
-        FLOAT32         = 0x21,  /// 32 bit Float
-        UINT64          = 0x22,  /// 64 bit unsigned integer
-        HASHDOC         = 0x23,  /// Hash point to documement, public key or signature
-        VER             = 0x3F,  /// Version field
-        DEFINED_NATIVE  = 0x40,  /// Reserved as a definition tag it's for Native types
-        NATIVE_DOCUMENT = DEFINED_NATIVE | 0x3e, /// This type is only used as an internal represention (Document type)
+    UINT32 = 0x20, /// 32 bit unsigend integer
+    FLOAT32 = 0x21, /// 32 bit Float
+    UINT64 = 0x22, /// 64 bit unsigned integer
+    HASHDOC = 0x23, /// Hash point to documement, public key or signature
+    VER = 0x3F, /// Version field
+    DEFINED_NATIVE = 0x40, /// Reserved as a definition tag it's for Native types
+    NATIVE_DOCUMENT = DEFINED_NATIVE | 0x3e, /// This type is only used as an internal represention (Document type)
 
-        DEFINED_ARRAY   = 0x80,  /// Indicated an Intrinsic array types
-        /// Native types is only used inside the BSON object
-        NATIVE_HIBON_ARRAY    = DEFINED_ARRAY | DEFINED_NATIVE | DOCUMENT,
-        /// Represetents (HISON[]) is convert to an ARRAY of DOCUMENT's
-        NATIVE_DOCUMENT_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | NATIVE_DOCUMENT,
-        /// Represetents (Document[]) is convert to an ARRAY of DOCUMENT's
-        NATIVE_STRING_ARRAY   = DEFINED_ARRAY | DEFINED_NATIVE | STRING,
-        /// Represetents (string[]) is convert to an ARRAY of string's
-        }
-
+    DEFINED_ARRAY = 0x80, /// Indicated an Intrinsic array types
+    /// Native types is only used inside the BSON object
+    NATIVE_HIBON_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | DOCUMENT,
+    /// Represetents (HISON[]) is convert to an ARRAY of DOCUMENT's
+    NATIVE_DOCUMENT_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | NATIVE_DOCUMENT,
+    /// Represetents (Document[]) is convert to an ARRAY of DOCUMENT's
+    NATIVE_STRING_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | STRING,/// Represetents (string[]) is convert to an ARRAY of string's
+}
 
 struct DataBlock {
     @nogc:
@@ -258,34 +258,28 @@ struct Key {
 
 }
 
-
-
-/++
- Returns:
- true if the type is a internal native HiBON type
-+/
+/**
+ * @return true if the type is a internal native HiBON type
+ */
 bool isNative(Type type) pure nothrow {
     with(Type) {
         return ((type & DEFINED_NATIVE) !is 0) && (type !is DEFINED_NATIVE);
     }
 }
 
-
-
-/++
+/**
  Returns:
  true if the type is a internal native array HiBON type
-+/
+ */
 // bool isNativeArray(Type type) pure nothrow {
 //     with(Type) {
 //         return ((type & DEFINED_ARRAY) !is 0) && (isNative(type));
 //     }
 // }
 
-/++
- Returns:
- true if the type is a HiBON data array (This is not the same as HiBON.isArray)
-+/
+/**
+ * @return true if the type is a HiBON data array (This is not the same as HiBON.isArray)
+ */
 bool isArray(Type type) pure nothrow {
     with(Type) {
         return ((type & DEFINED_ARRAY) !is 0) && (type !is DEFINED_ARRAY) && (!isNative(type));
@@ -294,10 +288,9 @@ bool isArray(Type type) pure nothrow {
 
 mixin(Init_HiBON_Types!("__gshared immutable hibon_types=", 0));
 
-/++
- Returns:
- true if the type is a valid HiBONType excluding narive types
-+/
+/**
+ * @return true if the type is a valid HiBONType excluding narive types
+ */
 bool isHiBONType(Type type) {
     return hibon_types[type];
 }
@@ -324,9 +317,9 @@ version(none) {
 
 enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
 }
-/++
- HiBON Generic value used by the HiBON class and the Document struct
-+/
+/**
+ * HiBON Generic value used by the HiBON class and the Document struct
+ */
 //@safe
 union ValueT(bool NATIVE=false, HiBON,  Document) {
     @nogc:
@@ -398,10 +391,9 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
 
     }
 
-    /++
-     Returns:
-     the value as HiBON type E
-     +/
+    /**
+     * @return the value as HiBON type E
+      */
     auto by(Type type)() pure const {
         enum code=GetFunctions!("", true, __traits(allMembers, ValueT));
         mixin(code);
@@ -435,14 +427,14 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         }
     }
 
-    /++
-     convert the T to a HiBON-Type
-     +/
+    /**
+     * convert the T to a HiBON-Type
+     */
     enum asType(T) = GetType!(Unqual!T, __traits(allMembers, ValueT));
 
-    /++
+    /**
      is true if the type T is support by the HiBON
-     +/
+      */
     enum hasType(T) = asType!T !is Type.NONE;
 
     static if (!is(Document == void) && is(HiBON == void)) {
@@ -457,10 +449,10 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         }
     }
 
-    /++
-     Construct a Value of the type T
-     +/
-    this(T)(T x) if (isOneOf!(Unqual!T, typeof(this.tupleof)) && !is(T == struct) ) {
+    /**
+     * Construct a Value of the type T
+     */
+    this(T)(T x) if (isOneOf!(Unqual!T, typeof(this.tupleof)) && !is(T == struct)) {
         alias MutableT = Unqual!T;
         static foreach(m; __traits(allMembers, ValueT) ) {
             static if ( is(typeof(__traits(getMember, this, m)) == MutableT ) ){
@@ -478,9 +470,9 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         assert (0, T.stringof~" is not supported" );
     }
 
-    /++
-     Constructs a Value of the type BigNumber
-     +/
+    /**
+     * Constructs a Value of the type BigNumber
+     */
     this(const BigNumber big) pure {
         bigint=cast(BigNumber)big;
     }
@@ -493,12 +485,10 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         date=x;
     }
 
-
-    /++
-     Assign the value to x
-     Params:
-     x = value to be assigned
-     +/
+    /**
+     * Assign the value to x
+     * @param x = value to be assigned
+     */
     void opAssign(T)(T x) if (isOneOf!(T, typeof(this.tupleof))) {
         alias UnqualT = Unqual!T;
         static foreach(m; __traits(allMembers, ValueT) ) {
@@ -517,12 +507,12 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
         }
     }
 
-    // /++
+    // /**
     //  Assign of none standard HiBON types.
     //  This function will cast to type has the best match to he parameter x
     //  Params:
     //  x = sign value
-    //  +/
+    //   */
     // void opAssign(T)(T x) if (!isOneOf!(T, typeof(this.tupleof))) {
     //     alias UnqualT=Unqual!T;
     //     alias CastT=castTo!(UnqualT, CastTypes);
@@ -531,15 +521,14 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
     //     opAssing(cast(CastT)x);
     // }
 
-    /++
-     Convert a HiBON Type to a D-type
-     +/
+    /**
+     * Convert a HiBON Type to a D-type
+     */
     alias TypeT(Type aType) = typeof(by!aType());
 
-    /++
-     Returns:
-     the size on bytes of the value as a HiBON type E
-     +/
+    /**
+     * @return the size on bytes of the value as a HiBON type E
+     */
     uint size(Type E)() const pure nothrow {
         static if (isHiBONType(E)) {
             alias T = TypeT!E;
@@ -561,67 +550,65 @@ union ValueT(bool NATIVE=false, HiBON,  Document) {
 };
 
 
-unittest {
-    alias Value = ValueT!(false, void, void);
-    Value test;
-    with(Type) {
-        test=Value(int(-42)); assert(test.by!INT32 == -42);
-        test=Value(long(-42)); assert(test.by!INT64 == -42);
-        test=Value(uint(42)); assert(test.by!UINT32 == 42);
-        test=Value(ulong(42)); assert(test.by!UINT64 == 42);
-        test=Value(float(42.42)); assert(test.by!FLOAT32 == float(42.42));
-        test=Value(double(17.42)); assert(test.by!FLOAT64 == double(17.42));
-        sdt_t time=1001;
-        test=Value(time); assert(test.by!TIME == time);
-        test=Value("Hello"); assert(test.by!STRING == "Hello");
-    }
-}
+// unittest {
+//     alias Value = ValueT!(false, void, void);
+//     Value test;
+//     with(Type) {
+//         test=Value(int(-42)); assert(test.by!INT32 == -42);
+//         test=Value(long(-42)); assert(test.by!INT64 == -42);
+//         test=Value(uint(42)); assert(test.by!UINT32 == 42);
+//         test=Value(ulong(42)); assert(test.by!UINT64 == 42);
+//         test=Value(float(42.42)); assert(test.by!FLOAT32 == float(42.42));
+//         test=Value(double(17.42)); assert(test.by!FLOAT64 == double(17.42));
+//         sdt_t time=1001;
+//         test=Value(time); assert(test.by!TIME == time);
+//         test=Value("Hello"); assert(test.by!STRING == "Hello");
+//     }
+// }
 
-unittest {
-    import std.typecons;
-    alias Value = ValueT!(false, void, void);
+// unittest {
+//     import std.typecons;
+//     alias Value = ValueT!(false, void, void);
 
-    { // Check invalid type
-        Value value;
-        static assert(!__traits(compiles, value='x'));
-    }
+//     { // Check invalid type
+//         Value value;
+//         static assert(!__traits(compiles, value='x'));
+//     }
 
-    { // Simple data type
-        auto test_tabel=tuple(
-            float(-1.23), double(2.34), "Text", true, ulong(0x1234_5678_9ABC_DEF0),
-            int(-42), uint(42), long(-0x1234_5678_9ABC_DEF0)
-            );
-        foreach(i, t; test_tabel) {
-            Value v;
-            v=test_tabel[i];
-            alias U = test_tabel.Types[i];
-            enum E  = Value.asType!U;
-            assert(test_tabel[i] == v.by!E);
-        }
-    }
+//     { // Simple data type
+//         auto test_tabel=tuple(
+//             float(-1.23), double(2.34), "Text", true, ulong(0x1234_5678_9ABC_DEF0),
+//             int(-42), uint(42), long(-0x1234_5678_9ABC_DEF0)
+//             );
+//         foreach(i, t; test_tabel) {
+//             Value v;
+//             v=test_tabel[i];
+//             alias U = test_tabel.Types[i];
+//             enum E  = Value.asType!U;
+//             assert(test_tabel[i] == v.by!E);
+//         }
+//     }
 
-    version(none)
-    { // utc test,
-        static assert(Value.asType!sdt_t is Type.TIME);
-        sdt_t time = 1234;
-        Value v;
-        v = time;
-        assert(v.by!(Type.TIME) == 1234);
-        alias U = Value.TypeT!(Type.TIME);
-        static assert(is(U == const sdt_t));
-        static assert(!is(U == const ulong));
-    }
+//     version(none)
+//     { // utc test,
+//         static assert(Value.asType!sdt_t is Type.TIME);
+//         sdt_t time = 1234;
+//         Value v;
+//         v = time;
+//         assert(v.by!(Type.TIME) == 1234);
+//         alias U = Value.TypeT!(Type.TIME);
+//         static assert(is(U == const sdt_t));
+//         static assert(!is(U == const ulong));
+//     }
 
-}
+// }
 
-/++
- Converts from a text to a index
- Params:
- a = the string to be converted to an index
- result = index value
- Returns:
- true if a is an index
-+/
+/**
+ * Converts from a text to a index
+ * @param a = the string to be converted to an index
+ * @param result = index value
+ * @return true if a is an index
+ */
 // memcpy(return void* s1, scope const void* s2, size_t n);
 bool is_index(const(char[]) a, out uint result) pure {
     enum MAX_UINT_SIZE=uint.max.stringof.length;
@@ -658,14 +645,11 @@ uint to_uint(string num) pure {
     return cast(uint)result;
 }
 
-
-/++
- Check if all the keys in range is indices and are consecutive
- Returns:
- true if keys is the indices of an HiBON array
-+/
-version(none)
-bool isArray(R)(R keys) {
+/**
+ * Check if all the keys in range is indices and are consecutive
+ * @return true if keys is the indices of an HiBON array
+ */
+version (none) bool isArray(R)(R keys) {
     bool check_array_index(const uint previous_index) {
         if (!keys.empty) {
             uint current_index;
@@ -689,36 +673,36 @@ bool isArray(R)(R keys) {
     return false;
 }
 
-///
-unittest { // check is_index
-    uint index;
-    assert(is_index("0", index));
-    assert(index is 0);
-    assert(!is_index("-1", index));
+// ///
+// unittest { // check is_index
+//     uint index;
+//     assert(is_index("0", index));
+//     assert(index is 0);
+//     assert(!is_index("-1", index));
 
-    assert(is_index(uint.max.stringof[0..$-1], index));
-    assert(index is uint.max);
+//     assert(is_index(uint.max.stringof[0..$-1], index));
+//     assert(index is uint.max);
 
-    enum overflow=((cast(ulong)uint.max)+1);
-    assert(!is_index(overflow.stringof, index));
+//     enum overflow=((cast(ulong)uint.max)+1);
+//     assert(!is_index(overflow.stringof, index));
 
-    assert(is_index("42", index));
-    assert(index is 42);
+//     assert(is_index("42", index));
+//     assert(index is 42);
 
-    assert(!is_index("0x0", index));
-    assert(!is_index("00", index));
-    assert(!is_index("01", index));
-}
+//     assert(!is_index("0x0", index));
+//     assert(!is_index("00", index));
+//     assert(!is_index("01", index));
+// }
 
-/++
- This function decides the order of the HiBON keys
-+/
+/**
+ * This function decides the order of the HiBON keys
+ */
 int key_compare(const(char[]) a, const(char[]) b) pure
-    in {
-        assert(a.length > 0);
-        assert(b.length > 0);
-    }
-do {
+in {
+    assert(a.length > 0);
+    assert(b.length > 0);
+}
+body {
     uint a_index;
     uint b_index;
     if ( is_index(a, a_index) && is_index(b, b_index) ) {
@@ -739,11 +723,10 @@ do {
     return 1;
 }
 
-/++
- Checks if the keys in the range is ordred
- Returns:
- ture if all keys in the range is ordered
-+/
+/**
+ * Checks if the keys in the range is ordred
+ * @return true if all keys in the range is ordered
+ */
 bool is_key_ordered(R)(R range) if (isInputRange!R) {
     string prev_key;
     while(!range.empty) {
@@ -758,22 +741,21 @@ bool is_key_ordered(R)(R range) if (isInputRange!R) {
     return true;
 }
 
-///
-unittest { // Check less_than
-    assert(key_compare("a", "b") < 0);
-    assert(key_compare("0", "1") < 0);
-    assert(key_compare("00", "0") > 0);
-    assert(key_compare("0", "abe") < 0);
-    assert(key_compare("42", "abe") < 0);
-    assert(key_compare("42", "17") > 0);
-    assert(key_compare("42", "42") == 0);
-    assert(key_compare("abc", "abc") == 0);
-}
+// ///
+// unittest { // Check less_than
+//     assert(key_compare("a", "b") < 0);
+//     assert(key_compare("0", "1") < 0);
+//     assert(key_compare("00", "0") > 0);
+//     assert(key_compare("0", "abe") < 0);
+//     assert(key_compare("42", "abe") < 0);
+//     assert(key_compare("42", "17") > 0);
+//     assert(key_compare("42", "42") == 0);
+//     assert(key_compare("abc", "abc") == 0);
+// }
 
-/++
- Returns:
- true if the key is a valid HiBON key
-+/
+/**
+ * @return true if the key is a valid HiBON key
+ */
 @safe bool is_key_valid(const(char[]) a) pure nothrow {
     enum : char {
         SPACE = 0x20,
@@ -798,33 +780,32 @@ unittest { // Check less_than
 }
 
 ///
-unittest { // Check is_key_valid
-    assert(!is_key_valid(""));
-    string text=" "; // SPACE
-    assert(!is_key_valid(text));
-    text="\x80"; // Only simple ASCII
-    assert(!is_key_valid(text));
-    text=`"`; // Double quote
-    assert(!is_key_valid(text));
-    text="'"; // Sigle quote
-    assert(!is_key_valid(text));
-    text="`"; // Back quote
-    assert(!is_key_valid(text));
-    text="\0";
-    assert(!is_key_valid(text));
+// unittest { // Check is_key_valid
+//     assert(!is_key_valid(""));
+//     string text=" "; // SPACE
+//     assert(!is_key_valid(text));
+//     text="\x80"; // Only simple ASCII
+//     assert(!is_key_valid(text));
+//     text=`"`; // Double quote
+//     assert(!is_key_valid(text));
+//     text="'"; // Sigle quote
+//     assert(!is_key_valid(text));
+//     text="`"; // Back quote
+//     assert(!is_key_valid(text));
+//     text="\0";
+//     assert(!is_key_valid(text));
 
+//     assert(is_key_valid("abc"));
+//     assert(is_key_valid("42"));
 
-    assert(is_key_valid("abc"));
-    assert(is_key_valid("42"));
-
-    text="";
-    char[ubyte.max+1] max_key_size;
-    foreach(ref a; max_key_size) {
-        a='a';
-    }
-    assert(is_key_valid(max_key_size[0..$-1]));
-    assert(is_key_valid(max_key_size));
-}
+//     text="";
+//     char[ubyte.max+1] max_key_size;
+//     foreach(ref a; max_key_size) {
+//         a='a';
+//     }
+//     assert(is_key_valid(max_key_size[0..$-1]));
+//     assert(is_key_valid(max_key_size));
+// }
 
 
 template isOneOf(T, TList...) {

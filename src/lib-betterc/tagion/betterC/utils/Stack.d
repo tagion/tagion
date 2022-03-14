@@ -1,9 +1,11 @@
-module hibon.utils.Stack;
+/// \file Stack.d
 
-extern(C):
+module tagion.betterC.utils.Stack;
+
 @nogc:
 
-import hibon.utils.Memory;
+import tagion.betterC.utils.Memory;
+
 //import core.stdc.stdio;
 
 struct Stack(T) {
@@ -26,6 +28,7 @@ struct Stack(T) {
         static void _dispose(ref Element* e) {
             if (e !is null) {
                 _dispose(e.next);
+                
                 .dispose!false(e);
             }
         }

@@ -28,9 +28,9 @@ import tagion.basic.Basic: this_dot, basename, Pubkey, Buffer, bitarray_clear, b
 import tagion.Keywords: Keywords;
 
 import tagion.logger.Logger;
-import tagion.hashgraph.HashGraphBasic: isMajority, isAllVotes, EventBody, EventPackage, EvaPayload, Tides, EventMonitorCallbacks;
-import tagion.hashgraph.HashGraph: HashGraph;
-import tagion.utils.BitMask: BitMask;
+import tagion.hashgraph.HashGraphBasic : isMajority, isAllVotes, EventBody, EventPackage, EvaPayload, Tides, EventMonitorCallbacks;
+import tagion.hashgraph.HashGraph : HashGraph;
+import tagion.utils.BitMask : BitMask;
 
 /// check function used in the Event package
 // Returns the highest altitude

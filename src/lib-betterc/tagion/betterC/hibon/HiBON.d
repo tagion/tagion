@@ -1,63 +1,66 @@
+/// \file HiBON.d
+
 /**
- * Implements HiBON
+ * @brief Implements HiBON
  * Hash-invariant Binary Object Notation
  * Is inspired by BSON but us not compatible
  *
- * See_Also:
- *  $(LINK2 http://bsonspec.org/, BSON - Binary JSON)
- *
+ * @see
+ * <a href="http://bsonspec.org/">BSON - Binary JSON</a> 
  */
-module hibon.HiBON;
+module tagion.betterC.hibon.HiBON;
 
-extern(C):
 @nogc:
 //import std.container : RedBlackTree;
 //import std.format;
 import std.meta : staticIndexOf;
 //import std.algorithm.iteration : map, fold, each;
-import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType, PointerTarget;
+import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType, PointerTarget,
+    isAssociativeArray;
 import std.meta : AliasSeq;
 
 //import std.conv : to;
 //import std.typecons : TypedefType;
 
-import hibon.BigNumber;
-import hibon.Document;
-import hibon.HiBONBase;
-import hibon.utils.Bailout;
-import hibon.utils.RBTree;
-import hibon.utils.Memory;
-import hibon.utils.Text;
-import hibon.utils.BinBuffer;
-import hibon.utils.Basic;
-import LEB128=hibon.utils.LEB128;
+import tagion.betterC.hibon.BigNumber;
+import tagion.betterC.hibon.Document;
+import tagion.betterC.hibon.HiBONBase;
+import tagion.betterC.utils.Bailout;
+import tagion.betterC.utils.RBTree;
+import tagion.betterC.utils.Memory;
+import tagion.betterC.utils.Text;
+import tagion.betterC.utils.BinBuffer;
+import tagion.betterC.utils.Basic;
+import LEB128 = tagion.betterC.utils.LEB128;
 
-import hibon.utils.platform;
+import tagion.betterC.utils.platform;
+
 //import core.stdc.stdio;
+
+import std.stdio;
 
 HiBONT HiBON() {
     HiBONT result=HiBONT(RBTree!(HiBONT.Member*)(), true, false);
     return result;
 }
 
-/++
- HiBON is a generate obje52ct of the HiBON format
- +/
+/**
+ * HiBON is a generate obje52ct of the HiBON format
+ */
 struct HiBONT {
-    @nogc:
-    /++
-     Gets the internal buffer
-     Returns:
-     The buffer of the HiBON document
-     +/
-    alias Members=RBTreeT!(Member*);
+@nogc:
+    /**
+     * Gets the internal buffer
+     * @return the buffer of the HiBON document
+     */
+    alias Members = RBTreeT!(Member*);
 
 //     RedBlackTree!(Member, (a, b) => (less_than(a.key, b.key)));
     private {
         Members _members;
-        bool _owns;
-        bool _readonly;
-        bool _self_destruct;
+        bool _owns; /// show is it owning
+        bool _readonly; /// true if read only
+        bool _self_destruct; /// true if self-destruced
         BinBuffer _buffer;
     }
 
@@ -65,6 +68,9 @@ struct HiBONT {
 
     alias Value=ValueT!(true, HiBONT*,  Document);
 
+    /**
+     * Destructor
+     */
     ~this() {
         dispose;
     }
@@ -77,8 +83,9 @@ struct HiBONT {
             _members.surrender;
         }
         _buffer.dispose;
-        if ( _self_destruct ) {
-            HiBONT* self=&this;
+        if (_self_destruct) {
+            HiBONT* self = &this;
+            
             .dispose!false(self);
         }
     }
@@ -87,12 +94,11 @@ struct HiBONT {
         assert(_owns || (!_owns && _readonly));
     }
 
-    /++
-     Calculated the size in bytes of HiBON payload
-     Returns:
-     the size in bytes
-     +/
-    size_t size()  const {
+    /**
+     * Calculate the size in bytes of HiBON payload
+     * @return the size in bytes
+     */
+    size_t size() const {
         size_t result;
         foreach(n; _members[]) {
             result+=n.size;
@@ -105,11 +111,10 @@ struct HiBONT {
         }
     }
 
-    /++
-     Calculated the size in bytes of serialized HiBON
-     Returns:
-     the size in bytes
-     +/
+    /**
+     * Calculated the size in bytes of serialized HiBON
+     * @return the size in bytes
+     */
     size_t serialize_size() const {
         auto _size=size;
         if (_size !is ubyte.sizeof ) {
@@ -118,12 +123,10 @@ struct HiBONT {
         return _size;
     }
 
-
-    /++
-     Expropriate the members to the return
-     Returns:
-     The new owner of the members
-     +/
+    /**
+     * Expropriate the members to the return
+     * @return The new owner of the members
+     */
     HiBONT* expropriate() {
         auto result=create!(HiBONT);
         // Surrender the RBTree to the result;
@@ -146,20 +149,19 @@ struct HiBONT {
         return _owns;
     }
 
-    /++
-     Generated the serialized HiBON
-     Returns:
-     The byte stream
-     +/
+    /**
+     * Generated the serialized HiBON
+     * @return the byte stream
+     */
     immutable(ubyte[]) serialize() {
         _buffer.recreate(serialize_size);
         append(_buffer);
         return _buffer.serialize;
     }
 
-    // /++
+    // /**
     //  Helper function to append
-    //  +/
+    //  */
     private void append(ref BinBuffer buffer) const {
         if (_members.empty) {
             buffer.write(ubyte(0));
@@ -176,9 +178,9 @@ struct HiBONT {
         }
     }
 
-    /++
-     Internal Member in the HiBON class
-     +/
+    /**
+     ** Internal Member in the HiBON class
+     */
     struct Member {
         @nogc:
         private {
@@ -205,15 +207,15 @@ struct HiBONT {
             return opCmp(b) == 0;
         }
 
-        alias CastTypes=AliasSeq!(uint, int, ulong, long, string);
-        /++
-         Params:
-         x = the parameter value
-         key = the name of the member
-         +/
-
+        alias CastTypes = AliasSeq!(uint, int, ulong, long, string);
+        /**
+         * Construct a Member
+         * @param x = the parameter value
+         * @param key = the name of the member
+         */
         this(T)(T x, in const(char[]) key) {
-            .create(this._key, key);
+            
+                .create(this._key, key);
             void _init(S)(S x) {
                 enum E=Value.asType!S;
                 this._type=E;
@@ -297,8 +299,9 @@ struct HiBONT {
                     static foreach(E; EnumMembers!Type) {
                     case E:
                         static if (.isArray(E)) {
-                            alias U=Unqual!(ForeachType!(Value.TypeT!E));
-                            auto remove_this=cast(U[])value.by!E;
+                            alias U = Unqual!(ForeachType!(Value.TypeT!E));
+                            auto remove_this = cast(U[]) value.by!E;
+                            
                             .dispose(remove_this);
                         }
                         else static if (E is Type.DOCUMENT) {
@@ -314,12 +317,10 @@ struct HiBONT {
             _key.dispose;
         }
 
-        /++
-         If the value of the Member contains a Document it returns it or else an error is asserted
-         Returns:
-         the value as a Document
-         +/
-
+        /**
+         * If the value of the Member contains a Document it returns it or else an error is asserted
+         * @return the value as a Document
+         */
         const(HiBONT*) document() const pure
             in {
                 assert(type is Type.DOCUMENT);
@@ -328,36 +329,29 @@ struct HiBONT {
             return value.document;
         }
 
-
-        /++
-         Returns:
-         The value as type T
-         Throws:
-         If the member does not match the type T and HiBONException is thrown
-         +/
+        /**
+         * @return the value as type T
+         * @throw if the member does not match the type T and HiBONException is thrown
+         */
         const(T) get(T)() const {
             enum E = Value.asType!T;
+            
             .check(E is type, message("Expected HiBON type %s but apply type %s (%s)", type, E, T.stringof));
             return value.by!E;
         }
 
-        /++
-         Returns:
-         The value as HiBON Type E
-         Throws:
-         If the member does not match the type T and HiBONException is thrown
-         +/
+        /**
+         * @return the value as HiBON Type E
+         * @throw if the member does not match the type T and HiBONException is thrown
+         */
         auto by(Type type)() inout {
             return value.by!type;
         }
 
-
-        /++
-         Calculates the size in bytes of the Member
-         Returns:
-         the size in bytes
-         +/
-
+        /**
+         * Calculates the size in bytes of the Member
+         * @return the size in bytes
+         */
         size_t size() const {
             with(Type) {
             TypeCase:
@@ -465,10 +459,9 @@ struct HiBONT {
         }
     }
 
-    /++
-     Returns:
-     A Range of members
-     +/
+    /**
+     * @return Range of members
+     */
     Members.Range opSlice() const {
         return _members[];
     }
@@ -490,13 +483,18 @@ struct HiBONT {
         }
     }
 
-    /++
-     Assign and member x with the key
-     Params:
-     x = parameter value
-     key = member key
-     +/
-    void opIndexAssign(T)(T x, in const(char[]) key) if (!is(T:const(HiBONT))) {
+    void opAssign(T)(T r) if ((isInputRange!T) && !isAssociativeArray!T) {
+        foreach (i, a; r.enumerate) {
+            opIndexAssign(a, i);
+        }
+    }
+
+    /**
+     * Assign and member x with the key
+     * @param x = parameter value
+     * @param key = member key
+     */
+    void opIndexAssign(T)(T x, in const(char[]) key) if (!is(T : const(HiBONT))) {
         if (!readonly && is_key_valid(key)) {
             auto new_member=create!Member(x, key);
             _members.insert(new_member);
@@ -506,13 +504,12 @@ struct HiBONT {
         }
     }
 
-    /++
-     Assign and member x with the index
-     Params:
-     x = parameter value
-     index = member index
-     +/
-    void opIndexAssign(T)(T x, const size_t index) if (!is(T:const(HiBONT))) {
+    /**
+     * Assign and member x with the index
+     * @param x = parameter value
+     * @paramindex = member index
+     */
+    void opIndexAssign(T)(T x, const size_t index) if (!is(T : const(HiBONT))) {
         if (index <= uint.max) {
             auto _key=Key(cast(uint)index);
             opIndexAssign(x, _key.serialize);
@@ -534,32 +531,24 @@ struct HiBONT {
         }
     }
 
-    /++
-     Access an member at key
-     Params:
-     key = member key
-     Returns:
-     the Member at the key
-     Throws:
-     if the an member with the key does not exist an HiBONException is thrown
-     +/
+    /**
+     * Access an member at key
+     * @param key = member key
+     * @return the Member at the key
+     * @throw if the an member with the key does not exist an HiBONException is thrown
+     */
     const(Member*) opIndex(in const(char[]) key) const {
         auto m=Member(key);
         return _members.get(&m);
     }
 
-
-    /++
-     Access an member at index
-     Params:
-     index = member index
-     Returns:
-     the Member at the index
-     Throws:
-     if the an member with the index does not exist an HiBONException is thrown
+    /**
+     * Access an member at index
+     * @param index = member index
+     * @return the Member at the index
+     * @throw if the an member with the index does not exist an HiBONException is thrown
      Or an std.conv.ConvException is thrown if the key is not an index
-     +/
-
+     */
     const(Member*) opIndex(const size_t index) {
         if (index <= uint.max) {
             auto m=Member(index);
@@ -569,22 +558,19 @@ struct HiBONT {
         return null;
     }
 
-    /++
-     Params:
-     key = member key
-     Returns:
-     true if the member with the key exists
-     +/
+    /**
+     * @param key = member key
+     * @return true if the member with the key exists
+     */
     bool hasMember(in const(char[]) key) const {
         auto m=Member(key);
         return _members.exists(&m);
     }
 
-    /++
-     Removes a member with name of key
-     Params:
-     key = name of the member to be removed
-     +/
+    /**
+     * Removes a member with name of key
+     * @param key = name of the member to be removed
+     */
     void remove(in const(char[]) key) {
         auto m=Member(key);
         _members.remove(&m);
@@ -603,18 +589,16 @@ struct HiBONT {
         assert(!hibon.hasMember("b"));
     }
 
-    /++
-     Returns:
-     the number of members in the HiBON
-     +/
+    /**
+     * @return the number of members in the HiBON
+     */
     size_t length() const {
         return _members.length;
     }
 
-    /++
-     Returns:
-     A list of the member keys
-     +/
+    /**
+     * @return a list of the member keys
+     */
     KeyRange keys() const {
         return KeyRange(&this);
     }
@@ -642,11 +626,10 @@ struct HiBONT {
         }
     }
 
-    /++
-     A list of indices
-     Returns:
-     returns false if some index is not a number;
-     +/
+    /**
+     * A list of indices
+     * @return returns false if some index is not a number;
+     */
     IndexRange indices() const {
         return IndexRange(&this);
     }
@@ -685,12 +668,10 @@ struct HiBONT {
         }
     }
 
-
-    /++
-     Check if the HiBON is an Array
-     Returns:
-     true if all keys is indices and are consecutive
-     +/
+    /**
+     * Check if the HiBON is an Array
+     * @return true if all keys is indices and are consecutive
+     */
     bool isArray() const {
         auto range=indices;
         long prev_index=-1;
@@ -833,6 +814,7 @@ struct HiBONT {
             assert(size is LEB128.calc_size(14)+doc_size);
 
             immutable data = hibon.serialize;
+
             const doc = Document(data);
 
             assert(doc.length is 1);
@@ -925,10 +907,11 @@ struct HiBONT {
         const(char[4]) text="Text";
         table_array.STRING.create(text);
 
-        auto test_table_array=table_array.tupleof;
-        scope(exit) {
-            foreach(i, t; test_table_array) {
-                .dispose(t);
+        auto test_table_array = table_array.tupleof;
+        scope (exit) {
+            foreach (i, t; test_table_array) {
+                
+                    .dispose(t);
             }
         }
 

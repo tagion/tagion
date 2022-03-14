@@ -26,7 +26,7 @@ import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
 
 import tagion.logger.Logger;
-import tagion.utils.Miscellaneous: toHex = toHexString;
+import tagion.utils.Miscellaneous : toHex = toHexString;
 import tagion.gossip.InterfaceNet;
 
 version (unittest) {
@@ -1081,7 +1081,7 @@ class HashGraph {
         import std.conv;
         import std.datetime;
         import tagion.hibon.HiBONJSON;
-        import tagion.basic.Logger: log, LoggerType;
+        import tagion.logger.Logger : log, LoggerType;
 
         log.push(LoggerType.NONE);
 

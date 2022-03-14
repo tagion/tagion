@@ -5,6 +5,7 @@ import core.sys.posix.pthread;
 import std.string;
 import tagion.basic.Basic : Control;
 import tagion.basic.TagionExceptions;
+import tagion.hibon.HiBONRecord;
 
 extern(C) int pthread_setname_np(pthread_t, const char*) nothrow;
 

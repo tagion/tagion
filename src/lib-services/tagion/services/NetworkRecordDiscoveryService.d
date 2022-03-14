@@ -9,7 +9,7 @@ import std.conv;
 import std.concurrency;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
 import tagion.logger.Logger;
-import std.stdio;
+import tagion.utils.StdTime;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
