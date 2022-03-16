@@ -526,7 +526,7 @@ static setDefaultOption(ref Options options) {
     // Recorder
     with (options.recorder) {
         task_name = "recorder";
-        folder_path = "/tmp/records/";
+        folder_path = "tmp/epoch_blocks/";
     }
     // Discovery
     with (options.discovery) {

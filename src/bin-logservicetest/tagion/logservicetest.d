@@ -77,13 +77,12 @@ import std.file : exists;
 import std.format;
 import std.conv : to;
 import std.array;
-import std.concurrency;
 import tagion.utils.Miscellaneous;
 import tagion.utils.Gene;
 import tagion.services.Options : Options, setDefaultOption;
 import tagion.services.LoggerService : loggerTask;
 import tagion.services.RecorderService;
-import tagion.basic.Basic : Control, Buffer;
+import tagion.basic.Basic : Control, Buffer, TrustedConcurrency;
 import tagion.dart.DART : DART;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.communication.HiRPC;
@@ -202,6 +201,8 @@ immutable(RecordFactory.Recorder) testNewRecorder() {
     return rec_im;
 }
 
+mixin TrustedConcurrency;
+
 int recorderCliTest(string[] args) {
 
     const auto EXEC_NAME = baseName(args[0]);
@@ -218,7 +219,7 @@ int recorderCliTest(string[] args) {
 
     // Dummy inits
     string passphrase = "verysecret";
-    string file_for_blocks = "tmp/EpochBlocks_files/";
+    string file_for_blocks = options.recorder.folder_path;
     string dartfilename = file_for_blocks ~ "A";
 
     // Default inits for cli
@@ -249,44 +250,46 @@ int recorderCliTest(string[] args) {
     auto rec = recordFactory.recorder;
     rec.add(Document(hibon_));
     immutable(RecordFactory.Recorder) rec_im = cast(immutable) rec;
-    addRecToDB(db_, rec_im, hirpc_);
 
-    writeln("1 step: ", db_.fingerprint.cutHex); //for test
+    // ==================================================================================
+    // addRecToDB(db_, rec_im, hirpc_);
 
-    auto rec1 = testFlipRecorderAdd; //create recorder
-    auto block1 = epBlockFactory(rec1, noHash, db_.fingerprint); //create block
-    blocks_.addBlock(block1); //save block
-    addRecToDB(db_, block1.recorder, hirpc_); //add to DB
+    // writeln("1 step: ", db_.fingerprint.cutHex); //for test
 
-    writeln("2 step: ", db_.fingerprint.cutHex, " (add 1-st -> ", block1.fingerprint.cutHex, ")");
+    // auto rec1 = testFlipRecorderAdd; //create recorder
+    // auto block1 = epBlockFactory(rec1, noHash, db_.fingerprint); //create block
+    // blocks_.addBlock(block1); //save block
+    // addRecToDB(db_, block1.recorder, hirpc_); //add to DB
 
-    auto rec2 = testFlipRecorderDel;
-    auto block2 = epBlockFactory(rec2, block1.fingerprint, db_.fingerprint);
-    blocks_.addBlock(block2);
-    addRecToDB(db_, block2.recorder, hirpc_);
+    // writeln("2 step: ", db_.fingerprint.cutHex, " (add 1-st -> ", block1.fingerprint.cutHex, ")");
 
-    writeln("3 step: ", db_.fingerprint.cutHex, " (add 2-nd -> ", block2.fingerprint.cutHex, ")");
+    // auto rec2 = testFlipRecorderDel;
+    // auto block2 = epBlockFactory(rec2, block1.fingerprint, db_.fingerprint);
+    // blocks_.addBlock(block2);
+    // addRecToDB(db_, block2.recorder, hirpc_);
 
-    auto rec3 = testNewRecorder;
-    auto block3 = epBlockFactory(rec3, block2.fingerprint, db_.fingerprint);
-    blocks_.addBlock(block3);
-    addRecToDB(db_, block3.recorder, hirpc_);
+    // writeln("3 step: ", db_.fingerprint.cutHex, " (add 2-nd -> ", block2.fingerprint.cutHex, ")");
 
-    writeln("4 step: ", db_.fingerprint.cutHex, " (add 3-rd -> ", block3.fingerprint.cutHex, ")");
+    // auto rec3 = testNewRecorder;
+    // auto block3 = epBlockFactory(rec3, block2.fingerprint, db_.fingerprint);
+    // blocks_.addBlock(block3);
+    // addRecToDB(db_, block3.recorder, hirpc_);
 
-    addRecToDB(db_, blocks_.flipRecorder(block3), hirpc_);
+    // writeln("4 step: ", db_.fingerprint.cutHex, " (add 3-rd -> ", block3.fingerprint.cutHex, ")");
 
-    writeln("5 step: ", db_.fingerprint.cutHex);
+    // addRecToDB(db_, blocks_.flipRecorder(block3), hirpc_);
 
-    //auto block_flip_1 = blocks.rollBack();
-    addRecToDB(db_, blocks_.flipRecorder(block2), hirpc_);
+    // writeln("5 step: ", db_.fingerprint.cutHex);
 
-    writeln("6 step: ", db_.fingerprint.cutHex);
+    // //auto block_flip_1 = blocks.rollBack();
+    // addRecToDB(db_, blocks_.flipRecorder(block2), hirpc_);
 
-    //auto block_flip_2 = blocks.rollBack();
-    addRecToDB(db_, blocks_.flipRecorder(block1), hirpc_);
+    // writeln("6 step: ", db_.fingerprint.cutHex);
 
-    writeln("7 step: ", db_.fingerprint.cutHex);
+    // //auto block_flip_2 = blocks.rollBack();
+    // addRecToDB(db_, blocks_.flipRecorder(block1), hirpc_);
+
+    // writeln("7 step: ", db_.fingerprint.cutHex);
     // ===================================================================================
 
     // auto logger_tid=spawn(&loggerTask, options);
@@ -356,24 +359,26 @@ int recorderCliTest(string[] args) {
         import tagion.services.RecorderService : recorderTask;
 
         auto recorder_service_tid = spawn(&recorderTask, options);
+        auto result = receiveOnly!Control;
+        writeln("RecorderService working: ", result);
+
         scope (exit) {
             recorder_service_tid.send(Control.STOP);
             writeln("exit bin init; control=", receiveOnly!Control);
         }
-
-        const net = new StdHashNet;
-        auto factory = RecordFactory(net);
-        RecordFactory.Recorder recorder = factory.recorder;
-
-        string filename = "filename";
-
+        
         import core.thread;
 
-        while (true) {
-            recorder_service_tid.send("aaa   bbb   ccc", filename);
-            writeln("while sleep 5 seconds...");
-            filename ~= "_a";
-            Thread.sleep(5.seconds);
+        for (int i = 0; i < 3; ++i) {
+            recorder_service_tid.send(rec_im, Fingerprint(db_.fingerprint));
+            writeln("while sleep 1 second...");
+            Thread.sleep(1.seconds);
+        }
+        scope(exit) {
+            import std.file;
+            writeln("before rmdir 10 sec");
+            Thread.sleep(10.seconds);
+            rmdirRecurse(options.recorder.folder_path);
         }
     }
 
@@ -565,6 +570,6 @@ int logSubscriptionTest(string[] args) {
 
 int main(string[] args) {
     //return loggerServiceTest(args);
-    //return recorderCliTest(args);
-    return logSubscriptionTest(args);
+    return recorderCliTest(args);
+    //return logSubscriptionTest(args);
 }
