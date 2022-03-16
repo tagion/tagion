@@ -28,6 +28,8 @@ void mdnsDiscoveryService(shared p2plib.Node node, string task_name, immutable(O
         }
         log.register(task_name);
 
+        bool is_ready = false;
+
         p2plib.MdnsService discovery = node.startMdns("tagion_mdns", opts.discovery.interval.msecs);
 
         log("Run mdns service");
@@ -95,7 +97,7 @@ void mdnsDiscoveryService(shared p2plib.Node node, string task_name, immutable(O
                 case DiscoveryRequestCommand.BecomeOnline: {
                         log("Becoming online..");
                         addOwnInfo();
-                        // ownerTid.send(DiscoveryState.ONLINE);
+                        ownerTid.send(DiscoveryState.ONLINE);
                         break;
                     }
                 case DiscoveryRequestCommand.RequestTable: {

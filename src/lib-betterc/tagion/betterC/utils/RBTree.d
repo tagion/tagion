@@ -27,30 +27,35 @@ import tagion.betterC.utils.Stack;
 
 //import hibon.HiBONBase : Key;
 import std.traits : isPointer;
+
 //import core.stdc.stdio;
 
-RBTreeT!(K) RBTree(K)(const bool owns=true) {
+RBTreeT!(K) RBTree(K)(const bool owns = true) {
     RBTreeT!(K) result;
-    with(result) {
-        NILL.color=Color.BLACK;
-        nill=&NILL;
-        root=nill;
+    with (result) {
+        NILL.color = Color.BLACK;
+        nill = &NILL;
+        root = nill;
     }
-    result.owns=owns;
+    result.owns = owns;
     return result;
 }
 
 struct RBTreeT(K) {
-    @nogc:
-    enum Color { RED, BLACK };
+@nogc:
+    enum Color {
+        RED,
+        BLACK
+    }
+
     struct Node {
-        @nogc:
+    @nogc:
         K item;
         Color color;
         Node* parent;
         Node* left;
         Node* right;
-    };
+    }
 
     private {
         static Node NILL;
@@ -60,15 +65,15 @@ struct RBTreeT(K) {
     }
 
     RBTreeT expropriate() {
-        auto result=RBTree!K(owns);
-        result.root=root;
-        root=nill;
+        auto result = RBTree!K(owns);
+        result.root = root;
+        root = nill;
         return result;
     }
 
     void surrender() {
-        root=nill;
-        owns=false;
+        root = nill;
+        owns = false;
     }
 
     ~this() {
@@ -92,8 +97,9 @@ struct RBTreeT(K) {
                 current.dispose;
             }
         }
+
         _dispose(root);
-        root=nill;
+        root = nill;
     }
 
     /* Print tree items by inorder tree walk */
@@ -130,27 +136,29 @@ struct RBTreeT(K) {
         }
     }
 
-    version(WebAssembly) {
-        void dump(int iter_max=20) const {
+    version (WebAssembly) {
+        void dump(int iter_max = 20) const {
             // empty
         }
     }
     else {
-        void dump(int iter_max=20) const {
+        void dump(int iter_max = 20) const {
             import core.stdc.stdio;
-            const(char[4]) INDENT="  ->";
-            void _dump(const(Node*) current, const uint level=1) @nogc {
+
+            const(char[4]) INDENT = "  ->";
+            void _dump(const(Node*) current, const uint level = 1) @nogc {
                 if (current !is nill) {
-                    _dump(current.left, level+1);
-                    foreach(i;0..level) {
-                        printf("%s",INDENT.ptr);
+                    _dump(current.left, level + 1);
+                    foreach (i; 0 .. level) {
+                        printf("%s", INDENT.ptr);
                     }
-                    printf("%p\n",  current);
+                    printf("%p\n", current);
                     iter_max--;
-                    assert(iter_max>0);
-                    _dump(current.right, level+1);
+                    assert(iter_max > 0);
+                    _dump(current.right, level + 1);
                 }
             }
+
             printf("DUMP %p %p\n", root, nill);
             _dump(root);
         }
@@ -160,7 +168,8 @@ struct RBTreeT(K) {
         const(Node*) _search(const(Node*) current) pure {
             if (current !is nill) {
                 import std.traits;
-                const cmp=compare(current.item, item);
+
+                const cmp = compare(current.item, item);
                 if (cmp == 0) {
                     return current;
                 }
@@ -173,7 +182,8 @@ struct RBTreeT(K) {
             }
             return nill;
         }
-        auto result=_search(root);
+
+        auto result = _search(root);
         if (result !is nill) {
             return result;
         }
@@ -181,20 +191,20 @@ struct RBTreeT(K) {
     }
 
     bool exists(K item) const {
-//        const result=search(item);
+        //        const result=search(item);
         return search(item) !is null;
     }
 
     @property size_t length() const {
         size_t count;
-        foreach(m; this[]) {
+        foreach (m; this[]) {
             count++;
         }
         return count;
     }
 
-    protected Node* tree_minimum(Node *x) {
-        while(x.left !is nill) {
+    protected Node* tree_minimum(Node* x) {
+        while (x.left !is nill) {
             x = x.left;
         }
         return x;
@@ -209,18 +219,18 @@ struct RBTreeT(K) {
     bool insert(K item) {
         bool result;
         Node* z = create!Node;
-        scope(exit) {
+        scope (exit) {
             if (!result) {
                 z.dispose;
             }
         }
-        z.item=item;
-        return result=insert(z);
+        z.item = item;
+        return result = insert(z);
     }
 
     const(K) get(const(K) item) const {
-        alias _K=const(K);
-        auto result=search(item);
+        alias _K = const(K);
+        auto result = search(item);
         if (result !is null) {
             return result.item;
         }
@@ -228,7 +238,7 @@ struct RBTreeT(K) {
     }
 
     private bool insert(Node* z) {
-        Node*  x, y;
+        Node* x, y;
         z.color = Color.RED;
         z.left = nill;
         z.right = nill;
@@ -242,7 +252,7 @@ struct RBTreeT(K) {
          */
         while (x !is nill) {
             y = x;
-            const cmp=compare(z.item, x.item);
+            const cmp = compare(z.item, x.item);
             if (cmp < 0) {
                 x = x.left;
             }
@@ -312,7 +322,7 @@ struct RBTreeT(K) {
                 }
 
                 /* z's grand parent's right child is not RED */
-                else {
+            else {
 
                     /* z is z's parent's right child */
                     if (z is z.parent.right) {
@@ -450,7 +460,7 @@ struct RBTreeT(K) {
      */
 
     bool remove(K item) {
-        auto remove_node=_search(item);
+        auto remove_node = _search(item);
         if (remove_node !is nill) {
             remove(remove_node);
             return true;
@@ -459,7 +469,7 @@ struct RBTreeT(K) {
     }
 
     protected void remove(ref Node* z) {
-        scope(exit) {
+        scope (exit) {
             if (owns) {
                 static if (isPointer!K) {
                     
@@ -539,8 +549,8 @@ struct RBTreeT(K) {
      * If x is right child of it's parent do exact same thing swapping left<->right
      */
 
-    protected void remove_fixup(Node *x) {
-        Node *w;
+    protected void remove_fixup(Node* x) {
+        Node* w;
 
         while (x !is root && x.color is Color.BLACK) {
             if (x is x.parent.left) {
@@ -632,7 +642,7 @@ struct RBTreeT(K) {
     Range opSlice() const {
         // In betterC the descructor of RBTree is call if the argument is passed to the Range struct
         // This is the reason why the pointer to RBTree is used
-        auto range=Range(root);
+        auto range = Range(root);
         return range;
     }
 
@@ -646,9 +656,9 @@ struct RBTreeT(K) {
             Stack!(Node*) stack;
         }
 
-        this(const(Node*) root)  {
-            this.nill=&RBTreeT.NILL;
-            walker=current=cast(Node*)root;
+        this(const(Node*) root) {
+            this.nill = &RBTreeT.NILL;
+            walker = current = cast(Node*) root;
             popFront;
         }
 
@@ -658,12 +668,13 @@ struct RBTreeT(K) {
 
         void dispose() {
             stack.dispose;
-            walker=current=null;
+            walker = current = null;
         }
 
         private void push(Node* node) {
             stack.push(node);
         }
+
         private Node* pop() {
             if (stack.empty) {
                 return nill;
@@ -685,15 +696,15 @@ struct RBTreeT(K) {
         void popFront() {
             while (walker !is nill) {
                 push(walker);
-                walker=walker.left;
+                walker = walker.left;
             }
 
             if (!stack.empty) {
-                walker=current=pop;
-                walker=walker.right;
+                walker = current = pop;
+                walker = walker.right;
             }
             else {
-                current=nill;
+                current = nill;
             }
         }
     }
@@ -701,53 +712,52 @@ struct RBTreeT(K) {
 
 unittest {
 
-
-    enum tcase=[ 60, 140, 20, 130, 30, 160, 110, 170, 40, 120, 50, 70, 100, 10, 150, 80, 90];
-    const(int[17]) result=[ 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170];
+    enum tcase = [60, 140, 20, 130, 30, 160, 110, 170, 40, 120, 50, 70, 100, 10, 150, 80, 90];
+    const(int[17]) result = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170];
 
     assert(tcase.length == result.length);
 
-    auto tree=RBTree!int(false);
+    auto tree = RBTree!int(false);
 
-    foreach(item; tcase) {
+    foreach (item; tcase) {
         tree.insert(item);
     }
 
     // Check that all the elements has been added
     uint count;
 
-    foreach(n; tree[]) {
-        const item=result[count++];
+    foreach (n; tree[]) {
+        const item = result[count++];
         assert(n == item);
     }
 
     // Check the size of the check lists
     assert(tcase.length == count);
 
-    enum indices=[5,3, 14, 0, tcase.length-1];
+    enum indices = [5, 3, 14, 0, tcase.length - 1];
 
     // Check exists
-    foreach(i; indices) {
-        const item=result[i];
+    foreach (i; indices) {
+        const item = result[i];
         assert(tree.exists(item));
     }
 
     // Check search
-    foreach(i; indices) {
-        const item=result[i];
-        const n=tree.search(item);
+    foreach (i; indices) {
+        const item = result[i];
+        const n = tree.search(item);
         assert(n !is null);
         assert(item == n.item);
     }
 
     // Check remove
-    foreach(i; indices) {
-        const item=result[i];
-        const n_exists=tree.search(item);
+    foreach (i; indices) {
+        const item = result[i];
+        const n_exists = tree.search(item);
         assert(n_exists !is null);
         tree.remove(item);
         assert(!tree.exists(item));
-        const n=tree.search(item);
+        const n = tree.search(item);
         assert(n is null);
         count--;
         assert(tree.length == count);
@@ -796,10 +806,10 @@ unittest {
 // }
 
 unittest {
-    auto tree=RBTree!int(false);
+    auto tree = RBTree!int(false);
     tree.insert(42);
     assert(tree.length is 1);
     tree.insert(42);
     assert(tree.length is 1);
-//    assert(0);
+    //    assert(0);
 }

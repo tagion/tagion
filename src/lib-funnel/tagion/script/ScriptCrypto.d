@@ -2,22 +2,22 @@ module tagion.script.ScriptCrypto;
 
 import std.bigint;
 import tagion.script.Script;
-import tagion.script.ScriptBase: Value, FunnelType, check, ScriptException;
+import tagion.script.ScriptBase : Value, FunnelType, check, ScriptException;
 import tagion.script.ScriptParser;
 
 //import tagion.utils.BSON : BSON, HBSON, BSONException;
 import tagion.hibon.BigNumber;
-import tagion.hibon.HiBON: HiBON;
-import tagion.crypto.SecureNet: StdSecureNet;
-import tagion.basic.Basic: Buffer, Pubkey, Signature;
+import tagion.hibon.HiBON : HiBON;
+import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.basic.Basic : Buffer, Pubkey, Signature;
 import tagion.basic.ConsensusExceptions;
-import tagion.script.ScriptBuilder: ScriptBuilder;
+import tagion.script.ScriptBuilder : ScriptBuilder;
 import tagion.script.ScriptParser;
 import tagion.script.ScriptBase;
-import std.algorithm.sorting: sort;
-import std.array: join;
+import std.algorithm.sorting : sort;
+import std.array : join;
 
-import tagion.crypto.secp256k1.NativeSecp256k1: NativeSecp256k1;
+import tagion.crypto.secp256k1.NativeSecp256k1 : NativeSecp256k1;
 
 @safe
 class CryptoNet : StdSecureNet {
@@ -78,7 +78,7 @@ version (none) unittest { // verify test
     Buffer sig = crypto_net.sign(hash_msg);
     assert(crypto_net.verify(hash_msg, sig, pubkey));
 
-    import std.string: join;
+    import std.string : join;
 
     string source = [
         "variable pubkey",
@@ -119,7 +119,7 @@ class ScriptCryptoHash256 : ScriptElement {
         data hash256
     */
     mixin ScriptElementTemplate!("hash256", 0);
-    import std.stdio: writefln;
+    import std.stdio : writefln;
 
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
@@ -153,7 +153,7 @@ version (none) unittest { // hash256 test
     Buffer seed = [2, 3, 4, 1];
     auto facit_hash = crypto_net.calcHash(seed);
 
-    import std.string: join;
+    import std.string : join;
 
     string source = [
         "variable seed",
@@ -188,7 +188,7 @@ class ScriptSortHash256 : ScriptElement {
         hash_1 hash_2 hash_3...hash_k sorthash256
     */
     mixin ScriptElementTemplate!("sorthash256", 0);
-    import std.stdio: writefln;
+    import std.stdio : writefln;
 
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
         check(s, sc);
@@ -238,7 +238,7 @@ version (none) unittest { //sortHash256
 
     const facit_hash = crypto_net.calcHash(seed_sorted);
 
-    import std.string: join;
+    import std.string : join;
 
     string source = [
         ": testsorthash256",

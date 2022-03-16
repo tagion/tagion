@@ -16,32 +16,35 @@ struct OpenSSL {
     string email;       /// Email Address
     import std.range : zip, repeat, only;
     import std.format;
+
     auto config() const pure nothrow @nogc {
         return only(
-            country,
-            state,
-            city,
-            organisation,
-            name,
-            email);
-//                "\n".repeat);
+                country,
+                state,
+                city,
+                organisation,
+                name,
+                email);
+        //                "\n".repeat);
 
     }
+
     auto command() const pure {
         return only(
-            "openssl",
-            "req",
-            "-newkey",
-            format!"rsa:%d"(key_size),
-            "-nodes",
-            "-keyout",
-            private_key,
-            "-x509",
-            "-days",
-            days.to!string,
-            "-out",
-            certificate);
+                "openssl",
+                "req",
+                "-newkey",
+                format!"rsa:%d"(key_size),
+                "-nodes",
+                "-keyout",
+                private_key,
+                "-x509",
+                "-days",
+                days.to!string,
+                "-out",
+                certificate);
     }
+
     mixin JSONCommon;
 }
 
@@ -60,6 +63,6 @@ struct SSLOption {
     // string certificate; /// Certificate file name
     // string private_key; /// Private key
     uint client_timeout; /// Client timeout
-    OpenSSL openssl;     ///
+    OpenSSL openssl; ///
     mixin JSONCommon;
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env rdmd
-   //Debug
-   //#!/usr/bin/rdmd -g
+//Debug
+//#!/usr/bin/rdmd -g
 
 module ddeps;
 
@@ -19,15 +19,14 @@ import std.range : repeat, tee, only;
 import std.ascii : toUpper;
 
 // Makefile environment format $(NAME)
-alias envFormat=format!("$(%s)", string);
-
+alias envFormat = format!("$(%s)", string);
 
 struct Ddeps {
     string sourcedir;
-    string DSRCDIR="DSRCDIR";
-    string DOBJDIR="DOBJDIR";
-    string DOBJEXT="o";
-    string DCIREXT="cir";
+    string DSRCDIR = "DSRCDIR";
+    string DOBJDIR = "DOBJDIR";
+    string DOBJEXT = "o";
+    string DCIREXT = "cir";
     struct Module {
         string file; // Source file
         string obj; // Object file
@@ -40,14 +39,15 @@ struct Ddeps {
         uint level;
         int marked;
         auto allCircular() const {
-            bool[const(Module)*] result;
+            bool[const(Module)* ] result;
             void collect(const(Module*) mod) {
                 if (!(mod in result)) {
-                    result[mod]=true;
-                    deps.each!((impmod) =>  collect(impmod));
+                    result[mod] = true;
+                    deps.each!((impmod) => collect(impmod));
                     circular.each!((impmod) => collect(impmod));
                 }
             }
+
             circular.each!((impmod) => collect(impmod));
             deps
                 .filter!((impmod) => (impmod in result))
@@ -56,6 +56,7 @@ struct Ddeps {
             return result.byKey;
         }
     }
+
     string cirname(const Module mod) const {
         return mod.objname.setExtension(DCIREXT);
     }
@@ -64,15 +65,16 @@ struct Ddeps {
     Module[string] modules;
     void createMakeDeps(string inputfile) {
         import std.json;
+
         auto json = inputfile.readText.parseJSON;
-        foreach(j; json.array) {
+        foreach (j; json.array) {
             Module getImports(JSONValue members) {
                 Module result;
-                foreach(j; members.array) {
-                    const kind=j["kind"];
+                foreach (j; members.array) {
+                    const kind = j["kind"];
                     switch (kind.str) {
                     case "import":
-                        result.imports~=j["name"].str;
+                        result.imports ~= j["name"].str;
                         break;
                     default:
                         // empty
@@ -80,12 +82,13 @@ struct Ddeps {
                 }
                 return result;
             }
-            const kind=j["kind"];
+
+            const kind = j["kind"];
             switch (kind.str) {
             case "module":
-                auto mod=getImports(j["members"]);
-                mod.file=j["file"].str;
-                modules[j["name"].str]=mod;
+                auto mod = getImports(j["members"]);
+                mod.file = j["file"].str;
+                modules[j["name"].str] = mod;
                 break;
             default:
                 // empty
@@ -97,11 +100,11 @@ struct Ddeps {
         uint level(Module* mod) {
             if (mod.marked != marker) {
                 mod.marked = marker;
-                mod.level=mod.imports
+                mod.level = mod.imports
                     .map!((impname) =>
-                        impname in modules)
+                            impname in modules)
                     .filter!(q{a !is null})
-                    .map!((impmod) => level(impmod)+1)
+                    .map!((impmod) => level(impmod) + 1)
                     .fold!((a, b) => max(a, b))(0);
             }
             return mod.level;
@@ -111,17 +114,17 @@ struct Ddeps {
             bool result;
             if (mod.marked != marker) {
                 mod.marked = marker;
-                foreach(impmod; mod.imports
-                    .map!((impname) =>
-                        impname in modules)
-                    .filter!(q{a !is null})) {
+                foreach (impmod; mod.imports
+                        .map!((impname) =>
+                            impname in modules)
+                        .filter!(q{a !is null})) {
                     const iscircular = circular(impmod);
                     if (mod.level <= impmod.level || iscircular) {
-                        mod.circular~=impmod;
-                        result=true;
+                        mod.circular ~= impmod;
+                        result = true;
                     }
                     else {
-                        mod.deps~=impmod;
+                        mod.deps ~= impmod;
                     }
                 }
 
@@ -132,12 +135,12 @@ struct Ddeps {
         modules
             .byValue
             .each!((ref m) =>
-                m.rank=m.imports
-                .count!((impname) => (impname in modules) !is null)
-                );
+                    m.rank = m.imports
+                    .count!((impname) => (impname in modules) !is null)
+            );
 
         // Sorts the ranks and search from the highest rank
-        auto rank_func=modules
+        auto rank_func = modules
             .byValue
             .map!((ref m) => &m)
             .array
@@ -154,11 +157,11 @@ struct Ddeps {
     }
 
     void objectName() {
-        foreach(name, ref mod; modules) {
-            mod.file =mod.file.replace(sourcedir, "");
-            mod.srcname=buildNormalizedPath(DSRCDIR.envFormat, mod.file);
+        foreach (name, ref mod; modules) {
+            mod.file = mod.file.replace(sourcedir, "");
+            mod.srcname = buildNormalizedPath(DSRCDIR.envFormat, mod.file);
             mod.obj = mod.file.setExtension(DOBJEXT);
-            mod.objname=buildNormalizedPath(DOBJDIR.envFormat, mod.obj);
+            mod.objname = buildNormalizedPath(DOBJDIR.envFormat, mod.obj);
         }
     }
 
@@ -168,7 +171,7 @@ struct Ddeps {
             .byValue
             .map!((mod) => mod.objname.dirName)
             .filter!((dir) => !(dir in result))
-            .tee!(a => result[a]=true);
+            .tee!(a => result[a] = true);
     }
 
     auto allCirculars() const {
@@ -177,9 +180,9 @@ struct Ddeps {
             .byValue
             .map!((mod) => mod.circular)
             .map!((cirs) => cirs[]
-                .map!((cir) => cirname(*cir))
-                .filter!((name) => !(name in result))
-                .tee!(a => result[a]=true))
+                    .map!((cir) => cirname(*cir))
+                    .filter!((name) => !(name in result))
+                    .tee!(a => result[a] = true))
             .joiner;
     }
 
@@ -192,6 +195,7 @@ struct Ddeps {
                 mod.circular.each!(collect);
             }
         }
+
         collect(&mod);
         return result.byKey;
     }
@@ -205,38 +209,39 @@ struct Ddeps {
                 mod.circular.each!(collect);
             }
         }
+
         collect(&mod);
         return result.byKey;
     }
 
     enum {
-        PRECMD="PRECMD",
-        DOBJALL="DOBJALL",
-        DSRCALL="DSRCALL",
-        DCIRALL="DCIRALL",
-        DWAYSALL="DWAYSALL",
-        CIROBJS="CIROBJS",
-        RM="RM",
-        MKDIR="MKDIR",
-        MAKE="MAKE",
-        TOUCH="TOUCH",
+        PRECMD = "PRECMD",
+        DOBJALL = "DOBJALL",
+        DSRCALL = "DSRCALL",
+        DCIRALL = "DCIRALL",
+        DWAYSALL = "DWAYSALL",
+        CIROBJS = "CIROBJS",
+        RM = "RM",
+        MKDIR = "MKDIR",
+        MAKE = "MAKE",
+        TOUCH = "TOUCH",
     }
 
     void display(string outputfile) const {
         File fout;
-        scope(exit) {
+        scope (exit) {
             if (fout !is stdout) {
                 fout.close;
             }
         }
         if (outputfile) {
-            fout=File(outputfile, "w");
+            fout = File(outputfile, "w");
         }
         else {
-            fout=stdout;
+            fout = stdout;
         }
         fout.writefln("%s?=%s", DSRCDIR, sourcedir.asNormalizedPath);
-        const dobjdir=environment.get(DOBJDIR, "");
+        const dobjdir = environment.get(DOBJDIR, "");
         if (dobjdir.length) {
             fout.writefln("%s?=%s", DOBJDIR, dobjdir.asNormalizedPath);
         }
@@ -246,7 +251,7 @@ struct Ddeps {
         fout.writeln;
         fout.writeln(".SECONDEXPANSION:");
 
-        foreach(name, mod; modules) {
+        foreach (name, mod; modules) {
             fout.writeln;
             fout.writeln("#");
             fout.writefln("# %s", name);
@@ -257,33 +262,33 @@ struct Ddeps {
             fout.writeln;
 
             fout.writefln("DOBJ.%s=%s", name, mod.objname);
-            const objs_mod_fmt = "%-(DOBJS."~name~" +=%s\n%)";
-            fout.writefln("%-(DOBJS."~name~" += %s \n%)", allModuleObjects(mod));
+            const objs_mod_fmt = "%-(DOBJS." ~ name ~ " +=%s\n%)";
+            fout.writefln("%-(DOBJS." ~ name ~ " += %s \n%)", allModuleObjects(mod));
             fout.writeln;
-            fout.writefln("%-(DSRCS."~name~" += %s \n%)", allModuleSources(mod));
+            fout.writefln("%-(DSRCS." ~ name ~ " += %s \n%)", allModuleSources(mod));
             fout.writeln;
 
             fout.writefln("%s: DMODULE=%s", mod.objname, name);
             fout.writefln("%s: %s", mod.objname, mod.srcname);
             if (mod.deps) {
 
-            fout.writeln("# obj dependencies");
-            fout.writef(`%s: `, mod.objname);
-            immutable obj_space=' '.repeat(mod.objname.length).array;
-            const obj_fmt="%-(%s \\\n "~obj_space~" %)";
-            fout.writefln(obj_fmt, mod.deps
-                .map!((impmod) => impmod.objname));
+                fout.writeln("# obj dependencies");
+                fout.writef(`%s: `, mod.objname);
+                immutable obj_space = ' '.repeat(mod.objname.length).array;
+                const obj_fmt = "%-(%s \\\n " ~ obj_space ~ " %)";
+                fout.writefln(obj_fmt, mod.deps
+                        .map!((impmod) => impmod.objname));
             }
             if (mod.circular) {
                 fout.writeln("# circular dependencies");
-                immutable workdir=mod.objname.dirName.buildNormalizedPath(".way");
-//                immutable cirobjs=("CIRCULAR_"~name).map!((a) => (a == '.')?'_':a).map!((a) => cast(char)a.toUpper).array;
-                immutable cir=cirname(mod);
+                immutable workdir = mod.objname.dirName.buildNormalizedPath(".way");
+                //                immutable cirobjs=("CIRCULAR_"~name).map!((a) => (a == '.')?'_':a).map!((a) => cast(char)a.toUpper).array;
+                immutable cir = cirname(mod);
                 fout.writefln("%s: %s", cir, workdir);
-                immutable cir_fmt="%-(\t${eval "~CIROBJS~"+= %s }\n%) }";
+                immutable cir_fmt = "%-(\t${eval " ~ CIROBJS ~ "+= %s }\n%) }";
                 fout.writefln("\t%s", PRECMD.envFormat);
                 fout.writefln(cir_fmt, mod.allCircular
-                    .map!((impmod) => impmod.objname));
+                        .map!((impmod) => impmod.objname));
                 fout.writefln("\t%s %s", TOUCH.envFormat, cir);
                 fout.writeln;
                 fout.writefln("%s: %s", mod.objname, cir);
@@ -301,21 +306,21 @@ struct Ddeps {
         }
         fout.writeln;
         fout.writeln("# All D objects");
-        fout.writefln("%-("~DOBJALL~" += %s\n%)", modules.byValue
-            .map!((mod) => mod.objname));
+        fout.writefln("%-(" ~ DOBJALL ~ " += %s\n%)", modules.byValue
+                .map!((mod) => mod.objname));
 
         fout.writeln;
         fout.writeln("# All D source");
-        fout.writefln("%-("~DSRCALL~" += %s\n%)", modules.byValue
-            .map!((mod) => mod.srcname));
+        fout.writefln("%-(" ~ DSRCALL ~ " += %s\n%)", modules.byValue
+                .map!((mod) => mod.srcname));
 
         fout.writeln;
         fout.writeln("# All circular targets");
-        fout.writefln("%-("~DCIRALL~" += %s\n%)", allCirculars);
+        fout.writefln("%-(" ~ DCIRALL ~ " += %s\n%)", allCirculars);
 
         fout.writeln;
         fout.writeln("# All target directories");
-        fout.writefln("%-("~DWAYSALL~" += %s\n%)", allObjectDirectories);
+        fout.writefln("%-(" ~ DWAYSALL ~ " += %s\n%)", allObjectDirectories);
 
         fout.writeln;
         fout.writeln("# Make way for object");
@@ -330,48 +335,47 @@ struct Ddeps {
 }
 
 int main(string[] args) {
-    immutable program="deps";
-    immutable REVNO="0.0";
+    immutable program = "deps";
+    immutable REVNO = "0.0";
     string outputfile;
     try {
         Ddeps ddeps;
         auto main_args = getopt(args,
-            std.getopt.config.caseSensitive,
-            std.getopt.config.bundling,
-            "output|o", "Output filename", &outputfile,
-            "source|s", "Source directory", &ddeps.sourcedir,
-            "srcdir", format("Source env directory name (Default:%s)",
+                std.getopt.config.caseSensitive,
+                std.getopt.config.bundling,
+                "output|o", "Output filename", &outputfile,
+                "source|s", "Source directory", &ddeps.sourcedir,
+                "srcdir", format("Source env directory name (Default:%s)",
                 ddeps.DSRCDIR), &ddeps.DSRCDIR,
-            "objdir", format("Object env directory name (Default:%s)",
+                "objdir", format("Object env directory name (Default:%s)",
                 ddeps.DOBJDIR), &ddeps.DOBJDIR,
-            "objext", format("Object file extension   (Default:%s)",
+                "objext", format("Object file extension   (Default:%s)",
                 ddeps.DOBJEXT), &ddeps.DOBJEXT,
-            "cirext", format("Circular file extension (Default:%s)",
+                "cirext", format("Circular file extension (Default:%s)",
                 ddeps.DCIREXT), &ddeps.DCIREXT,
 
-            );
+        );
 
         if (main_args.helpWanted) {
             defaultGetoptPrinter(
-                [
-                    format("%s version %s", program, REVNO),
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] <dlang.json>", program),
-                    "",
-                    "<option>:",
-                    ].join("\n"),
-                main_args.options);
+                    [
+                format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <dlang.json>", program),
+                "",
+                "<option>:",
+            ].join("\n"),
+            main_args.options);
             return 0;
         }
-
 
         if (args.length != 2) {
             stderr.writefln("ERROR: dlang .json file expected");
             return 1;
         }
-        immutable inputfile=args[1];
+        immutable inputfile = args[1];
         if (!inputfile.exists) {
             stderr.writefln("ERROR: %s not found", inputfile);
             return 2;

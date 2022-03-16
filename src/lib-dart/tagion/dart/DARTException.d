@@ -1,6 +1,6 @@
 module tagion.dart.DARTException;
 
-import tagion.basic.TagionExceptions: TagionException;
+import tagion.basic.TagionExceptions : TagionException;
 
 /**
  * Exception type used by tagion.dart.BlockFile module

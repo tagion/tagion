@@ -4,15 +4,16 @@ import std.traits : isArray, ForeachType, isPointer, PointerTarget, Unqual;
 import tagion.betterC.utils.platform;
 
 import std.conv : emplace;
+
 @nogc:
 
-version(memtrace) {
-    enum memalloc_format="#%p:%06d\t\t\t\t%04d %c %s\n";
-    static const memalloc_trace=memalloc_format.ptr;
-    enum memfree_format="#%p:000000\t\t\t\t%04d %c %s\n";
-    static const memfree_trace=memfree_format.ptr;
-    enum mempos_format="#%p:%06d\t\t\t\t%d:%s\n";
-    static const mempos=mempos_format.ptr;
+version (memtrace) {
+    enum memalloc_format = "#%p:%06d\t\t\t\t%04d %c %s\n";
+    static const memalloc_trace = memalloc_format.ptr;
+    enum memfree_format = "#%p:000000\t\t\t\t%04d %c %s\n";
+    static const memfree_trace = memfree_format.ptr;
+    enum mempos_format = "#%p:%06d\t\t\t\t%d:%s\n";
+    static const mempos = mempos_format.ptr;
     static uint block;
 }
 
@@ -26,7 +27,7 @@ T create(T)(const size_t size, string file = __FILE__, size_t line = __LINE__) i
         printf(mempos, mem, _size, line, file.ptr);
         block++;
     }
-    return (cast(BaseT*)mem)[0..size];
+    return (cast(BaseT*) mem)[0 .. size];
 }
 
 @trusted
@@ -35,16 +36,16 @@ in {
     assert(data is null);
 }
 do {
-    alias BaseT=ForeachType!T;
-    auto mem=calloc(size, BaseT.sizeof);
-    version(memtrace) {
-        const _size=size*BaseT.sizeof;
-        printf(memalloc_trace, mem, _size,  block, 'A', T.stringof.ptr);
+    alias BaseT = ForeachType!T;
+    auto mem = calloc(size, BaseT.sizeof);
+    version (memtrace) {
+        const _size = size * BaseT.sizeof;
+        printf(memalloc_trace, mem, _size, block, 'A', T.stringof.ptr);
         printf(mempos, mem, _size, line, file.ptr);
         block++;
 
     }
-    data=(cast(BaseT*)mem)[0..size];
+    data = (cast(BaseT*) mem)[0 .. size];
 }
 
 @trusted
@@ -53,17 +54,17 @@ in {
     assert(data is null);
 }
 do {
-    alias BaseU=Unqual!U;
-    auto mem=calloc(src.length, U.sizeof);
-    version(memtrace) {
-        printf(memalloc_trace, mem, src.length*U.sizeof,  block, 'B', (U[]).stringof.ptr);
+    alias BaseU = Unqual!U;
+    auto mem = calloc(src.length, U.sizeof);
+    version (memtrace) {
+        printf(memalloc_trace, mem, src.length * U.sizeof, block, 'B', (U[]).stringof.ptr);
         printf(mempos, mem, 0, line, file.ptr);
         block++;
 
     }
-    auto temp=(cast(BaseU*)mem)[0..src.length];
-    temp[0..src.length]=src;
-    data=cast(U[])temp;
+    auto temp = (cast(BaseU*) mem)[0 .. src.length];
+    temp[0 .. src.length] = src;
+    data = cast(U[]) temp;
 }
 
 @trusted
@@ -75,7 +76,7 @@ T* create(T, Args...)(Args args, string file = __FILE__, size_t line = __LINE__)
         printf(mempos, mem, _size, line, file.ptr);
         block++;
     }
-    auto result=cast(T*)mem;
+    auto result = cast(T*) mem;
     emplace!T(result, args);
     return result;
 }
@@ -90,7 +91,7 @@ T create(T)(string file = __FILE__, size_t line = __LINE__) if (isPointer!T) {
         block++;
 
     }
-    return cast(T)mem;
+    return cast(T) mem;
 }
 
 @trusted
@@ -103,64 +104,63 @@ void resize(T)(ref T data, const size_t len, string file = __FILE__, size_t line
         printf(memalloc_trace, mem, size, block, 'R', T.stringof.ptr);
         printf(mempos, mem, size, line, file.ptr);
     }
-    data=(cast(BaseT*)mem)[0..len];
+    data = (cast(BaseT*) mem)[0 .. len];
 }
 
 @trusted
 void dispose(T)(ref T die, string file = __FILE__, size_t line = __LINE__) if (isArray!T) {
     if (die !is null) {
-    static if(__traits(compiles, die[0].dispose)) {
-        foreach(ref d; die) {
-            d.dispose;
+        static if (__traits(compiles, die[0].dispose)) {
+            foreach (ref d; die) {
+                d.dispose;
+            }
         }
-    }
-    version(memtrace) {
-        block--;
-        printf(memfree_trace,  die.ptr, block, 'd', T.stringof.ptr);
-        printf(mempos, die.ptr, 0, line, file.ptr);
-    }
-    free(die.ptr);
-    die=null;
+        version (memtrace) {
+            block--;
+            printf(memfree_trace, die.ptr, block, 'd', T.stringof.ptr);
+            printf(mempos, die.ptr, 0, line, file.ptr);
+        }
+        free(die.ptr);
+        die = null;
     }
 }
 
 @trusted
 void dispose(bool OWNS = true, T)(ref T die, string file = __FILE__, size_t line = __LINE__) if (isPointer!T) {
     if (die !is null) {
-    static if (OWNS && __traits(compiles, (*die).dispose)) {
-        (*die).dispose;
-    }
-    version(memtrace) {
-        block--;
-        printf(memfree_trace, die, block, 'D', T.stringof.ptr);
-        printf(mempos, die, 0, line, file.ptr);
-    }
-    free(die);
-    die=null;
+        static if (OWNS && __traits(compiles, (*die).dispose)) {
+            (*die).dispose;
+        }
+        version (memtrace) {
+            block--;
+            printf(memfree_trace, die, block, 'D', T.stringof.ptr);
+            printf(mempos, die, 0, line, file.ptr);
+        }
+        free(die);
+        die = null;
     }
 }
 
 unittest {
     { // Check Array
         uint[] array;
-        const(uint[6]) table=[5,6,7,3,2,1];
+        const(uint[6]) table = [5, 6, 7, 3, 2, 1];
         array.create(table.length);
-        scope(exit) {
+        scope (exit) {
             array.dispose;
             assert(array.length == 0);
             assert(array is null);
         }
 
-        foreach(a; array) {
+        foreach (a; array) {
             assert(a == a.init);
         }
 
-
-        foreach(i, c; table) {
-            array[i]=c;
+        foreach (i, c; table) {
+            array[i] = c;
         }
 
-        foreach(i, a; array) {
+        foreach (i, a; array) {
             assert(a == table[i]);
         }
         assert(array.length == table.length);
@@ -171,11 +171,11 @@ unittest {
             bool b;
             int x;
         }
-        auto s=create!S(true, 42);
-        scope(exit) {
+
+        auto s = create!S(true, 42);
+        scope (exit) {
             s.dispose;
         }
-
 
         assert(s.b == true);
         assert(s.x == 42);

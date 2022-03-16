@@ -10,7 +10,7 @@ struct TranscriptOptions {
 
     uint pause_from; // Sets the from/to delay between transaction test
     uint pause_to;
-//    string prefix;
+    //    string prefix;
 
     bool epoch_debug;
     mixin JSONCommon;

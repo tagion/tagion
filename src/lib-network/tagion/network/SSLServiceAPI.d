@@ -1,9 +1,9 @@
 module tagion.network.SSLServiceAPI;
 
-import core.time: dur, Duration;
+import core.time : dur, Duration;
 import core.thread;
-import std.stdio: writeln, writefln, stdout;
-import std.socket: InternetAddress, Socket, SocketSet, SocketShutdown, shutdown, AddressFamily;
+import std.stdio : writeln, writefln, stdout;
+import std.socket : InternetAddress, Socket, SocketSet, SocketShutdown, shutdown, AddressFamily;
 import std.concurrency;
 
 //import tagion.services.Options;

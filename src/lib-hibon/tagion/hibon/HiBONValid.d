@@ -1,18 +1,18 @@
 module tagion.hibon.HiBONValid;
 
-import tagion.hibon.Document: Document;
-import tagion.basic.Basic: Buffer;
+import tagion.hibon.Document : Document;
+import tagion.basic.Basic : Buffer;
 
 bool error_callback(const Document main_doc, const Document.Element.ErrorCode error_code,
         const(Document.Element) current, const(Document.Element) previous) nothrow @safe {
-    import tagion.hibon.HiBONBase: Type, isDataBlock, isHiBONType;
+    import tagion.hibon.HiBONBase : Type, isDataBlock, isHiBONType;
     import LEB128 = tagion.utils.LEB128;
-    import std.exception: assumeWontThrow;
-    import std.traits: isIntegral, EnumMembers;
+    import std.exception : assumeWontThrow;
+    import std.traits : isIntegral, EnumMembers;
     import std.stdio;
 
     static void hex_dump(Buffer data) {
-        import std.algorithm.comparison: min;
+        import std.algorithm.comparison : min;
 
         uint addr;
         enum width = 16;
@@ -109,9 +109,7 @@ bool error_callback(const Document main_doc, const Document.Element.ErrorCode er
                                             .. ubyte.sizeof + leb128_version_size]);
                                 }
                                 static if (isHiBONType(E)) {
-                                    (() @trusted {
-                                        writefln("\tvalue  %s", current.by!E);
-                                    })();
+                                    (() @trusted { writefln("\tvalue  %s", current.by!E); })();
                                 }
 
                                 break CaseType;

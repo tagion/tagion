@@ -2,26 +2,26 @@ module tagion.script.Script;
 
 import std.stdio;
 import std.conv;
-import std.uni: toUpper;
-import std.typecons: Typedef, TypedefType;
+import std.uni : toUpper;
+import std.typecons : Typedef, TypedefType;
 
-import std.range: enumerate;
-import std.traits: EnumMembers, isIntegral;
+import std.range : enumerate;
+import std.traits : EnumMembers, isIntegral;
 import std.regex;
 
-import core.exception: RangeError;
+import core.exception : RangeError;
 
-import tagion.hibon.HiBON: HiBON;
-import tagion.hibon.Document: Document;
-import tagion.hibon.HiBONBase: HiBONType = Type, isHiBONType;
-import tagion.hibon.HiBONException: HiBONException;
-import tagion.basic.Basic: Buffer, BillType;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONBase : HiBONType = Type, isHiBONType;
+import tagion.hibon.HiBONException : HiBONException;
+import tagion.basic.Basic : Buffer, BillType;
 import tagion.Keywords;
-import tagion.basic.TagionExceptions: TagionException;
-import tagion.script.ScriptParser: Token;
+import tagion.basic.TagionExceptions : TagionException;
+import tagion.script.ScriptParser : Token;
 import tagion.basic.Message;
 
-import tagion.script.ScriptParser: ScriptKeyword, Lexer;
+import tagion.script.ScriptParser : ScriptKeyword, Lexer;
 import tagion.script.ScriptBase;
 import tagion.script.ScriptBlocks;
 
@@ -160,6 +160,8 @@ class ScriptContext {
 
     Value pop() {
 
+        
+
             .check(_stack_index > 0, "Data stack empty");
         _stack_index--;
         scope (failure) {
@@ -169,6 +171,8 @@ class ScriptContext {
     }
 
     void push(T)(T v) {
+
+        
 
             .check(_stack_index < data_stack.length, message(
                     "Stack overflow (Data stack size=%d)", data_stack.length));
@@ -194,6 +198,8 @@ class ScriptContext {
 
     inout(Value) peek(const uint i = 0) inout {
 
+        
+
             .check(_stack_index > i,
                     message("Stack peek overflow, stack pointer is %d and access pointer is %d",
                     _stack_index, i));
@@ -201,6 +207,8 @@ class ScriptContext {
     }
 
     void poke(const uint i, Value value) {
+
+        
 
             .check(_stack_index > i,
                     message("Stack poke overflow, stack pointer is %d and access pointer is %d",
@@ -326,9 +334,13 @@ abstract class ScriptElement {
     }
     do {
 
+        
+
             .check(runlevel <= s.runlevel,
                     message("Opcode %s is only allowed in runlevel %d but the current runlevel is %d",
                     toText, runlevel, s.runlevel));
+
+        
 
         .check(sc.fuel >= cost,
                 message("At opcode %s the script runs out of fuel",
@@ -397,7 +409,7 @@ class ScriptError : ScriptElement {
     }
 
     override const(ScriptElement) opCall(const Script s, ScriptContext sc) const {
-        import std.stdio: writefln, writeln;
+        import std.stdio : writefln, writeln;
 
         writefln("Aborted: %s", msg);
         if (problem_element) {
@@ -791,7 +803,7 @@ class ScriptNumber : ScriptElement {
 
     @trusted
     override string toText() const {
-        import std.format: format;
+        import std.format : format;
 
         if (x.ulongLength == 1) {
             return x.toDecimalString;
@@ -1458,7 +1470,7 @@ enum Dot {
     L = ".L",
     V = ".V",
     S = ".S"
-};
+}
 
 @safe
 class ScriptDebugPrint(Dot O) : ScriptElement {
@@ -1539,7 +1551,7 @@ class ScriptPutHiBON : ScriptElement {
             auto hibon_key = sc.pop.by!(FunnelType.TEXT);
             auto hibon = sc.pop.by!(FunnelType.HIBON);
 
-
+            
 
             .check(hibon_key.length !is 0, "The hibon field name cannot be empty");
 
@@ -1597,18 +1609,6 @@ class ScriptGetBSON : ScriptElement {
             with (FunnelType) {
                 auto hibon_key = sc.pop.by!TEXT;
                 auto hibon = sc.pop().by!(FunnelType.HIBON);
-                //                pragma(msg, "typepf hibon=", typeof(hibon));
-
-                //                 if ( hibon_key.length !is 0) {
-                //                     return new ScriptError("The bson field name cannot be empty", this);
-                //                 }
-
-                // //            auto hibon=sc.hibon(hibons_index);
-
-                //                 if ( !hibon.hasMember(hibon_key) ) {
-                //                     return new ScriptError("The bson_key does not exists in the bson.", this);
-                //                 }
-
                 Value value;
                 auto hibon_elm = hibon[hibon_key];
             TypeCase:
@@ -2045,6 +2045,8 @@ class Script {
 
     void defineFunc(string func_name, ScriptFunc call) {
 
+        
+
             .check((func_name in functions) is null, message("Function %s already defined", func_name));
         functions[func_name] = call;
     }
@@ -2060,6 +2062,8 @@ class Script {
     package void setFunc(string name, const(ScriptElement) next, const(FunctionBlock) block) {
         auto def = functions.get(name, null);
 
+        
+
         .check(def !is null, message("Function %s has not been defined", name));
         def.define(next, block);
     }
@@ -2072,6 +2076,8 @@ class Script {
     }
 
     void defineVar(ref Variable var) {
+
+        
 
             .check(!existVar(var.name), message("Multiple declaration of variable '%s'", var.name));
         var.index = variable_count;
@@ -2097,6 +2103,8 @@ class Script {
 
     uint opCall(string var_name) const {
         const var_toUpper = var_name.toUpper;
+
+        
 
         .check(existVar(var_toUpper), message("Variable '%s' is not defined", var_name));
         return getVar(var_toUpper).index;

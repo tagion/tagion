@@ -123,9 +123,9 @@ struct AESCrypto(int KEY_LENGTH) {
 
     unittest {
         import tagion.utils.Random;
-        import std.range: iota;
-        import std.algorithm.iteration: map;
-        import std.array: array;
+        import std.range : iota;
+        import std.algorithm.iteration : map;
+        import std.array : array;
 
         { // Encrypt
             immutable(ubyte[]) indata = [
@@ -169,7 +169,9 @@ struct AESCrypto(int KEY_LENGTH) {
                     0x3f, 0xf1, 0xca, 0xa1, 0x68, 0x1f, 0xac, 0x09, 0x12, 0x0e, 0xca, 0x30, 0x75, 0x86, 0xe1, 0xa7
                 ];
             }
-            ubyte[BLOCK_SIZE] iv = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f];
+            ubyte[BLOCK_SIZE] iv = [
+                0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+            ];
 
             ubyte[] enc_output;
             AESCrypto.encrypt(key, iv, indata, enc_output);

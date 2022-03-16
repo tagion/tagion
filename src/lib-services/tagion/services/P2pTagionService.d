@@ -59,6 +59,7 @@ import tagion.services.NetworkRecordDiscoveryService;
 
 //mport tagion.gossip.P2pGossipNet: AddressBook;
 import tagion.services.DARTService;
+
 //import tagion.Keywords : NetworkMode;
 
 import std.stdio;
@@ -69,11 +70,11 @@ import std.format;
 
 shared(p2plib.Node) initialize_node(immutable Options opts) {
     auto p2pnode = new shared(p2plib.Node)(
-        format("/ip4/%s/tcp/%s",
+            format("/ip4/%s/tcp/%s",
             opts.ip,
             opts.port), 0);
     log("initialize_node");
-    scope(exit) {
+    scope (exit) {
         log("END initialize_node");
 
     }
@@ -96,12 +97,12 @@ shared(p2plib.Node) initialize_node(immutable Options opts) {
 }
 
 void tagionService(NetworkMode net_mode)(Options opts) nothrow {
-//     in {
-//         import std.algorithm : canFind;
+    //     in {
+    //         import std.algorithm : canFind;
 
-//         assert([NetworkMode.internal, NetworkMode.local, NetworkMode.pub].canFind(opts.net_mode));
-//     }
-// do {
+    //         assert([NetworkMode.internal, NetworkMode.local, NetworkMode.pub].canFind(opts.net_mode));
+    //     }
+    // do {
     try {
         setOptions(opts);
 
@@ -176,7 +177,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 // immutable task_name = "p2ptagion";
                 // opts.node_name = task_name;
                 gossip_net = new P2pGossipNet(net.pubkey, opts.node_name,
-                    opts.discovery.task_name, opts.host, p2pnode);
+                        opts.discovery.task_name, opts.host, p2pnode);
             }
             else {
                 throw new OptionException("Unknown network mode");
@@ -202,30 +203,30 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
             log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 
             discovery_tid = spawn(&networkRecordDiscoveryService, net.pubkey,
-                p2pnode, opts.discovery.task_name, opts);
+                    p2pnode, opts.discovery.task_name, opts);
             auto ctrl = receiveOnly!Control;
             assert(ctrl == Control.LIVE);
 
             receive((DiscoveryState state) { assert(state == DiscoveryState.READY); });
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
             receive((ActiveNodeAddressBook address_book) {
-                    update_pkeys(address_book.data.keys);
-                    dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet,
-                        opts, p2pnode, shared_net, sector_range);
-                    // receiveOnly!Control;
-                    dart_tid = spawn(&dartServiceTask!StdSecureNet, opts, p2pnode,
-                        shared_net, sector_range);
-                    log("address_book len: %d", address_book.data.length);
-                    send(dart_sync_tid, cast(immutable) address_book);
-                }, (Control ctrl) {
-                    if (ctrl is Control.STOP) {
-                        force_stop = true;
-                    }
+                update_pkeys(address_book.data.keys);
+                dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet,
+                    opts, p2pnode, shared_net, sector_range);
+                // receiveOnly!Control;
+                dart_tid = spawn(&dartServiceTask!StdSecureNet, opts, p2pnode,
+                    shared_net, sector_range);
+                log("address_book len: %d", address_book.data.length);
+                send(dart_sync_tid, cast(immutable) address_book);
+            }, (Control ctrl) {
+                if (ctrl is Control.STOP) {
+                    force_stop = true;
+                }
 
-                    if (ctrl is Control.END) {
-                        force_stop = true;
-                    }
-                });
+                if (ctrl is Control.END) {
+                    force_stop = true;
+                }
+            });
         }
         scope (exit) {
             log("Closing net");
@@ -239,18 +240,18 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         int ready_counter = 0;
         do {
             receive((Control ctrl) {
-                    log("Received ctrl: %s", ctrl);
-                    if (ctrl is Control.LIVE) {
-                        ready_counter++;
-                    }
-                    else if (ctrl is Control.STOP) {
-                        force_stop = true;
-                    }
-                }, (DARTSynchronizeState state) {
-                    if (state == DARTSynchronizeState.READY) {
-                        ready = true;
-                    }
-                });
+                log("Received ctrl: %s", ctrl);
+                if (ctrl is Control.LIVE) {
+                    ready_counter++;
+                }
+                else if (ctrl is Control.STOP) {
+                    force_stop = true;
+                }
+            }, (DARTSynchronizeState state) {
+                if (state == DARTSynchronizeState.READY) {
+                    ready = true;
+                }
+            });
             if (force_stop)
                 return;
         }
@@ -262,12 +263,10 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         scope (exit) {
             discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
         }
-        // receive((DiscoveryState state) { assert(state == DiscoveryState.ONLINE); });
+        receive((DiscoveryState state) { assert(state == DiscoveryState.ONLINE); });
 
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
-        receive((ActiveNodeAddressBook address_book) {
-                update_pkeys(address_book.data.keys);
-            });
+        receive((ActiveNodeAddressBook address_book) { update_pkeys(address_book.data.keys); });
 
         scope (exit) {
             log("close listener");
@@ -324,14 +323,14 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 monitor_socket_tid.prioritySend(Control.STOP);
 
                 receive((Control ctrl) {
-                        if (ctrl is Control.END) {
-                            log("Closed monitor");
-                        }
-                        // else if (ctrl is Control.FAIL)
-                        // {
-                        //     log.error("Closed monitor with failure");
-                        // }
-                    }, (immutable Exception e) { ownerTid.prioritySend(e); });
+                    if (ctrl is Control.END) {
+                        log("Closed monitor");
+                    }
+                    // else if (ctrl is Control.FAIL)
+                    // {
+                    //     log.error("Closed monitor with failure");
+                    // }
+                }, (immutable Exception e) { ownerTid.prioritySend(e); });
             }
 
             log("End");
@@ -360,7 +359,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         if (force_stop)
             return;
         transcript_tid = spawn(&transcriptServiceTask, opts.transcript.task_name,
-            opts.dart.sync.task_name);
+                opts.dart.sync.task_name);
 
         enum max_gossip = 2;
         uint gossip_count = max_gossip;
@@ -418,37 +417,28 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         void receive_wavefront(const Document doc) {
             timeout_count = 0;
             log("\n*\n*\n*\n******* receive %s %s", opts.node_name,
-                doc.data.length);
+                    doc.data.length);
             const receiver = HiRPC.Receiver(doc);
             hashgraph.wavefront(receiver, gossip_net.time,
-                (const(HiRPC.Sender) return_wavefront) @safe {
-                    gossip_net.send(receiver.pubkey, return_wavefront);
-                }, &payload);
+                    (const(HiRPC.Sender) return_wavefront) @safe { gossip_net.send(receiver.pubkey, return_wavefront); }, &payload);
         }
 
         import tagion.utils.Random;
 
         Random!size_t random;
         random.seed(123456789);
-        auto empty_hirpc = HiRPC(null);
         while (!stop && !abort) {
             immutable message_received = receiveTimeout(opts.timeout.msecs, &receive_payload, &controller,
-                &receive_wavefront, &taskfailure, 
-                (ActiveNodeAddressBook address_book) {
-                    log("Update address book");
-                    update_pkeys(address_book.data.keys);
-                },
-                (string respond_task_name, Buffer data){
-                    import tagion.hibon.HiBONJSON;
-                    const doc = Document(data);
-                    const receiver = empty_hirpc.receive(doc);
-                    auto respond = new HiBON();
-                    respond["rounds"] = hashgraph.rounds.length;
-                    respond["inGraph"] = hashgraph.areWeInGraph;
-                    auto response = empty_hirpc.result(receiver, respond);
-                    log("Healthcheck: %s", response.toDoc.toJSON);
-                    locate(respond_task_name).send(response.toDoc.serialize);
-                });
+                    &receive_wavefront, &taskfailure, (ActiveNodeAddressBook address_book) {
+                log("Update address book");
+                update_pkeys(address_book.data.keys);
+                if (dart_sync_tid != Tid.init) {
+                    send(dart_sync_tid, address_book);
+                }
+                else {
+                    log("DART sync not found");
+                }
+            });
             log("ROUNDS: %d AreWeInGraph: %s", hashgraph.rounds.length, hashgraph.areWeInGraph);
             if (!message_received || !hashgraph.areWeInGraph) {
                 const init_tide = random.value(0, 2) is 1;
@@ -463,4 +453,3 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         fatal(t);
     }
 }
-

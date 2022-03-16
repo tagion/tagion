@@ -1,23 +1,24 @@
 module tagion.script.StandardRecords;
 
-import std.meta: AliasSeq;
+import std.meta : AliasSeq;
 
-import tagion.basic.Basic: Buffer, Pubkey, Signature;
+import tagion.basic.Basic : Buffer, Pubkey, Signature;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONException;
-import tagion.script.ScriptBase: Number;
+import tagion.script.ScriptBase : Number;
 import tagion.script.TagionCurrency;
+
 @safe {
     @RecordType("BIL") struct StandardBill {
         @Label("$V") TagionCurrency value; // Bill type
         @Label("$k") uint epoch; // Epoch number
-//        @Label("$T", true) string bill_type; // Bill type
+        //        @Label("$T", true) string bill_type; // Bill type
         @Label("$Y") Pubkey owner; // Double hashed owner key
         @Label("$G") Buffer gene; // Bill gene
         mixin HiBONRecord!(
-            q{
+                q{
                 this(TagionCurrency value, const uint epoch, Pubkey owner, Buffer gene) {
                     this.value = value;
                     this.epoch = epoch;
@@ -87,6 +88,7 @@ import tagion.script.TagionCurrency;
         TagionCurrency fees(const TagionCurrency topay, const size_t size) pure const {
             return fixed_fees + size * storage_fee;
         }
+
         mixin HiBONRecord;
     }
 
@@ -128,7 +130,7 @@ import tagion.script.TagionCurrency;
         @Label("$name") string name;
         @Label("$env", true) Buffer link; // Hash pointer to smart contract object;
         mixin HiBONRecord!(
-            q{
+                q{
                 this(string name, Buffer link=null) {
                     this.name = name;
                     this.link = link;
@@ -139,6 +141,7 @@ import tagion.script.TagionCurrency;
         // }
 
     }
+
     alias ListOfRecords = AliasSeq!(
             StandardBill,
             NetworkNameCard,
@@ -160,20 +163,21 @@ import tagion.script.TagionCurrency;
         @Label("$derives") Buffer[Pubkey] derives;
         @Label("$bills") StandardBill[] bills;
         @Label("$state") Buffer derive_state;
-        @Label("$active") bool[Pubkey] activated;  /// Actived bills
-        import std.algorithm:  map, sum, filter, any, each;
+        @Label("$active") bool[Pubkey] activated; /// Actived bills
+        import std.algorithm : map, sum, filter, any, each;
 
-        bool remove_bill(Pubkey pk){
+        bool remove_bill(Pubkey pk) {
             import std.algorithm : remove, countUntil;
+
             const index = countUntil!"a.owner == b"(bills, pk);
-            if(index>0){
+            if (index > 0) {
                 bills = bills.remove(index);
                 return true;
             }
             return false;
         }
 
-        void add_bill(StandardBill bill){
+        void add_bill(StandardBill bill) {
             bills ~= bill;
         }
 
@@ -191,43 +195,43 @@ import tagion.script.TagionCurrency;
         }
 
         const pure {
-        /++
+            /++
          Returns:
          true if the all transaction has been registered as processed
          +/
-        bool processed() nothrow {
-            return bills
-                .any!(b => (b.owner in activated));
-        }
-        /++
+            bool processed() nothrow {
+                return bills
+                    .any!(b => (b.owner in activated));
+            }
+            /++
          Returns:
          The available balance
          +/
-        TagionCurrency available() {
-            return bills
-                .filter!(b => !(b.owner in activated))
-                .map!(b => b.value)
-                .sum;
-        }
-        /++
+            TagionCurrency available() {
+                return bills
+                    .filter!(b => !(b.owner in activated))
+                    .map!(b => b.value)
+                    .sum;
+            }
+            /++
          Returns:
          The total active amount
          +/
-        TagionCurrency active() {
-            return bills
-                .filter!(b => b.owner in activated)
-                .map!(b => b.value)
-                .sum;
-        }
-        /++
+            TagionCurrency active() {
+                return bills
+                    .filter!(b => b.owner in activated)
+                    .map!(b => b.value)
+                    .sum;
+            }
+            /++
          Returns:
          The total balance including the active bills
          +/
-        TagionCurrency total()  {
-            return bills
-                .map!(b => b.value)
-                .sum;
-        }
+            TagionCurrency total() {
+                return bills
+                    .map!(b => b.value)
+                    .sum;
+            }
         }
         mixin HiBONRecord;
     }

@@ -1,10 +1,11 @@
 module tagion.mobile.Recycle;
 
 struct Recycle(T) {
+    pragma(msg, "fixme(cbr): Why is it offset by one with (START_INDEX = 1) ?");
     enum START_INDEX = 1;
 
-    enum to_index = (uint i) => cast(const(uint)) (i + START_INDEX);
-    enum to_doc_id = (uint i) => cast(const(uint)) (i - START_INDEX);
+    enum to_index = (uint i) => cast(const(uint))(i + START_INDEX);
+    enum to_doc_id = (uint i) => cast(const(uint))(i - START_INDEX);
 
     private {
         T[] _active;
@@ -14,17 +15,17 @@ struct Recycle(T) {
     /// Create an object of T and return it's index in '_active'
     const(uint) create(T x) {
         if (_reuse.length > 0) {
-            const reuse_id = _reuse[$-1];
+            const reuse_id = _reuse[$ - 1];
             _reuse.length--;
             _active[reuse_id] = x;
             return to_index(reuse_id);
         }
         _active ~= x;
-        return to_index(cast(uint)_active.length - 1);
+        return to_index(cast(uint) _active.length - 1);
     }
 
-    bool put(T x, const uint id){
-        if(exists(id)){
+    bool put(T x, const uint id) {
+        if (exists(id)) {
             const doc_id = to_doc_id(id);
             _active[doc_id] = x;
             return true;
@@ -42,6 +43,7 @@ struct Recycle(T) {
     do {
         const doc_id = to_doc_id(id);
         import std.algorithm.searching : count;
+
         _active[doc_id] = T.init;
         // Check for avoiding the multiple append the same id
         if (_reuse.count(doc_id) is 0) {
@@ -54,7 +56,7 @@ struct Recycle(T) {
     in {
         const doc_id = to_doc_id(id);
         assert(doc_id < _active.length);
-        assert(_active[doc_id] !is T.init);
+        assert(_active[doc_id]!is T.init);
     }
     do {
         const doc_id = to_doc_id(id);
@@ -65,7 +67,7 @@ struct Recycle(T) {
     bool exists(const uint id) const pure nothrow {
         const doc_id = to_doc_id(id);
         if (doc_id < _active.length) {
-            return _active[doc_id] !is T.init;
+            return _active[doc_id]!is T.init;
         }
         return false;
     }
@@ -76,6 +78,7 @@ version(none)
 unittest {
     import tagion.hibon.Document : Document;
     import std.stdio;
+
     // import std.stdio : writeln;
     /**
      * create Documents' recycler;
@@ -119,11 +122,11 @@ unittest {
     assert(!recycler.exists(doc1_id));
 
     // create a new Documents doc4 and doc5
-    immutable(ubyte[]) doc4_data = [5,6,7];
+    immutable(ubyte[]) doc4_data = [5, 6, 7];
     auto doc4 = Document(doc4_data);
     const doc4_id = recycler.create(doc4);
 
-    immutable(ubyte[]) doc5_data = [6,7,8];
+    immutable(ubyte[]) doc5_data = [6, 7, 8];
     auto doc5 = Document(doc5_data);
     const doc5_id = recycler.create(doc5);
 
@@ -138,10 +141,11 @@ unittest {
      * Check ref changes
     */
     import std.algorithm;
-    immutable(ubyte)[] doc6_data = [5,6,7];
+
+    immutable(ubyte)[] doc6_data = [5, 6, 7];
     auto doc6 = Document(doc6_data);
     const doc6_id = recycler.create(doc6);
-    doc6_data~=8;
+    doc6_data ~= 8;
     auto same_doc = recycler(doc6_id);
     assert(equal(doc6.serialize, same_doc.serialize));
 }

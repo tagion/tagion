@@ -4,8 +4,7 @@ module tagion.utils.Random;
 struct Random(T = uint) {
     private T m_z;
     private T m_w;
-    this(const T seed_value)
-    {
+    this(const T seed_value) {
         seed(seed_value);
     }
 
@@ -14,15 +13,13 @@ struct Random(T = uint) {
         m_w = 7 * seed_value;
     }
 
-    T value()
-    {
+    T value() {
         m_z = 36969 * (m_z & T.max) + (m_z >> 16);
         m_w = 18000 * (m_w & T.max) + (m_w >> 16);
         return (m_z << 16) + m_w;
     }
 
-    T value(const(T) range)
-    {
+    T value(const(T) range) {
         return value % range;
     }
 

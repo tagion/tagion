@@ -1,11 +1,11 @@
 module tagion.script.ScriptBlocks;
 
 import std.stdio;
-import tagion.script.ScriptParser: Lexer, ScriptKeyword;
+import tagion.script.ScriptParser : Lexer, ScriptKeyword;
 import tagion.script.Script;
-import tagion.script.ScriptParser: Token;
-import tagion.basic.Message: message;
-import tagion.script.ScriptBase: Value, FunnelType, check;
+import tagion.script.ScriptParser : Token;
+import tagion.basic.Message : message;
+import tagion.script.ScriptBase : Value, FunnelType, check;
 
 alias Variable = Script.Variable;
 

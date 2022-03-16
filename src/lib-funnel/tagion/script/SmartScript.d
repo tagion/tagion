@@ -1,14 +1,14 @@
 module tagion.script.SmartScript;
 
-import std.exception: assumeUnique;
-import std.range: lockstep;
+import std.exception : assumeUnique;
+import std.range : lockstep;
 import std.format;
 import std.algorithm.iteration : sum, map;
 
-import tagion.crypto.SecureInterfaceNet: SecureNet;
-import tagion.basic.ConsensusExceptions: SmartScriptException, ConsensusFailCode, Check;
-import tagion.script.StandardRecords: SignedContract, StandardBill, PayContract;
-import tagion.basic.Basic: Pubkey;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCode, Check;
+import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract;
+import tagion.basic.Basic : Pubkey;
 import tagion.script.TagionCurrency;
 import tagion.script.Script : Script, ScriptContext;
 import tagion.script.ScriptParser : ScriptParser;
@@ -45,24 +45,34 @@ class SmartScript {
     }
     do {
 
+        
+
             .check(signed_contract.signs.length > 0, ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE);
         const message = net.hashOf(signed_contract.contract.toDoc);
 
+        
+
         .check(signed_contract.signs.length >= signed_contract.input.length,
                 ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE);
+
+        
 
         .check(signed_contract.contract.input.length == signed_contract.input.length,
                 ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
         const payment = PayContract(signed_contract.input);
         foreach (i, print, input, signature; lockstep(signed_contract.contract.input, payment.bills, signed_contract
                 .signs)) {
-            import tagion.utils.Miscellaneous: toHexString;
+            import tagion.utils.Miscellaneous : toHexString;
 
             immutable fingerprint = net.hashOf(input.toDoc);
+
+            
 
             .check(print == fingerprint, ConsensusFailCode
                     .SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
             Pubkey pkey = input.owner;
+
+            
 
             .check(net.verify(message, signature, pkey),
                     ConsensusFailCode.SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY);
@@ -80,9 +90,8 @@ class SmartScript {
         // immutable source=signed_contract.contract.script;
         enum transactions_name = "#trans";
         immutable source = (() @trusted =>
-            format(": %s %s ;", transactions_name, signed_contract.contract.script)
-            )();
-//        pragma(msg, typeof(source));
+                format(": %s %s ;", transactions_name, signed_contract.contract.script)
+        )();
         auto src = ScriptParser(source);
         Script script;
         auto builder = ScriptBuilder(src[]);
@@ -99,13 +108,15 @@ class SmartScript {
             bill.epoch = epoch;
             const num = sc.pop.get!Number;
             pragma(msg, "fixme(cbr): Check for overflow");
-            const amount = TagionCurrency(cast(long)num);
+            const amount = TagionCurrency(cast(long) num);
             total_output += amount;
             bill.value = amount;
             bill.owner = pkey;
-//            bill.bill_type = "TGN";
+            //            bill.bill_type = "TGN";
             _output_bills ~= bill;
         }
+
+        
 
         .check(total_output <= total_input, ConsensusFailCode.SMARTSCRIPT_NOT_ENOUGH_MONEY);
     }

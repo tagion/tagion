@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-
-cp ./tub/Makefile.root Makefile
-make setup

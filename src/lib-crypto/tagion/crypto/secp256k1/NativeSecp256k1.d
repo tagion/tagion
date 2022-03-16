@@ -19,36 +19,36 @@ module tagion.crypto.secp256k1.NativeSecp256k1;
 private import tagion.crypto.secp256k1.c.secp256k1;
 private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
 
-import std.exception: assumeUnique;
+import std.exception : assumeUnique;
 import tagion.basic.ConsensusExceptions;
 
-import tagion.utils.Miscellaneous: toHexString;
+import tagion.utils.Miscellaneous : toHexString;
 
 enum SECP256K1 : uint {
     FLAGS_TYPE_MASK = SECP256K1_FLAGS_TYPE_MASK,
-        FLAGS_TYPE_CONTEXT = SECP256K1_FLAGS_TYPE_CONTEXT,
-        FLAGS_TYPE_COMPRESSION =  SECP256K1_FLAGS_TYPE_COMPRESSION,
-        /** The higher bits contain the actual data. Do not use directly. */
-        FLAGS_BIT_CONTEXT_VERIFY = SECP256K1_FLAGS_BIT_CONTEXT_VERIFY,
-        FLAGS_BIT_CONTEXT_SIGN = SECP256K1_FLAGS_BIT_CONTEXT_SIGN,
-        FLAGS_BIT_COMPRESSION =  FLAGS_BIT_CONTEXT_SIGN,
+    FLAGS_TYPE_CONTEXT = SECP256K1_FLAGS_TYPE_CONTEXT,
+    FLAGS_TYPE_COMPRESSION = SECP256K1_FLAGS_TYPE_COMPRESSION,
+    /** The higher bits contain the actual data. Do not use directly. */
+    FLAGS_BIT_CONTEXT_VERIFY = SECP256K1_FLAGS_BIT_CONTEXT_VERIFY,
+    FLAGS_BIT_CONTEXT_SIGN = SECP256K1_FLAGS_BIT_CONTEXT_SIGN,
+    FLAGS_BIT_COMPRESSION = FLAGS_BIT_CONTEXT_SIGN,
 
-        /** Flags to pass to secp256k1_context_create. */
-        CONTEXT_VERIFY = SECP256K1_CONTEXT_VERIFY,
-        CONTEXT_SIGN = SECP256K1_CONTEXT_SIGN,
-        CONTEXT_NONE = SECP256K1_CONTEXT_NONE,
+    /** Flags to pass to secp256k1_context_create. */
+    CONTEXT_VERIFY = SECP256K1_CONTEXT_VERIFY,
+    CONTEXT_SIGN = SECP256K1_CONTEXT_SIGN,
+    CONTEXT_NONE = SECP256K1_CONTEXT_NONE,
 
-        /** Flag to pass to secp256k1_ec_pubkey_serialize and secp256k1_ec_privkey_export. */
-        EC_COMPRESSED = SECP256K1_EC_COMPRESSED,
-        EC_UNCOMPRESSED =  SECP256K1_EC_UNCOMPRESSED,
+    /** Flag to pass to secp256k1_ec_pubkey_serialize and secp256k1_ec_privkey_export. */
+    EC_COMPRESSED = SECP256K1_EC_COMPRESSED,
+    EC_UNCOMPRESSED = SECP256K1_EC_UNCOMPRESSED,
 
-        /** Prefix byte used to tag various encoded curvepoints for specific purposes */
-        TAG_PUBKEY_EVEN = SECP256K1_TAG_PUBKEY_EVEN,
-        TAG_PUBKEY_ODD = SECP256K1_TAG_PUBKEY_ODD,
-        TAG_PUBKEY_UNCOMPRESSED = SECP256K1_TAG_PUBKEY_UNCOMPRESSED,
-        TAG_PUBKEY_HYBRID_EVEN = SECP256K1_TAG_PUBKEY_HYBRID_EVEN,
-        TAG_PUBKEY_HYBRID_ODD = SECP256K1_TAG_PUBKEY_HYBRID_ODD
-    };
+    /** Prefix byte used to tag various encoded curvepoints for specific purposes */
+    TAG_PUBKEY_EVEN = SECP256K1_TAG_PUBKEY_EVEN,
+    TAG_PUBKEY_ODD = SECP256K1_TAG_PUBKEY_ODD,
+    TAG_PUBKEY_UNCOMPRESSED = SECP256K1_TAG_PUBKEY_UNCOMPRESSED,
+    TAG_PUBKEY_HYBRID_EVEN = SECP256K1_TAG_PUBKEY_HYBRID_EVEN,
+    TAG_PUBKEY_HYBRID_ODD = SECP256K1_TAG_PUBKEY_HYBRID_ODD
+}
 
 /++
  + <p>This class holds native methods to handle ECDSA verification.</p>
@@ -87,7 +87,7 @@ class NativeSecp256k1 {
     @trusted
     this(const Format format_verify = Format.COMPACT,
             const Format format_sign = Format.COMPACT,
-        const SECP256K1 flag = SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY) nothrow
+            const SECP256K1 flag = SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY) nothrow
     in {
         with (Format) {
             assert((format_sign is DER) || (format_sign is COMPACT) || (format_sign is RAW),
@@ -147,7 +147,7 @@ class NativeSecp256k1 {
         }
         if ((_format_verify & Format.RAW) || (_format_verify == 0)) {
             check(siglen == SIGNATURE_SIZE, ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-            import core.stdc.string: memcpy;
+            import core.stdc.string : memcpy;
 
             memcpy(&(sig.data), sigdata, siglen);
         }
@@ -170,7 +170,7 @@ class NativeSecp256k1 {
      + @param sig byte array of signature
      +/
     @trusted
-        immutable(ubyte[]) sign(const(ubyte[]) data, const(ubyte[]) sec) const
+    immutable(ubyte[]) sign(const(ubyte[]) data, const(ubyte[]) sec) const
     in {
         assert(data.length == 32);
         assert(sec.length <= 32);
@@ -478,7 +478,7 @@ class NativeSecp256k1 {
 
 //@safe
 unittest {
-    import tagion.utils.Miscellaneous: toHexString, decode;
+    import tagion.utils.Miscellaneous : toHexString, decode;
     import std.traits;
 
     /+
@@ -685,7 +685,7 @@ unittest {
         auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
         //auto message= decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A9A");
         auto seed = decode("A441B15FE9A3CF5661190A0B93B9DEC7D04127288CC87250967CF3B52894D110"); //sha256hash of "random"
-        import tagion.utils.Miscellaneous: toHexString;
+        import tagion.utils.Miscellaneous : toHexString;
         import std.digest.sha;
 
         try {
@@ -825,10 +825,10 @@ unittest {
 
         auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.RAW, NativeSecp256k1.Format.RAW);
 
-        const aliceSecretKey  = decode("37cf9a0f624a21b0821f4ab3f711ac3a86ac3ae8e4d25bdbd8cdcad7b6cf92d4");
+        const aliceSecretKey = decode("37cf9a0f624a21b0821f4ab3f711ac3a86ac3ae8e4d25bdbd8cdcad7b6cf92d4");
         const alicePublicKey = crypt.computePubkey(aliceSecretKey, false);
 
-        const bobSecretKey  = decode("2f402cd0753d3afca00bd3f7661ca2f882176ae4135b415efae0e9c616b4a63e");
+        const bobSecretKey = decode("2f402cd0753d3afca00bd3f7661ca2f882176ae4135b415efae0e9c616b4a63e");
         const bobPublicKey = crypt.computePubkey(bobSecretKey, false);
 
         assert(alicePublicKey.toHexString == "0451958fb5c78264dc67edec62ad7cb0722ca7468e9781c1aebc0c05c5e8be05daa916301e6267fed2a662c9d727da9c3ffa4eab9f76dd848f60ef44d2917cf7ee");
@@ -840,22 +840,19 @@ unittest {
         assert(aliceResult == bobResult);
     }
 
-
-
-    version(none)
-    { // Test 1 ECDH
+    version (none) { // Test 1 ECDH
         auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.RAW, NativeSecp256k1.Format.RAW);
         import std.stdio;
+
         //writefln("%d", "039c28258a97c779c88212a0e37a74ec90898c63b60df60a7d05d0424f6f6780".length);
         const privKey = decode("039c28258a97c779c88212a0e37a74ec90898c63b60df60a7d05d0424f6f6780");
 
-//        writefln(
+        //        writefln(
         const pubKey = crypt.computePubkey(privKey, false);
         writefln("privKey=%s", privKey.toHexString!true);
         writefln("privKey=%s", pubKey.toHexString!true);
         writefln("       =%s", "049E35EFD4390AB5AB1CBD5C273D0D23E6D46C8CCF966C2CC62A4196AC58967AB9   7735ACB05E8646C557EF824F118C9B66AF162FCFAD14B91A145BC55693C342E6");
         assert(pubKey.toHexString!true == "049E35EFD4390AB5AB1CBD5C273D0D23E6D46C8CCF966C2CC62A4196AC58967AB97735ACB05E8646C557EF824F118C9B66AF162FCFAD14B91A145BC55693C342E6");
-
 
         const ciphertextPrivKey = decode("f2785178d20217ed89e982ddca6491ed21d598d8545db503f1dee5e09c747164");
 
@@ -869,12 +866,12 @@ unittest {
         writefln("             %s", "46defe934a709bf55328ad593b62884079f908d6a6ebbc2bdbc93b77e3506181   6e287b5665a9b5f0fdb08a1f3f63557849525df1e4ece2c717fd0de1e0a7330f");
 
         secp256k1_pubkey sharedECCKey1;
-//        ubyte[] sharedECCKey1;
-        auto sharedECCKey1_ptr=&sharedECCKey1; //sharedECCKey1[0];
+        //        ubyte[] sharedECCKey1;
+        auto sharedECCKey1_ptr = &sharedECCKey1; //sharedECCKey1[0];
         const(ubyte*) ciphertextPrivKey_ptr = &ciphertextPrivKey[0];
-        int ret = secp256k1_ec_pubkey_create(crypt._ctx, sharedECCKey1_ptr , ciphertextPrivKey_ptr);
+        int ret = secp256k1_ec_pubkey_create(crypt._ctx, sharedECCKey1_ptr, ciphertextPrivKey_ptr);
         writefln("sharedECCKey1 %s", sharedECCKey1.data.toHexString!true);
 
-            //  "f2785178d20217ed89e982ddca6491ed21d598d8545db503f1dee5e09c747164");
+        //  "f2785178d20217ed89e982ddca6491ed21d598d8545db503f1dee5e09c747164");
     }
 }

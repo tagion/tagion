@@ -7,7 +7,7 @@ import tagion.basic.Basic : Control;
 import tagion.basic.TagionExceptions;
 import tagion.hibon.HiBONRecord;
 
-extern(C) int pthread_setname_np(pthread_t, const char*) nothrow;
+extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
 
 enum LoggerType {
     NONE    = 0,
@@ -26,6 +26,7 @@ private static Tid logger_tid;
 @safe
 static struct Logger {
     import std.format;
+
     protected {
         string _task_name;
         uint id;
@@ -43,18 +44,18 @@ static struct Logger {
 
     @trusted
     void register(string task_name) nothrow
-        in {
-            assert(logger_tid == logger_tid.init);
-        }
+    in {
+        assert(logger_tid == logger_tid.init);
+    }
     do {
         push(LoggerType.ALL);
-        scope(exit) {
+        scope (exit) {
             pop;
         }
         try {
             logger_tid = locate(logger_task_name);
             .register(task_name, thisTid);
-            _task_name=task_name;
+            _task_name = task_name;
             setThreadName(task_name);
             import std.stdio : stderr;
 
@@ -68,20 +69,20 @@ static struct Logger {
 
     @property @trusted
     void task_name(string task_name)
-        in {
-            assert(logger_tid == logger_tid.init);
-        }
+    in {
+        assert(logger_tid == logger_tid.init);
+    }
     do {
-        _task_name=task_name;
+        _task_name = task_name;
         setThreadName(task_name);
         log("Register: %s logger", _task_name);
     }
 
     @trusted @nogc
     void set_logger_task(string logger_task_name) nothrow
-        in {
-            assert(this.logger_task_name.length == 0);
-        }
+    in {
+        assert(this.logger_task_name.length == 0);
+    }
     do {
         this.logger_task_name = logger_task_name;
     }
@@ -94,39 +95,41 @@ static struct Logger {
     @property @trusted
     bool isTask() const nothrow {
         import std.exception : assumeWontThrow;
+
         return assumeWontThrow(logger_tid != logger_tid.init);
     }
 
     void push(const uint mask) nothrow {
-        masks~=mask;
+        masks ~= mask;
     }
 
     @nogc
     uint pop() nothrow {
-        uint result=masks[$-1];
-        if ( masks.length > 1 ) {
-            masks=masks[0..$-1];
+        uint result = masks[$ - 1];
+        if (masks.length > 1) {
+            masks = masks[0 .. $ - 1];
         }
         return result;
     }
 
     @trusted
     void report(LoggerType type, lazy scope string text) const nothrow {
-        if ( (type & masks[$-1]) && !silent ) {
+        if ((type & masks[$ - 1]) && !silent) {
             import std.exception : assumeWontThrow;
             import std.conv : to;
 
             if (!isTask) {
                 import core.stdc.stdio;
-                scope const _type=assumeWontThrow(type.to!string);
-                scope const _text=assumeWontThrow(toStringz(text));
+
+                scope const _type = assumeWontThrow(type.to!string);
+                scope const _text = assumeWontThrow(toStringz(text));
                 if (_task_name.length > 0) {
-                    printf("ERROR: Logger not register for '%.*s'\n", cast(int)_task_name.length, _task_name.ptr);
+                    printf("ERROR: Logger not register for '%.*s'\n", cast(int) _task_name.length, _task_name.ptr);
                 }
                 printf("%.*s:%.*s: %s\n",
-                    cast(int)_task_name.length, _task_name.ptr,
-                    cast(int)_type.length, _type.ptr,
-                    _text);
+                        cast(int) _task_name.length, _task_name.ptr,
+                        cast(int) _type.length, _type.ptr,
+                        _text);
             }
             else {
                 try {
@@ -134,10 +137,11 @@ static struct Logger {
                 }
                 catch (Exception e) {
                     import core.stdc.stdio;
-                    scope const _type=assumeWontThrow(toStringz(type.to!string));
-                    scope const _text=assumeWontThrow(toStringz(text));
+
+                    scope const _type = assumeWontThrow(toStringz(type.to!string));
+                    scope const _text = assumeWontThrow(toStringz(text));
                     fprintf(stderr, "\t%s:%s: %s", _task_name.toStringz, _type, _text);
-                    scope const _msg=assumeWontThrow(toStringz(e.toString));
+                    scope const _msg = assumeWontThrow(toStringz(e.toString));
                     fprintf(stderr, "%s", _msg);
                 }
             }
@@ -157,22 +161,23 @@ static struct Logger {
         report(LoggerType.INFO, fmt, args);
     }
 
-
     void opCall(lazy immutable(TaskFailure) task_e) const nothrow {
         fatal("From task %s '%s'", task_e.task_name, task_e.throwable.msg);
         scope char[] text;
         const(char[]) error_text() @trusted {
-            task_e.throwable.toString((buf) {text~=buf;});
+            task_e.throwable.toString((buf) { text ~= buf; });
             return text;
         }
-        fatal("%s",  error_text());
+
+        fatal("%s", error_text());
         opCall(task_e.throwable);
     }
 
     @trusted
     void opCall(lazy const(Throwable) t) const nothrow {
         import std.exception;
-        auto mt=assumeWontThrow(cast(Throwable)t);
+
+        auto mt = assumeWontThrow(cast(Throwable) t);
 
         fatal(assumeWontThrow(mt.toString));
         fatal(mt.info.toString);
@@ -242,10 +247,10 @@ static struct Logger {
     void close() const nothrow {
         if (isTask) {
             import std.exception : assumeWontThrow;
+
             assumeWontThrow(logger_tid.send(Control.STOP));
         }
     }
 }
-
 
 static Logger log;

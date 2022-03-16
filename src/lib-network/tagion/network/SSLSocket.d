@@ -2,14 +2,14 @@ module tagion.network.SSLSocket;
 
 import std.socket;
 import core.stdc.stdio;
-import std.range.primitives: isBidirectionalRange;
-import std.string: format;
+import std.range.primitives : isBidirectionalRange;
+import std.string : format;
 import io = std.stdio;
 
 enum EndpointType {
     Client,
     Server
-};
+}
 
 @safe
 class SSLSocketException : SocketException {
@@ -88,7 +88,7 @@ class SSLSocket : Socket {
             pragma(msg, "DEBUG: SSLSocket compiled in debug mode");
             enum in_debugging_mode = true;
 
-            import std.stdio: writeln;
+            import std.stdio : writeln;
 
             static void printDebugInformation(string msg) {
                 int i;
@@ -294,7 +294,7 @@ class SSLSocket : Socket {
     @trusted
     static string str_error(const int errornum) {
         const str = strerror(errornum);
-        import std.string: fromStringz;
+        import std.string : fromStringz;
 
         return fromStringz(str).idup;
     }
@@ -305,7 +305,7 @@ class SSLSocket : Socket {
         const error_code = ERR_get_error;
         scope char[ERROR_LENGTH] err_text;
         ERR_error_string_n(ERR_get_error, err_text.ptr, ERROR_LENGTH);
-        import std.string: fromStringz;
+        import std.string : fromStringz;
 
         return fromStringz(err_text.ptr).idup;
     }

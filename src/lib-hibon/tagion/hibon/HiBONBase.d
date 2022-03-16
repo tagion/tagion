@@ -1,17 +1,17 @@
 module tagion.hibon.HiBONBase;
 
-import tagion.basic.Basic: isOneOf;
+import tagion.basic.Basic : isOneOf;
 
 import tagion.utils.StdTime;
 
 import std.format;
-import std.meta: AliasSeq, allSatisfy;
-import std.traits: isBasicType, isSomeString, isNumeric, isType, EnumMembers,
+import std.meta : AliasSeq, allSatisfy;
+import std.traits : isBasicType, isSomeString, isNumeric, isType, EnumMembers,
     Unqual, getUDAs, hasUDA;
-import std.typecons: tuple, TypedefType;
-import std.range.primitives: isInputRange;
+import std.typecons : tuple, TypedefType;
+import std.range.primitives : isInputRange;
 
-import std.system: Endian;
+import std.system : Endian;
 import bin = std.bitmanip;
 import tagion.hibon.HiBONException;
 import tagion.hibon.BigNumber;
@@ -24,7 +24,7 @@ enum HIBON_VERSION = 0;
  Helper function to serialize a HiBON
 +/
 void binwrite(T, R, I)(R range, const T value, I index) pure {
-    import std.typecons: TypedefType;
+    import std.typecons : TypedefType;
 
     alias BaseT = TypedefType!(T);
     bin.write!(BaseT, Endian.littleEndian, R)(range, cast(BaseT) value, index);
@@ -58,11 +58,11 @@ enum Type : ubyte {
 
     INT32 = 0x11, /// 32-bit integer
     INT64 = 0x12, /// 64-bit integer,
-        // INT128 = 0x13, /// 128-bit integer,
+    // INT128 = 0x13, /// 128-bit integer,
 
     UINT32 = 0x21, /// 32 bit unsigend integer
     UINT64 = 0x22, /// 64 bit unsigned integer
-        // UINT128 = 0x23, /// 128-bit unsigned integer,
+    // UINT128 = 0x23, /// 128-bit unsigned integer,
 
     FLOAT32 = 0x31, /// 32 bit Float
     FLOAT64 = 0x32, /// Floating point
@@ -437,7 +437,7 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
         }
     }
 
-};
+}
 
 unittest {
     alias Value = ValueT!(false, void, void);
@@ -507,7 +507,7 @@ unittest {
  true if a is an index
 +/
 @safe @nogc bool is_index(const(char[]) a, out uint result) pure nothrow {
-    import std.conv: to;
+    import std.conv : to;
 
     enum MAX_UINT_SIZE = to!string(uint.max).length;
     @nogc @safe static ulong to_ulong(const(char[]) a) pure nothrow {
@@ -572,8 +572,8 @@ unittest {
 }
 
 unittest {
-    import std.algorithm: map;
-    import std.conv: to;
+    import std.algorithm : map;
+    import std.conv : to;
 
     const(uint[]) null_index;
     assert(isArray(null_index.map!(a => a.to!string)));
@@ -588,7 +588,7 @@ unittest {
 
 ///
 unittest { // check is_index
-    import std.conv: to;
+    import std.conv : to;
 
     uint index;
     assert(is_index("0", index));
@@ -656,7 +656,7 @@ enum isKey(T) = (isIntegral!(T) || isKeyString!(T));
 
 ///
 unittest { // Check less_than
-    import std.conv: to;
+    import std.conv : to;
 
     assert(less_than("a", "b"));
     assert(less_than(0.to!string, 1.to!string));
@@ -696,9 +696,9 @@ unittest { // Check less_than
 
 ///
 unittest { // Check is_key_valid
-    import std.conv: to;
-    import std.range: iota;
-    import std.algorithm.iteration: map, each;
+    import std.conv : to;
+    import std.range : iota;
+    import std.algorithm.iteration : map, each;
 
     assert(!is_key_valid(""));
     string text = " "; // SPACE

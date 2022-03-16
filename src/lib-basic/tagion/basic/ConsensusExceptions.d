@@ -1,11 +1,11 @@
 module tagion.basic.ConsensusExceptions;
 
-import std.format: format;
-import tagion.basic.TagionExceptions: TagionException;
+import std.format : format;
+import tagion.basic.TagionExceptions : TagionException;
 
 @safe
 void Check(E)(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
-        if (is(E : ConsensusException)) {
+if (is(E : ConsensusException)) {
     if (!flag) {
         throw new E(code, file, line);
     }
@@ -91,7 +91,7 @@ enum ConsensusFailCode {
     SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT,
     SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY,
     SMARTSCRIPT_NOT_ENOUGH_MONEY,
-};
+}
 
 @safe
 class ConsensusException : TagionException {
@@ -258,7 +258,7 @@ class SmartScriptException : ConsensusException {
 
             ];
         // dfmt on
-        import std.exception: assumeUnique;
+        import std.exception : assumeUnique;
 
         consensus_error_messages = assumeUnique(_consensus_error_messages);
         assert(ConsensusFailCode.max + 1 == consensus_error_messages.length,

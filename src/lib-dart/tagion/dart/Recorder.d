@@ -3,24 +3,24 @@ module tagion.dart.Recorder;
 //import std.stdio;
 import tagion.hibon.HiBONJSON;
 
-import std.container.rbtree: RedBlackTree;
-import std.range.primitives: isInputRange;
+import std.container.rbtree : RedBlackTree;
+import std.range.primitives : isInputRange;
 import std.format;
 
-import tagion.crypto.SecureInterfaceNet: HashNet;
-import tagion.hibon.Document: Document;
-import tagion.hibon.HiBON: HiBON;
-import tagion.hibon.HiBONRecord: Label, STUB, isHiBONRecord, GetLabel, isStub, RecordType;
-import tagion.basic.Basic: Buffer;
+import tagion.crypto.SecureInterfaceNet : HashNet;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONRecord : Label, STUB, isHiBONRecord, GetLabel, isStub, RecordType;
+import tagion.basic.Basic : Buffer;
 import tagion.basic.Message;
 
-import tagion.dart.DARTException: DARTRecorderException;
+import tagion.dart.DARTException : DARTRecorderException;
 
-import tagion.basic.TagionExceptions: Check;
+import tagion.basic.TagionExceptions : Check;
 
 //import tagion.utils.Miscellaneous : toHex=toHexString;
 
-import tagion.utils.Miscellaneous: toHexString;
+import tagion.utils.Miscellaneous : toHexString;
 
 alias hex = toHexString;
 
@@ -77,10 +77,10 @@ class RecordFactory {
         alias Archives = RedBlackTree!(Archive, (a, b) @safe => a.fingerprint < b.fingerprint);
         package Archives archives;
 
-        import tagion.hibon.HiBONJSON: JSONString;
+        import tagion.hibon.HiBONJSON : JSONString;
 
         mixin JSONString;
-        import tagion.hibon.HiBONRecord: HiBONRecordType;
+        import tagion.hibon.HiBONRecord : HiBONRecordType;
 
         mixin HiBONRecordType;
         /++
@@ -107,7 +107,10 @@ class RecordFactory {
         }
 
         private this(Document doc) {
-            .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
+
+            
+
+                .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             this.archives = new Archives;
             foreach (e; doc[]) {
                 if (e.key != TYPENAME) {
@@ -152,12 +155,12 @@ class RecordFactory {
          + Returns:
          +     The archive @ fingerprint and if it dosn't exists then a null reference is returned
          +/
-        Archive find(immutable(Buffer) fingerprint)
-        in {
-            assert(fingerprint);
-        }
-        do {
-            if (archives) {
+        Archive find(immutable(Buffer) fingerprint) {
+            // in {
+            //     assert(fingerprint);
+            // }
+            // do {
+            if ((fingerprint.length !is 0) && (archives !is null)) {
                 scope archive = new Archive(fingerprint, Archive.Type.NONE);
                 scope range = archives.equalRange(archive);
                 if ((!range.empty) && (archive.fingerprint == range.front.fingerprint)) {
@@ -167,6 +170,44 @@ class RecordFactory {
             return null;
         }
 
+        unittest { // Check find
+            import tagion.crypto.SecureNet : StdHashNet;
+
+            const hash_net = new StdHashNet;
+
+            auto record_factory = RecordFactory(hash_net);
+            Archive[Buffer] set_of_archives;
+            foreach (i; 0 .. 7) {
+                auto hibon = new HiBON;
+                hibon["text"] = format("Some text %d", i);
+                hibon["index"] = i;
+                auto archive = new Archive(hash_net, Document(hibon));
+                set_of_archives[archive.fingerprint] = archive;
+            }
+
+            auto recorder = record_factory.recorder;
+
+            // Check for an empty record
+            assert(recorder.find(set_of_archives.byKey.front) is null);
+
+            // Fill up the record with set_of_archives
+            foreach (a; set_of_archives) {
+                recorder.insert(a);
+            }
+
+            foreach (a; set_of_archives) {
+                auto archive_found = recorder.find(a.fingerprint);
+                assert(archive_found);
+                assert(archive_found is a);
+            }
+
+            { // None existing archive
+                auto hibon = new HiBON;
+                hibon["text"] = "Does not exist in the recoder";
+                auto none_existing_archive = new Archive(hash_net, Document(hibon));
+                assert(recorder.find(none_existing_archive.fingerprint) is null);
+            }
+        }
         /+
          + Clear all archives
          +/
@@ -181,8 +222,7 @@ class RecordFactory {
             return archive;
         }
 
-        const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE)
-                if (isHiBONRecord!T) {
+        const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE) if (isHiBONRecord!T) {
             return insert(pack.toDoc, type);
         }
 
@@ -202,7 +242,7 @@ class RecordFactory {
         const(Archive) remove(T)(T pack) {
             return insert(pack, Archive.Type.REMOVE);
         }
-//        alias add(T) = insert!T(
+        //        alias add(T) = insert!T(
         // const(Archive) add(const(Document) doc) {
         //     auto archive = new Archive(net, doc, Archive.Type.ADD);
         //     archives.insert(archive);
@@ -266,6 +306,8 @@ class RecordFactory {
     }
 }
 
+alias GetType = Archive.Type delegate(const(Archive)) @safe;
+
 @safe class Archive {
     enum Type : int {
         NONE = 0,
@@ -277,9 +319,9 @@ class RecordFactory {
     @Label("$a", true) const Document filed;
     enum archiveLabel = GetLabel!(this.filed).name;
     enum fingerprintLabel = GetLabel!(this.fingerprint).name;
-    enum typeLabel = GetLabel!(this.type).name;
-    @Label("$t", true) Type type;
-    @Label("") bool done;
+    enum typeLabel = GetLabel!(this._type).name;
+    protected @Label("$t", true) Type _type;
+    protected @Label("") bool _done;
 
     mixin JSONString;
     private this(const HashNet net, const(Document) doc, const Type t = Type.NONE)
@@ -307,9 +349,9 @@ class RecordFactory {
                 fingerprint = null;
             }
         }
-        type = t;
-        if (type is Type.NONE && doc.hasMember(typeLabel)) {
-            type = doc[typeLabel].get!Type;
+        _type = t;
+        if (_type is Type.NONE && doc.hasMember(typeLabel)) {
+            _type = doc[typeLabel].get!Type;
         }
 
     }
@@ -326,26 +368,34 @@ class RecordFactory {
         else {
             hibon[archiveLabel] = filed;
         }
-        if (type !is Type.NONE) {
-            hibon[typeLabel] = type;
+        if (_type !is Type.NONE) {
+            hibon[typeLabel] = _type;
         }
         return Document(hibon);
     }
 
     // Define a remove archive by it fingerprint
-    private this(Buffer fingerprint, const Type t = Type.NONE) {
-        type = t;
+    private this(Buffer fingerprint, const Type t = Type.NONE)
+    in {
+        assert(fingerprint);
+    }
+    do {
+        _type = t;
         filed = Document();
         this.fingerprint = fingerprint;
     }
 
-    final bool isRemove() pure const nothrow {
-        return type is Type.REMOVE;
+    final bool isRemove(GetType get_type) const {
+        return get_type(this) is Type.REMOVE;
     }
 
-    final bool isAdd() pure const nothrow {
-        return type is Type.ADD;
-    }
+    // final bool isRemove() pure const nothrow {
+    //     return type is Type.REMOVE;
+    // }
+
+    // final bool isAdd() pure const nothrow {
+    //     return type is Type.ADD;
+    // }
 
     final bool isStub() pure const nothrow {
         return filed.empty;
@@ -355,9 +405,24 @@ class RecordFactory {
         return T.isRecord(filed);
     }
 
-    // final Type type() pure const nothrow {
-    //     return _type;
-    // }
+    final bool done() const pure nothrow @nogc {
+        return _done;
+    }
+
+    final Type type() const pure nothrow @nogc {
+        return _type;
+    }
+    /++
+     An Archive is only allowed to be done once
+     +/
+    final void doit() const pure nothrow @trusted
+    in {
+        assert(!_done, "An Archive can only be done once");
+    }
+    do {
+        auto force_done = cast(bool*)(&_done);
+        *force_done = true;
+    }
 
     /++
      + Returns:
@@ -383,8 +448,8 @@ unittest { // Archive
     import std.format;
     import tagion.hibon.HiBONJSON;
     import tagion.dart.DARTFakeNet;
-    import tagion.utils.Miscellaneous: toHex = toHexString;
-    import std.string: representation;
+    import tagion.utils.Miscellaneous : toHex = toHexString;
+    import std.string : representation;
 
     auto net = new DARTFakeNet;
     auto manufactor = RecordFactory(net);
@@ -417,7 +482,7 @@ unittest { // Archive
 
     }
 
-    a.type = Archive.Type.ADD;
+    a._type = Archive.Type.ADD;
     { // Simple archive with ADD/REMOVE Type
         // a=new Archive(net, filed_doc);
         assert(!a.isStub);
@@ -464,7 +529,7 @@ unittest { // Archive
         }
 
         { // Stub with type
-            stub.type = Archive.Type.REMOVE;
+            stub._type = Archive.Type.REMOVE;
             const result_stub = new Archive(net, stub.toDoc, Archive.Type.NONE);
             assert(result_stub.fingerprint == stub.fingerprint);
             assert(result_stub.type == stub.type);
@@ -487,4 +552,5 @@ unittest { // Archive
         auto hash = new Archive(net, filed_hash, Archive.Type.NONE);
         assert(hash.fingerprint == hashkey_fingerprint);
     }
+
 }

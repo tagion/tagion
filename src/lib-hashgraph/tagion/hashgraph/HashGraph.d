@@ -3,25 +3,25 @@ module tagion.hashgraph.HashGraph;
 import std.stdio;
 import std.conv;
 import std.format;
-import std.exception: assumeWontThrow;
-import std.typecons: TypedefType;
-import std.algorithm.searching: count, all, any;
-import std.algorithm.iteration: map, each, filter, fold;
-import std.algorithm.comparison: max;
-import std.algorithm.sorting: sort;
-import std.range.primitives: walkLength;
-import std.range: dropExactly, lockstep, tee;
-import std.array: array;
+import std.exception : assumeWontThrow;
+import std.typecons : TypedefType;
+import std.algorithm.searching : count, all, any;
+import std.algorithm.iteration : map, each, filter, fold;
+import std.algorithm.comparison : max;
+import std.algorithm.sorting : sort;
+import std.range.primitives : walkLength;
+import std.range : dropExactly, lockstep, tee;
+import std.array : array;
 import tagion.hashgraph.Event;
 import tagion.crypto.SecureInterfaceNet;
-import tagion.hibon.Document: Document;
-import tagion.hibon.HiBON: HiBON;
-import tagion.hibon.HiBONRecord: isHiBONRecord;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
 
-import tagion.basic.Basic: Pubkey, Signature, Privkey, Buffer, bitarray_clear, countVotes;
+import tagion.basic.Basic : Pubkey, Signature, Privkey, Buffer, countVotes;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
 
@@ -293,7 +293,7 @@ class HashGraph {
                 .fingerprint.toHexString));
     }
     do {
-        if (event_pack.pubkey == channel || valid_channel(event_pack.pubkey)) {
+        if (valid_channel(event_pack.pubkey)) {
             auto event = new Event(event_pack, this);
             _event_cache[event.fingerprint] = event;
             event.connect(this);
@@ -357,7 +357,11 @@ class HashGraph {
         if (_register) {
             return _register.register(fingerprint);
         }
-        return _event_cache.get(fingerprint, null);
+        scope event_ptr = fingerprint in _event_cache;
+        if (event_ptr) {
+            return *event_ptr;
+        }
+        return null;
     }
 
     /++
@@ -475,8 +479,7 @@ class HashGraph {
             .byValue
             .all!((n) => n._event !is null);
 
-        const state = (nodes.length is node_size && contain_all) ? ExchangeState.COHERENT
-            : ExchangeState.RIPPLE;
+        const state = (nodes.length is node_size && contain_all) ? ExchangeState.COHERENT : ExchangeState.RIPPLE;
 
         return Wavefront(result, null, state);
     }
@@ -664,7 +667,7 @@ class HashGraph {
         }
     }
 
-    import std.traits: fullyQualifiedName;
+    import std.traits : fullyQualifiedName;
 
     alias NodeRange = typeof((cast(const) nodes).byValue);
 
@@ -748,7 +751,7 @@ class HashGraph {
      +/
     @trusted
     void fwrite(string filename, Pubkey[string] node_labels = null) {
-        import tagion.hibon.HiBONRecord: fwrite;
+        import tagion.hibon.HiBONRecord : fwrite;
 
         size_t[Pubkey] node_id_relocation;
         if (node_labels.length) {
@@ -763,8 +766,7 @@ class HashGraph {
         // writefln("node_id_relocation=%s", node_id_relocation.byKeyValue.map!((n) => format("%d[%s]", n.value, n.key.cutHex)));
         scope events = new HiBON;
         foreach (n; nodes) {
-            const node_id = (node_id_relocation.length is 0) ? size_t.max
-                : node_id_relocation[n.channel];
+            const node_id = (node_id_relocation.length is 0) ? size_t.max : node_id_relocation[n.channel];
             n[]
                 .filter!((e) => !e.isGrounded)
                 .each!((e) => events[e.id] = EventView(e, node_id));
@@ -880,13 +882,13 @@ class HashGraph {
      +/
     version (hashgraph_fibertest) {
         static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
-            import core.thread.fiber: Fiber;
-            import tagion.crypto.SecureNet: StdSecureNet;
-            import tagion.gossip.InterfaceNet: GossipNet;
+            import core.thread.fiber : Fiber;
+            import tagion.crypto.SecureNet : StdSecureNet;
+            import tagion.gossip.InterfaceNet : GossipNet;
             import tagion.utils.Random;
             import tagion.utils.Queue;
             import tagion.hibon.HiBONJSON;
-            import std.datetime.systime: SysTime;
+            import std.datetime.systime : SysTime;
             import core.time;
 
             TestGossipNet authorising;
@@ -931,8 +933,7 @@ class HashGraph {
                     channel_queues[channel].write(doc);
                 }
 
-                final void send(T)(const(Pubkey) channel, T pack)
-                        if (isHiBONRecord!T) {
+                final void send(T)(const(Pubkey) channel, T pack) if (isHiBONRecord!T) {
                     send(channel, pack.toDoc);
                 }
 
@@ -1093,7 +1094,7 @@ class HashGraph {
 
             Elisa,
             Freja,
-            George,// Hermine,
+            George, // Hermine,
 
             // Illa,
             // Joella,
@@ -1119,7 +1120,7 @@ class HashGraph {
         const channels = network.channels;
 
         try {
-            foreach (i; 0 .. 3276) {
+            foreach (i; 0 .. 550) {
                 const channel_number = network.random.value(0, channels.length);
                 const channel = channels[channel_number];
                 auto current = network.networks[channel];
@@ -1146,8 +1147,7 @@ class HashGraph {
         bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
             static string print(const Event e) nothrow {
                 if (e) {
-                    const round_received = (e.round_received) ? e.round_received.number.to!string
-                        : "#";
+                    const round_received = (e.round_received) ? e.round_received.number.to!string : "#";
                     return assumeWontThrow(format("(%d:%d:%d:r=%d:rr=%s:%s)",
                             e.id, e.node_id, e.altitude, e.round.number, round_received,
                             e.fingerprint.cutHex));

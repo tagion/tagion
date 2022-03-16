@@ -7,6 +7,7 @@ import std.array;
 import std.typecons;
 import std.path : buildPath, baseName;
 import std.algorithm;
+import std.format;
 
 import tagion.basic.Basic : Control, Buffer;
 import tagion.basic.TagionExceptions : fatal;
@@ -432,10 +433,10 @@ mixin TrustedConcurrency;
             with (Control) switch (ctrl) {
             case STOP:
                 stop = true;
-                writeln("%s Stopped ", opts.recorder.task_name);
+                writeln(format("%s stopped ", opts.recorder.task_name));
                 break;
             default:
-                writeln("%s: Unsupported control %s", opts.recorder.task_name, ctrl);
+                writeln(format("%s: Unsupported control %s", opts.recorder.task_name, ctrl));
             }
         }
 
@@ -462,9 +463,8 @@ mixin TrustedConcurrency;
     }
 }
 
+version (none)
 unittest {
-    assert(false);
-
     pragma(msg, "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
     import std.stdio;
     writeln("-------------------=======================-----------------------====================-----------------");

@@ -3,15 +3,15 @@ module tagion.gossip.EmulatorGossipNet;
 import std.stdio;
 import std.concurrency;
 import std.format;
-import std.array: join;
-import std.conv: to;
+import std.array : join;
+import std.conv : to;
 
 // import tagion.revision;
 //import tagion.services.Options;
-import tagion.basic.Basic: EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType;
+import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType;
 
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
-import tagion.utils.Miscellaneous: cutHex;
+import tagion.utils.Miscellaneous : cutHex;
 
 // import tagion.utils.Random;
 import tagion.utils.LRU;
@@ -19,8 +19,8 @@ import tagion.utils.Queue;
 
 //import tagion.Keywords;
 
-import tagion.hibon.HiBON: HiBON;
-import tagion.hibon.Document: Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.Document : Document;
 import tagion.gossip.InterfaceNet;
 
 // import tagion.gossip.GossipNet;
@@ -36,7 +36,7 @@ import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import core.atomic;
-import std.random: Random, unpredictableSeed, uniform;
+import std.random : Random, unpredictableSeed, uniform;
 import core.time;
 import std.datetime;
 import core.thread;
@@ -48,7 +48,7 @@ static uint getTids(Tid[] tids) {
         immutable uint_i = cast(uint) i;
         immutable taskname = uint_i.get_node_name;
         tid = locate(taskname);
-        if (tid == thisTid) {
+        if (tid is thisTid) {
             result = uint_i;
         }
     }
@@ -113,7 +113,7 @@ class EmulatorGossipNet : GossipNet {
     }
 
     const(Pubkey) select_channel(ChannelFilter channel_filter) {
-        import std.range: dropExactly;
+        import std.range : dropExactly;
 
         foreach (count; 0 .. _tids.length * 2) {
             const node_index = uniform(0, cast(uint) _tids.length, random);
@@ -158,7 +158,7 @@ class EmulatorGossipNet : GossipNet {
 
     @trusted
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
-        import std.algorithm.searching: countUntil;
+        import std.algorithm.searching : countUntil;
         import tagion.hibon.HiBONJSON;
 
         log.trace("send to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
