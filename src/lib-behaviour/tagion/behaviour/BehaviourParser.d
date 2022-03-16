@@ -5,15 +5,26 @@ import tagion.behaviour.BehaviourBase;
 import std.range.primitives : isInputRange, ElementType;
 import std.traits;
 import std.regex;
+import std.string : strip;
 
 Feature parser(R)(R range) if(isInputRange!R && isSomeString!(ElementType!R)) {
+    enum featute_regex=regex(`feature(?:\s+|\:)`);
+    enum module_regex=regex(r"`((?:\w+\.?)+)`");
+    enum scenario_regex=regex(`scenario(?:\s+|\:)`);
+    enum action_regex=regex(`\s*\*(\w+)\*`);
+    enum func_regex=regex(r"\s*\*`(\w+)`\*");
     Feature result;
     void feature() {
          while (!range.empty) {
-             enum featute_regex=regex(`feature(?:\s+|:)(*$)`);
+//             enum featute_regex=regex(`feature(?:\s+|\:)`);
              auto match = range.front.matchFirst(featute_regex);
+//             io.writefln("!!!) match %s", match);
+
              if (match) {
-                 io.writefln("match %s", match);
+                 io.writefln("match %s '%s'", match, match.post.strip);
+                 range.popFront;
+
+                 auto module_match=
                  return;
              }
 //                 range.front.featute_regex
