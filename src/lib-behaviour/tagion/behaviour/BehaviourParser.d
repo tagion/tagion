@@ -50,10 +50,10 @@ FeatureGroup parser(R)(R range) if(isInputRange!R && isSomeString!(ElementType!R
                     io.writeln("None");
                     switch (state) {
                     case State.Feature:
-                        result.info.comments~=match.post.strip;
+//                        result.info.comments~=match.post.strip;
                         break;
                     case State.Scenario:
-                        check(result.scenarios.length > 0, fromat("Scenario has not been declared yet : %d", line));
+//                        check(result.scenarios.length > 0, format("Scenario has not been declared yet : %d", line));
                         result.scenarios[$-1].comments~=match.post.strip;
                         break;
                     default:
@@ -64,18 +64,18 @@ FeatureGroup parser(R)(R range) if(isInputRange!R && isSomeString!(ElementType!R
                 case FEATURE:
                     check(state is State.Start, format("Feature has already been declared in line %d", line));
                     state = State.Feature;
-                    result.info.description = match.post.strip;
+//                    result.info.description = match.post.strip;
                     io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
                     break;
                 case MODULE:
                     check(state is State.Feature, format("Module name can only be declare after the Feature declaration :%d", line));
-                    result.info.name=match[1];
+//                    result.info.name=match[1];
                     io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
                     break;
                 case SCENARIO:
                     check(state is State.Feature ||  state is State.Scenario, format("Scenario must be declared after a Feature :%d", line));
                     state = State.Scenario;
-                    result.scenarios ~= Scenario(match.post.strip);
+//                    result.scenarios ~= Scenario(match.post.strip);
                     io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
                     break;
                 case ACTION:
@@ -108,7 +108,7 @@ unittest { /// Convert ProtoBDD to Feature
     pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
     pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
 
-    auto feature=parser(feature_byline);
+//    auto feature=parser(feature_byline);
 }
 
 version(unittest) {
