@@ -1,5 +1,5 @@
 ## Feature: Some awesome feature should print some cash out of the blue
-
+    Some addtion notes
 `tagion.behaviour.unittest.ProtoBDD`
 
 ### Scenario: Some awesome money printer
@@ -22,4 +22,3 @@
     *When* the Customer request cash
 
 `request_cash`
-

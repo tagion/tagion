@@ -6,32 +6,92 @@ import std.range.primitives : isInputRange, ElementType;
 import std.traits;
 import std.regex;
 import std.string : strip;
+import std.format;
 
-Feature parser(R)(R range) if(isInputRange!R && isSomeString!(ElementType!R)) {
-    enum featute_regex=regex(`feature(?:\s+|\:)`);
-    enum module_regex=regex(r"`((?:\w+\.?)+)`");
-    enum scenario_regex=regex(`scenario(?:\s+|\:)`);
-    enum action_regex=regex(`\s*\*(\w+)\*`);
-    enum func_regex=regex(r"\s*\*`(\w+)`\*");
-    Feature result;
-    void feature() {
-         while (!range.empty) {
-//             enum featute_regex=regex(`feature(?:\s+|\:)`);
-             auto match = range.front.matchFirst(featute_regex);
-//             io.writefln("!!!) match %s", match);
+import tagion.behaviour.BehaviourException;
 
-             if (match) {
-                 io.writefln("match %s '%s'", match, match.post.strip);
-                 range.popFront;
+enum feature_regex=regex([
+        `Feature(?:\s+|\:)`,  /// Feature
+        `Scenario(?:\s+|\:)`, /// Scenario
+        r"\s*\*(\w+)\*",      /// Action
+        r"\s*`(\w+)`",        /// Name
+        r"`((?:\w+\.?)+)`"    /// Module
+        ]);
 
-                 auto module_match=
-                 return;
-             }
-//                 range.front.featute_regex
-             range.popFront;
-         }
+enum Token {
+    NONE,
+    FEATURE,
+    SCENARIO,
+    ACTION,
+    NAME,
+    MODULE
+}
+
+enum State {
+    Start,
+    Feature,
+    Scenario,
+}
+
+FeatureGroup parser(R)(R range) if(isInputRange!R && isSomeString!(ElementType!R)) {
+    FeatureGroup result;
+    State state;
+
+    foreach(line; range) {
+        auto match = range.front.matchFirst(feature_regex);
+        io.writefln("match %s : %s", match, line);
+
+        if (match) {
+            // io.writefln("match %s '%s' whichPattern=%d", match, match.post.strip, match.whichPattern);
+            const token=cast(Token)(match.whichPattern);
+            with(Token) {
+                final switch(token) {
+                case NONE:
+                    io.writeln("None");
+                    switch (state) {
+                    case State.Feature:
+                        result.info.comments~=match.post.strip;
+                        break;
+                    case State.Scenario:
+                        check(result.scenarios.length > 0, fromat("Scenario has not been declared yet : %d", line));
+                        result.scenarios[$-1].comments~=match.post.strip;
+                        break;
+                    default:
+                        /// Empty
+                    }
+
+                    break;
+                case FEATURE:
+                    check(state is State.Start, format("Feature has already been declared in line %d", line));
+                    state = State.Feature;
+                    result.info.description = match.post.strip;
+                    io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
+                    break;
+                case MODULE:
+                    check(state is State.Feature, format("Module name can only be declare after the Feature declaration :%d", line));
+                    result.info.name=match[1];
+                    io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
+                    break;
+                case SCENARIO:
+                    check(state is State.Feature ||  state is State.Scenario, format("Scenario must be declared after a Feature :%d", line));
+                    state = State.Scenario;
+                    result.scenarios ~= Scenario(match.post.strip);
+                    io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
+                    break;
+                case ACTION:
+                    io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
+                    break;
+                case NAME:
+                    io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
+
+                }
+            }
+//             range.popFront;
+
+// //auto module_match=
+//             return;
+        }
     }
-    feature;
     return result;
 }
 

@@ -15,6 +15,7 @@ import tagion.hibon.Document;
 struct Feature {
     string description;
     @Label(VOID, true) string[] comments;
+    string name;
     mixin HiBONRecord!(q{
             this(string description, string[] comments=null ) {
                 this.description = description;
