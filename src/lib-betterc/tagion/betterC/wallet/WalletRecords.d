@@ -28,9 +28,9 @@ struct Label {
         @Label("$Q") string[] questions;
         this(Document doc) {
             auto mydata = doc["$Q"].get!Document;
-            questions = mydata[]
-                .map!(a => a.get!string)
-                .array.dup;
+            // questions = mydata[]
+            //     .map!(a => a.get!string)
+            //     .array.dup;
         }
     }
     /++
@@ -44,11 +44,6 @@ struct Label {
         // mixin HiBONRecord;
     }
 
-    // @RecordType("Wallet") struct Wallet {
-    //     KeyRecover.RecoverGenerator generator;
-    //     mixin HiBONRecord;
-    // }
-
     @RecordType("Wallet")
     struct RecoverGenerator {
         Buffer[] Y; /// Recorvery seed
@@ -59,7 +54,7 @@ struct Label {
         inout(HiBONT) toHiBON() inout {
             auto hibon = HiBON();
             // hibon["Y"] = Y;
-            // hibon["S"] = S;
+            hibon["S"] = S;
             hibon["N"] = confidence;
             return cast(inout) hibon;
         }
@@ -71,9 +66,9 @@ struct Label {
 
         this(Document doc) {
             auto Y_data = doc["Y"].get!Document;
-            Y = Y_data[]
-                .map!(a => a.get!Buffer)
-                .array.dup;
+            // Y = Y_data[]
+            //     .map!(a => a.get!Buffer)
+            //     .array.dup;
             S = doc["S"].get!Buffer;
             confidence = doc["N"].get!uint;
         }

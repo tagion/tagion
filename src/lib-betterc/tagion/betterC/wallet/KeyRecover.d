@@ -5,28 +5,19 @@ module tagion.betterC.wallet.KeyRecover;
 //use net directly
 import tagion.betterC.wallet.Net;
 
-import tagion.crypto.SecureInterfaceNet : HashNet;
-import tagion.crypto.SecureNet : scramble, StdSecureNet;
 import tagion.utils.Miscellaneous : xor;
-import tagion.basic.Basic : Buffer;
-import tagion.basic.Message;
+import tagion.betterC.utils.BinBuffer;
 import tagion.betterC.utils.Memory;
 
-// use better C doc, hibon, hibon record 
+// // use better C doc, hibon, hibon record 
 import tagion.betterC.hibon.HiBON : HiBONT;
 import tagion.betterC.hibon.Document : Document;
 
-// import tagion.betterC.hibon.HiBONRecord;
-// import tagion.hibon.HiBONRecord;
-
-import std.exception : assumeUnique;
 import std.string : representation;
-import std.range : lockstep, StoppingPolicy, indexed, iota;
+import std.range : iota, indexed/*, lockstep, StoppingPolicy*/; // commented stuff produce error no TypeInfo in betterC
 import std.algorithm.mutation : copy;
 import std.algorithm.iteration : map, filter;
-import std.array : array;
 
-import tagion.basic.TagionExceptions : Check, TagionException;
 import tagion.betterC.wallet.WalletRecords : RecoverGenerator;
 
 @safe
@@ -51,25 +42,25 @@ struct KeyRecover {
     /**
      * Generates the quiz hash of the from a list of questions and answers
      */
-    Buffer[] quiz(scope const(string[]) questions, scope const(char[][]) answers) const @trusted
+    BinBuffer[] quiz(scope const(string[]) questions, scope const(char[][]) answers) const @trusted
     in {
         assert(questions.length is answers.length);
     }
     do {
 
         // auto results = new Buffer[questions.length];
-        Buffer[] results;
+        BinBuffer[] results;
         results.create(questions.length);
 
-        foreach (ref result, question, answer; lockstep(results, questions, answers, StoppingPolicy
-                .requireSameLength)) {
-            scope strip_down = cast(ubyte[]) answer.strip_down;
-            scope (exit) {
-                strip_down.scramble;
-            }
-            const hash = calcHash(strip_down);
-            result = calcHash(hash ~ hash);
-        }
+        // foreach (ref result, question, answer; lockstep(results, questions, answers, StoppingPolicy
+        //         .requireSameLength)) {
+        //     scope strip_down = cast(ubyte[]) answer.strip_down;
+        //     scope (exit) {
+        //         strip_down.scramble;
+        //     }
+        //     const hash = calcHash(strip_down);
+        //     result = calcHash(hash ~ hash);
+        // }
         return results;
     }
 
@@ -88,7 +79,7 @@ struct KeyRecover {
         assert(numberOfSeeds(10, 5) is 26);
     }
 
-    Buffer checkHash(scope const(ubyte[]) value) const {
+    BinBuffer checkHash(scope const(ubyte[]) value) const {
         return rawCalcHash(rawCalcHash(value));
     }
 
@@ -125,7 +116,7 @@ struct KeyRecover {
         createKey(quiz(questions, answers), confidence);
     }
 
-    void createKey(Buffer[] A, const uint confidence) {
+    void createKey(BinBuffer[] A, const uint confidence) {
         // scope R = new ubyte[hashSize];
         scope ubyte[] R;
         R.create(hashSize);
@@ -139,7 +130,7 @@ struct KeyRecover {
     /**
      * Generates the quiz seed values from the privat key R and the quiz list
      */
-    void quizSeed(scope ref const(ubyte[]) R, Buffer[] A, const uint confidence) {
+    void quizSeed(scope ref const(ubyte[]) R, BinBuffer[] A, const uint confidence) {
         scope (success) {
             generator.confidence = confidence;
             generator.S = checkHash(R);
@@ -169,7 +160,7 @@ struct KeyRecover {
         return findSecret(R, quiz(questions, answers));
     }
 
-    bool findSecret(scope ref ubyte[] R, Buffer[] A) const {
+    bool findSecret(scope ref ubyte[] R, BinBuffer[] A) const {
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, generator.confidence);
 
@@ -199,10 +190,12 @@ out (result) {
 do {
     import std.ascii : toLower, isAlphaNum;
 
-    return text
-        .map!(c => cast(char) toLower(c))
-        .filter!(c => isAlphaNum(c))
-        .array;
+    char[] res;
+    // return text
+    //     .map!(c => cast(char) toLower(c))
+    //     .filter!(c => isAlphaNum(c))
+    //     .array;
+    return res;
 }
 
 static immutable(string[]) standard_questions;

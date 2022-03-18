@@ -360,14 +360,9 @@ import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 
     bool set_response_update_wallet(const(HiRPC.Receiver) receiver) nothrow {
         if (receiver.isResponse) { // ???
-            try {
                 account.bills = receiver.method.params[].map!(e => StandardBill(e.get!Document))
                     .array;
                 return true;
-            }
-            catch (Exception e) {
-                // Ingore
-            }
         }
         return false;
     }
