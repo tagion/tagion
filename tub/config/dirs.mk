@@ -1,6 +1,7 @@
 export BUILD := ${abspath ${REPOROOT}/build/}
 export LOG := ${abspath ${REPOROOT}/logs/}
 
+export DDEVNET := ${abspath ${REPOROOT}/devnet/}
 export DBUILD := ${abspath $(BUILD)/$(PLATFORM)}
 export DLOG := ${abspath $(LOG)/$(PLATFORM)}
 

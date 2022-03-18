@@ -79,6 +79,7 @@ include $(DTUB)/config/host.mk
 include $(DTUB)/config/cross.mk
 include $(DTUB)/config/platform.mk
 include $(DTUB)/config/auxiliary.mk
+include $(DTUB)/devnet/devnet.mk
 
 #
 # Packages
