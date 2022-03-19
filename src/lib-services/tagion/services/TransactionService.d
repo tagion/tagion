@@ -81,6 +81,12 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             auto tosend = sender.toDoc.serialize;
             send(dart_sync_tid, opts.transaction.service.response_task_name, tosend);
         }
+        
+        @trusted void areWeInGraph(uint id) {
+            auto sender = internal_hirpc.healthcheck(new HiBON(), id);
+            auto tosend = sender.toDoc.serialize;
+            send(node_tid, opts.transaction.service.response_task_name, tosend);
+        }
 
         @safe class TransactionRelay : SSLFiberService.Relay {
             bool agent(SSLFiber ssl_relay) {
@@ -197,10 +203,27 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         break;
                     case "search":
                         search(params, ssl_relay.id); //epoch number?
-                        yield; /// Expects a response from the DART service
+                        do {
+                            yield;/// Expects a response from the DART service
+                        }
+                        while (!ssl_relay.available());
                         const response = ssl_relay.response;
                         ssl_relay.send(response);
                         break;
+                    case "healthcheck":
+                    
+                        log("sending healthcheck request");
+                        areWeInGraph(ssl_relay.id);
+                        do {
+                            yield;
+                            log("available - %s" , ssl_relay.available());
+                        }
+                        while (!ssl_relay.available());
+                        const response = ssl_relay.response;
+                        log("sending healthcheck response %s", Document(response).toJSON);
+                        ssl_relay.send(response);
+                        break;
+
                     default:
                         return true;
                     }
