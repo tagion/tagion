@@ -68,10 +68,17 @@ void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) @safe if (
     return cast(immutable)res;
 }
 
+@trusted immutable(ubyte[]) rawCalcHash(const BinBuffer buffer) {
+    import std.digest.sha : SHA256;
+    import std.digest;
+
+    BinBuffer res;
+    res.write(digest!SHA256(buffer.serialize));
+
+    return res.serialize;
+}
+
 @trusted immutable(BinBuffer) calcHash(scope const(ubyte[]) data) {
-    version (unittest) {
-        assert(!Document(data.idup).isInorder, "calcHash should not be use on a Document use hashOf instead");
-    }
     return rawCalcHash(data);
 }
 
@@ -200,34 +207,34 @@ do {
     immutable(ubyte[]) pubKeyTweakMul(const(ubyte[]) pubkey, const(ubyte[]) tweak, immutable bool compress = true) const {
         //        auto ctx=getContext();
         ubyte[] pubkey_array;
-        // pubkey_array.create(pubkey.length);
-        // pubkey_array[0 .. $] = pubkey[0 .. $];
-        // ubyte* _pubkey = pubkey_array.ptr;
-        // const(ubyte)* _tweak = tweak.ptr;
-        // size_t publen = pubkey.length;
+        pubkey_array.create(pubkey.length);
+        pubkey_array[0 .. $] = pubkey[0 .. $];
+        ubyte* _pubkey = pubkey_array.ptr;
+        const(ubyte)* _tweak = tweak.ptr;
+        size_t publen = pubkey.length;
 
-        // secp256k1_pubkey pubkey_result;
-        // int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, _pubkey, publen);
+        secp256k1_pubkey pubkey_result;
+        int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, _pubkey, publen);
 
-        // ret = secp256k1_ec_pubkey_tweak_mul(_ctx, &pubkey_result, _tweak);
+        ret = secp256k1_ec_pubkey_tweak_mul(_ctx, &pubkey_result, _tweak);
 
         ubyte[] outputSer_array;
-        // SECP256K1 flag;
-        // if (compress) {
-        //     outputSer_array.create(COMPRESSED_PUBKEY_SIZE);
-        //     // outputSer_array = new ubyte[COMPRESSED_PUBKEY_SIZE];
-        //     flag = SECP256K1.EC_COMPRESSED;
-        // }
-        // else {
-        //     outputSer_array.create(UNCOMPRESSED_PUBKEY_SIZE);
-        //     // outputSer_array = new ubyte[UNCOMPRESSED_PUBKEY_SIZE];
-        //     flag = SECP256K1.EC_UNCOMPRESSED;
-        // }
+        SECP256K1 flag;
+        if (compress) {
+            outputSer_array.create(COMPRESSED_PUBKEY_SIZE);
+            // outputSer_array = new ubyte[COMPRESSED_PUBKEY_SIZE];
+            flag = SECP256K1.EC_COMPRESSED;
+        }
+        else {
+            outputSer_array.create(UNCOMPRESSED_PUBKEY_SIZE);
+            // outputSer_array = new ubyte[UNCOMPRESSED_PUBKEY_SIZE];
+            flag = SECP256K1.EC_UNCOMPRESSED;
+        }
 
-        // ubyte* outputSer = outputSer_array.ptr;
-        // size_t outputLen = outputSer_array.length;
+        ubyte* outputSer = outputSer_array.ptr;
+        size_t outputLen = outputSer_array.length;
 
-        // int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey_result, flag);
+        int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey_result, flag);
 
         return cast(immutable)(outputSer_array);
     }
@@ -437,29 +444,31 @@ do {
 
     }
 
-    @trusted immutable(BinBuffer) HMAC(scope const(ubyte[]) data) const pure {
-        import std.exception : assumeUnique;
+    @trusted immutable(ubyte[]) HMAC(scope const(ubyte[]) data) const {
         import std.digest.sha : SHA256;
         import std.digest.hmac : digestHMAC = HMAC;
 
         scope hmac = digestHMAC!SHA256(data);
-        auto result = hmac.finish.dup;
-        return assumeUnique(result);
+        auto res_size = hmac.finish.length;
+        ubyte[] result;
+        result.create(res_size);
+        result[0 .. $] = hmac.finish[0 .. $];
+        return cast(immutable)result;
     }
 
-    @nogc final Pubkey pubkey() pure const nothrow {
+    Pubkey pubkey() pure const nothrow {
         return _pubkey;
     }
 
-    final Pubkey derivePubkey(string tweak_word) const {
+    Pubkey derivePubkey(string tweak_word) const {
         const tweak_code = HMAC(tweak_word.representation);
         return derivePubkey(tweak_code);
     }
 
-    final Pubkey derivePubkey(const(ubyte[]) tweak_code) const {
+    Pubkey derivePubkey(const(ubyte[]) tweak_code) const {
         Pubkey result;
-        // const pkey = cast(const(ubyte[])) _pubkey;
-        // result = pubKeyTweakMul(pkey, tweak_code);
+        const pkey = cast(const(ubyte[])) _pubkey;
+        result = pubKeyTweakMul(pkey, tweak_code);
         return result;
     }
 

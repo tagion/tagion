@@ -6,6 +6,7 @@ import std.range.primitives : isInputRange;
 import std.algorithm : map;
 import std.array : array;
 import std.algorithm.iteration : fold, cumulativeFold;
+import tagion.betterC.utils.BinBuffer;
 
 @trusted
 string toHexString(bool UCASE = false, BUF)(BUF buffer) pure nothrow
@@ -132,6 +133,16 @@ do {
     const _a = cast(const(ulong[])) a;
     const _b = cast(const(ulong[])) b;
     return cast(Buffer) gene_xor(_a, _b);
+}
+
+@safe
+const(Buffer) xor(BinBuffer a, BinBuffer b) pure nothrow
+in {
+    assert(a.length == b.length);
+    assert(a.length % ulong.sizeof == 0);
+}
+do {
+    return xor(a.serialize, b.serialize);
 }
 
 @nogc @safe
