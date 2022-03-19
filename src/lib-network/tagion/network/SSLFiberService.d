@@ -56,6 +56,7 @@ interface SSLFiber {
     void unlock() nothrow;
 
     Buffer response(); /// Response from the service
+    bool available(); 
     @property uint id();
     immutable(ubyte[]) receive(); /// Recives from the service socket
     void send(immutable(ubyte[]) buffer); /// Send to the service socket
