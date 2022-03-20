@@ -263,7 +263,6 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         scope (exit) {
             discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
         }
-        receive((DiscoveryState state) { assert(state == DiscoveryState.ONLINE); });
 
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
         receive((ActiveNodeAddressBook address_book) { update_pkeys(address_book.data.keys); });

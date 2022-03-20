@@ -341,17 +341,19 @@ struct NodeAddress {
         return tuple(from_ang, to_ang);
     }
 
-    static string parseAddr(string addr) {
+     static string parseAddr(string addr) {
         import std.string;
 
         string result;
         auto firstpartAddr = addr.indexOf('[') + 1;
-        auto secondpartAddr = addr.indexOf(']');
+        auto secondpartAddr = addr[firstpartAddr..$].indexOf(' ') + firstpartAddr;
         auto firstpartId = addr.indexOf('{') + 1;
         auto secondpartId = addr.indexOf(':');
         result = addr[firstpartAddr .. secondpartAddr] ~ p2p_token ~ addr[firstpartId .. secondpartId];
+        // log("address: %s \n after: %s", addr, result);
         return result;
     }
+
 
     public string toString() {
         return address;
