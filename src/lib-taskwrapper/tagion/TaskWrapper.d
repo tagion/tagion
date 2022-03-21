@@ -128,6 +128,7 @@ mixin TrustedConcurrency;
     }
 }
 
+version (unittest)
 @safe struct FakeTask {
     import std.string : StringException;
 

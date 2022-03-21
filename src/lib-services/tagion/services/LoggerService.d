@@ -41,11 +41,9 @@ import tagion.GlobalSignals : abort;
         }
     });
 
-    bool match(string task_name, LoggerType log_level) pure const nothrow {
-        if ((this.task_name == any_task_name || this.task_name == task_name) && this.log_level & log_level) {
-            return true;
-        }
-        return false;
+    @nogc bool match(string task_name, LoggerType log_level) pure const nothrow {
+        return (this.task_name == any_task_name || this.task_name == task_name)
+                && this.log_level & log_level;
     }
 }
 
@@ -86,20 +84,23 @@ void loggerTask(immutable(Options) opts) {
         }
 
         LogFilter[] log_filters;
-        bool matchAnyFilter(string task_name, LoggerType log_level) const nothrow {
+        @nogc bool matchAnyFilter(string task_name, LoggerType log_level) const nothrow pure {
             foreach (filter; log_filters) {
                 if (filter.match(task_name, log_level)) {
                     return true;
                 }
             }
             return false;
+            // return log_filters.any({lambda...})
         }
 
         task_register;
         log.set_logger_task(opts.logger.task_name);
 
-        // TODO: spawn log_sub_tid here?
+        pragma(msg, "fixme(ib) Spawn LogSubscriptionService from LoggerService");
         Tid log_subscription_tid;
+
+        pragma(msg, "fixme(ib) Pass mask to Logger to not pass not necessary data");
 
         File file;
         const logging = opts.logger.file_name.length != 0;
@@ -110,11 +111,11 @@ void loggerTask(immutable(Options) opts) {
         }
 
         void sendToLogSubscriptionService(string task_name, LoggerType log_level, string log_output) {
-            if (log_subscription_tid == Tid.init) {
+            if (log_subscription_tid is Tid.init) {
                 log_subscription_tid = locate(opts.logSubscription.task_name);
             }
 
-            if (log_subscription_tid != Tid.init) {
+            if (log_subscription_tid !is Tid.init) {
                 log_subscription_tid.send(task_name, log_level, log_output);
             }
         }
