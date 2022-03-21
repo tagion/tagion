@@ -39,6 +39,7 @@ include $(DTUB)/config/commands.mk
 prebuild:
 	$(PRECMD)
 	${foreach wrap,$(WRAPS),$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) $(wrap);}
+	git submodule update --recursive
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) ddeps
 
