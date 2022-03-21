@@ -13,12 +13,12 @@ main: help
 #
 # Defining absolute Root and Tub directories
 #
-export DSRC := $(abspath $(DROOT)/src)
-export DTUB := $(abspath $(DROOT)/tub)
-ifndef DROOT
-${error DROOT must be defined}
+export DSRC := $(abspath $(REPOROOT)/src)
+export DTUB := $(abspath $(REPOROOT)/tub)
+ifndef REPOROOT
+${error REPOROOT must be defined}
 endif
-#export DROOT := ${abspath ${DTUB}/../}
+#export REPOROOT := ${abspath ${DTUB}/../}
 
 ifeq (prebuild,$(MAKECMDGOALS))
 PREBUILD=1
@@ -27,8 +27,8 @@ endif
 #
 # Local config, ignored by git
 #
--include $(DROOT)/local.*.mk
--include $(DROOT)/local.mk
+-include $(REPOROOT)/local.*.mk
+-include $(REPOROOT)/local.mk
 include $(DTUB)/utilities/dir.mk
 include $(DTUB)/utilities/log.mk
 
@@ -38,11 +38,8 @@ include $(DTUB)/config/commands.mk
 
 prebuild:
 	$(PRECMD)
-	echo "******************************* " $@ K$(MAKELEVEL)K
-	echo "******************************* " $@ $(MAKELEVEL)
-	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) secp256k1
-	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) p2pgowrapper
-	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) openssl
+	${foreach wrap,$(WRAPS),$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) $(wrap);}
+	git submodule update --recursive
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) ddeps
 
@@ -53,8 +50,8 @@ prebuild:
 #
 # This is the HOST target platform
 #
-HOST_PLATFORM=${call join-with,-,$(GETARCH) $(GETHOSTOS) $(GETOS)}
-PLATFORM?=$(HOST_PLATFORM)
+HOST=${call join-with,-,$(GETARCH) $(GETHOSTOS) $(GETOS)}
+PLATFORM?=$(HOST)
 
 #
 # Platform
@@ -69,7 +66,7 @@ ifndef PREBUILD
 -include $(DBUILD)/gen.ddeps.mk
 endif
 
--include $(DROOT)/platform.*.mk
+-include $(REPOROOT)/platform.*.mk
 
 #
 # Secondary tub functionality
@@ -83,6 +80,7 @@ include $(DTUB)/config/host.mk
 include $(DTUB)/config/cross.mk
 include $(DTUB)/config/platform.mk
 include $(DTUB)/config/auxiliary.mk
+include $(DTUB)/devnet/devnet.mk
 
 #
 # Packages
@@ -104,8 +102,8 @@ include $(DTUB)/compile.mk
 #
 # Root config
 #
--include $(DROOT)/config.*.mk
--include $(DROOT)/config.mk
+-include $(REPOROOT)/config.*.mk
+-include $(REPOROOT)/config.mk
 
 
 #
@@ -121,4 +119,4 @@ include $(DTUB)/help.mk
 run: tagionwave
 	cd $(DBIN);
 	rm -fR data; mkdir data;
-	./tagionwave -N 7
+	script -c "./tagionwave $(DRTFALGS) -N 7" tagionwave_script.log

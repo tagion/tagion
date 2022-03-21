@@ -154,45 +154,8 @@ Buffer xor(Range)(scope Range range) pure if (isInputRange!Range) {
     import std.array : array;
     import std.range : tail;
 
-    // ubyte[] result;
-    // foreach(b; range) {
-    //     if (result) {
-    //         result.length = b.length;
-    //     }
-    //     result = xor(result, b);
-    // }
-    // return result;
-    //     if (!range.empty) {
-    //         result.length = range.front.length;
-
-    //         import std.algorithm.iteration : fold;
-
-    //     //pragma(msg, "xor Range ", Range);
-    //     // auto test(scope const(ubyte[]) a, scope const(ubyte[]) b) @safe {
-    //     //     return xor(a, b);
-    //     // }
-    //     import tagion.utils.Gene: gene_xor;
-
-    //     auto x=range
-    //         .map!((a) => cast(ulong[])a)
-    //         .fold!((a, b) => gene_xor(a, b));
-    // //        .array;
-
-    //     const y=xor(range.front, range.front);
     return range
         .cumulativeFold!((a, b) => _xor(a, b))
         .tail(1)
         .front;
-    // pragma(msg, "typeof(x) ", typeof(x));
-    //     pragma(msg, "#################################### typeof(x) ", typeof(x));
-    //     // pragma(msg, "typeof(range) ", typeof(range));
-    //     pragma(msg, "typeof(range.front) ", typeof(range.front));
-    //    xxx;
-
-    // return
-    //     null;
-    //    return range.fold!((scope a, scope b) => xor(a, b)).array;
 }
-
-// import std.compiler;
-// pragma(msg, "### VERSION ", version_major, ".", version_minor);

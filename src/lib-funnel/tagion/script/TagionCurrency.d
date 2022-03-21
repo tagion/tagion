@@ -179,8 +179,6 @@ struct TagionCurrency {
                             q{
                         static assert(!__traits(compiles, 10.TGN %s 12.TGN));
                     }, op);
-                //pragma(msg, code);
-
                 mixin(code);
             }
         }
@@ -191,7 +189,6 @@ struct TagionCurrency {
                             q{
                         static assert(!__traits(compiles, 4 %s 12.TGN));
                     }, op);
-                //pragma(msg, code);
                 mixin(code);
             }
         }
@@ -207,11 +204,9 @@ struct TagionCurrency {
                     x %s x;
                 }));
             }(op);
-                //pragma(msg, code);
                 mixin(code);
             }
         }
-        //                    4 / 12.TGN));
 
         { // test of opEqual, opBinary, opBinaryRight, opUnary, opCmp
             const x = 11.TGN;

@@ -97,7 +97,6 @@ void mdnsDiscoveryService(shared p2plib.Node node, string task_name, immutable(O
                 case DiscoveryRequestCommand.BecomeOnline: {
                         log("Becoming online..");
                         addOwnInfo();
-                        ownerTid.send(DiscoveryState.ONLINE);
                         break;
                     }
                 case DiscoveryRequestCommand.RequestTable: {

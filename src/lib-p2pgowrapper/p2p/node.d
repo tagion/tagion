@@ -3,6 +3,7 @@ module p2p.node;
 import lib = p2p.cgo.libp2pgowrapper;
 import p2p.cgo.c_helper;
 import p2p.go_helper;
+import p2p.interfaces;
 import std.stdio;
 import core.time;
 import std.algorithm;
@@ -13,14 +14,6 @@ import p2p.callback;
 
 static void EnableLogger() {
     lib.enableLogger();
-}
-
-alias Buffer = immutable(ubyte[]);
-private static struct DefaultOptions { //TODO: moveout to static options in tagion
-static:
-    Duration timeout = 100.seconds;
-    int maxSize = 1024 * 10;
-    Duration mdnsInterval = 10.seconds;
 }
 
 @trusted class Subscription {
@@ -44,7 +37,7 @@ static:
     }
 }
 
-@trusted synchronized class Node {
+@trusted synchronized class Node : NodeI {
     protected shared const void* node;
     protected shared const void* context;
     // OPTIONS
@@ -104,15 +97,23 @@ static:
         this.node = cast(shared) lib.createNodeApi(cast(void*) context, opts).cgocheck;
     }
 
-    void listen(string pid, HandlerCallback handler, string tid,
-            Duration timeout = DefaultOptions.timeout, int maxSize = DefaultOptions.maxSize) { //TODO: check if disposed
+    void listen(
+            string pid,
+            HandlerCallback handler,
+            string tid,
+            Duration timeout = DefaultOptions.timeout,
+            int maxSize = DefaultOptions.maxSize) { //TODO: check if disposed
         DBuffer pidStr = pid.ToDString();
         DBuffer tidStr = tid.ToDString();
         lib.listenApi(cast(void*) node, pidStr, handler, tidStr,
                 cast(int)(timeout.total!"msecs"), maxSize).cgocheck;
     }
 
-    void listenMatch(string pid, HandlerCallback handler, string tid, string[] pids,
+    void listenMatch(
+            string pid,
+            HandlerCallback handler,
+            string tid,
+            string[] pids,
             Duration timeout = DefaultOptions.timeout, int maxSize = DefaultOptions.maxSize) { //TODO: check if disposed
         DBuffer pidStr = pid.ToDString();
         DBuffer tidStr = tid.ToDString();
@@ -126,7 +127,10 @@ static:
         lib.closeListenerApi(cast(void*) node, pidStr).cgocheck;
     }
 
-    shared(RequestStream) connect(string addr, bool addrInfo, string[] pids...) {
+    shared(RequestStreamI) connect(
+            string addr,
+            bool addrInfo,
+            string[] pids...) {
         DBuffer addrStr = addr.ToDString();
         DBuffer[] pidStr = pids.map!(pid => pid.ToDString).array;
         auto listenerResponse = lib.handleApi(cast(void*) node, addrStr,
@@ -134,12 +138,17 @@ static:
         return new shared RequestStream(listenerResponse.r0, listenerResponse.r1);
     }
 
-    void connect(string addr, bool addrInfo = false) {
+    void connect(
+            string addr,
+            bool addrInfo = false) {
         DBuffer addrStr = addr.ToDString();
         lib.connectApi(cast(void*) node, cast(void*) context, addrStr, addrInfo);
     }
 
-    MdnsService startMdns(string randezvous, Duration interval = DefaultOptions.mdnsInterval) {
+    MdnsService startMdns(
+            string randezvous,
+            Duration interval =
+            DefaultOptions.mdnsInterval) {
         DBuffer randezvousStr = randezvous.ToDString();
         return new MdnsService(lib.createMdnsApi(cast(void*) context,
                 cast(void*) node, cast(int)(interval.total!"msecs"), randezvousStr).cgocheck);
@@ -170,7 +179,7 @@ static:
         return new AutoNAT(natPtr);
     }
 
-    @property Id() {
+    @property string Id() {
         CopyCallback cb;
         lib.getNodeIdApi(cast(void*) node, &(CopyCallback.callbackFunc), &cb).cgocheck;
         return cast(string)(cb.buffer);
@@ -239,24 +248,24 @@ static:
     }
 }
 
-@trusted synchronized class Stream {
+@trusted synchronized class Stream : StreamI {
     protected shared const void* stream;
-    protected shared const ulong identifier;
+    protected shared const ulong _identifier;
 
     protected shared bool disposed = false;
 
-    @property bool alive() {
+    @property bool alive() pure const nothrow {
         return !disposed;
     }
 
     @disable this();
     package this(const void* ptr, const ulong id) {
         stream = cast(shared) ptr;
-        identifier = id;
+        _identifier = id;
     }
 
-    @property ulong Identifier() {
-        return identifier;
+    @property ulong identifier() {
+        return _identifier;
     }
 
     void writeBytes(Buffer data) {
@@ -269,7 +278,7 @@ static:
 
     void close() {
         if (!disposed) {
-            writeln("!!NODE!! CLOSE STREAM ", identifier);
+            writeln("!!NODE!! CLOSE STREAM ", _identifier);
             lib.closeStreamApi(cast(void*) stream).cgocheck;
             lib.destroyApi(cast(void*) stream).cgocheck;
             disposed = true;
@@ -277,7 +286,7 @@ static:
     }
 
     ~this() {
-        writeln("!!NODE!! DESTROY STREAM ", identifier);
+        writeln("!!NODE!! DESTROY STREAM ", _identifier);
         // close();
         if (!disposed) {
             lib.destroyApi(cast(void*) stream).cgocheck;
@@ -286,27 +295,30 @@ static:
     }
 }
 
-@trusted synchronized class RequestStream : Stream {
+@trusted synchronized class RequestStream : Stream, RequestStreamI {
     @disable this();
     private this(const void* ptr, const ulong id) {
         super(ptr, id);
     }
 
-    void listen(HandlerCallback handler, string tid,
-            Duration timeout = DefaultOptions.timeout, int maxSize = DefaultOptions.maxSize) {
+    void listen(
+            HandlerCallback handler,
+            string tid,
+            Duration timeout = DefaultOptions.timeout,
+            int maxSize = DefaultOptions.maxSize) {
         DBuffer tidStr = tid.ToDString();
-        lib.listenStreamApi(cast(void*) stream, cast(int) identifier, handler,
+        lib.listenStreamApi(cast(void*) stream, cast(int) _identifier, handler,
                 tidStr, cast(int)(timeout.total!"msecs"), maxSize).cgocheck;
     }
 
     void reset() {
-        writeln("!!NODE!! RESET RequestStream", identifier);
+        writeln("!!NODE!! RESET RequestStream", _identifier);
         lib.resetStreamApi(cast(void*) stream).cgocheck;
     }
 
     override void close() {
         if (!disposed) {
-            writeln("!!NODE!! DESTROY RequestStream", identifier);
+            writeln("!!NODE!! DESTROY RequestStream", _identifier);
             reset();
             lib.destroyApi(cast(void*) stream).cgocheck;
             disposed = true;
@@ -314,12 +326,12 @@ static:
     }
 
     ~this() {
-        writeln("!!NODE!! destructor DESTROY RequestStream", identifier);
+        writeln("!!NODE!! destructor DESTROY RequestStream", _identifier);
         close();
     }
 }
 
-@trusted class MdnsService {
+@trusted class MdnsService : MdnsServiceI {
     protected shared const void* service;
     protected shared bool disposed = false;
 
@@ -328,7 +340,9 @@ static:
         service = cast(shared) ptr;
     }
 
-    MdnsNotifee registerNotifee(HandlerCallback callback, string tid) {
+    MdnsNotifee registerNotifee(
+            HandlerCallback callback,
+            string tid) {
         DBuffer tidStr = tid.ToDString();
         auto notifee = lib.registerNotifeeApi(cast(void*) service, callback, tidStr).cgocheck;
         return new MdnsNotifee(notifee, this);
@@ -352,7 +366,7 @@ static:
     }
 }
 
-@trusted class MdnsNotifee {
+@trusted class MdnsNotifee : MdnsNotifeeI {
     protected shared const void* notifee;
     protected const MdnsService mdns;
     protected shared bool disposed = false;

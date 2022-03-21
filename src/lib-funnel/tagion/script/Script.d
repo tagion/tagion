@@ -1470,7 +1470,7 @@ enum Dot {
     L = ".L",
     V = ".V",
     S = ".S"
-};
+}
 
 @safe
 class ScriptDebugPrint(Dot O) : ScriptElement {
@@ -1609,18 +1609,6 @@ class ScriptGetBSON : ScriptElement {
             with (FunnelType) {
                 auto hibon_key = sc.pop.by!TEXT;
                 auto hibon = sc.pop().by!(FunnelType.HIBON);
-                //                pragma(msg, "typepf hibon=", typeof(hibon));
-
-                //                 if ( hibon_key.length !is 0) {
-                //                     return new ScriptError("The bson field name cannot be empty", this);
-                //                 }
-
-                // //            auto hibon=sc.hibon(hibons_index);
-
-                //                 if ( !hibon.hasMember(hibon_key) ) {
-                //                     return new ScriptError("The bson_key does not exists in the bson.", this);
-                //                 }
-
                 Value value;
                 auto hibon_elm = hibon[hibon_key];
             TypeCase:

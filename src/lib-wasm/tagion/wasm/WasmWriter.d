@@ -22,22 +22,16 @@ import tagion.wasm.WasmBase;
 import tagion.wasm.WasmReader;
 import tagion.wasm.WasmException;
 
-//import wavm.Wdisasm;
-
 @safe class WasmWriter {
 
     alias ReaderSections = WasmReader.Sections;
 
     alias ReaderCustom = ReaderSections[Section.CUSTOM];
 
-    // alias Module=ModuleT!(WasmSection);
     alias Sections = SectionsT!(WasmSection);
 
     // The first element Custom is Sections sequency is replaced with CustomList
     alias Modules = Tuple!(Replace!(WasmSection.Custom, WasmSection.CustomList, Sections));
-    //    pragma(msg, Modules);
-    //    alias ModuleIterator=void delegate(const Section sec, ref scope const(Module) mod);
-
     alias InterfaceModule = InterfaceModuleT!(Sections);
 
     alias ReaderSecType(Section sec) = TemplateArgsOf!(ReaderSections[sec].SecRange)[1];
@@ -65,15 +59,13 @@ import tagion.wasm.WasmException;
     template FromSecType(SecType, TList...) {
         alias T = WasmSection.SectionT!SecType;
         static foreach (E; EnumMembers!Section) {
-            static if (is(T == TList[E])) { // || (isPointer!(TList[E])) && is(T == PointerTarget!(TList[E]))) {
+            static if (is(T == TList[E])) {
                 enum FromSecType = E;
             }
         }
     }
 
     enum fromSecType(T) = FromSecType!(T, Sections);
-
-    // alias getType(Section sec)=WasmSection.Sections.Types[sec];
 
     mixin template loadSec(Section sec_type) {
         enum code = format(q{
@@ -87,15 +79,13 @@ import tagion.wasm.WasmException;
     }
 
     class WasmLoader : WasmReader.InterfaceModule {
-        //        alias SecType(Section sec)=Sections[sec];
         alias SecElement(Section sec) = TemplateArgsOf!(Sections[sec])[0];
         private Section previous_sec;
         void section_secT(Section sec)(ref ConstOf!(ReaderSections[sec]) _reader_sec) {
             if (_reader_sec !is null) {
-                //alias ModT=Sections[sec];
                 alias ModuleType = Sections[sec];
                 alias SectionElement = TemplateArgsOf!(ModuleType);
-                auto _sec = new ModuleType; //ecType!sec;
+                auto _sec = new ModuleType;
                 mod[sec] = _sec;
                 foreach (s; _reader_sec[]) {
                     _sec.sectypes ~= SecElement!(sec)(s);
@@ -152,21 +142,9 @@ import tagion.wasm.WasmException;
         }
 
         foreach (E; EnumMembers!Section) {
-            //static if (E is Section.CUSTOM) {
-            //            if (mod[Section.CUSTOM][previous_sec]e.length) {
-            // writefln("mod[Section.CUSTOM] %s ", mod[Section.CUSTOM]);
-            // writefln("mod[Section.CUSTOM].list=%s", mod[Section.CUSTOM].list);
-            // writefln("mod[Section.CUSTOM].list %s", typeof(mod[Section.CUSTOM].list).stringof);
-            // writefln("mod[Section.CUSTOM].list[0] %s", typeof(mod[Section.CUSTOM].list[0]).stringof);
             foreach (const sec; mod[Section.CUSTOM].list[previous_sec]) {
-                // }
                 output_custom(sec);
             }
-            // if (custom) {
-            //     custom_buffers[previous_sec]=new OutBuffer;
-            //     custom_buffers[previous_sec].reserve(custom.guess_size);
-            //     custom.serialize(custom_buffers[previous_sec]);
-            // }
             static if (E !is Section.CUSTOM) {
                 if (mod[E]!is null) {
                     buffers[E] = new OutBuffer;
@@ -179,11 +157,8 @@ import tagion.wasm.WasmException;
             previous_sec = E;
         }
         foreach (const sec; mod[Section.CUSTOM].list[previous_sec]) {
-            // }
             output_custom(sec);
         }
-        //output_custom(mod[Section.CUSTOM][previous_sec]);
-        //
         previous_sec = Section.CUSTOM;
         auto output = new OutBuffer;
         output_size += magic.length + wasm_version.length;
@@ -242,11 +217,9 @@ import tagion.wasm.WasmException;
                                 m.each!((e) => bout.write(encode(e)));
                             }
                             else static if (hasMember!(U, "serialize")) {
-                                //writefln("serialize %s m.length=%d", m, m.length);
                                 foreach (e; m) {
                                     e.serialize(bout);
                                 }
-                                //writefln("bout=%s", bout.toBytes);
                             }
                             else {
                                 static assert(0,
@@ -285,7 +258,6 @@ import tagion.wasm.WasmException;
                     }
                 }
             }
-            //mixin Serialize;
         }
 
         static class SectionT(SecType) {
@@ -331,7 +303,6 @@ import tagion.wasm.WasmException;
             }
 
         }
-        //        alias Custom=CustomType[Section];
 
         struct FuncType {
             Types type;
@@ -434,8 +405,6 @@ import tagion.wasm.WasmException;
                         }
                     }
                 }
-
-                //                mixin Serialize;
 
                 auto get(IndexType IType)() const pure
                 in {
@@ -554,7 +523,6 @@ import tagion.wasm.WasmException;
             Limit limit;
             this(ref const(ReaderSecType!(Section.MEMORY)) m) {
                 limit = Limit(m.limit);
-                //writefln("MemoryType %s", this);
             }
 
             mixin Serialize;
@@ -569,13 +537,11 @@ import tagion.wasm.WasmException;
             this(const GlobalDesc global, immutable(ubyte)[] expr) {
                 this.global = global;
                 this.expr = expr;
-                //writefln("GlobalDesc length=%d expr=%s", expr.length, expr);
             }
 
             this(ref const(ReaderSecType!(Section.GLOBAL)) g) {
                 global = ImportType.ImportDesc.GlobalDesc(g.global);
                 expr = g.expr;
-                //writefln("GlobalDesc length=%d expr=%s", expr.length, expr);
             }
 
             mixin Serialize;
@@ -668,7 +634,7 @@ import tagion.wasm.WasmException;
                 auto tmp_out = new OutBuffer;
                 tmp_out.reserve(guess_size);
                 tmp_out.write(encode(locals.length));
-                locals.each!((l) => l.serialize(tmp_out)); //.write(encode(e)));
+                locals.each!((l) => l.serialize(tmp_out));
                 tmp_out.write(expr);
                 bout.write(encode(tmp_out.offset));
                 bout.write(tmp_out.toBytes);
@@ -700,8 +666,6 @@ version (none) unittest {
     import std.file;
     import std.exception : assumeUnique;
     import tagion.wavm.Wast;
-
-    //      import std.file : fread=read, fwrite=write;
 
     @trusted static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
         import std.file : _read = read;

@@ -25,7 +25,6 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
 import tagion.dart.DARTException : BlockFileException;
 
-// version(unittest) {
 import std.math : rint;
 
 version (unittest) {
@@ -47,9 +46,6 @@ extern (C) {
 void truncate(ref File file, long length) {
     ftruncate(file.fileno, length);
 }
-
-//alias BlockFileT=BlockFile!0x200;
-//private alias SmallBlockFile=BlockFile!0x40;
 
 alias check = Check!BlockFileException;
 
@@ -184,8 +180,6 @@ class BlockFile {
         void read() {
             indices.clear;
             void read_recycle_list(const uint index) {
-                // import std.stdio;
-                // writeln(index);
                 if (index !is INDEX_NULL) {
                     const block = owner.read(index);
                     indices.insert(index);
@@ -528,7 +522,6 @@ class BlockFile {
         headerblock.create_time = Clock.currTime.toUnixTime!long;
         headerblock.write(file);
         last_block_index = 1;
-        //masterblock.write(file);
         masterblock.write(file, BLOCK_SIZE);
         hasheader = true;
     }

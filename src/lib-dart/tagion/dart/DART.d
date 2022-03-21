@@ -523,6 +523,9 @@ class DART : DARTFile { //, HiRPC.Supports {
         enum indexName = GetLabel!(index).name;
         enum recorderName = GetLabel!(recorder).name;
         this(RecordFactory manufactor, const Document doc) {
+
+            
+
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!uint;
             const recorder_doc = doc[recorderName].get!Document;
@@ -682,14 +685,14 @@ class DART : DARTFile { //, HiRPC.Supports {
                     //
                     const request_archives = dartRead(foreign_branches.fingerprints, hirpc, id);
                     const result_archives = sync.query(request_archives);
-                    scope foreign_recoder = manufactor.recorder(result_archives.response.result);
+                    auto foreign_recoder = manufactor.recorder(result_archives.response.result);
                     //
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
                     // The archive fingerprints is removed from the branches
-                    Archive[Buffer] set_of_archives;
-                    foreach (a; foreign_recoder.archives[]) {
-                        set_of_archives[a.fingerprint] = a;
-                    }
+                    // Archive[Buffer] set_of_archives;
+                    // foreach (a; foreign_recoder.archives[]) {
+                    //     set_of_archives[a.fingerprint] = a;
+                    // }
                     //                    sync.record(foreign_recoder);
 
                     auto foreign_fingerprints = foreign_branches.fingerprints.dup;
@@ -701,10 +704,11 @@ class DART : DARTFile { //, HiRPC.Supports {
                         immutable key = cast(ubyte) k;
                         immutable sub_rims = Rims(params.rims ~ key);
                         immutable local_print = local_branches.fingerprint(key);
-                        auto foreign_archive = (foreign_print in set_of_archives);
+                        // auto foreign_archive = (foreign_print in set_of_archives);
+                        auto foreign_archive = foreign_recoder.find(foreign_print);
                         if (foreign_archive) {
                             if (local_print != foreign_print) {
-                                local_recorder.insert(*foreign_archive);
+                                local_recorder.insert(foreign_archive);
                                 sync.remove_recursive(sub_rims);
                             }
                         }
@@ -760,13 +764,6 @@ class DART : DARTFile { //, HiRPC.Supports {
                 ) {
                 immutable data = journalfile.load(index);
                 const doc = Document(data);
-                // index=doc[Params.index].get!uint;
-
-                //scope replay_recorder_doc=doc[Params.recorder].get!Document;
-
-                // scope replay_recorder=manufactor.recorder(replay_recorder_doc);
-                // writefln("replay_recorder_doc=%s", replay_recorder_doc);
-                // writefln("doc.keys=%s", doc.keys);
                 auto journal_replay = Journal(manufactor, doc);
                 index = journal_replay.index;
                 auto action_recorder = recorder;
@@ -838,7 +835,7 @@ class DART : DARTFile { //, HiRPC.Supports {
     unittest {
         import tagion.utils.Random;
         import tagion.dart.BlockFile;
-        import tagion.basic.Basic : tempfile;
+        import tagion.basic.Basic : tempfile, assumeTrusted;
         import tagion.dart.DARTFakeNet : DARTFakeNet;
 
         auto net = new DARTFakeNet("very_secret");
@@ -928,7 +925,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                         auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                         // D!(sector, "%x");
                         while (!dart_A_synchronizer.empty) {
-                            (() @trusted { dart_A_synchronizer.call; })();
+                            (() @trusted => dart_A_synchronizer.call)();
                         }
                     }
                     foreach (journal_filename; journal_filenames) {
@@ -990,7 +987,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        (() @trusted => dart_A_synchronizer.call)();
                     }
                 }
                 foreach (journal_filename; journal_filenames) {
@@ -1046,7 +1043,7 @@ class DART : DARTFile { //, HiRPC.Supports {
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
-                        (() @trusted { dart_A_synchronizer.call; })();
+                        (() @trusted => dart_A_synchronizer.call)();
                     }
                 }
                 foreach (journal_filename; journal_filenames) {

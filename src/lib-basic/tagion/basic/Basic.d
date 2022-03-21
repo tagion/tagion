@@ -228,7 +228,7 @@ enum Control {
     STOP, /// Send when the child task to stop task
     //    FAIL,   /// This if a something failed other than an exception
     END /// Send for the child to the ownerTid when the task ends
-};
+}
 
 /++
  Calculates log2
@@ -446,7 +446,6 @@ auto eatOne(R)(ref R r) if (isInputRange!R) {
 
 unittest {
     const(int)[] a = [1, 2, 3];
-    pragma(msg, typeof(a));
     assert(eatOne(a) == 1);
     assert(eatOne(a) == 2);
     assert(eatOne(a) == 3);
@@ -461,50 +460,6 @@ template assumeTrusted(alias F) {
     auto assumeTrusted(Args...)(Args args) @trusted {
         return F(args);
     }
-}
-
-version (none) template assumeTrusted1(alias F) {
-    import std.traits;
-
-    //    static assert(isUnsafe!F);
-    pragma(msg, "assumeTrusted1 ", F.stringof);
-    pragma(msg, "assumeTrusted1 ", isCallable!F);
-    pragma(msg, "assumeTrusted1 ", is(F == function));
-    // alias Params=Parameters!(typeof(F));
-    // alias ParamNames=ParameterIdentifierTuple!F;
-
-    // writefln("code=%s", code);
-    // writefln("code=%s", code.splitter!("a == b",Yes.keepSeparators)(')'));
-    // writefln("part=%s", code.splitter!("a == b",Yes.keepSeparators)(')').front);
-
-    enum code = format!q{
-        auto %s @trusted {
-            %s
-        }
-    }(F.stringof, "x");
-    pragma(msg, code);
-    // auto assumeTrusted(Args...)(Args args) @trusted {
-    //     return F(args);
-    // }
-}
-
-T assumeTrusted1(T)(lazy T expr) @trusted {
-    //     import std.traits;
-    // //    pragma(msg, "assumeTrusted1 ", F.stringof);
-    //     return (() @trusted => expr)();
-    // //    static assert(isUnsafe!F);
-    //     // pragma(msg, "assumeTrusted1 ", isCallable!F);
-    //     // pragma(msg, "assumeTrusted1 ", is(F == function));
-    //     // auto assumeTrusted(Args...)(Args args) @trusted {
-    //     //     return F(args);
-    //     // }
-    return T.init;
-}
-
-import std.concurrency;
-
-static int x_send(Args...)(Tid tid, Args args) @system {
-    return 42;
 }
 
 ///
@@ -559,4 +514,67 @@ unittest {
         assert(assumeTrusted!(receiveOnly!(const(int))) == 21 * 2);
         assert(assumeTrusted!(receiveOnly!(string)) == "Hello");
     }
+}
+
+protected template _staticSearchIndexOf(int index, alias find, L...) {
+    import std.meta : staticIndexOf;
+
+    static if (isType!find) {
+        enum _staticSearchIndexOf = staticIndexOf!(find, L);
+    }
+    else {
+        static if (L.length is index) {
+            enum _staticSearchIndexOf = -1;
+        }
+        else {
+            enum found = find!(L[index]);
+            pragma(msg, "found ", found);
+            static if (found) {
+                enum _staticSearchIndexOf = index;
+            }
+            else {
+                enum _staticSearchIndexOf = _staticSearchIndexOf!(index + 1, find, L);
+            }
+        }
+    }
+}
+
+/**
+This template finds the index of find in the AliasSeq L.
+If find is a type it works the same as traits.staticIndexOf,
+ but if func is a templeate function it will use this function as a filter
+Returns:
+First index where find has been found
+If nothing has been found the template returns -1
+ */
+
+template staticSearchIndexOf(alias find, L...) {
+    enum staticSearchIndexOf = _staticSearchIndexOf!(0, find, L);
+}
+
+static unittest {
+    import std.traits : isIntegral, isFloatingPoint;
+
+    alias seq = AliasSeq!(string, int, long, char);
+    pragma(msg, "staticSearchIndexOf ", staticSearchIndexOf!(long, seq));
+    static assert(staticSearchIndexOf!(long, seq) is 2);
+    static assert(staticSearchIndexOf!(isIntegral, seq) is 1);
+    static assert(staticSearchIndexOf!(isFloatingPoint, seq) is -1);
+}
+
+enum unitdata = "unitdata";
+/**
+   Returns:
+   unittest data filename
+ */
+string unitfile(string filename, string file = __FILE__) {
+    import std.path;
+
+    return buildPath(file.dirName, unitdata, filename);
+}
+
+template mangleFunc(alias T) if (isCallable!T) {
+    import core.demangle : mangle;
+
+    alias mangleFunc = mangle!(FunctionTypeOf!(T));
 }

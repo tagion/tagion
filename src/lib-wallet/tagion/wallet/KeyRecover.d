@@ -206,8 +206,6 @@ struct KeyRecover {
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, generator.confidence);
 
-        // .check(generator.Y.length == seeds, message(
-        //         "Number of answers does not match the number of quiz seeds"));
         bool result;
         bool search_for_the_secret(scope const(uint[]) indices) @safe {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
@@ -223,7 +221,6 @@ struct KeyRecover {
         }
 
         iterateSeeds(number_of_questions, generator.confidence, &search_for_the_secret);
-        //        writefln("Checked secret %s %d", generator.S == checkHash(R), generator.S.length);
         return result;
     }
 }
@@ -263,8 +260,6 @@ unittest {
     import std.array : join;
 
     auto selected_questions = indexed(standard_questions, [0, 2, 3, 7, 8]).array.idup;
-    //pragma(msg, typeof(selected_questions));
-    //writefln("%s", selected_questions.join("\n"));
     string[] answers = [
         "mobidick",
         "Mother Teresa!",
@@ -280,7 +275,6 @@ unittest {
 
     { // All the ansers are correct
         const result = recover.findSecret(R, selected_questions, answers);
-        //writefln("R=%s", R.toHexString);
         assert(R.length == net.hashSize);
         assert(result); // Password found
     }

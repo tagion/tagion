@@ -83,8 +83,6 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
         const task_name = opts.dart.sync.task_name;
         log.register(task_name);
 
-        //auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, uint))(10.seconds); //***
-
         auto state = ServiceState!DARTSynchronizeState(DARTSynchronizeState.WAITING);
         auto pid = opts.dart.sync.protocol_id;
         log("-----Start DART Sync service-----");
@@ -123,7 +121,6 @@ void dartSynchronizeServiceTask(Net : SecureNet)(immutable(Options) opts,
 
         scope (exit) {
             node.closeListener(pid);
-            //// 
         }
         bool stop;
         void handleControl(Control ts) {
@@ -486,7 +483,7 @@ tagion.dart.DARTSynchronization.P2pSynchronizationFactory.this(
     immutable(Options) opts,
     immutable(Typedef!(immutable(ubyte)[], null, "PUBKEY")) pkey)
 
-
+iiiiik
     DART,
     shared(Node),
     shared(ConnectionPool!(shared(Stream), ulong)),

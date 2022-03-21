@@ -10,7 +10,7 @@ import std.string: strip;
 
 import tagion.basic.Basic: basename, DataFormat;
 import tagion.basic.TagionExceptions;
-import tagion.basic.Logger: LoggerType;
+import tagion.logger.Logger : LoggerType;
 import tagion.utils.JSONCommon;
 
 /++
@@ -171,6 +171,22 @@ struct Options {
 
     Transaction transaction;
 
+    struct LogSubscription {
+        string protocol_id;
+        string task_name; /// Transaction task name
+        string net_task_name;
+        string prefix;
+        uint timeout; /// Socket listerne timeout in msecs
+        import tagion.network.SSLOptions;
+
+        SSLOption service; /// SSL Service used by the transaction service
+        HostOptions host;
+        ushort max; // max == 0 means all
+        mixin JSONCommon;
+    }
+
+    LogSubscription logSubscription;
+
     import tagion.dart.DARTOptions;
     DARTOptions dart;
 
@@ -185,6 +201,7 @@ struct Options {
 
     Logger logger;
 
+
     struct TRT {
         string task_name;
         string pass; 
@@ -193,6 +210,15 @@ struct Options {
     }
 
     TRT trt;
+
+    struct Recorder {
+        string task_name; /// Name of the recorder task
+        string folder_path; /// Folder used for the recorder service files
+        mixin JSONCommon;
+    }
+
+    Recorder recorder;
+
 
     struct Message {
         string language; /// Language used to print message
@@ -359,7 +385,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
 
 
     );
-};
+}
 
 static setDefaultOption(ref Options options) {
     // Main
@@ -455,6 +481,43 @@ static setDefaultOption(ref Options options) {
             max_size = 1024 * 100;
         }
     }
+    // LogSubscription
+    with (options.logSubscription) {
+        //        port=10700;
+        max = 0;
+        prefix = "logsubscription";
+        task_name = prefix;
+        net_task_name = "logsubscription_net";
+        timeout = 250;
+        with (service) {
+            prefix = "logsubscriptionservice";
+            task_name = prefix;
+            response_task_name = "respose";
+            address = "0.0.0.1";
+            port = 10_700;
+            select_timeout = 300;
+            client_timeout = 4000; // msecs
+            max_buffer_size = 0x4000;
+            max_queue_length = 100;
+            max_connections = 1000;
+            // max_number_of_accept_fibers = 100;
+            // min_duration_full_fibers_cycle_ms = 10;
+            //            max_number_of_fiber_reuse = 1000;
+            //            min_number_of_fibers = 10;
+            //            min_duration_for_accept_ms = 3000;
+            with (openssl) {
+                certificate = "pem_files/domain.pem";
+                private_key = "pem_files/domain.key.pem";
+                days = 365;
+                key_size = 4096;
+            }
+            task_name = "logsubscription.service";
+        }
+        with (host) {
+            timeout = 3000;
+            max_size = 1024 * 100;
+        }
+    }
     // Monitor
     with (options.monitor) {
         port = 10900;
@@ -471,6 +534,11 @@ static setDefaultOption(ref Options options) {
         flush = true;
         to_console = true;
         mask = LoggerType.ALL;
+    }
+    // Recorder
+    with (options.recorder) {
+        task_name = "recorder";
+        folder_path = "/tmp/records/";
     }
     // Discovery
     with (options.discovery) {

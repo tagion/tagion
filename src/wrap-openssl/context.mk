@@ -21,8 +21,6 @@ LIBOPENSSL+=$(DTMP)/libssl.a
 
 prebuild1: $(LIBOPENSSL)
 
-$(UNITTEST_BIN): LIBS+=$(LIBOPENSSL)
-
 proper-openssl:
 	$(PRECMD)
 	${call log.header, $@ :: openssl}

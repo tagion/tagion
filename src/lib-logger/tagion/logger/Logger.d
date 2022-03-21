@@ -5,6 +5,7 @@ import core.sys.posix.pthread;
 import std.string;
 import tagion.basic.Basic : Control;
 import tagion.basic.TagionExceptions;
+import tagion.hibon.HiBONRecord;
 
 extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
 
@@ -17,6 +18,33 @@ enum LoggerType {
     FATAL = ERROR << 1,
     ALL = INFO | TRACE | WARNING | ERROR | FATAL,
     STDERR = WARNING | ERROR | FATAL
+}
+
+struct LogFilter {
+    string task_name;
+    LoggerType log_level;
+
+    mixin HiBONRecord!(q{
+        this(string task_name, LoggerType log_level) {
+            this.task_name = task_name;
+            this.log_level = log_level;
+        }
+    });
+
+    bool match(string task_name, LoggerType log_level) pure const nothrow {
+        if (this.task_name == task_name && this.log_level & log_level) {
+            return true;
+        }
+        return false;
+    }
+}
+
+immutable struct LogFilterArray {
+    LogFilter[] filters;
+
+    this(immutable LogFilter[] filters_array) {
+        this.filters = filters_array;
+    }
 }
 
 private static Tid logger_tid;
@@ -134,6 +162,12 @@ static struct Logger {
             }
             else {
                 try {
+                    LogFilter[] ff = [
+                        LogFilter("tagionlogservicetest", LoggerType.WARNING),
+                        LogFilter("tagionlogservicetest", LoggerType.INFO)
+                    ];
+                    logger_tid.send(LogFilterArray(ff.idup));
+
                     logger_tid.send(type, _task_name, text);
                 }
                 catch (Exception e) {
