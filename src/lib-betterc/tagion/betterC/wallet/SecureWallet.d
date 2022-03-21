@@ -2,28 +2,28 @@
 
 module tagion.betterC.wallet.SecureWallet;
 
-import std.format;
-import std.string : representation;
-import std.algorithm : map, max, min, sum, until, each, filter, cache;
-import std.range : tee;
-import std.array;
-import std.exception : assumeUnique;
-import core.time : MonoTime;
+// import std.format;
+// import std.string : representation;
+// import std.algorithm : map, max, min, sum, until, each, filter, cache;
+// import std.range : tee;
+// import std.array;
+// import std.exception : assumeUnique;
+// import core.time : MonoTime;
 
 //import std.stdio;
 //use hibon betterc
 import tagion.betterC.hibon.HiBON : HiBON;
 import tagion.betterC.hibon.Document : Document;
-
-import tagion.basic.Basic : basename, Buffer, Pubkey;
+import tagion.betterC.wallet.Net;
+// import tagion.basic.Basic : basename, Buffer, Pubkey;
 import tagion.script.StandardRecords;
 
-// import tagion.gossip.GossipNet : StdSecureNet, StdHashNet, scramble;
-import tagion.basic.Message;
-import tagion.utils.Miscellaneous;
-import tagion.Keywords;
-import tagion.script.TagionCurrency;
-import tagion.communication.HiRPC;
+// // import tagion.gossip.GossipNet : StdSecureNet, StdHashNet, scramble;
+// import tagion.basic.Message;
+// import tagion.utils.Miscellaneous;
+// import tagion.Keywords;
+// import tagion.script.TagionCurrency;
+// import tagion.communication.HiRPC;
 import tagion.betterC.wallet.KeyRecover;
 import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 
@@ -148,7 +148,7 @@ import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN;
         return false;
     }
 
-    @nogc bool isLoggedin() pure const nothrow {
+    bool isLoggedin() const {
         // pragma(msg, "fixme(cbr): Yam the net");
         // return net !is null;
         return true;

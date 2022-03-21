@@ -128,15 +128,6 @@ struct KeyRecover {
      * Generates the quiz seed values from the privat key R and the quiz list
      */
     void quizSeed(scope ref const(ubyte[]) R, Buffer[] A, const uint confidence) {
-        scope (success) {
-            generator.confidence = confidence;
-            generator.S = checkHash(R);
-        }
-        scope (failure) {
-            generator.Y = null;
-            generator.S = null;
-            generator.confidence = 0;
-        }
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, confidence);
 
@@ -197,80 +188,80 @@ do {
 
 static immutable(string[]) standard_questions;
 
-shared static this() {
-    standard_questions = [
-        "What is your favorite book?",
-        "What is the name of the road you grew up on?",
-        "What is your mother’s maiden name?",
-        "What was the name of your first/current/favorite pet?",
-        "What was the first company that you worked for?",
-        "Where did you meet your spouse?",
-        "Where did you go to high school/college?",
-        "What is your favorite food?",
-        "What city were you born in?",
-        "Where is your favorite place to vacation?"
-    ];
-}
+// shared static this() {
+//     standard_questions = [
+//         "What is your favorite book?",
+//         "What is the name of the road you grew up on?",
+//         "What is your mother’s maiden name?",
+//         "What was the name of your first/current/favorite pet?",
+//         "What was the first company that you worked for?",
+//         "Where did you meet your spouse?",
+//         "Where did you go to high school/college?",
+//         "What is your favorite food?",
+//         "What city were you born in?",
+//         "Where is your favorite place to vacation?"
+//     ];
+// }
 
 unittest {
-    // import tagion.crypto.SecureNet : StdHashNet;
-    // import std.array : join;
+    import tagion.crypto.SecureNet : StdHashNet;
+    import std.array : join;
 
-    // auto selected_questions = indexed(standard_questions, [0, 2, 3, 7, 8]).array.idup;
-    // //pragma(msg, typeof(selected_questions));
-    // //writefln("%s", selected_questions.join("\n"));
-    // string[] answers = [
-    //     "mobidick",
-    //     "Mother Teresa!",
-    //     "Pluto",
-    //     "Pizza",
-    //     "Maputo"
-    // ];
-    // KeyRecover recover;
-    // recover.createKey(selected_questions, answers, 3);
+    auto selected_questions = indexed(standard_questions, [0, 2, 3, 7, 8]).array.idup;
+    //pragma(msg, typeof(selected_questions));
+    //writefln("%s", selected_questions.join("\n"));
+    string[] answers = [
+        "mobidick",
+        "Mother Teresa!",
+        "Pluto",
+        "Pizza",
+        "Maputo"
+    ];
+    KeyRecover recover;
+    recover.createKey(selected_questions, answers, 3);
 
-    // // auto R = new ubyte[net.hashSize];
-    // ubyte[] R;
-    // R.create(hashSize);
+    // auto R = new ubyte[net.hashSize];
+    ubyte[] R;
+    R.create(hashSize);
 
-    // { // All the ansers are correct
-    //     const result = recover.findSecret(R, selected_questions, answers);
-    //     //writefln("R=%s", R.toHexString);
-    //     assert(R.length == hashSize);
-    //     assert(result); // Password found
-    // }
+    { // All the ansers are correct
+        const result = recover.findSecret(R, selected_questions, answers);
+        //writefln("R=%s", R.toHexString);
+        assert(R.length == hashSize);
+        assert(result); // Password found
+    }
 
-    // { // 3 out of 5 answers are correct. This is a valid answer to generate the secret key
-    //     string[] good_answers = [
-    //         "MobiDick",
-    //         "MOTHER TERESA",
-    //         "Fido",
-    //         "pizza",
-    //         "Maputo"
-    //     ];
-    //     // auto goodR = new ubyte[hashSize];
-    //     ubyte[] goodR;
-    //     goodR.create(hashSize);
-    //     const result = recover.findSecret(goodR, selected_questions, good_answers);
-    //     assert(R.length == hashSize);
-    //     assert(result); // Password found
-    //     assert(R == goodR);
-    // }
+    { // 3 out of 5 answers are correct. This is a valid answer to generate the secret key
+        string[] good_answers = [
+            "MobiDick",
+            "MOTHER TERESA",
+            "Fido",
+            "pizza",
+            "Maputo"
+        ];
+        // auto goodR = new ubyte[hashSize];
+        ubyte[] goodR;
+        goodR.create(hashSize);
+        const result = recover.findSecret(goodR, selected_questions, good_answers);
+        assert(R.length == hashSize);
+        assert(result); // Password found
+        assert(R == goodR);
+    }
 
-    // { // 2 out of 5 answers are correct. This is NOT a valid answer to generate the secret key
-    //     string[] bad_answers = [
-    //         "mobidick",
-    //         "Monalisa",
-    //         "Fido",
-    //         "Burger",
-    //         "Maputo"
-    //     ];
-    //     // auto badR = new ubyte[net.hashSize];
-    //     ubyte[] badR;
-    //     badR.create(hashSize);
-    //     const result = recover.findSecret(badR, selected_questions, bad_answers);
-    //     assert(!result); // Password not found
-    //     assert(R != badR);
+    { // 2 out of 5 answers are correct. This is NOT a valid answer to generate the secret key
+        string[] bad_answers = [
+            "mobidick",
+            "Monalisa",
+            "Fido",
+            "Burger",
+            "Maputo"
+        ];
+        // auto badR = new ubyte[net.hashSize];
+        ubyte[] badR;
+        badR.create(hashSize);
+        const result = recover.findSecret(badR, selected_questions, bad_answers);
+        assert(!result); // Password not found
+        assert(R != badR);
 
-    // }
+    }
 }

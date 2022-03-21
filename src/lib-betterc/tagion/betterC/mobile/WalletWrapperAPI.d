@@ -1,14 +1,19 @@
-// module tagion.betterC.mobile.WalletWrapperApi;
+module tagion.betterC.mobile.WalletWrapperApi;
 
-// import tagion.betterC.mobile.DocumentWrapperApi;
-// import tagion.betterC.hibon.Document;
-// import core.runtime : rt_init, rt_term;
+import tagion.betterC.mobile.DocumentWrapperApi;
+import tagion.betterC.hibon.Document;
+import core.runtime : rt_init, rt_term;
 // import core.stdc.stdlib;
-// import std.stdint;
+import std.stdint;
 // import std.string : toStringz, fromStringz;
 // import std.array;
 // import std.random;
-// // import tagion.betterC.wallet.SecureWallet;
+// import tagion.betterC.wallet.SecureWallet;
+import tagion.betterC.wallet.Net;
+import tagion.betterC.hibon.HiBON;
+
+// import tagion.script.TagionCurrency;
+
 // import tagion.script.TagionCurrency;
 // import tagion.script.StandardRecords;
 // import tagion.communication.HiRPC;
@@ -17,86 +22,86 @@
 // import tagion.hibon.HiBONJSON;
 // import tagion.basic.Basic : Pubkey, Buffer;
 // // import tagion.crypto.aes.AESCrypto;
-// // import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
+// // import tagion.crypto.SecureNet : SecureNet, BadSecureNet;
 // // import tagion.betterC.crypto.SecureNet;
 // // import tagion.betterC.wallet.KeyRecover;
 
 // // import tagion.crypto.SecureNet :  StdHashNet;
 // import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 
-// /// Used for describing the d-runtime status
-// enum drtStatus
-// {
-//     DEFAULT_STS,
-//     STARTED,
-//     TERMINATED
-// }
-// /// Variable, which repsresents the d-runtime status
-// __gshared drtStatus __runtimeStatus = drtStatus.DEFAULT_STS;
+/// Used for describing the d-runtime status
+enum drtStatus
+{
+    DEFAULT_STS,
+    STARTED,
+    TERMINATED
+}
+/// Variable, which repsresents the d-runtime status
+__gshared drtStatus __runtimeStatus = drtStatus.DEFAULT_STS;
 
-// string[] parse_string(const char* str, const uint len)
-// {
-//     string[] result;
-//     return result;
-// }
+string[] parse_string(const char* str, const uint len)
+{
+    string[] result;
+    return result;
+}
 
-// /// Functions called from d-lang through dart:ffi
-// extern (C)
-// {
-//     /// Staritng d-runtime
-//     export static int64_t start_rt()
-//     {
-//         if (__runtimeStatus is drtStatus.DEFAULT_STS)
-//         {
-//             __runtimeStatus = drtStatus.STARTED;
-//             return rt_init;
-//         }
-//         return -1;
-//     }
+/// Functions called from d-lang through dart:ffi
+    /// Staritng d-runtime
+    export static int64_t start_rt()
+    {
+        if (__runtimeStatus is drtStatus.DEFAULT_STS)
+        {
+            __runtimeStatus = drtStatus.STARTED;
+            return rt_init;
+        }
+        return -1;
+    }
 
-//     /// Terminating d-runtime
-//     export static int64_t stop_rt()
-//     {
-//         if (__runtimeStatus is drtStatus.STARTED)
-//         {
-//             __runtimeStatus = drtStatus.TERMINATED;
-//             return rt_term;
-//         }
-//         return -1;
-//     }
-//     //const uint8_t* data_ptr, const uint32_t len
-//     export uint wallet_create(const uint8_t* pincodePtr, const uint32_t pincodeLen, const uint32_t aes_doc_id,
-//         const char* questionsPtr, const uint32_t qestionslen, const char* answersPtr,
-//         const uint32_t answerslen, uint32_t confidence)
-//     {
-//         immutable pincode = cast(immutable)(pincodePtr[0 .. pincodeLen]);
-//         // uint8_t[] pincode;
-//         // pincode.create(pincodeLen);
-//         // foreach (i, a; pincode)
-//         // {
+    /// Terminating d-runtime
+    export static int64_t stop_rt()
+    {
+        if (__runtimeStatus is drtStatus.STARTED)
+        {
+            __runtimeStatus = drtStatus.TERMINATED;
+            return rt_term;
+        }
+        return -1;
+    }
+    //const uint8_t* data_ptr, const uint32_t len
+    // export uint wallet_create(const uint8_t* pincodePtr, const uint32_t pincodeLen, const uint32_t aes_doc_id,
+    //     const char* questionsPtr, const uint32_t qestionslen, const char* answersPtr,
+    //     const uint32_t answerslen, uint32_t confidence)
+    // {
+    //     immutable pincode = cast(immutable)(pincodePtr[0 .. pincodeLen]);
+    //     // uint8_t[] pincode;
+    //     // pincode.create(pincodeLen);
+    //     // foreach (i, a; pincode)
+    //     // {
 
-//         // }
+    //     // }
 
-//         const aes_key_data = recyclerDoc(aes_doc_id);
 
-//         immutable decr_pincode = decrypt(pincode, aes_key_data);
-//         immutable questions = cast(immutable)((questionsPtr[0 .. qestionslen]).split(";"));
-//         immutable answers = cast(immutable)((answersPtr[0 .. answerslen]).split(";"));
-//         auto wallet = SecureWallet!(StdSecureNet).createWallet(questions,
-//             answers, confidence, cast(immutable(char)[]) decr_pincode);
 
-//         auto recovery_id = recyclerDoc.create(Document(wallet.wallet.toHiBON));
-//         auto device_pin_id = recyclerDoc.create(Document(wallet.pin.toHiBON));
-//         auto account_id = recyclerDoc.create(Document(wallet.account.toHiBON));
+    //     const aes_key_data = recyclerDoc(aes_doc_id);
 
-//         auto result = new HiBON();
-//         result["recovery"] = recovery_id;
-//         result["pin"] = device_pin_id;
-//         result["account"] = account_id;
+    //     immutable decr_pincode = decrypt(pincode, aes_key_data);
+    //     immutable questions = cast(immutable)((questionsPtr[0 .. qestionslen]).split(";"));
+    //     immutable answers = cast(immutable)((answersPtr[0 .. answerslen]).split(";"));
+    //     auto wallet = SecureWallet!(SecureNet).createWallet(questions,
+    //         answers, confidence, cast(immutable(char)[]) decr_pincode);
 
-//         const doc_id = recyclerDoc.create(Document(result));
-//         return doc_id;
-//     }
+    //     auto recovery_id = recyclerDoc.create(Document(wallet.wallet.toHiBON));
+    //     auto device_pin_id = recyclerDoc.create(Document(wallet.pin.toHiBON));
+    //     auto account_id = recyclerDoc.create(Document(wallet.account.toHiBON));
+
+    //     auto result = HiBON();
+    //     result["recovery"] = recovery_id;
+    //     result["pin"] = device_pin_id;
+    //     result["account"] = account_id;
+
+    //     const doc_id = recyclerDoc.create(Document(result));
+    //     return doc_id;
+    // }
 
 //     export uint invoice_create(const uint32_t doc_id, const uint32_t dev_pin_doc_id,
 //         const uint8_t* pincodePtr, const uint32_t pincodeLen,
@@ -112,7 +117,7 @@
 
 //         immutable label = cast(immutable)(labelPtr[0 .. labelLen]);
 //         const doc = recyclerDoc(doc_id);
-//         auto secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN(device_pin_doc),
+//         auto secure_wallet = SecureWallet!(SecureNet)(DevicePIN(device_pin_doc),
 //             RecoverGenerator.init, AccountDetails(doc));
 
 //         scope (success)
@@ -121,7 +126,7 @@
 //         }
 //         if (secure_wallet.login(decr_pincode))
 //         {
-//             auto invoice = SecureWallet!(StdSecureNet).createInvoice(label,
+//             auto invoice = SecureWallet!(SecureNet).createInvoice(label,
 //                 (cast(ulong) amount).TGN);
 //             secure_wallet.registerInvoice(invoice);
 //             HiBON hibon = new HiBON();
@@ -144,7 +149,7 @@
 
 //         const wallet_doc = recyclerDoc(doc_id);
 
-//         auto secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN(device_pin_doc),
+//         auto secure_wallet = SecureWallet!(SecureNet)(DevicePIN(device_pin_doc),
 //             RecoverGenerator.init, AccountDetails(wallet_doc));
 
 //         scope (success)
@@ -184,7 +189,7 @@
 
 //         const wallet_doc = recyclerDoc(wallet_doc_id);
 
-//         auto secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN(device_pin_doc),
+//         auto secure_wallet = SecureWallet!(SecureNet)(DevicePIN(device_pin_doc),
 //             RecoverGenerator.init, AccountDetails(wallet_doc));
 
 //         scope (success)
@@ -218,7 +223,7 @@
 //     // {
 //     //     immutable pincode = cast(immutable(char)[])(pincodePtr[0 .. pincodeLen]);
 //     //     const wallet_doc = recyclerDoc(wallet_doc_id);
-//     //     auto secure_wallet = SecureWallet!(StdSecureNet)(wallet_doc);
+//     //     auto secure_wallet = SecureWallet!(SecureNet)(wallet_doc);
 
 //     //     scope (success)
 //     //     {
@@ -242,7 +247,7 @@
 //     {
 //         const wallet_doc = recyclerDoc(doc_id);
 
-//         auto secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN.init,
+//         auto secure_wallet = SecureWallet!(SecureNet)(DevicePIN.init,
 //             RecoverGenerator.init, AccountDetails(wallet_doc));
 
 //         const balance = secure_wallet.available_balance();
@@ -253,7 +258,7 @@
 //     {
 //         const wallet_doc = recyclerDoc(wallet_doc_id);
 
-//         auto secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN.init,
+//         auto secure_wallet = SecureWallet!(SecureNet)(DevicePIN.init,
 //             RecoverGenerator.init, AccountDetails(wallet_doc));
 
 //         const balance = secure_wallet.active_balance();
@@ -263,7 +268,7 @@
 //     // export ulong get_lock_for_amount(const uint32_t wallet_doc_id, const uint64_t amount)
 //     // {
 //     //     const wallet_doc = recyclerDoc(wallet_doc_id);
-//     //     auto secure_wallet = SecureWallet!(StdSecureNet)(wallet_doc);
+//     //     auto secure_wallet = SecureWallet!(SecureNet)(wallet_doc);
 
 //     //     const bills = secure_wallet.get_payment_bills(amount);
 //     //     const lock_amount = secure_wallet.calcTotal(bills);
@@ -308,7 +313,7 @@
 
 //         const account_doc = recyclerDoc(doc_id);
 
-//         auto secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN.init,
+//         auto secure_wallet = SecureWallet!(SecureNet)(DevicePIN.init,
 //             RecoverGenerator.init, AccountDetails(account_doc));
 
 //         const request = secure_wallet.get_request_update_wallet();
@@ -331,7 +336,7 @@
 
 //         immutable device_pin_doc = recyclerDoc(dev_pin_doc_id);
 
-//         auto secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN(device_pin_doc),
+//         auto secure_wallet = SecureWallet!(SecureNet)(DevicePIN(device_pin_doc),
 //             RecoverGenerator.init, AccountDetails(doc));
 
 //         scope (success)
@@ -384,7 +389,7 @@
 
 //         const doc = recyclerDoc(doc_id);
 
-//         auto secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN(device_pin_doc),
+//         auto secure_wallet = SecureWallet!(SecureNet)(DevicePIN(device_pin_doc),
 //             RecoverGenerator.init, AccountDetails(doc));
 
 //         if (secure_wallet.login(decr_pincode))

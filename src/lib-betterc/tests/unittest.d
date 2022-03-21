@@ -14,6 +14,10 @@ import Bailout = tagion.betterC.utils.Bailout;
 import tagion.betterC.utils.Text;
 import tagion.betterC.hibon.HiBON;
 import tagion.betterC.hibon.Document;
+import tagion.betterC.wallet.Net;
+import tagion.betterC.wallet.KeyRecover;
+import tagion.betterC.wallet.WalletRecords;
+import tagion.betterC.mobile.Recycle;
 
 import core.stdc.stdio;
 
@@ -76,6 +80,12 @@ static void callUnittest(alias Module)() {
             callUnittest!(tagion.betterC.hibon.Document)();
             callUnittest!(tagion.betterC.hibon.HiBON);
             callUnittest!(tagion.betterC.utils.LEB128);
+
+            callUnittest!(tagion.betterC.wallet.Net);
+            callUnittest!(tagion.betterC.wallet.KeyRecover);
+            callUnittest!(tagion.betterC.wallet.WalletRecords);
+
+            callUnittest!(tagion.betterC.mobile.Recycle);
             printf("Passed\n");
             return 0;
         }
