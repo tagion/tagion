@@ -105,7 +105,7 @@ void tagionServiceTask(Net)(immutable(Options) args, shared(SecureNet) master_ne
                 }, (immutable(TaskFailure) t) { ownerTid.send(t); });
             }
 
-            if (monitor_socket_tid != monitor_socket_tid.init) {
+            if (monitor_socket_tid !is monitor_socket_tid.init) {
                 log("send stop to %s", opts.monitor.task_name);
                 monitor_socket_tid.send(Control.STOP);
 

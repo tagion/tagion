@@ -120,8 +120,9 @@ void loggerTask(immutable(Options) opts) {
         }
 
         void filterReceiver(LogFilterArray array) {
+            pragma(msg, "fixme(cbr): This accumulate alot for trach memory on the heap");
             log_filters = array.filters.dup;
-            writeln(format("filterReceiver; length = %d", log_filters.length));
+//            writeln(format("filterReceiver; length = %d", log_filters.length));
         }
 
         ownerTid.send(Control.LIVE);
