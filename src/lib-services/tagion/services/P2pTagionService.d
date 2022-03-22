@@ -26,7 +26,7 @@ import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : EventBody, ExchangeState, Wavefront;
 
-import tagion.services.TagionService;
+//import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;

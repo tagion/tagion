@@ -13,7 +13,7 @@ import tagion.utils.Random;
 import tagion.GlobalSignals : abort;
 import tagion.basic.Basic : Pubkey, Control;
 import tagion.logger.Logger;
-import tagion.services.TagionService;
+//import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
