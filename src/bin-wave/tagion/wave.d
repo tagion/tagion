@@ -13,7 +13,7 @@ import tagion.services.Options;
 import tagion.options.CommonOptions : setCommonOptions;
 
 //import tagion.services.HeartBeatService;
-import tagion.services.P2pTagionService;
+import tagion.services.TagionService;
 import tagion.services.LoggerService;
 import tagion.services.TagionFactory;
 import tagion.GlobalSignals;
