@@ -12,11 +12,8 @@ import core.time : MonoTime;
 
 //import std.stdio;
 //use hibon betterc
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONException : HiBONRecordException;
+import tagion.betterC.hibon.HiBON : HiBON;
+import tagion.betterC.hibon.Document : Document;
 
 import tagion.basic.Basic : basename, Buffer, Pubkey;
 import tagion.script.StandardRecords;
@@ -27,9 +24,8 @@ import tagion.utils.Miscellaneous;
 import tagion.Keywords;
 import tagion.script.TagionCurrency;
 import tagion.communication.HiRPC;
-import tagion.wallet.KeyRecover;
-import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
-import tagion.wallet.WalletException : check;
+import tagion.betterC.wallet.KeyRecover;
+import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 
 //alias StdSecureWallet = SecureWallet!StdSecureNet;
 
@@ -288,7 +284,7 @@ import tagion.wallet.WalletException : check;
                 SecureNet bill_net;
                 // Sign all inputs
                 result.signs = contract_bills.filter!(b => b.owner in account.derives)
-                    .map!(b => {
+                    .map!((b) {
                         immutable tweak_code = account.derives[b.owner];
                         bill_net.derive(tweak_code, shared_net);
                         return bill_net.sign(message);
@@ -345,7 +341,7 @@ import tagion.wallet.WalletException : check;
             TagionCurrency rest = amount;
             active_bills = none_active.filter!(b => b.value <= rest)
                 .until!(b => rest <= 0)
-                .tee!(b => { rest -= b.value; account.activated[b.owner] = true; })
+                .tee!((b) { rest -= b.value; account.activated[b.owner] = true; })
                 .array;
             if (rest > 0) {
                 // Take an extra larger bill if not enough
@@ -386,7 +382,6 @@ import tagion.wallet.WalletException : check;
 
     unittest {
         import std.stdio;
-        import tagion.hibon.HiBONJSON;
         import std.range : iota;
         import std.format;
 
