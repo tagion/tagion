@@ -66,6 +66,10 @@ tagionsubscription: prebuild-linux
 tagionsubscription: target-tagionsubscription
 bin: tagionsubscription
 
+recorderchain: prebuild-linux
+recorderchain: target-recorderchain
+bin: recorderchain
+
 target-linux:
 	@echo DBUILD $(DBUILD)
 

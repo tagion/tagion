@@ -454,8 +454,6 @@ mixin TrustedConcurrency;
             }
         }
 
-// cli to print all chain to console & rollback db
-// separate bin
         void receiveRecorder(immutable(RecordFactory.Recorder) recorder, Fingerprint db_fingerprint) {
             auto last_block_fingerprint = blocks_db.lastBlockFingerprint;
             auto block = epoch_block_factory(recorder, last_block_fingerprint, db_fingerprint.buffer);

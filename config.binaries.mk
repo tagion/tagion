@@ -141,3 +141,24 @@ clean-tagionsubscription:
 clean: clean-tagionsubscription
 
 BIN_TARGETS+=target-tagionsubscription
+
+
+#
+# Recorderchain utility
+#
+# FIXME(IB) should be removed when ddeps works correctly
+target-recorderchain: LIBS+=$(LIBOPENSSL)
+target-recorderchain: LIBS+=$(LIBSECP256K1)
+target-recorderchain: LIBS+=$(LIBP2PGOWRAPPER)
+
+target-recorderchain: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-recorderchain/*"}
+target-recorderchain: $(DBIN)/recorderchain
+
+clean-recorderchain:
+	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RM) $(DBIN)/recorderchain
+
+clean: clean-recorderchain
+
+BIN_TARGETS+=target-recorderchain
