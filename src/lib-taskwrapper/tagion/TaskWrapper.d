@@ -154,8 +154,24 @@ version (unittest)
 }
 
 @safe unittest {
-    import std.variant : Variant;
+    import tagion.services.Options : Options, setDefaultOption;
+    import tagion.services.LoggerService;
+    import tagion.logger.Logger;
     
+    enum main_task = "taskwrapperunittest";
+
+    Options options;
+    setDefaultOption(options);
+    auto logger_tid = spawn(&loggerTask, options);
+    scope (exit) {
+        logger_tid.send(Control.STOP);
+        assert(receiveOnly!Control is Control.END);
+    }
+
+    assert(receiveOnly!Control is Control.LIVE);
+
+    log.register(main_task);
+
     // Spawn fake task
     enum fake_task_name = "fake_task_name";
     alias fake_task = Task!FakeTask;
