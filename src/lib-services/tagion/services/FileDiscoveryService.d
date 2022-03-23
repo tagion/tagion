@@ -85,7 +85,6 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name,
             time = Clock.currTime;
         }
 
-        auto is_ready = false;
         SysTime mdns_start_timestamp;
         updateTimestamp(mdns_start_timestamp);
         auto owner_notified = false;
@@ -94,8 +93,8 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name,
             if (!owner_notified) {
                 const after_delay = checkTimestamp(mdns_start_timestamp,
                         opts.discovery.delay_before_start.msecs);
-                if (after_delay && is_ready) {
-                    ownerTid.send(DiscoveryState.ONLINE);
+                if (after_delay) {
+                    ownerTid.send(DiscoveryState.READY);
                     owner_notified = true;
                 }
             }
@@ -154,7 +153,6 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name,
                     case BecomeOnline:
                         log("Becoming online..");
                         recordOwnInfo();
-                        is_ready = true;
                         break;
                     case RequestTable:
                         initialize();

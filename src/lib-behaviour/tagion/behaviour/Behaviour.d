@@ -182,6 +182,7 @@ FeatureGroup getFeature(alias M)() if (isFeature!M) {
     return result;
 }
 
+version(CBR)
 @safe
 unittest { //
     import tagion.hibon.HiBONRecord;
