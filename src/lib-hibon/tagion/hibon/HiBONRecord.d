@@ -147,7 +147,7 @@ enum VOID = "*";
 mixin template HiBONRecordType() {
     import tagion.hibon.Document : Document;
     import tagion.hibon.HiBONRecord : TYPENAME;
-    import std.traits : getUDAs, hasUDA;
+    import std.traits : getUDAs, hasUDA, isIntegral, isUnsigned;
 
     alias ThisType = typeof(this);
     static if (hasUDA!(ThisType, RecordType)) {
