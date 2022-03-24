@@ -2,6 +2,10 @@ module tagion.utils.Miscellaneous;
 
 import tagion.basic.Basic : Buffer, isBufferType;
 import std.exception;
+import std.range.primitives : isInputRange;
+import std.algorithm : map;
+import std.array : array;
+import std.algorithm.iteration : fold, cumulativeFold;
 
 @trusted
 string toHexString(bool UCASE = false, BUF)(BUF buffer) pure nothrow
@@ -103,7 +107,21 @@ string cutHex(bool UCASE = false, BUF)(BUF buf) pure if (isBufferType!BUF) {
 }
 
 @safe
-Buffer xor(const(ubyte[]) a, const(ubyte[]) b) pure nothrow
+protected Buffer _xor(const(ubyte[]) a, const(ubyte[]) b) pure nothrow
+in {
+    assert(a.length == b.length);
+    assert(a.length % ulong.sizeof == 0);
+}
+do {
+    import tagion.utils.Gene : gene_xor;
+
+    const _a = cast(const(ulong[])) a;
+    const _b = cast(const(ulong[])) b;
+    return cast(Buffer) gene_xor(_a, _b);
+}
+
+@safe
+const(Buffer) xor(scope const(ubyte[]) a, scope const(ubyte[]) b) pure nothrow
 in {
     assert(a.length == b.length);
     assert(a.length % ulong.sizeof == 0);
@@ -132,8 +150,12 @@ do {
 }
 
 @safe
-Buffer xor(Range)(Range range) pure {
-    import std.algorithm.iteration : fold;
+Buffer xor(Range)(scope Range range) pure if (isInputRange!Range) {
+    import std.array : array;
+    import std.range : tail;
 
-    return range.fold!((a, b) => xor(a, b));
+    return range
+        .cumulativeFold!((a, b) => _xor(a, b))
+        .tail(1)
+        .front;
 }

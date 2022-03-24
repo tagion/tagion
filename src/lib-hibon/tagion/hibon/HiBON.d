@@ -541,7 +541,6 @@ static size_t size(U)(const(U[]) array) pure {
     unittest { // remove
         auto hibon = new HiBON;
         hibon["a"] = 1;
-        hibon["test"] = "adfkjsrglj";
         hibon["b"] = 2;
         hibon["c"] = 3;
         hibon["d"] = 4;

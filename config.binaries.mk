@@ -9,7 +9,7 @@
 target-tagionwave: LIBS+=$(LIBOPENSSL)
 target-tagionwave: LIBS+=$(LIBSECP256K1)
 target-tagionwave: LIBS+=$(LIBP2PGOWRAPPER)
-target-tagionwave: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wave/*"}
+target-tagionwave: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wave/*" -a -not -path "*/unitdata/*" }
 target-tagionwave: $(DBIN)/tagionwave
 .PHONY: target-tagionwave
 
@@ -29,7 +29,7 @@ target-hibonutil: LIBS+=$(LIBOPENSSL)
 target-hibonutil: LIBS+=$(LIBSECP256K1)
 target-hibonutil: LIBS+=$(LIBP2PGOWRAPPER)
 
-target-hibonutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-hibonutil/*"}
+target-hibonutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-hibonutil/*" -a -not -path "*/unitdata/*"}
 target-hibonutil: $(DBIN)/hibonutil
 
 clean-hibonutil:
@@ -48,7 +48,7 @@ BIN_TARGETS+=target-hibonutil
 target-dartutil: LIBS+=$(LIBOPENSSL)
 target-dartutil: LIBS+=$(LIBSECP256K1)
 target-dartutil: LIBS+=$(LIBP2PGOWRAPPER)
-target-dartutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-dartutil/*"}
+target-dartutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-dartutil/*" -a -not -path "*/unitdata/*"}
 target-dartutil: $(DBIN)/dartutil
 
 clean-dartutil:
@@ -67,7 +67,7 @@ BIN_TARGETS+=target-dartutil
 target-wasmutil: LIBS+=$(LIBOPENSSL)
 target-wasmutil: LIBS+=$(LIBSECP256K1)
 target-wasmutil: LIBS+=$(LIBP2PGOWRAPPER)
-target-wasmutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wasmutil/*"}
+target-wasmutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wasmutil/*" -a -not -path "*/unitdata/*"}
 target-wasmutil: $(DBIN)/wasmutil
 
 clean-wasmutil:
@@ -87,7 +87,7 @@ BIN_TARGETS+=target-wasmutil
 target-wallet: LIBS+=$(LIBOPENSSL)
 target-wallet: LIBS+=$(LIBSECP256K1)
 target-wallet: LIBS+=$(LIBP2PGOWRAPPER)
-target-wallet: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wallet/*"}
+target-wallet: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wallet/*" -a -not -path "*/unitdata/*"}
 target-wallet: $(DBIN)/wallet
 
 clean-wallet:
@@ -99,6 +99,7 @@ clean: clean-wallet
 
 
 BIN_TARGETS+=target-wallet
+
 
 #
 # Logservicetest utility
@@ -119,3 +120,45 @@ clean-tagionlogservicetest:
 clean: clean-tagionlogservicetest
 
 BIN_TARGETS+=target-tagionlogservicetest
+
+
+#
+# Subscription utility
+#
+# FIXME(IB) should be removed when ddeps works correctly
+target-tagionsubscription: LIBS+=$(LIBOPENSSL)
+target-tagionsubscription: LIBS+=$(LIBSECP256K1)
+target-tagionsubscription: LIBS+=$(LIBP2PGOWRAPPER)
+
+target-tagionsubscription: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-subscription/*"}
+target-tagionsubscription: $(DBIN)/tagionsubscription
+
+clean-tagionsubscription:
+	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RM) $(DBIN)/tagionsubscription
+
+clean: clean-tagionsubscription
+
+BIN_TARGETS+=target-tagionsubscription
+
+
+#
+# Recorderchain utility
+#
+# FIXME(IB) should be removed when ddeps works correctly
+target-recorderchain: LIBS+=$(LIBOPENSSL)
+target-recorderchain: LIBS+=$(LIBSECP256K1)
+target-recorderchain: LIBS+=$(LIBP2PGOWRAPPER)
+
+target-recorderchain: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-recorderchain/*"}
+target-recorderchain: $(DBIN)/recorderchain
+
+clean-recorderchain:
+	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RM) $(DBIN)/recorderchain
+
+clean: clean-recorderchain
+
+BIN_TARGETS+=target-recorderchain

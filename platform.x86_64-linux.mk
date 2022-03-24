@@ -8,11 +8,13 @@ PLATFORMS+=$(LINUX_X86_64)
 ifeq ($(PLATFORM),$(LINUX_X86_64))
 
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
-ifdef BETTERC
-DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc*" -a -not -path "*/tests/*"}
-else
-DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-*" -a -not -path "*/tests/*"}
-endif
+# ifdef BETTERC
+# DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc*" -a -not -path "*/tests/*"}
+# else
+DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
+# endif
+
+WRAPS+=secp256k1 p2pgowrapper openssl
 
 prebuild-extern-linux: $(DBUILD)/.way
 #prebuild-extern-linux: secp256k1 openssl p2pgowrapper
@@ -22,21 +24,17 @@ prebuild-extern-linux: $(DBUILD)/.way
 #prebuild-linux: dstep
 #.PHONY: prebuild-extern-linux
 
-#$(DBUILD)/gen.ddeps.mk: dstep
 #prebuild-linux: $(DBUILD)/gen.ddeps.mk
 .PHONY: prebuild-linux
 
 #traget-linux: prebuild-linux
 #target-linux: | secp256k1 openssl p2pgowrapper
 # target-linux: | secp256k1 p2pgowrapper
-# target-linux: dstep
-# target-linux: $(DBUILD)/gen.ddeps.mk
-#traget-linux: $(DBUILD)/gen.dfiles.mk
+$(UNITTEST_BIN): $(DFILES)
 
 unittest: LIBS+=$(LIBOPENSSL)
 unittest: LIBS+=$(LIBSECP256K1)
 unittest: LIBS+=$(LIBP2PGOWRAPPER)
-unittest: $(DFILES)
 unittest: proto-unittest-run
 
 hibonutil: prebuild-linux
@@ -63,6 +61,14 @@ bin: tagionwave
 tagionlogservicetest: prebuild-linux
 tagionlogservicetest: target-tagionlogservicetest
 bin: tagionlogservicetest
+
+tagionsubscription: prebuild-linux
+tagionsubscription: target-tagionsubscription
+bin: tagionsubscription
+
+recorderchain: prebuild-linux
+recorderchain: target-recorderchain
+bin: recorderchain
 
 target-linux:
 	@echo DBUILD $(DBUILD)

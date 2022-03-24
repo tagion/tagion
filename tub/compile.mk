@@ -1,4 +1,9 @@
 
+ifdef COV
+DFLAGS+=$(DCOV)
+DRTFALGS+=$(COVOPT)
+COVWAY=$(DLOGCOV)/.way
+endif
 #DFLAGS+=$(DIP25) $(DIP1000)
 DFLAGS+=$(DPREVIEW)=inclusiveincontracts
 
@@ -52,18 +57,22 @@ $(DBIN)/%:
 #
 # Proto targets for unittest
 #
-UNITTEST_FLAGS?=$(DUNITTEST) $(DDEBUG) $(DDEBUG_SYMBOLS)
+UNITTEST_FLAGS?=$(DUNITTEST) $(DDEBUG) $(DDEBUG_SYMBOLS) $(DMAIN)
 UNITTEST_DOBJ=$(DOBJ)/unittest
 UNITTEST_BIN?=$(DBIN)/unittest
+UNITTEST_LOG?=$(DLOG)/unittest.log
 
+proto-unittest-run: $(DLOG)/.way
 proto-unittest-run: $(UNITTEST_BIN)
 	$(PRECMD)
-	$(UNITTEST_BIN)
+	$(SCRIPT_LOG) $(UNITTEST_BIN) $(UNITTEST_LOG)
 
-$(UNITTEST_BIN):
+$(UNITTEST_BIN):DFLAGS+=$(DIP25) $(DIP1000)
+$(UNITTEST_BIN): $(COVWAY) $$(DFILES)
 	$(PRECMD)
-	@echo deps $?
-	$(DC) $(UNITTEST_FLAGS) $(DMAIN) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OUTPUT)$@
+	echo deps $?
+	echo LIBS=$(LIBS)
+	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFALGS) ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OUTPUT)$@
 
 
 clean-unittest:
@@ -90,6 +99,8 @@ env-unittest:
 	${call log.env, UNITTEST_DOBJ, $(UNITTEST_DOBJ)}
 	${call log.env, UNITTEST_FLAGS, $(UNITTEST_FLAGS)}
 	${call log.env, UNITTEST_BIN, $(UNITTEST_BIN)}
+	${call log.close}
+
 
 env: env-unittest
 
@@ -108,3 +119,21 @@ env-build:
 	${call log.env, DINC, $(DINC)}
 
 env: env-build
+
+help-cov:
+	$(PRECMD)
+	${call log.header, $@ :: help}
+	${call log.help, "make <target> COV=1", "Enable <target> with code covarage"}
+	${call log.close}
+
+help: help-cov
+
+env-cov:
+	$(PRECMD)
+	${call log.header, $@ :: env}
+	${call log.kvp, COVOPT, $(COVOPT)}
+	${call log.close}
+
+env: env-cov
+
+.PHONY: env-cov help-cov

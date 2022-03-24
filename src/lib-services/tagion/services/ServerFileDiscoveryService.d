@@ -56,14 +56,12 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
 
         void recordOwnInfo(string addrs) {
             if (opts.serverFileDiscovery.token) {
-                addrs = addrs.replace("[", "[\"" ~ opts.hostbootrap.bootstrapNodes.split("\n")[0] ~ "/p2p-circuit\",");
                 auto params = new HiBON;
                 params["pkey"] = pubkey;
                 params["address"] = addrs;
                 auto doc = Document(params.serialize);
                 auto json = doc.toJSON().toString();
-                log("posting info to %s \n %s \n with token :%s", opts.serverFileDiscovery.url ~ "/node/record", json, opts
-                        .serverFileDiscovery.tag);
+                log("posting info to %s \n %s", opts.serverFileDiscovery.url ~ "/node/record", json);
                 try {
                     post(opts.serverFileDiscovery.url ~ "/node/record",
                             [
@@ -114,7 +112,7 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
                         auto addr = doc["address"].get!string;
                         import tagion.utils.Miscellaneous : toHexString, cutHex;
 
-                        auto node_addr = NodeAddress(addr, opts.dart, true);
+                        auto node_addr = NodeAddress(addr, opts.dart, opts.port_base, true);
                         node_addresses[pkey] = node_addr;
                     }
                 }
@@ -125,43 +123,29 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
             }
         }
 
-        // auto addr_changed_tid = spawn(&handleAddrChanedEvent, node);
-        // receive((Control ctrl) { assert(ctrl == Control.LIVE); });
+        auto addr_changed_tid = spawn(&handleAddrChanedEvent, node);
+        receive((Control ctrl) { assert(ctrl == Control.LIVE); });
 
-        // auto rechability_changed_tid = spawn(&handleRechabilityChanged, node);
-        // receive((Control ctrl) { assert(ctrl == Control.LIVE); });
+        auto rechability_changed_tid = spawn(&handleRechabilityChanged, node);
+        receive((Control ctrl) { assert(ctrl == Control.LIVE); });
         scope (exit) {
-            // {
-            //     addr_changed_tid.send(Control.STOP);
-            //     auto ctrl = receiveOnly!Control;
-            //     assert(ctrl == Control.END);
-            // }
-            // {
-            //     rechability_changed_tid.send(Control.STOP);
-            //     auto ctrl = receiveOnly!Control;
-            //     assert(ctrl == Control.END);
-            // }
+            {
+                addr_changed_tid.send(Control.STOP);
+                auto ctrl = receiveOnly!Control;
+                assert(ctrl == Control.END);
+            }
+            {
+                rechability_changed_tid.send(Control.STOP);
+                auto ctrl = receiveOnly!Control;
+                assert(ctrl == Control.END);
+            }
         }
 
-        // auto substoaddrupdate = node.SubscribeToAddressUpdated("addr_changed_handler");
-        // auto substorechability = node.SubscribeToRechabilityEvent("rechability_handler");
-        log("subscribed");
+        auto substoaddrupdate = node.SubscribeToAddressUpdated("addr_changed_handler");
+        auto substorechability = node.SubscribeToRechabilityEvent("rechability_handler");
         scope (exit) {
-            // substoaddrupdate.close();
-            // substorechability.close();
-        }
-
-        if (opts.hostbootrap.enabled) {
-            if (opts.hostbootrap.bootstrapNodes.length) {
-                auto bootsraps = opts.hostbootrap.bootstrapNodes.split("\n");
-                foreach (bootsrap; bootsraps) {
-                    log("Connection to %s", bootsrap);
-                    node.connect(bootsrap);
-                }
-            }
-            else {
-                throw new OptionException("Bootstrap nodes list is empty");
-            }
+            substoaddrupdate.close();
+            substorechability.close();
         }
 
         string last_seen_addr = "";
@@ -179,32 +163,20 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
         SysTime mdns_start_timestamp;
         updateTimestamp(mdns_start_timestamp);
 
-        SysTime update_timestamp;
-        updateTimestamp(update_timestamp);
-
         auto owner_notified = false;
 
         void notifyReadyAfterDelay() {
             if (!owner_notified) {
                 const after_delay = checkTimestamp(mdns_start_timestamp,
                         opts.discovery.delay_before_start.msecs);
-                if (after_delay && is_ready) {
+                if (after_delay && is_online && is_ready) {
                     ownerTid.send(DiscoveryState.READY);
                     owner_notified = true;
-                }
-            }
-            else {
-                const after_delay = checkTimestamp(update_timestamp,
-                        opts.discovery.interval.msecs);
-                if (after_delay && is_ready) {
-                    updateTimestamp(update_timestamp);
-                    thisTid.send(DiscoveryRequestCommand.RequestTable);
                 }
             }
         }
 
         ownerTid.send(Control.LIVE);
-        log("listened");
 
         do {
             receiveTimeout(500.msecs, (immutable(Pubkey) key, Tid tid) {
@@ -219,10 +191,9 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
                 }
             }, (string updated_address) {
                 last_seen_addr = updated_address;
-                updateTimestamp(mdns_start_timestamp);
-                is_ready = true;
                 if (is_online) {
                     recordOwnInfo(updated_address);
+                    is_ready = true;
                 }
             }, (DiscoveryRequestCommand cmd) {
                 switch (cmd) {
@@ -231,7 +202,6 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
                         is_online = true;
                         if (last_seen_addr != "") {
                             recordOwnInfo(last_seen_addr);
-                            updateTimestamp(mdns_start_timestamp);
                             is_ready = true;
                         }
                         break;
@@ -251,21 +221,6 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
                 }
             });
             notifyReadyAfterDelay();
-            auto pub_addr = node.PublicAddress;
-            // log("PUB ADDR: %s", pub_addr);
-            if (pub_addr.length > 0) {
-                auto addrinfo = node.AddrInfo();
-                // log("ADDR info: %s", addrinfo);
-                if (last_seen_addr != addrinfo) {
-                    writefln("Addr changed %s", addrinfo);
-                    last_seen_addr = addrinfo;
-                    updateTimestamp(mdns_start_timestamp);
-                    is_ready = true;
-                    if (is_online) {
-                        recordOwnInfo(addrinfo);
-                    }
-                }
-            }
         }
         while (!stop);
     }
@@ -279,12 +234,11 @@ void handleAddrChanedEvent(shared p2plib.Node node) nothrow {
         register("addr_changed_handler", thisTid);
         ownerTid.send(Control.LIVE);
         scope (exit) {
-            writeln("stop");
+            log("stop");
             ownerTid.prioritySend(Control.END);
         }
         auto stop = false;
         do {
-            writeln("addr changed waiting ", thisTid);
             receive((immutable(ubyte)[] data) {
                 auto pub_addr = node.PublicAddress;
                 writefln("Addr changed %s", pub_addr);
@@ -314,12 +268,11 @@ void handleRechabilityChanged(shared p2plib.Node node) nothrow {
         register("rechability_handler", thisTid);
         ownerTid.send(Control.LIVE);
         scope (exit) {
-            writeln("stop");
+            log("stop");
             ownerTid.prioritySend(Control.END);
         }
         auto stop = false;
         do {
-            writeln("rech changed waiting");
             receive((immutable(ubyte)[] data) {
                 writefln("RECHABILITY CHANGED: %s", cast(string) data);
                 auto pub_addr = node.PublicAddress;

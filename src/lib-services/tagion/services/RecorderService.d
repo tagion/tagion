@@ -1,28 +1,69 @@
 module tagion.services.RecorderService;
 
-import std.concurrency;
 import std.stdio : writeln;
+import std.stdio : File;
 import std.file : exists, mkdirRecurse, write, read;
-
-import tagion.basic.Basic : Control;
-import tagion.logger.Logger;
-
-import tagion.services.Options : Options;
-import tagion.basic.TagionExceptions : fatal;
-
-import tagion.crypto.SecureNet;
-import tagion.hibon.Document;
-import tagion.dart.Recorder;
-import tagion.basic.Basic : Buffer;
-import tagion.hibon.HiBONRecord : Label, GetLabel;
-import tagion.hibon.HiBONJSON : JSONString;
-import tagion.hibon.HiBON;
+import std.array;
 import std.typecons;
 import std.path : buildPath, baseName;
 import std.algorithm;
+import std.bigint : BigInt;
+import std.format;
+import std.string : strip;
+
+import tagion.basic.Basic : Control, Buffer;
+import tagion.basic.TagionExceptions : fatal;
+import tagion.logger.Logger;
+import tagion.services.Options : Options, setDefaultOption;
+
+import tagion.crypto.SecureNet;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.dart.Recorder;
+import tagion.dart.BlockFile;
+import tagion.dart.DART;
+import tagion.dart.DARTFile;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONRecord : Label, GetLabel;
+import tagion.hibon.HiBONJSON : JSONString;
+import tagion.hibon.HiBON;
 import tagion.utils.Miscellaneous : toHexString, decode;
-import std.array;
-import std.stdio : File;
+
+struct Fingerprint {
+    immutable(Buffer) buffer;
+
+    this(immutable(Buffer) buffer) {
+        this.buffer = buffer;
+    }
+
+    pragma(msg, "fixme(ib) do this using toString");
+    static string format(Buffer fingerprint, bool to_hex = true, uint numbers_in_line = 16) pure {
+        string format_str;
+        const string f = to_hex ? "%02X " : "%d ";
+
+        for (int i = 0; i < fingerprint.length; ++i) {
+            format_str ~= std.format.format(f, BigInt(fingerprint[i]));
+
+            if ((i+1) % numbers_in_line is 0)
+                format_str ~= "\n";
+        }
+
+        return strip(format_str);
+    }
+}
+
+unittest {
+    assert(Fingerprint.format([]) == "");
+    assert(Fingerprint.format([255]) == "FF");
+
+    Buffer fingerprint = [143, 0, 51, 132, 41, 244, 105, 22, 182, 75, 173, 136, 17, 208, 91, 39];
+
+    assert(Fingerprint.format(fingerprint) == "8F 00 33 84 29 F4 69 16 B6 4B AD 88 11 D0 5B 27");
+    assert(Fingerprint.format(fingerprint, false) == "143 0 51 132 41 244 105 22 182 75 173 136 17 208 91 39");
+    assert(Fingerprint.format(fingerprint, true, 4) == "8F 00 33 84 \n" ~
+                                                        "29 F4 69 16 \n" ~
+                                                        "B6 4B AD 88 \n" ~
+                                                        "11 D0 5B 27");
+}
 
 struct EpochBlockFactory {
     const StdHashNet net;
@@ -53,17 +94,24 @@ struct EpochBlockFactory {
         mixin JSONString;
 
         private this(const(Document) doc, const(StdHashNet) net) immutable {
-            auto d = doc[recorderLabel].get!Document;
-            auto c = doc[chainLabel].get!Buffer;
-            auto b = doc[bullseyeLabel].get!Buffer;
+            auto doc_keys = doc.keys.array;
+
+            Buffer doc_chain = doc[chainLabel].get!Buffer;
+            
+            Document doc_recorder;
+            if (doc_keys.canFind(recorderLabel))
+                doc_recorder = doc[recorderLabel].get!Document;
+            
+            Buffer doc_bullseye;
+            if (doc_keys.canFind(bullseyeLabel))
+                doc_bullseye = doc[bullseyeLabel].get!Buffer;
 
             auto factory = RecordFactory(net);
-            auto rec = factory.recorder(d);
-            immutable(RecordFactory.Recorder) recor = cast(immutable(RecordFactory.Recorder)) rec;
+            immutable(RecordFactory.Recorder) rec = cast(immutable(RecordFactory.Recorder)) factory.recorder(doc_recorder);
 
-            this.recorder = recor;
-            this._chain = c;
-            this.bullseye = b;
+            this.recorder = rec;
+            this._chain = doc_chain;
+            this.bullseye = doc_bullseye;
             this._fingerprint = net.hashOf(Document(toHiBON));
         }
 
@@ -80,15 +128,15 @@ struct EpochBlockFactory {
             assert(recorder, "recorder can be empty");
         }
         do {
-            auto h = new HiBON;
-            h[chainLabel] = chain;
+            auto hibon = new HiBON;
+            hibon[chainLabel] = chain;
             if (recorder) {
-                h[recorderLabel] = recorder.toDoc;
+                hibon[recorderLabel] = recorder.toDoc;
             }
             if (bullseye) {
-                h[bullseyeLabel] = bullseye;
+                hibon[bullseyeLabel] = bullseye;
             }
-            return h;
+            return hibon;
         }
 
         final const(Document) toDoc() const {
@@ -120,34 +168,38 @@ interface EpochBlockFileDataBaseInterface {
     Buffer[] getFullChainBullseye();
 }
 
-alias info_blocks = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFactory.EpochBlock, "last", ulong, "amount");
-enum FileName_Len = 64;
+alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFactory.EpochBlock, "last", ulong, "amount");
 
 class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
-
     private EpochBlockFactory.EpochBlock first_block;
     private EpochBlockFactory.EpochBlock last_block;
     private ulong _amount;
-    private immutable(string) file_for_blocks;
+    private immutable(string) folder_path;
 
-    this(string file_for_blocks) {
-        this.file_for_blocks = file_for_blocks;
+    enum EPOCH_BLOCK_FILENAME_LEN = 64;
+
+    this(string folder_path) {
+        this.folder_path = folder_path;
 
         import std.file : write;
 
-        if (!exists(this.file_for_blocks))
-            mkdirRecurse(this.file_for_blocks);
+        if (!exists(this.folder_path))
+            mkdirRecurse(this.folder_path);
 
         if (getFiles.length) {
-            auto info = findFirstLastAmountBlock;
+            auto info = getBlocksInfo;
             this.first_block = info.first;
             this.last_block = info.last;
             this._amount = info.amount;
         }
     }
 
-    string makePath(Buffer name) {
-        return buildPath(this.file_for_blocks, name.toHexString);
+    static string makePath(Buffer name, string folder_path) {
+        return buildPath(folder_path, name.toHexString);
+    }
+
+    private string makePath(Buffer name) {
+        return makePath(name, this.folder_path);
     }
 
     immutable(EpochBlockFactory.EpochBlock) addBlock(immutable(EpochBlockFactory.EpochBlock) block)
@@ -176,7 +228,7 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
     immutable(EpochBlockFactory.EpochBlock) deleteLastBlock() {
         if (amount) {
 
-            auto info = findFirstLastAmountBlock;
+            auto info = getBlocksInfo;
             this.last_block = info[1]; // because rollBack can move pointer
 
             immutable(EpochBlockFactory.EpochBlock) block = cast(immutable(EpochBlockFactory.EpochBlock)) this.last_block;
@@ -184,7 +236,7 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
             _amount--;
 
             if (amount) {
-                this.last_block = cast(EpochBlockFactory.EpochBlock) getBlockFing(block._chain);
+                this.last_block = cast(EpochBlockFactory.EpochBlock) readBlockFromFingerprint(block._chain);
             }
             else {
                 this.first_block = null;
@@ -203,29 +255,29 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
                 import std.file;
 
                 Buffer[Buffer] link_table;
-                string[] files_name;
-                string dir = this.file_for_blocks;
+                string[] file_names;
+                string dir = this.folder_path;
 
                 auto files = dirEntries(dir, SpanMode.shallow).filter!(a => a.isFile())
                     .map!(a => baseName(a))
                     .array();
 
                 foreach (f; files) {
-                    if (f.length == FileName_Len) {
-                        files_name ~= f;
+                    if (f.length == EPOCH_BLOCK_FILENAME_LEN) {
+                        file_names ~= f;
                     }
                 }
 
-                foreach (f; files_name) {
-                    Buffer fing = decode(f);
-                    auto block_ = getBlockFing(fing);
-                    link_table[fing] = block_.chain;
+                foreach (f; file_names) {
+                    Buffer fingerprint = decode(f);
+                    auto block_ = readBlockFromFingerprint(fingerprint);
+                    link_table[fingerprint] = block_.chain;
                 }
 
                 foreach (key; link_table.keys) {
                     foreach (value; link_table.values) {
                         if (value == block.fingerprint)
-                            this.first_block = cast(EpochBlockFactory.EpochBlock) getBlockFing(key);
+                            this.first_block = cast(EpochBlockFactory.EpochBlock) readBlockFromFingerprint(key);
                     }
                 }
             }
@@ -244,55 +296,68 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
         return _amount;
     }
 
-    private info_blocks findFirstLastAmountBlock() {
+    immutable(Buffer) lastBlockFingerprint() {
+        if (last_block is null)
+            return null;
+        else
+            return last_block.fingerprint.idup;
+    }
+
+    static BlocksInfo getBlocksInfo(string folder_path) {
 
         Buffer[Buffer] link_table;
-        string[] files_name = getFiles;
+        auto filenames = getFiles(folder_path);
 
-        foreach (f; files_name) {
-            Buffer fing = decode(f);
-            auto block = getBlockFing(fing);
-            link_table[fing] = block.chain;
+        foreach (f; filenames) {
+            Buffer fingerprint = decode(f);
+            auto block = readBlockFromFingerprint(fingerprint, folder_path);
+            link_table[fingerprint] = block.chain;
         }
 
-        info_blocks info;
+        BlocksInfo info;
+        info.amount = filenames.length;
 
-        bool a = false;
-        foreach (key; link_table.keys) {
-            foreach (value; link_table.values) {
-                if (key == value)
-                    a = true;
+        // search for the last block
+        bool found_next_block = false;
+        foreach (fingerprint; link_table.keys) { // search such block, that there isn't chain which points to this block 
+            foreach (chain; link_table.values) {
+                if (fingerprint == chain)
+                    found_next_block = true;
             }
-            if (!a) { //last blocks
-                info[1] = cast(EpochBlockFactory.EpochBlock) getBlockFing(key);
+            if (!found_next_block) { // save last block
+                info.last = cast(EpochBlockFactory.EpochBlock) readBlockFromFingerprint(fingerprint, folder_path);
             }
-            a = false;
+            found_next_block = false;
         }
 
-        bool b = true;
-        foreach (v; link_table.values) {
-            foreach (k; link_table.keys) {
-                if (v == k)
-                    a = false;
+        // search for the first block
+        bool found_prev_block = false;
+        foreach (chain; link_table.values) { // search empty chain that doesn't point to some block
+            foreach (fingerprint; link_table.keys) {
+                if (chain == fingerprint)
+                    found_prev_block = true;
             }
-            if (b) {
-                foreach (ke; link_table.keys) {
-                    if (link_table[ke] == v) { //first block
-                        info[0] = cast(EpochBlockFactory.EpochBlock) getBlockFing(ke);
+            if (!found_prev_block) {
+                foreach (fingerprint; link_table.keys) {
+                    if (link_table[fingerprint] == chain) { // find block with empty chain
+                        info.first = cast(EpochBlockFactory.EpochBlock) readBlockFromFingerprint(fingerprint, folder_path);
                     }
                 }
             }
-            b = true;
+            found_prev_block = false;
         }
-        info[2] = files_name.length;
-        return info;
 
+        return info;
+    }
+
+    private BlocksInfo getBlocksInfo() {
+        return getBlocksInfo(this.folder_path);
     }
 
     private immutable(EpochBlockFactory.EpochBlock) delBlock(Buffer fingerprint) {
         assert(fingerprint);
 
-        auto block = getBlockFing(fingerprint);
+        auto block = readBlockFromFingerprint(fingerprint);
         const f_name = makePath(fingerprint);
         import std.file : remove;
 
@@ -300,24 +365,28 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
         return block;
     }
 
-    private string[] getFiles() {
+    static string[] getFiles(string folder_path) {
         import std.file;
 
-        string[] files_name;
+        string[] file_names;
 
-        auto files = dirEntries(this.file_for_blocks, SpanMode.shallow).filter!(a => a.isFile())
+        auto files = dirEntries(folder_path, SpanMode.shallow).filter!(a => a.isFile())
             .map!(a => baseName(a))
             .array();
         foreach (f; files) {
-            if (f.length == FileName_Len) {
-                files_name ~= f;
+            if (f.length == EPOCH_BLOCK_FILENAME_LEN) {
+                file_names ~= f;
             }
         }
-        return files_name;
+        return file_names;
+    }    
+
+    private string[] getFiles() {
+        return getFiles(this.folder_path);
     }
 
     private immutable(EpochBlockFactory.EpochBlock) rollBack() {
-        if (buildPath(this.file_for_blocks, this.last_block._chain.toHexString).exists) {
+        if (buildPath(this.folder_path, this.last_block._chain.toHexString).exists) {
             const f_name = makePath(this.last_block._chain);
             import tagion.hibon.HiBONRecord : fread;
 
@@ -333,8 +402,8 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
     }
 
     Buffer[] getFullChainBullseye() {
-        auto info = findFirstLastAmountBlock;
-        this.last_block = info[1];
+        auto info = getBlocksInfo;
+        this.last_block = info.last;
         Buffer[] flipped_chain;
         flipped_chain ~= this.last_block.bullseye;
 
@@ -346,30 +415,24 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
             else {
                 Buffer[] full_chain;
                 full_chain = flipped_chain.reverse;
-                auto info_ = findFirstLastAmountBlock;
-                this.last_block = info[1];
+                auto info_ = getBlocksInfo;
+                this.last_block = info.last;
                 return full_chain;
             }
         }
     }
 
-    private immutable(EpochBlockFactory.EpochBlock) getBlockFing(Buffer fingerprint) {
-        const f_name = makePath(fingerprint);
-        auto file = File(f_name, "r");
+    static immutable(EpochBlockFactory.EpochBlock) readBlockFromFingerprint(Buffer fingerprint, string folder_path) {
+        const f_name = makePath(fingerprint, folder_path);
+        
         import tagion.hibon.HiBONRecord : fread;
-
-        auto d = fread(f_name);
-        immutable(StdHashNet) _net = new StdHashNet;
-        auto factory = EpochBlockFactory(_net);
-        auto block = factory(d);
-        return block;
+        auto doc = fread(f_name);
+        auto factory = EpochBlockFactory(new StdHashNet);
+        return factory(doc);
     }
 
-    string getFileName() {
-        if (this.file_for_blocks)
-            return this.file_for_blocks;
-        else
-            assert(0);
+    private immutable(EpochBlockFactory.EpochBlock) readBlockFromFingerprint(Buffer fingerprint) {
+        return readBlockFromFingerprint(fingerprint, this.folder_path);
     }
 
     immutable(RecordFactory.Recorder) flipRecorder(immutable(EpochBlockFactory.EpochBlock) block) const {
@@ -393,42 +456,42 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
     }
 }
 
-unittest {
-    // TODO
-}
+import tagion.basic.Basic : TrustedConcurrency;
+mixin TrustedConcurrency;
 
-void recorderTask(immutable(Options) opts) {
+/*@safe*/ void recorderTask(immutable(Options) opts) {
     try {
         scope (exit) {
-            ownerTid.prioritySend(Control.END);
+            prioritySend(ownerTid, Control.END);
         }
 
         log.register(opts.recorder.task_name);
 
-        auto records_folder = opts.recorder.folder_path;
-        // if (!records_folder.exists) {
-        //     records_folder.mkdir;
-        // }
+        const records_folder = opts.recorder.folder_path;
+        auto blocks_db = new EpochBlockFileDataBase(records_folder);
+
+        immutable(StdHashNet) hashnet = new StdHashNet;
+        auto epoch_block_factory = EpochBlockFactory(hashnet);
 
         bool stop;
-        void control(Control ctrl) @safe {
+        void control(Control ctrl) {
             with (Control) switch (ctrl) {
             case STOP:
                 stop = true;
-                writeln("%s Stopped ", opts.recorder.task_name);
+                writeln(format("%s stopped ", opts.recorder.task_name));
                 break;
             default:
-                writeln("%s: Unsupported control %s", opts.recorder.task_name, ctrl);
+                writeln(format("%s: Unsupported control %s", opts.recorder.task_name, ctrl));
             }
         }
 
-        void receiveRecorder(string test_str, string filename) {
-            import tagion.hibon.Document;
+        void receiveRecorder(immutable(RecordFactory.Recorder) recorder, Fingerprint db_fingerprint) {
+            auto last_block_fingerprint = blocks_db.lastBlockFingerprint;
+            auto block = epoch_block_factory(recorder, last_block_fingerprint, db_fingerprint.buffer);
+            blocks_db.addBlock(block);
 
-            writeln("===== receiveRecorder WRITE <", test_str, "> to ", filename);
-            // write(/*records_folder ~ */filename ~ ".recorder", test_str);
-            // auto read_output = read(/*records_folder ~ */filename ~ ".recorder");
-            // writeln("-----receiveRecorder READ <", read_output, ">");
+            version(unittest)
+            ownerTid.send(Control.LIVE);
         }
 
         ownerTid.send(Control.LIVE);
@@ -436,7 +499,67 @@ void recorderTask(immutable(Options) opts) {
             receive(&control, &receiveRecorder);
         }
     }
-    catch (Throwable t) {
-        fatal(t);
+    catch (Exception e) {
+        fatal(e);
     }
+}
+
+unittest {
+    Options options;
+    setDefaultOption(options);
+
+    // Init dummy database
+    string passphrase = "verysecret";
+    string folder_path = options.recorder.folder_path;
+    string dartfilename = folder_path ~ "DummyDART";
+
+    if (!exists(folder_path))
+        mkdirRecurse(folder_path);
+
+    SecureNet net = new StdSecureNet;
+    net.generateKeyPair(passphrase);
+    enum BLOCK_SIZE = 0x80;
+    BlockFile.create(dartfilename, DARTFile.stringof, BLOCK_SIZE);
+
+    ushort fromAngle = 0;
+    ushort toAngle = 1;
+    DART db = new DART(net, dartfilename, fromAngle, toAngle);
+
+    // Create dummy Recorder
+    HiBON hibon = new HiBON;
+    hibon["not_empty_db?"] = "NO:)";
+    immutable(StdHashNet) hashnet = new StdHashNet;
+    auto recordFactory = RecordFactory(hashnet);
+    auto rec = recordFactory.recorder;
+    rec.add(Document(hibon));
+    immutable(RecordFactory.Recorder) rec_im = cast(immutable) rec;
+
+    // Spawn recorder task
+    auto recorder_service_tid = spawn(&recorderTask, options);
+    assert(receiveOnly!Control == Control.LIVE);
+    scope(exit) {
+        import std.file;
+        rmdirRecurse(folder_path);
+    }
+    
+    // Send recorder to service
+    enum number_of_test_iterations = 5;
+    foreach (i; 0..number_of_test_iterations) {
+        recorder_service_tid.send(rec_im, Fingerprint(db.fingerprint));
+        assert(receiveOnly!Control == Control.LIVE);
+
+        auto blocks_info = EpochBlockFileDataBase.getBlocksInfo(folder_path);
+
+        auto files = EpochBlockFileDataBase.getFiles(folder_path);
+        assert(blocks_info.amount == files.length);
+
+        Buffer fingerprint = blocks_info.last.fingerprint;
+        foreach (j; 0..blocks_info.amount) {
+            auto current_block = EpochBlockFileDataBase.readBlockFromFingerprint(fingerprint, folder_path);
+            fingerprint = current_block.chain;
+        }
+    }
+
+    recorder_service_tid.send(Control.STOP);
+    assert(receiveOnly!Control == Control.END);
 }

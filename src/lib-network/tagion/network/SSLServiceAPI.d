@@ -44,6 +44,7 @@ struct SSLServiceAPI {
     }
 
     void send(uint id, immutable(ubyte[]) buffer) {
+        writeln("Send data to listener_id");
         service.send(id, buffer);
     }
 

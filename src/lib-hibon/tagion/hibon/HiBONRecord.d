@@ -195,6 +195,8 @@ mixin template HiBONRecordType() {
  --------------------
 
  +/
+pragma(msg, "The less_than function in this mixin is used for none string key (Should be added to the HiBON spec)");
+
 mixin template HiBONRecord(string CTOR = "") {
 
     import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember, isCallable,
@@ -682,12 +684,8 @@ mixin template HiBONRecord(string CTOR = "") {
     return doc;
 }
 
-const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
-    import tagion.hibon.HiBONException : check;
-
-    immutable data = assumeUnique(cast(ubyte[]) file.read(filename));
-    const doc = Document(data);
-    check(doc.isInorder, "HiBON Document format failed");
+const(T) fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
+    const doc = filename.fread;
     return T(doc, args);
 }
 
@@ -1251,7 +1249,7 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
     { // None standard Keys
         import std.typecons : Typedef;
         import std.algorithm : map, each;
-        import std.bitmanip : binwrite = write;
+        import std.range : tee;
         import std.algorithm : sort;
         import std.array : array;
         import std.typecons : tuple;
@@ -1260,7 +1258,14 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
 
         import tagion.basic.Basic : Buffer;
 
+        static void binwrite(Args...)(ubyte[] buf, Args args) @trusted {
+            import std.bitmanip : write;
+
+            write(buf, args);
+        }
+        //        alias binwrite=assumeTrusted!(bitmanip.write!Buffer);
         { // Typedef on HiBON.type is used as key in an associative-array
+            pragma(msg, "fixme(cbr): make sure that the assoicated array is hash invariant");
             alias Bytes = Typedef!(immutable(ubyte)[], null, "Bytes");
             alias Tabel = int[Bytes];
             static struct StructBytes {
@@ -1276,7 +1281,7 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
             auto list = [-17, 117, 3, 17, 42];
             auto buffer = new ubyte[int.sizeof];
             foreach (i; list) {
-                (() @trusted { buffer.binwrite(i, 0); })();
+                binwrite(buffer, i, 0);
                 tabel[Bytes(buffer.idup)] = i;
             }
 
@@ -1285,39 +1290,18 @@ const(T) fread(T, Args...)(string filename, T, Args args) if (isHiBONRecord!T) {
             const s_doc = s.toDoc;
             const result = StructBytes(s_doc);
 
-            (() @trusted {
-                assert(
-                    equal(
+            assert(
+                equal(
                     list
-                    .map!(i => { buffer.binwrite(i, 0); return tuple(buffer.idup, i); })
-                    .map!(q{a()})
+                    .map!((i) {binwrite(buffer, i, 0); return tuple(buffer.idup, i);})
                     .array
                     .sort,
                     s_doc["tabel"]
                     .get!Document[]
                     .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
                 ));
-            })();
-
             assert(s_doc == result.toDoc);
         }
-
-        // {
-        //     alias Bytes = Typedef!(immutable(ubyte)[], null, "Bytes");
-        //     alias Tabel = Document[Bytes];
-        //     static struct StructDocument {
-        //         Tabel tabel;
-        //         mixin HiBONRecord;
-        //     }
-
-        //     static assert(isSpecialKeyType!Tabel)
-
-        //     StructDocument s;
-        //     {
-
-        //     }
-
-        // }
 
         { // Typedef of a HiBONRecord is used as key in an associative-array
             static struct KeyStruct {

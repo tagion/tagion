@@ -285,25 +285,10 @@ import tagion.wallet.WalletException : check;
             pragma(msg, "fixme(cbr): Storage fee needs to be estimated");
             const fees = globals.fees(topay, size_in_bytes);
             const amount = topay + fees;
-            //string source;
-            //uint count;
-            // foreach (o; orders) {
-            //     source = assumeUnique(format("%s %s", o.amount, source));
-            //     //              count++;
-            // }
-
-            // Input
-            // TagionCurrency amount;
-            // const contract_bills = account.bills
-            //     .tee!(b => amount+=b.value)
-            //     .until!(b => amount >= total)
-            //     .array;
             StandardBill[] contract_bills;
             const enough = collect_bills(amount, contract_bills);
             if (enough) {
                 const total = contract_bills.map!(b => b.value).sum;
-                // pragma(msg, "isHiBONRecord ",isHiBONRecord!(typeof(result.contract.input[0])));
-                // pragma(msg, "isHiBONRecord ",typeof(contract_bills));
 
                 result.contract.input = contract_bills.map!(b => net.hashOf(b.toDoc)).array;
                 const rest = total - amount;
@@ -320,12 +305,13 @@ import tagion.wallet.WalletException : check;
                 auto shared_net = (() @trusted { return cast(shared) net; })();
                 auto bill_net = new Net;
                 // Sign all inputs
-                result.signs = contract_bills.filter!(b => b.owner in account.derives)
-                    .map!(b => {
+                result.signs = contract_bills
+                    .filter!(b => b.owner in account.derives)
+                    .map!((b) {
                         immutable tweak_code = account.derives[b.owner];
                         bill_net.derive(tweak_code, shared_net);
                         return bill_net.sign(message);
-                    }())
+                    })
                     .array;
                 return true;
             }
@@ -377,14 +363,12 @@ import tagion.wallet.WalletException : check;
             TagionCurrency rest = amount;
             active_bills = none_active.filter!(b => b.value <= rest)
                 .until!(b => rest <= 0)
-                .tee!(b => { rest -= b.value; account.activated[b.owner] = true; })
+                .tee!((b) { rest -= b.value; account.activated[b.owner] = true; })
                 .array;
             if (rest > 0) {
                 // Take an extra larger bill if not enough
                 StandardBill extra_bill;
                 none_active.each!(b => extra_bill = b);
-                // .retro
-                // .takeOne;
                 account.activated[extra_bill.owner] = true;
                 active_bills ~= extra_bill;
             }
@@ -407,10 +391,6 @@ import tagion.wallet.WalletException : check;
         }
         return false;
     }
-
-    // TagionCurrency get_balance() const pure {
-    //     return calcTotal(account.bills);
-    // }
 
     static TagionCurrency calcTotal(const(StandardBill[]) bills) pure {
         return bills.map!(b => b.value).sum;

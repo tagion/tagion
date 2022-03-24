@@ -263,7 +263,6 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         scope (exit) {
             discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
         }
-        // receive((DiscoveryState state) { assert(state == DiscoveryState.ONLINE); });
 
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
         receive((ActiveNodeAddressBook address_book) { update_pkeys(address_book.data.keys); });
@@ -427,25 +426,17 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
 
         Random!size_t random;
         random.seed(123456789);
-        auto empty_hirpc = HiRPC(null);
         while (!stop && !abort) {
             immutable message_received = receiveTimeout(opts.timeout.msecs, &receive_payload, &controller,
-                    &receive_wavefront, &taskfailure,
-                    (ActiveNodeAddressBook address_book) {
+                    &receive_wavefront, &taskfailure, (ActiveNodeAddressBook address_book) {
                 log("Update address book");
                 update_pkeys(address_book.data.keys);
-            },
-                    (string respond_task_name, Buffer data) {
-                import tagion.hibon.HiBONJSON;
-
-                const doc = Document(data);
-                const receiver = empty_hirpc.receive(doc);
-                auto respond = new HiBON();
-                respond["rounds"] = hashgraph.rounds.length;
-                respond["inGraph"] = hashgraph.areWeInGraph;
-                auto response = empty_hirpc.result(receiver, respond);
-                log("Healthcheck: %s", response.toDoc.toJSON);
-                locate(respond_task_name).send(response.toDoc.serialize);
+                if (dart_sync_tid != Tid.init) {
+                    send(dart_sync_tid, address_book);
+                }
+                else {
+                    log("DART sync not found");
+                }
             });
             log("ROUNDS: %d AreWeInGraph: %s", hashgraph.rounds.length, hashgraph.areWeInGraph);
             if (!message_received || !hashgraph.areWeInGraph) {

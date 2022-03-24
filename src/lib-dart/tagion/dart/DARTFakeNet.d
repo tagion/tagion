@@ -42,7 +42,9 @@ class DARTFakeNet : StdSecureNet {
         return super.rawCalcHash(h);
     }
 
-    override immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const {
+    override immutable(Buffer) calcHash(
+            scope const(ubyte[]) h1,
+            scope const(ubyte[]) h2) const {
         scope ubyte[] fake_h1;
         scope ubyte[] fake_h2;
         if (h1.length is ulong.sizeof) {

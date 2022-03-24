@@ -14,7 +14,6 @@ import tagion.hibon.Document;
 
 import tagion.logger.Logger;
 
-//import tagion.utils.Random;
 import tagion.basic.TagionExceptions;
 import tagion.script.SmartScript;
 import tagion.script.StandardRecords : Contract, SignedContract, PayContract;
@@ -89,7 +88,6 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
             catch (Error e) {
                 fatal(e);
                 return false;
-                //log("Throwable: %s", e.msg);
             }
         }
 

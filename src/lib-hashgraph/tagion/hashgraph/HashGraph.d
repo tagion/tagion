@@ -21,7 +21,7 @@ import tagion.communication.HiRPC;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
 
-import tagion.basic.Basic : Pubkey, Signature, Privkey, Buffer, bitarray_clear, countVotes;
+import tagion.basic.Basic : Pubkey, Signature, Privkey, Buffer, countVotes;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
 
@@ -293,7 +293,7 @@ class HashGraph {
                 .fingerprint.toHexString));
     }
     do {
-        if (event_pack.pubkey == channel || valid_channel(event_pack.pubkey)) {
+        if (valid_channel(event_pack.pubkey)) {
             auto event = new Event(event_pack, this);
             _event_cache[event.fingerprint] = event;
             event.connect(this);
@@ -357,7 +357,11 @@ class HashGraph {
         if (_register) {
             return _register.register(fingerprint);
         }
-        return _event_cache.get(fingerprint, null);
+        scope event_ptr = fingerprint in _event_cache;
+        if (event_ptr) {
+            return *event_ptr;
+        }
+        return null;
     }
 
     /++
@@ -1116,7 +1120,7 @@ class HashGraph {
         const channels = network.channels;
 
         try {
-            foreach (i; 0 .. 3276) {
+            foreach (i; 0 .. 550) {
                 const channel_number = network.random.value(0, channels.length);
                 const channel = channels[channel_number];
                 auto current = network.networks[channel];

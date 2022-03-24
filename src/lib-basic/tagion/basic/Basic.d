@@ -87,18 +87,18 @@ enum BITARRAY_MESSAGE = "Use tagion.utils.BitMask instead";
 /++
  Creates a new clean bitarray
 +/
-deprecated(BITARRAY_MESSAGE) void bitarray_clear(out BitArray bits, const size_t length) @trusted pure nothrow {
+version (none) deprecated(BITARRAY_MESSAGE) void bitarray_clear(out BitArray bits, const size_t length) @trusted pure nothrow {
     bits.length = length;
 }
 
 /++
  Change the size of the bitarray
 +/
-deprecated(BITARRAY_MESSAGE) void bitarray_change(ref scope BitArray bits, const size_t length) @trusted {
+version (none) deprecated(BITARRAY_MESSAGE) void bitarray_change(ref scope BitArray bits, const size_t length) @trusted {
     bits.length = length;
 }
 
-unittest {
+version (none) unittest {
     {
         BitArray test;
         immutable uint size = 7;
@@ -228,7 +228,7 @@ enum Control {
     STOP, /// Send when the child task to stop task
     //    FAIL,   /// This if a something failed other than an exception
     END /// Send for the child to the ownerTid when the task ends
-};
+}
 
 /++
  Calculates log2
@@ -397,11 +397,26 @@ static unittest {
 */
 template doFront(Range) if (isInputRange!Range) {
     alias T = ForeachType!Range;
-    T doFront(Range r) {
+    import std.range;
+
+    T doFront(Range r) @safe {
         if (r.empty) {
             return T.init;
         }
         return r.front;
+    }
+}
+
+@safe
+unittest {
+    {
+        int[] a;
+        static assert(isInputRange!(typeof(a)));
+        assert(a.doFront is int.init);
+    }
+    {
+        const a = [1, 2, 3];
+        assert(a.doFront is a[0]);
     }
 }
 
@@ -421,8 +436,174 @@ unittest {
 }
 
 auto eatOne(R)(ref R r) if (isInputRange!R) {
+    import std.range;
+
     scope (exit) {
         r.popFront;
     }
     return r.front;
+}
+
+unittest {
+    const(int)[] a = [1, 2, 3];
+    assert(eatOne(a) == 1);
+    assert(eatOne(a) == 2);
+    assert(eatOne(a) == 3);
+}
+
+/// Calling any system functions.
+template assumeTrusted(alias F) {
+    import std.traits;
+
+    static assert(isUnsafe!F);
+
+    auto assumeTrusted(Args...)(Args args) @trusted {
+        return F(args);
+    }
+}
+
+///
+@safe
+unittest {
+    auto bar(int b) @system {
+        return b + 1;
+    }
+
+    const b = assumeTrusted!bar(5);
+    assert(b == 6);
+
+    // applicable to 0-ary function
+    static auto foo() @system {
+        return 3;
+    }
+
+    const a = assumeTrusted!foo;
+    assert(a == 3);
+
+    // // It can be used for alias
+    alias trustedBar = assumeTrusted!bar;
+    alias trustedFoo = assumeTrusted!foo;
+    //    assert(is(typeof(trustedFoo) == function));
+
+    import core.stdc.stdlib;
+
+    auto ptr = assumeTrusted!malloc(100);
+    assert(ptr !is null);
+    ptr.assumeTrusted!free;
+
+    ptr = assumeTrusted!calloc(10, 100);
+    ptr.assumeTrusted!free;
+
+    alias lambda = assumeTrusted!((int a) @system => a * 3);
+
+    assert(lambda(42) == 3 * 42);
+
+    {
+        import std.concurrency;
+
+        static void task() @safe {
+            const result = 2 * assumeTrusted!(receiveOnly!int);
+            assumeTrusted!({ ownerTid.send(result); });
+            alias trusted_owner = assumeTrusted!(ownerTid);
+            alias trusted_send = assumeTrusted!(send!(string));
+            trusted_send(trusted_owner, "Hello");
+        }
+
+        auto tid = assumeTrusted!({ return spawn(&task); });
+        assumeTrusted!({ send(tid, 21); });
+        assert(assumeTrusted!(receiveOnly!(const(int))) == 21 * 2);
+        assert(assumeTrusted!(receiveOnly!(string)) == "Hello");
+    }
+}
+
+protected template _staticSearchIndexOf(int index, alias find, L...) {
+    import std.meta : staticIndexOf;
+
+    static if (isType!find) {
+        enum _staticSearchIndexOf = staticIndexOf!(find, L);
+    }
+    else {
+        static if (L.length is index) {
+            enum _staticSearchIndexOf = -1;
+        }
+        else {
+            enum found = find!(L[index]);
+            pragma(msg, "found ", found);
+            static if (found) {
+                enum _staticSearchIndexOf = index;
+            }
+            else {
+                enum _staticSearchIndexOf = _staticSearchIndexOf!(index + 1, find, L);
+            }
+        }
+    }
+}
+
+/**
+This template finds the index of find in the AliasSeq L.
+If find is a type it works the same as traits.staticIndexOf,
+ but if func is a templeate function it will use this function as a filter
+Returns:
+First index where find has been found
+If nothing has been found the template returns -1
+ */
+
+template staticSearchIndexOf(alias find, L...) {
+    enum staticSearchIndexOf = _staticSearchIndexOf!(0, find, L);
+}
+
+static unittest {
+    import std.traits : isIntegral, isFloatingPoint;
+
+    alias seq = AliasSeq!(string, int, long, char);
+    pragma(msg, "staticSearchIndexOf ", staticSearchIndexOf!(long, seq));
+    static assert(staticSearchIndexOf!(long, seq) is 2);
+    static assert(staticSearchIndexOf!(isIntegral, seq) is 1);
+    static assert(staticSearchIndexOf!(isFloatingPoint, seq) is -1);
+}
+
+enum unitdata = "unitdata";
+/**
+   Returns:
+   unittest data filename
+ */
+string unitfile(string filename, string file = __FILE__) {
+    import std.path;
+
+    return buildPath(file.dirName, unitdata, filename);
+}
+
+template mangleFunc(alias T) if (isCallable!T) {
+    import core.demangle : mangle;
+
+    alias mangleFunc = mangle!(FunctionTypeOf!(T));
+}
+
+@safe mixin template TrustedConcurrency() {
+    import concurrency = std.concurrency;
+    alias Tid = concurrency.Tid;
+
+    static void send(Args...)(Tid tid, Args args) @trusted {
+        concurrency.send(tid, args);
+    }
+
+    static void prioritySend(Args...)(Tid tid, Args args) @trusted {
+        concurrency.prioritySend(tid, args);
+    }
+
+    static void receive(Args...)(Args args) @trusted {
+        concurrency.receive(args);
+    }
+
+    static auto receiveOnly(T...)() @trusted {
+        return concurrency.receiveOnly!T;
+    }
+
+    static Tid ownerTid() @trusted {
+        return concurrency.ownerTid;
+    }
+
+    static Tid spawn(F, Args...)(F fn, Args args) @trusted {
+        return concurrency.spawn(fn, args);
+    }
 }
