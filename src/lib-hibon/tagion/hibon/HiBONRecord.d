@@ -6,7 +6,7 @@ import tagion.hibon.HiBONJSON;
 import file = std.file;
 import std.exception : assumeUnique;
 import std.typecons : Tuple;
-import std.traits : hasMember, ReturnType, isArray, ForeachType, isUnsigned;
+import std.traits : hasMember, ReturnType, isArray, ForeachType, isUnsigned, isIntegral;
 
 import tagion.basic.Basic : basename, EnumContinuousSequency;
 import tagion.hibon.HiBONBase : ValueT;
@@ -373,6 +373,14 @@ mixin template HiBONRecord(string CTOR = "") {
                         alias BaseU = TypedefType!(ForeachType!(UnqualT));
                         hibon[name] = toList(m);
                     }
+                    else static if (isIntegral!UnqualT || UnqualT.sizeof <= short.sizeof) {
+                        static if (isUnsigned!UnqualT) {
+                            hibon[name] = cast(uint) m;
+                        }
+                        else {
+                            hibon[name] = cast(int) m;
+                        }
+                    }
                     else {
                         static assert(0, format("Convering for member '%s' of type %s is not supported by default",
                                 name, MemberT.stringof));
@@ -623,8 +631,17 @@ mixin template HiBONRecord(string CTOR = "") {
                             }
                             m = toList!BaseT(sub_doc);
                         }
+                        else static if (isIntegral!BaseT && BaseT.sizeof <= short.sizeof) {
+                            static if (isUnsigned!BaseT) {
+                                m = cast(BaseT) doc[name].get!uint;
+                            }
+                            else {
+                                m = cast(BaseT) doc[name].get!int;
+                            }
+                        }
                         else {
-                            static assert(0, format("Convering for member '%s' of type %s is not supported by default",
+                            static assert(0,
+                                format("Convering for member '%s' of type %s is not supported by default",
                                     name, MemberT.stringof));
 
                         }
@@ -1366,5 +1383,31 @@ const(T) fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
             const result = DefaultStruct(s_doc);
             assert(result.x is -1);
         }
+    }
+
+    {
+        static struct ImpliciteTypes {
+            ushort u_s;
+            short i_s;
+            ubyte u_b;
+            byte i_b;
+            mixin HiBONRecord;
+        }
+
+        { //
+            ImpliciteTypes s;
+            s.u_s = 42_000;
+            s.i_s = -22_000;
+            s.u_b = 142;
+            s.i_b = -42;
+
+            const s_doc = s.toDoc;
+            const result = ImpliciteTypes(s_doc);
+            assert(result.u_s == 42_000);
+            assert(result.i_s == -22_000);
+            assert(result.u_b == 142);
+            assert(result.i_b == -42);
+        }
+
     }
 }
