@@ -25,7 +25,7 @@ import tagion.services.DARTSynchronizeService;
 import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
 
-import tagion.services.P2pTagionService;
+import tagion.services.TagionService;
 import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
 import tagion.services.MdnsDiscoveryService;
 
