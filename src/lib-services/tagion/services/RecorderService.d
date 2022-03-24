@@ -7,7 +7,9 @@ import std.array;
 import std.typecons;
 import std.path : buildPath, baseName;
 import std.algorithm;
+import std.bigint : BigInt;
 import std.format;
+import std.string : strip;
 
 import tagion.basic.Basic : Control, Buffer;
 import tagion.basic.TagionExceptions : fatal;
@@ -32,6 +34,35 @@ struct Fingerprint {
     this(immutable(Buffer) buffer) {
         this.buffer = buffer;
     }
+
+    pragma(msg, "fixme(ib) do this using toString");
+    static string format(Buffer fingerprint, bool to_hex = true, uint numbers_in_line = 16) pure {
+        string format_str;
+        const string f = to_hex ? "%02X " : "%d ";
+
+        for (int i = 0; i < fingerprint.length; ++i) {
+            format_str ~= std.format.format(f, BigInt(fingerprint[i]));
+
+            if ((i+1) % numbers_in_line is 0)
+                format_str ~= "\n";
+        }
+
+        return strip(format_str);
+    }
+}
+
+unittest {
+    assert(Fingerprint.format([]) == "");
+    assert(Fingerprint.format([255]) == "FF");
+
+    Buffer fingerprint = [143, 0, 51, 132, 41, 244, 105, 22, 182, 75, 173, 136, 17, 208, 91, 39];
+
+    assert(Fingerprint.format(fingerprint) == "8F 00 33 84 29 F4 69 16 B6 4B AD 88 11 D0 5B 27");
+    assert(Fingerprint.format(fingerprint, false) == "143 0 51 132 41 244 105 22 182 75 173 136 17 208 91 39");
+    assert(Fingerprint.format(fingerprint, true, 4) == "8F 00 33 84 \n" ~
+                                                        "29 F4 69 16 \n" ~
+                                                        "B6 4B AD 88 \n" ~
+                                                        "11 D0 5B 27");
 }
 
 struct EpochBlockFactory {
@@ -436,7 +467,7 @@ mixin TrustedConcurrency;
 
         log.register(opts.recorder.task_name);
 
-        const auto records_folder = opts.recorder.folder_path;
+        const records_folder = opts.recorder.folder_path;
         auto blocks_db = new EpochBlockFileDataBase(records_folder);
 
         immutable(StdHashNet) hashnet = new StdHashNet;
@@ -513,7 +544,7 @@ unittest {
     
     // Send recorder to service
     enum number_of_test_iterations = 5;
-    for (int i = 0; i < number_of_test_iterations; ++i) {
+    foreach (i; 0..number_of_test_iterations) {
         recorder_service_tid.send(rec_im, Fingerprint(db.fingerprint));
         assert(receiveOnly!Control == Control.LIVE);
 
@@ -523,7 +554,7 @@ unittest {
         assert(blocks_info.amount == files.length);
 
         Buffer fingerprint = blocks_info.last.fingerprint;
-        for (int j = 0; j < blocks_info.amount; ++j) {
+        foreach (j; 0..blocks_info.amount) {
             auto current_block = EpochBlockFileDataBase.readBlockFromFingerprint(fingerprint, folder_path);
             fingerprint = current_block.chain;
         }

@@ -52,7 +52,7 @@ int main(string[] args) {
 
     bool print = false;
     bool clean = false;
-    uint rollback, init_count;
+    ulong rollback, init_count;
 
     auto cli_args_config = getopt(
             args,
@@ -63,6 +63,9 @@ int main(string[] args) {
             "init|i", "Init n dummy blocks", &init_count,
             "clean|c", "Clean recorder chain folder after work", &clean,
     );
+
+    // TODO: add argument for selecting folder
+    auto folder_path = options.recorder.folder_path;
 
     int onHelp() {
         defaultGetoptPrinter(
@@ -83,7 +86,6 @@ int main(string[] args) {
     void onInit() {
         // Init dummy database
         string passphrase = "verysecret";
-        string folder_path = options.recorder.folder_path;
         string dartfilename = folder_path ~ "DummyDART";
 
         if (!exists(folder_path))
@@ -102,18 +104,18 @@ int main(string[] args) {
         HiBON hibon = new HiBON;
         hibon["not_empty_db?"] = "NO:)";
 
-        immutable(StdHashNet) hashnet = new StdHashNet;
+        immutable hashnet = new StdHashNet;
         auto recordFactory = RecordFactory(hashnet);
         auto rec = recordFactory.recorder;
         rec.add(Document(hibon));
-        immutable(RecordFactory.Recorder) rec_im = cast(immutable) rec;
+        immutable rec_im = cast(immutable) rec;
 
         // Spawn recorder task
         auto recorder_service_tid = spawn(&recorderTask, options);
         receiveOnly!Control;
         
         // Send recorder to service
-        for (int i = 0; i < init_count; ++i) {
+        foreach (i; 0..init_count) {
             recorder_service_tid.send(rec_im, Fingerprint(db.fingerprint));
         }
 
@@ -122,41 +124,46 @@ int main(string[] args) {
     }
 
     void onPrint() {
-        writeln("--print");
-
-        string folder_path = options.recorder.folder_path;
         auto blocks_info = EpochBlockFileDataBase.getBlocksInfo(folder_path);
 
         Buffer fingerprint = blocks_info.last.fingerprint;
-        for (int j = 0; j < blocks_info.amount; ++j) {
-            auto current_block = EpochBlockFileDataBase.readBlockFromFingerprint(fingerprint, folder_path);
+        foreach (j; 0..blocks_info.amount) {
+            const current_block = EpochBlockFileDataBase.readBlockFromFingerprint(fingerprint, folder_path);
 
-            writeln(format("%s block", blocks_info.amount-j));
-            writeln(current_block);
+            writeln(format(">> %s block start", blocks_info.amount-j));
+            
+            writeln("Fingerprint:\n", Fingerprint.format(current_block.fingerprint));
+            const bullseye = current_block.bullseye;
+            if (bullseye.empty)
+                writeln("Bullseye: <empty>");
+            else
+                writeln("Bullseye:\n", Fingerprint.format(bullseye));
+
+            writeln(format("<< %s block end\n", blocks_info.amount-j));
 
             fingerprint = current_block.chain;
         }
     }
 
     void onRollback() {
-        writeln("--rollback called for ", rollback, " steps\n");
-        while (rollback > 0) {
-            writefln("Current rollback: %d", rollback);
-            //const flip_rec = blocks_.rollBack();
+        auto blocks_info = EpochBlockFileDataBase.getBlocksInfo(folder_path);
+        if (rollback > blocks_info.amount)
+            rollback = blocks_info.amount;
 
-            // function `tagion.dart.DARTFile.DARTFile.modify(Recorder modify_records)`
-            // is not callable using argument types `(immutable(EpochBlock))`
-            // db.modify(flip_rec);
-            // if (dump) {
-            //     writefln("Rollback on %d step: %s", rollback, "dummy.db"); //db.fingerprint);
-            // }
-            rollback--;
+        writeln("Rollback for ", rollback, " steps\n");
+
+        Buffer fingerprint = blocks_info.last.fingerprint;
+        foreach (j; 0..rollback) {
+            writefln("Current rollback: %d", rollback-j);
+
+            const current_block = EpochBlockFileDataBase.readBlockFromFingerprint(fingerprint, folder_path);
+
+            //auto filename = 
+            EpochBlockFileDataBase.makePath(fingerprint, folder_path).remove;
+            //remove(filename);
+
+            fingerprint = current_block.chain;
         }
-    }
-
-    int onClean() {
-        writeln("--clean");
-        return 0;
     }
 
     try {
@@ -167,20 +174,22 @@ int main(string[] args) {
         // Should be the first action
         if (init_count > 0) onInit;
 
-        // Calling --print | -p
         if (print) onPrint;
 
         if (rollback > 0) onRollback;
 
         // Last action in work
-        if (clean)
-            return onClean;
+        if (clean) {
+            rmdirRecurse(folder_path);
+            writeln(format("Cleaned files in '%s'", folder_path));
+        }
     }
     catch (Exception e) {
         // Might be:
         // std.getopt.GetOptException for unrecoginzed option
         // std.conv.ConvException for unexpected values for option recognized
         writeln(e);
+        return 1;
     }
     return 0;
 }
