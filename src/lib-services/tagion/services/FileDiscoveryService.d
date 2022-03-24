@@ -23,8 +23,11 @@ import std.array;
 import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
 import tagion.gossip.P2pGossipNet;
 
-void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name,
-        immutable(Options) opts) nothrow { //TODO: for test
+void fileDiscoveryService(
+    Pubkey pubkey,
+    string node_address,
+    string task_name,
+    immutable(Options) opts) nothrow { //TODO: for test
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
@@ -159,7 +162,9 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name,
         while (!stop) {
             receiveTimeout(
                     500.msecs,
-                    (immutable(Pubkey) key, Tid tid) { log("looking for key: %s", key); tid.send(node_addresses[key]); },
+                    (immutable(Pubkey) key, Tid tid) {
+                        log("looking for key: %s", key);
+                        tid.send(node_addresses[key]); },
                     (Control control) {
                 if (control == Control.STOP) {
                     log("stop");
