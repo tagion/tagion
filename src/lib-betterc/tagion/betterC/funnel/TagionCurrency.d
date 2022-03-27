@@ -1,4 +1,4 @@
-module tagion.script.TagionCurrency;
+module tagion.betterC.funnel.TagionCurrency;
 
 import std.format;
 // import std.traits : isIntegral, isNumeric, isFloatingPoint;
@@ -6,6 +6,8 @@ import std.format;
 import std.range : only;
 // import std.array : join;
 // import std.conv : to;
+import tagion.betterC.hibon.HiBON;
+import tagion.betterC.hibon.Document;
 
 import tagion.betterC.wallet.WalletRecords;
 
@@ -16,7 +18,7 @@ TagionCurrency TGN(T)(T x) pure if (isNumeric!T) {
     return TagionCurrency(cast(double) x);
 }
 
-@safe
+@trusted
 struct TagionCurrency {
     enum long AXION_UNIT = 1_000_000_000;
     enum long AXION_MAX = 1_000_000_000 * AXION_UNIT;
@@ -26,16 +28,20 @@ struct TagionCurrency {
         @Label("$v") long _axions;
     }
 
-    // mixin HiBONRecord!(
-    //         q{
-    //         this(T)(T tagions) pure if (isFloatingPoint!T) {
-    //             _axions = cast(long)(tagions * AXION_UNIT);
-    //         }
+    inout(HiBONT) toHiBON() inout {
+        auto hibon = HiBON();
+        hibon["$v"] = _axions;
+        return cast(inout) hibon;
+    }
 
-    //         this(T)(const T axions) pure if (isIntegral!T) {
-    //             _axions = axions;
-    //         }
-    //     });
+    const(Document) toDoc() {
+        auto doc = Document(toHiBON.serialize);
+        return cast(const) doc;
+    }
+
+    this(Document doc) {
+        _axions = doc["$v"].get!long;
+    }
 
     bool verify() const pure nothrow {
         return _axions > -AXION_MAX && _axions < AXION_MAX;
@@ -130,18 +136,18 @@ struct TagionCurrency {
         }
     }
 
-    static string toTagion(const long axions) pure {
-        long value = axions;
-        if (axions < 0) {
-            value = -value;
-        }
-        const sign = (axions < 0) ? "-" : "";
-        return only(sign, (value / AXION_UNIT).to!string, ".", (value % AXION_UNIT).to!string).join;
-    }
+    // static string toTagion(const long axions) pure {
+    //     long value = axions;
+    //     if (axions < 0) {
+    //         value = -value;
+    //     }
+    //     const sign = (axions < 0) ? "-" : "";
+    //     return only(sign, (value / AXION_UNIT).to!string, ".", (value % AXION_UNIT).to!string).join;
+    // }
 
-    string toString() {
-        return toTagion(_axions);
-    }
+    // string toString() {
+    //     return toTagion(_axions);
+    // }
 
     ///
     unittest {

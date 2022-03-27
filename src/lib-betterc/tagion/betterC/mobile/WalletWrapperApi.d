@@ -12,9 +12,8 @@ import std.stdint;
 import tagion.betterC.wallet.Net;
 import tagion.betterC.hibon.HiBON;
 
-// import tagion.script.TagionCurrency;
 
-// import tagion.script.TagionCurrency;
+// import tagion.betterC.funnel.TagionCurrency;
 // import tagion.script.StandardRecords;
 // import tagion.communication.HiRPC;
 // import tagion.hibon.HiBON;

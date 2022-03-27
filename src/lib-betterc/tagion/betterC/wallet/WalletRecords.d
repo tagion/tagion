@@ -1,12 +1,12 @@
 module tagion.betterC.wallet.WalletRecords;
 
-// import tagion.betterC.hibon.HiBONRecord;
-import tagion.betterC.hibon.HiBON : HiBONT;
+import tagion.betterC.hibon.HiBON;
 import tagion.betterC.hibon.Document : Document;
 import tagion.betterC.wallet.KeyRecover : KeyRecover;
 import tagion.basic.Basic : Buffer, Pubkey;
+import tagion.betterC.utils.Memory;
 
-// import tagion.script.TagionCurrency;
+// import tagion.betterC.funnel.TagionCurrency;
 // import tagion.script.StandardRecords : StandardBill;
 
 struct RecordType {
@@ -27,21 +27,51 @@ struct Label {
     struct Quiz {
         @Label("$Q") string[] questions;
         this(Document doc) {
-            auto mydata = doc["$Q"].get!Document;
-            // questions = mydata[]
-            //     .map!(a => a.get!string)
-            //     .array.dup;
+            auto received_questions = doc["$Q"].get!Document;
+            questions.create(received_questions.length);
+            // questions[0 .. $] = received_questions;
+            // foreach (i, question; received_questions)
+            // {
+            //     questions[i] = question;
+            // }
+            // for (int i = 0; i < received_questions.length; i++) {
+            //     questions[i] = received_questions[i];
+            // }
+        }
+
+        inout(HiBONT) toHiBON() inout {
+            auto hibon = HiBON();
+            // hibon["Q"] = questions;
+            return cast(inout) hibon;
+        }
+
+        const(Document) toDoc() {
+            auto doc = Document(toHiBON.serialize);
+            return cast(const) doc;
         }
     }
-    /++
 
-+/
     @RecordType("PIN")
     struct DevicePIN {
         Buffer Y;
         Buffer check;
 
-        // mixin HiBONRecord;
+        this(Document doc) {
+            Y = doc["Y"].get!Buffer;
+            check = doc["C"].get!Buffer;
+        }
+
+        inout(HiBONT) toHiBON() inout {
+            auto hibon = HiBON();
+            hibon["Y"] = Y;
+            hibon["C"] = check;
+            return cast(inout) hibon;
+        }
+
+        const(Document) toDoc() {
+            auto doc = Document(toHiBON.serialize);
+            return cast(const) doc;
+        }
     }
 
     @RecordType("Wallet")
