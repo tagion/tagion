@@ -8,6 +8,8 @@ private import tagion.crypto.secp256k1.c.secp256k1;
 private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
 import tagion.betterC.utils.Memory;
 
+import hash = tagion.betterC.wallet.hash;
+
 // import tagion.betterC.hibon.Document;
 
 enum HASH_SIZE = 32;
@@ -41,17 +43,25 @@ enum SECP256K1 : uint {
     TAG_PUBKEY_HYBRID_ODD = SECP256K1_TAG_PUBKEY_HYBRID_ODD
 }
 
-void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) @safe if (T.sizeof is 1) {
-    import std.random;
+@trusted
+void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) if (T.sizeof is 1) {
+    // import std.random;
+    // ubyte[] seed;
+    // seed.create(data.length);
 
-    auto gen = Mt19937(unpredictableSeed);
-    foreach (ref s; data) { //, gen1, StoppingPolicy.shortest)) {
-        s = gen.front & ubyte.max;
-        gen.popFront;
-    }
-    foreach (i, x; xor) {
-        data[i] ^= x;
-    }
+    // ubyte[32] gen;
+    // ubyte* received_value;
+    // hash.randomize(cast(immutable)seed, received_value);
+    // for (int i = 0; i < gen.length; i++) {
+    //     gen[i] = *(received_value + i);
+    // }
+    // foreach (ref s; data) { //, gen1, StoppingPolicy.shortest)) {
+    //     s = gen.front & ubyte.max;
+    //     gen.popFront;
+    // }
+    // foreach (i, x; xor) {
+    //     data[i] ^= x;
+    // }
 }
 
 @trusted uint hashSize() pure nothrow {
@@ -59,21 +69,15 @@ void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) @safe if (
 }
 
 @trusted immutable(BinBuffer) rawCalcHash(scope const(ubyte[]) data) {
-    import std.digest.sha : SHA256;
-    import std.digest;
-
     BinBuffer res;
-    res.write(digest!SHA256(data));
+    res.write(hash.secp256k1_count_hash(data));
 
     return cast(immutable)res;
 }
 
 @trusted immutable(ubyte[]) rawCalcHash(const BinBuffer buffer) {
-    import std.digest.sha : SHA256;
-    import std.digest;
-
     BinBuffer res;
-    res.write(digest!SHA256(buffer.serialize));
+    res.write(hash.secp256k1_count_hash(buffer.serialize));
 
     return res.serialize;
 }
@@ -111,7 +115,6 @@ do {
 
 @safe struct SecureNet {
     import tagion.basic.Basic : Pubkey;
-    import std.digest.hmac : digestHMAC = HMAC;
 
     private Pubkey _pubkey;
 
@@ -445,14 +448,12 @@ do {
     }
 
     @trusted immutable(ubyte[]) HMAC(scope const(ubyte[]) data) const {
-        import std.digest.sha : SHA256;
-        import std.digest.hmac : digestHMAC = HMAC;
 
-        scope hmac = digestHMAC!SHA256(data);
-        auto res_size = hmac.finish.length;
+        scope hmac = hash.secp256k1_count_hmac_hash(data);
+        auto res_size = hmac.length;
         ubyte[] result;
         result.create(res_size);
-        result[0 .. $] = hmac.finish[0 .. $];
+        result[0 .. $] = hmac[0 .. $];
         return cast(immutable)result;
     }
 

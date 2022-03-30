@@ -6,7 +6,7 @@ import tagion.betterC.wallet.KeyRecover : KeyRecover;
 import tagion.basic.Basic : Buffer, Pubkey;
 import tagion.betterC.utils.Memory;
 
-// import tagion.betterC.funnel.TagionCurrency;
+// import\ tagion.betterC.funnel.TagionCurrency;
 // import tagion.script.StandardRecords : StandardBill;
 
 struct RecordType {
@@ -29,19 +29,15 @@ struct Label {
         this(Document doc) {
             auto received_questions = doc["$Q"].get!Document;
             questions.create(received_questions.length);
-            // questions[0 .. $] = received_questions;
-            // foreach (i, question; received_questions)
-            // {
-            //     questions[i] = question;
-            // }
-            // for (int i = 0; i < received_questions.length; i++) {
-            //     questions[i] = received_questions[i];
-            // }
+            foreach (element; received_questions[])
+            {
+                questions[element.index] = element.get!string;
+            }
         }
 
         inout(HiBONT) toHiBON() inout {
             auto hibon = HiBON();
-            // hibon["Q"] = questions;
+            hibon["Q"] = questions;
             return cast(inout) hibon;
         }
 
@@ -83,7 +79,7 @@ struct Label {
 
         inout(HiBONT) toHiBON() inout {
             auto hibon = HiBON();
-            // hibon["Y"] = Y;
+            hibon["Y"] = Y;
             hibon["S"] = S;
             hibon["N"] = confidence;
             return cast(inout) hibon;
@@ -96,13 +92,14 @@ struct Label {
 
         this(Document doc) {
             auto Y_data = doc["Y"].get!Document;
-            // Y = Y_data[]
-            //     .map!(a => a.get!Buffer)
-            //     .array.dup;
+            Y.create(Y_data.length);
+            foreach (element; Y_data[])
+            {
+                Y[element.index] = element.get!Buffer;
+            }
             S = doc["S"].get!Buffer;
             confidence = doc["N"].get!uint;
         }
-        // mixin HiBONRecord;
     }
 
 }

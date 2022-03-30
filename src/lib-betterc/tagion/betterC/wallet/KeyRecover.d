@@ -128,6 +128,7 @@ struct KeyRecover {
      * Generates the quiz seed values from the privat key R and the quiz list
      */
     void quizSeed(scope ref const(ubyte[]) R, Buffer[] A, const uint confidence) {
+        // import tagion.utils.Miscellaneous : xor;
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, confidence);
 
