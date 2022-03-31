@@ -230,7 +230,8 @@ int recorderCliTest(string[] args) {
     ushort fromAngle = 0;
     ushort toAngle = 1;
 
-    auto blocks_ = new EpochBlockFileDataBase(file_for_blocks);
+    alias BlocksDB = EpochBlockFileDataBase;
+    auto blocks_ = new BlocksDB(file_for_blocks);
 
     SecureNet net_;
     net_ = new StdSecureNet;
@@ -252,44 +253,47 @@ int recorderCliTest(string[] args) {
     immutable(RecordFactory.Recorder) rec_im = cast(immutable) rec;
 
     // ==================================================================================
-    // addRecToDB(db_, rec_im, hirpc_);
+    addRecToDB(db_, rec_im, hirpc_);
 
-    // writeln("1 step: ", db_.fingerprint.cutHex); //for test
+    writeln("1 step: ", db_.fingerprint.cutHex); //for test
 
-    // auto rec1 = testFlipRecorderAdd; //create recorder
-    // auto block1 = epBlockFactory(rec1, noHash, db_.fingerprint); //create block
-    // blocks_.addBlock(block1); //save block
-    // addRecToDB(db_, block1.recorder, hirpc_); //add to DB
+    auto rec1 = testFlipRecorderAdd; //create recorder
+    auto block1 = epBlockFactory(rec_im, noHash, db_.fingerprint); //create block
+    writeln("2 step BEFORE: ", db_.fingerprint.cutHex, " (add 1-st -> ", block1.bullseye.cutHex, ")");
+    blocks_.addBlock(block1); //save block
+    addRecToDB(db_, block1.recorder, hirpc_); //add to DB
 
-    // writeln("2 step: ", db_.fingerprint.cutHex, " (add 1-st -> ", block1.fingerprint.cutHex, ")");
+    writeln("2 step: ", db_.fingerprint.cutHex, " (add 1-st -> ", block1.bullseye.cutHex, ")");
 
-    // auto rec2 = testFlipRecorderDel;
-    // auto block2 = epBlockFactory(rec2, block1.fingerprint, db_.fingerprint);
-    // blocks_.addBlock(block2);
-    // addRecToDB(db_, block2.recorder, hirpc_);
+    auto rec2 = testFlipRecorderDel;
+    auto block2 = epBlockFactory(rec_im, block1.fingerprint, db_.fingerprint);
+    writeln("3 step BEFORE: ", db_.fingerprint.cutHex, " (add 2-nd -> ", block2.bullseye.cutHex, ")");
+    blocks_.addBlock(block2);
+    addRecToDB(db_, block2.recorder, hirpc_);
 
-    // writeln("3 step: ", db_.fingerprint.cutHex, " (add 2-nd -> ", block2.fingerprint.cutHex, ")");
+    writeln("3 step: ", db_.fingerprint.cutHex, " (add 2-nd -> ", block2.bullseye.cutHex, ")");
 
-    // auto rec3 = testNewRecorder;
-    // auto block3 = epBlockFactory(rec3, block2.fingerprint, db_.fingerprint);
-    // blocks_.addBlock(block3);
-    // addRecToDB(db_, block3.recorder, hirpc_);
+    auto rec3 = testNewRecorder;
+    auto block3 = epBlockFactory(rec_im, block2.fingerprint, db_.fingerprint);
+    writeln("4 step BEFORE: ", db_.fingerprint.cutHex, " (add 3-rd -> ", block3.bullseye.cutHex, ")");
+    blocks_.addBlock(block3);
+    addRecToDB(db_, block3.recorder, hirpc_);
 
-    // writeln("4 step: ", db_.fingerprint.cutHex, " (add 3-rd -> ", block3.fingerprint.cutHex, ")");
+    writeln("4 step: ", db_.fingerprint.cutHex, " (add 3-rd -> ", block3.bullseye.cutHex, ")");
 
-    // addRecToDB(db_, blocks_.flipRecorder(block3), hirpc_);
+    addRecToDB(db_, BlocksDB.getFlippedRecorder(block3), hirpc_);
 
-    // writeln("5 step: ", db_.fingerprint.cutHex);
+    writeln("5 step: ", db_.fingerprint.cutHex);
 
-    // //auto block_flip_1 = blocks.rollBack();
-    // addRecToDB(db_, blocks_.flipRecorder(block2), hirpc_);
+    //auto block_flip_1 = blocks.rollBack();
+    addRecToDB(db_, BlocksDB.getFlippedRecorder(block2), hirpc_);
 
-    // writeln("6 step: ", db_.fingerprint.cutHex);
+    writeln("6 step: ", db_.fingerprint.cutHex);
 
-    // //auto block_flip_2 = blocks.rollBack();
-    // addRecToDB(db_, blocks_.flipRecorder(block1), hirpc_);
+    //auto block_flip_2 = blocks.rollBack();
+    addRecToDB(db_, BlocksDB.getFlippedRecorder(block1), hirpc_);
 
-    // writeln("7 step: ", db_.fingerprint.cutHex);
+    writeln("7 step: ", db_.fingerprint.cutHex);
     // ===================================================================================
 
     // auto logger_tid=spawn(&loggerTask, options);
@@ -346,40 +350,6 @@ int recorderCliTest(string[] args) {
 
     void onInit() {
         writeln("--init");
-        // if (dartfilename.length == 0) {
-        //     dartfilename = tempfile ~ "tmp";
-        //     writeln("DART filename: ", dartfilename);
-        // }
-
-        // enum BLOCK_SIZE = 0x80;
-        // BlockFile.create(dartfilename, DARTFile.stringof, BLOCK_SIZE);
-
-        import tagion.dart.Recorder : RecordFactory;
-        import tagion.crypto.SecureNet : StdHashNet;
-        import tagion.services.RecorderService : recorderTask;
-
-        auto recorder_service_tid = spawn(&recorderTask, options);
-        auto result = receiveOnly!Control;
-        writeln("RecorderService working: ", result);
-
-        scope (exit) {
-            recorder_service_tid.send(Control.STOP);
-            writeln("exit bin init; control=", receiveOnly!Control);
-        }
-        
-        import core.thread;
-
-        for (int i = 0; i < 3; ++i) {
-            recorder_service_tid.send(rec_im, Fingerprint(db_.fingerprint));
-            writeln("while sleep 1 second...");
-            Thread.sleep(1.seconds);
-        }
-        scope(exit) {
-            import std.file;
-            writeln("before rmdir 10 sec");
-            Thread.sleep(10.seconds);
-            rmdirRecurse(options.recorder.folder_path);
-        }
     }
 
     void onDump() {

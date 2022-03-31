@@ -2,7 +2,7 @@ module tagion.services.RecorderService;
 
 import std.stdio : writeln;
 import std.stdio : File;
-import std.file : exists, mkdirRecurse, write, read;
+import std.file : exists, mkdirRecurse, rmdirRecurse, write, read, remove;
 import std.array;
 import std.typecons;
 import std.path : buildPath, baseName;
@@ -27,6 +27,7 @@ import tagion.hibon.HiBONRecord : Label, GetLabel;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.HiBON;
 import tagion.utils.Miscellaneous : toHexString, decode;
+import tagion.communication.HiRPC;
 
 struct Fingerprint {
     immutable(Buffer) buffer;
@@ -229,9 +230,9 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
         if (amount) {
 
             auto info = getBlocksInfo;
-            this.last_block = info[1]; // because rollBack can move pointer
+            this.last_block = info.last; // because rollBack can move pointer
 
-            immutable(EpochBlockFactory.EpochBlock) block = cast(immutable(EpochBlockFactory.EpochBlock)) this.last_block;
+            auto block = cast(immutable(EpochBlockFactory.EpochBlock)) this.last_block;
             delBlock(this.last_block._fingerprint);
             _amount--;
 
@@ -255,18 +256,7 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
                 import std.file;
 
                 Buffer[Buffer] link_table;
-                string[] file_names;
-                string dir = this.folder_path;
-
-                auto files = dirEntries(dir, SpanMode.shallow).filter!(a => a.isFile())
-                    .map!(a => baseName(a))
-                    .array();
-
-                foreach (f; files) {
-                    if (f.length == EPOCH_BLOCK_FILENAME_LEN) {
-                        file_names ~= f;
-                    }
-                }
+                auto file_names = getFiles;
 
                 foreach (f; file_names) {
                     Buffer fingerprint = decode(f);
@@ -435,24 +425,22 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
         return readBlockFromFingerprint(fingerprint, this.folder_path);
     }
 
-    immutable(RecordFactory.Recorder) flipRecorder(immutable(EpochBlockFactory.EpochBlock) block) const {
+    static immutable(RecordFactory.Recorder) getFlippedRecorder(immutable(EpochBlockFactory.EpochBlock) block) {
         const net = new StdHashNet;
         auto factory = RecordFactory(net);
         auto rec = factory.recorder;
-        foreach (a; block.recorder) {
-
-            if (a.type == Archive.Type.ADD) {
-                rec.remove(a.filed);
+        foreach (archive; block.recorder) {
+            if (archive.type == Archive.Type.ADD) {
+                rec.remove(archive.filed);
             }
-            else if (a.type == Archive.Type.REMOVE) {
-                rec.add(a.filed);
+            else if (archive.type == Archive.Type.REMOVE) {
+                rec.add(archive.filed);
             }
             else {
-                rec.insert(a);
+                rec.insert(archive);
             }
         }
-        immutable(RecordFactory.Recorder) rec_im = cast(immutable(RecordFactory.Recorder)) rec;
-        return rec_im;
+        return cast(immutable(RecordFactory.Recorder)) rec;
     }
 }
 
@@ -504,9 +492,120 @@ mixin TrustedConcurrency;
     }
 }
 
+immutable(RecordFactory.Recorder) initDummyRecorderAdd() {
+    const net = new StdHashNet;
+    auto factory = RecordFactory(net);
+    auto rec = factory.recorder;
+
+    HiBON[10] HIB;
+
+    foreach (i; 0 .. HIB.length) {
+        HIB[i] = new HiBON;
+    }
+
+    for (int i = 0; i < HIB.length; i++) {
+        HIB[i]["test1"] = i * 35 - 46;
+        HIB[i]["test2"] = i * 35 - 45;
+        HIB[i]["test3"] = i * 35 - 44;
+        HIB[i]["test4"] = i * 35 - 43;
+        HIB[i]["test5"] = i * 35 - 42;
+        HIB[i]["test6"] = i * 35 - 41;
+        HIB[i]["test7"] = i * 35 - 40;
+        HIB[i]["test8"] = i * 35 - 39;
+        HIB[i]["test9"] = i * 35 - 38;
+        HIB[i]["test10"] = i * 35 - 37;
+    }
+
+    foreach (i; 0 .. HIB.length) {
+        rec.add(Document(HIB[i]));
+    }
+
+    immutable(RecordFactory.Recorder) rec_im = cast(immutable(RecordFactory.Recorder)) rec;
+    return rec_im;
+}
+
+immutable(RecordFactory.Recorder) initDummyRecorderDel() {
+
+    const net = new StdHashNet;
+    auto factory = RecordFactory(net);
+    auto rec = factory.recorder;
+
+    HiBON[5] HIB;
+
+    foreach (i; 0 .. HIB.length) {
+        HIB[i] = new HiBON;
+    }
+
+    for (int i = 0; i < HIB.length; i++) {
+        HIB[i]["test1"] = i * 35 - 46;
+        HIB[i]["test2"] = i * 35 - 45;
+        HIB[i]["test3"] = i * 35 - 44;
+        HIB[i]["test4"] = i * 35 - 43;
+        HIB[i]["test5"] = i * 35 - 42;
+        HIB[i]["test6"] = i * 35 - 41;
+        HIB[i]["test7"] = i * 35 - 40;
+        HIB[i]["test8"] = i * 35 - 39;
+        HIB[i]["test9"] = i * 35 - 38;
+        HIB[i]["test10"] = i * 35 - 37;
+    }
+
+    foreach (i; 0 .. 5) {
+        rec.remove(Document(HIB[i]));
+    }
+
+    HiBON toAdd = new HiBON;
+    toAdd["add"] = "add";
+    rec.add(Document(toAdd));
+
+    immutable(RecordFactory.Recorder) rec_im = cast(immutable(RecordFactory.Recorder)) rec;
+    return rec_im;
+}
+
+immutable(RecordFactory.Recorder) initDummyNewRecorder() {
+    const net = new StdHashNet;
+    auto factory = RecordFactory(net);
+    auto rec = factory.recorder;
+
+    HiBON[3] H;
+
+    foreach (i; 0 .. H.length) {
+        H[i] = new HiBON;
+    }
+
+    for (int i = 0; i < H.length; i++) {
+        H[i]["Otest1"] = i * 350 - 46;
+        H[i]["Otest2"] = i * 350 - 45;
+        H[i]["Otest3"] = i * 350 - 44;
+        H[i]["Otest4"] = i * 350 - 43;
+        H[i]["Otest5"] = i * 350 - 42;
+        H[i]["Otest6"] = i * 350 - 41;
+        H[i]["Otest7"] = i * 350 - 40;
+        H[i]["Otest8"] = i * 350 - 39;
+        H[i]["Otest9"] = i * 350 - 38;
+        H[i]["Otest10"] = i * 350 - 37;
+    }
+
+    foreach (i; 0 .. 3) {
+        rec.add(Document(H[i]));
+    }
+
+    immutable(RecordFactory.Recorder) rec_im = cast(immutable(RecordFactory.Recorder)) rec;
+    return rec_im;
+}
+
+void addDummyRecordToDB(ref DART db, immutable(RecordFactory.Recorder) rec, HiRPC hirpc) {
+    const sent = hirpc.dartModify(rec);
+    const received = hirpc.receive(sent.toDoc);
+    const result = db(received, false);
+}
+
 unittest {
+    import std.algorithm : equal;    
+
     Options options;
     setDefaultOption(options);
+
+    alias BlocksDB = EpochBlockFileDataBase;
 
     // Init dummy database
     string passphrase = "verysecret";
@@ -515,9 +614,12 @@ unittest {
 
     if (!exists(folder_path))
         mkdirRecurse(folder_path);
+    scope(exit)
+        rmdirRecurse(folder_path);
 
     SecureNet net = new StdSecureNet;
     net.generateKeyPair(passphrase);
+    auto hirpc = HiRPC(net);
     enum BLOCK_SIZE = 0x80;
     BlockFile.create(dartfilename, DARTFile.stringof, BLOCK_SIZE);
 
@@ -537,27 +639,60 @@ unittest {
     // Spawn recorder task
     auto recorder_service_tid = spawn(&recorderTask, options);
     assert(receiveOnly!Control == Control.LIVE);
-    scope(exit) {
-        import std.file;
-        rmdirRecurse(folder_path);
-    }
+
+    /* Add blocks to database */    
+    // Step 0
+    addDummyRecordToDB(db, rec_im, hirpc);
+    recorder_service_tid.send(rec_im, Fingerprint(db.fingerprint));
+    assert(receiveOnly!Control == Control.LIVE);
+
+    assert(equal(db.fingerprint, BlocksDB.getBlocksInfo(folder_path).last.bullseye));
+
+    // Step 1
+    auto rec1 = initDummyRecorderAdd;
+    addDummyRecordToDB(db, rec1, hirpc);
+    recorder_service_tid.send(rec1, Fingerprint(db.fingerprint));
+    assert(receiveOnly!Control == Control.LIVE);
+
+    assert(equal(db.fingerprint, BlocksDB.getBlocksInfo(folder_path).last.bullseye));
+
+    // Step 2
+    auto rec2 = initDummyRecorderDel;
+    addDummyRecordToDB(db, rec2, hirpc);
+    recorder_service_tid.send(rec2, Fingerprint(db.fingerprint));
+    assert(receiveOnly!Control == Control.LIVE);
+
+    assert(equal(db.fingerprint, BlocksDB.getBlocksInfo(folder_path).last.bullseye));
+
+    // Step 3
+    auto rec3 = initDummyNewRecorder;
+    addDummyRecordToDB(db, rec3, hirpc);
+    recorder_service_tid.send(rec3, Fingerprint(db.fingerprint));
+    assert(receiveOnly!Control == Control.LIVE);
     
-    // Send recorder to service
-    enum number_of_test_iterations = 5;
-    foreach (i; 0..number_of_test_iterations) {
-        recorder_service_tid.send(rec_im, Fingerprint(db.fingerprint));
-        assert(receiveOnly!Control == Control.LIVE);
+    assert(equal(db.fingerprint, BlocksDB.getBlocksInfo(folder_path).last.bullseye));
 
-        auto blocks_info = EpochBlockFileDataBase.getBlocksInfo(folder_path);
+    // Check iterations through blocks
+    auto blocks_info = BlocksDB.getBlocksInfo(folder_path);
+    auto files = BlocksDB.getFiles(folder_path);
+    assert(blocks_info.amount == files.length);
 
-        auto files = EpochBlockFileDataBase.getFiles(folder_path);
-        assert(blocks_info.amount == files.length);
+    Buffer fingerprint = blocks_info.last.fingerprint;
+    foreach (j; 0..blocks_info.amount) {
+        auto current_block = BlocksDB.readBlockFromFingerprint(fingerprint, folder_path);
+        fingerprint = current_block.chain;
+    }
 
-        Buffer fingerprint = blocks_info.last.fingerprint;
-        foreach (j; 0..blocks_info.amount) {
-            auto current_block = EpochBlockFileDataBase.readBlockFromFingerprint(fingerprint, folder_path);
-            fingerprint = current_block.chain;
-        }
+    import tagion.utils.Miscellaneous : cutHex;
+
+    /* Test rollback */
+    foreach (j; 0..BlocksDB.getBlocksInfo(folder_path).amount-1) {
+        immutable block = cast(immutable(EpochBlockFactory.EpochBlock)) BlocksDB.getBlocksInfo(folder_path).last;
+
+        addDummyRecordToDB(db, BlocksDB.getFlippedRecorder(block), hirpc);
+        BlocksDB.makePath(block.fingerprint, folder_path).remove;
+
+        assert(equal(db.fingerprint, BlocksDB.getBlocksInfo(folder_path).last.bullseye));
     }
 
     recorder_service_tid.send(Control.STOP);

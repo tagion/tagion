@@ -20,6 +20,7 @@ import tagion.services.Options : Options, setDefaultOption;
 import tagion.services.RecorderService;
 import tagion.services.LoggerService;
 import tagion.logger.Logger;
+import tagion.communication.HiRPC;
 
 enum main_task = "recorderchain";
 
@@ -66,6 +67,13 @@ int main(string[] args) {
 
     // TODO: add argument for selecting folder
     auto folder_path = options.recorder.folder_path;
+    string dartfilename = folder_path ~ "DummyDART";
+    ushort fromAngle = 0;
+    ushort toAngle = 1;
+    string passphrase = "verysecret";
+    SecureNet net = new StdSecureNet;
+    net.generateKeyPair(passphrase);
+    auto hirpc = HiRPC(net);
 
     int onHelp() {
         defaultGetoptPrinter(
@@ -84,20 +92,12 @@ int main(string[] args) {
     }
 
     void onInit() {
-        // Init dummy database
-        string passphrase = "verysecret";
-        string dartfilename = folder_path ~ "DummyDART";
-
         if (!exists(folder_path))
             mkdirRecurse(folder_path);
 
-        SecureNet net = new StdSecureNet;
-        net.generateKeyPair(passphrase);
         enum BLOCK_SIZE = 0x80;
         BlockFile.create(dartfilename, DARTFile.stringof, BLOCK_SIZE);
 
-        ushort fromAngle = 0;
-        ushort toAngle = 1;
         DART db = new DART(net, dartfilename, fromAngle, toAngle);
 
         // Create dummy Recorder
@@ -113,14 +113,17 @@ int main(string[] args) {
         // Spawn recorder task
         auto recorder_service_tid = spawn(&recorderTask, options);
         receiveOnly!Control;
-        
+
         // Send recorder to service
         foreach (i; 0..init_count) {
             recorder_service_tid.send(rec_im, Fingerprint(db.fingerprint));
+            addRecordToDB(db, rec_im, hirpc);
         }
 
         recorder_service_tid.send(Control.STOP);
         receiveOnly!Control;
+
+        writeln(format("Initialized %d dummy records in '%s'", init_count, folder_path));
     }
 
     void onPrint() {
@@ -152,15 +155,25 @@ int main(string[] args) {
 
         writeln("Rollback for ", rollback, " steps\n");
 
+        if (!exists(folder_path)) {
+            writeln(format("File '%s' don't exist, failed to rollback. Abort"));
+        }
+
+        DART db = new DART(net, dartfilename, fromAngle, toAngle);
+
         Buffer fingerprint = blocks_info.last.fingerprint;
         foreach (j; 0..rollback) {
             writefln("Current rollback: %d", rollback-j);
 
             const current_block = EpochBlockFileDataBase.readBlockFromFingerprint(fingerprint, folder_path);
 
-            //auto filename = 
+            writeln("Current block bullseye:\n", Fingerprint.format(current_block.bullseye));
+            writeln("DB fingerprint:\n", Fingerprint.format(db.fingerprint));
+
+            // Add flipped recorder to DB
+            addRecordToDB(db, EpochBlockFileDataBase.getFlippedRecorder(current_block), hirpc);
+            // Remove local file with this block
             EpochBlockFileDataBase.makePath(fingerprint, folder_path).remove;
-            //remove(filename);
 
             fingerprint = current_block.chain;
         }
