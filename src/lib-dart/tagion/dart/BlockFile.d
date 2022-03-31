@@ -1387,15 +1387,12 @@ class BlockFile {
         //
         // Write new allocated blocks to the file
         //
-        @trusted writeBlock()
+
         { //write_blocks_in_sorted_order
             pragma(msg, "Block ", Block);
-
             auto sorted_indices = blocks.keys.dup.sort;
-
             sorted_indices.each!(index => write(index, blocks[index]));
         }
-        writeBlock;
 
         writeMasterBlock;
         recycle_indices.build_segments;

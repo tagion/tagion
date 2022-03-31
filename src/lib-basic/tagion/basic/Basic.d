@@ -486,7 +486,7 @@ unittest {
     //    assert(is(typeof(trustedFoo) == function));
 
     import core.stdc.stdlib;
-    
+
     auto ptr = assumeTrusted!malloc(100);
     assert(ptr !is null);
     ptr.assumeTrusted!free;
