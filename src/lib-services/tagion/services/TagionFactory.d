@@ -13,7 +13,7 @@ import tagion.utils.Random;
 import tagion.GlobalSignals : abort;
 import tagion.basic.Basic : Pubkey, Control;
 import tagion.logger.Logger;
-import tagion.services.TagionService;
+//import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
@@ -25,7 +25,7 @@ import tagion.services.DARTSynchronizeService;
 import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
 
-import tagion.services.P2pTagionService;
+import tagion.services.TagionService;
 import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
 import tagion.services.MdnsDiscoveryService;
 

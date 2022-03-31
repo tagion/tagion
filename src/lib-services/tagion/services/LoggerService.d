@@ -167,6 +167,7 @@ void loggerTask(immutable(Options) opts) {
         }
 
         void filterReceiver(LogFilter[] log_info) {
+            pragma(msg, "fixme(cbr): This accumulate alot for trach memory on the heap");
             log_filters = log_info;
         }
 

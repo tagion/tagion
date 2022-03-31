@@ -23,8 +23,11 @@ import std.array;
 import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
 import tagion.gossip.P2pGossipNet;
 
-void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name,
-        immutable(Options) opts) nothrow { //TODO: for test
+void fileDiscoveryService(
+    Pubkey pubkey,
+    string node_address,
+    string task_name,
+    immutable(Options) opts) nothrow { //TODO: for test
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
@@ -36,14 +39,33 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name,
         auto stop = false;
         NodeAddress[Pubkey] node_addresses;
 
+        bool checkOnline(){
+            auto read_buff = cast(ubyte[]) shared_storage.read;
+                auto splited_read_buff = read_buff.split("/n");
+                log("%d", splited_read_buff.length);
+                foreach (node_info_buff; splited_read_buff) {
+                    if (node_info_buff.length > 0) {
+                        auto doc = Document(cast(immutable) node_info_buff);
+                        auto pkey_buff = doc["pkey"].get!Buffer;
+                        auto pkey = cast(Pubkey) pkey_buff;
+                        if (pkey == pubkey) {
+                            return true;
+                        }
+                    }
+                }
+            return false;
+        }
+
         void recordOwnInfo() nothrow {
             try {
-                log("record own info");
-                auto params = new HiBON;
-                params["pkey"] = pubkey;
-                params["address"] = node_address;
-                shared_storage.append(params.serialize);
-                shared_storage.append("/n");
+                do{
+                    log("record own info");
+                    auto params = new HiBON;
+                    params["pkey"] = pubkey;
+                    params["address"] = node_address;
+                    shared_storage.append(params.serialize);
+                    shared_storage.append("/n");
+                } while (!checkOnline);
             }
             catch (Exception e) {
                 log.error("Exception: %s", e.msg);
@@ -140,7 +162,9 @@ void fileDiscoveryService(Pubkey pubkey, string node_address, string task_name,
         while (!stop) {
             receiveTimeout(
                     500.msecs,
-                    (immutable(Pubkey) key, Tid tid) { log("looking for key: %s", key); tid.send(node_addresses[key]); },
+                    (immutable(Pubkey) key, Tid tid) {
+                        log("looking for key: %s", key);
+                        tid.send(node_addresses[key]); },
                     (Control control) {
                 if (control == Control.STOP) {
                     log("stop");

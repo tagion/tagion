@@ -85,11 +85,11 @@ class HashGraph {
     package Round.Rounder _rounds;
 
     alias ValidChannel = bool delegate(const Pubkey channel);
-    private ValidChannel valid_channel;
+    const ValidChannel valid_channel;
     alias EpochCallback = void delegate(const(Event[]) events, const sdt_t epoch_time) @safe;
     EpochCallback epoch_callback;
 
-    this(const size_t node_size, const SecureNet net, ValidChannel valid_channel, EpochCallback epoch_callback, string name = null) {
+    this(const size_t node_size, const SecureNet net, const ValidChannel valid_channel, EpochCallback epoch_callback, string name = null) {
         hirpc = HiRPC(net);
         this.node_size = node_size;
         this.valid_channel = valid_channel;
@@ -196,7 +196,9 @@ class HashGraph {
     }
 
     void init_tide(
-            const(Pubkey) delegate(GossipNet.ChannelFilter channel_filter, const(HiRPC.Sender) delegate() response) @safe responde,
+            const(Pubkey) delegate(
+                GossipNet.ChannelFilter channel_filter,
+                const(HiRPC.Sender) delegate() response) @safe responde,
             const(Document) delegate() @safe payload,
             lazy const sdt_t time) {
         const(HiRPC.Sender) payload_sender() @safe {
@@ -271,8 +273,9 @@ class HashGraph {
     package void epoch(const(Event)[] events, const sdt_t epoch_time, const Round decided_round) {
         import std.stdio;
 
-        log("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d", name, decided_round.number, Event
-                .count, Event.Witness.count, events.length);
+        log("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d",
+            name, decided_round.number,
+            Event.count, Event.Witness.count, events.length);
         if (epoch_callback !is null) {
             epoch_callback(events, epoch_time);
         }
@@ -749,7 +752,7 @@ class HashGraph {
     /++
      Dumps all events in the Hashgraph to a file
      +/
-    @trusted
+    //   @trusted
     void fwrite(string filename, Pubkey[string] node_labels = null) {
         import tagion.hibon.HiBONRecord : fwrite;
 
@@ -764,14 +767,15 @@ class HashGraph {
 
         }
         // writefln("node_id_relocation=%s", node_id_relocation.byKeyValue.map!((n) => format("%d[%s]", n.value, n.key.cutHex)));
-        scope events = new HiBON;
-        foreach (n; nodes) {
-            const node_id = (node_id_relocation.length is 0) ? size_t.max : node_id_relocation[n.channel];
-            n[]
-                .filter!((e) => !e.isGrounded)
-                .each!((e) => events[e.id] = EventView(e, node_id));
-        }
-        scope h = new HiBON;
+        auto events = new HiBON;
+        (() @trusted {
+            foreach (n; nodes) {
+                const node_id = (node_id_relocation.length is 0) ? size_t.max : node_id_relocation[n.channel];
+                n[]
+                    .filter!((e) => !e.isGrounded)
+                    .each!((e) => events[e.id] = EventView(e, node_id));
+            }})();
+        auto h = new HiBON;
         h[Params.size] = node_size;
         h[Params.events] = events;
         filename.fwrite(h);
