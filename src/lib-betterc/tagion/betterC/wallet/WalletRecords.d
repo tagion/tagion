@@ -83,9 +83,14 @@ struct Label {
 
         inout(HiBONT) toHiBON() inout {
             auto hibon = HiBON();
-            // hibon["Y"] = Y;
-            hibon["S"] = S;
-            hibon["N"] = confidence;
+            auto tmp_arr = HiBON();
+            foreach (i, y; Y)
+            {
+                tmp_arr[i] = y;
+            }
+            tmp_arr["S"] = S;
+            tmp_arr["N"] = confidence;
+            hibon = tmp_arr;
             return cast(inout) hibon;
         }
 
