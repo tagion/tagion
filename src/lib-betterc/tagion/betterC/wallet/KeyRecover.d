@@ -5,7 +5,6 @@ module tagion.betterC.wallet.KeyRecover;
 //use net directly
 import tagion.betterC.wallet.Net;
 
-import tagion.utils.Miscellaneous : xor;
 import tagion.betterC.utils.Memory;
 
 // // use better C doc, hibon, hibon record 
@@ -128,7 +127,8 @@ struct KeyRecover {
      * Generates the quiz seed values from the privat key R and the quiz list
      */
     void quizSeed(scope ref const(ubyte[]) R, Buffer[] A, const uint confidence) {
-        // import tagion.utils.Miscellaneous : xor;
+        import tagion.betterC.utils.Miscellaneous;
+
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, confidence);
 
@@ -137,7 +137,7 @@ struct KeyRecover {
         uint count;
         bool calculate_this_seeds(scope const(uint[]) indices) {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
-            generator.Y[count] = xor(R, xor(list_of_selected_answers_and_the_secret));
+            // generator.Y[count] = xor(R, xor(list_of_selected_answers_and_the_secret));
             count++;
             return false;
         }
@@ -156,14 +156,14 @@ struct KeyRecover {
         bool result;
         bool search_for_the_secret(scope const(uint[]) indices) @safe {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
-            const guess = xor(list_of_selected_answers_and_the_secret);
-            foreach (y; generator.Y) {
-                xor(R, y, guess);
-                if (generator.S == checkHash(R)) {
-                    result = true;
-                    return true;
-                }
-            }
+            // const guess = xor(list_of_selected_answers_and_the_secret);
+            // foreach (y; generator.Y) {
+            //     xor(R, y, guess);
+            //     if (generator.S == checkHash(R)) {
+            //         result = true;
+            //         return true;
+            //     }
+            // }
             return false;
         }
 

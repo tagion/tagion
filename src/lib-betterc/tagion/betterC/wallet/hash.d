@@ -1,5 +1,7 @@
 module tagion.betterC.wallet.hash;
 
+import tagion.betterC.utils.Memory;
+
 /***********************************************************************
  * Copyright (c) 2014 Pieter Wuille                                    *
  * Distributed under the MIT software license, see the accompanying    *
@@ -8,18 +10,19 @@ module tagion.betterC.wallet.hash;
 
 extern (C):
 
-ubyte[32] secp256k1_count_hash(const const(ubyte[]) data) {
+ubyte[] secp256k1_count_hash(const const(ubyte[]) data) {
     secp256k1_sha256 hash;
-    ubyte[32] res;
+    ubyte[] res;
+    res.create(32);
     ubyte* ret_arr;
 
     // secp256k1_sha256_initialize(&hash);
     // secp256k1_sha256_write(&hash, &data[0], data.length);
     // secp256k1_sha256_finalize(&hash, ret_arr);
 
-    // for (int i = 0; i < 32 ; i++) {
-    //     res[i] = *(ret_arr + i);
-    // }
+    for (int i = 0; i < 32 ; i++) {
+        res[i] = *(ret_arr + i);
+    }
 
     return res;
 }

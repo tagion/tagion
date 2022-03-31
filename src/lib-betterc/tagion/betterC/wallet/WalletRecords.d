@@ -37,13 +37,18 @@ struct Label {
 
         inout(HiBONT) toHiBON() inout {
             auto hibon = HiBON();
-            hibon["Q"] = questions;
+            auto tmp_arr = HiBON();
+            foreach (i, question; questions)
+            {
+                tmp_arr[i] = question;
+            }
+            // GetLabel
+            hibon["Q"] = tmp_arr;
             return cast(inout) hibon;
         }
 
         const(Document) toDoc() {
-            auto doc = Document(toHiBON.serialize);
-            return cast(const) doc;
+            return Document(toHiBON.serialize);
         }
     }
 
@@ -65,8 +70,7 @@ struct Label {
         }
 
         const(Document) toDoc() {
-            auto doc = Document(toHiBON.serialize);
-            return cast(const) doc;
+            return Document(toHiBON.serialize);
         }
     }
 
@@ -79,15 +83,14 @@ struct Label {
 
         inout(HiBONT) toHiBON() inout {
             auto hibon = HiBON();
-            hibon["Y"] = Y;
+            // hibon["Y"] = Y;
             hibon["S"] = S;
             hibon["N"] = confidence;
             return cast(inout) hibon;
         }
 
         const(Document) toDoc() {
-            auto doc = Document(toHiBON.serialize);
-            return cast(const) doc;
+            return Document(toHiBON.serialize);
         }
 
         this(Document doc) {

@@ -85,8 +85,8 @@ static void callUnittest(alias Module)() {
 
             callUnittest!(tagion.betterC.wallet.Net);
             callUnittest!(tagion.betterC.wallet.KeyRecover);
-            // callUnittest!(tagion.betterC.wallet.WalletRecords);
-            // callUnittest!(tagion.betterC.wallet.SecureWallet);
+            callUnittest!(tagion.betterC.wallet.WalletRecords);
+            callUnittest!(tagion.betterC.wallet.SecureWallet);
 
                 // callUnittest!(tagion.betterC.mobile.Recycle);
             //     callUnittest!(tagion.betterC.mobile.WalletWrapperApi);
