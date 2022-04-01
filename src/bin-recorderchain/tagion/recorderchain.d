@@ -6,6 +6,7 @@ import std.path;
 import std.format;
 import std.array;
 import std.file;
+import std.conv;
 
 import tagion.basic.Basic : Control, Buffer;
 import tagion.crypto.SecureNet;
@@ -113,15 +114,29 @@ int main(string[] args) {
         // Spawn recorder task
         auto recorder_service_tid = spawn(&recorderTask, options);
         receiveOnly!Control;
+        scope(exit) {
+            recorder_service_tid.send(Control.STOP);
+            receiveOnly!Control;
+        }
+
+        addDummyRecordToDB(db, rec_im, hirpc);
+        recorder_service_tid.send(rec_im, Fingerprint(db.fingerprint));
+        writeln;
+        writeln("db\n", db.fingerprint);
+        writeln("bl\n", EpochBlockFileDataBase.getBlocksInfo(folder_path).last.bullseye);
+        writeln;
 
         // Send recorder to service
         foreach (i; 0..init_count) {
-            recorder_service_tid.send(rec_im, Fingerprint(db.fingerprint));
-            addRecordToDB(db, rec_im, hirpc);
-        }
+            auto recorder = initDummyRecorderAdd(cast(int)i, to!string(i));
+            addDummyRecordToDB(db, recorder, hirpc);
+            recorder_service_tid.send(recorder, Fingerprint(db.fingerprint));
 
-        recorder_service_tid.send(Control.STOP);
-        receiveOnly!Control;
+            writeln;
+            writeln("-db\n", db.fingerprint);
+            writeln("-bl\n", EpochBlockFileDataBase.getBlocksInfo(folder_path).last.bullseye);
+            writeln;
+        }
 
         writeln(format("Initialized %d dummy records in '%s'", init_count, folder_path));
     }
@@ -150,8 +165,10 @@ int main(string[] args) {
 
     void onRollback() {
         auto blocks_info = EpochBlockFileDataBase.getBlocksInfo(folder_path);
-        if (rollback > blocks_info.amount)
+        if (rollback > blocks_info.amount) {
+            writeln(format("Rollback count (%d) is greater than number of blocks (%d)", rollback, blocks_info.amount));
             rollback = blocks_info.amount;
+        }
 
         writeln("Rollback for ", rollback, " steps\n");
 
@@ -171,7 +188,7 @@ int main(string[] args) {
             writeln("DB fingerprint:\n", Fingerprint.format(db.fingerprint));
 
             // Add flipped recorder to DB
-            addRecordToDB(db, EpochBlockFileDataBase.getFlippedRecorder(current_block), hirpc);
+            addDummyRecordToDB(db, EpochBlockFileDataBase.getFlippedRecorder(current_block), hirpc);
             // Remove local file with this block
             EpochBlockFileDataBase.makePath(fingerprint, folder_path).remove;
 
@@ -193,8 +210,13 @@ int main(string[] args) {
 
         // Last action in work
         if (clean) {
-            rmdirRecurse(folder_path);
-            writeln(format("Cleaned files in '%s'", folder_path));
+            if (exists(folder_path)) {
+                rmdirRecurse(folder_path);
+                writeln(format("Cleaned files in '%s'", folder_path));
+            }
+            else {
+                writeln(format("Folder '%s' is already empty", folder_path));
+            }
         }
     }
     catch (Exception e) {

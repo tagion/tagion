@@ -492,7 +492,7 @@ mixin TrustedConcurrency;
     }
 }
 
-immutable(RecordFactory.Recorder) initDummyRecorderAdd() {
+immutable(RecordFactory.Recorder) initDummyRecorderAdd(int seed = 1, string suffix = "") {
     const net = new StdHashNet;
     auto factory = RecordFactory(net);
     auto rec = factory.recorder;
@@ -504,16 +504,16 @@ immutable(RecordFactory.Recorder) initDummyRecorderAdd() {
     }
 
     for (int i = 0; i < HIB.length; i++) {
-        HIB[i]["test1"] = i * 35 - 46;
-        HIB[i]["test2"] = i * 35 - 45;
-        HIB[i]["test3"] = i * 35 - 44;
-        HIB[i]["test4"] = i * 35 - 43;
-        HIB[i]["test5"] = i * 35 - 42;
-        HIB[i]["test6"] = i * 35 - 41;
-        HIB[i]["test7"] = i * 35 - 40;
-        HIB[i]["test8"] = i * 35 - 39;
-        HIB[i]["test9"] = i * 35 - 38;
-        HIB[i]["test10"] = i * 35 - 37;
+        HIB[i]["test1"  ~ suffix] = (seed * i) % 10 * 35 - 46;
+        HIB[i]["test2"  ~ suffix] = (seed * i) % 10 * 35 - 45;
+        HIB[i]["test3"  ~ suffix] = (seed * i) % 10 * 35 - 44;
+        HIB[i]["test4"  ~ suffix] = (seed * i) % 10 * 35 - 43;
+        HIB[i]["test5"  ~ suffix] = (seed * i) % 10 * 35 - 42;
+        HIB[i]["test6"  ~ suffix] = (seed * i) % 10 * 35 - 41;
+        HIB[i]["test7"  ~ suffix] = (seed * i) % 10 * 35 - 40;
+        HIB[i]["test8"  ~ suffix] = (seed * i) % 10 * 35 - 39;
+        HIB[i]["test9"  ~ suffix] = (seed * i) % 10 * 35 - 38;
+        HIB[i]["test10" ~ suffix] = (seed * i) % 10 * 35 - 37;
     }
 
     foreach (i; 0 .. HIB.length) {
@@ -530,7 +530,9 @@ immutable(RecordFactory.Recorder) initDummyRecorderDel() {
     auto factory = RecordFactory(net);
     auto rec = factory.recorder;
 
-    HiBON[5] HIB;
+    enum hibon_count = 5;
+
+    HiBON[hibon_count] HIB;
 
     foreach (i; 0 .. HIB.length) {
         HIB[i] = new HiBON;
@@ -549,7 +551,7 @@ immutable(RecordFactory.Recorder) initDummyRecorderDel() {
         HIB[i]["test10"] = i * 35 - 37;
     }
 
-    foreach (i; 0 .. 5) {
+    foreach (i; 0 .. hibon_count) {
         rec.remove(Document(HIB[i]));
     }
 
@@ -566,7 +568,9 @@ immutable(RecordFactory.Recorder) initDummyNewRecorder() {
     auto factory = RecordFactory(net);
     auto rec = factory.recorder;
 
-    HiBON[3] H;
+    enum hibon_count = 3;
+
+    HiBON[hibon_count] H;
 
     foreach (i; 0 .. H.length) {
         H[i] = new HiBON;
@@ -585,7 +589,7 @@ immutable(RecordFactory.Recorder) initDummyNewRecorder() {
         H[i]["Otest10"] = i * 350 - 37;
     }
 
-    foreach (i; 0 .. 3) {
+    foreach (i; 0 .. hibon_count) {
         rec.add(Document(H[i]));
     }
 
@@ -649,7 +653,7 @@ unittest {
     assert(equal(db.fingerprint, BlocksDB.getBlocksInfo(folder_path).last.bullseye));
 
     // Step 1
-    auto rec1 = initDummyRecorderAdd;
+    auto rec1 = initDummyRecorderAdd(111, "a");
     addDummyRecordToDB(db, rec1, hirpc);
     recorder_service_tid.send(rec1, Fingerprint(db.fingerprint));
     assert(receiveOnly!Control == Control.LIVE);
@@ -657,7 +661,7 @@ unittest {
     assert(equal(db.fingerprint, BlocksDB.getBlocksInfo(folder_path).last.bullseye));
 
     // Step 2
-    auto rec2 = initDummyRecorderDel;
+    auto rec2 = initDummyRecorderAdd(23, "aaa");
     addDummyRecordToDB(db, rec2, hirpc);
     recorder_service_tid.send(rec2, Fingerprint(db.fingerprint));
     assert(receiveOnly!Control == Control.LIVE);
@@ -665,7 +669,7 @@ unittest {
     assert(equal(db.fingerprint, BlocksDB.getBlocksInfo(folder_path).last.bullseye));
 
     // Step 3
-    auto rec3 = initDummyNewRecorder;
+    auto rec3 = initDummyRecorderAdd(31, "aaaaa");
     addDummyRecordToDB(db, rec3, hirpc);
     recorder_service_tid.send(rec3, Fingerprint(db.fingerprint));
     assert(receiveOnly!Control == Control.LIVE);
