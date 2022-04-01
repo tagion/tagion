@@ -17,14 +17,11 @@ $(TOOLS_LDC_BIN): $(LDC_TAR)
 	$(CD) $(TOOLS); tar -xJvf $<
 	$(TOUCH) $@
 
-ldc-bin: $(TOOLS_LDC_BIN)
-	@
+druntime-bin: $(TOOLS_LDC_BIN)
 
-ldc-tar: $(LDC_TAR)
+druntime-tar: $(LDC_TAR)
 
-.PHONY: ldc-tar
-
-env-build-runtime:
+env-druntime:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.kvp, LDC_TAR_NAME, $(LDC_TAR_NAME)}
@@ -34,4 +31,17 @@ env-build-runtime:
 	${call log.kvp, TOOLS_LCD_BIN, $(TOOLS_LDC_BIN)}
 	${call log.close}
 
-#$(TOOLS)/$(LDC_T
+
+env: env-druntime
+
+help-druntime:
+	$(PRECMD)
+	${call log.header, $@ :: help}
+	${call log.help, "make druntime-bin", "Installs ldc2 compiler and runtime"}
+	${call log.help, "make druntime-tar", "Downloads the tar file for ldc2 compiler"}
+	${call log.close}
+
+help: help-druntime
+
+
+.PHONY: env-druntime help-druntime
