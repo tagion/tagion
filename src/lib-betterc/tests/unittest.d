@@ -18,6 +18,7 @@ import tagion.betterC.wallet.Net;
 import tagion.betterC.wallet.KeyRecover;
 import tagion.betterC.wallet.WalletRecords;
 import tagion.betterC.mobile.Recycle;
+import tagion.betterC.wallet.SecureWallet;
 // import tagion.betterC.mobile.WalletWrapperApi;
 // import tagion.betterC.mobile.DocumentWrapperApi;
 

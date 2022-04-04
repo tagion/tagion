@@ -76,4 +76,22 @@ void secp256k1_rfc6979_hmac_sha256_initialize (secp256k1_rfc6979_hmac_sha256* rn
 void secp256k1_rfc6979_hmac_sha256_generate (secp256k1_rfc6979_hmac_sha256* rng, ubyte* out_, size_t outlen);
 void secp256k1_rfc6979_hmac_sha256_finalize (secp256k1_rfc6979_hmac_sha256* rng);
 
+// struct secp256k1_context {
+//     secp256k1_ecmult_gen_context ecmult_gen_ctx;
+//     secp256k1_callback illegal_callback;
+//     secp256k1_callback error_callback;
+//     int declassify;
+// };
+
+// void randomize32(const (ubyte[]) seed, ubyte[] out32)
+// in {
+//     assert(seed.length == 32);
+//     assert(out32.length == 32);
+// }
+// do {
+//     secp256k1_context ctx;
+//     out32[0.. $]
+
+// }
+
 /* SECP256K1_HASH_H */

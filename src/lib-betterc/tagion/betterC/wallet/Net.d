@@ -68,11 +68,11 @@ void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) if (T.size
     return HASH_SIZE;
 }
 
-@trusted immutable(BinBuffer) rawCalcHash(scope const(ubyte[]) data) {
+@trusted BinBuffer rawCalcHash(scope const(ubyte[]) data) {
     BinBuffer res;
     res.write(hash.secp256k1_count_hash(data));
 
-    return cast(immutable)res;
+    return res;
 }
 
 @trusted immutable(ubyte[]) rawCalcHash(const BinBuffer buffer) {
@@ -83,7 +83,7 @@ void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) if (T.size
 }
 
 @trusted immutable(BinBuffer) calcHash(scope const(ubyte[]) data) {
-    return rawCalcHash(data);
+    return cast(immutable)rawCalcHash(data);
 }
 
 @trusted immutable(BinBuffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2)
@@ -101,7 +101,7 @@ do {
         concatenat.create(h1.length + h2.length);
         concatenat[0 .. h1.length] = h1;
         concatenat[h1.length .. $] = h2;
-        return rawCalcHash(concatenat);
+        return cast(immutable)rawCalcHash(concatenat);
     }
     else if (h1.length is 0) {
         res.write(h2);
@@ -112,6 +112,46 @@ do {
 
     return cast(immutable)res;
 }
+struct AES {
+        enum KEY_LENGTH = 256;
+        enum KEY_SIZE = KEY_LENGTH / 8;
+        enum BLOCK_SIZE = 16;
+
+        static size_t enclength(const size_t inputlength) {
+            return ((inputlength / BLOCK_SIZE) + ((inputlength % BLOCK_SIZE == 0) ? 0 : 1)) * BLOCK_SIZE;
+        }
+        import tagion.crypto.aes.tiny_aes.tiny_aes;
+
+        alias T_AES = Tiny_AES!(KEY_LENGTH, Mode.CBC);
+
+        static void crypt_parse(bool ENCRYPT = true)(const(ubyte[]) key, ubyte[BLOCK_SIZE] iv, ref ubyte[] data) {
+            scope aes = T_AES(key[0 .. KEY_SIZE], iv);
+            static if (ENCRYPT) {
+                aes.encrypt(data);
+            }
+            else {
+                aes.decrypt(data);
+            }
+        }
+
+        static void crypt(bool ENCRYPT = true)(scope const(ubyte[]) key, scope const(ubyte[]) iv, scope const(ubyte[]) indata, ref ubyte[] outdata) {
+            if (outdata is null) {
+                outdata.create(indata.length);
+            }
+            outdata[0 .. $] = indata[0 .. $];
+            size_t old_length;
+            if (outdata.length % BLOCK_SIZE !is 0) {
+                old_length = outdata.length;
+                // outdata.length = enclength(outdata.length);
+                outdata.create(enclength(outdata.length));
+            }
+            ubyte[BLOCK_SIZE] temp_iv = iv[0 .. BLOCK_SIZE];
+            crypt_parse!ENCRYPT(key, temp_iv, outdata);
+        }
+
+        alias encrypt = crypt!true;
+        alias decrypt = crypt!false;
+    }
 
 @safe struct SecureNet {
     import tagion.basic.Basic : Pubkey;
@@ -324,51 +364,6 @@ do {
         return secp256k1_ec_seckey_verify(_ctx, sec) == 1;
     }
 
-    struct AES {
-        enum KEY_LENGTH = 256;
-        enum KEY_SIZE = KEY_LENGTH / 8;
-        enum BLOCK_SIZE = 16;
-
-        static size_t enclength(const size_t inputlength) {
-            return ((inputlength / BLOCK_SIZE) + ((inputlength % BLOCK_SIZE == 0) ? 0 : 1)) * BLOCK_SIZE;
-        }
-        import tagion.crypto.aes.tiny_aes.tiny_aes;
-
-        alias T_AES = Tiny_AES!(KEY_LENGTH, Mode.CBC);
-
-        static void crypt_parse(bool ENCRYPT = true)(const(ubyte[]) key, ubyte[BLOCK_SIZE] iv, ref ubyte[] data) {
-            scope aes = T_AES(key[0 .. KEY_SIZE], iv);
-            static if (ENCRYPT) {
-                aes.encrypt(data);
-            }
-            else {
-                aes.decrypt(data);
-            }
-        }
-
-        static void crypt(bool ENCRYPT = true)(scope const(ubyte[]) key, scope const(ubyte[]) iv, scope const(ubyte[]) indata, ref ubyte[] outdata) {
-            if (outdata is null) {
-                outdata.create(indata.length);
-            }
-            outdata[0 .. $] = indata[0 .. $];
-            size_t old_length;
-            if (outdata.length % BLOCK_SIZE !is 0) {
-                old_length = outdata.length;
-                outdata.length = enclength(outdata.length);
-            }
-            scope (exit) {
-                if (old_length) {
-                    outdata.length = old_length;
-                }
-            }
-            ubyte[BLOCK_SIZE] temp_iv = iv[0 .. BLOCK_SIZE];
-            crypt_parse!ENCRYPT(key, temp_iv, outdata);
-        }
-
-        alias encrypt = crypt!true;
-        alias decrypt = crypt!false;
-    }
-
     @trusted void createKeyPair(ref ubyte[] privkey)
     in {
         assert(secKeyVerify(privkey));
@@ -470,6 +465,15 @@ do {
         Pubkey result;
         const pkey = cast(const(ubyte[])) _pubkey;
         result = pubKeyTweakMul(pkey, tweak_code);
+        return result;
+    }
+
+    Pubkey derivePubkey(BinBuffer tweak_buf) const {
+        Pubkey result;
+    //     // ubyte[] tweak_arr;
+    //     // tweak_arr.create(tweak_buf.length);
+    //     // tweak_arr[0..$] = tweak_buf[0..$];
+    //     // return derivePubkey(tweak_arr);
         return result;
     }
 
