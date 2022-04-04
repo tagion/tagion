@@ -66,7 +66,16 @@ unittest {
                                                         "11 D0 5B 27");
 }
 
-struct EpochBlockFactory {
+pragma(msg, "fixme(ib) I don't like the way we cast immutable here. Can we get rid of it?");
+static immutable(T) castToImmutable(T)(T object) @trusted {
+    return cast(immutable(T)) object;
+}                   
+
+static T castFromImmutable(T)(immutable(T) object) @trusted {
+    return cast(T) object;
+}
+
+@safe struct EpochBlockFactory {
     const StdHashNet net;
 
     @disable this();
@@ -83,7 +92,7 @@ struct EpochBlockFactory {
         return new immutable(EpochBlock)(recorder, chain, bullseye, this.net);
     }
 
-    class EpochBlock {
+    @safe class EpochBlock {
         @Label("") private Buffer _fingerprint;
         Buffer bullseye;
         Buffer _chain;
@@ -108,7 +117,7 @@ struct EpochBlockFactory {
                 doc_bullseye = doc[bullseyeLabel].get!Buffer;
 
             auto factory = RecordFactory(net);
-            immutable(RecordFactory.Recorder) rec = cast(immutable(RecordFactory.Recorder)) factory.recorder(doc_recorder);
+            auto rec = castToImmutable(factory.recorder(doc_recorder));
 
             this.recorder = rec;
             this._chain = doc_chain;
@@ -171,7 +180,7 @@ interface EpochBlockFileDataBaseInterface {
 
 alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFactory.EpochBlock, "last", ulong, "amount");
 
-class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
+@safe class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
     private EpochBlockFactory.EpochBlock first_block;
     private EpochBlockFactory.EpochBlock last_block;
     private ulong _amount;
@@ -217,10 +226,10 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
 
         fwrite(f_name, block.toHiBON);
         if (amount)
-            this.last_block = cast(EpochBlockFactory.EpochBlock) block;
+            this.last_block = castFromImmutable(block);
         else {
-            this.last_block = cast(EpochBlockFactory.EpochBlock) block;
-            this.first_block = cast(EpochBlockFactory.EpochBlock) block;
+            this.last_block  = castFromImmutable(block);
+            this.first_block = castFromImmutable(block);
         }
         _amount++;
         return block;
@@ -232,12 +241,12 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
             auto info = getBlocksInfo;
             this.last_block = info.last; // because rollBack can move pointer
 
-            auto block = cast(immutable(EpochBlockFactory.EpochBlock)) this.last_block;
+            auto block = castToImmutable(this.last_block);
             delBlock(this.last_block._fingerprint);
             _amount--;
 
             if (amount) {
-                this.last_block = cast(EpochBlockFactory.EpochBlock) readBlockFromFingerprint(block._chain);
+                this.last_block = castFromImmutable(readBlockFromFingerprint(block._chain));
             }
             else {
                 this.first_block = null;
@@ -267,7 +276,7 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
                 foreach (key; link_table.keys) {
                     foreach (value; link_table.values) {
                         if (value == block.fingerprint)
-                            this.first_block = cast(EpochBlockFactory.EpochBlock) readBlockFromFingerprint(key);
+                            this.first_block = castFromImmutable(readBlockFromFingerprint(key));
                     }
                 }
             }
@@ -315,7 +324,7 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
                     found_next_block = true;
             }
             if (!found_next_block) { // save last block
-                info.last = cast(EpochBlockFactory.EpochBlock) readBlockFromFingerprint(fingerprint, folder_path);
+                info.last = castFromImmutable(readBlockFromFingerprint(fingerprint, folder_path));
             }
             found_next_block = false;
         }
@@ -330,7 +339,7 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
             if (!found_prev_block) {
                 foreach (fingerprint; link_table.keys) {
                     if (link_table[fingerprint] == chain) { // find block with empty chain
-                        info.first = cast(EpochBlockFactory.EpochBlock) readBlockFromFingerprint(fingerprint, folder_path);
+                        info.first = castFromImmutable(readBlockFromFingerprint(fingerprint, folder_path));
                     }
                 }
             }
@@ -355,7 +364,7 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
         return block;
     }
 
-    static string[] getFiles(string folder_path) {
+    static string[] getFiles(string folder_path) @trusted {
         import std.file;
 
         string[] file_names;
@@ -385,8 +394,8 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
             auto factory = EpochBlockFactory(net);
             auto block_prev = factory(d);
             assert(block_prev.fingerprint);
-            this.last_block = cast(EpochBlockFactory.EpochBlock) block_prev;
-            return cast(immutable(EpochBlockFactory.EpochBlock)) this.last_block;
+            this.last_block = castFromImmutable(block_prev);
+            return castToImmutable(this.last_block);
         }
         assert(0);
     }
@@ -440,55 +449,37 @@ class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface {
                 rec.insert(archive);
             }
         }
-        return cast(immutable(RecordFactory.Recorder)) rec;
+        return castToImmutable(rec);
     }
 }
 
 import tagion.basic.Basic : TrustedConcurrency;
 mixin TrustedConcurrency;
 
-/*@safe*/ void recorderTask(immutable(Options) opts) {
-    try {
-        scope (exit) {
-            prioritySend(ownerTid, Control.END);
-        }
+import tagion.TaskWrapper;
 
-        log.register(opts.recorder.task_name);
+@safe struct RecorderTask {
+    mixin TaskBasic;
 
-        const records_folder = opts.recorder.folder_path;
-        auto blocks_db = new EpochBlockFileDataBase(records_folder);
+    EpochBlockFileDataBase blocks_db;
+    EpochBlockFactory epoch_block_factory = EpochBlockFactory(new StdHashNet);
 
-        immutable(StdHashNet) hashnet = new StdHashNet;
-        auto epoch_block_factory = EpochBlockFactory(hashnet);
+    @TaskMethod void receiveRecorder(immutable(RecordFactory.Recorder) recorder, Fingerprint db_fingerprint) {
+        auto last_block_fingerprint = blocks_db.lastBlockFingerprint;
+        auto block = epoch_block_factory(recorder, last_block_fingerprint, db_fingerprint.buffer);
+        blocks_db.addBlock(block);
 
-        bool stop;
-        void control(Control ctrl) {
-            with (Control) switch (ctrl) {
-            case STOP:
-                stop = true;
-                writeln(format("%s stopped ", opts.recorder.task_name));
-                break;
-            default:
-                writeln(format("%s: Unsupported control %s", opts.recorder.task_name, ctrl));
-            }
-        }
+        version(unittest)
+        ownerTid.send(Control.LIVE);
+    }
 
-        void receiveRecorder(immutable(RecordFactory.Recorder) recorder, Fingerprint db_fingerprint) {
-            auto last_block_fingerprint = blocks_db.lastBlockFingerprint;
-            auto block = epoch_block_factory(recorder, last_block_fingerprint, db_fingerprint.buffer);
-            blocks_db.addBlock(block);
-
-            version(unittest)
-            ownerTid.send(Control.LIVE);
-        }
+    void opCall(immutable(Options) opts) {
+        blocks_db = new EpochBlockFileDataBase(opts.recorder.folder_path);
 
         ownerTid.send(Control.LIVE);
         while (!stop) {
             receive(&control, &receiveRecorder);
         }
-    }
-    catch (Exception e) {
-        fatal(e);
     }
 }
 
@@ -520,7 +511,7 @@ immutable(RecordFactory.Recorder) initDummyRecorderAdd(int seed = 1, string suff
         rec.add(Document(HIB[i]));
     }
 
-    immutable(RecordFactory.Recorder) rec_im = cast(immutable(RecordFactory.Recorder)) rec;
+    immutable(RecordFactory.Recorder) rec_im = castToImmutable(rec);
     return rec_im;
 }
 
@@ -559,8 +550,7 @@ immutable(RecordFactory.Recorder) initDummyRecorderDel() {
     toAdd["add"] = "add";
     rec.add(Document(toAdd));
 
-    immutable(RecordFactory.Recorder) rec_im = cast(immutable(RecordFactory.Recorder)) rec;
-    return rec_im;
+    return castToImmutable(rec);
 }
 
 immutable(RecordFactory.Recorder) initDummyNewRecorder() {
@@ -593,8 +583,7 @@ immutable(RecordFactory.Recorder) initDummyNewRecorder() {
         rec.add(Document(H[i]));
     }
 
-    immutable(RecordFactory.Recorder) rec_im = cast(immutable(RecordFactory.Recorder)) rec;
-    return rec_im;
+    return castToImmutable(rec);
 }
 
 void addDummyRecordToDB(ref DART db, immutable(RecordFactory.Recorder) rec, HiRPC hirpc) {
@@ -638,16 +627,16 @@ unittest {
     auto recordFactory = RecordFactory(hashnet);
     auto rec = recordFactory.recorder;
     rec.add(Document(hibon));
-    immutable(RecordFactory.Recorder) rec_im = cast(immutable) rec;
+    immutable(RecordFactory.Recorder) rec_im = castToImmutable(rec);
 
     // Spawn recorder task
-    auto recorder_service_tid = spawn(&recorderTask, options);
+    auto recorderService = Task!RecorderTask(options.recorder.task_name, options);
     assert(receiveOnly!Control == Control.LIVE);
 
     /* Add blocks to database */    
     // Step 0
     addDummyRecordToDB(db, rec_im, hirpc);
-    recorder_service_tid.send(rec_im, Fingerprint(db.fingerprint));
+    recorderService.receiveRecorder(rec_im, Fingerprint(db.fingerprint));
     assert(receiveOnly!Control == Control.LIVE);
 
     assert(equal(db.fingerprint, BlocksDB.getBlocksInfo(folder_path).last.bullseye));
@@ -655,7 +644,7 @@ unittest {
     // Step 1
     auto rec1 = initDummyRecorderAdd(111, "a");
     addDummyRecordToDB(db, rec1, hirpc);
-    recorder_service_tid.send(rec1, Fingerprint(db.fingerprint));
+    recorderService.receiveRecorder(rec1, Fingerprint(db.fingerprint));
     assert(receiveOnly!Control == Control.LIVE);
 
     assert(equal(db.fingerprint, BlocksDB.getBlocksInfo(folder_path).last.bullseye));
@@ -663,7 +652,7 @@ unittest {
     // Step 2
     auto rec2 = initDummyRecorderAdd(23, "aaa");
     addDummyRecordToDB(db, rec2, hirpc);
-    recorder_service_tid.send(rec2, Fingerprint(db.fingerprint));
+    recorderService.receiveRecorder(rec2, Fingerprint(db.fingerprint));
     assert(receiveOnly!Control == Control.LIVE);
 
     assert(equal(db.fingerprint, BlocksDB.getBlocksInfo(folder_path).last.bullseye));
@@ -671,7 +660,7 @@ unittest {
     // Step 3
     auto rec3 = initDummyRecorderAdd(31, "aaaaa");
     addDummyRecordToDB(db, rec3, hirpc);
-    recorder_service_tid.send(rec3, Fingerprint(db.fingerprint));
+    recorderService.receiveRecorder(rec3, Fingerprint(db.fingerprint));
     assert(receiveOnly!Control == Control.LIVE);
     
     assert(equal(db.fingerprint, BlocksDB.getBlocksInfo(folder_path).last.bullseye));
@@ -691,7 +680,7 @@ unittest {
 
     /* Test rollback */
     foreach (j; 0..BlocksDB.getBlocksInfo(folder_path).amount-1) {
-        immutable block = cast(immutable(EpochBlockFactory.EpochBlock)) BlocksDB.getBlocksInfo(folder_path).last;
+        immutable block = castToImmutable(BlocksDB.getBlocksInfo(folder_path).last);
 
         addDummyRecordToDB(db, BlocksDB.getFlippedRecorder(block), hirpc);
         BlocksDB.makePath(block.fingerprint, folder_path).remove;
@@ -699,6 +688,6 @@ unittest {
         assert(equal(db.fingerprint, BlocksDB.getBlocksInfo(folder_path).last.bullseye));
     }
 
-    recorder_service_tid.send(Control.STOP);
+    recorderService.control(Control.STOP);
     assert(receiveOnly!Control == Control.END);
 }

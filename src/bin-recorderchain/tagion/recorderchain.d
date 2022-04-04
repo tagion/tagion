@@ -22,6 +22,7 @@ import tagion.services.RecorderService;
 import tagion.services.LoggerService;
 import tagion.logger.Logger;
 import tagion.communication.HiRPC;
+import tagion.TaskWrapper : Task;
 
 enum main_task = "recorderchain";
 
@@ -112,15 +113,15 @@ int main(string[] args) {
         immutable rec_im = cast(immutable) rec;
 
         // Spawn recorder task
-        auto recorder_service_tid = spawn(&recorderTask, options);
+        auto recorderService = Task!RecorderTask(options.recorder.task_name, options);
         receiveOnly!Control;
         scope(exit) {
-            recorder_service_tid.send(Control.STOP);
+            recorderService.control(Control.STOP);
             receiveOnly!Control;
         }
 
         addDummyRecordToDB(db, rec_im, hirpc);
-        recorder_service_tid.send(rec_im, Fingerprint(db.fingerprint));
+        recorderService.receiveRecorder(rec_im, Fingerprint(db.fingerprint));
         writeln;
         writeln("db\n", db.fingerprint);
         writeln("bl\n", EpochBlockFileDataBase.getBlocksInfo(folder_path).last.bullseye);
@@ -130,7 +131,7 @@ int main(string[] args) {
         foreach (i; 0..init_count) {
             auto recorder = initDummyRecorderAdd(cast(int)i, to!string(i));
             addDummyRecordToDB(db, recorder, hirpc);
-            recorder_service_tid.send(recorder, Fingerprint(db.fingerprint));
+            recorderService.receiveRecorder(recorder, Fingerprint(db.fingerprint));
 
             writeln;
             writeln("-db\n", db.fingerprint);

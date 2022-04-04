@@ -1,4 +1,4 @@
-module tagion.utils.TaskWrapper;
+module tagion.TaskWrapper;
 
 import std.stdio;
 import std.format;
@@ -6,6 +6,9 @@ import std.traits : isCallable;
 import tagion.basic.Basic : Control, TrustedConcurrency;
 import tagion.logger.Logger;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
+import tagion.services.RecorderService : Fingerprint;
+import tagion.dart.Recorder;
+alias Recorder = RecordFactory.Recorder;
 
 mixin TrustedConcurrency;
 
