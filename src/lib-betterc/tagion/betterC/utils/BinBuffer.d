@@ -28,7 +28,7 @@ struct BinBuffer {
             _data.create(size);
         }
     }
-
+    @trusted
     ~this() {
         dispose;
     }

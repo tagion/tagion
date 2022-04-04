@@ -5,7 +5,7 @@ import tagion.betterC.utils.Memory;
 import std.range.primitives : isInputRange;
 // import std.algorithm : map;
 // import std.array : array;
-// import std.algorithm.iteration : fold, cumulativeFold;
+import std.algorithm.iteration : fold, cumulativeFold;
 import tagion.betterC.utils.BinBuffer;
 
 void gene_xor(ref scope ulong[] result, scope const(ubyte[]) a, scope const(ubyte[]) b)
@@ -54,19 +54,19 @@ do {
     return xor(a.serialize, b.serialize);
 }
 
-// @trusted
-// void xor(ref scope ubyte[] result, scope const(ubyte[]) a, scope const(ubyte[]) b)
-// in {
-//     assert(a.length == b.length);
-//     assert(a.length % ulong.sizeof == 0);
-// }
-// do {
-//     ulong[] res;
-//     res.create(a.length);
-//     gene_xor(res, a, b);
+@trusted
+Buffer xor(ref scope ubyte[] result, scope const(ubyte[]) a, scope const(ubyte[]) b)
+in {
+    assert(a.length == b.length);
+    assert(a.length % ulong.sizeof == 0);
+}
+do {
+    ulong[] res;
+    res.create(a.length);
+    gene_xor(res, a, b);
 
-//     return cast(Buffer) res;
-// }
+    return cast(Buffer) res;
+}
 
 @trusted
 Buffer xor(Range)(scope Range range) if (isInputRange!Range) {

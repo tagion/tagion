@@ -1,8 +1,8 @@
 module tagion.betterC.funnel.TagionCurrency;
 
 import std.format;
-// import std.traits : isIntegral, isNumeric, isFloatingPoint;
-// import std.algorithm.searching : canFind;
+import std.traits : isIntegral, isNumeric, isFloatingPoint;
+import std.algorithm.searching : canFind;
 import std.range : only;
 // import std.array : join;
 // import std.conv : to;
@@ -26,6 +26,14 @@ struct TagionCurrency {
 
     protected {
         @Label("$v") long _axions;
+    }
+
+    this(T)(const T axions) pure if (isIntegral!T) {
+        _axions = axions;
+    }
+
+    this(T)(T tagions) pure if (isFloatingPoint!T) {
+        _axions = cast(long)(tagions * AXION_UNIT);
     }
 
     inout(HiBONT) toHiBON() inout {
