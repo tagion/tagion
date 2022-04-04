@@ -5,32 +5,20 @@ module tagion.betterC.wallet.KeyRecover;
 //use net directly
 import tagion.betterC.wallet.Net;
 
-import tagion.crypto.SecureInterfaceNet : HashNet;
-import tagion.crypto.SecureNet : scramble, StdSecureNet;
-import tagion.utils.Miscellaneous : xor;
-import tagion.basic.Basic : Buffer;
-import tagion.basic.Message;
 import tagion.betterC.utils.Memory;
 
-// use better C doc, hibon, hibon record 
+// // use better C doc, hibon, hibon record 
 import tagion.betterC.hibon.HiBON : HiBONT;
 import tagion.betterC.hibon.Document : Document;
 
-// import tagion.betterC.hibon.HiBONRecord;
-// import tagion.hibon.HiBONRecord;
-
-import std.exception : assumeUnique;
+import tagion.basic.Basic : Buffer;
 import std.string : representation;
-import std.range : lockstep, StoppingPolicy, indexed, iota;
+import std.range : iota, indexed/*, lockstep, StoppingPolicy*/; // commented stuff produce error no TypeInfo in betterC
 import std.algorithm.mutation : copy;
 import std.algorithm.iteration : map, filter;
-import std.array : array;
 
-import tagion.basic.TagionExceptions : Check, TagionException;
 import tagion.betterC.wallet.WalletRecords : RecoverGenerator;
 
-@safe
-@nogc
 struct KeyRecover {
     enum MAX_QUESTION = 10;
     enum MAX_SEEDS = 64;
@@ -61,19 +49,18 @@ struct KeyRecover {
         Buffer[] results;
         results.create(questions.length);
 
-        foreach (ref result, question, answer; lockstep(results, questions, answers, StoppingPolicy
-                .requireSameLength)) {
-            scope strip_down = cast(ubyte[]) answer.strip_down;
-            scope (exit) {
-                strip_down.scramble;
-            }
-            const hash = calcHash(strip_down);
-            result = calcHash(hash ~ hash);
-        }
+        // foreach (ref result, question, answer; lockstep(results, questions, answers, StoppingPolicy
+        //         .requireSameLength)) {
+        //     scope strip_down = cast(ubyte[]) answer.strip_down;
+        //     scope (exit) {
+        //         strip_down.scramble;
+        //     }
+        //     const hash = calcHash(strip_down);
+        //     result = calcHash(hash ~ hash);
+        // }
         return results;
     }
 
-    @nogc
     static uint numberOfSeeds(const uint M, const uint N) pure nothrow
     in {
         assert(M >= N);
@@ -83,11 +70,11 @@ struct KeyRecover {
         return (M - N) * N + 1;
     }
 
-    @nogc
     static unittest {
         assert(numberOfSeeds(10, 5) is 26);
     }
 
+    @trusted
     Buffer checkHash(scope const(ubyte[]) value) const {
         return rawCalcHash(rawCalcHash(value));
     }
@@ -140,15 +127,8 @@ struct KeyRecover {
      * Generates the quiz seed values from the privat key R and the quiz list
      */
     void quizSeed(scope ref const(ubyte[]) R, Buffer[] A, const uint confidence) {
-        scope (success) {
-            generator.confidence = confidence;
-            generator.S = checkHash(R);
-        }
-        scope (failure) {
-            generator.Y = null;
-            generator.S = null;
-            generator.confidence = 0;
-        }
+        import tagion.betterC.utils.Miscellaneous;
+
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, confidence);
 
@@ -157,7 +137,7 @@ struct KeyRecover {
         uint count;
         bool calculate_this_seeds(scope const(uint[]) indices) {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
-            generator.Y[count] = xor(R, xor(list_of_selected_answers_and_the_secret));
+            // generator.Y[count] = xor(R, xor(list_of_selected_answers_and_the_secret));
             count++;
             return false;
         }
@@ -174,16 +154,16 @@ struct KeyRecover {
         const seeds = numberOfSeeds(number_of_questions, generator.confidence);
 
         bool result;
-        bool search_for_the_secret(scope const(uint[]) indices) {
+        bool search_for_the_secret(scope const(uint[]) indices) @safe {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
-            const guess = xor(list_of_selected_answers_and_the_secret);
-            foreach (y; generator.Y) {
-                xor(R, y, guess);
-                if (generator.S == checkHash(R)) {
-                    result = true;
-                    return true;
-                }
-            }
+            // const guess = xor(list_of_selected_answers_and_the_secret);
+            // foreach (y; generator.Y) {
+            //     xor(R, y, guess);
+            //     if (generator.S == checkHash(R)) {
+            //         result = true;
+            //         return true;
+            //     }
+            // }
             return false;
         }
 
@@ -199,28 +179,30 @@ out (result) {
 do {
     import std.ascii : toLower, isAlphaNum;
 
-    return text
-        .map!(c => cast(char) toLower(c))
-        .filter!(c => isAlphaNum(c))
-        .array;
+    char[] res;
+    // return text
+    //     .map!(c => cast(char) toLower(c))
+    //     .filter!(c => isAlphaNum(c))
+    //     .array;
+    return res;
 }
 
 static immutable(string[]) standard_questions;
 
-shared static this() {
-    standard_questions = [
-        "What is your favorite book?",
-        "What is the name of the road you grew up on?",
-        "What is your mother’s maiden name?",
-        "What was the name of your first/current/favorite pet?",
-        "What was the first company that you worked for?",
-        "Where did you meet your spouse?",
-        "Where did you go to high school/college?",
-        "What is your favorite food?",
-        "What city were you born in?",
-        "Where is your favorite place to vacation?"
-    ];
-}
+// shared static this() {
+//     standard_questions = [
+//         "What is your favorite book?",
+//         "What is the name of the road you grew up on?",
+//         "What is your mother’s maiden name?",
+//         "What was the name of your first/current/favorite pet?",
+//         "What was the first company that you worked for?",
+//         "Where did you meet your spouse?",
+//         "Where did you go to high school/college?",
+//         "What is your favorite food?",
+//         "What city were you born in?",
+//         "Where is your favorite place to vacation?"
+//     ];
+// }
 
 unittest {
     import tagion.crypto.SecureNet : StdHashNet;

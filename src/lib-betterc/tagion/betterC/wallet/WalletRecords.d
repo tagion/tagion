@@ -1,12 +1,12 @@
 module tagion.betterC.wallet.WalletRecords;
 
-// import tagion.betterC.hibon.HiBONRecord;
-import tagion.betterC.hibon.HiBON : HiBONT;
+import tagion.betterC.hibon.HiBON;
 import tagion.betterC.hibon.Document : Document;
 import tagion.betterC.wallet.KeyRecover : KeyRecover;
 import tagion.basic.Basic : Buffer, Pubkey;
+import tagion.betterC.utils.Memory;
 
-// import tagion.script.TagionCurrency;
+// import\ tagion.betterC.funnel.TagionCurrency;
 // import tagion.script.StandardRecords : StandardBill;
 
 struct RecordType {
@@ -27,27 +27,52 @@ struct Label {
     struct Quiz {
         @Label("$Q") string[] questions;
         this(Document doc) {
-            auto mydata = doc["$Q"].get!Document;
-            questions = mydata[]
-                .map!(a => a.get!string)
-                .array.dup;
+            auto received_questions = doc["$Q"].get!Document;
+            questions.create(received_questions.length);
+            foreach (element; received_questions[])
+            {
+                questions[element.index] = element.get!string;
+            }
+        }
+
+        inout(HiBONT) toHiBON() inout {
+            auto hibon = HiBON();
+            auto tmp_arr = HiBON();
+            foreach (i, question; questions)
+            {
+                tmp_arr[i] = question;
+            }
+            // GetLabel
+            hibon["Q"] = tmp_arr;
+            return cast(inout) hibon;
+        }
+
+        const(Document) toDoc() {
+            return Document(toHiBON.serialize);
         }
     }
-    /++
 
-+/
     @RecordType("PIN")
     struct DevicePIN {
         Buffer Y;
         Buffer check;
 
-        // mixin HiBONRecord;
-    }
+        this(Document doc) {
+            Y = doc["Y"].get!Buffer;
+            check = doc["C"].get!Buffer;
+        }
 
-    // @RecordType("Wallet") struct Wallet {
-    //     KeyRecover.RecoverGenerator generator;
-    //     mixin HiBONRecord;
-    // }
+        inout(HiBONT) toHiBON() inout {
+            auto hibon = HiBON();
+            hibon["Y"] = Y;
+            hibon["C"] = check;
+            return cast(inout) hibon;
+        }
+
+        const(Document) toDoc() {
+            return Document(toHiBON.serialize);
+        }
+    }
 
     @RecordType("Wallet")
     struct RecoverGenerator {
@@ -58,26 +83,31 @@ struct Label {
 
         inout(HiBONT) toHiBON() inout {
             auto hibon = HiBON();
-            // hibon["Y"] = Y;
-            // hibon["S"] = S;
-            hibon["N"] = confidence;
+            auto tmp_arr = HiBON();
+            foreach (i, y; Y)
+            {
+                tmp_arr[i] = y;
+            }
+            tmp_arr["S"] = S;
+            tmp_arr["N"] = confidence;
+            hibon = tmp_arr;
             return cast(inout) hibon;
         }
 
         const(Document) toDoc() {
-            auto doc = Document(toHiBON.serialize);
-            return cast(const) doc;
+            return Document(toHiBON.serialize);
         }
 
         this(Document doc) {
             auto Y_data = doc["Y"].get!Document;
-            Y = Y_data[]
-                .map!(a => a.get!Buffer)
-                .array.dup;
+            Y.create(Y_data.length);
+            foreach (element; Y_data[])
+            {
+                Y[element.index] = element.get!Buffer;
+            }
             S = doc["S"].get!Buffer;
             confidence = doc["N"].get!uint;
         }
-        // mixin HiBONRecord;
     }
 
 }

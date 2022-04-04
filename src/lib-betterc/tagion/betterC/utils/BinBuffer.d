@@ -62,7 +62,7 @@ struct BinBuffer {
             const new_size = _data.length + ((add.length < DEFAULT_SIZE) ? DEFAULT_SIZE : add.length);
             _data.resize(new_size);
         }
-        _data[*index .. *index + add.length] = add;
+        _data[*index .. *index + add.length] = add[0 .. $];
     }
 
     private void write(T)(const T x, size_t* index) if (isNumeric!T || is(Unqual!(T) == bool)) {
@@ -105,7 +105,7 @@ struct BinBuffer {
         }
     }
 
-    BinBuffer opSlice(const size_t from, const size_t to)
+    BinBuffer opSlice(const size_t from, const size_t to) const
     in {
         assert(from <= to);
         assert(to <= _data.length);

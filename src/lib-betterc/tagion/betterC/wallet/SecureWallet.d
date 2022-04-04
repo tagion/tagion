@@ -2,42 +2,40 @@
 
 module tagion.betterC.wallet.SecureWallet;
 
-import std.format;
-import std.string : representation;
-import std.algorithm : map, max, min, sum, until, each, filter, cache;
-import std.range : tee;
-import std.array;
-import std.exception : assumeUnique;
-import core.time : MonoTime;
+// import std.format;
+// import std.string : representation;
+// import std.algorithm : map, max, min, sum, until, each, filter, cache;
+// import std.range : tee;
+// import std.array;
+// import std.exception : assumeUnique;
+// import core.time : MonoTime;
 
 //import std.stdio;
 //use hibon betterc
-import tagion.betterC.hibon.HiBON : HiBON;
-import tagion.betterC.hibon.Document : Document;
+// import tagion.betterC.hibon.HiBON : HiBON;
+// import tagion.betterC.hibon.Document : Document;
+import tagion.betterC.wallet.Net;
+// import tagion.basic.Basic : basename, Buffer, Pubkey;
+// import tagion.script.StandardRecords;
 
-import tagion.basic.Basic : basename, Buffer, Pubkey;
-import tagion.script.StandardRecords;
-
-// import tagion.gossip.GossipNet : StdSecureNet, StdHashNet, scramble;
-import tagion.basic.Message;
-import tagion.utils.Miscellaneous;
-import tagion.Keywords;
-import tagion.script.TagionCurrency;
-import tagion.communication.HiRPC;
-import tagion.betterC.wallet.KeyRecover;
+// // import tagion.gossip.GossipNet : StdSecureNet, StdHashNet, scramble;
+// import tagion.basic.Message;
+// import tagion.utils.Miscellaneous;
+// import tagion.Keywords;
+// import tagion.betterC.funnel.TagionCurrency;
+// import tagion.communication.HiRPC;
+// import tagion.betterC.wallet.KeyRecover;
 import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 
 //alias StdSecureWallet = SecureWallet!StdSecureNet;
 
 @safe struct SecureWallet(Net) {
-    // static assert(is(Net : SecureNet));
+    static assert(is(Net : SecureNet));
     protected RecoverGenerator _wallet;
     protected DevicePIN _pin;
 
     AccountDetails account;
     protected SecureNet net;
-
-    //    @disable this();
 
     this(DevicePIN pin, RecoverGenerator wallet = RecoverGenerator.init, AccountDetails account = AccountDetails.init) { //nothrow {
         _wallet = wallet;
@@ -54,18 +52,19 @@ import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN;
         this(__pin, __wallet);
     }
 
-    @nogc const(RecoverGenerator) wallet() pure const nothrow {
+    const(RecoverGenerator) wallet() const {
         return _wallet;
     }
 
-    @nogc const(DevicePIN) pin() pure const nothrow {
+    const(DevicePIN) pin() const {
         return _pin;
     }
-    // final Document toDoc() const {
-    //     return wallet.toDoc;
-    // }
 
-    @nogc uint confidence() pure const nothrow {
+    final Document toDoc() const {
+        return wallet.toDoc;
+    }
+
+    uint confidence() const {
         return _wallet.confidence;
     }
 
@@ -76,8 +75,7 @@ import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN;
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
     }
     do {
-        // auto net = new Net;
-        //        auto hashnet = new StdHashNet;
+        Net net;
         KeyRecover recover;
 
         if (confidence == questions.length) {
@@ -91,7 +89,7 @@ import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN;
         RecoverGenerator wallet;
         DevicePIN pin;
         {
-            // auto R = new ubyte[net.hashSize];
+    //         // auto R = new ubyte[net.hashSize];
             ubyte[] R;
             R.create(hashSize);
 
@@ -105,9 +103,9 @@ import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN;
         return SecureWallet(pin, wallet);
     }
 
-    // void load(AccountDetails account) nothrow pure {
-    //     this.account = account;
-    // }
+    void load(AccountDetails account) nothrow pure {
+        this.account = account;
+    }
 
     protected void set_pincode(const KeyRecover recover, scope const(ubyte[]) R,
             const(ubyte[]) pinhash) {
@@ -148,7 +146,7 @@ import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN;
         return false;
     }
 
-    @nogc bool isLoggedin() pure const nothrow {
+    bool isLoggedin() const {
         // pragma(msg, "fixme(cbr): Yam the net");
         // return net !is null;
         return true;
@@ -360,14 +358,9 @@ import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 
     bool set_response_update_wallet(const(HiRPC.Receiver) receiver) nothrow {
         if (receiver.isResponse) { // ???
-            try {
                 account.bills = receiver.method.params[].map!(e => StandardBill(e.get!Document))
                     .array;
                 return true;
-            }
-            catch (Exception e) {
-                // Ingore
-            }
         }
         return false;
     }

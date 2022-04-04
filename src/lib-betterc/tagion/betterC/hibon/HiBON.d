@@ -18,6 +18,7 @@ import std.meta : staticIndexOf;
 //import std.algorithm.iteration : map, fold, each;
 import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType, PointerTarget,
     isAssociativeArray;
+import std.range : isInputRange, enumerate;
 import std.meta : AliasSeq;
 
 //import std.conv : to;
@@ -511,9 +512,10 @@ struct HiBONT {
      * @paramindex = member index
      */
     void opIndexAssign(T)(T x, const size_t index) if (!is(T : const(HiBONT))) {
+        import tagion.betterC.utils.StringHelper;
         if (index <= uint.max) {
-            auto _key = Key(cast(uint) index);
-            opIndexAssign(x, _key.serialize);
+            const _key = int_to_str(index);
+            opIndexAssign(x, _key);
         }
         else {
             error++;

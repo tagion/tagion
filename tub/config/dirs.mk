@@ -12,6 +12,7 @@ export DTMP := $(DBUILD)/tmp
 export DOBJ := $(DBUILD)/obj
 export DLIB := $(DBUILD)/lib
 export DLOGCOV := $(DLOG)/cov/
+export TOOLS := $(REPOROOT)/tools/
 
 env-dirs:
 	$(PRECMD)

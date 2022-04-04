@@ -1,36 +1,38 @@
-// module tagion.betterC.mobile.DocumentWrapperApi;
+module tagion.betterC.mobile.DocumentWrapperApi;
 
-// import tagion.betterC.mobile.Recycle;
+import tagion.betterC.mobile.Recycle;
 
-// import tagion.betterC.hibon.Document;
-// import tagion.betterC.hibon.HiBON;
+import tagion.betterC.hibon.Document;
+import tagion.betterC.hibon.HiBON;
 
-// // import tagion.basic.Recycle;
-// // import tagion.gossip.GossipNet;
-// // import tagion.wallet.KeyRecover;
-// // import tagion.betterC.wallet.Net : SecureNet;
-// // import tagion.wallet.KeyRecover;
+import tagion.betterC.utils.Memory;
+
+// import tagion.basic.Recycle;
+// import tagion.gossip.GossipNet;
+// import tagion.wallet.KeyRecover;
+// import tagion.betterC.wallet.Net : SecureNet;
+// import tagion.wallet.KeyRecover;
 
 // import core.runtime : rt_init, rt_term;
 // import core.stdc.stdlib;
-// import std.stdint;
+import std.stdint;
 // import std.string : toStringz, fromStringz;
-// import tagion.basic.Basic: Buffer;
+import tagion.basic.Basic: Buffer;
 // import tagion.hibon.HiBONJSON;
 
-// public static Recycle!Document recyclerDoc;
+public static Recycle!Document recyclerDoc;
 
-// enum BAD_RESULT = 0;
+enum BAD_RESULT = 0;
 
-// string[] parse_string(const char* str, const uint len)
-// {
-//     string[] result;
-//     return result;
-// }
+string[] parse_string(const char* str, const uint len)
+{
+    string[] result;
+    return result;
+}
 
-// /// Functions called from d-lang through dart:ffi
+/// Functions called from d-lang through dart:ffi
 
-// /// Creating Document by ubyte array
+/// Creating Document by ubyte array
 // export uint32_t create_test_doc()
 // {
 //     auto hibon = HiBON();
@@ -54,44 +56,44 @@
 //     }
 //     return BAD_RESULT;
 // }
-// /// Creating Document by ubyte array
-// export uint32_t create_doc(const uint8_t* data_ptr, const uint32_t len)
-// {
-//     // immutable(ubyte)[] data = cast(immutable(ubyte)[]) data_ptr[0 .. len];
-//     ubyte[] data;
-//     data.create(len);
-//     foreach(i, a;  data_ptr) {
-//         data[i] = a;
-//     }
-//     auto doc = Document(cast(immutable)(data));
-//     if (doc.isInorder())
-//     {
-//         auto docId = recyclerDoc.create(doc);
-//         return docId;
-//     }
-//     return BAD_RESULT;
-// }
+/// Creating Document by ubyte array
+export uint32_t create_doc(const uint8_t* data_ptr, const uint32_t len)
+{
+    // immutable(ubyte)[] data = cast(immutable(ubyte)[]) data_ptr[0 .. len];
+    ubyte[] data;
+    data.create(len);
+    for (size_t i = 0; i < len; i++) {
+        data[i] = data_ptr[i];
+    }
+    auto doc = Document(cast(immutable)(data));
+    if (doc.isInorder())
+    {
+        auto docId = recyclerDoc.create(doc);
+        return docId;
+    }
+    return BAD_RESULT;
+}
 
-// /// Deleting the specific Document
-// export void delete_doc_by_id(const uint32_t id)
-// {
-//     if (id !is BAD_RESULT)
-//     {
-//         recyclerDoc.erase(id);
-//     }
-// }
+/// Deleting the specific Document
+export void delete_doc_by_id(const uint32_t id)
+{
+    if (id !is BAD_RESULT)
+    {
+        recyclerDoc.erase(id);
+    }
+}
 
 // /// Getting the int value from Document by integer index
 // export int32_t doc_get_int_by_id(const uint32_t doc_id, const uint32_t index)
 // {
 //     if (recyclerDoc(doc_id).hasMember(index))
 //     {
-//         return recyclerDoc(doc_id)[index].get!int;
+//         return recyclerDoc(doc_id)[index].get;
 //     }
 //     return BAD_RESULT;
 // }
 
-// /// Getting the int value from Document by string key
+/// Getting the int value from Document by string key
 // export int32_t doc_get_int_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len)
 // {
 //     // immutable key = cast(immutable)(key_str[0 .. len]);
@@ -105,7 +107,7 @@
 //         return recyclerDoc(doc_id)[key].get!int;
 //     }
 //     return BAD_RESULT;
-// }
+// // }
 // /// Getting the ulong value from Document by string key
 // export int64_t doc_get_ulong_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len)
 // {
@@ -286,18 +288,18 @@
 // {
 //     return recyclerDoc(doc_id).length;
 // }
-// // /// Getting the keys of Document
-// // /// It uses UF-16 codding
-// // export const(char*) doc_get_keys(const uint32_t doc_id)
-// // {
-// //     if (recyclerDoc.exists(doc_id))
-// //     {
-// //         string[] keys = recyclerDoc(doc_id).keys();
-// //         string keysStr = join(keys, ";");
-// //         return toStringz(keysStr);
-// //     }
-// //     return null;
-// // }
+// /// Getting the keys of Document
+// /// It uses UF-16 codding
+// export const(char*) doc_get_keys(const uint32_t doc_id)
+// {
+//     if (recyclerDoc.exists(doc_id))
+//     {
+//         string[] keys = recyclerDoc(doc_id).keys();
+//         string keysStr = join(keys, ";");
+//         return toStringz(keysStr);
+//     }
+//     return null;
+// }
 
 // unittest
 // {
