@@ -6,7 +6,7 @@ LINUX_X86_64:=x86_64-linux
 
 PLATFORMS+=$(LINUX_X86_64)
 ifeq ($(PLATFORM),$(LINUX_X86_64))
-
+ANDROID_ABI=x86_64
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 # ifdef BETTERC
 # DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc*" -a -not -path "*/tests/*"}

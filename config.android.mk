@@ -16,6 +16,9 @@ export ANDROID_SYSROOT=${abspath $(ANDROID_TOOLCHAIN)/../sysroot}
 
 export ANDROID_CLANG_VER?=${shell ${ANDROID_CC} --version | $(DTUB)/clang_version.pl}
 
+export ANDROID_CMAKE =$(ANDROID_NDK)/build/cmake/android.toolchain.cmake
+
+
 #
 # Android link flags
 #
@@ -74,6 +77,7 @@ env-android:
 	${call log.header, $@ :: env}
 	${call log.kvp, ANDROID_NDK, $(ANDROID_NDK)}
 	${call log.kvp, ANDROID_API, $(ANDROID_API)}
+	${call log.kvp, ANDROID_ABI, $(ANDROID_ABI)}
 	${call log.kvp, ANDROID_ROOT, $(ANDROID_ROOT)}
 	${call log.kvp, ANDROID_TOOLCHAIN, $(ANDROID_TOOLCHAIN)}
 	${call log.kvp, ANDROID_LD, $(ANDROID_LD)}
@@ -81,6 +85,7 @@ env-android:
 	${call log.kvp, ANDROID_CPP, $(ANDROID_CPP)}
 	${call log.kvp, ANDROID_SYSROOT, $(ANDROID_SYSROOT)}
 	${call log.kvp, ANDROID_CLANG_VER, $(ANDROID_CLANG_VER)}
+	${call log.env, ANDROID_CMAKE, $(ANDROID_CMAKE)}
 	${call log.env, ANDROID_LDFLAGS, $(ANDROID_LDFLAGS)}
 	${call log.close}
 

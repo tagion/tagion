@@ -6,8 +6,10 @@ LINUX_X86_64_BETTERC:=x86_64-linux-betterC
 
 PLATFORMS+=$(LINUX_X86_64_BETTERC)
 ifeq ($(PLATFORM),$(LINUX_X86_64_BETTERC))
+ANDROID_ABI=x86_64
 DFLAGS+=$(DVERSION)=TINY_AES
 MTRIPLE:=x86_64-linux
+TRIPLET:=$(MTRIPLE)-android
 UNITTEST_FLAGS:=$(DDEBUG) $(DDEBUG_SYMBOLS)
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 ifdef BETTERC
