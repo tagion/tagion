@@ -58,6 +58,18 @@ tagionwave: |prebuild-linux
 tagionwave: target-tagionwave
 bin: tagionwave
 
+tagionlogservicetest: prebuild-linux
+tagionlogservicetest: target-tagionlogservicetest
+bin: tagionlogservicetest
+
+tagionsubscription: prebuild-linux
+tagionsubscription: target-tagionsubscription
+bin: tagionsubscription
+
+recorderchain: prebuild-linux
+recorderchain: target-recorderchain
+bin: recorderchain
+
 target-linux:
 	@echo DBUILD $(DBUILD)
 

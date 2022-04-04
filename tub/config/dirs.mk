@@ -4,6 +4,7 @@ export LOG := ${abspath ${REPOROOT}/logs/}
 export DDEVNET := ${abspath ${REPOROOT}/devnet/}
 export DBUILD := ${abspath $(BUILD)/$(PLATFORM)}
 export DLOG := ${abspath $(LOG)/$(PLATFORM)}
+export TOOLS := ${abspath $(REPOROOT)/tools}
 
 # New simplified flow directories
 export DBIN := $(DBUILD)/bin

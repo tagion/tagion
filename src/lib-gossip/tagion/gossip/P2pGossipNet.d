@@ -20,6 +20,7 @@ import tagion.utils.LRU;
 import tagion.utils.Queue;
 
 import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONRecord : HiBONRecord, RecordType;
 import tagion.hibon.Document : Document;
 import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraph;
@@ -286,7 +287,9 @@ struct NodeAddress {
     uint port;
     DART.SectorRange sector;
 
-    this(
+    mixin HiBONRecord!(
+        q{
+            this(
             string address,
             immutable(DARTOptions) dart_opts,
             const ulong port_base,
@@ -308,9 +311,7 @@ struct NodeAddress {
                 else {
                     const max_sync_node_count = dart_opts.sync.master_angle_from_port
                         ? dart_opts.sync.maxSlaves : dart_opts.sync.maxMasters;
-                    auto ang_range = calcAngleRange(dart_opts, node_number, max_sync_node_count);
-
-                    sector = DART.SectorRange(ang_range[0], ang_range[1]);
+                    sector = calcAngleRange(dart_opts, node_number, max_sync_node_count);
                 }
             }
             else {
@@ -324,12 +325,13 @@ struct NodeAddress {
             }
         }
         catch (Exception e) {
-            log(e.msg);
+            // log(e.msg);
             log.fatal(e.msg);
         }
     }
+        });
 
-    static Tuple!(ushort, ushort) calcAngleRange(
+    static DART.SectorRange calcAngleRange(
             immutable(DARTOptions) dart_opts,
             const ulong node_number,
             const ulong max_nodes) {
@@ -338,17 +340,17 @@ struct NodeAddress {
         float delta = (cast(float)(dart_opts.sync.netToAng - dart_opts.sync.netFromAng)) / max_nodes;
         auto from_ang = to!ushort(dart_opts.from_ang + floor(node_number * delta));
         auto to_ang = to!ushort(dart_opts.from_ang + floor((node_number + 1) * delta));
-        return tuple(from_ang, to_ang);
+        return DART.SectorRange(from_ang, to_ang);
     }
 
      static string parseAddr(string addr) {
         import std.string;
 
         string result;
-        auto firstpartAddr = addr.indexOf('[') + 1;
-        auto secondpartAddr = addr[firstpartAddr..$].indexOf(' ') + firstpartAddr;
-        auto firstpartId = addr.indexOf('{') + 1;
-        auto secondpartId = addr.indexOf(':');
+        const firstpartAddr = addr.indexOf('[') + 1;
+        const secondpartAddr = addr[firstpartAddr..$].indexOf(' ') + firstpartAddr;
+        const firstpartId = addr.indexOf('{') + 1;
+        const secondpartId = addr.indexOf(':');
         result = addr[firstpartAddr .. secondpartAddr] ~ p2p_token ~ addr[firstpartId .. secondpartId];
         // log("address: %s \n after: %s", addr, result);
         return result;

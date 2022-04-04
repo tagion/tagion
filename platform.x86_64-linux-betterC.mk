@@ -20,10 +20,9 @@ DFILES?=${shell find $(DSRC) -type f -name "*.d" \( -path "*src/lib-betterC/*" -
 endif
 
 
-DFILES+=src/lib-betterc/tests/unittest.d
+unittest: DFILES+=src/lib-betterc/tests/unittest.d
 WRAPS+=secp256k1
-WRAPS+=$(TOOLS_LDC_BIN)
-
+#WRAPS+=$(TOOLS_LDC_BIN)
 prebuild-extern-linux: $(DBUILD)/.way
 #prebuild-extern-linux: secp256k1 openssl p2pgowrapper
 #dstep: prebuild-extern-linux

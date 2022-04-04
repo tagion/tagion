@@ -14,7 +14,7 @@ import tagion.basic.Basic : Buffer, FUNCTION_NAME, nameOf;
 import tagion.Keywords;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, GetLabel;
+import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, GetLabel, Label;
 import tagion.hibon.HiBONJSON;
 
 import tagion.dart.DARTFile;
@@ -74,9 +74,11 @@ class DART : DARTFile { //, HiRPC.Supports {
     }
 
     static struct SectorRange {
-        private ushort _sector;
-        private ushort _from_sector;
-        private ushort _to_sector;
+        private {
+            @Label("sector") ushort _sector;
+            @Label("from") ushort _from_sector;
+            @Label("to") ushort _to_sector;
+        }
         @property ushort from_sector() inout {
             return _from_sector;
         }
@@ -85,12 +87,14 @@ class DART : DARTFile { //, HiRPC.Supports {
             return _to_sector;
         }
 
-        protected bool flag;
-        this(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
-            _from_sector = from_sector;
-            _to_sector = to_sector;
-            _sector = from_sector;
-        }
+        @Label("") protected bool flag;
+        mixin HiBONRecord!(q{
+                this(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
+                    _from_sector = from_sector;
+                    _to_sector = to_sector;
+                    _sector = from_sector;
+                }
+            });
 
         bool isFullRange() const pure nothrow {
             return _from_sector == _to_sector;
@@ -104,7 +108,10 @@ class DART : DARTFile { //, HiRPC.Supports {
             return sectorInRange(rims.sector, _from_sector, _to_sector);
         }
 
-        static bool sectorInRange(const ushort sector, const ushort from_sector, const ushort to_sector) pure nothrow {
+        static bool sectorInRange(
+            const ushort sector,
+            const ushort from_sector,
+            const ushort to_sector) pure nothrow {
             if (to_sector == from_sector) {
                 return true;
             }

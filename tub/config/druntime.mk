@@ -55,7 +55,7 @@ druntime-all32:
 	MAKE_SYSTEM_VERSION=$(LEVEL)
 
 
-env-druntime:
+env-druntime-x:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.kvp, DRUNTIME, $(DRUNTIME)}
@@ -63,12 +63,12 @@ env-druntime:
 	${call log.kvp, BUILD-RUNTIME, $(BUILD-RUNTIME)}
 	${call log.close}
 
-env: env-druntime
+env: env-druntime-x
 
-help-druntime:
+help-druntime-x:
 	$(PRECMD)
 	${call log.header, $@ :: help}
 	${call log.help, "make druntime", "Will build druntime and phobos"}
 	${call log.close}
 
-help: help-druntime
+help: help-druntime-x

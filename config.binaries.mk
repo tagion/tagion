@@ -99,3 +99,66 @@ clean: clean-wallet
 
 
 BIN_TARGETS+=target-wallet
+
+
+#
+# Logservicetest utility
+#
+# FIXME(IB) should be removed when ddeps works correctly
+target-tagionlogservicetest: LIBS+=$(LIBOPENSSL)
+target-tagionlogservicetest: LIBS+=$(LIBSECP256K1)
+target-tagionlogservicetest: LIBS+=$(LIBP2PGOWRAPPER)
+
+target-tagionlogservicetest: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-logservicetest/*"}
+target-tagionlogservicetest: $(DBIN)/tagionlogservicetest
+
+clean-tagionlogservicetest:
+	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RM) $(DBIN)/tagionlogservicetest
+
+clean: clean-tagionlogservicetest
+
+BIN_TARGETS+=target-tagionlogservicetest
+
+
+#
+# Subscription utility
+#
+# FIXME(IB) should be removed when ddeps works correctly
+target-tagionsubscription: LIBS+=$(LIBOPENSSL)
+target-tagionsubscription: LIBS+=$(LIBSECP256K1)
+target-tagionsubscription: LIBS+=$(LIBP2PGOWRAPPER)
+
+target-tagionsubscription: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-subscription/*"}
+target-tagionsubscription: $(DBIN)/tagionsubscription
+
+clean-tagionsubscription:
+	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RM) $(DBIN)/tagionsubscription
+
+clean: clean-tagionsubscription
+
+BIN_TARGETS+=target-tagionsubscription
+
+
+#
+# Recorderchain utility
+#
+# FIXME(IB) should be removed when ddeps works correctly
+target-recorderchain: LIBS+=$(LIBOPENSSL)
+target-recorderchain: LIBS+=$(LIBSECP256K1)
+target-recorderchain: LIBS+=$(LIBP2PGOWRAPPER)
+
+target-recorderchain: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-recorderchain/*"}
+target-recorderchain: $(DBIN)/recorderchain
+
+clean-recorderchain:
+	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RM) $(DBIN)/recorderchain
+
+clean: clean-recorderchain
+
+BIN_TARGETS+=target-recorderchain
