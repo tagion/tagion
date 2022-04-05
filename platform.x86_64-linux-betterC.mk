@@ -11,6 +11,7 @@ DFLAGS+=$(DVERSION)=TINY_AES
 MTRIPLE:=x86_64-linux
 TRIPLET:=$(MTRIPLE)-android
 
+
 UNITTEST_FLAGS:=$(DDEBUG) $(DDEBUG_SYMBOLS)
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 ifdef BETTERC
@@ -52,20 +53,20 @@ target-android: LIBS+=$(LDC_BUILD_RUNTIME_TMP)/lib/libdruntime-ldc.a
 target-android: LIBS+=$(LDC_BUILD_RUNTIME_TMP)/lib/libphobos2-ldc.a
 
 
-target-android: LDFLAGS+=$(ANDROID_LDFLAGS)
+# target-android: LDFLAGS+=$(ANDROID_LDFLAGS)
 
-target-android: LDFLAGS+=$(ANDROID_SYSTEM)
-target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/aarch64
-target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../lib/gcc/aarch64-linux-android/4.9.x
-target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30
-target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android
-target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib
-target-android: LDFLAGS+=-soname $(LIBRARY)
-target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a
-target-android: LDFLAGS+=-l:libunwind.a
-target-android: LDFLAGS+=-ldl
-target-android: LDFLAGS+=-lc
-target-android: LDFLAGS+=-lm
+# target-android: LDFLAGS+=$(ANDROID_SYSTEM)
+# target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/aarch64
+# target-android: LDFLAGS+=-L$(ANDROID_TOOLCHAIN)/../lib/gcc/aarch64-linux-android/4.9.x
+# target-android: LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib/aarch64-linux-android/$(ANDROID_API)
+# target-android: LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib/aarch64-linux-android
+# target-android: LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib
+# target-android: LDFLAGS+=-soname $(LIBRARY)
+# target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a
+# target-android: LDFLAGS+=-l:libunwind.a
+# target-android: LDFLAGS+=-ldl
+# target-android: LDFLAGS+=-lc
+# target-android: LDFLAGS+=-lm
 # target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a
 # target-android: LDFLAGS+=-l:libunwind.a
 # target-android: LDFLAGS+=-ldl

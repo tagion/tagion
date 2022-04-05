@@ -1,8 +1,16 @@
 
+#
+# Linux aarch64 Android
+#
+
 ANDROID_AARCH64=aarch64-linux-android
 PLATFORMS+=$(ANDROID_AARCH64)
 
 ifeq ($(PLATFORM),$(ANDROID_AARCH64))
+ANDROID_ABI=arm64-v8a
+DFLAGS+=$(DVERSION)=TINY_AES
+MTRIPLE:=aarch64-linux
+TRIPLET:=$(MTRIPLE)-android
 
 CROSS_OS=android
 CROSS_GO_ARCH=arm64
@@ -18,22 +26,24 @@ TRIPLE = $(ANDROID_ARCH)
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 
 ifdef BETTERC
+#DFLAGS+=$(DBETTERC)
+#
+# DFILES include
+#
+DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc/*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
+#unittest: DFILES+=src/lib-betterc/tests/unittest.d
+
 LIBNAME?=libwallet-betterc-$(CROSS_ARCH)
 LIBRARY=$(DLIB)/$(LIBNAME).$(LIBEXT)
 LIBOBJECT=$(DOBJ)/$(LIBNAME).$(OBJEXT)
+
 MODE:=-lib-betterc
-
-#
-# Files to be include
-#
-DFILES?=${shell find $(DSRC) -type f -name "*.d" -a -not -name "~*" -path "*src/lib-betterc*" -not -path "*/tests/*"}
-
 
 #
 # Switch in the betterC flags if has been defined
 #
-ANDROID_DFLAGS+=$(DBETTERC)
 
+ANDROID_DFLAGS+=$(DBETTERC)
 #
 # Swicth off the phobos and druntime
 #
@@ -41,6 +51,9 @@ ANDROID_DFLAGS+=$(DBETTERC)
 ifdef SHARED
 ANDROID_LDFLAGS+=-shared
 endif
+
+WRAPS+=secp256k1
+WRAPS+=druntime
 
 ANDROID_LDFLAGS+=-m aarch64linux
 
@@ -58,7 +71,7 @@ ANDROID_LDFLAGS+=--fix-cortex-a53-843419
 # Link all into one library
 #
 #ANDROID_LDFLAGS+=-Wl,--whole-archive
-ANDROID_DFLAGS+=--defaultlib=libdruntime-ldc.a,libphobos2-ldc.a
+ANDROID_DFLAGS+=--defaultlib=libdruntime-ldc-lto.a,libphobos2-ldc-lto.a
 
 ANDROID_DFLAGS+=-L/home/carsten/work/ldc-runtime/ldc-build-runtime.tmp/lib/
 ANDROID_DFLAGS+=-L/home/carsten/work/ldc-runtime/ldc-build-runtime.tmp/lib/
@@ -69,6 +82,7 @@ ANDROID_DFLAGS+=--flto=thin
 ANDROID_DFLAGS+=--Oz
 
 #ANDROID_DFLAGS+=--static
+#target-android: DC=$(TOOLS_LDC_BIN)/ldc2
 
 target-android: LD=$(ANDROID_LD)
 target-android: CC=$(ANDROID_CC)
@@ -134,8 +148,6 @@ target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/
 #target-android: LIBS+=$(LIBSECP256K1)
 
 
-target-android: | secp256k1
-
 # To make sure that the all has been defined correctly
 # The library must be expanded on the second pass
 ifdef OPT_ONLY_OBJ
@@ -146,9 +158,9 @@ endif
 
 platform: target-android
 
-platform: show
+#platform: show
 
-show:
+env-show:
 	@echo LIBEXT=$(LIBEXT)
 	@echo SHARED=$(SHARED)
 	@echo LIBRARY=$(LIBRARY)
