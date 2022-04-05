@@ -52,6 +52,7 @@ enum DARTSynchronizeState {
     READY = 10,
 }
 
+//@safe
 struct ServiceState(T) {
     mixin StateT!T;
     this(T initial) {
@@ -74,9 +75,10 @@ struct ServiceState(T) {
     }
 }
 
+//@safe
 void dartSynchronizeServiceTask(Net : SecureNet)(
         immutable(Options) opts,
-        shared(p2plib.NodeI) node,
+        shared(p2plib.NodeI) node, //HERE
         shared(Net) master_net,
         immutable(DART.SectorRange) sector_range) nothrow {
     try {
@@ -97,8 +99,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
             immutable filename = opts.dart.path;
         }
         if (opts.dart.initialize) {
-            enum BLOCK_SIZE = 0x80;
-            BlockFile.create(filename, DARTFile.stringof, BLOCK_SIZE);
+            BlockFile.create(filename, DARTFile.stringof, opts.dart.BLOCK_SIZE);
         }
         log("DART file created with filename: %s", filename);
 
@@ -123,7 +124,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         }
 
         scope (exit) {
-            node.closeListener(pid);
+            node.closeListener(pid); //HERE
         }
         bool stop;
         void handleControl(Control ts) {
@@ -148,7 +149,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         auto connectionPool = new shared(ConnectionPoolT)(
                 opts.dart.sync.host.timeout.msecs);
         auto sync_factory = new P2pSynchronizationFactory(
-                dart, opts.port, node,
+                dart, opts.port, node, //HERE
                 connectionPool, opts.dart, net.pubkey);
         auto syncPool = new DARTSynchronizationPool!(StdHandlerPool!(ResponseHandler, uint))(dart.sectors,
                 journalReplayFiber, opts.dart);
@@ -350,7 +351,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     }
                 }
                 if (state.checkState(DARTSynchronizeState.READY) && !request_handling) {
-                    node.listen(pid, &StdHandlerCallback, cast(string) task_name,
+                    node.listen(pid, &StdHandlerCallback, cast(string) task_name, // HERE
                             opts.dart.sync.host.timeout.msecs,
                             cast(uint) opts.dart.sync.host.max_size);
                     request_handling = true;
@@ -409,10 +410,10 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
         this.opts = opts;
     }
 
-    void tryToSubscribe(NodeAddress[Pubkey] node_addreses, shared(p2plib.NodeI) node) {
+    void tryToSubscribe(NodeAddress[Pubkey] node_addreses, shared(p2plib.NodeI) node) { //HERE
         bool subscribeTo(NodeAddress address) {
             try {
-                stream = node.connect(address.address, address.is_marshal,
+                stream = node.connect(address.address, address.is_marshal, //HERE
                         opts.dart.subs.protocol_id);
                 auto taskName = opts.dart.subs.slave_task_name;
                 handlerTid = spawn(&handleSubscription, taskName);
@@ -478,6 +479,9 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
     }
 }
 
+unittest {
+    assert(1==1);
+}
 /+
 Error: constructor
 tagion.dart.DARTSynchronization.P2pSynchronizationFactory.this(

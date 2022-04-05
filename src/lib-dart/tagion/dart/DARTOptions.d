@@ -25,6 +25,7 @@ struct DARTOptions {
     bool fast_load;
     ulong tick_timeout;
     bool master_from_port;
+    enum BLOCK_SIZE = 0x80;
 
     struct Synchronize {
         ulong maxSlaves;
