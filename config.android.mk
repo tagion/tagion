@@ -39,10 +39,10 @@ export ANDROID_DFLAGS
 ANDROID_DFLAGS+=-mtriple=$(TRIPLET)
 ANDROID_DFLAGS+=-Xcc=--sysroot=$(ANDROID_SYSROOT)
 
-ANDROID_CONFIG_MK:=$(DBUILD)/gen.android.mk
+#ANDROID_CONFIG_MK:=$(DBUILD)/gen.android.mk
 
 target-android: $(DBUILD)
-target-android: $(ANDROID_CONFIG_MK)
+#target-android: $(ANDROID_CONFIG_MK)
 
 
 $(ANDROID_CONFIG_MK): $(DBUILD)
