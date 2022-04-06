@@ -57,11 +57,16 @@ WRAPS+=druntime
 
 ANDROID_LDFLAGS+=-m aarch64linux
 ANDROID_LDFLAGS+=-L$(ANDROID_ROOT)/lib64/clang/$(ANDROID_CLANG_VER)/lib/linux/aarch64
-ANDROID_LDFLAGS+=-L$(ANDROID_LIBPATH)/gcc/aarch64-linux-android/4.9.x
-ANDROID_LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib/aarch64-linux-android/30
-ANDROID_LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib/aarch64-linux-android
+ANDROID_LDFLAGS+=-L$(ANDROID_LIBPATH)/gcc/$(PLATFORM)/4.9.x
+ANDROID_LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib/$(PLATFORM)/$(ANDROID_API)
+ANDROID_LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib/$(PLATFORM)
 ANDROID_LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib
 ANDROID_LDFLAGS+=$(ANDROID_ROOT)/lib64/clang/$(ANDROID_CLANG_VER)/lib/linux/libclang_rt.builtins-aarch64-android.a
+ANDROID_LDFLAGS+=$(ANDROID_SYSROOT)/usr/lib/$(PLATFORM)/$(ANDROID_API)/crtend_so.o
+ANDROID_LDFLAGS+=-l:libunwind.a
+ANDROID_LDFLAGS+=-ldl
+ANDROID_LDFLAGS+=-lc
+ANDROID_LDFLAGS+=-lm
 #target-ANDROID_LDFLAGS+=-soname $(LIBRARY)
 
 else
@@ -108,14 +113,14 @@ target-android: DFLAGS+=--shared
 #target-android: DFLAGS+=--singleobj
 target-android: DFLAGS+=--defaultlib=libdruntime-ldc.a,libphobos2-ldc.a
 #target-android: DFLAGS+=-I/home/carsten/work/tagion/src/lib-basic/ -I/home/carsten/work/tagion/src/lib-crypto/
-target-android: DFLAGS+=-mtriple=aarch64-linux-android
+target-android: DFLAGS+=-mtriple=$(PLATFORM)
 target-android: DFLAGS+=-Xcc=--sysroot=$(ANDROID_SYSROOT)
 #/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/
 target-android: DFLAGS+=--betterC
 
 # target-android: DFLAGS+=${shell find build/aarch64-linux-android/tmp/secp256k1/ -name "*.o"}
-# target-android: DFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30/crtbegin_so.o
-# target-android: DFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30/crtend_so.o
+# target-android: DFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/$(ANDROID_API)/crtbegin_so.o
+# target-android: DFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/$(ANDROID_API)/crtend_so.o
 # target-android: DFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a
 
 #target-android: DFLAGS+=$(LIBSECP256K1_STATIC)
@@ -129,21 +134,21 @@ target-android: LDFLAGS+=$(ANDROID_LDFLAGS)
 #target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/aarch64
 #target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../lib/gcc/aarch64-linux-android/4.9.x
 # target-android: LDFLAGS+=-L$(ANDROID_LIBPATH)/gcc/aarch64-linux-android/4.9.x
-# target-android: LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib/aarch64-linux-android/30
+# target-android: LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib/aarch64-linux-android/$(ANDROID_API)
 # target-android: LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib/aarch64-linux-android
 # target-android: LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib
 target-android: LDFLAGS+=-soname $(LIBRARY)
 #target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a
 #target-android: LDFLAGS+=$(ANDROID_ROOT)/lib64/clang/$(ANDROID_CLANG_VER)/lib/linux/libclang_rt.builtins-aarch64-android.a
-target-android: LDFLAGS+=-l:libunwind.a
-target-android: LDFLAGS+=-ldl
-target-android: LDFLAGS+=-lc
-target-android: LDFLAGS+=-lm
+# target-android: LDFLAGS+=-l:libunwind.a
+# target-android: LDFLAGS+=-ldl
+# target-android: LDFLAGS+=-lc
+# target-android: LDFLAGS+=-lm
 # target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a
 # target-android: LDFLAGS+=-l:libunwind.a
 # target-android: LDFLAGS+=-ldl
-#target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30/crtend_so.o
-target-android: LDFLAGS+=$(ANDROID_SYSROOT)/usr/lib/aarch64-linux-android/30/crtend_so.o
+#target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/$(ANDROID_API)/crtend_so.o
+#target-android: LDFLAGS+=$(ANDROID_SYSROOT)/usr/lib/aarch64-linux-android/$(ANDROID_API)/crtend_so.o
 #target-android: LDFLAGS+=${shell find build/aarch64-linux-android/tmp/secp256k1/ -name "*.o"}
 #$(LIBSECP256K1_STATIC)
 #target-android: LDFLAGS+=$(LIBSECP256K1)
@@ -189,6 +194,6 @@ ${call DDEPS,$(DBUILD),$(DFILES)}
 
 endif
 
-#"/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/ld" -z noexecstack -EL --fix-cortex-a53-843419 --warn-shared-textrel -z now -z relro -z max-page-size=4096 --hash-style=gnu --enable-new-dtags --eh-frame-hdr -m aarch64linux -shared -o bin/libtest-aarch64.so /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30/crtbegin_so.o -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/aarch64 -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../lib/gcc/aarch64-linux-android/4.9.x -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30 -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib -soname bin/libtest-aarch64.so bin/libtest-aarch64.o /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a -l:libunwind.a -ldl -lc /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a -l:libunwind.a -ldl /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30/crtend_so.o
+#"/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/ld" -z noexecstack -EL --fix-cortex-a53-843419 --warn-shared-textrel -z now -z relro -z max-page-size=4096 --hash-style=gnu --enable-new-dtags --eh-frame-hdr -m aarch64linux -shared -o bin/libtest-aarch64.so /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/$(ANDROID_API)/crtbegin_so.o -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/aarch64 -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../lib/gcc/aarch64-linux-android/4.9.x -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/$(ANDROID_API) -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib -soname bin/libtest-aarch64.so bin/libtest-aarch64.o /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a -l:libunwind.a -ldl -lc /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a -l:libunwind.a -ldl /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/$(ANDROID_API)/crtend_so.o
 
-#"/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/ld" -z noexecstack -EL --fix-cortex-a53-843419 --warn-shared-textrel -z now -z relro -z max-page-size=4096 --hash-style=gnu --enable-new-dtags --eh-frame-hdr -m aarch64linux -shared -o bin/libtest-aarch64.so /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30/crtbegin_so.o -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/aarch64 -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../lib/gcc/aarch64-linux-android/4.9.x -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30 -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib -soname bin/libtest-aarch64.so bin/libtest-aarch64.o /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a -l:libunwind.a -ldl -lc /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a -l:libunwind.a -ldl /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30/crtend_so.o
+#"/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/ld" -z noexecstack -EL --fix-cortex-a53-843419 --warn-shared-textrel -z now -z relro -z max-page-size=4096 --hash-style=gnu --enable-new-dtags --eh-frame-hdr -m aarch64linux -shared -o bin/libtest-aarch64.so /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/$(ANDROID_API)/crtbegin_so.o -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/aarch64 -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../lib/gcc/aarch64-linux-android/4.9.x -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/$(ANDROID_API) -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android -L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib -soname bin/libtest-aarch64.so bin/libtest-aarch64.o /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a -l:libunwind.a -ldl -lc /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a -l:libunwind.a -ldl /home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/$(ANDROID_API)/crtend_so.o
