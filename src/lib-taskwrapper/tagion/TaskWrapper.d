@@ -7,6 +7,7 @@ import tagion.basic.Basic : Control, TrustedConcurrency;
 import tagion.logger.Logger;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
 import tagion.services.RecorderService : Fingerprint;
+import tagion.services.LoggerService : LogFilter;
 import tagion.dart.Recorder;
 alias Recorder = RecordFactory.Recorder;
 
@@ -165,9 +166,10 @@ version (unittest)
 
     Options options;
     setDefaultOption(options);
-    auto logger_tid = spawn(&loggerTask, options);
+
+    auto loggerService = Task!LoggerTask(options.logger.task_name, options);
     scope (exit) {
-        logger_tid.send(Control.STOP);
+        loggerService.control(Control.STOP);
         assert(receiveOnly!Control is Control.END);
     }
 

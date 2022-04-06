@@ -8,7 +8,7 @@ import std.array;
 import std.file;
 import std.conv;
 
-import tagion.basic.Basic : Control, Buffer;
+import tagion.basic.Basic : Control, Buffer, TrustedConcurrency;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.dart.Recorder;
@@ -23,6 +23,8 @@ import tagion.services.LoggerService;
 import tagion.logger.Logger;
 import tagion.communication.HiRPC;
 import tagion.TaskWrapper : Task;
+
+mixin TrustedConcurrency;
 
 enum main_task = "recorderchain";
 
@@ -39,9 +41,9 @@ int main(string[] args) {
     Options options;
     setDefaultOption(options);
 
-    auto logger_tid = spawn(&loggerTask, options);
+    auto loggerService = Task!LoggerTask(options.logger.task_name, options);
     scope (exit) {
-        logger_tid.send(Control.STOP);
+        loggerService.control(Control.STOP);
         receiveOnly!Control;
     }
 
