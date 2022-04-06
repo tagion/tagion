@@ -13,11 +13,13 @@ export ANDROID_CPP=$(ANDROID_TOOLCHAIN)/clang++
 export ANDROID_CROSS_CC=$(ANDROID_TOOLCHAIN)/$(TRIPPLE)
 
 export ANDROID_SYSROOT=${abspath $(ANDROID_TOOLCHAIN)/../sysroot}
+export ANDROID_LIBPATH=${abspath $(ANDROID_TOOLCHAIN)/../lib}
 
 export ANDROID_CLANG_VER?=${shell ${ANDROID_CC} --version | $(DTUB)/clang_version.pl}
 
 export ANDROID_CMAKE =$(ANDROID_NDK)/build/cmake/android.toolchain.cmake
 
+#export ANDROID_LIBPATH =$(/lib64/clang/12.0.8/lib/linux/aarch64
 
 #
 # Android link flags
@@ -84,6 +86,7 @@ env-android:
 	${call log.kvp, ANDROID_CC, $(ANDROID_CC)}
 	${call log.kvp, ANDROID_CPP, $(ANDROID_CPP)}
 	${call log.kvp, ANDROID_SYSROOT, $(ANDROID_SYSROOT)}
+	${call log.kvp, ANDROID_LIBPATH, $(ANDROID_LIBPATH)}
 	${call log.kvp, ANDROID_CLANG_VER, $(ANDROID_CLANG_VER)}
 	${call log.env, ANDROID_CMAKE, $(ANDROID_CMAKE)}
 	${call log.env, ANDROID_LDFLAGS, $(ANDROID_LDFLAGS)}

@@ -56,6 +56,13 @@ WRAPS+=secp256k1
 WRAPS+=druntime
 
 ANDROID_LDFLAGS+=-m aarch64linux
+ANDROID_LDFLAGS+=-L$(ANDROID_ROOT)/lib64/clang/$(ANDROID_CLANG_VER)/lib/linux/aarch64
+ANDROID_LDFLAGS+=-L$(ANDROID_LIBPATH)/gcc/aarch64-linux-android/4.9.x
+ANDROID_LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib/aarch64-linux-android/30
+ANDROID_LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib/aarch64-linux-android
+ANDROID_LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib
+ANDROID_LDFLAGS+=$(ANDROID_ROOT)/lib64/clang/$(ANDROID_CLANG_VER)/lib/linux/libclang_rt.builtins-aarch64-android.a
+#target-ANDROID_LDFLAGS+=-soname $(LIBRARY)
 
 else
 ${error The none betterC version is not implemented yet. Set BETTERC=1}
@@ -94,14 +101,18 @@ target-android: CPP=$(ANDROID_CPP)
 #target-android: LDFLAGS=$(ANDROID_LDFLAGS)
 
 #target-android: DFLAGS+=--flto=thin
+target-android: DFLAGS+=-I$(LDC_BUILD_RUNTIME_TMP)/ldc-src/runtime/phobos/
+target-android: DFLAGS+=-I$(LDC_BUILD_RUNTIME_TMP)/ldc-src/runtime/druntime/src/
 target-android: DFLAGS+=--Oz
 target-android: DFLAGS+=--shared
 #target-android: DFLAGS+=--singleobj
 target-android: DFLAGS+=--defaultlib=libdruntime-ldc.a,libphobos2-ldc.a
 #target-android: DFLAGS+=-I/home/carsten/work/tagion/src/lib-basic/ -I/home/carsten/work/tagion/src/lib-crypto/
 target-android: DFLAGS+=-mtriple=aarch64-linux-android
-target-android: DFLAGS+=-Xcc=--sysroot=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/
+target-android: DFLAGS+=-Xcc=--sysroot=$(ANDROID_SYSROOT)
+#/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/
 target-android: DFLAGS+=--betterC
+
 # target-android: DFLAGS+=${shell find build/aarch64-linux-android/tmp/secp256k1/ -name "*.o"}
 # target-android: DFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30/crtbegin_so.o
 # target-android: DFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30/crtend_so.o
@@ -115,14 +126,15 @@ target-android: DFLAGS+=--betterC
 
 target-android: LDFLAGS+=$(ANDROID_LDFLAGS)
 
-target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30/crtbegin_so.o
-target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/aarch64
-target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../lib/gcc/aarch64-linux-android/4.9.x
-target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30
-target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android
-target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib
+#target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/aarch64
+#target-android: LDFLAGS+=-L/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../lib/gcc/aarch64-linux-android/4.9.x
+# target-android: LDFLAGS+=-L$(ANDROID_LIBPATH)/gcc/aarch64-linux-android/4.9.x
+# target-android: LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib/aarch64-linux-android/30
+# target-android: LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib/aarch64-linux-android
+# target-android: LDFLAGS+=-L$(ANDROID_SYSROOT)/usr/lib
 target-android: LDFLAGS+=-soname $(LIBRARY)
-target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a
+#target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a
+#target-android: LDFLAGS+=$(ANDROID_ROOT)/lib64/clang/$(ANDROID_CLANG_VER)/lib/linux/libclang_rt.builtins-aarch64-android.a
 target-android: LDFLAGS+=-l:libunwind.a
 target-android: LDFLAGS+=-ldl
 target-android: LDFLAGS+=-lc
@@ -130,7 +142,8 @@ target-android: LDFLAGS+=-lm
 # target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/12.0.8/lib/linux/libclang_rt.builtins-aarch64-android.a
 # target-android: LDFLAGS+=-l:libunwind.a
 # target-android: LDFLAGS+=-ldl
-target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30/crtend_so.o
+#target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/lib/aarch64-linux-android/30/crtend_so.o
+target-android: LDFLAGS+=$(ANDROID_SYSROOT)/usr/lib/aarch64-linux-android/30/crtend_so.o
 #target-android: LDFLAGS+=${shell find build/aarch64-linux-android/tmp/secp256k1/ -name "*.o"}
 #$(LIBSECP256K1_STATIC)
 #target-android: LDFLAGS+=$(LIBSECP256K1)
