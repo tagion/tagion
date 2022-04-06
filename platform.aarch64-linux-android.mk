@@ -43,7 +43,7 @@ MODE:=-lib-betterc
 # Switch in the betterC flags if has been defined
 #
 
-ANDROID_DFLAGS+=$(DBETTERC)
+#ANDROID_DFLAGS+=$(DBETTERC)
 #
 # Swicth off the phobos and druntime
 #
@@ -107,7 +107,7 @@ target-android: DFLAGS+=--defaultlib=libdruntime-ldc.a,libphobos2-ldc.a
 target-android: DFLAGS+=-mtriple=$(PLATFORM)
 target-android: DFLAGS+=-Xcc=--sysroot=$(ANDROID_SYSROOT)
 #/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/
-target-android: DFLAGS+=--betterC
+target-android: DFLAGS+=$(DBETTERC)
 
 target-android: LDFLAGS+=$(ANDROID_LDFLAGS)
 target-android: LDFLAGS+=-soname $(LIBRARY)
