@@ -10,7 +10,6 @@ module tagion.services.LoggerService;
 
 import std.stdio;
 import std.format;
-import std.concurrency;
 import core.thread;
 import core.sys.posix.pthread;
 import std.string;
@@ -59,127 +58,137 @@ unittest {
     assert(!LogFilter(some_task_name, LoggerType.ERROR).match(another_task_name, LoggerType.ERROR));
 }
 
+import tagion.basic.Basic : TrustedConcurrency;
+mixin TrustedConcurrency;
+
+import tagion.TaskWrapper;
+
 /**
  * Main function of LoggerService
  * @param optiions
  */
-void loggerTask(immutable(Options) opts) {
-    try {
-        scope (success) {
-            ownerTid.prioritySend(Control.END);
-        }
+@safe struct LoggerTask {
+    mixin TaskBasic;
 
-        setOptions(opts);
+    LogFilter[] commonLogFilters;
+    pragma(msg, "fixme(ib) Spawn LogSubscriptionService from LoggerService");
+    Tid logSubscriptionTid;
 
-        scope (success) {
-            ownerTid.prioritySend(Control.END);
-            if (abort) {
-                log.silent = true;
+    Options options;
+
+    File file;
+    bool logging;
+
+    @nogc bool matchAnyFilter(string task_name, LoggerType type) const nothrow pure {
+        foreach (filter; commonLogFilters) {
+            if (filter.match(task_name, type)) {
+                return true;
             }
         }
+        return false;
+        // return commonLogFilters.any({lambda...})
+    }
 
-        @trusted void task_register() {
-            writeln("REGISTER ", opts.logger.task_name);
-            assert(register(opts.logger.task_name, thisTid));
-        }
-
-        LogFilter[] log_filters;
-        @nogc bool matchAnyFilter(string task_name, LoggerType log_level) const nothrow pure {
-            foreach (filter; log_filters) {
-                if (filter.match(task_name, log_level)) {
-                    return true;
+    @TaskMethod void receiveLogs(LoggerType type, string task_name, string log_msg) {
+        void printToConsole(string s) @trusted {
+            if (options.logger.to_console) {
+                writeln(s);
+                if (options.logger.flush) {
+                    stdout.flush();
                 }
             }
-            return false;
-            // return log_filters.any({lambda...})
         }
 
-        task_register;
-        log.set_logger_task(opts.logger.task_name);
+        void sendToLogSubscriptionService(LoggerType type, string task_name, string log_output) {
+            if (logSubscriptionTid is Tid.init) {
+                logSubscriptionTid = locate(options.logSubscription.task_name);
+            }
 
-        pragma(msg, "fixme(ib) Spawn LogSubscriptionService from LoggerService");
-        Tid log_subscription_tid;
+            if (logSubscriptionTid !is Tid.init) {
+                logSubscriptionTid.send(task_name, type, log_output);
+            }
+        }
+
+        void printStdError(LoggerType type, string task_name, string log_msg) @trusted {
+            if (type & LoggerType.STDERR) {
+                stderr.writefln("%s:%s: %s", task_name, type, log_msg);
+            }
+        }
+
+        string output;
+        if (type is LoggerType.INFO) {
+            output = format("%s: %s", task_name, log_msg);
+        }
+        else {
+            output = format("%s:%s: %s", task_name, type, log_msg);
+        }
+
+        if (logging) {
+            file.writeln(output);
+        }
+        printToConsole(output);
+        if (matchAnyFilter(task_name, type)) {
+            sendToLogSubscriptionService(type, task_name, output);
+        }
+
+        printStdError(type, task_name, log_msg);
+    }
+
+    @TaskMethod void receiveFilters(immutable(LogFilter[]) filters) {
+        pragma(msg, "fixme(cbr): This accumulate alot for trach memory on the heap");
+        commonLogFilters = filters.dup;
+    }
+
+    void onSTOP() {
+        stop = true;
+        file.writefln("%s stopped ", options.logger.task_name);
+    }
+
+    void onLIVE() {
+        writeln("LogSubscriptionService is working...");
+    }
+
+    void onEND() {
+        writeln("LogSubscriptionService was stopped");
+    }
+
+    void opCall(immutable(Options) options) {
+        this.options = options;
+        setOptions(options);
+
+        void taskRegister() {
+            writeln("REGISTER ", options.logger.task_name);
+            
+            // TODO: here could possibly be problems!
+            log.register(options.logger.task_name);
+
+            //assert(register(options.logger.task_name, thisTid));
+        }
+
+        taskRegister;
+        log.set_logger_task(options.logger.task_name);
 
         pragma(msg, "fixme(ib) Pass mask to Logger to not pass not necessary data");
 
-        File file;
-        const logging = opts.logger.file_name.length != 0;
+        logSubscriptionTid = spawn(&logSubscriptionServiceTask, options);
+        scope(exit) {
+            logSubscriptionTid.send(Control.STOP);
+            receiveOnly!Control;
+        }     
+
+        logging = options.logger.file_name.length != 0;
         if (logging) {
-            file.open(opts.logger.file_name, "w");
-            file.writefln("Logger task: %s", opts.logger.task_name);
+            file.open(options.logger.file_name, "w");
+            file.writefln("Logger task: %s", options.logger.task_name);
             file.flush;
         }
 
-        void sendToLogSubscriptionService(string task_name, LoggerType log_level, string log_output) {
-            if (log_subscription_tid is Tid.init) {
-                log_subscription_tid = locate(opts.logSubscription.task_name);
-            }
-
-            if (log_subscription_tid !is Tid.init) {
-                log_subscription_tid.send(task_name, log_level, log_output);
-            }
-        }
-
-        bool stop;
-
-        void controller(Control ctrl) @safe {
-            with (Control) switch (ctrl) {
-                case STOP:
-                    stop = true;
-                    file.writefln("%s Stopped ", opts.logger.task_name);
-                    break;
-                    // TODO: if spawn logger from here handle END    
-                    //case END:
-                default:
-                    file.writefln("%s: Unsupported control %s", opts.logger.task_name, ctrl);
-                }
-        }
-
-        @trusted void receiver(LoggerType type, string label, string text) {
-            void printToConsole(string s) {
-                if (opts.logger.to_console) {
-                    writeln(s);
-                    if (opts.logger.flush) {
-                        stdout.flush();
-                    }
-                }
-            }
-
-            string output;
-            if (type is LoggerType.INFO) {
-                output = format("%s: %s", label, text);
-            }
-            else {
-                output = format("%s:%s: %s", label, type, text);
-            }
-
-            if (logging) {
-                file.writeln(output);
-            }
-            printToConsole(output);
-            if (matchAnyFilter(label, type)) {
-                sendToLogSubscriptionService(label, type, output);
-            }
-
-            if (type & LoggerType.STDERR) {
-                stderr.writefln("%s:%s: %s", label, type, text);
-            }
-        }
-
-        void filterReceiver(LogFilter[] log_info) {
-            pragma(msg, "fixme(cbr): This accumulate alot for trach memory on the heap");
-            log_filters = log_info;
-        }
-
         ownerTid.send(Control.LIVE);
-        while (!stop && !abort) {
-            receive(&controller, &receiver, &filterReceiver);
-            if (opts.logger.flush && logging) {
+        while (!stop) {
+            receive(&control, &receiveLogs, &receiveFilters);
+            if (options.logger.flush && logging) {
                 file.flush();
             }
         }
-    }
-    catch (Throwable t) {
-        fatal(t);
     }
 }

@@ -606,4 +606,8 @@ template mangleFunc(alias T) if (isCallable!T) {
     static Tid spawn(F, Args...)(F fn, Args args) @trusted {
         return concurrency.spawn(fn, args);
     }
+
+    static Tid locate(string name) @trusted {
+        return concurrency.locate(name);
+    }
 }
