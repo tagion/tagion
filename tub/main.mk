@@ -105,6 +105,8 @@ include $(DTUB)/compile.mk
 -include $(REPOROOT)/config.*.mk
 -include $(REPOROOT)/config.mk
 
+include $(DTUB)/config/ldc-build-runtime.mk
+
 
 #
 # Enable cleaning
