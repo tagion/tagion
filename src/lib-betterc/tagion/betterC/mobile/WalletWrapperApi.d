@@ -15,6 +15,7 @@ import hash = tagion.betterC.wallet.hash;
 import tagion.betterC.utils.StringHelper;
 import tagion.betterC.utils.Memory;
 import tagion.betterC.wallet.WalletRecords;
+import tagion.betterC.communication.HiRPC;
 
 import tagion.betterC.funnel.TagionCurrency;
 // import tagion.script.StandardRecords;
@@ -154,7 +155,7 @@ string[] parse_string(const char* str, const uint len)
             Invoice[1] orders;
             if (secure_wallet.payment(orders, signed_contract))
             {
-                // HiRPC hirpc;
+                HiRPC hirpc;
         //         const sender = hirpc.action("transaction", signed_contract.toHiBON);
         //         immutable data = Document(sender.toHiBON);
         //         const contract_doc_id = recyclerDoc.create(data);

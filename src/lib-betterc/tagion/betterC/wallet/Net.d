@@ -154,9 +154,11 @@ struct AES {
     }
 
 @safe struct SecureNet {
-    import tagion.basic.Basic : Pubkey;
+    import tagion.basic.Basic : Pubkey, Signature;
 
     private Pubkey _pubkey;
+    // private SignDelegate _crypt;
+    // immutable(ubyte[]) delegate(const(ubyte[])) sign_dg;
 
     enum DER_SIGNATURE_SIZE = 72;
     enum SIGNATURE_SIZE = 64;
@@ -216,6 +218,18 @@ struct AES {
         // immutable(ubyte[]) result = sig.data[0 .. SIGNATURE_SIZE].idup;
         return cast(immutable)result;
     }
+
+    // Signature sign(const(ubyte[]) message) const
+    // in {
+    //     assert(message.length == 32);
+    // }
+    // do {
+    //     // import std.traits;
+
+    //     // assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
+
+    //     // return Signature(sign_dg(message));
+    // }
 
     @trusted
     void privKeyTweakMul(const(ubyte[]) privkey, const(ubyte[]) tweak, ref ubyte[] tweak_privkey) const
@@ -369,7 +383,6 @@ struct AES {
         assert(secKeyVerify(privkey));
     }
     do {
-        import std.digest.sha : SHA256;
         import std.string : representation;
 
         _pubkey = computePubkey(privkey);
@@ -423,6 +436,55 @@ struct AES {
             AES.decrypt(aes_key.serialize, aes_iv.serialize, encrypted_privkey, privkey);
             dg(privkey);
         }
+        // struct SignWrapper {
+            @trusted
+            immutable(ubyte[]) raw_sign(const(ubyte[]) data, const(ubyte[]) sec) const
+            in {
+                assert(data.length == 32);
+                assert(sec.length <= 32);
+            }
+            do {
+                ubyte[] result;
+                const msgdata = data.ptr;
+                const secKey = sec.ptr;
+                secp256k1_ecdsa_signature sig_array;
+                secp256k1_ecdsa_signature* sig = &sig_array;
+
+                // int ret = secp256k1_ecdsa_sign(_ctx, sig, msgdata, secKey, null, null);
+                // check(ret == 1, ConsensusFailCode.SECURITY_SIGN_FAULT);
+                // if (_format_sign is Format.DER) {
+                //     ubyte[DER_SIGNATURE_SIZE] outputSer_array;
+                //     ubyte* outputSer = outputSer_array.ptr;
+                //     size_t outputLen = outputSer_array.length;
+                //     ret = secp256k1_ecdsa_signature_serialize_der(_ctx, outputSer, &outputLen, sig);
+                //     if (ret) {
+                //         immutable(ubyte[]) result = outputSer_array[0 .. outputLen].idup;
+                //         return result;
+                //     }
+                // }
+                // if (_format_sign is Format.COMPACT) {
+                //     ubyte[SIGNATURE_SIZE] outputSer_array;
+                //     ubyte* outputSer = outputSer_array.ptr;
+                //     //            size_t outputLen = outputSer_array.length;
+                //     ret = secp256k1_ecdsa_signature_serialize_compact(_ctx, outputSer, sig);
+                //     if (ret) {
+                //         immutable(ubyte[]) result = outputSer_array.idup;
+                //         return result;
+                //     }
+                // }
+                // //        writefln("Format=%s", _format_sign);
+                // immutable(ubyte[]) result = sig.data[0 .. SIGNATURE_SIZE].idup;
+                return cast(immutable)result;
+            }
+
+            @trusted immutable(ubyte[]) sign(const(ubyte[]) message) const {
+                immutable(ubyte)[] result;
+                do_secret_stuff((const(ubyte[]) privkey) { result = raw_sign(message, privkey); });
+                return result;
+            }
+        // }
+        // SignWrapper sign_wrapper;
+        // sign_dg = &sign_wrapper.sign;
 
         void tweakMul(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) {
             do_secret_stuff((const(ubyte[]) privkey) @safe { privKeyTweakMul(privkey, tweak_code, tweak_privkey); });
@@ -439,7 +501,6 @@ struct AES {
             });
             return result.serialize;
         }
-
     }
 
     @trusted immutable(ubyte[]) HMAC(scope const(ubyte[]) data) const {
@@ -475,6 +536,47 @@ struct AES {
     //     // tweak_arr[0..$] = tweak_buf[0..$];
     //     // return derivePubkey(tweak_arr);
         return result;
+    }
+
+    @trusted
+    bool verify(const(ubyte[]) data, const(ubyte[]) signature, const(ubyte[]) pub) const
+    in {
+        assert(data.length == 32);
+        assert(signature.length <= 520);
+        assert(pub.length <= 520);
+    }
+    do {
+        int ret;
+        const sigdata = signature.ptr;
+        auto siglen = signature.length;
+        const pubdata = pub.ptr;
+        const msgdata = data.ptr;
+
+        secp256k1_ecdsa_signature sig;
+        secp256k1_pubkey pubkey;
+        if (_format_verify & Format.DER) {
+            ret = secp256k1_ecdsa_signature_parse_der(_ctx, &sig, sigdata, siglen);
+        }
+        if (ret) {
+            goto PARSED;
+        }
+        if (_format_verify & Format.COMPACT) {
+            ret = secp256k1_ecdsa_signature_parse_compact(_ctx, &sig, sigdata);
+        }
+        if (ret) {
+            goto PARSED;
+        }
+        if ((_format_verify & Format.RAW) || (_format_verify == 0)) {
+            import core.stdc.string : memcpy;
+
+            memcpy(&(sig.data), sigdata, siglen);
+        }
+    PARSED:
+        auto publen = pub.length;
+        ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey, pubdata, publen);
+
+        ret = secp256k1_ecdsa_verify(_ctx, &sig, msgdata, &pubkey);
+        return ret == 1;
     }
 
 }
