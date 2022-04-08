@@ -4,9 +4,10 @@ import std.stdio;
 import core.thread;
 import std.getopt;
 import std.format;
+import std.concurrency;
 import std.array : join;
 
-import tagion.basic.Basic : Control, TrustedConcurrency;
+import tagion.basic.Basic : Control;
 import tagion.logger.Logger;
 import tagion.services.Options;
 import tagion.options.CommonOptions : setCommonOptions;
@@ -18,9 +19,6 @@ import tagion.services.TagionFactory;
 import tagion.GlobalSignals;
 import tagion.network.SSLOptions;
 import tagion.gossip.EmulatorGossipNet;
-import tagion.TaskWrapper;
-
-mixin TrustedConcurrency;
 
 //import tagion.Keywords: NetworkMode, ValidNetwrokModes;
 pragma(msg, "Fixme(cbr): Rename the tagion Node to Prime");
@@ -150,10 +148,11 @@ int main(string[] args) {
 
     create_ssl(service_options.transaction.service.openssl);
 
-    auto loggerService = Task!LoggerTask(service_options.logger.task_name, service_options);
+    auto logger_tid = spawn(&loggerTask, service_options);
+
     scope (exit) {
-        loggerService.control(Control.STOP);
-        receiveOnly!Control;
+        logger_tid.send(Control.STOP);
+        auto respond_control = receiveOnly!Control;
     }
 
     import std.stdio : stderr;
