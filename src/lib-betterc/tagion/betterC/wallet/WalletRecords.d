@@ -3,7 +3,7 @@ module tagion.betterC.wallet.WalletRecords;
 import tagion.betterC.hibon.HiBON;
 import tagion.betterC.hibon.Document : Document;
 import tagion.betterC.wallet.KeyRecover : KeyRecover;
-import tagion.basic.Basic : Buffer, Pubkey, Signature;
+import tagion.basic.Basic : Buffer, Pubkey, Signature, basename;
 import tagion.betterC.utils.Memory;
 import tagion.betterC.utils.BinBuffer;
 
@@ -18,6 +18,25 @@ struct RecordType {
 struct Label {
     string name; /// Name of the HiBON member
     bool optional; /// This flag is set to true if this paramer is optional
+}
+
+enum VOID = "*";
+
+template GetLabel(alias member) {
+    import std.traits : getUDAs, hasUDA;
+
+    static if (hasUDA!(member, Label)) {
+        enum label = getUDAs!(member, Label)[0];
+        static if (label.name == VOID) {
+            enum GetLabel = Label(basename!(member), label.optional);
+        }
+        else {
+            enum GetLabel = label;
+        }
+    }
+    else {
+        enum GetLabel = Label(basename!(member));
+    }
 }
 
 @trusted {
@@ -44,7 +63,7 @@ struct Label {
                 tmp_arr[i] = question;
             }
             // GetLabel
-            hibon["Q"] = tmp_arr;
+            hibon["$Q"] = tmp_arr;
             return cast(inout) hibon;
         }
 
