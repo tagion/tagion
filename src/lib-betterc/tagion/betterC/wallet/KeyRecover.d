@@ -7,7 +7,7 @@ import tagion.betterC.wallet.Net;
 
 import tagion.betterC.utils.Memory;
 
-// // use better C doc, hibon, hibon record 
+// // use better C doc, hibon, hibon record
 import tagion.betterC.hibon.HiBON : HiBONT;
 import tagion.betterC.hibon.Document : Document;
 
@@ -210,7 +210,7 @@ static immutable(string[]) standard_questions;
 
 unittest {
     import tagion.crypto.SecureNet : StdHashNet;
-    import std.array : join;
+    import std.array : join, array;
 
     auto selected_questions = indexed(standard_questions, [0, 2, 3, 7, 8]).array.idup;
     //pragma(msg, typeof(selected_questions));
