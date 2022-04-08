@@ -1,3 +1,3 @@
-Tagion wrapper for `secp256k1`.
+# Secp256k1 wrapper
 
-*Documentation is in progress...*
+> 🚧 This document is still in development.
