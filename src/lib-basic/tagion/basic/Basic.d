@@ -578,3 +578,36 @@ template mangleFunc(alias T) if (isCallable!T) {
 
     alias mangleFunc = mangle!(FunctionTypeOf!(T));
 }
+
+@safe mixin template TrustedConcurrency() {
+    import concurrency = std.concurrency;
+    alias Tid = concurrency.Tid;
+
+    static void send(Args...)(Tid tid, Args args) @trusted {
+        concurrency.send(tid, args);
+    }
+
+    static void prioritySend(Args...)(Tid tid, Args args) @trusted {
+        concurrency.prioritySend(tid, args);
+    }
+
+    static void receive(Args...)(Args args) @trusted {
+        concurrency.receive(args);
+    }
+
+    static auto receiveOnly(T...)() @trusted {
+        return concurrency.receiveOnly!T;
+    }
+
+    static Tid ownerTid() @trusted {
+        return concurrency.ownerTid;
+    }
+
+    static Tid spawn(F, Args...)(F fn, Args args) @trusted {
+        return concurrency.spawn(fn, args);
+    }
+
+    static Tid locate(string name) @trusted {
+        return concurrency.locate(name);
+    }
+}
