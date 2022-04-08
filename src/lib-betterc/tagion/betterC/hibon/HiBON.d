@@ -195,13 +195,20 @@ struct HiBONT {
         }
 
         int opCmp(const(char[]) key) const pure {
-            if (this._key == key) {
-                return 0;
+            int res = 1;
+            if (this._key.length == key.length) {
+                res = 0;
+                foreach (i, elem; key)
+                {
+                    if (this._key[i] != elem) {
+                        res = 1;
+                    }
+                }
             }
             else if (this._key < key) {
-                return -1;
+                res = -1;
             }
-            return 1;
+            return res;
         }
 
         bool opEquals(T)(T b) const pure {
