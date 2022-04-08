@@ -476,12 +476,12 @@ static setDefaultOption(ref Options options) {
         prefix = "logsubscription";
         task_name = prefix;
         net_task_name = "logsubscription_net";
-        timeout = 10000;
+        timeout = 250;
         with (service) {
             prefix = "logsubscriptionservice";
             task_name = prefix;
             response_task_name = "respose";
-            address = "0.0.0.0";
+            address = "0.0.0.1";
             port = 10_700;
             select_timeout = 300;
             client_timeout = 4000; // msecs
@@ -499,6 +499,7 @@ static setDefaultOption(ref Options options) {
                 days = 365;
                 key_size = 4096;
             }
+            task_name = "logsubscription.service";
         }
         with (host) {
             timeout = 3000;
@@ -525,7 +526,7 @@ static setDefaultOption(ref Options options) {
     // Recorder
     with (options.recorder) {
         task_name = "recorder";
-        folder_path = "tmp/epoch_blocks/";
+        folder_path = "/tmp/records/";
     }
     // Discovery
     with (options.discovery) {
