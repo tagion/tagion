@@ -1,1 +1,3 @@
-Initial repo
+# Network library
+
+> 🚧 This document is still in development.
