@@ -1,23 +1,7 @@
-# tagion_hibon
-Hash invariant Binary Object Notation
+# HiBON library
 
-This module is used as a data format in the Tagion Network
+> 🚧 This document is still in development.
 
-This module is compile as.
+**HiBON** stands for **H**ash **i**nvariant **B**inary **O**bject **N**otation.
 
-```bash
-make lib
-```
-
-To run the unittest:
-
-```bash
-make test
-```
-
-
-
-Which generated the *bin/tagion_hibon.a* archive.
-
-The source code is distributed under the [LICENSE.md](LICENSE.md)
-
+HiBON is a data format for the Tagion Network. It is based on BSON, with some data formats added, and strict rules on key sorting, resulting in hash-invariance (same data always results in the same hash).

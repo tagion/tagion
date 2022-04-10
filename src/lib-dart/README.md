@@ -1,1 +1,3 @@
-Initial repo
+# DART library
+
+> 🚧 This document is still in development.

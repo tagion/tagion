@@ -1,2 +1,3 @@
-# bin-logger
-Logger test program
+# Tagionsubscription CLI
+
+> 🚧 This document is still in development.
