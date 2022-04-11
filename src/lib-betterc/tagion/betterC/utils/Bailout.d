@@ -26,6 +26,18 @@ protected __gshared const(char)[] _file;
  * @param args - arguments which can be set for every message
  * @return buffer based on input data and arguments
  */
+
+bool isEqual(immutable (char)[] input_arr, string word, size_t start_pos) {
+    bool res = true;
+    foreach (i, key; word)
+    {
+        if (input_arr[start_pos + i] != key) {
+            res = false;
+            break;
+        }
+    }
+    return res;
+}
 const(char[]) message(Args...)(string text, Args args) {
     auto temp = Text(_message_buffer.length);
     enum {
@@ -37,7 +49,7 @@ const(char[]) message(Args...)(string text, Args args) {
         {
             const start = pos;
             while (pos + NUM.length < text.length) {
-                if ((text[pos .. pos + NUM.length] == NUM || text[pos .. pos + TEXT.length] == TEXT)) {
+                if (isEqual(text, NUM, pos) || isEqual(text, TEXT, pos)) {
                     temp(text[start .. pos])(arg);
                     break;
                 }

@@ -442,10 +442,19 @@ struct Document {
     const(Element) opBinaryRight(string op)(in string key) const if (op == "in") {
         foreach (element; this[]) {
             Text work_key;
-            if (element.key(work_key) == key) {
-                return element;
+            if (element.key(work_key).length == key.length) {
+                bool isEqual = true;
+                for (int i = 0; i < key.length; i++) {
+                    if (element.key(work_key)[i] != key[i]) {
+                        isEqual = false;
+                        break;
+                    }
+                }
+                if (isEqual) {
+                    return element;
+                }
             }
-            else if (element.key(work_key) > key) {
+             if (element.key(work_key) > key) {
                 break;
             }
         }
