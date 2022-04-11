@@ -122,3 +122,10 @@ run: tagionwave
 	cd $(DBIN);
 	rm -fR data; mkdir data;
 	script -c "./tagionwave $(DRTFALGS) -N 7 -t 200" tagionwave_script.log
+
+mode1: tagionwave
+	cd $(DBIN)
+	rm -f tagionrun.sh tagionwave.json
+	ln -s ../../../tagionwave.json
+	ln -s ../../../tagionrun.sh
+	./tagionrun.sh
