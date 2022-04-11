@@ -266,10 +266,10 @@ class ConnectionPoolBridge {
 
 }
 
-alias ActiveNodeAddressBook = immutable(AddressBook!Pubkey);
+alias ActiveNodeAddressBook = immutable(AddressBookT!Pubkey);
 
 @safe
-immutable class AddressBook(TKey) {
+immutable class AddressBookT(TKey) {
     this(const(NodeAddress[TKey]) addrs) @trusted {
         this.data = cast(immutable) addrs.dup;
     }
