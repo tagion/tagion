@@ -208,7 +208,7 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
                     }
                 case DiscoveryRequestCommand.RequestTable: {
                         initialize();
-                        auto address_book = new ActiveNodeAddressBook(node_addresses);
+                        auto address_book = new ActiveNodeAddressBookPub(node_addresses);
                         ownerTid.send(address_book);
                         break;
                     }

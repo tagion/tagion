@@ -35,10 +35,12 @@ import tagion.hibon.HiBONJSON;
 import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
 import tagion.crypto.SecureNet;
 
-void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
-        string task_name, immutable(Options) opts) nothrow {
+void networkRecordDiscoveryService(
+    Pubkey pubkey,
+    shared p2plib.Node p2pnode,
+    string task_name,
+    immutable(Options) opts) nothrow {
     try {
-
         scope (exit) {
             log("exit");
             ownerTid.prioritySend(Control.END);
@@ -121,6 +123,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
 
             NetworkNameRecord getNetworkNameRecord(Buffer previous = null, uint index = 0) {
                 auto addresses_record = NetworkNameRecord();
+                pragma(msg, "fixme(cbr): NetworkNameRecord is HiBONRecord ctor should be used instead");
                 // addresses_record.time = Clock.currStdTime();
                 addresses_record.payload = toAddressTable(node_addresses);
                 addresses_record.name = net.calcHash(cast(const(ubyte)[]) ADDR_TABLE);
@@ -206,7 +209,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
         }
 
         auto is_ready = false;
-        void receiveAddrBook(ActiveNodeAddressBook address_book) {
+        void receiveAddrBook(ActiveNodeAddressBookPub address_book) {
             log("updated addr book: %d", address_book.data.length);
             if (is_ready) {
                 log("updated addr book internal: %d", address_book.data.length);

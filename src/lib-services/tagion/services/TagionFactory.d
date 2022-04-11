@@ -26,7 +26,7 @@ import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
 
 import tagion.services.TagionService;
-import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
+import tagion.gossip.P2pGossipNet : ActiveNodeAddressBookPub;
 import tagion.services.MdnsDiscoveryService;
 
 //import tagion.Keywords : NetworkMode;

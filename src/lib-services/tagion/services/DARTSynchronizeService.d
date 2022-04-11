@@ -37,7 +37,7 @@ import tagion.communication.HandlerPool;
 
 //import tagion.services.MdnsDiscoveryService;
 import tagion.gossip.P2pGossipNet : NodeAddress,
-    ActiveNodeAddressBook, ConnectionPool;
+    ActiveNodeAddressBookPub, ConnectionPool;
 
 import tagion.basic.TagionExceptions;
 
@@ -294,7 +294,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     sendResult(response.toDoc.serialize);
                 }
             },
-                (ActiveNodeAddressBook update) {
+                (ActiveNodeAddressBookPub update) {
                 node_addrses = cast(NodeAddress[Pubkey]) update.data;
                 // log("node addresses %s", node_addrses);
             }, (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); }, // (immutable(Throwable) t) {

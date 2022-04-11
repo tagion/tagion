@@ -266,15 +266,44 @@ class ConnectionPoolBridge {
 
 }
 
-alias ActiveNodeAddressBook = immutable(AddressBookT!Pubkey);
+alias ActiveNodeAddressBookPub = immutable(AddressBook_deprecation);
 
 @safe
-immutable class AddressBookT(TKey) {
-    this(const(NodeAddress[TKey]) addrs) @trusted {
-        this.data = cast(immutable) addrs.dup;
+immutable class AddressBook_deprecation {
+    this(const(NodeAddress[Pubkey]) addrs) @trusted {
+        _addressbook.overwrite(addrs);
+//         this.data = cast(immutable) addrs.dup;
     }
 
-    immutable(NodeAddress[TKey]) data;
+//    immutable(NodeAddress[Pubkey]) data;
+
+    immutable(NodeAddress[Pubkey]) data() @trusted {
+        return cast(immutable)_addressbook._data;
+    }
+
+}
+
+@safe
+synchronized class AddressBook {
+    protected shared(NodeAddress[Pubkey]) addresses;
+
+    private shared(NodeAddress[Pubkey]) _data() {
+        return addresses;
+    }
+
+    private void overwrite(const(NodeAddress[Pubkey]) addrs) {
+        addresses=null;
+        foreach(pkey, addr; addrs) {
+            addresses[pkey] = addr;
+        }
+    }
+
+}
+
+protected static shared(AddressBook) _addressbook;
+
+shared static this() {
+    _addressbook=new shared(AddressBook);
 }
 
 @safe

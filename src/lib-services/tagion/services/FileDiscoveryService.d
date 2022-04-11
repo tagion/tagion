@@ -180,7 +180,7 @@ void fileDiscoveryService(
                         break;
                     case RequestTable:
                         initialize();
-                        auto address_book = new ActiveNodeAddressBook(
+                        auto address_book = new ActiveNodeAddressBookPub(
                             node_addresses);
                         ownerTid.send(address_book);
                         break;

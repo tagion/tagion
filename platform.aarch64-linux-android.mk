@@ -63,6 +63,8 @@ ANDROID_LDFLAGS+=-L$(ANDROID_ROOT)/lib64/clang/$(ANDROID_CLANG_VER)/lib/linux/aa
 #ANDROID_LDFLAGS+=-L$(ANDROID_USRLIB)
 ANDROID_LDFLAGS+=$(ANDROID_ROOT)/lib64/clang/$(ANDROID_CLANG_VER)/lib/linux/libclang_rt.builtins-aarch64-android.a
 ANDROID_LDFLAGS+=$(ANDROID_SYSROOT)/usr/lib/$(PLATFORM)/$(ANDROID_API)/crtend_so.o
+# ANDROID_LDFLAGS+=$(LDC_BUILD_RUNTIME_TMP)/lib/libdruntime-ldc-lto.a
+# ANDROID_LDFLAGS+=$(LDC_BUILD_RUNTIME_TMP)/lib/libphobos2-ldc-lto.a
 # ANDROID_LDFLAGS+=-l:libunwind.a
 # ANDROID_LDFLAGS+=-ldl
 # ANDROID_LDFLAGS+=-lc
@@ -74,7 +76,7 @@ ${error The none betterC version is not implemented yet. Set BETTERC=1}
 endif
 
 ANDROID_LDFLAGS+=--fix-cortex-a53-843419
-
+#ANDROID_LDFLAGS+=-flto=thin
 #
 # Link all into one library
 #

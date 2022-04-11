@@ -21,7 +21,10 @@ import tagion.basic.TagionExceptions : fatal;
 import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
 import tagion.gossip.P2pGossipNet;
 
-void mdnsDiscoveryService(shared p2plib.Node node, string task_name, immutable(Options) opts) nothrow { //TODO: for test
+void mdnsDiscoveryService(
+    shared p2plib.Node node,
+    string task_name,
+    immutable(Options) opts) nothrow { //TODO: for test
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
@@ -100,7 +103,7 @@ void mdnsDiscoveryService(shared p2plib.Node node, string task_name, immutable(O
                         break;
                     }
                 case DiscoveryRequestCommand.RequestTable: {
-                        auto address_book = new ActiveNodeAddressBook(node_addrses);
+                        auto address_book = new ActiveNodeAddressBookPub(node_addrses);
                         log("Requested: %s", address_book.data.length);
                         ownerTid.send(address_book);
                         break;
