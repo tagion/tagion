@@ -1,13 +1,11 @@
-# HiBON in BetterC
-This is an implementations of [HiBON](https://github.com/tagion/hibon_spec) in BetterC  should implement basic function found the D version found in  [tagion_hibon](https://github.com/tagion/tagion_hibon).
+# Tools in BetterC
 
+> 🚧 This document is still in development.
 
+Collection of libraries rewritten in BetterC, so it can be easily embedded into mobile apps and web apps (WebAssembly).
 
-Because this version does not rely on druntime the footprint is much smaller, this means the implementation fits better for embedded systems and web-applications.
+BetterC libraries do not rely on druntime, resulting in smaller footprint and simpler cross-compilation.
 
+---
 
-
-**This version is not up-to-date with the D version**
-
-
-
+> ❗️ This version is not up-to-date with the D version.

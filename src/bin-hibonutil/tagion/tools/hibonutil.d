@@ -1,4 +1,4 @@
-module tagion.hibonutil;
+module tagion.tools.hibonutil;
 
 import std.getopt;
 import std.stdio;
@@ -17,7 +17,7 @@ import tagion.hibon.HiBONJSON;
 //import tagion.script.StandardRecords;
 import std.array : join;
 
-// import tagion.revision; 
+// import tagion.revision;
 
 enum fileextensions {
     HIBON = ".hibon",
@@ -49,7 +49,7 @@ int main(string[] args) {
             "value|V", format("Bill value : default: %d", value), &value,
             "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty, //        "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
 
-            
+
 
     );
 
