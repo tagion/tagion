@@ -121,4 +121,4 @@ include $(DTUB)/help.mk
 run: tagionwave
 	cd $(DBIN);
 	rm -fR data; mkdir data;
-	script -c "./tagionwave $(DRTFALGS) -N 7" tagionwave_script.log
+	script -c "./tagionwave $(DRTFALGS) -N 7 -t 200" tagionwave_script.log
