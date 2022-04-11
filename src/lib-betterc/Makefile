@@ -19,10 +19,16 @@ wasm:
 	$(MAKE) -f $(BETTERCMK)
 
 android:
-	$(MAKE) -f $(ANDROIDMK) M64=yes
-	$(MAKE) -f $(ANDROIDMK)
+	# $(MAKE) -f $(ANDROIDMK) M64=yes
+	# $(MAKE) -f $(ANDROIDMK)
 	$(MAKE) -f $(ANDROIDMK) M64=yes SHARED=1
 	$(MAKE) -f $(ANDROIDMK) SHARED=1
+
+android-obj:
+	# $(MAKE) -f $(ANDROIDMK) M64=yes
+	# $(MAKE) -f $(ANDROIDMK)
+	$(MAKE) -f $(ANDROIDMK) M64=yes SHARED=1 obj
+	$(MAKE) -f $(ANDROIDMK) SHARED=1 obj
 
 android-test:
 	# $(MAKE) -f $(ANDROIDMK) M64=yes all-test

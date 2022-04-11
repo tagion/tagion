@@ -1,5 +1,5 @@
 
-#
+ #
 # Targets for all binaries
 #
 
@@ -20,7 +20,6 @@ clean-tagionwave:
 
 clean: clean-tagionwave
 
-BIN_TARGETS+=target-tagionwave
 #
 # HiBON utility
 #
@@ -38,8 +37,6 @@ clean-hibonutil:
 	$(RM) $(DBIN)/hibonutil
 
 clean: clean-hibonutil
-
-BIN_TARGETS+=target-hibonutil
 
 #
 # DART utility
@@ -77,8 +74,6 @@ clean-wasmutil:
 
 clean: clean-wasmutil
 
-BIN_TARGETS+=target-wasmutil
-
 
 #
 # WASM utility
@@ -98,7 +93,6 @@ clean-wallet:
 clean: clean-wallet
 
 
-BIN_TARGETS+=target-wallet
 
 
 #
@@ -161,4 +155,40 @@ clean-recorderchain:
 
 clean: clean-recorderchain
 
-BIN_TARGETS+=target-recorderchain
+hibonutil: prebuild-linux
+hibonutil: target-hibonutil
+bin: hibonutil
+
+dartutil: prebuild-linux
+dartutil: target-dartutil
+bin: dartutil
+
+wasnutil: prebuild-linux
+wasmutil: target-wasmutil
+bin: wasmutil
+
+wallet: prebuild-linux
+wallet: target-wallet
+bin: wallet
+
+
+tagionwave: |prebuild-linux
+tagionwave: target-tagionwave
+bin: tagionwave
+
+tagionlogservicetest: prebuild-linux
+tagionlogservicetest: target-tagionlogservicetest
+bin: tagionlogservicetest
+
+tagionsubscription: prebuild-linux
+tagionsubscription: target-tagionsubscription
+bin: tagionsubscription
+
+recorderchain: prebuild-linux
+recorderchain: target-recorderchain
+bin: recorderchain
+
+target-linux:
+	@echo DBUILD $(DBUILD)
+
+.PHONY: traget-linux

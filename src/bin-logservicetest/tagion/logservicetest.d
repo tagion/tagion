@@ -1,5 +1,31 @@
 module tagion.logservicetest;
 
+import std.path;
+import std.getopt;
+import std.stdio;
+import std.file : exists;
+import std.format;
+import std.conv : to;
+import std.array;
+import tagion.utils.Miscellaneous;
+import tagion.utils.Gene;
+import tagion.services.Options : Options, setDefaultOption;
+import tagion.services.LoggerService;
+import tagion.services.RecorderService;
+import tagion.basic.Basic : Control, Buffer, TrustedConcurrency;
+import tagion.dart.DART : DART;
+import tagion.dart.Recorder : RecordFactory;
+import tagion.communication.HiRPC;
+import tagion.hibon.HiBON;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
+import tagion.dart.BlockFile;
+import tagion.hibon.Document;
+import tagion.dart.DARTFile;
+import tagion.TaskWrapper;
+
+mixin TrustedConcurrency;
+
 pragma(msg, "Fixme(cbr): Rename the tagion Node to Prime");
 
 int loggerServiceTest(string[] args) {
@@ -7,24 +33,22 @@ int loggerServiceTest(string[] args) {
     import core.thread;
     import std.getopt;
     import std.format;
-    import std.concurrency;
     import std.array : join;
 
     import tagion.basic.Basic : Control;
     import tagion.logger.Logger;
     import tagion.services.Options : Options, setDefaultOption;
     import tagion.options.CommonOptions : setCommonOptions;
-    import tagion.services.LoggerService : loggerTask;
 
     enum main_task = "tagionlogservicetest";
 
     Options service_options;
     setDefaultOption(service_options);
 
-    auto logger_tid = spawn(&loggerTask, service_options);
+    auto loggerService = Task!LoggerTask(service_options.logger.task_name, service_options);
     scope (exit) {
-        logger_tid.send(Control.STOP);
-        auto respond_control = receiveOnly!Control;
+        loggerService.control(Control.STOP);
+        receiveOnly!Control;
     }
 
     import std.stdio : stderr;
@@ -44,7 +68,7 @@ int loggerServiceTest(string[] args) {
     int counter = 0;
     while (true) {
         if (counter == 5) {
-            logger_tid.send(Control.STOP);
+            loggerService.control(Control.STOP);
         }
 
         switch (counter % 3) {
@@ -65,33 +89,6 @@ int loggerServiceTest(string[] args) {
 
     return 0;
 }
-
-// // service that receives and saves recored
-// // bin that can revert 1 step db
-// // cli 2 func: revert, replay
-
-import std.path;
-import std.getopt;
-import std.stdio;
-import std.file : exists;
-import std.format;
-import std.conv : to;
-import std.array;
-import tagion.utils.Miscellaneous;
-import tagion.utils.Gene;
-import tagion.services.Options : Options, setDefaultOption;
-import tagion.services.LoggerService : loggerTask;
-import tagion.services.RecorderService;
-import tagion.basic.Basic : Control, Buffer, TrustedConcurrency;
-import tagion.dart.DART : DART;
-import tagion.dart.Recorder : RecordFactory;
-import tagion.communication.HiRPC;
-import tagion.hibon.HiBON;
-import tagion.crypto.SecureInterfaceNet : SecureNet;
-import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
-import tagion.dart.BlockFile;
-import tagion.hibon.Document;
-import tagion.dart.DARTFile;
 
 void addRecToDB(ref DART db, immutable(RecordFactory.Recorder) rec, HiRPC hirpc) {
     writeln("addRecToDB run...");
@@ -201,8 +198,6 @@ immutable(RecordFactory.Recorder) testNewRecorder() {
     return rec_im;
 }
 
-mixin TrustedConcurrency;
-
 int recorderCliTest(string[] args) {
 
     const auto EXEC_NAME = baseName(args[0]);
@@ -296,10 +291,10 @@ int recorderCliTest(string[] args) {
     writeln("7 step: ", db_.fingerprint.cutHex);
     // ===================================================================================
 
-    // auto logger_tid=spawn(&loggerTask, options);
-    // scope(exit){
-    //     logger_tid.send(Control.STOP);
-    //     auto respond_control = receiveOnly!Control;
+    // auto loggerService = Task!LoggerTask(options.logger.task_name, options);
+    // scope (exit) {
+    //     loggerService.control(Control.STOP);
+    //     receiveOnly!Control;
     // }
 
     auto cliArgsConfig = getopt(
@@ -408,7 +403,6 @@ int logSubscriptionTest(string[] args) {
     import std.stdio;
     import core.thread;
     import std.getopt;
-    import std.concurrency;
     import std.stdio;
     import std.format;
     import std.socket : InternetAddress, AddressFamily;
@@ -429,7 +423,6 @@ int logSubscriptionTest(string[] args) {
     import tagion.logger.Logger : LoggerType;
     import tagion.services.Options : Options, setDefaultOption;
     import tagion.options.CommonOptions : setCommonOptions;
-    import tagion.services.LoggerService : loggerTask, LogFilter;
     import tagion.utils.Miscellaneous;
     import tagion.utils.Gene;
 
@@ -479,11 +472,10 @@ int logSubscriptionTest(string[] args) {
     // Set the shared common options for all services
     setCommonOptions(service_options.common);
 
-    auto logger_tid = spawn(&loggerTask, service_options);
-
-    scope(exit){
-        logger_tid.send(Control.STOP);
-        auto respond_control = receiveOnly!Control;
+    auto loggerService = Task!LoggerTask(service_options.logger.task_name, service_options);
+    scope (exit) {
+        loggerService.control(Control.STOP);
+        receiveOnly!Control;
     }
 
     import std.stdio : stderr;
@@ -495,14 +487,6 @@ int logSubscriptionTest(string[] args) {
         stderr.writeln("ERROR:Logger %s", response);
     }
 
-    /// \link logSubscriptionServiceTask
-    auto log_subscription_tid = spawn(&logSubscriptionServiceTask, service_options);
-
-    scope(exit) {
-        log_subscription_tid.send(Control.STOP);
-        auto respond_control = receiveOnly!Control;
-    }
-    assert(receiveOnly!Control == Control.LIVE);
     ClientOprions options;
     options.setDefault();
     Thread.sleep(5.seconds);
