@@ -211,8 +211,10 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 p2pnode,
                 opts.discovery.task_name,
                 opts);
+
             auto ctrl = receiveOnly!Control;
             assert(ctrl is Control.LIVE);
+
             log("networkRecordDiscoveryService Started");
 
             receive((DiscoveryState state) { assert(state is DiscoveryState.READY); });

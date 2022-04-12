@@ -283,15 +283,15 @@ immutable class AddressBook_deprecation {
 
 }
 
-@safe
-struct AddressDirecory {
-    private NodeAddress[Pubkey] addresses;
-    mixin HiBONRecord;
-}
+// @safe
+// struct AddressDirecory {
+//     private NodeAddress[Pubkey] addresses;
+//     mixin HiBONRecord;
+// }
 
 @safe
 synchronized class AddressBook {
-    static struct AddressDirecory {
+    static struct AddressDirectory {
         NodeAddress[Pubkey] addresses;
         mixin HiBONRecord;
     }
@@ -310,13 +310,13 @@ synchronized class AddressBook {
 
     void load(string filename) {
         if (filename.exists) {
-            auto dir = filename.fread!AddressDirecory;
+            auto dir = filename.fread!AddressDirectory;
             overwrite(dir.addresses);
         }
     }
 
     void save(string filename) @trusted {
-        AddressDirecory dir;
+        AddressDirectory dir;
         dir.addresses=cast(NodeAddress[Pubkey])addresses;
         filename.fwrite(dir);
     }
