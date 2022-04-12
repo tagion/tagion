@@ -85,30 +85,34 @@ void mdnsDiscoveryService(
         //    try{
         do {
             pragma(msg, "fixme(alex); 500.msecs shoud be an option parameter");
-            receiveTimeout(500.msecs, (Response!(ControlCode.Control_PeerDiscovered) response) {
-                string address = cast(string) response.data;
+            receiveTimeout(
+                500.msecs,
+                (Response!(ControlCode.Control_PeerDiscovered) response) {
+                    string address = cast(string) response.data;
                 NodeAddress node_address = NodeAddress(NodeAddress.parseAddr(address), opts.dart, opts.port_base);
                 Pubkey pk = cast(immutable(ubyte)[])(node_address.id);
                 node_addrses[pk] = node_address;
                 // log("RECEIVED PEER %d", node_addrses.length);
-            }, (Control control) {
+            },
+                (Control control) {
                 if (control == Control.STOP) {
                     // log("stop");
                     stop = true;
                 }
-            }, (DiscoveryRequestCommand request) {
+            },
+                (DiscoveryRequestCommand request) {
                 final switch (request) {
-                case DiscoveryRequestCommand.BecomeOnline: {
+                case DiscoveryRequestCommand.BecomeOnline:
                         log("Becoming online..");
                         addOwnInfo();
                         break;
-                    }
-                case DiscoveryRequestCommand.RequestTable: {
+
+                case DiscoveryRequestCommand.RequestTable:
                         auto address_book = new ActiveNodeAddressBookPub(node_addrses);
                         log("Requested: %s", address_book.data.length);
                         ownerTid.send(address_book);
                         break;
-                    }
+
                 case DiscoveryRequestCommand.UpdateTable:
                 case DiscoveryRequestCommand.BecomeOffline: {
                         break;
