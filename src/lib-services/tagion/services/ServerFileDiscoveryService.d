@@ -35,8 +35,11 @@ enum DiscoveryState {
     OFFLINE = 3
 }
 
-void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
-        string taskName, immutable(Options) opts) nothrow { //TODO: for test
+void serverFileDiscoveryService(
+    Pubkey pubkey,
+    shared p2plib.Node node,
+    string taskName,
+    immutable(Options) opts) nothrow { //TODO: for test
     try {
         scope (exit) {
             log("exit");
@@ -124,20 +127,20 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
         }
 
         auto addr_changed_tid = spawn(&handleAddrChanedEvent, node);
-        receive((Control ctrl) { assert(ctrl == Control.LIVE); });
+        receive((Control ctrl) { assert(ctrl is Control.LIVE); });
 
         auto rechability_changed_tid = spawn(&handleRechabilityChanged, node);
-        receive((Control ctrl) { assert(ctrl == Control.LIVE); });
+        receive((Control ctrl) { assert(ctrl is Control.LIVE); });
         scope (exit) {
             {
                 addr_changed_tid.send(Control.STOP);
                 auto ctrl = receiveOnly!Control;
-                assert(ctrl == Control.END);
+                assert(ctrl is Control.END);
             }
             {
                 rechability_changed_tid.send(Control.STOP);
                 auto ctrl = receiveOnly!Control;
-                assert(ctrl == Control.END);
+                assert(ctrl is Control.END);
             }
         }
 
@@ -178,26 +181,30 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
 
         ownerTid.send(Control.LIVE);
 
-        do {
-            receiveTimeout(500.msecs, (immutable(Pubkey) key, Tid tid) {
-                import tagion.utils.Miscellaneous : toHexString, cutHex;
+        while(!stop) {
+            receiveTimeout(500.msecs,
+                (immutable(Pubkey) key, Tid tid) {
+                    import tagion.utils.Miscellaneous : toHexString, cutHex;
 
-                log("looking for key: %s", key.cutHex);
-                tid.send(node_addresses[key]);
-            }, (Control control) {
-                if (control == Control.STOP) {
-                    log("stop");
-                    stop = true;
-                }
-            }, (string updated_address) {
-                last_seen_addr = updated_address;
-                if (is_online) {
-                    recordOwnInfo(updated_address);
-                    is_ready = true;
-                }
-            }, (DiscoveryRequestCommand cmd) {
-                switch (cmd) {
-                case DiscoveryRequestCommand.BecomeOnline: {
+                    log("looking for key: %s", key.cutHex);
+                    tid.send(node_addresses[key]);
+                },
+                (Control control) {
+                    if (control is Control.STOP) {
+                        log("stop");
+                        stop = true;
+                    }
+                },
+                (string updated_address) {
+                    last_seen_addr = updated_address;
+                    if (is_online) {
+                        recordOwnInfo(updated_address);
+                        is_ready = true;
+                    }
+                },
+                (DiscoveryRequestCommand cmd) {
+                    switch (cmd) {
+                    case DiscoveryRequestCommand.BecomeOnline: {
                         log("Becoming online..");
                         is_online = true;
                         if (last_seen_addr != "") {
@@ -206,23 +213,22 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
                         }
                         break;
                     }
-                case DiscoveryRequestCommand.RequestTable: {
+                    case DiscoveryRequestCommand.RequestTable: {
                         initialize();
                         auto address_book = new ActiveNodeAddressBookPub(node_addresses);
                         ownerTid.send(address_book);
                         break;
                     }
-                case DiscoveryRequestCommand.BecomeOffline: {
+                    case DiscoveryRequestCommand.BecomeOffline: {
                         eraseOwnInfo();
                         break;
                     }
-                default:
-                    pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
-                }
-            });
+                    default:
+                        pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
+                    }
+                });
             notifyReadyAfterDelay();
         }
-        while (!stop);
     }
     catch (Throwable t) {
         fatal(t);

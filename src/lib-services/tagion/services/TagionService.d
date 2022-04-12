@@ -158,7 +158,8 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
             log("opts.node_name = %s", opts.node_name);
             net.derive(opts.node_name, shared_net);
             p2pnode = initialize_node(opts);
-            static if (net_mode == NetworkMode.internal) {
+            final switch(net_mode) {
+            case NetworkMode.internal:
                 gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
                 ownerTid.send(net.pubkey);
                 Pubkey[] received_pkeys;
@@ -172,15 +173,17 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 foreach (p; pkeys)
                     gossip_net.add_channel(p);
                 ownerTid.send(Control.LIVE);
-            }
-            else if ([NetworkMode.local, NetworkMode.pub].canFind(net_mode)) {
+                break;
+            case NetworkMode.local:
+            case NetworkMode.pub:
+            // else if ([NetworkMode.local, NetworkMode.pub].canFind(net_mode)) {
                 // immutable task_name = "p2ptagion";
                 // opts.node_name = task_name;
                 gossip_net = new P2pGossipNet(net.pubkey, opts.node_name,
                         opts.discovery.task_name, opts.host, p2pnode);
-            }
-            else {
-                throw new OptionException("Unknown network mode");
+            // }
+            // else {
+            //     throw new OptionException("Unknown network mode");
             }
             // gossip_net = new P2pGossipNet(task_name, opts.discovery.task_name, opts.host, p2pnode);
             void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted {
@@ -293,7 +296,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 }
             }
 
-            if (discovery_tid != Tid.init) {
+            if (discovery_tid !is Tid.init) {
                 log("Send stop to %s", opts.discovery.task_name);
                 discovery_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
@@ -301,7 +304,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 }
             }
 
-            if (dart_sync_tid != Tid.init) {
+            if (dart_sync_tid !is Tid.init) {
                 log("Send stop to %s", opts.dart.sync.task_name);
                 dart_sync_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
@@ -309,7 +312,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 }
             }
             log("DART TID: %s", dart_tid);
-            if (dart_tid != Tid.init) {
+            if (dart_tid !is Tid.init) {
                 log("Send stop to %s", opts.dart.task_name);
                 dart_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {

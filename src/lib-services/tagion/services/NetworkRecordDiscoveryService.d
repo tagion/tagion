@@ -222,66 +222,69 @@ void networkRecordDiscoveryService(
         Tid bootstrap_tid;
 
         final switch (opts.net_mode) {
-        case NetworkMode.internal: {
-                bootstrap_tid = spawn(&mdnsDiscoveryService, p2pnode, inner_task_name, opts);
-                break;
-            }
-        case NetworkMode.local: {
-                bootstrap_tid = spawn(&fileDiscoveryService, pubkey,
-                        p2pnode.LlistenAddress, inner_task_name, opts);
-                break;
-            }
-        case NetworkMode.pub: {
-                bootstrap_tid = spawn(&serverFileDiscoveryService, pubkey,
-                        p2pnode, inner_task_name, opts);
-                break;
-            }
+        case NetworkMode.internal:
+            bootstrap_tid = spawn(&mdnsDiscoveryService, p2pnode, inner_task_name, opts);
+            break;
+        case NetworkMode.local:
+            bootstrap_tid = spawn(&fileDiscoveryService, pubkey,
+                p2pnode.LlistenAddress, inner_task_name, opts);
+            break;
+        case NetworkMode.pub:
+            bootstrap_tid = spawn(&serverFileDiscoveryService, pubkey,
+                p2pnode, inner_task_name, opts);
+            break;
         }
 
         scope (exit) {
             bootstrap_tid.send(Control.STOP);
             auto ctrl = receiveOnly!Control;
-            assert(ctrl == Control.END);
+            assert(ctrl is Control.END);
         }
 
         auto ctrl = receiveOnly!Control;
-        assert(ctrl == Control.LIVE);
+        assert(ctrl is Control.LIVE);
 
         ownerTid.send(Control.LIVE);
 
-        auto stop = false;
-        do {
-            receive(&receiveAddrBook, (immutable(Pubkey) key, Tid tid) {
-                log("looking for key: %s HASH: %s", key.cutHex, net.calcHash(cast(Buffer) key).cutHex);
-                auto result_addr = internal_nodeaddr_table.get(key, NodeAddress.init);
-                if (result_addr == NodeAddress.init) {
-                    log("Address not found in internal nodeaddr table");
-                }
-                tid.send(result_addr);
-            }, (DiscoveryRequestCommand request) {
-                log("send request: %s", request);
-                switch (request) {
-                case DiscoveryRequestCommand.BecomeOnline: {
+        bool stop = false;
+        while(!stop) {
+            receive(
+                &receiveAddrBook,
+                (immutable(Pubkey) key, Tid tid) {
+                    log("looking for key: %s HASH: %s", key.cutHex, net.calcHash(cast(Buffer) key).cutHex);
+                    auto result_addr = internal_nodeaddr_table.get(key, NodeAddress.init);
+                    if (result_addr == NodeAddress.init) {
+                        log("Address not found in internal nodeaddr table");
+                    }
+                    tid.send(result_addr);
+                },
+                (DiscoveryRequestCommand request) {
+                    log("send request: %s", request);
+                    switch (request) {
+                    case DiscoveryRequestCommand.BecomeOnline: {
                         is_ready = true;
                         break;
                     }
-                case DiscoveryRequestCommand.UpdateTable: {
+                    case DiscoveryRequestCommand.UpdateTable: {
                         auto addr_table = request_addr_table();
                         update_internal_table(addr_table);
                         break;
                     }
-                default:
-                    break;
-                }
-                bootstrap_tid.send(request);
-            }, (DiscoveryState state) { ownerTid.send(state); }, (Control control) {
-                if (control == Control.STOP) {
-                    log("stop");
-                    stop = true;
-                }
-            });
+                    default:
+                        break;
+                    }
+                    bootstrap_tid.send(request);
+                },
+                (DiscoveryState state) {
+                    ownerTid.send(state);
+                },
+                (Control control) {
+                    if (control == Control.STOP) {
+                        log("stop");
+                        stop = true;
+                    }
+                });
         }
-        while (!stop);
     }
     catch (Throwable t) {
         fatal(t);

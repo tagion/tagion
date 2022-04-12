@@ -20,7 +20,7 @@ import tagion.utils.LRU;
 import tagion.utils.Queue;
 
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : HiBONRecord, RecordType;
+import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, fread, fwrite, isSpecialKeyType;
 import tagion.hibon.Document : Document;
 import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraph;
@@ -271,20 +271,30 @@ alias ActiveNodeAddressBookPub = immutable(AddressBook_deprecation);
 @safe
 immutable class AddressBook_deprecation {
     this(const(NodeAddress[Pubkey]) addrs) @trusted {
-        _addressbook.overwrite(addrs);
+        addressbook.overwrite(addrs);
 //         this.data = cast(immutable) addrs.dup;
     }
 
 //    immutable(NodeAddress[Pubkey]) data;
 
     immutable(NodeAddress[Pubkey]) data() @trusted {
-        return cast(immutable)_addressbook._data;
+        return cast(immutable)addressbook._data;
     }
 
 }
 
 @safe
+struct AddressDirecory {
+    private NodeAddress[Pubkey] addresses;
+    mixin HiBONRecord;
+}
+
+@safe
 synchronized class AddressBook {
+    static struct AddressDirecory {
+        NodeAddress[Pubkey] addresses;
+        mixin HiBONRecord;
+    }
     protected shared(NodeAddress[Pubkey]) addresses;
 
     private shared(NodeAddress[Pubkey]) _data() {
@@ -298,12 +308,44 @@ synchronized class AddressBook {
         }
     }
 
+    void load(string filename) {
+        if (filename.exists) {
+            auto dir = filename.fread!AddressDirecory;
+            overwrite(dir.addresses);
+        }
+    }
+
+    void save(string filename) @trusted {
+        AddressDirecory dir;
+        dir.addresses=cast(NodeAddress[Pubkey])addresses;
+        filename.fwrite(dir);
+    }
+
+    immutable(NodeAddress) opIndex(const Pubkey pkey) const pure nothrow {
+        auto addr=pkey in addresses;
+        if (addr) {
+            return cast(immutable)(*addr);
+        }
+        return NodeAddress.init;
+    }
+
+    void opIndexAssign(const NodeAddress addr, const Pubkey pkey) pure nothrow {
+        addresses[pkey]=addr;
+    }
+
+    void erase(const Pubkey pkey) pure nothrow {
+        addresses.remove(pkey);
+    }
+
+    bool exists(const Pubkey pkey) const pure nothrow {
+        return (pkey in addresses) !is null;
+    }
 }
 
-protected static shared(AddressBook) _addressbook;
+static shared(AddressBook) addressbook;
 
 shared static this() {
-    _addressbook=new shared(AddressBook);
+    addressbook=new shared(AddressBook);
 }
 
 @safe

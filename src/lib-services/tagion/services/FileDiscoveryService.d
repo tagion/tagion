@@ -40,6 +40,9 @@ void fileDiscoveryService(
         NodeAddress[Pubkey] node_addresses;
 
         bool checkOnline(){
+            addressbook.load(shared_storage);
+            return addressbook.exists(pubkey);
+            version(none) {
             auto read_buff = cast(ubyte[]) shared_storage.read;
                 auto splited_read_buff = read_buff.split("/n");
                 log("%d", splited_read_buff.length);
@@ -54,6 +57,7 @@ void fileDiscoveryService(
                     }
                 }
             return false;
+            }
         }
 
         void recordOwnInfo() nothrow {
@@ -73,7 +77,10 @@ void fileDiscoveryService(
             }
         }
 
-        void eraseOwnInfo() nothrow {
+        void eraseOwnInfo() {
+            addressbook.erase(pubkey);
+            addressbook.save(shared_storage);
+            version(none) {
             try {
                 log("erase");
                 auto read_buff = cast(ubyte[]) shared_storage.read;
@@ -97,6 +104,7 @@ void fileDiscoveryService(
                 log("Exception: %s", e.msg);
                 stop = true;
             }
+            }
         }
 
         bool checkTimestamp(SysTime time, Duration duration) {
@@ -109,7 +117,7 @@ void fileDiscoveryService(
 
         SysTime mdns_start_timestamp;
         updateTimestamp(mdns_start_timestamp);
-        auto owner_notified = false;
+        bool owner_notified = false;
 
         void notifyReadyAfterDelay() {
             if (!owner_notified) {
@@ -126,8 +134,12 @@ void fileDiscoveryService(
             eraseOwnInfo();
         }
 
-        void initialize() nothrow {
+        void initialize() {
             log("initializing");
+            addressbook.load(shared_storage);
+            addressbook[pubkey]=NodeAddress(node_address, opts.dart, opts.port_base);
+            addressbook.save(shared_storage);
+            version(none) {
             try {
                 auto read_buff = cast(ubyte[]) shared_storage.read;
                 auto splited_read_buff = read_buff.split("/n");
@@ -153,49 +165,51 @@ void fileDiscoveryService(
                 //logwriteln("Er:", e.msg);
                 log.fatal(e.msg);
             }
+            }
         }
 
         log("File Discovery started");
         ownerTid.send(Control.LIVE);
         // ownerTid.send(DiscoveryState.READY);
+        initialize;
 
         while (!stop) {
             receiveTimeout(
-                    500.msecs,
-                    (immutable(Pubkey) key, Tid tid) {
-                        log("looking for key: %s", key);
-                        tid.send(node_addresses[key]); },
-                    (Control control) {
-                if (control == Control.STOP) {
-                    log("stop");
-                    stop = true;
-                }
-            },
-                    (DiscoveryRequestCommand request) {
-                with (DiscoveryRequestCommand) {
-                    final switch (request) {
-                    case BecomeOnline:
-                        log("Becoming online..");
-                        recordOwnInfo();
-                        break;
-                    case RequestTable:
-                        initialize();
-                        auto address_book = new ActiveNodeAddressBookPub(
-                            node_addresses);
-                        ownerTid.send(address_book);
-                        break;
-                    case BecomeOffline:
-                        eraseOwnInfo();
-                        break;
-                    case UpdateTable:
-                        throw new TagionException(format("DiscoveryRequestCommand %s has not function", request));
-                        break;
-
+                500.msecs,
+                (immutable(Pubkey) key, Tid tid) {
+                    log("looking for key: %s", key);
+                    tid.send(node_addresses[key]);
+                },
+                (Control control) {
+                    if (control == Control.STOP) {
+                        log("stop");
+                        stop = true;
                     }
-                }
-            });
-            notifyReadyAfterDelay();
+                },
+                (DiscoveryRequestCommand request) {
+                    with (DiscoveryRequestCommand) {
+                        final switch (request) {
+                        case BecomeOnline:
+                            log("Becoming online..");
+                            recordOwnInfo();
+                            break;
+                        case RequestTable:
+                            initialize();
+                            auto address_book = new ActiveNodeAddressBookPub(
+                                node_addresses);
+                            ownerTid.send(address_book);
+                            break;
+                        case BecomeOffline:
+                            eraseOwnInfo();
+                            break;
+                        case UpdateTable:
+                            throw new TagionException(format("DiscoveryRequestCommand %s has not function", request));
+                            break;
 
+                        }
+                    }
+                });
+            notifyReadyAfterDelay();
         }
     }
     catch (Throwable t) {
