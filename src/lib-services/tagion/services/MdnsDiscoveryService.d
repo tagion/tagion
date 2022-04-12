@@ -47,7 +47,8 @@ void mdnsDiscoveryService(
             // }
         }
 
-        auto stop = false;
+        bool stop = false;
+
         NodeAddress[Pubkey] node_addrses;
 
         bool checkTimestamp(SysTime time, Duration duration) {
@@ -76,8 +77,8 @@ void mdnsDiscoveryService(
 
         void addOwnInfo() {
             NodeAddress node_address = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
-            immutable pk = cast(immutable(ubyte)[])(node_address.id);
-            node_addrses[cast(Pubkey) pk] = node_address;
+            Pubkey pk = cast(immutable(ubyte)[])(node_address.id);
+            node_addrses[pk] = node_address;
         }
 
         ownerTid.send(Control.LIVE);
@@ -87,8 +88,8 @@ void mdnsDiscoveryService(
             receiveTimeout(500.msecs, (Response!(ControlCode.Control_PeerDiscovered) response) {
                 string address = cast(string) response.data;
                 NodeAddress node_address = NodeAddress(NodeAddress.parseAddr(address), opts.dart, opts.port_base);
-                immutable pk = cast(immutable(ubyte)[])(node_address.id);
-                node_addrses[cast(Pubkey) pk] = node_address;
+                Pubkey pk = cast(immutable(ubyte)[])(node_address.id);
+                node_addrses[pk] = node_address;
                 // log("RECEIVED PEER %d", node_addrses.length);
             }, (Control control) {
                 if (control == Control.STOP) {
