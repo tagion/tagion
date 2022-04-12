@@ -236,12 +236,12 @@ class DART : DARTFile { //, HiRPC.Supports {
                 uint id = 0) if (isInputRange!Range && is(ElementType!Range : const(Buffer))) { //if (is(ForeachType!Range : Buffer)) {
             auto params = new HiBON;
             auto params_fingerprints = new HiBON;
-//            params_fingerprints = fingerprints.filter!(b => b.length !is 0);
-            foreach (i, b; fingerprints) {
-                if (b.length !is 0) {
-                    params_fingerprints[i] = b;
-                }
-            }
+            params_fingerprints = fingerprints.filter!(b => b.length !is 0);
+            // foreach (i, b; fingerprints) {
+            //     if (b.length !is 0) {
+            //         params_fingerprints[i] = b;
+            //     }
+            // }
             params[Params.fingerprints] = params_fingerprints;
             return hirpc.dartRead(params, id);
         }
