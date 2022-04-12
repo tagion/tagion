@@ -37,7 +37,7 @@ void fileDiscoveryService(
         log.register(task_name);
 
         auto stop = false;
-        NodeAddress[Pubkey] node_addresses;
+//        NodeAddress[Pubkey] node_addresses;
 
         bool checkOnline(){
             addressbook.load(shared_storage);
@@ -60,7 +60,8 @@ void fileDiscoveryService(
             }
         }
 
-        void recordOwnInfo() nothrow {
+        version(none)
+        void recordOwnInfo() {
             try {
                 do{
                     log("record own info");
@@ -76,6 +77,7 @@ void fileDiscoveryService(
                 stop = true;
             }
         }
+
 
         void eraseOwnInfo() {
             addressbook.erase(pubkey);
@@ -172,13 +174,13 @@ void fileDiscoveryService(
         ownerTid.send(Control.LIVE);
         // ownerTid.send(DiscoveryState.READY);
         initialize;
-
+        alias recordOwnInfo = initialize;
         while (!stop) {
             receiveTimeout(
                 500.msecs,
                 (immutable(Pubkey) key, Tid tid) {
                     log("looking for key: %s", key);
-                    tid.send(node_addresses[key]);
+                    tid.send(addressbook[key]);
                 },
                 (Control control) {
                     if (control == Control.STOP) {
@@ -195,9 +197,9 @@ void fileDiscoveryService(
                             break;
                         case RequestTable:
                             initialize();
-                            auto address_book = new ActiveNodeAddressBookPub(
-                                node_addresses);
-                            ownerTid.send(address_book);
+                            // auto address_book = new ActiveNodeAddressBookPub(
+                            //     node_addresses);
+                            ownerTid.send(ActiveNodeAddressBookPub.data);
                             break;
                         case BecomeOffline:
                             eraseOwnInfo();

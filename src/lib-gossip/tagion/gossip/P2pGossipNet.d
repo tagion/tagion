@@ -277,7 +277,7 @@ immutable class AddressBook_deprecation {
 
 //    immutable(NodeAddress[Pubkey]) data;
 
-    immutable(NodeAddress[Pubkey]) data() @trusted {
+    static immutable(NodeAddress[Pubkey]) data() @trusted {
         return cast(immutable)addressbook._data;
     }
 
