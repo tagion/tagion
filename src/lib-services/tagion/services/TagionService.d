@@ -212,21 +212,25 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 opts.discovery.task_name,
                 opts);
             auto ctrl = receiveOnly!Control;
-            assert(ctrl == Control.LIVE);
+            assert(ctrl is Control.LIVE);
             log("networkRecordDiscoveryService Started");
 
-            receive((DiscoveryState state) { assert(state == DiscoveryState.READY); });
-            log("DiscoveryState state");
+            receive((DiscoveryState state) { assert(state is DiscoveryState.READY); });
+            log("After DiscoveryState state");
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
+            log("After DiscoveryRequestCommand.RequestTable");
             receive(
                 (ActiveNodeAddressBookPub address_book) {
+                    log("ActiveNodeAddressBookPub address_book");
                     update_pkeys(address_book.data.keys);
+                    log("After update_pkeys(address_book.data.keys)");
                     dart_sync_tid = spawn(
                         &dartSynchronizeServiceTask!StdSecureNet,
                         opts,
                         p2pnode,
                         shared_net,
                         sector_range);
+                    log("After dartSynchronizeServiceTask!StdSecureNet start");
                 // receiveOnly!Control;
                     dart_tid = spawn(
                         &dartServiceTask!StdSecureNet,

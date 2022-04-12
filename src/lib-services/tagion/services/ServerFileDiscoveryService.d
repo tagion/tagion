@@ -41,7 +41,7 @@ void serverFileDiscoveryService(
     string taskName,
     immutable(Options) opts) nothrow { //TODO: for test
     try {
-        scope (exit) {
+        scope (success) {
             log("exit");
             ownerTid.prioritySend(Control.END);
         }

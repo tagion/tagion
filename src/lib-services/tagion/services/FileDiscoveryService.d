@@ -196,7 +196,9 @@ void fileDiscoveryService(
                             recordOwnInfo();
                             break;
                         case RequestTable:
+                            log("Received RequestTable");
                             initialize();
+                            log("After  initialize");
                             // auto address_book = new ActiveNodeAddressBookPub(
                             //     node_addresses);
                             ownerTid.send(ActiveNodeAddressBookPub.data);

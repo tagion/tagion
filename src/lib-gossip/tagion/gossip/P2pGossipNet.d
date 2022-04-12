@@ -301,7 +301,7 @@ synchronized class AddressBook {
         return addresses;
     }
 
-    private void overwrite(const(NodeAddress[Pubkey]) addrs) {
+    void overwrite(const(NodeAddress[Pubkey]) addrs) {
         addresses=null;
         foreach(pkey, addr; addrs) {
             addresses[pkey] = addr;
