@@ -142,6 +142,10 @@ import tagion.TaskWrapper;
     void onSTOP() {
         stop = true;
         file.writefln("%s stopped ", options.logger.task_name);
+
+        if (abort) {
+            log.silent = true;
+        }
     }
 
     void onLIVE() {
@@ -155,18 +159,6 @@ import tagion.TaskWrapper;
     void opCall(immutable(Options) options) {
         this.options = options;
         setOptions(options);
-
-        void taskRegister() {
-            writeln("REGISTER ", options.logger.task_name);
-            
-            // TODO: here could possibly be problems!
-            log.register(options.logger.task_name);
-
-            //assert(register(options.logger.task_name, thisTid));
-        }
-
-        taskRegister;
-        log.set_logger_task(options.logger.task_name);
 
         pragma(msg, "fixme(ib) Pass mask to Logger to not pass not necessary data");
 
@@ -184,7 +176,7 @@ import tagion.TaskWrapper;
         }
 
         ownerTid.send(Control.LIVE);
-        while (!stop) {
+        while (!stop && !abort) {
             receive(&control, &receiveLogs, &receiveFilters);
             if (options.logger.flush && logging) {
                 file.flush();

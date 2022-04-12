@@ -7,7 +7,7 @@ import tagion.basic.Basic : Control, TrustedConcurrency;
 import tagion.logger.Logger;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
 import tagion.services.RecorderService : Fingerprint;
-import tagion.services.LoggerService : LogFilter;
+import tagion.services.LoggerService;
 import tagion.dart.Recorder;
 alias Recorder = RecordFactory.Recorder;
 
@@ -71,6 +71,18 @@ mixin TrustedConcurrency;
         );
     }
 
+    static void registerLogger(string task_name) {
+        writeln("REGISTER ", task_name);
+
+        static if (is(Func == LoggerTask)) {
+            register(task_name, thisTid);
+            log.set_logger_task(task_name);
+        }
+        else {
+            log.register(task_name);
+        }
+    }
+
     static void run(string task_name, Params args) nothrow {
         try {
             scope (success) {
@@ -84,7 +96,7 @@ mixin TrustedConcurrency;
                 prioritySend(ownerTid, Control.END);
             }
 
-            log.register(task_name);
+            registerLogger(task_name);
 
             Func task;
             // Boiler coded
