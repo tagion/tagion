@@ -102,7 +102,7 @@ void networkRecordDiscoveryService(
                 // pragma(msg, "ElementType!Type ",ElementType!Type);
 //                static assert(isInputRange!Type);
 
-                const addresses_recorder = loadFromDART(active_pubkeys.array);
+                const addresses_recorder = loadFromDART(active_pubkeys);
                 pragma(msg, "fixme(cbr): Should be range in the address book");
                 NodeAddress[Pubkey] node_addresses;
                 foreach (archive; addresses_recorder[]) {
