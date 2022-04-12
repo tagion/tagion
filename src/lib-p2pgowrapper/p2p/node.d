@@ -12,6 +12,8 @@ import std.array;
 import p2p.connection;
 import p2p.callback;
 
+import tagion.services.Options : DefaultOptions;
+
 static void EnableLogger() {
     lib.enableLogger();
 }

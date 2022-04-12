@@ -40,6 +40,7 @@ import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress,
     ActiveNodeAddressBook, ConnectionPool;
 
 import tagion.basic.TagionExceptions;
+import tagion.gossip.DartSynchInterfase;
 
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
@@ -480,7 +481,12 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
 }
 
 unittest {
-    assert(1==1);
+    shared Test t;
+    shared char[] a;
+    a=cast(shared)"WOW_WORK!".dup;
+    t=new shared(Test)(a);
+    t.print;
+
 }
 /+
 Error: constructor
