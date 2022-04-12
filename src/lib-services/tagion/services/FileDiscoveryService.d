@@ -36,7 +36,7 @@ void fileDiscoveryService(
 
         log.register(task_name);
 
-        auto stop = false;
+        bool stop = false;
 //        NodeAddress[Pubkey] node_addresses;
 
         bool checkOnline(){

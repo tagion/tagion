@@ -213,8 +213,10 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 opts);
             auto ctrl = receiveOnly!Control;
             assert(ctrl == Control.LIVE);
+            log("networkRecordDiscoveryService Started");
 
             receive((DiscoveryState state) { assert(state == DiscoveryState.READY); });
+            log("DiscoveryState state");
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
             receive(
                 (ActiveNodeAddressBookPub address_book) {
