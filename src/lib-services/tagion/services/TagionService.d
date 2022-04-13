@@ -158,7 +158,8 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
             log("opts.node_name = %s", opts.node_name);
             net.derive(opts.node_name, shared_net);
             p2pnode = initialize_node(opts);
-            static if (net_mode == NetworkMode.internal) {
+            final switch(net_mode) {
+            case NetworkMode.internal:
                 gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
                 ownerTid.send(net.pubkey);
                 Pubkey[] received_pkeys;
@@ -172,15 +173,17 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 foreach (p; pkeys)
                     gossip_net.add_channel(p);
                 ownerTid.send(Control.LIVE);
-            }
-            else if ([NetworkMode.local, NetworkMode.pub].canFind(net_mode)) {
+                break;
+            case NetworkMode.local:
+            case NetworkMode.pub:
+            // else if ([NetworkMode.local, NetworkMode.pub].canFind(net_mode)) {
                 // immutable task_name = "p2ptagion";
                 // opts.node_name = task_name;
                 gossip_net = new P2pGossipNet(net.pubkey, opts.node_name,
                         opts.discovery.task_name, opts.host, p2pnode);
-            }
-            else {
-                throw new OptionException("Unknown network mode");
+            // }
+            // else {
+            //     throw new OptionException("Unknown network mode");
             }
             // gossip_net = new P2pGossipNet(task_name, opts.discovery.task_name, opts.host, p2pnode);
             void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted {
@@ -202,31 +205,53 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
             hashgraph.scrap_depth = opts.scrap_depth;
             log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 
-            discovery_tid = spawn(&networkRecordDiscoveryService, net.pubkey,
-                    p2pnode, opts.discovery.task_name, opts);
+            discovery_tid = spawn(
+                &networkRecordDiscoveryService,
+                net.pubkey,
+                p2pnode,
+                opts.discovery.task_name,
+                opts);
+
             auto ctrl = receiveOnly!Control;
-            assert(ctrl == Control.LIVE);
+            assert(ctrl is Control.LIVE);
 
-            receive((DiscoveryState state) { assert(state == DiscoveryState.READY); });
+            log("networkRecordDiscoveryService Started");
+
+            receive((DiscoveryState state) { assert(state is DiscoveryState.READY); });
+            log("After DiscoveryState state");
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
-            receive((ActiveNodeAddressBook address_book) {
-                update_pkeys(address_book.data.keys);
-                dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet,
-                    opts, p2pnode, shared_net, sector_range);
+            log("After DiscoveryRequestCommand.RequestTable");
+            receive(
+                (ActiveNodeAddressBookPub address_book) {
+                    log("ActiveNodeAddressBookPub address_book");
+                    update_pkeys(address_book.data.keys);
+                    log("After update_pkeys(address_book.data.keys)");
+                    dart_sync_tid = spawn(
+                        &dartSynchronizeServiceTask!StdSecureNet,
+                        opts,
+                        p2pnode,
+                        shared_net,
+                        sector_range);
+                    log("After dartSynchronizeServiceTask!StdSecureNet start");
                 // receiveOnly!Control;
-                dart_tid = spawn(&dartServiceTask!StdSecureNet, opts, p2pnode,
-                    shared_net, sector_range);
-                log("address_book len: %d", address_book.data.length);
-                send(dart_sync_tid, cast(immutable) address_book);
-            }, (Control ctrl) {
-                if (ctrl is Control.STOP) {
-                    force_stop = true;
-                }
+                    dart_tid = spawn(
+                        &dartServiceTask!StdSecureNet,
+                        opts,
+                        p2pnode,
+                        shared_net,
+                        sector_range);
+                    log("address_book len: %d", address_book.data.length);
+                    send(dart_sync_tid, address_book);
+                },
+                (Control ctrl) {
+                    if (ctrl is Control.STOP) {
+                        force_stop = true;
+                    }
 
-                if (ctrl is Control.END) {
-                    force_stop = true;
-                }
-            });
+                    if (ctrl is Control.END) {
+                        force_stop = true;
+                    }
+                });
         }
         scope (exit) {
             log("Closing net");
@@ -279,7 +304,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 }
             }
 
-            if (discovery_tid != Tid.init) {
+            if (discovery_tid !is Tid.init) {
                 log("Send stop to %s", opts.discovery.task_name);
                 discovery_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
@@ -287,7 +312,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 }
             }
 
-            if (dart_sync_tid != Tid.init) {
+            if (dart_sync_tid !is Tid.init) {
                 log("Send stop to %s", opts.dart.sync.task_name);
                 dart_sync_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
@@ -295,7 +320,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 }
             }
             log("DART TID: %s", dart_tid);
-            if (dart_tid != Tid.init) {
+            if (dart_tid !is Tid.init) {
                 log("Send stop to %s", opts.dart.task_name);
                 dart_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
@@ -428,7 +453,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         bool network_ready = false;
         do{
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
-            receive((ActiveNodeAddressBook address_book) { update_pkeys(address_book.data.keys); });
+            receive((ActiveNodeAddressBookPub address_book) { update_pkeys(address_book.data.keys); });
             if(pkeys.length < opts.nodes){
                 Thread.sleep(500.msecs);
             }else{
@@ -438,7 +463,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
 
         while (!stop && !abort) {
             immutable message_received = receiveTimeout(opts.timeout.msecs, &receive_payload, &controller,
-                    &receive_wavefront, &taskfailure, (ActiveNodeAddressBook address_book) {
+                    &receive_wavefront, &taskfailure, (ActiveNodeAddressBookPub address_book) {
                 log("Update address book");
                 update_pkeys(address_book.data.keys);
                 if (dart_sync_tid != Tid.init) {

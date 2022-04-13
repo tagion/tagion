@@ -1,5 +1,5 @@
 ANDROID_API?=30
-ANDROID_NDK = $(ANDROID_TOOLS)/android-ndk-r23b
+ANDROID_NDK?=$(ANDROID_TOOLS)/android-ndk-r23b
 
 ANDROID_HOST=${call join-with,-,$(GETHOSTOS) $(GETARCH)}
 

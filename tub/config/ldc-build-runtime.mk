@@ -45,6 +45,8 @@ env-druntime:
 	${call log.kvp, LDC_TAR, $(LDC_TAR)}
 	${call log.kvp, LDC_URL, $(LDC_URL)}
 	${call log.kvp, TOOLS_LCD_BIN, $(TOOLS_LDC_BIN)}
+	${call log.kvp, LDC_BUILD_RUNTIME, $(LDC_BUILD_RUNTIME)}
+	${call log.kvp, LDC_BUILD_RUNTIME_TMP, $(LDC_BUILD_RUNTIME_TMP)}
 	${call log.close}
 
 

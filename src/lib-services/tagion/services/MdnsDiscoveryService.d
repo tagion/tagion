@@ -21,7 +21,10 @@ import tagion.basic.TagionExceptions : fatal;
 import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
 import tagion.gossip.P2pGossipNet;
 
-void mdnsDiscoveryService(shared p2plib.Node node, string task_name, immutable(Options) opts) nothrow { //TODO: for test
+void mdnsDiscoveryService(
+    shared p2plib.Node node,
+    string task_name,
+    immutable(Options) opts) nothrow { //TODO: for test
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
@@ -44,7 +47,8 @@ void mdnsDiscoveryService(shared p2plib.Node node, string task_name, immutable(O
             // }
         }
 
-        auto stop = false;
+        bool stop = false;
+
         NodeAddress[Pubkey] node_addrses;
 
         bool checkTimestamp(SysTime time, Duration duration) {
@@ -73,38 +77,42 @@ void mdnsDiscoveryService(shared p2plib.Node node, string task_name, immutable(O
 
         void addOwnInfo() {
             NodeAddress node_address = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
-            immutable pk = cast(immutable(ubyte)[])(node_address.id);
-            node_addrses[cast(Pubkey) pk] = node_address;
+            Pubkey pk = cast(immutable(ubyte)[])(node_address.id);
+            node_addrses[pk] = node_address;
         }
 
         ownerTid.send(Control.LIVE);
         //    try{
         do {
             pragma(msg, "fixme(alex); 500.msecs shoud be an option parameter");
-            receiveTimeout(500.msecs, (Response!(ControlCode.Control_PeerDiscovered) response) {
-                string address = cast(string) response.data;
+            receiveTimeout(
+                500.msecs,
+                (Response!(ControlCode.Control_PeerDiscovered) response) {
+                    string address = cast(string) response.data;
                 NodeAddress node_address = NodeAddress(NodeAddress.parseAddr(address), opts.dart, opts.port_base);
-                immutable pk = cast(immutable(ubyte)[])(node_address.id);
-                node_addrses[cast(Pubkey) pk] = node_address;
+                Pubkey pk = cast(immutable(ubyte)[])(node_address.id);
+                node_addrses[pk] = node_address;
                 // log("RECEIVED PEER %d", node_addrses.length);
-            }, (Control control) {
+            },
+                (Control control) {
                 if (control == Control.STOP) {
                     // log("stop");
                     stop = true;
                 }
-            }, (DiscoveryRequestCommand request) {
+            },
+                (DiscoveryRequestCommand request) {
                 final switch (request) {
-                case DiscoveryRequestCommand.BecomeOnline: {
+                case DiscoveryRequestCommand.BecomeOnline:
                         log("Becoming online..");
                         addOwnInfo();
                         break;
-                    }
-                case DiscoveryRequestCommand.RequestTable: {
-                        auto address_book = new ActiveNodeAddressBook(node_addrses);
+
+                case DiscoveryRequestCommand.RequestTable:
+                        auto address_book = new ActiveNodeAddressBookPub(node_addrses);
                         log("Requested: %s", address_book.data.length);
                         ownerTid.send(address_book);
                         break;
-                    }
+
                 case DiscoveryRequestCommand.UpdateTable:
                 case DiscoveryRequestCommand.BecomeOffline: {
                         break;
