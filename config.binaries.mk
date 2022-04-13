@@ -162,3 +162,21 @@ clean-recorderchain:
 clean: clean-recorderchain
 
 BIN_TARGETS+=target-recorderchain
+
+#
+# Dart bootstrap util
+#
+target-boot: LIBS+=$(LIBOPENSSL)
+target-boot: LIBS+=$(LIBSECP256K1)
+target-boot: LIBS+=$(LIBP2PGOWRAPPER)
+target-boot: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-boot/*" -a -not -path "*/unitdata/*"}
+target-boot: $(DBIN)/boot
+
+clean-boot:
+	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RM) $(DBIN)/boot
+
+clean: clean-boot
+
+BIN_TARGETS+=target-boot
