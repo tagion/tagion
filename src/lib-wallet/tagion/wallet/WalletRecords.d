@@ -19,7 +19,11 @@ import tagion.script.StandardRecords : StandardBill;
     @RecordType("PIN")
     struct DevicePIN {
         Buffer D;     /// Devices Number
-        Buffer check; /// Value P
+        Buffer S;     /// Check sum value
+        void recover(ref scope ubyte[] R, scope const(ubyte[]) P) pure nothrow const {
+            import tagion.utils.Miscellaneous : xor;
+            xor(R, D, P);
+        }
         mixin HiBONRecord;
     }
 

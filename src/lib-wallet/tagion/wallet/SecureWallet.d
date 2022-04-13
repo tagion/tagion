@@ -150,7 +150,7 @@ import tagion.wallet.WalletException : check;
             recover.findSecret(R, questions, answers);
             auto pinhash = recover.checkHash(pincode.representation);
             pin.D = xor(R, pinhash);
-            pin.check = recover.checkHash(R);
+            pin.S = recover.checkHash(R);
             net.createKeyPair(R);
             wallet = RecoverGenerator(recover.toDoc);
         }
@@ -164,7 +164,7 @@ import tagion.wallet.WalletException : check;
     protected void set_pincode(const KeyRecover recover, scope const(ubyte[]) R,
             const(ubyte[]) pinhash) {
         _pin.D = xor(R, pinhash);
-        _pin.check = recover.checkHash(R);
+        _pin.S = recover.checkHash(R);
     }
 
     bool correct(const(string[]) questions, const(char[][]) answers)
@@ -213,8 +213,8 @@ import tagion.wallet.WalletException : check;
             auto recover = KeyRecover(hashnet);
             auto pinhash = recover.checkHash(pincode.representation);
             auto R = new ubyte[hashnet.hashSize];
-            xor(R, _pin.D, pinhash);
-            if (_pin.check == recover.checkHash(R)) {
+            _pin.recover(R, pinhash);
+            if (_pin.S == recover.checkHash(R)) {
                 net = new Net;
                 net.createKeyPair(R);
                 return true;
@@ -232,8 +232,8 @@ import tagion.wallet.WalletException : check;
         auto recover = KeyRecover(hashnet);
         const pinhash = recover.checkHash(pincode.representation);
         auto R = new ubyte[hashnet.hashSize];
-        xor(R, _pin.D, pinhash);
-        return _pin.check == recover.checkHash(R);
+        _pin.recover(R, pinhash);
+        return _pin.S == recover.checkHash(R);
     }
 
     bool change_pincode(const(char[]) pincode, const(char[]) new_pincode) {
@@ -241,8 +241,9 @@ import tagion.wallet.WalletException : check;
         auto recover = KeyRecover(hashnet);
         const pinhash = recover.checkHash(pincode.representation);
         auto R = new ubyte[hashnet.hashSize];
-        xor(R, _pin.D, pinhash);
-        if (_pin.check == recover.checkHash(R)) {
+        // xor(R, _pin.D, pinhash);
+        _pin.recover(R, pinhash);
+        if (_pin.S == recover.checkHash(R)) {
             const new_pinhash = recover.checkHash(new_pincode.representation);
             set_pincode(recover, R, new_pinhash);
             logout;
