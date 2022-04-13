@@ -18,8 +18,8 @@ import tagion.script.StandardRecords : StandardBill;
 +/
     @RecordType("PIN")
     struct DevicePIN {
-        Buffer Y;
-        Buffer check;
+        Buffer D;     /// Devices Number
+        Buffer check; /// Value P
         mixin HiBONRecord;
     }
 
