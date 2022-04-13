@@ -68,7 +68,7 @@ int main(string[] args) {
             "generate", "Generate a fake test dart (recomended to use with --useFakeNet)", &generate,
             "dump", "Dumps all the arcvives with in the given angle", &dump,
             "width|w", "Sets the rings width and is used in combination with the generate", &ringWidth,
-            "rings|r", "Sets the rings height and is used in  combination with the generate", &rings,
+            "rings", "Sets the rings height and is used in  combination with the generate", &rings,
             "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
     );
 
