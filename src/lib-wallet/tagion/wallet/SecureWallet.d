@@ -163,7 +163,13 @@ import tagion.wallet.WalletException : check;
 
     protected void set_pincode(const KeyRecover recover, scope const(ubyte[]) R,
             const(ubyte[]) pinhash) {
-        _pin.D = xor(R, pinhash);
+        scope seed = new ubyte[net.hashSize];
+        scramble(seed);
+        _pin.U = seed.idup;
+       _pin.D = xor(R, pinhash);
+ 
+ //       _pin.create(R, pinhash);
+//        _pin.D = xor(R, pinhash);
         _pin.S = recover.checkHash(R);
     }
 
