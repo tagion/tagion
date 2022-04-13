@@ -600,7 +600,7 @@ struct WalletInterface {
                 }
                 writeln("Change you pin code");
                 LINE.writeln;
-                if (secure_wallet.pin.Y) {
+                if (secure_wallet.pin.D) {
                     char[] old_pincode;
                     char[] new_pincode1;
                     char[] new_pincode2;
@@ -744,7 +744,7 @@ struct WalletInterface {
                     case 'c': // Create Wallet
                         scope (exit) {
                             // Erase the answer from memory
-                            answers.each!((ref a) => { scramble(a); a = null; });
+                            answers.each!((ref a) { scramble(a); a = null; });
                             pressKey;
                         }
                         auto quiz_list = zip(questions, answers)
