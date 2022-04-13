@@ -74,11 +74,15 @@ struct KeyRecover {
         foreach (ref result, question, answer; lockstep(results, questions, answers, StoppingPolicy
                 .requireSameLength)) {
             scope strip_down = cast(ubyte[]) answer.strip_down;
-            scope (exit) {
-                strip_down.scramble;
-            }
-            const hash = net.calcHash(strip_down);
-            result = net.calcHash(hash ~ hash);
+            scope answer_hash = net.calcHash(strip_down);
+            scope question_hash = net.calcHash(question.representation);
+            // scope (exit) {
+            //     strip_down.sceamble;
+            //     answer_hash.scramble;
+            //     question_hash.scramble;
+            // }
+//            const hash = net.calcHash(answer);
+            result = net.calcHash(answer_hash ~ question_hash );
         }
         return results;
     }
