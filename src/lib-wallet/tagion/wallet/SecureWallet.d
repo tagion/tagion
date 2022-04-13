@@ -148,7 +148,7 @@ import tagion.wallet.WalletException : check;
             auto R = new ubyte[net.hashSize];
 
             recover.findSecret(R, questions, answers);
-            auto pinhash = recover.checkHash(pincode.representation);
+            auto pinhash = recover.checkHash(pincode.representation, pin.U);
             pin.D = xor(R, pinhash);
             pin.S = recover.checkHash(R);
             net.createKeyPair(R);
@@ -162,14 +162,13 @@ import tagion.wallet.WalletException : check;
     // }
 
     protected void set_pincode(const KeyRecover recover, scope const(ubyte[]) R,
-            const(ubyte[]) pinhash) {
+        scope const(char[]) pincode) {
         scope seed = new ubyte[net.hashSize];
         scramble(seed);
+
         _pin.U = seed.idup;
-       _pin.D = xor(R, pinhash);
- 
- //       _pin.create(R, pinhash);
-//        _pin.D = xor(R, pinhash);
+        const pinhash = recover.checkHash(pincode.representation, _pin.U);
+        _pin.D = xor(R, pinhash);
         _pin.S = recover.checkHash(R);
     }
 
@@ -194,8 +193,8 @@ import tagion.wallet.WalletException : check;
         auto R = new ubyte[net.hashSize];
         const result = recover.findSecret(R, questions, answers);
         if (result) {
-            auto pinhash = recover.checkHash(pincode.representation);
-            set_pincode(recover, R, pinhash);
+            // auto pinhash = recover.checkHash(pincode.representation, _pin.U);
+            set_pincode(recover, R, pincode);
             net.createKeyPair(R);
             return true;
         }
@@ -213,11 +212,11 @@ import tagion.wallet.WalletException : check;
     }
 
     bool login(const(char[]) pincode) {
-        if (_pin.D) {
+        if (_pin.D && _pin.U) {
             logout;
             auto hashnet = new Net;
             auto recover = KeyRecover(hashnet);
-            auto pinhash = recover.checkHash(pincode.representation);
+            auto pinhash = recover.checkHash(pincode.representation, _pin.U);
             auto R = new ubyte[hashnet.hashSize];
             _pin.recover(R, pinhash);
             if (_pin.S == recover.checkHash(R)) {
@@ -236,7 +235,7 @@ import tagion.wallet.WalletException : check;
     bool check_pincode(const(char[]) pincode) {
         const hashnet = new Net;
         auto recover = KeyRecover(hashnet);
-        const pinhash = recover.checkHash(pincode.representation);
+        const pinhash = recover.checkHash(pincode.representation, _pin.U);
         auto R = new ubyte[hashnet.hashSize];
         _pin.recover(R, pinhash);
         return _pin.S == recover.checkHash(R);
@@ -245,13 +244,13 @@ import tagion.wallet.WalletException : check;
     bool change_pincode(const(char[]) pincode, const(char[]) new_pincode) {
         const hashnet = new Net;
         auto recover = KeyRecover(hashnet);
-        const pinhash = recover.checkHash(pincode.representation);
+        const pinhash = recover.checkHash(pincode.representation, _pin.U);
         auto R = new ubyte[hashnet.hashSize];
         // xor(R, _pin.D, pinhash);
         _pin.recover(R, pinhash);
         if (_pin.S == recover.checkHash(R)) {
-            const new_pinhash = recover.checkHash(new_pincode.representation);
-            set_pincode(recover, R, new_pinhash);
+            // const new_pinhash = recover.checkHash(new_pincode.representation, _pin.U);
+            set_pincode(recover, R, new_pincode);
             logout;
             return true;
         }

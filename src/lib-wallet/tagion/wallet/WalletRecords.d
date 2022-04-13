@@ -25,6 +25,7 @@ import tagion.script.StandardRecords : StandardBill;
             import tagion.utils.Miscellaneous : xor;
             xor(R, D, P);
         }
+
         mixin HiBONRecord;
     }
 
