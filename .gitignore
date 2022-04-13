@@ -33,6 +33,7 @@ gen.*
 .tmp
 build
 logs
+tools
 *.log
 
 # Devnet

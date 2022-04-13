@@ -4,6 +4,7 @@ export LOG := ${abspath ${REPOROOT}/logs/}
 export DDEVNET := ${abspath ${REPOROOT}/devnet/}
 export DBUILD := ${abspath $(BUILD)/$(PLATFORM)}
 export DLOG := ${abspath $(LOG)/$(PLATFORM)}
+export TOOLS := ${abspath $(REPOROOT)/tools}
 
 # New simplified flow directories
 export DBIN := $(DBUILD)/bin
@@ -24,6 +25,8 @@ env-dirs:
 	$(call log.kvp, DLOG, $(DLOG))
 	$(call log.kvp, DSRC, $(DSRC))
 	$(call log.kvp, DTUB, $(DTUB))
+	$(call log.kvp, DLOGCOV, $(DLOGCOV))
+	$(call log.kvp, TOOLS, $(TOOLS))
 	$(call log.kvp, REPOROOT, $(REPOROOT))
 	$(call log.close)
 
