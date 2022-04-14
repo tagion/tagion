@@ -17,6 +17,7 @@ void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) @safe if (
     import std.random;
 
     auto gen = Mt19937(unpredictableSeed);
+    pragma(msg, "Fixme(cbr): replace random with  secp256k1");
     foreach (ref s; data) { //, gen1, StoppingPolicy.shortest)) {
         s = gen.front & ubyte.max;
         gen.popFront;

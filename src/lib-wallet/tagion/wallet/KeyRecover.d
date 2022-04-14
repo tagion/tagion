@@ -216,6 +216,7 @@ struct KeyRecover {
             const guess = xor(list_of_selected_answers_and_the_secret);
             foreach (y; generator.Y) {
                 xor(R, y, guess);
+                pragma(msg, "Fixme(cbr): constant time on a equal - sidechanel atack");
                 if (generator.S == checkHash(R)) {
                     result = true;
                     return true;
@@ -225,6 +226,7 @@ struct KeyRecover {
         }
 
         iterateSeeds(number_of_questions, generator.confidence, &search_for_the_secret);
+        pragma(msg, "Fixme(cbr): Constant time - sidechanel atack");
         return result;
     }
 }
