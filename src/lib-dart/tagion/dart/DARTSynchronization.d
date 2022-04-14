@@ -220,13 +220,14 @@ class ReplayPool(T) {
 
 @safe
 interface SynchronizationFactory {
-    alias OnFailure = void delegate(const DART.Rims sector);
+    alias OnFailure = void delegate(const DART.Rims sector) @safe;
+    alias OnComplete = void delegate(string) @safe;
     alias SyncSectorResponse = Tuple!(uint, ResponseHandler);
     pragma(msg, "SyncSectorResponse :", SyncSectorResponse);
     bool canSynchronize();
     SyncSectorResponse syncSector(
             const DART.Rims sector,
-            void delegate(string) oncomplete,
+            OnComplete oncomplete,
             OnFailure onfailure);
 }
 
@@ -273,7 +274,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
 
     SyncSectorResponse syncSector(
             const DART.Rims sector,
-            void delegate(string) @safe oncomplete,
+            OnComplete oncomplete,
             OnFailure onfailure) {
         SyncSectorResponse syncWith(NodeAddress address) @safe {
             import p2p.go_helper;
@@ -653,7 +654,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
 
     void start(SynchronizationFactory factory) //restart with new factory
 
-    
+
 
     in {
         assert(checkState(State.STOP, State.READY, State.ERROR));
@@ -745,7 +746,10 @@ unittest {
 
         private SyncSectorResponse mockReturn;
         private uint sync_counter = 0;
-        SyncSectorResponse syncSector(const DART.Rims sector, void delegate(string) oncomplete, OnFailure onfailure) {
+        SyncSectorResponse syncSector(
+            const DART.Rims sector,
+            OnComplete oncomplete,
+            OnFailure onfailure) {
             sync_counter++;
             return mockReturn;
         }
