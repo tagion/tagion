@@ -57,7 +57,7 @@ WRAPS+=druntime
 ANDROID_LDFLAGS+=-L$(ANDROID_ROOT)/lib64/clang/$(ANDROID_CLANG_VER)/lib/linux/x86_64
 ANDROID_LDFLAGS+=$(ANDROID_ROOT)/lib64/clang/$(ANDROID_CLANG_VER)/lib/linux/libclang_rt.builtins-x86_64-android.a
 ANDROID_LDFLAGS+=$(ANDROID_SYSROOT)/usr/lib/$(PLATFORM)/$(ANDROID_API)/crtend_so.o
-ANDROID_LDFLAGS+=${shell find $(DTMP_SECP256K1)/src/.libs -name "*.o"}
+#ANDROID_LDFLAGS+=${shell find $(DTMP_SECP256K1)/src/.libs -name "*.o"}
 else
 ${error The none betterC version is not implemented yet. Set BETTERC=1}
 endif

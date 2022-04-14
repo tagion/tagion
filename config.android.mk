@@ -54,6 +54,8 @@ ANDROID_DFLAGS+=-Xcc=--sysroot=$(ANDROID_SYSROOT)
 #ANDROID_CONFIG_MK:=$(DBUILD)/gen.android.mk
 
 target-android: $(DBUILD)
+target-android: ANDROID_LDFLAGS+=${shell find $(DTMP_SECP256K1)/src/.libs -name "*.o"}
+
 #target-android: $(ANDROID_CONFIG_MK)
 
 
