@@ -141,6 +141,7 @@ void tagionServiceWrapper(Options opts) {
 
     void taskfailure(immutable(TaskFailure) t) {
         ownerTid.send(t);
+        pragma(msg, "fixme(ib) check why we have an abort?");
         abort = true;
         log.silent = true;
     }
