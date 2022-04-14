@@ -603,6 +603,10 @@ template mangleFunc(alias T) if (isCallable!T) {
         return concurrency.ownerTid;
     }
 
+    static Tid thisTid() @safe {
+        return concurrency.thisTid;
+    }
+
     static Tid spawn(F, Args...)(F fn, Args args) @trusted {
         return concurrency.spawn(fn, args);
     }
@@ -610,4 +614,9 @@ template mangleFunc(alias T) if (isCallable!T) {
     static Tid locate(string name) @trusted {
         return concurrency.locate(name);
     }
+
+    static bool register(string name, Tid tid) @trusted {
+        return concurrency.register(name, tid);
+    }
+
 }

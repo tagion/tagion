@@ -1,8 +1,15 @@
+/// \file LoggerService.d
+
+
+/// \page LoggerService
+
+/** @brief Service for logging everythinh
+ */
+
 module tagion.services.LoggerService;
 
 import std.stdio;
 import std.format;
-import std.concurrency;
 import core.thread;
 import core.sys.posix.pthread;
 import std.string;
@@ -11,129 +18,169 @@ import std.string;
 
 import tagion.basic.Basic : Control;
 import tagion.logger.Logger;
+import tagion.services.LogSubscriptionService : logSubscriptionServiceTask;
+
+import tagion.hibon.HiBONRecord;
 
 import tagion.services.Options : Options, setOptions, options;
 import tagion.basic.TagionExceptions;
 import tagion.GlobalSignals : abort;
 
-void loggerTask(immutable(Options) opts) {
-    try {
-        scope (success) {
-            ownerTid.prioritySend(Control.END);
+/** Struct with log filter
+ */
+@safe struct LogFilter {
+    enum any_task_name = "";
+
+    string task_name;
+    LoggerType log_level;
+    mixin HiBONRecord!(q{
+        this(string task_name, LoggerType log_level) nothrow {
+            this.task_name = task_name;
+            this.log_level = log_level;
         }
+    });
 
-        setOptions(opts);
+    @nogc bool match(string task_name, LoggerType log_level) pure const nothrow {
+        return (this.task_name == any_task_name || this.task_name == task_name)
+                && this.log_level & log_level;
+    }
+}
 
-        scope (success) {
-            ownerTid.prioritySend(Control.END);
-            if (abort) {
-                log.silent = true;
+unittest {
+    enum some_task_name = "sometaskname";
+    enum another_task_name = "anothertaskname";
+
+    assert(LogFilter("", LoggerType.ERROR).match(some_task_name, LoggerType.STDERR));
+    assert(LogFilter(some_task_name, LoggerType.ALL).match(some_task_name, LoggerType.INFO));
+    assert(LogFilter(some_task_name, LoggerType.ERROR).match(some_task_name, LoggerType.ERROR));
+
+    assert(!LogFilter(some_task_name, LoggerType.STDERR).match(some_task_name, LoggerType.INFO));
+    assert(!LogFilter(some_task_name, LoggerType.ERROR).match(another_task_name, LoggerType.ERROR));
+}
+
+import tagion.basic.Basic : TrustedConcurrency;
+mixin TrustedConcurrency;
+
+import tagion.TaskWrapper;
+
+/**
+ * Main function of LoggerService
+ * @param optiions
+ */
+@safe struct LoggerTask {
+    mixin TaskBasic;
+
+    LogFilter[] commonLogFilters;
+    pragma(msg, "fixme(ib) Spawn LogSubscriptionService from LoggerService");
+    Tid logSubscriptionTid;
+
+    Options options;
+
+    File file;
+    bool logging;
+
+    @nogc bool matchAnyFilter(string task_name, LoggerType type) const nothrow pure {
+        foreach (filter; commonLogFilters) {
+            if (filter.match(task_name, type)) {
+                return true;
             }
         }
+        return false;
+        // return commonLogFilters.any({lambda...})
+    }
 
-        @trusted void task_register() {
-            writeln("REGISTER ", opts.logger.task_name);
-            assert(register(opts.logger.task_name, thisTid));
-        }
-
-        LogFilter[] log_filters;
-        bool matchAnyFilter(string task_name, LoggerType log_level) const nothrow {
-            foreach (filter; log_filters) {
-                if (filter.match(task_name, log_level)) {
-                    return true;
+    @TaskMethod void receiveLogs(LoggerType type, string task_name, string log_msg) {
+        void printToConsole(string s) @trusted {
+            if (options.logger.to_console) {
+                writeln(s);
+                if (options.logger.flush) {
+                    stdout.flush();
                 }
             }
-            return false;
         }
 
-        void sendToLogSubscriptionService(string task_name, LoggerType log_level, string log_output) {
-            writeln("sendToLogSubscriptionService; ", task_name, ": ", log_level);
-            // TODO
-            // send()
-        }
+        void sendToLogSubscriptionService(LoggerType type, string task_name, string log_output) {
+            if (logSubscriptionTid is Tid.init) {
+                logSubscriptionTid = locate(options.logSubscription.task_name);
+            }
 
-        task_register;
-        log.set_logger_task(opts.logger.task_name);
-
-        File file;
-        const logging = opts.logger.file_name.length != 0;
-        if (logging) {
-            file.open(opts.logger.file_name, "w");
-            file.writefln("Logger task: %s", opts.logger.task_name);
-            file.flush;
-        }
-        // scope (exit) {
-        //     if (logging) {
-        //         file.close;
-        //         ownerTid.send(Control.END);
-        //     }
-        // }
-
-        // scope (success) {
-        //     if (logging) {
-        //         file.writeln("Logger closed");
-        //     }
-        // }
-
-        bool stop;
-
-        void controller(Control ctrl) @safe {
-            with (Control) switch (ctrl) {
-            case STOP:
-                stop = true;
-                file.writefln("%s Stopped ", opts.logger.task_name);
-                break;
-            default:
-                file.writefln("%s: Unsupported control %s", opts.logger.task_name, ctrl);
+            if (logSubscriptionTid !is Tid.init) {
+                logSubscriptionTid.send(task_name, type, log_output);
             }
         }
 
-        @trusted void receiver(LoggerType type, string label, string text) {
-            void printToConsole(string s) {
-                if (opts.logger.to_console) {
-                    writeln(s);
-                    if (opts.logger.flush) {
-                        stdout.flush();
-                    }
-                }
-            }
-
-            string output;
-            if (type is LoggerType.INFO) {
-                output = format("%s: %s", label, text);
-            }
-            else {
-                output = format("%s:%s: %s", label, type, text);
-            }
-
-            if (logging) {
-                file.writeln(output);
-            }
-            printToConsole(output);
-            if (matchAnyFilter(label, type)) {
-                sendToLogSubscriptionService(label, type, output);
-            }
-
+        void printStdError(LoggerType type, string task_name, string log_msg) @trusted {
             if (type & LoggerType.STDERR) {
-                stderr.writefln("%s:%s: %s", label, type, text);
+                stderr.writefln("%s:%s: %s", task_name, type, log_msg);
             }
         }
 
-        void filterReceiver(LogFilterArray array) {
-            pragma(msg, "fixme(cbr): This accumulate alot for trach memory on the heap");
-            log_filters = array.filters.dup;
-//            writeln(format("filterReceiver; length = %d", log_filters.length));
+        string output;
+        if (type is LoggerType.INFO) {
+            output = format("%s: %s", task_name, log_msg);
+        }
+        else {
+            output = format("%s:%s: %s", task_name, type, log_msg);
+        }
+
+        if (logging) {
+            file.writeln(output);
+        }
+        printToConsole(output);
+        if (matchAnyFilter(task_name, type)) {
+            sendToLogSubscriptionService(type, task_name, output);
+        }
+
+        printStdError(type, task_name, log_msg);
+    }
+
+    @TaskMethod void receiveFilters(immutable(LogFilter[]) filters) {
+        pragma(msg, "fixme(cbr): This accumulate alot for trach memory on the heap");
+        commonLogFilters = filters.dup;
+    }
+
+    void onSTOP() {
+        stop = true;
+        file.writefln("%s stopped ", options.logger.task_name);
+
+        if (abort) {
+            log.silent = true;
+        }
+    }
+
+    void onLIVE() {
+        writeln("LogSubscriptionService is working...");
+    }
+
+    void onEND() {
+        writeln("LogSubscriptionService was stopped");
+    }
+
+    void opCall(immutable(Options) options) {
+        this.options = options;
+        setOptions(options);
+
+        pragma(msg, "fixme(ib) Pass mask to Logger to not pass not necessary data");
+
+        logSubscriptionTid = spawn(&logSubscriptionServiceTask, options);
+        scope(exit) {
+            logSubscriptionTid.send(Control.STOP);
+            receiveOnly!Control;
+        }     
+
+        logging = options.logger.file_name.length != 0;
+        if (logging) {
+            file.open(options.logger.file_name, "w");
+            file.writefln("Logger task: %s", options.logger.task_name);
+            file.flush;
         }
 
         ownerTid.send(Control.LIVE);
         while (!stop && !abort) {
-            receive(&controller, &receiver, &filterReceiver);
-            if (opts.logger.flush && logging) {
+            receive(&control, &receiveLogs, &receiveFilters);
+            if (options.logger.flush && logging) {
                 file.flush();
             }
         }
-    }
-    catch (Throwable t) {
-        fatal(t);
     }
 }
