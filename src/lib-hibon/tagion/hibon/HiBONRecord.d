@@ -641,7 +641,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         else {
                             static assert(0,
-                                format("Convering for member '%s' of type %s is not supported by default",
+                                    format("Convering for member '%s' of type %s is not supported by default",
                                     name, MemberT.stringof));
 
                         }
@@ -1308,15 +1308,15 @@ const(T) fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
             const result = StructBytes(s_doc);
 
             assert(
-                equal(
+                    equal(
                     list
-                    .map!((i) {binwrite(buffer, i, 0); return tuple(buffer.idup, i);})
+                    .map!((i) { binwrite(buffer, i, 0); return tuple(buffer.idup, i); })
                     .array
                     .sort,
                     s_doc["tabel"]
                     .get!Document[]
                     .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
-                ));
+            ));
             assert(s_doc == result.toDoc);
         }
 

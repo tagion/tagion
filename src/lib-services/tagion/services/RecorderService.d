@@ -44,7 +44,7 @@ struct Fingerprint {
         for (int i = 0; i < fingerprint.length; ++i) {
             format_str ~= std.format.format(f, BigInt(fingerprint[i]));
 
-            if ((i+1) % numbers_in_line is 0)
+            if ((i + 1) % numbers_in_line is 0)
                 format_str ~= "\n";
         }
 
@@ -61,15 +61,15 @@ unittest {
     assert(Fingerprint.format(fingerprint) == "8F 00 33 84 29 F4 69 16 B6 4B AD 88 11 D0 5B 27");
     assert(Fingerprint.format(fingerprint, false) == "143 0 51 132 41 244 105 22 182 75 173 136 17 208 91 39");
     assert(Fingerprint.format(fingerprint, true, 4) == "8F 00 33 84 \n" ~
-                                                        "29 F4 69 16 \n" ~
-                                                        "B6 4B AD 88 \n" ~
-                                                        "11 D0 5B 27");
+            "29 F4 69 16 \n" ~
+            "B6 4B AD 88 \n" ~
+            "11 D0 5B 27");
 }
 
 pragma(msg, "fixme(ib) I don't like the way we cast immutable here. Can we get rid of it?");
 static immutable(T) castToImmutable(T)(T object) @trusted {
     return cast(immutable(T)) object;
-}                   
+}
 
 static T castFromImmutable(T)(immutable(T) object) @trusted {
     return cast(T) object;
@@ -107,11 +107,11 @@ static T castFromImmutable(T)(immutable(T) object) @trusted {
             auto doc_keys = doc.keys.array;
 
             Buffer doc_chain = doc[chainLabel].get!Buffer;
-            
+
             Document doc_recorder;
             if (doc_keys.canFind(recorderLabel))
                 doc_recorder = doc[recorderLabel].get!Document;
-            
+
             Buffer doc_bullseye;
             if (doc_keys.canFind(bullseyeLabel))
                 doc_bullseye = doc[bullseyeLabel].get!Buffer;
@@ -228,7 +228,7 @@ alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFacto
         if (amount)
             this.last_block = castFromImmutable(block);
         else {
-            this.last_block  = castFromImmutable(block);
+            this.last_block = castFromImmutable(block);
             this.first_block = castFromImmutable(block);
         }
         _amount++;
@@ -378,7 +378,7 @@ alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFacto
             }
         }
         return file_names;
-    }    
+    }
 
     private string[] getFiles() {
         return getFiles(this.folder_path);
@@ -423,8 +423,9 @@ alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFacto
 
     static immutable(EpochBlockFactory.EpochBlock) readBlockFromFingerprint(Buffer fingerprint, string folder_path) {
         const f_name = makePath(fingerprint, folder_path);
-        
+
         import tagion.hibon.HiBONRecord : fread;
+
         auto doc = fread(f_name);
         auto factory = EpochBlockFactory(new StdHashNet);
         return factory(doc);
@@ -454,6 +455,7 @@ alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFacto
 }
 
 import tagion.basic.Basic : TrustedConcurrency;
+
 mixin TrustedConcurrency;
 
 import tagion.TaskWrapper;
@@ -469,8 +471,8 @@ import tagion.TaskWrapper;
         auto block = epoch_block_factory(recorder, last_block_fingerprint, db_fingerprint.buffer);
         blocks_db.addBlock(block);
 
-        version(unittest)
-        ownerTid.send(Control.LIVE);
+        version (unittest)
+            ownerTid.send(Control.LIVE);
     }
 
     void opCall(immutable(Options) opts) {
@@ -495,15 +497,15 @@ immutable(RecordFactory.Recorder) initDummyRecorderAdd(int seed = 1, string suff
     }
 
     for (int i = 0; i < HIB.length; i++) {
-        HIB[i]["test1"  ~ suffix] = (seed * i) % 10 * 35 - 46;
-        HIB[i]["test2"  ~ suffix] = (seed * i) % 10 * 35 - 45;
-        HIB[i]["test3"  ~ suffix] = (seed * i) % 10 * 35 - 44;
-        HIB[i]["test4"  ~ suffix] = (seed * i) % 10 * 35 - 43;
-        HIB[i]["test5"  ~ suffix] = (seed * i) % 10 * 35 - 42;
-        HIB[i]["test6"  ~ suffix] = (seed * i) % 10 * 35 - 41;
-        HIB[i]["test7"  ~ suffix] = (seed * i) % 10 * 35 - 40;
-        HIB[i]["test8"  ~ suffix] = (seed * i) % 10 * 35 - 39;
-        HIB[i]["test9"  ~ suffix] = (seed * i) % 10 * 35 - 38;
+        HIB[i]["test1" ~ suffix] = (seed * i) % 10 * 35 - 46;
+        HIB[i]["test2" ~ suffix] = (seed * i) % 10 * 35 - 45;
+        HIB[i]["test3" ~ suffix] = (seed * i) % 10 * 35 - 44;
+        HIB[i]["test4" ~ suffix] = (seed * i) % 10 * 35 - 43;
+        HIB[i]["test5" ~ suffix] = (seed * i) % 10 * 35 - 42;
+        HIB[i]["test6" ~ suffix] = (seed * i) % 10 * 35 - 41;
+        HIB[i]["test7" ~ suffix] = (seed * i) % 10 * 35 - 40;
+        HIB[i]["test8" ~ suffix] = (seed * i) % 10 * 35 - 39;
+        HIB[i]["test9" ~ suffix] = (seed * i) % 10 * 35 - 38;
         HIB[i]["test10" ~ suffix] = (seed * i) % 10 * 35 - 37;
     }
 
@@ -593,7 +595,7 @@ void addDummyRecordToDB(ref DART db, immutable(RecordFactory.Recorder) rec, HiRP
 }
 
 unittest {
-    import std.algorithm : equal;    
+    import std.algorithm : equal;
 
     Options options;
     setDefaultOption(options);
@@ -607,7 +609,7 @@ unittest {
 
     if (!exists(folder_path))
         mkdirRecurse(folder_path);
-    scope(exit)
+    scope (exit)
         rmdirRecurse(folder_path);
 
     SecureNet net = new StdSecureNet;
@@ -633,7 +635,7 @@ unittest {
     auto recorderService = Task!RecorderTask(options.recorder.task_name, options);
     assert(receiveOnly!Control == Control.LIVE);
 
-    /* Add blocks to database */    
+    /* Add blocks to database */
     // Step 0
     addDummyRecordToDB(db, rec_im, hirpc);
     recorderService.receiveRecorder(rec_im, Fingerprint(db.fingerprint));
@@ -662,7 +664,7 @@ unittest {
     addDummyRecordToDB(db, rec3, hirpc);
     recorderService.receiveRecorder(rec3, Fingerprint(db.fingerprint));
     assert(receiveOnly!Control == Control.LIVE);
-    
+
     assert(equal(db.fingerprint, BlocksDB.getBlocksInfo(folder_path).last.bullseye));
 
     // Check iterations through blocks
@@ -671,7 +673,7 @@ unittest {
     assert(blocks_info.amount == files.length);
 
     Buffer fingerprint = blocks_info.last.fingerprint;
-    foreach (j; 0..blocks_info.amount) {
+    foreach (j; 0 .. blocks_info.amount) {
         auto current_block = BlocksDB.readBlockFromFingerprint(fingerprint, folder_path);
         fingerprint = current_block.chain;
     }
@@ -679,7 +681,7 @@ unittest {
     import tagion.utils.Miscellaneous : cutHex;
 
     /* Test rollback */
-    foreach (j; 0..BlocksDB.getBlocksInfo(folder_path).amount-1) {
+    foreach (j; 0 .. BlocksDB.getBlocksInfo(folder_path).amount - 1) {
         immutable block = castToImmutable(BlocksDB.getBlocksInfo(folder_path).last);
 
         addDummyRecordToDB(db, BlocksDB.getFlippedRecorder(block), hirpc);

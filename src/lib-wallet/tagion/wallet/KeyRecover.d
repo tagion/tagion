@@ -81,8 +81,8 @@ struct KeyRecover {
             //     answer_hash.scramble;
             //     question_hash.scramble;
             // }
-//            const hash = net.calcHash(answer);
-            result = net.calcHash(answer_hash ~ question_hash );
+            //            const hash = net.calcHash(answer);
+            result = net.calcHash(answer_hash ~ question_hash);
         }
         return results;
     }
@@ -102,8 +102,8 @@ struct KeyRecover {
         assert(numberOfSeeds(10, 5) is 26);
     }
 
-    Buffer checkHash(scope const(ubyte[]) value, scope const(ubyte[]) salt=null) const {
-        return net.rawCalcHash(net.rawCalcHash(value)~salt);
+    Buffer checkHash(scope const(ubyte[]) value, scope const(ubyte[]) salt = null) const {
+        return net.rawCalcHash(net.rawCalcHash(value) ~ salt);
     }
 
     static void iterateSeeds(
@@ -160,23 +160,23 @@ struct KeyRecover {
             generator.confidence = 0;
         }
 
-
+        
 
         .check(A.length > 1, message("Number of questions must be more than one"));
 
-
+        
 
         .check(confidence <= A.length, message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
                 A.length, confidence));
 
-
+        
 
         .check(A.length <= MAX_QUESTION, message("Mumber of question is %d but it should not exceed %d",
                 A.length, MAX_QUESTION));
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, confidence);
 
-
+        
 
         .check(seeds <= MAX_SEEDS, message("Number quiz-seeds is %d which exceed that max value of %d",
                 seeds, MAX_SEEDS));
@@ -198,11 +198,11 @@ struct KeyRecover {
 
     bool findSecret(scope ref ubyte[] R, Buffer[] A) const {
 
-
+        
 
             .check(A.length > 1, message("Number of questions must be more than one"));
 
-
+        
 
         .check(generator.confidence <= A.length,
                 message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",

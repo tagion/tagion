@@ -56,7 +56,7 @@ interface SSLFiber {
     void unlock() nothrow;
 
     Buffer response(); /// Response from the service
-    bool available(); 
+    bool available();
     @property uint id();
     immutable(ubyte[]) receive(); /// Recives from the service socket
     void send(immutable(ubyte[]) buffer); /// Send to the service socket
@@ -267,8 +267,9 @@ class SSLFiberService {
     void send(uint id, immutable(ubyte[]) buffer)
     in {
         assert(id in active_fibers);
-    } do{
-            active_fibers[id].raw_send(buffer);
+    }
+    do {
+        active_fibers[id].raw_send(buffer);
     }
 
     /++
@@ -362,6 +363,7 @@ class SSLFiberService {
         @trusted
         immutable(ubyte[]) receive() {
             import std.stdio;
+
             ubyte[] buffer;
             ubyte[] current;
             ptrdiff_t rec_data_size;
@@ -382,11 +384,12 @@ class SSLFiberService {
                     return null;
                 }
                 else {
+                    
                         .check(leb128_index < LEN_MAX, message("Invalid size of len128 length field %d", leb128_index));
                     break leb128_loop;
-                    }
-                    checkTimeout;
-                    yield;
+                }
+                checkTimeout;
+                yield;
             }
             // receive data
             const leb128_len = LEB128.decode!uint(leb128_len_data);
@@ -399,7 +402,7 @@ class SSLFiberService {
             buffer[0 .. rec_data_size] = leb128_len_data[0 .. rec_data_size];
             current = buffer[rec_data_size .. $];
             log("curr: %s %d", buffer[0 .. leb128_len.size], buffer.length);
-            while(current.length) {
+            while (current.length) {
                 rec_data_size = client.receive(current);
                 if (rec_data_size < 0) {
                     // Not ready yet

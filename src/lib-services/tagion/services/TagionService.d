@@ -426,15 +426,17 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         random.seed(123456789);
 
         bool network_ready = false;
-        do{
+        do {
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
             receive((ActiveNodeAddressBook address_book) { update_pkeys(address_book.data.keys); });
-            if(pkeys.length < opts.nodes){
+            if (pkeys.length < opts.nodes) {
                 Thread.sleep(500.msecs);
-            }else{
+            }
+            else {
                 network_ready = true;
             }
-        }while(!network_ready);
+        }
+        while (!network_ready);
 
         while (!stop && !abort) {
             immutable message_received = receiveTimeout(opts.timeout.msecs, &receive_payload, &controller,

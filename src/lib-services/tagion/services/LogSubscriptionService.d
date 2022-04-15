@@ -62,6 +62,7 @@ struct LogSubscriptionFilter {
     /// Send all current filters to LoggerService
     void notifyLogService() {
         import std.array;
+
         if (logger_service_tid != Tid.init) {
             logger_service_tid.send(filters.values.join.idup);
         }
@@ -75,7 +76,7 @@ struct LogSubscriptionFilter {
     uint[] matchFilters(string task_name, LoggerType log_level) {
         uint[] clients;
         foreach (client_id; filters.keys) {
-            foreach(filter; filters[client_id]) {
+            foreach (filter; filters[client_id]) {
                 if (filter.match(task_name, log_level)) {
                     clients ~= client_id;
                 }
@@ -93,7 +94,7 @@ struct LogSubscriptionFilter {
 /// \snippet HiBON.d Zero Test
 alias binread(T, R) = MyStruct.read!(T, Endian.littleEndian, R);
 
-    /** Service interact with ... / receive and store messages from ...
+/** Service interact with ... / receive and store messages from ...
      * All usefull stuff also mys be here
      * Main task for LogSubscriptionService
      * @param opts - options for running this task
@@ -127,7 +128,7 @@ void logSubscriptionServiceTask(Options opts) nothrow {
                         writeln("%s", buffer);
                         const result = Document(buffer);
                         // if (result.isInorder) {
-                            return result;
+                        return result;
                         // }
                     }
                     catch (Exception t) {
@@ -147,7 +148,7 @@ void logSubscriptionServiceTask(Options opts) nothrow {
                         foreach (log_level; log_levels) {
                             result += log_level;
                         }
-                        LogFilter filter = LogFilter(cast(string)task_name, cast(LoggerType)result);
+                        LogFilter filter = LogFilter(cast(string) task_name, cast(LoggerType) result);
 
                         subscribers.addSubscription(listener_id, filter);
                     }
@@ -181,7 +182,7 @@ void logSubscriptionServiceTask(Options opts) nothrow {
         @trusted void receiver(string task_name, LoggerType log_level, string log_output) {
             writeln(subscribers.filters.length);
             auto clients = subscribers.matchFilters(task_name, log_level);
-            foreach(client; clients) {
+            foreach (client; clients) {
                 HiRPC hirpc;
                 const sender = hirpc.action(log_output);
                 immutable log_buffer = sender.toDoc.serialize();
@@ -192,10 +193,10 @@ void logSubscriptionServiceTask(Options opts) nothrow {
         ownerTid.send(Control.LIVE);
         while (!stop) {
             receiveTimeout(500.msecs, //Control the thread
-                &handleState,
-                &taskfailure,
-                &receiver,
-                );
+                    &handleState,
+                    &taskfailure,
+                    &receiver,
+            );
         }
     }
     catch (Throwable t) {

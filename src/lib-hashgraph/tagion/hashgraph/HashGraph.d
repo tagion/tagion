@@ -197,8 +197,8 @@ class HashGraph {
 
     void init_tide(
             const(Pubkey) delegate(
-                GossipNet.ChannelFilter channel_filter,
-                const(HiRPC.Sender) delegate() response) @safe responde,
+            GossipNet.ChannelFilter channel_filter,
+            const(HiRPC.Sender) delegate() response) @safe responde,
             const(Document) delegate() @safe payload,
             lazy const sdt_t time) {
         const(HiRPC.Sender) payload_sender() @safe {
@@ -274,8 +274,8 @@ class HashGraph {
         import std.stdio;
 
         log("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d",
-            name, decided_round.number,
-            Event.count, Event.Witness.count, events.length);
+                name, decided_round.number,
+                Event.count, Event.Witness.count, events.length);
         if (epoch_callback !is null) {
             epoch_callback(events, epoch_time);
         }
@@ -774,7 +774,8 @@ class HashGraph {
                 n[]
                     .filter!((e) => !e.isGrounded)
                     .each!((e) => events[e.id] = EventView(e, node_id));
-            }})();
+            }
+        })();
         auto h = new HiBON;
         h[Params.size] = node_size;
         h[Params.events] = events;

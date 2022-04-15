@@ -162,7 +162,7 @@ import tagion.wallet.WalletException : check;
     // }
 
     protected void set_pincode(const KeyRecover recover, scope const(ubyte[]) R,
-        scope const(char[]) pincode) {
+            scope const(char[]) pincode) {
         scope seed = new ubyte[net.hashSize];
         scramble(seed);
 

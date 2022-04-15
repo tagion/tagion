@@ -350,8 +350,7 @@ unittest {
 
     // Tests for doc_get_str_by_key()
     pragma(msg, "fixme(cbr): This unittest does not pass (", __FILE__, ":", __LINE__, ")");
-    version(none)
-    {
+    version (none) {
         const(char)[] expected_str = "test_str_with_key";
 
         assert(fromStringz(doc_get_str_by_key(0, "doc2", 4)) == expected_str);
@@ -379,8 +378,7 @@ unittest {
     }
 
     pragma(msg, "fixme(cbr): This unittest does not pass (", __FILE__, ":", __LINE__, ")");
-    version(none)
-    {
+    version (none) {
         import std.algorithm;
 
         auto hib1 = new HiBON;

@@ -109,9 +109,9 @@ class DART : DARTFile { //, HiRPC.Supports {
         }
 
         static bool sectorInRange(
-            const ushort sector,
-            const ushort from_sector,
-            const ushort to_sector) pure nothrow {
+                const ushort sector,
+                const ushort from_sector,
+                const ushort to_sector) pure nothrow {
             if (to_sector == from_sector) {
                 return true;
             }

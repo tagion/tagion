@@ -288,7 +288,7 @@ struct NodeAddress {
     DART.SectorRange sector;
 
     mixin HiBONRecord!(
-        q{
+            q{
             this(
             string address,
             immutable(DARTOptions) dart_opts,
@@ -343,19 +343,18 @@ struct NodeAddress {
         return DART.SectorRange(from_ang, to_ang);
     }
 
-     static string parseAddr(string addr) {
+    static string parseAddr(string addr) {
         import std.string;
 
         string result;
         const firstpartAddr = addr.indexOf('[') + 1;
-        const secondpartAddr = addr[firstpartAddr..$].indexOf(' ') + firstpartAddr;
+        const secondpartAddr = addr[firstpartAddr .. $].indexOf(' ') + firstpartAddr;
         const firstpartId = addr.indexOf('{') + 1;
         const secondpartId = addr.indexOf(':');
         result = addr[firstpartAddr .. secondpartAddr] ~ p2p_token ~ addr[firstpartId .. secondpartId];
         // log("address: %s \n after: %s", addr, result);
         return result;
     }
-
 
     public string toString() {
         return address;

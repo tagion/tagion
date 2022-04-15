@@ -581,6 +581,7 @@ template mangleFunc(alias T) if (isCallable!T) {
 
 @safe mixin template TrustedConcurrency() {
     import concurrency = std.concurrency;
+
     alias Tid = concurrency.Tid;
 
     static void send(Args...)(Tid tid, Args args) @trusted {
