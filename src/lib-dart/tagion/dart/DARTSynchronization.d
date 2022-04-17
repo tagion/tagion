@@ -12,7 +12,8 @@ import std.datetime;
 import std.typecons;
 import std.format;
 
-import tagion.gossip.P2pGossipNet : NodeAddress, ConnectionPool;
+import tagion.gossip.P2pGossipNet : ConnectionPool;
+import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;

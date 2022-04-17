@@ -20,7 +20,9 @@ import tagion.services.Options;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
-import tagion.gossip.P2pGossipNet;
+
+import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
+import tagion.gossip.AddressBook : NodeAddress;
 
 enum DiscoveryRequestCommand {
     BecomeOnline = 1,
@@ -35,10 +37,13 @@ enum DiscoveryState {
     OFFLINE = 3
 }
 
-void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
-        string taskName, immutable(Options) opts) nothrow { //TODO: for test
+void serverFileDiscoveryService(
+        Pubkey pubkey,
+        shared p2plib.Node node,
+        string taskName,
+        immutable(Options) opts) nothrow { //TODO: for test
     try {
-        scope (exit) {
+        scope (success) {
             log("exit");
             ownerTid.prioritySend(Control.END);
         }
@@ -124,20 +129,20 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
         }
 
         auto addr_changed_tid = spawn(&handleAddrChanedEvent, node);
-        receive((Control ctrl) { assert(ctrl == Control.LIVE); });
+        receive((Control ctrl) { assert(ctrl is Control.LIVE); });
 
         auto rechability_changed_tid = spawn(&handleRechabilityChanged, node);
-        receive((Control ctrl) { assert(ctrl == Control.LIVE); });
+        receive((Control ctrl) { assert(ctrl is Control.LIVE); });
         scope (exit) {
             {
                 addr_changed_tid.send(Control.STOP);
                 auto ctrl = receiveOnly!Control;
-                assert(ctrl == Control.END);
+                assert(ctrl is Control.END);
             }
             {
                 rechability_changed_tid.send(Control.STOP);
                 auto ctrl = receiveOnly!Control;
-                assert(ctrl == Control.END);
+                assert(ctrl is Control.END);
             }
         }
 

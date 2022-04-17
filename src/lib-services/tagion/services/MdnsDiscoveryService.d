@@ -16,7 +16,7 @@ import tagion.logger.Logger;
 import std.concurrency;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
 import std.stdio;
-import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress;
+import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.basic.TagionExceptions : fatal;
 import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
 import tagion.gossip.P2pGossipNet;

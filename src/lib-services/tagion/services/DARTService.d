@@ -40,7 +40,8 @@ import tagion.communication.HiRPC;
 import tagion.services.DARTSynchronizeService;
 
 //import tagion.services.MdnsDiscoveryService;
-import tagion.gossip.P2pGossipNet : NodeAddress, ConnectionPool;
+import tagion.gossip.P2pGossipNet : ConnectionPool;
+import tagion.gossip.AddressBook : NodeAddress;
 
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;

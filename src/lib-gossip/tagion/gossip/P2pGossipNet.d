@@ -23,6 +23,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : HiBONRecord, RecordType;
 import tagion.hibon.Document : Document;
 import tagion.gossip.InterfaceNet;
+import tagion.gossip.AddressBook : NodeAddress;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraphBasic : convertState, ExchangeState;
@@ -277,6 +278,7 @@ immutable class AddressBook(TKey) {
     immutable(NodeAddress[TKey]) data;
 }
 
+version(none)
 @safe
 struct NodeAddress {
     enum tcp_token = "/tcp/";

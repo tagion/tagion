@@ -21,7 +21,9 @@ import std.file;
 import std.file : fwrite = write;
 import std.array;
 import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
-import tagion.gossip.P2pGossipNet;
+
+import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
+import tagion.gossip.AddressBook : addressbook, NodeAddress;
 
 void fileDiscoveryService(
         Pubkey pubkey,
@@ -36,7 +38,7 @@ void fileDiscoveryService(
 
         log.register(task_name);
 
-        auto stop = false;
+        bool stop = false;
         NodeAddress[Pubkey] node_addresses;
 
         bool checkOnline() {
@@ -110,7 +112,7 @@ void fileDiscoveryService(
 
         SysTime mdns_start_timestamp;
         updateTimestamp(mdns_start_timestamp);
-        auto owner_notified = false;
+        bool owner_notified = false;
 
         void notifyReadyAfterDelay() {
             if (!owner_notified) {
@@ -194,7 +196,6 @@ void fileDiscoveryService(
                 }
             });
             notifyReadyAfterDelay();
-
         }
     }
     catch (Throwable t) {

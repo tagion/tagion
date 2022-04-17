@@ -19,7 +19,8 @@ import tagion.hibon.Document : Document;
 import p2plib = p2p.node;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 
-import tagion.gossip.P2pGossipNet;
+import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
+import tagion.gossip.AddressBook : addressbook, NodeAddress;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
 import tagion.dart.Recorder : RecordFactory;
