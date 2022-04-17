@@ -96,7 +96,7 @@ shared(p2plib.Node) initialize_node(immutable Options opts) {
     return p2pnode;
 }
 
-void tagionService(NetworkMode net_mode)(Options opts) nothrow {
+void tagionService(NetworkMode net_mode, Options opts) nothrow {
     //     in {
     //         import std.algorithm : canFind;
 
@@ -112,11 +112,13 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
             ownerTid.prioritySend(Control.END);
         }
 
-        static if (net_mode == NetworkMode.internal) {
-            immutable passpharse = format("Secret_word_%s", opts.node_name).idup;
+        pragma(msg, "fixme(cbr): The passphrase should generate from outside");
+        string passpharse;
+        if (net_mode == NetworkMode.internal) {
+            passpharse = format("Secret_word_%s", opts.node_name).idup;
         }
         else {
-            immutable passpharse = format("Secret_word_%d", opts.port).idup;
+            passpharse = format("Secret_word_%d", opts.port).idup;
         }
 
         bool force_stop = false;
@@ -158,7 +160,8 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
             log("opts.node_name = %s", opts.node_name);
             net.derive(opts.node_name, shared_net);
             p2pnode = initialize_node(opts);
-            static if (net_mode == NetworkMode.internal) {
+            final switch (net_mode) {
+            case NetworkMode.internal:
                 gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
                 ownerTid.send(net.pubkey);
                 Pubkey[] received_pkeys;
@@ -172,16 +175,17 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 foreach (p; pkeys)
                     gossip_net.add_channel(p);
                 ownerTid.send(Control.LIVE);
-            }
-            else if ([NetworkMode.local, NetworkMode.pub].canFind(net_mode)) {
+                break;
+            case NetworkMode.local:
+            case NetworkMode.pub:
                 // immutable task_name = "p2ptagion";
                 // opts.node_name = task_name;
                 gossip_net = new P2pGossipNet(net.pubkey, opts.node_name,
                         opts.discovery.task_name, opts.host, p2pnode);
             }
-            else {
-                throw new OptionException("Unknown network mode");
-            }
+            // else {
+            //     throw new OptionException("Unknown network mode");
+            // }
             // gossip_net = new P2pGossipNet(task_name, opts.discovery.task_name, opts.host, p2pnode);
             void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted {
                 import std.algorithm;
