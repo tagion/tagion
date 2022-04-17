@@ -53,7 +53,9 @@ static struct Logger {
         }
         try {
             logger_tid = locate(logger_task_name);
+
             
+
             .register(task_name, thisTid);
             _task_name = task_name;
             setThreadName(task_name);
