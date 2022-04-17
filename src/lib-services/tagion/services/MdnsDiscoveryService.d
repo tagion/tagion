@@ -34,19 +34,19 @@ void mdnsDiscoveryService(
 
         bool is_ready = false;
 
-        p2plib.MdnsService discovery = node.startMdns("tagion_mdns", opts.discovery.interval.msecs);
+        // p2plib.MdnsService discovery = node.startMdns("tagion_mdns", opts.discovery.interval.msecs);
 
-        log("Run mdns service");
-        p2plib.MdnsNotifee notifee;
-        // if(opts.discovery.notify_enabled){
-        log("Mdns: notify enabled");
-        notifee = discovery.registerNotifee(&StdHandlerCallback, task_name);
+        // log("Run mdns service");
+        // p2plib.MdnsNotifee notifee;
+        // // if(opts.discovery.notify_enabled){
+        // log("Mdns: notify enabled");
+        // notifee = discovery.registerNotifee(&StdHandlerCallback, task_name);
+        // // }
+        // scope (exit) {
+        //     // if(opts.discovery.notify_enabled){
+        //     notifee.close();
+        //     // }
         // }
-        scope (exit) {
-            // if(opts.discovery.notify_enabled){
-            notifee.close();
-            // }
-        }
 
         bool stop = false;
 
@@ -89,15 +89,16 @@ void mdnsDiscoveryService(
             pragma(msg, "fixme(alex): 500.msecs shoud be an option parameter");
             receiveTimeout(
                     500.msecs,
-                    (Response!(ControlCode.Control_PeerDiscovered) response) {
-                //assert(0, "ControlCode.Control_PeerDiscovered should not be used");
-                // string address = cast(string) response.data;
-                // NodeAddress node_address = NodeAddress(NodeAddress.parseAddr(address), opts.dart, opts.port_base);
-                // immutable pk = cast(immutable(ubyte)[])(node_address.id);
-                // node_addrses[cast(Pubkey) pk] = node_address;
+            //         (Response!(ControlCode.Control_PeerDiscovered) response) {
+            //     //assert(0, "ControlCode.Control_PeerDiscovered should not be used");
+            //     // string address = cast(string) response.data;
+            //     // NodeAddress node_address = NodeAddress(NodeAddress.parseAddr(address), opts.dart, opts.port_base);
+            //     // immutable pk = cast(immutable(ubyte)[])(node_address.id);
+            //     // node_addrses[cast(Pubkey) pk] = node_address;
 
-                // log("RECEIVED PEER %d", node_addrses.length);
-            }, (Control control) {
+            //     // log("RECEIVED PEER %d", node_addrses.length);
+            // },
+                    (Control control) {
                 if (control == Control.STOP) {
                     // log("stop");
                     stop = true;
