@@ -54,7 +54,11 @@ synchronized class AddressBook {
 
     immutable(NodeAddress[Pubkey]) _data() @trusted {
         pragma(msg, "fixme(cbr): AddressBook._data This function should be removed whne the addressbook has been implemented");
-        return cast(immutable)addresses;
+        NodeAddress[Pubkey] result;
+        foreach(pkey, addr; addresses) {
+            result[pkey] = addr;
+        }
+        return cast(immutable)result;
     }
 
     void overwrite(const(NodeAddress[Pubkey]) addrs) {

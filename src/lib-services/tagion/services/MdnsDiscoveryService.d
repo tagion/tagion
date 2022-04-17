@@ -50,7 +50,7 @@ void mdnsDiscoveryService(
 
         bool stop = false;
 
-        NodeAddress[Pubkey] node_addrses;
+        // NodeAddress[Pubkey] node_addrses;
 
         bool checkTimestamp(SysTime time, Duration duration) {
             return (Clock.currTime - time) > duration;
@@ -77,9 +77,9 @@ void mdnsDiscoveryService(
         }
 
         void addOwnInfo() {
-            NodeAddress node_address = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
-            immutable pk = cast(immutable(ubyte)[])(node_address.id);
-            node_addrses[cast(Pubkey) pk] = node_address;
+            // NodeAddress node_address = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
+            // immutable pk = cast(immutable(ubyte)[])(node_address.id);
+            // node_addrses[cast(Pubkey) pk] = node_address;
         }
 
         addressbook[pubkey] = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
