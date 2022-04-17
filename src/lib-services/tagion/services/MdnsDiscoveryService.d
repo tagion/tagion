@@ -91,10 +91,10 @@ void mdnsDiscoveryService(
                     500.msecs,
                     (Response!(ControlCode.Control_PeerDiscovered) response) {
                 //assert(0, "ControlCode.Control_PeerDiscovered should not be used");
-                string address = cast(string) response.data;
-                NodeAddress node_address = NodeAddress(NodeAddress.parseAddr(address), opts.dart, opts.port_base);
-                immutable pk = cast(immutable(ubyte)[])(node_address.id);
-                node_addrses[cast(Pubkey) pk] = node_address;
+                // string address = cast(string) response.data;
+                // NodeAddress node_address = NodeAddress(NodeAddress.parseAddr(address), opts.dart, opts.port_base);
+                // immutable pk = cast(immutable(ubyte)[])(node_address.id);
+                // node_addrses[cast(Pubkey) pk] = node_address;
 
                 // log("RECEIVED PEER %d", node_addrses.length);
             }, (Control control) {
@@ -106,7 +106,7 @@ void mdnsDiscoveryService(
                 final switch (request) {
                 case DiscoveryRequestCommand.BecomeOnline: {
                         log("Becoming online..");
-                        addOwnInfo();
+                        //addOwnInfo();
                         break;
                     }
                 case DiscoveryRequestCommand.RequestTable: {
