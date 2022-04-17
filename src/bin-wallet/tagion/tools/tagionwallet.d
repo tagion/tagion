@@ -1,3 +1,5 @@
+module tagion.tools.tagionwallet;
+
 import std.getopt;
 import std.stdio;
 import std.file : exists, mkdir;

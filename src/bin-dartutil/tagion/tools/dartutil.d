@@ -1,4 +1,4 @@
-module tagion.dartutil;
+module tagion.tools.dartutil;
 
 import std.getopt;
 import std.stdio;
