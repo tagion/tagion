@@ -46,8 +46,11 @@ import tagion.gossip.AddressBook : NodeAddress;
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
-void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Node) node,
-        shared(Net) master_net, immutable(DART.SectorRange) sector_range) nothrow {
+void dartServiceTask(Net : SecureNet)(
+        immutable(Options) opts,
+        shared(p2plib.Node) node,
+        shared(Net) master_net,
+        immutable(DART.SectorRange) sector_range) nothrow {
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
@@ -76,8 +79,11 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
         Tid subscribe_handler_tid;
         if (is_active_node) {
             log("Handling for subscription");
-            node.listen(opts.dart.subs.protocol_id, &StdHandlerCallback,
-                    opts.dart.subs.master_task_name, opts.dart.subs.host.timeout.msecs,
+            node.listen(
+                    opts.dart.subs.protocol_id,
+                    &StdHandlerCallback,
+                    opts.dart.subs.master_task_name,
+                    opts.dart.subs.host.timeout.msecs,
                     cast(uint) opts.dart.subs.host.max_size);
             subscribe_handler_tid = spawn(&subscibeHandler, opts);
         }
@@ -117,14 +123,18 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
         ownerTid.send(Control.LIVE);
         while (!stop) {
             pragma(msg, "fixme(alex): 1000.msecs shoud be an option");
-            receiveTimeout(1000.msecs, &handleControl,
+            receiveTimeout(
+                    1000.msecs,
+                    &handleControl,
                     (Response!(ControlCode.Control_Connected) resp) {
                 log("DS: Client Connected key: %d", resp.key);
                 connectionPool.add(resp.key, resp.stream, true);
-            }, (Response!(ControlCode.Control_Disconnected) resp) {
+            },
+                    (Response!(ControlCode.Control_Disconnected) resp) {
                 log("DS: Client Disconnected key: %d", resp.key);
                 connectionPool.close(cast(void*) resp.key);
-            }, (Response!(ControlCode.Control_RequestHandled) resp) {
+            },
+                    (Response!(ControlCode.Control_RequestHandled) resp) {
                 log("DS: response received");
 
                 scope (exit) {
@@ -143,7 +153,8 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                     resp.data);
                 requestPool.setResponse(response);
 
-            }, (immutable(RecordFactory.Recorder) recorder) { //TODO: change to HiRPC
+            },
+                    (immutable(RecordFactory.Recorder) recorder) { //TODO: change to HiRPC
                 log("DS: received recorder");
                 if (subscribe_handler_tid != Tid.init) {
                     send(subscribe_handler_tid, recorder);
@@ -159,7 +170,8 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                 else {
                     log("Cannot locate DART synchronize service");
                 }
-            }, (Buffer data, bool flag) {
+            },
+                    (Buffer data, bool flag) {
                 auto doc = Document(data);
                 auto message_doc = doc[Keywords.message].get!Document;
                 const hirpc_id = message_doc[Keywords.id].get!uint;
@@ -172,7 +184,8 @@ void dartServiceTask(Net : SecureNet)(immutable(Options) opts, shared(p2plib.Nod
                     auto bullseye = result_doc[DARTFile.Params.bullseye].get!Buffer;
                     log(bullseye.cutHex);
                 }
-            }, (string taskName, Buffer data) {
+            },
+                    (string taskName, Buffer data) {
                 log("DS: Received request from service: %s", taskName);
                 const doc = Document(data);
                 auto receiver = empty_hirpc.receive(doc);
@@ -318,10 +331,12 @@ private void subscibeHandler(immutable(Options) opts) {
                 (Response!(ControlCode.Control_Connected) resp) {
             log("DS-subs: Client Connected key: %d", resp.key);
             connectionPool.add(resp.key, resp.stream, true);
-        }, (Response!(ControlCode.Control_Disconnected) resp) {
+        },
+                (Response!(ControlCode.Control_Disconnected) resp) {
             log("DS-subs: Client Disconnected key: %d", resp.key);
             connectionPool.close(resp.key);
-        }, (immutable(RecordFactory.Recorder) recorder) { //TODO: change to HiRPC
+        },
+                (immutable(RecordFactory.Recorder) recorder) { //TODO: change to HiRPC
             log("DS-subs: received recorder");
             connectionPool.broadcast(recorder.toDoc.serialize); //+save to journal etc..
             // if not ready/started => send error
