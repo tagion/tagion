@@ -217,13 +217,17 @@ class HashGraph {
         }
 
         if (areWeInGraph) {
-            const send_channel = responde(&not_used_channels, &payload_sender);
+            const send_channel = responde(
+                    &not_used_channels,
+                    &payload_sender);
             if (send_channel !is Pubkey(null)) {
                 getNode(send_channel).state = ExchangeState.INIT_TIDE;
             }
         }
         else {
-            const send_channel = responde(&not_used_channels, &ripple_sender);
+            const send_channel = responde(
+                    &not_used_channels,
+                    &ripple_sender);
         }
     }
 
@@ -371,7 +375,9 @@ class HashGraph {
      Returns:
      The front event of the send channel
      +/
-    const(Event) register_wavefront(const Wavefront received_wave, const Pubkey from_channel) {
+    const(Event) register_wavefront(
+            const Wavefront received_wave,
+            const Pubkey from_channel) {
         _register = new Register(received_wave);
         scope (exit) {
             _register = null;
@@ -393,7 +399,9 @@ class HashGraph {
         return front_seat_event;
     }
 
-    @HiRPCMethod() const(HiRPC.Sender) wavefront(const Wavefront wave, const uint id = 0) {
+    @HiRPCMethod() const(HiRPC.Sender) wavefront(
+            const Wavefront wave,
+            const uint id = 0) {
         return hirpc.wavefront(wave, id);
     }
 
