@@ -198,7 +198,7 @@ class HashGraph {
     void init_tide(
             const(Pubkey) delegate(
             GossipNet.ChannelFilter channel_filter,
-            const(HiRPC.Sender) delegate() response) @safe responde,
+            GossipNet.SenderCallBack sender) @safe responde,
             const(Document) delegate() @safe payload,
             lazy const sdt_t time) {
         const(HiRPC.Sender) payload_sender() @safe {
@@ -499,7 +499,7 @@ class HashGraph {
             const HiRPC.Receiver received,
             lazy const(sdt_t) time,
             void delegate(const(HiRPC.Sender) send_wave) @safe response,
-            Document delegate() @safe payload) {
+            const(Document) delegate() @safe payload) {
 
         alias consensus = consensusCheckArguments!(GossipConsensusException);
         immutable from_channel = received.pubkey;
@@ -1033,7 +1033,7 @@ class HashGraph {
                     }
                     uint count;
                     bool stop;
-                    Document payload() @safe {
+                    const(Document) payload() @safe {
                         auto h = new HiBON;
                         h["node"] = format("%s-%d", _hashgraph.name, count);
                         return Document(h);
@@ -1057,7 +1057,10 @@ class HashGraph {
                         //const onLine=_hashgraph.areWeOnline;
                         const init_tide = random.value(0, 2) is 1;
                         if (init_tide) {
-                            _hashgraph.init_tide(&authorising.gossip, &payload, time);
+                            _hashgraph.init_tide(
+                                    &authorising.gossip,
+                                    &payload,
+                                    time);
                             count++;
                         }
                     }
