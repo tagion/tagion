@@ -701,7 +701,7 @@ mixin template HiBONRecord(string CTOR = "") {
     return doc;
 }
 
-const(T) fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
+T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
     const doc = filename.fread;
     return T(doc, args);
 }

@@ -16,14 +16,15 @@ import tagion.basic.TagionExceptions : TagionException, taskException, fatal;
 import tagion.services.MdnsDiscoveryService;
 
 import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONRecord : fwrite, fread;
 import tagion.hibon.Document : Document;
-import std.file;
-import std.file : fwrite = write;
+import std.file : exists;
+// import std.file : fwrite = write;
 import std.array;
 import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
 
 import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
-import tagion.gossip.AddressBook : addressbook, NodeAddress;
+import tagion.gossip.AddressBook : addressbook, NodeAddress, AddressBook;
 
 void fileDiscoveryService(
         Pubkey pubkey,
@@ -39,21 +40,26 @@ void fileDiscoveryService(
         log.register(task_name);
 
         bool stop = false;
-        NodeAddress[Pubkey] node_addresses;
+        alias AddressDirectory = AddressBook.AddressDirectory;
+        AddressDirectory local_addresbook;
 
         bool checkOnline() {
-            auto read_buff = cast(ubyte[]) shared_storage.read;
-            auto splited_read_buff = read_buff.split("/n");
-            log("%d", splited_read_buff.length);
-            foreach (node_info_buff; splited_read_buff) {
-                if (node_info_buff.length > 0) {
-                    auto doc = Document(cast(immutable) node_info_buff);
-                    auto pkey_buff = doc["pkey"].get!Buffer;
-                    auto pkey = cast(Pubkey) pkey_buff;
-                    if (pkey == pubkey) {
-                        return true;
-                    }
-                }
+            if (shared_storage.exists) {
+                local_addresbook = shared_storage.fread!AddressDirectory;
+                return (pubkey in local_addresbook.addresses) !is null;
+            // auto read_buff = cast(ubyte[]) shared_storage.read;
+            // auto splited_read_buff = read_buff.split("/n");
+            // log("%d", splited_read_buff.length);
+            // foreach (node_info_buff; splited_read_buff) {
+            //     if (node_info_buff.length > 0) {
+            //         auto doc = Document(cast(immutable) node_info_buff);
+            //         auto pkey_buff = doc["pkey"].get!Buffer;
+            //         auto pkey = cast(Pubkey) pkey_buff;
+            //         if (pkey == pubkey) {
+            //             return true;
+            //         }
+            //     }
+            // }
             }
             return false;
         }
@@ -62,11 +68,14 @@ void fileDiscoveryService(
             try {
                 do {
                     log("record own info");
-                    auto params = new HiBON;
-                    params["pkey"] = pubkey;
-                    params["address"] = node_address;
-                    shared_storage.append(params.serialize);
-                    shared_storage.append("/n");
+                    local_addresbook = shared_storage.fread!AddressDirectory;
+                    local_addresbook.addresses[pubkey] = NodeAddress(node_address, opts.dart, opts.port_base);
+                    shared_storage.fwrite(local_addresbook);
+                    // auto params = new HiBON;
+                    // params["pkey"] = pubkey;
+                    // params["address"] = node_address;
+                    // shared_storage.append(params.serialize);
+                    // shared_storage.append("/n");
                 }
                 while (!checkOnline);
             }
@@ -79,22 +88,27 @@ void fileDiscoveryService(
         void eraseOwnInfo() nothrow {
             try {
                 log("erase");
-                auto read_buff = cast(ubyte[]) shared_storage.read;
-                auto splited_read_buff = read_buff.split("/n");
-                log("%d", splited_read_buff.length);
-                foreach (node_info_buff; splited_read_buff) {
-                    if (node_info_buff.length > 0) {
-                        auto doc = Document(cast(immutable) node_info_buff);
-                        auto pkey_buff = doc["pkey"].get!Buffer;
-                        auto pkey = cast(Pubkey) pkey_buff;
-                        if (pkey == pubkey) {
-                            log("found myself");
-                            shared_storage.fwrite(cast(string) read_buff.replace(node_info_buff,
-                                    cast(ubyte[]) ""));
-                            break;
-                        }
-                    }
-                }
+                local_addresbook = shared_storage.fread!AddressDirectory;
+                local_addresbook.addresses.remove(pubkey);
+                shared_storage.fwrite(local_addresbook);
+
+                // auto _addressbook = shared_storage.fread!AddressDirectory;
+                // auto read_buff = cast(ubyte[]) shared_storage.read;
+                // auto splited_read_buff = read_buff.split("/n");
+                // log("%d", splited_read_buff.length);
+                // foreach (node_info_buff; splited_read_buff) {
+                //     if (node_info_buff.length > 0) {
+                //         auto doc = Document(cast(immutable) node_info_buff);
+                //         auto pkey_buff = doc["pkey"].get!Buffer;
+                //         auto pkey = cast(Pubkey) pkey_buff;
+                //         if (pkey == pubkey) {
+                //             log("found myself");
+                //             shared_storage.fwrite(cast(string) read_buff.replace(node_info_buff,
+                //                     cast(ubyte[]) ""));
+                //             break;
+                //         }
+                //     }
+                // }
             }
             catch (Exception e) {
                 log("Exception: %s", e.msg);
@@ -132,25 +146,31 @@ void fileDiscoveryService(
         void initialize() nothrow {
             log("initializing");
             try {
-                auto read_buff = cast(ubyte[]) shared_storage.read;
-                auto splited_read_buff = read_buff.split("/n");
-                foreach (node_info_buff; splited_read_buff) {
-                    if (node_info_buff.length > 0) {
-                        auto doc = Document(cast(immutable) node_info_buff);
-                        import tagion.hibon.HiBONJSON;
-
-                        log("%s", doc.toJSON);
-                        auto pkey_buff = doc["pkey"].get!Buffer;
-                        auto pkey = cast(Pubkey) pkey_buff;
-                        auto addr = doc["address"].get!string;
-                        import tagion.utils.Miscellaneous : toHexString, cutHex;
-
-                        auto node_addr = NodeAddress(addr, opts.dart, opts.port_base);
-                        node_addresses[pkey] = node_addr;
-                        log("added %s", pkey);
-                    }
+                if (shared_storage.exists) {
+                    local_addresbook = shared_storage.fread!AddressDirectory;
                 }
-                log("initialized %d", node_addresses.length);
+                else {
+                    shared_storage.fwrite(local_addresbook);
+                }
+                // auto read_buff = cast(ubyte[]) shared_storage.read;
+                // auto splited_read_buff = read_buff.split("/n");
+                // foreach (node_info_buff; splited_read_buff) {
+                //     if (node_info_buff.length > 0) {
+                //         auto doc = Document(cast(immutable) node_info_buff);
+                //         import tagion.hibon.HiBONJSON;
+
+                //         log("%s", doc.toJSON);
+                //         auto pkey_buff = doc["pkey"].get!Buffer;
+                //         auto pkey = cast(Pubkey) pkey_buff;
+                //         auto addr = doc["address"].get!string;
+                //         import tagion.utils.Miscellaneous : toHexString, cutHex;
+
+                //         auto node_addr = NodeAddress(addr, opts.dart, opts.port_base);
+                //         node_addresses[pkey] = node_addr;
+                //         log("added %s", pkey);
+                //     }
+                // }
+                log("initialized %d", local_addresbook.addresses.length);
             }
             catch (Exception e) {
                 //logwriteln("Er:", e.msg);
@@ -168,7 +188,7 @@ void fileDiscoveryService(
                     500.msecs,
                     (immutable(Pubkey) key, Tid tid) {
                         log("looking for key: %s", key);
-                        tid.send(node_addresses[key]);
+                        tid.send(local_addresbook.addresses[key]);
                     },
                     (Control control) {
                 if (control is Control.STOP) {
@@ -186,7 +206,7 @@ void fileDiscoveryService(
                     case RequestTable:
                         initialize();
                         auto address_book = new ActiveNodeAddressBook(
-                            node_addresses);
+                            local_addresbook.addresses);
                         ownerTid.send(address_book);
                         break;
                     case BecomeOffline:
