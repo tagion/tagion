@@ -21,7 +21,11 @@ import tagion.basic.TagionExceptions : fatal;
 import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
 import tagion.gossip.P2pGossipNet;
 
-void mdnsDiscoveryService(shared p2plib.Node node, string task_name, immutable(Options) opts) nothrow { //TODO: for test
+void mdnsDiscoveryService(
+        Pubkey pubkey,
+        shared p2plib.Node node,
+        string task_name,
+        immutable(Options) opts) nothrow { //TODO: for test
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
@@ -44,7 +48,8 @@ void mdnsDiscoveryService(shared p2plib.Node node, string task_name, immutable(O
             // }
         }
 
-        auto stop = false;
+        bool stop = false;
+
         NodeAddress[Pubkey] node_addrses;
 
         bool checkTimestamp(SysTime time, Duration duration) {
@@ -80,8 +85,11 @@ void mdnsDiscoveryService(shared p2plib.Node node, string task_name, immutable(O
         ownerTid.send(Control.LIVE);
         //    try{
         do {
-            pragma(msg, "fixme(alex); 500.msecs shoud be an option parameter");
-            receiveTimeout(500.msecs, (Response!(ControlCode.Control_PeerDiscovered) response) {
+            pragma(msg, "fixme(alex): 500.msecs shoud be an option parameter");
+            receiveTimeout(
+                    500.msecs,
+                    (Response!(ControlCode.Control_PeerDiscovered) response) {
+                //assert(0, "ControlCode.Control_PeerDiscovered should not be used");
                 string address = cast(string) response.data;
                 NodeAddress node_address = NodeAddress(NodeAddress.parseAddr(address), opts.dart, opts.port_base);
                 immutable pk = cast(immutable(ubyte)[])(node_address.id);

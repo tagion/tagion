@@ -221,7 +221,12 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
 
         final switch (opts.net_mode) {
         case NetworkMode.internal: {
-                bootstrap_tid = spawn(&mdnsDiscoveryService, p2pnode, inner_task_name, opts);
+                bootstrap_tid = spawn(
+                    &mdnsDiscoveryService,
+                    pubkey,
+                    p2pnode,
+                    inner_task_name,
+                    opts);
                 break;
             }
         case NetworkMode.local: {
