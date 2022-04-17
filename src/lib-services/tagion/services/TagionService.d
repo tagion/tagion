@@ -271,7 +271,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         scope (exit) {
             log("!!!==========!!!!!! Existing %s", opts.node_name);
 
-            if (transcript_tid != transcript_tid.init) {
+            if (transcript_tid !is transcript_tid.init) {
                 log("Send stop to %s", opts.transcript.task_name);
                 transcript_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
@@ -279,7 +279,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 }
             }
 
-            if (discovery_tid != Tid.init) {
+            if (discovery_tid !is Tid.init) {
                 log("Send stop to %s", opts.discovery.task_name);
                 discovery_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
@@ -287,7 +287,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 }
             }
 
-            if (dart_sync_tid != Tid.init) {
+            if (dart_sync_tid !is Tid.init) {
                 log("Send stop to %s", opts.dart.sync.task_name);
                 dart_sync_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
@@ -295,7 +295,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 }
             }
             log("DART TID: %s", dart_tid);
-            if (dart_tid != Tid.init) {
+            if (dart_tid !is Tid.init) {
                 log("Send stop to %s", opts.dart.task_name);
                 dart_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
@@ -386,7 +386,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
             payload_queue.write(pload);
         }
 
-        Document payload() @safe {
+        const(Document) payload() @safe {
             // log("Select payload: %s", payload_queue.empty);
             if (!hashgraph.active || payload_queue.empty) {
                 return Document();
