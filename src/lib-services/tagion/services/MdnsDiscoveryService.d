@@ -110,9 +110,9 @@ void mdnsDiscoveryService(
                         break;
                     }
                 case DiscoveryRequestCommand.RequestTable: {
-                        auto address_book = new ActiveNodeAddressBook(node_addrses);
-                        log("Requested: %s", address_book.data.length);
-                        ownerTid.send(address_book);
+                    auto address_book = new ActiveNodeAddressBook(addressbook._data); //node_addrses);
+                        log("Requested: %s : %d", addressbook._data.length, address_book.data.length);
+                        ownerTid.send(address_book); //addressbook._data);
                         break;
                     }
                 case DiscoveryRequestCommand.UpdateTable:

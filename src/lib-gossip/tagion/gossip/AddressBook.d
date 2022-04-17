@@ -52,8 +52,9 @@ synchronized class AddressBook {
 
     protected shared(NodeAddresses) addresses;
 
-    private shared(NodeAddress[Pubkey]) _data() {
-        return addresses;
+    immutable(NodeAddress[Pubkey]) _data() @trusted {
+        pragma(msg, "fixme(cbr): AddressBook._data This function should be removed whne the addressbook has been implemented");
+        return cast(immutable)addresses;
     }
 
     void overwrite(const(NodeAddress[Pubkey]) addrs) {
