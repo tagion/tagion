@@ -20,7 +20,6 @@ clean-tagionwave:
 
 clean: clean-tagionwave
 
-BIN_TARGETS+=target-tagionwave
 #
 # HiBON utility
 #
@@ -38,8 +37,6 @@ clean-hibonutil:
 	$(RM) $(DBIN)/hibonutil
 
 clean: clean-hibonutil
-
-BIN_TARGETS+=target-hibonutil
 
 #
 # DART utility
@@ -77,8 +74,6 @@ clean-wasmutil:
 
 clean: clean-wasmutil
 
-BIN_TARGETS+=target-wasmutil
-
 
 #
 # WASM utility
@@ -98,7 +93,6 @@ clean-wallet:
 clean: clean-wallet
 
 
-BIN_TARGETS+=target-wallet
 
 
 #
@@ -161,22 +155,28 @@ clean-recorderchain:
 
 clean: clean-recorderchain
 
-BIN_TARGETS+=target-recorderchain
+hibonutil: target-hibonutil
+bin: hibonutil
 
-#
-# Dart bootstrap util
-#
-target-boot: LIBS+=$(LIBOPENSSL)
-target-boot: LIBS+=$(LIBSECP256K1)
-target-boot: LIBS+=$(LIBP2PGOWRAPPER)
-target-boot: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-boot/*" -a -not -path "*/unitdata/*"}
-target-boot: $(DBIN)/boot
+dartutil: target-dartutil
+bin: dartutil
 
-clean-boot:
-	$(PRECMD)
-	${call log.header, $@ :: clean}
-	$(RM) $(DBIN)/boot
+wasmutil: target-wasmutil
+bin: wasmutil
 
-clean: clean-boot
+wallet: target-wallet
+bin: wallet
 
-BIN_TARGETS+=target-boot
+tagionwave: target-tagionwave
+bin: tagionwave
+
+tagionlogservicetest: target-tagionlogservicetest
+bin: tagionlogservicetest
+
+tagionsubscription: target-tagionsubscription
+bin: tagionsubscription
+
+recorderchain: target-recorderchain
+bin: recorderchain
+
+
