@@ -82,6 +82,7 @@ void mdnsDiscoveryService(
             node_addrses[cast(Pubkey) pk] = node_address;
         }
 
+        addressbook[pubkey] = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
         ownerTid.send(Control.LIVE);
         //    try{
         do {
@@ -94,6 +95,7 @@ void mdnsDiscoveryService(
                 NodeAddress node_address = NodeAddress(NodeAddress.parseAddr(address), opts.dart, opts.port_base);
                 immutable pk = cast(immutable(ubyte)[])(node_address.id);
                 node_addrses[cast(Pubkey) pk] = node_address;
+
                 // log("RECEIVED PEER %d", node_addrses.length);
             }, (Control control) {
                 if (control == Control.STOP) {
