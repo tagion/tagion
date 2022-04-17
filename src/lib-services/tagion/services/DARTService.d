@@ -277,23 +277,9 @@ void dartServiceTask(Net : SecureNet)(
                 else if (method == DART.Quries.dartModify) {
                     modifyDART();
                 }
-            }, (NodeAddress[string] update) { node_addrses = update; }, // (immutable(TagionException) e) {
-                    //     stop=true;
-                    //     ownerTid.send(e);
-                    // },
-                    (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); }, // (immutable(Exception) e) {
-                    //     //log.fatal(e.msg);
-                    //     stop=true;
-                    //     ownerTid.send(e);
-                    // },
-                    // (immutable(Throwable) t) {
-                    //     //log.fatal(t.msg);
-                    //     stop=true;
-                    //     ownerTid.send(t);
-                    // }
-
-                    
-
+            },
+                    (NodeAddress[string] update) { node_addrses = update; },
+                    (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); },
             );
             requestPool.tick();
         }
