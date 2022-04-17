@@ -1,4 +1,4 @@
-module tagion.wave;
+module tagion.tagiowave;
 
 import std.stdio;
 import core.thread;
