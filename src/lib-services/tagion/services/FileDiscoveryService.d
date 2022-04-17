@@ -112,9 +112,9 @@ void fileDiscoveryService(
 
         SysTime mdns_start_timestamp;
         updateTimestamp(mdns_start_timestamp);
-        bool owner_notified = false;
 
         void notifyReadyAfterDelay() {
+            static bool owner_notified ;
             if (!owner_notified) {
                 const after_delay = checkTimestamp(mdns_start_timestamp,
                         opts.discovery.delay_before_start.msecs);
@@ -159,15 +159,19 @@ void fileDiscoveryService(
         }
 
         log("File Discovery started");
+        addressbook[pubkey] = NodeAddress(node_address, opts.dart, opts.port_base);
         ownerTid.send(Control.LIVE);
         // ownerTid.send(DiscoveryState.READY);
 
         while (!stop) {
             receiveTimeout(
                     500.msecs,
-                    (immutable(Pubkey) key, Tid tid) { log("looking for key: %s", key); tid.send(node_addresses[key]); },
+                    (immutable(Pubkey) key, Tid tid) {
+                        log("looking for key: %s", key);
+                        tid.send(node_addresses[key]);
+                    },
                     (Control control) {
-                if (control == Control.STOP) {
+                if (control is Control.STOP) {
                     log("stop");
                     stop = true;
                 }
