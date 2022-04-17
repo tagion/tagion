@@ -6,7 +6,10 @@ import tagion.dart.DART : DART;
 import tagion.dart.DARTOptions : DARTOptions;
 import tagion.logger.Logger : log;
 
-import std.file : exists;
+import std.file : exists, touch=write, remove;
+import std.path : setExtension;
+import core.thread : Thread;
+import std.format;
 import std.random;
 
 // alias ActiveNodeAddressBookPub = immutable(AddressBook_deprecation);
@@ -31,9 +34,22 @@ import std.random;
 //     private NodeAddress[Pubkey] addresses;
 //     mixin HiBONRecord;
 // }
+import tagion.basic.TagionExceptions;
+
+@safe class AddressBookException : TagionException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
+        super(msg, file, line);
+    }
+}
+
+/// check function used in the HiBON package
+alias check = Check!(AddressBookException);
+
 
 @safe
 synchronized class AddressBook {
+    import core.time;
+    enum lockext = "lock";
     alias NodeAddresses = NodeAddress[Pubkey];
     // pragma(msg, "typeof(addresses.byKeyValue) ", typeof(NodeAddresses.byKeyValue));
     alias NodePair = typeof((cast(NodeAddresses) addresses).byKeyValue.front);
@@ -41,6 +57,9 @@ synchronized class AddressBook {
         NodeAddresses addresses;
         mixin HiBONRecord;
     }
+
+    enum max_count = 3;
+    protected int timeout= 300; ///
 
     protected {
         Random rnd;
@@ -68,17 +87,47 @@ synchronized class AddressBook {
         }
     }
 
-    void load(string filename) {
-        if (filename.exists) {
+    void load(string filename, bool lock=false) @trusted {
+        void local_read() @safe {
             auto dir = filename.fread!AddressDirectory;
             overwrite(dir.addresses);
         }
+        if (filename.exists) {
+            if (lock) {
+                immutable file_lock = filename.setExtension(lockext);
+                int count_down = max_count;
+                while (file_lock.exists) {
+                    Thread.sleep(timeout.msecs);
+                    check(count_down > 0, format("File %s is locked timeout for the AddressBook"));
+                }
+                file_lock.touch(null);
+                local_read;
+                file_lock.remove;
+                return;
+            }
+            local_read;
+        }
     }
 
-    void save(string filename) @trusted {
-        AddressDirectory dir;
-        dir.addresses = cast(NodeAddress[Pubkey]) addresses;
-        filename.fwrite(dir);
+    void save(string filename, bool lock=false) @trusted {
+        void local_write() {
+            AddressDirectory dir;
+            dir.addresses = cast(NodeAddress[Pubkey]) addresses;
+            filename.fwrite(dir);
+        }
+        if (lock) {
+            immutable file_lock = filename.setExtension(lockext);
+            int count_down = max_count;
+            while (file_lock.exists) {
+                Thread.sleep(timeout.msecs);
+                check(count_down > 0, format("File %s is locked timeout for the AddressBook"));
+            }
+            file_lock.touch(null);
+            local_write;
+            file_lock.remove;
+            return;
+        }
+        local_write;
     }
 
     immutable(NodeAddress) opIndex(const Pubkey pkey) const pure nothrow {
@@ -92,7 +141,7 @@ synchronized class AddressBook {
     void opIndexAssign(const NodeAddress addr, const Pubkey pkey)
     in {
         assert(pkey.length is 33);
-        assert(!(pkey in addresses), "Temp check should be removed");
+//        assert(!(pkey in addresses), "Temp check should be removed");
     }
     do { //pure nothrow {
         import std.stdio;

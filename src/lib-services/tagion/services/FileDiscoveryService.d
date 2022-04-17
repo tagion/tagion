@@ -36,17 +36,19 @@ void fileDiscoveryService(
             ownerTid.prioritySend(Control.END);
         }
         string shared_storage = opts.path_to_shared_info;
-
         log.register(task_name);
 
         bool stop = false;
-        alias AddressDirectory = AddressBook.AddressDirectory;
-        AddressDirectory local_addresbook;
+        // alias AddressDirectory = AddressBook.AddressDirectory;
+        // AddressDirectory local_addresbook;
 
         bool checkOnline() {
             if (shared_storage.exists) {
-                local_addresbook = shared_storage.fread!AddressDirectory;
-                return (pubkey in local_addresbook.addresses) !is null;
+                addressbook.load(shared_storage, true);
+                version(none) {
+                    local_addresbook = shared_storage.fread!AddressDirectory;
+                    return (pubkey in local_addresbook.addresses) !is null;
+                }
             // auto read_buff = cast(ubyte[]) shared_storage.read;
             // auto splited_read_buff = read_buff.split("/n");
             // log("%d", splited_read_buff.length);
@@ -68,9 +70,14 @@ void fileDiscoveryService(
             try {
                 do {
                     log("record own info");
-                    local_addresbook = shared_storage.fread!AddressDirectory;
-                    local_addresbook.addresses[pubkey] = NodeAddress(node_address, opts.dart, opts.port_base);
-                    shared_storage.fwrite(local_addresbook);
+                    addressbook.load(shared_storage, true);
+                    addressbook[pubkey] = NodeAddress(node_address, opts.dart, opts.port_base);
+                    addressbook.save(shared_storage, true);
+                    version(none) {
+                        local_addresbook = shared_storage.fread!AddressDirectory;
+                        local_addresbook.addresses[pubkey] = NodeAddress(node_address, opts.dart, opts.port_base);
+                        shared_storage.fwrite(local_addresbook);
+                    }
                     // auto params = new HiBON;
                     // params["pkey"] = pubkey;
                     // params["address"] = node_address;
@@ -88,10 +95,14 @@ void fileDiscoveryService(
         void eraseOwnInfo() nothrow {
             try {
                 log("erase");
-                local_addresbook = shared_storage.fread!AddressDirectory;
-                local_addresbook.addresses.remove(pubkey);
-                shared_storage.fwrite(local_addresbook);
-
+                addressbook.load(shared_storage, true);
+                addressbook.erase(pubkey); //] = NodeAddress(node_address, opts.dart, opts.port_base);
+                addressbook.save(shared_storage, true);
+                version(none) {
+                    local_addresbook = shared_storage.fread!AddressDirectory;
+                    local_addresbook.addresses.remove(pubkey);
+                    shared_storage.fwrite(local_addresbook);
+                }
                 // auto _addressbook = shared_storage.fread!AddressDirectory;
                 // auto read_buff = cast(ubyte[]) shared_storage.read;
                 // auto splited_read_buff = read_buff.split("/n");
@@ -140,12 +151,20 @@ void fileDiscoveryService(
         }
 
         scope (exit) {
-            eraseOwnInfo();
+//            eraseOwnInfo();
         }
 
         void initialize() nothrow {
             log("initializing");
             try {
+                if (shared_storage.exists) {
+                    addressbook.load(shared_storage, true);
+                }
+                else {
+                    addressbook.save(shared_storage, true);
+                }
+
+                version(none)
                 if (shared_storage.exists) {
                     local_addresbook = shared_storage.fread!AddressDirectory;
                 }
@@ -170,7 +189,7 @@ void fileDiscoveryService(
                 //         log("added %s", pkey);
                 //     }
                 // }
-                log("initialized %d", local_addresbook.addresses.length);
+                log("initialized %d", addressbook.numOfNodes);
             }
             catch (Exception e) {
                 //logwriteln("Er:", e.msg);
@@ -188,7 +207,7 @@ void fileDiscoveryService(
                     500.msecs,
                     (immutable(Pubkey) key, Tid tid) {
                         log("looking for key: %s", key);
-                        tid.send(local_addresbook.addresses[key]);
+                        tid.send(addressbook[key]);
                     },
                     (Control control) {
                 if (control is Control.STOP) {
@@ -205,12 +224,16 @@ void fileDiscoveryService(
                         break;
                     case RequestTable:
                         initialize();
-                        auto address_book = new ActiveNodeAddressBook(
-                            local_addresbook.addresses);
-                        ownerTid.send(address_book);
+                        auto address_book = new ActiveNodeAddressBook(addressbook._data); //node_addrses);
+                        log("Requested: %s : %d", addressbook._data.length, address_book.data.length);
+                        ownerTid.send(address_book); //addressbook._data);
+
+                        // auto address_book = new ActiveNodeAddressBook(
+                        //     local_addresbook.addresses);
+                        // ownerTid.send(address_book);
                         break;
                     case BecomeOffline:
-                        eraseOwnInfo();
+//                        eraseOwnInfo();
                         break;
                     case UpdateTable:
                         throw new TagionException(format("DiscoveryRequestCommand %s has not function", request));
