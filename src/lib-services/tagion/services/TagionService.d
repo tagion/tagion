@@ -371,9 +371,9 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         enum timeout_end = 10;
         uint timeout_count;
         //    Event mother;
-        Event event;
+//        Event event;
 
-        immutable(ubyte)[] data;
+//        immutable(ubyte)[] data;
 
         {
             immutable buf = cast(Buffer) hashgraph.channel;

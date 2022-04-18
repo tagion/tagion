@@ -249,21 +249,24 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
                 break;
             }
         }
-
+        {
+            const ctrl = receiveOnly!Control;
+            assert(ctrl is Control.LIVE);
+        }
         scope (exit) {
             bootstrap_tid.send(Control.STOP);
-            auto ctrl = receiveOnly!Control;
-            assert(ctrl == Control.END);
+            const ctrl = receiveOnly!Control;
+            assert(ctrl is Control.END);
         }
 
-        auto ctrl = receiveOnly!Control;
-        assert(ctrl == Control.LIVE);
 
         ownerTid.send(Control.LIVE);
 
-        auto stop = false;
-        do {
-            receive(&receiveAddrBook, (immutable(Pubkey) key, Tid tid) {
+        bool stop = false;
+        while(!stop) {
+            receive(
+                &receiveAddrBook,
+                (immutable(Pubkey) key, Tid tid) {
                 log("looking for key: %s HASH: %s", key.cutHex, net.calcHash(cast(Buffer) key).cutHex);
                 auto result_addr = internal_nodeaddr_table.get(key, NodeAddress.init);
                 if (result_addr == NodeAddress.init) {
@@ -286,14 +289,17 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
                     break;
                 }
                 bootstrap_tid.send(request);
-            }, (DiscoveryState state) { ownerTid.send(state); }, (Control control) {
+            },
+                (DiscoveryState state) {
+                    ownerTid.send(state);
+                },
+                (Control control) {
                 if (control == Control.STOP) {
                     log("stop");
                     stop = true;
                 }
             });
         }
-        while (!stop);
     }
     catch (Throwable t) {
         fatal(t);
