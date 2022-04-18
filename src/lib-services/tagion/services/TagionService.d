@@ -151,16 +151,18 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             }
         }
 
+        shared StdSecureNet shared_net;
         synchronized (master_net) {
             import std.format;
 
             //immutable secret = passpharse.idup;
 
             master_net.generateKeyPair(passpharse);
-            shared shared_net = cast(shared) master_net;
+            shared_net = cast(shared) master_net;
             log("opts.node_name = %s", opts.node_name);
             net.derive(opts.node_name, shared_net);
             p2pnode = initialize_node(opts);
+        }
             final switch (net_mode) {
             case NetworkMode.internal:
                 gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
@@ -232,7 +234,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                     force_stop = true;
                 }
             });
-        }
+
         scope (exit) {
             log("Closing net");
             gossip_net.close();
