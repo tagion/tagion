@@ -143,6 +143,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         Tid transcript_tid;
         Pubkey[] pkeys;
         void update_pkeys(Pubkey[] pubkeys) {
+            version(none)
             if (net_mode != NetworkMode.internal) {
                 pkeys = pubkeys;
                 foreach (p; pkeys)

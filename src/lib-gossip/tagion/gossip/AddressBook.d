@@ -52,11 +52,14 @@ void lock(string filename) {
     file_lock.fwrite(null);
 }
 
-void unlock(string filename) {
+void unlock(string filename) nothrow {
     import std.file : remove;
     immutable file_lock = filename.setExtension(lockext);
-    if (file_lock.exists) {
+    try {
         file_lock.remove;
+    }
+    catch (Exception e) {
+        // ignore
     }
 }
 
@@ -90,7 +93,7 @@ synchronized class AddressBook {
     protected shared(NodeAddresses) addresses;
 
     immutable(NodeAddress[Pubkey]) _data() @trusted {
-        pragma(msg, "fixme(cbr): AddressBook._data This function should be removed whne the addressbook has been implemented");
+        pragma(msg, "fixme(cbr): AddressBook._data This function should be removed when the addressbook has been implemented");
         NodeAddress[Pubkey] result;
         foreach(pkey, addr; addresses) {
             result[pkey] = addr;
@@ -178,7 +181,11 @@ synchronized class AddressBook {
         addresses.remove(pkey);
     }
 
-    bool exists(const Pubkey pkey) const pure nothrow {
+    bool exists(const Pubkey pkey) const nothrow {
+        return (pkey in addresses) !is null;
+    }
+
+    bool isActive(const Pubkey pkey) const pure nothrow {
         return (pkey in addresses) !is null;
     }
 
@@ -203,9 +210,9 @@ synchronized class AddressBook {
         return addresses.length >= opts.nodes;
     }
 
-    bool active(const Pubkey pkey) const pure nothrow {
-        return (pkey in addresses) !is null;
-    }
+    // bool active(const Pubkey pkey) const pure nothrow {
+    //     return (pkey in addresses) !is null;
+    // }
 
     immutable(NodePair) random() @trusted const pure {
         if (addresses.length) {
@@ -222,6 +229,15 @@ synchronized class AddressBook {
         return NodePair.init;
     }
 
+    const(Pubkey) selectActiveChannel(const size_t index) @trusted const pure {
+        import std.range : dropExactly;
+        auto _addresses = cast(NodeAddresses) addresses;
+        return _addresses.byKey.dropExactly(index).front;
+    }
+    // auto activeChannels() const pure nothrow {
+    //     auto _addresses = cast(NodeAddresses) addresses;
+    //     return _addresses.byKey;
+    // }
     //    pragma(msg, "random ", typeof(random()));
 }
 
