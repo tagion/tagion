@@ -6,7 +6,7 @@ import tagion.dart.DART : DART;
 import tagion.dart.DARTOptions : DARTOptions;
 import tagion.logger.Logger : log;
 
-import std.file : exists, touch=write, remove;
+import std.file : exists;
 import std.path : setExtension;
 import core.thread : Thread;
 import std.format;
@@ -45,11 +45,29 @@ import tagion.basic.TagionExceptions;
 /// check function used in the HiBON package
 alias check = Check!(AddressBookException);
 
+enum lockext = "lock";
+void lock(string filename) {
+    import std.file : fwrite=write;
+    immutable file_lock = filename.setExtension(lockext);
+    file_lock.fwrite(null);
+}
+
+void unlock(string filename) {
+    import std.file : remove;
+    immutable file_lock = filename.setExtension(lockext);
+    if (file_lock.exists) {
+        file_lock.remove;
+    }
+}
+
+bool locked(string filename) {
+    immutable file_lock = filename.setExtension(lockext);
+    return file_lock.exists;
+}
 
 @safe
 synchronized class AddressBook {
     import core.time;
-    enum lockext = "lock";
     alias NodeAddresses = NodeAddress[Pubkey];
     // pragma(msg, "typeof(addresses.byKeyValue) ", typeof(NodeAddresses.byKeyValue));
     alias NodePair = typeof((cast(NodeAddresses) addresses).byKeyValue.front);
@@ -87,47 +105,43 @@ synchronized class AddressBook {
         }
     }
 
-    void load(string filename, bool lock=false) @trusted {
+    void load(string filename, bool do_unlock=true) @trusted {
         void local_read() @safe {
             auto dir = filename.fread!AddressDirectory;
             overwrite(dir.addresses);
         }
         if (filename.exists) {
-            if (lock) {
-                immutable file_lock = filename.setExtension(lockext);
-                int count_down = max_count;
-                while (file_lock.exists) {
-                    Thread.sleep(timeout.msecs);
-                    check(count_down > 0, format("File %s is locked timeout for the AddressBook"));
-                }
-                file_lock.touch(null);
-                local_read;
-                file_lock.remove;
-                return;
+//            immutable file_lock = filename.setExtension(lockext);
+            int count_down = max_count;
+            while (filename.locked) {
+                Thread.sleep(timeout.msecs);
+                count_down--;
+                check(count_down > 0, format("The bootstrap file is locked. Timeout can't load file %s", filename));
             }
+            filename.lock;
             local_read;
+            if (do_unlock) {
+                filename.unlock;
+            }
         }
     }
 
-    void save(string filename, bool lock=false) @trusted {
+    void save(string filename, bool nonelock=false) @trusted {
         void local_write() {
             AddressDirectory dir;
             dir.addresses = cast(NodeAddress[Pubkey]) addresses;
             filename.fwrite(dir);
         }
-        if (lock) {
-            immutable file_lock = filename.setExtension(lockext);
-            int count_down = max_count;
-            while (file_lock.exists) {
-                Thread.sleep(timeout.msecs);
-                check(count_down > 0, format("File %s is locked timeout for the AddressBook"));
-            }
-            file_lock.touch(null);
-            local_write;
-            file_lock.remove;
-            return;
+//        immutable file_lock = filename.setExtension(lockext);
+        int count_down = max_count;
+        while (!nonelock && filename.locked) {
+            Thread.sleep(timeout.msecs);
+            count_down--;
+            check(count_down > 0, format("The bootstrap file is locked. Timeout can't save file %s", filename));
         }
+        filename.lock;
         local_write;
+        filename.unlock;
     }
 
     immutable(NodeAddress) opIndex(const Pubkey pkey) const pure nothrow {
@@ -141,16 +155,16 @@ synchronized class AddressBook {
     void opIndexAssign(const NodeAddress addr, const Pubkey pkey)
     in {
         assert(pkey.length is 33);
-//        assert(!(pkey in addresses), "Temp check should be removed");
+        assert(!(pkey in addresses), "Temp check should be removed");
     }
     do { //pure nothrow {
         import std.stdio;
         import tagion.utils.Miscellaneous : cutHex;
 
-        writefln("AddressBook.opIndexAssign %s:%d", pkey.cutHex, pkey.length);
+        log.trace("AddressBook.opIndexAssign %s:%d", pkey.cutHex, pkey.length);
 
         addresses[pkey] = addr;
-        writefln("After AddressBook.opIndexAssign %s:%d", pkey.cutHex, pkey.length);
+        log.trace("After AddressBook.opIndexAssign %s:%d", pkey.cutHex, pkey.length);
 
     }
 

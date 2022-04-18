@@ -8,6 +8,7 @@ import std.concurrency;
 import std.stdio;
 import std.array;
 import std.algorithm.iteration;
+import std.format;
 
 import tagion.services.Options;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
@@ -45,7 +46,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
             ownerTid.prioritySend(Control.END);
         }
         const ADDR_TABLE = "address_table";
-        immutable inner_task_name = task_name ~ "internal";
+        immutable inner_task_name = format("%s-%s", task_name, "internal");
         log.register(task_name);
         HashNet net = new StdHashNet();
         HiRPC internal_hirpc = HiRPC(null);
@@ -181,7 +182,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
                 nnr.address = node_addresses[key].address;
                 // nnr.dart_from = 0;
                 // nnr.dart_to = 0;
-                log("ADDRESS: %s", Document(nnr.toHiBON.serialize).toJSON);
+                log("ADDRESS: %s", nnr.toJSON);
                 // log("insert to addr_table_recorder PK: %s HASH: %s", key.cutHex, net.hashOf(Document(nnr.toHiBON().serialize)).cutHex);
                 insert_recorder.add(Document(nnr.toHiBON.serialize));
             }
@@ -230,13 +231,21 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
                 break;
             }
         case NetworkMode.local: {
-                bootstrap_tid = spawn(&fileDiscoveryService, pubkey,
-                        p2pnode.LlistenAddress, inner_task_name, opts);
+                bootstrap_tid = spawn(
+                    &fileDiscoveryService,
+                    pubkey,
+                    p2pnode.LlistenAddress,
+                    inner_task_name,
+                    opts);
                 break;
             }
         case NetworkMode.pub: {
-                bootstrap_tid = spawn(&serverFileDiscoveryService, pubkey,
-                        p2pnode, inner_task_name, opts);
+                bootstrap_tid = spawn(
+                    &serverFileDiscoveryService,
+                    pubkey,
+                    p2pnode,
+                    inner_task_name,
+                    opts);
                 break;
             }
         }

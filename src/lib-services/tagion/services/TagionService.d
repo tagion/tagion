@@ -153,9 +153,9 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         synchronized (master_net) {
             import std.format;
 
-            immutable secret = passpharse.idup;
+            //immutable secret = passpharse.idup;
 
-            master_net.generateKeyPair(secret);
+            master_net.generateKeyPair(passpharse);
             shared shared_net = cast(shared) master_net;
             log("opts.node_name = %s", opts.node_name);
             net.derive(opts.node_name, shared_net);

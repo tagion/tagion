@@ -9,6 +9,7 @@ import std.concurrency;
 import std.stdio;
 
 // import tagion.services.LoggerService;
+import tagion.utils.Miscellaneous : cutHex;
 import tagion.services.Options;
 import tagion.logger.Logger;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
@@ -66,36 +67,29 @@ void fileDiscoveryService(
             return false;
         }
 
-        void recordOwnInfo() nothrow {
-            try {
-                do {
-                    log("record own info");
-                    addressbook.load(shared_storage, true);
-                    addressbook[pubkey] = NodeAddress(node_address, opts.dart, opts.port_base);
-                    addressbook.save(shared_storage, true);
-                    version(none) {
-                        local_addresbook = shared_storage.fread!AddressDirectory;
-                        local_addresbook.addresses[pubkey] = NodeAddress(node_address, opts.dart, opts.port_base);
-                        shared_storage.fwrite(local_addresbook);
-                    }
-                    // auto params = new HiBON;
-                    // params["pkey"] = pubkey;
-                    // params["address"] = node_address;
-                    // shared_storage.append(params.serialize);
-                    // shared_storage.append("/n");
+        void recordOwnInfo() {
+//            do {
+                log("record own info");
+                addressbook.load(shared_storage, false);
+                addressbook[pubkey] = NodeAddress(node_address, opts.dart, opts.port_base);
+                addressbook.save(shared_storage, true);
+                version(none) {
+                    local_addresbook = shared_storage.fread!AddressDirectory;
+                    local_addresbook.addresses[pubkey] = NodeAddress(node_address, opts.dart, opts.port_base);
+                    shared_storage.fwrite(local_addresbook);
                 }
-                while (!checkOnline);
-            }
-            catch (Exception e) {
-                log.error("Exception: %s", e.msg);
-                stop = true;
-            }
+                // auto params = new HiBON;
+                // params["pkey"] = pubkey;
+                // params["address"] = node_address;
+                // shared_storage.append(params.serialize);
+                // shared_storage.append("/n");
+            // }
+            // while (!checkOnline);
         }
 
-        void eraseOwnInfo() nothrow {
-            try {
+        void eraseOwnInfo() {
                 log("erase");
-                addressbook.load(shared_storage, true);
+                addressbook.load(shared_storage, false);
                 addressbook.erase(pubkey); //] = NodeAddress(node_address, opts.dart, opts.port_base);
                 addressbook.save(shared_storage, true);
                 version(none) {
@@ -120,11 +114,6 @@ void fileDiscoveryService(
                 //         }
                 //     }
                 // }
-            }
-            catch (Exception e) {
-                log("Exception: %s", e.msg);
-                stop = true;
-            }
         }
 
         bool checkTimestamp(SysTime time, Duration duration) {
@@ -154,14 +143,14 @@ void fileDiscoveryService(
 //            eraseOwnInfo();
         }
 
-        void initialize() nothrow {
+        void initialize() {
             log("initializing");
-            try {
+            // try {
                 if (shared_storage.exists) {
                     addressbook.load(shared_storage, true);
                 }
                 else {
-                    addressbook.save(shared_storage, true);
+                    addressbook.save(shared_storage);
                 }
 
                 version(none)
@@ -190,15 +179,16 @@ void fileDiscoveryService(
                 //     }
                 // }
                 log("initialized %d", addressbook.numOfNodes);
-            }
-            catch (Exception e) {
-                //logwriteln("Er:", e.msg);
-                log.fatal(e.msg);
-            }
+            // }
+            // catch (Exception e) {
+            //     //logwriteln("Er:", e.msg);
+            //     log.fatal(e.msg);
+            // }
         }
 
+        recordOwnInfo;
+//        addressbook[pubkey] = NodeAddress(node_address, opts.dart, opts.port_base);
         log("File Discovery started");
-        addressbook[pubkey] = NodeAddress(node_address, opts.dart, opts.port_base);
         ownerTid.send(Control.LIVE);
         // ownerTid.send(DiscoveryState.READY);
 
@@ -206,7 +196,7 @@ void fileDiscoveryService(
             receiveTimeout(
                     500.msecs,
                     (immutable(Pubkey) key, Tid tid) {
-                        log("looking for key: %s", key);
+                        log("looking for key: %s", key.cutHex);
                         tid.send(addressbook[key]);
                     },
                     (Control control) {
@@ -220,12 +210,12 @@ void fileDiscoveryService(
                     final switch (request) {
                     case BecomeOnline:
                         log("Becoming online..");
-                        recordOwnInfo();
+                        //recordOwnInfo();
                         break;
                     case RequestTable:
                         initialize();
                         auto address_book = new ActiveNodeAddressBook(addressbook._data); //node_addrses);
-                        log("Requested: %s : %d", addressbook._data.length, address_book.data.length);
+                        log("Requested: %d : %d", addressbook._data.length, address_book.data.length);
                         ownerTid.send(address_book); //addressbook._data);
 
                         // auto address_book = new ActiveNodeAddressBook(
