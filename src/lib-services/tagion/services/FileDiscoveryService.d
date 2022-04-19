@@ -79,10 +79,10 @@ void fileDiscoveryService(
         while (!stop) {
             receiveTimeout(
                     500.msecs,
-                    (immutable(Pubkey) key, Tid tid) {
-                        log("looking for key: %s", key.cutHex);
-                        tid.send(addressbook[key]);
-                    },
+                    // (immutable(Pubkey) key, Tid tid) {
+                    //     log("looking for key: %s", key.cutHex);
+                    //     tid.send(addressbook[key]);
+                    // },
                     (Control control) {
                 if (control is Control.STOP) {
                     log("stop");
