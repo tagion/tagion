@@ -93,7 +93,7 @@ void fileDiscoveryService(
                 with (DiscoveryRequestCommand) {
                     final switch (request) {
                     case RequestTable:
-                        initialize();
+//                        initialize();
                         auto address_book = new ActiveNodeAddressBook(addressbook._data); //node_addrses);
                         log("Requested: %d : %d", addressbook._data.length, address_book.data.length);
                         ownerTid.send(address_book);

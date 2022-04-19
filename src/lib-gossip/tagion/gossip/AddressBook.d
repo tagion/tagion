@@ -13,28 +13,6 @@ import core.thread : Thread;
 import std.format;
 import std.random;
 
-// alias ActiveNodeAddressBookPub = immutable(AddressBook_deprecation);
-
-// @safe
-// immutable class AddressBook_deprecation {
-//     this(const(NodeAddress[Pubkey]) addrs) @trusted {
-//         addressbook.overwrite(addrs);
-// //         this.data = cast(immutable) addrs.dup;
-//     }
-
-// //    immutable(NodeAddress[Pubkey]) data;
-
-//     static immutable(NodeAddress[Pubkey]) data() @trusted {
-//         return cast(immutable)addressbook._data;
-//     }
-
-// }
-
-// @safe
-// struct AddressDirecory {
-//     private NodeAddress[Pubkey] addresses;
-//     mixin HiBONRecord;
-// }
 import tagion.basic.TagionExceptions;
 
 @safe class AddressBookException : TagionException {
@@ -115,7 +93,6 @@ synchronized class AddressBook {
             overwrite(dir.addresses);
         }
         if (filename.exists) {
-//            immutable file_lock = filename.setExtension(lockext);
             int count_down = max_count;
             while (filename.locked) {
                 Thread.sleep(timeout.msecs);
@@ -136,7 +113,6 @@ synchronized class AddressBook {
             dir.addresses = cast(NodeAddress[Pubkey]) addresses;
             filename.fwrite(dir);
         }
-//        immutable file_lock = filename.setExtension(lockext);
         int count_down = max_count;
         while (!nonelock && filename.locked) {
             Thread.sleep(timeout.msecs);
@@ -159,24 +135,19 @@ synchronized class AddressBook {
     void opIndexAssign(const NodeAddress addr, const Pubkey pkey)
     in {
         assert(pkey.length is 33);
-        assert(!(pkey in addresses), format("Address %s has allready been set", pkey.cutHex));
+        if ((pkey in addresses) !is null) {
+            log.error(format("Address %s has already been set", pkey.cutHex));
+        }
+        assert((pkey in addresses) is null, format("Address %s has already been set", pkey.cutHex));
     }
     do { //pure nothrow {
         import std.stdio;
         import tagion.utils.Miscellaneous : cutHex;
-
         log.trace("AddressBook.opIndexAssign %s:%d", pkey.cutHex, pkey.length);
-
         addresses[pkey] = addr;
         log.trace("After AddressBook.opIndexAssign %s:%d", pkey.cutHex, pkey.length);
 
     }
-
-    // void set(const Pubkey pkey) {//, const NodeAddress addr) {
-    //     import std.stdio;
-    //     import tagion.utils.Miscellaneous : cutHex;
-    //     writefln("AddressBook.set %s", pkey.cutHex);
-    // }
 
     void erase(const Pubkey pkey) pure nothrow {
         addresses.remove(pkey);
@@ -211,22 +182,14 @@ synchronized class AddressBook {
         return addresses.length >= opts.nodes;
     }
 
-    // bool active(const Pubkey pkey) const pure nothrow {
-    //     return (pkey in addresses) !is null;
-    // }
-
     immutable(NodePair) random() @trusted const pure {
         if (addresses.length) {
             import std.range : dropExactly;
 
             auto _addresses = cast(NodeAddresses) addresses;
-            //   pragma(msg,
             const random_key_index = uniform(0, addresses.length, cast(Random) rnd);
             return _addresses.byKeyValue.dropExactly(random_key_index).front;
-            //            return  _addresses.byKeyValue.front;
-
         }
-        //assert(0);
         return NodePair.init;
     }
 
@@ -235,11 +198,6 @@ synchronized class AddressBook {
         auto _addresses = cast(NodeAddresses) addresses;
         return _addresses.byKey.dropExactly(index).front;
     }
-    // auto activeChannels() const pure nothrow {
-    //     auto _addresses = cast(NodeAddresses) addresses;
-    //     return _addresses.byKey;
-    // }
-    //    pragma(msg, "random ", typeof(random()));
 }
 
 static shared(AddressBook) addressbook;

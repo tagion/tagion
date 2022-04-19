@@ -121,6 +121,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             passpharse = format("Secret_word_%d", opts.port).idup;
         }
 
+        log.trace("passphrase %s", passpharse);
         bool force_stop = false;
 
         import std.format;
@@ -218,19 +219,29 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
             receive((ActiveNodeAddressBook address_book) {
                 update_pkeys(address_book.data.keys);
-                dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet,
-                    opts, p2pnode, shared_net, sector_range);
+                dart_sync_tid = spawn(
+                    &dartSynchronizeServiceTask!StdSecureNet,
+                    opts,
+                    p2pnode,
+                    shared_net,
+                    sector_range);
                 // receiveOnly!Control;
-                dart_tid = spawn(&dartServiceTask!StdSecureNet, opts, p2pnode,
-                    shared_net, sector_range);
+                dart_tid = spawn(
+                    &dartServiceTask!StdSecureNet,
+                    opts,
+                    p2pnode,
+                    shared_net,
+                    sector_range);
                 log("address_book len: %d", address_book.data.length);
-                send(dart_sync_tid, cast(immutable) address_book);
+                send(dart_sync_tid, address_book);
             }, (Control ctrl) {
                 if (ctrl is Control.STOP) {
+                    assert(0, "Why is it stopped here!!!");
                     force_stop = true;
                 }
 
                 if (ctrl is Control.END) {
+                    assert(0, "Why an END here!!!");
                     force_stop = true;
                 }
             });
