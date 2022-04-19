@@ -200,6 +200,13 @@ struct Options {
 
     Logger logger;
 
+    struct LoggerSubscription {
+        bool enable; // Enable logger subscribtion  service
+        mixin JSONCommon;
+    }
+
+    LoggerSubscription sub_logger;
+
     struct Recorder {
         string task_name; /// Name of the recorder task
         string folder_path; /// Folder used for the recorder service files
@@ -363,6 +370,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
         "dart-path", "Path to dart file", &(options.dart.path),
         "logger-filename" , format("Logger file name: default: %s", options.logger.file_name), &(options.logger.file_name),
         "logger-mask|l" , format("Logger mask: default: %d", options.logger.mask), &(options.logger.mask),
+        "logsub|L" , format("Logger subscription service enabled: default: %d", options.sub_logger.enable), &(options.sub_logger.enable),
         "net-mode", format("Network mode: one of [%s]: default: %s", [EnumMembers!NetworkMode].map!(t=>t.to!string).join(", "), options.net_mode), &(options.net_mode),
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
         "server-token", format("Token to access shared server"), &(options.serverFileDiscovery.token),
@@ -370,7 +378,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
 //        "help!h", "Display the help text",    &help_switch,
         // dfmt on
 
-    
+
 
     );
 }

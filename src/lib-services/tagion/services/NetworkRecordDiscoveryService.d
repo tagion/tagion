@@ -268,7 +268,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
                 &receiveAddrBook,
                 (immutable(Pubkey) key, Tid tid) {
                 log("looking for key: %s HASH: %s", key.cutHex, net.calcHash(cast(Buffer) key).cutHex);
-                auto result_addr = internal_nodeaddr_table.get(key, NodeAddress.init);
+                const result_addr = addressbook[key]; //internal_nodeaddr_table.get(key, NodeAddress.init);
                 if (result_addr == NodeAddress.init) {
                     log("Address not found in internal nodeaddr table");
                 }
@@ -282,7 +282,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
                     }
                 case DiscoveryRequestCommand.UpdateTable: {
                         auto addr_table = request_addr_table();
-                        update_internal_table(addr_table);
+                        update_internal_table(addressbook._data);
                         break;
                     }
                 default:

@@ -443,11 +443,11 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                     update_pkeys(address_book.data.keys);
                 });
             log.trace("NETWORK READY %d < %d ", addressbook.numOfNodes,  opts.nodes);
-            if (addressbook.numOfNodes < opts.nodes) {
-                Thread.sleep(500.msecs);
+            if (addressbook.ready(opts)) {
+                network_ready = true;
             }
             else {
-                network_ready = true;
+                Thread.sleep(500.msecs);
             }
         }
         while (!network_ready);

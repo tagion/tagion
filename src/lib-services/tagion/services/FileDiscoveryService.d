@@ -73,11 +73,21 @@ void fileDiscoveryService(
             addressbook.save(shared_storage, true);
         }
 
+        void updateAddressbook() {
+            static uint count;
+            count++;
+            log("update %d %s", count, pubkey.cutHex);
+            addressbook.load(shared_storage, true);
+            // addressbook[pubkey] = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
+            // addressbook.save(shared_storage, true);
+        }
+
+
         initialize;
         log("File Discovery started");
         ownerTid.send(Control.LIVE);
         while (!stop) {
-            receiveTimeout(
+            const message=receiveTimeout(
                     500.msecs,
                     // (immutable(Pubkey) key, Tid tid) {
                     //     log("looking for key: %s", key.cutHex);
@@ -111,7 +121,14 @@ void fileDiscoveryService(
                     }
                 }
             });
-            notifyReadyAfterDelay();
+            log.trace("FILE NETWORK READY %d < %d ", addressbook.numOfNodes,  opts.nodes);
+            if (!message) {
+                updateAddressbook;
+            }
+            if (addressbook.ready(opts)) {
+                ownerTid.send(DiscoveryState.READY);
+            }
+//            notifyReadyAfterDelay();
         }
     }
     catch (Throwable t) {

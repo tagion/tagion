@@ -162,10 +162,15 @@ import tagion.TaskWrapper;
 
         pragma(msg, "fixme(ib) Pass mask to Logger to not pass not necessary data");
 
-        logSubscriptionTid = spawn(&logSubscriptionServiceTask, options);
+
+        if (options.sub_logger.enable) {
+            logSubscriptionTid = spawn(&logSubscriptionServiceTask, options);
+        }
         scope (exit) {
-            logSubscriptionTid.send(Control.STOP);
-            receiveOnly!Control;
+            if (logSubscriptionTid !is Tid.init) {
+                logSubscriptionTid.send(Control.STOP);
+                receiveOnly!Control;
+            }
         }
 
         logging = options.logger.file_name.length != 0;
