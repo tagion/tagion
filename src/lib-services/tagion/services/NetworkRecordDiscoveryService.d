@@ -45,11 +45,11 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
             log("exit");
             ownerTid.prioritySend(Control.END);
         }
+        log.register(task_name);
         const ADDR_TABLE = "address_table";
         immutable inner_task_name = format("%s-%s", task_name, "internal");
-        log.register(task_name);
-        HashNet net = new StdHashNet();
-        HiRPC internal_hirpc = HiRPC(null);
+        const net = new StdHashNet();
+        const internal_hirpc = HiRPC(null);
         NodeAddress[Pubkey] internal_nodeaddr_table;
 
         auto rec_factory = RecordFactory(net);
@@ -207,7 +207,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
             updateDART(insert_recorder);
         }
 
-        auto is_ready = false;
+        bool is_ready = false;
         void receiveAddrBook(ActiveNodeAddressBook address_book) {
             log("updated addr book: %d", address_book.data.length);
             if (is_ready) {
@@ -234,7 +234,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
                 bootstrap_tid = spawn(
                     &fileDiscoveryService,
                     pubkey,
-                    p2pnode.LlistenAddress,
+                    p2pnode,
                     inner_task_name,
                     opts);
                 break;

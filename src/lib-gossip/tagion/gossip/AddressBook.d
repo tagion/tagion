@@ -5,6 +5,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.dart.DART : DART;
 import tagion.dart.DARTOptions : DARTOptions;
 import tagion.logger.Logger : log;
+import tagion.utils.Miscellaneous : cutHex;
 
 import std.file : exists;
 import std.path : setExtension;
@@ -158,7 +159,7 @@ synchronized class AddressBook {
     void opIndexAssign(const NodeAddress addr, const Pubkey pkey)
     in {
         assert(pkey.length is 33);
-        assert(!(pkey in addresses), "Temp check should be removed");
+        assert(!(pkey in addresses), format("Address %s has allready been set", pkey.cutHex));
     }
     do { //pure nothrow {
         import std.stdio;

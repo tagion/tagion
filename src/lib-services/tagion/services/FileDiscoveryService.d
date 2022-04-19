@@ -7,8 +7,11 @@ import std.conv;
 import std.format;
 import std.concurrency;
 import std.stdio;
+import std.file : exists;
+import std.array;
 
 // import tagion.services.LoggerService;
+import p2plib = p2p.node;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.services.Options;
 import tagion.logger.Logger;
@@ -19,9 +22,6 @@ import tagion.services.MdnsDiscoveryService;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : fwrite, fread;
 import tagion.hibon.Document : Document;
-import std.file : exists;
-// import std.file : fwrite = write;
-import std.array;
 import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
 
 import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
@@ -29,92 +29,17 @@ import tagion.gossip.AddressBook : addressbook, NodeAddress, AddressBook;
 
 void fileDiscoveryService(
         Pubkey pubkey,
-        string node_address,
+        shared p2plib.Node node,
         string task_name,
         immutable(Options) opts) nothrow { //TODO: for test
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
         }
-        string shared_storage = opts.path_to_shared_info;
         log.register(task_name);
+        string shared_storage = opts.path_to_shared_info;
 
         bool stop = false;
-        // alias AddressDirectory = AddressBook.AddressDirectory;
-        // AddressDirectory local_addresbook;
-
-        bool checkOnline() {
-            if (shared_storage.exists) {
-                addressbook.load(shared_storage, true);
-                version(none) {
-                    local_addresbook = shared_storage.fread!AddressDirectory;
-                    return (pubkey in local_addresbook.addresses) !is null;
-                }
-            // auto read_buff = cast(ubyte[]) shared_storage.read;
-            // auto splited_read_buff = read_buff.split("/n");
-            // log("%d", splited_read_buff.length);
-            // foreach (node_info_buff; splited_read_buff) {
-            //     if (node_info_buff.length > 0) {
-            //         auto doc = Document(cast(immutable) node_info_buff);
-            //         auto pkey_buff = doc["pkey"].get!Buffer;
-            //         auto pkey = cast(Pubkey) pkey_buff;
-            //         if (pkey == pubkey) {
-            //             return true;
-            //         }
-            //     }
-            // }
-            }
-            return false;
-        }
-
-        void recordOwnInfo() {
-//            do {
-                log("record own info");
-                addressbook.load(shared_storage, false);
-                addressbook[pubkey] = NodeAddress(node_address, opts.dart, opts.port_base);
-                addressbook.save(shared_storage, true);
-                version(none) {
-                    local_addresbook = shared_storage.fread!AddressDirectory;
-                    local_addresbook.addresses[pubkey] = NodeAddress(node_address, opts.dart, opts.port_base);
-                    shared_storage.fwrite(local_addresbook);
-                }
-                // auto params = new HiBON;
-                // params["pkey"] = pubkey;
-                // params["address"] = node_address;
-                // shared_storage.append(params.serialize);
-                // shared_storage.append("/n");
-            // }
-            // while (!checkOnline);
-        }
-
-        void eraseOwnInfo() {
-                log("erase");
-                addressbook.load(shared_storage, false);
-                addressbook.erase(pubkey); //] = NodeAddress(node_address, opts.dart, opts.port_base);
-                addressbook.save(shared_storage, true);
-                version(none) {
-                    local_addresbook = shared_storage.fread!AddressDirectory;
-                    local_addresbook.addresses.remove(pubkey);
-                    shared_storage.fwrite(local_addresbook);
-                }
-                // auto _addressbook = shared_storage.fread!AddressDirectory;
-                // auto read_buff = cast(ubyte[]) shared_storage.read;
-                // auto splited_read_buff = read_buff.split("/n");
-                // log("%d", splited_read_buff.length);
-                // foreach (node_info_buff; splited_read_buff) {
-                //     if (node_info_buff.length > 0) {
-                //         auto doc = Document(cast(immutable) node_info_buff);
-                //         auto pkey_buff = doc["pkey"].get!Buffer;
-                //         auto pkey = cast(Pubkey) pkey_buff;
-                //         if (pkey == pubkey) {
-                //             log("found myself");
-                //             shared_storage.fwrite(cast(string) read_buff.replace(node_info_buff,
-                //                     cast(ubyte[]) ""));
-                //             break;
-                //         }
-                //     }
-                // }
-        }
 
         bool checkTimestamp(SysTime time, Duration duration) {
             return (Clock.currTime - time) > duration;
@@ -139,59 +64,18 @@ void fileDiscoveryService(
             }
         }
 
-        scope (exit) {
-//            eraseOwnInfo();
-        }
-
         void initialize() {
-            log("initializing");
-            // try {
-                if (shared_storage.exists) {
-                    addressbook.load(shared_storage, true);
-                }
-                else {
-                    addressbook.save(shared_storage);
-                }
-
-                version(none)
-                if (shared_storage.exists) {
-                    local_addresbook = shared_storage.fread!AddressDirectory;
-                }
-                else {
-                    shared_storage.fwrite(local_addresbook);
-                }
-                // auto read_buff = cast(ubyte[]) shared_storage.read;
-                // auto splited_read_buff = read_buff.split("/n");
-                // foreach (node_info_buff; splited_read_buff) {
-                //     if (node_info_buff.length > 0) {
-                //         auto doc = Document(cast(immutable) node_info_buff);
-                //         import tagion.hibon.HiBONJSON;
-
-                //         log("%s", doc.toJSON);
-                //         auto pkey_buff = doc["pkey"].get!Buffer;
-                //         auto pkey = cast(Pubkey) pkey_buff;
-                //         auto addr = doc["address"].get!string;
-                //         import tagion.utils.Miscellaneous : toHexString, cutHex;
-
-                //         auto node_addr = NodeAddress(addr, opts.dart, opts.port_base);
-                //         node_addresses[pkey] = node_addr;
-                //         log("added %s", pkey);
-                //     }
-                // }
-                log("initialized %d", addressbook.numOfNodes);
-            // }
-            // catch (Exception e) {
-            //     //logwriteln("Er:", e.msg);
-            //     log.fatal(e.msg);
-            // }
+            static uint count;
+            count++;
+            log("initializing %d %s", count, pubkey.cutHex);
+            addressbook.load(shared_storage, false);
+            addressbook[pubkey] = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
+            addressbook.save(shared_storage, true);
         }
 
-        recordOwnInfo;
-//        addressbook[pubkey] = NodeAddress(node_address, opts.dart, opts.port_base);
+        initialize;
         log("File Discovery started");
         ownerTid.send(Control.LIVE);
-        // ownerTid.send(DiscoveryState.READY);
-
         while (!stop) {
             receiveTimeout(
                     500.msecs,
@@ -208,22 +92,17 @@ void fileDiscoveryService(
                     (DiscoveryRequestCommand request) {
                 with (DiscoveryRequestCommand) {
                     final switch (request) {
-                    case BecomeOnline:
-                        log("Becoming online..");
-                        //recordOwnInfo();
-                        break;
                     case RequestTable:
                         initialize();
                         auto address_book = new ActiveNodeAddressBook(addressbook._data); //node_addrses);
                         log("Requested: %d : %d", addressbook._data.length, address_book.data.length);
-                        ownerTid.send(address_book); //addressbook._data);
-
-                        // auto address_book = new ActiveNodeAddressBook(
-                        //     local_addresbook.addresses);
-                        // ownerTid.send(address_book);
+                        ownerTid.send(address_book);
+                        break;
+                    case BecomeOnline:
+                        log("Becoming online..");
                         break;
                     case BecomeOffline:
-//                        eraseOwnInfo();
+                        log("Becoming off-line");
                         break;
                     case UpdateTable:
                         throw new TagionException(format("DiscoveryRequestCommand %s has not function", request));
