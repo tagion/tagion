@@ -212,11 +212,12 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
 
             discovery_tid = spawn(&networkRecordDiscoveryService, net.pubkey,
                     p2pnode, opts.discovery.task_name, opts);
-            auto ctrl = receiveOnly!Control;
+            const ctrl = receiveOnly!Control;
             assert(ctrl == Control.LIVE);
 
             receive((DiscoveryState state) { assert(state == DiscoveryState.READY); });
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
+
             receive((ActiveNodeAddressBook address_book) {
                 update_pkeys(address_book.data.keys);
                 dart_sync_tid = spawn(
