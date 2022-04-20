@@ -107,6 +107,11 @@ include $(DTUB)/compile.mk
 
 include $(DTUB)/config/ldc-build-runtime.mk
 
+#
+# Testbench
+#
+include $(DTUB)/config/testbench.mk
+
 
 #
 # Enable cleaning
