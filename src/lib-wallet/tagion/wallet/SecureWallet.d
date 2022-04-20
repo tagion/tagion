@@ -64,67 +64,16 @@ import tagion.wallet.WalletException : check;
     @nogc const(DevicePIN) pin() pure const nothrow {
         return _pin;
     }
-    // final Document toDoc() const {
-    //     return wallet.toDoc;
-    // }
 
     @nogc uint confidence() pure const nothrow {
         return _wallet.confidence;
     }
 
-    // BillWrapper[] get_payment_bills(ulong amount)
-    // {
-    //     BillWrapper[] used_bills;
-    //     foreach (b; accont.filterBills(false))
-    //     {
-    //         amount -= min(amount, b.bill.value);
-    //         used_bills ~= b;
-    //         if (amount == 0)
-    //         {
-    //             break;
-    //         }
-    //     }
-    //     if (amount == 0)
-    //     {
-    //         return used_bills;
-    //     }
-    //     return [];
-    // }
-
-    // bool addBill(StandardBill bill)
-    // {
-    //     const pk = Pubkey(bill.owner);
-    //     if ((pk in account) != null)
-    //     {
-    //         const found = canFind!"a.bill.owner == b"(account.bills, pk);
-    //         if (found)
-    //             return false;
-    //         BillWrapper bill_wrapper = new BillWrapper();
-    //         bill_wrapper.bill = bill;
-    //         account.bills ~= bill_wrapper;
-    //         return true;
-    //     }
-    //     return false;
-    //     //check pk is in account and add to bills
-    // }
-
-    // bool removeBill(Pubkey pk)
-    // {
-    //     import std.algorithm : remove, filter, each;
-    //     pragma(msg, "fixme(al): fix this!!");
-    //     const index = account.bills.filter!(b => b.owner == pk).each!(b => account.derives.remove(b.owner));
-
-    //     if (index != -1)
-    //     {
-    //         account.bills = account.bills.remove(index);
-    //         return true;
-    //     }
-    //     return false;
-    //     //find bill in bills and remove it
-    // }
-
-    static SecureWallet createWallet(scope const(string[]) questions,
-            scope const(char[][]) answers, uint confidence, const(char[]) pincode)
+    static SecureWallet createWallet(
+        scope const(string[]) questions,
+        scope const(char[][]) answers,
+        uint confidence,
+        const(char[]) pincode)
     in {
         assert(questions.length > 3, "Minimal amount of answers is 4");
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
@@ -142,30 +91,30 @@ import tagion.wallet.WalletException : check;
 
         recover.createKey(questions, answers, confidence);
         //        StdSecureNet net;
-        RecoverGenerator wallet;
-        DevicePIN pin;
+        SecureWallet result;
         {
             auto R = new ubyte[net.hashSize];
-
+            scope(exit) {
+                scramble(R);
+            }
             recover.findSecret(R, questions, answers);
-            auto pinhash = recover.checkHash(pincode.representation, pin.U);
-            pin.D = xor(R, pinhash);
-            pin.S = recover.checkHash(R);
             net.createKeyPair(R);
-            wallet = RecoverGenerator(recover.toDoc);
+            auto wallet = RecoverGenerator(recover.toDoc);
+            result=SecureWallet(DevicePIN.init, wallet);
+            result.set_pincode(recover, R, pincode, net);
+
         }
-        return SecureWallet(pin, wallet);
+        return result;
     }
 
-    // void load(AccountDetails account) nothrow pure {
-    //     this.account = account;
-    // }
-
-    protected void set_pincode(const KeyRecover recover, scope const(ubyte[]) R,
-            scope const(char[]) pincode) {
-        scope seed = new ubyte[net.hashSize];
+    protected void set_pincode(
+        const KeyRecover recover,
+        scope const(ubyte[]) R,
+        scope const(char[]) pincode,
+        Net _net=null) {
+        const hash_size = ((net)?net:_net).hashSize;
+        auto seed = new ubyte[hash_size];
         scramble(seed);
-
         _pin.U = seed.idup;
         const pinhash = recover.checkHash(pincode.representation, _pin.U);
         _pin.D = xor(R, pinhash);
@@ -212,7 +161,7 @@ import tagion.wallet.WalletException : check;
     }
 
     bool login(const(char[]) pincode) {
-        if (_pin.D && _pin.U) {
+        if (_pin.D) {
             logout;
             auto hashnet = new Net;
             auto recover = KeyRecover(hashnet);
@@ -236,7 +185,7 @@ import tagion.wallet.WalletException : check;
         const hashnet = new Net;
         auto recover = KeyRecover(hashnet);
         const pinhash = recover.checkHash(pincode.representation, _pin.U);
-        auto R = new ubyte[hashnet.hashSize];
+        scope R = new ubyte[hashnet.hashSize];
         _pin.recover(R, pinhash);
         return _pin.S == recover.checkHash(R);
     }
@@ -420,8 +369,11 @@ import tagion.wallet.WalletException : check;
         const wallet_doc = SecureWallet.createWallet(dummey_questions,
                 dummey_amswers, confidence, pin_code).wallet.toDoc;
 
-        const pin_doc = SecureWallet.createWallet(dummey_questions,
-                dummey_amswers, confidence, pin_code).pin.toDoc;
+        const pin_doc = SecureWallet.createWallet(
+            dummey_questions,
+            dummey_amswers,
+            confidence,
+            pin_code).pin.toDoc;
 
         auto secure_wallet = SecureWallet(wallet_doc, pin_doc);
         const pin_code_2 = "3434";

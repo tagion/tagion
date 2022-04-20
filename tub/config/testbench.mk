@@ -78,10 +78,14 @@ env-testbench:
 	${call log.kvp, DARTUTIL, $(DARTUTIL)}
 	${call log.kvp, TAGIONWALLET, $(TAGIONWALLET)}
 	${call log.kvp, HIBONUTIL, $(HIBONUTIL)}
+	${call log.kvp, DARTBOOTRECORD, $(DARTBOOTRECORD)}
 	${call log.env, INVOICES, $(INVOICES)}
 	${call log.close}
 
-env: env-ddeps
+.PHONY: env-testbench
+
+env: env-testbench
+
 
 # CLEANERS+=clean-testbench
 
