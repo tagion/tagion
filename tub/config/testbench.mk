@@ -25,20 +25,47 @@ ${eval
 # WALLETS+=$$(TEST_DIR)/wallet$1
 # INVOICES+=$$(TEST_DIR)/invoice_$3.hibon
 TESTBENCH_$1=${abspath $2/$1}
+BASEWALLET_$1=${abspath $$(FOUND)/$1}
+STDIWALLET_$1=$$(BASEWALLET_$1)/wallet.stdin
 INVOICES+=$$(TESTBENCH_$1)/invoice.hibon
 
-$1: $$(TESTBENCH_$1)/.way
-$1: $$(TESTBENCH_$1)/invoice.hibon
+$1-wallet: $$(TESTBENCH_$1)/.way
+$1-wallet: $$(TESTBENCH_$1)/invoice.hibon
 
 $$(TESTBENCH_$1)/invoice.hibon: $$(TESTBENCH_$1)/tagionwallet.json
 	echo $(TAGIONWALLET) $$< -x $$(PINCODE) -c $$(NAME):$$(AMOUNT) -i $$@
 
-$$(TESTBENCH_$1)/tagionwallet.json: $$(TESTBENCH_$1)/wallet-$1 $(TAGIONWALLET)
+$$(TESTBENCH_$1)/tagionwallet.json: $$(TESTBENCH_$1)/wallet $(TAGIONWALLET)
 	echo $(TAGIONWALLET) $$@ --path $$< -O
 
-$$(TESTBENCH_$1)/wallet-$1:
+$$(TESTBENCH_$1)/wallet: $$(STDIWALLET_$1)
 	echo	@cp -a $$(TESTBENCH_BIN)/$$(@F) $$@
 
+$$(STDIWALLET_$1): $$(BASEWALLET_$1)/.way
+	tee $$(FOUND)/$1_wallet.stdin < /dev/stdin | $$(TAGIONWALLET) --path $$(<D)
+
+env-$1:
+	$$(PRECMD)
+	$${call log.header, $$@ :: env}
+	$${call log.kvp, TESTBENCH_$1 $$(TESTBENCH_$1)}
+	$${call log.kvp, BASEWALLET_$1 $$(BASEWALLET_$1)}
+	$${call log.kvp, STDIWALLET_$1 $$(STDIWALLET_$1)}
+	$${call log.close}
+
+env-testbench: env-$1
+
+help-$1:
+	$$(PRECMD)
+	$${call log.header, $@ :: help}
+	$${call log.help, "make env-$1", "Displays env for $1-wallet"}
+	$${call log.help, "make $1-wallet", "Creates $1-wallet"}
+	$${call log.help, "make clean-$1", "cleans $1-wallet"}
+
+	$${call log.close}
+
+help-testbench: help-$1
+
+.PHONY: help-$1
 }
 endef
 
@@ -51,24 +78,6 @@ create-invoices: tools $(INVOICES)
 
 $(DARTBOOTRECORDER): $(INVOICES)
 	$(PRECMD)$(TAGIONBOOT) $? -o $@
-
-# info-testbench:
-# 	@echo $(WALLET_CONFIGS)
-# 	@echo ${WALLET_SUFFIX_LIST}
-# 	@echo ${WALLET_SUFFIX}
-# 	@echo ${MASTER_WALLETS}
-# 	@echo "WALLETS =${WALLETS}"
-
-
-
-# $$(TEST_DIR)/invoice_$3.hibon: $$(TEST_DIR)/tagionwallet$1.json
-# 	@$$(TAGIONWALLET) $$< -x $2 -c $3:$4 -i $$(TEST_DIR)/invoice_$3.hibon
-
-# $$(TEST_DIR)/tagionwallet$1.json: $$(TEST_DIR)/wallet$1
-# 	@$$(TAGIONWALLET) $$@ --path $$< -O
-
-# $$(TEST_DIR)/wallet$1: ##$$(TESTBENCH_BIN)/wallet$1/tagionwallet.hibon
-# 	@cp -a $$(TESTBENCH_BIN)/$$(@F) $$@
 
 env-testbench:
 	$(PRECMD)
@@ -86,26 +95,25 @@ env-testbench:
 
 env: env-testbench
 
+help-testbench:
+	$(PRECMD)
+	${call log.header, $@ :: help}
+	${call log.help, "make testbench", "Runs the testbench"}
+	${call log.help, "make clean-testbench", "Cleans all the wallets"}
+	${call log.close}
 
-# CLEANERS+=clean-testbench
+.PHONY: help-testbench
 
-# clean-testbench:
-# 	rm -fR $(TEST_DIR)
+help: help-testbench
 
-# test77:
-# 	@echo $(TEST77)
-# 	@echo ${WALLET_SUFFIX_LIST}
-# 	@echo ${WALLET_SUFFIX}
-# 	@echo M ${MASTER_WALLETS}
-# 	@echo X ${WALLETS}
+clean-testbench:
+	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RMDIR) $(TESTBENCH)
+	${call log.close}
 
+.PHONY: clean-testbench
 
-
-# CLEANER+=clean-test
-# clean-testbench:
-# 	cd test; rm -fR *; rm -f .wallet*
-
-#${call CREATE_WALLET,first,$(TESTBENCH)}
-#${call CREATE_WALLET,second,$(TESTBENCH)}
+clean: clean-testbench
 
 ${foreach wallet,$(WALLETS),${call CREATE_WALLET,$(wallet),$(TESTBENCH)}}
