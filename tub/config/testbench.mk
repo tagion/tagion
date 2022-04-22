@@ -13,6 +13,9 @@ DARTBOOTRECORD = $(TESTBENCH)/bootrecord.hibon
 
 
 
+WALLETFILES+=tagionwallet.hibon
+WALLETFILES+=quiz.hibon
+WALLETFILES+=device.hibon
 
 # $1:name $2:testbench-path
 define CREATE_WALLET
@@ -24,47 +27,51 @@ ${eval
 
 # WALLETS+=$$(TEST_DIR)/wallet$1
 # INVOICES+=$$(TEST_DIR)/invoice_$3.hibon
-TESTBENCH_$1=${abspath $2/$1}
+TESTBENCH_$1=$${abspath $2/$1}
 BASEWALLET_$1=$$(FUND)/$1
-WALLETFILES_$1+=$$(BASEWALLET_$1)/tagionwallet.hibon
-WALLETFILES_$1+=$$(BASEWALLET_$1)/quiz.hibon
-WALLETFILES_$1+=$$(BASEWALLET_$1)/device.hibon
+
+BASEWALLETFILES_$1=$${addprefix $$(BASEWALLET_$1)/,$$(WALLETFILES)}
+TESTWALLETFILES_$1=$${addprefix $$(TESTBENCH_$1)/,$$(WALLETFILES)}
 
 STDINWALLET_$1=$$(BASEWALLET_$1)/wallet.stdin
 INVOICES+=$$(TESTBENCH_$1)/invoice.hibon
 
 .SECONDARY: $$(STDINWALLET_$1)
+.SECONDARY: $$(BASEWALLETFILES_$1)
+.SECONDARY: $$(TESTWALLETFILES_$1)
+.SECONDARY: $$(TESTBENCH_$1)/tagionwallet.json
 
-$1-wallet: $$(TESTBENCH_$1)/.way
+$1-wallet: | $$(TESTBENCH_$1)/.way
 $1-wallet: $$(TESTBENCH_$1)/invoice.hibon
 
-$1-fundamental: $$(WALLETFILES_$1)
+wallets: $1-wallet
 
-$$(TESTBENCH_$1)/invoice.hibon: $$(TESTBENCH_$1)/tagionwallet.json
+$1-fundamental: $$(BASEWALLETFILES_$1)
+
+$$(TESTBENCH_$1)/invoice.hibon: $$(TESTBENCH_$1)/tagionwallet.json $$(TESTWALLETFILES_$1)
 	echo $$(TAGIONWALLET) $$< -x $$(PINCODE) -c $$(NAME):$$(AMOUNT) -i $$@
 
-$$(TESTBENCH_$1)/tagionwallet.json: $$(TESTBENCH_$1)/wallet
+$$(TESTBENCH_$1)/tagionwallet.json: $$(TESTWALLETFILES_$1)
 	echo $$(TAGIONWALLET) $$@ --path $$< -O
 
-$$(TESTBENCH_$1)/wallet: $$(STDINWALLET_$1)
-	echo	@cp -a $$(TESTBENCH_BIN)/$$(@F) $$@
+$$(TESTBENCH_$1)/%.hibon: $$(BASEWALLET_$1)/%.hibon
+	cp $$< $$@
 
-$$(WALLETFILES_$1): $$(STDINWALLET_$1)
+$$(BASEWALLET_$1)/%.hibon: $$(BASEWALLETFILES_$1)
+
+$$(BASEWALLETFILES_$1): $$(STDINWALLET_$1)
 	$$(PRECMD)
 	cd $$(BASEWALLET_$1)
 	cat $$< | $$(TAGIONWALLET)
-
-$$(STDINWALLET_$1): $$(BASEWALLET_$1)/.way  target-wallet
-	$$(PRECMD)
-	cd $$(BASEWALLET_$1)
-	tee $$(STDINWALLET_$1) < /dev/stdin | $$(TAGIONWALLET)
 
 env-$1:
 	$$(PRECMD)
 	$${call log.header, $$@ :: env}
 	$${call log.kvp, TESTBENCH_$1 $$(TESTBENCH_$1)}
 	$${call log.kvp, BASEWALLET_$1 $$(BASEWALLET_$1)}
-	$${call log.kvp, STDIWALLET_$1 $$(STDIWALLET_$1)}
+	$${call log.kvp, STDINWALLET_$1 $$(STDINWALLET_$1)}
+	$${call log.env, TESTWALLETFILES_$1, $$(TESTWALLETFILES_$1)}
+	$${call log.env, BASEWALLETFILES_$1, $$(BASEWALLETFILES_$1)}
 	$${call log.close}
 
 env-testbench: env-$1
@@ -75,12 +82,34 @@ help-$1:
 	$${call log.help, "make env-$1", "Displays env for $1-wallet"}
 	$${call log.help, "make $1-wallet", "Creates $1-wallet"}
 	$${call log.help, "make clean-$1", "cleans $1-wallet"}
+	$${call log.help, "make remove-$1", "This will remove the fundation wallet."}
+	$${call log.help, "", "Except the key file $$(STDINWALLET_$1)"}
 	$${call log.help, "make $1-fundamental", "Generate the fundamental wallet which is stored in repositore"}
 	$${call log.close}
+.PHONY: help-$1
 
 help-testbench: help-$1
 
-.PHONY: help-$1
+clean-$1:
+	$$(PRECMD)
+	$${call log.header, $$@ :: clean}
+	$$(RMDIR) $$(TESTBENCH_$1)
+	$${call log.close}
+
+.PHONY: clean-$1
+
+clean-testbench: clean-$1
+
+remove-$1:
+	$$(PRECMD)
+	$${call log.header, $$@ :: remove}
+	$$(RM) $$(STDINWALLET_$1)
+	$${call log.close}
+
+remove-testbench: remove-$1
+
+.PHONY: remove-$1
+
 }
 endef
 
@@ -114,21 +143,19 @@ help-testbench:
 	$(PRECMD)
 	${call log.header, $@ :: help}
 	${call log.help, "make testbench", "Runs the testbench"}
+	${call log.help, "make wallets", "Will create all testwallets"}
 	${call log.help, "make clean-testbench", "Cleans all the wallets"}
+	${call log.help, "make remove-testbench", "Cleans all the wallets"}
 	${call log.close}
 
 .PHONY: help-testbench
 
 help: help-testbench
 
-clean-testbench:
-	$(PRECMD)
-	${call log.header, $@ :: clean}
-	$(RMDIR) $(TESTBENCH)
-	${call log.close}
-
 .PHONY: clean-testbench
 
 clean: clean-testbench
+
+.PHONY: remove-testbench
 
 ${foreach wallet,$(WALLETS),${call CREATE_WALLET,$(wallet),$(TESTBENCH)}}
