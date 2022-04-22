@@ -98,15 +98,15 @@ clean-$1:
 
 .PHONY: clean-$1
 
-clean-testbench: clean-$1
+clean-wallets: clean-$1
 
-remove-$1:
+remove-$1: clean-$1
 	$$(PRECMD)
 	$${call log.header, $$@ :: remove}
 	$$(RM) $$(STDINWALLET_$1)
 	$${call log.close}
 
-remove-testbench: remove-$1
+remove-wallets: remove-$1
 
 .PHONY: remove-$1
 
@@ -144,8 +144,8 @@ help-testbench:
 	${call log.header, $@ :: help}
 	${call log.help, "make testbench", "Runs the testbench"}
 	${call log.help, "make wallets", "Will create all testwallets"}
-	${call log.help, "make clean-testbench", "Cleans all the wallets"}
-	${call log.help, "make remove-testbench", "Cleans all the wallets"}
+	${call log.help, "make clean-wallets", "Cleans all the wallets"}
+	${call log.help, "make remove-wallets", "Cleans all the wallets"}
 	${call log.close}
 
 .PHONY: help-testbench
@@ -156,6 +156,6 @@ help: help-testbench
 
 clean: clean-testbench
 
-.PHONY: remove-testbench
+.PHONY: remove-wallets
 
 ${foreach wallet,$(WALLETS),${call CREATE_WALLET,$(wallet),$(TESTBENCH)}}
