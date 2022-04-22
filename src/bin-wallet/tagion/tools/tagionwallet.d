@@ -525,6 +525,8 @@ int main(string[] args) {
     bool overwrite_switch; /// Overwrite the config file
     bool version_switch;
     string payfile;
+    string questions_str;
+    string answers_str;
     bool wallet_ui;
     bool update_wallet;
     uint number_of_bills;
@@ -538,6 +540,8 @@ int main(string[] args) {
     bool print_amount;
     string path;
     string invoicefile = "invoice_file.hibon";
+
+    bool check_health;
 
     WalletOptions options;
     if (config_file.exists) {
@@ -566,8 +570,12 @@ int main(string[] args) {
             "pin|x", "Pincode", &pincode,
             "port|p", format("Tagion network port : default %d", options.port), &options.port,
             "url|u", format("Tagion url : default %s", options.addr), &options.addr,
-            "visual|g", "Visual user interface", &wallet_ui,);
-
+            "visual|g", "Visual user interface", &wallet_ui,
+            "questions", "Questions for wallet creation", &questions_str,
+            "answers", "Answers for wallet creation", &answers_str,
+            "generate-wallet", "Create a new wallet", &generate_wallet,
+            "health", "Healthcheck the node", &check_health
+            );
     if (version_switch) {
         writefln("version %s", REVNO);
         writefln("Git handle %s", HASH);
@@ -630,6 +638,56 @@ int main(string[] args) {
     }
 
     auto wallet_interface = WalletInterface(options);
+
+
+    if(check_health){
+        writefln("HEALTHCHECK: %s %d",wallet_interface.options.addr, wallet_interface.options.port);
+        HiRPC hirpc;
+        auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
+        client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface.options.port));
+        scope (exit) {
+            client.close;
+        }
+        client.blocking = true;
+        const sender = hirpc.action("healthcheck", new HiBON());
+
+        immutable data = sender.toDoc.serialize;
+        writeln(sender.toDoc.toJSON);
+        client.send(data);
+
+        auto rec_buf = new void[4000];
+        ptrdiff_t rec_size;
+
+        do {
+            rec_size = client.receive(rec_buf); //, current_max_size);
+            writefln("read rec_size=%d", rec_size);
+            Thread.sleep(400.msecs);
+        }
+        while (rec_size < 0);
+        auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
+        writeln(resp_doc.toJSON);
+    }
+    
+
+     if (generate_wallet) {
+        const questions = questions_str.split(',');
+        const answers = answers_str.split(',');
+        assert(questions.length >= 3, "Minimal amount of answers is 3");
+        assert(questions.length is answers.length, "Amount of questions should be same as answers");
+        assert(pincode.length = 4, "You must provide pin-code with 4 digits");
+        auto hashnet = new StdHashNet;
+        auto recover = KeyRecover(hashnet);
+        const pincode1 = to!(char[])(pincode);
+
+        const confidence = questions.length - 1;
+        const secure_wallet = wallet_interface.StdSecureWallet.createWallet(questions, answers, to!uint(confidence), pincode1);
+
+        // secure_wallet.login(pincode1);
+        options.walletfile.fwrite(secure_wallet.wallet);
+        options.devicefile.fwrite(secure_wallet.pin);
+        return 0;
+    }
+
 
     if (options.walletfile.exists) {
         const wallet_doc = options.walletfile.fread;
