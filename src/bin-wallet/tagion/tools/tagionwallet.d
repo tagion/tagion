@@ -551,7 +551,7 @@ int main(string[] args) {
             std.getopt.config.bundling, "version",
             "display the version", &version_switch,
             "overwrite|O", "Overwrite the config file and exits", &overwrite_switch,
-            "path", "Set the path for the wallet files", &path,
+        "path", format("Set the path for the wallet files : default %s", path), &path,
             "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
             "device", format("Device file : default %s", options.devicefile), &options.devicefile,
             "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,

@@ -13,7 +13,7 @@ export DOBJ := $(DBUILD)/obj
 export DLIB := $(DBUILD)/lib
 export DLOGCOV := $(DLOG)/cov
 export TESTBENCH := $(DLOG)/testbench
-export FOUND := $(REPOROOT)/foundamental
+export FUND := $(REPOROOT)/fundamental
 export TOOLS := $(REPOROOT)/tools
 
 env-dirs:
@@ -30,7 +30,7 @@ env-dirs:
 	$(call log.kvp, DTUB, $(DTUB))
 	$(call log.kvp, DLOGCOV, $(DLOGCOV))
 	$(call log.kvp, TESTBENCH, $(TESTBENCH))
-	$(call log.kvp, FOUND, $(FOUND))
+	$(call log.kvp, FUND, $(FUND))
 	$(call log.kvp, REPOROOT, $(REPOROOT))
 	$(call log.close)
 

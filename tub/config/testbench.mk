@@ -14,7 +14,7 @@ DARTBOOTRECORD = $(TESTBENCH)/bootrecord.hibon
 
 
 
-# $1:number $2:pincode $3:name $4:amount
+# $1:name $2:testbench-path
 define CREATE_WALLET
 ${eval
 # $(TEST_DIR)/.wallet$1: PINCODE=$2
@@ -25,24 +25,39 @@ ${eval
 # WALLETS+=$$(TEST_DIR)/wallet$1
 # INVOICES+=$$(TEST_DIR)/invoice_$3.hibon
 TESTBENCH_$1=${abspath $2/$1}
-BASEWALLET_$1=${abspath $$(FOUND)/$1}
-STDIWALLET_$1=$$(BASEWALLET_$1)/wallet.stdin
+BASEWALLET_$1=$$(FUND)/$1
+WALLETFILES_$1+=$$(BASEWALLET_$1)/tagionwallet.hibon
+WALLETFILES_$1+=$$(BASEWALLET_$1)/quiz.hibon
+WALLETFILES_$1+=$$(BASEWALLET_$1)/device.hibon
+
+STDINWALLET_$1=$$(BASEWALLET_$1)/wallet.stdin
 INVOICES+=$$(TESTBENCH_$1)/invoice.hibon
+
+.SECONDARY: $$(STDINWALLET_$1)
 
 $1-wallet: $$(TESTBENCH_$1)/.way
 $1-wallet: $$(TESTBENCH_$1)/invoice.hibon
 
+$1-fundamental: $$(WALLETFILES_$1)
+
 $$(TESTBENCH_$1)/invoice.hibon: $$(TESTBENCH_$1)/tagionwallet.json
-	echo $(TAGIONWALLET) $$< -x $$(PINCODE) -c $$(NAME):$$(AMOUNT) -i $$@
+	echo $$(TAGIONWALLET) $$< -x $$(PINCODE) -c $$(NAME):$$(AMOUNT) -i $$@
 
-$$(TESTBENCH_$1)/tagionwallet.json: $$(TESTBENCH_$1)/wallet $(TAGIONWALLET)
-	echo $(TAGIONWALLET) $$@ --path $$< -O
+$$(TESTBENCH_$1)/tagionwallet.json: $$(TESTBENCH_$1)/wallet
+	echo $$(TAGIONWALLET) $$@ --path $$< -O
 
-$$(TESTBENCH_$1)/wallet: $$(STDIWALLET_$1)
+$$(TESTBENCH_$1)/wallet: $$(STDINWALLET_$1)
 	echo	@cp -a $$(TESTBENCH_BIN)/$$(@F) $$@
 
-$$(STDIWALLET_$1): $$(BASEWALLET_$1)/.way
-	tee $$(FOUND)/$1_wallet.stdin < /dev/stdin | $$(TAGIONWALLET) --path $$(<D)
+$$(WALLETFILES_$1): $$(STDINWALLET_$1)
+	$$(PRECMD)
+	cd $$(BASEWALLET_$1)
+	cat $$< | $$(TAGIONWALLET)
+
+$$(STDINWALLET_$1): $$(BASEWALLET_$1)/.way  target-wallet
+	$$(PRECMD)
+	cd $$(BASEWALLET_$1)
+	tee $$(STDINWALLET_$1) < /dev/stdin | $$(TAGIONWALLET)
 
 env-$1:
 	$$(PRECMD)
@@ -56,11 +71,11 @@ env-testbench: env-$1
 
 help-$1:
 	$$(PRECMD)
-	$${call log.header, $@ :: help}
+	$${call log.header, $$@ :: help}
 	$${call log.help, "make env-$1", "Displays env for $1-wallet"}
 	$${call log.help, "make $1-wallet", "Creates $1-wallet"}
 	$${call log.help, "make clean-$1", "cleans $1-wallet"}
-
+	$${call log.help, "make $1-fundamental", "Generate the fundamental wallet which is stored in repositore"}
 	$${call log.close}
 
 help-testbench: help-$1
