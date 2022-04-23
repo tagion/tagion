@@ -4,62 +4,40 @@ MASTER_WALLETS=${wildcard $(WALLET_SUFFIX)*}
 
 WALLET_SUFFIX_LIST=${subst ${WALLET_SUFFIX},,${MASTER_WALLETS}}
 
-#TAGIONWALLET=$(TESTBENCH_BIN)/tagionwallet
-
-#TAGIONBOOT=$(TESTBENCH_BIN)/tagionboot
-
-#DARTUTIL=$(TESTBENCH_BIN)/dartutil
-
-TEST_DIR?=$(DIR_MAKEFILE)/test
-
-DARTBOOTRECORDER:=$(TEST_DIR)/dart.hibon
-
-WAYS+=$(TEST_DIR)
-
-# Wallet 0
-# first:  $(TESTBENCH)/first
-
-# 	echo $(TESTBENCH)/first
+#DARTBOOTRECORDER:=$(TEST_DIR)/dart.hibon
 
 WALLETS+=zero
-$(TESTBENCH)/zero: PINCODE=1234 NAME=zero AMOUNT=100000
+zero-wallet: PINCODE=01234
+zero-wallet: NAME=zero
+zero-wallet: AMOUNT=100000
 
 WALLETS+=first
-$(TESTBENCH)/first: PINCODE=1234 NAME=first AMOUNT=100000
+first-wallet: PINCODE=1234
+first-wallet: NAME=first
+first-wallet: AMOUNT=100000
 
 WALLETS+=second
-$(TESTBENCH)/second: PINCODE=1234 NAME=second AMOUNT=100000
+second-wallet: PINCODE=23456
+second-wallet: NAME=second
+second-wallet: AMOUNT=100000
 
 
 WALLETS+=third
-$(TESTBENCH)/third: PINCODE=1234 NAME=third AMOUNT=100000
+third-wallet: PINCODE=34567
+third-wallet: NAME=third
+third-wallet: AMOUNT=100000
 
 WALLETS+=fourth
-$(TESTBENCH)/fourth: PINCODE=1234 NAME=fourth AMOUNT=100000
-
+fourth-wallet: PINCODE=45678
+fourth-wallet: NAME=fourth
+fourth-wallet: AMOUNT=100000
 
 WALLETS+=fifth
-$(TESTBENCH)/fifth: PINCODE=1234 NAME=fourth  AMOUNT=100000
+fifth-wallet: PINCODE=56789
+fifth-wallet: NAME=fourth
+fifth-wallet: AMOUNT=100000
 
 WALLETS+=sixth
-$(TESTBENCH)/fifth: PINCODE=1234 NAME=sixth  AMOUNT=100000
-
-#${call CREATE_WALLET,0,zero,zero,1000000}
-
-# Wallet 1
-#${call CREATE_WALLET,1,first,first,1000000}
-
-# Wallet 2
-#${call CREATE_WALLET,2,second,second,1000000}
-
-# Wallet 3
-#${call CREATE_WALLET,3,third,third,1000000}
-
-# Wallet 4
-#${call CREATE_WALLET,4,fourth,fourth,1000000}
-
-# Wallet 5
-#${call CREATE_WALLET,5,fifth,fifth,1000000}
-
-# Wallet 6
-#${call CREATE_WALLET,6,sixth,sixth,1000000}
+sixth-wallet: PINCODE=67890
+sixth-wallet: NAME=sixth
+sixth-wallet: AMOUNT=100000

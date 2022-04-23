@@ -551,11 +551,13 @@ int main(string[] args) {
         options.setDefault;
     }
 
-    auto main_args = getopt(args, std.getopt.config.caseSensitive,
-            std.getopt.config.bundling, "version",
-            "display the version", &version_switch,
+    GetoptResult main_args;
+    try {
+        main_args = getopt(args, std.getopt.config.caseSensitive,
+            std.getopt.config.bundling,
+            "version", "display the version", &version_switch,
             "overwrite|O", "Overwrite the config file and exits", &overwrite_switch,
-        "path", format("Set the path for the wallet files : default %s", path), &path,
+            "path", format("Set the path for the wallet files : default %s", path), &path,
             "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
             "device", format("Device file : default %s", options.devicefile), &options.devicefile,
             "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
@@ -576,6 +578,12 @@ int main(string[] args) {
             "generate-wallet", "Create a new wallet", &generate_wallet,
             "health", "Healthcheck the node", &check_health
             );
+    }
+    catch (GetOptException e) {
+        stderr.writeln(e.msg);
+        return 1;
+    }
+
     if (version_switch) {
         writefln("version %s", REVNO);
         writefln("Git handle %s", HASH);
@@ -667,7 +675,7 @@ int main(string[] args) {
         auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
         writeln(resp_doc.toJSON);
     }
-    
+
 
      if (generate_wallet) {
         const questions = questions_str.split(',');
@@ -772,6 +780,7 @@ int main(string[] args) {
             scope invoice_args = create_invoice_command.splitter(":");
             import tagion.basic.Basic : eatOne;
 
+            writefln("invoice_args=%s create_invoice_command=%s", invoice_args, create_invoice_command);
             auto new_invoice = WalletInterface.StdSecureWallet.createInvoice(
                 invoice_args.eatOne,
                 invoice_args.eatOne.to!double.TGN);

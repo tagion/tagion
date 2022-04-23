@@ -41,6 +41,7 @@ INVOICES+=$$(TESTBENCH_$1)/invoice.hibon
 .SECONDARY: $$(TESTWALLETFILES_$1)
 .SECONDARY: $$(TESTBENCH_$1)/tagionwallet.json
 
+$1-wallet: target-wallet
 $1-wallet: | $$(TESTBENCH_$1)/.way
 $1-wallet: $$(TESTBENCH_$1)/invoice.hibon
 
@@ -49,12 +50,13 @@ wallets: $1-wallet
 $1-fundamental: $$(BASEWALLETFILES_$1)
 
 $$(TESTBENCH_$1)/invoice.hibon: $$(TESTBENCH_$1)/tagionwallet.json $$(TESTWALLETFILES_$1)
-	echo $$(TAGIONWALLET) $$< -x $$(PINCODE) -c $$(NAME):$$(AMOUNT) -i $$@
+	$$(TAGIONWALLET) $$< -x$$(PINCODE) -c $$(NAME):$$(AMOUNT) -i $$@
 
 $$(TESTBENCH_$1)/tagionwallet.json: $$(TESTWALLETFILES_$1)
-	echo $$(TAGIONWALLET) $$@ --path $$< -O
+	$$(TAGIONWALLET) $$@ --path $$(TESTBENCH_$1) -O
 
 $$(TESTBENCH_$1)/%.hibon: $$(BASEWALLET_$1)/%.hibon
+	$$(PRECMD)
 	cp $$< $$@
 
 $$(BASEWALLET_$1)/%.hibon: $$(BASEWALLETFILES_$1)
@@ -62,7 +64,7 @@ $$(BASEWALLET_$1)/%.hibon: $$(BASEWALLETFILES_$1)
 $$(BASEWALLETFILES_$1): $$(STDINWALLET_$1)
 	$$(PRECMD)
 	cd $$(BASEWALLET_$1)
-	cat $$< | $$(TAGIONWALLET)
+	cat $$< | $$(TAGIONWALLET) >/dev/null
 
 env-$1:
 	$$(PRECMD)
