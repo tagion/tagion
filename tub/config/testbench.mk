@@ -76,7 +76,7 @@ env-$1:
 	$${call log.env, BASEWALLETFILES_$1, $$(BASEWALLETFILES_$1)}
 	$${call log.close}
 
-env-testbench: env-$1
+env-wallets: env-$1
 
 help-$1:
 	$$(PRECMD)
@@ -88,6 +88,7 @@ help-$1:
 	$${call log.help, "", "Except the key file $$(STDINWALLET_$1)"}
 	$${call log.help, "make $1-fundamental", "Generate the fundamental wallet which is stored in repositore"}
 	$${call log.close}
+
 .PHONY: help-$1
 
 help-testbench: help-$1
@@ -125,7 +126,7 @@ create-invoices: tools $(INVOICES)
 $(DARTBOOTRECORDER): $(INVOICES)
 	$(PRECMD)$(TAGIONBOOT) $? -o $@
 
-env-testbench:
+env-wallets:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.kvp, TAGIONWAVE, $(TAGIONWAVE)}
@@ -139,9 +140,9 @@ env-testbench:
 
 .PHONY: env-testbench
 
-env: env-testbench
+env: env-wallets
 
-help-testbench:
+help-wallets:
 	$(PRECMD)
 	${call log.header, $@ :: help}
 	${call log.help, "make testbench", "Runs the testbench"}
@@ -150,13 +151,13 @@ help-testbench:
 	${call log.help, "make remove-wallets", "Cleans all the wallets"}
 	${call log.close}
 
-.PHONY: help-testbench
+.PHONY: help-wallets
 
-help: help-testbench
+help: help-wallets
 
-.PHONY: clean-testbench
+.PHONY: clean-wallets
 
-clean: clean-testbench
+clean: clean-wallets
 
 .PHONY: remove-wallets
 
