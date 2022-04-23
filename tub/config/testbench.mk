@@ -7,6 +7,7 @@ HIBONUTIL?=$(DBIN)/hibonutil
 TAGIONWALLET?=$(DBIN)/wallet
 
 DARTBOOTRECORD = $(TESTBENCH)/bootrecord.hibon
+DARTDB = $(TESTBENCH)/dart.drt
 
 WALLETFILES+=tagionwallet.hibon
 WALLETFILES+=quiz.hibon
@@ -161,6 +162,7 @@ help-boot:
 	$(PRECMD)
 	${call log.header, $@ :: help}
 	${call log.help, "make boot", "Will create DART boot recorder"}
+	${call log.help, "make clean-boot", "Delete the boot recorder"}
 	${call log.close}
 
 .PHONY: help-boot
@@ -187,5 +189,44 @@ $(DARTBOOTRECORD): $(INVOICES)
 clean-boot:
 	$(PRECMD)
 	${call log.header, $@ :: clean}
+	$(RM) $(DARTBOOTRECORD)
+	${call log.close}
+
+clean: clean-boot
+
+dart: target-dartutil $(DARTDB) boot
+
+$(DARTDB): $(DARTBOOTRECORD)
+	$(PRECMD)
+	$(DARTUTIL) --initialize -i $< --drt $@ -m
+
+env-dart:
+	$(PRECMD)
+	${call log.header, $@ :: env}
+	${call log.kvp, DARTDB, $(DARTDB)}
+	${call log.close}
+
+env: env-dart
+
+.PHONY: env-dart
+
+help-dart:
+	$(PRECMD)
+	${call log.header, $@ :: help}
+	${call log.help, "make dart", "Will create DART including"}
+	${call log.help, "make clean-dart", "Delete the DART db"}
+	${call log.close}
+
+help: help-dart
+
+.PHONY: help-dart
+
+clean-dart:
+	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RM) $(DARTDB)
+	${call log.close}
+
+clean: clean-dart
 
 ${foreach wallet,$(WALLETS),${call CREATE_WALLET,$(wallet),$(TESTBENCH)}}
