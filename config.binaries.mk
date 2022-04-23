@@ -119,7 +119,6 @@ BIN_TARGETS+=target-tagionlogservicetest
 #
 # Subscription utility
 #
-# FIXME(IB) should be removed when ddeps works correctly
 target-tagionsubscription: LIBS+=$(LIBOPENSSL)
 target-tagionsubscription: LIBS+=$(LIBSECP256K1)
 target-tagionsubscription: LIBS+=$(LIBP2PGOWRAPPER)
@@ -140,7 +139,6 @@ BIN_TARGETS+=target-tagionsubscription
 #
 # Recorderchain utility
 #
-# FIXME(IB) should be removed when ddeps works correctly
 target-recorderchain: LIBS+=$(LIBOPENSSL)
 target-recorderchain: LIBS+=$(LIBSECP256K1)
 target-recorderchain: LIBS+=$(LIBP2PGOWRAPPER)
@@ -154,6 +152,23 @@ clean-recorderchain:
 	$(RM) $(DBIN)/recorderchain
 
 clean: clean-recorderchain
+
+target-tagionboot: LIBS+=$(LIBSECP256K1)
+target-tagionboot: DCFLAGS+=$(DVERSION)=TINY_AES
+
+# fixme(cbr): When ddeps.mk work those libs are not needed
+target-tagionboot: LIBS+=$(LIBOPENSSL)
+target-tagionboot: LIBS+=$(LIBP2PGOWRAPPER)
+
+target-tagionboot: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-boot/*"}
+target-tagionboot: $(DBIN)/tagionboot
+
+clean-tagionboot:
+	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RM) $(DBIN)/tagionboot
+
+clean: clean-tagionboot
 
 hibonutil: target-hibonutil
 bin: hibonutil
@@ -178,3 +193,6 @@ bin: tagionsubscription
 
 recorderchain: target-recorderchain
 bin: recorderchain
+
+tagionboot: target-tagionboot
+bin: tagionboot

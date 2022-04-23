@@ -8,11 +8,6 @@ TAGIONWALLET?=$(DBIN)/wallet
 
 DARTBOOTRECORD = $(TESTBENCH)/bootrecord.hibon
 
-
-
-
-
-
 WALLETFILES+=tagionwallet.hibon
 WALLETFILES+=quiz.hibon
 WALLETFILES+=device.hibon
@@ -123,8 +118,9 @@ create-recorder: tools $(DARTBOOTRECORDER)
 
 create-invoices: tools $(INVOICES)
 
-$(DARTBOOTRECORDER): $(INVOICES)
-	$(PRECMD)$(TAGIONBOOT) $? -o $@
+# $(DARTBOOTRECORDER): $(INVOICES)
+# 	$(PRECMD)
+# 	$(TAGIONBOOT) $? -o $@
 
 env-wallets:
 	$(PRECMD)
@@ -160,5 +156,36 @@ help: help-wallets
 clean: clean-wallets
 
 .PHONY: remove-wallets
+
+help-boot:
+	$(PRECMD)
+	${call log.header, $@ :: help}
+	${call log.help, "make boot", "Will create DART boot recorder"}
+	${call log.close}
+
+.PHONY: help-boot
+
+help: help-boot
+
+env-boot:
+	$(PRECMD)
+	${call log.header, $@ :: env}
+	${call log.kvp, DARTBOOTRECORD, $(DARTBOOTRECORD)}
+	${call log.env, INVOICES, $(INVOICES)}
+	${call log.close}
+
+.PHONY: env-boot
+
+env: env-boot
+
+boot: wallets target-tagionboot $(DARTBOOTRECORD)
+
+$(DARTBOOTRECORD): $(INVOICES)
+	$(PRECMD)
+	$(TAGIONBOOT) $(INVOICES) -o $@
+
+clean-boot:
+	$(PRECMD)
+	${call log.header, $@ :: clean}
 
 ${foreach wallet,$(WALLETS),${call CREATE_WALLET,$(wallet),$(TESTBENCH)}}
