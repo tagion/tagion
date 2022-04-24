@@ -41,14 +41,18 @@ $1-wallet: target-wallet
 $1-wallet: | $$(TESTBENCH_$1)/.way
 $1-wallet: $$(TESTBENCH_$1)/invoice.hibon
 
+.PHONY: $1-wallet
+
 wallets: $1-wallet
 
 $1-fundamental: $$(BASEWALLETFILES_$1)
 
 $$(TESTBENCH_$1)/invoice.hibon: $$(TESTBENCH_$1)/tagionwallet.json $$(TESTWALLETFILES_$1)
+	$$(PRECMD)
 	$$(TAGIONWALLET) $$< -x$$(PINCODE) -c $$(NAME):$$(AMOUNT) -i $$@
 
 $$(TESTBENCH_$1)/tagionwallet.json: $$(TESTWALLETFILES_$1)
+	$$(PRECMD)
 	$$(TAGIONWALLET) $$@ --path $$(TESTBENCH_$1) -O
 
 $$(TESTBENCH_$1)/%.hibon: $$(BASEWALLET_$1)/%.hibon

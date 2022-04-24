@@ -780,7 +780,7 @@ int main(string[] args) {
             scope invoice_args = create_invoice_command.splitter(":");
             import tagion.basic.Basic : eatOne;
 
-            writefln("invoice_args=%s create_invoice_command=%s", invoice_args, create_invoice_command);
+//            writefln("invoice_args=%s create_invoice_command=%s", invoice_args, create_invoice_command);
             auto new_invoice = WalletInterface.StdSecureWallet.createInvoice(
                 invoice_args.eatOne,
                 invoice_args.eatOne.to!double.TGN);
@@ -795,7 +795,7 @@ int main(string[] args) {
             wallet_interface.payment_requests.list ~= new_invoice;
             options.paymentrequestsfile.fwrite(wallet_interface.payment_requests);
             // Writes the invoice-file to a file named <name>_<invoicefile>
-            writefln("invoicefile=%s", invoicefile);
+            // writefln("invoicefile=%s", invoicefile);
             invoicefile.fwrite(new_invoice);
         }
         else if (orders !is orders.init) {
