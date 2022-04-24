@@ -85,10 +85,10 @@ include $(DTUB)/devnet/devnet.mk
 #
 # Packages
 #
-
 include $(DTUB)/config/compiler.mk
 include $(DTUB)/config/dstep.mk
 include $(DTUB)/config/ddeps.mk
+include $(DTUB)/config/bins.mk
 
 include $(DTUB)/compile.mk
 
@@ -110,7 +110,7 @@ include $(DTUB)/config/ldc-build-runtime.mk
 #
 # Testbench
 #
-include $(DTUB)/config/testbench.mk
+include $(DTUB)/testbench/testbench.mk
 
 
 #
