@@ -74,7 +74,7 @@ endif
 include $(DTUB)/ways.mk
 include $(DTUB)/gitconfig.mk
 include $(DTUB)/config/submodules.mk
-include $(DTUB)/config/druntime.mk
+# include $(DTUB)/config/druntime.mk
 include $(DTUB)/config/submake.mk
 include $(DTUB)/config/host.mk
 include $(DTUB)/config/cross.mk
@@ -111,6 +111,7 @@ include $(DTUB)/config/ldc-build-runtime.mk
 # Testbench
 #
 include $(DTUB)/testbench/testbench.mk
+include $(DTUB)/testbench/mode0.mk
 
 
 #
@@ -123,10 +124,10 @@ include $(DTUB)/clean.mk
 #
 include $(DTUB)/help.mk
 
-run: tagionwave
-	cd $(DBIN);
-	rm -fR data; mkdir data;
-	script -c "./tagionwave $(DRTFALGS) -N 7 -t 200" tagionwave_script.log
+# run: tagionwave
+# 	cd $(DBIN)
+# 	rm -fR data; mkdir data;
+# 	script -c "./tagionwave $(DRTFALGS) -N 7 -t 200" tagionwave_script.log
 
 mode1: tagionwave
 	cd $(DBIN)

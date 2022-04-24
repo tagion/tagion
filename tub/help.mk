@@ -21,6 +21,9 @@ help-main:
 	${call log.help, "make prebuild", "Executes the prebuild"}
 	${call log.line}
 	${call log.help, "make env", "Show Make environment"}
+
+	${call log.help, "make unittest", "Runs all unittests"}
+	${call log.help, "make bins", "Will compile and link all unittests"}
 	${call log.line}
 	${call log.kvp, "README", "$(DTUB)/README.md"}
 	${call log.kvp, "Branch", "$(TUB_BRANCH)"}

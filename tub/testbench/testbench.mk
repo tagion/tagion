@@ -1,10 +1,10 @@
 
-TAGIONWAVE?=$(DBIN)/tagionwave
-TAGIONBOOT?=$(DBIN)/tagionboot
+# TAGIONWAVE?=$(DBIN)/tagionwave
+# TAGIONBOOT?=$(DBIN)/tagionboot
 
-DARTUTIL?=$(DBIN)/dartutil
-HIBONUTIL?=$(DBIN)/hibonutil
-TAGIONWALLET?=$(DBIN)/wallet
+# DARTUTIL?=$(DBIN)/dartutil
+# HIBONUTIL?=$(DBIN)/hibonutil
+# TAGIONWALLET?=$(DBIN)/wallet
 
 DARTBOOTRECORD = $(TESTBENCH)/bootrecord.hibon
 DARTDB = $(TESTBENCH)/dart.drt
