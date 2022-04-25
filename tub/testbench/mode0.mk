@@ -9,6 +9,9 @@ mode0: tagionwave $(MODE0_DART)
 	cd $(MODE0)
 	script -c "$(TAGIONWAVE) $(MODE0_FLAGS)" $(MODE0_LOG)
 
+.PHONY: mode0
+testbench: mode0
+
 $(MODE0_DART): | dart
 $(MODE0_DART): $(DARTDB)
 	$(PRECMD)
@@ -26,4 +29,17 @@ env-mode0:
 	${call log.kvp, MODE0_FLAGS,"$(MODE0_FLAGS)"}
 	${call log.close}
 
+.PHONY: env-mode0
+env-testbench: env-mode0
+
 run: mode0
+
+clean-mode0:
+	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RMDIR) $(MODE0)
+	${call log.close}
+
+.PHONY: clean-mode0
+
+clean-testbench: clean-mode0

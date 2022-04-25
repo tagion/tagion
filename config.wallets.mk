@@ -1,11 +1,4 @@
 
-WALLET_SUFFIX=$(TESTBENCH_BIN)/wallet
-MASTER_WALLETS=${wildcard $(WALLET_SUFFIX)*}
-
-WALLET_SUFFIX_LIST=${subst ${WALLET_SUFFIX},,${MASTER_WALLETS}}
-
-#DARTBOOTRECORDER:=$(TEST_DIR)/dart.hibon
-
 WALLETS+=zero
 zero-wallet: PINCODE=01234
 zero-wallet: NAME=zero
