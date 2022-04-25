@@ -57,7 +57,7 @@ struct Options {
     //bool sequential;       /// Sequential test mode, used to replace the same graph from a the seed value
 
     string logext; /// logfile extension
-    string path_arg; /// Search path
+    string pid_file; /// PID file
     string node_name; /// Name of the node
     string ip;
     ulong port;
@@ -311,8 +311,11 @@ struct TransactionMiddlewareOptions {
 
 //__gshared static TransactionMiddlewareOptions transaction_middleware_options;
 
-static ref auto all_getopt(ref string[] args, ref bool version_switch,
-        ref bool overwrite_switch, ref scope Options options) {
+static ref auto all_getopt(
+    ref string[] args,
+    ref bool version_switch,
+    ref bool overwrite_switch,
+    ref scope Options options) {
     import std.getopt;
     import std.algorithm;
     import std.conv;
@@ -326,7 +329,8 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
         "transaction-max|D",    format("Transaction max = 0 means all nodes: default %d", options.transaction.max),  &(options.transaction.max),
         "ip", "Host gossip ip", &(options.ip),
         "port", "Host gossip port ", &(options.port),
-        "path|I",    "Sets the search path",     &(options.path_arg),
+        "pid", format("Write the pid to %s file", options.pid_file), &(options.pid_file),
+//      "path|I",    "Sets the search path", &(options.path_arg),
         "trace-gossip|g",    "Sets the search path",     &(options.trace_gossip),
         "nodes|N",   format("Sets the number of nodes: default %d", options.nodes), &(options.nodes),
         "seed",      format("Sets the random seed: default %d", options.seed),       &(options.seed),

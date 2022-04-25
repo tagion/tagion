@@ -112,7 +112,8 @@ include $(DTUB)/config/ldc-build-runtime.mk
 #
 include $(DTUB)/testbench/testbench.mk
 include $(DTUB)/testbench/mode0.mk
-
+#include $(DTUB)/testbench/mode1.mk
+include /home/carsten/work/tagion/tub/testbench/mode1.mk
 
 #
 # Enable cleaning
@@ -129,7 +130,7 @@ include $(DTUB)/help.mk
 # 	rm -fR data; mkdir data;
 # 	script -c "./tagionwave $(DRTFALGS) -N 7 -t 200" tagionwave_script.log
 
-mode1: tagionwave
+mode1z: tagionwave
 	cd $(DBIN)
 	rm -f tagionrun.sh tagionwave.json
 	ln -s ../../../tagionwave.json
