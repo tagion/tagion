@@ -187,9 +187,10 @@ env: env-boot
 
 boot: wallets target-tagionboot $(DARTBOOTRECORD)
 
+$(DARTBOOTRECORD): |target-tagionboot
 $(DARTBOOTRECORD): $(INVOICES)
 	$(PRECMD)
-	${call log.header, $@ :: boot record}
+	${call log.header, $(@F) :: boot record}
 	$(TAGIONBOOT) $(INVOICES) -o $@
 	${call log.close}
 

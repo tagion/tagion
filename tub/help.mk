@@ -4,8 +4,8 @@ HELPER+=main_help
 
 help: help-main
 
-TUB_COMMIT = ${shell cd $(DROOT)/tub; git rev-parse --short HEAD}
-TUB_BRANCH = ${shell cd $(DROOT)/tub; git rev-parse --abbrev-ref HEAD}
+TUB_COMMIT = ${shell git rev-parse --short HEAD}
+TUB_BRANCH = ${shell git rev-parse --abbrev-ref HEAD}
 
 help-main:
 	$(PRECMD)
