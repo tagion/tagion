@@ -70,6 +70,10 @@ recorderchain: prebuild-linux
 recorderchain: target-recorderchain
 bin: recorderchain
 
+boot: prebuild-linux
+boot: target-boot
+bin: boot
+
 target-linux:
 	@echo DBUILD $(DBUILD)
 

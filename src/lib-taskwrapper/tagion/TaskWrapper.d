@@ -164,10 +164,10 @@ unittest {
     static void run(string task_name, Params args) nothrow {
         try {
             scope (success) {
-                assumeWontThrow(writefln(format("Success: TaskWrapper<%s>", task_name)));
+                log.trace(format("Success: TaskWrapper<%s>", task_name));
             }
             scope (failure) {
-                assumeWontThrow(writefln(format("Fail: TaskWrapper<%s>", task_name)));
+                log.trace(format("Fail: TaskWrapper<%s>", task_name));
             }
             scope (exit) {
                 _tid_table.removeTask(task_name);
