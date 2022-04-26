@@ -33,7 +33,7 @@ env-mode0:
 .PHONY: env-mode0
 env-testbench: env-mode0
 
-run: mode0
+#run: mode0
 
 clean-mode0:
 	$(PRECMD)

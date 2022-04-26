@@ -3,6 +3,7 @@ alpha-mode1: HOSTPORT=4020
 alpha-mode1: TRANSACTIONPORT=10810
 alpha-mode1: MONITORPORT=10820
 alpha-mode1: DARTSYNC=false
+aplha-mode1: dart
 MODE1_LIST+=alpha
 
 beta-mode1: HOSTPORT=4021

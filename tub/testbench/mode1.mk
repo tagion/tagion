@@ -5,13 +5,15 @@ MODE1_SRC_CONFIG:=$(FUND)/mode1/tagionwave.json
 MODE1_LOG:=$(MODE1_ROOT)/mode1_script.log
 #MODE1_FLAGS:=-N 7 -t 200
 
+
 define MODE1
 ${eval
 
-DART_$1=$$(MODE1_ROOT)/dart-$1.drt
-
+$1-mode1: DARTFILE=$$(MODE1_ROOT)/dart-$1.drt
+$1-mode1: target-tagionwave
 $1-mode1: $$(MODE1_ROOT)/.way
-$1-mode1: $$(DART_$1)
+$1-mode1: $$(MODE1_CONFIG)
+$1-mode1: $$(MODE1_DART)
 
 mode1: $1-mode1
 
@@ -21,17 +23,15 @@ clean-mode1-$1:
 	$$(RM) $$(DART_$1)
 	$${call log.close}
 
-$$(DART_$1): $$(MODE1_CONFIG)
+$1-mode1:
 	$$(PRECMD)
-	echo $$(TAGIONWAVE) $$(MODE1_CONFIG) $$(MODE1_FALGS) --port $$(HOSTPORT) -p $$(TRANSACTIONPORT) -P $$(MONITORPORT) --dart-filenamme=$$@ --dart-syncronize=$$(DARTSYNC) --pid $$(MODE1_ROOT)/tagionwave_$1.pid
+	echo	$$(TAGIONWAVE) $$(MODE1_CONFIG) $$(MODE1_FALGS) --port $$(HOSTPORT) -p $$(TRANSACTIONPORT) -P $$(MONITORPORT) --dart-filenamme=$$(DARTFILE) --dart-syncronize=$$(DARTSYNC) --pid $$(MODE1_ROOT)/tagionwave_$1.pid
 
 }
 endef
 
 mode1: $(MODE1_ROOT)/.way
 mode1: tagionwave $(MODE1_DART) $(MODE1_CONFIG)
-	cd $(MODE1_ROOT)
-	script -c "$(TAGIONWAVE) $(MODE1_FLAGS)" $(MODE1_LOG)
 
 .PHONY: mode1
 testbench: mode1
@@ -58,7 +58,7 @@ env-mode1:
 .PHONY: env-mode1
 env-testbench: env-mode1
 
-run: mode1
+#run: mode1
 
 clean-mode1:
 	$(PRECMD)

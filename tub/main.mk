@@ -130,9 +130,16 @@ include $(DTUB)/help.mk
 # 	rm -fR data; mkdir data;
 # 	script -c "./tagionwave $(DRTFALGS) -N 7 -t 200" tagionwave_script.log
 
+run:
+	@echo "------------ DEPRECATED ----------------"
+	@echo "run target change to mode0 or mode1"
+	@echo "make mode0 : to start a network in mode 0"
+	@echo "make mode1 : to start a network in mode 1"
+
 mode1z: tagionwave
-	cd $(DBIN)
+	cd $(MODE1_ROOT)
 	rm -f tagionrun.sh tagionwave.json
-	ln -s ../../../tagionwave.json
-	ln -s ../../../tagionrun.sh
+	cp $(FUND)/mode1/tagionwave.json .
+	cp -a $(REPOROOT)/tagionrun.sh .
+	export TAGIONWAVE=$(TAGIONWAVE)
 	./tagionrun.sh

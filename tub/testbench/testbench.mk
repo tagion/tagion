@@ -118,10 +118,11 @@ endef
 
 #include testbench_setup.mk
 
-create-recorder: tools $(DARTBOOTRECORDER)
-	$(PRECMD)$(TAGIONBOOT) $(INVOICES) -o $(DARTBOOTRECORDER)
+# create-recorder: tools $(DARTBOOTRECORDER)
+# 	$(PRECMD)
+# 	$(TAGIONBOOT) $(INVOICES) -o $(DARTBOOTRECORDER)
 
-create-invoices: tools $(INVOICES)
+# create-invoices: tools $(INVOICES)
 
 # $(DARTBOOTRECORDER): $(INVOICES)
 # 	$(PRECMD)
@@ -188,7 +189,9 @@ boot: wallets target-tagionboot $(DARTBOOTRECORD)
 
 $(DARTBOOTRECORD): $(INVOICES)
 	$(PRECMD)
+	${call log.header, $@ :: boot record}
 	$(TAGIONBOOT) $(INVOICES) -o $@
+	${call log.close}
 
 clean-boot:
 	$(PRECMD)
@@ -202,12 +205,15 @@ dart: target-dartutil $(DARTDB) boot
 
 $(DARTDB): $(DARTBOOTRECORD)
 	$(PRECMD)
+	${call log.header, $@ :: dart db}
 	$(DARTUTIL) --initialize -i $< --drt $@ -m
+	${call log.close}
 
 env-dart:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.kvp, DARTDB, $(DARTDB)}
+	${call log.kvp, DARTBOOTRECORD, $(DARTBOOTRECORD)}
 	${call log.close}
 
 env: env-dart
@@ -217,8 +223,10 @@ env: env-dart
 help-dart:
 	$(PRECMD)
 	${call log.header, $@ :: help}
-	${call log.help, "make dart", "Will create DART including"}
-	${call log.help, "make clean-dart", "Delete the DART db"}
+	${call log.help, "make dart", "Will creates DART from the boot recorder"}
+	${call log.help, "make boot", "Will create DART boot recorder"}
+	${call log.help, "make clean-dart", "Deletes the DART db"}
+	${call log.help, "make clean-boot", "Deletes the boot recorder"}
 	${call log.close}
 
 help: help-dart
