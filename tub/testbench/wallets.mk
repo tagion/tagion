@@ -38,37 +38,43 @@ INVOICES+=$$(INVOICE_$1)
 .SECONDARY: $$(STDINWALLET_$1)
 .SECONDARY: $$(BASEWALLETFILES_$1)
 .SECONDARY: $$(TESTWALLETFILES_$1)
-.SECONDARY: $$(TESTBENCH_$1)/tagionwallet.json
+.SECONDARY: $$(WALLET_CONFIG_$1)
 
-$1-wallet: target-wallet
+#$1-wallet: target-wallet
 $1-wallet: | $$(TESTBENCH_$1)/.way
-$1-wallet: $$(TESTBENCH_$1)/invoice.hibon
+$1-wallet: $$(INVOICE_$1)
 
 .PHONY: $1-wallet
 
 wallets: $1-wallet
 
 $1-fundamental: $$(BASEWALLETFILES_$1)
+.PHONY: $1-fundamental
 
 $$(INVOICE_$1): $$(WALLET_CONFIG_$1)
 	$$(PRECMD)
-	$${call log.header, $1 :: invoice}
+	$${call log.kvp, invoice $1}
 	$$(TAGIONWALLET) $$< -x$$(PINCODE) -c $$(NAME):$$(AMOUNT) -i $$@
 
-$$(WALLET_CONFIG_$1): $$(TESTWALLETFILES_$1)
+$1-config: $$(TESTWALLETFILES_$1)
+.PHONY: $1-config
+
+#$$(WALLET_CONFIG_$1): |target-wallet
+$$(WALLET_CONFIG_$1): $$(TESTBENCH_$1)/tagionwallet.hibon
 	$$(PRECMD)
-	$${call log.header, $$(@F) :: invoice}
+	$${call log.kvp, $$(@F) $1}
 	$$(TAGIONWALLET) $$@ --path $$(TESTBENCH_$1) -O
 
-$$(TESTBENCH_$1)/%.hibon: $$(BASEWALLET_$1)/%.hibon
+$$(TESTBENCH_$1)/tagionwallet.hibon: $$(BASEWALLET_$1)/tagionwallet.hibon
 	$$(PRECMD)
-	$${call log.info, $$(@F) :: wallet}
-	cp $$< $$@
+	$${call log.kvp, $$(@F) $1}
+	cp $$(BASEWALLETFILES_$1) $$(@D)
 
 #$$(BASEWALLET_$1)/%.hibon: $$(BASEWALLETFILES_$1)
-
-$$(BASEWALLETFILES_$1): $$(STDINWALLET_$1)
+$$(BASEWALLET_$1)/tagionwallet.hibon: | target-wallet
+$$(BASEWALLET_$1)/tagionwallet.hibon: $$(STDINWALLET_$1)
 	$$(PRECMD)
+	$${call log.kvp, base-wallet $1}
 	cd $$(BASEWALLET_$1)
 	cat $$< | $$(TAGIONWALLET) >/dev/null
 
@@ -210,8 +216,9 @@ clean-boot:
 
 clean: clean-boot
 
-dart: boot target-dartutil $(DARTDB)
+dart: boot $(DARTDB)
 
+$(DARTDB): target-dartutil
 $(DARTDB): $(DARTBOOTRECORD)
 	$(PRECMD)
 	${call log.header, $@ :: dart db}
