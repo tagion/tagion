@@ -28,9 +28,12 @@ BASEWALLET_$1=$$(FUND)/$1
 
 BASEWALLETFILES_$1=$${addprefix $$(BASEWALLET_$1)/,$$(WALLETFILES)}
 TESTWALLETFILES_$1=$${addprefix $$(TESTBENCH_$1)/,$$(WALLETFILES)}
+WALLET_CONFIG_$1=$$(TESTBENCH_$1)/tagionwallet.json
+INVOICE_$1=$$(TESTBENCH_$1)/invoice.hibon
 
 STDINWALLET_$1=$$(BASEWALLET_$1)/wallet.stdin
-INVOICES+=$$(TESTBENCH_$1)/invoice.hibon
+
+INVOICES+=$$(INVOICE_$1)
 
 .SECONDARY: $$(STDINWALLET_$1)
 .SECONDARY: $$(BASEWALLETFILES_$1)
@@ -47,19 +50,22 @@ wallets: $1-wallet
 
 $1-fundamental: $$(BASEWALLETFILES_$1)
 
-$$(TESTBENCH_$1)/invoice.hibon: $$(TESTBENCH_$1)/tagionwallet.json $$(TESTWALLETFILES_$1)
+$$(INVOICE_$1): $$(WALLET_CONFIG_$1)
 	$$(PRECMD)
+	$${call log.header, $1 :: invoice}
 	$$(TAGIONWALLET) $$< -x$$(PINCODE) -c $$(NAME):$$(AMOUNT) -i $$@
 
-$$(TESTBENCH_$1)/tagionwallet.json: $$(TESTWALLETFILES_$1)
+$$(WALLET_CONFIG_$1): $$(TESTWALLETFILES_$1)
 	$$(PRECMD)
+	$${call log.header, $$(@F) :: invoice}
 	$$(TAGIONWALLET) $$@ --path $$(TESTBENCH_$1) -O
 
 $$(TESTBENCH_$1)/%.hibon: $$(BASEWALLET_$1)/%.hibon
 	$$(PRECMD)
+	$${call log.info, $$(@F) :: wallet}
 	cp $$< $$@
 
-$$(BASEWALLET_$1)/%.hibon: $$(BASEWALLETFILES_$1)
+#$$(BASEWALLET_$1)/%.hibon: $$(BASEWALLETFILES_$1)
 
 $$(BASEWALLETFILES_$1): $$(STDINWALLET_$1)
 	$$(PRECMD)
@@ -72,6 +78,8 @@ env-$1:
 	$${call log.kvp, TESTBENCH_$1 $$(TESTBENCH_$1)}
 	$${call log.kvp, BASEWALLET_$1 $$(BASEWALLET_$1)}
 	$${call log.kvp, STDINWALLET_$1 $$(STDINWALLET_$1)}
+	$${call log.kvp, WALLET_CONFIG_$1, $$(WALLET_CONFIG_$1)}
+	$${call log.kvp, INVOICE_$1, $$(INVOICE_$1)}
 	$${call log.env, TESTWALLETFILES_$1, $$(TESTWALLETFILES_$1)}
 	$${call log.env, BASEWALLETFILES_$1, $$(BASEWALLETFILES_$1)}
 	$${call log.close}
@@ -187,7 +195,7 @@ env: env-boot
 
 boot: wallets target-tagionboot $(DARTBOOTRECORD)
 
-$(DARTBOOTRECORD): |target-tagionboot
+$(DARTBOOTRECORD): |wallets target-tagionboot
 $(DARTBOOTRECORD): $(INVOICES)
 	$(PRECMD)
 	${call log.header, $(@F) :: boot record}
@@ -202,7 +210,7 @@ clean-boot:
 
 clean: clean-boot
 
-dart: target-dartutil $(DARTDB) boot
+dart: boot target-dartutil $(DARTDB)
 
 $(DARTDB): $(DARTBOOTRECORD)
 	$(PRECMD)

@@ -101,7 +101,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
                     auto nnr = NetworkNodeRecord(archive.filed);
                     if (nnr.state == NetworkNodeRecord.State.ACTIVE) {
                         auto node_addr = NodeAddress(nnr.address, opts.dart, opts.port_base, true);
-                        auto pk = cast(Pubkey) nnr.node;
+                        auto pk = ncl.pubkey;
                         node_addresses[pk] = node_addr;
                     }
                 }
@@ -176,7 +176,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
 
             foreach (i, key; node_addresses.keys) {
                 auto nnr = NetworkNodeRecord();
-                nnr.node = cast(Buffer) key;
+//                nnr.node = cast(Buffer) key;
                 nnr.time = Clock.currStdTime();
                 nnr.state = NetworkNodeRecord.State.ACTIVE;
                 nnr.address = node_addresses[key].address;
