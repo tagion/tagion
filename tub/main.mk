@@ -110,10 +110,9 @@ include $(DTUB)/config/ldc-build-runtime.mk
 #
 # Testbench
 #
-include $(DTUB)/testbench/testbench.mk
+include $(DTUB)/testbench/wallets.mk
 include $(DTUB)/testbench/mode0.mk
-#include $(DTUB)/testbench/mode1.mk
-include /home/carsten/work/tagion/tub/testbench/mode1.mk
+include $(DTUB)/testbench/mode1.mk
 
 #
 # Enable cleaning
@@ -130,7 +129,7 @@ include $(DTUB)/help.mk
 # 	rm -fR data; mkdir data;
 # 	script -c "./tagionwave $(DRTFALGS) -N 7 -t 200" tagionwave_script.log
 
-run:
+run: mode0
 	@echo "------------ DEPRECATED ----------------"
 	@echo "run target change to mode0 or mode1"
 	@echo "make mode0 : to start a network in mode 0"
