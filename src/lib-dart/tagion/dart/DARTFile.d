@@ -132,12 +132,8 @@ alias check = Check!DARTException;
         if (blockfile.root_index) {
             const data = blockfile.load(blockfile.root_index);
             const doc = Document(data);
-            import std.stdio;
-            import tagion.hibon.HiBONJSON;
-            writefln("doc.toPretty=%s", doc.toPretty);
-            auto branch = Branches(doc);
-            writefln("branch.fingerprint=%s", branch.fingerprint(this).hex);
-            _fingerprint = branch.fingerprint(this);
+            auto branches = Branches(doc);
+            _fingerprint = branches.fingerprint(this);
         }
     }
 
@@ -150,6 +146,8 @@ alias check = Check!DARTException;
     immutable(Buffer) fingerprint() pure const nothrow {
         return _fingerprint;
     }
+
+    alias bullseye = fingerprint;
 
     /++
      Creates an empty Recorder
@@ -1579,12 +1577,9 @@ alias check = Check!DARTException;
             // dart_B.dump;
             // dart_A.dump;
             assert(dart_A.fingerprint == dart_B.fingerprint);
-            import std.stdio;
+
             // Check fingerprint on load
             auto read_dart_A = new DARTFile(net, filename_A);
-            writefln("     dart_A %s", dart_A.fingerprint.hex);
-            writefln("read_dart_A %s", read_dart_A.fingerprint.hex);
-
             assert(dart_A.fingerprint == read_dart_A.fingerprint);
         }
 
