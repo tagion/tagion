@@ -114,7 +114,7 @@ int main(string[] args) {
                 format("%s [<option>...] ", program),
                 format("%s <config.json>", program),
                         ].join("\n"),
-                    net_opts.options);
+                    main_args.options);
             return 0;
         }
 

@@ -376,6 +376,7 @@ static ref auto all_getopt(
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
         "server-token", format("Token to access shared server"), &(options.serverFileDiscovery.token),
         "server-tag", format("Group tag(should be the same as in token payload)"), &(options.serverFileDiscovery.tag),
+        "boot", format("Shared boot file: default: %s", options.path_to_shared_info), &(options.path_to_shared_info),
 //        "help!h", "Display the help text",    &help_switch,
         // dfmt on
 
@@ -406,7 +407,7 @@ static setDefaultOption(ref Options options) {
         //  s.network_socket_port =11900;
         //        sequential=false;
         min_port = 6000;
-        path_to_shared_info = "/tmp/info.hibon";
+        path_to_shared_info = "/tmp/boot.hibon";
         p2plogs = false;
         with (host) {
             timeout = 3000;
@@ -623,7 +624,7 @@ static setDefaultOption(ref Options options) {
         case local:
             options.dart.fast_load = true;
             options.dart.path = "./data/%dir%/dart.drt";
-            options.path_to_shared_info = "./shared-data/info.hibon";
+            options.path_to_shared_info = "./shared-data/boot.hibon";
             break;
         case pub:
             options.dart.fast_load = true;

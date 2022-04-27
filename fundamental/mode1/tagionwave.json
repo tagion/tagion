@@ -149,8 +149,8 @@
     "node_name": "",
     "nodes": 7,
     "p2plogs": false,
-    "path_arg": "",
     "path_to_shared_info": "./info.hibon",
+    "pid_file": "",
     "port": 4001,
     "port_base": 4000,
     "recorder": {

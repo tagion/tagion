@@ -16,7 +16,7 @@ gamma-mode1: HOSTPORT=4022
 gamma-mode1: TRANSACTIONPORT=10812
 gamma-mode1: MONITORPORT=10822
 gamma-mode1: DARTSYNC=true
-MODE1_LIST+=gamme
+MODE1_LIST+=gamma
 
 delta-mode1: HOSTPORT=4023
 delta-mode1: TRANSACTIONPORT=10813
