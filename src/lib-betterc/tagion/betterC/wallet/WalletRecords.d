@@ -7,8 +7,102 @@ import tagion.basic.Basic : Buffer, Pubkey, Signature, basename;
 import tagion.betterC.utils.Memory;
 import tagion.betterC.utils.BinBuffer;
 
+// import std.format;
+import std.conv : emplace;
+import core.stdc.string : memcpy;
+
+import std.traits : hasMember, ReturnType, isArray, ForeachType, isUnsigned, isIntegral, Unqual, isAssociativeArray;
+import std.typecons : TypedefType, Tuple;
+import std.range.primitives : isInputRange;
+
 import tagion.betterC.funnel.TagionCurrency;
 // import tagion.script.StandardRecords : StandardBill;
+
+template isSpecialKeyType(T) {
+    import std.traits : isAssociativeArray, isUnsigned, KeyType;
+
+    static if (isAssociativeArray!T) {
+        alias KeyT = KeyType!T;
+        enum isSpecialKeyType = !(isUnsigned!KeyT) && !is(KeyT : string);
+    }
+    else {
+        enum isSpecialKeyType = false;
+    }
+}
+
+    static R toList(R)(const Document doc) {
+        alias MemberU = ForeachType!(R);
+        alias BaseU = TypedefType!MemberU;
+        static if (isArray!R) {
+            alias UnqualU = Unqual!MemberU;
+            UnqualU[] result;
+            result.length = doc.length;
+            enum do_foreach = true;
+        }
+        else static if (isSpecialKeyType!R) {
+            R result;
+            enum do_foreach = true;
+        }
+        else static if (isAssociativeArray!R) {
+            R result;
+            enum do_foreach = true;
+        }
+        else {
+            return R(doc);
+            enum do_foreach = false;
+        }
+        static if (do_foreach) {
+            foreach (elm; doc[]) {
+                static if (isSpecialKeyType!R) {
+                    const value_doc = elm.get!Document;
+                    alias KeyT = KeyType!R;
+                    alias BaseKeyT = TypedefType!KeyT;
+                    static if (Document.Value.hasType!BaseKeyT || is(BaseKeyT == enum)) {
+                        const key = KeyT(value_doc[0].get!BaseKeyT);
+                    }
+                    else {
+                        auto key = KeyT(value_doc[0].get!BaseKeyT);
+                    }
+                    const e = value_doc[1];
+                }
+                else {
+                    const e = elm;
+                }
+                static if (Document.Value.hasType!MemberU || is(BaseU == enum)) {
+                    auto value = e.get!BaseU;
+                }
+                else static if (Document.Value.hasType!BaseU) {
+                    // Special case for Typedef
+                    auto value = MemberU(e.get!BaseU);
+                }
+                else {
+                    const sub_doc = e.get!Document;
+                    static if (is(BaseU == struct)) {
+                        auto value = BaseU(sub_doc);
+                    }
+                    else {
+                        auto value = toList!BaseU(sub_doc);
+                    }
+                    // else {
+                    //     static assert(0,
+                    //             format("Can not convert %s to Document", R.stringof));
+                    // }
+                }
+                static if (isAssociativeArray!R) {
+                    static if (isSpecialKeyType!R) {
+                        result[key] = value;
+                    }
+                    else {
+                        result[e.key] = value;
+                    }
+                }
+                else {
+                    result[e.index] = value;
+                }
+            }
+        }
+        return cast(immutable)result;
+    }
 
 struct RecordType {
     string name;
@@ -74,18 +168,33 @@ template GetLabel(alias member) {
 
     @RecordType("PIN")
     struct DevicePIN {
-        Buffer Y;
-        Buffer check;
+        Buffer D;     /// Device number
+        Buffer U;     /// Device random
+        Buffer S;     /// Check sum value
+        void recover(ref scope ubyte[] R, scope const(ubyte[]) P) const {
+            import tagion.betterC.utils.Miscellaneous : xor;
+            xor(R, D, P);
+        }
 
         this(Document doc) {
-            Y = doc["Y"].get!Buffer;
-            check = doc["C"].get!Buffer;
+            enum number_name = GetLabel!(D).name;
+            enum random_name = GetLabel!(U).name;
+            enum sum_name = GetLabel!(S).name;
+
+            D = doc[number_name].get!Buffer;
+            U = doc[random_name].get!Buffer;
+            S = doc[sum_name].get!Buffer;
         }
 
         inout(HiBONT) toHiBON() inout {
             auto hibon = HiBON();
-            hibon["Y"] = Y;
-            hibon["C"] = check;
+            enum number_name = GetLabel!(D).name;
+            enum random_name = GetLabel!(U).name;
+            enum sum_name = GetLabel!(S).name;
+
+            hibon[number_name] = D;
+            hibon[random_name] = U;
+            hibon[sum_name] = S;
             return cast(inout) hibon;
         }
 
@@ -130,29 +239,51 @@ template GetLabel(alias member) {
         }
     }
         struct AccountDetails {
-        @Label("$derives") Buffer[Pubkey] derives;
+        // @Label("$derives") Buffer[Pubkey] derives;
+        @Label("$derives") Document derives;
         @Label("$bills") StandardBill[] bills;
-        @Label("$state") BinBuffer derive_state;
-        @Label("$active") bool[Pubkey] activated; /// Actived bills
+        @Label("$state") Buffer derive_state;
+        // boll[Pubkey]
+        @Label("$active") Document activated; /// Actived bills
         import std.algorithm : map, sum, filter, any, each;
 
         this(Document doc) {
-            // auto received__derives = doc["derives"].get!Buffer;
-            // derives = received__derives[Pubkey];
+            enum derives_name = GetLabel!(derives).name;
+            enum bills_name = GetLabel!(bills).name;
+            enum ds_name = GetLabel!(derive_state).name;
+            enum active_name = GetLabel!(activated).name;
 
-            auto received_bills = doc["bills"].get!Document;
+            auto received_der = doc[derives_name].get!Document;
+            // auto list = toList!Buffer[Pubkey](received_der);
+            auto received_bills = doc[bills_name].get!Document;
             bills.create(received_bills.length);
             foreach (element; received_bills[])
             {
-                // bills[element.index] = element.get!StandardBill;
+                enum value_name = GetLabel!(StandardBill.value).name;
+                bills[element.index].value = TagionCurrency(received_bills[value_name].get!Document);
+                bills[element.index].epoch = element.get!uint;
+                // bills[element.index].owner = element;
+                bills[element.index].gene = element.get!Buffer;
             }
-            // derive_state = doc["state"].get!Buffer;
-            // owner = doc["Y"].get!Pubkey;
-            // gene = doc["G"].get!Buffer;
+            derive_state = doc[ds_name].get!Buffer;
+            activated = doc[active_name].get!Document;
         }
 
         inout(HiBONT) toHiBON() inout {
             auto hibon = HiBON();
+            enum derives_name = GetLabel!(derives).name;
+            enum bills_name = GetLabel!(bills).name;
+            enum ds_name = GetLabel!(derive_state).name;
+            enum active_name = GetLabel!(activated).name;
+
+            hibon[derives_name] = derives;
+            // auto tmp_hibon = HiBON();
+            // foreach(i, bill; bills) {
+            //     tmp_hibon[i] = bill;
+            // }
+            // hibon[bills_name] = tmp_hibon;
+            hibon[ds_name] = derive_state;
+            hibon[active_name] = activated;
             return cast(inout) hibon;
         }
 
@@ -189,7 +320,7 @@ template GetLabel(alias member) {
             //     .each!(b => activated.remove(b.owner));
         }
 
-        const pure {
+        const {
             /++
          Returns:
          true if the all transaction has been registered as processed
@@ -198,9 +329,18 @@ template GetLabel(alias member) {
                 bool res = false;
                 foreach (bill; bills)
                 {
+                    foreach(active; activated[]) {
+                        const active_data = active.get!Document;
+                        if (active_data[0].get!Buffer == bill.owner) {
+
+                        }
+                        // const key = tmp[0].get!Buffer;
+                        // const value = tmp[1].get!bool;
+                    }
+                    // auto tmp = toList(activated)
                     // if (bill.owner in activated) {
-                //         res = true;
-                //     }
+                    //     res = true;
+                    // }
                 }
                 return res;
             }
@@ -208,22 +348,34 @@ template GetLabel(alias member) {
          Returns:
          The available balance
          +/
-            // TagionCurrency available() {
-                // return bills
-                //     // .filter!(b => !(b.owner in activated))
-                //     .map!(b => b.value)
-                //     .sum;
-            // }
+            TagionCurrency available() {
+                long result;
+                foreach (bill; bills) {
+                    foreach(active; activated[]) {
+                        const active_data = active.get!Document;
+                        if (active_data[0].get!Buffer == bill.owner) {
+                            result += active_data[1].get!uint;
+                        }
+                    }
+                }
+                return TagionCurrency(result);
+            }
             /++
         //  Returns:
         //  The total active amount
         //  +/
-        //     TagionCurrency active() {
-        //         return bills
-        //             .filter!(b => b.owner in activated)
-        //             .map!(b => b.value)
-        //             .sum;
-        //     }
+            TagionCurrency active() {
+                long result;
+                foreach (bill; bills) {
+                    foreach(active; activated[]) {
+                        const active_data = active.get!Document;
+                        if (active_data[0].get!Buffer == bill.owner) {
+                            result += active_data[1].get!uint;
+                        }
+                    }
+                }
+                return TagionCurrency(result);
+            }
         //     /++
         //  Returns:
         //  The total balance including the active bills
@@ -242,9 +394,12 @@ template GetLabel(alias member) {
         @Label("$Y") Pubkey owner; // Double hashed owner key
         @Label("$G") Buffer gene; // Bill gene
         this(Document doc) {
-            // value = doc["Y"].get!TagionCurrency;
+            // value = doc["Y"].get!Document;
             epoch = doc["k"].get!uint;
-            // owner = doc["Y"].get!Pubkey;
+            Buffer tmp_buf = doc["Y"].get!Buffer;
+            Pubkey pkey;
+            pkey = tmp_buf;
+            // memcpy_wrapper(owner, pkey);
             gene = doc["G"].get!Buffer;
         }
 
@@ -288,9 +443,29 @@ template GetLabel(alias member) {
     }
 
     @RecordType("SSC") struct SignedContract {
-        @Label("$signs") Signature[] signs; /// Signature of all inputs
+        @Label("$signs") immutable(ubyte)[] signs; /// Signature of all inputs
         @Label("$contract") Contract contract; /// The contract must signed by all inputs
         @Label("$in", true) Document input; /// The actual inputs
+        this(Document doc) {
+            enum sign_name = GetLabel!(signs).name;
+            // enum contract_name = GetLabel!(contract).name;
+            enum input_name = GetLabel!(input).name;
+
+            auto received_sign = doc[sign_name].get!Buffer;
+            signs.create(received_sign.length);
+            signs = received_sign;
+
+            // contract = doc[contract_name].get!Contract;
+            input = doc[input_name].get!Document;
+
+        }
+        inout(HiBONT) toHiBON() inout {
+            auto hibon = HiBON();
+            return cast(inout)hibon;
+        }
+        const(Document) toDoc() {
+            return Document(toHiBON.serialize);
+        }
     }
         struct Script {
         @Label("$name") string name;

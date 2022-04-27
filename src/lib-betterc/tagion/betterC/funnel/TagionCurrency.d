@@ -28,6 +28,10 @@ struct TagionCurrency {
         @Label("$v") long _axions;
     }
 
+    long get_axions() pure const {
+        return _axions;
+    }
+
     this(T)(const T axions) pure if (isIntegral!T) {
         _axions = axions;
     }

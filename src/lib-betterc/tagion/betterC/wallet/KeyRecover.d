@@ -50,15 +50,19 @@ struct KeyRecover {
         // auto results = new Buffer[questions.length];
         Buffer[] results;
         results.create(questions.length);
-
-        // foreach (ref result, question, answer; lockstep(results, questions, answers, StoppingPolicy
-        //         .requireSameLength)) {
-        //     scope strip_down = cast(ubyte[]) answer.strip_down;
-        //     scope (exit) {
-        //         strip_down.scramble;
-        //     }
-        //     const hash = calcHash(strip_down);
-        //     result = calcHash(hash ~ hash);
+        
+//         foreach (ref result, question, answer; lockstep(results, questions, answers, StoppingPolicy
+//                 .requireSameLength)) {
+//             scope strip_down = cast(ubyte[]) answer.strip_down;
+//             scope answer_hash = net.calcHash(strip_down);
+//             scope question_hash = net.calcHash(question.representation);
+//             // scope (exit) {
+//             //     strip_down.sceamble;
+//             //     answer_hash.scramble;
+//             //     question_hash.scramble;
+//             // }
+// //            const hash = net.calcHash(answer);
+//             result = net.calcHash(answer_hash ~ question_hash );
         // }
         return results;
     }
@@ -77,7 +81,7 @@ struct KeyRecover {
     }
 
     @trusted
-    Buffer checkHash(scope const(ubyte[]) value) const {
+    Buffer checkHash(scope const(ubyte[]) value, scope const(ubyte[]) salt=null) const {
         return rawCalcHash(rawCalcHash(value));
     }
 

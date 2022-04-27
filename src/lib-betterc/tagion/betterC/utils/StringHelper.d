@@ -75,3 +75,19 @@ const (char[])[] split_by_char(const (char)[] data, char splitter) {
     return res;
 }
 
+//dummy function for test
+extern(C) int foo(int a) {
+    a = 1;
+    return a;
+}
+
+// this(Document doc) {
+//     Document doc - [ [Pubkey, bool], [] ,[] ]
+//     forech(elem; doc) {
+//         const tmp = elem.get!Document;
+//         tmp[0].get!Buffer;
+//         tmp[1].get!bool;
+//     }
+
+
+// }

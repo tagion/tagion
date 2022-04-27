@@ -46,22 +46,13 @@ enum SECP256K1 : uint {
 @trusted
 void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) if (T.sizeof is 1) {
     // import std.random;
-    // ubyte[] seed;
-    // seed.create(data.length);
+    ubyte[] seed;
+    seed.create(data.length);
 
-    // ubyte[32] gen;
-    // ubyte* received_value;
-    // hash.randomize(cast(immutable)seed, received_value);
-    // for (int i = 0; i < gen.length; i++) {
-    //     gen[i] = *(received_value + i);
-    // }
-    // foreach (ref s; data) { //, gen1, StoppingPolicy.shortest)) {
-    //     s = gen.front & ubyte.max;
-    //     gen.popFront;
-    // }
-    // foreach (i, x; xor) {
-    //     data[i] ^= x;
-    // }
+    randomize(cast(immutable)seed);
+    foreach (i; data) {
+        data[i] ^= seed[i];
+    }
 }
 
 @trusted uint hashSize() pure nothrow {
@@ -158,7 +149,7 @@ struct AES {
 
     private Pubkey _pubkey;
     // private SignDelegate _crypt;
-    // immutable(ubyte[]) delegate(const(ubyte[])) sign_dg;
+    immutable(ubyte[]) delegate(const(ubyte[])) sign_dg;
 
     enum DER_SIGNATURE_SIZE = 72;
     enum SIGNATURE_SIZE = 64;
@@ -224,11 +215,11 @@ struct AES {
     //     assert(message.length == 32);
     // }
     // do {
-    //     // import std.traits;
+        // import std.traits;
 
-    //     // assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
+        // assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
 
-    //     // return Signature(sign_dg(message));
+        // return Signature(sign_dg(message));
     // }
 
     @trusted

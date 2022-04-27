@@ -92,6 +92,12 @@ struct Document {
         this._data = hibon.serialize;
     }
 
+    this(const HiBONT hibon) {
+        //check hibon
+        auto mut_hibon = cast(HiBONT)hibon;
+        this._data = mut_hibon.serialize;
+    }
+
     /**
      * Returns HiBON version
      * @return HiBON version
@@ -489,9 +495,13 @@ struct Document {
        Or of the key is not an index a std.conv.ConvException is thrown
      */
     @trusted @nogc const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
-        import std.conv;
+        import tagion.betterC.utils.StringHelper;
+        auto index_string = int_to_str(index);
+        scope(exit){
+            index_string.dispose;
+        }
 
-        return opIndex(index.to!string);
+        return opIndex(index_string);
     }
 
     /**
@@ -821,7 +831,7 @@ struct Document {
                                         Value* result = cast(Value*)(&data[value_pos]);
                                         return *result;
                                     }
-                                }
+                                } 
                             }
                             break TypeCase;
                         }

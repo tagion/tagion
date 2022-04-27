@@ -93,9 +93,9 @@ struct SecureWallet(Net) {
             R.create(hashSize);
 
             recover.findSecret(R, questions, answers);
-            auto pinhash = recover.checkHash(pincode.representation);
-            pin.Y = xor(R, pinhash);
-            pin.check = recover.checkHash(R);
+            auto pinhash = recover.checkHash(pincode.representation, pin.U);
+            pin.D = xor(R, pinhash);
+            pin.S = recover.checkHash(R);
             net.createKeyPair(R);
             wallet = RecoverGenerator(recover.toDoc);
         }
@@ -155,22 +155,22 @@ struct SecureWallet(Net) {
     }
 
     bool login(const(char[]) pincode) {
-        if (_pin.Y) {
-            logout;
-            // auto hashnet = new Net;
-            // auto recover = KeyRecover(hashnet);
-            KeyRecover recover;
-            auto pinhash = recover.checkHash(pincode.representation);
-            // auto R = new ubyte[hashnet.hashSize];
-            ubyte[] R;
-            R.create(hashSize);
-            xor(R, _pin.Y, pinhash);
-            if (_pin.check == recover.checkHash(R)) {
-                // net = new Net;
-                net.createKeyPair(R);
-                return true;
-            }
-        }
+        // if (_pin.Y) {
+        //     logout;
+        //     // auto hashnet = new Net;
+        //     // auto recover = KeyRecover(hashnet);
+        //     KeyRecover recover;
+        //     auto pinhash = recover.checkHash(pincode.representation);
+        //     // auto R = new ubyte[hashnet.hashSize];
+        //     ubyte[] R;
+        //     R.create(hashSize);
+        //     xor(R, _pin.Y, pinhash);
+        //     if (_pin.check == recover.checkHash(R)) {
+        //         // net = new Net;
+        //         net.createKeyPair(R);
+        //         return true;
+        //     }
+        // }
         return false;
     }
 
@@ -282,25 +282,27 @@ struct SecureWallet(Net) {
         return false;
     }
 
-    // TagionCurrency available_balance() const pure {
-    //     return account.available;
-    // }
+    TagionCurrency available_balance() const {
+        return account.available;
+    }
 
-    // TagionCurrency active_balance() const pure {
-    //     return account.active;
-    // }
+    TagionCurrency active_balance() const {
+        return account.active;
+    }
 
     // TagionCurrency total_balance() const pure {
     //     return account.total;
     // }
 
-    // // const(HiRPC.Sender) get_request_update_wallet() const {
-    // //     HiRPC hirpc;
-    // //     // auto h = new HiBON;
-    // //     HiBON h;
-    // //     h = account.derives.byKey.map!(p => cast(Buffer) p);
-    // //     return hirpc.search(h);
-    // // }
+    // const(HiRPC.Sender) get_request_update_wallet() const {
+    //     HiRPC hirpc;
+    //     // auto h = new HiBON;
+    //     auto h = HiBON();
+    //     auto account_doc = account.derives;
+    //     h = account_doc[0].get!Buffer;
+    //     // h = account.derives.byKey.map!(p => cast(Buffer) p);
+    //     return hirpc.search(h);
+    // }
 
     // bool collect_bills(const TagionCurrency amount, out StandardBill[] active_bills) {
     //     import std.algorithm.sorting : isSorted, sort;
@@ -341,14 +343,14 @@ struct SecureWallet(Net) {
     //     return false;
     // }
 
-    // // bool set_response_update_wallet(const(HiRPC.Receiver) receiver) nothrow {
-    // //     if (receiver.isResponse) { // ???
-    // //             account.bills = receiver.method.params[].map!(e => StandardBill(e.get!Document))
-    // //                 .array;
-    // //             return true;
-    // //     }
-    // //     return false;
-    // // }
+    // bool set_response_update_wallet(const(HiRPC.Receiver) receiver) nothrow {
+    //     if (receiver.isResponse) { // ???
+    //             account.bills = receiver.method.params[].map!(e => StandardBill(e.get!Document))
+    //                 .array;
+    //             return true;
+    //     }
+    //     return false;
+    // }
 
     // TagionCurrency get_balance() const pure {
     //     return calcTotal(account.bills);
