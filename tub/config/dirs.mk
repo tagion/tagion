@@ -14,6 +14,7 @@ export DLIB := $(DBUILD)/lib
 export DLOGCOV := $(DLOG)/cov
 export TESTBENCH := $(DLOG)/testbench
 export FUND := $(REPOROOT)/fundamental
+export SCRIPTS := $(DTUB)/scripts
 export TOOLS := $(REPOROOT)/tools
 
 env-dirs:
@@ -31,6 +32,8 @@ env-dirs:
 	$(call log.kvp, DLOGCOV, $(DLOGCOV))
 	$(call log.kvp, TESTBENCH, $(TESTBENCH))
 	$(call log.kvp, FUND, $(FUND))
+	$(call log.kvp, SCRIPTS, $(SCRIPTS))
+	$(call log.kvp, TOOLS, $(TOOLS))
 	$(call log.kvp, REPOROOT, $(REPOROOT))
 	$(call log.close)
 

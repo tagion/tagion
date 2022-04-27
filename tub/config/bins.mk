@@ -1,14 +1,14 @@
 
-TAGIONWAVE?=$(DBIN)/tagionwave
-TAGIONBOOT?=$(DBIN)/tagionboot
-DARTUTIL?=$(DBIN)/dartutil
-HIBONUTIL?=$(DBIN)/hibonutil
-TAGIONWALLET?=$(DBIN)/wallet
+# TAGIONWAVE?=$(DBIN)/tagionwave
+# TAGIONBOOT?=$(DBIN)/tagionboot
+# DARTUTIL?=$(DBIN)/dartutil
+# HIBONUTIL?=$(DBIN)/hibonutil
+# TAGIONWALLET?=$(DBIN)/wallet
 
 
 define BIN
 ${eval
-$2?=$$(DBIN)/$1
+export $2?=$$(DBIN)/$1
 
 BINS+=$$($2)
 

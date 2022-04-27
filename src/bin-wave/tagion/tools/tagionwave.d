@@ -72,19 +72,24 @@ int main(string[] args) {
     bool set_token = false;
     bool set_tag = false;
     void setToken(string option, string value) {
-        if (option == "server-token") {
+        switch(option) {
+        case "server-token":
             local_options.serverFileDiscovery.token = value;
             set_token = true;
-        }
-        if (option == "server-tag") {
+            break;
+        case "server-tag":
             local_options.serverFileDiscovery.tag = value;
             set_tag = true;
+            break;
+        default:
+            // Empty
         }
     }
 
     auto token_opts = getopt(args, std.getopt.config.passThrough,
-            "server-token", format("Token to access shared server"), &setToken,
-            "server-tag", format("Group tag(should be the same as in token payload)"), &setToken);
+            "server-token", &setToken,
+        "server-tag", &setToken);
+
     if (set_token && set_tag) {
         local_options.save(config_file);
         writeln("Group token and tag provided.. (remove it from parameters and run the network)");
@@ -108,13 +113,18 @@ int main(string[] args) {
                 "Usage:",
                 format("%s [<option>...] ", program),
                 format("%s <config.json>", program),
-            ].join("\n"),
-                main_args.options);
+                        ].join("\n"),
+                    net_opts.options);
             return 0;
         }
 
         if (overwrite_switch) {
+            if (args.length == 2) {
+                config_file = args[1];
+            }
             local_options.save(config_file);
+            writefln("Configure file written to %s", config_file);
+            return 0;
         }
 
         local_options.infinity = (local_options.loops == 0);
@@ -140,7 +150,7 @@ int main(string[] args) {
 
     if (service_options.pid_file) {
         import std.process : thisProcessID;
-        writefln("PID = %s written to %s", thisProcessID, options.pid_file);
+        stderr.writefln("PID = %s written to %s", thisProcessID, options.pid_file);
         service_options.pid_file.fwrite("PID = %s\n".format(thisProcessID));
     }
 

@@ -147,7 +147,7 @@
     "net_mode": "local",
     "node_id": 0,
     "node_name": "",
-    "nodes": 6,
+    "nodes": 7,
     "p2plogs": false,
     "path_arg": "",
     "path_to_shared_info": "./info.hibon",
