@@ -104,7 +104,7 @@ void mdnsDiscoveryService(
                 updateAddressbook;
             }
 */
-            if (addressbook.ready(opts)) {
+            if (addressbook.isReady) {
                 ownerTid.send(DiscoveryState.READY);
                 addressbook_done=true;
             // }
