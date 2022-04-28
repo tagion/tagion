@@ -225,26 +225,6 @@ struct Options {
     Message message;
 
     mixin JSONConfig;
-    version (none) {
-        void parseJSON(string json_text) {
-            auto json = JSON.parseJSON(json_text);
-            parse(json);
-        }
-
-        void load(string config_file) {
-            if (config_file.exists) {
-                auto json_text = readText(config_file);
-                parseJSON(json_text);
-            }
-            else {
-                save(config_file);
-            }
-        }
-
-        void save(string config_file) {
-            config_file.write(stringify);
-        }
-    }
 }
 
 protected static Options options_memory;

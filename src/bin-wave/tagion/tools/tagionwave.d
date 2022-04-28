@@ -61,7 +61,7 @@ int main(string[] args) {
     scope Options local_options;
     import std.getopt;
 
-    auto net_opts = getopt(args, std.getopt.config.passThrough, "net-mode", &(local_options.net_mode));
+    // auto net_opts = getopt(args, std.getopt.config.passThrough, "net-mode", &(local_options.net_mode));
 
     setDefaultOption(local_options);
 
@@ -105,7 +105,7 @@ int main(string[] args) {
             return 0;
         }
 
-        if (main_args.helpWanted || net_opts.helpWanted) {
+        if (main_args.helpWanted) {
             defaultGetoptPrinter(
                     [
                 "Documentation: https://tagion.org/",
