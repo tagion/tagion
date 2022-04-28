@@ -1,6 +1,6 @@
 module tagion.betterC.wallet.Net;
 
-import tagion.crypto.aes.AESCrypto;
+// import tagion.crypto.aes.AESCrypto;
 import tagion.betterC.utils.BinBuffer;
 import std.format;
 import std.string : representation;
@@ -144,12 +144,11 @@ struct AES {
         alias decrypt = crypt!false;
     }
 
-@safe struct SecureNet {
+struct SecureNet {
     import tagion.basic.Basic : Pubkey, Signature;
-
     private Pubkey _pubkey;
-    // private SignDelegate _crypt;
-    immutable(ubyte[]) delegate(const(ubyte[])) sign_dg;
+//     // private SignDelegate _crypt;
+//     immutable(ubyte[]) delegate(const(ubyte[])) sign_dg;
 
     enum DER_SIGNATURE_SIZE = 72;
     enum SIGNATURE_SIZE = 64;

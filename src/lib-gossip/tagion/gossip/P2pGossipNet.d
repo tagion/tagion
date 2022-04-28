@@ -23,7 +23,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, fread, fwrite, isSpecialKeyType;
 import tagion.hibon.Document : Document;
 import tagion.gossip.InterfaceNet;
-import tagion.gossip.AddressBook : NodeAddress, addressbook;
+import tagion.gossip.AddressBook : NodeAddress, AddressBook;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraphBasic : convertState, ExchangeState;
@@ -267,7 +267,7 @@ class ConnectionPoolBridge {
 
 }
 
-alias ActiveNodeAddressBookPub = immutable(AddressBook_deprecation);
+alias ActiveNodeAddressBook = immutable(AddressBook_deprecation);
 
 @safe
 immutable class AddressBook_deprecation {
@@ -290,58 +290,58 @@ immutable class AddressBook_deprecation {
 //     mixin HiBONRecord;
 // }
 
-@safe
-synchronized class AddressBook {
-    static struct AddressDirectory {
-        NodeAddress[Pubkey] addresses;
-        mixin HiBONRecord;
-    }
-    protected shared(NodeAddress[Pubkey]) addresses;
+// @safe
+// synchronized class AddressBook {
+//     static struct AddressDirectory {
+//         NodeAddress[Pubkey] addresses;
+//         mixin HiBONRecord;
+//     }
+//     protected shared(NodeAddress[Pubkey]) addresses;
 
-    private shared(NodeAddress[Pubkey]) _data() {
-        return addresses;
-    }
+//     private shared(NodeAddress[Pubkey]) _data() {
+//         return addresses;
+//     }
 
-    void overwrite(const(NodeAddress[Pubkey]) addrs) {
-        addresses=null;
-        foreach(pkey, addr; addrs) {
-            addresses[pkey] = addr;
-        }
-    }
+//     void overwrite(const(NodeAddress[Pubkey]) addrs) {
+//         addresses=null;
+//         foreach(pkey, addr; addrs) {
+//             addresses[pkey] = addr;
+//         }
+//     }
 
-    void load(string filename) {
-        if (filename.exists) {
-            auto dir = filename.fread!AddressDirectory;
-            overwrite(dir.addresses);
-        }
-    }
+//     void load(string filename) {
+//         if (filename.exists) {
+//             auto dir = filename.fread!AddressDirectory;
+//             overwrite(dir.addresses);
+//         }
+//     }
 
-    void save(string filename) @trusted {
-        AddressDirectory dir;
-        dir.addresses=cast(NodeAddress[Pubkey])addresses;
-        filename.fwrite(dir);
-    }
+//     void save(string filename) @trusted {
+//         AddressDirectory dir;
+//         dir.addresses=cast(NodeAddress[Pubkey])addresses;
+//         filename.fwrite(dir);
+//     }
 
-    immutable(NodeAddress) opIndex(const Pubkey pkey) const pure nothrow {
-        auto addr=pkey in addresses;
-        if (addr) {
-            return cast(immutable)(*addr);
-        }
-        return NodeAddress.init;
-    }
+//     immutable(NodeAddress) opIndex(const Pubkey pkey) const pure nothrow {
+//         auto addr=pkey in addresses;
+//         if (addr) {
+//             return cast(immutable)(*addr);
+//         }
+//         return NodeAddress.init;
+//     }
 
-    void opIndexAssign(const NodeAddress addr, const Pubkey pkey) pure nothrow {
-        addresses[pkey]=addr;
-    }
+//     void opIndexAssign(const NodeAddress addr, const Pubkey pkey) pure nothrow {
+//         addresses[pkey]=addr;
+//     }
 
-    void erase(const Pubkey pkey) pure nothrow {
-        addresses.remove(pkey);
-    }
+//     void erase(const Pubkey pkey) pure nothrow {
+//         addresses.remove(pkey);
+//     }
 
-    bool exists(const Pubkey pkey) const pure nothrow {
-        return (pkey in addresses) !is null;
-    }
-}
+//     bool exists(const Pubkey pkey) const pure nothrow {
+//         return (pkey in addresses) !is null;
+//     }
+// }
 
 static shared(AddressBook) addressbook;
 

@@ -213,64 +213,64 @@ static immutable(string[]) standard_questions;
 // }
 
 unittest {
-    import tagion.crypto.SecureNet : StdHashNet;
-    import std.array : join, array;
+    // import tagion.crypto.SecureNet : StdHashNet;
+    // import std.array : join, array;
 
-    auto selected_questions = indexed(standard_questions, [0, 2, 3, 7, 8]).array.idup;
-    //pragma(msg, typeof(selected_questions));
-    //writefln("%s", selected_questions.join("\n"));
-    string[] answers = [
-        "mobidick",
-        "Mother Teresa!",
-        "Pluto",
-        "Pizza",
-        "Maputo"
-    ];
-    KeyRecover recover;
-    recover.createKey(selected_questions, answers, 3);
+    // auto selected_questions = indexed(standard_questions, [0, 2, 3, 7, 8]).array.idup;
+    // //pragma(msg, typeof(selected_questions));
+    // //writefln("%s", selected_questions.join("\n"));
+    // string[] answers = [
+    //     "mobidick",
+    //     "Mother Teresa!",
+    //     "Pluto",
+    //     "Pizza",
+    //     "Maputo"
+    // ];
+    // KeyRecover recover;
+    // recover.createKey(selected_questions, answers, 3);
 
-    // auto R = new ubyte[net.hashSize];
-    ubyte[] R;
-    R.create(hashSize);
+    // // auto R = new ubyte[net.hashSize];
+    // ubyte[] R;
+    // R.create(hashSize);
 
-    { // All the ansers are correct
-        const result = recover.findSecret(R, selected_questions, answers);
-        //writefln("R=%s", R.toHexString);
-        assert(R.length == hashSize);
-        assert(result); // Password found
-    }
+    // { // All the ansers are correct
+    //     const result = recover.findSecret(R, selected_questions, answers);
+    //     //writefln("R=%s", R.toHexString);
+    //     assert(R.length == hashSize);
+    //     assert(result); // Password found
+    // }
 
-    { // 3 out of 5 answers are correct. This is a valid answer to generate the secret key
-        string[] good_answers = [
-            "MobiDick",
-            "MOTHER TERESA",
-            "Fido",
-            "pizza",
-            "Maputo"
-        ];
-        // auto goodR = new ubyte[hashSize];
-        ubyte[] goodR;
-        goodR.create(hashSize);
-        const result = recover.findSecret(goodR, selected_questions, good_answers);
-        assert(R.length == hashSize);
-        assert(result); // Password found
-        assert(R == goodR);
-    }
+    // { // 3 out of 5 answers are correct. This is a valid answer to generate the secret key
+    //     string[] good_answers = [
+    //         "MobiDick",
+    //         "MOTHER TERESA",
+    //         "Fido",
+    //         "pizza",
+    //         "Maputo"
+    //     ];
+    //     // auto goodR = new ubyte[hashSize];
+    //     ubyte[] goodR;
+    //     goodR.create(hashSize);
+    //     const result = recover.findSecret(goodR, selected_questions, good_answers);
+    //     assert(R.length == hashSize);
+    //     assert(result); // Password found
+    //     assert(R == goodR);
+    // }
 
-    { // 2 out of 5 answers are correct. This is NOT a valid answer to generate the secret key
-        string[] bad_answers = [
-            "mobidick",
-            "Monalisa",
-            "Fido",
-            "Burger",
-            "Maputo"
-        ];
-        // auto badR = new ubyte[net.hashSize];
-        ubyte[] badR;
-        badR.create(hashSize);
-        const result = recover.findSecret(badR, selected_questions, bad_answers);
-        assert(!result); // Password not found
-        assert(R != badR);
+    // { // 2 out of 5 answers are correct. This is NOT a valid answer to generate the secret key
+    //     string[] bad_answers = [
+    //         "mobidick",
+    //         "Monalisa",
+    //         "Fido",
+    //         "Burger",
+    //         "Maputo"
+    //     ];
+    //     // auto badR = new ubyte[net.hashSize];
+    //     ubyte[] badR;
+    //     badR.create(hashSize);
+    //     const result = recover.findSecret(badR, selected_questions, bad_answers);
+    //     assert(!result); // Password not found
+    //     assert(R != badR);
 
-    }
+    // }
 }
