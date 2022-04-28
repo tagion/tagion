@@ -295,7 +295,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                 }
             }, (ActiveNodeAddressBook update) {
                     //node_addrses = cast(NodeAddress[Pubkey]) update.data;
-                log("node addresses %s", update.data.length);
+                log.warning("Should be removed ActiveNodeAddressBook update (the AddressBook is shoud be used instead)");
             }, (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); }, // (immutable(Throwable) t) {
                     //     //log.fatal(t.msg);
                     //     stop=true;
@@ -310,7 +310,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                 if (opts.dart.synchronize) {
                     syncPool.tick();
                     if (!addressbook.isReady) {
-                        log("node_addrses.length=%d syncPool.isReady =%s state=%s sync_state=%s",
+                        log("addressbook.length=%d syncPool.isReady =%s state=%s sync_state=%s",
                         addressbook.numOfActiveNodes, syncPool.isReady, syncPool.state, syncPool.sync_state);
                     }
                     if (addressbook.numOfNodes > 0 && syncPool.isReady) {
@@ -413,6 +413,7 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
         this.opts = opts;
     }
 
+    version(none)
     void tryToSubscribe(NodeAddress[Pubkey] node_addreses, shared(p2plib.NodeI) node) {
         bool subscribeTo(NodeAddress address) {
             try {
