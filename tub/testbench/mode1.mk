@@ -13,8 +13,8 @@ ${eval
 
 MODE1_CONFIG_$1=$$(MODE1_ROOT)/tagionwave-$1.json
 MODE1_DARTFILE_$1=$$(MODE1_ROOT)/dart-$1.drt
-MODE1_PID_$1=$$(MODE1_ROOT)/tagionwave_$1.pid
-MODE1_LOG_$1=$$(MODE1_ROOT)/tagionwave_$1.log
+MODE1_PID_$1=$$(MODE1_ROOT)/tagionwave-$1.pid
+MODE1_LOG_$1=$$(MODE1_ROOT)/tagionwave-$1.log
 
 mode1-run-$1: export TAGIONCONFIG=$$(MODE1_CONFIG_$1)
 mode1-run-$1: export TAGIONLOG=$$(MODE1_LOG_$1)

@@ -72,9 +72,10 @@ void mdnsDiscoveryService(
 
         addressbook[pubkey] = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
         ownerTid.send(Control.LIVE);
+        bool addressbook_done;
         while (!stop) {
             pragma(msg, "fixme(alex): 500.msecs shoud be an option parameter");
-            receiveTimeout(
+            const message=receiveTimeout(
                     500.msecs,
                     (Control control) {
                 if (control is Control.STOP) {
@@ -97,7 +98,23 @@ void mdnsDiscoveryService(
                     }
                 }
             });
-            notifyReadyAfterDelay();
+                        if (!addressbook_done) {
+/*
+            if (!message) {
+                updateAddressbook;
+            }
+*/
+            if (addressbook.ready(opts)) {
+                ownerTid.send(DiscoveryState.READY);
+                addressbook_done=true;
+            // }
+            // }
+// }
+//                         notifyReadyAfterDelay();
+        }
+
+//            notifyReadyAfterDelay();
+                        }
         }
     }
     catch (Throwable t) {

@@ -548,7 +548,7 @@ version (none) unittest {
 class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)) : Fiber { //TODO: move fiber inside as a field
     enum root = DART.Rims.root;
     bool fast_load;
-    protected enum State {
+    enum State {
         READY,
         FIBER_RUNNING,
         RUNNING,
@@ -558,6 +558,9 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     }
 
     mixin StateT!State;
+    State sync_state() @nogc const pure nothrow {
+        return _state;
+    }
 
     bool isReady() nothrow {
         return checkState(State.READY);
@@ -646,6 +649,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
             }
         }
         if (failed_sync_sectors.length > 0) {
+            log.error("DART Sync sectors greater than 0 value is %d", failed_sync_sectors.length);
             _state = State.ERROR;
         }
         else {
@@ -654,9 +658,6 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     }
 
     void start(SynchronizationFactory factory) //restart with new factory
-
-
-
     in {
         assert(checkState(State.STOP, State.READY, State.ERROR));
     }
@@ -700,6 +701,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
         }
         else {
             sync_sectors[sector] = false;
+            log.error("Sync on RIM %s fiber-service not running", sector);
             _state = State.ERROR;
         }
     }

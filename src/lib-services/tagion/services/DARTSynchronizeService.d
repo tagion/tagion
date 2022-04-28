@@ -302,13 +302,14 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     //     ownerTid.send(t);
                     // }
 
-                    
+
 
             );
             try {
                 connectionPool.tick();
                 if (opts.dart.synchronize) {
                     syncPool.tick();
+                    log("node_addrses.length=%d syncPool.isReady =%s state=%s sync_state=%s", node_addrses.length, syncPool.isReady, syncPool.state, syncPool.sync_state);
                     if (node_addrses.length > 0 && syncPool.isReady) {
                         sync_factory.setNodeTable(node_addrses);
                         syncPool.start(sync_factory);
