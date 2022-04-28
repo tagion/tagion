@@ -5,19 +5,22 @@ MODE0_LOG:=$(MODE0_ROOT)/mode0_script.log
 MODE0_FLAGS:=-N 7 -t 200
 MODE0_FLAGS+=--pid=$(MODE0_ROOT)/tagionwave.pid
 
-mode0: $(MODE0_ROOT)/.way
-mode0: tagionwave $(MODE0_DART)
+mode0: $(MODE0_DATA)/.way
+mode0: DARDDB=$(MODE0_DART)
+mode0: dart
+mode0: tagionwave
 	cd $(MODE0_ROOT)
 	script -c "$(TAGIONWAVE) $(MODE0_FLAGS)" $(MODE0_LOG)
 
 .PHONY: mode0
 testbench: mode0
 
-$(MODE0_DART): | dart
-$(MODE0_DART): $(DARTDB)
-	$(PRECMD)
-	$(MKDIR) $(@D)
-	$(CP) $< $@
+#$(MODE0_DART): dart
+
+# $(MODE0_DART): $(DARTDB)
+# 	$(PRECMD)
+# 	$(MKDIR) $(@D)
+# 	$(CP) $< $@
 
 
 env-mode0:
