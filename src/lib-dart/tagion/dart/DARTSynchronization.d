@@ -13,7 +13,7 @@ import std.typecons;
 import std.format;
 
 import tagion.gossip.P2pGossipNet : ConnectionPool;
-import tagion.gossip.AddressBook : NodeAddress;
+import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;
@@ -264,13 +264,13 @@ class P2pSynchronizationFactory : SynchronizationFactory {
         this.pkey = pkey;
     }
 
-    protected NodeAddress[Pubkey] node_address;
-    void setNodeTable(NodeAddress[Pubkey] node_address) {
-        this.node_address = node_address;
+//    protected NodeAddress[Pubkey] node_address;
+    void setNodeTable(const(NodeAddress[Pubkey]) node_address) {
+//        this.node_address = node_address;
     }
 
     bool canSynchronize() {
-        return node_address !is null && node_address.length > 0;
+        return addressbook.isReady; //node_address !is null && node_address.length > 0;
     }
 
     SyncSectorResponse syncSector(
@@ -316,9 +316,11 @@ class P2pSynchronizationFactory : SynchronizationFactory {
         do {
             iteration++;
             import std.range : dropExactly;
-
+/+
             const random_key_index = uniform(0, node_address.length, rnd);
             const node_addr = node_address.byKeyValue.dropExactly(random_key_index).front;
++/
+            const node_addr = addressbook.random;
             if (node_addr.value.sector.inRange(sector)) {
                 const node_port = node_addr.value.port;
                 if (node_addr.key == pkey)
