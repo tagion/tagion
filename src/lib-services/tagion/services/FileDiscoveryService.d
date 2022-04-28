@@ -103,8 +103,10 @@ void fileDiscoveryService(
                 with (DiscoveryRequestCommand) {
                     final switch (request) {
                     case RequestTable:
+                        pragma(msg, "fixme(cbr):Address book request should not be used anymore (FileDiscoveryService)");
+
                         //                        initialize();
-                        auto address_book = new ActiveNodeAddressBook(addressbook._data); //node_addrses);
+                        auto address_book = new ActiveNodeAddressBook(null); //node_addrses);
                         log("Requested: %d : %d", addressbook._data.length, address_book.data.length);
                         ownerTid.send(address_book);
                         break;
