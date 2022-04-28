@@ -6,7 +6,7 @@
 .ONESHELL:
 .NOTPARALLEL:
 
-REPOROOT:=${shell git rev-parse --show-toplevel}
+export REPOROOT:=${shell git rev-parse --show-toplevel}
 SCRIPT:=$(REPOROOT)/tub
 MAIN_MK:=$(REPOROOT)/tub/main.mk
 MAIN_FLAGS+=REPOROOT=$(REPOROOT)

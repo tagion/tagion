@@ -8,6 +8,7 @@ import std.concurrency;
 import std.stdio;
 import std.array;
 import std.algorithm.iteration;
+import std.format;
 
 import tagion.services.Options;
 import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
@@ -19,7 +20,8 @@ import tagion.hibon.Document : Document;
 import p2plib = p2p.node;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 
-import tagion.gossip.P2pGossipNet;
+import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
+import tagion.gossip.AddressBook : addressbook, NodeAddress;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
 import tagion.dart.Recorder : RecordFactory;
@@ -43,11 +45,11 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
             log("exit");
             ownerTid.prioritySend(Control.END);
         }
-        const ADDR_TABLE = "address_table";
-        immutable inner_task_name = task_name ~ "internal";
         log.register(task_name);
-        HashNet net = new StdHashNet();
-        HiRPC internal_hirpc = HiRPC(null);
+        const ADDR_TABLE = "address_table";
+        immutable inner_task_name = format("%s-%s", task_name, "internal");
+        const net = new StdHashNet();
+        const internal_hirpc = HiRPC(null);
         NodeAddress[Pubkey] internal_nodeaddr_table;
 
         auto rec_factory = RecordFactory(net);
@@ -99,7 +101,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
                     auto nnr = NetworkNodeRecord(archive.filed);
                     if (nnr.state == NetworkNodeRecord.State.ACTIVE) {
                         auto node_addr = NodeAddress(nnr.address, opts.dart, opts.port_base, true);
-                        auto pk = cast(Pubkey) nnr.node;
+                        auto pk = ncl.pubkey;
                         node_addresses[pk] = node_addr;
                     }
                 }
@@ -174,13 +176,13 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
 
             foreach (i, key; node_addresses.keys) {
                 auto nnr = NetworkNodeRecord();
-                nnr.node = cast(Buffer) key;
+//                nnr.node = cast(Buffer) key;
                 nnr.time = Clock.currStdTime();
                 nnr.state = NetworkNodeRecord.State.ACTIVE;
                 nnr.address = node_addresses[key].address;
                 // nnr.dart_from = 0;
                 // nnr.dart_to = 0;
-                log("ADDRESS: %s", Document(nnr.toHiBON.serialize).toJSON);
+                log("ADDRESS: %s", nnr.toJSON);
                 // log("insert to addr_table_recorder PK: %s HASH: %s", key.cutHex, net.hashOf(Document(nnr.toHiBON().serialize)).cutHex);
                 insert_recorder.add(Document(nnr.toHiBON.serialize));
             }
@@ -205,7 +207,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
             updateDART(insert_recorder);
         }
 
-        auto is_ready = false;
+        bool is_ready = false;
         void receiveAddrBook(ActiveNodeAddressBook address_book) {
             log("updated addr book: %d", address_book.data.length);
             if (is_ready) {
@@ -220,37 +222,53 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
 
         final switch (opts.net_mode) {
         case NetworkMode.internal: {
-                bootstrap_tid = spawn(&mdnsDiscoveryService, p2pnode, inner_task_name, opts);
+                bootstrap_tid = spawn(
+                    &mdnsDiscoveryService,
+                    pubkey,
+                    p2pnode,
+                    inner_task_name,
+                    opts);
                 break;
             }
         case NetworkMode.local: {
-                bootstrap_tid = spawn(&fileDiscoveryService, pubkey,
-                        p2pnode.LlistenAddress, inner_task_name, opts);
+                bootstrap_tid = spawn(
+                    &fileDiscoveryService,
+                    pubkey,
+                    p2pnode,
+                    inner_task_name,
+                    opts);
                 break;
             }
         case NetworkMode.pub: {
-                bootstrap_tid = spawn(&serverFileDiscoveryService, pubkey,
-                        p2pnode, inner_task_name, opts);
+                bootstrap_tid = spawn(
+                    &serverFileDiscoveryService,
+                    pubkey,
+                    p2pnode,
+                    inner_task_name,
+                    opts);
                 break;
             }
         }
-
+        {
+            const ctrl = receiveOnly!Control;
+            assert(ctrl is Control.LIVE);
+        }
         scope (exit) {
             bootstrap_tid.send(Control.STOP);
-            auto ctrl = receiveOnly!Control;
-            assert(ctrl == Control.END);
+            const ctrl = receiveOnly!Control;
+            assert(ctrl is Control.END);
         }
 
-        auto ctrl = receiveOnly!Control;
-        assert(ctrl == Control.LIVE);
 
         ownerTid.send(Control.LIVE);
 
-        auto stop = false;
-        do {
-            receive(&receiveAddrBook, (immutable(Pubkey) key, Tid tid) {
+        bool stop = false;
+        while(!stop) {
+            receive(
+                &receiveAddrBook,
+                (immutable(Pubkey) key, Tid tid) {
                 log("looking for key: %s HASH: %s", key.cutHex, net.calcHash(cast(Buffer) key).cutHex);
-                auto result_addr = internal_nodeaddr_table.get(key, NodeAddress.init);
+                const result_addr = addressbook[key]; //internal_nodeaddr_table.get(key, NodeAddress.init);
                 if (result_addr == NodeAddress.init) {
                     log("Address not found in internal nodeaddr table");
                 }
@@ -264,21 +282,24 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
                     }
                 case DiscoveryRequestCommand.UpdateTable: {
                         auto addr_table = request_addr_table();
-                        update_internal_table(addr_table);
+                        update_internal_table(addressbook._data);
                         break;
                     }
                 default:
                     break;
                 }
                 bootstrap_tid.send(request);
-            }, (DiscoveryState state) { ownerTid.send(state); }, (Control control) {
+            },
+                (DiscoveryState state) {
+                    ownerTid.send(state);
+                },
+                (Control control) {
                 if (control == Control.STOP) {
                     log("stop");
                     stop = true;
                 }
             });
         }
-        while (!stop);
     }
     catch (Throwable t) {
         fatal(t);

@@ -399,10 +399,48 @@ static size_t size(U)(const(U[]) array) pure {
         return _members[];
     }
 
-    void opAssign(T)(T r) if ((isInputRange!T) && !isAssociativeArray!T) {
+    void opAssign(T)(T r) @trusted if ((isInputRange!T) && !isAssociativeArray!T) {
         foreach (i, a; r.enumerate) {
             opIndexAssign(a, i);
         }
+    }
+
+    @trusted
+    unittest { // Check Array Range init
+        import std.stdio;
+
+        // import std.range : retro;
+        import std.algorithm.comparison : equal;
+
+        // import tagion.hibon.HiBONJSON;
+        struct ArrayRange {
+            int count;
+            bool empty() {
+                return count <= 0;
+            }
+
+            string front() {
+                return format("text-%d", count);
+            }
+
+            void popFront() {
+                count--;
+            }
+        }
+
+        auto h = new HiBON;
+        ArrayRange ar;
+        ar.count = 3;
+        h = ar;
+        // writefln("Array %s", h.toPretty);
+        assert(h.length == 3);
+        assert(h.isArray);
+        // ar.count = 3;
+        // writefln("retro %s %s", h[].map!(a => a.get!string), ar);
+        ar.count = 3;
+        assert(equal(h[].map!(a => a.get!string), ar));
+
+        // assert(0);
     }
     /++
      Assign and member x with the key

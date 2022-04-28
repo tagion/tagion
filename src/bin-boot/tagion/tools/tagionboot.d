@@ -23,38 +23,7 @@ import tagion.hibon.HiBONRecord : fread, fwrite;
 //import tagion.revision;
 import std.array : join;
 
-version (none) class HiRPCNet : StdSecureNet {
-    this(string passphrase) {
-        super();
-        generateKeyPair(passphrase);
-    }
-}
-
 Invoice[] invoices;
-version (none) HiBON generateBills(Document doc) {
-    foreach (d; doc[]) {
-        invoices ~= Invoice(d.get!Document);
-    }
-    enum TGS = "TGS";
-    //    enum RECORDTYPE = "BILL";
-    HiBON archives = new HiBON;
-    foreach (i, I; invoices) {
-        StandardBill bill;
-        with (bill) {
-            bill_type = TGS;
-            // type = RECORDTYPE;
-            value = I.amount;
-            epoch = 0;
-            auto pkey = I.pkey;
-            owner = pkey; //bill_net.calcHash(bill_net.calcHash(pkey));
-        }
-        HiBON archive = new HiBON;
-        archive[DARTFile.Params.archive] = bill.toHiBON;
-        archive[DARTFile.Params.type] = cast(uint)(DARTFile.Recorder.Archive.Type.ADD);
-        archives[i] = archive;
-    }
-    return archives;
-}
 
 enum REVNO = 0;
 enum HASH = "xxx";

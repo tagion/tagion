@@ -10,16 +10,15 @@ import tagion.hibon.HiBONRecord;
 extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
 
 enum LoggerType {
-    NONE    = 0,
-    INFO    = 1,
-    TRACE   = INFO<<1,
-    WARNING = TRACE<<1,
-    ERROR   = WARNING <<1,
-    FATAL   = ERROR<<1,
-    ALL     = INFO|TRACE|WARNING|ERROR|FATAL,
-    STDERR  = WARNING|ERROR|FATAL
+    NONE = 0,
+    INFO = 1,
+    TRACE = INFO << 1,
+    WARNING = TRACE << 1,
+    ERROR = WARNING << 1,
+    FATAL = ERROR << 1,
+    ALL = INFO | TRACE | WARNING | ERROR | FATAL,
+    STDERR = WARNING | ERROR | FATAL
 }
-
 
 private static Tid logger_tid;
 
@@ -54,6 +53,9 @@ static struct Logger {
         }
         try {
             logger_tid = locate(logger_task_name);
+
+            
+
             .register(task_name, thisTid);
             _task_name = task_name;
             setThreadName(task_name);

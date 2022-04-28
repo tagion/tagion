@@ -11,7 +11,10 @@ export DBIN := $(DBUILD)/bin
 export DTMP := $(DBUILD)/tmp
 export DOBJ := $(DBUILD)/obj
 export DLIB := $(DBUILD)/lib
-export DLOGCOV := $(DLOG)/cov/
+export DLOGCOV := $(DLOG)/cov
+export TESTBENCH := $(DLOG)/testbench
+export FUND := $(REPOROOT)/fundamental
+export TOOLS := $(REPOROOT)/tools
 
 env-dirs:
 	$(PRECMD)
@@ -26,7 +29,8 @@ env-dirs:
 	$(call log.kvp, DSRC, $(DSRC))
 	$(call log.kvp, DTUB, $(DTUB))
 	$(call log.kvp, DLOGCOV, $(DLOGCOV))
-	$(call log.kvp, TOOLS, $(TOOLS))
+	$(call log.kvp, TESTBENCH, $(TESTBENCH))
+	$(call log.kvp, FUND, $(FUND))
 	$(call log.kvp, REPOROOT, $(REPOROOT))
 	$(call log.close)
 

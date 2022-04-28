@@ -361,10 +361,12 @@ shared static immutable(IR[string]) instrLookupTable;
 
 protected immutable(Instr[IR]) generate_instrTable() {
     Instr[IR] result;
-    static foreach (E; EnumMembers!IR) {
-        {
-            enum code = format!q{result[E]=getUDAs!(%s, Instr)[0];}(E.stringof);
-            mixin(code);
+    with (IR) {
+        static foreach (E; EnumMembers!IR) {
+            {
+                enum code = format!q{result[%1$s]=getUDAs!(%1$s, Instr)[0];}(E.stringof);
+                mixin(code);
+            }
         }
     }
     return assumeUnique(result);

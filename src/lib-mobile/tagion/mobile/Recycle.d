@@ -74,8 +74,7 @@ struct Recycle(T) {
 }
 
 pragma(msg, "fixme(cbr): This unittest does not pass (", __FILE__, ":", __LINE__, ")");
-version(none)
-unittest {
+version (none) unittest {
     import tagion.hibon.Document : Document;
     import std.stdio;
 

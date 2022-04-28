@@ -1,3 +1,5 @@
+module tagion.tools.tagionwallet;
+
 import std.getopt;
 import std.stdio;
 import std.file : exists, mkdir;
@@ -21,6 +23,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
 
 import tagion.basic.Basic : basename, Buffer, Pubkey;
+import tagion.basic.TagionExceptions;
 import tagion.script.StandardRecords;
 import tagion.script.TagionCurrency;
 import tagion.crypto.SecureNet : StdSecureNet, StdHashNet, scramble;
@@ -31,370 +34,20 @@ import tagion.utils.Term;
 import tagion.basic.Message;
 import tagion.utils.Miscellaneous;
 
-//import tagion.script.StandardRecords : Invoice;
 import tagion.communication.HiRPC;
 import tagion.network.SSLSocket;
 import tagion.Keywords;
 
-//import tagion.revision;
-
 enum LINE = "------------------------------------------------------";
-
-StdSecureNet net;
-
-version (none) {
-    enum ulong AXION_UNIT = 1_000_000;
-    enum ulong AXION_MAX = 1_000_000 * AXION_UNIT;
-}
-
-version (none) ulong toAxion(const double amount) pure {
-    auto result = AXION_UNIT * amount;
-    if (result > AXION_MAX) {
-        result = AXION_MAX;
-    }
-    return cast(ulong) result;
-}
-
-version (none) double toTagion(const ulong amount) pure {
-    return (cast(real) amount) / AXION_UNIT;
-}
-
-version (none) string TGN(const ulong amount) pure {
-    const ulong tagions = amount / AXION_UNIT;
-    const ulong axions = amount % AXION_UNIT;
-    return format("%d.%d TGN", tagions, axions);
-}
-
-// Order
-// Is defined as information's which the customer send to receive get payment information (pubkeys)
-//
-
-// Invoice
-// Is defined as information's which the seller generates to the costumer about the (pubkeys)
-//
-
-Buffer drive_state;
-version (none) void writeAccounts(string file, Buffer[Pubkey] accounts) {
-    if (accounts.length) {
-        auto hibon_accounts = new HiBON;
-        foreach (hashpkey, drive; accounts) {
-            hibon_accounts[hashpkey.toHexString] = drive;
-        }
-        auto hibon = new HiBON;
-        hibon["state"] = drive_state;
-        hibon[accounts.stringof] = hibon_accounts;
-        file.fwrite(hibon);
-    }
-}
-
-version (none) Buffer[Pubkey] readAccounts(string file) {
-    Buffer[Pubkey] accounts;
-    if (file.exists) {
-        const doc = file.fread;
-        // immutable data=assumeUnique(cast(ubyte[])file.fread);
-        // const doc=Document(data);
-        // if (doc.isInOrder) {
-        drive_state = doc["state"].get!Buffer;
-        const doc_accounts = doc[accounts.stringof].get!Document;
-        foreach (e; doc_accounts[]) {
-            Pubkey key = decode(e.key);
-            accounts[key] = e.get!Buffer;
-            // }
-        }
-    }
-    return accounts;
-}
-
-version (none) ulong calcTotal(const(StandardBill[]) bills) {
-    ulong result;
-    foreach (b; bills) {
-        result += b.value;
-    }
-    return result;
-}
-
-version (none) ulong calcTotal(const(Invoice[]) invoices) {
-    ulong result;
-    foreach (b; invoices) {
-        result += b.amount;
-    }
-    return result;
-}
-
-version (none) void updateBills(string file, StandardBill[] bills) {
-    import tagion.dart.DARTFile;
-
-    if (bills.length) {
-        auto bills_hibon = new HiBON;
-        foreach (i, bill; bills) {
-            HiBON archive = new HiBON;
-            archive[DARTFile.Params.archive] = bill.toHiBON;
-            archive[DARTFile.Params.type] = cast(uint)(DARTFile.Recorder.Archive.Type.ADD);
-            bills_hibon[i] = archive;
-        }
-        file.fwrite(bills_hibon);
-    }
-}
-
-version (none) StandardBill[] readBills(string file) {
-    StandardBill[] result;
-    if (file.exists) {
-        const doc_recorder = file.fread;
-        if (doc_recorder.isInorder && doc_recorder.isArray) {
-            foreach (e; doc_recorder[]) {
-                const doc_archive = e.get!Document;
-                const doc_bill = doc_archive["archive"].get!Document;
-                auto bill = StandardBill(doc_bill);
-                Pubkey pkey = bill.owner;
-                if (pkey in accounts) {
-                    result ~= bill;
-                }
-            }
-        }
-    }
-    return result;
-}
-
-Buffer[Pubkey] accounts;
 
 void warning() {
     writefln("%sWARNING%s: This wallet should only be used for the Tagion Dev-net%s", RED, BLUE, RESET);
 }
 
-version (none) Invoice[] readInvoices(string file) {
-    Invoice[] result;
-    if (file.exists) {
-        const doc = file.fread;
-        if (doc.isInorder && doc.isArray) {
-            foreach (e; doc[]) {
-                const sub_doc = e.get!Document;
-                result ~= Invoice(sub_doc);
-            }
-        }
-    }
-    return result;
-}
 
-//@Recorder("Invoices")
 struct Invoices {
     Invoice[] list;
     mixin HiBONRecord;
-}
-
-//alias ContractT=Contract!(ContractType.INTERNAL);
-version (none) bool payment(const(Invoice[]) orders, const(StandardBill[]) bills, ref SignedContract result) {
-    if (net) {
-        const topay = calcTotal(orders);
-
-        StandardBill[] contract_bills;
-        if (topay > 0) {
-            string source;
-            uint count;
-            foreach (o; orders) {
-                source = assumeUnique(format("%s %s", o.amount, source));
-                count++;
-            }
-
-            // Input
-            ulong amount = topay;
-
-            foreach (b; bills) {
-                amount -= min(amount, b.value);
-                contract_bills ~= b;
-                if (amount == 0) {
-                    break;
-                }
-            }
-            if (amount != 0) {
-                return false;
-            }
-            //        result.input=contract_bills; // Input bills
-            //        Buffer[] inputs;
-            foreach (b; contract_bills) {
-                result.contract.input ~= net.calcHash(b.toHiBON.serialize);
-            }
-            const _total_input = calcTotal(contract_bills);
-            if (_total_input >= topay) {
-                const _rest = _total_input - topay;
-                count++;
-                result.contract.script = assumeUnique(format("%s %s %d pay", source, _rest, count));
-                // output
-                Invoice money_back;
-                money_back.amount = _rest;
-                createInvoice(money_back);
-                result.contract.output ~= money_back.pkey;
-                foreach (o; orders) {
-                    result.contract.output ~= o.pkey;
-                }
-            }
-            else {
-                return false;
-            }
-        }
-
-        // Sign all inputs
-        immutable message = net.calcHash(result.contract.toHiBON.serialize);
-        shared shared_net = cast(shared) net;
-        foreach (i, b; contract_bills) {
-            Pubkey pkey = b.owner;
-            if (pkey in accounts) {
-                writefln("%d] b.owner        %s", i, b.owner.toHexString);
-                writefln("%d] account        %s", i, net.derivePubkey(accounts[pkey]).toHexString);
-                immutable tweak_code = accounts[pkey];
-                auto bill_net = new StdSecureNet;
-                bill_net.derive(tweak_code, shared_net);
-                immutable signature = bill_net.sign(message);
-                result.signs ~= signature;
-                writefln("signed %5s pkey=%s", net.verify(message, signature, pkey), pkey.toHexString);
-            }
-        }
-
-        //    result.contract=Document(contract);
-        return true;
-    }
-    return false;
-}
-
-version (none) void createInvoice(ref Invoice invoice) {
-    string current_time = MonoTime.currTime.toString;
-    scope seed = new ubyte[net.hashSize];
-    scramble(seed);
-    drive_state = net.calcHash(seed ~ drive_state ~ current_time.representation);
-    scramble(seed);
-    //                invoice.drive=drive_state;
-
-    const pkey = net.derivePubkey(drive_state);
-    invoice.pkey = cast(Buffer) pkey;
-    accounts[pkey] = drive_state;
-}
-
-StandardBill[] bills;
-
-version (none) void accounting() {
-    int ch;
-    KeyStroke key;
-
-    if (drive_state.length is 0) {
-        const seed = "invoices";
-        drive_state = net.calcHash(seed.representation);
-    }
-
-    CLEARSCREEN.write;
-    scope (success) {
-        CLEARSCREEN.write;
-    }
-
-    scope (success) {
-        if (invoices.length) {
-            auto hibon = new HiBON;
-            foreach (i, ref invoice; invoices) {
-                const index = cast(uint) i;
-                createInvoice(invoice);
-                hibon[index] = invoice.toHiBON;
-            }
-            invoicefile.fwrite(hibon);
-            options.accountfile.writeAccounts(accounts);
-        }
-    }
-
-    uint select_index = 0;
-    uint selected = uint.max;
-    const _total = calcTotal(bills);
-    while (ch != 'q') {
-        HOME.write;
-        warning();
-        writefln(" Invoices ");
-        LINE.writeln;
-        writefln("                                 total %s", TGN(_total));
-        LINE.writeln;
-
-        if (invoices) {
-            foreach (i, a; invoices) {
-                string select_code;
-                string chosen_code;
-                if (select_index == i) {
-                    select_code = BLUE ~ BACKGOUND_WHITE;
-                }
-                if (selected == i) {
-                    chosen_code = GREEN;
-                }
-                // const ulong tagions=a.amount/AXION_UNIT;
-                // const ulong axions=a.amount % AXION_UNIT;
-
-                writefln("%2d %s%s%s %s%s", i, select_code, chosen_code, a.name, TGN(a.amount), RESET);
-            }
-            LINE.writeln;
-            writefln("%1$sq%2$s:quit %1$si%2$s:invoice %1$sEnter%2$s:select %1$sUp/Down%2$s:move              ",
-                    FKEY, RESET);
-        }
-        else {
-            writefln("%1$sq%2$s:quit %1$si%2$s:invoice ", FKEY, RESET);
-        }
-        CLEARDOWN.writeln;
-        const keycode = key.getKey(ch);
-
-        with (KeyStroke.KeyCode) {
-            switch (keycode) {
-            case UP:
-                if (invoices.length) {
-                    select_index = (select_index - 1) % invoices.length;
-                }
-                break;
-            case DOWN:
-                if (invoices.length) {
-                    select_index = (select_index + 1) % invoices.length;
-                }
-                break;
-            case ENTER:
-                selected = select_index;
-                writefln("%s%s%s", questions[select_index], CLEAREOL, CLEARDOWN);
-                answers[select_index] = readln.strip;
-                writefln("line=%s", answers[select_index]);
-                break;
-            case NONE:
-                switch (ch) {
-                case 'i':
-                    writeln("Item name");
-                    Invoice new_invoice;
-                    new_invoice.name = readln.strip;
-                    if (new_invoice.name.length == 0 || (new_invoice.name[0] == ':')) {
-                        break;
-                    }
-                    writefln("Price in TGN");
-                    const amount_tagion = readln.strip;
-                    if (amount_tagion.length == 0 || (amount_tagion[0] == ':')) {
-                        break;
-                    }
-                    new_invoice.amount = toAxion(amount_tagion.to!double);
-                    if (new_invoice.amount) {
-                        invoices ~= new_invoice;
-                    }
-                    CLEARSCREEN.write;
-                    break;
-                default:
-                    // ignore
-                }
-                break;
-            default:
-                // ignore
-            }
-        }
-    }
-}
-
-version (none) bool loginPincode(const(char[]) pincode) {
-    auto hashnet = new StdHashNet;
-    auto recover = new KeyRecover(hashnet);
-    auto pinhash = recover.checkHash(pincode.representation);
-    //writefln("pinhash=%s", pinhash.toHexString);
-    auto R = new ubyte[hashnet.hashSize];
-    xor(R, wallet.Y, pinhash);
-    if (wallet.check == recover.checkHash(R)) {
-        net = new StdSecureNet;
-        net.createKeyPair(R);
-        return true;
-    }
-    return false;
 }
 
 struct WalletOptions {
@@ -404,7 +57,6 @@ struct WalletOptions {
     string devicefile;
     string contractfile;
     string billsfile;
-    //    string invoicefile;
     string paymentrequestsfile;
     string addr;
     ushort port;
@@ -415,7 +67,6 @@ struct WalletOptions {
         quizfile = "quiz.hibon";
         contractfile = "contract.hibon";
         billsfile = "bills.hibon";
-        //        invoicefile = "invoice.hibon";
         paymentrequestsfile = "paymentrequests.hibon";
         devicefile = "device.hibon";
         addr = "localhost";
@@ -480,27 +131,6 @@ struct WalletInterface {
         }
 
         State state;
-
-        version (none)
-            if (options.walletfile.exists) {
-                immutable data = assumeUnique(cast(ubyte[]) options.walletfile.fread);
-                const doc = Document(data);
-                if (doc.isInorder) {
-                    auto hashnet = new StdHashNet;
-                    wallet = new Wallet(doc);
-                    state = State.WAIT_LOGIN;
-                }
-            }
-
-        version (none)
-            if (wallet !is null) {
-                if (net is null) {
-                    state = State.WAIT_LOGIN;
-                }
-                else {
-                    state = State.LOGGEDIN;
-                }
-            }
 
         int ch;
         KeyStroke key;
@@ -697,7 +327,6 @@ struct WalletInterface {
             writefln("Confidence %d", confidence);
 
             LINE.writefln;
-            //            const info = (recover_flag)?"recover":"create";
             if (recover_flag) {
                 writefln("%1$sq%2$s:quit %1$sEnter%2$s:select %1$sUp/Down%2$s:move %1$sc%2$s:recover%3$s",
                         FKEY, RESET, CLEARDOWN);
@@ -707,9 +336,6 @@ struct WalletInterface {
                         FKEY, RESET, CLEARDOWN);
             }
             const keycode = key.getKey(ch);
-            //            if (keycode = KeyStroke.KeyCode.NONE) {
-            // writefln("%s %s", keycode, ch);
-            //        version(none)
             with (KeyStroke.KeyCode) {
                 switch (keycode) {
                 case UP:
@@ -770,22 +396,14 @@ struct WalletInterface {
                                     continue;
                                 }
                             }
-                            // auto hashnet = new StdHashNet;
-                            // auto recover = KeyRecover(hashnet);
-
-                            // if (confidence == selected_answers.length) {
-                            //     // Due to some bug in KeyRecover
-                            //     confidence--;
-                            // }
-
                             do {
-                                char[] pincode1; // = stack_pincode1;
+                                char[] pincode1;
                                 pincode1.length = MAX_PINCODE_SIZE;
                                 char[] pincode2;
                                 pincode2.length = MAX_PINCODE_SIZE;
                                 scope (exit) {
                                     scramble(pincode1);
-                                    scramble(pincode1);
+                                    scramble(pincode2);
                                 }
                                 writefln("Pincode:%s", CLEARDOWN);
                                 readln(pincode1);
@@ -817,19 +435,12 @@ struct WalletInterface {
                                     }
                                     else {
                                         secure_wallet = StdSecureWallet.createWallet(quiz.questions, selected_answers, confidence, pincode1);
-                                        // writefln("pincode1=%s", pincode1);
-                                        //writefln("secure_wallet.wallet
                                         secure_wallet.login(pincode1);
-                                        // writefln("options.walletfile=%s", options.walletfile);
                                         options.walletfile.fwrite(secure_wallet.wallet);
-                                        // writefln("options.devicefile=%s", options.devicefile);
-                                        // writefln("secure_wallet.pin=%J", secure_wallet.pin); //options.devicefile);
                                         options.devicefile.fwrite(secure_wallet.pin);
                                         options.quizfile.fwrite(quiz);
-                                        // writefln("%1$sWallet created%2$s", GREEN, RESET);
 
                                     }
-                                    // writefln("loggedin=%s", secure_wallet.isLoggedin);
                                 }
                             }
                             while (!secure_wallet.isLoggedin);
@@ -837,7 +448,7 @@ struct WalletInterface {
                         }
                         break;
                     default:
-                        writefln("Ignore %s '%s'", keycode, cast(char) ch);
+                        //writefln("Ignore %s '%s'", keycode, cast(char) ch);
                         // ignore
                     }
                     break;
@@ -847,7 +458,6 @@ struct WalletInterface {
             }
 
         }
-        //    return null;
     }
 }
 
@@ -915,6 +525,8 @@ int main(string[] args) {
     bool overwrite_switch; /// Overwrite the config file
     bool version_switch;
     string payfile;
+    string questions_str;
+    string answers_str;
     bool wallet_ui;
     bool update_wallet;
     uint number_of_bills;
@@ -929,6 +541,8 @@ int main(string[] args) {
     string path;
     string invoicefile = "invoice_file.hibon";
 
+    bool check_health;
+
     WalletOptions options;
     if (config_file.exists) {
         options.load(config_file);
@@ -937,12 +551,13 @@ int main(string[] args) {
         options.setDefault;
     }
 
-    //   pragma(msg, "bill_type ", GetLabel!(StandardBill.bill_type));
-    auto main_args = getopt(args, std.getopt.config.caseSensitive,
-            std.getopt.config.bundling, "version",
-            "display the version", &version_switch,
+    GetoptResult main_args;
+    try {
+        main_args = getopt(args, std.getopt.config.caseSensitive,
+            std.getopt.config.bundling,
+            "version", "display the version", &version_switch,
             "overwrite|O", "Overwrite the config file and exits", &overwrite_switch,
-            "path", "Set the path for the wallet files", &path,
+            "path", format("Set the path for the wallet files : default %s", path), &path,
             "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
             "device", format("Device file : default %s", options.devicefile), &options.devicefile,
             "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
@@ -957,7 +572,18 @@ int main(string[] args) {
             "pin|x", "Pincode", &pincode,
             "port|p", format("Tagion network port : default %d", options.port), &options.port,
             "url|u", format("Tagion url : default %s", options.addr), &options.addr,
-            "visual|g", "Visual user interface", &wallet_ui,);
+            "visual|g", "Visual user interface", &wallet_ui,
+            "questions", "Questions for wallet creation", &questions_str,
+            "answers", "Answers for wallet creation", &answers_str,
+            "generate-wallet", "Create a new wallet", &generate_wallet,
+            "health", "Healthcheck the node", &check_health
+            );
+    }
+    catch (GetOptException e) {
+        stderr.writeln(e.msg);
+        return 1;
+    }
+
     if (version_switch) {
         writefln("version %s", REVNO);
         writefln("Git handle %s", HASH);
@@ -1021,6 +647,56 @@ int main(string[] args) {
 
     auto wallet_interface = WalletInterface(options);
 
+
+    if(check_health){
+        writefln("HEALTHCHECK: %s %d",wallet_interface.options.addr, wallet_interface.options.port);
+        HiRPC hirpc;
+        auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
+        client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface.options.port));
+        scope (exit) {
+            client.close;
+        }
+        client.blocking = true;
+        const sender = hirpc.action("healthcheck", new HiBON());
+
+        immutable data = sender.toDoc.serialize;
+        writeln(sender.toDoc.toJSON);
+        client.send(data);
+
+        auto rec_buf = new void[4000];
+        ptrdiff_t rec_size;
+
+        do {
+            rec_size = client.receive(rec_buf); //, current_max_size);
+            writefln("read rec_size=%d", rec_size);
+            Thread.sleep(400.msecs);
+        }
+        while (rec_size < 0);
+        auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
+        writeln(resp_doc.toJSON);
+    }
+
+
+     if (generate_wallet) {
+        const questions = questions_str.split(',');
+        const answers = answers_str.split(',');
+        assert(questions.length >= 3, "Minimal amount of answers is 3");
+        assert(questions.length is answers.length, "Amount of questions should be same as answers");
+        assert(pincode.length = 4, "You must provide pin-code with 4 digits");
+        auto hashnet = new StdHashNet;
+        auto recover = KeyRecover(hashnet);
+        const pincode1 = to!(char[])(pincode);
+
+        const confidence = questions.length - 1;
+        const secure_wallet = wallet_interface.StdSecureWallet.createWallet(questions, answers, to!uint(confidence), pincode1);
+
+        // secure_wallet.login(pincode1);
+        options.walletfile.fwrite(secure_wallet.wallet);
+        options.devicefile.fwrite(secure_wallet.pin);
+        return 0;
+    }
+
+
     if (options.walletfile.exists) {
         const wallet_doc = options.walletfile.fread;
         const pin_doc = options.devicefile.exists ? options.devicefile.fread : Document.init;
@@ -1082,69 +758,16 @@ int main(string[] args) {
     Invoices orders;
 
     if (payfile.exists) {
-        const order_doc = payfile.fread;
-        if (!order_doc.isInorder) {
+        try {
+            orders = payfile.fread!Invoices;
+//            orders = Invoices(order_doc);
+        }
+        catch (TagionException e) {
+            writefln(e.msg);
             writefln("%1$sThe order file '%3$s' is not formated correctly%2$s", RED, RESET, payfile);
             return 8;
         }
-        orders = Invoices(order_doc);
-        // const contract=payment(orders, bills);
-        // contractfile.fwrite(contract.toHiBON.serialize);
     }
-
-    version (none)
-        if (update_wallet) {
-            HiRPC hirpc;
-            Buffer prepareSearch(Buffer[] owners) {
-                HiBON params = new HiBON;
-                foreach (i, owner; owners) {
-                    params[i] = owner;
-                }
-                const sender = hirpc.action("search", params);
-                immutable data = sender.toDoc.serialize;
-                return data;
-            }
-
-            // writeln(accounts.length);
-            StandardBill[] new_bills;
-            Buffer[] pkeys;
-            foreach (pkey, dkey; accounts) {
-                pkeys ~= cast(Buffer) pkey;
-            }
-            auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-            client.connect(new InternetAddress(addr, port));
-            scope (exit) {
-                client.close;
-            }
-            client.blocking = true;
-            // writefln("looking for %s", (cast(Buffer)pkey).toHexString);
-            auto to_send = prepareSearch(pkeys);
-            client.send(to_send);
-
-            auto rec_buf = new void[4000];
-            ptrdiff_t rec_size;
-
-            do {
-                rec_size = client.receive(rec_buf); //, current_max_size);
-                // writefln("read rec_size=%d", rec_size);
-                Thread.sleep(400.msecs);
-            }
-            while (rec_size < 0);
-            auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
-            auto received = hirpc.receive(resp_doc);
-            if (!received.error.hasMember(Keywords.code)) {
-                foreach (bill; received.params[]) {
-                    auto std_bill = StandardBill(bill.get!Document);
-                    new_bills ~= std_bill;
-                }
-                options.billsfile.updateBills(new_bills);
-                bills = new_bills;
-                writeln("Wallet updated");
-            }
-            else {
-                writeln("Wallet update failed");
-            }
-        }
 
     if (wallet_ui) {
         wallet_interface.accountView;
@@ -1157,8 +780,10 @@ int main(string[] args) {
             scope invoice_args = create_invoice_command.splitter(":");
             import tagion.basic.Basic : eatOne;
 
-            auto new_invoice = WalletInterface.StdSecureWallet.createInvoice(invoice_args.eatOne, invoice_args.eatOne.to!double
-                    .TGN);
+//            writefln("invoice_args=%s create_invoice_command=%s", invoice_args, create_invoice_command);
+            auto new_invoice = WalletInterface.StdSecureWallet.createInvoice(
+                invoice_args.eatOne,
+                invoice_args.eatOne.to!double.TGN);
             if (new_invoice.name.length is 0 || new_invoice.amount <= 0 || !invoice_args.empty) {
                 writefln("Invalid invoice %s", create_invoice_command);
                 return 11;
@@ -1170,22 +795,23 @@ int main(string[] args) {
             wallet_interface.payment_requests.list ~= new_invoice;
             options.paymentrequestsfile.fwrite(wallet_interface.payment_requests);
             // Writes the invoice-file to a file named <name>_<invoicefile>
-            writefln("invoicefile=%s", invoicefile);
+            // writefln("invoicefile=%s", invoicefile);
             invoicefile.fwrite(new_invoice);
         }
         else if (orders !is orders.init) {
-            version (none) {
-                SignedContract signed_contract;
-                const flag = payment(orders, bills, signed_contract);
-                if (flag) {
-                    HiRPC hirpc;
-                    const sender = hirpc.action("transaction", signed_contract.toHiBON);
-                    immutable data = sender.toDoc.serialize;
-                    const test = Document(data);
+            SignedContract signed_contract;
+            version(none) {
+            const flag = payment(orders, bills, signed_contract);
+            if (flag) {
+                HiRPC hirpc;
+                const sender = hirpc.action("transaction", signed_contract);
+                // sender.
+                // immutable data = sender.toDoc.serialize;
+                // const test = Document(data);
 
-                    const scontract = SignedContract(test["message"].get!Document["params"].get!Document);
-                    options.contractfile.fwrite(sender.toDoc);
-                }
+                // const scontract = SignedContract(test["message"].get!Document["params"].get!Document);
+                options.contractfile.fwrite(sender);
+            }
             }
         }
         if (send_flag) {
@@ -1199,20 +825,18 @@ int main(string[] args) {
 
                 writeln(LEB128.calc_size(doc1.serialize));
                 auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-                client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface.options.port));
                 scope (exit) {
                     client.close;
                 }
+                client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface.options.port));
                 client.blocking = true;
-                // writeln(cast(string) data.data);
                 client.send(data.data);
 
                 auto rec_buf = new void[4000];
                 ptrdiff_t rec_size;
 
                 do {
-                    rec_size = client.receive(rec_buf); //, current_max_size);
-                    // writefln("read rec_size=%d", rec_size);
+                    rec_size = client.receive(rec_buf);
                     Thread.sleep(400.msecs);
                 }
                 while (rec_size < 0);
@@ -1220,15 +844,6 @@ int main(string[] args) {
                 HiRPC hirpc;
                 auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
                 auto received = hirpc.receive(resp_doc);
-                version (none)
-                    if (received.params.hasMember(Keywords.code) && received.error[Keywords.code].get!int != 0) {
-                        writeln(received.error[Keywords.message].get!string);
-                    }
-                    else {
-                        options.accountfile.writeAccounts(accounts);
-                        writeln("Successfuly sended");
-                    }
-
                 Thread.sleep(200.msecs);
             }
         }

@@ -59,6 +59,7 @@ import tagion.services.NetworkRecordDiscoveryService;
 
 //mport tagion.gossip.P2pGossipNet: AddressBook;
 import tagion.services.DARTService;
+import tagion.gossip.AddressBook: addressbook;
 
 //import tagion.Keywords : NetworkMode;
 
@@ -96,7 +97,7 @@ shared(p2plib.Node) initialize_node(immutable Options opts) {
     return p2pnode;
 }
 
-void tagionService(NetworkMode net_mode)(Options opts) nothrow {
+void tagionService(NetworkMode net_mode, Options opts) nothrow {
     //     in {
     //         import std.algorithm : canFind;
 
@@ -112,13 +113,16 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
             ownerTid.prioritySend(Control.END);
         }
 
-        static if (net_mode == NetworkMode.internal) {
-            immutable passpharse = format("Secret_word_%s", opts.node_name).idup;
+        pragma(msg, "fixme(cbr): The passphrase should generate from outside");
+        string passpharse;
+        if (net_mode == NetworkMode.internal) {
+            passpharse = format("Secret_word_%s", opts.node_name).idup;
         }
         else {
-            immutable passpharse = format("Secret_word_%d", opts.port).idup;
+            passpharse = format("Secret_word_%d", opts.port).idup;
         }
 
+        log.trace("passphrase %s", passpharse);
         bool force_stop = false;
 
         import std.format;
@@ -141,93 +145,104 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         Tid transcript_tid;
         Pubkey[] pkeys;
         void update_pkeys(Pubkey[] pubkeys) {
-            if (net_mode != NetworkMode.internal) {
-                pkeys = pubkeys;
-                foreach (p; pkeys)
-                    gossip_net.add_channel(p);
-            }
+            version (none)
+                if (net_mode != NetworkMode.internal) {
+                    pkeys = pubkeys;
+                    foreach (p; pkeys)
+                        gossip_net.add_channel(p);
+                }
         }
 
+        shared StdSecureNet shared_net;
         synchronized (master_net) {
             import std.format;
 
-            immutable secret = passpharse.idup;
+            //immutable secret = passpharse.idup;
 
-            master_net.generateKeyPair(secret);
-            shared shared_net = cast(shared) master_net;
+            master_net.generateKeyPair(passpharse);
+            shared_net = cast(shared) master_net;
             log("opts.node_name = %s", opts.node_name);
             net.derive(opts.node_name, shared_net);
             p2pnode = initialize_node(opts);
-            static if (net_mode == NetworkMode.internal) {
-                gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
-                ownerTid.send(net.pubkey);
-                Pubkey[] received_pkeys;
-                foreach (i; 0 .. opts.nodes) {
-                    received_pkeys ~= receiveOnly!(Pubkey);
-                    log.trace("Receive %d %s", i, received_pkeys[i].cutHex);
-                }
-                import std.exception : assumeUnique;
-
-                pkeys = received_pkeys.dup;
-                foreach (p; pkeys)
-                    gossip_net.add_channel(p);
-                ownerTid.send(Control.LIVE);
-            }
-            else if ([NetworkMode.local, NetworkMode.pub].canFind(net_mode)) {
-                // immutable task_name = "p2ptagion";
-                // opts.node_name = task_name;
-                gossip_net = new P2pGossipNet(net.pubkey, opts.node_name,
-                        opts.discovery.task_name, opts.host, p2pnode);
-            }
-            else {
-                throw new OptionException("Unknown network mode");
-            }
-            // gossip_net = new P2pGossipNet(task_name, opts.discovery.task_name, opts.host, p2pnode);
-            void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted {
-                import std.algorithm;
-                import std.array : array;
-                import tagion.hibon.HiBONJSON;
-
-                HiBON params = new HiBON;
-                pragma(msg, "fixme(cbr): epoch_time has not beed added to the epoch");
-                foreach (i, payload; events.map!((e) => e.event_body.payload).array) {
-                    params[i] = payload;
-                }
-                log("Send to transcript: %s", Document(params).toJSON);
-                transcript_tid.send(params.serialize);
-            }
-
-            hashgraph = new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, &receive_epoch);
-            // hashgraph.print_flag = true;
-            hashgraph.scrap_depth = opts.scrap_depth;
-            log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
-
-            discovery_tid = spawn(&networkRecordDiscoveryService, net.pubkey,
-                    p2pnode, opts.discovery.task_name, opts);
-            auto ctrl = receiveOnly!Control;
-            assert(ctrl == Control.LIVE);
-
-            receive((DiscoveryState state) { assert(state == DiscoveryState.READY); });
-            discovery_tid.send(DiscoveryRequestCommand.RequestTable);
-            receive((ActiveNodeAddressBook address_book) {
-                update_pkeys(address_book.data.keys);
-                dart_sync_tid = spawn(&dartSynchronizeServiceTask!StdSecureNet,
-                    opts, p2pnode, shared_net, sector_range);
-                // receiveOnly!Control;
-                dart_tid = spawn(&dartServiceTask!StdSecureNet, opts, p2pnode,
-                    shared_net, sector_range);
-                log("address_book len: %d", address_book.data.length);
-                send(dart_sync_tid, cast(immutable) address_book);
-            }, (Control ctrl) {
-                if (ctrl is Control.STOP) {
-                    force_stop = true;
-                }
-
-                if (ctrl is Control.END) {
-                    force_stop = true;
-                }
-            });
         }
+        final switch (net_mode) {
+        case NetworkMode.internal:
+            gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
+            ownerTid.send(net.pubkey);
+            Pubkey[] received_pkeys;
+            foreach (i; 0 .. opts.nodes) {
+                received_pkeys ~= receiveOnly!(Pubkey);
+                log.trace("Receive %d %s", i, received_pkeys[i].cutHex);
+            }
+            import std.exception : assumeUnique;
+
+            pkeys = received_pkeys.dup;
+            foreach (p; pkeys)
+                gossip_net.add_channel(p);
+            ownerTid.send(Control.LIVE);
+            break;
+        case NetworkMode.local:
+        case NetworkMode.pub:
+            gossip_net = new P2pGossipNet(net.pubkey, opts.node_name,
+                    opts.discovery.task_name, opts.host, p2pnode);
+        }
+
+        void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted {
+            import std.algorithm;
+            import std.array : array;
+            import tagion.hibon.HiBONJSON;
+
+            HiBON params = new HiBON;
+            pragma(msg, "fixme(cbr): epoch_time has not beed added to the epoch");
+            foreach (i, payload; events.map!((e) => e.event_body.payload).array) {
+                params[i] = payload;
+            }
+            log("Send to transcript: %s", Document(params).toJSON);
+            transcript_tid.send(params.serialize);
+        }
+
+        hashgraph = new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, &receive_epoch);
+        // hashgraph.print_flag = true;
+        hashgraph.scrap_depth = opts.scrap_depth;
+        log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
+
+        discovery_tid = spawn(&networkRecordDiscoveryService, net.pubkey,
+                p2pnode, opts.discovery.task_name, opts);
+        const ctrl = receiveOnly!Control;
+        assert(ctrl == Control.LIVE);
+
+        receive((DiscoveryState state) { assert(state == DiscoveryState.READY); });
+        discovery_tid.send(DiscoveryRequestCommand.RequestTable);
+
+        receive((ActiveNodeAddressBook address_book) {
+            update_pkeys(address_book.data.keys);
+            dart_sync_tid = spawn(
+                &dartSynchronizeServiceTask!StdSecureNet,
+                opts,
+                p2pnode,
+                shared_net,
+                sector_range);
+            // receiveOnly!Control;
+            dart_tid = spawn(
+                &dartServiceTask!StdSecureNet,
+                opts,
+                p2pnode,
+                shared_net,
+                sector_range);
+            log("address_book len: %d", address_book.data.length);
+            send(dart_sync_tid, address_book);
+        }, (Control ctrl) {
+            if (ctrl is Control.STOP) {
+                assert(0, "Why is it stopped here!!!");
+                force_stop = true;
+            }
+
+            if (ctrl is Control.END) {
+                assert(0, "Why an END here!!!");
+                force_stop = true;
+            }
+        });
+
         scope (exit) {
             log("Closing net");
             gossip_net.close();
@@ -271,7 +286,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         scope (exit) {
             log("!!!==========!!!!!! Existing %s", opts.node_name);
 
-            if (transcript_tid != transcript_tid.init) {
+            if (transcript_tid !is transcript_tid.init) {
                 log("Send stop to %s", opts.transcript.task_name);
                 transcript_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
@@ -279,7 +294,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 }
             }
 
-            if (discovery_tid != Tid.init) {
+            if (discovery_tid !is Tid.init) {
                 log("Send stop to %s", opts.discovery.task_name);
                 discovery_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
@@ -287,7 +302,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 }
             }
 
-            if (dart_sync_tid != Tid.init) {
+            if (dart_sync_tid !is Tid.init) {
                 log("Send stop to %s", opts.dart.sync.task_name);
                 dart_sync_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
@@ -295,7 +310,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
                 }
             }
             log("DART TID: %s", dart_tid);
-            if (dart_tid != Tid.init) {
+            if (dart_tid !is Tid.init) {
                 log("Send stop to %s", opts.dart.task_name);
                 dart_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
@@ -363,10 +378,6 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         bool stop = false;
         enum timeout_end = 10;
         uint timeout_count;
-        //    Event mother;
-        Event event;
-
-        immutable(ubyte)[] data;
 
         {
             immutable buf = cast(Buffer) hashgraph.channel;
@@ -386,7 +397,7 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
             payload_queue.write(pload);
         }
 
-        Document payload() @safe {
+        const(Document) payload() @safe {
             // log("Select payload: %s", payload_queue.empty);
             if (!hashgraph.active || payload_queue.empty) {
                 return Document();
@@ -426,15 +437,20 @@ void tagionService(NetworkMode net_mode)(Options opts) nothrow {
         random.seed(123456789);
 
         bool network_ready = false;
-        do{
+        do {
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
-            receive((ActiveNodeAddressBook address_book) { update_pkeys(address_book.data.keys); });
-            if(pkeys.length < opts.nodes){
-                Thread.sleep(500.msecs);
-            }else{
+            receive((ActiveNodeAddressBook address_book) {
+                    update_pkeys(address_book.data.keys);
+                });
+            log.trace("NETWORK READY %d < %d ", addressbook.numOfNodes,  opts.nodes);
+            if (addressbook.ready(opts)) {
                 network_ready = true;
             }
-        }while(!network_ready);
+            else {
+                Thread.sleep(500.msecs);
+            }
+        }
+        while (!network_ready);
 
         while (!stop && !abort) {
             immutable message_received = receiveTimeout(opts.timeout.msecs, &receive_payload, &controller,
