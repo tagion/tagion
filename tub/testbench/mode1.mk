@@ -1,8 +1,8 @@
 export MODE1_ROOT:=$(TESTBENCH)/mode1
-export MODE1_DART:=$(MODE1_ROOT)/dart.drt
-export MODE1_CONFIG:=$(MODE1_ROOT)/tagionwave.json
+#export MODE1_DART:=$(MODE1_ROOT)/dart.drt
+#export MODE1_CONFIG:=$(MODE1_ROOT)/tagionwave.json
 #export MODE1_SRC_CONFIG:=$(FUND)/mode1/tagionwave.json
-export MODE1_LOG:=$(MODE1_ROOT)/mode1_script.log
+#export MODE1_LOG:=$(MODE1_ROOT)/mode1_script.log
 MODE1_FLAGS:=-N 7 -t 300
 MODE1_FLAGS+=--net-mode=local
 MODE1_FLAGS+=--boot=$(MODE1_ROOT)/boot.hibon
@@ -14,14 +14,16 @@ ${eval
 MODE1_CONFIG_$1=$$(MODE1_ROOT)/tagionwave-$1.json
 MODE1_DARTFILE_$1=$$(MODE1_ROOT)/dart-$1.drt
 MODE1_PID_$1=$$(MODE1_ROOT)/tagionwave_$1.pid
+MODE1_LOG_$1=$$(MODE1_ROOT)/tagionwave_$1.log
+
+mode1-run-$1: export TAGIONCONFIG=$$(MODE1_CONFIG_$1)
+mode1-run-$1: export TAGIONLOG=$$(MODE1_LOG_$1)
 
 mode1-$1: DARTFILE=$$(MODE1_DART_$1)
 mode1-$1: target-tagionwave
 mode1-$1: $$(MODE1_ROOT)/.way
-mode1-$1: $$(MODE1_CONFIG)
+#mode1-$1: $$(MODE1_CONFIG)
 mode1-$1: $$(MODE1_DART)
-
-mode1: mode1-$1-run
 
 clean-mode1-$1:
 	$$(PRECMD)
@@ -31,7 +33,10 @@ clean-mode1-$1:
 
 mode1-run-$1: mode1-$1
 	$$(PRECMD)
-	$$(SCRIPTS)/tagionrun.sh
+	gnome-terminal --working-directory=$$(MODE1_ROOT) --tab -- $$(SCRIPTS)/tagionrun.sh
+
+.PHONY: mode1-run-$1
+mode1: mode1-run-$1
 
 mode1-$1: $$(MODE1_CONFIG_$1)
 
@@ -56,16 +61,16 @@ env-mode1: env-mode1-$1
 endef
 
 mode1: $(MODE1_ROOT)/.way
-mode1: tagionwave $(MODE1_DART) $(MODE1_CONFIG)
+mode1: tagionwave $(MODE1_DART)
 
 .PHONY: mode1
 testbench: mode1
 
-$(MODE1_DART): | dart
-$(MODE1_DART): $(DARTDB)
-	$(PRECMD)
-	$(MKDIR) $(@D)
-	$(CP) $< $@
+# $(MODE1_DART): | dart
+# $(MODE1_DART): $(DARTDB)
+# 	$(PRECMD)
+# 	$(MKDIR) $(@D)
+# 	$(CP) $< $@
 
 # $(MODE1_CONFIG): $$(MODE1_ROOT)/.way
 # $(MODE1_CONFIG): $(MODE1_SRC_CONFIG)
@@ -88,10 +93,6 @@ help: help-mode1
 env-mode1:
 	$(PRECMD)
 	${call log.header, $@ :: env}
-	${call log.kvp, MODE1_ROOT,$(MODE1_ROOT)}
-	${call log.kvp, MODE1_DART,$(MODE1_DART)}
-	${call log.kvp, MODE1_LOG,$(MODE1_LOG)}
-	${call log.kvp, MODE1_CONFIG,$(MODE1_CONFIG)}
 	${call log.kvp, MODE1_FLAGS,"$(MODE1_FLAGS)"}
 	${call log.env, MODE1_LIST,$(MODE1_LIST)}
 	${call log.close}

@@ -53,7 +53,7 @@ void fileDiscoveryService(
         updateTimestamp(mdns_start_timestamp);
 
         void notifyReadyAfterDelay() {
-            static bool owner_notified ;
+            static bool owner_notified;
             if (!owner_notified) {
                 const after_delay = checkTimestamp(mdns_start_timestamp,
                         opts.discovery.delay_before_start.msecs);
@@ -69,6 +69,7 @@ void fileDiscoveryService(
             count++;
             log("initializing %d %s", count, pubkey.cutHex);
             addressbook.load(shared_storage, false);
+            addressbook.erase(pubkey);
             addressbook[pubkey] = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
             addressbook.save(shared_storage, true);
         }
@@ -82,14 +83,13 @@ void fileDiscoveryService(
             // addressbook.save(shared_storage, true);
         }
 
-
         initialize;
         log("File Discovery started");
         ownerTid.send(Control.LIVE);
+        bool addressbook_done;
         while (!stop) {
-            const message=receiveTimeout(
-                    500.msecs,
-                    // (immutable(Pubkey) key, Tid tid) {
+            const message = receiveTimeout(
+                    500.msecs,// (immutable(Pubkey) key, Tid tid) {
                     //     log("looking for key: %s", key.cutHex);
                     //     tid.send(addressbook[key]);
                     // },
@@ -103,7 +103,7 @@ void fileDiscoveryService(
                 with (DiscoveryRequestCommand) {
                     final switch (request) {
                     case RequestTable:
-//                        initialize();
+                        //                        initialize();
                         auto address_book = new ActiveNodeAddressBook(addressbook._data); //node_addrses);
                         log("Requested: %d : %d", addressbook._data.length, address_book.data.length);
                         ownerTid.send(address_book);
@@ -121,14 +121,19 @@ void fileDiscoveryService(
                     }
                 }
             });
-            log.trace("FILE NETWORK READY %d < %d ", addressbook.numOfNodes,  opts.nodes);
+            log.trace("FILE NETWORK READY %d < %d ", addressbook.numOfNodes, opts.nodes);
+            //version(none) {
+            if (!addressbook_done) {
             if (!message) {
                 updateAddressbook;
             }
             if (addressbook.ready(opts)) {
                 ownerTid.send(DiscoveryState.READY);
+                addressbook_done=true;
             }
-//            notifyReadyAfterDelay();
+            }
+// }
+//                         notifyReadyAfterDelay();
         }
     }
     catch (Throwable t) {

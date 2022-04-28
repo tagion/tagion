@@ -72,26 +72,29 @@ void mdnsDiscoveryService(
 
         addressbook[pubkey] = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
         ownerTid.send(Control.LIVE);
-        while(!stop) {
+        while (!stop) {
             pragma(msg, "fixme(alex): 500.msecs shoud be an option parameter");
             receiveTimeout(
                     500.msecs,
                     (Control control) {
-                if (control == Control.STOP) {
+                if (control is Control.STOP) {
                     stop = true;
                 }
-            }, (DiscoveryRequestCommand request) {
-                final switch (request) {
-                case DiscoveryRequestCommand.RequestTable:
-                    auto address_book = new ActiveNodeAddressBook(addressbook._data); //node_addrses);
+            },
+                    (DiscoveryRequestCommand request) {
+                with (DiscoveryRequestCommand) {
+                    final switch (request) {
+                    case RequestTable:
+                        auto address_book = new ActiveNodeAddressBook(addressbook._data); //node_addrses);
                         log("Requested: %s : %d", addressbook._data.length, address_book.data.length);
                         ownerTid.send(address_book); //addressbook._data);
                         break;
-                case DiscoveryRequestCommand.BecomeOnline:
-                case DiscoveryRequestCommand.UpdateTable:
-                case DiscoveryRequestCommand.BecomeOffline:
+                    case BecomeOnline:
+                    case BecomeOffline:
+                    case UpdateTable:
                         break;
 
+                    }
                 }
             });
             notifyReadyAfterDelay();

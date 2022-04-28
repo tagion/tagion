@@ -164,7 +164,7 @@ help-wallets:
 	${call log.help, "make testbench", "Runs the testbench"}
 	${call log.help, "make wallets", "Will create all testwallets"}
 	${call log.help, "make clean-wallets", "Cleans all the wallets"}
-	${call log.help, "make remove-wallets", "Cleans all the wallets"}
+	${call log.help, "make remove-wallets", "Removes all the base wallets except for the .stdin files"}
 	${call log.close}
 
 .PHONY: help-wallets
@@ -216,13 +216,12 @@ clean-boot:
 
 clean: clean-boot
 
-dart: boot $(DARTDB)
-
-$(DARTDB): target-dartutil
-$(DARTDB): $(DARTBOOTRECORD)
+dart: boot
+dart: target-dartutil
+dart: $(DARTBOOTRECORD)
 	$(PRECMD)
 	${call log.header, $@ :: dart db}
-	$(DARTUTIL) --initialize -i $< --drt $@ -m
+	$(DARTUTIL) --initialize -i $< --drt $(DARTDB) -m
 	${call log.close}
 
 env-dart:
