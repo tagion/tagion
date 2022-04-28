@@ -55,8 +55,8 @@ struct Document {
         if (_data.length) {
             ubyte[] result;
             result.create(full_size);
-            foreach (i; 0 .. full_size) {
-                result[i] = _data[i];
+            foreach (i, elem; _data) {
+                result[i] = elem;
             }
             return cast(immutable)(result);
         }
