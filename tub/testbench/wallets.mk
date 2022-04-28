@@ -221,6 +221,7 @@ dart: target-dartutil
 dart: $(DARTBOOTRECORD)
 	$(PRECMD)
 	${call log.header, $@ :: dart db}
+	$(MKDIR) ${dir $(DARTDB)}
 	$(DARTUTIL) --initialize -i $< --drt $(DARTDB) -m
 	${call log.close}
 

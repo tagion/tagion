@@ -5,8 +5,11 @@ MODE0_LOG:=$(MODE0_ROOT)/mode0_script.log
 MODE0_FLAGS:=-N 7 -t 200
 MODE0_FLAGS+=--pid=$(MODE0_ROOT)/tagionwave.pid
 
+mode0-dart: DARTDB=$(MODE0_DART)
+mode0-dart: dart
+
 mode0: $(MODE0_DATA)/.way
-mode0: DARDDB=$(MODE0_DART)
+mode0: DARTDB=$(MODE0_DART)
 mode0: dart
 mode0: tagionwave
 	cd $(MODE0_ROOT)

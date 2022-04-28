@@ -23,7 +23,7 @@ mode1-$1: DARTFILE=$$(MODE1_DART_$1)
 mode1-$1: target-tagionwave
 mode1-$1: $$(MODE1_ROOT)/.way
 #mode1-$1: $$(MODE1_CONFIG)
-mode1-$1: $$(MODE1_DART)
+#mode1-$1: $$(MODE1_DART)
 
 clean-mode1-$1:
 	$$(PRECMD)
