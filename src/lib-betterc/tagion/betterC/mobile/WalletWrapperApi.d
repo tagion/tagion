@@ -30,7 +30,9 @@ import tagion.basic.Basic : Pubkey, Buffer;
 
 // // import tagion.crypto.SecureNet :  StdHashNet;
 // import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
-extern(C) {
+version(D_BETTERC) {
+extern(C):
+}
 /// Used for describing the d-runtime status
 enum drtStatus
 {
@@ -385,5 +387,5 @@ string[] parse_string(const char* str, const uint len)
 
         return cast(immutable)result;
     }
-}
+
 // }
