@@ -36,6 +36,18 @@ env-mode0:
 .PHONY: env-mode0
 env-testbench: env-mode0
 
+help-mode0:
+	$(PRECMD)
+	${call log.header, $@ :: help}
+	${call log.help, "make mode0", "Will start the test network in mode0"}
+	${call log.help, "make clean-mode0", "Will clean all data in mode 0"}
+
+	${call log.help, "make env-mode0", "Lists the setting for mode 0"}
+	${call log.close}
+
+.PHONY: help-mode0
+
+help: help-mode0
 #run: mode0
 
 clean-mode0:
