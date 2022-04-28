@@ -1,6 +1,5 @@
 /// \file LoggerService.d
 
-
 /// \page LoggerService
 
 /** @brief Service for logging everythinh
@@ -42,7 +41,7 @@ import tagion.GlobalSignals : abort;
 
     @nogc bool match(string task_name, LoggerType log_level) pure const nothrow {
         return (this.task_name == any_task_name || this.task_name == task_name)
-                && this.log_level & log_level;
+            && this.log_level & log_level;
     }
 }
 
@@ -59,6 +58,7 @@ unittest {
 }
 
 import tagion.basic.Basic : TrustedConcurrency;
+
 mixin TrustedConcurrency;
 
 import tagion.TaskWrapper;
@@ -162,11 +162,16 @@ import tagion.TaskWrapper;
 
         pragma(msg, "fixme(ib) Pass mask to Logger to not pass not necessary data");
 
-        logSubscriptionTid = spawn(&logSubscriptionServiceTask, options);
-        scope(exit) {
-            logSubscriptionTid.send(Control.STOP);
-            receiveOnly!Control;
-        }     
+
+        if (options.sub_logger.enable) {
+            logSubscriptionTid = spawn(&logSubscriptionServiceTask, options);
+        }
+        scope (exit) {
+            if (logSubscriptionTid !is Tid.init) {
+                logSubscriptionTid.send(Control.STOP);
+                receiveOnly!Control;
+            }
+        }
 
         logging = options.logger.file_name.length != 0;
         if (logging) {

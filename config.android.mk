@@ -1,3 +1,4 @@
+ifdef ANDROID_TOOLS
 ANDROID_API?=30
 ANDROID_NDK?=$(ANDROID_TOOLS)/android-ndk-r23b
 
@@ -102,3 +103,4 @@ help-android:
 help: help-android
 
 .PHONY: env-android help-android
+endif

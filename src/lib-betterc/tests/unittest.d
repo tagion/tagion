@@ -14,13 +14,6 @@ import Bailout = tagion.betterC.utils.Bailout;
 import tagion.betterC.utils.Text;
 import tagion.betterC.hibon.HiBON;
 import tagion.betterC.hibon.Document;
-import tagion.betterC.wallet.Net;
-import tagion.betterC.wallet.KeyRecover;
-import tagion.betterC.wallet.WalletRecords;
-import tagion.betterC.mobile.Recycle;
-import tagion.betterC.wallet.SecureWallet;
-// import tagion.betterC.mobile.WalletWrapperApi;
-// import tagion.betterC.mobile.DocumentWrapperApi;
 
 import core.stdc.stdio;
 
@@ -67,33 +60,24 @@ static void callUnittest(alias Module)() {
 }
 
 //version (unittest) {
-    static if (!__traits(compiles, main())) {
-        extern (C) int main() {
-            printf("Unittest\n");
-            import core.stdc.stdlib;
+static if (!__traits(compiles, main())) {
+    extern (C) int main() {
+        printf("Unittest\n");
+        import core.stdc.stdlib;
 
-            callUnittest!(tagion.betterC.utils.Memory)();
-            callUnittest!(tagion.betterC.utils.BinBuffer)();
-            callUnittest!(tagion.betterC.utils.Text)();
-            callUnittest!(tagion.betterC.utils.Stack)();
+        callUnittest!(tagion.betterC.utils.Memory)();
+        callUnittest!(tagion.betterC.utils.BinBuffer)();
+        callUnittest!(tagion.betterC.utils.Text)();
+        callUnittest!(tagion.betterC.utils.Stack)();
 
-            callUnittest!(tagion.betterC.utils.RBTree)();
-            callUnittest!(tagion.betterC.hibon.HiBONBase)();
+        callUnittest!(tagion.betterC.utils.RBTree)();
+        callUnittest!(tagion.betterC.hibon.HiBONBase)();
 
-            callUnittest!(tagion.betterC.hibon.Document)();
-            callUnittest!(tagion.betterC.hibon.HiBON);
-            callUnittest!(tagion.betterC.utils.LEB128);
-
-            callUnittest!(tagion.betterC.wallet.Net);
-            callUnittest!(tagion.betterC.wallet.KeyRecover);
-            callUnittest!(tagion.betterC.wallet.WalletRecords);
-//            callUnittest!(tagion.betterC.wallet.SecureWallet);
-
-                // callUnittest!(tagion.betterC.mobile.Recycle);
-            //     callUnittest!(tagion.betterC.mobile.WalletWrapperApi);
-                // callUnittest!(tagion.betterC.mobile.DocumentWrapperApi);
-            printf("Passed\n");
-            return 0;
-        }
+        callUnittest!(tagion.betterC.hibon.Document)();
+        callUnittest!(tagion.betterC.hibon.HiBON);
+        callUnittest!(tagion.betterC.utils.LEB128);
+        printf("Passed\n");
+        return 0;
     }
+}
 //}

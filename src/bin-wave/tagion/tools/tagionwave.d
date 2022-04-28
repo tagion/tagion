@@ -22,13 +22,8 @@ import tagion.TaskWrapper;
 
 mixin TrustedConcurrency;
 
-//import tagion.Keywords: NetworkMode, ValidNetwrokModes;
-pragma(msg, "Fixme(cbr): Rename the tagion Node to Prime");
-// import tagion.revision;
-
 enum main_task = "tagionwave";
 
-/// Creates ssl certificate if it doesn't exist
 void create_ssl(const(OpenSSL) openssl) {
     import std.algorithm.iteration : each;
     import std.file : exists, mkdirRecurse;
@@ -57,6 +52,8 @@ void create_ssl(const(OpenSSL) openssl) {
 }
 
 int main(string[] args) {
+    import std.file : fwrite=write;
+    import std.path : setExtension;
     immutable program = args[0];
     bool version_switch;
     bool overwrite_switch;
@@ -64,7 +61,7 @@ int main(string[] args) {
     scope Options local_options;
     import std.getopt;
 
-    auto net_opts = getopt(args, std.getopt.config.passThrough, "net-mode", &(local_options.net_mode));
+    // auto net_opts = getopt(args, std.getopt.config.passThrough, "net-mode", &(local_options.net_mode));
 
     setDefaultOption(local_options);
 
@@ -75,19 +72,24 @@ int main(string[] args) {
     bool set_token = false;
     bool set_tag = false;
     void setToken(string option, string value) {
-        if (option == "server-token") {
+        switch(option) {
+        case "server-token":
             local_options.serverFileDiscovery.token = value;
             set_token = true;
-        }
-        if (option == "server-tag") {
+            break;
+        case "server-tag":
             local_options.serverFileDiscovery.tag = value;
             set_tag = true;
+            break;
+        default:
+            // Empty
         }
     }
 
     auto token_opts = getopt(args, std.getopt.config.passThrough,
-            "server-token", format("Token to access shared server"), &setToken,
-            "server-tag", format("Group tag(should be the same as in token payload)"), &setToken);
+            "server-token", &setToken,
+        "server-tag", &setToken);
+
     if (set_token && set_tag) {
         local_options.save(config_file);
         writeln("Group token and tag provided.. (remove it from parameters and run the network)");
@@ -103,24 +105,26 @@ int main(string[] args) {
             return 0;
         }
 
-        if (main_args.helpWanted || net_opts.helpWanted) {
+        if (main_args.helpWanted) {
             defaultGetoptPrinter(
                     [
-                // format("%s version %s", program, REVNO),
                 "Documentation: https://tagion.org/",
                 "",
                 "Usage:",
                 format("%s [<option>...] ", program),
                 format("%s <config.json>", program),
-            ].join("\n"), //                "This program run a hashwave tagion test net.",
-                main_args.options);
+                        ].join("\n"),
+                    main_args.options);
             return 0;
         }
 
-        //        local_options=getOptions();
         if (overwrite_switch) {
-
+            if (args.length == 2) {
+                config_file = args[1];
+            }
             local_options.save(config_file);
+            writefln("Configure file written to %s", config_file);
+            return 0;
         }
 
         local_options.infinity = (local_options.loops == 0);
@@ -144,9 +148,11 @@ int main(string[] args) {
     // Set the shared common options for all services
     setCommonOptions(service_options.common);
 
-    // with (service_options.transaction.service) { // Check ssl certificate
-    //     if (service_options.transaction.service
-    // }
+    if (service_options.pid_file) {
+        import std.process : thisProcessID;
+        stderr.writefln("PID = %s written to %s", thisProcessID, options.pid_file);
+        service_options.pid_file.fwrite("PID = %s\n".format(thisProcessID));
+    }
 
     create_ssl(service_options.transaction.service.openssl);
 
@@ -186,7 +192,14 @@ int main(string[] args) {
             stderr.writefln("Unexpected signal %s", response);
         }
     },
-            (immutable(Exception) e) { const print_e = e; result = 2; },
-            (immutable(Throwable) t) { const print_t = t; result = 3; });
+            (immutable(Exception) e) {
+                stderr.writeln(e.msg);
+                result = 2;
+            },
+            (immutable(Throwable) t) {
+                stderr.writeln(t.msg);
+                result = 3;
+            }
+        );
     return result;
 }

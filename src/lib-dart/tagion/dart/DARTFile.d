@@ -129,6 +129,12 @@ alias check = Check!DARTException;
         blockfile = BlockFile(filename);
         this.manufactor = RecordFactory(net);
         this.filename = filename;
+        if (blockfile.root_index) {
+            const data = blockfile.load(blockfile.root_index);
+            const doc = Document(data);
+            auto branches = Branches(doc);
+            _fingerprint = branches.fingerprint(this);
+        }
     }
 
     void close() @trusted {
@@ -140,6 +146,8 @@ alias check = Check!DARTException;
     immutable(Buffer) fingerprint() pure const nothrow {
         return _fingerprint;
     }
+
+    alias bullseye = fingerprint;
 
     /++
      Creates an empty Recorder
@@ -228,7 +236,7 @@ alias check = Check!DARTException;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
 
-            
+
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if (doc.hasMember(indicesName)) {
@@ -316,7 +324,7 @@ alias check = Check!DARTException;
                     if (index !is INDEX_NULL) {
                         hibon_indices[key] = index;
 
-                        
+
 
                         .check(_fingerprints[key]!is null, format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
@@ -422,7 +430,7 @@ alias check = Check!DARTException;
                 foreach (key, index; _indices) {
                     if ((index !is INDEX_NULL) && (_fingerprints[key] is null)) {
 
-                        
+
 
                             .check((index in index_used) is null,
                                     format("The DART contains a recursive tree @ index %d", index));
@@ -776,7 +784,7 @@ alias check = Check!DARTException;
                         const doc = Document(data);
                         branches = Branches(doc);
 
-                        
+
 
                         .check(branches.hasIndices,
                                 "DART failure within the sector rims the DART should contain a branch");
@@ -804,7 +812,7 @@ alias check = Check!DARTException;
                         immutable data = blockfile.load(branch_index);
                         const doc = Document(data);
 
-                        
+
 
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
                         if (Branches.isRecord(doc)) {
@@ -1570,6 +1578,9 @@ alias check = Check!DARTException;
             // dart_A.dump;
             assert(dart_A.fingerprint == dart_B.fingerprint);
 
+            // Check fingerprint on load
+            auto read_dart_A = new DARTFile(net, filename_A);
+            assert(dart_A.fingerprint == read_dart_A.fingerprint);
         }
 
         { // Large random test
@@ -1664,6 +1675,10 @@ alias check = Check!DARTException;
 
             // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
             assert(dart_A.fingerprint == dart_B.fingerprint);
+
+            // Check fingerprint on load
+            auto read_dart_A = new DARTFile(net, filename_A);
+            writefln("read_dart_A %s", read_dart_A.fingerprint.cutHex);
         }
     }
 }

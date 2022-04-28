@@ -12,7 +12,8 @@ import std.datetime;
 import std.typecons;
 import std.format;
 
-import tagion.gossip.P2pGossipNet : NodeAddress, ConnectionPool;
+import tagion.gossip.P2pGossipNet : ConnectionPool;
+import tagion.gossip.AddressBook : NodeAddress;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;
@@ -227,8 +228,8 @@ interface SynchronizationFactory {
     bool canSynchronize();
     SyncSectorResponse syncSector(
             const DART.Rims sector,
-            OnComplete oncomplete,
-            OnFailure onfailure);
+            const OnComplete oncomplete,
+            const OnFailure onfailure);
 }
 
 alias ConnectionPoolT = ConnectionPool!(shared p2plib.StreamI, ulong);
@@ -274,8 +275,8 @@ class P2pSynchronizationFactory : SynchronizationFactory {
 
     SyncSectorResponse syncSector(
             const DART.Rims sector,
-            OnComplete oncomplete,
-            OnFailure onfailure) {
+            const OnComplete oncomplete,
+            const OnFailure onfailure) {
         SyncSectorResponse syncWith(NodeAddress address) @safe {
             import p2p.go_helper;
 
@@ -344,8 +345,8 @@ class P2pSynchronizationFactory : SynchronizationFactory {
     class P2pSynchronizer : DART.StdSynchronizer, ResponseHandler {
         protected const ulong key;
         protected Buffer response;
-        protected void delegate(string journal_filename) @safe oncomplete;
-        protected OnFailure onfailure;
+        protected const OnComplete oncomplete;
+        protected const OnFailure onfailure;
         string filename;
         void setResponse(Buffer resp) @trusted {
             response = resp;
@@ -358,7 +359,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             return fiber.state != Fiber.State.TERM && connection_pool.contains(key);
         }
 
-        this(string journal_filename, const ulong key, void delegate(string) @safe oncomplete, OnFailure onfailure) {
+        this(string journal_filename, const ulong key, const OnComplete oncomplete, const OnFailure onfailure) {
             filename = journal_filename;
             this.key = key;
             this.oncomplete = oncomplete;
@@ -547,7 +548,7 @@ version (none) unittest {
 class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)) : Fiber { //TODO: move fiber inside as a field
     enum root = DART.Rims.root;
     bool fast_load;
-    protected enum State {
+    enum State {
         READY,
         FIBER_RUNNING,
         RUNNING,
@@ -557,6 +558,9 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     }
 
     mixin StateT!State;
+    State sync_state() @nogc const pure nothrow {
+        return _state;
+    }
 
     bool isReady() nothrow {
         return checkState(State.READY);
@@ -645,6 +649,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
             }
         }
         if (failed_sync_sectors.length > 0) {
+            log.error("DART Sync sectors greater than 0 value is %d", failed_sync_sectors.length);
             _state = State.ERROR;
         }
         else {
@@ -653,9 +658,6 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     }
 
     void start(SynchronizationFactory factory) //restart with new factory
-
-
-
     in {
         assert(checkState(State.STOP, State.READY, State.ERROR));
     }
@@ -699,6 +701,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
         }
         else {
             sync_sectors[sector] = false;
+            log.error("Sync on RIM %s fiber-service not running", sector);
             _state = State.ERROR;
         }
     }
@@ -747,9 +750,9 @@ unittest {
         private SyncSectorResponse mockReturn;
         private uint sync_counter = 0;
         SyncSectorResponse syncSector(
-            const DART.Rims sector,
-            OnComplete oncomplete,
-            OnFailure onfailure) {
+                const DART.Rims sector,
+                OnComplete oncomplete,
+                OnFailure onfailure) {
             sync_counter++;
             return mockReturn;
         }

@@ -20,7 +20,9 @@ import tagion.services.Options;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
-import tagion.gossip.P2pGossipNet;
+
+import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
+import tagion.gossip.AddressBook : NodeAddress;
 
 enum DiscoveryRequestCommand {
     BecomeOnline = 1,
@@ -36,10 +38,10 @@ enum DiscoveryState {
 }
 
 void serverFileDiscoveryService(
-    Pubkey pubkey,
-    shared p2plib.Node node,
-    string taskName,
-    immutable(Options) opts) nothrow { //TODO: for test
+        Pubkey pubkey,
+        shared p2plib.Node node,
+        string taskName,
+        immutable(Options) opts) nothrow { //TODO: for test
     try {
         scope (success) {
             log("exit");
@@ -181,30 +183,26 @@ void serverFileDiscoveryService(
 
         ownerTid.send(Control.LIVE);
 
-        while(!stop) {
-            receiveTimeout(500.msecs,
-                (immutable(Pubkey) key, Tid tid) {
-                    import tagion.utils.Miscellaneous : toHexString, cutHex;
+        do {
+            receiveTimeout(500.msecs, (immutable(Pubkey) key, Tid tid) {
+                import tagion.utils.Miscellaneous : toHexString, cutHex;
 
-                    log("looking for key: %s", key.cutHex);
-                    tid.send(node_addresses[key]);
-                },
-                (Control control) {
-                    if (control is Control.STOP) {
-                        log("stop");
-                        stop = true;
-                    }
-                },
-                (string updated_address) {
-                    last_seen_addr = updated_address;
-                    if (is_online) {
-                        recordOwnInfo(updated_address);
-                        is_ready = true;
-                    }
-                },
-                (DiscoveryRequestCommand cmd) {
-                    switch (cmd) {
-                    case DiscoveryRequestCommand.BecomeOnline: {
+                log("looking for key: %s", key.cutHex);
+                tid.send(node_addresses[key]);
+            }, (Control control) {
+                if (control == Control.STOP) {
+                    log("stop");
+                    stop = true;
+                }
+            }, (string updated_address) {
+                last_seen_addr = updated_address;
+                if (is_online) {
+                    recordOwnInfo(updated_address);
+                    is_ready = true;
+                }
+            }, (DiscoveryRequestCommand cmd) {
+                switch (cmd) {
+                case DiscoveryRequestCommand.BecomeOnline: {
                         log("Becoming online..");
                         is_online = true;
                         if (last_seen_addr != "") {
@@ -213,22 +211,23 @@ void serverFileDiscoveryService(
                         }
                         break;
                     }
-                    case DiscoveryRequestCommand.RequestTable: {
+                case DiscoveryRequestCommand.RequestTable: {
                         initialize();
-                        auto address_book = new ActiveNodeAddressBookPub(node_addresses);
+                        auto address_book = new ActiveNodeAddressBook(node_addresses);
                         ownerTid.send(address_book);
                         break;
                     }
-                    case DiscoveryRequestCommand.BecomeOffline: {
+                case DiscoveryRequestCommand.BecomeOffline: {
                         eraseOwnInfo();
                         break;
                     }
-                    default:
-                        pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
-                    }
-                });
+                default:
+                    pragma(msg, "Fixme(alex): What should happen when the command does not exist? (Maybe you should use final case)");
+                }
+            });
             notifyReadyAfterDelay();
         }
+        while (!stop);
     }
     catch (Throwable t) {
         fatal(t);

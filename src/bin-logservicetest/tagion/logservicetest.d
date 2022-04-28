@@ -426,7 +426,6 @@ int logSubscriptionTest(string[] args) {
     import tagion.utils.Miscellaneous;
     import tagion.utils.Gene;
 
-
     /** \struct ClientOprions
     *  Client options used to set up socket connection
     */
@@ -447,7 +446,8 @@ int logSubscriptionTest(string[] args) {
     struct MyStruct {
         /** To read something
         */
-        void read() {}
+        void read() {
+        }
     }
 
     writefln("args=%s", args);
@@ -457,10 +457,10 @@ int logSubscriptionTest(string[] args) {
     LoggerType log_info;
 
     getopt(args,
-        std.getopt.config.caseSensitive,
-        "port", &port,
-        "task_name", &task_name,
-        "log_info", &log_info);
+            std.getopt.config.caseSensitive,
+            "port", &port,
+            "task_name", &task_name,
+            "log_info", &log_info);
 
     /// \link LogFilter
     LogFilter filter = LogFilter(task_name, log_info);
@@ -480,10 +480,10 @@ int logSubscriptionTest(string[] args) {
 
     import std.stdio : stderr;
 
-    const response=receiveOnly!Control;
+    const response = receiveOnly!Control;
     stderr.flush();
     std.stdio.stdout.flush();
-    if ( response !is Control.LIVE ) {
+    if (response !is Control.LIVE) {
         stderr.writeln("ERROR:Logger %s", response);
     }
 
@@ -500,7 +500,7 @@ int logSubscriptionTest(string[] args) {
     }
 
     /// @see HiRPC
-    HiRPC hirpc; 
+    HiRPC hirpc;
     const sender = hirpc.action("test", filter.toDoc);
     immutable data = sender.toDoc.serialize;
     writeln(data);
@@ -511,7 +511,7 @@ int logSubscriptionTest(string[] args) {
     do {
         do {
             rec_size = client.receive(rec_buf); //, current_max_size);
-            string reply = cast(string)rec_buf.idup;
+            string reply = cast(string) rec_buf.idup;
             writeln(reply);
             Thread.sleep(400.msecs);
         }

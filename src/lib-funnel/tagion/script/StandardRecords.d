@@ -29,22 +29,27 @@ import tagion.script.TagionCurrency;
     }
 
     @RecordType("NNC") struct NetworkNameCard {
-        @Label("#name") string name; // Tagion domain name
-        @Label("$lang") string lang;
-        @Label("$time") ulong time;
-        @Label("$pkey") Pubkey pubkey;
-        @Label("$sign") Buffer sign;
-        @Label("$record") Buffer record;
+        @Label("#name") string name; /// Tagion domain name
+        @Label("$lang") string lang; /// Language used for the #name
+        @Label("$time") ulong time;  /// Time-stamp of
+        @Label("$pkey") Pubkey pubkey;  /// NNC pubkey
+        // @Label("$sign") Buffer sign;    ///
+        @Label("$record") Buffer record; /// Hash pointer to NRC
         mixin HiBONRecord;
     }
 
     @RecordType("NRC") struct NetworkNameRecord {
-        @Label("$name") Buffer name;
-        @Label("$prev") Buffer previous;
-        @Label("$index") uint index;
-        @Label("$node") Buffer node;
+        @Label("$name") Buffer name; /// Hash of the NNC.name
+        @Label("$prev") Buffer previous; /// Hash pointer to the previuos NRC
+        @Label("$index") uint index; /// Current index previous.index+1
+        @Label("$node") Buffer node; /// Hash pointer to NNR
         @Label("$payload", true) Document payload;
         mixin HiBONRecord;
+    }
+
+    @RecordType("NSR") struct NetworkSignatureRecord {
+        @Label("#pkey") Pubkey pubkey;  /// Hash of the pubkey
+        @Label("$sign") Buffer sign;    /// Of the NNC with the pubkey
     }
 
     @RecordType("NNR") struct NetworkNodeRecord {
@@ -55,10 +60,10 @@ import tagion.script.TagionCurrency;
             STERILE
         }
 
-        @Label("#node") Buffer node;
-        @Label("$name") Buffer name;
+//        @Label("#node") Buffer node; /// Hash point of the public key
+        @Label("$name") Buffer name;  /// Hash pointer to the
         @Label("$time") ulong time;
-        @Label("$sign") uint sign;
+        @Label("$sign") uint sign;    /// Signature of
         @Label("$state") State state;
         @Label("$gene") Buffer gene;
         @Label("$addr") string address;

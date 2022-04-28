@@ -13,6 +13,7 @@ import tagion.utils.Random;
 import tagion.GlobalSignals : abort;
 import tagion.basic.Basic : Pubkey, Control;
 import tagion.logger.Logger;
+
 //import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -107,7 +108,7 @@ void tagionServiceWrapper(Options opts) {
             Pubkey[] pkeys;
             foreach (node_opt; node_opts) {
 
-                tids ~= spawn(&tagionService!(NetworkMode.internal), node_opt);
+                tids ~= spawn(&tagionService, NetworkMode.internal, node_opt);
                 pkeys ~= receiveOnly!(Pubkey);
             }
 
@@ -122,20 +123,20 @@ void tagionServiceWrapper(Options opts) {
             // }
             // else if (opts.net_mode == NetworkMode.local) {
             opts.node_name = "local-tagion";
-            tids ~= spawn(&tagionService!(NetworkMode.local), opts);
+            tids ~= spawn(&tagionService, opts.net_mode, opts);
             break;
         case pub:
             // }
             // else if (opts.net_mode == NetworkMode.pub) {
             opts.node_name = "public-tagion";
-            tids ~= spawn(&tagionService!(NetworkMode.pub), opts);
+            tids ~= spawn(&tagionService, opts.net_mode, opts);
             break;
         }
     }
     scope (exit) {
         foreach (tid; tids) {
             tid.send(Control.STOP);
-            receive((Control ctrl) { assert(ctrl == Control.END); });
+            assert(receiveOnly!Control is Control.END);
         }
     }
 
@@ -155,7 +156,9 @@ void tagionServiceWrapper(Options opts) {
     rand.seed(opts.seed);
     while (!stop && !abort) {
         //            Thread.sleep(opts.delay.msecs);
-        immutable message_received = receiveTimeout(opts.delay.msecs, (Control ctrl) {
+        immutable message_received = receiveTimeout(
+                opts.delay.msecs,
+                (Control ctrl) {
             with (Control) {
                 switch (ctrl) {
                 case STOP:

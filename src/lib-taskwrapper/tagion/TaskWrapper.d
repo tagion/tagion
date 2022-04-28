@@ -9,6 +9,7 @@ import tagion.basic.TagionExceptions : fatal, TaskFailure;
 import tagion.services.RecorderService : Fingerprint;
 import tagion.services.LoggerService;
 import tagion.dart.Recorder;
+
 alias Recorder = RecordFactory.Recorder;
 
 mixin TrustedConcurrency;
@@ -24,7 +25,7 @@ mixin TrustedConcurrency;
 
     alias Params = Parameters!Func;
     alias ParamNames = ParameterIdentifierTuple!Func;
-    
+
     private Tid _tid;
     immutable(string) task_name;
 
@@ -144,12 +145,11 @@ mixin TrustedConcurrency;
     }
 }
 
-version (unittest)
-@safe struct FakeTask {
+version (unittest) @safe struct FakeTask {
     import std.string : StringException;
 
     mixin TaskBasic;
-    
+
     @TaskMethod void echo_string(string test_string) {
         send(ownerTid, test_string);
     }
@@ -173,7 +173,7 @@ version (unittest)
     import tagion.services.Options : Options, setDefaultOption;
     import tagion.services.LoggerService;
     import tagion.logger.Logger;
-    
+
     enum main_task = "taskwrapperunittest";
 
     Options options;

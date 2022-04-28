@@ -35,6 +35,15 @@ build
 logs
 tools
 *.log
+*.way
+
+#
+# Temporary wallet files
+#
+device.hibon
+quiz.hibon
+tagionwallet.hibon
+tagionwallet.json
 
 # Devnet
 /devnet

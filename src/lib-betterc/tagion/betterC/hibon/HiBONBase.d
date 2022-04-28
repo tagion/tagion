@@ -59,7 +59,7 @@ enum Type : ubyte {
     /// Represetents (HISON[]) is convert to an ARRAY of DOCUMENT's
     NATIVE_DOCUMENT_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | NATIVE_DOCUMENT,
     /// Represetents (Document[]) is convert to an ARRAY of DOCUMENT's
-    NATIVE_STRING_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | STRING,/// Represetents (string[]) is convert to an ARRAY of string's
+    NATIVE_STRING_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | STRING, /// Represetents (string[]) is convert to an ARRAY of string's
 }
 
 struct DataBlock {

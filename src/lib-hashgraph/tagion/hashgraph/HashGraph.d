@@ -197,8 +197,8 @@ class HashGraph {
 
     void init_tide(
             const(Pubkey) delegate(
-                GossipNet.ChannelFilter channel_filter,
-                GossipNet.SenderCallBack sender) @safe responde,
+            GossipNet.ChannelFilter channel_filter,
+            GossipNet.SenderCallBack sender) @safe responde,
             const(Document) delegate() @safe payload,
             lazy const sdt_t time) {
         const(HiRPC.Sender) payload_sender() @safe {
@@ -218,16 +218,16 @@ class HashGraph {
 
         if (areWeInGraph) {
             const send_channel = responde(
-                &not_used_channels,
-                &payload_sender);
+                    &not_used_channels,
+                    &payload_sender);
             if (send_channel !is Pubkey(null)) {
                 getNode(send_channel).state = ExchangeState.INIT_TIDE;
             }
         }
         else {
             const send_channel = responde(
-                &not_used_channels,
-                &ripple_sender);
+                    &not_used_channels,
+                    &ripple_sender);
         }
     }
 
@@ -278,8 +278,8 @@ class HashGraph {
         import std.stdio;
 
         log("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d",
-            name, decided_round.number,
-            Event.count, Event.Witness.count, events.length);
+                name, decided_round.number,
+                Event.count, Event.Witness.count, events.length);
         if (epoch_callback !is null) {
             epoch_callback(events, epoch_time);
         }
@@ -376,8 +376,8 @@ class HashGraph {
      The front event of the send channel
      +/
     const(Event) register_wavefront(
-        const Wavefront received_wave,
-        const Pubkey from_channel) {
+            const Wavefront received_wave,
+            const Pubkey from_channel) {
         _register = new Register(received_wave);
         scope (exit) {
             _register = null;
@@ -400,8 +400,8 @@ class HashGraph {
     }
 
     @HiRPCMethod() const(HiRPC.Sender) wavefront(
-        const Wavefront wave,
-        const uint id = 0) {
+            const Wavefront wave,
+            const uint id = 0) {
         return hirpc.wavefront(wave, id);
     }
 
@@ -782,7 +782,8 @@ class HashGraph {
                 n[]
                     .filter!((e) => !e.isGrounded)
                     .each!((e) => events[e.id] = EventView(e, node_id));
-            }})();
+            }
+        })();
         auto h = new HiBON;
         h[Params.size] = node_size;
         h[Params.events] = events;
@@ -1057,9 +1058,9 @@ class HashGraph {
                         const init_tide = random.value(0, 2) is 1;
                         if (init_tide) {
                             _hashgraph.init_tide(
-                                &authorising.gossip,
-                                &payload,
-                                time);
+                                    &authorising.gossip,
+                                    &payload,
+                                    time);
                             count++;
                         }
                     }
