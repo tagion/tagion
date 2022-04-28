@@ -57,7 +57,7 @@ struct Options {
     //bool sequential;       /// Sequential test mode, used to replace the same graph from a the seed value
 
     string logext; /// logfile extension
-    string path_arg; /// Search path
+    string pid_file; /// PID file
     string node_name; /// Name of the node
     string ip;
     ulong port;
@@ -200,6 +200,13 @@ struct Options {
 
     Logger logger;
 
+    struct LoggerSubscription {
+        bool enable; // Enable logger subscribtion  service
+        mixin JSONCommon;
+    }
+
+    LoggerSubscription sub_logger;
+
     struct Recorder {
         string task_name; /// Name of the recorder task
         string folder_path; /// Folder used for the recorder service files
@@ -304,8 +311,11 @@ struct TransactionMiddlewareOptions {
 
 //__gshared static TransactionMiddlewareOptions transaction_middleware_options;
 
-static ref auto all_getopt(ref string[] args, ref bool version_switch,
-        ref bool overwrite_switch, ref scope Options options) {
+static ref auto all_getopt(
+    ref string[] args,
+    ref bool version_switch,
+    ref bool overwrite_switch,
+    ref scope Options options) {
     import std.getopt;
     import std.algorithm;
     import std.conv;
@@ -317,9 +327,10 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
         "version",   "display the version",     &version_switch,
         "overwrite|O", "Overwrite the config file", &overwrite_switch,
         "transaction-max|D",    format("Transaction max = 0 means all nodes: default %d", options.transaction.max),  &(options.transaction.max),
-        "ip", "Host ip", &(options.ip),
-        "port", "Host port", &(options.port),
-        "path|I",    "Sets the search path",     &(options.path_arg),
+        "ip", "Host gossip ip", &(options.ip),
+        "port", "Host gossip port ", &(options.port),
+        "pid", format("Write the pid to %s file", options.pid_file), &(options.pid_file),
+//      "path|I",    "Sets the search path", &(options.path_arg),
         "trace-gossip|g",    "Sets the search path",     &(options.trace_gossip),
         "nodes|N",   format("Sets the number of nodes: default %d", options.nodes), &(options.nodes),
         "seed",      format("Sets the random seed: default %d", options.seed),       &(options.seed),
@@ -327,17 +338,14 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
         "delay|d",   format("Sets delay: default: %d (ms)", options.delay), &(options.delay),
         "loops",     format("Sets the loop count (loops=0 runs forever): default %d", options.loops), &(options.loops),
         "url",       format("Sets the url: default %s", options.common.url), &(options.common.url),
-//        "noserv|n",  format("Disable monitor sockets: default %s", options.monitor.disable), &(options.monitor.disable),
         "sockets|M", format("Sets maximum number of monitors opened: default %s", options.monitor.max), &(options.monitor.max),
         "tmp",       format("Sets temporaty work directory: default '%s'", options.tmp), &(options.tmp),
-        "monitor|P",    format("Sets first monitor port of the port sequency (port>=%d): default %d", options.min_port, options.monitor.port),  &(options.monitor.port),
-        // "transaction|p",    format("Sets first transaction port of the port sequency (port>=%d): default %d", options.min_port, options.transaction.port),  &(options.transaction.port),
-//        "seq|s",     format("The event is produced sequential this is only used in test mode: default %s", options.sequential), &(options.sequential),
+        "monitor|P", format("Sets first monitor port of the port sequency (port>=%d): default %d", options.min_port, options.monitor.port),  &(options.monitor.port),
         "stdout",    format("Set the stdout: default %s", options.stdout), &(options.stdout),
 
-        "transaction-ip",  format("Sets the listener ip address: default %s", options.transaction.service.address), &(options.transaction.service.address),
-        "transaction-port|p", format("Sets the listener port: default %d", options.transaction.service.port), &(options.transaction.service.port),
-        "transaction-queue", format("Sets the listener max queue lenght: default %d", options.transaction.service.max_queue_length), &(options.transaction.service.max_queue_length),
+        "transaction-ip",  format("Sets the listener transaction ip address: default %s", options.transaction.service.address), &(options.transaction.service.address),
+        "transaction-port|p", format("Sets the listener transcation port: default %d", options.transaction.service.port), &(options.transaction.service.port),
+        "transaction-queue", format("Sets the listener transcation max queue lenght: default %d", options.transaction.service.max_queue_length), &(options.transaction.service.max_queue_length),
         "transaction-maxcon",  format("Sets the maximum number of connections: default: %d", options.transaction.service.max_connections), &(options.transaction.service.max_connections),
         "transaction-maxqueue",  format("Sets the maximum queue length: default: %d", options.transaction.service.max_queue_length), &(options.transaction.service.max_queue_length),
 
@@ -363,6 +371,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
         "dart-path", "Path to dart file", &(options.dart.path),
         "logger-filename" , format("Logger file name: default: %s", options.logger.file_name), &(options.logger.file_name),
         "logger-mask|l" , format("Logger mask: default: %d", options.logger.mask), &(options.logger.mask),
+        "logsub|L" , format("Logger subscription service enabled: default: %d", options.sub_logger.enable), &(options.sub_logger.enable),
         "net-mode", format("Network mode: one of [%s]: default: %s", [EnumMembers!NetworkMode].map!(t=>t.to!string).join(", "), options.net_mode), &(options.net_mode),
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
         "server-token", format("Token to access shared server"), &(options.serverFileDiscovery.token),
@@ -370,7 +379,7 @@ static ref auto all_getopt(ref string[] args, ref bool version_switch,
 //        "help!h", "Display the help text",    &help_switch,
         // dfmt on
 
-    
+
 
     );
 }
@@ -476,12 +485,12 @@ static setDefaultOption(ref Options options) {
         prefix = "logsubscription";
         task_name = prefix;
         net_task_name = "logsubscription_net";
-        timeout = 250;
+        timeout = 10000;
         with (service) {
             prefix = "logsubscriptionservice";
             task_name = prefix;
             response_task_name = "respose";
-            address = "0.0.0.1";
+            address = "0.0.0.0";
             port = 10_700;
             select_timeout = 300;
             client_timeout = 4000; // msecs
@@ -499,7 +508,6 @@ static setDefaultOption(ref Options options) {
                 days = 365;
                 key_size = 4096;
             }
-            task_name = "logsubscription.service";
         }
         with (host) {
             timeout = 3000;
@@ -526,7 +534,7 @@ static setDefaultOption(ref Options options) {
     // Recorder
     with (options.recorder) {
         task_name = "recorder";
-        folder_path = "/tmp/records/";
+        folder_path = "tmp/epoch_blocks/";
     }
     // Discovery
     with (options.discovery) {

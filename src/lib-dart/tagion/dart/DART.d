@@ -10,7 +10,7 @@ import std.conv : ConvException;
 import std.traits : EnumMembers;
 import std.format : format;
 import std.range : isInputRange, ElementType;
-import  std.algorithm.iteration : filter;
+import std.algorithm.iteration : filter;
 
 import tagion.basic.Basic : Buffer, FUNCTION_NAME, nameOf;
 import tagion.Keywords;
@@ -111,9 +111,9 @@ class DART : DARTFile { //, HiRPC.Supports {
         }
 
         static bool sectorInRange(
-            const ushort sector,
-            const ushort from_sector,
-            const ushort to_sector) pure nothrow {
+                const ushort sector,
+                const ushort from_sector,
+                const ushort to_sector) pure nothrow {
             if (to_sector == from_sector) {
                 return true;
             }
@@ -534,7 +534,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         enum recorderName = GetLabel!(recorder).name;
         this(RecordFactory manufactor, const Document doc) {
 
-
+            
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!uint;

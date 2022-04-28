@@ -4,10 +4,9 @@ import std.stdio;
 import core.thread;
 import std.getopt;
 import std.format;
-import std.concurrency;
 import std.array : join;
 
-import tagion.basic.Basic : Control;
+import tagion.basic.Basic : Control, TrustedConcurrency;
 import tagion.logger.Logger;
 import tagion.services.Options;
 import tagion.options.CommonOptions : setCommonOptions;
@@ -19,14 +18,12 @@ import tagion.services.TagionFactory;
 import tagion.GlobalSignals;
 import tagion.network.SSLOptions;
 import tagion.gossip.EmulatorGossipNet;
+import tagion.TaskWrapper;
 
-//import tagion.Keywords: NetworkMode, ValidNetwrokModes;
-pragma(msg, "Fixme(cbr): Rename the tagion Node to Prime");
-// import tagion.revision;
+mixin TrustedConcurrency;
 
 enum main_task = "tagionwave";
 
-/// Creates ssl certificate if it doesn't exist
 void create_ssl(const(OpenSSL) openssl) {
     import std.algorithm.iteration : each;
     import std.file : exists, mkdirRecurse;
@@ -55,6 +52,8 @@ void create_ssl(const(OpenSSL) openssl) {
 }
 
 int main(string[] args) {
+    import std.file : fwrite=write;
+    import std.path : setExtension;
     immutable program = args[0];
     bool version_switch;
     bool overwrite_switch;
@@ -104,20 +103,17 @@ int main(string[] args) {
         if (main_args.helpWanted || net_opts.helpWanted) {
             defaultGetoptPrinter(
                     [
-                // format("%s version %s", program, REVNO),
                 "Documentation: https://tagion.org/",
                 "",
                 "Usage:",
                 format("%s [<option>...] ", program),
                 format("%s <config.json>", program),
-            ].join("\n"), //                "This program run a hashwave tagion test net.",
+            ].join("\n"),
                 main_args.options);
             return 0;
         }
 
-        //        local_options=getOptions();
         if (overwrite_switch) {
-
             local_options.save(config_file);
         }
 
@@ -142,17 +138,18 @@ int main(string[] args) {
     // Set the shared common options for all services
     setCommonOptions(service_options.common);
 
-    // with (service_options.transaction.service) { // Check ssl certificate
-    //     if (service_options.transaction.service
-    // }
+    if (service_options.pid_file) {
+        import std.process : thisProcessID;
+        writefln("PID = %s written to %s", thisProcessID, options.pid_file);
+        service_options.pid_file.fwrite("PID = %s\n".format(thisProcessID));
+    }
 
     create_ssl(service_options.transaction.service.openssl);
 
-    auto logger_tid = spawn(&loggerTask, service_options);
-
+    auto loggerService = Task!LoggerTask(service_options.logger.task_name, service_options);
     scope (exit) {
-        logger_tid.send(Control.STOP);
-        auto respond_control = receiveOnly!Control;
+        loggerService.control(Control.STOP);
+        receiveOnly!Control;
     }
 
     import std.stdio : stderr;
@@ -185,7 +182,14 @@ int main(string[] args) {
             stderr.writefln("Unexpected signal %s", response);
         }
     },
-            (immutable(Exception) e) { const print_e = e; result = 2; },
-            (immutable(Throwable) t) { const print_t = t; result = 3; });
+            (immutable(Exception) e) {
+                stderr.writeln(e.msg);
+                result = 2;
+            },
+            (immutable(Throwable) t) {
+                stderr.writeln(t.msg);
+                result = 3;
+            }
+        );
     return result;
 }

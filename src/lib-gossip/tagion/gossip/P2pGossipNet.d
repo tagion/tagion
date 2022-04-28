@@ -23,6 +23,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, fread, fwrite, isSpecialKeyType;
 import tagion.hibon.Document : Document;
 import tagion.gossip.InterfaceNet;
+import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraphBasic : convertState, ExchangeState;
@@ -348,90 +349,6 @@ shared static this() {
     addressbook=new shared(AddressBook);
 }
 
-@safe
-struct NodeAddress {
-    enum tcp_token = "/tcp/";
-    enum p2p_token = "/p2p/";
-    string address;
-    bool is_marshal;
-    string id;
-    uint port;
-    DART.SectorRange sector;
-
-    mixin HiBONRecord!(
-        q{
-            this(
-            string address,
-            immutable(DARTOptions) dart_opts,
-            const ulong port_base,
-            bool marshal = false) {
-        import std.string;
-
-        try {
-            this.address = address;
-            this.is_marshal = marshal;
-            if (!marshal) {
-                this.id = address[address.lastIndexOf(p2p_token) + 5 .. $];
-                auto tcpIndex = address.indexOf(tcp_token) + tcp_token.length;
-                this.port = to!uint(address[tcpIndex .. tcpIndex + 4]);
-
-                const node_number = this.port - port_base;
-                if (this.port >= dart_opts.sync.maxSlavePort) {
-                    sector = DART.SectorRange(dart_opts.sync.netFromAng, dart_opts.sync.netToAng);
-                }
-                else {
-                    const max_sync_node_count = dart_opts.sync.master_angle_from_port
-                        ? dart_opts.sync.maxSlaves : dart_opts.sync.maxMasters;
-                    sector = calcAngleRange(dart_opts, node_number, max_sync_node_count);
-                }
-            }
-            else {
-                import std.json;
-
-                auto json = parseJSON(address);
-                this.id = json["ID"].str;
-                auto addr = (() @trusted => json["Addrs"].array()[0].str())();
-                auto tcpIndex = addr.indexOf(tcp_token) + tcp_token.length;
-                this.port = to!uint(addr[tcpIndex .. tcpIndex + 4]);
-            }
-        }
-        catch (Exception e) {
-            // log(e.msg);
-            log.fatal(e.msg);
-        }
-    }
-        });
-
-    static DART.SectorRange calcAngleRange(
-            immutable(DARTOptions) dart_opts,
-            const ulong node_number,
-            const ulong max_nodes) {
-        import std.math : ceil, floor;
-
-        float delta = (cast(float)(dart_opts.sync.netToAng - dart_opts.sync.netFromAng)) / max_nodes;
-        auto from_ang = to!ushort(dart_opts.from_ang + floor(node_number * delta));
-        auto to_ang = to!ushort(dart_opts.from_ang + floor((node_number + 1) * delta));
-        return DART.SectorRange(from_ang, to_ang);
-    }
-
-     static string parseAddr(string addr) {
-        import std.string;
-
-        string result;
-        const firstpartAddr = addr.indexOf('[') + 1;
-        const secondpartAddr = addr[firstpartAddr..$].indexOf(' ') + firstpartAddr;
-        const firstpartId = addr.indexOf('{') + 1;
-        const secondpartId = addr.indexOf(':');
-        result = addr[firstpartAddr .. secondpartAddr] ~ p2p_token ~ addr[firstpartId .. secondpartId];
-        // log("address: %s \n after: %s", addr, result);
-        return result;
-    }
-
-
-    public string toString() {
-        return address;
-    }
-}
 
 @safe
 private static string convert_to_net_task_name(string task_name) {
@@ -637,7 +554,7 @@ static void async_send(
 class P2pGossipNet : StdP2pNet, GossipNet {
     protected {
         sdt_t _current_time;
-        bool[Pubkey] pks;
+        //bool[Pubkey] pks;
         Pubkey mypk;
     }
     Random random;
@@ -662,19 +579,19 @@ class P2pGossipNet : StdP2pNet, GossipNet {
         return _current_time;
     }
 
-    bool isValidChannel(const(Pubkey) channel) const pure nothrow {
-        return (channel in pks) !is null && channel != mypk;
+    bool isValidChannel(const(Pubkey) channel) const nothrow {
+        return channel != mypk && addressbook.isActive(channel);
     }
 
     const(Pubkey) select_channel(ChannelFilter channel_filter) {
         import std.range : dropExactly;
-
-        foreach (count; 0 .. pks.length * 2) {
-            const node_index = uniform(0, cast(uint) pks.length, random);
-            log("selected index: %d %d", node_index, pks.length);
-            const send_channel = pks.byKey.dropExactly(node_index).front;
-            log("trying to select: %s, valid?: %s", send_channel.cutHex, channel_filter(
-                    send_channel));
+        const active_nodes=addressbook.numOfActiveNodes;
+        foreach (count; 0 .. active_nodes * 2) {
+            const node_index = uniform(0, active_nodes, random);
+            log("selected index: %d %d", node_index, active_nodes);
+            const send_channel = addressbook.selectActiveChannel(node_index);
+            // log("trying to select: %s, valid?: %s", send_channel.cutHex, channel_filter(
+            //         send_channel));
             if (channel_filter(send_channel)) {
                 return send_channel;
             }
@@ -692,10 +609,12 @@ class P2pGossipNet : StdP2pNet, GossipNet {
     }
 
     void add_channel(const Pubkey channel) {
-        pks[channel] = true;
+        assert(0, "addressbook should be used instead");
+//        pks[channel] = true;
     }
 
     void remove_channel(const Pubkey channel) {
-        pks.remove(channel);
+        assert(0, "addressbook should be used instead");
+        //      pks.remove(channel);
     }
 }

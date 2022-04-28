@@ -16,6 +16,8 @@ static void EnableLogger() {
     lib.enableLogger();
 }
 
+pragma(msg, "fixme(cbr): Reduces the scope of @trusted in the module");
+
 @trusted class Subscription {
     protected const void* ptr;
     protected shared bool disposed = false;
@@ -114,7 +116,8 @@ static void EnableLogger() {
             HandlerCallback handler,
             string tid,
             string[] pids,
-            Duration timeout = DefaultOptions.timeout, int maxSize = DefaultOptions.maxSize) { //TODO: check if disposed
+            Duration timeout = DefaultOptions.timeout,
+            int maxSize = DefaultOptions.maxSize) { //TODO: check if disposed
         DBuffer pidStr = pid.ToDString();
         DBuffer tidStr = tid.ToDString();
         DBuffer[] pidsStr = pids.map!(protocolId => protocolId.ToDString).array;

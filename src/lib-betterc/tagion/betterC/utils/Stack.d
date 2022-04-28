@@ -29,7 +29,9 @@ struct Stack(T) {
         static void _dispose(ref Element* e) {
             if (e !is null) {
                 _dispose(e.next);
+
                 
+
                 .dispose!false(e);
             }
         }

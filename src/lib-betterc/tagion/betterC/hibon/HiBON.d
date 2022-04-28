@@ -87,7 +87,9 @@ struct HiBONT {
         _buffer.dispose;
         if (_self_destruct) {
             HiBONT* self = &this;
+
             
+
             .dispose!false(self);
         }
     }
@@ -222,7 +224,9 @@ struct HiBONT {
          * @param key = the name of the member
          */
         this(T)(T x, in const(char[]) key) {
+
             
+
                 .create(this._key, key);
             void _init(S)(S x) {
                 enum E = Value.asType!S;
@@ -310,7 +314,9 @@ struct HiBONT {
                         static if (.isArray(E)) {
                             alias U = Unqual!(ForeachType!(Value.TypeT!E));
                             auto remove_this = cast(U[]) value.by!E;
+
                             
+
                             .dispose(remove_this);
                         }
                         else static if (E is Type.DOCUMENT) {
@@ -344,7 +350,9 @@ struct HiBONT {
          */
         const(T) get(T)() const {
             enum E = Value.asType!T;
+
             
+
             .check(E is type, message("Expected HiBON type %s but apply type %s (%s)", type, E, T.stringof));
             return value.by!E;
         }
@@ -918,7 +926,9 @@ struct HiBONT {
         auto test_table_array = table_array.tupleof;
         scope (exit) {
             foreach (i, t; test_table_array) {
+
                 
+
                     .dispose(t);
             }
         }

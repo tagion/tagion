@@ -20,33 +20,6 @@ enum LoggerType {
     STDERR = WARNING | ERROR | FATAL
 }
 
-struct LogFilter {
-    string task_name;
-    LoggerType log_level;
-
-    mixin HiBONRecord!(q{
-        this(string task_name, LoggerType log_level) {
-            this.task_name = task_name;
-            this.log_level = log_level;
-        }
-    });
-
-    bool match(string task_name, LoggerType log_level) pure const nothrow {
-        if (this.task_name == task_name && this.log_level & log_level) {
-            return true;
-        }
-        return false;
-    }
-}
-
-immutable struct LogFilterArray {
-    LogFilter[] filters;
-
-    this(immutable LogFilter[] filters_array) {
-        this.filters = filters_array;
-    }
-}
-
 private static Tid logger_tid;
 
 @safe
@@ -162,12 +135,6 @@ static struct Logger {
             }
             else {
                 try {
-                    LogFilter[] ff = [
-                        LogFilter("tagionlogservicetest", LoggerType.WARNING),
-                        LogFilter("tagionlogservicetest", LoggerType.INFO)
-                    ];
-                    logger_tid.send(LogFilterArray(ff.idup));
-
                     logger_tid.send(type, _task_name, text);
                 }
                 catch (Exception e) {

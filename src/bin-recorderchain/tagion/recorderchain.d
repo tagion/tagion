@@ -117,7 +117,7 @@ int main(string[] args) {
         // Spawn recorder task
         auto recorderService = Task!RecorderTask(options.recorder.task_name, options);
         receiveOnly!Control;
-        scope(exit) {
+        scope (exit) {
             recorderService.control(Control.STOP);
             receiveOnly!Control;
         }
@@ -130,8 +130,8 @@ int main(string[] args) {
         writeln;
 
         // Send recorder to service
-        foreach (i; 0..init_count) {
-            auto recorder = initDummyRecorderAdd(cast(int)i, to!string(i));
+        foreach (i; 0 .. init_count) {
+            auto recorder = initDummyRecorderAdd(cast(int) i, to!string(i));
             addDummyRecordToDB(db, recorder, hirpc);
             recorderService.receiveRecorder(recorder, Fingerprint(db.fingerprint));
 
@@ -148,11 +148,11 @@ int main(string[] args) {
         auto blocks_info = EpochBlockFileDataBase.getBlocksInfo(folder_path);
 
         Buffer fingerprint = blocks_info.last.fingerprint;
-        foreach (j; 0..blocks_info.amount) {
+        foreach (j; 0 .. blocks_info.amount) {
             const current_block = EpochBlockFileDataBase.readBlockFromFingerprint(fingerprint, folder_path);
 
-            writeln(format(">> %s block start", blocks_info.amount-j));
-            
+            writeln(format(">> %s block start", blocks_info.amount - j));
+
             writeln("Fingerprint:\n", Fingerprint.format(current_block.fingerprint));
             const bullseye = current_block.bullseye;
             if (bullseye.empty)
@@ -160,7 +160,7 @@ int main(string[] args) {
             else
                 writeln("Bullseye:\n", Fingerprint.format(bullseye));
 
-            writeln(format("<< %s block end\n", blocks_info.amount-j));
+            writeln(format("<< %s block end\n", blocks_info.amount - j));
 
             fingerprint = current_block.chain;
         }
@@ -182,8 +182,8 @@ int main(string[] args) {
         DART db = new DART(net, dartfilename, fromAngle, toAngle);
 
         Buffer fingerprint = blocks_info.last.fingerprint;
-        foreach (j; 0..rollback) {
-            writefln("Current rollback: %d", rollback-j);
+        foreach (j; 0 .. rollback) {
+            writefln("Current rollback: %d", rollback - j);
 
             const current_block = EpochBlockFileDataBase.readBlockFromFingerprint(fingerprint, folder_path);
 
@@ -205,11 +205,14 @@ int main(string[] args) {
             return onHelp;
 
         // Should be the first action
-        if (init_count > 0) onInit;
+        if (init_count > 0)
+            onInit;
 
-        if (print) onPrint;
+        if (print)
+            onPrint;
 
-        if (rollback > 0) onRollback;
+        if (rollback > 0)
+            onRollback;
 
         // Last action in work
         if (clean) {

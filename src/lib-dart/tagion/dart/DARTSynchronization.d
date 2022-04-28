@@ -12,7 +12,8 @@ import std.datetime;
 import std.typecons;
 import std.format;
 
-import tagion.gossip.P2pGossipNet : NodeAddress, ConnectionPool;
+import tagion.gossip.P2pGossipNet : ConnectionPool;
+import tagion.gossip.AddressBook : NodeAddress;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;
@@ -220,14 +221,15 @@ class ReplayPool(T) {
 
 @safe
 interface SynchronizationFactory {
-    alias OnFailure = void delegate(const DART.Rims sector);
+    alias OnFailure = void delegate(const DART.Rims sector) @safe;
+    alias OnComplete = void delegate(string) @safe;
     alias SyncSectorResponse = Tuple!(uint, ResponseHandler);
     pragma(msg, "SyncSectorResponse :", SyncSectorResponse);
     bool canSynchronize();
     SyncSectorResponse syncSector(
             const DART.Rims sector,
-            void delegate(string) oncomplete,
-            OnFailure onfailure);
+            const OnComplete oncomplete,
+            const OnFailure onfailure);
 }
 
 alias ConnectionPoolT = ConnectionPool!(shared p2plib.StreamI, ulong);
@@ -273,8 +275,8 @@ class P2pSynchronizationFactory : SynchronizationFactory {
 
     SyncSectorResponse syncSector(
             const DART.Rims sector,
-            void delegate(string) @safe oncomplete,
-            OnFailure onfailure) {
+            const OnComplete oncomplete,
+            const OnFailure onfailure) {
         SyncSectorResponse syncWith(NodeAddress address) @safe {
             import p2p.go_helper;
 
@@ -343,8 +345,8 @@ class P2pSynchronizationFactory : SynchronizationFactory {
     class P2pSynchronizer : DART.StdSynchronizer, ResponseHandler {
         protected const ulong key;
         protected Buffer response;
-        protected void delegate(string journal_filename) @safe oncomplete;
-        protected OnFailure onfailure;
+        protected const OnComplete oncomplete;
+        protected const OnFailure onfailure;
         string filename;
         void setResponse(Buffer resp) @trusted {
             response = resp;
@@ -357,7 +359,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             return fiber.state != Fiber.State.TERM && connection_pool.contains(key);
         }
 
-        this(string journal_filename, const ulong key, void delegate(string) @safe oncomplete, OnFailure onfailure) {
+        this(string journal_filename, const ulong key, const OnComplete oncomplete, const OnFailure onfailure) {
             filename = journal_filename;
             this.key = key;
             this.oncomplete = oncomplete;
@@ -653,7 +655,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
 
     void start(SynchronizationFactory factory) //restart with new factory
 
-    
+
 
     in {
         assert(checkState(State.STOP, State.READY, State.ERROR));
@@ -745,7 +747,10 @@ unittest {
 
         private SyncSectorResponse mockReturn;
         private uint sync_counter = 0;
-        SyncSectorResponse syncSector(const DART.Rims sector, void delegate(string) oncomplete, OnFailure onfailure) {
+        SyncSectorResponse syncSector(
+                const DART.Rims sector,
+                OnComplete oncomplete,
+                OnFailure onfailure) {
             sync_counter++;
             return mockReturn;
         }
