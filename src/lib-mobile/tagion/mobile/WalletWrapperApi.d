@@ -39,7 +39,11 @@ string[] parse_string(const char* str, const uint len) {
 }
 
 /// Functions called from d-lang through dart:ffi
-extern (C) {
+version(D_BetterC) {
+}
+else {
+extern (C):
+}
     /// Staritng d-runtime
     export static int64_t start_rt() {
         if (__runtimeStatus is drtStatus.DEFAULT_STS) {
@@ -355,6 +359,8 @@ extern (C) {
         return 0;
     }
 
+    import std.traits;
+    pragma(msg, "dscript ", fullyQualifiedName!Document);
     Buffer decrypt(Buffer encrypted_seed, Document aes_key_doc) {
         import std.digest.sha : SHA256;
         import std.digest;
@@ -374,4 +380,3 @@ extern (C) {
 
         return result.idup;
     }
-}

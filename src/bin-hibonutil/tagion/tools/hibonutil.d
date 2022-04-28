@@ -49,7 +49,7 @@ int main(string[] args) {
             "value|V", format("Bill value : default: %d", value), &value,
             "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty, //        "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
 
-            
+
 
     );
 

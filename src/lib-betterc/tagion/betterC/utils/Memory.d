@@ -4,6 +4,10 @@ import std.traits : isArray, ForeachType, isPointer, PointerTarget, Unqual;
 import tagion.betterC.utils.platform;
 
 import std.conv : emplace;
+import core.stdc.string : memcpy;
+
+private import tagion.crypto.secp256k1.c.secp256k1;
+private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
 
 @nogc:
 
@@ -120,7 +124,7 @@ void dispose(T)(ref T die, string file = __FILE__, size_t line = __LINE__) if (i
             printf(memfree_trace, die.ptr, block, 'd', T.stringof.ptr);
             printf(mempos, die.ptr, 0, line, file.ptr);
         }
-        free(die.ptr);
+        free(cast(void*)die.ptr);
         die = null;
     }
 }
@@ -139,6 +143,27 @@ void dispose(bool OWNS = true, T)(ref T die, string file = __FILE__, size_t line
         free(die);
         die = null;
     }
+}
+
+@trusted
+void memcpy_wrapper(T)(ref T desination, T source) {
+    if (desination.length == source.length) {
+        memcpy(desination, source, source.length);
+    }
+}
+
+@trusted
+bool randomize(immutable(ubyte[]) seed)
+in {
+    assert(seed.length == 32 || seed is null);
+}
+do {
+    secp256k1_context* _ctx;
+    const int flag = 0;
+    _ctx = secp256k1_context_create(flag);
+    //        auto ctx=getContext();
+    // immutable(ubyte)* _seed = seed.ptr;
+    return secp256k1_context_randomize(_ctx, &seed[0]) == 1;
 }
 
 unittest {
