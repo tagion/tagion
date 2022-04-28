@@ -1,6 +1,8 @@
 module tagion.services.MdnsDiscoveryService;
 
 import p2plib = p2p.node;
+import p2p.callback;
+import p2p.cgo.c_helper;
 import tagion.communication.HandlerPool;
 
 //import tagion.dart.DART;
@@ -29,6 +31,20 @@ void mdnsDiscoveryService(
             ownerTid.prioritySend(Control.END);
         }
         log.register(task_name);
+
+        p2plib.MdnsService discovery = node.startMdns("tagion_mdns", opts.discovery.interval.msecs);
+
+        log("Run mdns service");
+        p2plib.MdnsNotifee notifee;
+        // if(opts.discovery.notify_enabled){
+        log("Mdns: notify enabled");
+        notifee = discovery.registerNotifee(&StdHandlerCallback, task_name);
+        // }
+        scope (exit) {
+            // if(opts.discovery.notify_enabled){
+            notifee.close();
+            // }
+        }
 
         bool stop = false;
 
