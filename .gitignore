@@ -33,7 +33,7 @@ gen.*
 .tmp
 build
 logs
-tools
+tools/*
 *.log
 *.way
 

@@ -519,7 +519,11 @@ enum fileextensions {
     JSON = ".json"
 };
 
-int main(string[] args) {
+import tagion.tools.Basic;
+
+mixin Main!_main;
+
+int _main(string[] args) {
     immutable program = args[0];
     auto config_file = "tagionwallet.json";
     bool overwrite_switch; /// Overwrite the config file

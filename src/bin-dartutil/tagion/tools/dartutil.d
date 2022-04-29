@@ -27,8 +27,11 @@ import tagion.Keywords;
 import tagion.dart.Recorder;
 
 // import tagion.revision;
+import tagion.tools.Basic;
 
-int main(string[] args) {
+mixin Main!_main;
+
+int _main(string[] args) {
     immutable program = args[0];
 
     string dartfilename = "/tmp/default.drt";

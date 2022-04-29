@@ -51,7 +51,12 @@ void create_ssl(const(OpenSSL) openssl) {
     }
 }
 
-int main(string[] args) {
+
+import tagion.tools.Basic;
+
+mixin Main!_main;
+
+int _main(string[] args) {
     import std.file : fwrite=write;
     import std.path : setExtension;
     immutable program = args[0];
