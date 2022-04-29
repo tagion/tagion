@@ -13,6 +13,8 @@ import tagion.basic.Basic : basename, Buffer, Pubkey;
 import tagion.script.StandardRecords;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.script.StandardRecords : Invoice;
+import tagion.script.TagionCurrency;
+import tagion.wallet.SecureWallet;
 
 //import tagion.dart.DARTFile;
 import tagion.dart.Recorder;
@@ -32,9 +34,10 @@ int main(string[] args) {
     bool version_switch;
 
     string invoicefile;
-    string outputfile = "dart.hibon";
+    string outputfile = "tmp/dart.hibon";
     //    StandardBill bill;
     uint number_of_bills;
+    bool test_mode = false;
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
@@ -43,8 +46,8 @@ int main(string[] args) {
             //         "bills|b", "Generate bills", &number_of_bills,
             // "value|V", format("Bill value : default: %d", value), &value,
             // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
-
-
+            "test|t", "Testing mode", &test_mode,
+            
 
     );
 
@@ -85,23 +88,42 @@ int main(string[] args) {
     const net = new StdHashNet;
     auto factory = RecordFactory(net);
     auto recorder = factory.recorder;
-    foreach (file; args[1 .. $]) {
-        if (!file.exists) {
-            writefln("Error: File %s does not exists", file);
-            return 3;
+
+    if (!test_mode) {
+        foreach (file; args[1 .. $]) {
+            if (!file.exists) {
+                writefln("Error: File %s does not exists", file);
+                return 3;
+            }
+            const invoice_doc = file.fread;
+            if (!invoice_doc.isInorder) {
+                writefln("Invoice file %s is not a HiBON file", file);
+                return 1;
+            }
+
+            const invoice = Invoice(invoice_doc);
+
+            const bill = StandardBill(invoice.amount, 0, invoice.pkey, initial_gene);
+
+            // Add the bill to the DART recorder
+            recorder.add(bill);
         }
-        const invoice_doc = file.fread;
-        if (!invoice_doc.isInorder) {
-            writefln("Invoice file %s is not a HiBON file", file);
-            return 1;
+    }
+    else {
+        writeln("TEST MODE");
+        import tagion.crypto.SecureNet;
+        alias StdSecureWallet = SecureWallet!StdSecureNet;
+    
+        auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN);
+        
+        const label = "some_name";
+        foreach (amount; bill_amounts) {
+            const invoice = StdSecureWallet.createInvoice(label, amount);
+            const bill = StandardBill(invoice.amount, 0, invoice.pkey, initial_gene);
+            
+            // Add the bill to the DART recorder
+            recorder.add(bill);
         }
-
-        const invoice = Invoice(invoice_doc);
-
-        const bill = StandardBill(invoice.amount, 0, invoice.pkey, initial_gene);
-
-        // Add the bill to the DART recorder
-        recorder.add(bill);
     }
 
     if (recorder.empty) {
@@ -109,5 +131,6 @@ int main(string[] args) {
     }
 
     outputfile.fwrite(recorder);
+    writefln("Recorder has been written to file '%s'", outputfile);
     return 0;
 }

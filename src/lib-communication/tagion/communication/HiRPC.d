@@ -480,6 +480,11 @@ struct HiRPC {
         return receiver;
     }
 
+    final const(Receiver) receive(T)(T sender) const if (isHiBONRecord!T) {
+        auto receiver = Receiver(net, sender.toDoc);
+        return receiver;
+    }
+
     static void check_type(T)(Document doc, string key) {
         immutable msg = format("Wrong type of member '%s', expected type but the type was",
                 key);

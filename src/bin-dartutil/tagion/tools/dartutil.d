@@ -6,6 +6,7 @@ import std.file : fread = read, fwrite = write, exists;
 import std.format;
 import std.conv : to;
 import std.array;
+import std.algorithm;
 
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
@@ -23,6 +24,7 @@ import tagion.hibon.HiBON;
 
 import tagion.utils.Miscellaneous;
 import tagion.Keywords;
+import tagion.dart.Recorder;
 
 // import tagion.revision;
 
@@ -40,6 +42,7 @@ int main(string[] args) {
     bool dump = false;
 
     bool dartread = false;
+    string[] dartread_args;
     bool dartmodify = false;
     bool dartrim = false;
     bool dartrpc = false;
@@ -61,7 +64,7 @@ int main(string[] args) {
             "from", format("Sets from angle: default %s", (fromAngle == toAngle) ? "full" : fromAngle.to!string), &fromAngle,
             "to", format("Sets to angle: default %s", (fromAngle == toAngle) ? "full" : toAngle.to!string), &toAngle,
             "useFakeNet|fn", format("Enables fake hash test-mode: default %s", useFakeNet), &useFakeNet,
-            "read|r", format("Excutes a DART read sequency: default %s", dartread), &dartread,
+            "read|r", format("Excutes a DART read sequency: default %s", dartread), &dartread_args,
             "rim", format("Performs DART rim read: default %s", dartrim), &dartrim,
             "modify|m", format("Excutes a DART modify sequency: default %s", dartmodify), &dartmodify,
             "rpc", format("Excutes a HiPRC on the DART: default %s", dartrpc), &dartrpc,
@@ -71,6 +74,8 @@ int main(string[] args) {
             "rings", "Sets the rings height and is used in  combination with the generate", &rings,
             "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
     );
+
+    dartread = !dartread_args.empty;
 
     if (version_switch) {
         // writefln("version %s", REVNO);
@@ -170,6 +175,25 @@ int main(string[] args) {
             writeln("No input file");
         }
         else {
+            auto fingerprints = dartread_args.map!(hash => decode(hash)).array;
+
+            auto blockfile = BlockFile(dartfilename);
+            writefln("Blockfile %s", blockfile.masterBlock);
+
+            writeln("EYE ", db.fingerprint.hex);
+
+            const sender = DART.dartRead(fingerprints, hirpc);
+            writeln("AAA ", sender.toJSON.toPrettyString);
+            auto receiver = hirpc.receive(sender.toDoc);
+            writeln("BBB ", receiver.toJSON.toPrettyString);
+            auto result = db(receiver, false);
+            auto tosend = hirpc.toHiBON(result);
+            writeln("CCC ", result.toJSON.toPrettyString);
+            auto tosendResult = tosend.method.params;
+            if (dump)
+                db.dump(true);
+            writeResponse(tosendResult.serialize);
+
             // auto inputBuffer = cast(immutable(ubyte)[])fread(inputfilename);
             // auto params=new HiBON;
             // auto params_fingerprints=new HiBON;
@@ -226,12 +250,11 @@ int main(string[] args) {
     }
     else if (dartmodify) {
         auto inputBuffer = cast(immutable(ubyte)[]) fread(inputfilename);
-        import tagion.dart.Recorder;
 
         auto factory = RecordFactory(net);
         auto recorder = factory.recorder(Document(inputBuffer));
-        auto sended = hirpc.dartModify(recorder);
-        auto received = hirpc.receive(sended.toDoc);
+        auto sended = DART.dartModify(recorder, hirpc);
+        auto received = hirpc.receive(sended);
         auto result = db(received, false);
         auto tosend = hirpc.toHiBON(result);
         auto tosendResult = tosend.method.params;

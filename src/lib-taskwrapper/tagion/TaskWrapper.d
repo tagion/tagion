@@ -3,6 +3,9 @@ module tagion.TaskWrapper;
 import std.stdio;
 import std.format;
 import std.traits : isCallable;
+import std.typecons : Tuple;
+import std.range;
+import std.algorithm.mutation : remove;
 import tagion.basic.Basic : Control, TrustedConcurrency;
 import tagion.logger.Logger;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
@@ -17,6 +20,75 @@ mixin TrustedConcurrency;
 @safe struct TaskMethod {
 }
 
+alias TaskInfo = Tuple!(Tid, "tid", string, "task_name");
+@safe struct TidTable {
+    import std.container;
+    private TaskInfo[] array;
+
+    bool empty() const {
+        return array.empty;
+    }
+
+    void push_back(TaskInfo elem) {
+        array ~= elem;
+    }
+
+    TaskInfo pop_back() {
+        if (array.empty)
+            return TaskInfo();
+
+        auto e = back;
+        array = array.remove(array.length-1);
+        return e;
+    }
+
+    TaskInfo back() {
+        if (array.empty)
+            return TaskInfo();
+
+        return array[$-1];
+    }
+
+    bool removeTask(string task_name) {
+        foreach (i; 0..array.length) {
+            if (array[i].task_name == task_name) {
+                array = array.remove(i);
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+unittest {
+    TidTable table;
+    assert(table.empty);
+
+    auto info0 = TaskInfo(thisTid,  "info0");
+    auto info1 = TaskInfo(Tid.init, "info1");
+    auto info2 = TaskInfo(thisTid,  "info2");
+
+    table.push_back(info0);
+    assert(!table.empty);
+    assert(table.back == info0);
+    
+    table.push_back(info1);
+    assert(!table.empty);
+    assert(table.back == info1);
+
+    table.push_back(info2);
+    assert(!table.empty);
+    assert(table.back == info2);
+
+    const wrong_name = "wrong_name";
+    assert(!table.removeTask(wrong_name));
+
+    assert(table.removeTask(info1.task_name));
+    assert(table.pop_back == info2);
+    assert(table.pop_back == info0);
+    assert(table.empty);
+}
+
 @safe struct Task(alias Func) {
     static assert(is(Func == struct));
     import std.traits : Parameters, ParameterIdentifierTuple, isFunction, isDelegate, isFunctionPointer, hasUDA, getUDAs;
@@ -25,18 +97,18 @@ mixin TrustedConcurrency;
 
     alias Params = Parameters!Func;
     alias ParamNames = ParameterIdentifierTuple!Func;
-
-    private Tid _tid;
+    
     immutable(string) task_name;
+    private Tid _tid;
+
+    private static TidTable _tid_table;
 
     this(string task_name, Params args) {
         this.task_name = task_name;
         _tid = spawn(&run, task_name, args);
-        // TODO add table
-        version (none) {
-            // Should we do the check and log if there is error but not stop the execution? 
-            check(receiveOnly!Control is Control.LIVE);
-        }
+        
+        // Add to static table of tasks
+        _tid_table.push_back(TaskInfo(_tid, task_name));
     }
 
     static if (is(Func == struct)) {
@@ -65,11 +137,17 @@ mixin TrustedConcurrency;
         mixin(send_methods);
     }
 
-    version (none) void stop() const {
-        _tid.send(Control.STOP);
-        receive((Control control) =>
-                check(control is Control.END, "Bad something")
-        );
+    version(none)
+    static void stopTasks() {
+        writeln("stopTasks");
+
+        // Stop tasks in LIFO order
+        while (!_tid_table.empty) {
+            auto task_info = _tid_table.pop_back;
+            writeln("stopTasks step ", task_info);
+            send(task_info.tid, Control.STOP);
+            writeln(format("Stopping '%s'... %s", task_info.task_name, receiveOnly!Control));
+        }
     }
 
     static void registerLogger(string task_name) {
@@ -87,13 +165,13 @@ mixin TrustedConcurrency;
     static void run(string task_name, Params args) nothrow {
         try {
             scope (success) {
-                assumeWontThrow(writefln("Success"));
+                log.trace(format("Success: TaskWrapper<%s>", task_name));
             }
             scope (failure) {
-                assumeWontThrow(writefln("Fail"));
-                // Send logs?
+                log.trace(format("Fail: TaskWrapper<%s>", task_name));
             }
             scope (exit) {
+                _tid_table.removeTask(task_name);
                 prioritySend(ownerTid, Control.END);
             }
 
