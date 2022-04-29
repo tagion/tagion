@@ -1,4 +1,5 @@
 
+
 #
 # Targets for all binaries
 #
@@ -7,14 +8,14 @@
 # Core program
 #
 target-tagionwave: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wave/*" -a -not -path "*/unitdata/*" }
-${call BIN,tagionwave,TAGIONWAVE,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),yes}
+${call BIN,tagionwave,TAGIONWAVE,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETOOL)}
 
 #
 # HiBON utility
 #
 # FIXME(CBR) should be remove when ddeps works correctly
 target-hibonutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-hibonutil/*" -a -not -path "*/unitdata/*" }
-${call BIN,hibonutil,HIBONUTIL,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),yes}
+${call BIN,hibonutil,HIBONUTIL,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETOOL)}
 
 
 #
@@ -22,7 +23,7 @@ ${call BIN,hibonutil,HIBONUTIL,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),
 #
 # FIXME(CBR) should be remove when ddeps works correctly
 target-dartutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-dartutil/*" -a -not -path "*/unitdata/*" }
-${call BIN,dartutil,DARTUTIL,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),yes}
+${call BIN,dartutil,DARTUTIL,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETOOL)}
 
 #
 # WASM utility
@@ -35,10 +36,10 @@ ${call BIN,wasmutil,WASMUTIL,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
 # WASM utility
 #
 # FIXME(CBR) should be remove when ddeps works correctly
-target-wallet: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wallet/*" -a -not -path "*/unitdata/*" }
-${call BIN,tagionwallet,TAGIONWALLET,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),yes}
+target-tagionwallet: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wallet/*" -a -not -path "*/unitdata/*" }
+${call BIN,tagionwallet,TAGIONWALLET,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETOOL)}
 
-wallet: target-wallet
+wallet: target-tagionwallet
 #
 # Logservicetest utility
 #
