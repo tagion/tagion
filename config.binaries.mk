@@ -7,14 +7,14 @@
 # Core program
 #
 target-tagionwave: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wave/*" -a -not -path "*/unitdata/*" }
-${call BIN,tagionwave,TAGIONWAVE,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
+${call BIN,tagionwave,TAGIONWAVE,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),yes}
 
 #
 # HiBON utility
 #
 # FIXME(CBR) should be remove when ddeps works correctly
 target-hibonutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-hibonutil/*" -a -not -path "*/unitdata/*" }
-${call BIN,hibonutil,HIBONUTIL,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
+${call BIN,hibonutil,HIBONUTIL,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),yes}
 
 
 #
@@ -22,7 +22,7 @@ ${call BIN,hibonutil,HIBONUTIL,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
 #
 # FIXME(CBR) should be remove when ddeps works correctly
 target-dartutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-dartutil/*" -a -not -path "*/unitdata/*" }
-${call BIN,dartutil,DARTUTIL,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
+${call BIN,dartutil,DARTUTIL,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),yes}
 
 #
 # WASM utility
@@ -36,8 +36,9 @@ ${call BIN,wasmutil,WASMUTIL,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
 #
 # FIXME(CBR) should be remove when ddeps works correctly
 target-wallet: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wallet/*" -a -not -path "*/unitdata/*" }
-${call BIN,wallet,TAGIONWALLET,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
+${call BIN,tagionwallet,TAGIONWALLET,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),yes}
 
+wallet: target-wallet
 #
 # Logservicetest utility
 #
@@ -76,8 +77,8 @@ target-tagion: DFILES+=${shell find $(DSRC)/bin-tools/tagion -name "*.d"  }
 # target-tagion: DFILES+=${shell find $(DSRC)/bin-hibonutil -name "*.d" -a -not -path "*/unitdata/*" }
 # target-tagion: DFILES+=${shell find $(DSRC)/bin-wallet -name "*.d" -a -not -path "*/unitdata/*" }
 
-target-tagion: tagion-info
+target-tagion:
 ${call BIN,tagion,TAGION,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
 
-tagion-info:
-	@echo $(DFILES)
+# tagion-info:
+# 	@echo $(DFILES)

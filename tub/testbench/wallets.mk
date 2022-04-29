@@ -71,7 +71,7 @@ $$(TESTBENCH_$1)/tagionwallet.hibon: $$(BASEWALLET_$1)/tagionwallet.hibon
 	cp $$(BASEWALLETFILES_$1) $$(@D)
 
 #$$(BASEWALLET_$1)/%.hibon: $$(BASEWALLETFILES_$1)
-$$(BASEWALLET_$1)/tagionwallet.hibon: | target-wallet
+$$(BASEWALLET_$1)/tagionwallet.hibon: | target-tagionwallet
 $$(BASEWALLET_$1)/tagionwallet.hibon: $$(STDINWALLET_$1)
 	$$(PRECMD)
 	$${call log.kvp, base-wallet $1}
