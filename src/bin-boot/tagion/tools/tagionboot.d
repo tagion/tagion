@@ -1,3 +1,5 @@
+module tagion.tools.tagionboot;
+
 import std.getopt;
 import std.stdio;
 import std.file : exists;
@@ -27,7 +29,12 @@ Invoice[] invoices;
 
 enum REVNO = 0;
 enum HASH = "xxx";
-int main(string[] args) {
+
+import tagion.tools.Basic;
+
+mixin Main!(_main, "boot");
+
+int _main(string[] args) {
     immutable program = args[0];
     writefln("BOOT ", program);
     immutable initial_gene = iota(256 / 8).map!(i => immutable(ubyte)(0b10101010)).array;
@@ -47,7 +54,7 @@ int main(string[] args) {
             // "value|V", format("Bill value : default: %d", value), &value,
             // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
             "test|t", "Testing mode", &test_mode,
-            
+
 
     );
 
@@ -113,14 +120,14 @@ int main(string[] args) {
         writeln("TEST MODE");
         import tagion.crypto.SecureNet;
         alias StdSecureWallet = SecureWallet!StdSecureNet;
-    
+
         auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN);
-        
+
         const label = "some_name";
         foreach (amount; bill_amounts) {
             const invoice = StdSecureWallet.createInvoice(label, amount);
             const bill = StandardBill(invoice.amount, 0, invoice.pkey, initial_gene);
-            
+
             // Add the bill to the DART recorder
             recorder.add(bill);
         }

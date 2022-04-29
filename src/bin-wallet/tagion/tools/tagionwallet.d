@@ -521,7 +521,7 @@ enum fileextensions {
 
 import tagion.tools.Basic;
 
-mixin Main!_main;
+mixin Main!(_main, "wallet");
 
 int _main(string[] args) {
     immutable program = args[0];
