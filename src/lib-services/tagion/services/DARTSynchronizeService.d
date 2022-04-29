@@ -173,7 +173,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         auto empty_hirpc = HiRPC(null);
 
         auto subscription = ActiveNodeSubscribtion!Net(opts);
-        NodeAddress[Pubkey] node_addrses;
+//        NodeAddress[Pubkey] node_addrses;
         log("send live");
         ownerTid.send(Control.LIVE);
         while (!stop) {
@@ -294,23 +294,27 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     sendResult(response.toDoc.serialize);
                 }
             }, (ActiveNodeAddressBook update) {
-                node_addrses = cast(NodeAddress[Pubkey]) update.data;
-                // log("node addresses %s", node_addrses);
+                    //node_addrses = cast(NodeAddress[Pubkey]) update.data;
+                log.warning("Should be removed ActiveNodeAddressBook update (the AddressBook is shoud be used instead)");
             }, (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); }, // (immutable(Throwable) t) {
                     //     //log.fatal(t.msg);
                     //     stop=true;
                     //     ownerTid.send(t);
                     // }
 
-                    
+
 
             );
             try {
                 connectionPool.tick();
                 if (opts.dart.synchronize) {
                     syncPool.tick();
-                    if (node_addrses.length > 0 && syncPool.isReady) {
-                        sync_factory.setNodeTable(node_addrses);
+                    if (!addressbook.isReady) {
+                        log("addressbook.length=%d syncPool.isReady =%s state=%s sync_state=%s",
+                        addressbook.numOfActiveNodes, syncPool.isReady, syncPool.state, syncPool.sync_state);
+                    }
+                    if (addressbook.numOfNodes > 0 && syncPool.isReady) {
+                        sync_factory.setNodeTable(addressbook._data);
                         syncPool.start(sync_factory);
                         state.setState(DARTSynchronizeState.SYNCHRONIZING);
                     }
@@ -321,7 +325,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     }
                     if (syncPool.isError) {
                         log("Error handling");
-                        sync_factory.setNodeTable(node_addrses);
+                        sync_factory.setNodeTable(addressbook._data);
                         syncPool.start(sync_factory);
                         state.setState(DARTSynchronizeState.SYNCHRONIZING); //TODO: remove if notification not needed
                     }
@@ -409,6 +413,7 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
         this.opts = opts;
     }
 
+    version(none)
     void tryToSubscribe(NodeAddress[Pubkey] node_addreses, shared(p2plib.NodeI) node) {
         bool subscribeTo(NodeAddress address) {
             try {

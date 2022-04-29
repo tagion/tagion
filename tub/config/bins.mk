@@ -1,28 +1,39 @@
 
-TAGIONWAVE?=$(DBIN)/tagionwave
-TAGIONBOOT?=$(DBIN)/tagionboot
-DARTUTIL?=$(DBIN)/dartutil
-HIBONUTIL?=$(DBIN)/hibonutil
-TAGIONWALLET?=$(DBIN)/wallet
-
-
+#
+# $1 : Program name
+# $2 : Path to the program
+# $3 : List of libraries used by the program
+# $4 : Set if the program is tagion tool
+#
 define BIN
 ${eval
-$2?=$$(DBIN)/$1
+export $2?=$$(DBIN)/$1
 
 BINS+=$$($2)
 
 $1: target-$1
 bins: $1
 
+_TOOLS=$4
+
+ifdef _TOOLS
+info-$1:
+	@echo _TOOLS defined $$(TAGION)
+
+target-$1: target-tagion
+	@echo Tools enabled $1
+	rm -f $$($2)
+	ln -s $$(TAGION) $$($2)
+else
+info-$1:
+	@echo _TOOLS undefined
 LIBS_$1+=$3
 #DFILES_$1+=xxx
-DFILES_$1+=$${shell find $$(DSRC) -name "*.d" -a -path "*/src/bin-tagionwave/*" -a -not -path "*/unitdata/*"}
+#DFILES_$1+=$${shell find $$(DSRC) -name "*.d" -a -path "*/src/bin-tagionwave/*" -a -not -path "*/unitdata/*"}
 target-$1: LIBS+=$$(LIBS_$1)
-#target-$1: DFILES+=$$(DFILES_$1)
 
-# tar-$1: DFILES+=$${shell find $$(DSRC) -name "*.d" -a -path "*/src/bin-$1/*" -a -not -path "*/unitdata/*"}
 target-$1: $$(DBIN)/$1
+endif
 
 env-$1:
 	$$(PRECMD)

@@ -60,6 +60,11 @@ synchronized class AddressBook {
 
     enum max_count = 3;
     protected int timeout= 300; ///
+    protected size_t nodes;
+
+    void number_of_active_nodes(const size_t nodes) pure nothrow {
+        this.nodes = nodes;
+    }
 
     protected {
         Random rnd;
@@ -178,8 +183,12 @@ synchronized class AddressBook {
 
     import tagion.services.Options;
 
-    bool ready(ref const(Options) opts) const pure nothrow {
-        return addresses.length >= opts.nodes;
+    bool isReady() const pure nothrow
+        in {
+            assert(nodes >= 4);
+        }
+    do {
+        return addresses.length >= nodes;
     }
 
     immutable(NodePair) random() @trusted const pure {

@@ -24,7 +24,11 @@ enum fileextensions {
     JSON = ".json"
 };
 
-int main(string[] args) {
+import tagion.tools.Basic;
+
+mixin Main!_main;
+
+int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
 
@@ -49,7 +53,7 @@ int main(string[] args) {
             "value|V", format("Bill value : default: %d", value), &value,
             "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty, //        "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
 
-            
+
 
     );
 

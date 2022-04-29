@@ -25,7 +25,12 @@ CONFIGUREFLAGS_SECP256K1 += CRYPTO_LIBS=$(DTMP)/ CRYPTO_CFLAGS=$(DSRC_OPENSSL)/i
 CONFIGUREFLAGS_SECP256K1 += --prefix=$(DLIB)
 include ${call dir.resolve, cross.mk}
 
-secp256k1: $(LIBSECP256K1)
+secp256k1: $(LIBSECP256K1) $(DSRC_SECP256K1)/include/secp256k1_hash.h
+
+$(DSRC_SECP256K1)/include/secp256k1_hash.h: $(DSRC_SECP256K1)/src/hash.h
+	$(PRECMD)
+	ln -s $< $@
+
 
 proper-secp256k1:
 	$(PRECMD)
@@ -57,6 +62,7 @@ env: env-secp256k1
 help-secp256k1:
 	$(PRECMD)
 	${call log.header, $@ :: help}
+	${call log.help, "make secp256k1", "Creates the secp256k1 library"}
 	${call log.help, "make help-secp256k1", "Will display this part"}
 	${call log.help, "make proper-secp256k1", "Erase all secp256k1 objects and libraries"}
 	${call log.help, "make env-secp256k1", "List all secp256k1 build environment"}

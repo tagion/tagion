@@ -13,7 +13,7 @@ import std.typecons;
 import std.format;
 
 import tagion.gossip.P2pGossipNet : ConnectionPool;
-import tagion.gossip.AddressBook : NodeAddress;
+import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;
@@ -264,13 +264,13 @@ class P2pSynchronizationFactory : SynchronizationFactory {
         this.pkey = pkey;
     }
 
-    protected NodeAddress[Pubkey] node_address;
-    void setNodeTable(NodeAddress[Pubkey] node_address) {
-        this.node_address = node_address;
+//    protected NodeAddress[Pubkey] node_address;
+    void setNodeTable(const(NodeAddress[Pubkey]) node_address) {
+//        this.node_address = node_address;
     }
 
     bool canSynchronize() {
-        return node_address !is null && node_address.length > 0;
+        return addressbook.isReady; //node_address !is null && node_address.length > 0;
     }
 
     SyncSectorResponse syncSector(
@@ -316,9 +316,11 @@ class P2pSynchronizationFactory : SynchronizationFactory {
         do {
             iteration++;
             import std.range : dropExactly;
-
+/+
             const random_key_index = uniform(0, node_address.length, rnd);
             const node_addr = node_address.byKeyValue.dropExactly(random_key_index).front;
++/
+            const node_addr = addressbook.random;
             if (node_addr.value.sector.inRange(sector)) {
                 const node_port = node_addr.value.port;
                 if (node_addr.key == pkey)
@@ -548,7 +550,7 @@ version (none) unittest {
 class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)) : Fiber { //TODO: move fiber inside as a field
     enum root = DART.Rims.root;
     bool fast_load;
-    protected enum State {
+    enum State {
         READY,
         FIBER_RUNNING,
         RUNNING,
@@ -558,6 +560,9 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     }
 
     mixin StateT!State;
+    State sync_state() @nogc const pure nothrow {
+        return _state;
+    }
 
     bool isReady() nothrow {
         return checkState(State.READY);
@@ -646,6 +651,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
             }
         }
         if (failed_sync_sectors.length > 0) {
+            log.error("DART Sync sectors greater than 0 value is %d", failed_sync_sectors.length);
             _state = State.ERROR;
         }
         else {
@@ -654,9 +660,6 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     }
 
     void start(SynchronizationFactory factory) //restart with new factory
-
-
-
     in {
         assert(checkState(State.STOP, State.READY, State.ERROR));
     }
@@ -700,6 +703,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
         }
         else {
             sync_sectors[sector] = false;
+            log.error("Sync on RIM %s fiber-service not running", sector);
             _state = State.ERROR;
         }
     }

@@ -108,6 +108,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         setOptions(opts);
 
         log.register(opts.node_name);
+        addressbook.number_of_active_nodes = opts.nodes;
         scope (success) {
             log.close;
             ownerTid.prioritySend(Control.END);
@@ -443,7 +444,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                     update_pkeys(address_book.data.keys);
                 });
             log.trace("NETWORK READY %d < %d ", addressbook.numOfNodes,  opts.nodes);
-            if (addressbook.ready(opts)) {
+            if (addressbook.isReady) {
                 network_ready = true;
             }
             else {

@@ -1,6 +1,8 @@
 module tagion.services.MdnsDiscoveryService;
 
 import p2plib = p2p.node;
+import p2p.callback;
+import p2p.cgo.c_helper;
 import tagion.communication.HandlerPool;
 
 //import tagion.dart.DART;
@@ -30,6 +32,20 @@ void mdnsDiscoveryService(
         }
         log.register(task_name);
 
+        p2plib.MdnsService discovery = node.startMdns("tagion_mdns", opts.discovery.interval.msecs);
+
+        log("Run mdns service");
+        p2plib.MdnsNotifee notifee;
+        // if(opts.discovery.notify_enabled){
+        log("Mdns: notify enabled");
+        notifee = discovery.registerNotifee(&StdHandlerCallback, task_name);
+        // }
+        scope (exit) {
+            // if(opts.discovery.notify_enabled){
+            notifee.close();
+            // }
+        }
+
         bool stop = false;
 
         bool checkTimestamp(SysTime time, Duration duration) {
@@ -56,29 +72,50 @@ void mdnsDiscoveryService(
 
         addressbook[pubkey] = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
         ownerTid.send(Control.LIVE);
-        while(!stop) {
+        bool addressbook_done;
+        while (!stop) {
             pragma(msg, "fixme(alex): 500.msecs shoud be an option parameter");
-            receiveTimeout(
+            const message=receiveTimeout(
                     500.msecs,
                     (Control control) {
-                if (control == Control.STOP) {
+                if (control is Control.STOP) {
                     stop = true;
                 }
-            }, (DiscoveryRequestCommand request) {
-                final switch (request) {
-                case DiscoveryRequestCommand.RequestTable:
-                    auto address_book = new ActiveNodeAddressBook(addressbook._data); //node_addrses);
+            },
+                    (DiscoveryRequestCommand request) {
+                with (DiscoveryRequestCommand) {
+                    final switch (request) {
+                    case RequestTable:
+                        pragma(msg, "fixme(cbr):Address book request should not be used anymore");
+                        auto address_book = new ActiveNodeAddressBook(null); //node_addrses);
                         log("Requested: %s : %d", addressbook._data.length, address_book.data.length);
                         ownerTid.send(address_book); //addressbook._data);
                         break;
-                case DiscoveryRequestCommand.BecomeOnline:
-                case DiscoveryRequestCommand.UpdateTable:
-                case DiscoveryRequestCommand.BecomeOffline:
+                    case BecomeOnline:
+                    case BecomeOffline:
+                    case UpdateTable:
                         break;
 
+                    }
                 }
             });
-            notifyReadyAfterDelay();
+                        if (!addressbook_done) {
+/*
+            if (!message) {
+                updateAddressbook;
+            }
+*/
+            if (addressbook.isReady) {
+                ownerTid.send(DiscoveryState.READY);
+                addressbook_done=true;
+            // }
+            // }
+// }
+//                         notifyReadyAfterDelay();
+        }
+
+//            notifyReadyAfterDelay();
+                        }
         }
     }
     catch (Throwable t) {

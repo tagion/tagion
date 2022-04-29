@@ -1,44 +1,49 @@
 
-alpha-mode1: HOSTPORT=4020
-alpha-mode1: TRANSACTIONPORT=10810
-alpha-mode1: MONITORPORT=10820
-alpha-mode1: DARTSYNC=false
-aplha-mode1: dart
+test-dart: DARTDB=$(TESTBENCH)/test-dart.drt
+test-dart: dart
+
+mode1-alpha: HOSTPORT=4020
+mode1-alpha: TRANSACTIONPORT=10810
+mode1-alpha: MONITORPORT=10820
+mode1-alpha: DARTSYNC=false
+mode1-alpha: DARTDB=$(TESTBENCH)/mode1/dart-alpha.drt
+mode1-alpha: dart
+
 MODE1_LIST+=alpha
 
-beta-mode1: HOSTPORT=4021
-beta-mode1: TRANSACTIONPORT=10811
-beta-mode1: MONITORPORT=10821
-beta-mode1: DARTSYNC=true
+mode1-beta: HOSTPORT=4021
+mode1-beta: TRANSACTIONPORT=10811
+mode1-beta: MONITORPORT=10821
+mode1-beta: DARTSYNC=true
 MODE1_LIST+=beta
 
-gamma-mode1: HOSTPORT=4022
-gamma-mode1: TRANSACTIONPORT=10812
-gamma-mode1: MONITORPORT=10822
-gamma-mode1: DARTSYNC=true
-MODE1_LIST+=gamme
+mode1-gamma: HOSTPORT=4022
+mode1-gamma: TRANSACTIONPORT=10812
+mode1-gamma: MONITORPORT=10822
+mode1-gamma: DARTSYNC=true
+MODE1_LIST+=gamma
 
-delta-mode1: HOSTPORT=4023
-delta-mode1: TRANSACTIONPORT=10813
-delta-mode1: MONITORPORT=10823
-delta-mode1: DARTSYNC=true
+mode1-delta: HOSTPORT=4023
+mode1-delta: TRANSACTIONPORT=10813
+mode1-delta: MONITORPORT=10823
+mode1-delta: DARTSYNC=true
 MODE1_LIST+=delta
 
-epsilon-mode1: HOSTPORT=4024
-epsilon-mode1: TRANSACTIONPORT=10814
-epsilon-mode1: MONITORPORT=10824
-epsilon-mode1: DARTSYNC=true
+mode1-epsilon: HOSTPORT=4024
+mode1-epsilon: TRANSACTIONPORT=10814
+mode1-epsilon: MONITORPORT=10824
+mode1-epsilon: DARTSYNC=true
 MODE1_LIST+=epsilon
 
-zeta-mode1: HOSTPORT=4025
-zeta-mode1: TRANSACTIONPORT=10815
-zeta-mode1: MONITORPORT=10825
-zeta-mode1: DARTSYNC=true
+mode1-zeta: HOSTPORT=4025
+mode1-zeta: TRANSACTIONPORT=10815
+mode1-zeta: MONITORPORT=10825
+mode1-zeta: DARTSYNC=true
 MODE1_LIST+=zeta
 
 
-eta-mode1: HOSTPORT=4026
-eta-mode1: TRANSACTIONPORT=10816
-eta-mode1: MONITORPORT=10826
-eta-mode1: DARTSYNC=true
+mode1-eta: HOSTPORT=4026
+mode1-eta: TRANSACTIONPORT=10816
+mode1-eta: MONITORPORT=10826
+mode1-eta: DARTSYNC=true
 MODE1_LIST+=eta
