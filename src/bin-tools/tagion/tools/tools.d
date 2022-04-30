@@ -23,8 +23,6 @@ int main(string[] args) {
     alias alltools = AliasSeq!(tagionwave, dartutil, hibonutil, tagionwallet,tagionboot);
     enum toolName(alias tool)=moduleName!tool.split(".").tail(1)[0];
 
-//    enum toolnames=staticMap!(toolName, alltools);
-
     auto tool=args[0].baseName;
 
     alias Result=Tuple!(int, "exit_code", bool, "executed");
@@ -33,6 +31,9 @@ int main(string[] args) {
         switch (tool) {
             static foreach(toolmod; alltools) {{
                     enum toolname=toolName!toolmod;
+                    static if (toolmod.alternative_name) {
+                    case toolmod.alternative_name:
+                    }
                     case toolname:
                         enum code =format(q{return Result(%s._main(args), true);}, toolname);
                         mixin(code);
@@ -49,7 +50,12 @@ int main(string[] args) {
         result=do_main(tool, args[1..$]);
     }
     if (!result.executed) {
-        enum toolnames=staticMap!(toolName, alltools);
+        enum alternative(alias mod) = mod.alternative_name;
+        enum notNull(string name) = name !is null;
+        enum toolnames=AliasSeq!(
+            staticMap!(toolName, alltools),
+            Filter!(notNull, staticMap!(alternative, alltools))
+            );
         stderr.writefln("Invalid tool %s available %-(%s, %)", tool, [toolnames]);
         return 1;
     }
