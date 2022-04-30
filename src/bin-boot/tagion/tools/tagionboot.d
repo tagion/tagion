@@ -44,7 +44,8 @@ int _main(string[] args) {
     string outputfile = "tmp/dart.hibon";
     //    StandardBill bill;
     uint number_of_bills;
-    bool test_mode = false;
+    bool initbills = false;
+    bool stdrecords = false;
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
@@ -53,9 +54,8 @@ int _main(string[] args) {
             //         "bills|b", "Generate bills", &number_of_bills,
             // "value|V", format("Bill value : default: %d", value), &value,
             // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
-            "test|t", "Testing mode", &test_mode,
-
-
+            "initbills|b", "Testing mode", &initbills,
+            "stdrecords|s", &stdrecords,
     );
 
     if (version_switch) {
@@ -96,7 +96,43 @@ int _main(string[] args) {
     auto factory = RecordFactory(net);
     auto recorder = factory.recorder;
 
-    if (!test_mode) {
+    const onehot = stdrecords + initbills;
+
+    if (onehot > 1) {
+        stderr.writeln("Only one of the --stdrecords and --initbills switches alowed");
+        return 1;
+    }
+
+    if (stdrecords) {
+        writeln("TEST MODE:\nInitialize standart records");
+
+        NetworkNameCard nnc1;
+        nnc1.name = "some_random_string";
+
+        NetworkNameRecord nrc1;
+        nrc1.name = net.hashOf(nnc1.toDoc);
+        nnc1.record = net.hashOf(nrc1.toDoc);
+        
+        recorder.add(nnc1);
+        recorder.add(nrc1);
+    }
+    else if (initbills) {
+        writeln("TEST MODE:\nInitialize dummy bills");
+        import tagion.crypto.SecureNet;
+        alias StdSecureWallet = SecureWallet!StdSecureNet;
+    
+        auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN);
+        
+        const label = "some_name";
+        foreach (amount; bill_amounts) {
+            const invoice = StdSecureWallet.createInvoice(label, amount);
+            const bill = StandardBill(invoice.amount, 0, invoice.pkey, initial_gene);
+            
+            // Add the bill to the DART recorder
+            recorder.add(bill);
+        }
+    }
+    else {
         foreach (file; args[1 .. $]) {
             if (!file.exists) {
                 writefln("Error: File %s does not exists", file);
@@ -110,22 +146,6 @@ int _main(string[] args) {
 
             const invoice = Invoice(invoice_doc);
 
-            const bill = StandardBill(invoice.amount, 0, invoice.pkey, initial_gene);
-
-            // Add the bill to the DART recorder
-            recorder.add(bill);
-        }
-    }
-    else {
-        writeln("TEST MODE");
-        import tagion.crypto.SecureNet;
-        alias StdSecureWallet = SecureWallet!StdSecureNet;
-
-        auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN);
-
-        const label = "some_name";
-        foreach (amount; bill_amounts) {
-            const invoice = StdSecureWallet.createInvoice(label, amount);
             const bill = StandardBill(invoice.amount, 0, invoice.pkey, initial_gene);
 
             // Add the bill to the DART recorder
