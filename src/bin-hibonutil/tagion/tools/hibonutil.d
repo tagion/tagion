@@ -40,9 +40,7 @@ int _main(string[] args) {
     //    string passphrase="verysecret";
     ulong value = 1000_000_000;
     bool pretty;
-    //    bill.toHiBON;
 
-    //   pragma(msg, "bill_type ", GetLabel!(StandardBill.bill_type));
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
@@ -51,10 +49,7 @@ int _main(string[] args) {
             "outputfile|o", "Sets the output file name", &outputfilename,
             "bin|b", "Use HiBON or else use JSON", &binary,
             "value|V", format("Bill value : default: %d", value), &value,
-            "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty, //        "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
-
-
-
+            "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
     );
 
     if (version_switch) {
@@ -113,9 +108,7 @@ int _main(string[] args) {
     switch (input_extension) {
     case fileextensions.HIBON:
         immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
-        //        pragma(msg, typeof(data));
         const doc = Document(data);
-        //        version(none) {
         const error_code = doc.valid(
                 (
                 const(Document) sub_doc,
@@ -126,7 +119,6 @@ int _main(string[] args) {
             writefln("Errorcode %s", error_code);
             return 1;
         }
-        //      }
         auto json = doc.toJSON;
         auto json_stringify = (pretty) ? json.toPrettyString : json.toString;
         if (standard_output) {

@@ -35,7 +35,6 @@ int main(string[] args) {
                     enum toolname=toolName!toolmod;
                     case toolname:
                         enum code =format(q{return Result(%s._main(args), true);}, toolname);
-                        // pragma(msg, code);
                         mixin(code);
                         break SelectTool;
                 }}

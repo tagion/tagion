@@ -51,7 +51,6 @@ bool locked(string filename) {
 synchronized class AddressBook {
     import core.time;
     alias NodeAddresses = NodeAddress[Pubkey];
-    // pragma(msg, "typeof(addresses.byKeyValue) ", typeof(NodeAddresses.byKeyValue));
     alias NodePair = typeof((cast(NodeAddresses) addresses).byKeyValue.front);
     static struct AddressDirectory {
         NodeAddresses addresses;
@@ -70,7 +69,6 @@ synchronized class AddressBook {
         Random rnd;
     }
     this() {
-        //        pragma(msg, "rnd ", typeof(rnd));
         rnd = shared(Random)(unpredictableSeed);
     }
 
@@ -240,11 +238,6 @@ struct NodeAddress {
             this.is_marshal = marshal;
             if (!marshal) {
                 pragma(msg, "fixme(cbr): This code should be done with a regex");
-                // enum message="fixme(cbr): This buried logic should be moved into the DART Synch (NodeAddress) should be a simple datatype";
-                // assert(0, message);
-
-                // pragma(msg, message);
-                // version(none) {
                 this.id = address[address.lastIndexOf(p2p_token) + 5 .. $];
                 auto tcpIndex = address.indexOf(tcp_token) + tcp_token.length;
                 this.port = to!uint(address[tcpIndex .. tcpIndex + 4]);
