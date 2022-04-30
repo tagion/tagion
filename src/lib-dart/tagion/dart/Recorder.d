@@ -47,7 +47,7 @@ class RecordFactory {
     }
 
     /++
-     Creates an empty Recorder
+     Creates an Recorder from a document
      +/
     Recorder recorder(const(Document) doc) {
         return new Recorder(doc);
@@ -108,7 +108,7 @@ class RecordFactory {
 
         private this(Document doc) {
 
-            
+
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             this.archives = new Archives;
