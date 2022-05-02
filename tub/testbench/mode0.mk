@@ -4,6 +4,7 @@ MODE0_DART:=$(MODE0_DATA)/node0/dart.drt
 MODE0_LOG:=$(MODE0_ROOT)/mode0_script.log
 MODE0_FLAGS:=-N 7 -t 200
 MODE0_FLAGS+=--pid=$(MODE0_ROOT)/tagionwave.pid
+MODE0_FLAGS+=--dart-init=false;
 
 mode0: mode0-dart
 mode0: $(MODE0_DATA)/.way

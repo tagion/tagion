@@ -29,7 +29,7 @@ struct DARTOptions {
     struct Synchronize {
         ulong maxSlaves;
         ulong maxMasters;
-        ulong maxSlavePort;
+        ushort maxSlavePort;
         ushort netFromAng;
         ushort netToAng;
         ulong tick_timeout;
