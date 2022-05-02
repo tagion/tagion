@@ -212,8 +212,8 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
             log("updated addr book: %d", address_book.data.length);
             if (is_ready) {
                 log("updated addr book internal: %d", address_book.data.length);
-                update_internal_table(address_book.data);
-                update_dart(address_book.data);
+                // update_internal_table(address_book.data);
+                // update_dart(address_book.data);
             }
             ownerTid.send(address_book);
         }
@@ -274,20 +274,20 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
                 }
                 tid.send(result_addr);
             }, (DiscoveryRequestCommand request) {
-                log("send request: %s", request);
-                switch (request) {
-                case DiscoveryRequestCommand.BecomeOnline: {
-                        is_ready = true;
-                        break;
-                    }
-                case DiscoveryRequestCommand.UpdateTable: {
-                        auto addr_table = request_addr_table();
-                        update_internal_table(addressbook._data);
-                        break;
-                    }
-                default:
-                    break;
-                }
+                // log("send request: %s", request);
+                // switch (request) {
+                // case DiscoveryRequestCommand.BecomeOnline: {
+                //         is_ready = true;
+                //         break;
+                //     }
+                // case DiscoveryRequestCommand.UpdateTable: {
+                //         auto addr_table = request_addr_table();
+                //         update_internal_table(addressbook._data);
+                //         break;
+                //     }
+                // default:
+                //     break;
+                // }
                 bootstrap_tid.send(request);
             },
                 (DiscoveryState state) {
