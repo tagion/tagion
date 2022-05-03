@@ -83,7 +83,8 @@ synchronized class AddressBook {
         return cast(immutable)result;
     }
 
-    void overwrite(const(NodeAddress[Pubkey]) addrs) {
+
+    private void overwrite(const(NodeAddress[Pubkey]) addrs) {
         addresses = null;
         foreach (pkey, addr; addrs) {
             addresses[pkey] = addr;

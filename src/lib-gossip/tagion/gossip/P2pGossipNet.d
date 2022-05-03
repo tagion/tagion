@@ -272,7 +272,7 @@ alias ActiveNodeAddressBook = immutable(AddressBook_deprecation);
 @safe
 immutable class AddressBook_deprecation {
     this(const(NodeAddress[Pubkey]) addrs) @trusted {
-        addressbook.overwrite(addrs);
+//        addressbook.overwrite(addrs);
 //         this.data = cast(immutable) addrs.dup;
     }
 
@@ -586,6 +586,7 @@ class P2pGossipNet : StdP2pNet, GossipNet {
     const(Pubkey) select_channel(ChannelFilter channel_filter) {
         import std.range : dropExactly;
         const active_nodes=addressbook.numOfActiveNodes;
+        log.trace("active_nodes=%d", active_nodes);
         foreach (count; 0 .. active_nodes * 2) {
             const node_index = uniform(0, active_nodes, random);
             log("selected index: %d %d", node_index, active_nodes);
@@ -600,7 +601,8 @@ class P2pGossipNet : StdP2pNet, GossipNet {
     }
 
     const(Pubkey) gossip(
-            ChannelFilter channel_filter, SenderCallBack sender) {
+            ChannelFilter channel_filter,
+            SenderCallBack sender) {
         const send_channel = select_channel(channel_filter);
         if (send_channel.length) {
             send(send_channel, sender());

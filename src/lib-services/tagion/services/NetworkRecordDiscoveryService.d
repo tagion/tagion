@@ -207,14 +207,14 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
             updateDART(insert_recorder);
         }
 
-        bool is_ready = false;
+        //bool is_ready = false;
         void receiveAddrBook(ActiveNodeAddressBook address_book) {
-            log("updated addr book: %d", address_book.data.length);
-            if (is_ready) {
-                log("updated addr book internal: %d", address_book.data.length);
-                // update_internal_table(address_book.data);
-                // update_dart(address_book.data);
-            }
+            // log("updated addr book: %d", address_book.data.length);
+            // if (is_ready) {
+            //     log("updated addr book internal: %d", address_book.data.length);
+            //     // update_internal_table(address_book.data);
+            //     // update_dart(address_book.data);
+            // }
             ownerTid.send(address_book);
         }
 
