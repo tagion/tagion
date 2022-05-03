@@ -54,6 +54,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
 
         auto rec_factory = RecordFactory(net);
         log("net created");
+        version(none)
         RecordFactory.Recorder loadFromDART(Buffer[] fp) {
             try {
                 auto dart_sync_tid = locate(opts.dart.sync.task_name);
@@ -79,10 +80,11 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
             }
         }
 
-        void update_internal_table(immutable NodeAddress[Pubkey] node_addresses) {
-            internal_nodeaddr_table = cast(NodeAddress[Pubkey]) node_addresses.dup;
-        }
+        // void update_internal_table(immutable NodeAddress[Pubkey] node_addresses) {
+        //     internal_nodeaddr_table = cast(NodeAddress[Pubkey]) node_addresses.dup;
+        // }
 
+        version(nonde)
         immutable(NodeAddress[Pubkey]) request_addr_table() {
             log("start: request_addr_table");
             const addr_table_fp = net.calcHash(cast(Buffer) ADDR_TABLE);
@@ -111,6 +113,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
             throw new TagionException("Address table not initialized yet");
         }
 
+        version(none)
         void update_dart(immutable NodeAddress[Pubkey] node_addresses) {
             log("start: update_dart");
             Document toAddressTable(immutable NodeAddress[Pubkey] node_addresses) {
@@ -209,7 +212,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
 
         //bool is_ready = false;
         void receiveAddrBook(ActiveNodeAddressBook address_book) {
-            // log("updated addr book: %d", address_book.data.length);
+            log.trace("updated addr book: %d", addressbook.numOfActiveNodes);
             // if (is_ready) {
             //     log("updated addr book internal: %d", address_book.data.length);
             //     // update_internal_table(address_book.data);
@@ -267,6 +270,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
             receive(
                 &receiveAddrBook,
                 (immutable(Pubkey) key, Tid tid) {
+                    assert(0, "Should not be used");
                 log("looking for key: %s HASH: %s", key.cutHex, net.calcHash(cast(Buffer) key).cutHex);
                 const result_addr = addressbook[key]; //internal_nodeaddr_table.get(key, NodeAddress.init);
                 if (result_addr == NodeAddress.init) {
@@ -274,7 +278,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
                 }
                 tid.send(result_addr);
             }, (DiscoveryRequestCommand request) {
-                // log("send request: %s", request);
+                log("send request: %s", request);
                 // switch (request) {
                 // case DiscoveryRequestCommand.BecomeOnline: {
                 //         is_ready = true;
@@ -291,6 +295,7 @@ void networkRecordDiscoveryService(Pubkey pubkey, shared p2plib.Node p2pnode,
                 bootstrap_tid.send(request);
             },
                 (DiscoveryState state) {
+                    log.trace("state %s", state);
                     ownerTid.send(state);
                 },
                 (Control control) {

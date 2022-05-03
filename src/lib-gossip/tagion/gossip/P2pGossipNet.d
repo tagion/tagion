@@ -372,7 +372,12 @@ class StdP2pNet : P2pNet {
         this.internal_task_name = convert_to_net_task_name(owner_task_name);
         this.node = node;
         void spawn_sender() {
-            this.sender_tid = spawn(&async_send, owner_task_name, discovery_task_name, host, node);
+            this.sender_tid = spawn(
+                &async_send,
+                owner_task_name,
+                discovery_task_name,
+                host,
+                node);
         }
 
         spawn_sender();
