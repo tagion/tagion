@@ -49,20 +49,14 @@ void networkRecordDiscoveryService(
             ownerTid.prioritySend(Control.END);
         }
         log.register(task_name);
-        const ADDR_TABLE = "address_table";
+        // const ADDR_TABLE = "address_table";
         immutable inner_task_name = format("%s-%s", task_name, "internal");
         const net = new StdHashNet();
         const internal_hirpc = HiRPC(null);
-        NodeAddress[Pubkey] internal_nodeaddr_table;
+//        NodeAddress[Pubkey] internal_nodeaddr_table;
 
-        //bool is_ready = false;
         void receiveAddrBook(ActiveNodeAddressBook address_book) {
             log.trace("updated addr book: %d", addressbook.numOfActiveNodes);
-            // if (is_ready) {
-            //     log("updated addr book internal: %d", address_book.data.length);
-            //     // update_internal_table(address_book.data);
-            //     // update_dart(address_book.data);
-            // }
             ownerTid.send(address_book);
         }
 
@@ -109,15 +103,18 @@ void networkRecordDiscoveryService(
         while(!stop) {
             receive(
                 &receiveAddrBook,
+                /*
                 (immutable(Pubkey) key, Tid tid) {
                     assert(0, "Should not be used");
-                log("looking for key: %s HASH: %s", key.cutHex, net.calcHash(cast(Buffer) key).cutHex);
-                const result_addr = addressbook[key]; //internal_nodeaddr_table.get(key, NodeAddress.init);
-                if (result_addr == NodeAddress.init) {
-                    log("Address not found in internal nodeaddr table");
-                }
-                tid.send(result_addr);
-            }, (DiscoveryRequestCommand request) {
+                    log("looking for key: %s HASH: %s", key.cutHex, net.calcHash(cast(Buffer) key).cutHex);
+                    const result_addr = addressbook[key]; //internal_nodeaddr_table.get(key, NodeAddress.init);
+                    if (result_addr == NodeAddress.init) {
+                        log("Address not found in internal nodeaddr table");
+                    }
+                    tid.send(result_addr);
+                },
+                */
+                (DiscoveryRequestCommand request) {
                 log("send request: %s", request);
                 bootstrap_tid.send(request);
             },
