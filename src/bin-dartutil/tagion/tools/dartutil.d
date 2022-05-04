@@ -51,6 +51,7 @@ int _main(string[] args) {
     bool dartrim = false;
     bool dartrpc = false;
     bool generate = false;
+    bool eye;
 
     ubyte ringWidth = 4;
     int rings = 4;
@@ -74,6 +75,7 @@ int _main(string[] args) {
             "rpc", format("Excutes a HiPRC on the DART: default %s", dartrpc), &dartrpc,
             "generate", "Generate a fake test dart (recomended to use with --useFakeNet)", &generate,
             "dump", "Dumps all the arcvives with in the given angle", &dump,
+            "eye", "Prints the bullseye", &eye,
             "width|w", "Sets the rings width and is used in combination with the generate", &ringWidth,
             "rings", "Sets the rings height and is used in  combination with the generate", &rings,
             "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
@@ -148,8 +150,12 @@ int _main(string[] args) {
         auto fp = SetInitialDataSet(db, ringWidth, rings);
         writeln("GENERATED DART. EYE: ", fp.cutHex);
     }
-    if (dump)
+    if (dump) {
         db.dump(true);
+    }
+    else if (eye) {
+        writefln("EYE: %s", db.fingerprint.hex);
+    }
 
     const onehot = dartrpc + dartread + dartrim + dartmodify;
 
@@ -157,9 +163,9 @@ int _main(string[] args) {
         stderr.writeln("Only one of the dartrpc, dartread, dartrim and dartmodify switched alowed");
         return 1;
     }
-    if (!inputfilename.exists) {
-        stderr.writefln("No input file '%s'", inputfilename);
-    }
+    // if (!inputfilename.exists) {
+    //     stderr.writefln("No input file '%s'", inputfilename);
+    // }
 
     if (dartrpc) {
         if (!inputfilename.exists) {
@@ -180,8 +186,8 @@ int _main(string[] args) {
         // else {
             auto fingerprints = dartread_args.map!(hash => decode(hash)).array;
 
-            auto blockfile = BlockFile(dartfilename);
-            writefln("Blockfile %s", blockfile.masterBlock);
+            // auto blockfile = BlockFile(dartfilename);
+            // writefln("Blockfile %s", blockfile.masterBlock);
 
             writeln("EYE ", db.fingerprint.hex);
 

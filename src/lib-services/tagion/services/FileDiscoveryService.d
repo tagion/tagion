@@ -41,17 +41,22 @@ void fileDiscoveryService(
 
         bool stop = false;
 
+        version(none)
         bool checkTimestamp(SysTime time, Duration duration) {
             return (Clock.currTime - time) > duration;
         }
 
+        version(none)
         void updateTimestamp(ref SysTime time) {
             time = Clock.currTime;
         }
 
+        version(none) {
         SysTime mdns_start_timestamp;
         updateTimestamp(mdns_start_timestamp);
+        }
 
+        version(none)
         void notifyReadyAfterDelay() {
             static bool owner_notified;
             if (!owner_notified) {
