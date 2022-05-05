@@ -108,6 +108,8 @@ void mdnsDiscoveryService(
                 updateAddressbook;
             }
 */
+                            log.trace("MDNS NETWORK READY %d < %d (%s)", addressbook.numOfNodes, opts.nodes, addressbook.isReady);
+
             if (addressbook.isReady) {
                 ownerTid.send(DiscoveryState.READY);
                 addressbook_done=true;

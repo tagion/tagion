@@ -222,6 +222,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
 
 //        receive((DiscoveryState state) { assert(state == DiscoveryState.READY); });
         assert(receiveOnly!DiscoveryState is DiscoveryState.READY);
+        log.trace("Network discovered ready");
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
 
         receive((ActiveNodeAddressBook address_book) {

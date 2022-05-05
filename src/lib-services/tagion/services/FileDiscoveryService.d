@@ -97,12 +97,12 @@ void fileDiscoveryService(
                         }
                     }
                 });
-            log.trace("FILE NETWORK READY %d < %d ", addressbook.numOfNodes, opts.nodes);
             if (!addressbook_done) {
                 if (!message) {
                     updateAddressbook;
                 }
-                if (addressbook_requested && addressbook.isReady) {
+                log.trace("FILE NETWORK READY %d < %d (%s) done = %s", addressbook.numOfNodes, opts.nodes, addressbook.isReady, addressbook_done);
+                if (addressbook.isReady) {
                     ownerTid.send(DiscoveryState.READY);
                     addressbook_done=true;
                 }

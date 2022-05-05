@@ -115,9 +115,6 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
             dart.dump;
         }
         else {
-            // if(!opts.dart.initialize){
-            //     dart.calculateFingerprint();
-            // }
             dart.dump;
             log("DART bullseye: %s", dart.fingerprint.cutHex);
         }
@@ -210,13 +207,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     if (received.method.name == DART.Quries.dartModify) { //Not allowed
                         closeConnection();
                     }
-                    // log("Req:%s", doc.toJSON);
                     auto request = dart(received);
-                    // auto tosend = request.toDoc.serialize;
-                    // import tagion.hibon.HiBONJSON;
-                    // log("Res:%s", Document(tosend).toJSON);
                     connectionPool.send(resp.key, request.toDoc.serialize);
-                    // log("DSS: Sended response to connection: %s", resp.key);
                 }
 
                 if (received.isMethod && state.checkState(DARTSynchronizeState.READY)) { //TODO: to switch
@@ -305,7 +297,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
 
 
             );
-            try {
+            // try {
                 connectionPool.tick();
                 if (opts.dart.synchronize) {
                     syncPool.tick();
@@ -359,42 +351,14 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                             cast(uint) opts.dart.sync.host.max_size);
                     request_handling = true;
                 }
-            }
-            // catch(TagionException e){
-            //     immutable task_e = e.taskException;
-            //     log(task_e);
-            //     stop=true;
-            //     ownerTid.send(task_e);
+            // catch (Throwable t) {
+            //     stop = true;
+            //     fatal(t);
             // }
-            // catch(Exception e){
-            //     log.fatal(e.msg);
-            //     stop=true;
-            //     ownerTid.send(cast(immutable)e);
-            // }
-            catch (Throwable t) {
-                stop = true;
-                fatal(t);
-                // immutable task_e = t.taskException;
-                // log(task_e);
-                // stop=true;
-                // ownerTid.send(task_e);
-            }
         }
     }
-    // catch(TagionException e){
-    //     immutable task_e=e.taskException;
-    //     log(task_e);
-    //     ownerTid.send(task_e);
-    // }
-    // catch(Exception e){
-    //     log.fatal(e.msg);
-    //     ownerTid.send(cast(immutable)e.taskException);
-    // }
     catch (Throwable t) {
         fatal(t);
-        // immutable task_e=e.taskException;
-        // log(task_e);
-        // ownerTid.send(task_e);
     }
 }
 
