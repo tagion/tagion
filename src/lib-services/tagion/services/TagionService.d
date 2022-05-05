@@ -33,9 +33,9 @@ import tagion.gossip.EmulatorGossipNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 //import tagion.options.ServiceNames : get_node_name;
-import tagion.basic.TagionExceptions;
+import tagion.basic.TagionExceptions : taskfailure, fatal;
 import tagion.services.DARTSynchronizeService;
-import tagion.dart.DARTSynchronization;
+///import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
 import tagion.gossip.P2pGossipNet;
 import tagion.gossip.InterfaceNet;
@@ -51,8 +51,8 @@ import tagion.communication.HiRPC;
 
 import tagion.utils.Miscellaneous : cutHex;
 
-import tagion.basic.ConsensusExceptions;
-import tagion.basic.TagionExceptions : TagionException;
+//import tagion.basic.ConsensusExceptions;
+//import tagion.basic.TagionExceptions : TagionException;
 
 //import tagion.services.ScriptCallbacks;
 import tagion.services.FileDiscoveryService;
@@ -150,6 +150,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             net.derive(opts.node_name, shared_net);
             p2pnode = initialize_node(opts);
         }
+
         final switch (net_mode) {
         case NetworkMode.internal:
             Pubkey[] pkeys;
@@ -236,6 +237,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         bool ready = false;
         int ready_counter = 2;
         log.trace("Before sync ready addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
+
         do {
             receive((Control ctrl) {
                 log("Received ctrl: %s", ctrl);
@@ -323,7 +325,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         }
 
         log.trace("Before startinf monitor and transaction addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
-        try {
+//        try {
             monitor_socket_tid = spawn(
                 &monitorServiceTask,
                 opts);
@@ -341,13 +343,13 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             else {
                 log("bad command");
             }
-        }
-        catch (Exception e) {
-            log("ERROR: %s", e.msg);
-            force_stop = true;
-        }
-        if (force_stop)
-            return;
+        // }
+        // catch (Exception e) {
+        //     log("ERROR: %s", e.msg);
+        //     force_stop = true;
+        // }
+        // if (force_stop)
+        //     return;
         transcript_tid = spawn(&transcriptServiceTask, opts.transcript.task_name,
                 opts.dart.sync.task_name);
         assert(receiveOnly!Control is Control.LIVE);
