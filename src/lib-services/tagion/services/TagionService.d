@@ -224,7 +224,9 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         log.trace("Network discovered ready");
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
 
-        receive((ActiveNodeAddressBook address_book) {
+        receiveOnly!ActiveNodeAddressBook; //Control is Control.LIVE);
+
+//        receive((ActiveNodeAddressBook address_book) {
                 //update_pkeys(address_book.data.keys);
             dart_sync_tid = spawn(
                 &dartSynchronizeServiceTask!StdSecureNet,
@@ -242,17 +244,17 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             log.trace("Start sync addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
 
 //            dart_sync_tid.send(address_book);
-        }, (Control ctrl) {
-            if (ctrl is Control.STOP) {
-                assert(0, "Why is it stopped here!!!");
-                force_stop = true;
-            }
+        // }, (Control ctrl) {
+        //     if (ctrl is Control.STOP) {
+        //         assert(0, "Why is it stopped here!!!");
+        //         force_stop = true;
+        //     }
 
-            if (ctrl is Control.END) {
-                assert(0, "Why an END here!!!");
-                force_stop = true;
-            }
-        });
+        //     if (ctrl is Control.END) {
+        //         assert(0, "Why an END here!!!");
+        //         force_stop = true;
+        //     }
+        // });
 
         scope (exit) {
             log("Closing net");
