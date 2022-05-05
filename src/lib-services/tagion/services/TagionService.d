@@ -144,14 +144,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         Tid monitor_socket_tid;
         Tid transaction_socket_tid;
         Tid transcript_tid;
-        // void update_pkeys(Pubkey[] pubkeys) {
-        //     version (none)
-        //         if (net_mode != NetworkMode.internal) {
-        //             pkeys = pubkeys;
-        //             foreach (p; pkeys)
-        //                 gossip_net.add_channel(p);
-        //         }
-        // }
 
         shared StdSecureNet shared_net;
         synchronized (master_net) {
@@ -227,7 +219,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
 
         receiveOnly!ActiveNodeAddressBook; //Control is Control.LIVE);
 //        receive((ActiveNodeAddressBook address_book) {
-                //update_pkeys(address_book.data.keys);
             dart_sync_tid = spawn(
                 &dartSynchronizeServiceTask!StdSecureNet,
                 opts,
@@ -462,8 +453,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
             receive((ActiveNodeAddressBook address_book) {
                     log.trace("Before addressbook active %d", addressbook.numOfActiveNodes);
-
-                    //update_pkeys(address_book.data.keys);
                 });
             log.trace("NETWORK READY %d < %d ", addressbook.numOfNodes,  opts.nodes);
             if (addressbook.isReady) {
@@ -486,7 +475,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                 (ActiveNodeAddressBook address_book) {
                     assert(0, "Should not be used");
                     log("Update address book");
-                    //update_pkeys(address_book.data.keys);
                     if (dart_sync_tid !is Tid.init) {
                         send(dart_sync_tid, address_book);
                     }
