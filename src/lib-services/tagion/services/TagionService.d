@@ -98,12 +98,6 @@ shared(p2plib.Node) initialize_node(immutable Options opts) {
 }
 
 void tagionService(NetworkMode net_mode, Options opts) nothrow {
-    //     in {
-    //         import std.algorithm : canFind;
-
-    //         assert([NetworkMode.internal, NetworkMode.local, NetworkMode.pub].canFind(opts.net_mode));
-    //     }
-    // do {
     try {
         setOptions(opts);
 
@@ -130,13 +124,12 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
 
         auto sector_range = DART.SectorRange(opts.dart.from_ang, opts.dart.to_ang);
         shared(p2plib.Node) p2pnode;
-        // string passpharse;
 
         auto master_net = new StdSecureNet;
         StdSecureNet net = new StdSecureNet;
         GossipNet gossip_net;
         ScriptCallbacks scriptcallbacks;
-        HashGraph hashgraph; // = new HashGraph(opts.nodes);
+        HashGraph hashgraph;
 
         Tid discovery_tid;
         Tid dart_sync_tid;
@@ -148,9 +141,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         shared StdSecureNet shared_net;
         synchronized (master_net) {
             import std.format;
-
-            //immutable secret = passpharse.idup;
-
             master_net.generateKeyPair(passpharse);
             shared_net = cast(shared) master_net;
             log("opts.node_name = %s", opts.node_name);
@@ -212,13 +202,11 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             opts);
         assert(receiveOnly!Control is Control.LIVE);
 
-//        receive((DiscoveryState state) { assert(state == DiscoveryState.READY); });
         assert(receiveOnly!DiscoveryState is DiscoveryState.READY);
         log.trace("Network discovered ready");
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
 
         receiveOnly!ActiveNodeAddressBook; //Control is Control.LIVE);
-//        receive((ActiveNodeAddressBook address_book) {
             dart_sync_tid = spawn(
                 &dartSynchronizeServiceTask!StdSecureNet,
                 opts,
@@ -234,26 +222,11 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                 sector_range);
             log.trace("Start sync addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
 
-//            dart_sync_tid.send(address_book);
-        // }, (Control ctrl) {
-        //     if (ctrl is Control.STOP) {
-        //         assert(0, "Why is it stopped here!!!");
-        //         force_stop = true;
-        //     }
-
-        //     if (ctrl is Control.END) {
-        //         assert(0, "Why an END here!!!");
-        //         force_stop = true;
-        //     }
-        // });
 
         scope (exit) {
             log("Closing net");
             gossip_net.close();
         }
-        // if (force_stop) {
-        //     return;
-        // }
 
         bool ready = false;
         int ready_counter = 2;
@@ -264,16 +237,11 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                 if (ctrl is Control.LIVE) {
                     ready_counter--;
                 }
-                // else if (ctrl is Control.STOP) {
-                //     force_stop = true;
-                // }
             }, (DARTSynchronizeState state) {
                 if (state == DARTSynchronizeState.READY) {
                     ready = true;
                 }
             });
-            // if (force_stop)
-            //     return;
         }
         while (!ready || (ready_counter !is 0)); // empty
 
@@ -342,10 +310,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                     if (ctrl is Control.END) {
                         log("Closed monitor");
                     }
-                    // else if (ctrl is Control.FAIL)
-                    // {
-                    //     log.error("Closed monitor with failure");
-                    // }
                 }, (immutable Exception e) { ownerTid.prioritySend(e); });
             }
 
