@@ -91,8 +91,9 @@ void mdnsDiscoveryService(
                     case RequestTable:
                         pragma(msg, "fixme(cbr):Address book request should not be used anymore");
                         auto address_book = new ActiveNodeAddressBook(null); //node_addrses);
-                        log("Requested: %s : %d", addressbook._data.length, address_book.data.length);
-                        ownerTid.send(address_book); //addressbook._data);
+                        log("Requested: %s ", addressbook._data.length);
+                        addressbook_done=false;
+                        //ownerTid.send(address_book); //addressbook._data);
                         break;
                     case BecomeOnline:
                     case BecomeOffline:

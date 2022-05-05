@@ -81,8 +81,8 @@ void fileDiscoveryService(
                             //                        initialize();
                             auto address_book = new ActiveNodeAddressBook(null); //node_addrses);
                             //log("Requested: %d : %d", addressbook._data.length, address_book.data.length);
-                            addressbook_requested=true;
-                            ownerTid.send(address_book);
+                            addressbook_done=false;
+                            //ownerTid.send(address_book);
                             break;
                         case BecomeOnline:
                             log("Becoming online..");

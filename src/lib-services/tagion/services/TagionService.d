@@ -205,8 +205,10 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         assert(receiveOnly!DiscoveryState is DiscoveryState.READY);
         log.trace("Network discovered ready");
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
+        assert(receiveOnly!DiscoveryState is DiscoveryState.READY);
 
-        receiveOnly!ActiveNodeAddressBook; //Control is Control.LIVE);
+//        receiveOnly!DiscoveryState;
+//        receiveOnly!ActiveNodeAddressBook; //Control is Control.LIVE);
             dart_sync_tid = spawn(
                 &dartSynchronizeServiceTask!StdSecureNet,
                 opts,
@@ -415,9 +417,9 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         bool network_ready = false;
         do {
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
-            receive((ActiveNodeAddressBook address_book) {
-                    log.trace("Before addressbook active %d", addressbook.numOfActiveNodes);
-                });
+            // receive((ActiveNodeAddressBook address_book) {
+            //         log.trace("Before addressbook active %d", addressbook.numOfActiveNodes);
+            //     });
             log.trace("NETWORK READY %d < %d ", addressbook.numOfNodes,  opts.nodes);
             if (addressbook.isReady) {
                 network_ready = true;
@@ -427,6 +429,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             }
         }
         while (!network_ready);
+
         log.trace("Before Main loop  addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
 
         while (!stop && !abort) {

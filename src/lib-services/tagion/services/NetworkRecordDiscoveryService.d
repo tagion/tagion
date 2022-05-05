@@ -54,8 +54,9 @@ void networkRecordDiscoveryService(
         const internal_hirpc = HiRPC(null);
 
         void receiveAddrBook(ActiveNodeAddressBook address_book) {
+            assert(0, "Shoudl not be used");
             log.trace("updated addr book: %d", addressbook.numOfActiveNodes);
-            ownerTid.send(address_book);
+            //   ownerTid.send(address_book);
         }
 
         Tid bootstrap_tid;
@@ -100,7 +101,7 @@ void networkRecordDiscoveryService(
         bool stop = false;
         while(!stop) {
             receive(
-                &receiveAddrBook,
+                //&receiveAddrBook,
                 (DiscoveryRequestCommand request) {
                     log("send request: %s", request);
                     bootstrap_tid.send(request);
