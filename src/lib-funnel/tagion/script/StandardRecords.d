@@ -44,11 +44,11 @@ import tagion.script.TagionCurrency;
         @Label("$index") uint index; /// Current index previous.index+1
         @Label("$node") Buffer node; /// Hash pointer to NNR
         @Label("$payload", true) Document payload;
+        pragma(msg, "fixme(ib): payload should be Buffer type");
         mixin HiBONRecord;
     }
 
     @RecordType("NSR") struct NetworkSignatureRecord {
-        @Label("#pkey") Pubkey pubkey;  /// Hash of the pubkey
         @Label("$sign") Buffer sign;    /// Of the NNC with the pubkey
     }
 
