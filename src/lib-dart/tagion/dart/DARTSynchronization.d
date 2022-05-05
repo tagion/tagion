@@ -340,6 +340,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             pragma(msg, "fixme(alex): Why 20?");
         }
         while (iteration < 20);
+        log("master not found");
         return SyncSectorResponse(0, null);
     }
 

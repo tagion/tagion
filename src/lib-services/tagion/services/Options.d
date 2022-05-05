@@ -39,7 +39,7 @@ struct Options {
 
     HostOptions host;
 
-    uint nodes; /// Number of concurrent nodes (Test mode)
+    ushort nodes; /// Number of concurrent nodes (Test mode)
 
     uint seed; /// Random seed for pseudo random sequency (Test mode)
 
@@ -61,7 +61,7 @@ struct Options {
     string node_name; /// Name of the node
     string ip;
     ulong port;
-    ulong port_base;
+    ushort port_base;
     ushort min_port; /// Minum value of the port number
     string path_to_shared_info;
     bool p2plogs;

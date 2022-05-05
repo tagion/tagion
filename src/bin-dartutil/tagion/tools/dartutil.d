@@ -2,7 +2,7 @@ module tagion.tools.dartutil;
 
 import std.getopt;
 import std.stdio;
-import std.file : fread = read, fwrite = write, exists;
+import std.file : exists;
 import std.format;
 import std.conv : to;
 import std.array;
@@ -20,6 +20,7 @@ import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord : fread, fwrite;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONRecord;
 
@@ -63,7 +64,7 @@ int _main(string[] args) {
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
             "version", "display the version", &version_switch,
-            "dartfilename|drt", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
+            "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
             "initialize", "Create a dart file", &initialize,
             "inputfile|i", "Sets the HiBON input file name", &inputfilename,
             "outputfile|o", "Sets the output file name", &outputfilename,
@@ -132,11 +133,11 @@ int _main(string[] args) {
     const hirpc = HiRPC(net);
     // DART db;
 
-    void writeResponse(Buffer data) {
-        // if(dump) db.dump(true);
-        writeln("OUTPUT: ", outputfilename);
-        fwrite(outputfilename, data);
-    }
+    // void writeResponse(Buffer data) {
+    //     // if(dump) db.dump(true);
+    //     writeln("OUTPUT: ", outputfilename);
+    //     fwrite(outputfilename, data);
+    // }
 
     if (initialize) {
         if (dartfilename.length == 0) {
@@ -215,29 +216,30 @@ int _main(string[] args) {
             writeln("No input file");
         }
         else {
-            Buffer inputBuffer = cast(immutable(ubyte)[]) fread(inputfilename);
-            auto doc = Document(inputBuffer);
+            const doc = inputfilename.fread;
             auto received = hirpc.receive(doc);
             auto result = db(received);
-            auto tosendResult = result.response.result[Keywords.result].get!Document;
-            writeResponse(tosendResult.serialize);
+            const tosendResult = result.response.result[Keywords.result].get!Document;
+            outputfilename.fwrite(tosendResult);
         }
     }
     else if (dartread) {
-        if (!inputfilename.exists) {
-            writeln("No input file");
-        }
-        else {
+        // if (!inputfilename.exists) {
+        //     writeln("No input file");
+        // }
+        // else {
             auto fingerprints = dartread_args.map!(hash => decode(hash)).array;
 
             const sender = DART.dartRead(fingerprints, hirpc);
             auto receiver = hirpc.receive(sender.toDoc);
             auto result = db(receiver, false);
             auto tosend = hirpc.toHiBON(result);
-            auto tosendResult = tosend.method.params;
+            writeln("CCC ", result.toJSON.toPrettyString);
+            const tosendResult = tosend.method.params;
             if (dump)
                 db.dump(true);
-            writeResponse(tosendResult.serialize);
+//            writeResponse(tosendResult.serialize);
+            outputfilename.fwrite(tosendResult);
             writeln("Result: %s", result.message.toJSON.toPrettyString);
 
             // auto inputBuffer = cast(immutable(ubyte)[])fread(inputfilename);
@@ -268,7 +270,7 @@ int _main(string[] args) {
             // auto tosend = hirpc.toHiBON(result);
             // auto tosendResult = (tosend[Keywords.message].get!Document)[Keywords.result].get!Document;
             // writeResponse(tosendResult.serialize);
-        }
+        // }
     }
     else if (dartrim) {
         // Buffer root_rims;
@@ -295,10 +297,12 @@ int _main(string[] args) {
         // writeResponse(tosendResult.serialize);
     }
     else if (dartmodify) {
-        auto inputBuffer = cast(immutable(ubyte)[]) fread(inputfilename);
+//        auto inputBuffer = cast(immutable(ubyte)[]) fread(inputfilename);
 
+        const doc = inputfilename.fread;
         auto factory = RecordFactory(net);
-        auto recorder = factory.recorder(Document(inputBuffer));
+//        const recorder = inputfilename.fread!(RecordFactory.Recorder)(factory.net);
+        auto recorder = factory.recorder(doc);
         auto sended = DART.dartModify(recorder, hirpc);
         auto received = hirpc.receive(sended);
         auto result = db(received, false);
@@ -306,7 +310,7 @@ int _main(string[] args) {
         auto tosendResult = tosend.method.params;
         if (dump)
             db.dump(true);
-        writeResponse(tosendResult.serialize);
+        outputfilename.fwrite(tosendResult);
     }
     else if (nncread) {
         auto nnc = readNNC(nncreadname, hirpc, db);

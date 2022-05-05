@@ -4,10 +4,9 @@ MODE0_DART:=$(MODE0_DATA)/node0/dart.drt
 MODE0_LOG:=$(MODE0_ROOT)/mode0_script.log
 MODE0_FLAGS:=-N 7 -t 200
 MODE0_FLAGS+=--pid=$(MODE0_ROOT)/tagionwave.pid
+MODE0_FLAGS+=--dart-init=false;
 
-mode0-dart: DARTDB=$(MODE0_DART)
-mode0-dart: dart
-
+mode0: mode0-dart
 mode0: $(MODE0_DATA)/.way
 mode0: DARTDB=$(MODE0_DART)
 mode0: dart
@@ -17,6 +16,9 @@ mode0: tagionwave
 
 .PHONY: mode0
 testbench: mode0
+
+mode0-dart: DARTDB=$(MODE0_DART)
+mode0-dart: dart
 
 #$(MODE0_DART): dart
 
@@ -43,8 +45,8 @@ help-mode0:
 	$(PRECMD)
 	${call log.header, $@ :: help}
 	${call log.help, "make mode0", "Will start the test network in mode0"}
+	${call log.help, "make mode0-dart", "Will clean all data in mode 0"}
 	${call log.help, "make clean-mode0", "Will clean all data in mode 0"}
-
 	${call log.help, "make env-mode0", "Lists the setting for mode 0"}
 	${call log.close}
 

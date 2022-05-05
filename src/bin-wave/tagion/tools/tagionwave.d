@@ -54,7 +54,7 @@ void create_ssl(const(OpenSSL) openssl) {
 
 import tagion.tools.Basic;
 
-mixin Main!_main;
+mixin Main!(_main, "wave");
 
 int _main(string[] args) {
     import std.file : fwrite=write;

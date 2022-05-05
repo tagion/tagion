@@ -222,7 +222,7 @@ dart: $(DARTBOOTRECORD)
 	$(PRECMD)
 	${call log.header, $@ :: dart db}
 	$(MKDIR) ${dir $(DARTDB)}
-	$(DARTUTIL) --initialize -i $< --drt $(DARTDB) -m
+	$(DARTUTIL) --initialize -i $< --dartfilename $(DARTDB) -m
 	${call log.close}
 
 env-dart:

@@ -1,3 +1,5 @@
+module tagion.tools.tagionboot;
+
 import std.getopt;
 import std.stdio;
 import std.file : exists;
@@ -12,6 +14,7 @@ import tagion.hibon.Document : Document;
 import tagion.basic.Basic : basename, Buffer, Pubkey;
 import tagion.script.StandardRecords;
 import tagion.crypto.SecureNet : StdHashNet;
+import tagion.script.StandardRecords : Invoice;
 import tagion.script.TagionCurrency;
 import tagion.wallet.SecureWallet;
 
@@ -26,7 +29,12 @@ Invoice[] invoices;
 
 enum REVNO = 0;
 enum HASH = "xxx";
-int main(string[] args) {
+
+import tagion.tools.Basic;
+
+mixin Main!(_main, "boot");
+
+int _main(string[] args) {
     immutable program = args[0];
     writefln("BOOT ", program);
     immutable initial_gene = iota(256 / 8).map!(i => immutable(ubyte)(0b10101010)).array;

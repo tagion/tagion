@@ -18,11 +18,10 @@ int main(string[] args) {
     import dartutil = tagion.tools.dartutil;
     import hibonutil = tagion.tools.hibonutil;
     import tagionwallet = tagion.tools.tagionwallet;
+    import tagionboot = tagion.tools.tagionboot;
 
-    alias alltools = AliasSeq!(tagionwave, dartutil, hibonutil, tagionwallet);
+    alias alltools = AliasSeq!(tagionwave, dartutil, hibonutil, tagionwallet,tagionboot);
     enum toolName(alias tool)=moduleName!tool.split(".").tail(1)[0];
-
-    enum toolnames=staticMap!(toolName, alltools);
 
     auto tool=args[0].baseName;
 
@@ -30,10 +29,13 @@ int main(string[] args) {
     Result do_main(string tool, string[] args) {
     SelectTool:
         switch (tool) {
-            static foreach(toolname; toolnames) {{
+            static foreach(toolmod; alltools) {{
+                    enum toolname=toolName!toolmod;
+                    static if (toolmod.alternative_name) {
+                    case toolmod.alternative_name:
+                    }
                     case toolname:
                         enum code =format(q{return Result(%s._main(args), true);}, toolname);
-                        // pragma(msg, code);
                         mixin(code);
                         break SelectTool;
                 }}
@@ -48,6 +50,12 @@ int main(string[] args) {
         result=do_main(tool, args[1..$]);
     }
     if (!result.executed) {
+        enum alternative(alias mod) = mod.alternative_name;
+        enum notNull(string name) = name !is null;
+        enum toolnames=AliasSeq!(
+            staticMap!(toolName, alltools),
+            Filter!(notNull, staticMap!(alternative, alltools))
+            );
         stderr.writefln("Invalid tool %s available %-(%s, %)", tool, [toolnames]);
         return 1;
     }

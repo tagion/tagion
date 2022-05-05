@@ -184,8 +184,12 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             break;
         case NetworkMode.local:
         case NetworkMode.pub:
-            gossip_net = new P2pGossipNet(net.pubkey, opts.node_name,
-                    opts.discovery.task_name, opts.host, p2pnode);
+            gossip_net = new P2pGossipNet(
+                net.pubkey,
+                opts.node_name,
+                opts.discovery.task_name,
+                opts.host,
+                p2pnode);
         }
 
         void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted {
@@ -207,16 +211,21 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         hashgraph.scrap_depth = opts.scrap_depth;
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 
-        discovery_tid = spawn(&networkRecordDiscoveryService, net.pubkey,
-                p2pnode, opts.discovery.task_name, opts);
+        discovery_tid = spawn(
+            &networkRecordDiscoveryService,
+            net.pubkey,
+            p2pnode,
+            opts.discovery.task_name,
+            opts);
         const ctrl = receiveOnly!Control;
         assert(ctrl == Control.LIVE);
 
-        receive((DiscoveryState state) { assert(state == DiscoveryState.READY); });
+//        receive((DiscoveryState state) { assert(state == DiscoveryState.READY); });
+        assert(receiveOnly!DiscoveryState is DiscoveryState.READY);
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
 
         receive((ActiveNodeAddressBook address_book) {
-            update_pkeys(address_book.data.keys);
+                //update_pkeys(address_book.data.keys);
             dart_sync_tid = spawn(
                 &dartSynchronizeServiceTask!StdSecureNet,
                 opts,
@@ -230,8 +239,9 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                 p2pnode,
                 shared_net,
                 sector_range);
-            log("address_book len: %d", address_book.data.length);
-            send(dart_sync_tid, address_book);
+            log.trace("Start sync addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
+
+            dart_sync_tid.send(address_book);
         }, (Control ctrl) {
             if (ctrl is Control.STOP) {
                 assert(0, "Why is it stopped here!!!");
@@ -254,6 +264,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
 
         bool ready = false;
         int ready_counter = 0;
+        log.trace("Before sync ready addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
         do {
             receive((Control ctrl) {
                 log("Received ctrl: %s", ctrl);
@@ -349,14 +360,19 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             ownerTid.prioritySend(Control.END);
         }
 
+        log.trace("Before startinf monitor and transaction addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
         try {
-            monitor_socket_tid = spawn(&monitorServiceTask, opts);
+            monitor_socket_tid = spawn(
+                &monitorServiceTask,
+                opts);
             stderr.writefln("@@@@ Wait for monitor %s", opts.node_name,);
 
             if (receiveOnly!Control is Control.LIVE) {
                 log("Monitor started");
             }
-            transaction_socket_tid = spawn(&transactionServiceTask, opts);
+            transaction_socket_tid = spawn(
+                &transactionServiceTask,
+                opts);
             if (receiveOnly!Control is Control.LIVE) {
                 log("Transaction started port %d", opts.transaction.service.port);
             }
@@ -437,10 +453,14 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         Random!size_t random;
         random.seed(123456789);
 
+        log.trace("Before DiscoveryRequestCommand.RequestTable  addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
+
         bool network_ready = false;
         do {
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
             receive((ActiveNodeAddressBook address_book) {
+                    log.trace("Before addressbook active %d", addressbook.numOfActiveNodes);
+
                     update_pkeys(address_book.data.keys);
                 });
             log.trace("NETWORK READY %d < %d ", addressbook.numOfNodes,  opts.nodes);
@@ -452,20 +472,27 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             }
         }
         while (!network_ready);
+        log.trace("Before Main loop  addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
 
         while (!stop && !abort) {
-            immutable message_received = receiveTimeout(opts.timeout.msecs, &receive_payload, &controller,
-                    &receive_wavefront, &taskfailure, (ActiveNodeAddressBook address_book) {
-                log("Update address book");
-                update_pkeys(address_book.data.keys);
-                if (dart_sync_tid != Tid.init) {
-                    send(dart_sync_tid, address_book);
-                }
-                else {
-                    log("DART sync not found");
-                }
-            });
-            log("ROUNDS: %d AreWeInGraph: %s", hashgraph.rounds.length, hashgraph.areWeInGraph);
+            immutable message_received = receiveTimeout(
+                opts.timeout.msecs,
+                &receive_payload,
+                &controller,
+                &receive_wavefront,
+                &taskfailure,
+                (ActiveNodeAddressBook address_book) {
+                    assert(0, "Should not be used");
+                    log("Update address book");
+                    update_pkeys(address_book.data.keys);
+                    if (dart_sync_tid !is Tid.init) {
+                        send(dart_sync_tid, address_book);
+                    }
+                    else {
+                        log("DART sync not found");
+                    }
+                });
+            log("ROUNDS: %d AreWeInGraph: %s Active %d", hashgraph.rounds.length, hashgraph.areWeInGraph, addressbook.numOfActiveNodes);
             if (!message_received || !hashgraph.areWeInGraph) {
                 const init_tide = random.value(0, 2) is 1;
                 if (init_tide) {

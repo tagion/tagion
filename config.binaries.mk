@@ -65,7 +65,7 @@ ${call BIN,recorderchain,RECORDERCHAIN,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOW
 #
 # fixme(cbr): When ddeps.mk work those libs are not needed
 target-tagionboot: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-boot/*" -a -not -path "*/unitdata/*" }
-${call BIN,tagionboot,TAGIONBOOT,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
+${call BIN,tagionboot,TAGIONBOOT,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETOOL)}
 
 target-tagion: DFLAGS+=$(DVERSION)=TAGION_TOOLS
 target-tagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" }
@@ -74,6 +74,7 @@ target-tagion: DFILES+=${shell find $(DSRC)/bin-dartutil/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-hibonutil/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-wallet/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-tools/tagion -name "*.d"  }
+target-tagion: DFILES+=${shell find $(DSRC)/bin-boot/tagion -name "*.d"  }
 # target-tagion: DFILES+=${shell find $(DSRC)/bin-dartutil -name "*.d" -a -not -path "*/unitdata/*" }
 # target-tagion: DFILES+=${shell find $(DSRC)/bin-hibonutil -name "*.d" -a -not -path "*/unitdata/*" }
 # target-tagion: DFILES+=${shell find $(DSRC)/bin-wallet -name "*.d" -a -not -path "*/unitdata/*" }

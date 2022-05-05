@@ -93,11 +93,9 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
 
         void receive_epoch(Buffer payloads_buff) nothrow {
             try {
-                // pragma(msg, "transcript: ", typeof(payloads));
                 auto payload_doc = Document(payloads_buff);
                 log("Received epoch: len:%d", payload_doc.length);
 
-                // log("Epoch: %s", payload_doc.toJSON);
                 scope bool[Buffer] used_inputs;
                 scope (exit) {
                     used_inputs = null;
@@ -107,7 +105,6 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                 auto recorder = rec_factory.recorder;
                 foreach (payload_el; payload_doc[]) {
                     immutable doc = payload_el.get!Document;
-                    // log("payload: %s", doc.toJSON);
                     log("PAYLOAD: %s", doc.toJSON);
                     if (!SignedContract.isRecord(doc)) {
                         continue;

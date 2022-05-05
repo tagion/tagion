@@ -73,7 +73,6 @@ class StdHashNet : HashNet {
         }
     }
     do {
-        pragma(msg, "dlang: Pre and post condition does not work here");
         assert(h1.length is 0 || h1.length is HASH_SIZE,
                 format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
         assert(h2.length is 0 || h2.length is HASH_SIZE,

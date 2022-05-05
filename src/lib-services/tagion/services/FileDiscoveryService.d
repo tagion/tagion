@@ -77,7 +77,7 @@ void fileDiscoveryService(
         void updateAddressbook() {
             static uint count;
             count++;
-            log("update %d %s", count, pubkey.cutHex);
+            log.trace("update %d %s", count, pubkey.cutHex);
             addressbook.load(shared_storage, true);
             // addressbook[pubkey] = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
             // addressbook.save(shared_storage, true);
@@ -87,6 +87,7 @@ void fileDiscoveryService(
         log("File Discovery started");
         ownerTid.send(Control.LIVE);
         bool addressbook_done;
+        bool addressbook_requested;
         while (!stop) {
             const message = receiveTimeout(
                     500.msecs,// (immutable(Pubkey) key, Tid tid) {
@@ -107,7 +108,8 @@ void fileDiscoveryService(
 
                         //                        initialize();
                         auto address_book = new ActiveNodeAddressBook(null); //node_addrses);
-                        log("Requested: %d : %d", addressbook._data.length, address_book.data.length);
+                        //log("Requested: %d : %d", addressbook._data.length, address_book.data.length);
+                        addressbook_requested=true;
                         ownerTid.send(address_book);
                         break;
                     case BecomeOnline:
@@ -129,7 +131,7 @@ void fileDiscoveryService(
             if (!message) {
                 updateAddressbook;
             }
-            if (addressbook.isReady) {
+            if (addressbook_requested && addressbook.isReady) {
                 ownerTid.send(DiscoveryState.READY);
                 addressbook_done=true;
             }
