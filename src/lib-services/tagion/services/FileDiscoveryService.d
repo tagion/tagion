@@ -1,14 +1,8 @@
 module tagion.services.FileDiscoveryService;
 
 import core.time;
-//import std.datetime;
-//import std.typecons;
-//import std.conv;
 import std.format;
 import std.concurrency;
-//import std.stdio;
-//import std.file : exists;
-//import std.array;
 
 import p2plib = p2p.node;
 import tagion.utils.Miscellaneous : cutHex;
@@ -18,9 +12,6 @@ import tagion.basic.Basic : Buffer, Control, Pubkey;
 import tagion.basic.TagionExceptions : TagionException, fatal;
 import tagion.services.MdnsDiscoveryService;
 
-//import tagion.hibon.HiBON : HiBON;
-//import tagion.hibon.HiBONRecord : fwrite, fread;
-//import tagion.hibon.Document : Document;
 import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
 
 import tagion.gossip.AddressBook : addressbook, NodeAddress;
@@ -60,7 +51,6 @@ void fileDiscoveryService(
         log("File Discovery started");
         ownerTid.send(Control.LIVE);
         bool addressbook_done;
-//        bool addressbook_requested;
         while (!stop) {
             const message = receiveTimeout(
                 500.msecs,
