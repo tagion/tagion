@@ -324,32 +324,51 @@ int _main(string[] args) {
                 writefln("NetworkNameRecord: %s", nrc.toDoc.toJSON.toPrettyString);
             }
         }
+    }
+    else if (nncupdate) {
+        auto nnc = readNNC(nncupdatename, hirpc, db);
+        if (nnc == NetworkNameCard.init) {
+            writefln("No NetworkNameCard with name '%s' in DART", nncupdatename);
+        }
+        else {
+            auto nrc = readNRC(nnc.record, hirpc, db);
+            if (nrc == NetworkNameRecord.init) {
+                writefln("No associated NetworkNameRecord (hash='%s') with NetworkNameCard '%s' in DART", nnc.record.cutHex, nnc.name);
+            }
+            else {
+                // Remove old NNC
+                auto factory = RecordFactory(net);
+                auto recorder = factory.recorder;
+                
+                recorder.remove(nnc);
+                writeToDB(recorder, hirpc, db);
 
-        // --------------------------------------------------- //
+                // Create and add new NNC and NRC
+                NetworkNameCard nnc_new;
+                nnc_new.name = nnc.name;
+                nnc_new.lang = nnc.lang;
+                // nnc_new.time = current_time?
+
+                NetworkNameRecord nrc_new;
+                nrc_new.name = net.hashOf(nnc_new.toDoc);
+                nrc_new.previous = nnc.record;
+                nrc_new.index = nrc.index + 1;
+
+                nnc_new.record = net.hashOf(nrc_new.toDoc);
         
-        // // #6 Create updated records
-        // writeln("TEST MODE:\nUpdate standart records");
+                auto recorder_new = factory.recorder;
+                recorder_new.add(nnc_new);
+                recorder_new.add(nrc_new);
 
-        // // TODO Remove old and add new
-        // NetworkNameCard nnc_new;
-        // nnc_new.name = namenew;
-        // nnc_new.lang = nnc.lang;
-        // // nnc_new.time = current_time?
+                writeToDB(recorder_new, hirpc, db);
 
-        // NetworkNameRecord nrc_new;
-        // nrc_new.name = net.hashOf(nnc_new.toDoc);
-        // nrc_new.previous = nnc.record;
-        // nrc_new.index = nrc.index + 1;
+                writefln("Updated NetworkNameCard with name '%s'", nnc.name);
 
-        // nnc_new.record = net.hashOf(nrc_new.toDoc);
+                if (dump)
+                    db.dump(true);
+            }
 
-        // // #7 Create new recorder
-        // auto recorder_new = factory.recorder;
-        // recorder_new.add(nnc_new);
-        // recorder_new.add(nrc_new);
-
-        // auto result3 = writeToDB(recorder_new, hirpc, db);
-        // writeln("Result3.message:\n", result3.message.toJSON.toPrettyString);
+        }
     }
     return 0;
 }
