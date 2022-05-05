@@ -285,10 +285,12 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     auto response = empty_hirpc.result(receiver, params);
                     sendResult(response.toDoc.serialize);
                 }
-            }, (ActiveNodeAddressBook update) {
-                    //node_addrses = cast(NodeAddress[Pubkey]) update.data;
-                log.warning("Should be removed ActiveNodeAddressBook update (the AddressBook is shoud be used instead)");
-            }, (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); }, // (immutable(Throwable) t) {
+            },
+            //     (ActiveNodeAddressBook update) {
+            //         //node_addrses = cast(NodeAddress[Pubkey]) update.data;
+            //     log.warning("Should be removed ActiveNodeAddressBook update (the AddressBook is shoud be used instead)");
+            // },
+                (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); }, // (immutable(Throwable) t) {
                     //     //log.fatal(t.msg);
                     //     stop=true;
                     //     ownerTid.send(t);

@@ -217,8 +217,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             p2pnode,
             opts.discovery.task_name,
             opts);
-        const ctrl = receiveOnly!Control;
-        assert(ctrl == Control.LIVE);
+        assert(receiveOnly!Control is Control.LIVE);
 
 //        receive((DiscoveryState state) { assert(state == DiscoveryState.READY); });
         assert(receiveOnly!DiscoveryState is DiscoveryState.READY);
@@ -242,7 +241,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                 sector_range);
             log.trace("Start sync addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
 
-            dart_sync_tid.send(address_book);
+//            dart_sync_tid.send(address_book);
         }, (Control ctrl) {
             if (ctrl is Control.STOP) {
                 assert(0, "Why is it stopped here!!!");
