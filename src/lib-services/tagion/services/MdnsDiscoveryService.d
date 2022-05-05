@@ -50,7 +50,7 @@ void mdnsDiscoveryService(
         bool addressbook_done;
         while (!stop) {
             pragma(msg, "fixme(alex): 500.msecs shoud be an option parameter");
-            const message=receiveTimeout(
+            const message = receiveTimeout(
                     500.msecs,
                     (Control control) {
                 if (control is Control.STOP) {
@@ -64,7 +64,7 @@ void mdnsDiscoveryService(
                         pragma(msg, "fixme(cbr):Address book request should not be used anymore");
                         //auto address_book = new ActiveNodeAddressBook(null); //node_addrses);
                         log("Requested: %s ", addressbook._data.length);
-                        addressbook_done=false;
+                        addressbook_done = false;
                         //ownerTid.send(address_book); //addressbook._data);
                         break;
                     case BecomeOnline:
@@ -75,25 +75,25 @@ void mdnsDiscoveryService(
                     }
                 }
             });
-                        if (!addressbook_done) {
-/*
+            if (!addressbook_done) {
+                /*
             if (!message) {
                 updateAddressbook;
             }
 */
-                            log.trace("MDNS NETWORK READY %d < %d (%s)", addressbook.numOfNodes, opts.nodes, addressbook.isReady);
+                log.trace("MDNS NETWORK READY %d < %d (%s)", addressbook.numOfNodes, opts.nodes, addressbook.isReady);
 
-            if (addressbook.isReady) {
-                ownerTid.send(DiscoveryState.READY);
-                addressbook_done=true;
-            // }
-            // }
-// }
-//                         notifyReadyAfterDelay();
-        }
+                if (addressbook.isReady) {
+                    ownerTid.send(DiscoveryState.READY);
+                    addressbook_done = true;
+                    // }
+                    // }
+                    // }
+                    //                         notifyReadyAfterDelay();
+                }
 
-//            notifyReadyAfterDelay();
-                        }
+                //            notifyReadyAfterDelay();
+            }
         }
     }
     catch (Throwable t) {

@@ -1,31 +1,29 @@
 module tagion.services.FileDiscoveryService;
 
 import core.time;
-import std.datetime;
-import std.typecons;
-import std.conv;
+//import std.datetime;
+//import std.typecons;
+//import std.conv;
 import std.format;
 import std.concurrency;
-import std.stdio;
-import std.file : exists;
-import std.array;
+//import std.stdio;
+//import std.file : exists;
+//import std.array;
 
-// import tagion.services.LoggerService;
 import p2plib = p2p.node;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.services.Options;
 import tagion.logger.Logger;
-import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
-import tagion.basic.TagionExceptions : TagionException, taskException, fatal;
+import tagion.basic.Basic : Buffer, Control, Pubkey;
+import tagion.basic.TagionExceptions : TagionException, fatal;
 import tagion.services.MdnsDiscoveryService;
 
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : fwrite, fread;
-import tagion.hibon.Document : Document;
+//import tagion.hibon.HiBON : HiBON;
+//import tagion.hibon.HiBONRecord : fwrite, fread;
+//import tagion.hibon.Document : Document;
 import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
 
-//import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
-import tagion.gossip.AddressBook : addressbook, NodeAddress, AddressBook;
+import tagion.gossip.AddressBook : addressbook, NodeAddress;
 
 void fileDiscoveryService(
     Pubkey pubkey,
@@ -62,7 +60,7 @@ void fileDiscoveryService(
         log("File Discovery started");
         ownerTid.send(Control.LIVE);
         bool addressbook_done;
-        bool addressbook_requested;
+//        bool addressbook_requested;
         while (!stop) {
             const message = receiveTimeout(
                 500.msecs,
@@ -76,13 +74,7 @@ void fileDiscoveryService(
                     with (DiscoveryRequestCommand) {
                         final switch (request) {
                         case RequestTable:
-                            pragma(msg, "fixme(cbr):Address book request should not be used anymore (FileDiscoveryService)");
-
-                            //                        initialize();
-                            //auto address_book = new ActiveNodeAddressBook(null); //node_addrses);
-                            //log("Requested: %d : %d", addressbook._data.length, address_book.data.length);
                             addressbook_done=false;
-                            //ownerTid.send(address_book);
                             break;
                         case BecomeOnline:
                             log("Becoming online..");
