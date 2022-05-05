@@ -20,7 +20,7 @@ import tagion.hibon.Document : Document;
 import p2plib = p2p.node;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 
-import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
+//import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
 import tagion.gossip.AddressBook : addressbook, NodeAddress;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
@@ -53,6 +53,7 @@ void networkRecordDiscoveryService(
         const net = new StdHashNet();
         const internal_hirpc = HiRPC(null);
 
+        version(none)
         void receiveAddrBook(ActiveNodeAddressBook address_book) {
             assert(0, "Shoudl not be used");
             log.trace("updated addr book: %d", addressbook.numOfActiveNodes);

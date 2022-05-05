@@ -90,7 +90,7 @@ void mdnsDiscoveryService(
                     final switch (request) {
                     case RequestTable:
                         pragma(msg, "fixme(cbr):Address book request should not be used anymore");
-                        auto address_book = new ActiveNodeAddressBook(null); //node_addrses);
+                        //auto address_book = new ActiveNodeAddressBook(null); //node_addrses);
                         log("Requested: %s ", addressbook._data.length);
                         addressbook_done=false;
                         //ownerTid.send(address_book); //addressbook._data);

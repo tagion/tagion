@@ -24,7 +24,7 @@ import tagion.hibon.HiBONRecord : fwrite, fread;
 import tagion.hibon.Document : Document;
 import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
 
-import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
+//import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
 import tagion.gossip.AddressBook : addressbook, NodeAddress, AddressBook;
 
 void fileDiscoveryService(
@@ -79,7 +79,7 @@ void fileDiscoveryService(
                             pragma(msg, "fixme(cbr):Address book request should not be used anymore (FileDiscoveryService)");
 
                             //                        initialize();
-                            auto address_book = new ActiveNodeAddressBook(null); //node_addrses);
+                            //auto address_book = new ActiveNodeAddressBook(null); //node_addrses);
                             //log("Requested: %d : %d", addressbook._data.length, address_book.data.length);
                             addressbook_done=false;
                             //ownerTid.send(address_book);

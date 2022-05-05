@@ -21,8 +21,26 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
 
-import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
+//import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
 import tagion.gossip.AddressBook : NodeAddress;
+
+alias ActiveNodeAddressBookX = immutable(AddressBook_deprecation);
+
+@safe
+immutable class AddressBook_deprecation {
+    this(const(NodeAddress[Pubkey]) addrs) @trusted {
+//        addressbook.overwrite(addrs);
+//         this.data = cast(immutable) addrs.dup;
+    }
+
+//    immutable(NodeAddress[Pubkey]) data;
+
+    static immutable(NodeAddress[Pubkey]) data() @trusted {
+        immutable(NodeAddress[Pubkey]) empty;
+        return empty;
+    }
+
+}
 
 enum DiscoveryRequestCommand {
     BecomeOnline = 1,
@@ -213,7 +231,7 @@ void serverFileDiscoveryService(
                     }
                 case DiscoveryRequestCommand.RequestTable: {
                         initialize();
-                        auto address_book = new ActiveNodeAddressBook(node_addresses);
+                        auto address_book = new ActiveNodeAddressBookX(node_addresses);
                         ownerTid.send(address_book);
                         break;
                     }

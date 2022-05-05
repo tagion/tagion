@@ -439,16 +439,17 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                 &controller,
                 &receive_wavefront,
                 &taskfailure,
-                (ActiveNodeAddressBook address_book) {
-                    assert(0, "Should not be used");
-                    log("Update address book");
-                    if (dart_sync_tid !is Tid.init) {
-                        send(dart_sync_tid, address_book);
-                    }
-                    else {
-                        log("DART sync not found");
-                    }
-                });
+                // (ActiveNodeAddressBook address_book) {
+                //     assert(0, "Should not be used");
+                //     log("Update address book");
+                //     if (dart_sync_tid !is Tid.init) {
+                //         send(dart_sync_tid, address_book);
+                //     }
+                //     else {
+                //         log("DART sync not found");
+                //     }
+                // }
+                );
             log("ROUNDS: %d AreWeInGraph: %s Active %d", hashgraph.rounds.length, hashgraph.areWeInGraph, addressbook.numOfActiveNodes);
             if (!message_received || !hashgraph.areWeInGraph) {
                 const init_tide = random.value(0, 2) is 1;

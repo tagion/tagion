@@ -267,7 +267,7 @@ class ConnectionPoolBridge {
 
 }
 
-alias ActiveNodeAddressBook = immutable(AddressBook_deprecation);
+alias ActiveNodeAddressBookX = immutable(AddressBook_deprecation);
 
 @safe
 immutable class AddressBook_deprecation {
