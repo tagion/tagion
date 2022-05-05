@@ -144,7 +144,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         Tid monitor_socket_tid;
         Tid transaction_socket_tid;
         Tid transcript_tid;
-        Pubkey[] pkeys;
         // void update_pkeys(Pubkey[] pubkeys) {
         //     version (none)
         //         if (net_mode != NetworkMode.internal) {
@@ -168,6 +167,8 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         }
         final switch (net_mode) {
         case NetworkMode.internal:
+            Pubkey[] pkeys;
+
             gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
             ownerTid.send(net.pubkey);
             Pubkey[] received_pkeys;
