@@ -145,14 +145,14 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         Tid transaction_socket_tid;
         Tid transcript_tid;
         Pubkey[] pkeys;
-        void update_pkeys(Pubkey[] pubkeys) {
-            version (none)
-                if (net_mode != NetworkMode.internal) {
-                    pkeys = pubkeys;
-                    foreach (p; pkeys)
-                        gossip_net.add_channel(p);
-                }
-        }
+        // void update_pkeys(Pubkey[] pubkeys) {
+        //     version (none)
+        //         if (net_mode != NetworkMode.internal) {
+        //             pkeys = pubkeys;
+        //             foreach (p; pkeys)
+        //                 gossip_net.add_channel(p);
+        //         }
+        // }
 
         shared StdSecureNet shared_net;
         synchronized (master_net) {
@@ -485,7 +485,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                 (ActiveNodeAddressBook address_book) {
                     assert(0, "Should not be used");
                     log("Update address book");
-                    update_pkeys(address_book.data.keys);
+                    //update_pkeys(address_book.data.keys);
                     if (dart_sync_tid !is Tid.init) {
                         send(dart_sync_tid, address_book);
                     }
