@@ -115,15 +115,15 @@ class SSLSocket : Socket {
      The client use this configuration by default.
      +/
     protected void init(bool verifyPeer, EndpointType et) {
-        checkContext(et);
-        _ssl = SSL_new(_ctx);
+            checkContext(et);
+            _ssl = SSL_new(_ctx);
 
-        if (et is EndpointType.Client) {
-            SSL_set_fd(_ssl, this.handle);
-            if (!verifyPeer) {
-                SSL_set_verify(_ssl, SSL_VERIFY_NONE, null);
+            if (et is EndpointType.Client) {
+                SSL_set_fd(_ssl, this.handle);
+                if (!verifyPeer) {
+                    SSL_set_verify(_ssl, SSL_VERIFY_NONE, null);
+                }
             }
-        }
     }
 
     protected void checkContext(EndpointType et)
@@ -131,6 +131,8 @@ class SSLSocket : Socket {
         assert(_ctx);
     }
     do {
+        synchronized {
+
         //Maybe implement more versions....
         if (et is EndpointType.Client) {
             if (client_ctx is null) {
@@ -144,6 +146,8 @@ class SSLSocket : Socket {
             }
             _ctx = server_ctx;
         }
+        }
+
     }
 
     /++
