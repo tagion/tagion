@@ -267,23 +267,6 @@ class ConnectionPoolBridge {
 
 }
 
-alias ActiveNodeAddressBookX = immutable(AddressBook_deprecation);
-
-@safe
-immutable class AddressBook_deprecation {
-    this(const(NodeAddress[Pubkey]) addrs) @trusted {
-//        addressbook.overwrite(addrs);
-//         this.data = cast(immutable) addrs.dup;
-    }
-
-//    immutable(NodeAddress[Pubkey]) data;
-
-    static immutable(NodeAddress[Pubkey]) data() @trusted {
-        return cast(immutable)addressbook._data;
-    }
-
-}
-
 // @safe
 // struct AddressDirecory {
 //     private NodeAddress[Pubkey] addresses;
