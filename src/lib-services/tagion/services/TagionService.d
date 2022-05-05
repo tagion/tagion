@@ -225,7 +225,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
 
         receiveOnly!ActiveNodeAddressBook; //Control is Control.LIVE);
-
 //        receive((ActiveNodeAddressBook address_book) {
                 //update_pkeys(address_book.data.keys);
             dart_sync_tid = spawn(
@@ -260,31 +259,31 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             log("Closing net");
             gossip_net.close();
         }
-        if (force_stop) {
-            return;
-        }
+        // if (force_stop) {
+        //     return;
+        // }
 
         bool ready = false;
-        int ready_counter = 0;
+        int ready_counter = 2;
         log.trace("Before sync ready addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
         do {
             receive((Control ctrl) {
                 log("Received ctrl: %s", ctrl);
                 if (ctrl is Control.LIVE) {
-                    ready_counter++;
+                    ready_counter--;
                 }
-                else if (ctrl is Control.STOP) {
-                    force_stop = true;
-                }
+                // else if (ctrl is Control.STOP) {
+                //     force_stop = true;
+                // }
             }, (DARTSynchronizeState state) {
                 if (state == DARTSynchronizeState.READY) {
                     ready = true;
                 }
             });
-            if (force_stop)
-                return;
+            // if (force_stop)
+            //     return;
         }
-        while (!ready || ready_counter != 2); // empty
+        while (!ready || (ready_counter !is 0)); // empty
 
         log("Ready: %s", ready);
 

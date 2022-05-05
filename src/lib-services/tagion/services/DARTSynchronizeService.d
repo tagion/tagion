@@ -166,8 +166,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
             state.setState(DARTSynchronizeState.READY);
         }
 
-        auto hrpc = HiRPC(net);
-        auto empty_hirpc = HiRPC(null);
+        const hrpc = HiRPC(net);
+        const empty_hirpc = HiRPC(null);
 
         auto subscription = ActiveNodeSubscribtion!Net(opts);
 //        NodeAddress[Pubkey] node_addrses;
@@ -414,7 +414,7 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
 
     void stop() {
         log("Stop subscription");
-        if (subscribed && handlerTid != Tid.init) {
+        if (subscribed && handlerTid !is Tid.init) {
             send(handlerTid, Control.STOP);
             // receiveOnly!Control;
         }
@@ -425,8 +425,6 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
             log("exit handleSubscription");
             // ownerTid.prioritySend(Control.END);
         }
-        pragma(msg, "fixme(cbr):Why is fake net used here?");
-        //        auto net = new MyFakeNet();
         auto net = new Net;
         log.register(taskName);
         auto stop = false;
