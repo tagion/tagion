@@ -462,7 +462,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             receive((ActiveNodeAddressBook address_book) {
                     log.trace("Before addressbook active %d", addressbook.numOfActiveNodes);
 
-                    update_pkeys(address_book.data.keys);
+                    //update_pkeys(address_book.data.keys);
                 });
             log.trace("NETWORK READY %d < %d ", addressbook.numOfNodes,  opts.nodes);
             if (addressbook.isReady) {
