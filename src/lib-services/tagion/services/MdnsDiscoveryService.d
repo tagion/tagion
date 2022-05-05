@@ -19,7 +19,6 @@ import std.stdio;
 import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.basic.TagionExceptions : fatal;
 import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
-import tagion.gossip.P2pGossipNet;
 
 void mdnsDiscoveryService(
         Pubkey pubkey,
@@ -41,37 +40,10 @@ void mdnsDiscoveryService(
         notifee = discovery.registerNotifee(&StdHandlerCallback, task_name);
         // }
         scope (exit) {
-            // if(opts.discovery.notify_enabled){
             notifee.close();
-            // }
         }
 
         bool stop = false;
-        version(none)
-        bool checkTimestamp(SysTime time, Duration duration) {
-            return (Clock.currTime - time) > duration;
-        }
-        version(none)
-
-        void updateTimestamp(ref SysTime time) {
-            time = Clock.currTime;
-        }
-
-        SysTime mdns_start_timestamp;
-                version(none)
-        updateTimestamp(mdns_start_timestamp);
-        version(none)
-        void notifyReadyAfterDelay() {
-            static bool owner_notified;
-            if (!owner_notified) {
-                const after_delay = checkTimestamp(mdns_start_timestamp,
-                        opts.discovery.delay_before_start.msecs);
-                if (after_delay) {
-                    ownerTid.send(DiscoveryState.READY);
-                    owner_notified = true;
-                }
-            }
-        }
 
         addressbook[pubkey] = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
         ownerTid.send(Control.LIVE);
