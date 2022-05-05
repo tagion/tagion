@@ -1,13 +1,15 @@
 module tagion.services.TagionService;
 
-import core.thread;
+import core.thread : Thread;
+import core.time;
 import std.concurrency;
+
 
 import std.datetime : Clock;
 import tagion.utils.StdTime;
 
-import std.conv;
-import std.algorithm.searching : canFind;
+//import std.conv;
+//import std.algorithm.searching : canFind;
 
 import p2plib = p2p.node;
 
@@ -15,22 +17,22 @@ import p2plib = p2p.node;
 import p2p.callback;
 import p2p.cgo.c_helper;
 
-import tagion.services.Options : Options, setOptions, options, OptionException, NetworkMode;
+import tagion.services.Options : Options, setOptions, OptionException, NetworkMode;
 import tagion.utils.Random;
 import tagion.utils.Queue;
 import tagion.GlobalSignals : abort;
 
-import tagion.basic.Basic : Pubkey, Control, nameOf, Buffer;
+import tagion.basic.Basic : Pubkey, Control, Buffer;
 import tagion.logger.Logger;
 import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
-import tagion.hashgraph.HashGraphBasic : EventBody, ExchangeState, Wavefront;
+//import tagion.hashgraph.HashGraphBasic : Wavefront;
 
-import tagion.services.TagionService;
+//import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.options.ServiceNames : get_node_name;
+//import tagion.options.ServiceNames : get_node_name;
 import tagion.basic.TagionExceptions;
 import tagion.services.DARTSynchronizeService;
 import tagion.dart.DARTSynchronization;
@@ -52,7 +54,7 @@ import tagion.utils.Miscellaneous : cutHex;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.TagionExceptions : TagionException;
 
-import tagion.services.ScriptCallbacks;
+//import tagion.services.ScriptCallbacks;
 import tagion.services.FileDiscoveryService;
 import tagion.services.ServerFileDiscoveryService;
 import tagion.services.NetworkRecordDiscoveryService;
@@ -63,13 +65,14 @@ import tagion.gossip.AddressBook: addressbook;
 
 //import tagion.Keywords : NetworkMode;
 
-import std.stdio;
-import std.array : replace, split;
-import std.string : indexOf;
-import std.file : mkdir, exists;
+//import std.stdio;
+//import std.array : replace, split;
+//import std.string : indexOf;
+//import std.file : mkdir, exists;
 import std.format;
 
 shared(p2plib.Node) initialize_node(immutable Options opts) {
+    import std.array : split;
     auto p2pnode = new shared(p2plib.Node)(
             format("/ip4/%s/tcp/%s",
             opts.ip,
@@ -128,7 +131,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         auto master_net = new StdSecureNet;
         StdSecureNet net = new StdSecureNet;
         GossipNet gossip_net;
-        ScriptCallbacks scriptcallbacks;
+        //ScriptCallbacks scriptcallbacks;
         HashGraph hashgraph;
 
         Tid discovery_tid;
@@ -324,7 +327,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             monitor_socket_tid = spawn(
                 &monitorServiceTask,
                 opts);
-            stderr.writefln("@@@@ Wait for monitor %s", opts.node_name,);
+            //stderr.writefln("@@@@ Wait for monitor %s", opts.node_name,);
 
             if (receiveOnly!Control is Control.LIVE) {
                 log("Monitor started");
