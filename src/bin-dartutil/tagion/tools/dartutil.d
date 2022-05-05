@@ -21,10 +21,12 @@ import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBON;
+import tagion.hibon.HiBONRecord;
 
 import tagion.utils.Miscellaneous;
 import tagion.Keywords;
 import tagion.dart.Recorder;
+import tagion.script.StandardRecords;
 
 // import tagion.revision;
 import tagion.tools.Basic;
@@ -55,6 +57,7 @@ int _main(string[] args) {
     int rings = 4;
     bool initialize = false;
     string passphrase = "verysecret";
+    string nncupdatename, nncreadname;
 
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
@@ -75,10 +78,14 @@ int _main(string[] args) {
             "dump", "Dumps all the arcvives with in the given angle", &dump,
             "width|w", "Sets the rings width and is used in combination with the generate", &ringWidth,
             "rings", "Sets the rings height and is used in  combination with the generate", &rings,
-            "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
+            "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
+            "nncupdate", "Update existing NetworkNameCard with given name", &nncupdatename,
+            "nncread", "Read NetworkNameCard with given name", &nncreadname,
     );
 
     dartread = !dartread_args.empty;
+    bool nncupdate = !nncupdatename.empty;
+    bool nncread = !nncreadname.empty;
 
     if (version_switch) {
         // writefln("version %s", REVNO);
@@ -150,10 +157,53 @@ int _main(string[] args) {
     if (dump)
         db.dump(true);
 
-    const onehot = dartrpc + dartread + dartrim + dartmodify;
+    static const(HiRPCSender) readFromDB(Buffer[] fingerprints, HiRPC hirpc, DART db) {
+        const sender = DART.dartRead(fingerprints, hirpc);
+        auto receiver = hirpc.receive(sender.toDoc);
+        return db(receiver, false);
+    }
+
+    static const(HiRPCSender) writeToDB(RecordFactory.Recorder recorder, HiRPC hirpc, DART db) {
+        const sender = DART.dartModify(recorder, hirpc);
+        auto receiver = hirpc.receive(sender);
+        return db(receiver, false);
+    }
+
+    NetworkNameCard readNNC(string name, HiRPC hirpc, DART db) {
+        NetworkNameCard nnc_find;
+        nnc_find.name = name;
+
+        auto result = readFromDB([net.hashOf(nnc_find.toDoc)], hirpc, db);
+
+        auto factory = RecordFactory(net);
+        auto recorder = factory.recorder(result.message["result"].get!Document);
+
+        if (recorder[].empty) {
+            return NetworkNameCard();
+        }
+        else {
+            return NetworkNameCard(recorder[].front.filed); 
+        }
+    }
+
+    NetworkNameRecord readNRC(Buffer nrc_hash, HiRPC hirpc, DART db) {
+        auto result = readFromDB([nrc_hash], hirpc, db);
+
+        auto factory = RecordFactory(net);
+        auto recorder = factory.recorder(result.message["result"].get!Document);
+
+        if (recorder[].empty) {
+            return NetworkNameRecord();
+        }
+        else {
+            return NetworkNameRecord(recorder[].front.filed);
+        }
+    }
+
+    const onehot = dartrpc + dartread + dartrim + dartmodify + nncupdate + nncread;
 
     if (onehot > 1) {
-        stderr.writeln("Only one of the dartrpc, dartread, dartrim and dartmodify switched alowed");
+        stderr.writeln("Only one of the dartrpc, dartread, dartrim, dartmodify, nncupdate and nncread switched alowed");
         return 1;
     }
     if (!inputfilename.exists) {
@@ -180,22 +230,15 @@ int _main(string[] args) {
         else {
             auto fingerprints = dartread_args.map!(hash => decode(hash)).array;
 
-            auto blockfile = BlockFile(dartfilename);
-            writefln("Blockfile %s", blockfile.masterBlock);
-
-            writeln("EYE ", db.fingerprint.hex);
-
             const sender = DART.dartRead(fingerprints, hirpc);
-            writeln("AAA ", sender.toJSON.toPrettyString);
             auto receiver = hirpc.receive(sender.toDoc);
-            writeln("BBB ", receiver.toJSON.toPrettyString);
             auto result = db(receiver, false);
             auto tosend = hirpc.toHiBON(result);
-            writeln("CCC ", result.toJSON.toPrettyString);
             auto tosendResult = tosend.method.params;
             if (dump)
                 db.dump(true);
             writeResponse(tosendResult.serialize);
+            writeln("Result: %s", result.message.toJSON.toPrettyString);
 
             // auto inputBuffer = cast(immutable(ubyte)[])fread(inputfilename);
             // auto params=new HiBON;
@@ -264,6 +307,49 @@ int _main(string[] args) {
         if (dump)
             db.dump(true);
         writeResponse(tosendResult.serialize);
+    }
+    else if (nncread) {
+        auto nnc = readNNC(nncreadname, hirpc, db);
+        if (nnc == NetworkNameCard.init) {
+            writefln("No NetworkNameCard with name '%s' in DART", nncreadname);
+        }
+        else {
+            writefln("NetworkNameCard: %s", nnc.toDoc.toJSON.toPrettyString);
+
+            auto nrc = readNRC(nnc.record, hirpc, db);
+            if (nrc == NetworkNameRecord.init) {
+                writefln("No NetworkNameRecord with hash '%s' in DART", nnc.record.cutHex);
+            }
+            else {
+                writefln("NetworkNameRecord: %s", nrc.toDoc.toJSON.toPrettyString);
+            }
+        }
+
+        // --------------------------------------------------- //
+        
+        // // #6 Create updated records
+        // writeln("TEST MODE:\nUpdate standart records");
+
+        // // TODO Remove old and add new
+        // NetworkNameCard nnc_new;
+        // nnc_new.name = namenew;
+        // nnc_new.lang = nnc.lang;
+        // // nnc_new.time = current_time?
+
+        // NetworkNameRecord nrc_new;
+        // nrc_new.name = net.hashOf(nnc_new.toDoc);
+        // nrc_new.previous = nnc.record;
+        // nrc_new.index = nrc.index + 1;
+
+        // nnc_new.record = net.hashOf(nrc_new.toDoc);
+
+        // // #7 Create new recorder
+        // auto recorder_new = factory.recorder;
+        // recorder_new.add(nnc_new);
+        // recorder_new.add(nrc_new);
+
+        // auto result3 = writeToDB(recorder_new, hirpc, db);
+        // writeln("Result3.message:\n", result3.message.toJSON.toPrettyString);
     }
     return 0;
 }

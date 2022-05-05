@@ -4,7 +4,7 @@ import std.file : exists;
 import std.format;
 import std.exception : assumeUnique;
 import std.algorithm.iteration : map;
-import std.range : iota;
+import std.range;
 import std.array : array;
 
 import tagion.hibon.HiBON : HiBON;
@@ -37,7 +37,7 @@ int main(string[] args) {
     //    StandardBill bill;
     uint number_of_bills;
     bool initbills = false;
-    bool stdrecords = false;
+    string nnc_name;
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
@@ -47,7 +47,7 @@ int main(string[] args) {
             // "value|V", format("Bill value : default: %d", value), &value,
             // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
             "initbills|b", "Testing mode", &initbills,
-            "stdrecords|s", &stdrecords,
+            "nnc", "Initialize NNC and NRC with given name", &nnc_name,
     );
 
     if (version_switch) {
@@ -88,25 +88,26 @@ int main(string[] args) {
     auto factory = RecordFactory(net);
     auto recorder = factory.recorder;
 
-    const onehot = stdrecords + initbills;
+    const onehot = initbills + (!nnc_name.empty);
 
     if (onehot > 1) {
         stderr.writeln("Only one of the --stdrecords and --initbills switches alowed");
         return 1;
     }
 
-    if (stdrecords) {
+    if (!nnc_name.empty) {
         writeln("TEST MODE:\nInitialize standart records");
 
-        NetworkNameCard nnc1;
-        nnc1.name = "some_random_string";
+        NetworkNameCard nnc;
+        nnc.name = nnc_name;
+        // TODO: set also time?
 
-        NetworkNameRecord nrc1;
-        nrc1.name = net.hashOf(nnc1.toDoc);
-        nnc1.record = net.hashOf(nrc1.toDoc);
+        NetworkNameRecord nrc;
+        nrc.name = net.hashOf(nnc.toDoc);
+        nnc.record = net.hashOf(nrc.toDoc);
         
-        recorder.add(nnc1);
-        recorder.add(nrc1);
+        recorder.add(nnc);
+        recorder.add(nrc);
     }
     else if (initbills) {
         writeln("TEST MODE:\nInitialize dummy bills");
