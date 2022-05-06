@@ -44,6 +44,7 @@ version (none) {
  true if T is a buffer
 +/
 enum isBufferType(T) = is(T : const(ubyte[])) || is(TypedefType!T : const(ubyte[]));
+enum isBufferTypeDef(T) = is(TypedefType!T : const(ubyte[])) && !is(T : const(ubyte[]));
 
 static unittest {
     static assert(isBufferType!(immutable(ubyte[])));

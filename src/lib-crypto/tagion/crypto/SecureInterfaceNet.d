@@ -1,6 +1,8 @@
 module tagion.crypto.SecureInterfaceNet;
 
-import tagion.basic.Basic : Buffer, Pubkey, Signature;
+import std.typecons : TypedefType;
+
+import tagion.basic.Basic : Buffer, Pubkey, Signature, isBufferTypeDef;
 import tagion.hibon.HiBONRecord : isHiBONRecord, HiBONPrefix;
 import tagion.hibon.Document : Document;
 
@@ -11,6 +13,14 @@ alias check = Check!SecurityConsensusException;
 @safe
 interface HashNet {
     uint hashSize() const pure nothrow;
+    final immutable(Buffer) rawCalcHash(Buf)(scope const(Buf) data) const if (isBufferTypeDef!Buf) {
+        return rawCalcHash(cast(TypedefType!Buf)data);
+    }
+
+    final immutable(Buffer) calcHash(Buf)(scope const(Buf) data) const if (isBufferTypeDef!Buf) {
+        return calcHash(cast(TypedefType!Buf)data);
+    }
+
     immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const;
     immutable(Buffer) calcHash(scope const(ubyte[]) data) const;
     immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure;

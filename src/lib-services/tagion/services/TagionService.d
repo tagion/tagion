@@ -22,7 +22,7 @@ import tagion.utils.Random;
 import tagion.utils.Queue;
 import tagion.GlobalSignals : abort;
 
-import tagion.basic.Basic : Pubkey, Control, Buffer;
+import tagion.basic.Basic : Pubkey, Control;
 import tagion.logger.Logger;
 import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
@@ -30,7 +30,7 @@ import tagion.hashgraph.HashGraph : HashGraph;
 
 //import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
-import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
+//import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 //import tagion.options.ServiceNames : get_node_name;
 import tagion.basic.TagionExceptions : taskfailure, fatal;
@@ -157,14 +157,14 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
 
             gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
             ownerTid.send(net.pubkey);
-            Pubkey[] received_pkeys;
+            //Pubkey[] received_pkeys;
             foreach (i; 0 .. opts.nodes) {
-                received_pkeys ~= receiveOnly!(Pubkey);
-                log.trace("Receive %d %s", i, received_pkeys[i].cutHex);
+                pkeys ~= receiveOnly!(Pubkey);
+                log.trace("Receive %d %s", i, pkeys[i].cutHex);
             }
             import std.exception : assumeUnique;
 
-            pkeys = received_pkeys.dup;
+            //pkeys = received_pkeys.dup;
             foreach (p; pkeys)
                 gossip_net.add_channel(p);
             ownerTid.send(Control.LIVE);
@@ -361,7 +361,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         uint timeout_count;
 
         {
-            immutable buf = cast(Buffer) hashgraph.channel;
+            immutable buf = hashgraph.channel;
             const nonce = net.calcHash(buf);
             auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
 
