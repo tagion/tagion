@@ -8,7 +8,9 @@ import std.conv : to;
 
 // import tagion.revision;
 //import tagion.services.Options;
-import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType;
+import tagion.basic.Types : Buffer, Pubkey, isBufferType;
+import tagion.basic.Basic : EnumText, buf_idup, basename;
+
 
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous : cutHex;

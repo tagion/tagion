@@ -6,7 +6,8 @@ import std.getopt;
 import std.format;
 import std.array : join;
 
-import tagion.basic.Basic : Control, TrustedConcurrency;
+import tagion.basic.Types : Control;
+import tagion.basic.Basic : TrustedConcurrency;
 import tagion.logger.Logger;
 import tagion.services.Options;
 import tagion.options.CommonOptions : setCommonOptions;

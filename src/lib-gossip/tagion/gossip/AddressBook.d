@@ -1,6 +1,6 @@
 module tagion.gossip.AddressBook;
 
-import tagion.basic.Basic : Pubkey;
+import tagion.basic.Types : Pubkey;
 import tagion.hibon.HiBONRecord;
 import tagion.dart.DART : DART;
 import tagion.dart.DARTOptions : DARTOptions;

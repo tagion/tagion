@@ -28,46 +28,45 @@ int decimal_place(T)(T data) {
     return count;
 }
 
+int count_pieces(const (char)[] data, char splitter) {
+    int res = 1;
+    size_t pos = 0;
+    while (pos < data.length) {
+        if (data[pos] == splitter) {
+            res++;
+            while(data[pos] == splitter) {
+                pos++;
+            }
+        }
+        pos++;
+    }
+    return res;
+}
+
+size_t find_next_char(const (char)[] data, char symbol, size_t start_pos) {
+    for (size_t i = start_pos + 1; i < data.length; i++) {
+        if (data[i] == symbol) {
+            return i;
+        }
+    }
+    return data.length;
+}
 const (char[])[] split_by_char(const (char)[] data, char splitter) {
-    int count_char(const (char)[] data, char splitter) {
-        int res = 1;
-        size_t pos = 0;
-        while (pos < data.length) {
-            if (data[pos] == splitter) {
-                res++;
-                while(data[pos] == splitter) {
-                    pos++;
-                }
-            }
-            pos++;
-        }
-        return res;
-    }
-
-    size_t find_char(const (char)[] data, char symbol) {
-        foreach(i, letter; data) {
-            if (letter == symbol) {
-                return i;
-            }
-        }
-        return data.length;
-    }
-
     const (char)[][] res;
-    auto res_size = count_char(data, splitter);
+    auto res_size = count_pieces(data, splitter);
     res.create(res_size);
     if (res_size != 1) {
-        size_t split_pos = find_char(data, splitter);
         size_t start_pos = 0;
+        size_t split_pos = find_next_char(data, splitter, start_pos);
         size_t splits_num = 0;
         do {
-            if(start_pos != split_pos) {
+            if (start_pos < split_pos) {
                 res[splits_num] = data[start_pos .. split_pos];
                 splits_num++;
             }
             start_pos = split_pos + 1;
-            split_pos = split_pos + find_char(data[start_pos .. $], splitter);
-        } while(split_pos < data.length);
+            split_pos = find_next_char(data, splitter, split_pos);
+        } while(start_pos < data.length);
     }
     else {
         res[0] = data[0 .. $];
@@ -75,10 +74,61 @@ const (char[])[] split_by_char(const (char)[] data, char splitter) {
     return res;
 }
 
-//dummy function for test
-extern(C) int foo(int a) {
-    a = 1;
-    return a;
+unittest {
+    // no need to split
+    {
+        string test = "123";
+        auto res = split_by_char(test, ',');
+        string[] exp_res;
+        exp_res ~= "123";
+        // exp_res ~= "321";
+        assert(res == exp_res);
+    }
+    //find next char pos
+    {
+        string test = "012,4,6";
+        size_t pos = find_next_char(test, ',', 0);
+        auto count = count_pieces(test, ',');
+
+        assert(count == 3);
+
+        assert(pos == 3);
+        pos = find_next_char(test, ',', pos);
+        assert(pos == 5);
+
+        pos = find_next_char(test, ',', pos);
+        assert(pos == test.length);
+    }
+    // one spliter
+    {
+        string test = "123,321";
+        auto res = split_by_char(test, ',');
+        string[] exp_res;
+        exp_res ~= "123";
+        exp_res ~= "321";
+        assert(res == exp_res);
+    }
+    // one spliter many times
+    {
+        string test = "123,,,,,,321";
+        auto res = split_by_char(test, ',');
+        string[] exp_res;
+        exp_res ~= "123";
+        exp_res ~= "321";
+        assert(res == exp_res);
+    }
+    // more spliters
+    {
+        string test = "12,3,3,,,2,,1";
+        auto res = split_by_char(test, ',');
+        string[] exp_res;
+        exp_res ~= "12";
+        exp_res ~= "3";
+        exp_res ~= "3";
+        exp_res ~= "2";
+        exp_res ~= "1";
+        assert(res == exp_res);
+    }
 }
 
 // this(Document doc) {

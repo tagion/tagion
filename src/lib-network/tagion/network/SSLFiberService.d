@@ -12,7 +12,7 @@ import tagion.network.SSLSocket;
 import tagion.network.SSLOptions;
 import tagion.network.NetworkExceptions : check;
 import tagion.basic.Message;
-import tagion.basic.Basic : Buffer;
+import tagion.basic.Types : Buffer, Control;
 import tagion.logger.Logger;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.TagionExceptions : taskfailure, fatal;
@@ -385,7 +385,7 @@ class SSLFiberService {
                 }
                 else {
 
-                    
+
 
                         .check(leb128_index < LEN_MAX, message("Invalid size of len128 length field %d", leb128_index));
                     break leb128_loop;
@@ -511,7 +511,7 @@ class SSLFiberService {
     @trusted
     static void responseService(immutable(string) task_name, shared Response handler) nothrow {
         try {
-            import tagion.basic.Basic : Control;
+            import tagion.basic.Types : Control;
             import tagion.communication.HiRPC;
             import tagion.hibon.Document;
 

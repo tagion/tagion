@@ -11,7 +11,8 @@ import std.algorithm;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;
-import tagion.basic.Basic;
+import tagion.basic.Types : Buffer;
+import tagion.basic.Basic : tempfile;
 
 import tagion.communication.HiRPC;
 import tagion.dart.DARTSynchronization;
@@ -189,7 +190,7 @@ int _main(string[] args) {
             return NetworkNameCard();
         }
         else {
-            return NetworkNameCard(recorder[].front.filed); 
+            return NetworkNameCard(recorder[].front.filed);
         }
     }
 
@@ -349,7 +350,7 @@ int _main(string[] args) {
                 // Remove old NNC
                 auto factory = RecordFactory(net);
                 auto recorder = factory.recorder;
-                
+
                 recorder.remove(nnc);
                 writeToDB(recorder, hirpc, db);
 
@@ -365,7 +366,7 @@ int _main(string[] args) {
                 nrc_new.index = nrc.index + 1;
 
                 nnc_new.record = net.hashOf(nrc_new.toDoc);
-        
+
                 auto recorder_new = factory.recorder;
                 recorder_new.add(nnc_new);
                 recorder_new.add(nrc_new);

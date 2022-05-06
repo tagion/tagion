@@ -13,7 +13,8 @@ import tagion.hashgraph.HashGraphBasic : Tides, EventMonitorCallbacks;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 
 //import tagion.basic.Basic : Control, basename, Pubkey, DataFormat;
-import tagion.basic.Basic : EnumText, Pubkey, DataFormat, basename;
+import tagion.basic.Types : Pubkey, DataFormat;
+import tagion.basic.Basic : EnumText;
 import tagion.basic.Message;
 
 import tagion.hibon.HiBON;

@@ -4,7 +4,7 @@ import std.random;
 
 //import tagion.gossip.InterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.basic.Basic : Buffer, Control;
+import tagion.basic.Types : Buffer, Control;
 import tagion.dart.DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : RecordFactory;

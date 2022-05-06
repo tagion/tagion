@@ -2,7 +2,7 @@ module tagion.crypto.SecureNet;
 
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.aes.AESCrypto;
-import tagion.basic.Basic : Buffer, Signature;
+import tagion.basic.Types : Buffer, Signature;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
 import tagion.basic.ConsensusExceptions;
@@ -102,7 +102,7 @@ class StdHashNet : HashNet {
 @safe
 class StdSecureNet : StdHashNet, SecureNet {
     import tagion.crypto.secp256k1.NativeSecp256k1;
-    import tagion.basic.Basic : Pubkey;
+    import tagion.basic.Types : Pubkey;
     import tagion.crypto.aes.AESCrypto;
 
     import tagion.basic.ConsensusExceptions;

@@ -15,7 +15,7 @@ import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
 import std.stdio;
 import tagion.hibon.HiBONJSON;
-import tagion.basic.Basic : Pubkey, Buffer;
+import tagion.basic.Types : Pubkey, Buffer;
 import tagion.crypto.aes.AESCrypto;
 import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
 import tagion.crypto.SecureNet;

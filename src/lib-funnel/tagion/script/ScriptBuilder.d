@@ -580,7 +580,7 @@ unittest { // Simple function test
 }
 
 unittest { // Simple compare operator test
-    import tagion.basic.Basic : Buffer;
+    import tagion.basic.Types : Buffer;
 
     string source = [
         ": test",

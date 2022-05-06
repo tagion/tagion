@@ -18,7 +18,8 @@ private {
     import core.thread : Fiber;
     import std.range.primitives : isInputRange;
 
-    import tagion.basic.Basic : Buffer, EnumText, assumeTrusted;
+    import tagion.basic.Types : Buffer;
+    import tagion.basic.Basic : EnumText, assumeTrusted;
     import tagion.Keywords;
 
     import tagion.hibon.HiBON : HiBON;

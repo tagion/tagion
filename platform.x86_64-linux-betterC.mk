@@ -12,12 +12,13 @@ MTRIPLE:=x86_64-linux
 TRIPLET:=$(MTRIPLE)-android
 
 
-UNITTEST_FLAGS:=$(DDEBUG) $(DDEBUG_SYMBOLS)
+#UNITTEST_FLAGS:=$(DDEBUG) $(DDEBUG_SYMBOLS)
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 ifdef BETTERC
 DFLAGS+=$(DBETTERC)
 DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc/*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
 unittest: DFILES+=src/lib-betterc/tests/unittest.d
+#unittest: DFILES+=src/lib-betterc/tests/unittest.d
 
 else
 DFILES?=${shell find $(DSRC) -type f -name "*.d" \( -path "*src/lib-betterC/*" -o -path "*src/lib-crypto/*" -o -path "*src/lib-hibon/*"  -o -path "*src/lib-utils/*" -o -path "*src/lib-basic/*"  -o -path "*src/lib-logger/*" \) -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}

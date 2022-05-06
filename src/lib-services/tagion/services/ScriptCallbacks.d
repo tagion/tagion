@@ -8,7 +8,7 @@ import tagion.hashgraph.Event : Event;
 
 // import tagion.hashgraph.HashGraphBasic: EventScriptCallbacks;
 import tagion.hashgraph.HashGraphBasic : EventBody;
-import tagion.basic.Basic : Buffer, Control;
+import tagion.basic.Types : Buffer, Control;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.Keywords;

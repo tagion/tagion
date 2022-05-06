@@ -1,7 +1,7 @@
 module tagion.hibon.HiBONValid;
 
 import tagion.hibon.Document : Document;
-import tagion.basic.Basic : Buffer;
+import tagion.basic.Types : Buffer;
 
 bool error_callback(const Document main_doc, const Document.Element.ErrorCode error_code,
         const(Document.Element) current, const(Document.Element) previous) nothrow @safe {

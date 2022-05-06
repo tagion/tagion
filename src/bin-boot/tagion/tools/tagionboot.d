@@ -11,7 +11,8 @@ import std.array : array;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.basic.Basic : basename, Buffer, Pubkey;
+import tagion.basic.Types : Buffer, Pubkey;
+import tagion.basic.Basic : basename;
 import tagion.script.StandardRecords;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.script.StandardRecords : Invoice;
@@ -113,7 +114,7 @@ int _main(string[] args) {
         NetworkNameRecord nrc;
         nrc.name = net.hashOf(nnc.toDoc);
         nnc.record = net.hashOf(nrc.toDoc);
-        
+
         recorder.add(nnc);
         recorder.add(nrc);
     }
@@ -121,14 +122,14 @@ int _main(string[] args) {
         writeln("TEST MODE:\nInitialize dummy bills");
         import tagion.crypto.SecureNet;
         alias StdSecureWallet = SecureWallet!StdSecureNet;
-    
+
         auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN);
-        
+
         const label = "some_name";
         foreach (amount; bill_amounts) {
             const invoice = StdSecureWallet.createInvoice(label, amount);
             const bill = StandardBill(invoice.amount, 0, invoice.pkey, initial_gene);
-            
+
             // Add the bill to the DART recorder
             recorder.add(bill);
         }

@@ -9,7 +9,8 @@ import std.concurrency;
 import tagion.logger.Logger;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
-import tagion.basic.Basic : Control, basename, Pubkey;
+import tagion.basic.Types : Control, Pubkey;
+import tagion.basic.Basic : basename;
 import tagion.basic.TagionExceptions : TagionException;
 
 import tagion.hibon.Document;
@@ -104,7 +105,7 @@ void monitorServiceTask(immutable(Options) opts) nothrow {
                     //     // throw t;
                     // }
 
-            
+
 
             );
             //        log("Running");

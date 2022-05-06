@@ -14,7 +14,8 @@ import std.net.curl;
 
 // import tagion.services.LoggerService;
 import tagion.logger.Logger;
-import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
+import tagion.basic.Types : Buffer, Control, Pubkey;
+import tagion.basic.Basic : nameOf;
 import tagion.basic.TagionExceptions : fatal;
 import tagion.services.Options;
 import tagion.hibon.HiBON : HiBON;

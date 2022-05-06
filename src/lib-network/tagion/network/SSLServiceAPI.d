@@ -6,13 +6,12 @@ import std.stdio : writeln, writefln, stdout;
 import std.socket : InternetAddress, Socket, SocketSet, SocketShutdown, shutdown, AddressFamily;
 import std.concurrency;
 
-//import tagion.services.Options;
 import tagion.network.SSLSocket;
 import tagion.network.SSLFiberService;
 import tagion.network.SSLOptions;
 
 import tagion.logger.Logger;
-import tagion.basic.Basic : Control;
+import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions : TagionException, fatal;
 
 @safe

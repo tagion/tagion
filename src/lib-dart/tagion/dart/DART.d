@@ -12,7 +12,8 @@ import std.format : format;
 import std.range : isInputRange, ElementType;
 import std.algorithm.iteration : filter;
 
-import tagion.basic.Basic : Buffer, FUNCTION_NAME, nameOf;
+import tagion.basic.Basic : FUNCTION_NAME, nameOf;
+import tagion.basic.Types : Buffer;
 import tagion.Keywords;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
@@ -534,7 +535,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         enum recorderName = GetLabel!(recorder).name;
         this(RecordFactory manufactor, const Document doc) {
 
-            
+
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!uint;

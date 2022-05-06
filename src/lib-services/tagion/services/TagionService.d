@@ -22,7 +22,8 @@ import tagion.utils.Random;
 import tagion.utils.Queue;
 import tagion.GlobalSignals : abort;
 
-import tagion.basic.Basic : Pubkey, Control;
+import tagion.basic.Types : Pubkey, Control, Buffer;
+import tagion.basic.Basic : nameOf;
 import tagion.logger.Logger;
 import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
@@ -360,7 +361,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         uint timeout_count;
 
         {
-            immutable buf = Buffer(hashgraph.channel);
+            immutable buf = cast(Buffer)hashgraph.channel;
             const nonce = net.calcHash(buf);
             auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
 

@@ -2,7 +2,7 @@ module tagion.script.StandardRecords;
 
 import std.meta : AliasSeq;
 
-import tagion.basic.Basic : Buffer, Pubkey, Signature;
+import tagion.basic.Types : Buffer, Pubkey, Signature;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;

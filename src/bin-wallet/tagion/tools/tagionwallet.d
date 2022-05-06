@@ -22,7 +22,8 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
 
-import tagion.basic.Basic : basename, Buffer, Pubkey;
+import tagion.basic.Types : Buffer, Pubkey;
+//import tagion.basic.Basic : ;
 import tagion.basic.TagionExceptions;
 import tagion.script.StandardRecords;
 import tagion.script.TagionCurrency;

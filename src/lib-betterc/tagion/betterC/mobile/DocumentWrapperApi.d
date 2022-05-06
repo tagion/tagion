@@ -17,7 +17,7 @@ import tagion.betterC.utils.Memory;
 import std.stdint;
 import std.string;
 import std.conv;
-import tagion.basic.Basic: Buffer;
+import tagion.basic.Types: Buffer;
 // import tagion.hibon.HiBONJSON;
 
 extern (C) {
@@ -224,7 +224,7 @@ export uint8_t* doc_get_docPtr_by_key(const uint32_t doc_id, const char* key_str
 export uint64_t get_docLen(const uint32_t doc_id)
 {
     const doc = recyclerDoc(doc_id);
-    return doc.serialize.length;  
+    return doc.serialize.length;
 }
 
 // /// getting the Document value
@@ -312,7 +312,7 @@ export uint64_t doc_get_memberCount(const uint32_t doc_id)
 //     auto hib = new HiBON;
 //     hib["doc2"] = "test_str_with_key";
 
-//     // Tests for create_doc() 
+//     // Tests for create_doc()
 //     {
 //         // Test for null request
 //         assert(create_doc(null, 0) is 1);
@@ -329,7 +329,7 @@ export uint64_t doc_get_memberCount(const uint32_t doc_id)
 //         //assert(create_doc(data2.ptr, data2.length) is 3);
 //     }
 
-//     // Tests for delete_doc_by_id() 
+//     // Tests for delete_doc_by_id()
 //     {
 //         delete_doc_by_id(1);
 //         delete_doc_by_id(2);
@@ -347,7 +347,7 @@ export uint64_t doc_get_memberCount(const uint32_t doc_id)
 //     }
 //     // Range of Document' indexes in RecyclerDoc [0 .. 3]
 
-//     // Tests for doc_get_int_by_key() 
+//     // Tests for doc_get_int_by_key()
 //     {
 //         assert(doc_get_int_by_key(0, "doc1", 4) is 100);
 //         assert(doc_get_int_by_key(1, "doc1", 4) is 100);
@@ -373,7 +373,7 @@ export uint64_t doc_get_memberCount(const uint32_t doc_id)
 //         assert(doc_get_int_by_key(3, "doc", 10) is BAD_RESULT);
 //     }
 
-//     // Tests for doc_get_int_by_id() 
+//     // Tests for doc_get_int_by_id()
 //     {
 //         assert(doc_get_int_by_id(0, 1) is 101);
 //         assert(doc_get_int_by_id(1, 1) is 101);
@@ -387,7 +387,7 @@ export uint64_t doc_get_memberCount(const uint32_t doc_id)
 //         assert(doc_get_int_by_id(3, 3) is BAD_RESULT);
 //     }
 
-//     // Tests for doc_get_str_by_id() 
+//     // Tests for doc_get_str_by_id()
 //     {
 //         const(char)[] expected_str = "test_str_with_id";
 
@@ -403,7 +403,7 @@ export uint64_t doc_get_memberCount(const uint32_t doc_id)
 //         assert(doc_get_str_by_id(3, 0) is null);
 //     }
 
-//     // Tests for doc_get_str_by_key() 
+//     // Tests for doc_get_str_by_key()
 //     {
 //         const(char)[] expected_str = "test_str_with_key";
 

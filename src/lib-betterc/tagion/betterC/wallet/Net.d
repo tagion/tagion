@@ -145,7 +145,7 @@ struct AES {
     }
 
 struct SecureNet {
-    import tagion.basic.Basic : Pubkey, Signature;
+    import tagion.basic.Types : Pubkey, Signature;
     private Pubkey _pubkey;
 //     // private SignDelegate _crypt;
 //     immutable(ubyte[]) delegate(const(ubyte[])) sign_dg;

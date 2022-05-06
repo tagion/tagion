@@ -12,7 +12,7 @@ import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
 import tagion.logger.Logger;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
-import tagion.basic.Basic : Control, Buffer;
+import tagion.basic.Types : Control, Buffer;
 
 import tagion.hibon.Document;
 import tagion.communication.HiRPC;
@@ -290,7 +290,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                     //     ownerTid.send(t);
                     // }
 
-                    
+
 
             );
         }

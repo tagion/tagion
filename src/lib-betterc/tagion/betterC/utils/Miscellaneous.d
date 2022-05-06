@@ -1,6 +1,6 @@
 module tagion.betterC.utils.Miscellaneous;
 
-import tagion.basic.Basic : Buffer, isBufferType;
+import tagion.basic.Types : Buffer, isBufferType;
 import tagion.betterC.utils.Memory;
 import std.range.primitives : isInputRange;
 // import std.algorithm : map;

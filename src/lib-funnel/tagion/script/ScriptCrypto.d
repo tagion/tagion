@@ -9,7 +9,7 @@ import tagion.script.ScriptParser;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBON : HiBON;
 import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.basic.Basic : Buffer, Pubkey, Signature;
+import tagion.basic.Types : Buffer, Pubkey, Signature;
 import tagion.basic.ConsensusExceptions;
 import tagion.script.ScriptBuilder : ScriptBuilder;
 import tagion.script.ScriptParser;
@@ -126,7 +126,7 @@ class ScriptCryptoHash256 : ScriptElement {
         try {
             auto data = sc.pop.get!Buffer;
 
-            
+
 
             .check(data.length is 0, "The data cannot be empty");
 

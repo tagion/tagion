@@ -13,7 +13,7 @@ import std.conv;
 import std.array;
 
 import tagion.logger.Logger;
-import tagion.basic.Basic : Buffer, Control;
+import tagion.basic.Types : Buffer, Control;
 import tagion.basic.TagionExceptions;
 
 import tagion.utils.Miscellaneous : toHexString, cutHex;
