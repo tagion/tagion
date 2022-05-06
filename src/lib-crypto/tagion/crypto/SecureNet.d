@@ -353,7 +353,23 @@ class StdSecureNet : StdHashNet, SecureNet {
         _crypt = null;
     }
 
-    unittest { // StdSecureNet
+    unittest { // StdSecureNet rawSign
+        const some_data ="some message";
+        SecureNet net = new StdSecureNet;
+        net.generateKeyPair("Secret password");
+        SecureNet bad_net = new StdSecureNet;
+        bad_net.generateKeyPair("Wrong Secret password");
+
+        const message = net.rawCalcHash(some_data.representation);
+
+        Signature signature = net.sign(message);
+
+        assert(!net.verify(message, signature, bad_net.pubkey));
+        assert(net.verify(message, signature, net.pubkey));
+
+    }
+
+    unittest { // StdSecureNet document
         import tagion.hibon.HiBONJSON;
 
         import tagion.hibon.HiBON;
@@ -375,13 +391,18 @@ class StdSecureNet : StdHashNet, SecureNet {
         assert(doc_signed.message == net.rawCalcHash(doc.serialize));
         assert(net.verify(doc, doc_signed.signature, net.pubkey));
 
+        SecureNet bad_net = new StdSecureNet;
+        bad_net.generateKeyPair("Wrong Secret password");
+        assert(!net.verify(doc, doc_signed.signature, bad_net.pubkey));
+
+
         { // Hash key
             auto h = new HiBON;
             h["#message"] = "Some message";
             doc = Document(h);
         }
 
-        // A document containing a hash-ket can not be signed or verified
+        // A document containing a hash-key can not be signed or verified
         assertThrown!SecurityConsensusException(net.sign(doc));
         assertThrown!SecurityConsensusException(net.verify(doc, doc_signed.signature, net.pubkey));
 

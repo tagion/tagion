@@ -540,11 +540,11 @@ mixin template HiBONRecord(string CTOR = "") {
             }
 
             enum do_verify = hasMember!(ThisType, "verify")
-                && isCallable!(verify) && __traits(compiles, this.verify);
+                && isCallable!(verify) && __traits(compiles, this.verify());
 
             static if (do_verify) {
                 scope (exit) {
-                    check(this.verify,
+                    check(this.verify(),
                             format("Document verification faild for HiBONRecord %s",
                             ThisType.stringof));
                 }

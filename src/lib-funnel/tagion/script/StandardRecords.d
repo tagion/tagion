@@ -9,6 +9,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONException;
 import tagion.script.ScriptBase : Number;
 import tagion.script.TagionCurrency;
+import tagion.script.ScriptException : check;
 
 @safe {
     @RecordType("BIL") struct StandardBill {
@@ -30,9 +31,9 @@ import tagion.script.TagionCurrency;
 
     @RecordType("NNC") struct NetworkNameCard {
         @Label("#name") string name; /// Tagion domain name
+        @Label("$pkey") Pubkey pubkey;  /// NNC pubkey
         @Label("$lang") string lang; /// Language used for the #name
         @Label("$time") ulong time;  /// Time-stamp of
-        @Label("$pkey") Pubkey pubkey;  /// NNC pubkey
         // @Label("$sign") Buffer sign;    ///
         @Label("$record") Buffer record; /// Hash pointer to NRC
         mixin HiBONRecord;
@@ -43,13 +44,68 @@ import tagion.script.TagionCurrency;
         @Label("$prev") Buffer previous; /// Hash pointer to the previuos NRC
         @Label("$index") uint index; /// Current index previous.index+1
         @Label("$node") Buffer node; /// Hash pointer to NNR
-        @Label("$payload", true) Document payload;
-        pragma(msg, "fixme(ib): payload should be Buffer type");
+        @Label("$payload", true) Document payload; /// Hash pointer to payload
         mixin HiBONRecord;
     }
 
     @RecordType("NSR") struct NetworkSignatureRecord {
-        @Label("$sign") Buffer sign;    /// Of the NNC with the pubkey
+        import tagion.crypto.SecureInterfaceNet;
+        @Label("$sign") Signature sign;    /// Of the NNC with the pubkey
+        mixin HiBONRecord!(q{
+                @disable this();
+                import tagion.crypto.SecureInterfaceNet;
+                import tagion.script.StandardRecords : NetworkNameCard;
+                import std.format;
+                import tagion.script.ScriptException : check;
+                this(const(SecureNet) net, ref const(NetworkNameCard) nnc) {
+                    check(net.pubkey == nnc.pubkey, format("Wrong pubkey %s can not be sign", NetworkNameCard.stringof));
+                    const message = net.rawCalcHash(nnc.toDoc.serialize);
+                    sign = net.sign(message);
+                }
+            });
+
+        bool verify (const(SecureNet) net, ref const(NetworkNameCard) nnc) const {
+            const message = net.rawCalcHash(nnc.toDoc.serialize);
+            return net.verify(message, sign, nnc.pubkey);
+        }
+    }
+
+    unittest {
+        import tagion.crypto.SecureNet : StdSecureNet;
+        import tagion.script.ScriptException : ScriptException;
+        import std.exception : assertThrown, assertNotThrown;
+        import std.string : representation;
+        auto good_net = new StdSecureNet;
+        auto bad_net = new StdSecureNet;
+        {
+            good_net.generateKeyPair("very secret correct password");
+            bad_net.generateKeyPair("very secret other password");
+        }
+        NetworkNameCard nnc;
+        {
+            nnc.name = "some_name";
+            nnc.pubkey = good_net.pubkey;
+        }
+        NetworkNameCard bad_nnc;
+        {
+            bad_nnc.name = "some_name";
+            bad_nnc.pubkey = bad_net.pubkey;
+        }
+//            const nsr1 = NetworkSignatureRecord(bad_net, nnc);
+
+        // Invalid NSR
+        assertThrown(NetworkSignatureRecord(bad_net, nnc));
+        // Correct NSR
+        const nsr = assertNotThrown(NetworkSignatureRecord(good_net, nnc));
+        { // Verify that the NNC has been signed correctly
+            const net = new StdSecureNet;
+            // Bad NNC
+            assert(!nsr.verify(net, bad_nnc));
+            // Good NNC
+            assert(nsr.verify(net, nnc));
+        }
+
+
     }
 
     @RecordType("NNR") struct NetworkNodeRecord {
