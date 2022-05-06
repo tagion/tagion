@@ -8,7 +8,8 @@ import std.getopt;
 import std.array : join;
 import std.string : strip;
 
-import tagion.basic.Basic : basename, DataFormat;
+import tagion.basic.Types : DataFormat;
+import tagion.basic.Basic : basename;
 import tagion.basic.TagionExceptions;
 import tagion.logger.Logger : LoggerType;
 import tagion.utils.JSONCommon;

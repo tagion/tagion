@@ -3,7 +3,8 @@ module tagion.betterC.wallet.WalletRecords;
 import tagion.betterC.hibon.HiBON;
 import tagion.betterC.hibon.Document : Document;
 import tagion.betterC.wallet.KeyRecover : KeyRecover;
-import tagion.basic.Basic : Buffer, Pubkey, Signature, basename;
+import tagion.basic.Types : Buffer, Pubkey, Signature;
+import tagion.basic.Basic : basename;
 import tagion.betterC.utils.Memory;
 import tagion.betterC.utils.BinBuffer;
 
@@ -483,5 +484,3 @@ template GetLabel(alias member) {
 
     }
 }
-
-

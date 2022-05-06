@@ -20,7 +20,8 @@ import tagion.utils.Random;
 import tagion.utils.Queue;
 import tagion.GlobalSignals : abort;
 
-import tagion.basic.Basic : Pubkey, Control, nameOf, Buffer;
+import tagion.basic.Types : Pubkey, Control, Buffer;
+import tagion.basic.Basic : nameOf;
 import tagion.logger.Logger;
 import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;

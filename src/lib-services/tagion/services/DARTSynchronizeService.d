@@ -11,7 +11,7 @@ import p2plib = p2p.interfaces;
 import p2p.callback;
 import p2p.cgo.c_helper;
 import tagion.logger.Logger;
-import tagion.basic.Basic : Buffer, Control;
+import tagion.basic.Types : Buffer, Control, Pubkey;
 import std.getopt;
 import std.stdio;
 import std.conv;
@@ -302,7 +302,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     //     ownerTid.send(t);
                     // }
 
-                    
+
 
             );
             try {

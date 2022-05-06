@@ -12,7 +12,9 @@ import std.typecons;
 import tagion.options.HostOptions;
 import tagion.dart.DARTOptions;
 
-import tagion.basic.Basic : EnumText, Buffer, Pubkey, buf_idup, basename, isBufferType, Control, assumeTrusted;
+import tagion.basic.Types : Buffer, Pubkey, isBufferType, Control;
+
+import tagion.basic.Basic : EnumText, buf_idup, basename, assumeTrusted;
 
 import tagion.utils.Miscellaneous : cutHex;
 

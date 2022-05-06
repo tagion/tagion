@@ -15,7 +15,8 @@ import p2plib = p2p.node;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.services.Options;
 import tagion.logger.Logger;
-import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
+import tagion.basic.Types : Buffer, Control, Pubkey;
+import tagion.basic.Basic : nameOf;
 import tagion.basic.TagionExceptions : TagionException, taskException, fatal;
 import tagion.services.MdnsDiscoveryService;
 

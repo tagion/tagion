@@ -21,7 +21,7 @@ import tagion.logger.Logger;
 import tagion.services.LoggerService : LogFilter;
 import tagion.services.Options : Options, setOptions, setDefaultOption;
 import tagion.options.CommonOptions : commonOptions;
-import tagion.basic.Basic : Control, Buffer;
+import tagion.basic.Types : Control, Buffer;
 import tagion.network.SSLFiberService;
 import tagion.network.SSLServiceAPI;
 import tagion.hibon.Document;

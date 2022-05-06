@@ -17,7 +17,8 @@ import std.conv : to;
 import std.traits;
 import std.exception : assumeUnique;
 import std.container.rbtree : RedBlackTree, redBlackTree;
-import tagion.basic.Basic : basename, Buffer, log2, assumeTrusted;
+import tagion.basic.Types : Buffer;
+import tagion.basic.Basic : basename, log2, assumeTrusted;
 import tagion.basic.TagionExceptions : Check;
 
 import tagion.hibon.HiBON : HiBON;
@@ -1236,7 +1237,7 @@ class BlockFile {
     void fromDoc(const(Document) doc) {
         allocated_chains = null;
 
-        
+
 
         .check(doc.isArray, "Document should be an array");
         foreach (a; doc[]) {

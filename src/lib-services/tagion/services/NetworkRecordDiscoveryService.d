@@ -11,7 +11,8 @@ import std.algorithm.iteration;
 import std.format;
 
 import tagion.services.Options;
-import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
+import tagion.basic.Basic : nameOf;
+import tagion.basic.Types : Buffer, Control, Pubkey;
 import tagion.logger.Logger;
 import tagion.utils.StdTime;
 

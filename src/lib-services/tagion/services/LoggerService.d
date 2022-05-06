@@ -15,7 +15,7 @@ import std.string;
 
 //extern(C) int pthread_setname_np(pthread_t, const char*);
 
-import tagion.basic.Basic : Control;
+import tagion.basic.Types : Control;
 import tagion.logger.Logger;
 import tagion.services.LogSubscriptionService : logSubscriptionServiceTask;
 

@@ -1244,7 +1244,7 @@ T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
             alias Text = Typedef!(string, null, "Text");
 
             // Pubkey is a Typedef
-            import tagion.basic.Basic : Pubkey;
+            import tagion.basic.Types : Pubkey;
 
             static struct TextArray {
                 Text[] texts;
@@ -1273,7 +1273,7 @@ T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
         import std.algorithm.sorting : isStrictlyMonotonic;
         import std.stdio;
 
-        import tagion.basic.Basic : Buffer;
+        import tagion.basic.Types : Buffer;
 
         static void binwrite(Args...)(ubyte[] buf, Args args) @trusted {
             import std.bitmanip : write;

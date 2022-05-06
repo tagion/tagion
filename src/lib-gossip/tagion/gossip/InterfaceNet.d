@@ -8,7 +8,7 @@ import tagion.hibon.Document : Document;
 
 //import tagion.utils.Queue;
 import tagion.basic.ConsensusExceptions;
-import tagion.basic.Basic;
+import tagion.basic.Types : Pubkey;
 import tagion.communication.HiRPC;
 import tagion.utils.StdTime;
 

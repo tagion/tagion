@@ -3,7 +3,8 @@ module tagion.TaskWrapper;
 import std.stdio;
 import std.format;
 import std.traits : isCallable;
-import tagion.basic.Basic : Control, TrustedConcurrency;
+import tagion.basic.Types : Control;
+import tagion.basic.Basic : TrustedConcurrency;
 import tagion.logger.Logger;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
 import tagion.services.RecorderService : Fingerprint;
@@ -34,7 +35,7 @@ mixin TrustedConcurrency;
         _tid = spawn(&run, task_name, args);
         // TODO add table
         version (none) {
-            // Should we do the check and log if there is error but not stop the execution? 
+            // Should we do the check and log if there is error but not stop the execution?
             check(receiveOnly!Control is Control.LIVE);
         }
     }
@@ -111,7 +112,7 @@ mixin TrustedConcurrency;
 
 @safe mixin template TaskBasic() {
     bool stop;
-    // TODO Do we need handle also "abort"? 
+    // TODO Do we need handle also "abort"?
 
     // Task can redefine this method to customize actions when receiving Control.STOP
     void onSTOP() {

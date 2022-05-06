@@ -4,7 +4,7 @@ import std.algorithm : map;
 import std.array : array;
 import std.range : iota;
 
-import tagion.basic.Basic : Buffer, Pubkey, Signature;
+import tagion.basic.Types : Buffer, Pubkey, Signature;
 import tagion.utils.StdTime : sdt_t;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBON : HiBON;

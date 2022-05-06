@@ -24,7 +24,8 @@ import tagion.hibon.HiBONRecord;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
 
-import tagion.basic.Basic : this_dot, basename, Pubkey, Buffer, EnumText, buf_idup;
+import tagion.basic.Types : Pubkey, Buffer;
+import tagion.basic.Basic : this_dot, basename, EnumText, buf_idup;
 import tagion.Keywords : Keywords;
 
 import tagion.logger.Logger;

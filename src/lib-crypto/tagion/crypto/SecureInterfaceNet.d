@@ -1,6 +1,6 @@
 module tagion.crypto.SecureInterfaceNet;
 
-import tagion.basic.Basic : Buffer, Pubkey, Signature;
+import tagion.basic.Types : Buffer, Pubkey, Signature;
 import tagion.hibon.HiBONRecord : isHiBONRecord, HiBONPrefix;
 import tagion.hibon.Document : Document;
 
@@ -35,7 +35,7 @@ interface SecureNet : HashNet {
     bool verify(immutable(ubyte[]) message, const Signature signature, const Pubkey pubkey) const;
     final bool verify(const Document doc, const Signature signature, const Pubkey pubkey) const {
 
-        
+
 
             .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
                     .SECURITY_MESSAGE_HASH_KEY);
@@ -54,7 +54,7 @@ interface SecureNet : HashNet {
 
     final Signed sign(const Document doc) const {
 
-        
+
 
             .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
                     .SECURITY_MESSAGE_HASH_KEY);

@@ -21,7 +21,8 @@ import tagion.communication.HiRPC;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
 
-import tagion.basic.Basic : Pubkey, Signature, Privkey, Buffer, countVotes;
+import tagion.basic.Types : Pubkey, Signature, Privkey, Buffer;
+import tagion.basic.Basic : countVotes;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
 

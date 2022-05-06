@@ -11,7 +11,7 @@ import tagion.betterC.utils.Memory;
 import tagion.betterC.hibon.HiBON : HiBONT;
 import tagion.betterC.hibon.Document : Document;
 
-import tagion.basic.Basic : Buffer;
+import tagion.basic.Types : Buffer;
 import std.string : representation;
 import std.range : iota, indexed, lockstep/*, StoppingPolicy*/; // commented stuff produce error no TypeInfo in betterC
 import std.algorithm.mutation : copy;
@@ -50,7 +50,7 @@ struct KeyRecover {
         // auto results = new Buffer[questions.length];
         Buffer[] results;
         results.create(questions.length);
-        
+
 //         foreach (ref result, question, answer; lockstep(results, questions, answers, StoppingPolicy
 //                 .requireSameLength)) {
 //             scope strip_down = cast(ubyte[]) answer.strip_down;

@@ -21,7 +21,7 @@ import tagion.dart.DARTBasic;
 import tagion.dart.Recorder;
 
 import tagion.dart.DARTOptions : DARTOptions;
-import tagion.basic.Basic;
+import tagion.basic.Types : Buffer, Pubkey, Control;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.hibon.HiBONJSON;
@@ -236,6 +236,7 @@ alias ConnectionPoolT = ConnectionPool!(shared p2plib.StreamI, ulong);
 @safe
 class P2pSynchronizationFactory : SynchronizationFactory {
     import tagion.dart.DARTOptions;
+    import tagion.basic.Basic : tempfile;
 
     protected {
         DART dart;

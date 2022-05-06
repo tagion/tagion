@@ -11,7 +11,7 @@ import std.bigint : BigInt;
 import std.format;
 import std.string : strip;
 
-import tagion.basic.Basic : Control, Buffer;
+import tagion.basic.Types : Control, Buffer;
 import tagion.basic.TagionExceptions : fatal;
 import tagion.logger.Logger;
 import tagion.services.Options : Options, setDefaultOption;
@@ -318,7 +318,7 @@ alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFacto
 
         // search for the last block
         bool found_next_block = false;
-        foreach (fingerprint; link_table.keys) { // search such block, that there isn't chain which points to this block 
+        foreach (fingerprint; link_table.keys) { // search such block, that there isn't chain which points to this block
             foreach (chain; link_table.values) {
                 if (fingerprint == chain)
                     found_next_block = true;

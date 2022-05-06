@@ -3,7 +3,7 @@ module tagion.communication.HandlerPool;
 import core.time;
 import std.datetime;
 import std.stdio;
-import tagion.basic.Basic : Buffer;
+import tagion.basic.Types : Buffer;
 
 @safe
 interface ResponseHandler {

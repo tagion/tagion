@@ -12,7 +12,7 @@ import tagion.services.Options;
 import std.conv;
 import tagion.logger.Logger;
 import std.concurrency;
-import tagion.basic.Basic : Buffer, Control, Pubkey;
+import tagion.basic.Types : Buffer, Control, Pubkey;
 import std.stdio;
 import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.basic.TagionExceptions : fatal;

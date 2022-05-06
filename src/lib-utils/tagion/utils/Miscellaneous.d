@@ -1,6 +1,6 @@
 module tagion.utils.Miscellaneous;
 
-import tagion.basic.Basic : Buffer, isBufferType;
+import tagion.basic.Types : Buffer, isBufferType;
 import std.exception;
 import std.range.primitives : isInputRange;
 import std.algorithm : map;

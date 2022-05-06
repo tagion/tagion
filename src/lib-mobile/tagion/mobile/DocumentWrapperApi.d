@@ -16,7 +16,7 @@ import core.runtime : rt_init, rt_term;
 import core.stdc.stdlib;
 import std.stdint;
 import std.string : toStringz, fromStringz;
-import tagion.basic.Basic : Buffer;
+import tagion.basic.Types : Buffer;
 import tagion.hibon.HiBONJSON;
 
 public static Recycle!Document recyclerDoc;

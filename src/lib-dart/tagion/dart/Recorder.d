@@ -11,7 +11,7 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : Label, STUB, isHiBONRecord, GetLabel, isStub, RecordType;
-import tagion.basic.Basic : Buffer;
+import tagion.basic.Types : Buffer;
 import tagion.basic.Message;
 
 import tagion.dart.DARTException : DARTRecorderException;
@@ -108,7 +108,7 @@ class RecordFactory {
 
         private this(Document doc) {
 
-            
+
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             this.archives = new Archives;

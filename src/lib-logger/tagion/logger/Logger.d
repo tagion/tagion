@@ -3,7 +3,7 @@ module tagion.logger.Logger;
 import std.concurrency;
 import core.sys.posix.pthread;
 import std.string;
-import tagion.basic.Basic : Control;
+import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions;
 import tagion.hibon.HiBONRecord;
 
@@ -54,7 +54,7 @@ static struct Logger {
         try {
             logger_tid = locate(logger_task_name);
 
-            
+
 
             .register(task_name, thisTid);
             _task_name = task_name;

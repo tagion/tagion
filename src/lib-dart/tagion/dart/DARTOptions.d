@@ -1,6 +1,6 @@
 module tagion.dart.DARTOptions;
 
-import tagion.basic.Basic : basename, DataFormat;
+import tagion.basic.Basic : basename;
 import tagion.basic.TagionExceptions;
 
 struct DARTOptions {
