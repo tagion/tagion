@@ -153,11 +153,10 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
 
         final switch (net_mode) {
         case NetworkMode.internal:
-            Pubkey[] pkeys;
 
             gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
             ownerTid.send(net.pubkey);
-            //Pubkey[] received_pkeys;
+            Pubkey[] pkeys;
             foreach (i; 0 .. opts.nodes) {
                 pkeys ~= receiveOnly!(Pubkey);
                 log.trace("Receive %d %s", i, pkeys[i].cutHex);
@@ -361,7 +360,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         uint timeout_count;
 
         {
-            immutable buf = hashgraph.channel;
+            immutable buf = Buffer(hashgraph.channel);
             const nonce = net.calcHash(buf);
             auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
 
