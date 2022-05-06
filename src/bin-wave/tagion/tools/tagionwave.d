@@ -110,7 +110,7 @@ int _main(string[] args) {
             return 0;
         }
 
-        if (main_args.helpWanted) {
+        if (main_args.helpWanted || token_opts.helpWanted) {
             defaultGetoptPrinter(
                     [
                 "Documentation: https://tagion.org/",
@@ -153,7 +153,7 @@ int _main(string[] args) {
     // Set the shared common options for all services
     setCommonOptions(service_options.common);
 
-    if (service_options.pid_file) {
+    if (service_options.pid_file.length) {
         import std.process : thisProcessID;
         stderr.writefln("PID = %s written to %s", thisProcessID, options.pid_file);
         service_options.pid_file.fwrite("PID = %s\n".format(thisProcessID));
