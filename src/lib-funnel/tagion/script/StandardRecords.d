@@ -48,61 +48,68 @@ import tagion.script.ScriptException : check;
         mixin HiBONRecord;
     }
 
-    @RecordType("NSR") struct NetworkSignatureRecord {
+    @RecordType("HR") struct HashRecord {
         import tagion.crypto.SecureInterfaceNet;
-        @Label("$sign") Signature sign;    /// Of the NNC with the pubkey
+        @Label("$lock") Buffer lock;    /// Of the NNC with the pubkey
         mixin HiBONRecord!(q{
                 @disable this();
-                import tagion.crypto.SecureInterfaceNet;
-                import tagion.script.StandardRecords : NetworkNameCard;
-                import std.format;
+                import tagion.crypto.SecureInterfaceNet : HashNet;
                 import tagion.script.ScriptException : check;
-                this(const(SecureNet) net, ref const(NetworkNameCard) nnc) {
-                    check(net.pubkey == nnc.pubkey, format("Wrong pubkey %s can not be sign", NetworkNameCard.stringof));
-                    const message = net.rawCalcHash(nnc.toDoc.serialize);
-                    sign = net.sign(message);
+                import tagion.hibon.HiBONRecord : isHiBONRecord, hasHashKey;
+                this(const(HashNet) net, const(Document) doc) {
+                    check(doc.hasHashKey, "Document should have a has key");
+                    lock = net.rawCalcHash(doc.serialize);
+                }
+                this(T)(const(HashNet) net, ref const(T) h) if (isHiBONRecord!T) {
+                    this(net, h.toDoc);
                 }
             });
 
-        bool verify (const(SecureNet) net, ref const(NetworkNameCard) nnc) const {
-            const message = net.rawCalcHash(nnc.toDoc.serialize);
-            return net.verify(message, sign, nnc.pubkey);
+        bool verify (const(HashNet) net, const(Document) doc) const {
+            return lock == net.rawCalcHash(doc.serialize);
         }
+        bool verify(T)(const(HashNet) net, ref T h) const if (isHiBONRecord!T) {
+            return verify(net, h.toDoc);
+        }
+
     }
 
     unittest {
-        import tagion.crypto.SecureNet : StdSecureNet;
+        import tagion.crypto.SecureNet : StdHashNet;
         import tagion.script.ScriptException : ScriptException;
         import std.exception : assertThrown, assertNotThrown;
         import std.string : representation;
-        auto good_net = new StdSecureNet;
-        auto bad_net = new StdSecureNet;
-        {
-            good_net.generateKeyPair("very secret correct password");
-            bad_net.generateKeyPair("very secret other password");
-        }
+        const net = new StdHashNet;
         NetworkNameCard nnc;
         {
+            import tagion.crypto.SecureNet : StdSecureNet;
+            auto good_net = new StdSecureNet;
+            good_net.generateKeyPair("very secret correct password");
             nnc.name = "some_name";
             nnc.pubkey = good_net.pubkey;
         }
         NetworkNameCard bad_nnc;
-        {
-            bad_nnc.name = "some_name";
-            bad_nnc.pubkey = bad_net.pubkey;
+        bad_nnc.name = "some_other_name";
+        static struct NoHash {
+            string name;
+            mixin HiBONRecord!(q{
+                    this(string name) {
+                        this.name = name;
+                    }
+                });
         }
-//            const nsr1 = NetworkSignatureRecord(bad_net, nnc);
+        // Invalid HR
+        const nohash=NoHash("no hash");
+//        const x=HashRecord(net, nohash);
+        assertThrown(HashRecord(net, nohash));
+        // Correct HR
+        const hr = assertNotThrown(HashRecord(net, nnc));
 
-        // Invalid NSR
-        assertThrown(NetworkSignatureRecord(bad_net, nnc));
-        // Correct NSR
-        const nsr = assertNotThrown(NetworkSignatureRecord(good_net, nnc));
         { // Verify that the NNC has been signed correctly
-            const net = new StdSecureNet;
             // Bad NNC
-            assert(!nsr.verify(net, bad_nnc));
+            assert(!hr.verify(net, bad_nnc));
             // Good NNC
-            assert(nsr.verify(net, nnc));
+            assert(hr.verify(net, nnc));
         }
 
 
