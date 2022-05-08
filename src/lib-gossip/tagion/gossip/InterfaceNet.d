@@ -45,8 +45,8 @@ interface GossipNet : P2pNet {
     bool isValidChannel(const(Pubkey) channel) const nothrow;
     void add_channel(const(Pubkey) channel);
     void remove_channel(const(Pubkey) channel);
-    const(Pubkey) gossip(ChannelFilter channel_filter, SenderCallBack sender);
-    const(Pubkey) select_channel(ChannelFilter channel_filter);
+    const(Pubkey) gossip(const(ChannelFilter) channel_filter, const(SenderCallBack) sender);
+    const(Pubkey) select_channel(const(ChannelFilter) channel_filter);
 }
 
 @safe

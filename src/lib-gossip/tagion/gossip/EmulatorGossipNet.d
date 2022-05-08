@@ -114,7 +114,7 @@ class EmulatorGossipNet : GossipNet {
         return (channel in _tids) !is null && channel != mypk;
     }
 
-    const(Pubkey) select_channel(ChannelFilter channel_filter) {
+    const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
         import std.range : dropExactly;
 
         foreach (count; 0 .. _tids.length * 2) {
@@ -130,7 +130,8 @@ class EmulatorGossipNet : GossipNet {
     }
 
     const(Pubkey) gossip(
-            ChannelFilter channel_filter, SenderCallBack sender) {
+        const(ChannelFilter) channel_filter,
+        const(SenderCallBack) sender) {
         const send_channel = select_channel(channel_filter);
         log("selected channel: %s", send_channel.cutHex);
         if (send_channel.length) {

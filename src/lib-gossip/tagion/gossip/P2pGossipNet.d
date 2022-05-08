@@ -9,6 +9,7 @@ import std.file;
 import std.file : fwrite = write;
 import std.typecons;
 
+import tagion.basic.TagionExceptions : fatal;
 import tagion.options.HostOptions;
 import tagion.dart.DARTOptions;
 
@@ -250,7 +251,7 @@ unittest {
 
 @safe
 class ConnectionPoolBridge {
-    ulong[Pubkey] lookup;
+    protected ulong[Pubkey] lookup;
 
     void removeConnection(ulong connectionId) {
         log("CPB::REMOVING CONNECTION \n lookup: %s", lookup);
@@ -263,77 +264,23 @@ class ConnectionPoolBridge {
         }
     }
 
-    bool contains(Pubkey pk) {
-        return (pk in lookup) !is null;
+    ulong opIndex(const(Pubkey) channel) const pure {
+        return lookup.get(channel, 0);
+    }
+
+    void opIndexAssign(const ulong i, const(Pubkey) channel) pure nothrow {
+        lookup[channel] = i;
+    }
+
+    void remove(const(Pubkey) channel) {
+        lookup.remove(channel);
+    }
+
+    bool contains(const(Pubkey) channel) {
+        return (channel in lookup) !is null;
     }
 
 }
-
-// @safe
-// struct AddressDirecory {
-//     private NodeAddress[Pubkey] addresses;
-//     mixin HiBONRecord;
-// }
-
-// @safe
-// synchronized class AddressBook {
-//     static struct AddressDirectory {
-//         NodeAddress[Pubkey] addresses;
-//         mixin HiBONRecord;
-//     }
-//     protected shared(NodeAddress[Pubkey]) addresses;
-
-//     private shared(NodeAddress[Pubkey]) _data() {
-//         return addresses;
-//     }
-
-//     void overwrite(const(NodeAddress[Pubkey]) addrs) {
-//         addresses=null;
-//         foreach(pkey, addr; addrs) {
-//             addresses[pkey] = addr;
-//         }
-//     }
-
-//     void load(string filename) {
-//         if (filename.exists) {
-//             auto dir = filename.fread!AddressDirectory;
-//             overwrite(dir.addresses);
-//         }
-//     }
-
-//     void save(string filename) @trusted {
-//         AddressDirectory dir;
-//         dir.addresses=cast(NodeAddress[Pubkey])addresses;
-//         filename.fwrite(dir);
-//     }
-
-//     immutable(NodeAddress) opIndex(const Pubkey pkey) const pure nothrow {
-//         auto addr=pkey in addresses;
-//         if (addr) {
-//             return cast(immutable)(*addr);
-//         }
-//         return NodeAddress.init;
-//     }
-
-//     void opIndexAssign(const NodeAddress addr, const Pubkey pkey) pure nothrow {
-//         addresses[pkey]=addr;
-//     }
-
-//     void erase(const Pubkey pkey) pure nothrow {
-//         addresses.remove(pkey);
-//     }
-
-//     bool exists(const Pubkey pkey) const pure nothrow {
-//         return (pkey in addresses) !is null;
-//     }
-// }
-
-// static shared(AddressBook) addressbook;
-
-// shared static this() {
-//     addressbook=new shared(AddressBook);
-// }
-
 
 @safe
 private static string convert_to_net_task_name(string task_name) {
@@ -355,11 +302,12 @@ class StdP2pNet : P2pNet {
             shared p2plib.NodeI node) {
         this.owner_task_name = owner_task_name;
         this.internal_task_name = convert_to_net_task_name(owner_task_name);
+        log.trace("owner_task_name %s internal_task_name %s", owner_task_name, internal_task_name);
         this.node = node;
         void spawn_sender() {
             this.sender_tid = spawn(
                 &async_send,
-                owner_task_name,
+                internal_task_name,
                 discovery_task_name,
                 host,
                 node);
@@ -371,9 +319,8 @@ class StdP2pNet : P2pNet {
     @safe
     void close() {
         void send_stop() {
-            auto sender = locate(internal_task_name);
-            if (sender !is Tid.init) {
-                sender.prioritySend(Control.STOP);
+            if (sender_tid !is Tid.init) {
+                sender_tid.prioritySend(Control.STOP);
                 receiveOnly!Control;
             }
         }
@@ -383,28 +330,28 @@ class StdP2pNet : P2pNet {
 
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
         alias tsend = .send;
-        auto internal_sender = locate(internal_task_name);
-        log("send called");
-        if (internal_sender !is Tid.init) {
+        // auto internal_sender = locate(internal_task_name);
+        log("send called %s", channel.cutHex);
+        if (sender_tid !is Tid.init) {
             counter++;
-            log("sending to sender %s", internal_sender);
+//            log("sending to sender %s", internal_sender);
             auto t = sender.toDoc;
-            tsend(internal_sender, channel, sender.toDoc, counter);
+            tsend(sender_tid, channel, sender.toDoc, counter);
         }
         else {
-            log("sender not found");
+            log.warning("sender not found");
         }
     }
 
     protected void send_remove(Pubkey pk) {
         alias tsend = .send;
-        auto sender = locate(internal_task_name);
-        if (sender !is Tid.init) {
+        //auto sender = locate(internal_task_name);
+        if (sender_tid !is Tid.init) {
             counter++;
-            tsend(sender, pk, counter);
+            tsend(sender_tid, pk, counter);
         }
         else {
-            log("sender not found");
+            log.warning("sender not found");
         }
     }
 }
@@ -414,46 +361,59 @@ static void async_send(
         string task_name,
         string discovery_task_name,
         const(HostOptions) host,
-        shared p2plib.NodeI node) {
+        shared p2plib.NodeI node) nothrow {
+    try {
     scope (exit) {
         ownerTid.send(Control.END);
     }
     const hirpc = new HiRPC(null);
-    const internal_task_name = convert_to_net_task_name(task_name);
-    log.register(internal_task_name);
+//    const internal_task_name = convert_to_net_task_name(task_name);
+    log.register(task_name);
 
     auto connectionPool = new shared ConnectionPool!(shared p2plib.StreamI, ulong)();
     auto connectionPoolBridge = new ConnectionPoolBridge();
 
     log("start listening");
-    node.listen(internal_task_name, &StdHandlerCallback,
-            internal_task_name, host.timeout.msecs, host.max_size);
+    node.listen(
+        task_name,
+        &StdHandlerCallback,
+        task_name,
+        host.timeout.msecs,
+        host.max_size);
 
     scope (exit) {
         log("close listener");
-        node.closeListener(internal_task_name);
+        node.closeListener(task_name);
     }
 
     void send_to_channel(immutable(Pubkey) channel, Document doc) {
 
         log("sending to: %s TIME: %s", channel.cutHex, Clock.currTime().toUTC());
-        auto streamIdPtr = channel in connectionPoolBridge.lookup;
-        auto streamId = streamIdPtr is null ? 0 : *streamIdPtr;
+        // auto streamIdPtr = channel in connectionPoolBridge.lookup;
+        // auto streamId = streamIdPtr is null ? 0 : *streamIdPtr;
+        auto streamId = connectionPoolBridge[channel];
         if (streamId == 0 || !connectionPool.contains(streamId)) {
             auto discovery_tid = locate(discovery_task_name);
-            if (discovery_tid != Tid.init) {
+            if (discovery_tid !is Tid.init) {
                 discovery_tid.send(channel, thisTid);
                 receive(
                         (NodeAddress node_address) {
-                    auto stream = node.connect(node_address.address, node_address.is_marshal, [internal_task_name]);
-                    streamId = stream.identifier;
-                    import p2p.callback;
+                            auto stream = node.connect(
+                                node_address.address,
+                                node_address.is_marshal,
+                                [task_name]);
+                            streamId = stream.identifier;
+                            import p2p.callback;
 
-                    connectionPool.add(streamId, stream, true);
-                    stream.listen(&StdHandlerCallback, internal_task_name, host.timeout.msecs, host
-                        .max_size);
-                    connectionPoolBridge.lookup[channel] = streamId;
-                }
+                            connectionPool.add(streamId, stream, true);
+                            stream.listen(
+                                &StdHandlerCallback,
+                                task_name,
+                                host.timeout.msecs,
+                                host
+                                .max_size);
+                            connectionPoolBridge[channel] = streamId;
+                        }
                 );
             }
             else {
@@ -479,7 +439,7 @@ static void async_send(
         log("handling %s", thisTid);
         receive(
                 (const(Pubkey) channel, const(Document) doc, uint id) {
-            log("received sender %d", id);
+                    log("received sender %d %s", id, channel.cutHex);
             try {
                 send_to_channel(channel, doc);
             }
@@ -491,12 +451,11 @@ static void async_send(
                 (Pubkey channel, uint id) {
             log("Closing connection: %s", channel.cutHex);
             try {
-                auto streamIdPtr = channel in connectionPoolBridge.lookup;
-                if (streamIdPtr !is null) {
-                    const streamId = *streamIdPtr;
+                const streamId = connectionPoolBridge[channel];
+                if (streamId !is 0) {
                     log("connection to close: %d", streamId);
                     connectionPool.close(streamId);
-                    connectionPoolBridge.lookup.remove(channel);
+                    connectionPoolBridge.remove(channel);
                 }
             }
             catch (Exception e) {
@@ -507,7 +466,8 @@ static void async_send(
                 (Response!(p2plib.ControlCode.Control_Connected) resp) {
             log("Client Connected key: %d", resp.key);
             connectionPool.add(resp.key, resp.stream, true);
-        }, (Response!(p2plib.ControlCode.Control_Disconnected) resp) {
+        },
+                (Response!(p2plib.ControlCode.Control_Disconnected) resp) {
             synchronized (connectionPoolBridge) {
                 log("Client Disconnected key: %d", resp.key);
                 connectionPool.close(cast(void*) resp.key);
@@ -520,12 +480,13 @@ static void async_send(
             auto doc = Document(resp.data);
             const receiver = hirpc.receive(doc);
             Pubkey received_pubkey = receiver.pubkey;
-            if ((received_pubkey in connectionPoolBridge.lookup) !is null) {
+            const streamId = connectionPoolBridge[received_pubkey];
+            if (streamId) {
                 log("previous cpb: %d, now: %d",
-                    connectionPoolBridge.lookup[received_pubkey], resp.stream.identifier);
+                    connectionPoolBridge[received_pubkey], resp.stream.identifier);
             }
             else {
-                connectionPoolBridge.lookup[received_pubkey] = resp.stream.identifier;
+                connectionPoolBridge[received_pubkey] = resp.stream.identifier;
             }
             log("received in: %s", resp.stream.identifier);
             ownerTid.send(receiver.toDoc);
@@ -538,6 +499,10 @@ static void async_send(
         );
     }
     while (!stop);
+    }
+    catch (Exception e) {
+        fatal(e);
+    }
 }
 
 @safe
@@ -573,7 +538,7 @@ class P2pGossipNet : StdP2pNet, GossipNet {
         return channel != mypk && addressbook.isActive(channel);
     }
 
-    const(Pubkey) select_channel(ChannelFilter channel_filter) {
+    const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
         import std.range : dropExactly;
         const active_nodes=addressbook.numOfActiveNodes;
         log.trace("active_nodes=%d", active_nodes);
@@ -591,9 +556,10 @@ class P2pGossipNet : StdP2pNet, GossipNet {
     }
 
     const(Pubkey) gossip(
-            ChannelFilter channel_filter,
-            SenderCallBack sender) {
+        const(ChannelFilter) channel_filter,
+        const(SenderCallBack) sender) {
         const send_channel = select_channel(channel_filter);
+        log.trace("send_channel %s", send_channel.cutHex);
         if (send_channel.length) {
             send(send_channel, sender());
         }

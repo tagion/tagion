@@ -196,12 +196,19 @@ class HashGraph {
         return true;
     }
 
-    void init_tide(
-            const(Pubkey) delegate(
+    alias GraphResonse = const(Pubkey) delegate(
             GossipNet.ChannelFilter channel_filter,
-            GossipNet.SenderCallBack sender) @safe responde,
-            const(Document) delegate() @safe payload,
-            lazy const sdt_t time) {
+            GossipNet.SenderCallBack sender) @safe;
+    alias GraphPayload = const(Document) delegate() @safe;
+
+    void init_tide(
+        const(GraphResonse) responde,
+            // const(Pubkey) delegate(
+            // GossipNet.ChannelFilter channel_filter,
+            // GossipNet.SenderCallBack sender) @safe GraphResonse responde,
+        //const(Document) delegate() @safe
+        const(GraphPayload) payload,
+        lazy const sdt_t time) {
         const(HiRPC.Sender) payload_sender() @safe {
             const doc = payload();
             immutable epack = event_pack(time, null, doc);

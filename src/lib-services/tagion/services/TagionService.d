@@ -413,6 +413,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                     (const(HiRPC.Sender) return_wavefront) @safe { gossip_net.send(receiver.pubkey, return_wavefront); }, &payload);
         }
 
+        pragma(msg, "fixme(cbr): Random should be unpredictable");
         import tagion.utils.Random;
 
         Random!size_t random;
