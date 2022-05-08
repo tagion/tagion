@@ -74,6 +74,7 @@ synchronized class AddressBook {
 
     protected shared(NodeAddresses) addresses;
 
+//    version(none)
     immutable(NodeAddress[Pubkey]) _data() @trusted {
         pragma(msg, "fixme(cbr): AddressBook._data This function should be removed when the addressbook has been implemented");
         NodeAddress[Pubkey] result;

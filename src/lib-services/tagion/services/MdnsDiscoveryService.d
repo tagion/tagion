@@ -55,7 +55,7 @@ void mdnsDiscoveryService(
                     final switch (request) {
                     case RequestTable:
                         pragma(msg, "fixme(cbr):Address book request should not be used anymore");
-                        log("Requested: %s ", addressbook._data.length);
+                        log("Requested: %s ", addressbook.numOfActiveNodes);
                         addressbook_done = false;
                         break;
                     case BecomeOnline:
