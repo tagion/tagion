@@ -106,7 +106,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         setOptions(opts);
 
         log.register(opts.node_name);
-        addressbook.number_of_active_nodes = opts.nodes;
         scope (success) {
             log.close;
             ownerTid.prioritySend(Control.END);

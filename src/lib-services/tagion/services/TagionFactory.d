@@ -16,6 +16,7 @@ import tagion.logger.Logger;
 
 //import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
+import tagion.gossip.AddressBook : addressbook;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.options.ServiceNames : get_node_name;
@@ -31,10 +32,12 @@ import tagion.services.MdnsDiscoveryService;
 
 //import tagion.Keywords : NetworkMode;
 
-void tagionServiceWrapper(Options opts) {
-    setOptions(opts);
+void tagionFactoryService(Options opts) {
     immutable tast_name = opts.heartbeat.task_name;
     log.register(tast_name);
+    setOptions(opts);
+    addressbook.number_of_active_nodes = opts.nodes;
+
     Tid[] tids;
 
     with (NetworkMode) {

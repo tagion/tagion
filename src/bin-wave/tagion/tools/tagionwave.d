@@ -180,7 +180,7 @@ int _main(string[] args) {
     log.register(main_task);
 
     //    Control response;
-    Tid tagion_service_tid = spawn(&tagionServiceWrapper, service_options);
+    Tid tagion_service_tid = spawn(&tagionFactoryService, service_options);
     scope (exit) {
         tagion_service_tid.send(Control.STOP);
         auto respond_control = receiveOnly!Control;

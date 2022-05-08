@@ -61,7 +61,12 @@ synchronized class AddressBook {
     protected int timeout= 300; ///
     protected size_t nodes;
 
-    void number_of_active_nodes(const size_t nodes) pure nothrow {
+    void number_of_active_nodes(const size_t nodes)  pure nothrow
+        in {
+            debug log.trace("this.nodes %s set to %s", this.nodes, nodes);
+            assert(this.nodes is size_t.init);
+        }
+    do {
         this.nodes = nodes;
     }
 
@@ -183,12 +188,12 @@ synchronized class AddressBook {
 
     import tagion.services.Options;
 
-    bool isReady() const pure nothrow
-        in {
-            assert(nodes >= 4);
-        }
-    do {
-        return addresses.length >= nodes;
+    bool isReady() const pure nothrow {
+    //     in {
+    //         assert(nodes >= 4);
+    //     }
+    // do {
+        return (nodes >= 4) && (addresses.length >= nodes);
     }
 
     immutable(NodePair) random() @trusted const pure {
