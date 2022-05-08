@@ -308,18 +308,23 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                         addressbook.numOfActiveNodes, syncPool.isReady, syncPool.state, syncPool.sync_state);
                     }
                     if (addressbook.numOfNodes > 0 && syncPool.isReady) {
-                        sync_factory.setNodeTable(addressbook._data);
+                        pragma(msg, "fixme(cbr): sync_factory.setNodeTable(addressbook._data) has been removed");
+                        log.trace("syncPool.start active %d isReady %s", addressbook.numOfActiveNodes, addressbook.isReady);
+
+//                        sync_factory.setNodeTable(addressbook._data);
                         syncPool.start(sync_factory);
                         state.setState(DARTSynchronizeState.SYNCHRONIZING);
                     }
                     if (syncPool.isOver) {
+                        log.trace("syncPool.stop active %d isReady %s", addressbook.numOfActiveNodes, addressbook.isReady);
                         syncPool.stop;
                         // log("Start replay journals with: %d journals", journalReplayFiber.count);
                         state.setState(DARTSynchronizeState.REPLAYING_JOURNALS);
                     }
                     if (syncPool.isError) {
-                        log("Error handling");
-                        sync_factory.setNodeTable(addressbook._data);
+                        pragma(msg, "fixme(cbr): isError sync_factory.setNodeTable(addressbook._data) has been removed");
+                        log("syncPool Error handling active %d isReady %s", addressbook.numOfActiveNodes, addressbook.isReady);
+//                        sync_factory.setNodeTable(addressbook._data);
                         syncPool.start(sync_factory);
                         state.setState(DARTSynchronizeState.SYNCHRONIZING); //TODO: remove if notification not needed
                     }

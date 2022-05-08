@@ -313,11 +313,12 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             return SyncSectorResponse(0, null);
         }
 
-        auto iteration = 0;
-        do {
+        pragma(msg, "fixme(alex): Why 20?");
+        int iteration = 20;
+        while(iteration > 0) {
             iteration++;
-            import std.range : dropExactly;
 /+
+            import std.range : dropExactly;
             const random_key_index = uniform(0, node_address.length, rnd);
             const node_addr = node_address.byKeyValue.dropExactly(random_key_index).front;
 +/
@@ -338,9 +339,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                     continue;
                 return response;
             }
-            pragma(msg, "fixme(alex): Why 20?");
         }
-        while (iteration < 20);
         log("master not found");
         return SyncSectorResponse(0, null);
     }
