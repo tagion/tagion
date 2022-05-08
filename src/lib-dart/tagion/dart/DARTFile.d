@@ -2,6 +2,7 @@ module tagion.dart.DARTFile;
 
 private {
     import std.format;
+    import std.exception : assumeWontThrow;
     import std.stdio : File;
 
     import std.algorithm.sorting : sort;
@@ -479,7 +480,26 @@ alias check = Check!DARTException;
         protected Buffer data;
         protected bool _finished;
         protected DARTFile owner;
-        this(DARTFile owner, const(Buffer) rims) @trusted {
+        ushort sector() const pure nothrow
+            in {
+                assert(rims.length >= ubyte.sizeof, assumeWontThrow(format("Rims is too short %d >= %d", rims.length, ubyte.sizeof)));
+            }
+        do {
+            // if (data == [])
+            //     return 0;
+            if (rims.length == ubyte.sizeof) {
+                return ushort(rims[0]);
+            }
+            import std.bitmanip : bigEndianToNative;
+
+//            assert(data.length == T.sizeof);
+            return bigEndianToNative!ushort(rims[0 .. ushort.sizeof]);
+        }
+        this(DARTFile owner, const(Buffer) rims) @trusted
+        in {
+            assert(rims.length >= ubyte.sizeof, format("Size of rims should have a size of %d or more", ubyte.sizeof));
+        }
+        do {
             this.rims = rims;
             this.owner = owner;
             super(&run);

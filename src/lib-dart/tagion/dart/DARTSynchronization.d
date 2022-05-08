@@ -17,7 +17,7 @@ import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;
-import tagion.dart.DARTBasic;
+//import tagion.dart.DARTBasic;
 import tagion.dart.Recorder;
 
 import tagion.dart.DARTOptions : DARTOptions;
@@ -278,18 +278,18 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             const DART.Rims sector,
             const OnComplete oncomplete,
             const OnFailure onfailure) {
-        SyncSectorResponse syncWith(NodeAddress address) @safe {
+        SyncSectorResponse syncWith(ref const(NodeAddress) node_address) @safe {
             import p2p.go_helper;
 
             ulong connect() @safe {
-                if (address.address in synchronizing) {
-                    return synchronizing[address.address];
+                if (node_address.address in synchronizing) {
+                    return synchronizing[node_address.address];
                 }
-                auto stream = node.connect(address.address, address.is_marshal, [dart_opts.sync.protocol_id]);
+                auto stream = node.connect(node_address.address, node_address.is_marshal, [dart_opts.sync.protocol_id]);
                 connection_pool.add(stream.identifier, stream, true);
                 stream.listen(&StdHandlerCallback,
                         dart_opts.sync.task_name, dart_opts.sync.host.timeout.msecs, dart_opts.sync.host.max_size);
-                synchronizing[address.address] = stream.identifier;
+                synchronizing[node_address.address] = stream.identifier;
                 return stream.identifier;
             }
 
@@ -405,14 +405,12 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                 finish;
             }
             if (alive) {
-                log("P2pSynchronizer: close alive. Sector: %d", convertFromBuffer!ushort(
-                        fiber.root_rims.rims));
+                log("P2pSynchronizer: close alive. Sector: %d", fiber.root_rims.sector);
                 onfailure(fiber.root_rims);
                 fiber.reset();
             }
             else {
-                log("P2pSynchronizer: Synchronization Completed! Sector: %d", convertFromBuffer!ushort(
-                        fiber.root_rims.rims));
+                log("P2pSynchronizer: Synchronization Completed! Sector: %d", fiber.root_rims.sector);
                 oncomplete(filename);
             }
             // connection_pool.close(key); //TODO: if one connnection used for one synchronization
@@ -420,10 +418,13 @@ class P2pSynchronizationFactory : SynchronizationFactory {
     }
 }
 
+pragma(msg, "fixme(cbr): Why is the unittest uncommented (P2pSynchronizationFactory has no unittest)");
 version (none) unittest {
+    import tagion.services.Options;
+    import p2p.node :RequestStream, Node;
     @trusted
     synchronized
-    class FakeRequestStream : p2plib.RequestStream {
+    class FakeRequestStream : RequestStream {
         public static ulong id = 1;
         this() {
             super(null, id);
@@ -442,7 +443,7 @@ version (none) unittest {
             }
         }
 
-        override void listen(p2plib.HandlerCallback handler, string tid,
+        override void listen(HandlerCallback handler, string tid,
                 Duration timeout, int maxSize) {
 
         }
@@ -454,7 +455,7 @@ version (none) unittest {
 
     @trusted
     synchronized
-    class FakeNode : p2plib.Node {
+    class FakeNode : Node {
         this() {
             fake_stream = new shared FakeRequestStream();
             super();
@@ -462,7 +463,7 @@ version (none) unittest {
 
         private uint connect_counter = 0;
         private FakeRequestStream fake_stream;
-        override shared(p2plib.RequestStream) connect(string addr, string[] pids...) {
+        override shared(p2plib.RequestStreamI) connect(string addr, string[] pids...) {
             import core.atomic;
 
             atomicOp!"+="(this.connect_counter, 1);
@@ -488,7 +489,7 @@ version (none) unittest {
     auto addr1 = NodeAddress();
     addr1.sector = DART.SectorRange(0, 5);
     addr1.port = 4021;
-    auto pkey = cast(immutable(Pubkey))[0, 0, 0, 1];
+    auto pkey = immutable(Pubkey)([0, 0, 0, 1]);
     address_table[[pkey]] = addr1;
 
     DART.create_dart(filename);
