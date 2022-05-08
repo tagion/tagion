@@ -103,9 +103,9 @@ shared(p2plib.Node) initialize_node(immutable Options opts) {
 
 void tagionService(NetworkMode net_mode, Options opts) nothrow {
     try {
+        log.register(opts.node_name);
         setOptions(opts);
 
-        log.register(opts.node_name);
         scope (success) {
             log.close;
             ownerTid.prioritySend(Control.END);
@@ -120,7 +120,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             passpharse = format("Secret_word_%d", opts.port).idup;
         }
 
-        log.trace("passphrase %s", passpharse);
+//        log.trace("passphrase %s", passpharse);
         bool force_stop = false;
 
         import std.format;
@@ -297,7 +297,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                 }
             }
 
-            if (transaction_socket_tid != transaction_socket_tid.init) {
+            if (transaction_socket_tid !is transaction_socket_tid.init) {
                 log("send stop to %s", opts.transaction.task_name);
                 transaction_socket_tid.prioritySend(Control.STOP);
                 auto control = receiveOnly!Control;
@@ -349,8 +349,10 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         // }
         // if (force_stop)
         //     return;
-        transcript_tid = spawn(&transcriptServiceTask, opts.transcript.task_name,
-                opts.dart.sync.task_name);
+        transcript_tid = spawn(
+            &transcriptServiceTask,
+            opts.transcript.task_name,
+            opts.dart.sync.task_name);
         assert(receiveOnly!Control is Control.LIVE);
 
         enum max_gossip = 2;
@@ -421,9 +423,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         bool network_ready = false;
         do {
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
-            // receive((ActiveNodeAddressBook address_book) {
-            //         log.trace("Before addressbook active %d", addressbook.numOfActiveNodes);
-            //     });
             log.trace("NETWORK READY %d < %d ", addressbook.numOfNodes,  opts.nodes);
             if (addressbook.isReady) {
                 network_ready = true;
@@ -443,16 +442,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                 &controller,
                 &receive_wavefront,
                 &taskfailure,
-                // (ActiveNodeAddressBook address_book) {
-                //     assert(0, "Should not be used");
-                //     log("Update address book");
-                //     if (dart_sync_tid !is Tid.init) {
-                //         send(dart_sync_tid, address_book);
-                //     }
-                //     else {
-                //         log("DART sync not found");
-                //     }
-                // }
                 );
             log("ROUNDS: %d AreWeInGraph: %s Active %d", hashgraph.rounds.length, hashgraph.areWeInGraph, addressbook.numOfActiveNodes);
             if (!message_received || !hashgraph.areWeInGraph) {

@@ -25,7 +25,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, fread, fwrite, isSpecialKeyType;
 import tagion.hibon.Document : Document;
 import tagion.gossip.InterfaceNet;
-import tagion.gossip.AddressBook : NodeAddress, AddressBook;
+import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraphBasic : convertState, ExchangeState;
@@ -328,11 +328,11 @@ class ConnectionPoolBridge {
 //     }
 // }
 
-static shared(AddressBook) addressbook;
+// static shared(AddressBook) addressbook;
 
-shared static this() {
-    addressbook=new shared(AddressBook);
-}
+// shared static this() {
+//     addressbook=new shared(AddressBook);
+// }
 
 
 @safe
