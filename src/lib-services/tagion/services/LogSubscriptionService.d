@@ -27,7 +27,7 @@ import tagion.network.SSLServiceAPI;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.basic.TagionExceptions : fatal, taskfailure;
-import tagion.script.ScriptBuilder;
+//import tagion.script.ScriptBuilder;
 
 /**
  * \struct LogSubscriptionFilter

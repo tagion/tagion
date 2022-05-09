@@ -120,9 +120,9 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 log("%s", doc.toJSON);
                 const hirpc_received = hirpc.receive(doc);
                 {
-                    import tagion.script.ScriptBuilder;
-                    import tagion.script.ScriptParser;
-                    import tagion.script.Script;
+                    //import tagion.script.ScriptBuilder;
+                    //import tagion.script.ScriptParser;
+                    //import tagion.script.Script;
 
                     const method_name = hirpc_received.method.name;
                     const params = hirpc_received.method.params;

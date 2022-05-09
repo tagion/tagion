@@ -7,7 +7,7 @@ import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONException;
-import tagion.script.ScriptBase : Number;
+//import tagion.script.ScriptBase : Number;
 import tagion.script.TagionCurrency;
 import tagion.script.ScriptException : check;
 

@@ -10,15 +10,15 @@ import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCod
 import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract;
 import tagion.basic.Types : Pubkey;
 import tagion.script.TagionCurrency;
-import tagion.script.Script : Script, ScriptContext;
-import tagion.script.ScriptParser : ScriptParser;
-import tagion.script.ScriptBuilder : ScriptBuilder;
-import tagion.script.ScriptBase : Number;
+//import tagion.script.Script : Script, ScriptContext;
+//import tagion.script.ScriptParser : ScriptParser;
+//import tagion.script.ScriptBuilder : ScriptBuilder;
+//import tagion.script.ScriptBase : Number;
 import tagion.logger.Logger;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 
-import tagion.script.ScriptCrypto;
+//import tagion.script.ScriptCrypto;
 
 alias check = Check!SmartScriptException;
 
@@ -85,7 +85,11 @@ class SmartScript {
     const(StandardBill[]) output_bills() const pure nothrow {
         return _output_bills;
     }
+    void run(const uint epoch) {
+        assert(0);
+    }
 
+    version(none)
     void run(const uint epoch) {
         // immutable source=signed_contract.contract.script;
         enum transactions_name = "#trans";
