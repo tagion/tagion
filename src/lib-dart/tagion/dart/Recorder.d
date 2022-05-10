@@ -4,7 +4,8 @@ module tagion.dart.Recorder;
 import tagion.hibon.HiBONJSON;
 
 import std.container.rbtree : RedBlackTree;
-import std.range.primitives : isInputRange;
+import std.range.primitives : isInputRange, ElementType;
+import std.algorithm.iteration : map;
 import std.format;
 
 import tagion.crypto.SecureInterfaceNet : HashNet;
@@ -102,14 +103,18 @@ class RecordFactory {
             this.archives = archives;
         }
 
-        @trusted private this(R)(R range) if (isInputRange!R) {
-            this.archives = new Archives(range);
+        @trusted private this(R)(R range, const Archive.Type type = Archive.Type.NONE) if (isInputRange!R) {
+            archives = new Archives;
+            alias FiledType = ElementType!R;
+            static if (isHiBONRecord!FiledType) {
+                archives.insert(range.map!(a => new Archive(net, a.toDoc, type)));
+            }
+            else {
+                archives.insert(range.map!(a => new Archive(net, a, type)));
+            }
         }
 
         private this(Document doc) {
-
-
-
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             this.archives = new Archives;
             foreach (e; doc[]) {
@@ -359,6 +364,10 @@ alias GetType = Archive.Type delegate(const(Archive)) @safe;
     this(const(Document) doc, const Type t = Type.NONE) {
         this(null, doc, t);
     }
+
+    // this(H)(const HashNet net, ref const(H) h, const Type t = Type.NONE) if (isHiBONRecord!H) {
+    //     this(net, h.toDoc, t);
+    // }
 
     const(Document) toDoc() const {
         auto hibon = new HiBON;

@@ -4,6 +4,7 @@ import std.exception : assumeUnique;
 import std.range : lockstep;
 import std.format;
 import std.algorithm.iteration : sum, map;
+import std.algorithm.searching : all;
 
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCode, Check;
@@ -93,9 +94,9 @@ class SmartScript {
     //     return _output_bills;
     // }
 
-    void run(const(string) method, const ref SignedContract signed_contract, const RecordFactory.Recorder inputs) {
+    void run(const(SecureNet) net, const(string) method, const ref SignedContract signed_contract, const RecordFactory.Recorder inputs) {
         try {
-            check(signed_contract, inputs);
+            check(net, signed_contract, inputs);
 
         }
         catch (SmartScriptException e) {
@@ -103,7 +104,7 @@ class SmartScript {
             return;
         }
     }
-
+    version(none)
     void run(const uint epoch) {
         assert(0);
     }
@@ -163,6 +164,7 @@ unittest {
         bob.generateKeyPair("Bob's secret password");
     }
 
-    auto factory = new RecordFactory;
+    const net = new StdHashNet;
+    auto factory = RecordFactory(net);
     const alices_bills = factory.recorder(bills);
 }

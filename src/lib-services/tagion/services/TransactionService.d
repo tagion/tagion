@@ -108,6 +108,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 }
 
                 Document doc;
+                uint respone_id;
                 try {
                     doc = receivessl();
                     pragma(msg, "fixme(cbr): If doc is empty then return ");
@@ -116,6 +117,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                     const signed_contract = SignedContract(doc);
                     auto smartscript = new SmartScript(hirpc.net, signed_contract);
                     const hirpc_received = hirpc.receive(doc);
+                    respone_id = hirpc_received.method.id;
                     {
                         //import tagion.script.ScriptBuilder;
                         //import tagion.script.ScriptParser;
@@ -187,7 +189,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                             // signed_contract.input = payment.toDoc;
                             // Send the contract as payload to the HashGraph
                             // The data inside HashGraph is pure payload not an HiRPC
-                            smartscript.run(method_name, signed_contract, foreign_recorder);
+                            smartscript.run(hirpc.net, method_name, signed_contract, foreign_recorder);
                             //                        SmartScript.run(
                             //log("checked");
                             //                        const payload = Document(signed_contract.toHiBON.serialize);
@@ -212,7 +214,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 }
                 catch (TagionException e) {
                     log.error("Bad contract: %s", e.msg);
-                    const bad_response = hirpc.error(hirpc.receive(doc), e.msg, 1);
+                    const bad_response = hirpc.error(respone_id, e.msg, 1);
                     ssl_relay.send(bad_response.toDoc.serialize);
                     return true;
                 }

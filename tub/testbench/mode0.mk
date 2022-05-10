@@ -53,7 +53,6 @@ help-mode0:
 .PHONY: help-mode0
 
 help: help-mode0
-#run: mode0
 
 clean-mode0:
 	$(PRECMD)
@@ -64,3 +63,12 @@ clean-mode0:
 .PHONY: clean-mode0
 
 clean-testbench: clean-mode0
+
+check-mode0:
+	$(PRECMD)
+	${call log.header, $@ :: check}
+	echo "Bullseye mode0"
+	@${foreach node_no,0 1 2 3 4 5 6, dartutil --eye -d$(MODE0_DATA)/node$(node_no)/dart.drt;}
+	${call log.close}
+
+check: check-mode0

@@ -466,13 +466,7 @@ struct HiRPC {
     }
 
     const(Sender) error(ref const(Receiver) receiver, string msg, const int code = 0, Document data = Document()) const {
-        Error message;
-        message.id = receiver.method.id;
-        message.code = code;
-        message.data = data;
-        message.message = msg;
-        auto sender = Sender(net, message);
-        return sender;
+        return error(receiver.method.id, msg, code, data);
     }
 
     const(Sender) error(const uint id, string msg, const int code = 0, Document data = Document()) const {

@@ -60,8 +60,9 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
             }
         }
 
-        bool to_smart_script(SignedContract signed_contract) nothrow {
+        bool to_smart_script(ref SignedContract signed_contract) nothrow {
             try {
+                version(none) {
                 auto smart_script = new SmartScript(signed_contract);
                 smart_script.check(net, smart_script);
                 const signed_contract_doc = signed_contract.toDoc;
@@ -70,6 +71,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                 smart_script.run(current_epoch + 1);
 
                 smart_scripts[fingerprint] = smart_script;
+                }
                 return true;
             }
             catch (ConsensusException e) {
@@ -112,7 +114,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                     import std.datetime : Clock;
 
                     log("Signed contract %s", Clock.currTime().toUTC());
-                    scope signed_contract = new SignedContract(doc);
+                    scope signed_contract = SignedContract(doc);
                     //smart_script.check(net);
                     bool invalid;
                     ForachInput: foreach (input; signed_contract.contract.input) {
@@ -130,11 +132,13 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                         const added = to_smart_script(signed_contract);
                         if (added && fingerprint in smart_scripts) {
                             scope smart_script = smart_scripts[fingerprint];
-                            const payment = PayContract(smart_script.signed_contract.input);
+                            //const payment = PayContract(smart_script.signed_contract.input);
+                            PayContract payment;
                             foreach (bill; payment.bills) {
                                 const bill_doc = bill.toDoc;
                                 recorder.remove(bill_doc);
                             }
+                            version(none)
                             foreach (bill; smart_script.output_bills) {
                                 const bill_doc = bill.toDoc;
                                 recorder.add(bill_doc);
