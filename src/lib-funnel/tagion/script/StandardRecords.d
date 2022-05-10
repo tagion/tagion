@@ -11,12 +11,13 @@ import tagion.hibon.HiBONException;
 import tagion.script.TagionCurrency;
 import tagion.script.ScriptException : check;
 
+enum OwnerKey = "$Y";
 @safe {
     @RecordType("BIL") struct StandardBill {
         @Label("$V") TagionCurrency value; // Bill type
         @Label("$k") uint epoch; // Epoch number
         //        @Label("$T", true) string bill_type; // Bill type
-        @Label("$Y") Pubkey owner; // Double hashed owner key
+        @Label(OwnerKey) Pubkey owner; // Double hashed owner key
         @Label("$G") Buffer gene; // Bill gene
         mixin HiBONRecord!(
                 q{
@@ -31,7 +32,7 @@ import tagion.script.ScriptException : check;
 
     @RecordType("NNC") struct NetworkNameCard {
         @Label("#name") string name; /// Tagion domain name
-        @Label("$pkey") Pubkey pubkey;  /// NNC pubkey
+        @Label(OwnerKey) Pubkey pubkey;  /// NNC pubkey
         @Label("$lang") string lang; /// Language used for the #name
         @Label("$time") ulong time;  /// Time-stamp of
         // @Label("$sign") Buffer sign;    ///
@@ -48,7 +49,7 @@ import tagion.script.ScriptException : check;
         mixin HiBONRecord;
     }
 
-    @RecordType("HR") struct HashRecord {
+    @RecordType("HL") struct HashLock {
         import tagion.crypto.SecureInterfaceNet;
         @Label("$lock") Buffer lock;    /// Of the NNC with the pubkey
         mixin HiBONRecord!(q{
@@ -222,7 +223,7 @@ import tagion.script.ScriptException : check;
     @RecordType("Invoice") struct Invoice {
         string name;
         TagionCurrency amount;
-        Pubkey pkey;
+        @Label(OwnerKey) Pubkey pkey;
         @Label("*", true) Document info;
         mixin HiBONRecord;
     }

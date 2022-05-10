@@ -38,7 +38,8 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
         auto net = new StdSecureNet;
         auto rec_factory = RecordFactory(net);
         auto empty_hirpc = HiRPC(null);
-        scope SmartScript[Buffer] smart_scripts;
+        Tid dart_tid = locate(dart_task_name);
+        SmartScript[Buffer] smart_scripts;
 
         bool stop;
         void controller(Control ctrl) {
@@ -49,9 +50,8 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
         }
 
         void modifyDART(RecordFactory.Recorder recorder) {
-            Tid dart_tid = locate(dart_task_name);
             auto sender = empty_hirpc.dartModify(recorder);
-            if (dart_tid != Tid.init) {
+            if (dart_tid !is Tid.init) {
                 dart_tid.send("blackhole", sender.toDoc.serialize); //TODO: remove blackhole
             }
             else {
@@ -63,7 +63,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
         bool to_smart_script(SignedContract signed_contract) nothrow {
             try {
                 auto smart_script = new SmartScript(signed_contract);
-                smart_script.check(net);
+                smart_script.check(net, smart_script);
                 const signed_contract_doc = signed_contract.toDoc;
                 const fingerprint = net.HashNet.hashOf(signed_contract_doc);
 
@@ -112,7 +112,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                     import std.datetime : Clock;
 
                     log("Signed contract %s", Clock.currTime().toUTC());
-                    scope signed_contract = SignedContract(doc);
+                    scope signed_contract = new SignedContract(doc);
                     //smart_script.check(net);
                     bool invalid;
                     ForachInput: foreach (input; signed_contract.contract.input) {
