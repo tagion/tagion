@@ -504,7 +504,7 @@ class P2pGossipNet : StdP2pNet, GossipNet {
 
     bool isValidChannel(const(Pubkey) channel) const nothrow {
         log.trace("channel %s %s isActive %s", channel.cutHex, channel != mypk,addressbook.isActive(channel));
-        return channel != mypk && addressbook.isActive(channel);
+        return addressbook.isActive(channel);
     }
 
     const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
@@ -517,7 +517,7 @@ class P2pGossipNet : StdP2pNet, GossipNet {
             const send_channel = addressbook.selectActiveChannel(node_index);
             // log("trying to select: %s, valid?: %s", send_channel.cutHex, channel_filter(
             //         send_channel));
-            if (channel_filter(send_channel)) {
+            if ((send_channel != mypk) && channel_filter(send_channel)) {
                 return send_channel;
             }
         }
