@@ -14,7 +14,8 @@ import tagion.hibon.Document : Document;
 import tagion.basic.Types : Buffer, Pubkey;
 import tagion.basic.Basic : basename;
 import tagion.script.StandardRecords;
-import tagion.crypto.SecureNet : StdHashNet;
+import tagion.crypto.SecureNet;
+import tagion.crypto.SecureInterfaceNet;
 import tagion.script.StandardRecords : Invoice;
 import tagion.script.TagionCurrency;
 import tagion.wallet.SecureWallet;
@@ -32,6 +33,60 @@ enum REVNO = 0;
 enum HASH = "xxx";
 
 import tagion.tools.Basic;
+
+pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
+RecordFactory.Recorder createNetworkNameCard(string name, const HashNet net) {
+    auto factory = RecordFactory(net);
+    auto recorder = factory.recorder;
+
+    NetworkNameCard nnc;
+    nnc.name = name;
+    // TODO: set also time?
+
+    NetworkNameRecord nrc;
+    nrc.name = net.hashOf(nnc.toDoc);
+    nnc.record = net.hashOf(nrc.toDoc);
+
+    auto hr = HashRecord(net, nnc);
+
+    recorder.add(nnc);
+    recorder.add(nrc);
+    recorder.add(hr);
+
+    return recorder;
+}
+
+pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
+RecordFactory.Recorder updateNetworkNameCard(string name, const HashNet net, NetworkNameCard nnc, NetworkNameRecord nrc, HashRecord hr) {
+    auto factory = RecordFactory(net);
+    auto recorder = factory.recorder;
+
+    // Remove old NNC
+    recorder.remove(nnc);
+    recorder.remove(hr);
+    //writeToDB(recorder, hirpc, db);
+
+    // Create and add new NNC and NRC
+    NetworkNameCard nnc_new;
+    nnc_new.name = nnc.name;
+    nnc_new.lang = nnc.lang;
+    // nnc_new.time = current_time?
+
+    NetworkNameRecord nrc_new;
+    nrc_new.name = net.hashOf(nnc_new.toDoc);
+    nrc_new.previous = net.hashOf(nrc.toDoc);
+    nrc_new.index = nrc.index + 1;
+
+    nnc_new.record = net.hashOf(nrc_new.toDoc);
+
+    auto hr_new = HashRecord(net, nnc_new);
+
+    recorder.add(nnc_new);
+    recorder.add(nrc_new);
+    recorder.add(hr_new);
+
+    return recorder;
+}
 
 mixin Main!(_main, "boot");
 
@@ -56,7 +111,7 @@ int _main(string[] args) {
             // "value|V", format("Bill value : default: %d", value), &value,
             // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
             "initbills|b", "Testing mode", &initbills,
-            "nnc", "Initialize NNC and NRC with given name", &nnc_name,
+            "nnc", "Initialize NetworkNameCard with given name", &nnc_name,
     );
 
     if (version_switch) {
@@ -105,22 +160,11 @@ int _main(string[] args) {
     }
 
     if (!nnc_name.empty) {
-        writeln("TEST MODE:\nInitialize standart records");
-
-        NetworkNameCard nnc;
-        nnc.name = nnc_name;
-        // TODO: set also time?
-
-        NetworkNameRecord nrc;
-        nrc.name = net.hashOf(nnc.toDoc);
-        nnc.record = net.hashOf(nrc.toDoc);
-
-        recorder.add(nnc);
-        recorder.add(nrc);
+        writeln("TEST MODE: Initialize standart records");
+        recorder = createNetworkNameCard(nnc_name, net);
     }
     else if (initbills) {
-        writeln("TEST MODE:\nInitialize dummy bills");
-        import tagion.crypto.SecureNet;
+        writeln("TEST MODE: Initialize dummy bills");
         alias StdSecureWallet = SecureWallet!StdSecureNet;
 
         auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN);

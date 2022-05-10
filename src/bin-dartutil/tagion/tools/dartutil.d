@@ -7,6 +7,7 @@ import std.format;
 import std.conv : to;
 import std.array;
 import std.algorithm;
+import std.typecons;
 
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
@@ -177,35 +178,31 @@ int _main(string[] args) {
         return db(receiver, false);
     }
 
-    NetworkNameCard readNNC(string name, HiRPC hirpc, DART db) {
-        NetworkNameCard nnc_find;
-        nnc_find.name = name;
-
-        auto result = readFromDB([net.hashOf(nnc_find.toDoc)], hirpc, db);
+    Nullable!T readRecord(T)(Buffer hash, HiRPC hirpc, DART db) if (isHiBONRecord!T) {
+        auto result = readFromDB([hash], hirpc, db);
 
         auto factory = RecordFactory(net);
         auto recorder = factory.recorder(result.message["result"].get!Document);
 
         if (recorder[].empty) {
-            return NetworkNameCard();
+            return Nullable!T.init;
         }
         else {
-            return NetworkNameCard(recorder[].front.filed);
+            return Nullable!T(T(recorder[].front.filed));
         }
     }
 
-    NetworkNameRecord readNRC(Buffer nrc_hash, HiRPC hirpc, DART db) {
-        auto result = readFromDB([nrc_hash], hirpc, db);
+    Nullable!NetworkNameCard readNNC(string name, HiRPC hirpc, DART db) {
+        NetworkNameCard nnc_find;
+        nnc_find.name = name;
 
-        auto factory = RecordFactory(net);
-        auto recorder = factory.recorder(result.message["result"].get!Document);
+        return readRecord!NetworkNameCard(net.hashOf(nnc_find.toDoc), hirpc, db);
+    }
 
-        if (recorder[].empty) {
-            return NetworkNameRecord();
-        }
-        else {
-            return NetworkNameRecord(recorder[].front.filed);
-        }
+    bool verifyNNCSignature(NetworkNameCard nnc, HiRPC hirpc, DART db) {
+        auto check_hr = HashRecord(net, nnc);
+        auto found_hr = readRecord!HashRecord(net.hashOf(check_hr.toDoc), hirpc, db);
+        return !found_hr.isNull;
     }
 
     const onehot = dartrpc + dartread + dartrim + dartmodify + nncupdate + nncread;
@@ -241,11 +238,9 @@ int _main(string[] args) {
             auto receiver = hirpc.receive(sender.toDoc);
             auto result = db(receiver, false);
             auto tosend = hirpc.toHiBON(result);
-            writeln("CCC ", result.toJSON.toPrettyString);
             const tosendResult = tosend.method.params;
             if (dump)
                 db.dump(true);
-//            writeResponse(tosendResult.serialize);
             outputfilename.fwrite(tosendResult);
             writeln("Result: %s", result.message.toJSON.toPrettyString);
 
@@ -320,33 +315,45 @@ int _main(string[] args) {
         outputfilename.fwrite(tosendResult);
     }
     else if (nncread) {
-        auto nnc = readNNC(nncreadname, hirpc, db);
-        if (nnc == NetworkNameCard.init) {
+        auto nnc_read = readNNC(nncreadname, hirpc, db);
+        if (nnc_read.isNull) {
             writefln("No NetworkNameCard with name '%s' in DART", nncreadname);
         }
         else {
+            auto nnc = nnc_read.get;
             writefln("NetworkNameCard: %s", nnc.toDoc.toJSON.toPrettyString);
 
-            auto nrc = readNRC(nnc.record, hirpc, db);
-            if (nrc == NetworkNameRecord.init) {
-                writefln("No NetworkNameRecord with hash '%s' in DART", nnc.record.cutHex);
+            writeln;
+            if (verifyNNCSignature(nnc, hirpc, db))
+                writefln("Signature for NetworkNameCard '%s' is verified", nnc.name);
+            else {
+                writefln("WARNING: Signature for NetworkNameCard '%s' is not verified!", nnc.name);
+            }
+            writeln;
+
+            auto nrc_read = readRecord!NetworkNameRecord(nnc.record, hirpc, db);
+            if (nrc_read.isNull) {
+                writefln("No associated NetworkNameRecord (hash='%s') with NetworkNameCard '%s' in DART", nnc.record.cutHex, nnc.name);
             }
             else {
-                writefln("NetworkNameRecord: %s", nrc.toDoc.toJSON.toPrettyString);
+                writefln("NetworkNameRecord: %s", nrc_read.get.toDoc.toJSON.toPrettyString);
             }
         }
     }
     else if (nncupdate) {
-        auto nnc = readNNC(nncupdatename, hirpc, db);
-        if (nnc == NetworkNameCard.init) {
+        auto nnc_read = readNNC(nncupdatename, hirpc, db);
+        if (nnc_read.isNull) {
             writefln("No NetworkNameCard with name '%s' in DART", nncupdatename);
         }
         else {
-            auto nrc = readNRC(nnc.record, hirpc, db);
-            if (nrc == NetworkNameRecord.init) {
+            auto nnc = nnc_read.get;
+            auto nrc_read = readRecord!NetworkNameRecord(nnc.record, hirpc, db);
+            if (nrc_read.isNull) {
                 writefln("No associated NetworkNameRecord (hash='%s') with NetworkNameCard '%s' in DART", nnc.record.cutHex, nnc.name);
             }
             else {
+                auto nrc = nrc_read.get;
+
                 // Remove old NNC
                 auto factory = RecordFactory(net);
                 auto recorder = factory.recorder;
