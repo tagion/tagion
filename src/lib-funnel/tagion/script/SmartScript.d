@@ -160,7 +160,7 @@ unittest {
 
     auto bob = new StdSecureNet;
     {
-        bod.generateKeyPair("Bob's secret password");
+        bob.generateKeyPair("Bob's secret password");
     }
 
     auto factory = new RecordFactory;

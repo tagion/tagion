@@ -101,10 +101,10 @@ enum OwnerKey = "$Y";
         }
         // Invalid HR
         const nohash=NoHash("no hash");
-//        const x=HashRecord(net, nohash);
-        assertThrown(HashRecord(net, nohash));
+//        const x=HashLock(net, nohash);
+        assertThrown(HashLock(net, nohash));
         // Correct HR
-        const hr = assertNotThrown(HashRecord(net, nnc));
+        const hr = assertNotThrown(HashLock(net, nnc));
 
         { // Verify that the NNC has been signed correctly
             // Bad NNC
