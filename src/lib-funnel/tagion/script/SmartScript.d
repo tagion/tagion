@@ -7,8 +7,8 @@ import std.algorithm.iteration : sum, map;
 
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCode, Check;
-import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract;
-import tagion.basic.Types : Pubkey;
+import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey;
+import tagion.basic.Types : Pubkey, Buffer;
 import tagion.script.TagionCurrency;
 import tagion.dart.Recorder : RecordFactory;
 
@@ -58,8 +58,8 @@ class SmartScript {
         .check(signed_contract.signs.length >= inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE);
 
-        pragma(msg, typeof(inputs[].front.filed[OwnerKey].get!Buffer));
-        .check(inputs[].all!(a => a.filed.hasMember(OwnerKey)),
+//        pragma(msg, typeof(inputs[].front.filed[OwnerKey].get!Pubkey));
+        .check(inputs[].all!(a => a.filed.hasMember(OwnerKey) && a.filed[OwnerKey].isType!Buffer),
                 ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
 
         .check(signed_contract.contract.input.length == inputs.length,
