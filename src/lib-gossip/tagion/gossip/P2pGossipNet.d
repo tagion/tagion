@@ -47,32 +47,8 @@ import std.random : Random, unpredictableSeed, uniform;
 
 import std.datetime;
 
-private {
-    import concurrency = std.concurrency;
+import concurrency = std.concurrency;
 
-    alias ownerTid = assumeTrusted!(concurrency.ownerTid);
-    alias locate = assumeTrusted!(concurrency.locate);
-
-    Tid spawn(Args...)(Args args) @trusted {
-        return concurrency.spawn(args);
-    }
-
-    void send(Args...)(Args args) @trusted {
-        concurrency.send(args);
-    }
-
-    void prioritySend(Args...)(Args args) @trusted {
-        concurrency.prioritySend(args);
-    }
-
-    void receive(Args...)(Args args) @trusted {
-        concurrency.receive(args);
-    }
-
-    T receiveOnly(T)() @trusted {
-        return concurrency.receiveOnly!T;
-    }
-}
 
 @safe
 synchronized
@@ -304,8 +280,9 @@ class StdP2pNet : P2pNet {
         this.internal_task_name = convert_to_net_task_name(owner_task_name);
         log.trace("owner_task_name %s internal_task_name %s", owner_task_name, internal_task_name);
         this.node = node;
+        @trusted
         void spawn_sender() {
-            this.sender_tid = spawn(
+            this.sender_tid = concurrency.spawn(
                 &async_send,
                 internal_task_name,
                 discovery_task_name,
@@ -318,10 +295,11 @@ class StdP2pNet : P2pNet {
 
     @safe
     void close() {
+        @trusted
         void send_stop() {
             if (sender_tid !is Tid.init) {
-                sender_tid.prioritySend(Control.STOP);
-                receiveOnly!Control;
+                concurrency.prioritySend(sender_tid, Control.STOP);
+                concurrency.receiveOnly!Control;
             }
         }
 
@@ -329,14 +307,14 @@ class StdP2pNet : P2pNet {
     }
 
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
-        alias tsend = .send;
+        alias tsend = concurrency.send;
         // auto internal_sender = locate(internal_task_name);
         log("send called %s", channel.cutHex);
         if (sender_tid !is Tid.init) {
             counter++;
 //            log("sending to sender %s", internal_sender);
             auto t = sender.toDoc;
-            tsend(sender_tid, channel, sender.toDoc, counter);
+            assumeTrusted!({ tsend(sender_tid, channel, sender.toDoc, counter); });
         }
         else {
             log.warning("sender not found");
@@ -344,11 +322,11 @@ class StdP2pNet : P2pNet {
     }
 
     protected void send_remove(Pubkey pk) {
-        alias tsend = .send;
+        alias tsend = concurrency.send;
         //auto sender = locate(internal_task_name);
         if (sender_tid !is Tid.init) {
             counter++;
-            tsend(sender_tid, pk, counter);
+            assumeTrusted!({ tsend(sender_tid, pk, counter); });
         }
         else {
             log.warning("sender not found");
@@ -356,7 +334,7 @@ class StdP2pNet : P2pNet {
     }
 }
 
-@safe
+@trusted
 static void async_send(
         string task_name,
         string discovery_task_name,
@@ -364,7 +342,7 @@ static void async_send(
         shared p2plib.NodeI node) nothrow {
     try {
     scope (exit) {
-        ownerTid.send(Control.END);
+        assumeTrusted!({ concurrency.send(concurrency.ownerTid, Control.END); });
     }
     const hirpc = new HiRPC(null);
 //    const internal_task_name = convert_to_net_task_name(task_name);
@@ -393,32 +371,22 @@ static void async_send(
         // auto streamId = streamIdPtr is null ? 0 : *streamIdPtr;
         auto streamId = connectionPoolBridge[channel];
         if (streamId == 0 || !connectionPool.contains(streamId)) {
-            auto discovery_tid = locate(discovery_task_name);
-            if (discovery_tid !is Tid.init) {
-                discovery_tid.send(channel, thisTid);
-                receive(
-                        (NodeAddress node_address) {
-                            auto stream = node.connect(
-                                node_address.address,
-                                node_address.is_marshal,
-                                [task_name]);
-                            streamId = stream.identifier;
-                            import p2p.callback;
+            NodeAddress node_address = addressbook[channel];
+            auto stream = node.connect(
+                node_address.address,
+                node_address.is_marshal,
+                [task_name]);
+            streamId = stream.identifier;
+            import p2p.callback;
 
-                            connectionPool.add(streamId, stream, true);
-                            stream.listen(
-                                &StdHandlerCallback,
-                                task_name,
-                                host.timeout.msecs,
-                                host
-                                .max_size);
-                            connectionPoolBridge[channel] = streamId;
-                        }
-                );
-            }
-            else {
-                log("Can't send: Discovery service is not running");
-            }
+            connectionPool.add(streamId, stream, true);
+            stream.listen(
+                &StdHandlerCallback,
+                task_name,
+                host.timeout.msecs,
+                host
+                .max_size);
+            connectionPoolBridge[channel] = streamId;
         }
 
         try {
@@ -430,14 +398,14 @@ static void async_send(
         }
         catch (Exception e) {
             log.fatal(e.msg);
-            ownerTid.send(channel);
+            concurrency.send(concurrency.ownerTid, channel);
         }
     }
 
     auto stop = false;
     do {
         log("handling %s", thisTid);
-        receive(
+        concurrency.receive(
                 (const(Pubkey) channel, const(Document) doc, uint id) {
                     log("received sender %d %s", id, channel.cutHex);
             try {
@@ -445,7 +413,7 @@ static void async_send(
             }
             catch (Exception e) {
                 log("Error on sending to channel: %s", e.msg);
-                ownerTid.send(channel);
+                concurrency.send(concurrency.ownerTid, channel);
             }
         },
                 (Pubkey channel, uint id) {
@@ -489,7 +457,7 @@ static void async_send(
                 connectionPoolBridge[received_pubkey] = resp.stream.identifier;
             }
             log("received in: %s", resp.stream.identifier);
-            ownerTid.send(receiver.toDoc);
+            concurrency.send(concurrency.ownerTid, receiver.toDoc);
         },
                 (Control control) {
             if (control == Control.STOP) {
