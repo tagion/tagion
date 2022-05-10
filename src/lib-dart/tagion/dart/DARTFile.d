@@ -109,6 +109,14 @@ alias check = Check!DARTException;
 
     mixin(EnumText!("Params", _params));
 
+    enum MIN_BLOCK_SIZE = 0x80;
+    static create(string filename, const uint block_size = MIN_BLOCK_SIZE)
+        in {
+            assert(block_size >= MIN_BLOCK_SIZE, format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
+        }
+    do {
+        BlockFile.create(filename, DARTFile.stringof, block_size);
+    }
     /++
      + A file set by filename should be create by the BlockFile
      + before it can be used as a DARTFile
@@ -1179,11 +1187,11 @@ alias check = Check!DARTException;
 
         pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
         static {
-            enum TEST_BLOCK_SIZE = 0x80;
-            void create_dart(string filename) {
-                // Create DART file
-                BlockFile.create(filename, DARTFile.stringof, TEST_BLOCK_SIZE);
-            }
+            // enum TEST_BLOCK_SIZE = 0x80;
+            // void create_dart(string filename) {
+            //     // Create DART file
+            //     BlockFile.create(filename, DARTFile.stringof, TEST_BLOCK_SIZE);
+            // }
 
             bool check(const(RecordFactory.Recorder) A, const(RecordFactory.Recorder) B) {
                 return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
@@ -1362,14 +1370,14 @@ alias check = Check!DARTException;
         }
 
         { // Rim 2 test
-            create_dart(filename);
+            DARTFile.create(filename);
             auto dart = new DARTFile(net, filename);
             RecordFactory.Recorder recorder;
             assert(validate(dart, table[0 .. 4], recorder));
         }
 
         { // Rim 3 test
-            create_dart(filename);
+            DARTFile.create(filename);
             auto dart = new DARTFile(net, filename);
             RecordFactory.Recorder recorder;
             //=Recorder(net);
@@ -1379,7 +1387,7 @@ alias check = Check!DARTException;
         }
 
         { // Rim 3 test
-            create_dart(filename);
+            DARTFile.create(filename);
             auto dart = new DARTFile(net, filename);
             RecordFactory.Recorder recorder;
 
@@ -1388,7 +1396,7 @@ alias check = Check!DARTException;
         }
 
         { // Rim 4 test
-            create_dart(filename);
+            DARTFile.create(filename);
             auto dart = new DARTFile(net, filename);
             RecordFactory.Recorder recorder;
 
@@ -1397,7 +1405,7 @@ alias check = Check!DARTException;
         }
 
         { // Rim 2 & 3
-            create_dart(filename);
+            DARTFile.create(filename);
             auto dart = new DARTFile(net, filename);
             RecordFactory.Recorder recorder;
 
@@ -1406,7 +1414,7 @@ alias check = Check!DARTException;
         }
 
         { // Rim 2 & 3 & 4
-            create_dart(filename);
+            DARTFile.create(filename);
             auto dart = new DARTFile(net, filename);
             RecordFactory.Recorder recorder;
 
@@ -1415,7 +1423,7 @@ alias check = Check!DARTException;
         }
 
         { // Rim all
-            create_dart(filename);
+            DARTFile.create(filename);
             auto dart = new DARTFile(net, filename);
             RecordFactory.Recorder recorder;
 
@@ -1424,8 +1432,8 @@ alias check = Check!DARTException;
         }
 
         { // Remove two archives and check the bulleye
-            create_dart(filename_A);
-            create_dart(filename_B);
+            DARTFile.create(filename_A);
+            DARTFile.create(filename_B);
             RecordFactory.Recorder recorder_A;
             RecordFactory.Recorder recorder_B;
             auto dart_A = new DARTFile(net, filename_A);
@@ -1451,8 +1459,8 @@ alias check = Check!DARTException;
             foreach (ref r; random_table) {
                 r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
             }
-            create_dart(filename_A);
-            create_dart(filename_B);
+            DARTFile.create(filename_A);
+            DARTFile.create(filename_B);
             RecordFactory.Recorder recorder_A;
             RecordFactory.Recorder recorder_B;
             auto dart_A = new DARTFile(net, filename_A);
@@ -1478,8 +1486,8 @@ alias check = Check!DARTException;
             foreach (ref r; random_table) {
                 r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
             }
-            create_dart(filename_A);
-            create_dart(filename_B);
+            DARTFile.create(filename_A);
+            DARTFile.create(filename_B);
             RecordFactory.Recorder recorder_A;
             RecordFactory.Recorder recorder_B;
             auto dart_A = new DARTFile(net, filename_A);
@@ -1506,8 +1514,8 @@ alias check = Check!DARTException;
             foreach (ref r; random_table) {
                 r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
             }
-            create_dart(filename_A);
-            create_dart(filename_B);
+            DARTFile.create(filename_A);
+            DARTFile.create(filename_B);
             RecordFactory.Recorder recorder_A;
             RecordFactory.Recorder recorder_B;
             auto dart_A = new DARTFile(net, filename_A);
@@ -1530,8 +1538,8 @@ alias check = Check!DARTException;
                 0xABBA_1234_62BD_7814,
                 0xABBA_1234_DFA5_2B29
             ];
-            create_dart(filename_A);
-            create_dart(filename_B);
+            DARTFile.create(filename_A);
+            DARTFile.create(filename_B);
             RecordFactory.Recorder recorder_A;
             RecordFactory.Recorder recorder_B;
             auto dart_A = new DARTFile(net, filename_A);
@@ -1552,8 +1560,8 @@ alias check = Check!DARTException;
             foreach (ref r; random_table) {
                 r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
             }
-            create_dart(filename_A);
-            create_dart(filename_B);
+            DARTFile.create(filename_A);
+            DARTFile.create(filename_B);
             RecordFactory.Recorder recorder_A;
             RecordFactory.Recorder recorder_B;
             auto dart_A = new DARTFile(net, filename_A);
@@ -1575,8 +1583,8 @@ alias check = Check!DARTException;
             foreach (ref r; random_table) {
                 r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
             }
-            create_dart(filename_A);
-            create_dart(filename_B);
+            DARTFile.create(filename_A);
+            DARTFile.create(filename_B);
 
             auto dart_A = new DARTFile(net, filename_A);
             auto dart_B = new DARTFile(net, filename_B);
@@ -1611,8 +1619,8 @@ alias check = Check!DARTException;
             foreach (ref r; random_table) {
                 r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
             }
-            create_dart(filename_A);
-            create_dart(filename_B);
+            DARTFile.create(filename_A);
+            DARTFile.create(filename_B);
             RecordFactory.Recorder recorder_A;
             // Recorder recorder_B;
             auto dart_A = new DARTFile(net, filename_A);
@@ -1674,8 +1682,8 @@ alias check = Check!DARTException;
             foreach (ref r; random_stubs) {
                 r = rand.value(0x20_27_22_36_40_50_80_90, 0x20_29_22_36_40_50_80_90);
             }
-            create_dart(filename_A);
-            create_dart(filename_B);
+            DARTFile.create(filename_A);
+            DARTFile.create(filename_B);
 
             auto dart_A = new DARTFile(net, filename_A);
             auto dart_B = new DARTFile(net, filename_B);

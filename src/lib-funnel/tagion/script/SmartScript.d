@@ -148,6 +148,7 @@ class SmartScript {
 
 unittest {
     import tagion.crypto.SecureNet;
+    const net = new StdSecureNet;
     auto alice = new StdSecureNet;
     {
         alice.generateKeyPair("Alice's secret password");
@@ -164,7 +165,12 @@ unittest {
         bob.generateKeyPair("Bob's secret password");
     }
 
-    const net = new StdHashNet;
     auto factory = RecordFactory(net);
     const alices_bills = factory.recorder(bills);
+
+    import tagion.dart.BlockFile : fileId;
+    import tagion.dart.DART : DART;
+    immutable filename = fileId!SmartScript.fullpath;
+
+    auto db =new DART(net, filename);
 }
