@@ -10,7 +10,7 @@ import std.algorithm;
 
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
-import tagion.dart.BlockFile;
+//import tagion.dart.BlockFile;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Basic : tempfile;
 
@@ -147,8 +147,7 @@ int _main(string[] args) {
             dartfilename = tempfile ~ "tmp";
             writeln("DART filename: ", dartfilename);
         }
-        enum BLOCK_SIZE = 0x80;
-        BlockFile.create(dartfilename, DARTFile.stringof, BLOCK_SIZE);
+        DART.create(dartfilename);
     }
 
     auto db = new DART(net, dartfilename, fromAngle, toAngle);
