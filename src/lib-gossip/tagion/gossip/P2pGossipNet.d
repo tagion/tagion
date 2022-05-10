@@ -478,15 +478,15 @@ class P2pGossipNet : StdP2pNet, GossipNet {
     protected {
         sdt_t _current_time;
         //bool[Pubkey] pks;
-        Pubkey mypk;
     }
+    immutable(Pubkey) mypk;
     Random random;
 
     this(Pubkey pk,
-            string owner_task_name,
-            string discovery_task_name,
-            const(HostOptions) host,
-            shared p2plib.NodeI node) {
+        string owner_task_name,
+        string discovery_task_name,
+        const(HostOptions) host,
+        shared p2plib.NodeI node) {
         super(owner_task_name, discovery_task_name, host, node);
         this.random = Random(unpredictableSeed);
         this.mypk = pk;
@@ -503,6 +503,7 @@ class P2pGossipNet : StdP2pNet, GossipNet {
     }
 
     bool isValidChannel(const(Pubkey) channel) const nothrow {
+        log.trace("channel %s %s isActive %s", channel.cutHex, channel != mypk,addressbook.isActive(channel));
         return channel != mypk && addressbook.isActive(channel);
     }
 

@@ -90,7 +90,11 @@ class HashGraph {
     alias EpochCallback = void delegate(const(Event[]) events, const sdt_t epoch_time) @safe;
     EpochCallback epoch_callback;
 
-    this(const size_t node_size, const SecureNet net, const ValidChannel valid_channel, EpochCallback epoch_callback, string name = null) {
+    this(const size_t node_size,
+            const SecureNet net,
+            const ValidChannel valid_channel,
+            EpochCallback epoch_callback,
+            string name = null) {
         hirpc = HiRPC(net);
         this.node_size = node_size;
         this.valid_channel = valid_channel;
@@ -202,13 +206,9 @@ class HashGraph {
     alias GraphPayload = const(Document) delegate() @safe;
 
     void init_tide(
-        const(GraphResonse) responde,
-            // const(Pubkey) delegate(
-            // GossipNet.ChannelFilter channel_filter,
-            // GossipNet.SenderCallBack sender) @safe GraphResonse responde,
-        //const(Document) delegate() @safe
-        const(GraphPayload) payload,
-        lazy const sdt_t time) {
+            const(GraphResonse) responde,
+            const(GraphPayload) payload,
+            lazy const sdt_t time) {
         const(HiRPC.Sender) payload_sender() @safe {
             const doc = payload();
             immutable epack = event_pack(time, null, doc);
@@ -981,7 +981,8 @@ class HashGraph {
                 }
 
                 const(Pubkey) gossip(
-                        ChannelFilter channel_filter, SenderCallBack sender) {
+                        ChannelFilter channel_filter,
+                        SenderCallBack sender) {
                     const send_channel = select_channel(channel_filter);
                     if (send_channel.length) {
                         send(send_channel, sender());

@@ -98,7 +98,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
     @property void transcript_tid(Tid tid)
     @trusted
     in {
-        assert(_transcript_tid != _transcript_tid.init, format("%s hash already been set", __FUNCTION__));
+        assert(_transcript_tid !is _transcript_tid.init, format("%s hash already been set", __FUNCTION__));
     }
     do {
         _transcript_tid = tid;
@@ -111,7 +111,7 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
     protected Tid _scripting_engine_tid;
     @property void scripting_engine_tid(Tid tid) @trusted
     in {
-        assert(_scripting_engine_tid != _scripting_engine_tid.init, format(
+        assert(_scripting_engine_tid !is _scripting_engine_tid.init, format(
                 "%s hash already been set", __FUNCTION__));
     }
     do {
