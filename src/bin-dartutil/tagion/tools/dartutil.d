@@ -18,7 +18,7 @@ import tagion.basic.Basic : tempfile;
 import tagion.communication.HiRPC;
 import tagion.dart.DARTSynchronization;
 import tagion.gossip.GossipNet;
-import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
@@ -33,6 +33,39 @@ import tagion.script.StandardRecords;
 
 // import tagion.revision;
 import tagion.tools.Basic;
+
+alias UpdateRecorders=Tuple!(RecordFactory.Recorder, "remove", RecordFactory.Recorder, "add");
+
+pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
+UpdateRecorders updateNetworkNameCard(const HashNet net, NetworkNameCard nnc, NetworkNameRecord nrc, HashRecord hr) {
+    auto factory = RecordFactory(net);
+    UpdateRecorders update_recorders = [factory.recorder, factory.recorder]; 
+
+    // Remove old NNC and signature
+    update_recorders.remove.remove(nnc);
+    update_recorders.remove.remove(hr);
+
+    // Create new NNC, NRC and signature
+    NetworkNameCard nnc_new;
+    nnc_new.name = nnc.name;
+    nnc_new.lang = nnc.lang;
+    // nnc_new.time = current_time?
+
+    NetworkNameRecord nrc_new;
+    nrc_new.name = net.hashOf(nnc_new.toDoc);
+    nrc_new.previous = net.hashOf(nrc.toDoc);
+    nrc_new.index = nrc.index + 1;
+
+    nnc_new.record = net.hashOf(nrc_new.toDoc);
+
+    auto hr_new = HashRecord(net, nnc_new);
+
+    update_recorders.add.add(nnc_new);
+    update_recorders.add.add(nrc_new);
+    update_recorders.add.add(hr_new);
+
+    return update_recorders;
+}
 
 mixin Main!_main;
 
@@ -354,36 +387,22 @@ int _main(string[] args) {
             else {
                 auto nrc = nrc_read.get;
 
-                // Remove old NNC
-                auto factory = RecordFactory(net);
-                auto recorder = factory.recorder;
+                auto check_hr = HashRecord(net, nnc);
+                auto found_hr = readRecord!HashRecord(net.hashOf(check_hr.toDoc), hirpc, db);
+                if (found_hr.isNull) {
+                    writefln("WARNING: Signature for NetworkNameCard '%s' is not verified! Unable to update record\nAbort", nnc.name);
+                }
+                else {
+                    auto update_recorders = updateNetworkNameCard(net, nnc, nrc, found_hr.get);
+                    
+                    writeToDB(update_recorders.remove, hirpc, db);
+                    writeToDB(update_recorders.add, hirpc, db);
 
-                recorder.remove(nnc);
-                writeToDB(recorder, hirpc, db);
+                    writefln("Updated NetworkNameCard with name '%s'", nnc.name);
 
-                // Create and add new NNC and NRC
-                NetworkNameCard nnc_new;
-                nnc_new.name = nnc.name;
-                nnc_new.lang = nnc.lang;
-                // nnc_new.time = current_time?
-
-                NetworkNameRecord nrc_new;
-                nrc_new.name = net.hashOf(nnc_new.toDoc);
-                nrc_new.previous = nnc.record;
-                nrc_new.index = nrc.index + 1;
-
-                nnc_new.record = net.hashOf(nrc_new.toDoc);
-
-                auto recorder_new = factory.recorder;
-                recorder_new.add(nnc_new);
-                recorder_new.add(nrc_new);
-
-                writeToDB(recorder_new, hirpc, db);
-
-                writefln("Updated NetworkNameCard with name '%s'", nnc.name);
-
-                if (dump)
-                    db.dump(true);
+                    if (dump)
+                        db.dump(true);
+                }
             }
 
         }

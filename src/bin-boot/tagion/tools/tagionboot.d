@@ -56,38 +56,6 @@ RecordFactory.Recorder createNetworkNameCard(string name, const HashNet net) {
     return recorder;
 }
 
-pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
-RecordFactory.Recorder updateNetworkNameCard(string name, const HashNet net, NetworkNameCard nnc, NetworkNameRecord nrc, HashRecord hr) {
-    auto factory = RecordFactory(net);
-    auto recorder = factory.recorder;
-
-    // Remove old NNC
-    recorder.remove(nnc);
-    recorder.remove(hr);
-    //writeToDB(recorder, hirpc, db);
-
-    // Create and add new NNC and NRC
-    NetworkNameCard nnc_new;
-    nnc_new.name = nnc.name;
-    nnc_new.lang = nnc.lang;
-    // nnc_new.time = current_time?
-
-    NetworkNameRecord nrc_new;
-    nrc_new.name = net.hashOf(nnc_new.toDoc);
-    nrc_new.previous = net.hashOf(nrc.toDoc);
-    nrc_new.index = nrc.index + 1;
-
-    nnc_new.record = net.hashOf(nrc_new.toDoc);
-
-    auto hr_new = HashRecord(net, nnc_new);
-
-    recorder.add(nnc_new);
-    recorder.add(nrc_new);
-    recorder.add(hr_new);
-
-    return recorder;
-}
-
 mixin Main!(_main, "boot");
 
 int _main(string[] args) {
