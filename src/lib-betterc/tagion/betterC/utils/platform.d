@@ -92,3 +92,5 @@ extern(C) HiBONT_RBTreeT _D6tagion7betterC5utils6RBTree__T7RBTreeTTPSQBqQBm5hibo
 
 // extern(C) void  _D6tagion7betterC5utils6RBTree__T7RBTreeTTPSQBqQBm5hibon5HiBON6HiBONT6MemberZQBs20_staticCtor_L50_C5_1FNbNiNfZv() {
 // }
+
+pragma(msg, "HiBONT_RBTreeT ", _D6tagion7betterC5utils6RBTree__T7RBTreeTTPSQBqQBm5hibon5HiBON6HiBONT6MemberZQBs4NILLSQDgQDcQCxQCu__TQCqTQClZQCy4Node.sizeof);
