@@ -73,11 +73,12 @@ class EmulatorGossipNet : GossipNet {
     private immutable(Pubkey)[] _pkeys;
     protected uint _send_node_id;
     protected sdt_t _current_time;
-    protected Pubkey mypk;
+    immutable(Pubkey) mypk;
     Random random;
     this(const Pubkey mypk, Duration duration) {
         this.random = Random(unpredictableSeed);
         this.duration = duration;
+        this.mypk = mypk;
     }
 
     void add_channel(const Pubkey channel) {
@@ -111,7 +112,11 @@ class EmulatorGossipNet : GossipNet {
     }
 
     bool isValidChannel(const(Pubkey) channel) const pure nothrow {
-        return (channel in _tids) !is null && channel != mypk;
+        debug {
+            import std.exception : assumeWontThrow;
+            assumeWontThrow(log.trace("(channel in _tids) %s ((channel != mypk) %s", !!(channel in _tids), ((channel != mypk))));
+                }
+        return (channel in _tids) !is null;
     }
 
     const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
@@ -122,7 +127,7 @@ class EmulatorGossipNet : GossipNet {
             // log("selected index: %d %d", node_index, _tids.length);
             const send_channel = _pkeys[node_index];
             // log("trying to select: %s, valid?: %s", send_channel.cutHex, channel_filter(send_channel));
-            if (channel_filter(send_channel)) {
+            if ((send_channel != mypk) && channel_filter(send_channel)) {
                 return send_channel;
             }
         }

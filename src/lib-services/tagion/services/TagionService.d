@@ -192,6 +192,9 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             transcript_tid.send(params.serialize);
         }
 
+import tagion.utils.Miscellaneous;
+
+        log.trace("Hashgraph pubkey=%s", net.pubkey.cutHex);
         hashgraph = new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, &receive_epoch);
         // hashgraph.print_flag = true;
         hashgraph.scrap_depth = opts.scrap_depth;
