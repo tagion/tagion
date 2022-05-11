@@ -172,5 +172,6 @@ unittest {
     import tagion.dart.DART : DART;
     immutable filename = fileId!SmartScript.fullpath;
 
+    DART.create(filename);
     auto db =new DART(net, filename);
 }
