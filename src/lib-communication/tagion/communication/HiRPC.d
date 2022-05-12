@@ -421,11 +421,11 @@ struct HiRPC {
         return id;
     }
 
-    const(Sender) opDispatch(string method, T)(ref auto const T params, const uint id = uint.max) const {
+    immutable(Sender) opDispatch(string method, T)(ref auto const T params, const uint id = uint.max) const {
         return action(method, params, id);
     }
 
-    const(Sender) action(string method, const Document params, const uint id = uint.max) const {
+    immutable(Sender) action(string method, const Document params, const uint id = uint.max) const {
         Method message;
         message.id = (id is uint.max) ? generateId : id;
         if (!params.empty) {
@@ -437,17 +437,17 @@ struct HiRPC {
         return sender;
     }
 
-    const(Sender) action(T)(string method, T params, const uint id = uint.max) const
+    immutable(Sender) action(T)(string method, T params, const uint id = uint.max) const
     if (isHiBONRecord!T) {
         return action(method, params.toDoc, id);
     }
 
-    const(Sender) action(string method, const(HiBON) params = null, const uint id = uint.max) const {
+    immutable(Sender) action(string method, const(HiBON) params = null, const uint id = uint.max) const {
         const doc = Document(params);
         return action(method, doc, id);
     }
 
-    const(Sender) result(ref const(Receiver) receiver, const Document params) const {
+    immutable(Sender) result(ref const(Receiver) receiver, const Document params) const {
         Response message;
         message.id = receiver.method.id;
         message.result = params;
@@ -456,36 +456,34 @@ struct HiRPC {
         return sender;
     }
 
-    const(Sender) result(T)(ref const(Receiver) receiver, T params) const
+    immutable(Sender) result(T)(ref const(Receiver) receiver, T params) const
     if (isHiBONRecord!T) {
         return result(receiver, params.toDoc);
     }
 
-    const(Sender) result(ref const(Receiver) receiver, const(HiBON) params) const {
+    immutable(Sender) result(ref const(Receiver) receiver, const(HiBON) params) const {
         return result(receiver, Document(params));
     }
 
-    const(Sender) error(ref const(Receiver) receiver, string msg, const int code = 0, Document data = Document()) const {
+    immutable(Sender) error(ref const(Receiver) receiver, string msg, const int code = 0, Document data = Document()) const {
         return error(receiver.method.id, msg, code, data);
     }
 
-    const(Sender) error(const uint id, string msg, const int code = 0, Document data = Document()) const {
+    immutable(Sender) error(const uint id, string msg, const int code = 0, Document data = Document()) const {
         Error message;
         message.id = id;
         message.code = code;
         message.data = data;
         message.message = msg;
-        auto sender = Sender(net, message);
-        return sender;
+        return Sender(net, message);
     }
 
-
-    final const(Receiver) receive(Document doc) const {
+    final immutable(Receiver) receive(Document doc) const {
         auto receiver = Receiver(net, doc);
         return receiver;
     }
 
-    final const(Receiver) receive(T)(T sender) const if (isHiBONRecord!T) {
+    final immutable(Receiver) receive(T)(T sender) const if (isHiBONRecord!T) {
         auto receiver = Receiver(net, sender.toDoc);
         return receiver;
     }
