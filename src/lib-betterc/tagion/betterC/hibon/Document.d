@@ -168,18 +168,18 @@ struct Document {
         }
     }
 
-    unittest { // Document with residual data
-        import tagion.betterC.hibon.HiBON;
+    // unittest { // Document with residual data
+    //     import tagion.betterC.hibon.HiBON;
 
-        // import std.algorithm.comparison : equal;
-        auto h = HiBON();
-        h["test"] = 42;
-        immutable(ubyte[3]) residual = [42, 14, 217];
-        immutable data = h.serialize ~ residual;
-        const doc = Document(data);
-        assert(doc.full_size == h.serialize.length);
-        assert(doc.length == 1);
-    }
+    //     // import std.algorithm.comparison : equal;
+    //     auto h = HiBON();
+    //     h["test"] = 42;
+    //     immutable(ubyte[3]) residual = [42, 14, 217];
+    //     immutable data = h.serialize ~ residual;
+    //     const doc = Document(data);
+    //     assert(doc.full_size == h.serialize.length);
+    //     assert(doc.length == 1);
+    // }
 
     /**
      * Counts the number of members in a Document

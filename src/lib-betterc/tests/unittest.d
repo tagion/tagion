@@ -15,6 +15,9 @@ import tagion.betterC.utils.Text;
 import tagion.betterC.hibon.HiBON;
 import tagion.betterC.hibon.Document;
 
+import tagion.betterC.mobile.Recycle;
+import tagion.betterC.wallet.KeyRecover;
+
 import core.stdc.stdio;
 
 static void callUnittest(string parent, Members...)() {
@@ -76,6 +79,8 @@ static if (!__traits(compiles, main())) {
         callUnittest!(tagion.betterC.hibon.Document)();
         callUnittest!(tagion.betterC.hibon.HiBON);
         callUnittest!(tagion.betterC.utils.LEB128);
+
+        callUnittest!(tagion.betterC.wallet.KeyRecover);
         printf("Passed\n");
         return 0;
     }

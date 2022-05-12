@@ -76,59 +76,59 @@ const (char[])[] split_by_char(const (char)[] data, char splitter) {
 
 unittest {
     // no need to split
-    {
-        string test = "123";
-        auto res = split_by_char(test, ',');
-        string[] exp_res;
-        exp_res ~= "123";
-        // exp_res ~= "321";
-        assert(res == exp_res);
-    }
-    //find next char pos
-    {
-        string test = "012,4,6";
-        size_t pos = find_next_char(test, ',', 0);
-        auto count = count_pieces(test, ',');
+    // {
+    //     string test = "123";
+    //     auto res = split_by_char(test, ',');
+    //     string[] exp_res;
+    //     exp_res ~= "123";
+    //     // exp_res ~= "321";
+    //     assert(res == exp_res);
+    // }
+    // //find next char pos
+    // {
+    //     string test = "012,4,6";
+    //     size_t pos = find_next_char(test, ',', 0);
+    //     auto count = count_pieces(test, ',');
 
-        assert(count == 3);
+    //     assert(count == 3);
 
-        assert(pos == 3);
-        pos = find_next_char(test, ',', pos);
-        assert(pos == 5);
+    //     assert(pos == 3);
+    //     pos = find_next_char(test, ',', pos);
+    //     assert(pos == 5);
 
-        pos = find_next_char(test, ',', pos);
-        assert(pos == test.length);
-    }
-    // one spliter
-    {
-        string test = "123,321";
-        auto res = split_by_char(test, ',');
-        string[] exp_res;
-        exp_res ~= "123";
-        exp_res ~= "321";
-        assert(res == exp_res);
-    }
-    // one spliter many times
-    {
-        string test = "123,,,,,,321";
-        auto res = split_by_char(test, ',');
-        string[] exp_res;
-        exp_res ~= "123";
-        exp_res ~= "321";
-        assert(res == exp_res);
-    }
-    // more spliters
-    {
-        string test = "12,3,3,,,2,,1";
-        auto res = split_by_char(test, ',');
-        string[] exp_res;
-        exp_res ~= "12";
-        exp_res ~= "3";
-        exp_res ~= "3";
-        exp_res ~= "2";
-        exp_res ~= "1";
-        assert(res == exp_res);
-    }
+    //     pos = find_next_char(test, ',', pos);
+    //     assert(pos == test.length);
+    // }
+    // // one spliter
+    // {
+    //     string test = "123,321";
+    //     auto res = split_by_char(test, ',');
+    //     string[] exp_res;
+    //     exp_res ~= "123";
+    //     exp_res ~= "321";
+    //     assert(res == exp_res);
+    // }
+    // // one spliter many times
+    // {
+    //     string test = "123,,,,,,321";
+    //     auto res = split_by_char(test, ',');
+    //     string[] exp_res;
+    //     exp_res ~= "123";
+    //     exp_res ~= "321";
+    //     assert(res == exp_res);
+    // }
+    // // more spliters
+    // {
+    //     string test = "12,3,3,,,2,,1";
+    //     auto res = split_by_char(test, ',');
+    //     string[] exp_res;
+    //     exp_res ~= "12";
+    //     exp_res ~= "3";
+    //     exp_res ~= "3";
+    //     exp_res ~= "2";
+    //     exp_res ~= "1";
+    //     assert(res == exp_res);
+    // }
 }
 
 // this(Document doc) {

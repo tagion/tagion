@@ -66,27 +66,29 @@ string[] parse_string(const char* str, const uint len)
         const char* questionsPtr, const uint32_t qestionslen, const char* answersPtr,
         const uint32_t answerslen, uint32_t confidence)
     {
-        immutable pincode = cast(immutable)(pincodePtr[0 .. pincodeLen]);
+        // immutable pincode = cast(immutable)(pincodePtr[0 .. pincodeLen]);
 
-        const aes_key_data = recyclerDoc(aes_doc_id);
+        // const aes_key_data = recyclerDoc(aes_doc_id);
 
-        immutable decr_pincode = decrypt(pincode, aes_key_data);
+        // immutable decr_pincode = decrypt(pincode, aes_key_data);
+        Buffer tmp;
         immutable questions = cast(immutable)(split_by_char(questionsPtr[0 .. qestionslen],';'));
         immutable answers = cast(immutable)(split_by_char(answersPtr[0 .. answerslen],';'));
         auto wallet = SecureWallet!(SecureNet).createWallet(questions,
-            answers, confidence, cast(immutable(char)[]) decr_pincode);
+            answers, confidence, cast(immutable(char)[]) tmp);
 
-        auto recovery_id = recyclerDoc.create(Document(cast(HiBONT)wallet.wallet.toHiBON));
-        auto device_pin_id = recyclerDoc.create(Document(cast(HiBONT)wallet.pin.toHiBON));
-        auto account_id = recyclerDoc.create(Document(wallet.account.toHiBON));
+        // auto recovery_id = recyclerDoc.create(Document(cast(HiBONT)wallet.wallet.toHiBON));
+        // auto device_pin_id = recyclerDoc.create(Document(cast(HiBONT)wallet.pin.toHiBON));
+        // auto account_id = recyclerDoc.create(Document(wallet.account.toHiBON));
 
         auto result = HiBON();
-        result["recovery"] = recovery_id;
-        result["pin"] = device_pin_id;
-        result["account"] = account_id;
+        // result["recovery"] = recovery_id;
+        // result["pin"] = device_pin_id;
+        // result["account"] = account_id;
 
-        const doc_id = recyclerDoc.create(Document(result));
-        return doc_id;
+        // const doc_id = recyclerDoc.create(Document(result));
+        // return doc_id;
+        return 1;
     }
 
     export uint invoice_create(const uint32_t doc_id, const uint32_t dev_pin_doc_id,
