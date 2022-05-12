@@ -519,16 +519,25 @@ template mangleFunc(alias T) if (isCallable!T) {
 private import std.range;
 private import tagion.basic.Types : FileExtension;
 //private std.range.primitives;
-FileExtension fileExtension(R)(R path) //if (isRandomAccessRange!R) {
-//        && hasSlicing!R && hasLength!R && isSomeChar!(ElementType!R)) {
-        //          import tagion.basic.Types : FileExtension;
-//   if (isRandomAccessRange!R) {
-
-       if (isRandomAccessRange!R && hasSlicing!R && hasLength!R && isSomeChar!(ElementType!R)) {
-        return FileExtension.drt;
+string fileExtension(string path) {
+    import std.path : extension;
+    enum dot=".";
+    switch (path.extension) {
+        static foreach(ext; EnumMembers!FileExtension) {
+            case dot~ext:
+            return ext;
+        }
+        default:
+            return null;
+    }
+    assert(0);
 }
 
 unittest {
     import tagion.basic.Types : FileExtension;
-    assert("somenone_valid_file.extension".fileExtension):
+    import std.path : setExtension;
+    assert(!"somenone_invalid_file.extension".fileExtension);
+    immutable valid_filename = "somenone_valid_file".setExtension(FileExtension.hibon);
+    assert(valid_filename.fileExtension);
+    assert(valid_filename.fileExtension == FileExtension.hibon);
 }

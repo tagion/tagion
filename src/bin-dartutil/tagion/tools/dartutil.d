@@ -12,7 +12,7 @@ import std.algorithm;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 //import tagion.dart.BlockFile;
-import tagion.basic.Types : Buffer;
+import tagion.basic.Types : Buffer, FileExtension;
 import tagion.basic.Basic : tempfile;
 
 import tagion.communication.HiRPC;

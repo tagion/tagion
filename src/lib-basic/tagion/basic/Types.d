@@ -53,7 +53,6 @@ enum Control {
 
 
 enum FileExtension {
-    none = "",
     json = "json", // JSON File format
     hibon = "hibon", // HiBON file format
     wasm = "wasm", // WebAssembler binary format
