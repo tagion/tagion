@@ -94,7 +94,10 @@ class SmartScript {
     //     return _output_bills;
     // }
 
-    void run(const(SecureNet) net, const(string) method, const ref SignedContract signed_contract, const RecordFactory.Recorder inputs) {
+    void run(const(SecureNet) net,
+        const(string) method,
+        const ref SignedContract signed_contract,
+        const RecordFactory.Recorder inputs) {
         try {
             check(net, signed_contract, inputs);
 
@@ -147,7 +150,10 @@ class SmartScript {
 
 
 unittest {
+    import std.stdio : writefln;
+    import tagion.dart.Recorder : Add, Remove;
     import tagion.crypto.SecureNet;
+    import tagion.basic.Types : DataFormat;
     const net = new StdSecureNet;
     auto alice = new StdSecureNet;
     {
@@ -170,8 +176,13 @@ unittest {
 
     import tagion.dart.BlockFile : fileId;
     import tagion.dart.DART : DART;
-    immutable filename = fileId!SmartScript.fullpath;
+    immutable filename = fileId!SmartScript(DataFormat.dart).fullpath;
 
     DART.create(filename);
-    auto db =new DART(net, filename);
+    auto dart_db =new DART(net, filename);
+    dart_db.modify(alices_bills, Add);
+    writefln("dart-file %s", filename);
+    dart_db.dump(true);
+
+
 }

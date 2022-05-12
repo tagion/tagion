@@ -57,5 +57,5 @@ enum DataFormat {
     hibon = "hibon", // HiBON file format
     wasm = "wasm", // WebAssembler binary format
     wast = "wast", // WebAssembler text format
-    dartdb = "drt", // DART data-base
+    dart = "drt", // DART data-base
 }

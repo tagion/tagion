@@ -313,6 +313,9 @@ class RecordFactory {
 
 alias GetType = Archive.Type delegate(const(Archive)) @safe;
 
+enum Add = (const(Archive) a) => Archive.Type.ADD;
+enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
+
 @safe class Archive {
     enum Type : int {
         NONE = 0,

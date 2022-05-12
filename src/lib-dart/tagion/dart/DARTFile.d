@@ -1155,7 +1155,7 @@ alias check = Check!DARTException;
     void dump(bool full = false) {
         import std.stdio;
 
-        writeln("!!!EYE!!!: ", _fingerprint.hex);
+        writeln("EYE: ", _fingerprint.hex);
         void local_dump(const uint branch_index, const ubyte rim_key = 0, const uint rim = 0, string indent = null) @safe {
             if (branch_index !is INDEX_NULL) {
                 immutable data = blockfile.load(branch_index);
@@ -1174,7 +1174,7 @@ alias check = Check!DARTException;
                 else {
                     immutable fingerprint = manufactor.net.hashOf(doc);
                     auto lastRing = full ? fingerprint.length : rim + 1;
-                    writefln("%s:%s [%d]", indent, fingerprint[0 .. lastRing].hex, branch_index);
+                    writefln("%s%s [%d]", indent, fingerprint[0 .. lastRing].hex, branch_index);
                 }
             }
         }
@@ -1184,14 +1184,7 @@ alias check = Check!DARTException;
 
     version (unittest) {
         import tagion.dart.DARTFakeNet;
-
-        pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
         static {
-            // enum TEST_BLOCK_SIZE = 0x80;
-            // void create_dart(string filename) {
-            //     // Create DART file
-            //     BlockFile.create(filename, DARTFile.stringof, TEST_BLOCK_SIZE);
-            // }
 
             bool check(const(RecordFactory.Recorder) A, const(RecordFactory.Recorder) B) {
                 return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
@@ -1244,8 +1237,6 @@ alias check = Check!DARTException;
     }
 
     unittest {
-        pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
-
         import std.algorithm.sorting : sort;
 
         //    import tagion.basic.Basic;
