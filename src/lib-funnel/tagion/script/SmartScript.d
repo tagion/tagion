@@ -153,7 +153,7 @@ unittest {
     import std.stdio : writefln;
     import tagion.dart.Recorder : Add, Remove;
     import tagion.crypto.SecureNet;
-    import tagion.basic.Types : DataFormat;
+    import tagion.basic.Types : FileExtension;
     const net = new StdSecureNet;
     auto alice = new StdSecureNet;
     {
@@ -176,10 +176,10 @@ unittest {
 
     import tagion.dart.BlockFile : fileId;
     import tagion.dart.DART : DART;
-    immutable filename = fileId!SmartScript(DataFormat.dart).fullpath;
+    immutable filename = fileId!SmartScript(FileExtension.dart).fullpath;
 
     DART.create(filename);
-    auto dart_db =new DART(net, filename)
+    auto dart_db =new DART(net, filename);
     dart_db.modify(alices_bills, Add);
     writefln("dart-file %s", filename);
     dart_db.dump(true);

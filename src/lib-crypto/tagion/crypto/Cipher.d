@@ -116,7 +116,7 @@ struct Cipher {
         import tagion.hibon.HiBON : HiBON;
         import tagion.hibon.Document : Document;
         import tagion.basic.Basic : fileId;
-        import tagion.basic.Types : DataFormat;
+        import tagion.basic.Types : FileExtension;
 
         import std.algorithm.searching : all, any;
 
@@ -155,7 +155,7 @@ struct Cipher {
                     if (encrypted_doc.isInorder) {
                         import std.stdio : writefln;
                         import tagion.hibon.HiBONRecord : fwrite;
-                        immutable filename = fileId!Cipher(DataFormat.hibon, encrypted_doc.stringof).fullpath;
+                        immutable filename = fileId!Cipher(FileExtension.hibon, encrypted_doc.stringof).fullpath;
                         writefln("Cipher unittest file %s",filename);
                         filename.fwrite(encrypted_doc);
                     }

@@ -3,6 +3,7 @@ module tagion.tools.dartutil;
 import std.getopt;
 import std.stdio;
 import std.file : exists;
+import std.path : setExtension;
 import std.format;
 import std.conv : to;
 import std.array;
@@ -38,7 +39,7 @@ mixin Main!_main;
 int _main(string[] args) {
     immutable program = args[0];
 
-    string dartfilename = "/tmp/default.drt";
+    string dartfilename = "/tmp/default".setExtension(FileExtension.dart);
     string inputfilename = "";
     string outputfilename = tempfile;
     ushort fromAngle = 0;

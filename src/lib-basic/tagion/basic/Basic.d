@@ -7,6 +7,7 @@ import std.bitmanip : BitArray;
 import std.meta : AliasSeq;
 import std.range.primitives : isInputRange;
 
+
 enum this_dot = "this.";
 
 import std.conv;
@@ -558,4 +559,22 @@ template mangleFunc(alias T) if (isCallable!T) {
         return concurrency.register(name, tid);
     }
 
+}
+
+
+private import std.range;
+private import tagion.basic.Types : FileExtension;
+//private std.range.primitives;
+FileExtension fileExtension(R)(R path) //if (isRandomAccessRange!R) {
+//        && hasSlicing!R && hasLength!R && isSomeChar!(ElementType!R)) {
+        //          import tagion.basic.Types : FileExtension;
+//   if (isRandomAccessRange!R) {
+
+       if (isRandomAccessRange!R && hasSlicing!R && hasLength!R && isSomeChar!(ElementType!R)) {
+        return FileExtension.drt;
+}
+
+unittest {
+    import tagion.basic.Types : FileExtension;
+    assert("somenone_valid_file.extension".fileExtension):
 }
