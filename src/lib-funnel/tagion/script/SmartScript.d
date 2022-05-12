@@ -179,7 +179,7 @@ unittest {
     immutable filename = fileId!SmartScript(DataFormat.dart).fullpath;
 
     DART.create(filename);
-    auto dart_db =new DART(net, filename);
+    auto dart_db =new DART(net, filename)
     dart_db.modify(alices_bills, Add);
     writefln("dart-file %s", filename);
     dart_db.dump(true);

@@ -11,7 +11,8 @@ import std.json;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.basic.Basic : basename, Buffer, Pubkey;
+import tagion.basic.Basic : basename;
+import tagion.basic.Types : Buffer, Pubkey;
 import tagion.hibon.HiBONJSON;
 import tagion.wasm.Wast;
 import tagion.wasm.WasmReader;

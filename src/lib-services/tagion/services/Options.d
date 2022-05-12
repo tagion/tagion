@@ -4,11 +4,12 @@ import JSON = std.json;
 import std.format;
 import std.traits;
 import std.file;
+import std.path : setExtension;
 import std.getopt;
 import std.array : join;
 import std.string : strip;
 
-import tagion.basic.Types : DataFormat;
+import tagion.basic.Types : FileExtension;
 import tagion.basic.Basic : basename;
 import tagion.basic.TagionExceptions;
 import tagion.logger.Logger : LoggerType;
@@ -145,7 +146,7 @@ struct Options {
                               +/
         ushort port; /// Monitor port
         uint timeout; /// Socket listerne timeout in msecs
-        DataFormat dataformat;
+        FileExtension dataformat;
         /++ This specifies the data-format which is transmitted from the Monitor
          Option is json or hibon
         +/
@@ -503,7 +504,7 @@ static setDefaultOption(ref Options options) {
         prefix = "monitor";
         task_name = prefix;
         timeout = 500;
-        dataformat = DataFormat.json;
+        dataformat = FileExtension.json;
     }
     // Logger
     with (options.logger) {
@@ -600,16 +601,16 @@ static setDefaultOption(ref Options options) {
         final switch (options.net_mode) {
         case internal:
             options.dart.fast_load = true;
-            options.dart.path = "./data/%dir%/dart.drt";
+            options.dart.path = "./data/%dir%/dart".setExtension(FileExtension.dart);
             break;
         case local:
             options.dart.fast_load = true;
-            options.dart.path = "./data/%dir%/dart.drt";
-            options.path_to_shared_info = "./shared-data/boot.hibon";
+            options.dart.path = "./data/%dir%/dart".setExtension(FileExtension.dart);
+            options.path_to_shared_info = "./shared-data/boot".setExtension(FileExtension.hibon);
             break;
         case pub:
             options.dart.fast_load = true;
-            options.dart.path = "./data/dart.drt";
+            options.dart.path = "./data/dart".setExtension(FileExtension.dart);
             options.hostbootrap.enabled = true;
             options.dart.master_from_port = false;
             break;
