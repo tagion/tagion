@@ -610,62 +610,30 @@ unittest { /// RecordFactory.Recorder.insert range
 
     auto recorder = manufactor.recorder(range_filed);
 
-    writefln("recorder[] = %s",
-        recorder[]
-        .map!(a => Filed(a.filed).x));
-//    writefln("recorder[] = %s",
     enum recorder_sorted = (RecordFactory.Recorder rec) => rec[]
         .map!(a => Filed(a.filed))
         .array
         .sort!((a, b) => a.x < b.x);
 
     { // Check the content of
-        auto recorder_soretd_list = recorder_sorted(recorder);
-        // .range;
-        // .map!(a => Filed(a.filed))
-        // .array
-        // .sort!((a, b) => a.x < b.x);
-        writefln("recorder_soretd_list = %s", recorder_soretd_list.map!(a => a.x));
-
-
-//        .map!(a => a.x));
-
-        assert(equal(range_filed, recorder_soretd_list));
+        assert(equal(range_filed, recorder_sorted(recorder)));
     }
 
     { // Insert range of HiBON's
         auto range_filed_insert = iota(5, 10).map!(i => Filed(i));
-
-        writefln("filed %s", chain(range_filed, range_filed_insert).map!(a => a.x));
-
         recorder.insert(range_filed_insert);
-
-        writefln("recorder_soretd_list = %s", recorder_sorted(recorder).map!(a => a.x));
-
         assert(equal(
             chain(range_filed, range_filed_insert),
             recorder_sorted(recorder)));
-//            range_filed, recorder_soretd_list));
     }
 
     { /// Insert recorder to recorder
 
         auto recorder_base = manufactor.recorder(iota(3, 6).map!(i => Filed(i)));
         auto recorder_insert = manufactor.recorder(iota(0, 3).map!(i => Filed(i)));
-//        recorder_base.insert(recorder_insert);
-        writefln("recorder_base = %s", recorder_sorted(recorder_base).map!(a => a.x));
-        writefln("recorder_insert = %s", recorder_sorted(recorder_insert).map!(a => a.x));
         recorder_base.insert(recorder_insert);
-        writefln("recorder_base = -%(%s\n%)", recorder_insert[].map!(a => a.filed.toPretty));
-        writefln("recorder_base = %s", recorder_sorted(recorder_base).map!(a => a.x));
         assert(equal(
                  recorder_sorted(recorder_base),
                  iota(0, 6).map!(i => Filed(i))));
-
-
-
     }
-
-
-
 }
