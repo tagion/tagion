@@ -105,13 +105,14 @@ class RecordFactory {
 
         @trusted private this(R)(R range, const Archive.Type type = Archive.Type.NONE) if (isInputRange!R) {
             archives = new Archives;
-            alias FiledType = ElementType!R;
-            static if (isHiBONRecord!FiledType) {
-                archives.insert(range.map!(a => new Archive(net, a.toDoc, type)));
-            }
-            else {
-                archives.insert(range.map!(a => new Archive(net, a, type)));
-            }
+            insert(range, type);
+            // alias FiledType = ElementType!R;
+            // static if (isHiBONRecord!FiledType) {
+            //     archives.insert(range.map!(a => new Archive(net, a.toDoc, type)));
+            // }
+            // else {
+            //     archives.insert(range.map!(a => new Archive(net, a, type)));
+            // }
         }
 
         private this(Document doc) {
@@ -227,7 +228,7 @@ class RecordFactory {
             return archive;
         }
 
-        const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE) if (isHiBONRecord!T) {
+        const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE) if ((isHiBONRecord!T) && !is(T : const(Recorder))) {
             return insert(pack.toDoc, type);
         }
 
@@ -246,6 +247,23 @@ class RecordFactory {
 
         const(Archive) remove(T)(T pack) {
             return insert(pack, Archive.Type.REMOVE);
+        }
+
+        @trusted void insert(R)(R range, const Archive.Type type = Archive.Type.NONE)
+            if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONRecord!(ElementType!R))) {
+            alias FiledType = ElementType!R;
+            static if (isHiBONRecord!FiledType) {
+                archives.insert(range.map!(a => new Archive(net, a.toDoc, type)));
+            }
+            else {
+                archives.insert(range.map!(a => new Archive(net, a, type)));
+            }
+        }
+
+        void insert(Recorder r)  {
+            archives.insert(r.archives[]);
+//            if (isInputRange!R && (is(ElemetType!R : const(Document))))  {
+
         }
         //        alias add(T) = insert!T(
         // const(Archive) add(const(Document) doc) {
@@ -564,5 +582,90 @@ unittest { // Archive
         auto hash = new Archive(net, filed_hash, Archive.Type.NONE);
         assert(hash.fingerprint == hashkey_fingerprint);
     }
+
+}
+
+unittest { /// RecordFactory.Recorder.insert range
+    import tagion.hibon.HiBONRecord;
+    import tagion.crypto.SecureNet;
+    import std.range : iota, chain;
+    import std.algorithm.sorting : sort;
+    import std.algorithm.comparison : equal;
+    import std.array : array;
+
+    import std.stdio : writefln;
+    const net = new StdHashNet;
+    auto manufactor = RecordFactory(net);
+    static struct Filed {
+        int x;
+        mixin HiBONRecord!(
+            q{
+                this(int x) {
+                    this.x = x;
+                }
+            });
+    }
+
+    auto range_filed = iota(5).map!(i => Filed(i));
+
+    auto recorder = manufactor.recorder(range_filed);
+
+    writefln("recorder[] = %s",
+        recorder[]
+        .map!(a => Filed(a.filed).x));
+//    writefln("recorder[] = %s",
+    enum recorder_sorted = (RecordFactory.Recorder rec) => rec[]
+        .map!(a => Filed(a.filed))
+        .array
+        .sort!((a, b) => a.x < b.x);
+
+    { // Check the content of
+        auto recorder_soretd_list = recorder_sorted(recorder);
+        // .range;
+        // .map!(a => Filed(a.filed))
+        // .array
+        // .sort!((a, b) => a.x < b.x);
+        writefln("recorder_soretd_list = %s", recorder_soretd_list.map!(a => a.x));
+
+
+//        .map!(a => a.x));
+
+        assert(equal(range_filed, recorder_soretd_list));
+    }
+
+    { // Insert range of HiBON's
+        auto range_filed_insert = iota(5, 10).map!(i => Filed(i));
+
+        writefln("filed %s", chain(range_filed, range_filed_insert).map!(a => a.x));
+
+        recorder.insert(range_filed_insert);
+
+        writefln("recorder_soretd_list = %s", recorder_sorted(recorder).map!(a => a.x));
+
+        assert(equal(
+            chain(range_filed, range_filed_insert),
+            recorder_sorted(recorder)));
+//            range_filed, recorder_soretd_list));
+    }
+
+    { /// Insert recorder to recorder
+
+        auto recorder_base = manufactor.recorder(iota(3, 6).map!(i => Filed(i)));
+        auto recorder_insert = manufactor.recorder(iota(0, 3).map!(i => Filed(i)));
+//        recorder_base.insert(recorder_insert);
+        writefln("recorder_base = %s", recorder_sorted(recorder_base).map!(a => a.x));
+        writefln("recorder_insert = %s", recorder_sorted(recorder_insert).map!(a => a.x));
+        recorder_base.insert(recorder_insert);
+        writefln("recorder_base = -%(%s\n%)", recorder_insert[].map!(a => a.filed.toPretty));
+        writefln("recorder_base = %s", recorder_sorted(recorder_base).map!(a => a.x));
+        assert(equal(
+                 recorder_sorted(recorder_base),
+                 iota(0, 6).map!(i => Filed(i))));
+
+
+
+    }
+
+
 
 }
