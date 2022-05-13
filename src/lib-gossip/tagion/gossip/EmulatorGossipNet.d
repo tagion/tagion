@@ -112,10 +112,10 @@ class EmulatorGossipNet : GossipNet {
     }
 
     bool isValidChannel(const(Pubkey) channel) const pure nothrow {
-        debug {
-            import std.exception : assumeWontThrow;
-            assumeWontThrow(log.trace("(channel in _tids) %s ((channel != mypk) %s", !!(channel in _tids), ((channel != mypk))));
-                }
+        // debug {
+        //     import std.exception : assumeWontThrow;
+        //     assumeWontThrow(log.trace("(channel in _tids) %s ((channel != mypk) %s", !!(channel in _tids), ((channel != mypk))));
+        //         }
         return (channel in _tids) !is null;
     }
 
