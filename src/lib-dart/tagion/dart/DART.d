@@ -848,6 +848,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         import tagion.dart.BlockFile;
         import tagion.basic.Basic : tempfile, assumeTrusted;
         import tagion.dart.DARTFakeNet : DARTFakeNet;
+        enum TEST_BLOCK_SIZE = 0x80;
 
         auto net = new DARTFakeNet("very_secret");
 
@@ -885,8 +886,8 @@ class DART : DARTFile { //, HiRPC.Supports {
                 ];
                 // writefln("Test 0.0");
                 foreach (test_no; 0 .. 3) {
-                    DARTFile.create_dart(filename_A);
-                    DARTFile.create_dart(filename_B);
+                    DARTFile.create(filename_A);
+                    DARTFile.create(filename_B);
                     RecordFactory.Recorder recorder_B;
                     RecordFactory.Recorder recorder_A;
                     // Recorder recorder_B;
@@ -964,8 +965,8 @@ class DART : DARTFile { //, HiRPC.Supports {
             { // Single element different sectors
                 //
                 // writefln("Test 0.1");
-                DARTFile.create_dart(filename_A);
-                create_dart(filename_B);
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
                 RecordFactory.Recorder recorder_B;
                 RecordFactory.Recorder recorder_A;
                 // Recorder recorder_B;
@@ -1016,8 +1017,8 @@ class DART : DARTFile { //, HiRPC.Supports {
                 // from DART A against DART B when DART A is empty
                 // writefln("Test 1");
 
-                DARTFile.create_dart(filename_A);
-                create_dart(filename_B);
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
                 RecordFactory.Recorder recorder_B;
                 // Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1071,8 +1072,8 @@ class DART : DARTFile { //, HiRPC.Supports {
 
             { // Synchronization of a DART A which is a subset of DART B
                 // writefln("Test 2");
-                create_dart(filename_A);
-                create_dart(filename_B);
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1123,8 +1124,8 @@ class DART : DARTFile { //, HiRPC.Supports {
 
             { // Synchronization of a DART A where DART A is a superset of DART B
                 // writefln("Test 3");
-                create_dart(filename_A);
-                create_dart(filename_B);
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1177,8 +1178,8 @@ class DART : DARTFile { //, HiRPC.Supports {
             // ----------------
             { // Synchronization of a DART A where DART A is complementary of DART B
                 // writefln("Test 4");
-                create_dart(filename_A);
-                create_dart(filename_B);
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1231,8 +1232,8 @@ class DART : DARTFile { //, HiRPC.Supports {
 
             { // Synchronization of a DART A where DART A of DART B has common data
                 // writefln("Test 5");
-                create_dart(filename_A);
-                create_dart(filename_B);
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1284,8 +1285,8 @@ class DART : DARTFile { //, HiRPC.Supports {
 
             { // Synchronization of a Large DART A where DART A of DART B has common data
                 // writefln("Test 6");
-                create_dart(filename_A);
-                create_dart(filename_B);
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);

@@ -7,6 +7,7 @@ import std.bitmanip : BitArray;
 import std.meta : AliasSeq;
 import std.range.primitives : isInputRange;
 
+
 enum this_dot = "this.";
 
 import std.conv;
@@ -38,52 +39,6 @@ template find_dot(string str, size_t index = 0) {
     }
 }
 
-enum BITARRAY_MESSAGE = "Use tagion.utils.BitMask instead";
-/++
- Creates a new clean bitarray
-+/
-version (none) deprecated(BITARRAY_MESSAGE) void bitarray_clear(out BitArray bits, const size_t length) @trusted pure nothrow {
-    bits.length = length;
-}
-
-/++
- Change the size of the bitarray
-+/
-version (none) deprecated(BITARRAY_MESSAGE) void bitarray_change(ref scope BitArray bits, const size_t length) @trusted {
-    bits.length = length;
-}
-
-version (none) unittest {
-    {
-        BitArray test;
-        immutable uint size = 7;
-        test.length = size;
-        test[4] = true;
-        bitarray_clear(test, size);
-        assert(!test[4]);
-    }
-    {
-        BitArray test;
-        immutable uint size = 7;
-        test.length = size;
-        test[4] = true;
-        bitarray_change(test, size);
-        assert(test[4]);
-    }
-}
-
-/++
- Countes the number of bits set in mask
-+/
-uint countVotes(ref const(BitArray) mask) @trusted {
-    uint votes;
-    foreach (vote; mask) {
-        if (vote) {
-            votes++;
-        }
-    }
-    return votes;
-}
 
 /++
  Wraps a safe version of to!string for a BitArray
@@ -558,4 +513,31 @@ template mangleFunc(alias T) if (isCallable!T) {
         return concurrency.register(name, tid);
     }
 
+}
+
+
+private import std.range;
+private import tagion.basic.Types : FileExtension;
+//private std.range.primitives;
+string fileExtension(string path) {
+    import std.path : extension;
+    enum dot=".";
+    switch (path.extension) {
+        static foreach(ext; EnumMembers!FileExtension) {
+            case dot~ext:
+            return ext;
+        }
+        default:
+            return null;
+    }
+    assert(0);
+}
+
+unittest {
+    import tagion.basic.Types : FileExtension;
+    import std.path : setExtension;
+    assert(!"somenone_invalid_file.extension".fileExtension);
+    immutable valid_filename = "somenone_valid_file".setExtension(FileExtension.hibon);
+    assert(valid_filename.fileExtension);
+    assert(valid_filename.fileExtension == FileExtension.hibon);
 }

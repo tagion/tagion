@@ -12,7 +12,8 @@ import tagion.utils.Gene;
 import tagion.services.Options : Options, setDefaultOption;
 import tagion.services.LoggerService;
 import tagion.services.RecorderService;
-import tagion.basic.Basic : Control, Buffer, TrustedConcurrency;
+import tagion.basic.Basic : TrustedConcurrency;
+import tagion.basic.Types : Control, Buffer;
 import tagion.dart.DART : DART;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.communication.HiRPC;
@@ -35,7 +36,7 @@ int loggerServiceTest(string[] args) {
     import std.format;
     import std.array : join;
 
-    import tagion.basic.Basic : Control;
+    import tagion.basic.Types : Control;
     import tagion.logger.Logger;
     import tagion.services.Options : Options, setDefaultOption;
     import tagion.options.CommonOptions : setCommonOptions;
@@ -311,7 +312,7 @@ int recorderCliTest(string[] args) {
             // "from", format("Sets from angle: default %s", (fromAngle == toAngle) ? "full" : fromAngle.to!string), &fromAngle,
             // "to", format("Sets to angle: default %s", (fromAngle == toAngle) ? "full" : toAngle.to!string), &toAngle,
 
-            
+
 
     );
 
@@ -412,7 +413,7 @@ int logSubscriptionTest(string[] args) {
     import tagion.services.Options;
     import tagion.options.CommonOptions : setCommonOptions;
     import tagion.services.LogSubscriptionService;
-    import tagion.basic.Basic : Control, Buffer;
+    import tagion.basic.Types : Control, Buffer;
 
     import tagion.communication.HiRPC;
 
@@ -440,7 +441,7 @@ int logSubscriptionTest(string[] args) {
         }
     }
 
-    /** 
+    /**
     * \brief Struct myStruct dskfsl;df
     */
     struct MyStruct {

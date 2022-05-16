@@ -38,7 +38,8 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
         auto net = new StdSecureNet;
         auto rec_factory = RecordFactory(net);
         auto empty_hirpc = HiRPC(null);
-        scope SmartScript[Buffer] smart_scripts;
+        Tid dart_tid = locate(dart_task_name);
+        SmartScript[Buffer] smart_scripts;
 
         bool stop;
         void controller(Control ctrl) {
@@ -49,9 +50,8 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
         }
 
         void modifyDART(RecordFactory.Recorder recorder) {
-            Tid dart_tid = locate(dart_task_name);
             auto sender = empty_hirpc.dartModify(recorder);
-            if (dart_tid != Tid.init) {
+            if (dart_tid !is Tid.init) {
                 dart_tid.send("blackhole", sender.toDoc.serialize); //TODO: remove blackhole
             }
             else {
@@ -60,16 +60,18 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
             }
         }
 
-        bool to_smart_script(SignedContract signed_contract) nothrow {
+        bool to_smart_script(ref SignedContract signed_contract) nothrow {
             try {
+                version(none) {
                 auto smart_script = new SmartScript(signed_contract);
-                smart_script.check(net);
+                smart_script.check(net, smart_script);
                 const signed_contract_doc = signed_contract.toDoc;
                 const fingerprint = net.HashNet.hashOf(signed_contract_doc);
 
                 smart_script.run(current_epoch + 1);
 
                 smart_scripts[fingerprint] = smart_script;
+                }
                 return true;
             }
             catch (ConsensusException e) {
@@ -130,11 +132,13 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                         const added = to_smart_script(signed_contract);
                         if (added && fingerprint in smart_scripts) {
                             scope smart_script = smart_scripts[fingerprint];
-                            const payment = PayContract(smart_script.signed_contract.input);
+                            //const payment = PayContract(smart_script.signed_contract.input);
+                            PayContract payment;
                             foreach (bill; payment.bills) {
                                 const bill_doc = bill.toDoc;
                                 recorder.remove(bill_doc);
                             }
+                            version(none)
                             foreach (bill; smart_script.output_bills) {
                                 const bill_doc = bill.toDoc;
                                 recorder.add(bill_doc);

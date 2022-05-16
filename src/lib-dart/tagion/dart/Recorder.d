@@ -4,7 +4,8 @@ module tagion.dart.Recorder;
 import tagion.hibon.HiBONJSON;
 
 import std.container.rbtree : RedBlackTree;
-import std.range.primitives : isInputRange;
+import std.range.primitives : isInputRange, ElementType;
+import std.algorithm.iteration : map;
 import std.format;
 
 import tagion.crypto.SecureInterfaceNet : HashNet;
@@ -102,14 +103,19 @@ class RecordFactory {
             this.archives = archives;
         }
 
-        @trusted private this(R)(R range) if (isInputRange!R) {
-            this.archives = new Archives(range);
+        @trusted private this(R)(R range, const Archive.Type type = Archive.Type.NONE) if (isInputRange!R) {
+            archives = new Archives;
+            insert(range, type);
+            // alias FiledType = ElementType!R;
+            // static if (isHiBONRecord!FiledType) {
+            //     archives.insert(range.map!(a => new Archive(net, a.toDoc, type)));
+            // }
+            // else {
+            //     archives.insert(range.map!(a => new Archive(net, a, type)));
+            // }
         }
 
         private this(Document doc) {
-
-
-
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             this.archives = new Archives;
             foreach (e; doc[]) {
@@ -226,7 +232,7 @@ class RecordFactory {
             return archive;
         }
 
-        const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE) if (isHiBONRecord!T) {
+        const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE) if ((isHiBONRecord!T) && !is(T : const(Recorder))) {
             return insert(pack.toDoc, type);
         }
 
@@ -245,6 +251,23 @@ class RecordFactory {
 
         const(Archive) remove(T)(T pack) {
             return insert(pack, Archive.Type.REMOVE);
+        }
+
+        @trusted void insert(R)(R range, const Archive.Type type = Archive.Type.NONE)
+            if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONRecord!(ElementType!R))) {
+            alias FiledType = ElementType!R;
+            static if (isHiBONRecord!FiledType) {
+                archives.insert(range.map!(a => new Archive(net, a.toDoc, type)));
+            }
+            else {
+                archives.insert(range.map!(a => new Archive(net, a, type)));
+            }
+        }
+
+        void insert(Recorder r)  {
+            archives.insert(r.archives[]);
+//            if (isInputRange!R && (is(ElemetType!R : const(Document))))  {
+
         }
         //        alias add(T) = insert!T(
         // const(Archive) add(const(Document) doc) {
@@ -312,6 +335,9 @@ class RecordFactory {
 
 alias GetType = Archive.Type delegate(const(Archive)) @safe;
 
+enum Add = (const(Archive) a) => Archive.Type.ADD;
+enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
+
 @safe class Archive {
     enum Type : int {
         NONE = 0,
@@ -363,6 +389,10 @@ alias GetType = Archive.Type delegate(const(Archive)) @safe;
     this(const(Document) doc, const Type t = Type.NONE) {
         this(null, doc, t);
     }
+
+    // this(H)(const HashNet net, ref const(H) h, const Type t = Type.NONE) if (isHiBONRecord!H) {
+    //     this(net, h.toDoc, t);
+    // }
 
     const(Document) toDoc() const {
         auto hibon = new HiBON;
@@ -557,4 +587,57 @@ unittest { // Archive
         assert(hash.fingerprint == hashkey_fingerprint);
     }
 
+}
+
+unittest { /// RecordFactory.Recorder.insert range
+    import tagion.hibon.HiBONRecord;
+    import tagion.crypto.SecureNet;
+    import std.range : iota, chain;
+    import std.algorithm.sorting : sort;
+    import std.algorithm.comparison : equal;
+    import std.array : array;
+
+    import std.stdio : writefln;
+    const net = new StdHashNet;
+    auto manufactor = RecordFactory(net);
+    static struct Filed {
+        int x;
+        mixin HiBONRecord!(
+            q{
+                this(int x) {
+                    this.x = x;
+                }
+            });
+    }
+
+    auto range_filed = iota(5).map!(i => Filed(i));
+
+    auto recorder = manufactor.recorder(range_filed);
+
+    enum recorder_sorted = (RecordFactory.Recorder rec) => rec[]
+        .map!(a => Filed(a.filed))
+        .array
+        .sort!((a, b) => a.x < b.x);
+
+    { // Check the content of
+        assert(equal(range_filed, recorder_sorted(recorder)));
+    }
+
+    { // Insert range of HiBON's
+        auto range_filed_insert = iota(5, 10).map!(i => Filed(i));
+        recorder.insert(range_filed_insert);
+        assert(equal(
+            chain(range_filed, range_filed_insert),
+            recorder_sorted(recorder)));
+    }
+
+    { /// Insert recorder to recorder
+
+        auto recorder_base = manufactor.recorder(iota(3, 6).map!(i => Filed(i)));
+        auto recorder_insert = manufactor.recorder(iota(0, 3).map!(i => Filed(i)));
+        recorder_base.insert(recorder_insert);
+        assert(equal(
+                 recorder_sorted(recorder_base),
+                 iota(0, 6).map!(i => Filed(i))));
+    }
 }

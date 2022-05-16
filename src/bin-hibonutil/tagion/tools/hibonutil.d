@@ -2,17 +2,18 @@ module tagion.tools.hibonutil;
 
 import std.getopt;
 import std.stdio;
-import std.file : fread = read, fwrite = write, exists;
+import std.file : fread = read, fwrite = write, exists, readText;
 import std.format;
-import std.path : extension;
+import std.path : extension, withExtension;
 import std.traits : EnumMembers;
 import std.exception : assumeUnique, assumeWontThrow;
 import std.json;
+import std.range : only;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.basic.Types : Buffer, Pubkey;
-import tagion.basic.Basic : basename;
+import tagion.basic.Types : Buffer, Pubkey, FileExtension;
+import tagion.basic.Basic : basename, fileExtension;
 import tagion.hibon.HiBONJSON;
 
 //import tagion.script.StandardRecords;
@@ -20,10 +21,10 @@ import std.array : join;
 
 // import tagion.revision;
 
-enum fileextensions {
-    HIBON = ".hibon",
-    JSON = ".json"
-};
+// enum fileextensions {
+//     HIBON = ".hibon",
+//     JSON = ".json"
+// };
 
 import tagion.tools.Basic;
 
@@ -104,10 +105,10 @@ int _main(string[] args) {
     // if (standard_output) {
     //     output_extension=outputfilename.extension;
     // }
-    const input_extension = inputfilename.extension;
+//    const input_extension = inputfilename.extension;
     //   writefln("input_extension=%s", input_extension);
-    switch (input_extension) {
-    case fileextensions.HIBON:
+    switch (inputfilename.fileExtension) {
+    case FileExtension.hibon:
         immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
         const doc = Document(data);
         const error_code = doc.valid(
@@ -129,8 +130,8 @@ int _main(string[] args) {
             outputfilename.fwrite(json_stringify);
         }
         break;
-    case fileextensions.JSON:
-        const data = cast(char[]) fread(inputfilename);
+    case FileExtension.json:
+        const data = inputfilename.readText;
         auto parse = data.parseJSON;
         auto hibon = parse.toHiBON;
         if (standard_output) {
@@ -141,8 +142,9 @@ int _main(string[] args) {
         }
         break;
     default:
-        stderr.writefln("File extensions %s not valid (only %s)",
-                input_extension, [EnumMembers!fileextensions]);
+        stderr.writefln("File %s not valid (only %(.%s %))",
+            inputfilename, only(FileExtension.hibon, FileExtension.json));
+        return 1;
     }
 
     return 0;

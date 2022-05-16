@@ -72,5 +72,6 @@ target-android: LIBS+=$(LDC_BUILD_RUNTIME_TMP)/lib/libphobos2-ldc.a
 # target-android: LDFLAGS+=-l:libunwind.a
 # target-android: LDFLAGS+=-ldl
 target-android: LDFLAGS+=/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot
+target-android: LDFLAGS+=-fno-weak
 
 endif

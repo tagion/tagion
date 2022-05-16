@@ -8,7 +8,9 @@ import std.array;
 import std.file;
 import std.conv;
 
-import tagion.basic.Basic : Control, Buffer, TrustedConcurrency;
+import tagion.basic.Types : Control, Buffer;
+
+import tagion.basic.Basic : TrustedConcurrency;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.dart.Recorder;

@@ -11,12 +11,13 @@ import tagion.hibon.HiBONException;
 import tagion.script.TagionCurrency;
 import tagion.script.ScriptException : check;
 
+enum OwnerKey = "$Y";
 @safe {
     @RecordType("BIL") struct StandardBill {
         @Label("$V") TagionCurrency value; // Bill type
         @Label("$k") uint epoch; // Epoch number
         //        @Label("$T", true) string bill_type; // Bill type
-        @Label("$Y") Pubkey owner; // Double hashed owner key
+        @Label(OwnerKey) Pubkey owner; // Double hashed owner key
         @Label("$G") Buffer gene; // Bill gene
         mixin HiBONRecord!(
                 q{
@@ -31,7 +32,7 @@ import tagion.script.ScriptException : check;
 
     @RecordType("NNC") struct NetworkNameCard {
         @Label("#name") string name; /// Tagion domain name
-        @Label("$pkey") Pubkey pubkey;  /// NNC pubkey
+        @Label(OwnerKey) Pubkey pubkey;  /// NNC pubkey
         @Label("$lang") string lang; /// Language used for the #name
         @Label("$time") ulong time;  /// Time-stamp of
         // @Label("$sign") Buffer sign;    ///
@@ -48,7 +49,7 @@ import tagion.script.ScriptException : check;
         mixin HiBONRecord;
     }
 
-    @RecordType("HR") struct HashRecord {
+    @RecordType("HL") struct HashLock {
         import tagion.crypto.SecureInterfaceNet;
         @Label("$lock") Buffer lock;    /// Of the NNC with the pubkey
         mixin HiBONRecord!(q{
@@ -100,10 +101,10 @@ import tagion.script.ScriptException : check;
         }
         // Invalid HR
         const nohash=NoHash("no hash");
-//        const x=HashRecord(net, nohash);
-        assertThrown(HashRecord(net, nohash));
+//        const x=HashLock(net, nohash);
+        assertThrown(HashLock(net, nohash));
         // Correct HR
-        const hr = assertNotThrown(HashRecord(net, nnc));
+        const hr = assertNotThrown(HashLock(net, nnc));
 
         { // Verify that the NNC has been signed correctly
             // Bad NNC
@@ -190,7 +191,7 @@ import tagion.script.ScriptException : check;
     @RecordType("SSC") struct SignedContract {
         @Label("$signs") Signature[] signs; /// Signature of all inputs
         @Label("$contract") Contract contract; /// The contract must signed by all inputs
-        @Label("$in", true) Document input; /// The actual inputs
+//        @Label("$in", true) Document input; /// The actual inputs
         mixin HiBONRecord;
     }
 
@@ -222,7 +223,7 @@ import tagion.script.ScriptException : check;
     @RecordType("Invoice") struct Invoice {
         string name;
         TagionCurrency amount;
-        Pubkey pkey;
+        @Label(OwnerKey) Pubkey pkey;
         @Label("*", true) Document info;
         mixin HiBONRecord;
     }

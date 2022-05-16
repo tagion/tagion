@@ -3,6 +3,7 @@ module tagion.tools.dartutil;
 import std.getopt;
 import std.stdio;
 import std.file : exists;
+import std.path : setExtension;
 import std.format;
 import std.conv : to;
 import std.array;
@@ -11,8 +12,8 @@ import std.typecons;
 
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
-import tagion.dart.BlockFile;
-import tagion.basic.Types : Buffer;
+//import tagion.dart.BlockFile;
+import tagion.basic.Types : Buffer, FileExtension;
 import tagion.basic.Basic : tempfile;
 
 import tagion.communication.HiRPC;
@@ -67,7 +68,7 @@ mixin Main!_main;
 int _main(string[] args) {
     immutable program = args[0];
 
-    string dartfilename = "/tmp/default.drt";
+    string dartfilename = "/tmp/default".setExtension(FileExtension.dart);
     string inputfilename = "";
     string outputfilename = tempfile;
     ushort fromAngle = 0;
@@ -176,8 +177,7 @@ int _main(string[] args) {
             dartfilename = tempfile ~ "tmp";
             writeln("DART filename: ", dartfilename);
         }
-        enum BLOCK_SIZE = 0x80;
-        BlockFile.create(dartfilename, DARTFile.stringof, BLOCK_SIZE);
+        DART.create(dartfilename);
     }
 
     auto db = new DART(net, dartfilename, fromAngle, toAngle);
