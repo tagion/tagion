@@ -35,10 +35,11 @@ enum HASH = "xxx";
 import tagion.tools.Basic;
 
 pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
-RecordFactory.Recorder createNetworkNameCard(string name, const HashNet net) {
-    auto factory = RecordFactory(net);
-    auto recorder = factory.recorder;
-
+void createNetworkNameCard(const HashNet net, string name, RecordFactory.Recorder recorder)
+in {
+    assert(recorder);
+}
+do {
     NetworkNameCard nnc;
     nnc.name = name;
     // TODO: set also time?
@@ -52,8 +53,6 @@ RecordFactory.Recorder createNetworkNameCard(string name, const HashNet net) {
     recorder.add(nnc);
     recorder.add(nrc);
     recorder.add(hr);
-
-    return recorder;
 }
 
 mixin Main!(_main, "boot");
@@ -129,7 +128,7 @@ int _main(string[] args) {
 
     if (!nnc_name.empty) {
         writeln("TEST MODE: Initialize standart records");
-        recorder = createNetworkNameCard(nnc_name, net);
+        createNetworkNameCard(net, nnc_name, recorder);
     }
     else if (initbills) {
         writeln("TEST MODE: Initialize dummy bills");

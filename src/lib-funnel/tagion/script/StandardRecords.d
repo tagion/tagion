@@ -57,7 +57,7 @@ import tagion.script.ScriptException : check;
                 import tagion.script.ScriptException : check;
                 import tagion.hibon.HiBONRecord : isHiBONRecord, hasHashKey;
                 this(const(HashNet) net, const(Document) doc) {
-                    check(doc.hasHashKey, "Document should have a has key");
+                    check(doc.hasHashKey, "Document should have a hash key");
                     lock = net.rawCalcHash(doc.serialize);
                 }
                 this(T)(const(HashNet) net, ref const(T) h) if (isHiBONRecord!T) {

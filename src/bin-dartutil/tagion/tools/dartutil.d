@@ -34,17 +34,8 @@ import tagion.script.StandardRecords;
 // import tagion.revision;
 import tagion.tools.Basic;
 
-alias UpdateRecorders=Tuple!(RecordFactory.Recorder, "remove", RecordFactory.Recorder, "add");
-
 pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
-UpdateRecorders updateNetworkNameCard(const HashNet net, NetworkNameCard nnc, NetworkNameRecord nrc, HashRecord hr) {
-    auto factory = RecordFactory(net);
-    UpdateRecorders update_recorders = [factory.recorder, factory.recorder]; 
-
-    // Remove old NNC and signature
-    update_recorders.remove.remove(nnc);
-    update_recorders.remove.remove(hr);
-
+void updateNetworkNameCard(const HashNet net, NetworkNameCard nnc, NetworkNameRecord nrc, HashRecord hr, RecordFactory.Recorder recorder) {
     // Create new NNC, NRC and signature
     NetworkNameCard nnc_new;
     nnc_new.name = nnc.name;
@@ -60,11 +51,15 @@ UpdateRecorders updateNetworkNameCard(const HashNet net, NetworkNameCard nnc, Ne
 
     auto hr_new = HashRecord(net, nnc_new);
 
-    update_recorders.add.add(nnc_new);
-    update_recorders.add.add(nrc_new);
-    update_recorders.add.add(hr_new);
+    recorder.add(nnc_new);
+    recorder.add(nrc_new);
+    recorder.add(hr_new);
+}
 
-    return update_recorders;
+void hashRecorderRemove(const RecordFactory.Recorder src, RecordFactory.Recorder dest) {
+    auto hash_filter = src[].filter!(a => a.isAdd && a.filed.hasHashKey);
+    dest = factory.recorder(hash_filter);
+    auto hash_locks = hash_filter.map!(a => HashLock(a.filed)); // dest.insert(hash_locks)
 }
 
 mixin Main!_main;
@@ -393,7 +388,8 @@ int _main(string[] args) {
                     writefln("WARNING: Signature for NetworkNameCard '%s' is not verified! Unable to update record\nAbort", nnc.name);
                 }
                 else {
-                    auto update_recorders = updateNetworkNameCard(net, nnc, nrc, found_hr.get);
+                    auto recorder = factory.recorder; 
+                    updateNetworkNameCard(net, nnc, nrc, found_hr.get, recorder);
                     
                     writeToDB(update_recorders.remove, hirpc, db);
                     writeToDB(update_recorders.add, hirpc, db);
