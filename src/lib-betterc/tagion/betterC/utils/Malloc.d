@@ -141,7 +141,6 @@ size_t bigest() {
 }
 }
 
-version(none)
 unittest {
     import std.stdio;
     void dump() {
@@ -151,13 +150,9 @@ unittest {
         }
     }
     writeln("------------- ---------------");
-    import stdlib = core.stdc.stdlib;
     const mem_size = FreeBlock.sizeof*32;
-    auto mem = stdlib.malloc(mem_size);
-    scope(exit) {
-        stdlib.free(mem);
-    }
-    set_memory(mem, mem_size);
+    auto mem = new ubyte[mem_size];
+    set_memory(mem.ptr, mem_size);
 
     writefln("%s", *free_block_list_head);
     writefln("free_block_list_head.size=%s", free_block_list_head.size);
@@ -259,16 +254,12 @@ unittest {
 
 
 }
-version(none)
+
 unittest { /// calloc
     import std.stdio;
-    import stdlib = core.stdc.stdlib;
     const mem_size = FreeBlock.sizeof*32;
-    auto mem = stdlib.malloc(mem_size);
-    scope(exit) {
-        stdlib.free(mem);
-    }
-    set_memory(mem, mem_size);
+    auto mem = new ubyte[mem_size];
+    set_memory(mem.ptr, mem_size);
 
     auto ptr1 = malloc(64);
     auto array_ptr1=cast(byte*)ptr1;
