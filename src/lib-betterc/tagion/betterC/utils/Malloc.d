@@ -141,6 +141,7 @@ size_t bigest() {
 }
 }
 
+version(none)
 unittest {
     import std.stdio;
     void dump() {
@@ -258,7 +259,7 @@ unittest {
 
 
 }
-
+version(none)
 unittest { /// calloc
     import std.stdio;
     import stdlib = core.stdc.stdlib;
