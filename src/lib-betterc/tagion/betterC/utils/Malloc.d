@@ -11,7 +11,6 @@ extern(C) {
         *end_of_memory=FreeBlock.init;
     }
 }
-import std.stdio;
 
 @nogc nothrow {
 
@@ -79,6 +78,24 @@ void* malloc(size_t size) {
 
 
     assert(0, "Out of memory");
+}
+
+void* calloc(size_t nmemb, size_t size) {
+    return malloc(nmemb*size);
+}
+
+void* realloc(void* ptr, size_t size) {
+    FreeBlock* block = cast(FreeBlock*)(ptr - overhead);
+    if (size <= block.size) {
+        return ptr;
+    }
+    auto result=malloc(size);
+    scope(exit) {
+        free(ptr);
+    }
+    (cast(size_t*)result)[0..block.size/size_t.sizeof] =
+        (cast(size_t*)ptr)[0..block.size/size_t.sizeof];
+    return result;
 }
 
 void free(void* ptr) {
@@ -204,14 +221,14 @@ unittest {
     assert(avail == _avail);
 
     auto ptr6=malloc(70);
-    assert(!isFree(ptr6));
+    assert(!ptr6.isFree);
     _avail -=ptr6.sizeOf+overhead;
     writefln("ptr6 avail=%d _avail=%d", avail, _avail);
     assert(avail == _avail);
     _avail +=ptr5.sizeOf;
 
     free(ptr5);
-    assert(isFree(ptr5));
+    assert(ptr5.isFree);
     writefln("avail=%d _avail=%d", avail, _avail);
     assert(avail == _avail);
 // foreach(i;0..4) {
@@ -221,7 +238,7 @@ unittest {
     writefln("ptr5 %s ", ptr5);
     dump;
     auto ptr7=malloc(52);
-    assert(!isFree(ptr7));
+    assert(!ptr7.isFree);
     _avail -=ptr7.sizeOf+overhead;
 
     writefln("avail=%d _avail=%d", avail, _avail);
@@ -240,4 +257,34 @@ unittest {
     // writefln("ptr2=%s ptr4=%s", ptr2, ptr4);
 
 
+}
+
+unittest { /// calloc
+    import std.stdio;
+    import stdlib = core.stdc.stdlib;
+    const mem_size = FreeBlock.sizeof*32;
+    auto mem = stdlib.malloc(mem_size);
+    scope(exit) {
+        stdlib.free(mem);
+    }
+    set_memory(mem, mem_size);
+
+    auto ptr1 = malloc(64);
+    auto array_ptr1=cast(byte*)ptr1;
+    array_ptr1[0]=-42;
+    array_ptr1[63]=42;
+
+    writefln("%d", ptr1.sizeOf);
+    assert(ptr1.sizeOf == 80);
+
+    auto ptr2 = realloc(ptr1, 100);
+    writefln("%d", ptr2.sizeOf);
+    writefln("%s", isFree(ptr1));
+    auto array_ptr2=cast(byte*)ptr2;
+
+    assert(ptr1.isFree);
+    assert(!ptr2.isFree);
+    assert(ptr2.sizeOf == 112);
+    assert(array_ptr2[0] == -42);
+    assert(array_ptr2[63] == 42);
 }
