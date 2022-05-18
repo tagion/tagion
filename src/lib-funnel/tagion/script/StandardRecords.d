@@ -12,6 +12,7 @@ import tagion.script.TagionCurrency;
 import tagion.script.ScriptException : check;
 
 enum OwnerKey = "$Y";
+
 @safe {
     @RecordType("BIL") struct StandardBill {
         @Label("$V") TagionCurrency value; // Bill type
