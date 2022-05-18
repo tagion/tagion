@@ -20,9 +20,21 @@ import std.conv;
 import tagion.basic.Types: Buffer;
 // import tagion.hibon.HiBONJSON;
 
-extern (C) {
-public static Recycle!Document recyclerDoc;
+public Recycle!Document recyclerDoc;
 
+
+// static this() {
+//     recyclerDoc = recyclerDoc.init;
+// }
+
+// {
+//     auto recyclerDoc = new reecycle!Document;
+//     recycleDoc._active .... -> fine;
+//     free(recyclerDoc);
+//     recyclerDoc._active -> fail;
+// }
+
+extern (C) {
 enum BAD_RESULT = 0;
 
 string[] parse_string(const char* str, const uint len)

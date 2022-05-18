@@ -74,6 +74,34 @@ const (char[])[] split_by_char(const (char)[] data, char splitter) {
     return res;
 }
 
+void append(T) (ref T[] arr, T value)
+{
+    auto arr_length = arr.length;
+    // arr.length += 1;
+
+    T[] tmp_arr;
+    tmp_arr.create(arr_length + 1);
+    tmp_arr[0 .. $-1] = arr[0 .. $];
+    arr.dispose;
+    arr = tmp_arr;
+    // tmp_arr.dispose;
+    // arr_length += 1;
+    // arr.resize(arr_length);
+    arr[$ - 1] = value;
+}
+
+T pop_back(T) (ref T[] arr)
+in {
+    assert(arr.length > 0);
+}
+do {
+    auto result = arr[$ - 1];
+    auto arr_length = arr.length;
+    arr.resize(arr_length - 1);
+    return result;
+}
+
+
 unittest {
     // no need to split
     // {

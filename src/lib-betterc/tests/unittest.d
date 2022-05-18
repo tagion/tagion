@@ -18,6 +18,8 @@ import tagion.betterC.hibon.Document;
 import tagion.betterC.mobile.Recycle;
 import tagion.betterC.wallet.KeyRecover;
 
+import tagion.betterC.mobile.WalletWrapperApi;
+
 import core.stdc.stdio;
 
 static void callUnittest(string parent, Members...)() {
@@ -68,19 +70,21 @@ static if (!__traits(compiles, main())) {
         printf("Unittest\n");
         import core.stdc.stdlib;
 
-        callUnittest!(tagion.betterC.utils.Memory)();
-        callUnittest!(tagion.betterC.utils.BinBuffer)();
-        callUnittest!(tagion.betterC.utils.Text)();
-        callUnittest!(tagion.betterC.utils.Stack)();
+        // callUnittest!(tagion.betterC.utils.Memory)();
+        // callUnittest!(tagion.betterC.utils.BinBuffer)();
+        // callUnittest!(tagion.betterC.utils.Text)();
+        // callUnittest!(tagion.betterC.utils.Stack)();
 
-        callUnittest!(tagion.betterC.utils.RBTree)();
-        callUnittest!(tagion.betterC.hibon.HiBONBase)();
+        // callUnittest!(tagion.betterC.utils.RBTree)();
+        // callUnittest!(tagion.betterC.hibon.HiBONBase)();
 
-        callUnittest!(tagion.betterC.hibon.Document)();
-        callUnittest!(tagion.betterC.hibon.HiBON);
-        callUnittest!(tagion.betterC.utils.LEB128);
+        // callUnittest!(tagion.betterC.hibon.Document)();
+        // callUnittest!(tagion.betterC.hibon.HiBON);
+        // callUnittest!(tagion.betterC.utils.LEB128);
 
         callUnittest!(tagion.betterC.wallet.KeyRecover);
+        callUnittest!(tagion.betterC.mobile.Recycle);
+        callUnittest!(tagion.betterC.mobile.WalletWrapperApi);
         printf("Passed\n");
         return 0;
     }
