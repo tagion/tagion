@@ -41,6 +41,14 @@ private {
 
 }
 
+immutable(Buffer) hash_null;
+shared static this() @trusted {
+    import tagion.crypto.SecureNet : StdHashNet;
+    import std.exception : assumeUnique;
+    auto _null = new ubyte[StdHashNet.HASH_SIZE];
+    hash_null = assumeUnique(_null);
+}
+
 /++
  + Gets the rim key from a buffer
  +

@@ -26,7 +26,7 @@ package alias check = Check!SecurityConsensusException;
 class StdHashNet : HashNet {
     import std.format;
 
-    protected enum HASH_SIZE = 32;
+    enum HASH_SIZE = 32;
     @nogc final uint hashSize() const pure nothrow {
         return HASH_SIZE;
     }

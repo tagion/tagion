@@ -9,6 +9,7 @@ import std.algorithm.iteration : map;
 import std.range;
 import std.array : array;
 
+import tagion.gossip.AddressBook;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.Types : Buffer, Pubkey;
@@ -45,14 +46,21 @@ do {
     // TODO: set also time?
 
     NetworkNameRecord nrc;
-    nrc.name = net.hashOf(nnc.toDoc);
-    nnc.record = net.hashOf(nrc.toDoc);
+    nrc.name = net.hashOf(nnc);
 
-    auto hr = HashRecord(net, nnc);
+    NodeAddress na;
+    // TODO: init NodeAddress
+
+    // Bind hashes
+    nrc.node = net.hashOf(na);
+    nnc.record = net.hashOf(nrc);
+
+    auto hr = HashLock(net, nnc);
 
     recorder.add(nnc);
     recorder.add(nrc);
     recorder.add(hr);
+    recorder.add(na);
 }
 
 mixin Main!(_main, "boot");
@@ -118,6 +126,15 @@ int _main(string[] args) {
     const net = new StdHashNet;
     auto factory = RecordFactory(net);
     auto recorder = factory.recorder;
+
+    void addGenesisEpoch(RecordFactory.Recorder recorder) {
+        import tagion.dart.DARTFile : hash_null;
+        EpochBlock b;
+        b.previous = hash_null;
+
+        recorder.add(b);
+    }
+    addGenesisEpoch(recorder);
 
     const onehot = initbills + (!nnc_name.empty);
 

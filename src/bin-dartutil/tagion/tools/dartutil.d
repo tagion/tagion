@@ -12,13 +12,13 @@ import std.typecons;
 
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
-//import tagion.dart.BlockFile;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.basic.Basic : tempfile;
 
 import tagion.communication.HiRPC;
 import tagion.dart.DARTSynchronization;
 import tagion.gossip.GossipNet;
+import tagion.gossip.AddressBook;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.hibon.Document;
@@ -32,11 +32,12 @@ import tagion.Keywords;
 import tagion.dart.Recorder;
 import tagion.script.StandardRecords;
 
-// import tagion.revision;
 import tagion.tools.Basic;
 
 pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
-void updateNetworkNameCard(const HashNet net, NetworkNameCard nnc, NetworkNameRecord nrc, HashRecord hr, RecordFactory.Recorder recorder) {
+void updateAddNetworkNameCard(const HashNet net, NetworkNameCard nnc, NetworkNameRecord nrc, RecordFactory.Recorder recorder) {
+    recorder.remove(HashLock(net, nnc));
+
     // Create new NNC, NRC and signature
     NetworkNameCard nnc_new;
     nnc_new.name = nnc.name;
@@ -47,20 +48,28 @@ void updateNetworkNameCard(const HashNet net, NetworkNameCard nnc, NetworkNameRe
     nrc_new.name = net.hashOf(nnc_new.toDoc);
     nrc_new.previous = net.hashOf(nrc.toDoc);
     nrc_new.index = nrc.index + 1;
+    nrc_new.node = nrc.node; // update NodeAddress?
 
     nnc_new.record = net.hashOf(nrc_new.toDoc);
 
-    auto hr_new = HashRecord(net, nnc_new);
+    auto hr_new = HashLock(net, nnc_new);
 
     recorder.add(nnc_new);
     recorder.add(nrc_new);
     recorder.add(hr_new);
 }
 
-void hashRecorderRemove(const RecordFactory.Recorder src, RecordFactory.Recorder dest) {
+void updateRemoveNetworkNameCard(const HashNet net, const RecordFactory.Recorder src, RecordFactory.Recorder dest)
+in {
+    assert(dest !is null);
+} 
+do {
     auto hash_filter = src[].filter!(a => a.isAdd && a.filed.hasHashKey);
-    dest = factory.recorder(hash_filter);
-    auto hash_locks = hash_filter.map!(a => HashLock(a.filed)); // dest.insert(hash_locks)
+    dest.insert(hash_filter, Archive.Type.REMOVE);
+
+    // WRONG: removing NEW lock instead of OLD
+    // auto hash_locks = hash_filter.map!(a => HashLock(net, a.filed));
+    // dest.insert(hash_locks, Archive.Type.REMOVE);
 }
 
 mixin Main!_main;
@@ -85,6 +94,7 @@ int _main(string[] args) {
     bool dartrpc = false;
     bool generate = false;
     bool eye;
+    bool verbose;
 
     ubyte ringWidth = 4;
     int rings = 4;
@@ -115,6 +125,7 @@ int _main(string[] args) {
             "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
             "nncupdate", "Update existing NetworkNameCard with given name", &nncupdatename,
             "nncread", "Read NetworkNameCard with given name", &nncreadname,
+            "verbose|v", "Print output to console", &verbose,
     );
 
     dartread = !dartread_args.empty;
@@ -162,15 +173,7 @@ int _main(string[] args) {
     }
 
     const net = createNet;
-    // else net = new StdSecureNet(crypt);
     const hirpc = HiRPC(net);
-    // DART db;
-
-    // void writeResponse(Buffer data) {
-    //     // if(dump) db.dump(true);
-    //     writeln("OUTPUT: ", outputfilename);
-    //     fwrite(outputfilename, data);
-    // }
 
     if (initialize) {
         if (dartfilename.length == 0) {
@@ -228,9 +231,20 @@ int _main(string[] args) {
     }
 
     bool verifyNNCSignature(NetworkNameCard nnc, HiRPC hirpc, DART db) {
-        auto check_hr = HashRecord(net, nnc);
-        auto found_hr = readRecord!HashRecord(net.hashOf(check_hr.toDoc), hirpc, db);
+        auto check_hr = HashLock(net, nnc);
+        auto found_hr = readRecord!HashLock(net.hashOf(check_hr.toDoc), hirpc, db);
         return !found_hr.isNull;
+    }
+
+    void toConsole(string format, string doc, bool indent_line = false, string alternative_text = "") {
+        if (verbose) {
+            if (indent_line)
+                writeln;
+            writefln(format, doc);
+        }
+        else if (!alternative_text.empty) {
+            writeln(alternative_text);
+        }
     }
 
     const onehot = dartrpc + dartread + dartrim + dartmodify + nncupdate + nncread;
@@ -256,51 +270,17 @@ int _main(string[] args) {
         }
     }
     else if (dartread) {
-        // if (!inputfilename.exists) {
-        //     writeln("No input file");
-        // }
-        // else {
-            auto fingerprints = dartread_args.map!(hash => decode(hash)).array;
+        auto fingerprints = dartread_args.map!(hash => decode(hash)).array;
 
-            const sender = DART.dartRead(fingerprints, hirpc);
-            auto receiver = hirpc.receive(sender.toDoc);
-            auto result = db(receiver, false);
-            auto tosend = hirpc.toHiBON(result);
-            const tosendResult = tosend.method.params;
-            if (dump)
-                db.dump(true);
-            outputfilename.fwrite(tosendResult);
-            writeln("Result: %s", result.message.toJSON.toPrettyString);
+        const sender = DART.dartRead(fingerprints, hirpc);
+        auto receiver = hirpc.receive(sender.toDoc);
+        auto result = db(receiver, false);
+        auto tosend = hirpc.toHiBON(result);
+        const tosendResult = tosend.method.params;
 
-            // auto inputBuffer = cast(immutable(ubyte)[])fread(inputfilename);
-            // auto params=new HiBON;
-            // auto params_fingerprints=new HiBON;
-            // auto input_doc = Document(inputBuffer);
-            // if(input_doc.isInorder){
-            //     auto fps = (input_doc[DARTFile.Params.branches].get!Document)[DARTFile.Params.fingerprints].get!Document;
-            //     auto i = 0;
-            //     foreach(fp; fps[]){
-            //         params_fingerprints[i] = fp.get!Buffer;
-            //         i++;
-            //     }
-            // }else{
-            // writeln(3);
-            //     foreach(i, b; (cast(string)inputBuffer).split("\n")) {
-            //         auto fp = decode(b);
-            //         if ( b.length !is 0 ) {
-            //             params_fingerprints[i]=fp;
-            //         }
-            //     }
-            // }
-            // params[DARTFile.Params.fingerprints]=params_fingerprints;
-            // auto sended = hirpc.dartRead(params).toHiBON(net).serialize;
-            // auto doc = Document(sended);
-            // auto received = hirpc.receive(doc);
-            // auto result = db(received);
-            // auto tosend = hirpc.toHiBON(result);
-            // auto tosendResult = (tosend[Keywords.message].get!Document)[Keywords.result].get!Document;
-            // writeResponse(tosendResult.serialize);
-        // }
+        outputfilename.fwrite(tosendResult);
+
+        toConsole("Result: %s", result.message.toPretty);
     }
     else if (dartrim) {
         // Buffer root_rims;
@@ -327,11 +307,8 @@ int _main(string[] args) {
         // writeResponse(tosendResult.serialize);
     }
     else if (dartmodify) {
-//        auto inputBuffer = cast(immutable(ubyte)[]) fread(inputfilename);
-
         const doc = inputfilename.fread;
         auto factory = RecordFactory(net);
-//        const recorder = inputfilename.fread!(RecordFactory.Recorder)(factory.net);
         auto recorder = factory.recorder(doc);
         auto sended = DART.dartModify(recorder, hirpc);
         auto received = hirpc.receive(sended);
@@ -349,7 +326,7 @@ int _main(string[] args) {
         }
         else {
             auto nnc = nnc_read.get;
-            writefln("NetworkNameCard: %s", nnc.toDoc.toJSON.toPrettyString);
+            toConsole("NetworkNameCard: %s", nnc.toDoc.toPretty, true, format("\nFound NetworkNameCard '%s'", nncreadname));
 
             writeln;
             if (verifyNNCSignature(nnc, hirpc, db))
@@ -357,14 +334,24 @@ int _main(string[] args) {
             else {
                 writefln("WARNING: Signature for NetworkNameCard '%s' is not verified!", nnc.name);
             }
-            writeln;
 
             auto nrc_read = readRecord!NetworkNameRecord(nnc.record, hirpc, db);
             if (nrc_read.isNull) {
+                writeln;
                 writefln("No associated NetworkNameRecord (hash='%s') with NetworkNameCard '%s' in DART", nnc.record.cutHex, nnc.name);
             }
             else {
-                writefln("NetworkNameRecord: %s", nrc_read.get.toDoc.toJSON.toPrettyString);
+                auto nrc = nrc_read.get;
+                toConsole("NetworkNameRecord: %s", nrc.toDoc.toPretty, true);
+
+                auto node_addr_read = readRecord!NodeAddress(nrc.node, hirpc, db);
+                if (node_addr_read.isNull) {
+                    writeln;
+                    writefln("No associated NodeAddress (hash='%s') with NetworkNameCard '%s' in DART", nrc.node.cutHex, nnc.name);
+                }
+                else {
+                    toConsole("NodeAddress: %s", node_addr_read.get.toDoc.toPretty, true);
+                }
             }
         }
     }
@@ -382,17 +369,20 @@ int _main(string[] args) {
             else {
                 auto nrc = nrc_read.get;
 
-                auto check_hr = HashRecord(net, nnc);
-                auto found_hr = readRecord!HashRecord(net.hashOf(check_hr.toDoc), hirpc, db);
+                auto check_hr = HashLock(net, nnc);
+                auto found_hr = readRecord!HashLock(net.hashOf(check_hr.toDoc), hirpc, db);
                 if (found_hr.isNull) {
                     writefln("WARNING: Signature for NetworkNameCard '%s' is not verified! Unable to update record\nAbort", nnc.name);
                 }
                 else {
-                    auto recorder = factory.recorder; 
-                    updateNetworkNameCard(net, nnc, nrc, found_hr.get, recorder);
-                    
-                    writeToDB(update_recorders.remove, hirpc, db);
-                    writeToDB(update_recorders.add, hirpc, db);
+                    auto factory = RecordFactory(net);
+                    auto recorder_add = factory.recorder; 
+                    updateAddNetworkNameCard(net, nnc, nrc, recorder_add);
+                    auto recorder_remove = factory.recorder;
+                    updateRemoveNetworkNameCard(net, recorder_add, recorder_remove);
+
+                    db.modify(recorder_remove);
+                    db.modify(recorder_add);
 
                     writefln("Updated NetworkNameCard with name '%s'", nnc.name);
 
