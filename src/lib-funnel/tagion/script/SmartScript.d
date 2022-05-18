@@ -184,5 +184,6 @@ unittest {
     writefln("dart-file %s", filename);
     dart_db.dump(true);
 
+    /// Create a signaned smartcontract
 
 }
