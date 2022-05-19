@@ -27,7 +27,7 @@ import tagion.basic.Basic : nameOf;
 import tagion.logger.Logger;
 import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
-//import tagion.hashgraph.HashGraphBasic : Wavefront;
+import tagion.hashgraph.HashGraphBasic : EventPackage;
 
 //import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
@@ -192,10 +192,14 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             transcript_tid.send(params.serialize);
         }
 
+        void register_epack(immutable(EventPackage*) epack) @safe {
+            log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
+        }
+
         import tagion.utils.Miscellaneous;
 
         log.trace("Hashgraph pubkey=%s", net.pubkey.cutHex);
-        hashgraph = new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, &receive_epoch);
+        hashgraph = new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, &receive_epoch, &register_epack);
         // hashgraph.print_flag = true;
         hashgraph.scrap_depth = opts.scrap_depth;
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
@@ -375,13 +379,13 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
 
         alias PayloadQueue = Queue!Document;
         PayloadQueue payload_queue = new PayloadQueue();
+
         void receive_payload(Document pload, bool flag) { //TODO: remove flag. Maybe try switch(doc.type)
             log.trace("payload.size=%d", pload.size);
             payload_queue.write(pload);
         }
 
         const(Document) payload() @safe {
-            // log("Select payload: %s", payload_queue.empty);
             if (!hashgraph.active || payload_queue.empty) {
                 return Document();
             }
@@ -410,8 +414,13 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             log("\n*\n*\n*\n******* receive %s %s", opts.node_name,
                     doc.data.length);
             const receiver = HiRPC.Receiver(doc);
-            hashgraph.wavefront(receiver, gossip_net.time,
-                    (const(HiRPC.Sender) return_wavefront) @safe { gossip_net.send(receiver.pubkey, return_wavefront); }, &payload);
+            hashgraph.wavefront(
+                receiver,
+                gossip_net.time,
+                (const(HiRPC.Sender) return_wavefront) @safe {
+                    gossip_net.send(receiver.pubkey, return_wavefront);
+                },
+                &payload);
         }
 
         pragma(msg, "fixme(cbr): Random should be unpredictable");
