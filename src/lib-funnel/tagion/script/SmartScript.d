@@ -10,7 +10,7 @@ import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCode, Check;
 import tagion.basic.TagionExceptions : TagionException;
 import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey;
-import tagion.basic.Types : Pubkey, Buffer;
+import tagion.basic.Types : Pubkey, Buffer, Signature;
 import tagion.script.TagionCurrency;
 import tagion.dart.Recorder : RecordFactory;
 
@@ -199,6 +199,30 @@ unittest {
     dart_db.modify(alices_bills, Add);
     writefln("dart-file %s", filename);
     dart_db.dump(true);
+
+    SmartScript smart_script;
+    SignedContract signed_contract;
+
+    // // why not alices_bills?
+    // smart_script.inputs = factory.recorder(bills);
+
+    // look into SecureInterfasceNet
+    const bills_fingerprint = net.hashOf(alices_bills.toDoc);
+    signed_contract.contract.input ~= bills_fingerprint;
+    // use new.sugn instead  [alice.sign(dsfsd)]
+    signed_contract.signs ~= cast(Signature)(bills[0].owner);
+
+    assert(bob.verify(bills[0]) == false);
+    assert(bob.verify(bills[0]) == true);
+
+
+    //add static function for unittests for checking similar stuff
+
+
+    // // signed_contract.inputs ~= bills_fingerprint;
+    // smart_script.signed_contract = signed_contract;
+
+
 
     /// Create a signaned smartcontract
 
