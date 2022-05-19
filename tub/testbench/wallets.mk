@@ -16,13 +16,6 @@ WALLETFILES+=device.hibon
 # $1:name $2:testbench-path
 define CREATE_WALLET
 ${eval
-# $(TEST_DIR)/.wallet$1: PINCODE=$2
-# $(TEST_DIR)/.wallet$1: AMOUNT=$4
-# $(TEST_DIR)/.wallet$1: NAME=invoice_$3
-# $(TEST_DIR)/.wallet$1: INVOICE_FILE=$$(TEST_DIR)/invoice_$3.hibon
-
-# WALLETS+=$$(TEST_DIR)/wallet$1
-# INVOICES+=$$(TEST_DIR)/invoice_$3.hibon
 TESTBENCH_$1=$${abspath $2/$1}
 BASEWALLET_$1=$$(FUND)/$1
 
@@ -120,7 +113,7 @@ clean-wallets: clean-$1
 remove-$1: clean-$1
 	$$(PRECMD)
 	$${call log.header, $$@ :: remove}
-	$$(RM) $$(STDINWALLET_$1)
+	$$(RM) $$(BASEWALLETFILES_$1)
 	$${call log.close}
 
 remove-wallets: remove-$1
