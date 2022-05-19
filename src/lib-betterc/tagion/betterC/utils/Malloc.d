@@ -200,8 +200,7 @@ unittest {
     _avail +=ptr3.sizeOf;
     // dump;
 
-    // writefln("Before free avail=%d ptr3.sizeOf=%d", avail, ptr3.sizeOf)
-        ;
+    // writefln("Before free avail=%d ptr3.sizeOf=%d", avail, ptr3.sizeOf);
     free(ptr3);
     assert(isFree(ptr3));
     // writefln("%s", *free_block_list_head);
