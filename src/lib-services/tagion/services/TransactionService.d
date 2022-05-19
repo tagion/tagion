@@ -31,9 +31,6 @@ import tagion.dart.Recorder : RecordFactory;
     this(string passphrase) {
         super();
         generateKeyPair(passphrase);
-        // import tagion.utils.Miscellaneous;
-        // import tagion.Base;
-        // writefln("public=%s", (cast(Buffer)pubkey).toHexString);
     }
 }
 
@@ -167,28 +164,15 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                             const inputs = signed_contract.contract.input;
                             requestInputs(inputs, ssl_relay.id);
                             yield;
-                            //() @trusted => Fiber.yield; // Expect an Recorder resonse for the DART service
+                            //() @ => Fiber.yield; // Expect an Recorder resonse for the DART service
                             const response = ssl_relay.response;
                             const received = internal_hirpc.receive(Document(response));
                             //log("%s", Document(response).toJSON);
-                            const foreign_recorder = rec_factory.recorder(
+                            immutable foreign_recorder = rec_factory.uniqueRecorder(
                                     received.response.result);
                             //return recorder;
                             log("constructed");
-
-                            //import tagion.script.StandardRecords : StandardBill;
-
-                            // writefln("input loaded %d", foreign_recoder.archive);
-                            // PayContract payment;
-
-                            //signed_contract.input.bills = [];
-                            // foreach (archive; foreign_recorder[]) {
-                            //     auto std_bill = StandardBill(archive.filed);
-                            //     payment.bills ~= std_bill;
-                            // }
-                            // signed_contract.input = payment.toDoc;
-                            // Send the contract as payload to the HashGraph
-                            // The data inside HashGraph is pure payload not an HiRPC
+                            //if (SmartSript.check(hirpc.net, method_name, signed_contract, foreign_recorder)) {
                             smartscript.run(hirpc.net, method_name, signed_contract, foreign_recorder);
                             //                        SmartScript.run(
                             //log("checked");
