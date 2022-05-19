@@ -258,8 +258,8 @@ class SmartScriptException : ConsensusException {
             SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT: "Smart script fingerprint does not match the input",
             SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY      : "Smart script one of the input has a wrog signature",
             SMARTSCRIPT_NOT_ENOUGH_MONEY                : "Smart script not enough money in the account",
-            SMARTSCRIPT_CAUGHT_TAGIONEXCEPTION           : "Invalid smart script caught a Tagionexception",
-            SMARTSCRIPT_CAUGHT_EXCEPTION                 : "Invalid smart script caught an Exception"
+            SMARTSCRIPT_CAUGHT_TAGIONEXCEPTION          : "Invalid smart script caught a Tagionexception",
+            SMARTSCRIPT_CAUGHT_EXCEPTION                : "Invalid smart script caught an Exception"
 
             ];
         // dfmt on

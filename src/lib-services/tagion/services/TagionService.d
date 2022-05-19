@@ -192,7 +192,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             transcript_tid.send(params.serialize);
         }
 
-import tagion.utils.Miscellaneous;
+        import tagion.utils.Miscellaneous;
 
         log.trace("Hashgraph pubkey=%s", net.pubkey.cutHex);
         hashgraph = new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, &receive_epoch);
@@ -213,8 +213,6 @@ import tagion.utils.Miscellaneous;
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
         assert(receiveOnly!DiscoveryState is DiscoveryState.READY);
 
-//        receiveOnly!DiscoveryState;
-//        receiveOnly!ActiveNodeAddressBook; //Control is Control.LIVE);
             dart_sync_tid = spawn(
                 &dartSynchronizeServiceTask!StdSecureNet,
                 opts,

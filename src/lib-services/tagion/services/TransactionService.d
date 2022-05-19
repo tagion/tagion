@@ -89,8 +89,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             bool agent(SSLFiber ssl_relay) {
                 import tagion.hibon.HiBONJSON;
 
-                //Document doc;
-                @trusted const(Document) receivessl() {
+                @trusted const(Document) receivessl() nothrow {
                     try {
                         immutable buffer = ssl_relay.receive;
                         const result = Document(buffer);
@@ -116,10 +115,6 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                     const hirpc_received = hirpc.receive(doc);
                     respone_id = hirpc_received.method.id;
                     {
-                        //import tagion.script.ScriptBuilder;
-                        //import tagion.script.ScriptParser;
-                        //import tagion.script.Script;
-
                         void yield() @trusted {
                             Fiber.yield;
                         }
@@ -151,48 +146,28 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                             break;
 
                         default:
-                            //     return true;
-                            // }
-                            // }
-                            // if (hirpc_received.supports!ScriptExecuter) {
-                            //const signed_contract = SignedContract(params);
-                            //                            if (signed_contract.valid) {
-                            //
-                            // Load inputs to the contract from the DART
-                            //
-
                             const inputs = signed_contract.contract.input;
                             requestInputs(inputs, ssl_relay.id);
                             yield;
-                            //() @ => Fiber.yield; // Expect an Recorder resonse for the DART service
+
                             const response = ssl_relay.response;
                             const received = internal_hirpc.receive(Document(response));
-                            //log("%s", Document(response).toJSON);
                             immutable foreign_recorder = rec_factory.uniqueRecorder(
                                     received.response.result);
-                            //return recorder;
                             log("constructed");
-                            //if (SmartSript.check(hirpc.net, method_name, signed_contract, foreign_recorder)) {
-                            smartscript.run(hirpc.net, method_name, signed_contract, foreign_recorder);
-                            //                        SmartScript.run(
-                            //log("checked");
-                            //                        const payload = Document(signed_contract.toHiBON.serialize);
-                            version (node) {
-                                immutable data = signed_contract.toHiBON.serialize;
-                                const json_doc = Document(data);
-                                auto json = json_doc.toJSON;
-
-                                //log("Contract:\n%s", json.toPrettyString);
+                            auto fail_code = SmartScript.check(hirpc.net, signed_contract, foreign_recorder);
+                            if (!fail_code) {
+                                log("before send payload");
+                                sendPayload(signed_contract.toDoc);
+                                const empty_response = internal_hirpc.result(hirpc_received, Document());
+                                //                            empty_params);
+                                log("before send");
+                                ssl_relay.send(empty_response.toDoc.serialize);
                             }
-                            log("before send payload");
-                            sendPayload(signed_contract.toDoc);
-                            // pragma(msg, "fixme(cbr): This code could be reduced just (empty_doc=Document())");
-                            // auto empty_params = new HiBON;
-                            const empty_response = internal_hirpc.result(hirpc_received, Document());
-                            //                            empty_params);
-                            log("before send");
-                            ssl_relay.send(empty_response.toDoc.serialize);
-                            //  }
+                            if (fail_code) {
+                                import tagion.basic.ConsensusExceptions : consensus_error_messages;
+                                const error_response = internal_hirpc.error(hirpc_received, consensus_error_messages[fail_code]);
+                            }
                         }
                     }
                 }
@@ -200,24 +175,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                     log.error("Bad contract: %s", e.msg);
                     const bad_response = hirpc.error(respone_id, e.msg, 1);
                     ssl_relay.send(bad_response.toDoc.serialize);
-                    return true;
                 }
-
-                // version(none)
-                // {
-                //     auto response = new HiBON;
-                //     response["done"] = true;
-                //     const hirpc_send = hirpc.result(hirpc_received, response);
-                //     immutable send_buffer = hirpc_send.toDoc.serialize;
-                //     ssl_relay.send(send_buffer);
-                // }
-                //}
-                //         return true;
-                //             break;
-                // }
-                //         else {
-                //     }
-
                 return true;
             }
         }
