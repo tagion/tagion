@@ -149,102 +149,103 @@ unittest {
             writefln("%s : %2d 0x%02x", block, block.size, block.size);
         }
     }
-    writeln("------------- ---------------");
+    // writeln("------------- ---------------");
     const mem_size = FreeBlock.sizeof*32;
     auto mem = new ubyte[mem_size];
     set_memory(mem.ptr, mem_size);
 
-    writefln("%s", *free_block_list_head);
-    writefln("free_block_list_head.size=%s", free_block_list_head.size);
+    // writefln("%s", *free_block_list_head);
+    // writefln("free_block_list_head.size=%s", free_block_list_head.size);
     auto _avail = avail;
-    writefln("%s", avail);
+    // writefln("%s", avail);
 
     auto ptr1 = malloc(33);
     assert(!isFree(ptr1));
-    writefln("%s", *free_block_list_head);
-    writefln("ptr1=%s %s", ptr1, ptr1.sizeOf);
-    writefln("avail=%d _avail=%d %d %d", avail, _avail, ptr1.sizeOf,overhead);
+    // writefln("%s", *free_block_list_head);
+    // writefln("ptr1=%s %s", ptr1, ptr1.sizeOf);
+    // writefln("avail=%d _avail=%d %d %d", avail, _avail, ptr1.sizeOf,overhead);
     _avail -=ptr1.sizeOf+overhead;
 
     assert(avail == _avail);
 
 
-    writefln("%s", *free_block_list_head);
+    // writefln("%s", *free_block_list_head);
     auto ptr2 = malloc(100);
     assert(!isFree(ptr2));
-    writefln("ptr2=%s %s", ptr2, ptr2.sizeOf);
-    writefln("%s", *free_block_list_head);
+    // writefln("ptr2=%s %s", ptr2, ptr2.sizeOf);
+    // writefln("%s", *free_block_list_head);
     _avail -=ptr2.sizeOf+overhead;
 
     assert(avail == _avail);
 
-    writefln("%s", *free_block_list_head);
-    writefln("avail=%s", avail);
+    // writefln("%s", *free_block_list_head);
+    // writefln("avail=%s", avail);
     auto ptr3 = malloc(48);
     assert(!isFree(ptr3));
-    writefln("ptr3=%s %s", ptr3, ptr3.sizeOf);
-    writefln("%s", *free_block_list_head);
-    writefln("%s", avail);
+    // writefln("ptr3=%s %s", ptr3, ptr3.sizeOf);
+    // writefln("%s", *free_block_list_head);
+    // writefln("%s", avail);
     _avail -=ptr3.sizeOf+overhead;
 
     assert(avail == _avail);
 
     auto ptr4 = malloc(48);
     assert(!isFree(ptr4));
-    writefln("ptr3=%s %s", ptr3, ptr3.sizeOf);
-    writefln("%s", *free_block_list_head);
-    writefln("%s", avail);
+    // writefln("ptr3=%s %s", ptr3, ptr3.sizeOf);
+    // writefln("%s", *free_block_list_head);
+    // writefln("%s", avail);
     _avail -=ptr4.sizeOf+overhead;
 
     assert(avail == _avail);
     _avail +=ptr3.sizeOf;
-    dump;
+    // dump;
 
-    writefln("Before free avail=%d ptr3.sizeOf=%d", avail, ptr3.sizeOf);
+    // writefln("Before free avail=%d ptr3.sizeOf=%d", avail, ptr3.sizeOf)
+        ;
     free(ptr3);
     assert(isFree(ptr3));
-    writefln("%s", *free_block_list_head);
-    writefln("%s", avail);
-    writefln("avail=%d _avail=%d", avail, _avail);
+    // writefln("%s", *free_block_list_head);
+    // writefln("%s", avail);
+    // writefln("avail=%d _avail=%d", avail, _avail);
     assert(avail == _avail);
-    dump;
+    // dump;
 
     auto ptr5=malloc(58);
     assert(!isFree(ptr5));
     _avail -=ptr5.sizeOf+overhead;
-    writefln("ptr5 avail=%d _avail=%d", avail, _avail);
-    dump;
+    // writefln("ptr5 avail=%d _avail=%d", avail, _avail);
+    // dump;
     assert(avail == _avail);
 
     auto ptr6=malloc(70);
     assert(!ptr6.isFree);
     _avail -=ptr6.sizeOf+overhead;
-    writefln("ptr6 avail=%d _avail=%d", avail, _avail);
+    // writefln("ptr6 avail=%d _avail=%d", avail, _avail);
     assert(avail == _avail);
     _avail +=ptr5.sizeOf;
 
     free(ptr5);
     assert(ptr5.isFree);
-    writefln("avail=%d _avail=%d", avail, _avail);
+    // writefln("avail=%d _avail=%d", avail, _avail);
     assert(avail == _avail);
 // foreach(i;0..4) {
     //     malloc(20);
     // }
 
-    writefln("ptr5 %s ", ptr5);
-    dump;
+    // writefln("ptr5 %s ", ptr5);
+    // dump;
     auto ptr7=malloc(52);
     assert(!ptr7.isFree);
     _avail -=ptr7.sizeOf+overhead;
 
-    writefln("avail=%d _avail=%d", avail, _avail);
+    // writefln("avail=%d _avail=%d", avail, _avail);
 
-    dump;
+    // dump;
     auto ptr8=malloc(30);
     _avail -=ptr8.sizeOf+overhead;
-    writefln("avail=%d _avail=%d", avail, _avail);
+    // writefln("avail=%d _avail=%d", avail, _avail);
 
-    dump;
+    // dump;
 
     // Reuse ptr2
 
@@ -266,12 +267,12 @@ unittest { /// calloc
     array_ptr1[0]=-42;
     array_ptr1[63]=42;
 
-    writefln("%d", ptr1.sizeOf);
+    // writefln("%d", ptr1.sizeOf);
     assert(ptr1.sizeOf == 80);
 
     auto ptr2 = realloc(ptr1, 100);
-    writefln("%d", ptr2.sizeOf);
-    writefln("%s", isFree(ptr1));
+    // writefln("%d", ptr2.sizeOf);
+    // writefln("%s", isFree(ptr1));
     auto array_ptr2=cast(byte*)ptr2;
 
     assert(ptr1.isFree);
