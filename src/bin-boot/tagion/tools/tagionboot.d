@@ -9,12 +9,14 @@ import std.algorithm.iteration : map;
 import std.range;
 import std.array : array;
 
+import tagion.gossip.AddressBook;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.Types : Buffer, Pubkey;
 import tagion.basic.Basic : basename;
 import tagion.script.StandardRecords;
-import tagion.crypto.SecureNet : StdHashNet;
+import tagion.crypto.SecureNet;
+import tagion.crypto.SecureInterfaceNet;
 import tagion.script.StandardRecords : Invoice;
 import tagion.script.TagionCurrency;
 import tagion.wallet.SecureWallet;
@@ -32,6 +34,34 @@ enum REVNO = 0;
 enum HASH = "xxx";
 
 import tagion.tools.Basic;
+
+pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
+void createNetworkNameCard(const HashNet net, string name, RecordFactory.Recorder recorder)
+in {
+    assert(recorder);
+}
+do {
+    NetworkNameCard nnc;
+    nnc.name = name;
+    // TODO: set also time?
+
+    NetworkNameRecord nrc;
+    nrc.name = net.hashOf(nnc);
+
+    NodeAddress na;
+    // TODO: init NodeAddress
+
+    // Bind hashes
+    nrc.node = net.hashOf(na);
+    nnc.record = net.hashOf(nrc);
+
+    auto hr = HashLock(net, nnc);
+
+    recorder.add(nnc);
+    recorder.add(nrc);
+    recorder.add(hr);
+    recorder.add(na);
+}
 
 mixin Main!(_main, "boot");
 
@@ -56,7 +86,7 @@ int _main(string[] args) {
             // "value|V", format("Bill value : default: %d", value), &value,
             // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
             "initbills|b", "Testing mode", &initbills,
-            "nnc", "Initialize NNC and NRC with given name", &nnc_name,
+            "nnc", "Initialize NetworkNameCard with given name", &nnc_name,
     );
 
     if (version_switch) {
@@ -97,6 +127,15 @@ int _main(string[] args) {
     auto factory = RecordFactory(net);
     auto recorder = factory.recorder;
 
+    void addGenesisEpoch(RecordFactory.Recorder recorder) {
+        import tagion.dart.DARTFile : hash_null;
+        EpochBlock b;
+        b.previous = hash_null;
+
+        recorder.add(b);
+    }
+    addGenesisEpoch(recorder);
+
     const onehot = initbills + (!nnc_name.empty);
 
     if (onehot > 1) {
@@ -105,22 +144,11 @@ int _main(string[] args) {
     }
 
     if (!nnc_name.empty) {
-        writeln("TEST MODE:\nInitialize standart records");
-
-        NetworkNameCard nnc;
-        nnc.name = nnc_name;
-        // TODO: set also time?
-
-        NetworkNameRecord nrc;
-        nrc.name = net.hashOf(nnc.toDoc);
-        nnc.record = net.hashOf(nrc.toDoc);
-
-        recorder.add(nnc);
-        recorder.add(nrc);
+        writeln("TEST MODE: Initialize standart records");
+        createNetworkNameCard(net, nnc_name, recorder);
     }
     else if (initbills) {
-        writeln("TEST MODE:\nInitialize dummy bills");
-        import tagion.crypto.SecureNet;
+        writeln("TEST MODE: Initialize dummy bills");
         alias StdSecureWallet = SecureWallet!StdSecureNet;
 
         auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN);

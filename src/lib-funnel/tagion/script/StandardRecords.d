@@ -59,7 +59,7 @@ enum OwnerKey = "$Y";
                 import tagion.script.ScriptException : check;
                 import tagion.hibon.HiBONRecord : isHiBONRecord, hasHashKey;
                 this(const(HashNet) net, const(Document) doc) {
-                    check(doc.hasHashKey, "Document should have a has key");
+                    check(doc.hasHashKey, "Document should have a hash key");
                     lock = net.rawCalcHash(doc.serialize);
                 }
                 this(T)(const(HashNet) net, ref const(T) h) if (isHiBONRecord!T) {
@@ -117,6 +117,7 @@ enum OwnerKey = "$Y";
 
     }
 
+    version (none)
     @RecordType("NNR") struct NetworkNodeRecord {
         enum State {
             PROSPECT,
@@ -144,10 +145,10 @@ enum OwnerKey = "$Y";
     }
 
     @RecordType("$epoch0") struct EpochBlock {
-        @Label("$epoch") uint epoch; /// Epoch number
+        @Label("$epoch") int epoch; /// Epoch number
         @Label("$prev") Buffer previous; /// Hashpoint to the previous epoch block
         @Label("$recorder") Buffer recoder; /// Fingerprint of the recorder
-        @Label("$global") Globals global; /// Gloal nerwork paremeters
+        @Label("$global") Buffer global; /// Gloal nerwork paremeters
         @Label("$actives") ActiveNode[] actives; /// List of active nodes Sorted by the $node
         mixin HiBONRecord;
     }
@@ -160,10 +161,6 @@ enum OwnerKey = "$Y";
         }
 
         mixin HiBONRecord;
-    }
-
-    struct GenesisEpoch {
-        //    @Label("$
     }
 
     @RecordType("$master0") struct MasterGlobals {
@@ -216,7 +213,7 @@ enum OwnerKey = "$Y";
             StandardBill,
             NetworkNameCard,
             NetworkNameRecord,
-            NetworkNodeRecord,
+            // NetworkNodeRecord,
             Contract,
             SignedContract
     );

@@ -221,6 +221,7 @@ shared static this() {
 }
 
 @safe
+@RecordType("NNR")
 struct NodeAddress {
     enum tcp_token = "/tcp/";
     enum p2p_token = "/p2p/";

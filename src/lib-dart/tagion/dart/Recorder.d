@@ -131,6 +131,10 @@ class RecordFactory {
             return archives[];
         }
 
+        Archives.Range opSlice() pure nothrow {
+            return archives[];
+        }
+
         void removeOutOfRange(ushort from, ushort to) { //TODO: write unit tests
             if (from == to)
                 return;
@@ -419,13 +423,13 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
         return get_type(this) is Type.REMOVE;
     }
 
-    // final bool isRemove() pure const nothrow {
-    //     return type is Type.REMOVE;
-    // }
+    final bool isRemove() pure const nothrow {
+        return type is Type.REMOVE;
+    }
 
-    // final bool isAdd() pure const nothrow {
-    //     return type is Type.ADD;
-    // }
+    final bool isAdd() pure const nothrow {
+        return type is Type.ADD;
+    }
 
     final bool isStub() pure const nothrow {
         return filed.empty;
