@@ -401,10 +401,4 @@ string[] parse_string(const char* str, const uint len)
 
         return cast(immutable)result;
     }
-
-unittest {
-    start_rt();
-    assert(recyclerDoc.exists(1));
-}
-
 // }
