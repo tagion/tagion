@@ -268,10 +268,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             p2pnode.closeListener(opts.transaction.protocol_id);
         }
         scope (exit) {
-            log("!!!==========!!!!!! Existing %s", opts.node_name);
-
             if (transcript_tid !is transcript_tid.init) {
-                log("Send stop to %s", opts.transcript.task_name);
                 transcript_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
                     log("Scripting api end!!");
@@ -279,7 +276,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             }
 
             if (discovery_tid !is Tid.init) {
-                log("Send stop to %s", opts.discovery.task_name);
                 discovery_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
                     log("Discovery service stoped");
@@ -287,15 +283,12 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             }
 
             if (dart_sync_tid !is Tid.init) {
-                log("Send stop to %s", opts.dart.sync.task_name);
                 dart_sync_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
                     log("DART synchronization service stoped");
                 }
             }
-            log("DART TID: %s", dart_tid);
             if (dart_tid !is Tid.init) {
-                log("Send stop to %s", opts.dart.task_name);
                 dart_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
                     log("DART service stoped");
@@ -303,61 +296,37 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             }
 
             if (transaction_socket_tid !is transaction_socket_tid.init) {
-                log("send stop to %s", opts.transaction.task_name);
                 transaction_socket_tid.prioritySend(Control.STOP);
-                auto control = receiveOnly!Control;
-                log("Control %s", control);
-                if (control is Control.END) {
+                if (receiveOnly!Control is Control.END) {
                     log("Closed transaction");
                 }
             }
 
             if (monitor_socket_tid !is monitor_socket_tid.init) {
-                log("send stop to %s", opts.monitor.task_name);
-                //            try {
                 monitor_socket_tid.prioritySend(Control.STOP);
-
-                receive((Control ctrl) {
-                    if (ctrl is Control.END) {
-                        log("Closed monitor");
-                    }
-                }, (immutable Exception e) { ownerTid.prioritySend(e); });
+                if (receiveOnly!Control is Control.END) {
+                    log("Closed monitor");
+                }
             }
-
-            log("End");
             ownerTid.prioritySend(Control.END);
         }
 
         log.trace("Before startinf monitor and transaction addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
-//        try {
-            monitor_socket_tid = spawn(
-                &monitorServiceTask,
-                opts);
-            //stderr.writefln("@@@@ Wait for monitor %s", opts.node_name,);
 
-            if (receiveOnly!Control is Control.LIVE) {
-                log("Monitor started");
-            }
-            transaction_socket_tid = spawn(
-                &transactionServiceTask,
-                opts);
-            if (receiveOnly!Control is Control.LIVE) {
-                log("Transaction started port %d", opts.transaction.service.port);
-            }
-            else {
-                log("bad command");
-            }
-        // }
-        // catch (Exception e) {
-        //     log("ERROR: %s", e.msg);
-        //     force_stop = true;
-        // }
-        // if (force_stop)
-        //     return;
+        monitor_socket_tid = spawn(
+            &monitorServiceTask,
+            opts);
+        assert(receiveOnly!Control is Control.LIVE);
+
         transcript_tid = spawn(
             &transcriptServiceTask,
             opts.transcript.task_name,
             opts.dart.sync.task_name);
+        assert(receiveOnly!Control is Control.LIVE);
+
+        transaction_socket_tid = spawn(
+            &transactionServiceTask,
+            opts);
         assert(receiveOnly!Control is Control.LIVE);
 
         enum max_gossip = 2;
