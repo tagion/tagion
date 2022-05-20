@@ -107,7 +107,7 @@ void dartServiceTask(Net : SecureNet)(
         auto dart_sync_tid = locate(opts.dart.sync.task_name);
 
         auto net = new Net();
-        net.derive(opts.dart.task_name, master_net);
+        net.derive(opts.dart.task_nameopts.dart.task_name, master_net);
 
         auto hirpc = HiRPC(net);
         auto empty_hirpc = HiRPC(null);
