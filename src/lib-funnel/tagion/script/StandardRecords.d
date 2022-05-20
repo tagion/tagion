@@ -153,6 +153,27 @@ enum OwnerKey = "$Y";
         mixin HiBONRecord;
     }
 
+    enum EPOCH_TOP_NAME = "tagion";
+
+    @RecordType("top") struct LastEpochRecord {
+        @Label("#name") string name;
+        @Label("$top") Buffer top;
+        mixin HiBONRecord!(q{
+                @disable this();
+                import tagion.crypto.SecureInterfaceNet : HashNet;
+                this(const(HashNet) net, ref const(EpochBlock) block) {
+                    name = EPOCH_TOP_NAME;
+                    top = net.hashOf(block);
+                }
+            });
+
+        static Buffer dartHash(const(HashNet) net) {
+            EpochBlock b;
+            auto record = LastEpochRecord(net, b);
+            return net.hashOf(record);
+        }
+    }
+
     struct Globals {
         @Label("$fee") TagionCurrency fixed_fees; /// Fixed fees per Transcation
         @Label("$mem") TagionCurrency storage_fee; /// Fees per byte
