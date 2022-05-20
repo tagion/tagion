@@ -116,6 +116,7 @@ struct HiRPC {
         mixin HiBONRecord;
     }
 
+
     enum isMessage(T) = is(T : const(Method)) || is(T : const(Response)) || is(T : const(Error));
 
     enum SignedState {
@@ -171,7 +172,11 @@ struct HiRPC {
             Method method;
             Response response;
             Error error;
+            uint id;
         }
+        static assert(Message.method.id.alignof == Message.id.alignof);
+        static assert(Message.response.id.alignof == Message.id.alignof);
+        static assert(Message.error.id.alignof == Message.id.alignof);
 
         //@disable this();
         //        @Label("") SecureNet net;
