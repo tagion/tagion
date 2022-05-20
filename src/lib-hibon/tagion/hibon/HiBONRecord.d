@@ -6,7 +6,7 @@ import tagion.hibon.HiBONJSON;
 import file = std.file;
 import std.exception : assumeUnique;
 import std.typecons : Tuple;
-import std.traits : hasMember, ReturnType, isArray, ForeachType, isUnsigned;
+import std.traits : hasMember, ReturnType, isArray, ForeachType, isUnsigned, isIntegral;
 
 import tagion.basic.Basic : basename, EnumContinuousSequency;
 import tagion.hibon.HiBONBase : ValueT;
@@ -147,7 +147,7 @@ enum VOID = "*";
 mixin template HiBONRecordType() {
     import tagion.hibon.Document : Document;
     import tagion.hibon.HiBONRecord : TYPENAME;
-    import std.traits : getUDAs, hasUDA;
+    import std.traits : getUDAs, hasUDA, isIntegral, isUnsigned;
 
     alias ThisType = typeof(this);
     static if (hasUDA!(ThisType, RecordType)) {
@@ -195,7 +195,7 @@ mixin template HiBONRecordType() {
  --------------------
 
  +/
-pragma(msg, "The less_than function in this mixin is used for none string key (Should be added to the HiBON spec)");
+pragma(msg, "fixme(cbr): The less_than function in this mixin is used for none string key (Should be added to the HiBON spec)");
 
 mixin template HiBONRecord(string CTOR = "") {
 
@@ -373,6 +373,14 @@ mixin template HiBONRecord(string CTOR = "") {
                         alias BaseU = TypedefType!(ForeachType!(UnqualT));
                         hibon[name] = toList(m);
                     }
+                    else static if (isIntegral!UnqualT || UnqualT.sizeof <= short.sizeof) {
+                        static if (isUnsigned!UnqualT) {
+                            hibon[name] = cast(uint) m;
+                        }
+                        else {
+                            hibon[name] = cast(int) m;
+                        }
+                    }
                     else {
                         static assert(0, format("Convering for member '%s' of type %s is not supported by default",
                                 name, MemberT.stringof));
@@ -532,11 +540,11 @@ mixin template HiBONRecord(string CTOR = "") {
             }
 
             enum do_verify = hasMember!(ThisType, "verify")
-                && isCallable!(verify) && __traits(compiles, this.verify);
+                && isCallable!(verify) && __traits(compiles, this.verify());
 
             static if (do_verify) {
                 scope (exit) {
-                    check(this.verify,
+                    check(this.verify(),
                             format("Document verification faild for HiBONRecord %s",
                             ThisType.stringof));
                 }
@@ -623,8 +631,17 @@ mixin template HiBONRecord(string CTOR = "") {
                             }
                             m = toList!BaseT(sub_doc);
                         }
+                        else static if (isIntegral!BaseT && BaseT.sizeof <= short.sizeof) {
+                            static if (isUnsigned!BaseT) {
+                                m = cast(BaseT) doc[name].get!uint;
+                            }
+                            else {
+                                m = cast(BaseT) doc[name].get!int;
+                            }
+                        }
                         else {
-                            static assert(0, format("Convering for member '%s' of type %s is not supported by default",
+                            static assert(0,
+                                    format("Convering for member '%s' of type %s is not supported by default",
                                     name, MemberT.stringof));
 
                         }
@@ -684,7 +701,7 @@ mixin template HiBONRecord(string CTOR = "") {
     return doc;
 }
 
-const(T) fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
+T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
     const doc = filename.fread;
     return T(doc, args);
 }
@@ -1227,7 +1244,7 @@ const(T) fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
             alias Text = Typedef!(string, null, "Text");
 
             // Pubkey is a Typedef
-            import tagion.basic.Basic : Pubkey;
+            import tagion.basic.Types : Pubkey;
 
             static struct TextArray {
                 Text[] texts;
@@ -1256,7 +1273,7 @@ const(T) fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
         import std.algorithm.sorting : isStrictlyMonotonic;
         import std.stdio;
 
-        import tagion.basic.Basic : Buffer;
+        import tagion.basic.Types : Buffer;
 
         static void binwrite(Args...)(ubyte[] buf, Args args) @trusted {
             import std.bitmanip : write;
@@ -1291,15 +1308,15 @@ const(T) fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
             const result = StructBytes(s_doc);
 
             assert(
-                equal(
+                    equal(
                     list
-                    .map!((i) {binwrite(buffer, i, 0); return tuple(buffer.idup, i);})
+                    .map!((i) { binwrite(buffer, i, 0); return tuple(buffer.idup, i); })
                     .array
                     .sort,
                     s_doc["tabel"]
                     .get!Document[]
                     .map!(e => tuple(e.get!Document[0].get!Buffer, e.get!Document[1].get!int))
-                ));
+            ));
             assert(s_doc == result.toDoc);
         }
 
@@ -1366,5 +1383,31 @@ const(T) fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
             const result = DefaultStruct(s_doc);
             assert(result.x is -1);
         }
+    }
+
+    {
+        static struct ImpliciteTypes {
+            ushort u_s;
+            short i_s;
+            ubyte u_b;
+            byte i_b;
+            mixin HiBONRecord;
+        }
+
+        { //
+            ImpliciteTypes s;
+            s.u_s = 42_000;
+            s.i_s = -22_000;
+            s.u_b = 142;
+            s.i_b = -42;
+
+            const s_doc = s.toDoc;
+            const result = ImpliciteTypes(s_doc);
+            assert(result.u_s == 42_000);
+            assert(result.i_s == -22_000);
+            assert(result.u_b == 142);
+            assert(result.i_b == -42);
+        }
+
     }
 }

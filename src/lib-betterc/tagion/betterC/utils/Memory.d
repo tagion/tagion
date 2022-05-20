@@ -4,6 +4,10 @@ import std.traits : isArray, ForeachType, isPointer, PointerTarget, Unqual;
 import tagion.betterC.utils.platform;
 
 import std.conv : emplace;
+import core.stdc.string : memcpy;
+
+private import tagion.crypto.secp256k1.c.secp256k1;
+private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
 
 @nogc:
 
@@ -120,7 +124,7 @@ void dispose(T)(ref T die, string file = __FILE__, size_t line = __LINE__) if (i
             printf(memfree_trace, die.ptr, block, 'd', T.stringof.ptr);
             printf(mempos, die.ptr, 0, line, file.ptr);
         }
-        free(die.ptr);
+        free(cast(void*)die.ptr);
         die = null;
     }
 }
@@ -139,6 +143,54 @@ void dispose(bool OWNS = true, T)(ref T die, string file = __FILE__, size_t line
         free(die);
         die = null;
     }
+}
+
+@trusted
+void memcpy_wrapper(T)(ref T desination, T source) {
+    if (desination.length == source.length) {
+        memcpy(desination, source, source.length);
+    }
+}
+
+
+enum SECP256K1 : uint {
+    FLAGS_TYPE_MASK = SECP256K1_FLAGS_TYPE_MASK,
+    FLAGS_TYPE_CONTEXT = SECP256K1_FLAGS_TYPE_CONTEXT,
+    FLAGS_TYPE_COMPRESSION = SECP256K1_FLAGS_TYPE_COMPRESSION,
+    /** The higher bits contain the actual data. Do not use directly. */
+    FLAGS_BIT_CONTEXT_VERIFY = SECP256K1_FLAGS_BIT_CONTEXT_VERIFY,
+    FLAGS_BIT_CONTEXT_SIGN = SECP256K1_FLAGS_BIT_CONTEXT_SIGN,
+    FLAGS_BIT_COMPRESSION = FLAGS_BIT_CONTEXT_SIGN,
+
+    /** Flags to pass to secp256k1_context_create. */
+    CONTEXT_VERIFY = SECP256K1_CONTEXT_VERIFY,
+    CONTEXT_SIGN = SECP256K1_CONTEXT_SIGN,
+    CONTEXT_NONE = SECP256K1_CONTEXT_NONE,
+
+    /** Flag to pass to secp256k1_ec_pubkey_serialize and secp256k1_ec_privkey_export. */
+    EC_COMPRESSED = SECP256K1_EC_COMPRESSED,
+    EC_UNCOMPRESSED = SECP256K1_EC_UNCOMPRESSED,
+
+    /** Prefix byte used to tag various encoded curvepoints for specific purposes */
+    TAG_PUBKEY_EVEN = SECP256K1_TAG_PUBKEY_EVEN,
+    TAG_PUBKEY_ODD = SECP256K1_TAG_PUBKEY_ODD,
+    TAG_PUBKEY_UNCOMPRESSED = SECP256K1_TAG_PUBKEY_UNCOMPRESSED,
+    TAG_PUBKEY_HYBRID_EVEN = SECP256K1_TAG_PUBKEY_HYBRID_EVEN,
+    TAG_PUBKEY_HYBRID_ODD = SECP256K1_TAG_PUBKEY_HYBRID_ODD
+}
+
+@trusted
+bool randomize(immutable(ubyte[]) seed)
+in {
+    assert(seed.length == 32 || seed is null);
+}
+do {
+    secp256k1_context* _ctx;
+    // const int flag = 0;
+    _ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN);
+    //        auto ctx=getContext();
+    // immutable(ubyte)* _seed = seed.ptr;
+    return secp256k1_context_randomize(_ctx, &seed[0]) == 1;
 }
 
 unittest {

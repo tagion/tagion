@@ -4,13 +4,18 @@ export LOG := ${abspath ${REPOROOT}/logs/}
 export DDEVNET := ${abspath ${REPOROOT}/devnet/}
 export DBUILD := ${abspath $(BUILD)/$(PLATFORM)}
 export DLOG := ${abspath $(LOG)/$(PLATFORM)}
+export TOOLS := ${abspath $(REPOROOT)/tools}
 
 # New simplified flow directories
 export DBIN := $(DBUILD)/bin
 export DTMP := $(DBUILD)/tmp
 export DOBJ := $(DBUILD)/obj
 export DLIB := $(DBUILD)/lib
-export DLOGCOV := $(DLOG)/cov/
+export DLOGCOV := $(DLOG)/cov
+export TESTBENCH := $(DLOG)/testbench
+export FUND := $(REPOROOT)/fundamental
+export SCRIPTS := $(DTUB)/scripts
+export TOOLS := $(REPOROOT)/tools
 
 env-dirs:
 	$(PRECMD)
@@ -24,6 +29,11 @@ env-dirs:
 	$(call log.kvp, DLOG, $(DLOG))
 	$(call log.kvp, DSRC, $(DSRC))
 	$(call log.kvp, DTUB, $(DTUB))
+	$(call log.kvp, DLOGCOV, $(DLOGCOV))
+	$(call log.kvp, TESTBENCH, $(TESTBENCH))
+	$(call log.kvp, FUND, $(FUND))
+	$(call log.kvp, SCRIPTS, $(SCRIPTS))
+	$(call log.kvp, TOOLS, $(TOOLS))
 	$(call log.kvp, REPOROOT, $(REPOROOT))
 	$(call log.close)
 

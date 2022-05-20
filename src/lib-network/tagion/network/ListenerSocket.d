@@ -9,7 +9,7 @@ import std.array : join;
 import std.conv : to;
 import std.bitmanip : binwrite = write;
 
-import tagion.basic.Basic : Buffer;
+import tagion.basic.Types : Buffer;
 
 //import tagion.services.Options: Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;

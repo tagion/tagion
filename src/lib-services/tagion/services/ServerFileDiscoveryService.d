@@ -14,13 +14,34 @@ import std.net.curl;
 
 // import tagion.services.LoggerService;
 import tagion.logger.Logger;
-import tagion.basic.Basic : Buffer, Control, nameOf, Pubkey;
+import tagion.basic.Types : Buffer, Control, Pubkey;
+import tagion.basic.Basic : nameOf;
 import tagion.basic.TagionExceptions : fatal;
 import tagion.services.Options;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
-import tagion.gossip.P2pGossipNet;
+
+//import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
+import tagion.gossip.AddressBook : NodeAddress;
+
+alias ActiveNodeAddressBookX = immutable(AddressBook_deprecation);
+
+@safe
+immutable class AddressBook_deprecation {
+    this(const(NodeAddress[Pubkey]) addrs) @trusted {
+//        addressbook.overwrite(addrs);
+//         this.data = cast(immutable) addrs.dup;
+    }
+
+//    immutable(NodeAddress[Pubkey]) data;
+
+    static immutable(NodeAddress[Pubkey]) data() @trusted {
+        immutable(NodeAddress[Pubkey]) empty;
+        return empty;
+    }
+
+}
 
 enum DiscoveryRequestCommand {
     BecomeOnline = 1,
@@ -35,10 +56,13 @@ enum DiscoveryState {
     OFFLINE = 3
 }
 
-void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
-        string taskName, immutable(Options) opts) nothrow { //TODO: for test
+void serverFileDiscoveryService(
+        Pubkey pubkey,
+        shared p2plib.Node node,
+        string taskName,
+        immutable(Options) opts) nothrow { //TODO: for test
     try {
-        scope (exit) {
+        scope (success) {
             log("exit");
             ownerTid.prioritySend(Control.END);
         }
@@ -124,20 +148,20 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
         }
 
         auto addr_changed_tid = spawn(&handleAddrChanedEvent, node);
-        receive((Control ctrl) { assert(ctrl == Control.LIVE); });
+        receive((Control ctrl) { assert(ctrl is Control.LIVE); });
 
         auto rechability_changed_tid = spawn(&handleRechabilityChanged, node);
-        receive((Control ctrl) { assert(ctrl == Control.LIVE); });
+        receive((Control ctrl) { assert(ctrl is Control.LIVE); });
         scope (exit) {
             {
                 addr_changed_tid.send(Control.STOP);
                 auto ctrl = receiveOnly!Control;
-                assert(ctrl == Control.END);
+                assert(ctrl is Control.END);
             }
             {
                 rechability_changed_tid.send(Control.STOP);
                 auto ctrl = receiveOnly!Control;
-                assert(ctrl == Control.END);
+                assert(ctrl is Control.END);
             }
         }
 
@@ -208,7 +232,7 @@ void serverFileDiscoveryService(Pubkey pubkey, shared p2plib.Node node,
                     }
                 case DiscoveryRequestCommand.RequestTable: {
                         initialize();
-                        auto address_book = new ActiveNodeAddressBook(node_addresses);
+                        auto address_book = new ActiveNodeAddressBookX(node_addresses);
                         ownerTid.send(address_book);
                         break;
                     }

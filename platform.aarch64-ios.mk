@@ -3,6 +3,18 @@ IOS_AARCH64=aarch64-iso
 PLATFORMS+=$(IOS_AARCH64)
 
 ifeq ($(PLATFORM),$(ISO_AARCH64))
+ifndef CC_CROSS
+${error CC_CROSS not defined}
+endif
+ifndef CROSS_SYSROOT
+${error CROSS_SYSROOT not defined}
+endif
+ifndef CROSS_ARCH
+${error CROSS_ARCH not defined}
+endif
+CONFIGUREFLAGS_SECP256K1 += CC=$(CC_CROSS)
+CONFIGUREFLAGS_SECP256K1 += CFLAGS="-arch $(CROSS_ARCH) -fpic -g -Os -pipe -isysroot $(CROSS_SYSROOT) -mios-version-min=12.0"
+
 SHARED?=1
 #SPLIT_LINK?=1
 IOS_ARCH=$(IOS_AARCH64)

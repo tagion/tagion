@@ -55,8 +55,8 @@ struct Document {
         if (_data.length) {
             ubyte[] result;
             result.create(full_size);
-            foreach (i; 0 .. full_size) {
-                result[i] = _data[i];
+            foreach (i, elem; _data) {
+                result[i] = elem;
             }
             return cast(immutable)(result);
         }
@@ -90,6 +90,12 @@ struct Document {
     this(HiBONT hibon) {
         //check hibon
         this._data = hibon.serialize;
+    }
+
+    this(const HiBONT hibon) {
+        //check hibon
+        auto mut_hibon = cast(HiBONT)hibon;
+        this._data = mut_hibon.serialize;
     }
 
     /**
@@ -162,18 +168,18 @@ struct Document {
         }
     }
 
-    unittest { // Document with residual data
-        import tagion.betterC.hibon.HiBON;
+    // unittest { // Document with residual data
+    //     import tagion.betterC.hibon.HiBON;
 
-        // import std.algorithm.comparison : equal;
-        auto h = HiBON();
-        h["test"] = 42;
-        immutable(ubyte[3]) residual = [42, 14, 217];
-        immutable data = h.serialize ~ residual;
-        const doc = Document(data);
-        assert(doc.full_size == h.serialize.length);
-        assert(doc.length == 1);
-    }
+    //     // import std.algorithm.comparison : equal;
+    //     auto h = HiBON();
+    //     h["test"] = 42;
+    //     immutable(ubyte[3]) residual = [42, 14, 217];
+    //     immutable data = h.serialize ~ residual;
+    //     const doc = Document(data);
+    //     assert(doc.full_size == h.serialize.length);
+    //     assert(doc.length == 1);
+    // }
 
     /**
      * Counts the number of members in a Document
@@ -442,10 +448,19 @@ struct Document {
     const(Element) opBinaryRight(string op)(in string key) const if (op == "in") {
         foreach (element; this[]) {
             Text work_key;
-            if (element.key(work_key) == key) {
-                return element;
+            if (element.key(work_key).length == key.length) {
+                bool isEqual = true;
+                for (int i = 0; i < key.length; i++) {
+                    if (element.key(work_key)[i] != key[i]) {
+                        isEqual = false;
+                        break;
+                    }
+                }
+                if (isEqual) {
+                    return element;
+                }
             }
-            else if (element.key(work_key) > key) {
+             if (element.key(work_key) > key) {
                 break;
             }
         }
@@ -480,9 +495,13 @@ struct Document {
        Or of the key is not an index a std.conv.ConvException is thrown
      */
     @trusted @nogc const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
-        import std.conv;
+        import tagion.betterC.utils.StringHelper;
+        auto index_string = int_to_str(index);
+        scope(exit){
+            index_string.dispose;
+        }
 
-        return opIndex(index.to!string);
+        return opIndex(index_string);
     }
 
     /**
@@ -812,7 +831,7 @@ struct Document {
                                         Value* result = cast(Value*)(&data[value_pos]);
                                         return *result;
                                     }
-                                }
+                                } 
                             }
                             break TypeCase;
                         }

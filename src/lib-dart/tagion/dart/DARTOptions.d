@@ -1,6 +1,6 @@
 module tagion.dart.DARTOptions;
 
-import tagion.basic.Basic : basename, DataFormat;
+import tagion.basic.Basic : basename;
 import tagion.basic.TagionExceptions;
 
 struct DARTOptions {
@@ -30,7 +30,7 @@ struct DARTOptions {
     struct Synchronize {
         ulong maxSlaves;
         ulong maxMasters;
-        ulong maxSlavePort;
+        ushort maxSlavePort;
         ushort netFromAng;
         ushort netToAng;
         ulong tick_timeout;

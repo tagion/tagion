@@ -15,9 +15,11 @@ enum EndpointType {
 class SSLSocketException : SocketException {
     immutable SSLErrorCodes error_code;
     this(immutable(char)[] msg, const SSLErrorCodes error_code = SSLErrorCodes.SSL_ERROR_NONE,
-            string file = __FILE__, size_t line = __LINE__) {
+            string file = __FILE__, size_t line = __LINE__) pure nothrow {
         this.error_code = error_code;
-        super(msg, file, line);
+        import std.exception : assumeWontThrow;
+        immutable _msg=assumeWontThrow(format("%s (%s)", msg, error_code));
+        super(_msg, file, line);
     }
 }
 
@@ -45,8 +47,8 @@ extern (C) {
         SSL_CTX* SSL_CTX_new(const SSL_METHOD* method);
         void SSL_CTX_free(SSL_CTX* ctx);
 
-        SSL_METHOD* TLSv1_client_method();
-        SSL_METHOD* TLSv1_server_method();
+        SSL_METHOD* TLS_client_method();
+        SSL_METHOD* TLS_server_method();
 
         int SSL_CTX_use_certificate_file(SSL_CTX* ctx, const char* file, int type);
         int SSL_CTX_use_PrivateKey_file(SSL_CTX* ctx, const char* file, int type);
@@ -113,15 +115,15 @@ class SSLSocket : Socket {
      The client use this configuration by default.
      +/
     protected void init(bool verifyPeer, EndpointType et) {
-        checkContext(et);
-        _ssl = SSL_new(_ctx);
+            checkContext(et);
+            _ssl = SSL_new(_ctx);
 
-        if (et is EndpointType.Client) {
-            SSL_set_fd(_ssl, this.handle);
-            if (!verifyPeer) {
-                SSL_set_verify(_ssl, SSL_VERIFY_NONE, null);
+            if (et is EndpointType.Client) {
+                SSL_set_fd(_ssl, this.handle);
+                if (!verifyPeer) {
+                    SSL_set_verify(_ssl, SSL_VERIFY_NONE, null);
+                }
             }
-        }
     }
 
     protected void checkContext(EndpointType et)
@@ -129,19 +131,23 @@ class SSLSocket : Socket {
         assert(_ctx);
     }
     do {
+        synchronized {
+
         //Maybe implement more versions....
         if (et is EndpointType.Client) {
             if (client_ctx is null) {
-                client_ctx = SSL_CTX_new(TLSv1_client_method());
+                client_ctx = SSL_CTX_new(TLS_client_method());
             }
             _ctx = client_ctx;
         }
         else if (et is EndpointType.Server) {
             if (server_ctx is null) {
-                server_ctx = SSL_CTX_new(TLSv1_server_method());
+                server_ctx = SSL_CTX_new(TLS_server_method());
             }
             _ctx = server_ctx;
         }
+        }
+
     }
 
     /++

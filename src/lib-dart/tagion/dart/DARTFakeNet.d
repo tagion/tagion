@@ -4,14 +4,14 @@ import std.random;
 
 //import tagion.gossip.InterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.basic.Basic : Buffer, Control;
+import tagion.basic.Types : Buffer, Control;
 import tagion.dart.DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord : HiBONPrefix;
 import tagion.hibon.HiBON : HiBON;
-import tagion.dart.DARTBasic;
+//import tagion.dart.DARTBasic;
 import tagion.dart.Recorder;
 
 import std.stdio;
@@ -126,7 +126,8 @@ Buffer SetInitialDataSet(DART dart, ubyte ringWidth, int rings, int cores = 4) {
             fillRandomHash(buffer);
             buffer[ring] = j;
             // auto fake_hibon=new HiBON;
-            const bufLong = convertFromBuffer!ulong(buffer);
+            import std.bitmanip : bigEndianToNative;
+            const bufLong = buffer[0 .. ulong.sizeof].bigEndianToNative!ulong;
             //immutable fake_doc_data=DARTFakeNet.foa(bufLong);
             // This is not a real Document but just the data
             const fakeDoc = DARTFakeNet.fake_doc(bufLong);

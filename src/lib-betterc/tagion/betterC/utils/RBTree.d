@@ -33,7 +33,6 @@ import std.traits : isPointer;
 RBTreeT!(K) RBTree(K)(const bool owns = true) {
     RBTreeT!(K) result;
     with (result) {
-        NILL.color = Color.BLACK;
         nill = &NILL;
         root = nill;
     }
@@ -46,6 +45,10 @@ struct RBTreeT(K) {
     enum Color {
         RED,
         BLACK
+    }
+
+    static this() {
+        NILL.color = Color.BLACK;
     }
 
     struct Node {
@@ -87,7 +90,9 @@ struct RBTreeT(K) {
                 _dispose(current.right);
                 if (owns) {
                     static if (isPointer!K) {
-                        
+
+
+
                             .dispose(current.item);
                     }
                     else static if (__traits(compiles, current.item.dispose)) {
@@ -472,7 +477,9 @@ struct RBTreeT(K) {
         scope (exit) {
             if (owns) {
                 static if (isPointer!K) {
-                    
+
+
+
                         .dispose(z.item);
                 }
                 else static if (__traits(compiles, z.item.dispose)) {

@@ -7,54 +7,10 @@ import std.bitmanip : BitArray;
 import std.meta : AliasSeq;
 import std.range.primitives : isInputRange;
 
+
 enum this_dot = "this.";
 
 import std.conv;
-
-import std.typecons : Typedef, TypedefType;
-
-enum BufferType {
-    PUBKEY, /// Public key buffer type
-    PRIVKEY, /// Private key buffer type
-    SIGNATURE, /// Signature buffer type
-    HASHPOINTER, /// Hash pointre buffer type
-    MESSAGE, /// Message buffer type
-    PAYLOAD /// Payload buffer type
-}
-
-enum BillType {
-    NON_USABLE,
-    TAGIONS,
-    CONTRACTS
-}
-
-alias Buffer = immutable(ubyte)[]; /// General buffer
-alias Pubkey = Typedef!(Buffer, null, BufferType.PUBKEY.stringof); // Buffer used for public keys
-alias Signature = Typedef!(Buffer, null, BufferType.SIGNATURE.stringof);
-alias Privkey = Typedef!(Buffer, null, BufferType.PRIVKEY.stringof);
-
-alias Payload = Typedef!(Buffer, null, BufferType.PAYLOAD.stringof); // Buffer used fo the event payload
-version (none) {
-    alias Message = Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
-    alias HashPointer = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
-}
-
-/+
- Returns:
- true if T is a buffer
-+/
-enum isBufferType(T) = is(T : const(ubyte[])) || is(TypedefType!T : const(ubyte[]));
-
-static unittest {
-    static assert(isBufferType!(immutable(ubyte[])));
-    static assert(isBufferType!(immutable(ubyte)[]));
-    static assert(isBufferType!(Pubkey));
-}
-
-unittest {
-    immutable buf = cast(Buffer) "Hello";
-    immutable pkey = Pubkey(buf);
-}
 
 /++
  Returns:
@@ -83,52 +39,6 @@ template find_dot(string str, size_t index = 0) {
     }
 }
 
-enum BITARRAY_MESSAGE = "Use tagion.utils.BitMask instead";
-/++
- Creates a new clean bitarray
-+/
-version (none) deprecated(BITARRAY_MESSAGE) void bitarray_clear(out BitArray bits, const size_t length) @trusted pure nothrow {
-    bits.length = length;
-}
-
-/++
- Change the size of the bitarray
-+/
-version (none) deprecated(BITARRAY_MESSAGE) void bitarray_change(ref scope BitArray bits, const size_t length) @trusted {
-    bits.length = length;
-}
-
-version (none) unittest {
-    {
-        BitArray test;
-        immutable uint size = 7;
-        test.length = size;
-        test[4] = true;
-        bitarray_clear(test, size);
-        assert(!test[4]);
-    }
-    {
-        BitArray test;
-        immutable uint size = 7;
-        test.length = size;
-        test[4] = true;
-        bitarray_change(test, size);
-        assert(test[4]);
-    }
-}
-
-/++
- Countes the number of bits set in mask
-+/
-uint countVotes(ref const(BitArray) mask) @trusted {
-    uint votes;
-    foreach (vote; mask) {
-        if (vote) {
-            votes++;
-        }
-    }
-    return votes;
-}
 
 /++
  Wraps a safe version of to!string for a BitArray
@@ -221,16 +131,6 @@ unittest {
 }
 
 /++
- Genera signal
-+/
-enum Control {
-    LIVE = 1, /// Send to the ownerTid when the task has been started
-    STOP, /// Send when the child task to stop task
-    //    FAIL,   /// This if a something failed other than an exception
-    END /// Send for the child to the ownerTid when the task ends
-}
-
-/++
  Calculates log2
  Returns:
  log2(n)
@@ -320,13 +220,6 @@ static unittest {
     static assert(is(const(uint) == CastTo!(inout(uint), AliasSeq!(const(uint), const(string)))));
 }
 
-enum DataFormat {
-    json = "json", // JSON File format
-    hibon = "hibon", // HiBON file format
-    wasm = "wasm", // WebAssembler binary format
-    wast = "wast", // WebAssembler text format
-    dartdb = "drt", // DART data-base
-}
 
 import std.typecons : Tuple;
 
@@ -486,7 +379,7 @@ unittest {
     //    assert(is(typeof(trustedFoo) == function));
 
     import core.stdc.stdlib;
-    
+
     auto ptr = assumeTrusted!malloc(100);
     assert(ptr !is null);
     ptr.assumeTrusted!free;
@@ -577,4 +470,74 @@ template mangleFunc(alias T) if (isCallable!T) {
     import core.demangle : mangle;
 
     alias mangleFunc = mangle!(FunctionTypeOf!(T));
+}
+
+@safe mixin template TrustedConcurrency() {
+    import concurrency = std.concurrency;
+
+    alias Tid = concurrency.Tid;
+
+    static void send(Args...)(Tid tid, Args args) @trusted {
+        concurrency.send(tid, args);
+    }
+
+    static void prioritySend(Args...)(Tid tid, Args args) @trusted {
+        concurrency.prioritySend(tid, args);
+    }
+
+    static void receive(Args...)(Args args) @trusted {
+        concurrency.receive(args);
+    }
+
+    static auto receiveOnly(T...)() @trusted {
+        return concurrency.receiveOnly!T;
+    }
+
+    static Tid ownerTid() @trusted {
+        return concurrency.ownerTid;
+    }
+
+    static Tid thisTid() @safe {
+        return concurrency.thisTid;
+    }
+
+    static Tid spawn(F, Args...)(F fn, Args args) @trusted {
+        return concurrency.spawn(fn, args);
+    }
+
+    static Tid locate(string name) @trusted {
+        return concurrency.locate(name);
+    }
+
+    static bool register(string name, Tid tid) @trusted {
+        return concurrency.register(name, tid);
+    }
+
+}
+
+
+private import std.range;
+private import tagion.basic.Types : FileExtension;
+//private std.range.primitives;
+string fileExtension(string path) {
+    import std.path : extension;
+    enum dot=".";
+    switch (path.extension) {
+        static foreach(ext; EnumMembers!FileExtension) {
+            case dot~ext:
+            return ext;
+        }
+        default:
+            return null;
+    }
+    assert(0);
+}
+
+unittest {
+    import tagion.basic.Types : FileExtension;
+    import std.path : setExtension;
+    assert(!"somenone_invalid_file.extension".fileExtension);
+    immutable valid_filename = "somenone_valid_file".setExtension(FileExtension.hibon);
+    assert(valid_filename.fileExtension);
+    assert(valid_filename.fileExtension == FileExtension.hibon);
 }

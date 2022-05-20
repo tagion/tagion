@@ -29,7 +29,8 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, isHiBONRecordArray;
 
 import tagion.basic.Message : message;
-import tagion.basic.Basic : CastTo, Buffer;
+import tagion.basic.Types : Buffer;
+import tagion.basic.Basic : CastTo;
 import LEB128 = tagion.utils.LEB128;
 
 //import std.stdio;
@@ -234,7 +235,7 @@ static size_t size(U)(const(U[]) array) pure {
                     break;
                 default:
 
-                    
+
 
                         .check(0, message("Expected HiBON type %s but apply type (%s) which is not supported",
                                 type, T.stringof));
@@ -246,7 +247,7 @@ static size_t size(U)(const(U[]) array) pure {
         const(T) get(T)() const if (!isHiBONRecord!T && !isHiBON!T) {
             enum E = Value.asType!T;
 
-            
+
 
             .check(E is type, message("Expected HiBON type %s but apply type %s (%s)",
                     type, E, T.stringof));
@@ -399,10 +400,48 @@ static size_t size(U)(const(U[]) array) pure {
         return _members[];
     }
 
-    void opAssign(T)(T r) if ((isInputRange!T) && !isAssociativeArray!T) {
+    void opAssign(T)(T r) @trusted if ((isInputRange!T) && !isAssociativeArray!T) {
         foreach (i, a; r.enumerate) {
             opIndexAssign(a, i);
         }
+    }
+
+    @trusted
+    unittest { // Check Array Range init
+        import std.stdio;
+
+        // import std.range : retro;
+        import std.algorithm.comparison : equal;
+
+        // import tagion.hibon.HiBONJSON;
+        struct ArrayRange {
+            int count;
+            bool empty() {
+                return count <= 0;
+            }
+
+            string front() {
+                return format("text-%d", count);
+            }
+
+            void popFront() {
+                count--;
+            }
+        }
+
+        auto h = new HiBON;
+        ArrayRange ar;
+        ar.count = 3;
+        h = ar;
+        // writefln("Array %s", h.toPretty);
+        assert(h.length == 3);
+        assert(h.isArray);
+        // ar.count = 3;
+        // writefln("retro %s %s", h[].map!(a => a.get!string), ar);
+        ar.count = 3;
+        assert(equal(h[].map!(a => a.get!string), ar));
+
+        // assert(0);
     }
     /++
      Assign and member x with the key
@@ -424,12 +463,12 @@ static size_t size(U)(const(U[]) array) pure {
 
     void opIndexAssign(T)(T x, const string key) if (!isHiBON!T && !isHiBONRecord!T && !isHiBONRecordArray!T) {
 
-        
+
 
             .check(is_key_valid(key), message("Key is not a valid format '%s'", key));
         Member new_member = new Member(x, key);
 
-        
+
 
         .check(_members.insert(new_member) is 1, message("Element member %s already exists", key));
     }
@@ -443,13 +482,13 @@ static size_t size(U)(const(U[]) array) pure {
     void opIndexAssign(T, INDEX)(T x, const INDEX index) if (isIntegral!INDEX) {
         static if (INDEX.max > uint.max) {
 
-            
+
 
                 .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         static if (INDEX.min < uint.min) {
 
-            
+
 
                 .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
         }
@@ -470,7 +509,7 @@ static size_t size(U)(const(U[]) array) pure {
         scope search = new Member(key);
         auto range = _members.equalRange(search);
 
-        
+
 
         .check(!range.empty, message("Member '%s' does not exist", key));
         return range.front;
@@ -489,13 +528,13 @@ static size_t size(U)(const(U[]) array) pure {
     const(Member) opIndex(INDEX)(const INDEX index) const if (isIntegral!INDEX) {
         static if (INDEX.max > uint.max) {
 
-            
+
 
                 .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         static if (INDEX.min < uint.min) {
 
-            
+
 
                 .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
         }
@@ -558,13 +597,13 @@ static size_t size(U)(const(U[]) array) pure {
     @trusted void remove(INDEX)(const INDEX index) if (isIntegral!INDEX) {
         static if (INDEX.max > uint.max) {
 
-            
+
 
                 .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         static if (INDEX.min < uint.min) {
 
-            
+
 
                 .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
         }
@@ -666,7 +705,7 @@ static size_t size(U)(const(U[]) array) pure {
                 int, Type.INT32.stringof, long, Type.INT64.stringof, uint,
                 Type.UINT32.stringof, ulong, Type.UINT64.stringof, //                utc_t,  Type.UTC.stringof
 
-                
+
 
         );
 

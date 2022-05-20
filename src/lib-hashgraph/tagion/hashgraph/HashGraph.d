@@ -21,7 +21,7 @@ import tagion.communication.HiRPC;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
 
-import tagion.basic.Basic : Pubkey, Signature, Privkey, Buffer, countVotes;
+import tagion.basic.Types : Pubkey, Signature, Privkey, Buffer;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
 
@@ -85,11 +85,15 @@ class HashGraph {
     package Round.Rounder _rounds;
 
     alias ValidChannel = bool delegate(const Pubkey channel);
-    private ValidChannel valid_channel;
+    const ValidChannel valid_channel;
     alias EpochCallback = void delegate(const(Event[]) events, const sdt_t epoch_time) @safe;
     EpochCallback epoch_callback;
 
-    this(const size_t node_size, const SecureNet net, ValidChannel valid_channel, EpochCallback epoch_callback, string name = null) {
+    this(const size_t node_size,
+            const SecureNet net,
+            const ValidChannel valid_channel,
+            EpochCallback epoch_callback,
+            string name = null) {
         hirpc = HiRPC(net);
         this.node_size = node_size;
         this.valid_channel = valid_channel;
@@ -195,9 +199,14 @@ class HashGraph {
         return true;
     }
 
+    alias GraphResonse = const(Pubkey) delegate(
+            GossipNet.ChannelFilter channel_filter,
+            GossipNet.SenderCallBack sender) @safe;
+    alias GraphPayload = const(Document) delegate() @safe;
+
     void init_tide(
-            const(Pubkey) delegate(GossipNet.ChannelFilter channel_filter, const(HiRPC.Sender) delegate() response) @safe responde,
-            const(Document) delegate() @safe payload,
+            const(GraphResonse) responde,
+            const(GraphPayload) payload,
             lazy const sdt_t time) {
         const(HiRPC.Sender) payload_sender() @safe {
             const doc = payload();
@@ -215,13 +224,17 @@ class HashGraph {
         }
 
         if (areWeInGraph) {
-            const send_channel = responde(&not_used_channels, &payload_sender);
+            const send_channel = responde(
+                    &not_used_channels,
+                    &payload_sender);
             if (send_channel !is Pubkey(null)) {
                 getNode(send_channel).state = ExchangeState.INIT_TIDE;
             }
         }
         else {
-            const send_channel = responde(&not_used_channels, &ripple_sender);
+            const send_channel = responde(
+                    &not_used_channels,
+                    &ripple_sender);
         }
     }
 
@@ -271,8 +284,9 @@ class HashGraph {
     package void epoch(const(Event)[] events, const sdt_t epoch_time, const Round decided_round) {
         import std.stdio;
 
-        log("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d", name, decided_round.number, Event
-                .count, Event.Witness.count, events.length);
+        log("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d",
+                name, decided_round.number,
+                Event.count, Event.Witness.count, events.length);
         if (epoch_callback !is null) {
             epoch_callback(events, epoch_time);
         }
@@ -368,7 +382,9 @@ class HashGraph {
      Returns:
      The front event of the send channel
      +/
-    const(Event) register_wavefront(const Wavefront received_wave, const Pubkey from_channel) {
+    const(Event) register_wavefront(
+            const Wavefront received_wave,
+            const Pubkey from_channel) {
         _register = new Register(received_wave);
         scope (exit) {
             _register = null;
@@ -390,7 +406,9 @@ class HashGraph {
         return front_seat_event;
     }
 
-    @HiRPCMethod() const(HiRPC.Sender) wavefront(const Wavefront wave, const uint id = 0) {
+    @HiRPCMethod() const(HiRPC.Sender) wavefront(
+            const Wavefront wave,
+            const uint id = 0) {
         return hirpc.wavefront(wave, id);
     }
 
@@ -488,7 +506,7 @@ class HashGraph {
             const HiRPC.Receiver received,
             lazy const(sdt_t) time,
             void delegate(const(HiRPC.Sender) send_wave) @safe response,
-            Document delegate() @safe payload) {
+            const(Document) delegate() @safe payload) {
 
         alias consensus = consensusCheckArguments!(GossipConsensusException);
         immutable from_channel = received.pubkey;
@@ -749,7 +767,7 @@ class HashGraph {
     /++
      Dumps all events in the Hashgraph to a file
      +/
-    @trusted
+    //   @trusted
     void fwrite(string filename, Pubkey[string] node_labels = null) {
         import tagion.hibon.HiBONRecord : fwrite;
 
@@ -764,14 +782,16 @@ class HashGraph {
 
         }
         // writefln("node_id_relocation=%s", node_id_relocation.byKeyValue.map!((n) => format("%d[%s]", n.value, n.key.cutHex)));
-        scope events = new HiBON;
-        foreach (n; nodes) {
-            const node_id = (node_id_relocation.length is 0) ? size_t.max : node_id_relocation[n.channel];
-            n[]
-                .filter!((e) => !e.isGrounded)
-                .each!((e) => events[e.id] = EventView(e, node_id));
-        }
-        scope h = new HiBON;
+        auto events = new HiBON;
+        (() @trusted {
+            foreach (n; nodes) {
+                const node_id = (node_id_relocation.length is 0) ? size_t.max : node_id_relocation[n.channel];
+                n[]
+                    .filter!((e) => !e.isGrounded)
+                    .each!((e) => events[e.id] = EventView(e, node_id));
+            }
+        })();
+        auto h = new HiBON;
         h[Params.size] = node_size;
         h[Params.events] = events;
         filename.fwrite(h);
@@ -960,7 +980,8 @@ class HashGraph {
                 }
 
                 const(Pubkey) gossip(
-                        ChannelFilter channel_filter, SenderCallBack sender) {
+                        ChannelFilter channel_filter,
+                        SenderCallBack sender) {
                     const send_channel = select_channel(channel_filter);
                     if (send_channel.length) {
                         send(send_channel, sender());
@@ -1020,7 +1041,7 @@ class HashGraph {
                     }
                     uint count;
                     bool stop;
-                    Document payload() @safe {
+                    const(Document) payload() @safe {
                         auto h = new HiBON;
                         h["node"] = format("%s-%d", _hashgraph.name, count);
                         return Document(h);
@@ -1044,7 +1065,10 @@ class HashGraph {
                         //const onLine=_hashgraph.areWeOnline;
                         const init_tide = random.value(0, 2) is 1;
                         if (init_tide) {
-                            _hashgraph.init_tide(&authorising.gossip, &payload, time);
+                            _hashgraph.init_tide(
+                                    &authorising.gossip,
+                                    &payload,
+                                    time);
                             count++;
                         }
                     }

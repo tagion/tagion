@@ -59,7 +59,7 @@ enum Type : ubyte {
     /// Represetents (HISON[]) is convert to an ARRAY of DOCUMENT's
     NATIVE_DOCUMENT_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | NATIVE_DOCUMENT,
     /// Represetents (Document[]) is convert to an ARRAY of DOCUMENT's
-    NATIVE_STRING_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | STRING,/// Represetents (string[]) is convert to an ARRAY of string's
+    NATIVE_STRING_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | STRING, /// Represetents (string[]) is convert to an ARRAY of string's
 }
 
 struct DataBlock {
@@ -710,24 +710,32 @@ in {
     assert(b.length > 0);
 }
 do {
+    int res = 1;
     uint a_index;
     uint b_index;
     if (is_index(a, a_index) && is_index(b, b_index)) {
         if (a_index < b_index) {
-            return -1;
+            res = -1;
         }
         else if (a_index == b_index) {
-            return 0;
+            res = 0;
         }
-        return 1;
+        res = 1;
     }
-    if (a == b) {
-        return 0;
+    if (a.length == b.length) {
+        res = 0;
+        foreach (i, elem; a)
+        {
+            if (elem != b[i]) {
+                res = 1;
+                break;
+            }
+        }
     }
     else if (a < b) {
-        return -1;
+        res = -1;
     }
-    return 1;
+    return res;
 }
 
 /**

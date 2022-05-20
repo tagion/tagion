@@ -1,7 +1,7 @@
 module tagion.services.EpochDebugService;
 
 import std.concurrency;
-import tagion.basic.Basic : Control;
+import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions : fatal;
 import tagion.hibon.Document : Document;
 

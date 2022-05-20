@@ -6,13 +6,12 @@ import std.stdio : writeln, writefln, stdout;
 import std.socket : InternetAddress, Socket, SocketSet, SocketShutdown, shutdown, AddressFamily;
 import std.concurrency;
 
-//import tagion.services.Options;
 import tagion.network.SSLSocket;
 import tagion.network.SSLFiberService;
 import tagion.network.SSLOptions;
 
 import tagion.logger.Logger;
-import tagion.basic.Basic : Control;
+import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions : TagionException, fatal;
 
 @safe
@@ -20,6 +19,7 @@ struct SSLServiceAPI {
     immutable(SSLOption) ssl_options;
     protected {
         Thread service_task;
+        SSLFiberService service;
         SSLFiberService.Relay relay;
     }
     //    const(HiRPC) hirpc;
@@ -42,6 +42,11 @@ struct SSLServiceAPI {
         stop_service = true;
     }
 
+    void send(uint id, immutable(ubyte[]) buffer) {
+        writeln("Send data to listener_id");
+        service.send(id, buffer);
+    }
+
     @system
     void run() nothrow {
         try {
@@ -56,7 +61,7 @@ struct SSLServiceAPI {
             _listener.bind(new InternetAddress(ssl_options.address, ssl_options.port));
             _listener.listen(ssl_options.max_queue_length);
 
-            auto service = new SSLFiberService(ssl_options, _listener, relay);
+            service = new SSLFiberService(ssl_options, _listener, relay);
             auto response_tid = service.start(ssl_options.response_task_name);
             if (response_tid != Tid.init) {
                 if (receiveOnly!Control !is Control.LIVE) {

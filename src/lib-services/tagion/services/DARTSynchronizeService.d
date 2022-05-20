@@ -11,7 +11,7 @@ import p2plib = p2p.interfaces;
 import p2p.callback;
 import p2p.cgo.c_helper;
 import tagion.logger.Logger;
-import tagion.basic.Basic : Buffer, Control;
+import tagion.basic.Types : Buffer, Control, Pubkey;
 import std.getopt;
 import std.stdio;
 import std.conv;
@@ -36,8 +36,8 @@ import tagion.script.StandardRecords;
 import tagion.communication.HandlerPool;
 
 //import tagion.services.MdnsDiscoveryService;
-import tagion.gossip.P2pGossipNet : AddressBook, NodeAddress,
-    ActiveNodeAddressBook, ConnectionPool;
+import tagion.gossip.P2pGossipNet : ConnectionPool; //, ActiveNodeAddressBook;
+import tagion.gossip.AddressBook : NodeAddress, addressbook;
 
 import tagion.basic.TagionExceptions;
 import tagion.gossip.DartSynchInterfase;
@@ -117,9 +117,6 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
             dart.dump;
         }
         else {
-            // if(!opts.dart.initialize){
-            //     dart.calculateFingerprint();
-            // }
             dart.dump;
             log("DART bullseye: %s", dart.fingerprint.cutHex);
         }
@@ -171,11 +168,11 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
             state.setState(DARTSynchronizeState.READY);
         }
 
-        auto hrpc = HiRPC(net);
-        auto empty_hirpc = HiRPC(null);
+        const hrpc = HiRPC(net);
+        const empty_hirpc = HiRPC(null);
 
         auto subscription = ActiveNodeSubscribtion!Net(opts);
-        NodeAddress[Pubkey] node_addrses;
+//        NodeAddress[Pubkey] node_addrses;
         log("send live");
         ownerTid.send(Control.LIVE);
         while (!stop) {
@@ -212,13 +209,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     if (received.method.name == DART.Quries.dartModify) { //Not allowed
                         closeConnection();
                     }
-                    // log("Req:%s", doc.toJSON);
                     auto request = dart(received);
-                    // auto tosend = request.toDoc.serialize;
-                    // import tagion.hibon.HiBONJSON;
-                    // log("Res:%s", Document(tosend).toJSON);
                     connectionPool.send(resp.key, request.toDoc.serialize);
-                    // log("DSS: Sended response to connection: %s", resp.key);
                 }
 
                 if (received.isMethod && state.checkState(DARTSynchronizeState.READY)) { //TODO: to switch
@@ -295,35 +287,46 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     auto response = empty_hirpc.result(receiver, params);
                     sendResult(response.toDoc.serialize);
                 }
-            }, (ActiveNodeAddressBook update) {
-                node_addrses = cast(NodeAddress[Pubkey]) update.data;
-                // log("node addresses %s", node_addrses);
-            }, (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); }, // (immutable(Throwable) t) {
+            },
+            //     (ActiveNodeAddressBook update) {
+            //         //node_addrses = cast(NodeAddress[Pubkey]) update.data;
+            //     log.warning("Should be removed ActiveNodeAddressBook update (the AddressBook is shoud be used instead)");
+            // },
+                (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); }, // (immutable(Throwable) t) {
                     //     //log.fatal(t.msg);
                     //     stop=true;
                     //     ownerTid.send(t);
                     // }
 
-                    
+
 
             );
-            try {
+            // try {
                 connectionPool.tick();
                 if (opts.dart.synchronize) {
                     syncPool.tick();
-                    if (node_addrses.length > 0 && syncPool.isReady) {
-                        sync_factory.setNodeTable(node_addrses);
+                    if (!addressbook.isReady) {
+                        log("addressbook.length=%d syncPool.isReady =%s state=%s sync_state=%s",
+                        addressbook.numOfActiveNodes, syncPool.isReady, syncPool.state, syncPool.sync_state);
+                    }
+                    if (addressbook.numOfNodes > 0 && syncPool.isReady) {
+                        pragma(msg, "fixme(cbr): sync_factory.setNodeTable(addressbook._data) has been removed");
+                        log.trace("syncPool.start active %d isReady %s", addressbook.numOfActiveNodes, addressbook.isReady);
+
+//                        sync_factory.setNodeTable(addressbook._data);
                         syncPool.start(sync_factory);
                         state.setState(DARTSynchronizeState.SYNCHRONIZING);
                     }
                     if (syncPool.isOver) {
+                        log.trace("syncPool.stop active %d isReady %s", addressbook.numOfActiveNodes, addressbook.isReady);
                         syncPool.stop;
                         // log("Start replay journals with: %d journals", journalReplayFiber.count);
                         state.setState(DARTSynchronizeState.REPLAYING_JOURNALS);
                     }
                     if (syncPool.isError) {
-                        log("Error handling");
-                        sync_factory.setNodeTable(node_addrses);
+                        pragma(msg, "fixme(cbr): isError sync_factory.setNodeTable(addressbook._data) has been removed");
+                        log("syncPool Error handling active %d isReady %s", addressbook.numOfActiveNodes, addressbook.isReady);
+//                        sync_factory.setNodeTable(addressbook._data);
                         syncPool.start(sync_factory);
                         state.setState(DARTSynchronizeState.SYNCHRONIZING); //TODO: remove if notification not needed
                     }
@@ -357,42 +360,14 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                             cast(uint) opts.dart.sync.host.max_size);
                     request_handling = true;
                 }
-            }
-            // catch(TagionException e){
-            //     immutable task_e = e.taskException;
-            //     log(task_e);
-            //     stop=true;
-            //     ownerTid.send(task_e);
+            // catch (Throwable t) {
+            //     stop = true;
+            //     fatal(t);
             // }
-            // catch(Exception e){
-            //     log.fatal(e.msg);
-            //     stop=true;
-            //     ownerTid.send(cast(immutable)e);
-            // }
-            catch (Throwable t) {
-                stop = true;
-                fatal(t);
-                // immutable task_e = t.taskException;
-                // log(task_e);
-                // stop=true;
-                // ownerTid.send(task_e);
-            }
         }
     }
-    // catch(TagionException e){
-    //     immutable task_e=e.taskException;
-    //     log(task_e);
-    //     ownerTid.send(task_e);
-    // }
-    // catch(Exception e){
-    //     log.fatal(e.msg);
-    //     ownerTid.send(cast(immutable)e.taskException);
-    // }
     catch (Throwable t) {
         fatal(t);
-        // immutable task_e=e.taskException;
-        // log(task_e);
-        // ownerTid.send(task_e);
     }
 }
 
@@ -411,7 +386,8 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
         this.opts = opts;
     }
 
-    void tryToSubscribe(NodeAddress[Pubkey] node_addreses, shared(p2plib.NodeI) node) { //HERE
+    version(none)
+    void tryToSubscribe(NodeAddress[Pubkey] node_addreses, shared(p2plib.NodeI) node) {
         bool subscribeTo(NodeAddress address) {
             try {
                 import std.stdio;
@@ -451,7 +427,7 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
 
     void stop() {
         log("Stop subscription");
-        if (subscribed && handlerTid != Tid.init) {
+        if (subscribed && handlerTid !is Tid.init) {
             send(handlerTid, Control.STOP);
             // receiveOnly!Control;
         }
@@ -462,8 +438,6 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
             log("exit handleSubscription");
             // ownerTid.prioritySend(Control.END);
         }
-        pragma(msg, "fixme(cbr):Why is fake net used here?");
-        //        auto net = new MyFakeNet();
         auto net = new Net;
         log.register(taskName);
         auto stop = false;

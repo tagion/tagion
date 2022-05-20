@@ -9,12 +9,15 @@ import std.conv : ConvException;
 
 import std.traits : EnumMembers;
 import std.format : format;
+import std.range : isInputRange, ElementType;
+import std.algorithm.iteration : filter;
 
-import tagion.basic.Basic : Buffer, FUNCTION_NAME, nameOf;
+import tagion.basic.Basic : FUNCTION_NAME, nameOf;
+import tagion.basic.Types : Buffer;
 import tagion.Keywords;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, GetLabel;
+import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, GetLabel, Label;
 import tagion.hibon.HiBONJSON;
 
 import tagion.dart.DARTFile;
@@ -74,9 +77,11 @@ class DART : DARTFile { //, HiRPC.Supports {
     }
 
     static struct SectorRange {
-        private ushort _sector;
-        private ushort _from_sector;
-        private ushort _to_sector;
+        private {
+            @Label("sector") ushort _sector;
+            @Label("from") ushort _from_sector;
+            @Label("to") ushort _to_sector;
+        }
         @property ushort from_sector() inout {
             return _from_sector;
         }
@@ -85,12 +90,14 @@ class DART : DARTFile { //, HiRPC.Supports {
             return _to_sector;
         }
 
-        protected bool flag;
-        this(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
-            _from_sector = from_sector;
-            _to_sector = to_sector;
-            _sector = from_sector;
-        }
+        @Label("") protected bool flag;
+        mixin HiBONRecord!(q{
+                this(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
+                    _from_sector = from_sector;
+                    _to_sector = to_sector;
+                    _sector = from_sector;
+                }
+            });
 
         bool isFullRange() const pure nothrow {
             return _from_sector == _to_sector;
@@ -104,7 +111,10 @@ class DART : DARTFile { //, HiRPC.Supports {
             return sectorInRange(rims.sector, _from_sector, _to_sector);
         }
 
-        static bool sectorInRange(const ushort sector, const ushort from_sector, const ushort to_sector) pure nothrow {
+        static bool sectorInRange(
+                const ushort sector,
+                const ushort from_sector,
+                const ushort to_sector) pure nothrow {
             if (to_sector == from_sector) {
                 return true;
             }
@@ -224,14 +234,15 @@ class DART : DARTFile { //, HiRPC.Supports {
         @HiRPCMethod() const(HiRPCSender) dartRead(Range)(
                 Range fingerprints,
                 HiRPC hirpc = HiRPC(null),
-                uint id = 0) { //if (is(ForeachType!Range : Buffer)) {
+                uint id = 0) if (isInputRange!Range && is(ElementType!Range : const(Buffer))) { //if (is(ForeachType!Range : Buffer)) {
             auto params = new HiBON;
             auto params_fingerprints = new HiBON;
-            foreach (i, b; fingerprints) {
-                if (b.length !is 0) {
-                    params_fingerprints[i] = b;
-                }
-            }
+            params_fingerprints = fingerprints.filter!(b => b.length !is 0);
+            // foreach (i, b; fingerprints) {
+            //     if (b.length !is 0) {
+            //         params_fingerprints[i] = b;
+            //     }
+            // }
             params[Params.fingerprints] = params_fingerprints;
             return hirpc.dartRead(params, id);
         }
@@ -524,7 +535,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         enum recorderName = GetLabel!(recorder).name;
         this(RecordFactory manufactor, const Document doc) {
 
-            
+
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!uint;
@@ -837,6 +848,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         import tagion.dart.BlockFile;
         import tagion.basic.Basic : tempfile, assumeTrusted;
         import tagion.dart.DARTFakeNet : DARTFakeNet;
+        enum TEST_BLOCK_SIZE = 0x80;
 
         auto net = new DARTFakeNet("very_secret");
 
@@ -874,8 +886,8 @@ class DART : DARTFile { //, HiRPC.Supports {
                 ];
                 // writefln("Test 0.0");
                 foreach (test_no; 0 .. 3) {
-                    DARTFile.create_dart(filename_A);
-                    DARTFile.create_dart(filename_B);
+                    DARTFile.create(filename_A);
+                    DARTFile.create(filename_B);
                     RecordFactory.Recorder recorder_B;
                     RecordFactory.Recorder recorder_A;
                     // Recorder recorder_B;
@@ -953,8 +965,8 @@ class DART : DARTFile { //, HiRPC.Supports {
             { // Single element different sectors
                 //
                 // writefln("Test 0.1");
-                DARTFile.create_dart(filename_A);
-                create_dart(filename_B);
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
                 RecordFactory.Recorder recorder_B;
                 RecordFactory.Recorder recorder_A;
                 // Recorder recorder_B;
@@ -1005,8 +1017,8 @@ class DART : DARTFile { //, HiRPC.Supports {
                 // from DART A against DART B when DART A is empty
                 // writefln("Test 1");
 
-                DARTFile.create_dart(filename_A);
-                create_dart(filename_B);
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
                 RecordFactory.Recorder recorder_B;
                 // Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1060,8 +1072,8 @@ class DART : DARTFile { //, HiRPC.Supports {
 
             { // Synchronization of a DART A which is a subset of DART B
                 // writefln("Test 2");
-                create_dart(filename_A);
-                create_dart(filename_B);
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1112,8 +1124,8 @@ class DART : DARTFile { //, HiRPC.Supports {
 
             { // Synchronization of a DART A where DART A is a superset of DART B
                 // writefln("Test 3");
-                create_dart(filename_A);
-                create_dart(filename_B);
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1166,8 +1178,8 @@ class DART : DARTFile { //, HiRPC.Supports {
             // ----------------
             { // Synchronization of a DART A where DART A is complementary of DART B
                 // writefln("Test 4");
-                create_dart(filename_A);
-                create_dart(filename_B);
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1220,8 +1232,8 @@ class DART : DARTFile { //, HiRPC.Supports {
 
             { // Synchronization of a DART A where DART A of DART B has common data
                 // writefln("Test 5");
-                create_dart(filename_A);
-                create_dart(filename_B);
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1273,8 +1285,8 @@ class DART : DARTFile { //, HiRPC.Supports {
 
             { // Synchronization of a Large DART A where DART A of DART B has common data
                 // writefln("Test 6");
-                create_dart(filename_A);
-                create_dart(filename_B);
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);

@@ -1,6 +1,6 @@
 module tagion.crypto.Cipher;
 
-import tagion.basic.Basic;
+import tagion.basic.Types : Buffer, Pubkey;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 import std.exception : assumeUnique;
@@ -115,6 +115,9 @@ struct Cipher {
         import tagion.crypto.SecureNet : StdSecureNet;
         import tagion.hibon.HiBON : HiBON;
         import tagion.hibon.Document : Document;
+        import tagion.basic.Basic : fileId;
+        import tagion.basic.Types : FileExtension;
+
         import std.algorithm.searching : all, any;
 
         immutable passphrase = "Secret pass word";
@@ -136,7 +139,7 @@ struct Cipher {
             assert(secret_doc.data == encrypted_doc.data);
         }
 
-        { // You of the wrong privat-key
+        { // Use of the wrong privat-key
             //            writeln("Bad");
             auto dummy_net = new StdSecureNet;
             auto wrong_net = new StdSecureNet;
@@ -149,6 +152,13 @@ struct Cipher {
                     const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
                     //                writefln("encrypted_doc.full_size %d", encrypted_doc.full_size);
                     passed[0] = true;
+                    if (encrypted_doc.isInorder) {
+                        import std.stdio : writefln;
+                        import tagion.hibon.HiBONRecord : fwrite;
+                        immutable filename = fileId!Cipher(FileExtension.hibon, encrypted_doc.stringof).fullpath;
+                        writefln("Cipher unittest file %s",filename);
+                        filename.fwrite(encrypted_doc);
+                    }
                     assert(!encrypted_doc.isInorder);
                     passed[1] = true;
                     // assert(encrypted_doc.full_size != secret_doc.full_size);

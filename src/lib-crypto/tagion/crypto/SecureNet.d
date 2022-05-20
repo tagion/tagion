@@ -2,7 +2,7 @@ module tagion.crypto.SecureNet;
 
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.aes.AESCrypto;
-import tagion.basic.Basic : Buffer, Signature;
+import tagion.basic.Types : Buffer, Signature;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
 import tagion.basic.ConsensusExceptions;
@@ -26,7 +26,7 @@ package alias check = Check!SecurityConsensusException;
 class StdHashNet : HashNet {
     import std.format;
 
-    protected enum HASH_SIZE = 32;
+    enum HASH_SIZE = 32;
     @nogc final uint hashSize() const pure nothrow {
         return HASH_SIZE;
     }
@@ -73,7 +73,6 @@ class StdHashNet : HashNet {
         }
     }
     do {
-        pragma(msg, "dlang: Pre and post condition does not work here");
         assert(h1.length is 0 || h1.length is HASH_SIZE,
                 format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
         assert(h2.length is 0 || h2.length is HASH_SIZE,
@@ -103,7 +102,7 @@ class StdHashNet : HashNet {
 @safe
 class StdSecureNet : StdHashNet, SecureNet {
     import tagion.crypto.secp256k1.NativeSecp256k1;
-    import tagion.basic.Basic : Pubkey;
+    import tagion.basic.Types : Pubkey;
     import tagion.crypto.aes.AESCrypto;
 
     import tagion.basic.ConsensusExceptions;
@@ -354,7 +353,23 @@ class StdSecureNet : StdHashNet, SecureNet {
         _crypt = null;
     }
 
-    unittest { // StdSecureNet
+    unittest { // StdSecureNet rawSign
+        const some_data ="some message";
+        SecureNet net = new StdSecureNet;
+        net.generateKeyPair("Secret password");
+        SecureNet bad_net = new StdSecureNet;
+        bad_net.generateKeyPair("Wrong Secret password");
+
+        const message = net.rawCalcHash(some_data.representation);
+
+        Signature signature = net.sign(message);
+
+        assert(!net.verify(message, signature, bad_net.pubkey));
+        assert(net.verify(message, signature, net.pubkey));
+
+    }
+
+    unittest { // StdSecureNet document
         import tagion.hibon.HiBONJSON;
 
         import tagion.hibon.HiBON;
@@ -376,13 +391,18 @@ class StdSecureNet : StdHashNet, SecureNet {
         assert(doc_signed.message == net.rawCalcHash(doc.serialize));
         assert(net.verify(doc, doc_signed.signature, net.pubkey));
 
+        SecureNet bad_net = new StdSecureNet;
+        bad_net.generateKeyPair("Wrong Secret password");
+        assert(!net.verify(doc, doc_signed.signature, bad_net.pubkey));
+
+
         { // Hash key
             auto h = new HiBON;
             h["#message"] = "Some message";
             doc = Document(h);
         }
 
-        // A document containing a hash-ket can not be signed or verified
+        // A document containing a hash-key can not be signed or verified
         assertThrown!SecurityConsensusException(net.sign(doc));
         assertThrown!SecurityConsensusException(net.verify(doc, doc_signed.signature, net.pubkey));
 

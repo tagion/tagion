@@ -13,7 +13,8 @@ import tagion.hashgraph.HashGraphBasic : Tides, EventMonitorCallbacks;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 
 //import tagion.basic.Basic : Control, basename, Pubkey, DataFormat;
-import tagion.basic.Basic : EnumText, Pubkey, DataFormat, basename;
+import tagion.basic.Types : Pubkey, FileExtension;
+import tagion.basic.Basic : EnumText;
 import tagion.basic.Message;
 
 import tagion.hibon.HiBON;
@@ -83,14 +84,14 @@ class MonitorCallBacks : EventMonitorCallbacks {
     }
     immutable uint _local_node_id;
     // immutable uint _global_node_id;
-    immutable DataFormat dataformat;
+    immutable FileExtension ext;
 
     @trusted
     void socket_send(const(HiBON) hibon) nothrow {
         void inner_send() {
             const doc = Document(hibon);
-            with (DataFormat) {
-                switch (dataformat) {
+            with (FileExtension) {
+                switch (ext) {
                 case json:
                     _socket_thread_id.send(doc.toJSON.toString);
                     break;
@@ -98,7 +99,7 @@ class MonitorCallBacks : EventMonitorCallbacks {
                     _socket_thread_id.send(doc);
                     break;
                 default:
-                    throw new MonitorException(message("Bad dataformat %s. Only %s and %s allowed", json, hibon));
+                    throw new MonitorException(message("Bad fileformat %s. Only %s and %s allowed", json, hibon));
                 }
             }
         }
@@ -328,7 +329,7 @@ class MonitorCallBacks : EventMonitorCallbacks {
     @trusted
     this(Tid socket_thread_id,
             const uint local_node_id, // const uint global_node_id,
-            const DataFormat dataformat) {
+            const FileExtension dataformat) {
         this._socket_thread_id = socket_thread_id;
         this._network_socket_tread_id = locate("network_socket_thread");
         this._local_node_id = local_node_id;

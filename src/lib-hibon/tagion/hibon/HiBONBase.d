@@ -48,9 +48,9 @@ if (is(T : U[], U) && isBasicType!U) {
 +/
 enum Type : ubyte {
     NONE = 0x00, /// End Of Document
-    STRING = 0x02, /// UTF8 STRING
-    DOCUMENT = 0x03, /// Embedded document (Both Object and Documents)
-    BINARY = 0x05, /// Binary data
+    STRING = 0x01, /// UTF8 STRING
+    DOCUMENT = 0x02, /// Embedded document (Both Object and Documents)
+    BINARY = 0x03, /// Binary data
 
     BOOLEAN = 0x08, /// Boolean - true or false
     TIME = 0x09, /// Standard Time counted as the total 100nsecs from midnight, January 1st, 1 A.D. UTC.
@@ -60,16 +60,17 @@ enum Type : ubyte {
     INT64 = 0x12, /// 64-bit integer,
     // INT128 = 0x13, /// 128-bit integer,
 
-    UINT32 = 0x21, /// 32 bit unsigend integer
-    UINT64 = 0x22, /// 64 bit unsigned integer
-    // UINT128 = 0x23, /// 128-bit unsigned integer,
+    UINT32 = 0x14, /// 32 bit unsigend integer
+    UINT64 = 0x15, /// 64 bit unsigned integer
+    // UINT128 = 0x16, /// 128-bit unsigned integer,
 
-    FLOAT32 = 0x31, /// 32 bit Float
-    FLOAT64 = 0x32, /// Floating point
-    //       FLOAT128        = 0x33, /// 128bits Floating point
-    BIGINT = 0x3B, /// Signed Bigint
+    FLOAT32 = 0x17, /// 32 bit Float
+    FLOAT64 = 0x18, /// Floating point
+    //       FLOAT128        = 0x19, /// 128bits Floating point
+    BIGINT = 0x1A, /// Signed Bigint
 
-    VER = 0x3F, /// Version field
+    VER = 0x1F, /// Version field
+        /// The following is only used internal (by HiBON) and should to be use in a stream Document
     DEFINED_NATIVE = 0x40, /// Reserved as a definition tag it's for Native types
     NATIVE_DOCUMENT = DEFINED_NATIVE | 0x3e, /// This type is only used as an internal represention (Document type)
 
@@ -80,6 +81,11 @@ enum Type : ubyte {
     NATIVE_DOCUMENT_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | NATIVE_DOCUMENT,
     /// Represetents (Document[]) is convert to an ARRAY of DOCUMENT's
     NATIVE_STRING_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | STRING, /// Represetents (string[]) is convert to an ARRAY of string's
+}
+
+static unittest {
+    enum SPACE = char(0x20);
+    static assert(Type.VER < SPACE);
 }
 
 @safe struct DataBlock {

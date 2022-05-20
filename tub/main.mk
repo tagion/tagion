@@ -74,7 +74,7 @@ endif
 include $(DTUB)/ways.mk
 include $(DTUB)/gitconfig.mk
 include $(DTUB)/config/submodules.mk
-include $(DTUB)/config/druntime.mk
+# include $(DTUB)/config/druntime.mk
 include $(DTUB)/config/submake.mk
 include $(DTUB)/config/host.mk
 include $(DTUB)/config/cross.mk
@@ -85,10 +85,10 @@ include $(DTUB)/devnet/devnet.mk
 #
 # Packages
 #
-
 include $(DTUB)/config/compiler.mk
 include $(DTUB)/config/dstep.mk
 include $(DTUB)/config/ddeps.mk
+include $(DTUB)/config/bins.mk
 
 include $(DTUB)/compile.mk
 
@@ -105,6 +105,14 @@ include $(DTUB)/compile.mk
 -include $(REPOROOT)/config.*.mk
 -include $(REPOROOT)/config.mk
 
+include $(DTUB)/config/ldc-build-runtime.mk
+
+#
+# Testbench
+#
+include $(DTUB)/testbench/wallets.mk
+include $(DTUB)/testbench/mode0.mk
+include $(DTUB)/testbench/mode1.mk
 
 #
 # Enable cleaning
@@ -116,7 +124,21 @@ include $(DTUB)/clean.mk
 #
 include $(DTUB)/help.mk
 
-run: tagionwave
-	cd $(DBIN);
-	rm -fR data; mkdir data;
-	script -c "./tagionwave $(DRTFALGS) -N 7" tagionwave_script.log
+# run: tagionwave
+# 	cd $(DBIN)
+# 	rm -fR data; mkdir data;
+# 	script -c "./tagionwave $(DRTFALGS) -N 7 -t 200" tagionwave_script.log
+
+run: mode0
+	@echo "------------ DEPRECATED ----------------"
+	@echo "run target change to mode0 or mode1"
+	@echo "make mode0 : to start a network in mode 0"
+	@echo "make mode1 : to start a network in mode 1"
+
+mode1z: tagionwave
+	cd $(MODE1_ROOT)
+	rm -f tagionrun.sh tagionwave.json
+	cp $(FUND)/mode1/tagionwave.json .
+	cp -a $(REPOROOT)/tagionrun.sh .
+	export TAGIONWAVE=$(TAGIONWAVE)
+	./tagionrun.sh

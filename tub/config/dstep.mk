@@ -5,7 +5,7 @@ DSTEP_ATTRIBUTES+= --global-attribute=@nogc
 
 #
 # $1 D Package
-# $2 Include directory for the .h c-header files
+	# $2 Include directory for the .h c-header files
 # $3 Target directory for the .di files
 # $4 .d files which depends on the the .di files
 #

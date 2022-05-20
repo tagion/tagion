@@ -1,6 +1,9 @@
 module tagion.crypto.SecureInterfaceNet;
 
-import tagion.basic.Basic : Buffer, Pubkey, Signature;
+import std.typecons : TypedefType;
+import tagion.basic.Types : Buffer, Pubkey, Signature, isBufferTypeDef;
+
+
 import tagion.hibon.HiBONRecord : isHiBONRecord, HiBONPrefix;
 import tagion.hibon.Document : Document;
 
@@ -11,6 +14,14 @@ alias check = Check!SecurityConsensusException;
 @safe
 interface HashNet {
     uint hashSize() const pure nothrow;
+    final immutable(Buffer) rawCalcHash(Buf)(scope const(Buf) data) const if (isBufferTypeDef!Buf) {
+        return rawCalcHash(cast(TypedefType!Buf)data);
+    }
+
+    final immutable(Buffer) calcHash(Buf)(scope const(Buf) data) const if (isBufferTypeDef!Buf) {
+        return calcHash(cast(TypedefType!Buf)data);
+    }
+
     immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const;
     immutable(Buffer) calcHash(scope const(ubyte[]) data) const;
     immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure;
@@ -34,9 +45,6 @@ interface SecureNet : HashNet {
     @nogc Pubkey pubkey() pure const nothrow;
     bool verify(immutable(ubyte[]) message, const Signature signature, const Pubkey pubkey) const;
     final bool verify(const Document doc, const Signature signature, const Pubkey pubkey) const {
-
-        
-
             .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
                     .SECURITY_MESSAGE_HASH_KEY);
         immutable message = rawCalcHash(doc.serialize);
@@ -54,7 +62,7 @@ interface SecureNet : HashNet {
 
     final Signed sign(const Document doc) const {
 
-        
+
 
             .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
                     .SECURITY_MESSAGE_HASH_KEY);

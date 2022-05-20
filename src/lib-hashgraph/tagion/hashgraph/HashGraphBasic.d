@@ -5,7 +5,8 @@ import std.format;
 import std.typecons : TypedefType;
 import std.exception : assumeWontThrow;
 
-import tagion.basic.Basic : Buffer, Signature, Pubkey, EnumText;
+import tagion.basic.Types : Buffer, Signature, Pubkey;
+import tagion.basic.Basic : EnumText;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.utils.BitMask;

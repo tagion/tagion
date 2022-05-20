@@ -17,7 +17,8 @@ import std.conv : to;
 import std.traits;
 import std.exception : assumeUnique;
 import std.container.rbtree : RedBlackTree, redBlackTree;
-import tagion.basic.Basic : basename, Buffer, log2, assumeTrusted;
+import tagion.basic.Types : Buffer;
+import tagion.basic.Basic : basename, log2, assumeTrusted;
 import tagion.basic.TagionExceptions : Check;
 
 import tagion.hibon.HiBON : HiBON;
@@ -29,11 +30,11 @@ import std.math : rint;
 
 version (unittest) {
     import Basic = tagion.basic.Basic;
-
+    import tagion.basic.Types : FileExtension;
     const(Basic.FileNames) fileId(T = BlockFile)(string prefix = null) @safe {
         import basic = tagion.basic.Basic;
 
-        return basic.fileId!T("drt", prefix);
+        return basic.fileId!T(FileExtension.dart, prefix);
     }
 }
 
@@ -1236,7 +1237,7 @@ class BlockFile {
     void fromDoc(const(Document) doc) {
         allocated_chains = null;
 
-        
+
 
         .check(doc.isArray, "Document should be an array");
         foreach (a; doc[]) {
@@ -1387,15 +1388,12 @@ class BlockFile {
         //
         // Write new allocated blocks to the file
         //
-        @trusted writeBlock()
+
         { //write_blocks_in_sorted_order
             pragma(msg, "Block ", Block);
-
             auto sorted_indices = blocks.keys.dup.sort;
-
             sorted_indices.each!(index => write(index, blocks[index]));
         }
-        writeBlock;
 
         writeMasterBlock;
         recycle_indices.build_segments;
