@@ -84,3 +84,13 @@ extern(C) int main() {
     return 0;
 }
 ++/
+
+import tagion.betterC.utils.RBTree : RBTreeT;
+import tagion.betterC.hibon.HiBON : HiBONT;
+alias HiBONT_RBTreeT = RBTreeT!(HiBONT.Member*).Node;
+extern(C) HiBONT_RBTreeT _D6tagion7betterC5utils6RBTree__T7RBTreeTTPSQBqQBm5hibon5HiBON6HiBONT6MemberZQBs4NILLSQDgQDcQCxQCu__TQCqTQClZQCy4Node;
+
+// extern(C) void  _D6tagion7betterC5utils6RBTree__T7RBTreeTTPSQBqQBm5hibon5HiBON6HiBONT6MemberZQBs20_staticCtor_L50_C5_1FNbNiNfZv() {
+// }
+
+pragma(msg, "HiBONT_RBTreeT ", _D6tagion7betterC5utils6RBTree__T7RBTreeTTPSQBqQBm5hibon5HiBON6HiBONT6MemberZQBs4NILLSQDgQDcQCxQCu__TQCqTQClZQCy4Node.sizeof);
