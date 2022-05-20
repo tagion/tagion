@@ -352,7 +352,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     }
                 }
                 if (state.checkState(DARTSynchronizeState.READY) && !request_handling) {
-                    node.listen(pid, &StdHandlerCallback, cast(string) task_name, // HERE
+                    node.listen(pid, &StdHandlerCallback, cast(string) task_name, // HERE  cast?
                             opts.dart.sync.host.timeout.msecs,
                             cast(uint) opts.dart.sync.host.max_size);
                     request_handling = true;
@@ -414,6 +414,12 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
     void tryToSubscribe(NodeAddress[Pubkey] node_addreses, shared(p2plib.NodeI) node) { //HERE
         bool subscribeTo(NodeAddress address) {
             try {
+                import std.stdio;
+                log("###########################");
+                log("###########################");
+                log("%s", address.address);
+                log("###########################");
+                pragma(msg, "####");
                 stream = node.connect(address.address, address.is_marshal, //HERE
                         opts.dart.subs.protocol_id);
                 auto taskName = opts.dart.subs.slave_task_name;
@@ -480,14 +486,14 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
     }
 }
 
-unittest {
-    shared Test t;
-    shared char[] a;
-    a=cast(shared)"WOW_WORK!".dup;
-    t=new shared(Test)(a);
-    t.print;
+// unittest {
+//     shared Test t;
+//     shared char[] a;
+//     a=cast(shared)"WOW_WORK!".dup;
+//     t=new shared(Test)(a);
+//     t.print;
 
-}
+// }
 /+
 Error: constructor
 tagion.dart.DARTSynchronization.P2pSynchronizationFactory.this(

@@ -217,6 +217,10 @@ static void EnableLogger() {
         return addIdentity(listenAddr);
     }
 
+    string addIdentityy(string addr) {
+        return addr ~ "/p2p/" ~ this.Id;
+    }
+
     protected string addIdentity(string addr) {
         return addr ~ "/p2p/" ~ this.Id;
     }

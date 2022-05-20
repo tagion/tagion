@@ -1,6 +1,5 @@
 module p2p.interfaces;
 public import p2p.cgo.c_helper : ControlCode;
-import p2p.cgo.c_helper : DBuffer;
 import tagion.services.Options;
 import tagion.services.Options : DefaultOptions;
 alias Buffer = immutable(ubyte[]);
