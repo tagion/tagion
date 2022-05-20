@@ -292,6 +292,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
 
             },
                 &dartHiPRC,
+                /+
+                version(none) {
                 (string taskName, Buffer data) {
                 log("DSS: Received request from service: %s %d", taskName, data.length);
                 Document loadAll(HiRPC hirpc) {
@@ -357,7 +359,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     auto response = empty_hirpc.result(receiver, params);
                     sendResult(response.toDoc.serialize);
                 }
-            },
+                }}
+                +/
             //     (ActiveNodeAddressBook update) {
             //         //node_addrses = cast(NodeAddress[Pubkey]) update.data;
             //     log.warning("Should be removed ActiveNodeAddressBook update (the AddressBook is shoud be used instead)");

@@ -188,6 +188,7 @@ void dartServiceTask(Net : SecureNet)(
                     (string taskName, Buffer data) {
                 log("DS: Received request from service: %s", taskName);
                 const doc = Document(data);
+                immutable sender = empty_hirpc.sender(doc);
                 auto receiver = empty_hirpc.receive(doc);
                 const message_doc = doc[Keywords.message].get!Document;
                 const hrpc_id = message_doc[Keywords.id].get!uint;
@@ -259,7 +260,7 @@ void dartServiceTask(Net : SecureNet)(
                     }
                     if (local_fp.length > 0) {
                         immutable foreign_data = requestData(empty_hirpc, local_fp);
-                        send(dart_sync_tid, opts.dart.task_name, foreign_data);
+                        dart_sync_tid.send(opts.dart.task_name, foreign_data);
                     }
                 }
 
@@ -268,7 +269,7 @@ void dartServiceTask(Net : SecureNet)(
                     auto mrh = cast(ResponseHandler)(new ModifyRequestHandler(hirpc,
                         taskName, receiver));
                     requestPool.add(hrpc_id, mrh);
-                    send(dart_sync_tid, data);
+                    dart_sync_tid.send(sender);
                 }
 
                 if (method == DART.Quries.dartRead) {

@@ -173,7 +173,7 @@ struct HiRPC {
             Error error;
         }
 
-        @disable this();
+        //@disable this();
         //        @Label("") SecureNet net;
         @Label("$sign", true) @(Filter.Initialized) Signature signature;
         @Label("$pkey", true) @(Filter.Initialized) Pubkey pubkey;
