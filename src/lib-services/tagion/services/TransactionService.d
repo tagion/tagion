@@ -146,7 +146,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                             break;
 
                         default:
-                            const inputs = signed_contract.contract.input;
+                            const inputs = signed_contract.contract.inputs;
                             requestInputs(inputs, ssl_relay.id);
                             yield;
 

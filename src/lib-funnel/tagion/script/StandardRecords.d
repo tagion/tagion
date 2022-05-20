@@ -170,13 +170,13 @@ enum OwnerKey = "$Y";
     }
 
     @RecordType("SMC") struct Contract {
-        @Label("$in") Buffer[] input; /// Hash pointer to input (DART)
-        @Label("$read", true) Buffer[] read; /// Hash pointer to read-only input (DART)
+        @Label("$in") Buffer[] inputs; /// Hash pointer to input (DART)
+        @Label("$read", true) Buffer[] reads; /// Hash pointer to read-only input (DART)
         @Label("$out") Document[Pubkey] output; // pubkey of the output
         @Label("$run") Script script; // TVM-links / Wasm binary
         mixin HiBONRecord;
         bool verify() {
-            return (input.length > 0) &&
+            return (inputs.length > 0) &&
                 (output.length > 0);
         }
     }

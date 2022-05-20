@@ -67,15 +67,15 @@ class SmartScript {
         if (inputs[].all!(a => a.filed.hasMember(OwnerKey) && a.filed[OwnerKey].isType!Buffer)) {
             return ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING;
         }
-        if (signed_contract.contract.input.length == inputs.length) {
+        if (signed_contract.contract.inputs.length == inputs.length) {
                 return ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING;
         }
         auto check_range = () @trusted => lockstep(
-                    signed_contract.contract.input,
+                    signed_contract.contract.inputs,
                     inputs[],
                     signed_contract.signs);
 
-        foreach (print, input, signature; zip(signed_contract.contract.input,
+        foreach (print, input, signature; zip(signed_contract.contract.inputs,
                     inputs[],
                     signed_contract.signs)) {
             import tagion.utils.Miscellaneous : toHexString;

@@ -35,9 +35,9 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
 
         uint current_epoch;
 
-        auto net = new StdSecureNet;
+        const net = new StdSecureNet;
         auto rec_factory = RecordFactory(net);
-        auto empty_hirpc = HiRPC(null);
+        const empty_hirpc = HiRPC(null);
         Tid dart_tid = locate(dart_task_name);
         SmartScript[Buffer] smart_scripts;
 
@@ -93,9 +93,12 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
             }
         }
 
+        RecordFactory.Recorder input_recorder;
+
         void receive_epoch(Buffer payloads_buff) nothrow {
             try {
-                auto payload_doc = Document(payloads_buff);
+
+                const payload_doc = Document(payloads_buff);
                 log("Received epoch: len:%d", payload_doc.length);
 
                 scope bool[Buffer] used_inputs;
@@ -117,7 +120,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                     scope signed_contract = SignedContract(doc);
                     //smart_script.check(net);
                     bool invalid;
-                    ForachInput: foreach (input; signed_contract.contract.input) {
+                    ForachInput: foreach (input; signed_contract.contract.inputs) {
                         if (input in used_inputs) {
                             invalid = true;
                             break ForachInput;
@@ -171,10 +174,18 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
 
         }
 
+        void register_input(immutable(RecordFactory.Recorder) recorder) {
+
+        }
+
         uint counter;
         ownerTid.send(Control.LIVE);
         while (!stop) {
-            receive(&receive_epoch, &controller, &taskfailure,
+            receive(
+                &receive_epoch,
+                &register_input,
+                &controller,
+                &taskfailure,
             );
         }
     }

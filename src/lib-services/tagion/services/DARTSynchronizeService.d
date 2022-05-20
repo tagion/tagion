@@ -170,6 +170,75 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         const empty_hirpc = HiRPC(null);
 
         auto subscription = ActiveNodeSubscribtion!Net(opts);
+        //
+        // Handles HiPRC for the DART
+        //
+        void dartHiPRC(string taskName, immutable(HiRPC.Sender) sender) {
+//            log("DSS: Received request from service: %s %d", taskName, data.length);
+            Document loadAll(HiRPC hirpc) {
+                return Document(dart.loadAll().serialize);
+            }
+
+            void sendResult(Buffer result) {
+                auto tid = locate(taskName);
+                if (tid != Tid.init) {
+                    log("sending response back, %s", taskName);
+                    send(tid, result);
+                }
+                else {
+                    log("couldn't locate task: %s", taskName);
+                }
+            }
+
+//            const doc = Document(data);
+            const receiver = empty_hirpc.receive(sender);
+            if (receiver.supports!DART) {
+                log("receiver: %s", receiver.toDoc.toJSON);
+                const request = dart(receiver, false);
+                    const tosend = request.toDoc.serialize;
+                    sendResult(tosend);
+            }
+            else {
+                // auto epoch = receiver.params["epoch"].get!int;
+//                log("received: %s", doc.toJSON);
+                auto owners_doc = receiver.method.params["owners"].get!Document;
+                Buffer[] owners;
+                foreach (owner; owners_doc[]) {
+                    owners ~= owner.get!Buffer;
+                }
+                // log("epoch: %d, owner: %s", epoch, owner);
+                auto result_doc = loadAll(hrpc);
+                StandardBill[] bills;
+                foreach (archive_doc; result_doc[]) {
+                    auto archive = new Archive(net, archive_doc.get!Document);
+                    //auto data_doc = Document(archive.data);
+                    log("%s", archive.filed.toJSON);
+                    if (!StandardBill.isRecord(archive.filed))
+                        continue;
+                    log("is standardbill");
+                    const bill = StandardBill(archive.filed);
+
+                    // if (archive.filed.hasMember("$type")){
+                    //     if (archive.filed["$type"].get!string == "BIL"){
+                    //         auto bill = StandardBill(archive.filed);
+                    import std.algorithm : canFind;
+
+                    // log("bill.owner: %s, owner: %s", bill.owner, owner);
+                    if (owners.canFind(bill.owner)) {
+                        log("owners found");
+                        bills ~= bill;
+                    }
+                    // }
+                    // }
+                }
+                HiBON params = new HiBON;
+                foreach (i, bill; bills) {
+                    params[i] = bill.toHiBON;
+                }
+                auto response = empty_hirpc.result(receiver, params);
+                sendResult(response.toDoc.serialize);
+            }
+        }
 //        NodeAddress[Pubkey] node_addrses;
         log("send live");
         ownerTid.send(Control.LIVE);
@@ -220,7 +289,10 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                 else {
                     closeConnection();
                 }
-            }, (string taskName, Buffer data) {
+
+            },
+                &dartHiPRC,
+                (string taskName, Buffer data) {
                 log("DSS: Received request from service: %s %d", taskName, data.length);
                 Document loadAll(HiRPC hirpc) {
                     return Document(dart.loadAll().serialize);
@@ -441,7 +513,8 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
                 if (cntrl == Control.STOP) {
                     stop = true;
                 }
-            }, (Response!(ControlCode.Control_Disconnected) resp) { writeln("Subscribe Disconnected key: ", resp.key); }, (
+            },
+                (Response!(ControlCode.Control_Disconnected) resp) { writeln("Subscribe Disconnected key: ", resp.key); }, (
                     Response!(ControlCode.Control_RequestHandled) response) {
                 writeln("Subscribe recorder received");
                 auto doc = Document(response.data);
