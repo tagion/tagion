@@ -281,7 +281,7 @@ void dartServiceTask(Net : SecureNet)(
                 }
             },
                     &dartHiRPC,
-
+/+
                     (string taskName, Buffer data) {
                 log("DS: Received request from service: %s", taskName);
                 const doc = Document(data);
@@ -376,6 +376,7 @@ void dartServiceTask(Net : SecureNet)(
                     modifyDART();
                 }
             },
++/
                     (NodeAddress[string] update) { node_addrses = update; },
                     (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); },
             );
