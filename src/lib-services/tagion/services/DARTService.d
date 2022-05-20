@@ -107,7 +107,7 @@ void dartServiceTask(Net : SecureNet)(
         auto dart_sync_tid = locate(opts.dart.sync.task_name);
 
         auto net = new Net();
-        net.derive(opts.dart.task_nameopts.dart.task_name, master_net);
+        net.derive(opts.dart.task_name, master_net);
 
         auto hirpc = HiRPC(net);
         auto empty_hirpc = HiRPC(null);
@@ -116,6 +116,7 @@ void dartServiceTask(Net : SecureNet)(
         auto requestPool = new StdHandlerPool!(ResponseHandler, uint)(
                 opts.dart.commands.read_timeout.msecs);
 
+        pragma(msg, "fixme(cbr): shared address book should be used instead of local address book");
         NodeAddress[string] node_addrses;
 
         void dartHiRPC(string taskName, immutable(HiRPC.Sender) sender) {
@@ -377,7 +378,7 @@ void dartServiceTask(Net : SecureNet)(
                 }
             },
 +/
-                    (NodeAddress[string] update) { node_addrses = update; },
+//                    (NodeAddress[string] update) { node_addrses = update; },
                     (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); },
             );
             requestPool.tick();

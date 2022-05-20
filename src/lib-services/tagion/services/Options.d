@@ -153,12 +153,12 @@ struct Options {
         mixin JSONCommon;
     }
 
-    struct ContactCollector {
-        string task_name; /// Name of the transcript service
-        mixin JSONCommon;
-    }
+    // struct ContactCollector {
+    //     string task_name; /// Name of the transcript service
+    //     mixin JSONCommon;
+    // }
 
-    ContactCollector collector;
+    // ContactCollector collector;
 
     import tagion.script.TranscriptOptions;
 
