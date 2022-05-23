@@ -170,8 +170,12 @@ unittest {
     import tagion.dart.Recorder : Add, Remove;
     import tagion.crypto.SecureNet;
     import tagion.basic.Types : FileExtension;
+    import tagion.hibon.HiBON;
+    import tagion.hibon.HiBONRecord : GetLabel;
+
+
     const net = new StdSecureNet;
-    auto alice = new StdSecureNet;
+    SecureNet alice = new StdSecureNet;
     {
         alice.generateKeyPair("Alice's secret password");
     }
@@ -209,20 +213,27 @@ unittest {
     // look into SecureInterfasceNet
     const bills_fingerprint = net.hashOf(alices_bills.toDoc);
     signed_contract.contract.input ~= bills_fingerprint;
+
+    Document doc;
     // use new.sugn instead  [alice.sign(dsfsd)]
-    signed_contract.signs ~= cast(Signature)(bills[0].owner);
 
-    // assert(bob.verify(bills[0]) == false);
-    // assert(alice.verify(bills[0]) == true);
+        { // Hash key
+            auto h = new HiBON;
+            enum bill_name = GetLabel!(StandardBill).name;
+            h[bill_name] = bills[0];
+            doc = Document(h);
+        }
 
+    auto signed_doc = alice.sign(doc);
+
+    assert(alice.verify(doc, signed_doc.signature, alice.pubkey));
+    // assert(!bob.verify(doc, signed_doc.signature, bob.pubkey));
 
     //add static function for unittests for checking similar stuff
 
 
     // // signed_contract.inputs ~= bills_fingerprint;
     // smart_script.signed_contract = signed_contract;
-
-
 
     /// Create a signaned smartcontract
 
