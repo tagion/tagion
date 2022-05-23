@@ -44,7 +44,7 @@ class HashGraph {
 
     protected alias check = Check!HashGraphConsensusException;
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
-    import tagion.utils.Statistic;
+    import tagion.logger.Statistic;
 
     immutable size_t node_size;
     immutable(string) name; // Only used for debugging

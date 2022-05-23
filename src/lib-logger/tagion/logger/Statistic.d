@@ -1,10 +1,11 @@
-module tagion.utils.Statistic;
+module tagion.logger.Statistic;
 
 import std.typecons : Tuple;
+import tagion.hibon.HiBONRecord;
 
 struct Statistic(T) {
     //    enum Limits : double { MEAN=10, SUM=100 }
-    protected {
+    private {
         double sum2 = 0.0;
         double sum = 0.0;
         T _min = T.max, _max = T.min;
@@ -32,6 +33,8 @@ struct Statistic(T) {
 
         return Result(sqrt(M / (N - 1)), mx, N, _min, _max);
     }
+
+    mixin HiBONRecord;
 }
 
 unittest {
