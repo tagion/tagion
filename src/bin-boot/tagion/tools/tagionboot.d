@@ -129,10 +129,13 @@ int _main(string[] args) {
 
     void addGenesisEpoch(RecordFactory.Recorder recorder) {
         import tagion.dart.DARTFile : hash_null;
-        EpochBlock b;
-        b.previous = hash_null;
+        EpochBlock block;
+        block.previous = hash_null;
 
-        recorder.add(b);
+        auto top_record = LastEpochRecord(net, block);
+
+        recorder.add(block);
+        recorder.add(top_record);
     }
     addGenesisEpoch(recorder);
 

@@ -116,7 +116,101 @@ void dartServiceTask(Net : SecureNet)(
         auto requestPool = new StdHandlerPool!(ResponseHandler, uint)(
                 opts.dart.commands.read_timeout.msecs);
 
+        pragma(msg, "fixme(cbr): shared address book should be used instead of local address book");
         NodeAddress[string] node_addrses;
+
+        void dartHiRPC(string taskName, immutable(HiRPC.Sender) sender) {
+            /// Note use to be (string taskName, Buffer data) {
+
+                log("DS: Received request from service: %s", taskName);
+
+                immutable receiver = empty_hirpc.receive(sender);
+                //immutable method = receiver.method.name; ;
+
+                void readDART() {
+                    scope doc_fingerprints = receiver.method.params[DARTFile.Params.fingerprints].get!(
+                        Document);
+                    scope fingerprints = doc_fingerprints.range!(Buffer[]);
+                    alias bufArr = Buffer[];
+                    bufArr[NodeAddress] remote_fp_requests;
+                    Buffer[] local_fp;
+                    fpIterator: foreach (fp; fingerprints) {
+                        const rims = DART.Rims(fp);
+                        if (sector_range.inRange(rims)) {
+                            local_fp ~= fp;
+                            continue fpIterator;
+                        }
+                        else {
+                            foreach (address, fps; remote_fp_requests) {
+                                if (address.sector.inRange(rims)) {
+                                    fps ~= fp;
+                                    remote_fp_requests[address] = fps;
+                                    continue fpIterator;
+                                }
+                            }
+                            foreach (id, address; node_addrses) {
+                                if (address.sector.inRange(rims)) {
+                                    remote_fp_requests[address] = [fp];
+                                    continue fpIterator;
+                                }
+                            }
+                        }
+                        throw new TagionException("No address for fp");
+                    }
+                    // auto recorder=dart.loads(local_fp, DARTFile.Recorder.Archive.Type.ADD);
+                    auto rs = cast(ResponseHandler)(new ReadRequestHandler(array(fingerprints),
+                        hirpc, taskName, receiver));
+                    // if(local_fp.length>0){
+                    //     requestPool.setResponse(ResponseHandler.Response!uint(hrpc_id, empty_hirpc.result(receiver, recorder.toHiBON).toHiBON(net).serialize));
+                    // }
+                    requestPool.add(receiver.method.id, rs);
+                    Buffer requestData(HiRPC hirpc, bufArr fps) {
+                        auto params = new HiBON;
+                        auto params_fingerprints = new HiBON;
+                        foreach (i, b; fps) {
+                            if (b.length !is 0) {
+                                params_fingerprints[i] = b;
+                            }
+                        }
+                        params[DARTFile.Params.fingerprints] = params_fingerprints;
+                        const request = hirpc.dartRead(params, receiver.method.id);
+                        return request.toDoc.serialize;
+                    }
+
+                    if (remote_fp_requests.length > 0) {
+                        import std.array;
+
+                        foreach (addr, fps; remote_fp_requests) {
+                            auto stream = node.connect(addr.address,
+                                addr.is_marshal, [opts.dart.sync.protocol_id]);
+                            // connectionPool.add(stream.Identifier, stream);
+                            stream.listen(&StdHandlerCallback, task_name,
+                                opts.dart.sync.host.timeout.msecs, opts.dart.sync.host.max_size);
+                            immutable foreign_data = requestData(hirpc, fps);
+                            stream.writeBytes(foreign_data);
+                        }
+                    }
+                    if (local_fp.length > 0) {
+                        immutable foreign_data = requestData(empty_hirpc, local_fp);
+                        dart_sync_tid.send(opts.dart.task_name, foreign_data);
+                    }
+                }
+
+                void modifyDART() { //TODO: not implemented yet
+                    //HiRPC.check_element!Document(receiver.params, DARTFile.Params.recorder);
+                    auto mrh = cast(ResponseHandler)(new ModifyRequestHandler(hirpc,
+                        taskName, receiver));
+                    requestPool.add(receiver.method.id, mrh);
+                    dart_sync_tid.send(sender);
+                }
+
+                if (receiver.method.name == DART.Quries.dartRead) {
+                    readDART();
+                }
+                else if (receiver.method.name == DART.Quries.dartModify) {
+                    modifyDART();
+                }
+            }
 
         enum recorder_hrpc_id = 1;
         log("sending live");
@@ -185,9 +279,12 @@ void dartServiceTask(Net : SecureNet)(
                     log(bullseye.cutHex);
                 }
             },
+                    &dartHiRPC,
+/+
                     (string taskName, Buffer data) {
                 log("DS: Received request from service: %s", taskName);
                 const doc = Document(data);
+                immutable sender = empty_hirpc.sender(doc);
                 auto receiver = empty_hirpc.receive(doc);
                 const message_doc = doc[Keywords.message].get!Document;
                 const hrpc_id = message_doc[Keywords.id].get!uint;
@@ -259,7 +356,7 @@ void dartServiceTask(Net : SecureNet)(
                     }
                     if (local_fp.length > 0) {
                         immutable foreign_data = requestData(empty_hirpc, local_fp);
-                        send(dart_sync_tid, opts.dart.task_name, foreign_data);
+                        dart_sync_tid.send(opts.dart.task_name, foreign_data);
                     }
                 }
 
@@ -268,7 +365,7 @@ void dartServiceTask(Net : SecureNet)(
                     auto mrh = cast(ResponseHandler)(new ModifyRequestHandler(hirpc,
                         taskName, receiver));
                     requestPool.add(hrpc_id, mrh);
-                    send(dart_sync_tid, data);
+                    dart_sync_tid.send(sender);
                 }
 
                 if (method == DART.Quries.dartRead) {
@@ -278,7 +375,8 @@ void dartServiceTask(Net : SecureNet)(
                     modifyDART();
                 }
             },
-                    (NodeAddress[string] update) { node_addrses = update; },
++/
+//                    (NodeAddress[string] update) { node_addrses = update; },
                     (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); },
             );
             requestPool.tick();
@@ -286,11 +384,6 @@ void dartServiceTask(Net : SecureNet)(
     }
     catch (Throwable e) {
         fatal(e);
-        // immutable task_e = e.taskException;
-        // log(task_e);
-        // ownerTid.send(task_e);
-        // writefln("EXCEPTION: %s", e);
-        // pragma(msg, "fixme(alex): Why doesn't this send the exception to the owner");
     }
 }
 

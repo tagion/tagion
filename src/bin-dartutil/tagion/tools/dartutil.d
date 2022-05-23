@@ -59,7 +59,7 @@ void updateAddNetworkNameCard(const HashNet net, NetworkNameCard nnc, NetworkNam
     recorder.add(hr_new);
 }
 
-void updateRemoveNetworkNameCard(const HashNet net, const RecordFactory.Recorder src, RecordFactory.Recorder dest)
+void updateRemoveHashKeyRecord(const HashNet net, const RecordFactory.Recorder src, RecordFactory.Recorder dest)
 in {
     assert(dest !is null);
 } 
@@ -70,6 +70,18 @@ do {
     // WRONG: removing NEW lock instead of OLD
     // auto hash_locks = hash_filter.map!(a => HashLock(net, a.filed));
     // dest.insert(hash_locks, Archive.Type.REMOVE);
+}
+
+pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
+void updateAddEpochBlock(const HashNet net, EpochBlock epoch_block, RecordFactory.Recorder recorder) {
+    EpochBlock epoch_block_new;
+    epoch_block_new.epoch = epoch_block.epoch + 1;
+    epoch_block_new.previous = net.hashOf(epoch_block);
+
+    auto le_block_new = LastEpochRecord(net, epoch_block_new);
+
+    recorder.add(epoch_block_new);
+    recorder.add(le_block_new);
 }
 
 mixin Main!_main;
@@ -101,6 +113,7 @@ int _main(string[] args) {
     bool initialize = false;
     string passphrase = "verysecret";
     string nncupdatename, nncreadname;
+    uint testaddblocks, testdumpblocks;
 
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
@@ -126,6 +139,8 @@ int _main(string[] args) {
             "nncupdate", "Update existing NetworkNameCard with given name", &nncupdatename,
             "nncread", "Read NetworkNameCard with given name", &nncreadname,
             "verbose|v", "Print output to console", &verbose,
+            "testaddblocks", "DEBUG MODE: Add N epoch blocks in chain", &testaddblocks,
+            "testdumpblocks", "DEBUG MODE: Dump last N epoch blocks in chain", &testdumpblocks,
     );
 
     dartread = !dartread_args.empty;
@@ -236,18 +251,27 @@ int _main(string[] args) {
         return !found_hr.isNull;
     }
 
-    void toConsole(string format, string doc, bool indent_line = false, string alternative_text = "") {
+    Nullable!EpochBlock readLastEpochBlock(HiRPC hirpc, DART db) {
+        auto epoch_top_read = readRecord!LastEpochRecord(LastEpochRecord.dartHash(net), hirpc, db);
+        if (epoch_top_read.isNull) {
+            return Nullable!EpochBlock.init;
+        }
+
+        return readRecord!EpochBlock(epoch_top_read.get.top, hirpc, db);
+    }
+
+    void toConsole(T)(T doc, bool indent_line = false, string alternative_text = "") if (isHiBONRecord!T || is(T == Document)) {
         if (verbose) {
             if (indent_line)
                 writeln;
-            writefln(format, doc);
+            writefln("%s: %s", T.stringof, doc.toPretty);
         }
         else if (!alternative_text.empty) {
             writeln(alternative_text);
         }
     }
 
-    const onehot = dartrpc + dartread + dartrim + dartmodify + nncupdate + nncread;
+    const onehot = dartrpc + dartread + dartrim + dartmodify + nncupdate + nncread + (testaddblocks > 0) + (testdumpblocks > 0);
 
     if (onehot > 1) {
         stderr.writeln("Only one of the dartrpc, dartread, dartrim, dartmodify, nncupdate and nncread switched alowed");
@@ -280,7 +304,7 @@ int _main(string[] args) {
 
         outputfilename.fwrite(tosendResult);
 
-        toConsole("Result: %s", result.message.toPretty);
+        toConsole!Document(result.message);
     }
     else if (dartrim) {
         // Buffer root_rims;
@@ -322,35 +346,35 @@ int _main(string[] args) {
     else if (nncread) {
         auto nnc_read = readNNC(nncreadname, hirpc, db);
         if (nnc_read.isNull) {
-            writefln("No NetworkNameCard with name '%s' in DART", nncreadname);
+            writefln("No %s with name '%s' in DART", typeof(nnc_read.get).stringof, nncreadname);
         }
         else {
             auto nnc = nnc_read.get;
-            toConsole("NetworkNameCard: %s", nnc.toDoc.toPretty, true, format("\nFound NetworkNameCard '%s'", nncreadname));
+            toConsole(nnc, true, format("\nFound %s '%s'", typeof(nnc).stringof, nncreadname));
 
             writeln;
             if (verifyNNCSignature(nnc, hirpc, db))
-                writefln("Signature for NetworkNameCard '%s' is verified", nnc.name);
+                writefln("Signature for %s '%s' is verified", typeof(nnc).stringof, nnc.name);
             else {
-                writefln("WARNING: Signature for NetworkNameCard '%s' is not verified!", nnc.name);
+                writefln("WARNING: Signature for %s '%s' is not verified!", typeof(nnc).stringof, nnc.name);
             }
 
             auto nrc_read = readRecord!NetworkNameRecord(nnc.record, hirpc, db);
             if (nrc_read.isNull) {
                 writeln;
-                writefln("No associated NetworkNameRecord (hash='%s') with NetworkNameCard '%s' in DART", nnc.record.cutHex, nnc.name);
+                writefln("No associated %s (hash='%s') with %s '%s' in DART", typeof(nrc_read.get).stringof, typeof(nnc).stringof, nnc.record.cutHex, nnc.name);
             }
             else {
                 auto nrc = nrc_read.get;
-                toConsole("NetworkNameRecord: %s", nrc.toDoc.toPretty, true);
+                toConsole(nrc, true);
 
                 auto node_addr_read = readRecord!NodeAddress(nrc.node, hirpc, db);
                 if (node_addr_read.isNull) {
                     writeln;
-                    writefln("No associated NodeAddress (hash='%s') with NetworkNameCard '%s' in DART", nrc.node.cutHex, nnc.name);
+                    writefln("No associated %s (hash='%s') with %s '%s' in DART", typeof(node_addr_read.get).stringof, typeof(nnc).stringof, nrc.node.cutHex, nnc.name);
                 }
                 else {
-                    toConsole("NodeAddress: %s", node_addr_read.get.toDoc.toPretty, true);
+                    toConsole(node_addr_read.get, true);
                 }
             }
         }
@@ -358,13 +382,13 @@ int _main(string[] args) {
     else if (nncupdate) {
         auto nnc_read = readNNC(nncupdatename, hirpc, db);
         if (nnc_read.isNull) {
-            writefln("No NetworkNameCard with name '%s' in DART", nncupdatename);
+            writefln("No %s with name '%s' in DART", typeof(nnc_read.get).stringof, nncupdatename);
         }
         else {
             auto nnc = nnc_read.get;
             auto nrc_read = readRecord!NetworkNameRecord(nnc.record, hirpc, db);
             if (nrc_read.isNull) {
-                writefln("No associated NetworkNameRecord (hash='%s') with NetworkNameCard '%s' in DART", nnc.record.cutHex, nnc.name);
+                writefln("No associated %s (hash='%s') with %s '%s' in DART", typeof(nrc_read.get).stringof, typeof(nnc).stringof, nnc.record.cutHex, nnc.name);
             }
             else {
                 auto nrc = nrc_read.get;
@@ -372,25 +396,80 @@ int _main(string[] args) {
                 auto check_hr = HashLock(net, nnc);
                 auto found_hr = readRecord!HashLock(net.hashOf(check_hr.toDoc), hirpc, db);
                 if (found_hr.isNull) {
-                    writefln("WARNING: Signature for NetworkNameCard '%s' is not verified! Unable to update record\nAbort", nnc.name);
+                    writefln("WARNING: Signature for %s '%s' is not verified! Unable to update record\nAbort", typeof(nnc).stringof, nnc.name);
                 }
                 else {
                     auto factory = RecordFactory(net);
                     auto recorder_add = factory.recorder; 
                     updateAddNetworkNameCard(net, nnc, nrc, recorder_add);
                     auto recorder_remove = factory.recorder;
-                    updateRemoveNetworkNameCard(net, recorder_add, recorder_remove);
+                    updateRemoveHashKeyRecord(net, recorder_add, recorder_remove);
 
                     db.modify(recorder_remove);
                     db.modify(recorder_add);
 
-                    writefln("Updated NetworkNameCard with name '%s'", nnc.name);
+                    writeln;
+                    writefln("Updated %s with name '%s'", typeof(nnc).stringof, nnc.name);
+                    writeln;
 
                     if (dump)
                         db.dump(true);
                 }
             }
+        }
+    }
+    else if (testaddblocks > 0) {
+        foreach (i; 0..testaddblocks) {
+            writefln("Step %d", i);
 
+            auto last_epoch_block_read = readLastEpochBlock(hirpc, db);
+            if (last_epoch_block_read.isNull) {
+                writefln("DART is corrupted! Top epoch block in chain was not found. Abort");
+                return 1;
+            }
+
+            auto factory = RecordFactory(net);
+            auto recorder_add = factory.recorder; 
+            updateAddEpochBlock(net, last_epoch_block_read.get, recorder_add);
+            auto recorder_remove = factory.recorder;
+            updateRemoveHashKeyRecord(net, recorder_add, recorder_remove);
+
+            db.modify(recorder_remove);
+            db.modify(recorder_add);
+
+            if (verbose) {
+                writeln;
+                writefln("Recorder add %s", recorder_add.toPretty);
+                writeln;
+                writefln("Recorder remove %s", recorder_remove.toPretty);
+            }
+        }
+    }
+    else if (testdumpblocks > 0) {
+        import tagion.dart.DARTFile : hash_null;
+        auto last_epoch_block_read = readLastEpochBlock(hirpc, db);
+        if (last_epoch_block_read.isNull) {
+            writefln("DART is corrupted! Top epoch block in chain was not found. Abort");
+            return 1;
+        }
+
+        toConsole(last_epoch_block_read.get, true, "Last block is read successfully.");
+        auto previous_hash = last_epoch_block_read.get.previous;
+
+        foreach (i; 1..testdumpblocks) {
+            auto current_block_read = readRecord!EpochBlock(previous_hash, hirpc, db);
+            if (current_block_read.isNull) {
+                writefln("DART is corrupted! Epoch block in chain was not found. Abort");
+                return 1;
+            }
+
+            toConsole(current_block_read.get, true, format("N-%d epoch block is read successfully.", i));
+            previous_hash = current_block_read.get.previous;
+
+            if (previous_hash == hash_null) {
+                writefln("Reached first block in chain. Stop");
+                break;
+            }
         }
     }
     return 0;

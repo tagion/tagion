@@ -1,13 +1,14 @@
 module tagion.script.SmartScript;
 
 import std.exception : assumeUnique;
-import std.range : lockstep;
+import std.range : lockstep, zip;
 import std.format;
 import std.algorithm.iteration : sum, map;
 import std.algorithm.searching : all;
 
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCode, Check;
+import tagion.basic.TagionExceptions : TagionException;
 import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey;
 import tagion.basic.Types : Pubkey, Buffer;
 import tagion.script.TagionCurrency;
@@ -46,46 +47,61 @@ class SmartScript {
     // }
 
 //    @trusted
-    static void check(
+    static ConsensusFailCode check(
         const SecureNet net,
         const ref SignedContract signed_contract,
-        const RecordFactory.Recorder inputs)
+        const RecordFactory.Recorder inputs) nothrow
     in {
         assert(net);
     }
     do {
-        .check(signed_contract.signs.length > 0, ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE);
+        try {
+        if (signed_contract.signs.length > 0) {
+            return ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE;
+        }
         const message = net.hashOf(signed_contract.contract.toDoc);
-        .check(signed_contract.signs.length >= inputs.length,
-                ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE);
-
+        if (signed_contract.signs.length >= inputs.length) {
+            return ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE;
+        }
 //        pragma(msg, typeof(inputs[].front.filed[OwnerKey].get!Pubkey));
-        .check(inputs[].all!(a => a.filed.hasMember(OwnerKey) && a.filed[OwnerKey].isType!Buffer),
-                ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
+        if (inputs[].all!(a => a.filed.hasMember(OwnerKey) && a.filed[OwnerKey].isType!Buffer)) {
+            return ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING;
+        }
+        if (signed_contract.contract.inputs.length == inputs.length) {
+                return ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING;
+        }
+        auto check_range = () @trusted => lockstep(
+                    signed_contract.contract.inputs,
+                    inputs[],
+                    signed_contract.signs);
 
-        .check(signed_contract.contract.input.length == inputs.length,
-                ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
-//        const payment = PayContract(signed_contract.input);
-        (() @trusted {
-            foreach (i, print, input, signature;
-                lockstep(
-                    signed_contract.contract.input,
+        foreach (print, input, signature; zip(signed_contract.contract.inputs,
                     inputs[],
                     signed_contract.signs)) {
-                import tagion.utils.Miscellaneous : toHexString;
+            import tagion.utils.Miscellaneous : toHexString;
 
-                immutable fingerprint = net.hashOf(input);
+            immutable fingerprint = net.hashOf(input);
 
-                .check(print == fingerprint,
-                    ConsensusFailCode.SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
-                Pubkey pkey = input.filed[OwnerKey].get!Buffer;
-
-
-                .check(net.verify(message, signature, pkey),
-                    ConsensusFailCode.SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY);
-
+            if (print == fingerprint) {
+                return ConsensusFailCode.SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT;
             }
-        })();
+            Pubkey pkey = input.filed[OwnerKey].get!Buffer;
+
+
+            if (net.verify(message, signature, pkey)) {
+                return ConsensusFailCode.SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY;
+            }
+        }
+        }
+        catch (TagionException e) {
+            log.trace(e.msg);
+            return ConsensusFailCode.SMARTSCRIPT_CAUGHT_TAGIONEXCEPTION;
+        }
+        catch (Exception e) {
+            log.trace(e.msg);
+            return ConsensusFailCode.SMARTSCRIPT_CAUGHT_EXCEPTION;
+        }
+        return ConsensusFailCode.NONE;
     }
 
     // protected StandardBill[] _output_bills;

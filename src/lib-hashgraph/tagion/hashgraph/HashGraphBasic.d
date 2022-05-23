@@ -360,8 +360,12 @@ struct Wavefront {
     private void update_tides() pure nothrow {
         foreach (e; epacks) {
             _tides.update(e.pubkey,
-            { return e.event_body.altitude; },
-                    (int altitude) { return highest(altitude, e.event_body.altitude); });
+                {
+                    return e.event_body.altitude;
+                },
+                (int altitude) {
+                    return highest(altitude, e.event_body.altitude);
+                });
         }
     }
 

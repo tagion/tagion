@@ -27,7 +27,7 @@ import tagion.basic.Basic : nameOf;
 import tagion.logger.Logger;
 import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
-//import tagion.hashgraph.HashGraphBasic : Wavefront;
+import tagion.hashgraph.HashGraphBasic : EventPackage;
 
 //import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
@@ -192,10 +192,14 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             transcript_tid.send(params.serialize);
         }
 
-import tagion.utils.Miscellaneous;
+        void register_epack(immutable(EventPackage*) epack) @safe {
+            log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
+        }
+
+        import tagion.utils.Miscellaneous;
 
         log.trace("Hashgraph pubkey=%s", net.pubkey.cutHex);
-        hashgraph = new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, &receive_epoch);
+        hashgraph = new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, &receive_epoch, &register_epack);
         // hashgraph.print_flag = true;
         hashgraph.scrap_depth = opts.scrap_depth;
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
@@ -213,8 +217,6 @@ import tagion.utils.Miscellaneous;
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
         assert(receiveOnly!DiscoveryState is DiscoveryState.READY);
 
-//        receiveOnly!DiscoveryState;
-//        receiveOnly!ActiveNodeAddressBook; //Control is Control.LIVE);
             dart_sync_tid = spawn(
                 &dartSynchronizeServiceTask!StdSecureNet,
                 opts,
@@ -266,10 +268,7 @@ import tagion.utils.Miscellaneous;
             p2pnode.closeListener(opts.transaction.protocol_id);
         }
         scope (exit) {
-            log("!!!==========!!!!!! Existing %s", opts.node_name);
-
             if (transcript_tid !is transcript_tid.init) {
-                log("Send stop to %s", opts.transcript.task_name);
                 transcript_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
                     log("Scripting api end!!");
@@ -277,7 +276,6 @@ import tagion.utils.Miscellaneous;
             }
 
             if (discovery_tid !is Tid.init) {
-                log("Send stop to %s", opts.discovery.task_name);
                 discovery_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
                     log("Discovery service stoped");
@@ -285,15 +283,12 @@ import tagion.utils.Miscellaneous;
             }
 
             if (dart_sync_tid !is Tid.init) {
-                log("Send stop to %s", opts.dart.sync.task_name);
                 dart_sync_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
                     log("DART synchronization service stoped");
                 }
             }
-            log("DART TID: %s", dart_tid);
             if (dart_tid !is Tid.init) {
-                log("Send stop to %s", opts.dart.task_name);
                 dart_tid.prioritySend(Control.STOP);
                 if (receiveOnly!Control is Control.END) {
                     log("DART service stoped");
@@ -301,61 +296,37 @@ import tagion.utils.Miscellaneous;
             }
 
             if (transaction_socket_tid !is transaction_socket_tid.init) {
-                log("send stop to %s", opts.transaction.task_name);
                 transaction_socket_tid.prioritySend(Control.STOP);
-                auto control = receiveOnly!Control;
-                log("Control %s", control);
-                if (control is Control.END) {
+                if (receiveOnly!Control is Control.END) {
                     log("Closed transaction");
                 }
             }
 
             if (monitor_socket_tid !is monitor_socket_tid.init) {
-                log("send stop to %s", opts.monitor.task_name);
-                //            try {
                 monitor_socket_tid.prioritySend(Control.STOP);
-
-                receive((Control ctrl) {
-                    if (ctrl is Control.END) {
-                        log("Closed monitor");
-                    }
-                }, (immutable Exception e) { ownerTid.prioritySend(e); });
+                if (receiveOnly!Control is Control.END) {
+                    log("Closed monitor");
+                }
             }
-
-            log("End");
             ownerTid.prioritySend(Control.END);
         }
 
         log.trace("Before startinf monitor and transaction addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
-//        try {
-            monitor_socket_tid = spawn(
-                &monitorServiceTask,
-                opts);
-            //stderr.writefln("@@@@ Wait for monitor %s", opts.node_name,);
 
-            if (receiveOnly!Control is Control.LIVE) {
-                log("Monitor started");
-            }
-            transaction_socket_tid = spawn(
-                &transactionServiceTask,
-                opts);
-            if (receiveOnly!Control is Control.LIVE) {
-                log("Transaction started port %d", opts.transaction.service.port);
-            }
-            else {
-                log("bad command");
-            }
-        // }
-        // catch (Exception e) {
-        //     log("ERROR: %s", e.msg);
-        //     force_stop = true;
-        // }
-        // if (force_stop)
-        //     return;
+        monitor_socket_tid = spawn(
+            &monitorServiceTask,
+            opts);
+        assert(receiveOnly!Control is Control.LIVE);
+
         transcript_tid = spawn(
             &transcriptServiceTask,
             opts.transcript.task_name,
             opts.dart.sync.task_name);
+        assert(receiveOnly!Control is Control.LIVE);
+
+        transaction_socket_tid = spawn(
+            &transactionServiceTask,
+            opts);
         assert(receiveOnly!Control is Control.LIVE);
 
         enum max_gossip = 2;
@@ -377,13 +348,13 @@ import tagion.utils.Miscellaneous;
 
         alias PayloadQueue = Queue!Document;
         PayloadQueue payload_queue = new PayloadQueue();
+
         void receive_payload(Document pload, bool flag) { //TODO: remove flag. Maybe try switch(doc.type)
             log.trace("payload.size=%d", pload.size);
             payload_queue.write(pload);
         }
 
         const(Document) payload() @safe {
-            // log("Select payload: %s", payload_queue.empty);
             if (!hashgraph.active || payload_queue.empty) {
                 return Document();
             }
@@ -412,8 +383,13 @@ import tagion.utils.Miscellaneous;
             log("\n*\n*\n*\n******* receive %s %s", opts.node_name,
                     doc.data.length);
             const receiver = HiRPC.Receiver(doc);
-            hashgraph.wavefront(receiver, gossip_net.time,
-                    (const(HiRPC.Sender) return_wavefront) @safe { gossip_net.send(receiver.pubkey, return_wavefront); }, &payload);
+            hashgraph.wavefront(
+                receiver,
+                gossip_net.time,
+                (const(HiRPC.Sender) return_wavefront) @safe {
+                    gossip_net.send(receiver.pubkey, return_wavefront);
+                },
+                &payload);
         }
 
         pragma(msg, "fixme(cbr): Random should be unpredictable");

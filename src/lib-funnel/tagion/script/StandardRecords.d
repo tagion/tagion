@@ -153,6 +153,27 @@ enum OwnerKey = "$Y";
         mixin HiBONRecord;
     }
 
+    enum EPOCH_TOP_NAME = "tagion";
+
+    @RecordType("top") struct LastEpochRecord {
+        @Label("#name") string name;
+        @Label("$top") Buffer top;
+        mixin HiBONRecord!(q{
+                @disable this();
+                import tagion.crypto.SecureInterfaceNet : HashNet;
+                this(const(HashNet) net, ref const(EpochBlock) block) {
+                    name = EPOCH_TOP_NAME;
+                    top = net.hashOf(block);
+                }
+            });
+
+        static Buffer dartHash(const(HashNet) net) {
+            EpochBlock b;
+            auto record = LastEpochRecord(net, b);
+            return net.hashOf(record);
+        }
+    }
+
     struct Globals {
         @Label("$fee") TagionCurrency fixed_fees; /// Fixed fees per Transcation
         @Label("$mem") TagionCurrency storage_fee; /// Fees per byte
@@ -170,13 +191,13 @@ enum OwnerKey = "$Y";
     }
 
     @RecordType("SMC") struct Contract {
-        @Label("$in") Buffer[] input; /// Hash pointer to input (DART)
-        @Label("$read", true) Buffer[] read; /// Hash pointer to read-only input (DART)
+        @Label("$in") Buffer[] inputs; /// Hash pointer to input (DART)
+        @Label("$read", true) Buffer[] reads; /// Hash pointer to read-only input (DART)
         @Label("$out") Document[Pubkey] output; // pubkey of the output
         @Label("$run") Script script; // TVM-links / Wasm binary
         mixin HiBONRecord;
         bool verify() {
-            return (input.length > 0) &&
+            return (inputs.length > 0) &&
                 (output.length > 0);
         }
     }

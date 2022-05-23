@@ -12,7 +12,7 @@ if (is(E : ConsensusException)) {
 }
 
 enum ConsensusFailCode {
-    NON,
+    NONE,
     NO_MOTHER,
     MOTHER_AND_FATHER_SAME_SIZE,
     MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME,
@@ -91,12 +91,15 @@ enum ConsensusFailCode {
     SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT,
     SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY,
     SMARTSCRIPT_NOT_ENOUGH_MONEY,
+    SMARTSCRIPT_CAUGHT_TAGIONEXCEPTION,
+    SMARTSCRIPT_CAUGHT_EXCEPTION,
+
 }
 
 @safe
 class ConsensusException : TagionException {
     immutable ConsensusFailCode code;
-    this(string msg, ConsensusFailCode code = ConsensusFailCode.NON,
+    this(string msg, ConsensusFailCode code = ConsensusFailCode.NONE,
             string file = __FILE__, size_t line = __LINE__) pure {
         this.code = code;
         super(msg, file, line);
@@ -179,7 +182,7 @@ class SmartScriptException : ConsensusException {
     with (ConsensusFailCode) {
         // dfmt off
         string[ConsensusFailCode] _consensus_error_messages=[
-            NON                                         : "Non",
+            NONE                                        : "None",
             NO_MOTHER                                   : "If an event has no mother it can not have a father",
             MOTHER_AND_FATHER_SAME_SIZE                 : "Mother and Father must user the same hash function",
             MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME       : "The mother and father can not be the same event",
@@ -254,7 +257,9 @@ class SmartScriptException : ConsensusException {
             SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING       : "Smart script number of input figerprints does not match the number of inputs",
             SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT: "Smart script fingerprint does not match the input",
             SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY      : "Smart script one of the input has a wrog signature",
-            SMARTSCRIPT_NOT_ENOUGH_MONEY                : "Smart script not enough money in the account"
+            SMARTSCRIPT_NOT_ENOUGH_MONEY                : "Smart script not enough money in the account",
+            SMARTSCRIPT_CAUGHT_TAGIONEXCEPTION          : "Invalid smart script caught a Tagionexception",
+            SMARTSCRIPT_CAUGHT_EXCEPTION                : "Invalid smart script caught an Exception"
 
             ];
         // dfmt on

@@ -84,3 +84,9 @@ ${call BIN,tagion,TAGION,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
 
 # tagion-info:
 # 	@echo $(DFILES)
+
+#
+# Binary of BBD
+#
+target-behaviour: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-behaviour/*" -a -not -path "*/unitdata/*" }
+${call BIN,behaviour,BEHAVIOUR,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}

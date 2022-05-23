@@ -55,6 +55,25 @@ class RecordFactory {
     }
 
     /++
+     Same as recorder but produce an immutable recorder
+     +/
+    immutable(Recorder) uniqueRecorder(const(Document) doc) const @trusted {
+        auto result = new const(Recorder)(doc);
+        return cast(immutable)result;
+    }
+
+    /++
+     This function should be use with care (rec should only be allocate once)
+     rec is set to null after
+     +/
+    immutable(Recorder) uniqueRecorder(ref Recorder rec) const pure nothrow @trusted {
+        scope(exit) {
+            rec = null;
+        }
+        return cast(immutable)rec;
+    }
+
+    /++
      + Creates a Recorder base on an existing archive list
 
      + Params:
@@ -103,16 +122,9 @@ class RecordFactory {
             this.archives = archives;
         }
 
-        @trusted private this(R)(R range, const Archive.Type type = Archive.Type.NONE) if (isInputRange!R) {
+        private this(R)(R range, const Archive.Type type = Archive.Type.NONE) if (isInputRange!R) {
             archives = new Archives;
             insert(range, type);
-            // alias FiledType = ElementType!R;
-            // static if (isHiBONRecord!FiledType) {
-            //     archives.insert(range.map!(a => new Archive(net, a.toDoc, type)));
-            // }
-            // else {
-            //     archives.insert(range.map!(a => new Archive(net, a, type)));
-            // }
         }
 
         private this(Document doc) {

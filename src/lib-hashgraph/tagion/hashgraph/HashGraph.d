@@ -44,7 +44,7 @@ class HashGraph {
 
     protected alias check = Check!HashGraphConsensusException;
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
-    import tagion.utils.Statistic;
+    import tagion.logger.Statistic;
 
     immutable size_t node_size;
     immutable(string) name; // Only used for debugging
@@ -87,17 +87,21 @@ class HashGraph {
     alias ValidChannel = bool delegate(const Pubkey channel);
     const ValidChannel valid_channel;
     alias EpochCallback = void delegate(const(Event[]) events, const sdt_t epoch_time) @safe;
-    EpochCallback epoch_callback;
+    alias EventPackageCallback = void delegate(immutable(EventPackage*) epack) @safe;
+    const EpochCallback epoch_callback;
+    const EventPackageCallback epack_callback;
 
     this(const size_t node_size,
-            const SecureNet net,
-            const ValidChannel valid_channel,
-            EpochCallback epoch_callback,
-            string name = null) {
+        const SecureNet net,
+        const ValidChannel valid_channel,
+        const EpochCallback epoch_callback,
+        const EventPackageCallback epack_callback=null,
+        string name = null) {
         hirpc = HiRPC(net);
         this.node_size = node_size;
         this.valid_channel = valid_channel;
         this.epoch_callback = epoch_callback;
+        this.epack_callback = epack_callback;
         this.name = name;
         _rounds = Round.Rounder(this);
     }
@@ -310,6 +314,9 @@ class HashGraph {
         if (valid_channel(event_pack.pubkey)) {
             auto event = new Event(event_pack, this);
             _event_cache[event.fingerprint] = event;
+            if (epack_callback) {
+                epack_callback(event_pack);
+            }
             event.connect(this);
             return event;
         }
@@ -1089,7 +1096,7 @@ class HashGraph {
                     immutable passphrase = format("very secret %s", name);
                     auto net = new StdSecureNet();
                     net.generateKeyPair(passphrase);
-                    auto h = new HashGraph(N, net, &authorising.isValidChannel, null, name);
+                    auto h = new HashGraph(N, net, &authorising.isValidChannel, null, null, name);
                     h.scrap_depth = 0;
                     networks[net.pubkey] = new FiberNetwork(h);
                 }
