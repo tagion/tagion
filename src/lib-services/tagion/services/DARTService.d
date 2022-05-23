@@ -120,14 +120,12 @@ void dartServiceTask(Net : SecureNet)(
         NodeAddress[string] node_addrses;
 
         void dartHiRPC(string taskName, immutable(HiRPC.Sender) sender) {
-                log("DS: Received request from service: %s", taskName);
-//                const doc = Document(data);
-//                immutable sender = empty_hirpc.sender(doc);
-                immutable receiver = empty_hirpc.receive(sender);
-//                const message_doc = doc[Keywords.message].get!Document;
-                //const hrpc_id = receiver.id; //message_doc[Keywords.id].get!uint;
+            /// Note use to be (string taskName, Buffer data) {
 
-                const method = receiver.method.name; //message_doc[Keywords.method].get!string;
+                log("DS: Received request from service: %s", taskName);
+
+                immutable receiver = empty_hirpc.receive(sender);
+                //immutable method = receiver.method.name; ;
 
                 void readDART() {
                     scope doc_fingerprints = receiver.method.params[DARTFile.Params.fingerprints].get!(
@@ -206,10 +204,10 @@ void dartServiceTask(Net : SecureNet)(
                     dart_sync_tid.send(sender);
                 }
 
-                if (method == DART.Quries.dartRead) {
+                if (receiver.method.name == DART.Quries.dartRead) {
                     readDART();
                 }
-                else if (method == DART.Quries.dartModify) {
+                else if (receiver.method.name == DART.Quries.dartModify) {
                     modifyDART();
                 }
             }
@@ -386,11 +384,6 @@ void dartServiceTask(Net : SecureNet)(
     }
     catch (Throwable e) {
         fatal(e);
-        // immutable task_e = e.taskException;
-        // log(task_e);
-        // ownerTid.send(task_e);
-        // writefln("EXCEPTION: %s", e);
-        // pragma(msg, "fixme(alex): Why doesn't this send the exception to the owner");
     }
 }
 

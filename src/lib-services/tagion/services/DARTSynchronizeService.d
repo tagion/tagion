@@ -98,7 +98,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         }
         if (opts.dart.initialize) {
             enum BLOCK_SIZE = 0x80;
-            BlockFile.create(filename, DARTFile.stringof, BLOCK_SIZE);
+            DART.create(filename, BLOCK_SIZE);
         }
         log("DART file created with filename: %s", filename);
 
