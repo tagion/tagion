@@ -212,7 +212,6 @@ unittest {
 
     // look into SecureInterfasceNet
     const bills_fingerprint = net.hashOf(alices_bills.toDoc);
-    signed_contract.contract.input ~= bills_fingerprint;
 
     Document doc;
     // use new.sugn instead  [alice.sign(dsfsd)]
