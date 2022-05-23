@@ -3,9 +3,12 @@ module tagion.logger.Logger;
 import std.concurrency;
 import core.sys.posix.pthread;
 import std.string;
+import std.format;
+
 import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.Document : Document;
 
 extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
 
@@ -24,6 +27,7 @@ private static Tid logger_tid;
 
 @safe
 static struct Logger {
+
     import std.format;
 
     protected {
@@ -175,6 +179,45 @@ static struct Logger {
         opCall(task_e.throwable);
     }
 
+    private void opCall(string symbol_name, const(Document) doc, string file = __FILE__, size_t line = __LINE__) const pure nothrow {
+        static struct LogInfo {
+            string name;
+            Document info;
+            string file;
+            size_t line;
+            mixin HiBONRecord!(q{
+                    this(string symbol_name,
+                        const(Document) doc,
+                        string file,
+                        size_t line) {
+                        this.name = symbol_name;
+                        this.info = doc;
+                        this.file = file;
+                        this.line = line;
+                    }
+                });
+        }
+        const log_info = LogInfo(symbol_name, doc, file, line);
+        /// Send log_info to the logger service
+    }
+
+    bool opCall(T)(
+        lazy string symbol_name,
+        lazy T h,
+        string file = __FILE__,
+        size_t line = __LINE__) nothrow if (isHiBONRecord!T) {
+        static bool registered;
+        if (!registered) {
+            // Register the task name and the symbol_name
+        }
+        /+
+        if (is the filter set for this symbol the call the opCall) {
+        opCall(symbol_name, h.toDoc, file, line);
+        }
+        +/
+        return registered;
+    }
+
     @trusted
     void opCall(lazy const(Throwable) t) const nothrow {
         import std.exception;
@@ -184,34 +227,6 @@ static struct Logger {
         fatal(assumeWontThrow(mt.toString));
         fatal(mt.info.toString);
     }
-
-    // void opCall(lazy const(TagionException) e) const nothrow {
-    //     immutable task_e = t.taskException;
-    //     if (ownerTid !=
-    //     fatal("From task %s '%s'", tasg_e.task_name, e.msg);
-    //     scope char[] text;
-    //     const(char[]) error_text() @trusted {
-    //         e.toString((buf) {text~=buf;});
-    //         return text;
-    //     }
-    //     fatal("%s",  error_text());
-    // }
-
-    // void opCall(lazy const(Throwable) t) const nothrow if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
-    //     immutable task_e = t.taskException;
-    //     fatal("From task %s '%s;", tasl_e.task_name, task_e.throwable.msg);
-    //     scope char[] text;
-    //     const(char[]) error_text() @trusted {
-    //         task_e.throwable.toString((buf) {text~=buf;});
-    //         return text;
-    //     }
-    //     fatal("%s",  error_text());
-    // }
-
-    // void fatal(lazy const(TagionException) e) const nothrow {
-    //     opCall(e);
-
-    // }
 
     void trace(lazy string text) const nothrow {
         report(LoggerType.TRACE, text);
@@ -245,6 +260,7 @@ static struct Logger {
         report(LoggerType.FATAL, fmt, args);
     }
 
+
     @trusted
     void close() const nothrow {
         if (isTask) {
@@ -255,4 +271,31 @@ static struct Logger {
     }
 }
 
+mixin template Log(alias name) {
+    pragma(msg, name.stringof);
+    mixin(format(q{const bool %1$s_logger = log("%1$s", %1$s);}, name.stringof));
+    // enum logged_code = format!(
+    //     q{bool %s_logged =
+    //             log(name.stringof, name);},
+    //     name.stringof);
+//    const x=log(name.stringof, name);
+    // pragma(msg, logged_code);
+    // mixin(logged_code);
+
+}
+
 static Logger log;
+
+unittest {
+    import tagion.hibon.HiBONRecord;
+    static struct S {
+        int x;
+        mixin HiBONRecord!(
+            q{this(int x) {this.x = x;}}
+            );
+    }
+
+    const s=S(10);
+    mixin Log!s;
+
+}
