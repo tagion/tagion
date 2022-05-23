@@ -32,7 +32,8 @@ import tagion.services.MdnsDiscoveryService;
 
 //import tagion.Keywords : NetworkMode;
 
-void tagionFactoryService(Options opts) {
+void tagionFactoryService(Options opts) nothrow {
+    try {
     immutable tast_name = opts.heartbeat.task_name;
     log.register(tast_name);
     setOptions(opts);
@@ -96,6 +97,7 @@ void tagionFactoryService(Options opts) {
                 service_options.transaction.service.task_name = new_task_name(opts.transaction.service.task_name);
                 service_options.transaction.service.response_task_name
                     = new_task_name(opts.transaction.service.response_task_name);
+                service_options.collector.task_name = new_task_name(opts.collector.task_name);
                 service_options.dart.task_name = new_task_name(opts.dart.task_name);
                 service_options.dart.sync.task_name = new_task_name(opts.dart.sync.task_name);
                 service_options.discovery.task_name = new_task_name(opts.discovery.task_name);
@@ -178,5 +180,9 @@ void tagionFactoryService(Options opts) {
                 }
             }
         }, &taskfailure);
+    }
+    }
+    catch (Throwable t) {
+        fatal(t);
     }
 }

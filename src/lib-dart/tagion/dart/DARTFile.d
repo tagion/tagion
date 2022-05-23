@@ -17,7 +17,7 @@ private {
     import std.typecons;
     import std.conv : to;
     import core.thread : Fiber;
-    import std.range.primitives : isInputRange;
+    import std.range.primitives : isInputRange, ElementType;
 
     import tagion.basic.Types : Buffer;
     import tagion.basic.Basic : EnumText, assumeTrusted;
@@ -38,7 +38,6 @@ private {
     //import tagion.basic.Basic;
     import tagion.basic.TagionExceptions : Check;
     import tagion.utils.Miscellaneous : toHex = toHexString;
-
 }
 
 immutable(Buffer) hash_null;
@@ -633,9 +632,10 @@ alias check = Check!DARTException;
         return result;
     }
     // Loads all the archives in the list of fingerprints
-    RecordFactory.Recorder loads(Range)(Range fingerprints, Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range) {
+    RecordFactory.Recorder loads(Range)(
+        Range fingerprints,
+        Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : Buffer)) {
 
-        pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
         import std.algorithm.comparison : min;
 
         auto result = recorder;
