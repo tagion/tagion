@@ -244,7 +244,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         void dartRead(immutable(ResponseRequest) request, Buffer[][] fingerprints) @trusted {
             import std.algorithm : joiner;
             immutable result=cast(immutable)(dart.loads(fingerprints.joiner, Archive.Type.NONE));
-            request.response(result);
+//            request.response(result);
         }
 //        NodeAddress[Pubkey] node_addrses;
         log("send live");
