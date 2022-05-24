@@ -86,7 +86,7 @@ enum ConsensusFailCode {
     SCRIPTING_ENGINE_SIGNATUR_FAULT,
 
     SMARTSCRIPT_NO_SIGNATURE,
-    SMARTSCRIPT_MISSING_SIGNATURE,
+    SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS,
     SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING,
     SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT,
     SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY,
@@ -254,7 +254,7 @@ class SmartScriptException : ConsensusException {
             SCRIPTING_ENGINE_SIGNATUR_FAULT             : "Signatures are not correct",
 
             SMARTSCRIPT_NO_SIGNATURE                    : "Smart script does not contain enought signatures",
-            SMARTSCRIPT_MISSING_SIGNATURE               : "Smart script is missing some signatures for some inputs",
+            SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS     : "Smart script is missing some signatures for some inputs",
             SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING       : "Smart script number of input figerprints does not match the number of inputs",
             SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT: "Smart script fingerprint does not match the input",
             SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY      : "Smart script one of the input has a wrog signature",
