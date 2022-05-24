@@ -174,7 +174,7 @@ class SmartScript {
 
 
 unittest {
-    import std.stdio : writefln;
+    import std.stdio : writefln, writeln;
     import tagion.dart.Recorder : Add, Remove;
     import tagion.crypto.SecureNet;
     import tagion.basic.Types : FileExtension;
@@ -238,7 +238,7 @@ unittest {
 
         SignedContract signed_contract;
         sign_all_bills(bills, alice, signed_contract);
-        
+
 
         auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
         signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
@@ -346,5 +346,56 @@ unittest {
     // smart_script.signed_contract = signed_contract;
 
     /// Create a signaned smartcontract
+
+
+
+    /// Input sum example
+    auto input_list = factory.recorder(bills);
+    /// None bills
+    import tagion.hibon.HiBONRecord;
+    static struct DummyS {
+        int x;
+        mixin HiBONRecord!(q{
+                this(int x) {
+                    this.x=x;
+                }
+            });
+    }
+    import std.range : only;
+    input_list.insert(only(DummyS(42), DummyS(1)));
+
+    import std.algorithm : filter;
+    import std.algorithm.iteration : each, sum;
+
+    auto list_of_bills = input_list[]
+        .map!(a => a.filed)
+        .filter!(a => StandardBill.isRecord(a));
+
+    import tagion.hibon.HiBONJSON : toPretty;
+    list_of_bills
+        .map!(a => a.toPretty)
+        .each!writeln;
+
+    auto list_of_tgns = list_of_bills
+        .map!(a => TagionCurrency(a["$V"].get!Document));
+
+    list_of_tgns
+        .map!(a => a.toPretty)
+        .each!writeln;
+
+    writefln("Sum %s", list_of_tgns.sum);
+
+    // Or just
+    auto total = input_list[]
+        .map!(a => a.filed)
+        .filter!(a => StandardBill.isRecord(a))
+        .map!(a => TagionCurrency(a["$V"].get!Document))
+        .sum;
+//        .sum;
+    writefln("Sum %s", total);
+
+
+//    writefln("list_of_bills = -%( %s\n%)", list_of_bills.map!(a => a.toPretty));
+
 
 }
