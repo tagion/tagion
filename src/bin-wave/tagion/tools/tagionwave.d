@@ -19,7 +19,7 @@ import tagion.services.TagionFactory;
 import tagion.GlobalSignals;
 import tagion.network.SSLOptions;
 import tagion.gossip.EmulatorGossipNet;
-import tagion.TaskWrapper;
+import tagion.tasks.TaskWrapper;
 
 mixin TrustedConcurrency;
 
@@ -157,7 +157,7 @@ int _main(string[] args) {
     if (service_options.pid_file.length) {
         import std.process : thisProcessID;
         stderr.writefln("PID = %s written to %s", thisProcessID, options.pid_file);
-        service_options.pid_file.fwrite("PID = %s\n".format(thisProcessID));
+        service_options.pid_file.fwrite("export PID=%s\n".format(thisProcessID));
     }
 
     create_ssl(service_options.transaction.service.openssl);

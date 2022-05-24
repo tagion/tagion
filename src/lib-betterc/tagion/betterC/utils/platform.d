@@ -3,8 +3,14 @@ module tagion.betterC.utils.platform;
 public {
 
     extern(C) void _d_array_slice_copy(void* dst, size_t dstlen, void* src, size_t srclen, size_t elemsz) {
-        import ldc.intrinsics : llvm_memcpy;
-        llvm_memcpy!size_t(dst, src, dstlen * elemsz, 0);
+        import std.compiler;
+        static if ((version_major == 2 && version_minor >= 100) || (vendor !is Vendor.llvm)) {
+            pragma(msg, "Warning llvm_memcpy has not been enabled for ", vendor, " version ", version_major, ".", version_minor, );
+        }
+        else {
+            import ldc.intrinsics : llvm_memcpy;
+            llvm_memcpy!size_t(dst, src, dstlen * elemsz, 0);
+        }
     }
 
     // extern(C) void* __tls_get_addr (void* ptr) {

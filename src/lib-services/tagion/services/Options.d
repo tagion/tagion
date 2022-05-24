@@ -181,6 +181,13 @@ struct Options {
 
     Transaction transaction;
 
+    struct ContractCollector {
+        string task_name; /// Transaction task name
+        mixin JSONCommon;
+    }
+
+    ContractCollector collector;
+
     struct LogSubscription {
         string protocol_id;
         string task_name; /// Transaction task name
@@ -470,6 +477,9 @@ static setDefaultOption(ref Options options) {
             timeout = 3000;
             max_size = 1024 * 100;
         }
+    }
+    with (options.transaction) {
+        task_name = "collector";
     }
     // LogSubscription
     with (options.logSubscription) {

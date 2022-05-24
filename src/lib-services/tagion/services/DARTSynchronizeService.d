@@ -26,6 +26,7 @@ import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 
 import tagion.dart.DARTSynchronization;
+import tagion.tasks.ResponseRequest;
 
 version (unittest) import tagion.dart.BlockFile : fileId;
 import tagion.hibon.HiBONJSON;
@@ -183,7 +184,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
 
             void sendResult(Buffer result) {
                 auto tid = locate(taskName);
-                if (tid != Tid.init) {
+                if (tid !is Tid.init) {
                     log("sending response back, %s", taskName);
                     send(tid, result);
                 }
@@ -241,6 +242,12 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                 sendResult(response.toDoc.serialize);
             }
         }
+
+        void dartRead(immutable(ResponseRequest) request, Buffer[][] fingerprints) @trusted {
+            import std.algorithm : joiner;
+            immutable result=cast(immutable)(dart.loads(fingerprints.joiner, Archive.Type.NONE));
+            request.response(result);
+        }
 //        NodeAddress[Pubkey] node_addrses;
         log("send live");
         ownerTid.send(Control.LIVE);
@@ -294,6 +301,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
 
             },
                 &dartHiPRC,
+                &dartRead,
                 /+
                 version(none) {
                 (string taskName, Buffer data) {
