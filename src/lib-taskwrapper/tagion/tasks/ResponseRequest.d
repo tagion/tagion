@@ -38,3 +38,53 @@ struct ResponseRequest {
         }
     }
 }
+
+version(none)
+unittest {
+    static void task1(string task_name) {
+        bool stop;
+        task_name.register(thisTid);
+        void do_stop(bool _stop) {
+            stop = _stop;
+        }
+        ownerTid.send(true);
+        while(!stop) {
+            receive(
+                &do_stop
+                );
+        }
+    }
+    static void task2_1(string task_name) {
+        bool stop;
+        task_name.register(thisTid);
+        void do_stop(bool _stop) {
+            stop = _stop;
+        }
+        ownerTid.send(true);
+        while(!stop) {
+            receive(
+                &do_stop
+                );
+        }
+    }
+    static void task2(string task_name) {
+        bool stop;
+        task_name.register(thisTid);
+        void do_stop(bool _stop) {
+            stop = _stop;
+        }
+        auto tid=spawn(&task2_1, task_name~"_child");
+        assert(receiveOnly!bool is true);
+        ownerTid.send(true);
+        while(!stop) {
+            receive(
+                &do_stop
+                );
+        }
+    }
+    spawn(&task1, "task1");
+    assert(receiveOnly!bool is true);
+    spawn(&task1, "task2");
+    assert(receiveOnly!bool is true);
+
+}

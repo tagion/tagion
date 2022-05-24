@@ -206,6 +206,7 @@ class DART : DARTFile { //, HiRPC.Supports {
         do {
             if (rims.length == 0)
                 return ushort.init;
+            assert(rims.length == 1);
             ushort result = ushort(rims[0]) + ushort(rims[1] << ubyte.sizeof * 8);
             return result;
         }
