@@ -94,6 +94,7 @@ enum ConsensusFailCode {
     SMARTSCRIPT_CAUGHT_TAGIONEXCEPTION,
     SMARTSCRIPT_CAUGHT_EXCEPTION,
     SMARTSCRIPT_NO_OUTPUT,
+    SMARTSCRIPT_INVALID_OUTPUT
 
 }
 
@@ -261,8 +262,8 @@ class SmartScriptException : ConsensusException {
             SMARTSCRIPT_NOT_ENOUGH_MONEY                : "Smart script not enough money in the account",
             SMARTSCRIPT_CAUGHT_TAGIONEXCEPTION          : "Invalid smart script caught a Tagionexception",
             SMARTSCRIPT_CAUGHT_EXCEPTION                : "Invalid smart script caught an Exception",
-            SMARTSCRIPT_NO_OUTPUT                       : "Smart script does not contain any outputs"
-
+            SMARTSCRIPT_NO_OUTPUT                       : "Smart script does not contain any outputs",
+            SMARTSCRIPT_INVALID_OUTPUT                  : "Input currency value is less then output value"
             ];
         // dfmt on
         import std.exception : assumeUnique;

@@ -3,7 +3,7 @@ module tagion.script.SmartScript;
 import std.exception : assumeUnique;
 import std.range : lockstep, zip;
 import std.format;
-import std.algorithm.iteration : sum, map;
+import std.algorithm.iteration : sum, map, filter;
 import std.algorithm.searching : all;
 
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -72,11 +72,23 @@ class SmartScript {
         if (inputs[].all!(a => a.filed.hasMember(OwnerKey) && a.filed[OwnerKey].isType!Pubkey)) {
             return ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING;
         }
-        // do not understand this if
         if (signed_contract.contract.inputs.length != inputs.length) {
                 return ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING;
         }
 
+        auto total_input = inputs[]
+                    .map!(a => a.filed)
+                    .filter!(a => StandardBill.isRecord(a))
+                    .map!(a => TagionCurrency(a["$V"].get!Document))
+                    .sum;
+        
+        TagionCurrency total_output;
+        foreach(key; signed_contract.contract.output) {
+            total_output += TagionCurrency(key["$V"].get!Document);
+        }
+        if (total_output > total_input) {
+            return ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT;
+        }
         auto check_range = () @trusted => lockstep(
                     signed_contract.contract.inputs,
                     inputs[],
@@ -201,7 +213,6 @@ unittest {
         signed_contract.contract = contract;
     }
 
-    SignedContract signed_contract;
     const net = new StdSecureNet;
     SecureNet alice = new StdSecureNet;
     {
@@ -234,26 +245,18 @@ unittest {
 
     // simple valid scenario
     {
-        import std.algorithm;
+        SignedContract signed_contract;
         sign_all_bills(bills, alice, signed_contract);
-        
 
         auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
         signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
-
-        // TagionCurrency total_input;
-        // enum bill_name = GetLabel!(StandardBill).name;
-        // auto total_input = alices_bills[]
-        //                             .map!(a => a.filed)
-        //                             .filter!(a => StandardBill.isRecord(a))
-        //                             .map!(a => TagionCurrency(a[bill_name]))
-        //                             .sum;
 
         assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.NONE);
     }
 
     // simple invalid scenario (no output docs)
     {
+        SignedContract signed_contract;
         sign_all_bills(bills, alice, signed_contract);
 
         assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_NO_OUTPUT);
@@ -261,6 +264,7 @@ unittest {
 
     // invalid scenario (unsigned bill)
     {
+        SignedContract signed_contract;
         sign_all_bills(bills[0 .. $-1], alice, signed_contract);
 
         auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
@@ -269,8 +273,9 @@ unittest {
         assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS);
     }
 
-    //signs.length more than inputs.length
+    //contract.imput.length more than inputs.length
     {
+        SignedContract signed_contract;
         Contract contract;
         foreach (bill; bills)
         {
@@ -294,16 +299,35 @@ unittest {
         auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
         signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
 
-        assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS);
+        assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
     }
 
     // output value > input value
     {
+        SignedContract signed_contract;
         sign_all_bills(bills, alice, signed_contract);
 
         auto bob_bill = StandardBill(1000000.TGN, epoch, bob.pubkey, null);
         signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
 
-        // assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT);
+        assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT);
+    }
+
+    // output value > input value (many outputs)
+    {
+        SignedContract signed_contract;
+        sign_all_bills(bills, alice, signed_contract);
+
+        StandardBill[] bob_bills;
+        bob_bills ~= StandardBill(1000.TGN, epoch, bob.pubkey, null);
+        bob_bills ~= StandardBill(1000.TGN, epoch, bob.derivePubkey("bob0"), null);
+        bob_bills ~= StandardBill(1000.TGN, epoch, bob.derivePubkey("bob1"), null);
+        bob_bills ~= StandardBill(10000000.TGN, epoch, bob.derivePubkey("bob2"), null);
+
+        foreach(bill; bob_bills) {
+            signed_contract.contract.output[bill.owner] = bill.toDoc;
+        }
+
+        assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT);
     }
 }
