@@ -67,28 +67,28 @@ struct Recycle(T) {
     }
 }
 
-unittest {
-    import tagion.betterC.hibon.HiBON;
-    import tagion.betterC.hibon.Document;
+// unittest {
+//     import tagion.betterC.hibon.HiBON;
+//     import tagion.betterC.hibon.Document;
 
-    import core.stdc.stdio;
+//     import core.stdc.stdio;
 
-    auto hibon = HiBON();
-    Document doc = Document(hibon.serialize);
-    Recycle!Document recycler;
-    auto doc_id = recycler.create(doc);
-    // printf("%u\n", res);
+//     auto hibon = HiBON();
+//     Document doc = Document(hibon.serialize);
+//     Recycle!Document recycler;
+//     auto doc_id = recycler.create(doc);
+//     // printf("%u\n", res);
 
-    assert(recycler.exists(doc_id));
-    assert(doc == recycler(doc_id));
+//     assert(recycler.exists(doc_id));
+//     assert(doc == recycler(doc_id));
 
-    Document doc1 = Document(hibon.serialize);
-    auto doc1_id = recycler.create(doc1);
+//     Document doc1 = Document(hibon.serialize);
+//     auto doc1_id = recycler.create(doc1);
 
-    assert(doc1_id != doc_id);
-    assert(recycler.exists(doc1_id));
-    assert(doc == recycler(doc1_id));
+//     assert(doc1_id != doc_id);
+//     assert(recycler.exists(doc1_id));
+//     assert(doc == recycler(doc1_id));
 
-    recycler.erase(doc1_id);
-    assert(!recycler.exists(doc1_id));
-}
+//     recycler.erase(doc1_id);
+//     assert(!recycler.exists(doc1_id));
+// }

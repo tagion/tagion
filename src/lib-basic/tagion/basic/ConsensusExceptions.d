@@ -93,6 +93,7 @@ enum ConsensusFailCode {
     SMARTSCRIPT_NOT_ENOUGH_MONEY,
     SMARTSCRIPT_CAUGHT_TAGIONEXCEPTION,
     SMARTSCRIPT_CAUGHT_EXCEPTION,
+    SMARTSCRIPT_NO_OUTPUT,
 
 }
 
@@ -252,14 +253,15 @@ class SmartScriptException : ConsensusException {
             SCRIPTING_ENGINE_DATA_VALIDATION_FAULT      : "Transaction object does not contain the right elements",
             SCRIPTING_ENGINE_SIGNATUR_FAULT             : "Signatures are not correct",
 
-            SMARTSCRIPT_NO_SIGNATURE                    : "Smart script does not contain any signature",
+            SMARTSCRIPT_NO_SIGNATURE                    : "Smart script does not contain enought signatures",
             SMARTSCRIPT_MISSING_SIGNATURE               : "Smart script is missing some signatures for some inputs",
             SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING       : "Smart script number of input figerprints does not match the number of inputs",
             SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT: "Smart script fingerprint does not match the input",
             SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY      : "Smart script one of the input has a wrog signature",
             SMARTSCRIPT_NOT_ENOUGH_MONEY                : "Smart script not enough money in the account",
             SMARTSCRIPT_CAUGHT_TAGIONEXCEPTION          : "Invalid smart script caught a Tagionexception",
-            SMARTSCRIPT_CAUGHT_EXCEPTION                : "Invalid smart script caught an Exception"
+            SMARTSCRIPT_CAUGHT_EXCEPTION                : "Invalid smart script caught an Exception",
+            SMARTSCRIPT_NO_OUTPUT                       : "Smart script does not contain any outputs"
 
             ];
         // dfmt on
