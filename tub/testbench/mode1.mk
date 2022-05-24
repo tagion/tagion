@@ -7,6 +7,11 @@ MODE1_FLAGS:=-N 7 -t 300
 MODE1_FLAGS+=--net-mode=local
 MODE1_FLAGS+=--boot=$(MODE1_ROOT)/boot.hibon
 
+ifdef INSCREEN
+TERMINAL:=screen -S test -dm
+else
+TERMINAL:=gnome-terminal --working-directory=$$(MODE1_ROOT) --tab --
+endif
 
 define MODE1
 ${eval
@@ -31,9 +36,21 @@ clean-mode1-$1:
 	$$(RM) $$(DART_$1)
 	$${call log.close}
 
+ifdef INSCREEN
+mode1-run-$1: mode1-$1
+	$$(PRECMD)
+	screen -S $$<  -dm $$(SCRIPTS)/tagionrun.sh
+else
 mode1-run-$1: mode1-$1
 	$$(PRECMD)
 	gnome-terminal --working-directory=$$(MODE1_ROOT) --tab -- $$(SCRIPTS)/tagionrun.sh
+endif
+
+mode1-stop-$1:
+	$$(PRECMD)
+	$$(SCRIPTS)/killrun.sh $$(MODE1_PID_$1)
+
+mode1-stop: mode1-stop-$1
 
 .PHONY: mode1-run-$1
 mode1: mode1-run-$1

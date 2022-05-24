@@ -17,7 +17,7 @@ private {
     import std.typecons;
     import std.conv : to;
     import core.thread : Fiber;
-    import std.range.primitives : isInputRange;
+    import std.range.primitives : isInputRange, ElementType;
 
     import tagion.basic.Types : Buffer;
     import tagion.basic.Basic : EnumText, assumeTrusted;
@@ -38,7 +38,6 @@ private {
     //import tagion.basic.Basic;
     import tagion.basic.TagionExceptions : Check;
     import tagion.utils.Miscellaneous : toHex = toHexString;
-
 }
 
 immutable(Buffer) hash_null;
@@ -633,9 +632,10 @@ alias check = Check!DARTException;
         return result;
     }
     // Loads all the archives in the list of fingerprints
-    RecordFactory.Recorder loads(Range)(Range fingerprints, Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range) {
+    RecordFactory.Recorder loads(Range)(
+        Range fingerprints,
+        Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : Buffer)) {
 
-        pragma(msg, "Fixme(cbr): Remeber to check the ForeachType for Range");
         import std.algorithm.comparison : min;
 
         auto result = recorder;
@@ -894,7 +894,7 @@ alias check = Check!DARTException;
                                         auto recorder = manufactor.recorder;
                                         recorder.insert(archive_in_dart);
                                         recorder.insert(single_archive);
-                                        scope archives_range = recorder.archives[];
+                                        auto archives_range = recorder.archives[];
                                         do {
                                             auto sub_range = RimKeyRange(archives_range, rim);
                                             const sub_archive = sub_range.front;
@@ -924,7 +924,7 @@ alias check = Check!DARTException;
                                 else {
                                     archives.insert(archive_in_dart);
                                 }
-                                scope archive_range = archives[];
+                                auto archive_range = archives[];
                                 do {
                                     auto sub_range = RimKeyRange(archive_range, rim);
                                     const sub_archive = sub_range.front;
@@ -1001,7 +1001,7 @@ alias check = Check!DARTException;
             return _fingerprint;
         }
         else {
-            scope range = modify_records.archives[];
+            auto range = modify_records.archives[];
             immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
 
             scope (success) {
