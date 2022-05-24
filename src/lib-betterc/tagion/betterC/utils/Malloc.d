@@ -1,6 +1,5 @@
 module tagion.betterC.utils.Malloc;
 
-
 extern(C) {
     void set_memory(void* ptr, size_t size) {
         free_block_list_head=cast(FreeBlock*)(ptr);
