@@ -39,15 +39,20 @@ struct ResponseRequest {
     }
 }
 
-version(none)
 unittest {
+    import tagion.basic.Types : Control;
     static void task1(string task_name) {
         bool stop;
         task_name.register(thisTid);
-        void do_stop(bool _stop) {
-            stop = _stop;
+        scope(exit) {
+            ownerTid.send(Control.END);
         }
-        ownerTid.send(true);
+        void do_stop(Control ctrl) {
+            if (ctrl is Control.STOP) {
+                stop = true;
+            }
+        }
+        ownerTid.send(Control.LIVE);
         while(!stop) {
             receive(
                 &do_stop
@@ -56,11 +61,16 @@ unittest {
     }
     static void task2_1(string task_name) {
         bool stop;
-        task_name.register(thisTid);
-        void do_stop(bool _stop) {
-            stop = _stop;
+        scope(exit) {
+            ownerTid.send(Control.END);
         }
-        ownerTid.send(true);
+        task_name.register(thisTid);
+        void do_stop(Control ctrl) {
+            if (ctrl is Control.STOP) {
+                stop = true;
+            }
+        }
+        ownerTid.send(Control.LIVE);
         while(!stop) {
             receive(
                 &do_stop
@@ -70,21 +80,34 @@ unittest {
     static void task2(string task_name) {
         bool stop;
         task_name.register(thisTid);
-        void do_stop(bool _stop) {
-            stop = _stop;
+        scope(exit) {
+            ownerTid.send(Control.END);
         }
         auto tid=spawn(&task2_1, task_name~"_child");
-        assert(receiveOnly!bool is true);
-        ownerTid.send(true);
+        assert(receiveOnly!Control is Control.LIVE);
+        void do_stop(Control ctrl) {
+            if (ctrl is Control.STOP) {
+                tid.send(Control.STOP);
+                assert(receiveOnly!Control == Control.END);
+                stop = true;
+            }
+        }
+        ownerTid.send(Control.LIVE);
         while(!stop) {
             receive(
                 &do_stop
                 );
         }
     }
-    spawn(&task1, "task1");
-    assert(receiveOnly!bool is true);
-    spawn(&task1, "task2");
-    assert(receiveOnly!bool is true);
+    auto task1_tid=spawn(&task1, "task1");
+    assert(receiveOnly!Control is Control.LIVE);
+    auto task2_tid=spawn(&task1, "task2");
+    assert(receiveOnly!Control is Control.LIVE);
+
+    task1_tid.send(Control.STOP);
+    assert(receiveOnly!Control == Control.END);
+    task2_tid.send(Control.STOP);
+    assert(receiveOnly!Control == Control.END);
+
 
 }
