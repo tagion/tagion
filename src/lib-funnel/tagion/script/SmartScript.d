@@ -186,7 +186,7 @@ class SmartScript {
 
 
 unittest {
-    import std.stdio : writefln;
+    import std.stdio : writefln, writeln;
     import tagion.dart.Recorder : Add, Remove;
     import tagion.crypto.SecureNet;
     import tagion.basic.Types : FileExtension;
