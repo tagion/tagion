@@ -114,9 +114,12 @@ remove-$1: clean-$1
 	$$(PRECMD)
 	$${call log.header, $$@ :: remove}
 	$$(RM) $$(BASEWALLETFILES_$1)
+	$$(RM) $$(WALLET_CONFIG_$1)
 	$${call log.close}
 
 remove-wallets: remove-$1
+
+proper: remove-wallets
 
 .PHONY: remove-$1
 
