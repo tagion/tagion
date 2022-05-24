@@ -201,7 +201,7 @@ unittest {
         signed_contract.contract = contract;
     }
 
-
+    SignedContract signed_contract;
     const net = new StdSecureNet;
     SecureNet alice = new StdSecureNet;
     {
@@ -235,8 +235,6 @@ unittest {
     // simple valid scenario
     {
         import std.algorithm;
-
-        SignedContract signed_contract;
         sign_all_bills(bills, alice, signed_contract);
         
 
@@ -256,7 +254,6 @@ unittest {
 
     // simple invalid scenario (no output docs)
     {
-        SignedContract signed_contract;
         sign_all_bills(bills, alice, signed_contract);
 
         assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_NO_OUTPUT);
@@ -264,7 +261,6 @@ unittest {
 
     // invalid scenario (unsigned bill)
     {
-        SignedContract signed_contract;
         sign_all_bills(bills[0 .. $-1], alice, signed_contract);
 
         auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
@@ -274,77 +270,40 @@ unittest {
     }
 
     //signs.length more than inputs.length
-    // {
-    //     SignedContract signed_contract;
-    //     Contract contract;
-    //     foreach (bill; bills)
-    //     {
-    //         Document doc;
-    //         {
-    //             auto h = new HiBON;
-    //             enum bill_name = GetLabel!(StandardBill).name;
-    //             h[bill_name] = bill;
-    //             doc = Document(h);
-    //         }
+    {
+        Contract contract;
+        foreach (bill; bills)
+        {
+            Document doc;
+            {
+                auto h = new HiBON;
+                enum bill_name = GetLabel!(StandardBill).name;
+                h[bill_name] = bill;
+                doc = Document(h);
+            }
 
-    //         auto signed_doc = net.sign(doc);
-    //         contract.inputs ~= net.hashOf(bill);
-    //         signed_contract.signs ~= signed_doc.signature;
-    //         assert(net.verify(doc, signed_doc.signature, net.pubkey));
-    //     }
-    //     signed_contract.contract = contract;
+            auto signed_doc = alice.sign(doc);
+            contract.inputs ~= alice.hashOf(bill);
+            signed_contract.signs ~= signed_doc.signature;
+            assert(alice.verify(doc, signed_doc.signature, alice.pubkey));
+        }
+        auto other_bill = StandardBill(4300.TGN, epoch, alice.derivePubkey("alice3"), null);
+        contract.inputs ~= alice.hashOf(other_bill);
+        signed_contract.contract = contract;
 
-    // }
+        auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
+        signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
 
-    // invalid scenario (inputs value < output value)
-    // {
-    //     SignedContract signed_contract;
+        assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS);
+    }
 
-    //     Document doc;
+    // output value > input value
+    {
+        sign_all_bills(bills, alice, signed_contract);
 
-    //         { // Hash key
-    //             auto h = new HiBON;
-    //             enum bill_name = GetLabel!(StandardBill).name;
-    //             h[bill_name] = bills[0];
-    //             doc = Document(h);
-    //         }
+        auto bob_bill = StandardBill(1000000.TGN, epoch, bob.pubkey, null);
+        signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
 
-    //     auto signed_doc = alice.sign(doc);
-
-    //     assert(alice.verify(doc, signed_doc.signature, alice.pubkey));
-
-    //     Contract alice_contract;
-    //     alice_contract.inputs ~= alice.hashOf(bills[0]);
-
-    //     signed_contract.contract = alice_contract;
-
-    //     StandardBill[] bob_bills;
-    //     bob_bills ~= StandardBill(1000.TGN, epoch, bob.pubkey, null);
-    //     bob_bills ~= StandardBill(1200.TGN, epoch, bob.derivePubkey("bob0"), null);
-
-    //     signed_contract.contract.output[bob.pubkey] = bob_bills[0].toDoc;
-    //     signed_contract.contract.output[bob.derivePubkey("bob0")] = bob_bills[1].toDoc;
-
-    //     signed_contract.signs ~= signed_doc.signature;
-
-    //     assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE);
-    // }
-
-    // check value of TGN (2 inputs and 1 output?)
-    // check value of TGN (1 input and 1 output)
-
-    // check signs > inputs.length
-
-    // check 1 input and 2 output (input on 1000TGN, output on 500+500 TGN)
-    // invalid signature
-
-
-
-    // check with smart script
-
-    // // signed_contract.inputs ~= bills_fingerprint;
-    // smart_script.signed_contract = signed_contract;
-
-    /// Create a signaned smartcontract
-
+        // assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT);
+    }
 }
