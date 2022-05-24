@@ -1,13 +1,14 @@
-module tagion.TaskWrapper;
+module tagion.tasks.TaskWrapper;
 
 import std.stdio;
 import std.format;
 import std.traits : isCallable;
-import tagion.basic.Types : Control;
-import tagion.basic.Basic : TrustedConcurrency;
 import std.typecons : Tuple;
 import std.range;
 import std.algorithm.mutation : remove;
+
+import tagion.basic.Types : Control;
+import tagion.basic.Basic : TrustedConcurrency;
 import tagion.logger.Logger;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
 import tagion.services.RecorderService : Fingerprint;
@@ -72,7 +73,7 @@ unittest {
     table.push_back(info0);
     assert(!table.empty);
     assert(table.back == info0);
-    
+
     table.push_back(info1);
     assert(!table.empty);
     assert(table.back == info1);
@@ -98,7 +99,7 @@ unittest {
 
     alias Params = Parameters!Func;
     alias ParamNames = ParameterIdentifierTuple!Func;
-    
+
     immutable(string) task_name;
     private Tid _tid;
 
@@ -107,7 +108,7 @@ unittest {
     this(string task_name, Params args) {
         this.task_name = task_name;
         _tid = spawn(&run, task_name, args);
-        
+
         // Add to static table of tasks
         _tid_table.push_back(TaskInfo(_tid, task_name));
     }
@@ -190,7 +191,7 @@ unittest {
 
 @safe mixin template TaskBasic() {
     bool stop;
-    // TODO Do we need handle also "abort"? 
+    // TODO Do we need handle also "abort"?
 
     // Task can redefine this method to customize actions when receiving Control.STOP
     void onSTOP() {

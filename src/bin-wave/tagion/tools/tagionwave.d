@@ -19,7 +19,7 @@ import tagion.services.TagionFactory;
 import tagion.GlobalSignals;
 import tagion.network.SSLOptions;
 import tagion.gossip.EmulatorGossipNet;
-import tagion.TaskWrapper;
+import tagion.tasks.TaskWrapper;
 
 mixin TrustedConcurrency;
 

@@ -61,7 +61,7 @@ import tagion.basic.Basic : TrustedConcurrency;
 
 mixin TrustedConcurrency;
 
-import tagion.TaskWrapper;
+import tagion.tasks.TaskWrapper;
 
 /**
  * Main function of LoggerService
