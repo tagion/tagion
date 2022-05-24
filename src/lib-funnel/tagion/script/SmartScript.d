@@ -3,7 +3,7 @@ module tagion.script.SmartScript;
 import std.exception : assumeUnique;
 import std.range : lockstep, zip;
 import std.format;
-import std.algorithm.iteration : sum, map;
+import std.algorithm.iteration : sum, map, filter;
 import std.algorithm.searching : all;
 
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -72,11 +72,23 @@ class SmartScript {
         if (inputs[].all!(a => a.filed.hasMember(OwnerKey) && a.filed[OwnerKey].isType!Pubkey)) {
             return ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING;
         }
-        // do not understand this if
         if (signed_contract.contract.inputs.length != inputs.length) {
                 return ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING;
         }
 
+        auto total_input = inputs[]
+                    .map!(a => a.filed)
+                    .filter!(a => StandardBill.isRecord(a))
+                    .map!(a => TagionCurrency(a["$V"].get!Document))
+                    .sum;
+        
+        TagionCurrency total_output;
+        foreach(key; signed_contract.contract.output) {
+            total_output += TagionCurrency(key["$V"].get!Document);
+        }
+        if (total_output > total_input) {
+            return ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT;
+        }
         auto check_range = () @trusted => lockstep(
                     signed_contract.contract.inputs,
                     inputs[],
@@ -201,7 +213,6 @@ unittest {
         signed_contract.contract = contract;
     }
 
-
     const net = new StdSecureNet;
     SecureNet alice = new StdSecureNet;
     {
@@ -234,22 +245,11 @@ unittest {
 
     // simple valid scenario
     {
-        import std.algorithm;
-
         SignedContract signed_contract;
         sign_all_bills(bills, alice, signed_contract);
 
-
         auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
         signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
-
-        // TagionCurrency total_input;
-        // enum bill_name = GetLabel!(StandardBill).name;
-        // auto total_input = alices_bills[]
-        //                             .map!(a => a.filed)
-        //                             .filter!(a => StandardBill.isRecord(a))
-        //                             .map!(a => TagionCurrency(a[bill_name]))
-        //                             .sum;
 
         assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.NONE);
     }
@@ -273,129 +273,61 @@ unittest {
         assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS);
     }
 
-    //signs.length more than inputs.length
-    // {
-    //     SignedContract signed_contract;
-    //     Contract contract;
-    //     foreach (bill; bills)
-    //     {
-    //         Document doc;
-    //         {
-    //             auto h = new HiBON;
-    //             enum bill_name = GetLabel!(StandardBill).name;
-    //             h[bill_name] = bill;
-    //             doc = Document(h);
-    //         }
+    //contract.imput.length more than inputs.length
+    {
+        SignedContract signed_contract;
+        Contract contract;
+        foreach (bill; bills)
+        {
+            Document doc;
+            {
+                auto h = new HiBON;
+                enum bill_name = GetLabel!(StandardBill).name;
+                h[bill_name] = bill;
+                doc = Document(h);
+            }
 
-    //         auto signed_doc = net.sign(doc);
-    //         contract.inputs ~= net.hashOf(bill);
-    //         signed_contract.signs ~= signed_doc.signature;
-    //         assert(net.verify(doc, signed_doc.signature, net.pubkey));
-    //     }
-    //     signed_contract.contract = contract;
+            auto signed_doc = alice.sign(doc);
+            contract.inputs ~= alice.hashOf(bill);
+            signed_contract.signs ~= signed_doc.signature;
+            assert(alice.verify(doc, signed_doc.signature, alice.pubkey));
+        }
+        auto other_bill = StandardBill(4300.TGN, epoch, alice.derivePubkey("alice3"), null);
+        contract.inputs ~= alice.hashOf(other_bill);
+        signed_contract.contract = contract;
 
-    // }
+        auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
+        signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
 
-    // invalid scenario (inputs value < output value)
-    // {
-    //     SignedContract signed_contract;
-
-    //     Document doc;
-
-    //         { // Hash key
-    //             auto h = new HiBON;
-    //             enum bill_name = GetLabel!(StandardBill).name;
-    //             h[bill_name] = bills[0];
-    //             doc = Document(h);
-    //         }
-
-    //     auto signed_doc = alice.sign(doc);
-
-    //     assert(alice.verify(doc, signed_doc.signature, alice.pubkey));
-
-    //     Contract alice_contract;
-    //     alice_contract.inputs ~= alice.hashOf(bills[0]);
-
-    //     signed_contract.contract = alice_contract;
-
-    //     StandardBill[] bob_bills;
-    //     bob_bills ~= StandardBill(1000.TGN, epoch, bob.pubkey, null);
-    //     bob_bills ~= StandardBill(1200.TGN, epoch, bob.derivePubkey("bob0"), null);
-
-    //     signed_contract.contract.output[bob.pubkey] = bob_bills[0].toDoc;
-    //     signed_contract.contract.output[bob.derivePubkey("bob0")] = bob_bills[1].toDoc;
-
-    //     signed_contract.signs ~= signed_doc.signature;
-
-    //     assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE);
-    // }
-
-    // check value of TGN (2 inputs and 1 output?)
-    // check value of TGN (1 input and 1 output)
-
-    // check signs > inputs.length
-
-    // check 1 input and 2 output (input on 1000TGN, output on 500+500 TGN)
-    // invalid signature
-
-
-
-    // check with smart script
-
-    // // signed_contract.inputs ~= bills_fingerprint;
-    // smart_script.signed_contract = signed_contract;
-
-    /// Create a signaned smartcontract
-
-
-
-    /// Input sum example
-    auto input_list = factory.recorder(bills);
-    /// None bills
-    import tagion.hibon.HiBONRecord;
-    static struct DummyS {
-        int x;
-        mixin HiBONRecord!(q{
-                this(int x) {
-                    this.x=x;
-                }
-            });
+        assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
     }
-    import std.range : only;
-    input_list.insert(only(DummyS(42), DummyS(1)));
 
-    import std.algorithm : filter;
-    import std.algorithm.iteration : each, sum;
+    // output value > input value
+    {
+        SignedContract signed_contract;
+        sign_all_bills(bills, alice, signed_contract);
 
-    auto list_of_bills = input_list[]
-        .map!(a => a.filed)
-        .filter!(a => StandardBill.isRecord(a));
+        auto bob_bill = StandardBill(1000000.TGN, epoch, bob.pubkey, null);
+        signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
 
-    import tagion.hibon.HiBONJSON : toPretty;
-    list_of_bills
-        .map!(a => a.toPretty)
-        .each!writeln;
+        assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT);
+    }
 
-    auto list_of_tgns = list_of_bills
-        .map!(a => TagionCurrency(a["$V"].get!Document));
+    // output value > input value (many outputs)
+    {
+        SignedContract signed_contract;
+        sign_all_bills(bills, alice, signed_contract);
 
-    list_of_tgns
-        .map!(a => a.toPretty)
-        .each!writeln;
+        StandardBill[] bob_bills;
+        bob_bills ~= StandardBill(1000.TGN, epoch, bob.pubkey, null);
+        bob_bills ~= StandardBill(1000.TGN, epoch, bob.derivePubkey("bob0"), null);
+        bob_bills ~= StandardBill(1000.TGN, epoch, bob.derivePubkey("bob1"), null);
+        bob_bills ~= StandardBill(10000000.TGN, epoch, bob.derivePubkey("bob2"), null);
 
-    writefln("Sum %s", list_of_tgns.sum);
+        foreach(bill; bob_bills) {
+            signed_contract.contract.output[bill.owner] = bill.toDoc;
+        }
 
-    // Or just
-    auto total = input_list[]
-        .map!(a => a.filed)
-        .filter!(a => StandardBill.isRecord(a))
-        .map!(a => TagionCurrency(a["$V"].get!Document))
-        .sum;
-//        .sum;
-    writefln("Sum %s", total);
-
-
-//    writefln("list_of_bills = -%( %s\n%)", list_of_bills.map!(a => a.toPretty));
-
-
+        assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT);
+    }
 }
