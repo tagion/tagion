@@ -894,7 +894,7 @@ alias check = Check!DARTException;
                                         auto recorder = manufactor.recorder;
                                         recorder.insert(archive_in_dart);
                                         recorder.insert(single_archive);
-                                        scope archives_range = recorder.archives[];
+                                        auto archives_range = recorder.archives[];
                                         do {
                                             auto sub_range = RimKeyRange(archives_range, rim);
                                             const sub_archive = sub_range.front;
@@ -924,7 +924,7 @@ alias check = Check!DARTException;
                                 else {
                                     archives.insert(archive_in_dart);
                                 }
-                                scope archive_range = archives[];
+                                auto archive_range = archives[];
                                 do {
                                     auto sub_range = RimKeyRange(archive_range, rim);
                                     const sub_archive = sub_range.front;
@@ -1001,7 +1001,7 @@ alias check = Check!DARTException;
             return _fingerprint;
         }
         else {
-            scope range = modify_records.archives[];
+            auto range = modify_records.archives[];
             immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
 
             scope (success) {
