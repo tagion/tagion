@@ -93,6 +93,7 @@ enum ConsensusFailCode {
     SMARTSCRIPT_NOT_ENOUGH_MONEY,
     SMARTSCRIPT_CAUGHT_TAGIONEXCEPTION,
     SMARTSCRIPT_CAUGHT_EXCEPTION,
+    SMARTSCRIPT_CAUGHT_SMARTSCRIPTEXCEPTION,
     SMARTSCRIPT_NO_OUTPUT,
     SMARTSCRIPT_INVALID_OUTPUT
 
@@ -262,6 +263,7 @@ class SmartScriptException : ConsensusException {
             SMARTSCRIPT_NOT_ENOUGH_MONEY                : "Smart script not enough money in the account",
             SMARTSCRIPT_CAUGHT_TAGIONEXCEPTION          : "Invalid smart script caught a Tagionexception",
             SMARTSCRIPT_CAUGHT_EXCEPTION                : "Invalid smart script caught an Exception",
+            SMARTSCRIPT_CAUGHT_SMARTSCRIPTEXCEPTION     : "Invalid smart script caught an SmartScriptException",
             SMARTSCRIPT_NO_OUTPUT                       : "Smart script does not contain any outputs",
             SMARTSCRIPT_INVALID_OUTPUT                  : "Input currency value is less then output value"
             ];
