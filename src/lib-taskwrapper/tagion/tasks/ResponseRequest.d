@@ -1,8 +1,15 @@
 module tagion.tasks.ResponseRequest;
 
-import std.concurrency;
+import concurrency=std.concurrency;
+import std.concurrency : Tid, ownerTid, register, thisTid, spawn, send;
 
+
+
+@safe
 struct ResponseRequest {
+    void send(Args...)(Tid tid, immutable(ResponseRequest) request, Args args) @trusted {
+        concurrency.send(tid, request, args);
+    }
     string response_task_name;
     uint id;
     immutable(ResponseRequest*) cascade;
@@ -12,10 +19,10 @@ struct ResponseRequest {
         id=new_count;
         cascade=null;
     }
-    this(string task_name, ref immutable(ResponseRequest) cascade) immutable nothrow {
+    this(string task_name, immutable(ResponseRequest*) cascade) immutable nothrow {
         id_count++;
         id=cascade.id;
-        this.cascade = &cascade;
+        this.cascade = cascade;
     }
     static uint id_count;
     static uint new_count() @nogc nothrow {
@@ -27,42 +34,93 @@ struct ResponseRequest {
     }
     void opCall(T)(string task_name, immutable(T) msg) immutable @trusted {
         if (this !is this.init) {
-            auto tid = locate(response_task_name);
-            tid.send(task_name, id, msg);
+            auto tid = concurrency.locate(response_task_name);
+            concurrency.send(tid, task_name, id, msg);
         }
     }
-    void response(Args...)(Args args) immutable @trusted {
-        if (cascade !is null) {
-            auto tid = locate(cascade.response_task_name);
-            tid.send(args);
+
+    immutable(Message!T*) message(T)(T x) immutable pure nothrow {
+        return new immutable(Message!T)(&this, x);
+    }
+
+    alias MessageType(T) = immutable(Message!T)*;
+
+    @safe
+    struct Message(T) {
+        immutable(ResponseRequest*) resp;
+        T message;
+        this(immutable(ResponseRequest*) resp, T message) immutable pure nothrow {
+            this.resp=resp;
+            this.message = message;
+        }
+        uint id() immutable pure nothrow {
+            return resp.id;
+        }
+        void response(Args...)(Args args) immutable @trusted {
+            auto tid=concurrency.locate(resp.response_task_name);
+            concurrency.send(tid, args);
+            // if (cascade !is null) {
+        //     auto cascade_tid = concurrency.locate(cascade.response_task_name);
+        //     cascade_tid.send(args);
+        // }
         }
     }
 }
 
-version(none)
+
 unittest {
+    import tagion.basic.Types : Control;
+    import std.algorithm : each;
+    import std.format;
+    import core.time;
     static void task1(string task_name) {
         bool stop;
         task_name.register(thisTid);
-        void do_stop(bool _stop) {
-            stop = _stop;
+        scope(exit) {
+            ownerTid.send(Control.END);
         }
-        ownerTid.send(true);
+        void do_stop(Control ctrl) {
+            if (ctrl is Control.STOP) {
+                stop = true;
+            }
+        }
+        ResponseRequest.MessageType!(string)[uint] cache;
+        void request(immutable(ResponseRequest) resp, string echo) {
+            assert(!(resp.id in cache));
+            cache[resp.id]=resp.message(echo);
+        }
+        ownerTid.send(Control.LIVE);
         while(!stop) {
-            receive(
-                &do_stop
+            const time_out=concurrency.receiveTimeout(
+                100.msecs,
+                &do_stop,
+                &request
                 );
+            if (time_out) {
+                foreach(a;cache.byValue) {
+                    a.response(format("response %s", a.id));
+                }
+
+                // cache.byValue
+                //     .each!((a) => a.response(format("response %s", a.id)));
+                cache.clear;
+            }
         }
     }
     static void task2_1(string task_name) {
         bool stop;
-        task_name.register(thisTid);
-        void do_stop(bool _stop) {
-            stop = _stop;
+        scope(exit) {
+            ownerTid.send(Control.END);
         }
-        ownerTid.send(true);
+        task_name.register(thisTid);
+        void do_stop(Control ctrl) {
+            if (ctrl is Control.STOP) {
+                stop = true;
+            }
+        }
+        ownerTid.send(Control.LIVE);
         while(!stop) {
-            receive(
+            concurrency.receive(
                 &do_stop
                 );
         }
@@ -70,21 +128,35 @@ unittest {
     static void task2(string task_name) {
         bool stop;
         task_name.register(thisTid);
-        void do_stop(bool _stop) {
-            stop = _stop;
+        scope(exit) {
+            ownerTid.send(Control.END);
         }
         auto tid=spawn(&task2_1, task_name~"_child");
-        assert(receiveOnly!bool is true);
-        ownerTid.send(true);
+        assert(concurrency.receiveOnly!Control is Control.LIVE);
+        void do_stop(Control ctrl) {
+            if (ctrl is Control.STOP) {
+                tid.send(Control.STOP);
+                assert(concurrency.receiveOnly!Control == Control.END);
+                stop = true;
+            }
+        }
+        ownerTid.send(Control.LIVE);
         while(!stop) {
-            receive(
+            concurrency.receive(
                 &do_stop
                 );
         }
     }
-    spawn(&task1, "task1");
-    assert(receiveOnly!bool is true);
-    spawn(&task1, "task2");
-    assert(receiveOnly!bool is true);
+    auto task1_tid=spawn(&task1, "task1");
+    assert(concurrency.receiveOnly!Control is Control.LIVE);
+    auto task2_tid=spawn(&task1, "task2");
+    assert(concurrency.receiveOnly!Control is Control.LIVE);
+
+    task1_tid.send(Control.STOP);
+    assert(concurrency.receiveOnly!Control == Control.END);
+    task2_tid.send(Control.STOP);
+    assert(concurrency.receiveOnly!Control == Control.END);
+
+
 
 }
