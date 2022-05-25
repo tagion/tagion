@@ -26,18 +26,6 @@ int main(string[] args) {
     );
     if (version_switch) {
         import std.process;
-
-        // enum git_hash=execute([
-        //         "git", "rev-parse" "HEAD"],
-        //     null, Config.init, uint.max,
-        //     reporoot);
-        // enum git_revno=execute([
-        //         "git", "log" "HEAD", "--pretty=format:'%h'", "|", "wc", "-l"],
-        //     null, Config.init, uint.max,
-        //     reporoot);
-
-        // writefln("version %s", REVNO);
-        // writefln("Git handle %s", HASH);
         return 0;
     }
 
@@ -90,9 +78,6 @@ int main(string[] args) {
                     .map!(a => a[1].pipe!(to!string, demangle))
                     .joiner
             );
-
-        // filter_mangle
-        //     .each!((a) => writeln(a[1]));
         if (mangle_split) {
             zip(fin.byLine, filter_mangle)
                 .each!(a => writefln("%s\n%s\n", a[0], a[1]));
@@ -101,16 +86,6 @@ int main(string[] args) {
             filter_mangle
                 .each!writeln;
         }
-        //            .each!(writefln!"%-(%s \\\n %)");
-        //            .each!(writefln!"%-(%s \\\n %)");
-        //        fin.byLine.each!writeln;
-        // fin.byLineCopy
-        //     .map!(
-        //         l => l.chunkBy!(a => isAlphaNum(a) || a == '_')
-        //         .map!(a => a[1].pipe!(to!string, demangle)).joiner
-        //         )
-        //     .each!writeln;
-        //            .copy(stdout.lockingTextWriter);
     }
     return 0;
 }

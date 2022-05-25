@@ -2,69 +2,50 @@ module tagion.tasks.ResponseRequest;
 
 import concurrency=std.concurrency;
 import std.concurrency : Tid, ownerTid, register, thisTid, spawn, send;
+import std.stdio;
+import std.exception : assumeWontThrow;
+import std.typecons : Typedef, Tuple;
 
 
+//alias ResponseRequest=ResponseRequestT!void;
 
 @safe
-struct ResponseRequest {
-    void send(Args...)(Tid tid, immutable(ResponseRequest) request, Args args) @trusted {
-        concurrency.send(tid, request, args);
-    }
-    string response_task_name;
-    uint id;
-    immutable(ResponseRequest*) cascade;
-    @disable this();
-    this(string task_name) immutable nothrow {
-        id_count++;
-        id=new_count;
-        cascade=null;
-    }
-    this(string task_name, immutable(ResponseRequest*) cascade) immutable nothrow {
-        id_count++;
-        id=cascade.id;
-        this.cascade = cascade;
-    }
-    static uint id_count;
-    static uint new_count() @nogc nothrow {
+struct ResponseRequestT(T) {
+    protected alias _ID=Typedef!(uint, uint.init, T.stringof);
+    @safe
+    static _ID new_count() @nogc nothrow  {
+        static _ID id_count;
         id_count++;
         if (id_count is id_count.init) {
             id_count = id_count.init + 1;
         }
         return id_count;
     }
-    void opCall(T)(string task_name, immutable(T) msg) immutable @trusted {
-        if (this !is this.init) {
-            auto tid = concurrency.locate(response_task_name);
-            concurrency.send(tid, task_name, id, msg);
-        }
+    string task_name;
+    _ID id;
+    alias ID=immutable(_ID);
+    this(string task_name) immutable nothrow {
+        this.task_name = task_name;
+        id=new_count;
+    }
+    static void send(Args...)(Tid tid, string task_name, Args args) @trusted {
+        immutable resp=new immutable(ResponseRequestT)(task_name);
+        writefln("%s %s %s", task_name, args, typeof(resp).stringof);
+        concurrency.send(tid, resp, args);
+    }
+    void reply(T)(T message) immutable @trusted {
+        auto tid = concurrency.locate(task_name);
+        writefln("id=%s message=%s", id, message);
+        tid.send(id, message);
     }
 
-    immutable(Message!T*) message(T)(T x) immutable pure nothrow {
-        return new immutable(Message!T)(&this, x);
+    static if (is(T == void)) {
+        alias Message=immutable(ResponseRequestT)*;
     }
-
-    alias MessageType(T) = immutable(Message!T)*;
-
-    @safe
-    struct Message(T) {
-        immutable(ResponseRequest*) resp;
-        T message;
-        this(immutable(ResponseRequest*) resp, T message) immutable pure nothrow {
-            this.resp=resp;
-            this.message = message;
-        }
-        uint id() immutable pure nothrow {
-            return resp.id;
-        }
-        void response(Args...)(Args args) immutable @trusted {
-            auto tid=concurrency.locate(resp.response_task_name);
-            concurrency.send(tid, args);
-            // if (cascade !is null) {
-        //     auto cascade_tid = concurrency.locate(cascade.response_task_name);
-        //     cascade_tid.send(args);
-        // }
-        }
+    else {
+        alias Message=Tuple!(immutable(ResponseRequestT)*, "response",  T, "value");
     }
+    alias Cache = Message[ID];
 }
 
 
@@ -73,6 +54,8 @@ unittest {
     import std.algorithm : each;
     import std.format;
     import core.time;
+    import std.stdio;
+    alias ResponseText=ResponseRequestT!string;
     static void task1(string task_name) {
         bool stop;
         task_name.register(thisTid);
@@ -84,10 +67,23 @@ unittest {
                 stop = true;
             }
         }
-        ResponseRequest.MessageType!(string)[uint] cache;
-        void request(immutable(ResponseRequest) resp, string echo) {
+        // alias XXX=ResponseRequest.Message!(string);
+        // XXX[] xxx;
+        // XXX[uint] cache;
+        ResponseText.Cache cache;
+//        string[ResponseRequest.ID] echos;
+//        immutable(ResponseRequest*)
+        pragma(msg, "!!!!!!!!!!!!!!!!", ResponseText.Message);
+        void request(immutable(ResponseText)* resp, string echo) {
             assert(!(resp.id in cache));
-            cache[resp.id]=resp.message(echo);
+            cache[resp.id]=ResponseText.Message(resp, echo); //.message(echo);
+//            echos[resp.id]=echo;
+            writefln("cache[resp.id] %d", resp.id);
+            writefln("cache[resp.id] %x", resp.task_name.ptr);
+            writefln("cache[resp.id] %d", resp.task_name.length);
+            writefln("cache[resp.id] %s", resp.task_name);
+//            writefln("cache[resp.id] %x", cache[resp.id].resp);
+//            writefln("cache[resp.id].resp.response_task_name.ptr %x", cache[resp.id].task_name.ptr);
         }
         ownerTid.send(Control.LIVE);
         while(!stop) {
@@ -97,12 +93,19 @@ unittest {
                 &request
                 );
             if (time_out) {
-                foreach(a;cache.byValue) {
-                    a.response(format("response %s", a.id));
-                }
+                writefln("Timeout %d", cache.length);
 
+                foreach(a; cache.byValue) {
+                    writeln("------ --------");
+//                    writefln("'%s' %s",a.message, format("response %s", a.id));
+                    writefln("a.resp.id %d",a.response.id);
+                    writefln("a.resp.response_task_name.length %d",a.response.task_name.length);
+                    writefln("a.resp.response_task_name.ptr %x",a.response.task_name.ptr);
+//                    writefln("a.resp.response_task_name %x",&(a.resp.response_task_name[0]));
+                    a.response.reply(format("response %s", a.response.id));
+                }
                 // cache.byValue
-                //     .each!((a) => a.response(format("response %s", a.id)));
+                //     .each!((a) => a.response(a.message, format("response %s", a.id))s);
                 cache.clear;
             }
         }
@@ -147,15 +150,27 @@ unittest {
                 );
         }
     }
-    auto task1_tid=spawn(&task1, "task1");
+    enum task1_name="task1";
+    auto task1_tid=spawn(&task1, task1_name);
     assert(concurrency.receiveOnly!Control is Control.LIVE);
-    auto task2_tid=spawn(&task1, "task2");
-    assert(concurrency.receiveOnly!Control is Control.LIVE);
+    // auto task2_tid=spawn(&task1, "task2");
+    // assert(concurrency.receiveOnly!Control is Control.LIVE);
 
+    string main_task="main";
+    concurrency.register(main_task, thisTid);
+//    immutable request=immutable(ResponseRequest)(main_task);
+    enum num=6;
+    foreach(i; 0..num) {
+        ResponseText.send(task1_tid, main_task, format("echo %d", i));
+    }
+    writefln("Wait for response");
+    foreach(i; 0..num) {
+        writefln("%s ", concurrency.receiveOnly!(ResponseText.ID, string));
+    }
     task1_tid.send(Control.STOP);
     assert(concurrency.receiveOnly!Control == Control.END);
-    task2_tid.send(Control.STOP);
-    assert(concurrency.receiveOnly!Control == Control.END);
+    // task2_tid.send(Control.STOP);
+    // assert(concurrency.receiveOnly!Control == Control.END);
 
 
 

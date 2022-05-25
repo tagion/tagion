@@ -241,7 +241,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
             }
         }
 
-        void dartRead(immutable(ResponseRequest) request, Buffer[][] fingerprints) @trusted {
+        void dartRead(immutable(ResponseRequestT!void) request, Buffer[][] fingerprints) @trusted {
             import std.algorithm : joiner;
             immutable result=cast(immutable)(dart.loads(fingerprints.joiner, Archive.Type.NONE));
 //            request.response(result);

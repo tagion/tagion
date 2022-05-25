@@ -37,7 +37,8 @@ void contractCollectorTask(immutable(Options) opts) nothrow {
         }
 
         /// If the response_task_name is set
-        void register_epack(immutable(EventPackage*) epack, immutable(ResponseRequest) response) {
+        version(none)
+        void register_epack(immutable(EventPackage*) epack, immutable(ResponseRequest*) response) {
             import std.exception : assumeUnique;
             const doc = epack.event_body.payload;
             try {
@@ -65,7 +66,7 @@ void contractCollectorTask(immutable(Options) opts) nothrow {
         while (!stop) {
             receive(
                 &control,
-                &register_epack
+//                &register_epack
                 );
         }
     }
