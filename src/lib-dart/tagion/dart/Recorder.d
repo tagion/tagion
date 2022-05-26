@@ -94,7 +94,8 @@ class RecordFactory {
     @safe
     @RecordType("Recorder")
     class Recorder {
-        alias Archives = RedBlackTree!(Archive, (a, b) @safe => a.fingerprint < b.fingerprint);
+        /// This will order REMOVE before add
+        alias Archives = RedBlackTree!(Archive, (a,b) => (a.fingerprint < b.fingerprint) || (a.fingerprint == b.fingerprint) && (a._type < a._type));
         package Archives archives;
 
         import tagion.hibon.HiBONJSON : JSONString;
@@ -362,7 +363,7 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
     enum archiveLabel = GetLabel!(this.filed).name;
     enum fingerprintLabel = GetLabel!(this.fingerprint).name;
     enum typeLabel = GetLabel!(this._type).name;
-    protected @Label("$t", true) Type _type;
+    private @Label("$t", true) Type _type;
     protected @Label("") bool _done;
 
     mixin JSONString;
@@ -458,10 +459,14 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
     final Type type() const pure nothrow @nogc {
         return _type;
     }
+
+    bool xxx() const nothrow {
+        return true;
+    }
     /++
      An Archive is only allowed to be done once
      +/
-    final void doit() const pure nothrow @trusted
+    package final void doit() const pure nothrow @trusted
     in {
         assert(!_done, "An Archive can only be done once");
     }
