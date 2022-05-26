@@ -11,10 +11,10 @@ import std.typecons : Typedef, Tuple;
 
 @safe
 struct ResponseRequestT(T) {
-    protected alias _ID=Typedef!(uint, uint.init, T.stringof);
+    alias ID=Typedef!(uint, uint.init, T.stringof);
     @safe
-    static _ID new_count() @nogc nothrow  {
-        static _ID id_count;
+    static ID new_count() @nogc nothrow  {
+        static ID id_count;
         id_count++;
         if (id_count is id_count.init) {
             id_count = id_count.init + 1;
@@ -22,16 +22,17 @@ struct ResponseRequestT(T) {
         return id_count;
     }
     string task_name;
-    _ID id;
-    alias ID=immutable(_ID);
+    ID id;
+    alias iID=immutable(ID);
     this(string task_name) immutable nothrow {
         this.task_name = task_name;
         id=new_count;
     }
-    static void send(Args...)(Tid tid, string task_name, Args args) @trusted {
+    static ID send(Args...)(Tid tid, string task_name, Args args) @trusted {
         immutable resp=new immutable(ResponseRequestT)(task_name);
-        writefln("%s %s %s", task_name, args, typeof(resp).stringof);
+        writefln("%s %s resp.id=%d", task_name, args, resp.id);
         concurrency.send(tid, resp, args);
+        return resp.id;
     }
     void reply(T)(T message) immutable @trusted {
         auto tid = concurrency.locate(task_name);
@@ -43,7 +44,7 @@ struct ResponseRequestT(T) {
         alias Message=immutable(ResponseRequestT)*;
     }
     else {
-        alias Message=Tuple!(immutable(ResponseRequestT)*, "response",  T, "value");
+        alias Message=Tuple!(immutable(ResponseRequestT)*, "response",  T, "message");
     }
     alias Cache = Message[ID];
 }
@@ -51,12 +52,20 @@ struct ResponseRequestT(T) {
 
 unittest {
     import tagion.basic.Types : Control;
+    import std.exception : assertThrown, assertNotThrown;
     import std.algorithm : each;
     import std.format;
-    import core.time;
     import std.stdio;
+    import core.time;
+    import core.thread : Thread;
     alias ResponseText=ResponseRequestT!string;
+    @safe @nogc
+    static bool doThis(Tid tid) pure nothrow {
+        assert(0);
+    }
+    concurrency.setMaxMailboxSize(thisTid, size_t(0), &doThis); //size_t messages, bool function(Tid) onCrowdingDoThis);
     static void task1(string task_name) {
+        int count_down = 10;
         bool stop;
         task_name.register(thisTid);
         scope(exit) {
@@ -67,45 +76,29 @@ unittest {
                 stop = true;
             }
         }
-        // alias XXX=ResponseRequest.Message!(string);
-        // XXX[] xxx;
-        // XXX[uint] cache;
         ResponseText.Cache cache;
-//        string[ResponseRequest.ID] echos;
-//        immutable(ResponseRequest*)
-        pragma(msg, "!!!!!!!!!!!!!!!!", ResponseText.Message);
         void request(immutable(ResponseText)* resp, string echo) {
-            assert(!(resp.id in cache));
             cache[resp.id]=ResponseText.Message(resp, echo); //.message(echo);
-//            echos[resp.id]=echo;
-            writefln("cache[resp.id] %d", resp.id);
-            writefln("cache[resp.id] %x", resp.task_name.ptr);
-            writefln("cache[resp.id] %d", resp.task_name.length);
-            writefln("cache[resp.id] %s", resp.task_name);
-//            writefln("cache[resp.id] %x", cache[resp.id].resp);
-//            writefln("cache[resp.id].resp.response_task_name.ptr %x", cache[resp.id].task_name.ptr);
+            writefln("resp.id %d cache.length=%d", resp.id, cache.length);
         }
         ownerTid.send(Control.LIVE);
         while(!stop) {
-            const time_out=concurrency.receiveTimeout(
+            const message_received=concurrency.receiveTimeout(
                 100.msecs,
                 &do_stop,
                 &request
                 );
-            if (time_out) {
-                writefln("Timeout %d", cache.length);
 
-                foreach(a; cache.byValue) {
-                    writeln("------ --------");
-//                    writefln("'%s' %s",a.message, format("response %s", a.id));
-                    writefln("a.resp.id %d",a.response.id);
-                    writefln("a.resp.response_task_name.length %d",a.response.task_name.length);
-                    writefln("a.resp.response_task_name.ptr %x",a.response.task_name.ptr);
-//                    writefln("a.resp.response_task_name %x",&(a.resp.response_task_name[0]));
-                    a.response.reply(format("response %s", a.response.id));
+            if (!message_received || ((cache.length+1) % 4 == 0)) {
+                writefln("\nTimeout %d count_down=%d", cache.keys.length, count_down);
+                count_down--;
+                if (count_down < 0) {
+                    ownerTid.send("Fail to finish the test");
+                    stop = true;
                 }
-                // cache.byValue
-                //     .each!((a) => a.response(a.message, format("response %s", a.id))s);
+
+                cache.byValue
+                     .each!((a) => a.response.reply(a.message));
                 cache.clear;
             }
         }
@@ -158,15 +151,43 @@ unittest {
 
     string main_task="main";
     concurrency.register(main_task, thisTid);
+
 //    immutable request=immutable(ResponseRequest)(main_task);
-    enum num=6;
-    foreach(i; 0..num) {
-        ResponseText.send(task1_tid, main_task, format("echo %d", i));
+//    assumeWontThrow({
+
+    { // Simple resonse text
+        enum num=11;
+        ResponseText.ID[string] message_list;
+        pragma(msg, "ResponseText.ID ", ResponseText.ID);
+        foreach(i; 0..num) {
+            writefln("i=%d",i);
+            // if (i % 3 == 0) {
+            //     Thread.sleep(20.msecs);
+            // }
+            auto msg=format("echo %d", i);
+            message_list[msg]=ResponseText.send(task1_tid, main_task, msg);
+        }
+        assert(message_list.length is num);
+        writefln("Wait for response %s", message_list);
+        foreach(i; 0..num) {
+            writefln("Receive loop %d", i);
+            concurrency.receive(
+                (ResponseText.iID id, string message) {
+                    //immutable received_message =concurrency.receiveOnly!(immutable(ResponseText.ID), string); //ResponseText.Message);
+                    writefln("...id=%d %s ", id, message); //concurrency.receiveOnly!(ResponseText.ID, string));
+                    const received_id=message_list.get(message, id.max);
+                    writefln("received_id=%d id=%d", received_id, id);
+                    assert(received_id is id);
+                    message_list.remove(message);
+                },
+                 (string error) {
+                     assert(0, error);
+                 });
+
+        }
+        assert(message_list.length == 0);
     }
-    writefln("Wait for response");
-    foreach(i; 0..num) {
-        writefln("%s ", concurrency.receiveOnly!(ResponseText.ID, string));
-    }
+
     task1_tid.send(Control.STOP);
     assert(concurrency.receiveOnly!Control == Control.END);
     // task2_tid.send(Control.STOP);
