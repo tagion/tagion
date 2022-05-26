@@ -104,13 +104,11 @@ unittest {
     }
     alias childFormat=format!("child %s", string);
     static void task2(string task_name) {
-        writefln("task_name %s", task_name);
         int count_down = 10;
         bool stop;
         task_name.register(thisTid);
         scope(exit) {
             ownerTid.send(Control.END);
-            writefln("#### Task2 ends");
         }
         auto child_tid=spawn(&task1, task_name~"_child");
         assert(concurrency.receiveOnly!Control is Control.LIVE);
@@ -123,7 +121,6 @@ unittest {
         }
         ResponseText.Cache cache;
         void request(immutable(ResponseText)* resp, string echo, bool to_child) {
-            writefln("***** echo %s", echo);
             if (to_child) {
                 child_tid.send(resp, childFormat(echo));
                 return;
@@ -133,7 +130,6 @@ unittest {
         }
         ownerTid.send(Control.LIVE);
         while(!stop) {
-            writefln("!!!! loop %d", count_down);
             const message_received = concurrency.receiveTimeout(
                 50.msecs,
                 &do_stop,
@@ -195,12 +191,12 @@ unittest {
             const result_msg=(to_child)?childFormat(msg):msg;
             immutable resp=new immutable(ResponseText)(main_task);
 //            concurrency.send(task2_tid, msg);
-            concurrency.send(task2_tid, resp, msg, to_child);
+//            concurrency.send(task2_tid, resp, msg, to_child);
 //            concurrency.send(task2_tid, resp, msg);
 //            concurrency.send(task2_tid, resp, msg, true);
             writefln("%s %s", msg, to_child);
-            message_list[result_msg] = ResponseText.ID(resp.id);
-//            message_list[result_msg]=ResponseText.send(task2_tid, main_task, msg, to_child);
+            // message_list[result_msg] = ResponseText.ID(resp.id);
+            message_list[result_msg]=ResponseText.send(task2_tid, main_task, msg, to_child);
         }
         assert(message_list.length is num);
         foreach(i; 0..num) {
