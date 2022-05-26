@@ -5,13 +5,25 @@ import std.concurrency : Tid, ownerTid, register, thisTid, spawn, send;
 import std.stdio;
 import std.exception : assumeWontThrow;
 import std.typecons : Typedef, Tuple;
+import std.traits : isType;
 
 
 //alias ResponseRequest=ResponseRequestT!void;
 
 @safe
-struct ResponseRequestT(T) {
-    alias ID=Typedef!(uint, uint.init, T.stringof);
+struct ResponseRequest(alias Cookie) {
+    static if (isType!Cookie) {
+        enum cookie=Cookie.stringof;
+    }
+    else static if (is(typeof(Cookie) == string)) {
+        enum cookie=Cookie;
+    }
+    else {
+        static assert(0, format("Invalid cookie %s ", Cookie.stringof));
+        enum cookie="Invalid";
+    }
+
+    alias ID=Typedef!(uint, uint.init, cookie);
     @safe
     static ID new_count() @nogc nothrow  {
         static ID id_count;
@@ -29,7 +41,7 @@ struct ResponseRequestT(T) {
         id=new_count;
     }
     static ID send(Args...)(Tid tid, string task_name, Args args) @trusted {
-        immutable resp=new immutable(ResponseRequestT)(task_name);
+        immutable resp=new immutable(ResponseRequest)(task_name);
         concurrency.send(tid, resp, args);
         return resp.id;
     }
@@ -38,13 +50,15 @@ struct ResponseRequestT(T) {
         tid.send(id, message);
     }
 
-    static if (is(T == void)) {
-        alias Message=immutable(ResponseRequestT)*;
+    static if (isType!Cookie) {
+    static if (is(Cookie == void)) {
+        alias Message=immutable(ResponseRequest)*;
     }
     else {
-        alias Message=Tuple!(immutable(ResponseRequestT)*, "response",  T, "message");
+        alias Message=Tuple!(immutable(ResponseRequest)*, "response", Cookie, "message");
     }
     alias Cache = Message[ID];
+    }
 }
 
 
@@ -59,7 +73,7 @@ unittest {
     import core.thread : Thread;
     auto rnd = Random(unpredictableSeed);
 
-    alias ResponseText=ResponseRequestT!string;
+    alias ResponseText=ResponseRequest!string;
     @safe @nogc
     static bool doThis(Tid tid) pure nothrow {
         assert(0);

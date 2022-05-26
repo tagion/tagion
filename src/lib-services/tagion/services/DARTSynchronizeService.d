@@ -2,19 +2,16 @@ module tagion.services.DARTSynchronizeService;
 
 import core.thread;
 import std.concurrency;
-
-import tagion.services.Options;
-
-import p2plib = p2p.interfaces;
-
-//import p2p.connection;
-import p2p.callback;
-import p2p.cgo.c_helper;
-import tagion.logger.Logger;
-import tagion.basic.Types : Buffer, Control, Pubkey;
-import std.getopt;
 import std.stdio;
 import std.conv;
+
+import p2plib = p2p.interfaces;
+import p2p.callback;
+import p2p.cgo.c_helper;
+
+import tagion.services.Options;
+import tagion.logger.Logger;
+import tagion.basic.Types : Buffer, Control, Pubkey;
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTFile;
@@ -74,6 +71,8 @@ struct ServiceState(T) {
         send(ownerTid, _state);
     }
 }
+
+alias DARTReadRequest=ResponseRequest!(tagion.services.DARTSynchronizeService.stringof);
 
 void dartSynchronizeServiceTask(Net : SecureNet)(
         immutable(Options) opts,
@@ -241,12 +240,12 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
             }
         }
 
-        void dartRead(immutable(ResponseRequestT!void) request, Buffer[][] fingerprints) @trusted {
+        void dartRead(immutable(DARTReadRequest)* resp, Buffer[][] fingerprints) @trusted {
             import std.algorithm : joiner;
             immutable result=cast(immutable)(dart.loads(fingerprints.joiner, Archive.Type.NONE));
-//            request.response(result);
+            resp.reply(result);
         }
-//        NodeAddress[Pubkey] node_addrses;
+
         log("send live");
         ownerTid.send(Control.LIVE);
         while (!stop) {
