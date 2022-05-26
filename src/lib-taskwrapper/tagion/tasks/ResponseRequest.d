@@ -30,13 +30,11 @@ struct ResponseRequestT(T) {
     }
     static ID send(Args...)(Tid tid, string task_name, Args args) @trusted {
         immutable resp=new immutable(ResponseRequestT)(task_name);
-        writefln("%s %s resp.id=%d", task_name, args, resp.id);
         concurrency.send(tid, resp, args);
         return resp.id;
     }
     void reply(T)(T message) immutable @trusted {
         auto tid = concurrency.locate(task_name);
-        writefln("id=%s message=%s", id, message);
         tid.send(id, message);
     }
 
@@ -56,8 +54,11 @@ unittest {
     import std.algorithm : each;
     import std.format;
     import std.stdio;
+    import std.random;
     import core.time;
     import core.thread : Thread;
+    auto rnd = Random(unpredictableSeed);
+
     alias ResponseText=ResponseRequestT!string;
     @safe @nogc
     static bool doThis(Tid tid) pure nothrow {
@@ -79,7 +80,6 @@ unittest {
         ResponseText.Cache cache;
         void request(immutable(ResponseText)* resp, string echo) {
             cache[resp.id]=ResponseText.Message(resp, echo); //.message(echo);
-            writefln("resp.id %d cache.length=%d", resp.id, cache.length);
         }
         ownerTid.send(Control.LIVE);
         while(!stop) {
@@ -90,7 +90,6 @@ unittest {
                 );
 
             if (!message_received || ((cache.length+1) % 4 == 0)) {
-                writefln("\nTimeout %d count_down=%d", cache.keys.length, count_down);
                 count_down--;
                 if (count_down < 0) {
                     ownerTid.send("Fail to finish the test");
@@ -103,80 +102,74 @@ unittest {
             }
         }
     }
-    static void task2_1(string task_name) {
-        bool stop;
-        scope(exit) {
-            ownerTid.send(Control.END);
-        }
-        task_name.register(thisTid);
-        void do_stop(Control ctrl) {
-            if (ctrl is Control.STOP) {
-                stop = true;
-            }
-        }
-        ownerTid.send(Control.LIVE);
-        while(!stop) {
-            concurrency.receive(
-                &do_stop
-                );
-        }
-    }
+    alias childFormat=format!("child %s", string);
     static void task2(string task_name) {
+        writefln("task_name %s", task_name);
+        int count_down = 10;
         bool stop;
         task_name.register(thisTid);
         scope(exit) {
             ownerTid.send(Control.END);
+            writefln("#### Task2 ends");
         }
-        auto tid=spawn(&task2_1, task_name~"_child");
+        auto child_tid=spawn(&task1, task_name~"_child");
         assert(concurrency.receiveOnly!Control is Control.LIVE);
         void do_stop(Control ctrl) {
             if (ctrl is Control.STOP) {
-                tid.send(Control.STOP);
+                child_tid.send(Control.STOP);
                 assert(concurrency.receiveOnly!Control == Control.END);
                 stop = true;
             }
         }
+        ResponseText.Cache cache;
+        void request(immutable(ResponseText)* resp, string echo, bool to_child) {
+            writefln("***** echo %s", echo);
+            if (to_child) {
+                child_tid.send(resp, childFormat(echo));
+                return;
+            }
+            cache[resp.id]=ResponseText.Message(resp, echo); //.message(echo);
+
+        }
         ownerTid.send(Control.LIVE);
         while(!stop) {
-            concurrency.receive(
-                &do_stop
+            writefln("!!!! loop %d", count_down);
+            const message_received = concurrency.receiveTimeout(
+                50.msecs,
+                &do_stop,
+                &request,
                 );
+            if (!message_received || ((cache.length+1) % 4 == 0)) {
+                count_down--;
+                if (count_down < 0) {
+                    ownerTid.send("Fail to finish the test from parent");
+                    stop = true;
+                }
+                cache.byValue
+                     .each!((a) => a.response.reply(a.message));
+                cache.clear;
+            }
         }
     }
     enum task1_name="task1";
     auto task1_tid=spawn(&task1, task1_name);
     assert(concurrency.receiveOnly!Control is Control.LIVE);
-    // auto task2_tid=spawn(&task1, "task2");
-    // assert(concurrency.receiveOnly!Control is Control.LIVE);
 
     string main_task="main";
     concurrency.register(main_task, thisTid);
 
-//    immutable request=immutable(ResponseRequest)(main_task);
-//    assumeWontThrow({
-
-    { // Simple resonse text
+    { // Simple response text
         enum num=11;
         ResponseText.ID[string] message_list;
-        pragma(msg, "ResponseText.ID ", ResponseText.ID);
         foreach(i; 0..num) {
-            writefln("i=%d",i);
-            // if (i % 3 == 0) {
-            //     Thread.sleep(20.msecs);
-            // }
             auto msg=format("echo %d", i);
             message_list[msg]=ResponseText.send(task1_tid, main_task, msg);
         }
         assert(message_list.length is num);
-        writefln("Wait for response %s", message_list);
         foreach(i; 0..num) {
-            writefln("Receive loop %d", i);
             concurrency.receive(
                 (ResponseText.iID id, string message) {
-                    //immutable received_message =concurrency.receiveOnly!(immutable(ResponseText.ID), string); //ResponseText.Message);
-                    writefln("...id=%d %s ", id, message); //concurrency.receiveOnly!(ResponseText.ID, string));
                     const received_id=message_list.get(message, id.max);
-                    writefln("received_id=%d id=%d", received_id, id);
                     assert(received_id is id);
                     message_list.remove(message);
                 },
@@ -190,9 +183,40 @@ unittest {
 
     task1_tid.send(Control.STOP);
     assert(concurrency.receiveOnly!Control == Control.END);
-    // task2_tid.send(Control.STOP);
-    // assert(concurrency.receiveOnly!Control == Control.END);
-
-
-
+    enum task2_name="task2";
+    auto task2_tid=spawn(&task2, task2_name);
+    assert(concurrency.receiveOnly!Control is Control.LIVE);
+    { /// Send response for both child and parent
+        enum num=21;
+        ResponseText.ID[string] message_list;
+        foreach(i; 0..num) {
+            bool to_child = uniform!"[]"(0, 1, rnd) == 1;
+            const msg=format("echo %d", i);
+            const result_msg=(to_child)?childFormat(msg):msg;
+            immutable resp=new immutable(ResponseText)(main_task);
+//            concurrency.send(task2_tid, msg);
+            concurrency.send(task2_tid, resp, msg, to_child);
+//            concurrency.send(task2_tid, resp, msg);
+//            concurrency.send(task2_tid, resp, msg, true);
+            writefln("%s %s", msg, to_child);
+            message_list[result_msg] = ResponseText.ID(resp.id);
+//            message_list[result_msg]=ResponseText.send(task2_tid, main_task, msg, to_child);
+        }
+        assert(message_list.length is num);
+        foreach(i; 0..num) {
+            concurrency.receive(
+                (ResponseText.iID id, string message) {
+                    writefln("message %s", message);
+                    const received_id=message_list.get(message, id.max);
+                    assert(received_id is id);
+                    message_list.remove(message);
+                },
+                (string error) {
+                    assert(0, error);
+                });
+        }
+        assert(message_list.length == 0);
+    }
+    task2_tid.send(Control.STOP);
+    assert(concurrency.receiveOnly!Control == Control.END);
 }
