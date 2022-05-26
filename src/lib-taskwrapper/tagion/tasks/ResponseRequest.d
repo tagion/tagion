@@ -51,15 +51,28 @@ struct ResponseRequest(alias Cookie) {
     }
 
     static if (isType!Cookie) {
-    static if (is(Cookie == void)) {
-        alias Message=immutable(ResponseRequest)*;
-    }
-    else {
-        alias Message=Tuple!(immutable(ResponseRequest)*, "response", Cookie, "message");
-    }
-    alias Cache = Message[ID];
+        static if (is(Cookie == void)) {
+            alias Message=immutable(ResponseRequest)*;
+        }
+        else {
+            alias Message=Tuple!(immutable(ResponseRequest)*, "response", Cookie, "message");
+        }
+        alias Cache = Message[ID];
     }
 }
+
+enum isResponseRequest(T) = __traits(hasMember, T, "ID") && __traits(hasMember, T, "task_name");
+
+mixin template Cache(R, T) if (isResponseRequest!R) {
+    static if (is(Cookie == T)) {
+        alias Message=immutable(R)*;
+    }
+    else {
+            alias Message=Tuple!(immutable(R)*, "response", T, "message");
+    }
+    alias Cache = Message[ID];
+}
+
 
 
 unittest {

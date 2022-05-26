@@ -10,7 +10,7 @@ import tagion.services.Options;
 import tagion.communication.HiRPC : HiRPC;
 import tagion.hashgraph.HashGraphBasic : EventPackage;
 import tagion.script.StandardRecords : SignedContract;
-import tagion.tasks.ResponseRequest;
+import tagion.services.DARTSynchronizeService : DARTReadRequest;
 
 
 void contractCollectorTask(immutable(Options) opts) nothrow {
@@ -36,6 +36,7 @@ void contractCollectorTask(immutable(Options) opts) nothrow {
             }
         }
 
+//        DARTReadRequest.Cache! cache;
         /// If the response_task_name is set
         version(none)
         void register_epack(immutable(EventPackage*) epack, immutable(ResponseRequest*) response) {
