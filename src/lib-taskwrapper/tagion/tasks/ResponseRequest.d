@@ -190,19 +190,12 @@ unittest {
             const msg=format("echo %d", i);
             const result_msg=(to_child)?childFormat(msg):msg;
             immutable resp=new immutable(ResponseText)(main_task);
-//            concurrency.send(task2_tid, msg);
-//            concurrency.send(task2_tid, resp, msg, to_child);
-//            concurrency.send(task2_tid, resp, msg);
-//            concurrency.send(task2_tid, resp, msg, true);
-            writefln("%s %s", msg, to_child);
-            // message_list[result_msg] = ResponseText.ID(resp.id);
             message_list[result_msg]=ResponseText.send(task2_tid, main_task, msg, to_child);
         }
         assert(message_list.length is num);
         foreach(i; 0..num) {
             concurrency.receive(
                 (ResponseText.iID id, string message) {
-                    writefln("message %s", message);
                     const received_id=message_list.get(message, id.max);
                     assert(received_id is id);
                     message_list.remove(message);
