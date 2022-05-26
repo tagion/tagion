@@ -6,6 +6,7 @@ export MODE1_ROOT:=$(TESTBENCH)/mode1
 MODE1_FLAGS:=-N 7 -t 300
 MODE1_FLAGS+=--net-mode=local
 MODE1_FLAGS+=--boot=$(MODE1_ROOT)/boot.hibon
+MODE1_FLAGS+=--epochs=$(EPOCHS);
 
 ifdef INSCREEN
 TERMINAL:=screen -S test -dm

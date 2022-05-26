@@ -23,7 +23,7 @@ import tagion.utils.Queue;
 import tagion.GlobalSignals : abort;
 
 import tagion.basic.Types : Pubkey, Control, Buffer;
-import tagion.basic.Basic : nameOf;
+import tagion.basic.Basic : nameOf, main_task;
 import tagion.logger.Logger;
 import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
@@ -105,7 +105,8 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
     try {
         log.register(opts.node_name);
         setOptions(opts);
-
+        bool stop;
+        int count_down=opts.epoch_limit;
         scope (success) {
             log.close;
             ownerTid.prioritySend(Control.END);
@@ -184,12 +185,19 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             import tagion.hibon.HiBONJSON;
 
             HiBON params = new HiBON;
-            pragma(msg, "fixme(cbr): epoch_time has not beed added to the epoch");
+//            pragma(msg, "fixme(cbr): epoch_time has not beed added to the epoch");
             foreach (i, payload; events.map!((e) => e.event_body.payload).array) {
                 params[i] = payload;
             }
-            log("Send to transcript: %s", Document(params).toJSON);
+            log("Produced epoch count down  %d", count_down);
             transcript_tid.send(params.serialize);
+            if (count_down > 0) {
+                count_down--;
+                if (count_down <= 0) {
+                    auto main_tid = locate(main_task);
+                    main_tid.send(Control.STOP);
+                }
+            }
         }
 
         void register_epack(immutable(EventPackage*) epack) @safe {
@@ -331,7 +339,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
 
         enum max_gossip = 2;
         uint gossip_count = max_gossip;
-        bool stop = false;
         enum timeout_end = 10;
         uint timeout_count;
 

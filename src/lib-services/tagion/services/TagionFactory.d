@@ -34,6 +34,9 @@ import tagion.services.MdnsDiscoveryService;
 
 void tagionFactoryService(Options opts) nothrow {
     try {
+        scope(exit) {
+            ownerTid.send(Control.END);
+        }
     immutable tast_name = opts.heartbeat.task_name;
     log.register(tast_name);
     setOptions(opts);
@@ -166,6 +169,7 @@ void tagionFactoryService(Options opts) nothrow {
     uint time = opts.delay;
     Random!uint rand;
     rand.seed(opts.seed);
+    ownerTid.send(Control.LIVE);
     while (!stop && !abort) {
         //            Thread.sleep(opts.delay.msecs);
         immutable message_received = receiveTimeout(
