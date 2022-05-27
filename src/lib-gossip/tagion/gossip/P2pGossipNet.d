@@ -230,10 +230,10 @@ class ConnectionPoolBridge {
     protected ulong[Pubkey] lookup;
 
     void removeConnection(ulong connectionId) {
-        log("CPB::REMOVING CONNECTION \n lookup: %s", lookup);
+//        log("CPB::REMOVING CONNECTION \n lookup: %s", lookup);
         foreach (key, val; lookup) {
             if (val == connectionId) {
-                log("CPB::REMOVING KEY: connection id: %s as pk: %s", val, key.cutHex);
+                //              log("CPB::REMOVING KEY: connection id: %s as pk: %s", val, key.cutHex);
                 lookup.remove(key);
                 // break;
             }
@@ -503,7 +503,7 @@ class P2pGossipNet : StdP2pNet, GossipNet {
     }
 
     bool isValidChannel(const(Pubkey) channel) const nothrow {
-        log.trace("channel %s %s isActive %s", channel.cutHex, channel != mypk,addressbook.isActive(channel));
+//        log.trace("channel %s %s isActive %s", channel.cutHex, channel != mypk,addressbook.isActive(channel));
         return addressbook.isActive(channel);
     }
 

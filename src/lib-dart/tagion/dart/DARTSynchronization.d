@@ -730,6 +730,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
 @safe
 unittest {
     import std.algorithm : count;
+    log.push(LoggerType.ALL);
 
     @safe
     static class FakeResponseHandler : ResponseHandler {

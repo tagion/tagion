@@ -2,19 +2,16 @@ module tagion.services.DARTSynchronizeService;
 
 import core.thread;
 import std.concurrency;
-
-import tagion.services.Options;
-
-import p2plib = p2p.interfaces;
-
-//import p2p.connection;
-import p2p.callback;
-import p2p.cgo.c_helper;
-import tagion.logger.Logger;
-import tagion.basic.Types : Buffer, Control, Pubkey;
-import std.getopt;
 import std.stdio;
 import std.conv;
+
+import p2plib = p2p.interfaces;
+import p2p.callback;
+import p2p.cgo.c_helper;
+
+import tagion.services.Options;
+import tagion.logger.Logger;
+import tagion.basic.Types : Buffer, Control, Pubkey;
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTFile;
@@ -26,6 +23,7 @@ import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 
 import tagion.dart.DARTSynchronization;
+import tagion.tasks.ResponseRequest;
 
 version (unittest) import tagion.dart.BlockFile : fileId;
 import tagion.hibon.HiBONJSON;
@@ -73,6 +71,8 @@ struct ServiceState(T) {
         send(ownerTid, _state);
     }
 }
+
+alias DARTReadRequest=ResponseRequest!(tagion.services.DARTSynchronizeService.stringof);
 
 void dartSynchronizeServiceTask(Net : SecureNet)(
         immutable(Options) opts,
@@ -181,7 +181,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
 
             void sendResult(Buffer result) {
                 auto tid = locate(taskName);
-                if (tid != Tid.init) {
+                if (tid !is Tid.init) {
                     log("sending response back, %s", taskName);
                     send(tid, result);
                 }
@@ -239,7 +239,13 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                 sendResult(response.toDoc.serialize);
             }
         }
-//        NodeAddress[Pubkey] node_addrses;
+
+        void dartRead(immutable(DARTReadRequest)* resp, Buffer[][] fingerprints) @trusted {
+            import std.algorithm : joiner;
+            immutable result=cast(immutable)(dart.loads(fingerprints.joiner, Archive.Type.NONE));
+            resp.reply(result);
+        }
+
         log("send live");
         ownerTid.send(Control.LIVE);
         while (!stop) {
@@ -292,6 +298,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
 
             },
                 &dartHiPRC,
+                &dartRead,
                 /+
                 version(none) {
                 (string taskName, Buffer data) {
