@@ -113,7 +113,8 @@ int _main(string[] args) {
     bool initialize = false;
     string passphrase = "verysecret";
     string nncupdatename, nncreadname;
-    uint testaddblocks, testdumpblocks;
+    uint testaddblocks;
+    int testdumpblocks = -1;
 
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
@@ -140,12 +141,13 @@ int _main(string[] args) {
             "nncread", "Read NetworkNameCard with given name", &nncreadname,
             "verbose|v", "Print output to console", &verbose,
             "testaddblocks", "DEBUG MODE: Add N epoch blocks in chain", &testaddblocks,
-            "testdumpblocks", "DEBUG MODE: Dump last N epoch blocks in chain", &testdumpblocks,
+            "testdumpblocks", "DEBUG MODE: Dump last N epoch blocks in chain. Set 0 to dump all blocks in chain", &testdumpblocks,
     );
 
     dartread = !dartread_args.empty;
     bool nncupdate = !nncupdatename.empty;
     bool nncread = !nncreadname.empty;
+    bool testdumpblocks_enabled = testdumpblocks > -1;
 
     if (version_switch) {
         // writefln("version %s", REVNO);
@@ -271,7 +273,7 @@ int _main(string[] args) {
         }
     }
 
-    const onehot = dartrpc + dartread + dartrim + dartmodify + nncupdate + nncread + (testaddblocks > 0) + (testdumpblocks > 0);
+    const onehot = dartrpc + dartread + dartrim + dartmodify + nncupdate + nncread + (testaddblocks > 0) + testdumpblocks_enabled;
 
     if (onehot > 1) {
         stderr.writeln("Only one of the dartrpc, dartread, dartrim, dartmodify, nncupdate and nncread switched alowed");
@@ -420,7 +422,7 @@ int _main(string[] args) {
     }
     else if (testaddblocks > 0) {
         foreach (i; 0..testaddblocks) {
-            writefln("Step %d", i);
+            writef("Adding block %d... ", i+1);
 
             auto last_epoch_block_read = readLastEpochBlock(hirpc, db);
             if (last_epoch_block_read.isNull) {
@@ -437,6 +439,8 @@ int _main(string[] args) {
             db.modify(recorder_remove);
             db.modify(recorder_add);
 
+            writeln("Done!");
+
             if (verbose) {
                 writeln;
                 writefln("Recorder add %s", recorder_add.toPretty);
@@ -445,7 +449,7 @@ int _main(string[] args) {
             }
         }
     }
-    else if (testdumpblocks > 0) {
+    else if (testdumpblocks_enabled) {
         import tagion.dart.DARTFile : hash_null;
         auto last_epoch_block_read = readLastEpochBlock(hirpc, db);
         if (last_epoch_block_read.isNull) {
@@ -456,7 +460,9 @@ int _main(string[] args) {
         toConsole(last_epoch_block_read.get, true, "Last block is read successfully.");
         auto previous_hash = last_epoch_block_read.get.previous;
 
-        foreach (i; 1..testdumpblocks) {
+        int i = 1;
+        const has_count_limit = testdumpblocks > 0; // testdumpblocks = 0 means no limit in blocks count
+        while (!has_count_limit || i < testdumpblocks) {
             auto current_block_read = readRecord!EpochBlock(previous_hash, hirpc, db);
             if (current_block_read.isNull) {
                 writefln("DART is corrupted! Epoch block in chain was not found. Abort");
@@ -470,6 +476,8 @@ int _main(string[] args) {
                 writefln("Reached first block in chain. Stop");
                 break;
             }
+
+            i += 1;
         }
     }
     return 0;
