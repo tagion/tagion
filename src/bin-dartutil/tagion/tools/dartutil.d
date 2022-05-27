@@ -414,6 +414,13 @@ int _main(string[] args) {
                     writefln("Updated %s with name '%s'", typeof(nnc).stringof, nnc.name);
                     writeln;
 
+                    if (verbose) {
+                        writeln;
+                        writefln("Recorder add %s", recorder_add.toPretty);
+                        writeln;
+                        writefln("Recorder remove %s", recorder_remove.toPretty);
+                    }
+
                     if (dump)
                         db.dump(true);
                 }
@@ -463,6 +470,11 @@ int _main(string[] args) {
         int i = 1;
         const has_count_limit = testdumpblocks > 0; // testdumpblocks = 0 means no limit in blocks count
         while (!has_count_limit || i < testdumpblocks) {
+            if (previous_hash == hash_null) {
+                writefln("Reached first block in chain. Stop");
+                break;
+            }
+
             auto current_block_read = readRecord!EpochBlock(previous_hash, hirpc, db);
             if (current_block_read.isNull) {
                 writefln("DART is corrupted! Epoch block in chain was not found. Abort");
@@ -471,11 +483,6 @@ int _main(string[] args) {
 
             toConsole(current_block_read.get, true, format("N-%d epoch block is read successfully.", i));
             previous_hash = current_block_read.get.previous;
-
-            if (previous_hash == hash_null) {
-                writefln("Reached first block in chain. Stop");
-                break;
-            }
 
             i += 1;
         }
