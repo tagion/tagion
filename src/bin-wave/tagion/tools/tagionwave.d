@@ -165,21 +165,21 @@ int _main(string[] args) {
 
     create_ssl(service_options.transaction.service.openssl);
 
-    auto loggerService = Task!LoggerTask(service_options.logger.task_name, service_options);
-    scope (exit) {
-        loggerService.control(Control.STOP);
-        receiveOnly!Control;
-    }
-
+    auto logger_service_tid = Task!LoggerTask(service_options.logger.task_name, service_options);
     import std.stdio : stderr;
-
     stderr.writeln("Waiting for logger");
-
     const response = receiveOnly!Control;
     stderr.writeln("Logger started");
     if (response !is Control.LIVE) {
         stderr.writeln("ERROR:Logger %s", response);
+        return -1;
     }
+    scope (exit) {
+        logger_service_tid.control(Control.STOP);
+        receiveOnly!Control;
+    }
+
+
     log.register(main_task);
 
     //    Control response;
@@ -188,7 +188,7 @@ int _main(string[] args) {
     scope (exit) {
         if (tagion_service_tid !is tagion_service_tid.init) {
             tagion_service_tid.send(Control.STOP);
-            auto respond_control = receiveOnly!Control;
+            receiveOnly!Control;
         }
     }
     writeln("Wait for join");
