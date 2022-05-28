@@ -68,7 +68,7 @@ struct Options {
     string path_to_shared_info;
     bool p2plogs;
     uint scrap_depth;
-
+    int epoch_limit; /// If epoch_limit > 0 the round until it has produced epoch_limit
     NetworkMode net_mode;
     import tagion.options.CommonOptions;
 
@@ -346,6 +346,7 @@ static ref auto all_getopt(
         "transaction-queue", format("Sets the listener transcation max queue lenght: default %d", options.transaction.service.max_queue_length), &(options.transaction.service.max_queue_length),
         "transaction-maxcon",  format("Sets the maximum number of connections: default: %d", options.transaction.service.max_connections), &(options.transaction.service.max_connections),
         "transaction-maxqueue",  format("Sets the maximum queue length: default: %d", options.transaction.service.max_queue_length), &(options.transaction.service.max_queue_length),
+        "epochs",  format("Sets the number of epochs (0 for infinite): default: %d", options.epoch_limit), &(options.epoch_limit),
 
 //        "transaction-maxfibres",  format("Sets the maximum number of fibres: default: %d", options.transaction.service.max_number_of_accept_fibers), &(options.transaction.service.max_number_of_accept_fibers),
 //        "transaction-maxreuse",  format("Sets the maximum number of fibre reuse: default: %d", options.transaction.service.max_number_of_fiber_reuse), &(options.transaction.service.max_number_of_fiber_reuse),
