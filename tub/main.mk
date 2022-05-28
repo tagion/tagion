@@ -9,7 +9,6 @@
 PRECMD ?= @
 
 main: help
-
 #
 # Defining absolute Root and Tub directories
 #
@@ -29,6 +28,7 @@ endif
 #
 -include $(REPOROOT)/local.*.mk
 -include $(REPOROOT)/local.mk
+include $(DTUB)/testbench/default.mk
 include $(DTUB)/utilities/dir.mk
 include $(DTUB)/utilities/log.mk
 
