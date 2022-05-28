@@ -7,7 +7,7 @@ import std.format;
 import std.array : join;
 
 import tagion.basic.Types : Control;
-import tagion.basic.Basic : TrustedConcurrency;
+import tagion.basic.Basic : TrustedConcurrency, main_task;
 import tagion.logger.Logger;
 import tagion.services.Options;
 import tagion.options.CommonOptions : setCommonOptions;
@@ -23,7 +23,6 @@ import tagion.tasks.TaskWrapper;
 
 mixin TrustedConcurrency;
 
-enum main_task = "tagionwave";
 
 void create_ssl(const(OpenSSL) openssl) {
     import std.algorithm.iteration : each;
@@ -58,6 +57,10 @@ import tagion.tools.Basic;
 mixin Main!(_main, "wave");
 
 int _main(string[] args) {
+    scope(exit) {
+        abort = true;
+        writeln("Slut!");
+    }
     import std.file : fwrite=write;
     import std.path : setExtension;
     immutable program = args[0];
@@ -181,23 +184,35 @@ int _main(string[] args) {
 
     //    Control response;
     Tid tagion_service_tid = spawn(&tagionFactoryService, service_options);
+    assert(receiveOnly!Control == Control.LIVE);
     scope (exit) {
-        tagion_service_tid.send(Control.STOP);
-        auto respond_control = receiveOnly!Control;
+        if (tagion_service_tid !is tagion_service_tid.init) {
+            tagion_service_tid.send(Control.STOP);
+            auto respond_control = receiveOnly!Control;
+        }
     }
     writeln("Wait for join");
 
     int result;
-    receive(
+    // bool stop;
+    // while (!stop) {
+        receive(
             (Control response) {
-        if (response is Control.END) {
-            writeln("Slut!");
-        }
-        else {
-            result = 1;
-            stderr.writefln("Unexpected signal %s", response);
-        }
-    },
+                with(Control) {
+                    switch (response) {
+                    case STOP:
+                        // stop = true;
+                        break;
+                    case END:
+                        // stop = true;
+                        break;
+                    default:
+                        // stop = true;
+                        result = 1;
+                        stderr.writefln("Unexpected signal %s", response);
+                    }
+                }
+            },
             (immutable(Exception) e) {
                 stderr.writeln(e.msg);
                 result = 2;
@@ -207,5 +222,6 @@ int _main(string[] args) {
                 result = 3;
             }
         );
+    // }
     return result;
 }
