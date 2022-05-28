@@ -366,11 +366,6 @@ class Round {
                     bool rare_less(Buffer a, Buffer b) {
                         const ab = hashgraph.hirpc.net.calcHash(a ~ b);
                         const ba = hashgraph.hirpc.net.calcHash(b ~ a);
-                        // const A = (BitMask(ab).count);
-                        // const B = (BitMask(ba).count);
-                        // if (A is B) {
-                        //     return rare_less(ab, ba);
-                        // }
                         return ab < ba;
                     }
 
