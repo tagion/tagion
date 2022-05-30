@@ -7,7 +7,7 @@ import std.format;
 import std.array : join;
 
 import tagion.basic.Types : Control;
-import tagion.basic.Basic : TrustedConcurrency, main_task;
+import tagion.basic.Basic : TrustedConcurrency;
 import tagion.logger.Logger;
 import tagion.services.Options;
 import tagion.options.CommonOptions : setCommonOptions;
@@ -51,12 +51,12 @@ void create_ssl(const(OpenSSL) openssl) {
     }
 }
 
-
 import tagion.tools.Basic;
 
 mixin Main!(_main, "wave");
 
 int _main(string[] args) {
+    main_task="tagionwave";
     scope(exit) {
         abort = true;
 

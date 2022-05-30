@@ -638,3 +638,5 @@ static setDefaultOption(ref Options options) {
     }
     //    setThreadLocalOptions();
 }
+
+__gshared string main_task;

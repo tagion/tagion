@@ -16,13 +16,13 @@ import p2plib = p2p.node;
 import p2p.callback;
 import p2p.cgo.c_helper;
 
-import tagion.services.Options : Options, setOptions, OptionException, NetworkMode;
+import tagion.services.Options : Options, setOptions, OptionException, NetworkMode, main_task;
 import tagion.utils.Random;
 import tagion.utils.Queue;
 import tagion.GlobalSignals : abort;
 
 import tagion.basic.Types : Pubkey, Control, Buffer;
-import tagion.basic.Basic : nameOf, main_task;
+import tagion.basic.Basic : nameOf;
 import tagion.logger.Logger;
 import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
