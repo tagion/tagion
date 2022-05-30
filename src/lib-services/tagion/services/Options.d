@@ -8,7 +8,6 @@ import std.path : setExtension;
 import std.getopt;
 import std.array : join;
 import std.string : strip;
-import core.time;
 
 import tagion.basic.Types : FileExtension;
 import tagion.basic.Basic : basename;
@@ -638,14 +637,3 @@ static setDefaultOption(ref Options options) {
     }
     //    setThreadLocalOptions();
 }
-static struct DefaultOptions { //TODO: moveout to static options in tagion  + param(miliseconds)
-static:
-    Duration timeout = 100.seconds;
-    int maxSize = 1024 * 10;
-    Duration mdnsInterval = 10.seconds;
-}
-
-//alias Buffer = immutable(ubyte[]);
-
-
-

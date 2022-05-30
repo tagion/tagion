@@ -1,13 +1,19 @@
 module p2p.interfaces;
-public import p2p.cgo.c_helper : ControlCode;
-import tagion.services.Options;
-import tagion.services.Options : DefaultOptions;
 alias Buffer = immutable(ubyte[]);
-
+public import p2p.cgo.c_helper : ControlCode;
+import p2p.cgo.c_helper : DBuffer;
 
 import core.time;
 import p2p.callback : HandlerCallback;
 
+package static struct DefaultOptions { //TODO: moveout to static options in tagion
+static:
+    Duration timeout = 100.seconds;
+    int maxSize = 1024 * 10;
+    Duration mdnsInterval = 10.seconds;
+}
+
+//alias Buffer = immutable(ubyte[]);
 @safe
 synchronized interface StreamI {
     bool alive() pure const nothrow;

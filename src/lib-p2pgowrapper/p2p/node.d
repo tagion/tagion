@@ -12,8 +12,6 @@ import std.array;
 import p2p.connection;
 import p2p.callback;
 
-import tagion.services.Options : DefaultOptions;
-
 static void EnableLogger() {
     lib.enableLogger();
 }
@@ -218,10 +216,6 @@ pragma(msg, "fixme(cbr): Reduces the scope of @trusted in the module");
 
     @property string LlistenAddress() {
         return addIdentity(listenAddr);
-    }
-
-    string addIdentityy(string addr) {
-        return addr ~ "/p2p/" ~ this.Id;
     }
 
     protected string addIdentity(string addr) {
