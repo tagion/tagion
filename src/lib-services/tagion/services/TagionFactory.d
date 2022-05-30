@@ -163,7 +163,7 @@ void tagionFactoryService(Options opts) nothrow {
     }
 
     uint count = opts.loops;
-    bool stop = false;
+    bool stop;
     log("Start the heart beat");
     uint node_id;
     uint time = opts.delay;
@@ -173,17 +173,18 @@ void tagionFactoryService(Options opts) nothrow {
     while (!stop && !abort) {
         //            Thread.sleep(opts.delay.msecs);
         immutable message_received = receiveTimeout(
-                opts.delay.msecs,
-                (Control ctrl) {
-            with (Control) {
-                switch (ctrl) {
-                case STOP:
-                    stop = true;
-                    break;
-                default:
+            opts.delay.msecs,
+            (Control ctrl) {
+                with (Control) {
+                    switch (ctrl) {
+                    case STOP:
+                        stop = true;
+                        break;
+                    default:
+                    }
                 }
-            }
-        }, &taskfailure);
+            },
+            &taskfailure);
     }
     }
     catch (Throwable t) {

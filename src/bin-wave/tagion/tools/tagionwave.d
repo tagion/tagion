@@ -59,7 +59,7 @@ mixin Main!(_main, "wave");
 int _main(string[] args) {
     scope(exit) {
         abort = true;
-        writeln("Slut!");
+//        writeln("Slut!");
     }
     import std.file : fwrite=write;
     import std.path : setExtension;
