@@ -83,7 +83,7 @@ void networkRecordDiscoveryService(
                     log("send request: %s", request);
                     bootstrap_tid.send(request);
                 },
-                (DiscoveryState state) {
+                (DiscoveryControl state) {
                     log.trace("state %s", state);
                     ownerTid.send(state);
                 },

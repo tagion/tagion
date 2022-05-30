@@ -224,10 +224,10 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                 opts);
         assert(receiveOnly!Control is Control.LIVE);
 
-        assert(receiveOnly!DiscoveryState is DiscoveryState.READY);
+        assert(receiveOnly!DiscoveryControl is DiscoveryControl.READY);
         log.trace("Network discovered ready");
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
-        assert(receiveOnly!DiscoveryState is DiscoveryState.READY);
+        assert(receiveOnly!DiscoveryControl is DiscoveryControl.READY);
 
         dart_sync_tid = spawn(
                 &dartSynchronizeServiceTask!StdSecureNet,

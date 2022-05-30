@@ -12,7 +12,7 @@ import tagion.logger.Logger;
 import tagion.basic.Types : Buffer, Control, Pubkey;
 import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.basic.TagionExceptions : fatal;
-import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
+import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
 
 void mdnsDiscoveryService(
         Pubkey pubkey,
@@ -69,7 +69,7 @@ void mdnsDiscoveryService(
                 log.trace("MDNS NETWORK READY %d < %d (%s)", addressbook.numOfNodes, opts.nodes, addressbook.isReady);
 
                 if (addressbook.isReady) {
-                    ownerTid.send(DiscoveryState.READY);
+                    ownerTid.send(DiscoveryControl.READY);
                     addressbook_done = true;
                 }
             }

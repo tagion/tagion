@@ -13,7 +13,7 @@ import tagion.basic.Basic : nameOf;
 import tagion.basic.TagionExceptions : TagionException, fatal;
 import tagion.services.MdnsDiscoveryService;
 
-import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
+import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
 
 import tagion.gossip.AddressBook : addressbook, NodeAddress;
 
@@ -84,7 +84,7 @@ void fileDiscoveryService(
                 }
                 log.trace("FILE NETWORK READY %d < %d (%s) done = %s", addressbook.numOfNodes, opts.nodes, addressbook.isReady, addressbook_done);
                 if (addressbook.isReady) {
-                    ownerTid.send(DiscoveryState.READY);
+                    ownerTid.send(DiscoveryControl.READY);
                     addressbook_done=true;
                 }
             }
