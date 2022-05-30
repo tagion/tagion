@@ -21,6 +21,20 @@ import tagion.services.MdnsDiscoveryService;
 import tagion.basic.TagionExceptions : fatal;
 import tagion.crypto.SecureNet;
 
+enum DiscoveryRequestCommand {
+    BecomeOnline = 1,
+    RequestTable = 2,
+    BecomeOffline = 3,
+    UpdateTable = 4 // on epoch
+}
+
+enum DiscoveryControl {
+    READY = 1,
+    ONLINE = 2,
+    OFFLINE = 3
+}
+
+
 void networkRecordDiscoveryService(
     Pubkey pubkey,
     shared p2plib.Node p2pnode,
@@ -88,7 +102,7 @@ void networkRecordDiscoveryService(
                     ownerTid.send(state);
                 },
                 (Control control) {
-                if (control == Control.STOP) {
+                if (control is Control.STOP) {
                     log("stop");
                     stop = true;
                 }

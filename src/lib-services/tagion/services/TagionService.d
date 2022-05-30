@@ -59,7 +59,7 @@ import tagion.utils.Miscellaneous : cutHex;
 
 //import tagion.services.ScriptCallbacks;
 import tagion.services.FileDiscoveryService;
-import tagion.services.ServerFileDiscoveryService;
+//import tagion.services.ServerFileDiscoveryService;
 import tagion.services.NetworkRecordDiscoveryService;
 
 //mport tagion.gossip.P2pGossipNet: AddressBook;

@@ -13,8 +13,7 @@ import tagion.basic.Basic : nameOf;
 import tagion.basic.TagionExceptions : TagionException, fatal;
 import tagion.services.MdnsDiscoveryService;
 
-import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
-
+import tagion.services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
 import tagion.gossip.AddressBook : addressbook, NodeAddress;
 
 void fileDiscoveryService(
