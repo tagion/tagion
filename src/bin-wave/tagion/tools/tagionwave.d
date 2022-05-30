@@ -59,7 +59,8 @@ mixin Main!(_main, "wave");
 int _main(string[] args) {
     scope(exit) {
         abort = true;
-//        writeln("Slut!");
+
+        writeln("End!");
     }
     import std.file : fwrite=write;
     import std.path : setExtension;
@@ -186,10 +187,11 @@ int _main(string[] args) {
     Tid tagion_service_tid = spawn(&tagionFactoryService, service_options);
     assert(receiveOnly!Control == Control.LIVE);
     scope (exit) {
-        if (tagion_service_tid !is tagion_service_tid.init) {
-            tagion_service_tid.send(Control.STOP);
-            receiveOnly!Control;
-        }
+//        if (tagion_service_tid !is tagion_service_tid.init) {
+        tagion_service_tid.send(Control.STOP);
+        log("Wait for %s to stop", tagion_service_tid.stringof);
+        receiveOnly!Control;
+//        }
     }
     writeln("Wait for join");
 

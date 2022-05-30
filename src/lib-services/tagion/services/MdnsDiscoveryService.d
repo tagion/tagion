@@ -54,8 +54,6 @@ void mdnsDiscoveryService(
                 with (DiscoveryRequestCommand) {
                     final switch (request) {
                     case RequestTable:
-                        pragma(msg, "fixme(cbr):Address book request should not be used anymore");
-                        log("Requested: %s ", addressbook.numOfActiveNodes);
                         addressbook_done = false;
                         break;
                     case BecomeOnline:
@@ -65,7 +63,8 @@ void mdnsDiscoveryService(
 
                     }
                 }
-            });
+                    }
+                );
             if (!addressbook_done) {
                 log.trace("MDNS NETWORK READY %d < %d (%s)", addressbook.numOfNodes, opts.nodes, addressbook.isReady);
 

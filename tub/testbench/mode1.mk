@@ -6,7 +6,7 @@ export MODE1_ROOT:=$(TESTBENCH)/mode1
 MODE1_FLAGS:=-N 7 -t 300
 MODE1_FLAGS+=--net-mode=local
 MODE1_FLAGS+=--boot=$(MODE1_ROOT)/boot.hibon
-#MODE1_FLAGS+=--epochs=$(EPOCHS);
+#MODE1_FLAGS+=--epochs=$(EPOCHS)
 
 ifdef INSCREEN
 TERMINAL:=screen -S test -dm
@@ -63,6 +63,8 @@ $$(MODE1_CONFIG_$1): target-tagionwave
 $$(MODE1_CONFIG_$1):
 	$$(PRECMD)
 	$$(TAGIONWAVE) $$@ $$(MODE1_FLAGS) --port $$(HOSTPORT) -p $$(TRANSACTIONPORT) -P $$(MONITORPORT) --dart-filename=$$(MODE1_DARTFILE_$1) --dart-synchronize=$$(DARTSYNC) --dart-init=$$(DARTINIT) --pid=$$(MODE1_PID_$1) -O
+
+mode1-config: $$(MODE1_CONFIG_$1)
 
 env-mode1-$1:
 	$$(PRECMD)

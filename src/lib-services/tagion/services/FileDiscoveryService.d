@@ -68,18 +68,15 @@ void fileDiscoveryService(
                             addressbook_done=false;
                             break;
                         case BecomeOnline:
-                            log("Becoming online..");
-                            break;
                         case BecomeOffline:
-                            log("Becoming off-line");
-                            break;
                         case UpdateTable:
                             throw new TagionException(format("DiscoveryRequestCommand %s has not function", request));
                             break;
 
                         }
                     }
-                });
+                }
+                );
             if (!addressbook_done) {
                 if (!message) {
                     updateAddressbook;

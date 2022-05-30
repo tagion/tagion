@@ -1,2 +1,2 @@
-EPOCHS?=0
+EPOCHS?=3
 INSTALL?=$(HOME)/bin
