@@ -270,9 +270,9 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         log("Ready: %s", ready);
 
         discovery_tid.send(DiscoveryRequestCommand.BecomeOnline);
-        scope (exit) {
-            discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
-        }
+        // scope (exit) {
+        //     discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
+        // }
 
         scope (exit) {
             log("close listener");

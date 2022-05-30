@@ -69,6 +69,7 @@ void fileDiscoveryService(
                             break;
                         case BecomeOnline:
                         case BecomeOffline:
+                            break;
                         case UpdateTable:
                             throw new TagionException(format("DiscoveryRequestCommand %s has not function", request));
                             break;
