@@ -115,20 +115,16 @@ struct KeyRecover {
             if (index >= 0) {
                 dg(include);
                 pragma(msg, "review(cbr): Side channel attack fixed");
-
-//                else {
-                    if (include[index] < size) {
-                        include[index]++;
-                        local_search(index, size);
-                    }
-                    else if (index > 0) {
-                        include[index - 1]++;
-                        local_search(index - 1, size - 1);
-                    }
-//                }
+                if (include[index] < size) {
+                    include[index]++;
+                    local_search(index, size);
+                }
+                else if (index > 0) {
+                    include[index - 1]++;
+                    local_search(index - 1, size - 1);
+                }
             }
         }
-
         local_search(cast(int) include.length - 1, M - 1);
     }
 
@@ -201,15 +197,14 @@ struct KeyRecover {
             scope _R=new ubyte[net.hashSize];
             foreach (y; generator.Y) {
                 xor(_R, y, guess);
-                pragma(msg, "Fixme(cbr): constant time on a equal - sidechannel attack");
+                pragma(msg, "review(cbr): constant time on a equal - sidechannel attack");
                 if (generator.S == checkHash(_R)) {
                     _R.copy(R);
                     result = true;
                 }
             }
-            //return false;
         }
-        pragma(msg, "Fixme(cbr): Constant time - sidechannel attack");
+        pragma(msg, "review(cbr): Constant time - sidechannel attack");
         iterateSeeds(number_of_questions, generator.confidence, &search_for_the_secret);
         return result;
     }
