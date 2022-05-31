@@ -352,19 +352,31 @@ class Round {
             bool order_less(const Event a, const Event b) @safe {
                 order_compare_iteration_count++;
                 if (a.received_order is b.received_order) {
-                    if (a._mother && b._mother) {
-                        return order_less(a._mother, b._mother);
-                    }
                     if (a._father && b._father) {
                         return order_less(a._father, b._father);
                     }
-                    if (!a._father) {
+                    if (a._father && b._mother) {
+                        return order_less(a._father, b._mother);
+                    }
+                    if (a._mother && b._father) {
+                        return order_less(a._mother, b._father);
+                    }
+                    if (!a.isFatherLess && !b.isFatherLess) {
+                        return order_less(a._mother, b._mother);
+                    }
+                    if (!a.isFatherLess) {
                         return false;
                     }
-                    if (b._father) {
+                    if (!b.isFatherLess) {
                         return true;
                     }
-
+                    //assert(0);
+                    // if (!a._father) {
+                    //     return false;
+                    // }
+                    // if (b._father) {
+                    //     return true;
+                    // }
                     bool rare_less(Buffer a_print, Buffer b_print) {
                         rare_order_compare_count++;
                         pragma(msg, "review(cbr): Concensus order changed");
@@ -372,7 +384,8 @@ class Round {
                         // const ba = hashgraph.hirpc.net.calcHash(b ~ a);
                         return a_print < b_print;
                     }
-
+                    assert(a.isFatherLess && b.isFatherLess);
+                    //assert(a.isEva);
                     return rare_less(a.fingerprint, b.fingerprint);
                 }
                 return a.received_order < b.received_order;
