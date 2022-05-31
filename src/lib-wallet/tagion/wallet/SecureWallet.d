@@ -153,7 +153,7 @@ import tagion.wallet.WalletException : check;
     }
 
     @nogc bool isLoggedin() pure const nothrow {
-        pragma(msg, "fixme(cbr): Yam the net");
+        pragma(msg, "fixme(cbr): Jam the net");
         return net !is null;
     }
 

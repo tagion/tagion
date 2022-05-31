@@ -74,15 +74,15 @@ struct KeyRecover {
         foreach (ref result, question, answer; lockstep(results, questions, answers, StoppingPolicy
                 .requireSameLength)) {
             scope strip_down = cast(ubyte[]) answer.strip_down;
-            scope answer_hash = net.calcHash(strip_down);
-            scope question_hash = net.calcHash(question.representation);
+            scope answer_hash = net.rawCalcHash(strip_down);
+            scope question_hash = net.rawCalcHash(question.representation);
             // scope (exit) {
             //     strip_down.sceamble;
             //     answer_hash.scramble;
             //     question_hash.scramble;
             // }
-            //            const hash = net.calcHash(answer);
-            result = net.calcHash(answer_hash ~ question_hash);
+            //            const hash = net.rawCalcHash(answer);
+            result = net.rawCalcHash(answer_hash ~ question_hash);
         }
         return results;
     }
@@ -159,32 +159,20 @@ struct KeyRecover {
             generator.S = null;
             generator.confidence = 0;
         }
-
-
-
         .check(A.length > 1, message("Number of questions must be more than one"));
-
-
-
         .check(confidence <= A.length, message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
                 A.length, confidence));
-
-
-
         .check(A.length <= MAX_QUESTION, message("Mumber of question is %d but it should not exceed %d",
                 A.length, MAX_QUESTION));
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, confidence);
-
-
-
         .check(seeds <= MAX_SEEDS, message("Number quiz-seeds is %d which exceed that max value of %d",
                 seeds, MAX_SEEDS));
         generator.Y = new Buffer[seeds];
         uint count;
         bool calculate_this_seeds(scope const(uint[]) indices) @safe {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
-            generator.Y[count] = xor(R, xor(list_of_selected_answers_and_the_secret));
+            generator.Y[count] = xor(R, net.rawCalcHash(xor(list_of_selected_answers_and_the_secret)));
             count++;
             return false;
         }
@@ -197,13 +185,7 @@ struct KeyRecover {
     }
 
     bool findSecret(scope ref ubyte[] R, Buffer[] A) const {
-
-
-
-            .check(A.length > 1, message("Number of questions must be more than one"));
-
-
-
+        .check(A.length > 1, message("Number of questions must be more than one"));
         .check(generator.confidence <= A.length,
                 message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
                 A.length, generator.confidence));
@@ -213,10 +195,10 @@ struct KeyRecover {
         bool result;
         bool search_for_the_secret(scope const(uint[]) indices) @safe {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
-            const guess = xor(list_of_selected_answers_and_the_secret);
+            const guess = net.rawCalcHash(xor(list_of_selected_answers_and_the_secret));
             foreach (y; generator.Y) {
                 xor(R, y, guess);
-                pragma(msg, "Fixme(cbr): constant time on a equal - sidechanel atack");
+                pragma(msg, "Fixme(cbr): constant time on a equal - sidechannel attack");
                 if (generator.S == checkHash(R)) {
                     result = true;
                     return true;
@@ -226,7 +208,7 @@ struct KeyRecover {
         }
 
         iterateSeeds(number_of_questions, generator.confidence, &search_for_the_secret);
-        pragma(msg, "Fixme(cbr): Constant time - sidechanel atack");
+        pragma(msg, "Fixme(cbr): Constant time - sidechannel attack");
         return result;
     }
 }
