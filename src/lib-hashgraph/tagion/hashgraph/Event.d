@@ -370,22 +370,12 @@ class Round {
                     if (!b.isFatherLess) {
                         return true;
                     }
-                    //assert(0);
-                    // if (!a._father) {
-                    //     return false;
-                    // }
-                    // if (b._father) {
-                    //     return true;
-                    // }
                     bool rare_less(Buffer a_print, Buffer b_print) {
                         rare_order_compare_count++;
                         pragma(msg, "review(cbr): Concensus order changed");
-                        // const ab = hashgraph.hirpc.net.calcHash(a ~ b);
-                        // const ba = hashgraph.hirpc.net.calcHash(b ~ a);
                         return a_print < b_print;
                     }
                     assert(a.isFatherLess && b.isFatherLess);
-                    //assert(a.isEva);
                     return rare_less(a.fingerprint, b.fingerprint);
                 }
                 return a.received_order < b.received_order;
