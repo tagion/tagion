@@ -108,16 +108,15 @@ struct KeyRecover {
 
     static void iterateSeeds(
             const uint M, const uint N,
-            scope bool delegate(scope const(uint[]) indices) @safe dg) {
+            scope void delegate(scope const(uint[]) indices) @safe dg) {
         scope include = new uint[N];
         iota(N).copy(include);
-        bool end;
         void local_search(const int index, const int size) @safe {
-            if ((index >= 0) && !end) {
-                if (dg(include)) {
-                    end = true;
-                }
-                else {
+            if (index >= 0) {
+                dg(include);
+                pragma(msg, "review(cbr): Side channel attack fixed");
+
+//                else {
                     if (include[index] < size) {
                         include[index]++;
                         local_search(index, size);
@@ -126,7 +125,7 @@ struct KeyRecover {
                         include[index - 1]++;
                         local_search(index - 1, size - 1);
                     }
-                }
+//                }
             }
         }
 
@@ -170,11 +169,13 @@ struct KeyRecover {
                 seeds, MAX_SEEDS));
         generator.Y = new Buffer[seeds];
         uint count;
-        bool calculate_this_seeds(scope const(uint[]) indices) @safe {
+        void calculate_this_seeds(scope const(uint[]) indices) @safe {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
+            pragma(msg,"review(cbr): Recovery now used Y_a = R x H(A_a) instead of Y_a = R x H(A_a)");
+
             generator.Y[count] = xor(R, net.rawCalcHash(xor(list_of_selected_answers_and_the_secret)));
             count++;
-            return false;
+//            return false;
         }
 
         iterateSeeds(number_of_questions, confidence, &calculate_this_seeds);
@@ -193,22 +194,23 @@ struct KeyRecover {
         const seeds = numberOfSeeds(number_of_questions, generator.confidence);
 
         bool result;
-        bool search_for_the_secret(scope const(uint[]) indices) @safe {
+        void search_for_the_secret(scope const(uint[]) indices) @safe {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
+            pragma(msg,"review(cbr): Recovery now used Y_a = R x H(A_a) instead of Y_a = R x H(A_a)");
             const guess = net.rawCalcHash(xor(list_of_selected_answers_and_the_secret));
+            scope _R=new ubyte[net.hashSize];
             foreach (y; generator.Y) {
-                xor(R, y, guess);
+                xor(_R, y, guess);
                 pragma(msg, "Fixme(cbr): constant time on a equal - sidechannel attack");
-                if (generator.S == checkHash(R)) {
+                if (generator.S == checkHash(_R)) {
+                    _R.copy(R);
                     result = true;
-                    return true;
                 }
             }
-            return false;
+            //return false;
         }
-
-        iterateSeeds(number_of_questions, generator.confidence, &search_for_the_secret);
         pragma(msg, "Fixme(cbr): Constant time - sidechannel attack");
+        iterateSeeds(number_of_questions, generator.confidence, &search_for_the_secret);
         return result;
     }
 }
