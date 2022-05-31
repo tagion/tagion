@@ -312,11 +312,13 @@ class Round {
         private void collect_received_round(Round r, HashGraph hashgraph) {
             uint mark_received_iteration_count;
             uint order_compare_iteration_count;
+            uint rare_order_compare_count;
             uint epoch_events_count;
             // uint count;
             scope (success) {
                 hashgraph.mark_received_statistic(mark_received_iteration_count);
                 hashgraph.order_compare_statistic(order_compare_iteration_count);
+                hashgraph.rare_order_compare_statistic(rare_order_compare_count);
                 hashgraph.epoch_events_statistic(epoch_events_count);
             }
             r._events
@@ -363,10 +365,12 @@ class Round {
                         return true;
                     }
 
-                    bool rare_less(Buffer a, Buffer b) {
-                        const ab = hashgraph.hirpc.net.calcHash(a ~ b);
-                        const ba = hashgraph.hirpc.net.calcHash(b ~ a);
-                        return ab < ba;
+                    bool rare_less(Buffer a_print, Buffer b_print) {
+                        rare_order_compare_count++;
+                        pragma(msg, "review(cbr): Concensus order changed");
+                        // const ab = hashgraph.hirpc.net.calcHash(a ~ b);
+                        // const ba = hashgraph.hirpc.net.calcHash(b ~ a);
+                        return a_print < b_print;
                     }
 
                     return rare_less(a.fingerprint, b.fingerprint);
