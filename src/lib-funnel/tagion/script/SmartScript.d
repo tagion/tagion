@@ -43,7 +43,7 @@ class SmartScript {
     }
 
     void check(const SecureNet net) const {
-        check(net, signed_contract);
+        SmartScript.check(net, signed_contract);
     }
 
     @trusted
@@ -114,9 +114,9 @@ class SmartScript {
         foreach (pkey, doc; signed_contract.contract.output) {
             StandardBill bill;
             bill.epoch = epoch;
-            const num = sc.pop.get!Number;
+            //const num = sc.pop.get!Number;
             pragma(msg, "fixme(cbr): Check for overflow");
-            const amount = TagionCurrency(cast(long) num);
+            const amount = TagionCurrency(doc);
             total_output += amount;
             bill.value = amount;
             bill.owner = pkey;
@@ -283,6 +283,9 @@ class SmartScript {
 }
 }
 
+version(OLD_TRANSACTION) {
+}
+else {
 unittest {
     import std.stdio : writefln, writeln;
     import tagion.dart.Recorder : Add, Remove;
@@ -451,4 +454,5 @@ unittest {
             assert(SmartScript.run(alice, signed_contract, alices_bills, output_bills) == ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT);
         }
     }
+}
 }

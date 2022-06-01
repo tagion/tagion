@@ -109,18 +109,37 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                     doc = receivessl();
                     pragma(msg, "fixme(cbr): If doc is empty then return ");
                     log("%s", doc.toJSON);
+version(OLD_TRANSACTION) {
+    pragma(msg, "OLD_TRANSACTION ",__FILE__,":",__LINE__);
+
+                    pragma(msg, "fixme(cbr): smartscipt should be services not a local");
+                    // import tagion.script.ScriptBuilder;
+                    // import tagion.script.ScriptParser;
+                    // import tagion.script.Script;
+  const hirpc_received = hirpc.receive(doc);
+
+                    const method_name = hirpc_received.method.name;
+                    const params = hirpc_received.method.params;
+}
+else {
                     pragma(msg, "fixme(cbr): smartscipt should be services not a local");
                     const signed_contract = SignedContract(doc);
                     auto smartscript = new SmartScript(hirpc.net, signed_contract);
                     const hirpc_received = hirpc.receive(doc);
                     respone_id = hirpc_received.method.id;
+}
                     {
                         void yield() @trusted {
                             Fiber.yield;
                         }
+version(OLD_TRANSACTION) {
+        pragma(msg, "OLD_TRANSACTION ",__FILE__,":",__LINE__);
 
+}
+else {
                         const method_name = hirpc_received.method.name;
                         const params = hirpc_received.method.params;
+}
                         switch (method_name) {
                         case "search":
                             search(params, ssl_relay.id); //epoch number?
@@ -145,6 +164,8 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                             ssl_relay.send(response);
                             break;
                             version(OLD_TRANSACTION) {
+                                pragma(msg, "OLD_TRANSACTION ",__FILE__,":",__LINE__);
+
                                 case "transaction":
                                     // Should be EXTERNAL
                                     try {
@@ -213,7 +234,9 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                                     }
                                     return true;
                                     break;
+                                    default:
                             }
+                            else {
                         default:
                             const inputs = signed_contract.contract.inputs;
                             requestInputs(inputs, ssl_relay.id);
@@ -237,7 +260,9 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                                 import tagion.basic.ConsensusExceptions : consensus_error_messages;
                                 const error_response = internal_hirpc.error(hirpc_received, consensus_error_messages[fail_code]);
                             }
+                            }
                         }
+
                     }
                 }
                 catch (TagionException e) {
