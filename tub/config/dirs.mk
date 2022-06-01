@@ -35,6 +35,7 @@ env-dirs:
 	$(call log.kvp, SCRIPTS, $(SCRIPTS))
 	$(call log.kvp, TOOLS, $(TOOLS))
 	$(call log.kvp, REPOROOT, $(REPOROOT))
+	$(call log.kvp, INSTALL, $(INSTALL))
 	$(call log.close)
 
 env: env-dirs

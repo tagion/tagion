@@ -12,7 +12,7 @@ import tagion.logger.Logger;
 import tagion.basic.Types : Buffer, Control, Pubkey;
 import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.basic.TagionExceptions : fatal;
-import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
+import tagion.services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
 
 void mdnsDiscoveryService(
         Pubkey pubkey,
@@ -54,8 +54,6 @@ void mdnsDiscoveryService(
                 with (DiscoveryRequestCommand) {
                     final switch (request) {
                     case RequestTable:
-                        pragma(msg, "fixme(cbr):Address book request should not be used anymore");
-                        log("Requested: %s ", addressbook.numOfActiveNodes);
                         addressbook_done = false;
                         break;
                     case BecomeOnline:
@@ -65,12 +63,13 @@ void mdnsDiscoveryService(
 
                     }
                 }
-            });
+                    }
+                );
             if (!addressbook_done) {
                 log.trace("MDNS NETWORK READY %d < %d (%s)", addressbook.numOfNodes, opts.nodes, addressbook.isReady);
 
                 if (addressbook.isReady) {
-                    ownerTid.send(DiscoveryState.READY);
+                    ownerTid.send(DiscoveryControl.READY);
                     addressbook_done = true;
                 }
             }

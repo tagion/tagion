@@ -62,3 +62,5 @@
 #
 #PLATFORM?=i686-linux-android
 #
+
+INSTALL?=$(HOME)/bin

@@ -21,6 +21,8 @@ import tagion.services.Options;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
+import tagion.services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
+
 
 //import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
 import tagion.gossip.AddressBook : NodeAddress;
@@ -41,19 +43,6 @@ immutable class AddressBook_deprecation {
         return empty;
     }
 
-}
-
-enum DiscoveryRequestCommand {
-    BecomeOnline = 1,
-    RequestTable = 2,
-    BecomeOffline = 3,
-    UpdateTable = 4 // on epoch
-}
-
-enum DiscoveryState {
-    READY = 1,
-    ONLINE = 2,
-    OFFLINE = 3
 }
 
 void serverFileDiscoveryService(
@@ -194,7 +183,7 @@ void serverFileDiscoveryService(
                 const after_delay = checkTimestamp(mdns_start_timestamp,
                         opts.discovery.delay_before_start.msecs);
                 if (after_delay && is_online && is_ready) {
-                    ownerTid.send(DiscoveryState.READY);
+                    ownerTid.send(DiscoveryControl.READY);
                     owner_notified = true;
                 }
             }
