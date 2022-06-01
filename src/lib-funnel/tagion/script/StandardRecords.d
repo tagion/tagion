@@ -210,7 +210,10 @@ enum OwnerKey = "$Y";
     @RecordType("SSC") struct SignedContract {
         @Label("$signs") Signature[] signs; /// Signature of all inputs
         @Label("$contract") Contract contract; /// The contract must signed by all inputs
-//        @Label("$in", true) Document input; /// The actual inputs
+        version(OLD_TRANSACTION) {
+            pragma(msg, "OLD_TRANSACTION ",__FILE__,":",__LINE__);
+            @Label("$in", true) Document inputs; /// The actual inputs
+	}
         mixin HiBONRecord;
     }
 
