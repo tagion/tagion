@@ -681,8 +681,57 @@ int _main(string[] args) {
         return 0;
     }
 
+    version(OLD_CODE)
+    if(update_wallet){
+        HiRPC hirpc;
+        Buffer prepareSearch(Buffer[] owners){
+            HiBON params = new HiBON;
+            foreach(i, owner; owners){
+                params[i] = owner;
+            }
+            const sender=hirpc.action("search", params);
+            immutable data=sender.toDoc.serialize;
+            return data;
+        }
 
+        // writeln(accounts.length);
+        StandardBill[] new_bills;
+        Buffer[] pkeys;
+        foreach(pkey, dkey; accounts){
+            pkeys~=cast(Buffer)pkey;
+        }
+        auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
+        client.connect(new InternetAddress(addr, port));
+        scope(exit) {
+            client.close;
+        }
+        client.blocking=true;
+        // writefln("looking for %s", (cast(Buffer)pkey).toHexString);
+        auto to_send = prepareSearch(pkeys);
+        client.send(to_send);
 
+        auto rec_buf=new void[4000];
+        ptrdiff_t rec_size;
+
+        do {
+            rec_size = client.receive(rec_buf); //, current_max_size);
+            // writefln("read rec_size=%d", rec_size);
+            Thread.sleep(400.msecs);
+        } while (rec_size < 0);
+        auto resp_doc = Document(cast(Buffer)rec_buf[0..rec_size]);
+        auto received = hirpc.receive(resp_doc);
+        if(!received.error.hasMethod(Keywords.code)){
+            foreach(bill; received.params[]){
+                auto std_bill = StandardBill(bill.get!Document);
+                new_bills ~= std_bill;
+            }
+            billsfile.updateBills(new_bills);
+            bills = new_bills;
+            writeln("Wallet updated");
+        }else{
+            writeln("Wallet update failed");
+        }
+    }
 
     if (generate_wallet) {
         const questions = questions_str.split(',');
