@@ -152,40 +152,40 @@ struct WalletInterface {
             RESET.write;
             LINE.writeln;
             with (State) final switch (state) {
-            case CREATE_ACCOUNT:
-                if (secure_wallet.isLoggedin) {
-                    writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sp%2$s:change pin%3$s", FKEY, RESET, CLEARDOWN);
+                case CREATE_ACCOUNT:
+                    if (secure_wallet.isLoggedin) {
+                        writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sp%2$s:change pin%3$s", FKEY, RESET, CLEARDOWN);
+                    }
+                    else {
+                        writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sc%2$s:create%3$s", FKEY, RESET, CLEARDOWN);
+                    }
+                    break;
+                case WAIT_LOGIN:
+                    writefln("Pincode:%s", CLEARDOWN);
+                    //char[MAX_PINCODE_SIZE] stack_pincode;
+                    char[] pincode;
+                    pincode.length = MAX_PINCODE_SIZE;
+                    readln(pincode);
+                    //pincode = pincode[0..size];
+                    word_strip(pincode);
+                    scope (exit) {
+                        //pincode = stack_pincode;
+                        scramble(pincode);
+                    }
+                    secure_wallet.login(pincode);
+                    if (secure_wallet.isLoggedin) {
+                        state = LOGGEDIN;
+                        continue;
+                    }
+                    else {
+                        writefln("%sWrong pin%s", RED, RESET);
+                        writefln("Press %sEnter%s", YELLOW, RESET);
+                    }
+                    break;
+                case LOGGEDIN:
+                    writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sr%2$s:recover%3$s", FKEY, RESET, CLEARDOWN);
+                    break;
                 }
-                else {
-                    writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sc%2$s:create%3$s", FKEY, RESET, CLEARDOWN);
-                }
-                break;
-            case WAIT_LOGIN:
-                writefln("Pincode:%s", CLEARDOWN);
-                //char[MAX_PINCODE_SIZE] stack_pincode;
-                char[] pincode;
-                pincode.length = MAX_PINCODE_SIZE;
-                readln(pincode);
-                //pincode = pincode[0..size];
-                word_strip(pincode);
-                scope (exit) {
-                    //pincode = stack_pincode;
-                    scramble(pincode);
-                }
-                secure_wallet.login(pincode);
-                if (secure_wallet.isLoggedin) {
-                    state = LOGGEDIN;
-                    continue;
-                }
-                else {
-                    writefln("%sWrong pin%s", RED, RESET);
-                    writefln("Press %sEnter%s", YELLOW, RESET);
-                }
-                break;
-            case LOGGEDIN:
-                writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sr%2$s:recover%3$s", FKEY, RESET, CLEARDOWN);
-                break;
-            }
             CLEARDOWN.writeln;
             const keycode = key.getKey(ch);
             switch (ch) {
@@ -330,11 +330,11 @@ struct WalletInterface {
             LINE.writefln;
             if (recover_flag) {
                 writefln("%1$sq%2$s:quit %1$sEnter%2$s:select %1$sUp/Down%2$s:move %1$sc%2$s:recover%3$s",
-                        FKEY, RESET, CLEARDOWN);
+                    FKEY, RESET, CLEARDOWN);
             }
             else {
                 writefln("%1$sq%2$s:quit %1$sEnter%2$s:select %1$sUp/Down%2$s:move %1$sLeft/Right%2$s:confidence %1$sc%2$s:create%3$s",
-                        FKEY, RESET, CLEARDOWN);
+                    FKEY, RESET, CLEARDOWN);
             }
             const keycode = key.getKey(ch);
             with (KeyStroke.KeyCode) {
@@ -380,7 +380,7 @@ struct WalletInterface {
                         auto selected_answers = quiz_list.map!(q => q[1]).array;
                         if (selected_answers.length < 3) {
                             writefln("%1$sThen number of answers must be more than %4$d%2$s%3$s", RED, RESET, CLEAREOL, selected_answers
-                                    .length);
+                                .length);
                         }
                         else {
                             if (recover_flag) {
@@ -603,25 +603,25 @@ int _main(string[] args) {
 
     if (main_args.helpWanted) {
         defaultGetoptPrinter([
-            format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...]", program),
-            "",
-            format("%1$s %2$s [--path <some-path>] # Uses the %2$s instead of the default %3$s",
+                format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...]", program),
+                "",
+                format("%1$s %2$s [--path <some-path>] # Uses the %2$s instead of the default %3$s",
                     program, "<config.json>", config_file),
-            "",
-            // "Where:",
-            // format("<file>           hibon outfile (Default %s", outputfilename),
-            // "",
-            "Examples:",
-            "# To create an additional wallet in a different work-director and save the configuations",
-            format("%s --path wallet1 tagionwallet1.json -O", program),
-            "",
-            "<option>:",
+                "",
+                // "Where:",
+                // format("<file>           hibon outfile (Default %s", outputfilename),
+                // "",
+                "Examples:",
+                "# To create an additional wallet in a different work-director and save the configuations",
+                format("%s --path wallet1 tagionwallet1.json -O", program),
+                "",
+                "<option>:",
 
-        ].join("\n"), main_args.options);
+                ].join("\n"), main_args.options);
         return 0;
     }
 
@@ -652,7 +652,6 @@ int _main(string[] args) {
 
     auto wallet_interface = WalletInterface(options);
 
-
     if(check_health){
         writefln("HEALTHCHECK: %s %d",wallet_interface.options.addr, wallet_interface.options.port);
         HiRPC hirpc;
@@ -679,10 +678,13 @@ int _main(string[] args) {
         while (rec_size < 0);
         auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
         writeln(resp_doc.toJSON);
+        return 0;
     }
 
 
-     if (generate_wallet) {
+
+
+    if (generate_wallet) {
         const questions = questions_str.split(',');
         const answers = answers_str.split(',');
         assert(questions.length >= 3, "Minimal amount of answers is 3");
@@ -806,17 +808,17 @@ int _main(string[] args) {
         else if (orders !is orders.init) {
             SignedContract signed_contract;
             version(none) {
-            const flag = payment(orders, bills, signed_contract);
-            if (flag) {
-                HiRPC hirpc;
-                const sender = hirpc.action("transaction", signed_contract);
-                // sender.
-                // immutable data = sender.toDoc.serialize;
-                // const test = Document(data);
+                const flag = payment(orders, bills, signed_contract);
+                if (flag) {
+                    HiRPC hirpc;
+                    const sender = hirpc.action("transaction", signed_contract);
+                    // sender.
+                    // immutable data = sender.toDoc.serialize;
+                    // const test = Document(data);
 
-                // const scontract = SignedContract(test["message"].get!Document["params"].get!Document);
-                options.contractfile.fwrite(sender);
-            }
+                    // const scontract = SignedContract(test["message"].get!Document["params"].get!Document);
+                    options.contractfile.fwrite(sender);
+                }
             }
         }
         if (send_flag) {
