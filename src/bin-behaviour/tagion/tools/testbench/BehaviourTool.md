@@ -14,7 +14,7 @@
     *When* the BDD has been parsed
 
 `parsed`
-      *And* check the D source <name>.d file exits
+      *And* check that the D source <name>.d file exits
 
 `file_exists`
 
