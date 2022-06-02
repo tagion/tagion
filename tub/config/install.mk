@@ -18,15 +18,11 @@ ALL_LINKS=${addprefix $(INSTALL)/,$(TOOLLINKS)}
 
 
 install: ONETOOL=1
+install: target-tagion
 install: $(INSTALLEDTOOL)
-
-#echo $(TOOL) $(INSTALL)
-#	$(CP) $(DBIN)/tagion $(INSTALL)
-#	$(LN)
 
 
 $(INSTALLEDTOOL): ONETOOL=1
-$(INSTALLEDTOOL): target-tagion
 $(INSTALLEDTOOL): $(TOOL)
 $(INSTALLEDTOOL): $(ALL_LINKS)
 	$(PRECMD)

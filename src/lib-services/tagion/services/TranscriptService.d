@@ -60,11 +60,12 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
             }
         }
 
-        bool to_smart_script(ref SignedContract signed_contract) nothrow {
+        bool to_smart_script(ref const(SignedContract) signed_contract) nothrow {
             try {
-                version(none) {
+                version(OLD_TRANSACTION) {
+	pragma(msg, "OLD_TRANSACTION ",__FILE__,":",__LINE__);
                 auto smart_script = new SmartScript(signed_contract);
-                smart_script.check(net, smart_script);
+                smart_script.check(net);
                 const signed_contract_doc = signed_contract.toDoc;
                 const fingerprint = net.HashNet.hashOf(signed_contract_doc);
 
@@ -135,17 +136,25 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                         const added = to_smart_script(signed_contract);
                         if (added && fingerprint in smart_scripts) {
                             scope smart_script = smart_scripts[fingerprint];
-                            //const payment = PayContract(smart_script.signed_contract.input);
+                            version(OLD_TRANSACTION) {
+                                pragma(msg, "OLD_TRANSACTION ",__FUNCTION__," ",__FILE__,":",__LINE__);
+
+                            const payment = PayContract(smart_script.signed_contract.inputs);
+}
+else {
                             PayContract payment;
+}
                             foreach (bill; payment.bills) {
                                 const bill_doc = bill.toDoc;
                                 recorder.remove(bill_doc);
                             }
-                            version(none)
+                            version(OLD_TRANSACTION) {
+pragma(msg, "OLD_TRANSACTION ",__FILE__,":",__LINE__);
                             foreach (bill; smart_script.output_bills) {
                                 const bill_doc = bill.toDoc;
                                 recorder.add(bill_doc);
                             }
+}
                         }
                         else {
                             log("not in smart script");
