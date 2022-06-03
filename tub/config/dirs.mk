@@ -19,7 +19,7 @@ export TOOLS := $(REPOROOT)/tools
 
 env-dirs:
 	$(PRECMD)
-	$(call log.header, $@ :: dirs)
+	$(call log.header, $@ :: env)
 	$(call log.kvp, BUILD, $(BUILD))
 	$(call log.kvp, DBUILD, $(DBUILD))
 	$(call log.kvp, DBIN, $(DBIN))
@@ -35,6 +35,7 @@ env-dirs:
 	$(call log.kvp, SCRIPTS, $(SCRIPTS))
 	$(call log.kvp, TOOLS, $(TOOLS))
 	$(call log.kvp, REPOROOT, $(REPOROOT))
+	$(call log.kvp, INSTALL, $(INSTALL))
 	$(call log.close)
 
 env: env-dirs

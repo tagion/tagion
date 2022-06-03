@@ -13,8 +13,7 @@ import tagion.basic.Basic : nameOf;
 import tagion.basic.TagionExceptions : TagionException, fatal;
 import tagion.services.MdnsDiscoveryService;
 
-import tagion.services.ServerFileDiscoveryService : DiscoveryRequestCommand, DiscoveryState;
-
+import tagion.services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
 import tagion.gossip.AddressBook : addressbook, NodeAddress;
 
 void fileDiscoveryService(
@@ -68,10 +67,7 @@ void fileDiscoveryService(
                             addressbook_done=false;
                             break;
                         case BecomeOnline:
-                            log("Becoming online..");
-                            break;
                         case BecomeOffline:
-                            log("Becoming off-line");
                             break;
                         case UpdateTable:
                             throw new TagionException(format("DiscoveryRequestCommand %s has not function", request));
@@ -79,14 +75,15 @@ void fileDiscoveryService(
 
                         }
                     }
-                });
+                }
+                );
             if (!addressbook_done) {
                 if (!message) {
                     updateAddressbook;
                 }
                 log.trace("FILE NETWORK READY %d < %d (%s) done = %s", addressbook.numOfNodes, opts.nodes, addressbook.isReady, addressbook_done);
                 if (addressbook.isReady) {
-                    ownerTid.send(DiscoveryState.READY);
+                    ownerTid.send(DiscoveryControl.READY);
                     addressbook_done=true;
                 }
             }

@@ -9,7 +9,6 @@
 PRECMD ?= @
 
 main: help
-
 #
 # Defining absolute Root and Tub directories
 #
@@ -29,6 +28,7 @@ endif
 #
 -include $(REPOROOT)/local.*.mk
 -include $(REPOROOT)/local.mk
+include $(DTUB)/testbench/default.mk
 include $(DTUB)/utilities/dir.mk
 include $(DTUB)/utilities/log.mk
 
@@ -115,6 +115,11 @@ include $(DTUB)/testbench/mode0.mk
 include $(DTUB)/testbench/mode1.mk
 
 #
+# Install main tool
+#
+include $(DTUB)/config/install.mk
+
+#
 # Enable cleaning
 #
 include $(DTUB)/clean.mk
@@ -124,21 +129,8 @@ include $(DTUB)/clean.mk
 #
 include $(DTUB)/help.mk
 
-# run: tagionwave
-# 	cd $(DBIN)
-# 	rm -fR data; mkdir data;
-# 	script -c "./tagionwave $(DRTFALGS) -N 7 -t 200" tagionwave_script.log
-
 run: mode0
 	@echo "------------ DEPRECATED ----------------"
 	@echo "run target change to mode0 or mode1"
 	@echo "make mode0 : to start a network in mode 0"
 	@echo "make mode1 : to start a network in mode 1"
-
-mode1z: tagionwave
-	cd $(MODE1_ROOT)
-	rm -f tagionrun.sh tagionwave.json
-	cp $(FUND)/mode1/tagionwave.json .
-	cp -a $(REPOROOT)/tagionrun.sh .
-	export TAGIONWAVE=$(TAGIONWAVE)
-	./tagionrun.sh

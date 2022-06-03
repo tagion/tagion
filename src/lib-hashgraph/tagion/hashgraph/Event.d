@@ -312,11 +312,13 @@ class Round {
         private void collect_received_round(Round r, HashGraph hashgraph) {
             uint mark_received_iteration_count;
             uint order_compare_iteration_count;
+            uint rare_order_compare_count;
             uint epoch_events_count;
             // uint count;
             scope (success) {
                 hashgraph.mark_received_statistic(mark_received_iteration_count);
                 hashgraph.order_compare_statistic(order_compare_iteration_count);
+                hashgraph.rare_order_compare_statistic(rare_order_compare_count);
                 hashgraph.epoch_events_statistic(epoch_events_count);
             }
             r._events
@@ -350,30 +352,30 @@ class Round {
             bool order_less(const Event a, const Event b) @safe {
                 order_compare_iteration_count++;
                 if (a.received_order is b.received_order) {
-                    if (a._mother && b._mother) {
-                        return order_less(a._mother, b._mother);
-                    }
                     if (a._father && b._father) {
                         return order_less(a._father, b._father);
                     }
-                    if (!a._father) {
+                    if (a._father && b._mother) {
+                        return order_less(a._father, b._mother);
+                    }
+                    if (a._mother && b._father) {
+                        return order_less(a._mother, b._father);
+                    }
+                    if (!a.isFatherLess && !b.isFatherLess) {
+                        return order_less(a._mother, b._mother);
+                    }
+                    if (!a.isFatherLess) {
                         return false;
                     }
-                    if (b._father) {
+                    if (!b.isFatherLess) {
                         return true;
                     }
-
-                    bool rare_less(Buffer a, Buffer b) {
-                        const ab = hashgraph.hirpc.net.calcHash(a ~ b);
-                        const ba = hashgraph.hirpc.net.calcHash(b ~ a);
-                        // const A = (BitMask(ab).count);
-                        // const B = (BitMask(ba).count);
-                        // if (A is B) {
-                        //     return rare_less(ab, ba);
-                        // }
-                        return ab < ba;
+                    bool rare_less(Buffer a_print, Buffer b_print) {
+                        rare_order_compare_count++;
+                        pragma(msg, "review(cbr): Concensus order changed");
+                        return a_print < b_print;
                     }
-
+                    assert(a.isFatherLess && b.isFatherLess);
                     return rare_less(a.fingerprint, b.fingerprint);
                 }
                 return a.received_order < b.received_order;

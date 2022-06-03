@@ -53,6 +53,7 @@ class HashGraph {
     Statistic!uint received_order_statistic;
     Statistic!uint mark_received_statistic;
     Statistic!uint order_compare_statistic;
+    Statistic!uint rare_order_compare_statistic;
     Statistic!uint epoch_events_statistic;
     Statistic!uint wavefront_event_package_statistic;
     Statistic!uint wavefront_event_package_used_statistic;

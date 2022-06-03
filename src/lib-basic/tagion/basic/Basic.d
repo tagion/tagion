@@ -9,7 +9,6 @@ import std.range.primitives : isInputRange;
 
 
 enum this_dot = "this.";
-
 import std.conv;
 
 /++

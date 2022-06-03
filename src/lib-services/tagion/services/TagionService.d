@@ -4,7 +4,6 @@ import core.thread : Thread;
 import core.time;
 import std.concurrency;
 
-
 import std.datetime : Clock;
 import tagion.utils.StdTime;
 
@@ -17,7 +16,7 @@ import p2plib = p2p.node;
 import p2p.callback;
 import p2p.cgo.c_helper;
 
-import tagion.services.Options : Options, setOptions, OptionException, NetworkMode;
+import tagion.services.Options : Options, setOptions, OptionException, NetworkMode, main_task;
 import tagion.utils.Random;
 import tagion.utils.Queue;
 import tagion.GlobalSignals : abort;
@@ -31,11 +30,14 @@ import tagion.hashgraph.HashGraphBasic : EventPackage;
 
 //import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
+
 //import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
+
 //import tagion.options.ServiceNames : get_node_name;
 import tagion.basic.TagionExceptions : taskfailure, fatal;
 import tagion.services.DARTSynchronizeService;
+
 ///import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
 import tagion.gossip.P2pGossipNet;
@@ -57,12 +59,12 @@ import tagion.utils.Miscellaneous : cutHex;
 
 //import tagion.services.ScriptCallbacks;
 import tagion.services.FileDiscoveryService;
-import tagion.services.ServerFileDiscoveryService;
+//import tagion.services.ServerFileDiscoveryService;
 import tagion.services.NetworkRecordDiscoveryService;
 
 //mport tagion.gossip.P2pGossipNet: AddressBook;
 import tagion.services.DARTService;
-import tagion.gossip.AddressBook: addressbook;
+import tagion.gossip.AddressBook : addressbook;
 
 //import tagion.Keywords : NetworkMode;
 
@@ -74,6 +76,7 @@ import std.format;
 
 shared(p2plib.Node) initialize_node(immutable Options opts) {
     import std.array : split;
+
     auto p2pnode = new shared(p2plib.Node)(
             format("/ip4/%s/tcp/%s",
             opts.ip,
@@ -105,7 +108,8 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
     try {
         log.register(opts.node_name);
         setOptions(opts);
-
+        bool stop;
+        int count_down = opts.epoch_limit;
         scope (success) {
             log.close;
             ownerTid.prioritySend(Control.END);
@@ -120,7 +124,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             passpharse = format("Secret_word_%d", opts.port).idup;
         }
 
-//        log.trace("passphrase %s", passpharse);
+        //        log.trace("passphrase %s", passpharse);
         bool force_stop = false;
 
         import std.format;
@@ -144,6 +148,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         shared StdSecureNet shared_net;
         synchronized (master_net) {
             import std.format;
+
             master_net.generateKeyPair(passpharse);
             shared_net = cast(shared) master_net;
             log("opts.node_name = %s", opts.node_name);
@@ -171,11 +176,11 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         case NetworkMode.local:
         case NetworkMode.pub:
             gossip_net = new P2pGossipNet(
-                net.pubkey,
-                opts.node_name,
-                opts.discovery.task_name,
-                opts.host,
-                p2pnode);
+                    net.pubkey,
+                    opts.node_name,
+                    opts.discovery.task_name,
+                    opts.host,
+                    p2pnode);
         }
 
         void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted {
@@ -184,12 +189,19 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             import tagion.hibon.HiBONJSON;
 
             HiBON params = new HiBON;
-            pragma(msg, "fixme(cbr): epoch_time has not beed added to the epoch");
+            //            pragma(msg, "fixme(cbr): epoch_time has not beed added to the epoch");
             foreach (i, payload; events.map!((e) => e.event_body.payload).array) {
                 params[i] = payload;
             }
-            log("Send to transcript: %s", Document(params).toJSON);
+            log("Produced epoch count down  %d", count_down);
             transcript_tid.send(params.serialize);
+            if (count_down > 0) {
+                count_down--;
+                if (count_down <= 0) {
+                    auto main_tid = locate(main_task);
+                    main_tid.send(Control.STOP);
+                }
+            }
         }
 
         void register_epack(immutable(EventPackage*) epack) @safe {
@@ -205,33 +217,32 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 
         discovery_tid = spawn(
-            &networkRecordDiscoveryService,
-            net.pubkey,
-            p2pnode,
-            opts.discovery.task_name,
-            opts);
+                &networkRecordDiscoveryService,
+                net.pubkey,
+                p2pnode,
+                opts.discovery.task_name,
+                opts);
         assert(receiveOnly!Control is Control.LIVE);
 
-        assert(receiveOnly!DiscoveryState is DiscoveryState.READY);
+        assert(receiveOnly!DiscoveryControl is DiscoveryControl.READY);
         log.trace("Network discovered ready");
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
-        assert(receiveOnly!DiscoveryState is DiscoveryState.READY);
+        assert(receiveOnly!DiscoveryControl is DiscoveryControl.READY);
 
-            dart_sync_tid = spawn(
+        dart_sync_tid = spawn(
                 &dartSynchronizeServiceTask!StdSecureNet,
                 opts,
                 p2pnode,
                 shared_net,
                 sector_range);
-            // receiveOnly!Control;
-            dart_tid = spawn(
+        // receiveOnly!Control;
+        dart_tid = spawn(
                 &dartServiceTask!StdSecureNet,
                 opts,
                 p2pnode,
                 shared_net,
                 sector_range);
-            log.trace("Start sync addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
-
+        log.trace("Start sync addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
 
         scope (exit) {
             log("Closing net");
@@ -259,9 +270,9 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         log("Ready: %s", ready);
 
         discovery_tid.send(DiscoveryRequestCommand.BecomeOnline);
-        scope (exit) {
-            discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
-        }
+        // scope (exit) {
+        //     discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
+        // }
 
         scope (exit) {
             log("close listener");
@@ -311,32 +322,32 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             ownerTid.prioritySend(Control.END);
         }
 
-        log.trace("Before startinf monitor and transaction addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
+        log.trace("Before startinf monitor and transaction addressbook.numOfActiveNodes : %d", addressbook
+                .numOfActiveNodes);
 
         monitor_socket_tid = spawn(
-            &monitorServiceTask,
-            opts);
+                &monitorServiceTask,
+                opts);
         assert(receiveOnly!Control is Control.LIVE);
 
         transcript_tid = spawn(
-            &transcriptServiceTask,
-            opts.transcript.task_name,
-            opts.dart.sync.task_name);
+                &transcriptServiceTask,
+                opts.transcript.task_name,
+                opts.dart.sync.task_name);
         assert(receiveOnly!Control is Control.LIVE);
 
         transaction_socket_tid = spawn(
-            &transactionServiceTask,
-            opts);
+                &transactionServiceTask,
+                opts);
         assert(receiveOnly!Control is Control.LIVE);
 
         enum max_gossip = 2;
         uint gossip_count = max_gossip;
-        bool stop = false;
         enum timeout_end = 10;
         uint timeout_count;
 
         {
-            immutable buf = cast(Buffer)hashgraph.channel;
+            immutable buf = cast(Buffer) hashgraph.channel;
             const nonce = net.calcHash(buf);
             auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
 
@@ -384,12 +395,10 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                     doc.data.length);
             const receiver = HiRPC.Receiver(doc);
             hashgraph.wavefront(
-                receiver,
-                gossip_net.time,
-                (const(HiRPC.Sender) return_wavefront) @safe {
-                    gossip_net.send(receiver.pubkey, return_wavefront);
-                },
-                &payload);
+                    receiver,
+                    gossip_net.time,
+                    (const(HiRPC.Sender) return_wavefront) @safe { gossip_net.send(receiver.pubkey, return_wavefront); },
+                    &payload);
         }
 
         pragma(msg, "fixme(cbr): Random should be unpredictable");
@@ -398,12 +407,13 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         Random!size_t random;
         random.seed(123456789);
 
-        log.trace("Before DiscoveryRequestCommand.RequestTable  addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
+        log.trace("Before DiscoveryRequestCommand.RequestTable  addressbook.numOfActiveNodes : %d", addressbook
+                .numOfActiveNodes);
 
         bool network_ready = false;
         do {
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
-            log.trace("NETWORK READY %d < %d ", addressbook.numOfNodes,  opts.nodes);
+            log.trace("NETWORK READY %d < %d ", addressbook.numOfNodes, opts.nodes);
             if (addressbook.isReady) {
                 network_ready = true;
             }
@@ -417,13 +427,14 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
 
         while (!stop && !abort) {
             immutable message_received = receiveTimeout(
-                opts.timeout.msecs,
-                &receive_payload,
-                &controller,
-                &receive_wavefront,
-                &taskfailure,
-                );
-            log("ROUNDS: %d AreWeInGraph: %s Active %d", hashgraph.rounds.length, hashgraph.areWeInGraph, addressbook.numOfActiveNodes);
+                    opts.timeout.msecs,
+                    &receive_payload,
+                    &controller,
+                    &receive_wavefront,
+                    &taskfailure,
+            );
+            log("ROUNDS: %d AreWeInGraph: %s Active %d", hashgraph.rounds.length, hashgraph.areWeInGraph, addressbook
+                    .numOfActiveNodes);
             if (!message_received || !hashgraph.areWeInGraph) {
                 const init_tide = random.value(0, 2) is 1;
                 if (init_tide) {

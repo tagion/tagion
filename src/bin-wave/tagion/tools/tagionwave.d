@@ -23,7 +23,6 @@ import tagion.tasks.TaskWrapper;
 
 mixin TrustedConcurrency;
 
-enum main_task = "tagionwave";
 
 void create_ssl(const(OpenSSL) openssl) {
     import std.algorithm.iteration : each;
@@ -52,12 +51,17 @@ void create_ssl(const(OpenSSL) openssl) {
     }
 }
 
-
 import tagion.tools.Basic;
 
 mixin Main!(_main, "wave");
 
 int _main(string[] args) {
+    main_task="tagionwave";
+    scope(exit) {
+        abort = true;
+
+        writeln("End!");
+    }
     import std.file : fwrite=write;
     import std.path : setExtension;
     immutable program = args[0];
@@ -162,42 +166,55 @@ int _main(string[] args) {
 
     create_ssl(service_options.transaction.service.openssl);
 
-    auto loggerService = Task!LoggerTask(service_options.logger.task_name, service_options);
-    scope (exit) {
-        loggerService.control(Control.STOP);
-        receiveOnly!Control;
-    }
-
+    auto logger_service_tid = Task!LoggerTask(service_options.logger.task_name, service_options);
     import std.stdio : stderr;
-
     stderr.writeln("Waiting for logger");
-
     const response = receiveOnly!Control;
     stderr.writeln("Logger started");
     if (response !is Control.LIVE) {
         stderr.writeln("ERROR:Logger %s", response);
+        return -1;
     }
+    scope (exit) {
+        logger_service_tid.control(Control.STOP);
+        receiveOnly!Control;
+    }
+
+
     log.register(main_task);
 
     //    Control response;
     Tid tagion_service_tid = spawn(&tagionFactoryService, service_options);
+    assert(receiveOnly!Control == Control.LIVE);
     scope (exit) {
+//        if (tagion_service_tid !is tagion_service_tid.init) {
         tagion_service_tid.send(Control.STOP);
-        auto respond_control = receiveOnly!Control;
+        log("Wait for %s to stop", tagion_service_tid.stringof);
+        receiveOnly!Control;
+//        }
     }
     writeln("Wait for join");
 
     int result;
-    receive(
+    // bool stop;
+    // while (!stop) {
+        receive(
             (Control response) {
-        if (response is Control.END) {
-            writeln("Slut!");
-        }
-        else {
-            result = 1;
-            stderr.writefln("Unexpected signal %s", response);
-        }
-    },
+                with(Control) {
+                    switch (response) {
+                    case STOP:
+                        // stop = true;
+                        break;
+                    case END:
+                        // stop = true;
+                        break;
+                    default:
+                        // stop = true;
+                        result = 1;
+                        stderr.writefln("Unexpected signal %s", response);
+                    }
+                }
+            },
             (immutable(Exception) e) {
                 stderr.writeln(e.msg);
                 result = 2;
@@ -207,5 +224,6 @@ int _main(string[] args) {
                 result = 3;
             }
         );
+    // }
     return result;
 }
