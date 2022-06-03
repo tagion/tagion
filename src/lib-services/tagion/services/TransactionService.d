@@ -116,7 +116,7 @@ version(OLD_TRANSACTION) {
                     // import tagion.script.ScriptBuilder;
                     // import tagion.script.ScriptParser;
                     // import tagion.script.Script;
-  const hirpc_received = hirpc.receive(doc);
+                    const hirpc_received = hirpc.receive(doc);
 
                     const method_name = hirpc_received.method.name;
                     const params = hirpc_received.method.params;
@@ -140,6 +140,7 @@ else {
                         const method_name = hirpc_received.method.name;
                         const params = hirpc_received.method.params;
 }
+                    log("Method name: %s", method_name);
                         switch (method_name) {
                         case "search":
                             search(params, ssl_relay.id); //epoch number?
@@ -267,6 +268,11 @@ else {
                 }
                 catch (TagionException e) {
                     log.error("Bad contract: %s", e.msg);
+                    const bad_response = hirpc.error(respone_id, e.msg, 1);
+                    ssl_relay.send(bad_response.toDoc.serialize);
+                }
+                catch (Exception e){
+                    log.error("Bad connection: %s", e.msg);
                     const bad_response = hirpc.error(respone_id, e.msg, 1);
                     ssl_relay.send(bad_response.toDoc.serialize);
                 }

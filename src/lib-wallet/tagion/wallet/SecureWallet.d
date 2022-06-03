@@ -333,15 +333,18 @@ import tagion.wallet.WalletException : check;
         }
         return false;
     }
-
+    @trusted
     bool set_response_update_wallet(const(HiRPC.Receiver) receiver) nothrow {
         if (receiver.isResponse) {
             try {
-                account.bills = receiver.method.params[].map!(e => StandardBill(e.get!Document))
+                account.bills = receiver.response.result[].map!(e => StandardBill(e.get!Document))
                     .array;
                 return true;
             }
             catch (Exception e) {
+                import std.stdio;
+                import std.exception:assumeWontThrow;
+                assumeWontThrow(()=>writeln("Error on setresponse: %s", e.msg));
                 // Ingore
             }
         }
