@@ -33,6 +33,12 @@ check(false, "Check for 'contains_cash' not implemented");
 return Document();
 }
 
+@When("the Customer request cash")
+Document request_cash() {
+check(false, "Check for 'request_cash' not implemented");
+return Document();
+}
+
 @Then("the account is debited")
 Document is_debited() {
 check(false, "Check for 'is_debited' not implemented");
@@ -42,12 +48,6 @@ return Document();
 @And("the cash is dispensed")
 Document is_dispensed() {
 check(false, "Check for 'is_dispensed' not implemented");
-return Document();
-}
-
-@When("the Customer request cash")
-Document request_cash() {
-check(false, "Check for 'request_cash' not implemented");
 return Document();
 }
 
@@ -63,6 +63,12 @@ check(false, "Check for 'is_valid' not implemented");
 return Document();
 }
 
+@When("the Customer request cash")
+Document request_cash() {
+check(false, "Check for 'request_cash' not implemented");
+return Document();
+}
+
 @Then("the account is debited")
 Document is_debited() {
 check(false, "Check for 'is_debited' not implemented");
@@ -72,12 +78,6 @@ return Document();
 @And("the cash is dispensed")
 Document is_dispensed() {
 check(false, "Check for 'is_dispensed' not implemented");
-return Document();
-}
-
-@When("the Customer request cash")
-Document request_cash() {
-check(false, "Check for 'request_cash' not implemented");
 return Document();
 }
 
