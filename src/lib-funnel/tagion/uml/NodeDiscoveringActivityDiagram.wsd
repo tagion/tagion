@@ -1,0 +1,45 @@
+@startuml Node Discovering Activity
+
+skinparam Style strictuml
+skinparam SequenceMessageAlign center
+title Node Discovering Activity Diagram
+
+start
+
+:Init local DB with initial nodes;
+:Get last epoch of local DB: **E_loc**;
+:Get list of nodes from **E_loc** epoch block: **E_loc_nodes[]**;
+
+while (Unvisited nodes in **E_loc_nodes[]**) is (Y)
+    :Take next node from the list: **N_curr**;
+    :Take **N_curr**'s last epoch: **E_node**;
+
+    if (**E_node** > **E_loc**) then (Y)
+        :**E_trust** = **E_loc**;
+        :Go backward in **N_curr**'s epoch chain to **E_trust** epoch;
+        while (There are more epochs after **E_trust**\n&&\n**N_curr** is still trusted) is (Y)
+            :**E_ver** = **E_trust** + 1;
+            if (**E_ver** signature verified) then (Y)
+                :Go to the next epoch in **N_curr**'s epoch chain;
+                :**E_trust** = **E_ver**;
+            else (N)
+                :**N_curr** is not trusted;
+                note right
+                    Do we need to sync with this 
+                    node at all, if it has at least 
+                    one not trusted epoch?
+                end note
+            endif
+        endwhile (N)
+            :Sync local DB with **N_curr**'s epochs (**E_loc**..**E_trust**];
+    else (N)
+    endif
+
+    :Reinit **E_loc_nodes[]** with nodes from last epoch in local DB;
+
+endwhile (N)
+    stop
+
+stop
+
+@enduml
