@@ -406,6 +406,7 @@ class SSLFiberService {
             log("curr: %s %d", buffer[0 .. leb128_len.size], buffer.length);
             while (current.length) {
                 rec_data_size = client.receive(current);
+                log("in loop: %d %s", rec_data_size, current);
                 if (rec_data_size < 0) {
                     // Not ready yet
                     writeln("Timeout");
@@ -416,6 +417,7 @@ class SSLFiberService {
                 }
                 yield;
             }
+            log("message readed: %d %s", buffer.length, buffer);
             return assumeUnique(buffer);
         }
 
@@ -454,8 +456,11 @@ class SSLFiberService {
             startTime;
             scope accept_client = listener.accept;
             scope (exit) {
+                log("accept_client shutdown");
                 accept_client.shutdown(SocketShutdown.BOTH);
+                log("client shutdown");
                 shutdown;
+                log("unlock shutdown");
                 unlock;
             }
             assert(accept_client.isAlive);

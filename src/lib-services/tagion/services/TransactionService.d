@@ -92,10 +92,12 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 @trusted const(Document) receivessl() nothrow {
                     try {
                         immutable buffer = ssl_relay.receive;
+                        log("buffer receiver %d", buffer.length);
                         const result = Document(buffer);
-                        if (result.isInorder) {
+                        log("Doc: %s", result.toJSON);
+                        // if (result.isInorder) {
                             return result;
-                        }
+                        // }
                     }
                     catch (Exception t) {
                         log.warning("%s", t.msg);
@@ -116,10 +118,15 @@ version(OLD_TRANSACTION) {
                     // import tagion.script.ScriptBuilder;
                     // import tagion.script.ScriptParser;
                     // import tagion.script.Script;
+
+                    log("before hrpc");
                     const hirpc_received = hirpc.receive(doc);
+                    log("after hrpc");
 
                     const method_name = hirpc_received.method.name;
+                    log("method name %s ", method_name);
                     const params = hirpc_received.method.params;
+                    log("method params %s ", params.toJSON);
 }
 else {
                     pragma(msg, "fixme(cbr): smartscipt should be services not a local");
@@ -276,6 +283,7 @@ else {
                     const bad_response = hirpc.error(respone_id, e.msg, 1);
                     ssl_relay.send(bad_response.toDoc.serialize);
                 }
+                log("Stop connection");
                 return true;
             }
         }

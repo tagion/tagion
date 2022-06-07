@@ -325,10 +325,10 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         log.trace("Before startinf monitor and transaction addressbook.numOfActiveNodes : %d", addressbook
                 .numOfActiveNodes);
 
-        monitor_socket_tid = spawn(
-                &monitorServiceTask,
-                opts);
-        assert(receiveOnly!Control is Control.LIVE);
+        // monitor_socket_tid = spawn(
+        //         &monitorServiceTask,
+        //         opts);
+        // assert(receiveOnly!Control is Control.LIVE);
 
         transcript_tid = spawn(
                 &transcriptServiceTask,
@@ -336,10 +336,12 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                 opts.dart.sync.task_name);
         assert(receiveOnly!Control is Control.LIVE);
 
-        transaction_socket_tid = spawn(
-                &transactionServiceTask,
-                opts);
-        assert(receiveOnly!Control is Control.LIVE);
+        if(opts.transaction.service.port == 10800){
+            transaction_socket_tid = spawn(
+                    &transactionServiceTask,
+                    opts);
+            assert(receiveOnly!Control is Control.LIVE);
+        }
 
         enum max_gossip = 2;
         uint gossip_count = max_gossip;

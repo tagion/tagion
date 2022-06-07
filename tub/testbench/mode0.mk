@@ -5,7 +5,7 @@ MODE0_LOG:=$(MODE0_ROOT)/mode0_script.log
 MODE0_FLAGS:=-N 7 -t 200
 MODE0_FLAGS+=--pid=$(MODE0_ROOT)/tagionwave.pid
 MODE0_FLAGS+=--dart-init=false;
-MODE0_FLAGS+=--epochs=$(EPOCHS);
+# MODE0_FLAGS+=--epochs=$(EPOCHS);
 
 mode0: mode0-dart
 mode0: $(MODE0_DATA)/.way

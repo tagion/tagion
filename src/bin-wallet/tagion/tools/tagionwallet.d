@@ -862,7 +862,9 @@ int _main(string[] args) {
         
             auto updated = wallet_interface.secure_wallet.set_response_update_wallet(received);
             options.accountfile.fwrite(wallet_interface.secure_wallet.account);
+            Thread.sleep(1000.msecs);
             writeln("Wallet updated ", updated);
+            writeln("Connection closed ", !client.isAlive);
         }
         else {
             writeln("Wallet update failed");
@@ -913,6 +915,7 @@ int _main(string[] args) {
                     }
                     client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface.options.port));
                     client.blocking = true;
+                    writeln(data);
                     client.send(data);
 
                     auto rec_buf = new void[4000];
