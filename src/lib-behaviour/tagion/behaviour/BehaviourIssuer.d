@@ -221,6 +221,7 @@ unittest {
     auto bout = new OutBuffer;
     auto dlang = Dlang(bout);
     alias unit_mangle = mangleFunc!(DlangU);
+
     const feature_group = getFeature!(tagion.behaviour.BehaviourUnittest);
     {
         scope (exit) {
