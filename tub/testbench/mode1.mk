@@ -31,11 +31,16 @@ mode1-$1: $$(MODE1_ROOT)/.way
 #mode1-$1: $$(MODE1_CONFIG)
 #mode1-$1: $$(MODE1_DART)
 
-clean-mode1-$1:
+
+clean-mode1-$1: mode1-stop-$1
 	$$(PRECMD)
 	$${call log.header, $$@ :: clean}
 	$$(RM) $$(DART_$1)
 	$${call log.close}
+
+.PHONY: clean-mode1-$1
+
+clean-mode1: clean-mode1-$1
 
 ifdef INSCREEN
 mode1-run-$1: mode1-$1
@@ -51,9 +56,11 @@ mode1-stop-$1:
 	$$(PRECMD)
 	$$(SCRIPTS)/killrun.sh $$(MODE1_PID_$1)
 
+.PHONY: mode1-stop-$1
+
 mode1-stop: mode1-stop-$1
 
-mode1-run-$1:mode1-stop-$1
+mode1-run-$1: mode1-stop-$1
 
 .PHONY: mode1-run-$1
 mode1: mode1-run-$1
