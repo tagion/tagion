@@ -67,8 +67,8 @@ struct MarkdownT(Stream) {
     void issue(const(ScenarioGroup) scenario_group, string indent = null) {
         issue(scenario_group.info, indent, master.scenario);
         issue(scenario_group.given, indent ~ master.indent, master.property);
-        issue(scenario_group.then, indent ~ master.indent, master.property);
         issue(scenario_group.when, indent ~ master.indent, master.property);
+        issue(scenario_group.then, indent ~ master.indent, master.property);
     }
 
     void issue(const(FeatureGroup) feature_group, string indent = null) {
@@ -95,8 +95,8 @@ unittest { // Markdown scenario test
             .setExtension(EXT.Markdown);
         immutable expected = filename.freadText;
         markdown.issue(scenario_result.given.info, null, markdown.master.property);
+        filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
-        // filename.fwrite(bout.toString);
     }
     {
         scope (exit) {
@@ -107,6 +107,7 @@ unittest { // Markdown scenario test
             .setExtension(EXT.Markdown);
         immutable expected = filename.freadText;
         markdown.issue(scenario_result);
+        filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
         //io.writefln("bout=%s", bout);
         //        filename.fwrite(bout.toString);
@@ -127,8 +128,10 @@ unittest {
         immutable filename = unit_mangle("feature")
             .unitfile
             .setExtension(EXT.Markdown);
+
         immutable expected = filename.freadText;
         markdown.issue(feature_group);
+        filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
     }
 
