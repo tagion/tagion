@@ -53,6 +53,8 @@ mode1-stop-$1:
 
 mode1-stop: mode1-stop-$1
 
+mode1-run-$1:mode1-stop-$1
+
 .PHONY: mode1-run-$1
 mode1: mode1-run-$1
 
