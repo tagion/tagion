@@ -95,7 +95,7 @@ unittest { // Markdown scenario test
             .setExtension(EXT.Markdown);
         immutable expected = filename.freadText;
         markdown.issue(scenario_result.given.info, null, markdown.master.property);
-        filename.setExtension("mdtest").fwrite(bout.toString);
+//        filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
     }
     {
@@ -107,7 +107,7 @@ unittest { // Markdown scenario test
             .setExtension(EXT.Markdown);
         immutable expected = filename.freadText;
         markdown.issue(scenario_result);
-        filename.setExtension("mdtest").fwrite(bout.toString);
+//        filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
         //io.writefln("bout=%s", bout);
         //        filename.fwrite(bout.toString);
@@ -131,7 +131,7 @@ unittest {
 
         immutable expected = filename.freadText;
         markdown.issue(feature_group);
-        filename.setExtension("mdtest").fwrite(bout.toString);
+//        filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
     }
 
@@ -224,7 +224,6 @@ unittest {
     auto bout = new OutBuffer;
     auto dlang = Dlang(bout);
     alias unit_mangle = mangleFunc!(DlangU);
-
     const feature_group = getFeature!(tagion.behaviour.BehaviourUnittest);
     {
         scope (exit) {

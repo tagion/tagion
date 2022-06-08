@@ -187,7 +187,7 @@ unittest { //
     import tagion.hibon.HiBONRecord;
     import tagion.basic.Basic : unitfile;
     import core.demangle : mangle;
-    
+
     alias Module = tagion.behaviour.BehaviourUnittest;
     import std.path;
 

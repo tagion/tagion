@@ -97,30 +97,21 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
 
 unittest { /// Convert ProtoBDD to Feature
     enum name = "ProtoBDD";
-    import std.stdio;
-    writeln("SSSSS--------------------------------------------------------->>>>>>>>>>>>>>>>>>>>>");
     immutable filename = name.unitfile.setExtension(EXT.Markdown);
     io.writefln("filename=%s", filename);
     //   immutable mdsrc=filename.freadText;
+
     auto feature_byline = File(filename).byLine;
-    writeln(1);
+
     alias ByLine = typeof(feature_byline);
     pragma(msg, "isInputRange ", isInputRange!ByLine);
-    writeln(feature_byline);
-    writeln(2);
-   // pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
-   // writeln("ElementType!ByLine ", ElementType!ByLine);
-    writeln(3);
+    pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
     pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
-    writeln("isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
-    writeln("SSSSS--------------------------------------------------------->>>>>>>>>>>>>>>>>>>>>");
 
-    auto feature=parser(feature_byline);
-    writeln("work");
+    //    auto feature=parser(feature_byline);
 }
 
 version (unittest) {
-
     import io = std.stdio;
     import tagion.basic.Basic : unitfile;
     import tagion.behaviour.BehaviourIssue : EXT;
