@@ -131,7 +131,7 @@ class SSLSocket : Socket {
         assert(_ctx);
     }
     do {
-        synchronized {
+//        synchronized {
 
         //Maybe implement more versions....
         if (et is EndpointType.Client) {
@@ -146,7 +146,7 @@ class SSLSocket : Socket {
             }
             _ctx = server_ctx;
         }
-        }
+//        }
 
     }
 
@@ -196,8 +196,10 @@ class SSLSocket : Socket {
      +/
     override void connect(Address to) {
         super.connect(to);
-        const res = SSL_connect(_ssl);
-        check_error(res, true);
+        synchronized {
+            const res = SSL_connect(_ssl);
+            check_error(res, true);
+        }
     }
 
     /++
@@ -205,9 +207,12 @@ class SSLSocket : Socket {
      +/
     @trusted
     override ptrdiff_t send(const(void)[] buf, SocketFlags flags) {
-        auto res_val = SSL_write(_ssl, buf.ptr, cast(int) buf.length);
-        const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, res_val);
-        check_error(res_val);
+        int res_val;
+        synchronized {
+            res_val = SSL_write(_ssl, buf.ptr, cast(int) buf.length);
+            const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, res_val);
+            check_error(res_val);
+        }
         return res_val;
     }
 
@@ -261,6 +266,7 @@ class SSLSocket : Socket {
      +/
     @trusted
     override ptrdiff_t receive(void[] buf, SocketFlags flags) {
+
         const res_val = SSL_read(_ssl, buf.ptr, cast(uint) buf.length);
         check_error(res_val);
         return res_val;
