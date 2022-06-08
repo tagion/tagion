@@ -53,8 +53,8 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
                         //                        result.info.comments~=match.post.strip;
                         break;
                     case State.Scenario:
-                        //                        check(result.scenarios.length > 0, format("Scenario has not been declared yet : %d", line));
-                        result.scenarios[$ - 1].comments ~= match.post.strip;
+                                               //check(result.scenarios.length > 0, format("Scenario has not been declared yet : %d", line));
+                        //result.scenarios[$ - 1].comments ~= match.post.strip;
                         break;
                     default:
                         /// Empty
@@ -108,7 +108,7 @@ unittest { /// Convert ProtoBDD to Feature
     pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
     pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
 
-    //    auto feature=parser(feature_byline);
+    auto feature=parser(feature_byline);
 }
 
 version (unittest) {
