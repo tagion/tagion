@@ -131,7 +131,7 @@ class SSLSocket : Socket {
         assert(_ctx);
     }
     do {
-//        synchronized {
+        synchronized {
 
         //Maybe implement more versions....
         if (et is EndpointType.Client) {
@@ -146,7 +146,7 @@ class SSLSocket : Socket {
             }
             _ctx = server_ctx;
         }
-//        }
+        }
 
     }
 
@@ -196,10 +196,8 @@ class SSLSocket : Socket {
      +/
     override void connect(Address to) {
         super.connect(to);
-        synchronized {
-            const res = SSL_connect(_ssl);
-            check_error(res, true);
-        }
+        const res = SSL_connect(_ssl);
+        check_error(res, true);
     }
 
     /++
@@ -207,12 +205,9 @@ class SSLSocket : Socket {
      +/
     @trusted
     override ptrdiff_t send(const(void)[] buf, SocketFlags flags) {
-        int res_val;
-        synchronized {
-            res_val = SSL_write(_ssl, buf.ptr, cast(int) buf.length);
-            const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, res_val);
-            check_error(res_val);
-        }
+        auto res_val = SSL_write(_ssl, buf.ptr, cast(int) buf.length);
+        const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, res_val);
+        check_error(res_val);
         return res_val;
     }
 
@@ -227,7 +222,6 @@ class SSLSocket : Socket {
      Check the return flag for a SSL system function
      +/
     void check_error(const int res, const bool check_read_write = false) const {
-        synchronized {
         const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, res);
         with (SSLErrorCodes) final switch (ssl_error) {
         case SSL_ERROR_NONE:
@@ -250,7 +244,7 @@ class SSLSocket : Socket {
             throw new SSLSocketException(str_error(ssl_error), ssl_error);
             break;
         }
-        }
+
     }
 
     /++
@@ -267,7 +261,6 @@ class SSLSocket : Socket {
      +/
     @trusted
     override ptrdiff_t receive(void[] buf, SocketFlags flags) {
-
         const res_val = SSL_read(_ssl, buf.ptr, cast(uint) buf.length);
         check_error(res_val);
         return res_val;
@@ -280,6 +273,26 @@ class SSLSocket : Socket {
         return receive(buf, SocketFlags.NONE);
     }
 
+    version (none) {
+        @trusted
+        int receiveNonBlocking(void[] buf, ref int pending_in_buffer)
+        in {
+            assert(!this.blocking);
+        }
+        do {
+            int res = SSL_read(_ssl, buf.ptr, cast(int) buf.length);
+
+            check_error(res);
+            pending_in_buffer = SSL_pending(_ssl);
+
+            return res;
+        }
+    }
+
+    version (none) static string errorMessage(const SSLErrorCodes ssl_error) {
+        return format("SSL Error: %s. SSL error code: %d", ssl_error, ssl_error);
+    }
+
     /++
      Returns:
      the SSL system error message
@@ -290,6 +303,17 @@ class SSLSocket : Socket {
         import std.string : fromStringz;
 
         return fromStringz(str).idup;
+    }
+
+    version (none) @trusted
+    static string err_string() {
+        enum ERROR_LENGTH = 0x100;
+        const error_code = ERR_get_error;
+        scope char[ERROR_LENGTH] err_text;
+        ERR_error_string_n(ERR_get_error, err_text.ptr, ERROR_LENGTH);
+        import std.string : fromStringz;
+
+        return fromStringz(err_text.ptr).idup;
     }
 
     /++
@@ -360,7 +384,6 @@ class SSLSocket : Socket {
             printDebugInformation("Disconnet client. Closing client and clean up SSL.");
         }
         try {
-            synchronized {
             if (_ssl !is null) {
                 SSL_free(_ssl);
             }
@@ -369,7 +392,6 @@ class SSLSocket : Socket {
                     client_ctx != _ctx && server_ctx != _ctx && _ctx !is null) {
 
                 SSL_CTX_free(_ctx);
-            }
             }
         }
         catch (Exception ex) {
