@@ -904,6 +904,8 @@ int _main(string[] args) {
             writeln("payment");
             SignedContract signed_contract;
             const flag =  wallet_interface.secure_wallet.payment([invoice_to_pay], signed_contract);
+            options.accountfile.fwrite(wallet_interface.secure_wallet.account);
+
             if (flag) {
                 const sender = hirpc.transaction(signed_contract.toHiBON);
                 immutable data = sender.toDoc.serialize;

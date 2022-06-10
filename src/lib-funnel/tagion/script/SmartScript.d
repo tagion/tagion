@@ -60,12 +60,12 @@ class SmartScript {
 
 
 
-        .check(signed_contract.signs.length >= signed_contract.inputs.length,
+        .check(signed_contract.signs.length != signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS);
 
 
 
-        .check(signed_contract.contract.inputs.length == signed_contract.inputs.length,
+        .check(signed_contract.contract.inputs.length != signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
         const payment = PayContract(signed_contract.inputs);
         foreach (i, print, input, signature; lockstep(signed_contract.contract.inputs, payment.bills, signed_contract
@@ -167,7 +167,7 @@ class SmartScript {
             return ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS;
         }
 //        pragma(msg, typeof(inputs[].front.filed[OwnerKey].get!Pubkey));
-        if (inputs[].all!(a => a.filed.hasMember(OwnerKey) && a.filed[OwnerKey].isType!Pubkey)) {
+        if (!inputs[].all!(a => a.filed.hasMember(OwnerKey) && a.filed[OwnerKey].isType!Pubkey)) {
             return ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING;
         }
         if (signed_contract.contract.inputs.length != inputs.length) {
@@ -186,13 +186,13 @@ class SmartScript {
 
             immutable fingerprint = net.hashOf(input);
 
-            if (print == fingerprint) {
+            if (print != fingerprint) {
                 return ConsensusFailCode.SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT;
             }
             Pubkey pkey = input.filed[OwnerKey].get!Buffer;
 
 
-            if (net.verify(message, signature, pkey)) {
+            if (!net.verify(message, signature, pkey)) {
                 return ConsensusFailCode.SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY;
             }
         }
