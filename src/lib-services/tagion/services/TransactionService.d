@@ -89,12 +89,34 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             bool agent(SSLFiber ssl_relay) {
                 import tagion.hibon.HiBONJSON;
 
-                @trusted const(Document) receivessl() nothrow {
+                @trusted const(Document) receivessl() nothrow 
+                out(ret) {
+                    log("out ret %s",ret.data.length);
+                }
+                do {
+                    scope(exit) {
+                        log("after receivessl");
+                    }
                     try {
+                        import tagion.hibon.Document;
+                        import tagion.hibon.HiBONRecord;
                         immutable buffer = ssl_relay.receive;
                         log("buffer receiver %d", buffer.length);
                         const result = Document(buffer);
-                        log("Doc: %s", result.toJSON);
+                        log("Document created %d", result.data.length);
+                        bool check_doc(const Document main_doc,
+                                       const Document.Element.ErrorCode error_code, const(Document.Element) current, const(Document.Element) previous) nothrow @safe
+                        {
+                            log("Error code %s ", error_code);
+                            log("member key %s", current.key);
+                            return false;
+                        }
+                        result.valid(&check_doc);
+                        log("After valid %s", result.isInorder);
+                        // Thread.sleep(1.seconds);
+                        // log("Keys %s ", result.keys);
+                        // log("Doc: %s", result.toJSON);
+                        "/tmp/result.hibon".fwrite(result);
                         // if (result.isInorder) {
                             return result;
                         // }
@@ -109,8 +131,10 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 uint respone_id;
                 try {
                     doc = receivessl();
+                    log("after receivessl %s", doc.data.length);
+
                     pragma(msg, "fixme(cbr): If doc is empty then return ");
-                    log("%s", doc.toJSON);
+                    // log("%s", doc.toJSON);
 version(OLD_TRANSACTION) {
     pragma(msg, "OLD_TRANSACTION ",__FILE__,":",__LINE__);
 

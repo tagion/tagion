@@ -195,7 +195,7 @@ struct HiRPC {
             }
 
             bool isError() {
-                return type is Type.method;
+                return type is Type.error;
             }
         }
 

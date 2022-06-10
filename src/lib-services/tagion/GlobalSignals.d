@@ -21,17 +21,17 @@ version (linux) {
 
 shared bool abort = false;
 private shared bool fault;
-// static extern (C) void shutdown(int sig) @nogc nothrow {
-//     if (!fault) {
-//         printf("Shutdown sig %d about=%d\n", sig, abort);
-//         if (sig is SIGINT || sig is SIGTERM) {
-//             if (abort) {
-//                 exit(0);
-//             }
-//             abort = true;
-//         }
-//     }
-// }
+static extern (C) void shutdown(int sig) @nogc nothrow {
+    if (!fault) {
+        printf("Shutdown sig %d about=%d\n", sig, abort);
+        if (sig is SIGINT || sig is SIGTERM) {
+            if (abort) {
+                exit(0);
+            }
+            abort = true;
+        }
+    }
+}
 
 shared string call_stack_file;
 
@@ -98,24 +98,23 @@ shared static this() {
     call_stack_file = setExtension(thisExePath, backtrace_ext);
 
     signal(SIGPIPE, &ignore);
-    // version (linux) {
-    //     import core.sys.posix.signal;
+    version (linux) {
+        import core.sys.posix.signal;
 
-    //     //        import core.runtime;
+        //        import core.runtime;
 
-    //     sigaction_t sa = void;
-    //     (cast(byte*)&sa)[0 .. sa.sizeof] = 0;
-    //     /// sigfillset( &action.sa_mask ); // block other signals
+        sigaction_t sa = void;
+        (cast(byte*)&sa)[0 .. sa.sizeof] = 0;
+        /// sigfillset( &action.sa_mask ); // block other signals
 
-    //     sa.sa_sigaction = &segment_fault;
-    //     sigemptyset(&sa.sa_mask);
-    //     sa.sa_flags = SA_RESTART;
-    //     // sa.sa_flags = SA_SIGINFO | SA_RESETHAND;
-    //     // sigaction(SIGSEGV, &sa, null);
-    //     //signal(SIGSEGV, &segment_fault);   // Segment fault handler
-    // }
+        sa.sa_sigaction = &segment_fault;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_RESTART;
+        // sa.sa_flags = SA_SIGINFO | SA_RESETHAND;
+        sigaction(SIGSEGV, &sa, null);
+        //signal(SIGSEGV, &segment_fault);   // Segment fault handler
+    }
 
-    // signal(SIGINT, &ignore);
-    // signal(SIGTERM, &ignore);
-    signal(15, &ignore);
+    signal(SIGINT, &shutdown);
+    signal(SIGTERM, &shutdown);
 }

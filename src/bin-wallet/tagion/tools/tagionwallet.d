@@ -916,6 +916,8 @@ int _main(string[] args) {
                     client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface.options.port));
                     client.blocking = true;
                     writeln(data);
+                    auto test_doc = Document(data);
+                    assert(test_doc.serialize.length > 0);
                     client.send(data);
 
                     auto rec_buf = new void[4000];
@@ -923,11 +925,15 @@ int _main(string[] args) {
 
                     do {
                         rec_size = client.receive(rec_buf);
+                        writeln("receive after payment");
+                        writeln(rec_buf[0..100]);
                         Thread.sleep(400.msecs);
                     }
                     while (rec_size < 0);
 
                     auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
+                    pragma(msg, "fixme(vk) add check format (is responce form hirpc)");
+                        "/tmp/responce.hibon".fwrite(resp_doc);
                     auto received = hirpc.receive(resp_doc);
                 }
             }

@@ -363,7 +363,7 @@ class SSLFiberService {
         @trusted
         immutable(ubyte[]) receive() {
             import std.stdio;
-
+            import tagion.hibon.Document : Document;
             ubyte[] buffer;
             ubyte[] current;
             ptrdiff_t rec_data_size;
@@ -418,7 +418,9 @@ class SSLFiberService {
                 yield;
             }
             log("message readed: %d %s", buffer.length, buffer);
-            return assumeUnique(buffer);
+            // Document doc = Document(cast(immutable)buffer);
+            // log("Received log %d ", doc.serialize.length);
+            return buffer.idup;
         }
 
         /++
