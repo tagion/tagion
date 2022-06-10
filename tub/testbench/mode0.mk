@@ -68,7 +68,7 @@ help-mode0:
 	${call log.help, "", "IMPORTANT: To enable ddd you need to add"}
 	${call log.help, "", "           set auto-load safe-path /"}
 	${call log.help, "", "           to the ~/.gdbinit file"}
-	${call log.help, "make mode0-dart", "Will clean all data in mode 0"}
+	${call log.help, "make mode0-dart", "Create the DART for mode0"}
 	${call log.help, "make clean-mode0", "Will clean all data in mode 0"}
 	${call log.help, "make env-mode0", "Lists the setting for mode 0"}
 	${call log.close}
