@@ -5,13 +5,32 @@ import std.stdio;
 
 mixin Main!_main;
 
-int _main(string[] args) {
+struct BehaviourOptions {
+    string[] paths;
+    void setDefault() pure nothrow {
+    }
+    mixin JSONCommon;
+    mixin JSONConfig;
+}
+
+int main(string[] args) {
+    Options options;
     immutable program = args[0];
+    auto config_file = "behaviour.json";
     bool version_switch;
+
+    if (config_file.exists) {
+        options.load(config_file);
+    }
+    else {
+        options.setDefault;
+    }
+
     auto main_args = getopt(args,
         std.getopt.config.caseSensitive,
         std.getopt.config.bundling,
         "version", "display the version", &version_switch,
+        "O", "Write ", &options,
         "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
     );
 

@@ -121,6 +121,7 @@ include $(DTUB)/testbench/mode1.mk
 #
 # Install main tool
 #
+include $(DTUB)/config/revision.mk
 include $(DTUB)/config/install.mk
 
 #
