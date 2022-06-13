@@ -89,37 +89,21 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             bool agent(SSLFiber ssl_relay) {
                 import tagion.hibon.HiBONJSON;
 
-                @trusted const(Document) receivessl() nothrow 
-                out(ret) {
-                    log("out ret %s",ret.data.length);
-                }
-                do {
-                    scope(exit) {
-                        log("after receivessl");
-                    }
+                @trusted const(Document) receivessl() nothrow
+                {
                     try {
                         import tagion.hibon.Document;
                         import tagion.hibon.HiBONRecord;
                         immutable buffer = ssl_relay.receive;
                         log("buffer receiver %d", buffer.length);
                         const result = Document(buffer);
-                        log("Document created %d", result.data.length);
                         bool check_doc(const Document main_doc,
                                        const Document.Element.ErrorCode error_code, const(Document.Element) current, const(Document.Element) previous) nothrow @safe
                         {
-                            log("Error code %s ", error_code);
-                            log("member key %s", current.key);
                             return false;
                         }
                         result.valid(&check_doc);
-                        log("After valid %s", result.isInorder);
-                        // Thread.sleep(1.seconds);
-                        // log("Keys %s ", result.keys);
-                        // log("Doc: %s", result.toJSON);
-                        "/tmp/result.hibon".fwrite(result);
-                        // if (result.isInorder) {
-                            return result;
-                        // }
+                              return result;
                     }
                     catch (Exception t) {
                         log.warning("%s", t.msg);
@@ -131,10 +115,8 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 uint respone_id;
                 try {
                     doc = receivessl();
-                    log("after receivessl %s", doc.data.length);
 
                     pragma(msg, "fixme(cbr): If doc is empty then return ");
-                    // log("%s", doc.toJSON);
 version(OLD_TRANSACTION) {
     pragma(msg, "OLD_TRANSACTION ",__FILE__,":",__LINE__);
 
@@ -143,14 +125,10 @@ version(OLD_TRANSACTION) {
                     // import tagion.script.ScriptParser;
                     // import tagion.script.Script;
 
-                    log("before hrpc");
                     const hirpc_received = hirpc.receive(doc);
-                    log("after hrpc");
 
                     const method_name = hirpc_received.method.name;
-                    log("method name %s ", method_name);
                     const params = hirpc_received.method.params;
-                    log("method params %s ", params.toJSON);
 }
 else {
                     pragma(msg, "fixme(cbr): smartscipt should be services not a local");
@@ -242,12 +220,10 @@ else {
 
                                             //log("Contract:\n%s", json.toPrettyString);
                                         }
-                                        log("before send payload");
                                         sendPayload(payload);
                                         auto empty_params = new HiBON;
                                         auto empty_response = internal_hirpc.result(hirpc_received,
                                             empty_params);
-                                        log("before send");
                                         ssl_relay.send(empty_response.toDoc.serialize);
                                         //  }
                                     }
@@ -281,11 +257,9 @@ else {
                             log("constructed");
                             auto fail_code = SmartScript.check(hirpc.net, signed_contract, foreign_recorder);
                             if (!fail_code) {
-                                log("before send payload");
                                 sendPayload(signed_contract.toDoc);
                                 const empty_response = internal_hirpc.result(hirpc_received, Document());
                                 //                            empty_params);
-                                log("before send");
                                 ssl_relay.send(empty_response.toDoc.serialize);
                             }
                             if (fail_code) {

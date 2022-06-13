@@ -68,7 +68,6 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                 smart_script.check(net);
                 const signed_contract_doc = signed_contract.toDoc;
                 const fingerprint = net.HashNet.hashOf(signed_contract_doc);
-                log("Smart contract %s:", signed_contract.toJSON);
                 smart_script.run(current_epoch + 1);
 
                 smart_scripts[fingerprint] = smart_script;
