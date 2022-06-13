@@ -28,6 +28,7 @@ while (Unvisited nodes in **E_loc_nodes[]**) is (Y)
                     Do we need to sync with this 
                     node at all, if it has at least 
                     one not trusted epoch?
+                    Verify with another node
                 end note
             endif
         endwhile (N)
