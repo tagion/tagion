@@ -297,7 +297,9 @@ class HashGraph {
         }
         if (scrap_depth > 0) {
             live_events_statistic(Event.count);
+            mixin Log!(live_events_statistic);
             live_witness_statistic(Event.Witness.count);
+            mixin Log!(live_witness_statistic);
             _rounds.dustman;
         }
     }
@@ -395,6 +397,8 @@ class HashGraph {
             const Pubkey from_channel) {
         _register = new Register(received_wave);
         scope (exit) {
+            mixin Log!(wavefront_event_package_statistic);
+            mixin Log!(wavefront_event_package_used_statistic);
             _register = null;
         }
         assert(_register.event_package_cache.length);
