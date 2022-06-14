@@ -67,6 +67,7 @@ int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
     bool overwrite_switch;
+    auto logo = import("logo.txt");
 
     scope Options local_options;
     import std.getopt;
@@ -116,6 +117,7 @@ int _main(string[] args) {
         }
 
         if (main_args.helpWanted || token_opts.helpWanted) {
+            writeln(logo);
             defaultGetoptPrinter(
                     [
                 "Documentation: https://tagion.org/",

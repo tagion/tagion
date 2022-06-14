@@ -546,6 +546,8 @@ int _main(string[] args) {
     string path;
     string invoicefile = "invoice_file.hibon";
 
+    auto logo = import("logo.txt");
+
     bool check_health;
 
     WalletOptions options;
@@ -602,6 +604,7 @@ int _main(string[] args) {
     }
 
     if (main_args.helpWanted) {
+        writeln(logo);
         defaultGetoptPrinter([
                 format("%s version %s", program, REVNO),
                 "Documentation: https://tagion.org/",

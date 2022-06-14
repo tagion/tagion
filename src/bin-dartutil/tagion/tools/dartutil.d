@@ -95,6 +95,7 @@ int _main(string[] args) {
     ushort fromAngle = 0;
     ushort toAngle = 0;
     bool version_switch;
+    auto logo = import("logo.txt");
 
     bool useFakeNet = false;
     bool dump = false;
@@ -156,6 +157,7 @@ int _main(string[] args) {
     }
 
     if (main_args.helpWanted) {
+        writeln(logo);
         defaultGetoptPrinter(
                 [
             // format("%s version %s", program, REVNO),
