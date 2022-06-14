@@ -2,8 +2,12 @@ module tagion.tools.behaviour;
 
 import std.getopt;
 import std.stdio;
-
-mixin Main!_main;
+import std.format;
+import std.file : exists;
+import std.string : join;
+import std.string : splitLines;
+import tagion.utils.JSONCommon;
+import tagion.tools.revision;
 
 struct BehaviourOptions {
     string[] paths;
@@ -14,10 +18,11 @@ struct BehaviourOptions {
 }
 
 int main(string[] args) {
-    Options options;
+    BehaviourOptions options;
     immutable program = args[0];
     auto config_file = "behaviour.json";
     bool version_switch;
+    bool overwrite_switch;
 
     if (config_file.exists) {
         options.load(config_file);
@@ -30,33 +35,38 @@ int main(string[] args) {
         std.getopt.config.caseSensitive,
         std.getopt.config.bundling,
         "version", "display the version", &version_switch,
-        "O", "Write ", &options,
-        "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
+        "O", format("Write configure file %s", config_file), &overwrite_switch,
+        "I", "Include directory", &options.paths,
+//        "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
     );
 
     if (version_switch) {
-        // writefln("version %s", REVNO);
-        // writefln("Git handle %s", HASH);
+        revision_text.writeln;
+        return 0;
+    }
+
+    if (overwrite_switch) {
+        if (args.length == 2) {
+            config_file = args[1];
+        }
+        options.save(config_file);
+        writefln("Configure file written to %s", config_file);
         return 0;
     }
 
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 [
-            // format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s <command> [<option>...]", program),
-            "",
-            "Where:",
-            "<command>           one of [--read, --rim, --modify, --rpc]",
-            "",
+                    revision_text,
+                    "Documentation: https://tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...]", program),
+                    "",
+                    "<option>:",
 
-            "<option>:",
-
-        ].join("\n"),
-        main_args.options);
+                    ].join("\n"),
+                main_args.options);
         return 0;
     }
 

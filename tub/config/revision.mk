@@ -2,18 +2,16 @@
 
 $(REVISION_FILE):
 	$(PRECMD)
-	echo "module $(REVISION_MODULE);" > $@
-	echo 'enum REVNO=$(GIT_REVNO);' >> $@
-	echo 'enum HASH="$(GIT_HASH)";' >> $@
-	echo 'enum INFO="$(GIT_INFO)";' >> $@
-	echo 'enum DATA="$(GIT_DATE)";' >> $@
-	echo 'import std.format;' >> $@
-	echo 'import std.array : join;' >> $@
-	echo 'enum version_text = format(["git :%s", "hash:%s", "revno:%s", "date:%s"].join("\n"), INFO, HASH, REVNO, DATE);' >>  $@
+	$$(call log.header, revision :: $(GIT_DATE))
+	echo '$(GIT_INFO)' > $@
+	echo '$(GIT_HASH)' >> $@
+	echo '$(GIT_REVNO)' >> $@
+	echo '$(GIT_DATE)' >> $@
 
 revision: $(REVISION_FILE)
 	echo $(REVISION_FILE)
 
+prebuild:
 .PHONY: revision
 
 clean-revision:
@@ -46,3 +44,5 @@ env-revision:
 .PHONY: env-revision
 
 env: env-revision
+
+#DFILES+=$(REVISION_FILE)

@@ -36,7 +36,7 @@ include $(DTUB)/tools/*.mk
 include $(DTUB)/config/git.mk
 include $(DTUB)/config/commands.mk
 
-prebuild:
+prebuild: revision
 	$(PRECMD)
 	${foreach wrap,$(WRAPS),$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) $(wrap);}
 	git submodule update --recursive

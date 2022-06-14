@@ -66,6 +66,7 @@ NO_OBJ ?= --o-
 DJSON ?= --Xf
 DEXPORT_DYN?=-L-export-dynamic
 DCOV=--cov
+DIMPORTFILE=-J
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -94,6 +95,7 @@ DPREVIEW :=-preview
 NO_OBJ ?= -o-
 DJSON ?= -Xf
 DCOV ?=-cov
+DIMPORTFILE=-J
 endif
 
 DIP25 := $(DIP)25
@@ -168,6 +170,7 @@ env-compiler:
 	${call log.kvp, DDEBUG_SYMBOLS , $(DDEBUG_SYMBOLS)}
 	${call log.kvp, DEXPORT_DYN, $(DEXPORT_DYN)}
 	${call log.kvp, DCOV, $(DCOV)}
+	${call log.kvp, DIMPORTFILE, $(DIMPORTFILE)}
 	${call log.kvp, DEBUG_FLAGS, "$(DEBUG_FLAGS)"}
 	${call log.kvp, DFLAGS, "$(DFLAGS)"}
 	${call log.kvp, LDCFLAGS, "$(LDCFLAGS)"}
