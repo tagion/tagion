@@ -46,7 +46,6 @@ enum isSupported(T) = isOneOf!(T, ArrayElementTypes) || isNumeric!T || isSupport
         foreach (i, m; this.tupleof) {
             enum name = basename!(this.tupleof[i]);
             alias type = typeof(m);
-            pragma(msg, "type ", type, " ", is(type == struct));
             static if (is(type == struct)) {
                 result[name] = m.toJSON;
             }
@@ -96,7 +95,6 @@ enum isSupported(T) = isOneOf!(T, ArrayElementTypes) || isNumeric!T || isSupport
         static void set_array(T)(ref T m, ref JSON.JSONValue[] json_array, string name) if (isSupportedArray!T) {
                 //check(0, format("Array %s ", m));
                 foreach(_json_value; json_array) {
-                    pragma(msg, "T ", T);
                     ElementType!T m_element;
                     set(m_element, _json_value, name);
                     m~=m_element;
@@ -173,13 +171,6 @@ enum isSupported(T) = isOneOf!(T, ArrayElementTypes) || isNumeric!T || isSupport
                     m = _json_value.type == JSON.JSONType.true_;
                 }
                 else static if (isSupportedArray!T) {
-                    //isArray!type && isOneOf!(ElementType!type, ArrayElementTypes)) {
-
-//                import std.stdio;
-                    pragma(msg, "isArray ", isArray!T);
-                    pragma(msg, "isOneOf ", isOneOf!(ElementType!T, ArrayElementTypes));
-                    pragma(msg, "ArrayElementTypes ", ArrayElementTypes);
-//                parse_array(json_value[name]
                     check(_json_value.type is JSON.JSONType.array,
                         format("Type of member '%s' must be an %s", _name, JSON.JSONType.array));
                     set_array(m, _json_value.array, _name);
