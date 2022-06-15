@@ -33,11 +33,10 @@ int main(string[] args) {
 
     auto main_args = getopt(args,
         std.getopt.config.caseSensitive,
-        std.getopt.config.bundling,
         "version", "display the version", &version_switch,
-        "O", format("Write configure file %s", config_file), &overwrite_switch,
         "I", "Include directory", &options.paths,
-//        "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
+        std.getopt.config.bundling,
+        "O", format("Write configure file %s", config_file), &overwrite_switch,
     );
 
     if (version_switch) {
