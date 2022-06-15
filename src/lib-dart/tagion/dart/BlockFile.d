@@ -32,9 +32,7 @@ version (unittest) {
     import Basic = tagion.basic.Basic;
     import tagion.basic.Types : FileExtension;
     const(Basic.FileNames) fileId(T = BlockFile)(string prefix = null) @safe {
-        import basic = tagion.basic.Basic;
-
-        return basic.fileId!T(FileExtension.dart, prefix);
+        return Basic.fileId!T(FileExtension.dart, prefix);
     }
 }
 
