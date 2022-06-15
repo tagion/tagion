@@ -241,9 +241,6 @@ version(unittest) {
 }
 
 unittest {
-    import std.stdio;
-
-
     static struct OptS {
         bool _bool;
         string _string;
@@ -264,19 +261,10 @@ unittest {
         opt._uint = 42;
         opt.color = Color.blue;
 
-        writeln(opt.stringify);
         immutable filename = fileId!OptS.fullpath;
-        // immutable filename = Basic.fileId!OptS(FileExtension.json, null).fullpath;
-//    (FileExtension..fullpath;
         opt.save(filename);
-//FileExtension
         OptS opt_loaded;
         opt_loaded.load(filename);
-        writeln(opt_loaded.stringify);
-//    filename.fwrite(
-
-        writefln("opt       =%s", opt);
-        writefln("opt_loaded=%s", opt_loaded);
         assert(opt == opt_loaded);
     }
     static struct OptMain {
@@ -295,11 +283,6 @@ unittest {
 //FileExtension
         OptMain opt_loaded;
         opt_loaded.load(main_filename);
-        writeln(opt_loaded.stringify);
-//    filename.fwrite(
-
-        writefln("opt_main       =%s", opt_main);
-        writefln("opt_loaded=%s", opt_loaded);
         assert(opt_main == opt_loaded);
     }
 
@@ -312,7 +295,7 @@ unittest {
 }
 
 unittest { // JSONCommon with array types
-    import std.stdio;
+//    import std.stdio;
     static struct OptArray(T) {
         T[] list;
         mixin JSONCommon;
@@ -327,7 +310,6 @@ unittest { // JSONCommon with array types
         opt.list=[true, false, false, true, false];
         immutable filename = fileId!OptA.fullpath;
 
-        writefln(opt.stringify);
         opt.save(filename);
 
         OptA opt_loaded;
@@ -342,7 +324,6 @@ unittest { // JSONCommon with array types
         opt.list=["Hugo", "Borge", "Brian", "Johnny", "Sven Bendt"];
         immutable filename = fileId!OptA.fullpath;
 
-        writefln(opt.stringify);
         opt.save(filename);
 
         OptA opt_loaded;
@@ -357,7 +338,6 @@ unittest { // JSONCommon with array types
         opt.list=[42, -16, 117];
         immutable filename = fileId!OptA.fullpath;
 
-        writefln(opt.stringify);
         opt.save(filename);
 
         OptA opt_loaded;
@@ -376,7 +356,6 @@ unittest { // JSONCommon with array types
         opt.list=[OptSub("Hugo"), OptSub("Borge"), OptSub("Brian")];
         immutable filename = fileId!OptA.fullpath;
 
-        writefln(opt.stringify);
         opt.save(filename);
 
         OptA opt_loaded;
