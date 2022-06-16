@@ -434,4 +434,39 @@ class SSLSocket : Socket {
         if (client_ctx !is null)
             SSL_CTX_free(client_ctx);
     }
+        
+    //! [client creation circle]
+    unittest
+    {  
+           import std.stdio;        
+           writeln("LAUNCH UNIT TEST SSL_Socket");
+           SSLSocket testItem_client = new SSLSocket(AddressFamily.UNSPEC, EndpointType.Client);
+           assert(testItem_client._ctx != null);
+           assert(SSLSocket.server_ctx == null);
+           assert(SSLSocket.client_ctx != null);
+           assert(SSLSocket.client_ctx == testItem_client._ctx);
+    }
+
+    //! [server creation circle]
+    unittest
+    {
+           SSLSocket testItem_server = new SSLSocket(AddressFamily.UNSPEC, EndpointType.Server);
+           assert(testItem_server._ctx != null);
+           assert(SSLSocket.server_ctx != null);
+           assert(SSLSocket.client_ctx == null);
+           assert(SSLSocket.server_ctx == testItem_server._ctx);
+    }
+
+    //! [Acception] 
+    unittest
+    {
+        import std.stdio;
+        import std.array;
+        SSLSocket item = new SSLSocket(AddressFamily.UNSPEC, EndpointType.Server);
+        SSLSocket arg_one = new SSLSocket(AddressFamily.UNSPEC, EndpointType.Client);
+        Socket arg_two = new Socket(AddressFamily.UNSPEC, SocketType.STREAM);
+        bool result = item.acceptSSL(arg_one, arg_two);
+        auto writearg = "RESULT : ";
+        writeln(join([writearg, result ? "TRUE" : "FALSE"]));
+    }
 }
