@@ -2,14 +2,14 @@
 
 $(REVISION_FILE):
 	$(PRECMD)
-	$$(call log.header, revision :: $(GIT_DATE))
+	${call log.header, revision :: $(GIT_DATE)}
 	echo '$(GIT_INFO)' > $@
 	echo '$(GIT_HASH)' >> $@
 	echo '$(GIT_REVNO)' >> $@
 	echo '$(GIT_DATE)' >> $@
 
 revision: $(REVISION_FILE)
-	echo $(REVISION_FILE)
+#	echo $(REVISION_FILE)
 
 prebuild:
 .PHONY: revision

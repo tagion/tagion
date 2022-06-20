@@ -11,10 +11,27 @@ import tagion.tools.revision;
 
 struct BehaviourOptions {
     string[] paths;
+    string bbd_filter;
     void setDefault() pure nothrow {
+        bbd_filter = "*." ~ FileExtension.markdown;
     }
     mixin JSONCommon;
     mixin JSONConfig;
+}
+
+int parse_bdd(ref const(BehaviourOptions) opts) {
+
+    auto bdd_files = dirEntries("", SpanMode.depth).filter!(f => f.name.endsWith(".d"));
+foreach (d; dFiles)
+    writeln(d.name);
+
+    foreach (d; parallel(dFiles, 1)) {
+//passes by 1 file to each thread
+//{
+        string cmd = "dmd -c "  ~ d.name;
+        writeln(cmd);
+        executeShell(cmd);
+    }
 }
 
 int main(string[] args) {
