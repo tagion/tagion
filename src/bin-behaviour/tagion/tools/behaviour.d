@@ -1,24 +1,38 @@
 module tagion.tools.behaviour;
+// import tagion.behaviour.BehaviourParser;
+// import std.getopt;
+// import std.stdio;
+// import tagion.behaviour.BehaviourBase;
 
-import std.getopt;
-import std.stdio;
+// import std.range.primitives : isInputRange, ElementType;
+// import std.traits;
+// import std.regex;
+// import std.string : strip;
+// import std.format;
+// //mixin Main!_main;
+// import io = std.stdio;
+// import tagion.basic.Basic : unitfile;
+// import tagion.behaviour.BehaviourIssue : EXT;
+// import std.stdio : File;
 
-mixin Main!_main;
+    //    import std.file : fwrite = write, freadText = readText;
+
+    import std.path;
 
 int _main(string[] args) {
-    enum name = "ProtoBDD";
-    immutable filename = name.unitfile.setExtension(EXT.Markdown);
-    io.writefln("filename=%s", filename);
-    //   immutable mdsrc=filename.freadText;
+    // enum name = "ProroBDD";
+    // immutable filename = name.unitfile.setExtension(EXT.Markdown);
+    // io.writefln("filename=%s", filename);
+    // //   immutable mdsrc=filename.freadText;
 
-    auto feature_byline = File(filename).byLine;
+    // auto feature_byline = File(filename).byLine;
 
-    alias ByLine = typeof(feature_byline);
-    pragma(msg, "isInputRange ", isInputRange!ByLine);
-    pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
-    pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
+    // alias ByLine = typeof(feature_byline);
+    // pragma(msg, "isInputRange ", isInputRange!ByLine);
+    // pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
+    // pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
 
- //   auto feature=parser(feature_byline);
+   // auto feature=parser(feature_byline);
 
 
 
