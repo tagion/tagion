@@ -58,4 +58,6 @@ enum FileExtension {
     wasm = "wasm", // WebAssembler binary format
     wast = "wast", // WebAssembler text format
     dart = "drt", // DART data-base
+    markdown = "md", // DART data-base
+    dsrc = "d", // DART data-base
 }

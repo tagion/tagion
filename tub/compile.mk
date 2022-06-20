@@ -74,6 +74,7 @@ $(UNITTEST_BIN): $(COVWAY) $$(DFILES)
 	echo LIBS=$(LIBS)
 	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFALGS) ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OUTPUT)$@
 
+unittest: revision
 
 clean-unittest:
 	$(PRECMD)

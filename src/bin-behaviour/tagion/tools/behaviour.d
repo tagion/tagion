@@ -1,77 +1,90 @@
 module tagion.tools.behaviour;
-// import tagion.behaviour.BehaviourParser;
-// import std.getopt;
-// import std.stdio;
-// import tagion.behaviour.BehaviourBase;
 
-// import std.range.primitives : isInputRange, ElementType;
-// import std.traits;
-// import std.regex;
-// import std.string : strip;
-// import std.format;
-// //mixin Main!_main;
-// import io = std.stdio;
-// import tagion.basic.Basic : unitfile;
-// import tagion.behaviour.BehaviourIssue : EXT;
-// import std.stdio : File;
+import std.getopt;
+import std.stdio;
+import std.format;
+import std.file : exists;
+import std.string : join;
+import std.string : splitLines;
+import tagion.utils.JSONCommon;
+import tagion.tools.revision;
 
-    //    import std.file : fwrite = write, freadText = readText;
+struct BehaviourOptions {
+    string[] paths;
+    string bbd_filter;
+    void setDefault() pure nothrow {
+        bbd_filter = "*." ~ FileExtension.markdown;
+    }
+    mixin JSONCommon;
+    mixin JSONConfig;
+}
 
-    import std.path;
+int parse_bdd(ref const(BehaviourOptions) opts) {
 
-int _main(string[] args) {
-    // enum name = "ProroBDD";
-    // immutable filename = name.unitfile.setExtension(EXT.Markdown);
-    // io.writefln("filename=%s", filename);
-    // //   immutable mdsrc=filename.freadText;
+    auto bdd_files = dirEntries("", SpanMode.depth).filter!(f => f.name.endsWith(".d"));
+foreach (d; dFiles)
+    writeln(d.name);
 
-    // auto feature_byline = File(filename).byLine;
+    foreach (d; parallel(dFiles, 1)) {
+//passes by 1 file to each thread
+//{
+        string cmd = "dmd -c "  ~ d.name;
+        writeln(cmd);
+        executeShell(cmd);
+    }
+}
 
-    // alias ByLine = typeof(feature_byline);
-    // pragma(msg, "isInputRange ", isInputRange!ByLine);
-    // pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
-    // pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
+int main(string[] args) {
+    BehaviourOptions options;
+    immutable program = args[0];
+    auto config_file = "behaviour.json";
+    bool version_switch;
+    bool overwrite_switch;
 
-   // auto feature=parser(feature_byline);
+    if (config_file.exists) {
+        options.load(config_file);
+    }
+    else {
+        options.setDefault;
+    }
 
+    auto main_args = getopt(args,
+        std.getopt.config.caseSensitive,
+        "version", "display the version", &version_switch,
+        "I", "Include directory", &options.paths,
+        std.getopt.config.bundling,
+        "O", format("Write configure file %s", config_file), &overwrite_switch,
+    );
 
+    if (version_switch) {
+        revision_text.writeln;
+        return 0;
+    }
 
+    if (overwrite_switch) {
+        if (args.length == 2) {
+            config_file = args[1];
+        }
+        options.save(config_file);
+        writefln("Configure file written to %s", config_file);
+        return 0;
+    }
 
- 
-    // immutable program = args[0];
-    // bool version_switch;
-    // auto main_args = getopt(args,
-    //     std.getopt.config.caseSensitive,
-    //     std.getopt.config.bundling,
-    //     "version", "display the version", &version_switch,
-    //     "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
-    // );
+    if (main_args.helpWanted) {
+        defaultGetoptPrinter(
+                [
+                    revision_text,
+                    "Documentation: https://tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...]", program),
+                    "",
+                    "<option>:",
 
-    // if (version_switch) {
-    //     // writefln("version %s", REVNO);
-    //     // writefln("Git handle %s", HASH);
-    //     return 0;
-    // }
-
-    // if (main_args.helpWanted) {
-    //     defaultGetoptPrinter(
-    //             [
-    //         // format("%s version %s", program, REVNO),
-    //         "Documentation: https://tagion.org/",
-    //         "",
-    //         "Usage:",
-    //         format("%s <command> [<option>...]", program),
-    //         "",
-    //         "Where:",
-    //         "<command>           one of [--read, --rim, --modify, --rpc]",
-    //         "",
-
-    //         "<option>:",
-
-    //     ].join("\n"),
-    //     main_args.options);
-    //     return 0;
-    // }
+                    ].join("\n"),
+                main_args.options);
+        return 0;
+    }
 
 
     return 0;
