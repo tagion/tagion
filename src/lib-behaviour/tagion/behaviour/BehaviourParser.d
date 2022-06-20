@@ -44,8 +44,11 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
 
     Info!Feature info_feature;
     Info!Scenario info_scenario;
-    writeln(typeid(scenario_group.given));
-   
+    Info!Given info_given;
+    Info!Given info_when;
+    Info!Given info_then;
+ 
+    And[] ands;
 
     State state;
     
@@ -122,13 +125,21 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
                     assert(state == State.Scenario, "State should be scenario");
                     switch (match[1]) {
                         case "Given":
+                            info_given.description = match.post.idup;
                            // scenario_group.given.info.description = match.post;
                             break;
                         case "When" :
+                            info_when.description = match.post.idup;
                          //   scenario_group.when.description = match.post;
                             break;
                         case "Then":
+                            info_then.description = match.post.idup;
                            // scenario_group.then.description = match.post;
+                            break;
+                        case "And":
+                            And and;
+                            and.description = match.post.idup;
+                            ands ~= and;
                             break;
                         default:
                             break;
@@ -156,9 +167,13 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
     writeln("Info_S name: ", info_scenario.name);
     writeln("       description: ", info_scenario.property.description);
     writeln("       comments: ", info_scenario.property.comments);
-   // writeln("Given: ", scenario_group.given.description);
-   // writeln("When: ", scenario_group.when.description);
-   // writeln("Then: ", scenario_group.then.description);
+    writeln("Given: ", given.description);
+    writeln("When: ", when.description);
+    writeln("Then: ", then.description);
+    writeln("Ands:");
+    foreach(and; ands) {
+        writeln(and.description);
+    }
     writeln("FINISHHHHHHHH--------------------------------------------------------------------------------------------------------------");
     return result;  
 }
