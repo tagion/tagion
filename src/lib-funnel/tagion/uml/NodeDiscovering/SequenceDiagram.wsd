@@ -60,58 +60,5 @@ end
 end
 deactivate db
 deactivate node
-...
-group EpochNumber requestLastTrustedEpoch( E_loc )
-    node -> cnode : Go to **E_loc** epoch in DB
-    activate node
-    activate db
-    activate cnode
-    activate cdb
-    loop while not reach **E_loc**
-        cnode -> cdb : Get previous epoch
-        cdb --> cnode : Previous epoch
-    end
-    cnode --> node
-
-    loop foreach E_ver in (E_loc, ..., E_node]
-        node -> cnode : Request **E_ver** epoch signature
-        cnode -> cdb : Request **E_ver** signature
-        cdb --> cnode : **E_ver** signature
-        cnode --> node : **E_ver** signature
-        node -> node : Verify signature
-        note right of node #FFFFFF
-            Verify using trusted nodes
-        end note
-
-        alt #DCFFDC E_ver is trusted
-            node -> node : Next epoch
-        else #FFDCDC
-            node --> node : Return **E_ver-1**
-        end
-    end
-    node --> node : Return **E_node**
-end
-deactivate node
-deactivate db
-deactivate cnode
-deactivate cdb
-...
-group void syncEpochs( E_loc, E_trust )
-    node -> cnode : Request (**E_loc**, ..., **E_trust**] epochs
-    activate node
-    activate db
-    activate cnode
-    activate cdb
-    loop foreach E_curr in (E_loc, ..., E_trust]
-        cnode -> cdb : Read **E_curr** epoch data
-        cdb --> cnode : **E_curr** epoch data
-    end
-        cnode --> node : List of (**E_loc**, ..., **E_trust**] epochs
-        node -> db : Replay (**E_loc**, ..., **E_trust**] epochs
-deactivate node
-deactivate db
-deactivate cnode
-deactivate cdb
-end
 
 @enduml
