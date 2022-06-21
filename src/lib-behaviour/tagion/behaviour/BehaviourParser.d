@@ -59,7 +59,7 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
     State state;
     string action_flag;
     writeln("STARTTTTTTT--------------------------------------------------------------------------------------------------------------");
-   // string flag = "";
+    // string flag = "";
     int current_action_index=-1;
     foreach (line_no, line; range.enumerate(1)) {
         writeln("______________________________________");
@@ -83,13 +83,13 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
 
 //                 }
 //         }
-       // writeln("state: ", state);
+        // writeln("state: ", state);
         //writeln("match.post: ", match.post);
 
         //io.writefln("match %s : %s", match, line);
 
         //if (match) {
-            // io.writefln("match %s '%s' whichPattern=%d", match, match.post.strip, match.whichPattern);
+        // io.writefln("match %s '%s' whichPattern=%d", match, match.post.strip, match.whichPattern);
 
         const Token token = cast(Token)(match.whichPattern);
         writeln("Token: ", token);
@@ -155,7 +155,7 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
                 case State.Action:
                 case State.And_Action:
 
-                //check(current_action_index >= 0, format("Missing action declarations in line %s:%d", line, line_no));
+                    //check(current_action_index >= 0, format("Missing action declarations in line %s:%d", line, line_no));
                     static foreach(index, Field; Fields!ScenarioGroup) {
                         static if (hasMember!(Field, "info")) {
                             if (current_action_index is index) {
@@ -179,171 +179,66 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
                     break TokenSwitch;
                 }
                 check(0, format("No valid action has %s", match[1]));
-                // switch(action_flag) {
-                //     case "Given":
-                //         scenario_group.given.info.name = match[1].idup;
-                //         break;
-                //     case "When":
-                //         scenario_group.when.info.name = match[1].idup;
-                //     break;
-                //     case "Then":
-                //         scenario_group.then.info.name = match[1].idup;
-                //         break;
-                //     case "And":
-                //         // todo
-                //         break;
-                //     default:
-                //         break;
-                // }
-
                 writeln("STATEEEE: ", state);
-                //                    result.info.name=match[1];
-                    //io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
                 break;
             case SCENARIO:
                 current_action_index=-1;
-                    check(state is State.Feature || state is State.Scenario, format("Scenario must be declared after a Feature :%d", line));
-                    writeln("Hi from SCENARIO!!! ", line);
-                    if(canFind(line, "Scenario: ")) {
-                        string description = cast(string)line.replace("### Scenario: ", "");
-                        info_scenario.property.description = description;
-                    }
-                    else {assert(0);}
-                    state = State.Scenario;
-                    //                    result.scenarios ~= Scenario(match.post.strip);
-                   // io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
-                    break;
+                check(state is State.Feature || state is State.Scenario, format("Scenario must be declared after a Feature :%d", line));
+                writeln("Hi from SCENARIO!!! ", line);
+                if(canFind(line, "Scenario: ")) {
+                    string description = cast(string)line.replace("### Scenario: ", "");
+                    info_scenario.property.description = description;
+                }
+                else {assert(0);}
+                state = State.Scenario;
+                break;
             case ACTION:
                 writeln("Hi from action!!!!!!!!!!!!");
-//                assert(state == State.Scenario || state, "State should be scenario");
                 state = State.Action;
                 scope const action_word=match[1].toLower;
                 if (action_word == "and") {
                     check(current_action_index >=0, "Missing action Given, When or Then before And");
                     static foreach(index, Field; Fields!ScenarioGroup) {
                         static if (isBehaviourGroup!Field) {
-                        if (current_action_index == index) {
-                            Info!And and;
-                            and.property.description=match.post.idup;
-                            pragma(msg, "Field ", Fields!ScenarioGroup[index]);
-                            pragma(msg, ":::", FieldNameTuple!(typeof(scenario_group.tupleof[index])));
-                            scenario_group.tupleof[index].ands ~= and;
-                            pragma(msg, ":::", typeof(scenario_group.tupleof[index].ands));
-                        }
+                            if (current_action_index == index) {
+                                Info!And and;
+                                and.property.description=match.post.idup;
+                                pragma(msg, "Field ", Fields!ScenarioGroup[index]);
+                                pragma(msg, ":::", FieldNameTuple!(typeof(scenario_group.tupleof[index])));
+                                scenario_group.tupleof[index].ands ~= and;
+                                pragma(msg, ":::", typeof(scenario_group.tupleof[index].ands));
+                            }
                         }
                     }
                     state = State.And_Action;
                     break;
                 }
-//                alias Actions = AliasSeq!(Given, When, Then);
                 alias BehaviourGroups = staticMap!(BehaviourGroup, UniqueBehaviourProperties);
                 pragma(msg, "BehaviourGroups ", BehaviourGroups);
-                    // enum getFieldIndex(T) = staticIndexOf!(T, BehaviourGroups);
-                    // enum actions_indices = staticMap!(getFieldIndex, Fields!ScenarioGroup);
-                    // enum actions_name =
-                    // pragma(msg, "field_indices ", field_indices);
+                writefln("Action match %s", match);
+                static foreach(index, Field; Fields!ScenarioGroup) {{
+                        enum field_index = staticIndexOf!(Field, BehaviourGroups);
+                        static if (field_index >= 0) {
+                            alias label = GetLabel!(scenario_group.tupleof[index]);
+                            pragma(msg, "___action_name ", label.name);
+                            enum action_name = label.name;
+                            // enum action_name=getUDAs!(UniqueBehaviourProperties[field_index], RecordType)[0].name.toLower;
+                            pragma(msg, "action_name ", action_name);
 
+                            writefln("action %s match = %s index=%d", action_name, match[1].toLower, index);
 
+                            if (match[1].toLower == label.name) {
+                                writefln("!!!! %s", label.name);
+                                current_action_index = index;
+                                scenario_group.tupleof[index].info.property.description = match.post.idup;
 
-                    writefln("Action match %s", match);
-//                    switch (match[1]) {
-//                    version(none)
-
-                    static foreach(index, Field; Fields!ScenarioGroup) {{
-                            enum field_index = staticIndexOf!(Field, BehaviourGroups);
-                            static if (field_index >= 0) {
-                                alias label = GetLabel!(scenario_group.tupleof[index]);
-                                pragma(msg, "___action_name ", label.name);
-                                enum action_name = label.name;
-                                // enum action_name=getUDAs!(UniqueBehaviourProperties[field_index], RecordType)[0].name.toLower;
-                                pragma(msg, "action_name ", action_name);
-
-                                writefln("action %s match = %s index=%d", action_name, match[1].toLower, index);
-
-                                if (match[1].toLower == label.name) {
-                                    writefln("!!!! %s", label.name);
-                                    current_action_index = index;
-                                    scenario_group.tupleof[index].info.property.description = match.post.idup;
-
-                                    break TokenSwitch;
-                                }
+                                break TokenSwitch;
                             }
-                        }}
-
-
-                            //     stat
-                            // enum index =
-
-                            // static if (index > 0) {
-                            //     staticMap!(getFieldIndex, Fields!ScenarioGroup)
-                            //         }
-
-//                        }
-                        //         pragma(msg, "Field ", Field);
-                    //         // enum field_index = staticIndexOf!(BehaviourGroup!When, BehaviourGroups);
-                    //         // pragma(msg, "field_index ", field_index);
-                    //         enum field_index = staticIndexOf!(Field, BehaviourGroups);
-                    //         pragma(msg, "field_index ", field_index);
-                    //         static if (field_index > 0) {
-                    //             pragma(msg, "is Action ", Field);
-
-                    //             pragma(msg, "hasUDA ", hasUDA!(Actions[field_index], RecordType));
-                    //             pragma(msg, "getUDAs ", getUDAs!(Actions[field_index], RecordType)[0].name);
-
-                    //         }}
-                            // static foreach(i, ref m, scenario_group.tupleof) {{
-                            //         pragma(msg, i, File
-                            //         //alias Type=typeof(n);
-
-                        ///     }};
-                    //     case getUDAs!(Actions[field_index], RecordType)[0].name:
-                    //         writefln("%s match.post = %s %s", match[1], match.post, typeof(match.post).stringof);
-                    //         scenario_group.tupleof[index].info.property.description = match.post.idup;
-                    //     }
-
-                    // default:
-                    //      break;
-                    // }
-
-                    // writefln("Action match %s", match);
-                    // switch (match[1]) {
-                    //     case "Given":
-                    //         writefln("%s match.post = %s %s", match[1], match.post, typeof(match.post).stringof);
-                    //         scenario_group.given.info.property.description = match.post.idup;
-                    //         break;
-                    //     case "When" :
-                    //         writefln("%s match.post = %s %s", match[1], match.post, typeof(match.post).stringof);
-                    //         //writefln("%s match.post = %s ", match[1], match.post);
-                    //         scenario_group.when.info.property.description = match.post.idup;
-                    //         break;
-                    //     case "Then":
-                    //         writefln("%s match.post = %s %s", match[1], match.post, typeof(match.post).stringof);
-                    //         scenario_group.then.info.property.description = match.post.idup;
-                    //         //writefln("%s match.post = %s ", match[1], match.post);
-                    //         break;
-                    //     case "And":
-                    //         writefln("%s match.post = %s %s", match[1], match.post, typeof(match.post).stringof);
-                    //         // todo
-                    //         break;
-                    //     default:
-                    //         break;
-                    // }
-
-
-                   // io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
-                    break;
-                // case NAME:
-                //     writeln("Hi from name!!!!!!!!!!!!");
-                //     //io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
-
-                // }
+                        }
+                    }}
+                break;
             }
         }
-            //             range.popFront;
-
-            // //auto module_match=
-            //             return;
-       // }
     }
     scenario_group.info = info_scenario;
     result.info = info_feature;
