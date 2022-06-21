@@ -98,25 +98,24 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
                         break;
                     }
                     if(state is State.Scenario) {
-                        info_scenario.name = match[1].idup;
-                        break;
-                    }
-                    
-                    switch(action_flag) {
-                        case "Given":
-                            scenario_group.given.info.name = match[1].idup;
+                        switch(action_flag) {
+                            case "Given":
+                                scenario_group.given.info.name = match[1].idup;
+                                break;
+                            case "When":
+                                scenario_group.when.info.name = match[1].idup;
                             break;
-                        case "When":
-                            scenario_group.when.info.name = match[1].idup;
-                        break;
-                        case "Then":
-                            scenario_group.then.info.name = match[1].idup;
-                            break;
-                        case "And":
-                            // todo
-                            break;
-                        default:
-                            break;
+                            case "Then":
+                                scenario_group.then.info.name = match[1].idup;
+                                break;
+                            case "And":
+                                // todo
+                                break;
+                            default:
+                                info_scenario.name = match[1].idup;
+                                break;
+                       }
+                       break;
                     }
                     
                     writeln("STATEEEE: ", state);
