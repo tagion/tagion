@@ -15,7 +15,6 @@ import tagion.hibon.Document;
 struct Feature {
     string description;
     @Label(VOID, true) string[] comments;
-    string name;
     mixin HiBONRecord!(q{
             this(string description, string[] comments=null ) {
                 this.description = description;
@@ -98,8 +97,8 @@ enum isBehaviourGroup(alias I) = __traits(isSame, TemplateOf!I, BehaviourGroup);
 struct ScenarioGroup {
     Info!Scenario info;
     BehaviourGroup!(Given) given;
-    @Label(VOID, true) BehaviourGroup!(Then) then;
-    BehaviourGroup!(When) when;
+    @Label(VOID, true) BehaviourGroup!(When) when;
+    BehaviourGroup!(Then) then;
     mixin HiBONRecord!();
 }
 
