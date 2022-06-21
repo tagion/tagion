@@ -1,0 +1,44 @@
+@startuml Logger Subscription Sequence
+
+skinparam Style strictuml
+skinparam SequenceMessageAlign center
+hide empty description
+title Subscription to logs Sequence Diagram
+
+participant Subscriber as sub
+participant LogSubscriptionService as subservice
+participant LoggerService as logservice
+participant Logger as logger
+participant Task as task
+
+activate sub
+activate subservice
+activate logservice
+activate logger
+activate task
+
+task -> logger : Send log text \nand log level
+logger -> logservice : Send log text, log level\nand task name
+logservice -> logservice : Check given log level\nand task name in stored\ncommon filters list
+alt #DCFFDC Log match some filter
+    logservice -> subservice : Send log text, log level\nand task name
+else #FFDCDC Log doesn't match any filter
+    logservice ->x logservice : Drop this log
+end
+
+loop Foreach connected subscriber
+    subservice -> subservice : Check if log match\nsubscriber's filter
+    alt #DCFFDC Match filter 
+        subservice -> sub : Send log
+    else #FFDCDC else
+        subservice --> subservice : Go to next subscriber
+    end
+end
+
+deactivate sub
+deactivate subservice
+deactivate logservice
+deactivate logger
+deactivate task
+
+@enduml
