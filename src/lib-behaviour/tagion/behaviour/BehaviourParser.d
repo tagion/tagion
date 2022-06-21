@@ -44,14 +44,9 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
 
     Info!Feature info_feature;
     Info!Scenario info_scenario;
-    Info!Given info_given;
-    Info!Given info_when;
-    Info!Given info_then;
- 
-    And[] ands;
 
     State state;
-    
+    string action_flag;
     writeln("STARTTTTTTT--------------------------------------------------------------------------------------------------------------");
    // string flag = "";
     foreach (line; range) {
@@ -61,7 +56,6 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
         writeln("line: ", line);
        // writeln("state: ", state);
         //writeln("match.post: ", match.post);
-       
         //io.writefln("match %s : %s", match, line);
 
         //if (match) {
@@ -74,15 +68,13 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
                     string l = match.post.idup;
                     writeln("Hi from NONE!!!");
                     switch (state) {
-                    case State.Feature: 
+                    case State.Feature:
                         writeln("1");
-                        info_feature.property.comments ~= strip(l);                        
+                        info_feature.property.comments ~= strip(l);
                         break;
                     case State.Scenario:
                         writeln("2");
-                        info_scenario.property.comments ~= strip(l);  
-                                               //check(result.scenarios.length > 0, format("Scenario has not been declared yet : %d", line));
-                        //result.scenarios[$ - 1].comments ~= match.post.strip;
+                        info_scenario.property.comments ~= strip(l);
                         break;
                     default:
                         writeln("3");
@@ -91,19 +83,42 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
                     break;
                 case FEATURE:
                     check(state is State.Start, format("Feature has already been declared in line %d", line));
-                    writeln("Hi from Feature!!! ", line);
                     if(canFind(line, "Feature: ")) {
                         string description = cast(string)line.replace("## Feature: ", "");
                         info_feature.property.description = description;
-                    }   
+                    }
                     else {assert(0);}
                     state = State.Feature;
                     break;
                 case MODULE:
+                    writeln("STATE: ", state, " ", action_flag);
                    // check(state is State.Feature, format("Module name can only be declare after the Feature declaration :%d", line)); HERE!!!
+                    if(state is State.Feature) {
+                        info_feature.name = match[1].idup;
+                        break;
+                    }
+                    if(state is State.Scenario) {
+                        info_scenario.name = match[1].idup;
+                        break;
+                    }
                     
-                    if(state is State.Feature) info_feature.name = match[1].idup;
-                    if(state is State.Scenario) info_scenario.name = match[1].idup;
+                    switch(action_flag) {
+                        case "Given":
+                            scenario_group.given.info.name = match[1].idup;
+                            break;
+                        case "When":
+                            scenario_group.when.info.name = match[1].idup;
+                        break;
+                        case "Then":
+                            scenario_group.then.info.name = match[1].idup;
+                            break;
+                        case "And":
+                            // todo
+                            break;
+                        default:
+                            break;
+                    }
+                    
                     writeln("STATEEEE: ", state);
                     //                    result.info.name=match[1];
                     //io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
@@ -114,7 +129,7 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
                     if(canFind(line, "Scenario: ")) {
                         string description = cast(string)line.replace("### Scenario: ", "");
                         info_scenario.property.description = description;
-                    }   
+                    }
                     else {assert(0);}
                     state = State.Scenario;
                     //                    result.scenarios ~= Scenario(match.post.strip);
@@ -123,29 +138,32 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
                 case ACTION:
                     writeln("Hi from action!!!!!!!!!!!!");
                     assert(state == State.Scenario, "State should be scenario");
+                    writefln("Action match %s", match);
+                    action_flag = match[1].idup;
                     switch (match[1]) {
                         case "Given":
-                            info_given.description = match.post.idup;
-                           // scenario_group.given.info.description = match.post;
+                            writefln("%s match.post = %s %s", match[1], match.post, typeof(match.post).stringof);
+                            scenario_group.given.info.property.description = match.post.idup;
                             break;
                         case "When" :
-                            info_when.description = match.post.idup;
-                         //   scenario_group.when.description = match.post;
+                            writefln("%s match.post = %s %s", match[1], match.post, typeof(match.post).stringof);
+                            //writefln("%s match.post = %s ", match[1], match.post);
+                            scenario_group.when.info.property.description = match.post.idup;
                             break;
                         case "Then":
-                            info_then.description = match.post.idup;
-                           // scenario_group.then.description = match.post;
+                            writefln("%s match.post = %s %s", match[1], match.post, typeof(match.post).stringof);
+                            scenario_group.then.info.property.description = match.post.idup;
+                            //writefln("%s match.post = %s ", match[1], match.post);
                             break;
                         case "And":
-                            And and;
-                            and.description = match.post.idup;
-                            ands ~= and;
+                            writefln("%s match.post = %s %s", match[1], match.post, typeof(match.post).stringof);
+                            // todo
                             break;
                         default:
                             break;
                     }
-                    
-                    
+
+
                    // io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
                     break;
                 case NAME:
@@ -160,22 +178,28 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
             //             return;
        // }
     }
+    scenario_group.info = info_scenario;
+    result.info = info_feature;
+    result.scenarios ~= scenario_group;
+
     writeln("***********************************************************");
-    writeln("Info_F name: ", info_feature.name);
-    writeln("       description: ", info_feature.property.description);
-    writeln("       comments: ", info_feature.property.comments);
-    writeln("Info_S name: ", info_scenario.name);
-    writeln("       description: ", info_scenario.property.description);
-    writeln("       comments: ", info_scenario.property.comments);
-    writeln("Given: ", given.description);
-    writeln("When: ", when.description);
-    writeln("Then: ", then.description);
-    writeln("Ands:");
-    foreach(and; ands) {
-        writeln(and.description);
-    }
+    writeln("FeatureGroup: "); 
+    writeln("              Feature:   ");
+    writeln("                       name:        ", result.info.name);
+    writeln("                       description: ", result.info.property.description);
+    writeln("                       comments:    ", result.info.property.comments);
+    writeln("              Scenarios: ");
+    writeln("                       name:        ", result.scenarios[0].info.name);
+    writeln("                       description: ", result.scenarios[0].info.property.description);
+    writeln("                       comments:    ", result.scenarios[0].info.property.comments);
+    writeln("               Given name:          ", result.scenarios[0].given.info.name);
+    writeln("               Given description:   ", result.scenarios[0].given.info.property.description);
+    writeln("               When name:           ", result.scenarios[0].when.info.name);
+    writeln("               When description:    ", result.scenarios[0].when.info.property.description);
+    writeln("               Then name:           ", result.scenarios[0].then.info.name);
+    writeln("               Then description:    ", result.scenarios[0].then.info.property.description);
     writeln("FINISHHHHHHHH--------------------------------------------------------------------------------------------------------------");
-    return result;  
+    return result;
 }
 
 unittest { /// Convert ProtoBDD to Feature
