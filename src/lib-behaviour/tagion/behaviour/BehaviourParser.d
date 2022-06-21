@@ -206,56 +206,16 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
     scenario_group.info = info_scenario;
     result.info = info_feature;
     result.scenarios ~= scenario_group;
-
-    writeln("***********************************************************");
-    writeln("FeatureGroup: ");
-    writeln("              Feature:   ");
-    writeln("                       name:        ", result.info.name);
-    writeln("                       description: ", result.info.property.description);
-    writeln("                       comments:    ", result.info.property.comments);
-    writeln("              Scenarios: ");
-    writeln("                       name:        ", result.scenarios[0].info.name);
-    writeln("                       description: ", result.scenarios[0].info.property.description);
-    writeln("                       comments:    ", result.scenarios[0].info.property.comments);
-    writeln("               Given name:          ", result.scenarios[0].given.info.name);
-    writeln("               Given description:   ", result.scenarios[0].given.info.property.description);
-    writeln("               Given comments:   ", result.scenarios[0].given.info.property.comments);
-    writeln("               Given ands:   ", result.scenarios[0].given.ands.length);
-    foreach (and; result.scenarios[0].given.ands) {
-        writeln("                  And name:          ", and.name);
-        writeln("                  And description:   ", and.property.description);
-        writeln("                  And comments:   ", and.property.comments);
-    }
-    writeln("               When name:           ", result.scenarios[0].when.info.name);
-    writeln("               When description:    ", result.scenarios[0].when.info.property.description);
-    writeln("               When comments:   ", result.scenarios[0].when.info.property.comments);
-    writeln("               When ands:   ", result.scenarios[0].when.ands.length);
-    foreach (and; result.scenarios[0].when.ands) {
-        writeln("                  And name:          ", and.name);
-        writeln("                  And description:   ", and.property.description);
-        writeln("                  And comments:   ", and.property.comments);
-    }
-    writeln("               Then name:           ", result.scenarios[0].then.info.name);
-    writeln("               Then description:    ", result.scenarios[0].then.info.property.description);
-    writeln("               Then comments:   ", result.scenarios[0].then.info.property.comments);
-    writeln("               Then ands:   ", result.scenarios[0].then.ands.length);
-    foreach (and; result.scenarios[0].then.ands) {
-        writeln("                  And name:          ", and.name);
-        writeln("                  And description:   ", and.property.description);
-        writeln("                  And comments:   ", and.property.comments);
-    }
-    writeln("FINISHHHHHHHH--------------------------------------------------------------------------------------------------------------");
     import tagion.hibon.HiBONJSON : toPretty;
 
     writefln("pretty %s", result.toPretty);
     return result;
 }
 
-unittest { /// Convert ProtoBDD to Feature
+unittest { /// Convert ProtoDBBTestComments to Feature
     enum name = "ProtoDBBTestComments";
     immutable filename = name.unitfile.setExtension(EXT.Markdown);
     io.writefln("filename=%s", filename);
-    //   immutable mdsrc=filename.freadText;
 
     auto feature_byline = File(filename).byLine;
 
@@ -265,16 +225,46 @@ unittest { /// Convert ProtoBDD to Feature
     pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
 
     auto feature = parser(feature_byline);
-} //failed! fix
+    // check feature
+    assert(feature.info.name == "tagion.behaviour.unittest.ProtoBDD");
+    assert(feature.info.property.description == " Some awesome feature should print some cash out of the blue(descr)");
+    assert(feature.info.property.comments == ["Some addtion notes", "my comment1", "my comment2 a lot spaces", ""]);
+    // check scenario
+    assert(feature.scenarios[0].info.name == "Some_awesome_money_printer");
+    assert(feature.scenarios[0].info.property.description == " Some awesome money printer");
+    assert(feature.scenarios[0].info.property.comments == ["\u200B   comments", ""]); // Why?
+    // check given
+    assert(feature.scenarios[0].given.info.name == "is_valid");
+    assert(feature.scenarios[0].given.info.property.description == " the card is valid");
+    assert(feature.scenarios[0].given.info.property.comments == ["some comments scenario", ""]);
+    assert(feature.scenarios[0].given.ands.length == 2);
+    assert(feature.scenarios[0].given.ands[0].name == "in_credit");
+    assert(feature.scenarios[0].given.ands[0].property.description == " the account is in credit");
+    assert(feature.scenarios[0].given.ands[0].property.comments == ["some comments Given And", ""]);
+    assert(feature.scenarios[0].given.ands[1].name == "contains_cash");
+    assert(feature.scenarios[0].given.ands[1].property.description == " the dispenser contains cash");
+    assert(feature.scenarios[0].given.ands[1].property.comments == [""]);
+    // check when
+    assert(feature.scenarios[0].when.info.name == "request_cash");
+    assert(feature.scenarios[0].when.info.property.description == " the Customer request cash");
+    assert(feature.scenarios[0].when.info.property.comments == ["some comments for When"]);
+    assert(feature.scenarios[0].when.ands.length == 0);
+    // check then
+    assert(feature.scenarios[0].then.info.name == "is_debited");
+    assert(feature.scenarios[0].then.info.property.description == " the account is debited");
+    assert(feature.scenarios[0].then.info.property.comments == ["some comments for Then", ""]);
+    assert(feature.scenarios[0].then.ands.length == 1);
+    assert(feature.scenarios[0].then.ands[0].name == "is_dispensed");
+    assert(feature.scenarios[0].then.ands[0].property.description == " the cash is dispensed");
+    assert(feature.scenarios[0].then.ands[0].property.comments == ["some comments for Then And", ""]);
+    // white space at the start of description
+    // only for one scenario
+}
 
 version (unittest) {
     import io = std.stdio;
     import tagion.basic.Basic : unitfile;
     import tagion.behaviour.BehaviourIssue : EXT;
     import std.stdio : File;
-
-    //    import std.file : fwrite = write, freadText = readText;
-
     import std.path;
-
 }
