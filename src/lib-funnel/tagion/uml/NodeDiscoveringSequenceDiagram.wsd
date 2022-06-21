@@ -11,81 +11,107 @@ participant NextActiveNode as cnode
 database "NextActiveNode's DB" as cdb
 
 node -> db : Init with initial list of nodes
+activate node
+activate db
 |||
 node -> db : Request latest epoch: **E_loc**
 db --> node : **E_loc**
 
 note right of node
-    **last_epoch_updated** = true
+    **update_needed** = true
 end note
-group updating according to last epoch [repeat while **last_epoch_updated** == true]
+loop while **update_needed** == true
 node -> db : Request list of nodes: **E_loc_nodes[]**
 db --> node : **E_loc_nodes[]**
 
 note right of node
-    **last_epoch_updated** = false
+    **update_needed** = false
 end note
 
-group checking next active node [repeat while exists unvisited node in **E_loc_nodes**]
-    node -> cnode : Request node's last epoch: **E_node**
+loop foreach node N_curr in E_loc_nodes
+    node -> cnode : Request **N_curr**'s last epoch: **E_node**
     activate cnode
     activate cdb
     cnode -> cdb : Request last epoch: **E_node**
     cdb --> cnode : **E_node**
     cnode --> node : **E_node**
 
-    alt **E_node** > **E_loc**
-        node -> cnode : Go to **E_loc** epoch in DB
-        loop while not reach **E_loc**
-            cnode -> cdb : Get previous epoch
-            cdb --> cnode : Previous epoch
+    alt #DCFFDC **E_node** > **E_loc**
+
+        group requestLastTrustedEpoch( E_loc ) [return **E_trust**]
         end
-        cnode --> node
-        
-        note right of node
-            **E_trust** = **E_loc**
-        end note
 
-        loop **E_trust** is not the last in epoch chain
-            note left of cnode
-                **E_ver** = **E_trust** + 1
-            end note
-            node -> cnode : Verify **E_ver** epoch
-            cnode -> cdb : Request **E_ver** signature
-            cdb --> cnode : **E_ver** signature
-            cnode --> node : **E_ver** signature
-            node -> node : Verify signature
-
-            alt signature verified
-                note left of cnode
-                    **E_trust** = **E_ver**
-                end note
-                node -> cnode : Request **E_trust** epoch data
-                cnode -> cdb : Request **E_trust** epoch data
-                cdb --> cnode : **E_trust** epoch
-                deactivate cdb
-                cnode --> node : **E_trust** epoch
-                node -> db : Replay **E_trust** epoch
-
-                note right of node
-                    **last_epoch_updated** = true
-                end note
-
-            else not verified
-                note left of cnode
-                    End working with this node
-                end note
-                deactivate cnode
+        alt #90F090 **E_trust** > **E_loc**
+            group syncEpochs [sync epochs (E_loc, ..., E_trust] with N_curr        ]
             end
+            note right of node
+                **update_needed** = true
+            end note
+            node --> node : Break foreach loop
+        else #FFDCDC else
+            node --> node : Skip this node
+            deactivate cdb
+            deactivate cnode
         end
-
-    else else
-        note left of cnode
-            Skip this node
-        end note
-        deactivate cdb
-        deactivate cnode
+    else #FFDCDC
+        node --> node : Skip this node
     end
 end
 end
+deactivate db
+deactivate node
+...
+group EpochNumber requestLastTrustedEpoch( E_loc )
+    node -> cnode : Go to **E_loc** epoch in DB
+    activate node
+    activate db
+    activate cnode
+    activate cdb
+    loop while not reach **E_loc**
+        cnode -> cdb : Get previous epoch
+        cdb --> cnode : Previous epoch
+    end
+    cnode --> node
+
+    loop foreach E_ver in (E_loc, ..., E_node]
+        node -> cnode : Request **E_ver** epoch signature
+        cnode -> cdb : Request **E_ver** signature
+        cdb --> cnode : **E_ver** signature
+        cnode --> node : **E_ver** signature
+        node -> node : Verify signature
+        note right of node #FFFFFF
+            Verify using trusted nodes
+        end note
+
+        alt #DCFFDC E_ver is trusted
+            node -> node : Next epoch
+        else #FFDCDC
+            node --> node : Return **E_ver-1**
+        end
+    end
+    node --> node : Return **E_node**
+end
+deactivate node
+deactivate db
+deactivate cnode
+deactivate cdb
+...
+group void syncEpochs( E_loc, E_trust )
+    node -> cnode : Request (**E_loc**, ..., **E_trust**] epochs
+    activate node
+    activate db
+    activate cnode
+    activate cdb
+    loop foreach E_curr in (E_loc, ..., E_trust]
+        cnode -> cdb : Read **E_curr** epoch data
+        cdb --> cnode : **E_curr** epoch data
+    end
+        cnode --> node : List of (**E_loc**, ..., **E_trust**] epochs
+        node -> db : Replay (**E_loc**, ..., **E_trust**] epochs
+deactivate node
+deactivate db
+deactivate cnode
+deactivate cdb
+end
+
 @enduml
