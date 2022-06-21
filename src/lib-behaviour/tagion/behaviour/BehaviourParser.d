@@ -11,12 +11,13 @@ import std.format;
 import tagion.behaviour.BehaviourException;
 
 enum feature_regex = regex([
-        `Feature(?:\s+|\:)`, /// Feature
-        `Scenario(?:\s+|\:)`, /// Scenario
+        `feature(?:\s+|\:)`, /// Feature
+        `scenario(?:\s+|\:)`, /// Scenario
         r"\s*\*(\w+)\*", /// Action
         r"`((?:\w+\.?)+)`", /// Module
         r"\s*`(\w+)`" /// Name
-    ]);
+        ], "i");
+
 
 enum Token {
     NONE,
@@ -33,12 +34,14 @@ enum State {
     Scenario,
 }
 
+@trusted
 FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!R)) {
     import std.stdio;
     import std.array;
     import std.stdio: write, writeln, writef, writefln;
     import std.algorithm.searching;
     import std.string;
+    import std.range : enumerate;
     FeatureGroup result;
     ScenarioGroup scenario_group;
 
@@ -51,11 +54,17 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
 
     writeln("STARTTTTTTT--------------------------------------------------------------------------------------------------------------");
    // string flag = "";
-    foreach (line; range) {
+    foreach (line_no, line; range.enumerate(1)) {
         writeln("______________________________________");
         auto match = range.front.matchFirst(feature_regex);
         writeln("match: ", match);
         writeln("line: ", line);
+        static foreach(member; __traits(allMembers, ScenarioGroup)) {
+            pragma(msg, "member ", member);
+            {
+                alias type_1=member;
+                }
+        }
        // writeln("state: ", state);
         //writeln("match.post: ", match.post);
 
@@ -63,21 +72,21 @@ FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!
 
         //if (match) {
             // io.writefln("match %s '%s' whichPattern=%d", match, match.post.strip, match.whichPattern);
-            const token = cast(Token)(match.whichPattern);
+            const Token token = cast(Token)(match.whichPattern);
             writeln("Token: ", token);
             with (Token) {
                 final switch (token) {
                 case NONE:
-                    string l = match.post.idup;
+                    immutable comment = match.post.strip.idup;
                     writeln("Hi from NONE!!!");
                     switch (state) {
                     case State.Feature:
                         writeln("1");
-                        info_feature.property.comments ~= strip(l);
+                        info_feature.property.comments ~= comment;
                         break;
                     case State.Scenario:
                         writeln("2");
-                        info_scenario.property.comments ~= strip(l);
+                        info_scenario.property.comments ~= comment;
                                                //check(result.scenarios.length > 0, format("Scenario has not been declared yet : %d", line));
                         //result.scenarios[$ - 1].comments ~= match.post.strip;
                         break;
