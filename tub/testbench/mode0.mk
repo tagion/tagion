@@ -91,7 +91,7 @@ check-mode0:
 	$(PRECMD)
 	${call log.header, $@ :: check}
 	echo "Bullseye mode0"
-	@${foreach node_no,0 1 2 3 4 5 6, dartutil --eye -d$(MODE0_DATA)/node$(node_no)/dart.drt;}
+	@${foreach node_no,0 1 2 3 4 5 6, $(DBIN)/dartutil --eye -d$(MODE0_DATA)/node$(node_no)/dart.drt;}
 	${call log.close}
 
 check: check-mode0
