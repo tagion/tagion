@@ -57,16 +57,15 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
 
     FeatureGroup result;
     ScenarioGroup scenario_group;
+    int scenarios_count;
 
     Info!Feature info_feature;
     Info!Scenario info_scenario;
     writeln(typeid(scenario_group.given));
 
     State state;
-    writeln("STARTTTTTTT--------------------------------------------------------------------------------------------------------------");
     int current_action_index = -1;
     foreach (line_no, line; range.enumerate(1)) {
-        writeln("______________________________________");
         auto match = range.front.matchFirst(feature_regex);
         writeln("match: ", match);
         writefln("%s:%d ", line, line_no);
@@ -111,6 +110,9 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
                 check(state is State.Start, format("Feature has already been declared in line %d", line));
                 writeln("Hi from Feature!!! ", line);
                 info_feature.property.description = match.post.idup;
+                if (info_feature.property.description[0] == ' ') {
+                    writeln("TODO FIX");
+                }
                 state = State.Feature;
                 break;
             case NAME:
@@ -157,7 +159,14 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
                 current_action_index = -1;
                 check(state is State.Feature || state is State.Scenario, format("Scenario must be declared after a Feature :%d", line));
                 writeln("Hi from SCENARIO!!! ", line);
+                if(scenarios_count) {
+                    result.scenarios ~= scenario_group;
+                    scenario_group = ScenarioGroup.init;
+                }
                 info_scenario.property.description = match.post.idup;
+                if (info_scenario.property.description[0] == ' ') {
+                    writeln("TODO FIX");
+                }
                 state = State.Scenario;
                 break;
             case ACTION:
@@ -171,6 +180,9 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
                             if (current_action_index == index) {
                                 Info!And and;
                                 and.property.description = match.post.idup;
+                                if (and.property.description[0] == ' ') {
+                                    writeln("TODO FIX");
+                                }
                                 pragma(msg, "Field ", Fields!ScenarioGroup[index]);
                                 pragma(msg, ":::", FieldNameTuple!(typeof(scenario_group.tupleof[index])));
                                 scenario_group.tupleof[index].ands ~= and;
@@ -200,6 +212,9 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
                                 writefln("!!!! %s", label.name);
                                 current_action_index = index;
                                 scenario_group.tupleof[index].info.property.description = match.post.idup;
+                                if (scenario_group.tupleof[index].info.property.description[0] == ' ') {
+                                    writeln("TODO FIX");
+                                }
 
                                 break TokenSwitch;
                             }
@@ -212,7 +227,9 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
     }
     scenario_group.info = info_scenario;
     result.info = info_feature;
+    
     result.scenarios ~= scenario_group;
+    
     import tagion.hibon.HiBONJSON : toPretty;
 
     writefln("pretty %s", result.toPretty);
@@ -266,6 +283,38 @@ unittest { /// Convert ProtoDBBTestComments to Feature
     assert(feature.scenarios[0].then.ands[0].property.comments == ["some comments for Then And", ""]);
     // white space at the start of description
     // only for one scenario
+}
+
+unittest { /// Convert ProtoBDD_nomodule_name to Feature
+    enum name = "ProtoBDD_nomodule_name";
+    immutable filename = name.unitfile.setExtension(EXT.Markdown);
+    io.writefln("filename=%s", filename);
+
+    auto feature_byline = File(filename).byLine;
+
+    alias ByLine = typeof(feature_byline);
+    pragma(msg, "isInputRange ", isInputRange!ByLine);
+    pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
+    pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
+
+    auto feature = parser(feature_byline);
+    // todo
+}
+
+unittest { /// Convert ProtoBDD_nofunc_name to Feature
+    enum name = "ProtoBDD_nofunc_name";
+    immutable filename = name.unitfile.setExtension(EXT.Markdown);
+    io.writefln("filename=%s", filename);
+
+    auto feature_byline = File(filename).byLine;
+
+    alias ByLine = typeof(feature_byline);
+    pragma(msg, "isInputRange ", isInputRange!ByLine);
+    pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
+    pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
+
+    auto feature = parser(feature_byline);
+    // todo
 }
 
 version (unittest) {
