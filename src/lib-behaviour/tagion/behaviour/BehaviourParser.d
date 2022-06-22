@@ -40,7 +40,14 @@ enum State {
 }
 
 @trusted
-FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!R)) {
+FeatureGroup parser(string filename) {
+    import std.stdio : File;
+    auto by_line = File(filename).byLine;
+    return parser(by_line, filename);
+}
+
+@trusted
+FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isSomeString!(ElementType!R)) {
     import std.stdio;
     import std.array;
     import std.stdio : write, writeln, writef, writefln;

@@ -1,11 +1,14 @@
 
-bdd:
-	echo $(BEHAVIOUR)
-	echo $(DINC)
+bdd: behaviour
+	$(PRECMD)
+	echo $(BEHAVIOUR) $(BDD_FLAGS)
+	$(BEHAVIOUR) $(BDD_FLAGS)
+
+#echo $(DINC)
 
 env-bdd:
 	$(PRECMD)
-	${call log.header, $$@ :: env}
+	${call log.header, $@ :: env}
 	${call log.env, BDD_FLAGS, $(BDD_FLAGS)}
 	${call log.close}
 
