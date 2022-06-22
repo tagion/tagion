@@ -23,7 +23,7 @@ import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
 import tagion.dart.BlockFile;
 import tagion.hibon.Document;
 import tagion.dart.DARTFile;
-import tagion.TaskWrapper;
+import tagion.tasks.TaskWrapper;
 
 mixin TrustedConcurrency;
 
@@ -490,7 +490,7 @@ int logSubscriptionTest(string[] args) {
 
     ClientOprions options;
     options.setDefault();
-    Thread.sleep(5.seconds);
+    Thread.sleep(3.seconds);
 
     /// @see SSLSocket
     auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
@@ -525,6 +525,6 @@ int logSubscriptionTest(string[] args) {
 
 int main(string[] args) {
     //return loggerServiceTest(args);
-    return recorderCliTest(args);
-    //return logSubscriptionTest(args);
+    //return recorderCliTest(args);
+    return logSubscriptionTest(args);
 }
