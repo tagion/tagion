@@ -19,3 +19,7 @@ help-bdd:
 	${call log.help, "make help-bdd", "Will display this part"}
 	${call log.help, "make bdd", "Generated the bdd files"}
 	${call log.close}
+
+.PHONY: help-bdd
+
+help: help-bdd
