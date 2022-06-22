@@ -10,12 +10,16 @@ import std.algorithm.iteration : filter, map, joiner;
 import std.algorithm.searching : endsWith;
 import std.regex;
 import std.parallelism : parallel;
+import std.array : join;
+import std.process : execute;
 
 import tagion.utils.JSONCommon;
 import tagion.basic.Types : FileExtension;
 import tagion.tools.revision;
 import tagion.behaviour.BehaviourParser;
+import tagion.behaviour.BehaviourIssue : Dlang, Markdown;
 
+enum DOT='.';
 struct BehaviourOptions {
     string[] paths;
     string bdd_ext;
@@ -23,12 +27,22 @@ struct BehaviourOptions {
     string bdd_dext; // Extension
     string regex_inc;
     string regex_exc;
-
-    void setDefault() pure nothrow {
+    string bdd_gen;
+    string gen;
+    string dfmt;
+    string[] dfmt_flags;
+    void setDefault() {
+        gen = "gen";
         bdd_ext = FileExtension.markdown;
         //  dsrc_ext = "." ~ FileExtension.dsrc;
-        bdd_dext = "gen." ~ FileExtension.dsrc;
+        bdd_gen = [gen, FileExtension.markdown].join(DOT);
+        bdd_dext = [gen, FileExtension.dsrc].join(DOT);
         regex_inc =   `/testbench/`;
+        const which_dfmt=execute(["which", "dfmt"]);
+        if (which_dfmt.status is 0) {
+            dfmt = which_dfmt.output;
+            dfmt_flags=["-i"];
+        }
     }
     mixin JSONCommon;
     mixin JSONConfig;
@@ -36,20 +50,17 @@ struct BehaviourOptions {
 
 
 const(char[]) stripDot(const(char[]) ext) pure nothrow @nogc {
-    if ((ext.length > 0) && (ext[0] == '.')) {
+    if ((ext.length > 0) && (ext[0] == DOT)) {
         return ext[1..$];
     }
     return ext;
 }
 
 int parse_bdd(ref const(BehaviourOptions) opts) {
-
-    auto bdd_files = dirEntries("", SpanMode.depth).filter!(f => f.name.endsWith(".d"));
-    writefln("paths %s", opts.paths);
-    writefln("opts=%s", opts);
     const regex_include = regex(opts.regex_inc);
     const regex_exclude = regex(opts.regex_exc);
-    auto bdd_dirs = opts.paths
+//    const do_format=
+    auto bdd_files = opts.paths
         .map!(path => dirEntries(path, SpanMode.depth))
         .joiner
         .filter!(f => f.isFile)
@@ -57,19 +68,37 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
         .filter!(f => (opts.regex_inc.length is 0) || !f.name.matchFirst(regex_include).empty)
         .filter!(f => (opts.regex_exc.length is 0) || f.name.matchFirst(regex_exclude).empty);
 
-    // const x="xxx".matchFirst(regex_include).empty;
     int result;
-    foreach (d; parallel(bdd_dirs)) {
-
+    foreach (d; parallel(bdd_files)) {
         auto dsource = d.name.setExtension(FileExtension.dsrc);
-//        const bdd_gen = dsource.setExtension
+        const bdd_gen = dsource.setExtension(opts.bdd_gen);
         if (dsource.exists) {
             dsource = dsource.setExtension(opts.bdd_dext);
         }
         writeln(d.name);
         writeln(dsource);
+        writeln(bdd_gen);
         try {
-            const feature=parser(d.name);
+            auto feature=parser(d.name);
+            { // Generate d-source file
+                auto fout = File(dsource, "w");
+                scope(exit) {
+                    fout.close;
+                }
+                auto dlang = Dlang(fout);
+                dlang.issue(feature);
+                if (opts.dfmt.length) {
+                    execute(opts.dfmt ~ opts.dfmt_flags ~ dsource);
+                }
+            }
+            { // Generate bdd-md file
+                auto fout = File(bdd_gen, "w");
+                scope(exit) {
+                    fout.close;
+                }
+                auto markdown = Markdown(fout);
+                markdown.issue(feature);
+            }
 
         }
         catch (Exception e) {
@@ -77,13 +106,6 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
             result++;
         }
     }
-//     foreach (d; parallel(dFiles, 1)) {
-// //passes by 1 file to each thread
-// //{
-//         string cmd = "dmd -c "  ~ d.name;
-//         writeln(cmd);
-//         executeShell(cmd);
-//     }
     return result;
 }
 
@@ -107,6 +129,10 @@ int main(string[] args) {
         "I", "Include directory", &options.paths,
         std.getopt.config.bundling,
         "O", format("Write configure file %s", config_file), &overwrite_switch,
+        "i|regex_inc", format("Include regex `%s`", options.regex_inc),
+        &options.regex_inc,
+        "x|regex_exc", format("Exclude regex `%s`", options.regex_exc),
+        &options.regex_exc
     );
 
     if (version_switch) {
