@@ -3,10 +3,13 @@ module tagion.tools.behaviour;
 import std.getopt;
 import std.stdio;
 import std.format;
-import std.file : exists;
-import std.string : join;
-import std.string : splitLines;
+import std.file : exists, dirEntries, SpanMode;
+import std.string : join, splitLines;
+import std.algorithm.iteration : filter;
+import std.algorithm.searching : endsWith;
+
 import tagion.utils.JSONCommon;
+import tagion.basic.Types : FileExtension;
 import tagion.tools.revision;
 
 struct BehaviourOptions {
@@ -22,16 +25,17 @@ struct BehaviourOptions {
 int parse_bdd(ref const(BehaviourOptions) opts) {
 
     auto bdd_files = dirEntries("", SpanMode.depth).filter!(f => f.name.endsWith(".d"));
-foreach (d; dFiles)
-    writeln(d.name);
+    foreach (d; bdd_files)
+        writeln(d.name);
 
-    foreach (d; parallel(dFiles, 1)) {
-//passes by 1 file to each thread
-//{
-        string cmd = "dmd -c "  ~ d.name;
-        writeln(cmd);
-        executeShell(cmd);
-    }
+//     foreach (d; parallel(dFiles, 1)) {
+// //passes by 1 file to each thread
+// //{
+//         string cmd = "dmd -c "  ~ d.name;
+//         writeln(cmd);
+//         executeShell(cmd);
+//     }
+    return 0;
 }
 
 int main(string[] args) {
