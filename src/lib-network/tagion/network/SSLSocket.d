@@ -336,9 +336,9 @@ class SSLSocket : Socket {
                 throw new SSLSocketException("Socket could not connect to client. Socket closed.");
             }
             client.blocking = false;
-            ssl_client = new SSLSocket(client.handle, EndpointType.Server, AddressFamily.INET);
+            ssl_client = new SSLSocket(client.handle, EndpointType.Server, client.addressFamily);
             const fd_res = SSL_set_fd(ssl_client.getSSL, client.handle);
-            if (fd_res) {
+            if (!fd_res) {
                 return false;
             }
         }
@@ -348,8 +348,8 @@ class SSLSocket : Socket {
         const res = SSL_accept(c_ssl);
         bool accepted;
 
-        const ssl_error = cast(SSLErrorCodes) SSL_get_error(c_ssl, res);
-
+        const ssl_error = cast(SSLErrorCodes) SSL_get_error(c_ssl, res);        
+        
         with (SSLErrorCodes) switch (ssl_error) {
         case SSL_ERROR_NONE:
             accepted = true;
@@ -428,33 +428,46 @@ class SSLSocket : Socket {
         init(true, et);
     }
 
-    static ~this() {
+    static private void reset() {
         if (server_ctx !is null)
-            SSL_CTX_free(server_ctx);
+            SSL_CTX_free(server_ctx), server_ctx = null;
         if (client_ctx !is null)
-            SSL_CTX_free(client_ctx);
+            SSL_CTX_free(client_ctx), client_ctx = null;
     }
+
+    static ~this() {
+        reset();
+    }    
         
     //! [client creation circle]
     unittest
-    {  
-           import std.stdio;        
+    {      
+           /*
+           check_error(...)
+           configureContext
+           acceptSSL
+           */
+           import std.stdio;           
            writeln("LAUNCH UNIT TEST SSL_Socket");
-           SSLSocket testItem_client = new SSLSocket(AddressFamily.UNSPEC, EndpointType.Client);
+           SSLSocket testItem_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
            assert(testItem_client._ctx != null);
            assert(SSLSocket.server_ctx == null);
            assert(SSLSocket.client_ctx != null);
            assert(SSLSocket.client_ctx == testItem_client._ctx);
+           SSLSocket.reset();
     }
 
     //! [server creation circle]
     unittest
     {
-           SSLSocket testItem_server = new SSLSocket(AddressFamily.UNSPEC, EndpointType.Server);
+           import std.stdio;
+           writeln("LAUNCH SERVER CREATION CIRCLE");     
+           SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
            assert(testItem_server._ctx != null);
            assert(SSLSocket.server_ctx != null);
            assert(SSLSocket.client_ctx == null);
            assert(SSLSocket.server_ctx == testItem_server._ctx);
+           SSLSocket.reset();
     }
 
     //! [Acception] 
@@ -462,11 +475,118 @@ class SSLSocket : Socket {
     {
         import std.stdio;
         import std.array;
-        SSLSocket item = new SSLSocket(AddressFamily.UNSPEC, EndpointType.Server);
-        SSLSocket arg_one = new SSLSocket(AddressFamily.UNSPEC, EndpointType.Client);
-        Socket arg_two = new Socket(AddressFamily.UNSPEC, SocketType.STREAM);
-        bool result = item.acceptSSL(arg_one, arg_two);
-        auto writearg = "RESULT : ";
-        writeln(join([writearg, result ? "TRUE" : "FALSE"]));
+        writeln("LAUNCH ACCEPTION");  
+        SSLSocket item = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+        SSLSocket arg_one = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
+        Socket arg_two = new Socket(AddressFamily.UNIX, SocketType.STREAM);
+        bool result = false;
+        try {
+            result = item.acceptSSL(arg_one, arg_two);
+        }
+        catch(SSLSocketException exception)
+        {
+            writeln("EXEPTION ACCEPTION CORRECT "~exception.msg);
+            assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SSL);
+        }
+        assert(result == false);
+        SSLSocket.reset();
+    }
+
+    //! [File reading - incorrect]
+    unittest
+    {
+        import std.stdio;
+        SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+        bool result = true;
+        try {
+            testItem_server.configureContext("_", "_");
+        }
+        catch(SSLSocketException _exception)
+        {
+            writeln("Exception load file "~_exception.msg);
+            result = false;
+        }
+        assert(result == false);
+        SSLSocket.reset();
+    }
+
+    //! [file loading correct]
+    unittest
+    {
+        import std.stdio;
+        writeln("Load certificate/key files");
+        string cert_path = "../../../pem_files/domain.pem";
+        string key_path = "../../../pem_files/domain.key.pem";
+        SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+        try {
+            testItem_server.configureContext(cert_path, key_path);
+        }
+        catch(SSLSocketException exception)
+        {
+            writeln("TEST FAILED: check files/paths");
+            assert(false);
+        }
+        SSLSocket.reset();
+    }
+
+
+    //! [file loading key incorrect]
+    unittest
+    {
+        import std.stdio;
+        writeln("Load false key files");
+        string cert_path = "../../../pem_files/domain.pem";
+        auto false_key_path = cert_path;
+        SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+        bool flag = false;
+        try {
+            testItem_server.configureContext(cert_path, false_key_path);
+        }
+        catch(SSLSocketException exception)
+        {
+            flag = true;
+            writeln("TEST Complete: test thow exception "~exception.msg);
+        }
+        assert(flag);
+        SSLSocket.reset();
+    }
+
+    //! [correct acception]
+    unittest 
+    {        
+        import std.stdio;
+        import std.string;
+        writeln("PROTO SOCKET ACCEPTION START");
+        SSLSocket void_pointer = null;
+        SSLSocket socket = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
+        Socket arg_two = new Socket(AddressFamily.UNIX, SocketType.STREAM);
+        bool flag = false;
+        try {
+            flag = socket.acceptSSL(void_pointer, arg_two);
+        }
+        catch(SSLSocketException exception)
+        {            
+            writeln("PROTO SOCKET ACCEPTION"~exception.msg~"___"~lastSocketError);
+        } //*/        
+        writeln("PROTO SOCKET ACCEPTION FINISH "~(flag? "TRUE":"FALSE")~((void_pointer is null)? " NO CHANGED" : " is NULL"));
+        //assert(flag);
+    }
+
+     //! [error checking]
+    unittest 
+    {
+        SSLSocket socket = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+        int expetion_count = 0;
+        for (int k = -1; k < 2; k++)
+        {
+            try {            
+                socket.check_error(k, true);
+            }
+            catch(SSLSocketException except)
+            {
+                expetion_count++;
+            }
+        }
+        assert(expetion_count == 2);
     }
 }
