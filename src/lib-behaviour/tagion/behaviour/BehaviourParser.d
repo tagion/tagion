@@ -168,6 +168,7 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
                     writeln("TODO FIX");
                 }
                 state = State.Scenario;
+                scenarios_count ++;
                 break;
             case ACTION:
                 writeln("Hi from action!!!!!!!!!!!!");
