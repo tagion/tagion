@@ -106,6 +106,7 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
             result++;
         }
     }
+    writeln("retttttttttttttttttttttttttt");
     return result;
 }
 
@@ -164,8 +165,10 @@ int main(string[] args) {
                 main_args.options);
         return 0;
     }
+    writeln("1111111111111111111111111111");
 
     auto result = parse_bdd(options);
+    writeln("2222222222222222222222222222");
 
     return result;
 }

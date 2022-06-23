@@ -107,7 +107,7 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
                 break;
             case FEATURE:
                 current_action_index = -1;
-                check(state is State.Start, format("Feature has already been declared in line %d", line));
+               // check(state is State.Start, format("Feature has already been declared in line %d", line));
                 writeln("Hi from Feature!!! ", line);
                 info_feature.property.description = match.post.idup;
                 if (info_feature.property.description[0] == ' ') {
@@ -157,9 +157,11 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
                 break;
             case SCENARIO:
                 current_action_index = -1;
-                check(state is State.Feature || state is State.Scenario, format("Scenario must be declared after a Feature :%d", line));
+                //check(state is State.Feature || state is State.Scenario, format("Scenario must be declared after a Feature :%d", line));
                 writeln("Hi from SCENARIO!!! ", line);
                 if(scenarios_count) {
+                    //writeln("WOOOOOOOOOOOOOOOOOOOOOOOOW:   ", scenario_group.)
+                    scenario_group.info = info_scenario;
                     result.scenarios ~= scenario_group;
                     scenario_group = ScenarioGroup.init;
                 }
@@ -316,6 +318,41 @@ unittest { /// Convert ProtoBDD_nofunc_name to Feature
 
     auto feature = parser(feature_byline);
     // todo
+}
+
+unittest { /// Convert MonitorLogger_test to Feature
+import std.stdio;
+    enum name = "MonitorLogger_test";
+    immutable filename = name.unitfile.setExtension(EXT.Markdown);
+    io.writefln("filename=%s", filename);
+
+    auto feature_byline = File(filename).byLine;
+
+    alias ByLine = typeof(feature_byline);
+    pragma(msg, "isInputRange ", isInputRange!ByLine);
+    pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
+    pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
+    auto feature = parser(feature_byline);
+   
+    // check feature
+    assert(feature.info.property.description == " Connection remote to the logger service.");
+    assert(feature.info.property.comments == ["Takes care of the communication between the logger client and the logger service.", "", ""]);
+    // check scenario
+    assert(feature.scenarios[0].info.property.description == " Connecting the logger client to logger service");
+    // check given
+    assert(feature.scenarios[0].given.info.property.description == " the logger client is started");
+    assert(feature.scenarios[0].given.ands[0].property.description == " the client is connected to the logger service");
+    // check when
+    assert(feature.scenarios[0].when.info.property.description == " the client is connected success fully.");
+    // check then
+    assert(feature.scenarios[0].then.info.property.description == " send credential request to the logger.");
+    assert(feature.scenarios[0].then.ands[0].property.description == " then check that the credential has been verified.");
+    assert(feature.scenarios[1].info.property.description == " Rejection of the logger client.");
+    assert(feature.scenarios[1].given.info.property.description == " the logger client is started(2)");
+    assert(feature.scenarios[1].given.ands[0].property.description == " the client is connected to the logger service(2)");
+    assert(feature.scenarios[1].when.info.property.description == " the client is connected success fully(2)");
+    assert(feature.scenarios[1].then.info.property.description == " send bad credential request to the logger.(2)");
+    assert(feature.scenarios[1].then.ands[0].property.description == " then check that the credential has been rejected.(2)");
 }
 
 version (unittest) {
