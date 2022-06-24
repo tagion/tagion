@@ -850,8 +850,6 @@ int _main(string[] args) {
             // Add the invoice to the list
             wallet_interface.payment_requests.list ~= new_invoice;
             options.paymentrequestsfile.fwrite(wallet_interface.payment_requests);
-            // Writes the invoice-file to a file named <name>_<invoicefile>
-            // writefln("invoicefile=%s", invoicefile);
             invoicefile.fwrite(new_invoice);
         }
         else if (orders !is orders.init) {
