@@ -473,11 +473,11 @@ class SSLSocket : Socket {
         import std.array;
         writeln("LAUNCH ACCEPTION");  
         SSLSocket item = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
-        SSLSocket arg_one = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
-        Socket arg_two = new Socket(AddressFamily.UNIX, SocketType.STREAM);
+        SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
+        Socket client = new Socket(AddressFamily.UNIX, SocketType.STREAM);
         bool result = false;
         try {
-            result = item.acceptSSL(arg_one, arg_two);
+            result = item.acceptSSL(ssl_client, client);
         }
         catch(SSLSocketException exception)
         {
@@ -567,18 +567,18 @@ class SSLSocket : Socket {
         import std.stdio;
         import std.string;
         writeln("PROTO SOCKET ACCEPTION START");
-        SSLSocket null_pointer = null;
-        SSLSocket socket = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
-        Socket arg_two = new Socket(AddressFamily.UNIX, SocketType.STREAM);
+        SSLSocket empty_socket = null;
+        SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
+        Socket socket = new Socket(AddressFamily.UNIX, SocketType.STREAM);
         bool flag = false;
         try {
-            flag = socket.acceptSSL(null_pointer, arg_two);
+            flag = ssl_client.acceptSSL(empty_socket, socket);
         }
         catch(SSLSocketException exception)
         {            
             writeln("PROTO SOCKET ACCEPTION"~exception.msg~"___"~lastSocketError);
         } //*/
-        writeln("PROTO SOCKET ACCEPTION FINISH "~(flag? "TRUE":"FALSE")~((null_pointer is null)? " NO CHANGED" : " is NULL"));
+        writeln("PROTO SOCKET ACCEPTION FINISH "~(flag? "TRUE":"FALSE")~((empty_socket is null)? " NO CHANGED" : " is NULL"));
         //assert(flag);
     }
 
