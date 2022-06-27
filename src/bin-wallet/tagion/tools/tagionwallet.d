@@ -543,6 +543,7 @@ int _main(string[] args) {
     bool send_flag;
     string create_invoice_command;
     bool print_amount;
+    bool unlock_bills;
     string path;
     string invoicefile = "invoice_file.hibon";
 
@@ -583,7 +584,8 @@ int _main(string[] args) {
             "questions", "Questions for wallet creation", &questions_str,
             "answers", "Answers for wallet creation", &answers_str,
             "generate-wallet", "Create a new wallet", &generate_wallet,
-            "health", "Healthcheck the node", &check_health
+            "health", "Healthcheck the node", &check_health,
+            "Unlock bills", "Remove lock from all local bills", &unlock_bills
             );
     }
     catch (GetOptException e) {
@@ -685,58 +687,6 @@ int _main(string[] args) {
         return 0;
     }
 
-    version(OLD_CODE)
-    if(update_wallet){
-        HiRPC hirpc;
-        Buffer prepareSearch(Buffer[] owners){
-            HiBON params = new HiBON;
-            foreach(i, owner; owners){
-                params[i] = owner;
-            }
-            const sender=hirpc.action("search", params);
-            immutable data=sender.toDoc.serialize;
-            return data;
-        }
-
-        // writeln(accounts.length);
-        StandardBill[] new_bills;
-        Buffer[] pkeys;
-        foreach(pkey, dkey; accounts){
-            pkeys~=cast(Buffer)pkey;
-        }
-        auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-        client.connect(new InternetAddress(addr, port));
-        scope(exit) {
-            client.close;
-        }
-        client.blocking=true;
-        // writefln("looking for %s", (cast(Buffer)pkey).toHexString);
-        auto to_send = prepareSearch(pkeys);
-        client.send(to_send);
-
-        auto rec_buf=new void[4000];
-        ptrdiff_t rec_size;
-
-        do {
-            rec_size = client.receive(rec_buf); //, current_max_size);
-            // writefln("read rec_size=%d", rec_size);
-            Thread.sleep(400.msecs);
-        } while (rec_size < 0);
-        auto resp_doc = Document(cast(Buffer)rec_buf[0..rec_size]);
-        auto received = hirpc.receive(resp_doc);
-        if(!received.error.hasMethod(Keywords.code)){
-            foreach(bill; received.params[]){
-                auto std_bill = StandardBill(bill.get!Document);
-                new_bills ~= std_bill;
-            }
-            billsfile.updateBills(new_bills);
-            bills = new_bills;
-            writeln("Wallet updated");
-        }else{
-            writeln("Wallet update failed");
-        }
-    }
-
     if (generate_wallet) {
         const questions = questions_str.split(',');
         const answers = answers_str.split(',');
@@ -830,7 +780,9 @@ int _main(string[] args) {
             return 8;
         }
     }
-
+    if(unlock_bills){
+        wallet_interface.secure_wallet.deactivate_bills;
+    }
       if (update_wallet) {
         
         // writefln("looking for %s", (cast(Buffer)pkey).toHexString);
@@ -878,7 +830,7 @@ int _main(string[] args) {
     }
     else {
         if (print_amount) {
-            writefln("%s", wallet_interface.secure_wallet.account.total);
+            writefln("Total: %s\n Available: %s\n Locked: %s", wallet_interface.secure_wallet.total_balance, wallet_interface.secure_wallet.available_balance, wallet_interface.secure_wallet.active_balance);
         }
         if (create_invoice_command.length) {
             scope invoice_args = create_invoice_command.splitter(":");

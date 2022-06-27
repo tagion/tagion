@@ -290,6 +290,10 @@ import tagion.wallet.WalletException : check;
         return account.total;
     }
 
+    void deactivate_bills(){
+        account.activated.clear;
+    }
+
     const(HiRPC.Sender) get_request_update_wallet() const {
         HiRPC hirpc;
         auto h = new HiBON;
