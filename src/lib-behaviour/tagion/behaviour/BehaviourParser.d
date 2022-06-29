@@ -7,16 +7,20 @@ import std.traits;
 import std.regex;
 import std.string : strip;
 import std.format;
-
+import tagion.hibon.HiBONRecord : RecordType, GetLabel;
+import std.traits : Fields;
+import std.meta;
+import std.uni : toLower;
 import tagion.behaviour.BehaviourException;
+import tagion.behaviour.BehaviourBase : UniqueBehaviourProperties;
 
 enum feature_regex = regex([
-        `Feature(?:\s+|\:)`, /// Feature
-        `Scenario(?:\s+|\:)`, /// Scenario
+        `feature(?:\s+|\:)`, /// Feature
+        `scenario(?:\s+|\:)`, /// Scenario
         r"\s*\*(\w+)\*", /// Action
         r"\s*`(\w+)`", /// Name
-        r"`((?:\w+\.?)+)`" /// Module
-    ]);
+        r"`((?:\w+\.?)+)`", /// Module
+    ], "i");
 
 enum Token {
     NONE,
@@ -24,82 +28,195 @@ enum Token {
     SCENARIO,
     ACTION,
     NAME,
-    MODULE
+    MODULE,
 }
 
 enum State {
     Start,
     Feature,
     Scenario,
+    Action,
+    And_Action,
 }
 
-FeatureGroup parser(R)(R range) if (isInputRange!R && isSomeString!(ElementType!R)) {
+@trusted
+FeatureGroup parser(string filename) {
+    import std.stdio : File;
+    auto by_line = File(filename).byLine;
+    return parser(by_line, filename);
+}
+
+@trusted
+FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isSomeString!(ElementType!R)) {
+    import std.stdio;
+    import std.array;
+    import std.stdio : write, writeln, writef, writefln;
+    import std.algorithm.searching;
+    import std.string;
+    import std.range : enumerate;
+
     FeatureGroup result;
+    ScenarioGroup scenario_group;
+    int scenarios_count;
+    Info!Feature info_feature;
+    Info!Scenario info_scenario;
+
     State state;
-
-    foreach (line; range) {
+    int current_action_index = -1;
+    foreach (line_no, line; range.enumerate(1)) {
         auto match = range.front.matchFirst(feature_regex);
-        io.writefln("match %s : %s", match, line);
-
-        if (match) {
-            // io.writefln("match %s '%s' whichPattern=%d", match, match.post.strip, match.whichPattern);
-            const token = cast(Token)(match.whichPattern);
-            with (Token) {
-                final switch (token) {
-                case NONE:
-                    io.writeln("None");
-                    switch (state) {
-                    case State.Feature:
-                        //                        result.info.comments~=match.post.strip;
-                        break;
-                    case State.Scenario:
-                        //                        check(result.scenarios.length > 0, format("Scenario has not been declared yet : %d", line));
-                        result.scenarios[$ - 1].comments ~= match.post.strip;
-                        break;
-                    default:
-                        /// Empty
+        writeln("match: ", match);
+        writefln("%s:%d ", line, line_no);
+        const Token token = cast(Token)(match.whichPattern);
+        writeln("Token: ", token);
+        with (Token) {
+        TokenSwitch:
+            final switch (token) {
+            case NONE:
+                immutable comment = match.post.strip.idup;
+            StateSwitch:
+                final switch (state) {
+                case State.Feature:
+                    info_feature.property.comments ~= comment;
+                    break;
+                case State.Scenario:
+                    info_scenario.property.comments ~= comment;
+                    break;
+                case State.Action:
+                case State.And_Action:
+                    static foreach (index, Field; Fields!ScenarioGroup) {
+                        static if (hasMember!(Field, "info")) {
+                            if (current_action_index is index) {
+                                if (state == State.And_Action) {
+                                    scenario_group.tupleof[index].ands[$ - 1].property.comments ~= comment;
+                                    break StateSwitch;
+                                }
+                                scenario_group.tupleof[index].info.property.comments ~= comment;
+                            }
+                        }
                     }
-
                     break;
-                case FEATURE:
-                    check(state is State.Start, format("Feature has already been declared in line %d", line));
-                    state = State.Feature;
-                    //                    result.info.description = match.post.strip;
-                    io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
-                    break;
-                case MODULE:
-                    check(state is State.Feature, format("Module name can only be declare after the Feature declaration :%d", line));
-                    //                    result.info.name=match[1];
-                    io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
-                    break;
-                case SCENARIO:
-                    check(state is State.Feature || state is State.Scenario, format("Scenario must be declared after a Feature :%d", line));
-                    state = State.Scenario;
-                    //                    result.scenarios ~= Scenario(match.post.strip);
-                    io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
-                    break;
-                case ACTION:
-                    io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
-                    break;
-                case NAME:
-                    io.writefln("%s %s '%s' whichPattern=%d", token, match, match.post.strip, match.whichPattern);
-
+                case State.Start:
+                    check(0, format("Missing feature declaration %s:%d", line, line_no));
                 }
-            }
-            //             range.popFront;
+                break;
+            case FEATURE:
+                current_action_index = -1;
+               // check(state is State.Start, format("Feature has already been declared in line %d", line));
+                info_feature.property.description = match.post.idup;
+                state = State.Feature;
+                break;
+            case NAME:
+            case MODULE:
+                check((token is MODULE) || (state !is State.Feature),
+                        format("Illegal (namespace) name %s for %s", match[1], match.pre));
+                // check(state is State.Feature, format("Module name can only be declare after the Feature declaration :%d", line)); HERE!!!
+                final switch (state) {
+                case State.Feature:
+                    info_feature.name = match[1].idup;
+                    break TokenSwitch;
+                case State.Scenario:
+                    info_scenario.name = match[1].idup;
+                    break TokenSwitch;
+                case State.Action:
+                case State.And_Action:
+                    static foreach (index, Field; Fields!ScenarioGroup) {
+                        static if (hasMember!(Field, "info")) {
+                            if (current_action_index is index) {
+                                if (state is State.And_Action) {
+                                    scenario_group.tupleof[index].ands[$ - 1].name = match[1].idup;
+                                    break TokenSwitch;
+                                }
+                                writefln("scenario_group.tupleof[index].info.name = %s", scenario_group.tupleof[index]
+                                        .info.name);
+                                check(scenario_group.tupleof[index].info.name.length == 0,
+                                     format("Action name has already been defined %s", match[0], scenario_group.tupleof[index].info.name));
 
-            // //auto module_match=
-            //             return;
+                                scenario_group.tupleof[index].info.name = match[1].idup;
+                                break TokenSwitch;
+
+                            }
+                        }
+                    }
+                    break TokenSwitch;
+                case State.Start:
+                    writefln("Start %s", match);
+                    break TokenSwitch;
+                }
+                check(0, format("No valid action has %s", match[1]));
+                break;
+            case SCENARIO:
+                current_action_index = -1;
+                //check(state is State.Feature || state is State.Scenario, format("Scenario must be declared after a Feature :%d", line));
+                if(scenarios_count) {
+                    scenario_group.info = info_scenario;
+                    result.scenarios ~= scenario_group;
+                    scenario_group = ScenarioGroup.init;
+                }
+                info_scenario.property.description = match.post.idup;
+                state = State.Scenario;
+                scenarios_count ++;
+                break;
+            case ACTION:
+                state = State.Action;
+                scope const action_word = match[1].toLower;
+                if (action_word == "and") {
+                    check(current_action_index >= 0, "Missing action Given, When or Then before And");
+                    static foreach (index, Field; Fields!ScenarioGroup) {
+                        static if (isBehaviourGroup!Field) {
+                            if (current_action_index == index) {
+                                Info!And and;
+                                and.property.description = match.post.idup;
+                                pragma(msg, "Field ", Fields!ScenarioGroup[index]);
+                                pragma(msg, ":::", FieldNameTuple!(typeof(scenario_group.tupleof[index])));
+                                scenario_group.tupleof[index].ands ~= and;
+                                pragma(msg, ":::", typeof(scenario_group.tupleof[index].ands));
+                            }
+                        }
+                    }
+                    state = State.And_Action;
+                    break;
+                }
+                alias BehaviourGroups = staticMap!(BehaviourGroup, UniqueBehaviourProperties);
+                pragma(msg, "BehaviourGroups ", BehaviourGroups);
+                writefln("Action match %s", match);
+                static foreach (index, Field; Fields!ScenarioGroup) {
+                    {
+                        enum field_index = staticIndexOf!(Field, BehaviourGroups);
+                        static if (field_index >= 0) {
+                            alias label = GetLabel!(scenario_group.tupleof[index]);
+                            pragma(msg, "___action_name ", label.name);
+                            enum action_name = label.name;
+                            pragma(msg, "action_name ", action_name);
+
+                            writefln("action %s match = %s index=%d", action_name, match[1].toLower, index);
+
+                            if (match[1].toLower == label.name) {
+                                writefln("!!!! %s", label.name);
+                                current_action_index = index;
+                                scenario_group.tupleof[index].info.property.description = match.post.idup;
+                                break TokenSwitch;
+                            }
+                        }
+                    }
+                }
+                break;
+            }
         }
     }
+    scenario_group.info = info_scenario;
+    result.info = info_feature;
+    result.scenarios ~= scenario_group;
+    import tagion.hibon.HiBONJSON : toPretty;
+
+    writefln("pretty %s", result.toPretty);
     return result;
 }
 
-unittest { /// Convert ProtoBDD to Feature
-    enum name = "ProtoBDD";
+unittest { /// Convert ProtoDBBTestComments to Feature
+    enum name = "ProtoDBBTestComments";
     immutable filename = name.unitfile.setExtension(EXT.Markdown);
     io.writefln("filename=%s", filename);
-    //   immutable mdsrc=filename.freadText;
 
     auto feature_byline = File(filename).byLine;
 
@@ -108,7 +225,144 @@ unittest { /// Convert ProtoBDD to Feature
     pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
     pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
 
-    //    auto feature=parser(feature_byline);
+    auto feature = parser(feature_byline);
+    // check feature
+    assert(feature.info.name == "tagion.behaviour.unittest.ProtoBDD");
+    assert(feature.info.property.description == " Some awesome feature should print some cash out of the blue(descr)");
+    assert(feature.info.property.comments == ["Some addtion notes", "my comment1", "my comment2 a lot spaces", ""]);
+    // check scenario
+    assert(feature.scenarios[0].info.name == "Some_awesome_money_printer");
+    assert(feature.scenarios[0].info.property.description == " Some awesome money printer");
+    assert(feature.scenarios[0].info.property.comments == ["\u200B   comments", ""]); // Why?
+    // check given
+    assert(feature.scenarios[0].given.info.name == "is_valid");
+    assert(feature.scenarios[0].given.info.property.description == " the card is valid");
+    assert(feature.scenarios[0].given.info.property.comments == ["some comments scenario", ""]);
+    assert(feature.scenarios[0].given.ands.length == 2);
+    assert(feature.scenarios[0].given.ands[0].name == "in_credit");
+    assert(feature.scenarios[0].given.ands[0].property.description == " the account is in credit");
+    assert(feature.scenarios[0].given.ands[0].property.comments == ["some comments Given And", ""]);
+    assert(feature.scenarios[0].given.ands[1].name == "contains_cash");
+    assert(feature.scenarios[0].given.ands[1].property.description == " the dispenser contains cash");
+    assert(feature.scenarios[0].given.ands[1].property.comments == [""]);
+    // check when
+    assert(feature.scenarios[0].when.info.name == "request_cash");
+    assert(feature.scenarios[0].when.info.property.description == " the Customer request cash");
+    assert(feature.scenarios[0].when.info.property.comments == ["some comments for When"]);
+    assert(feature.scenarios[0].when.ands.length == 0);
+    // check then
+    assert(feature.scenarios[0].then.info.name == "is_debited");
+    assert(feature.scenarios[0].then.info.property.description == " the account is debited");
+    assert(feature.scenarios[0].then.info.property.comments == ["some comments for Then", ""]);
+    assert(feature.scenarios[0].then.ands.length == 1);
+    assert(feature.scenarios[0].then.ands[0].name == "is_dispensed");
+    assert(feature.scenarios[0].then.ands[0].property.description == " the cash is dispensed");
+    assert(feature.scenarios[0].then.ands[0].property.comments == ["some comments for Then And", ""]);
+}
+
+unittest { /// Convert ProtoBDD_nomodule_name to Feature
+    enum name = "ProtoBDD_nomodule_name";
+    immutable filename = name.unitfile.setExtension(EXT.Markdown);
+    io.writefln("filename=%s", filename);
+
+    auto feature_byline = File(filename).byLine;
+
+    alias ByLine = typeof(feature_byline);
+    pragma(msg, "isInputRange ", isInputRange!ByLine);
+    pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
+    pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
+
+    auto feature = parser(feature_byline);
+    assert(feature.info.property.description == " Some awesome feature should print some cash out of the blue");
+    assert(feature.info.property.comments == ["Some addtion notes"]);
+    // check scenario
+    assert(feature.scenarios[0].info.property.description == " Some awesome money printer");
+    // check given
+    assert(feature.scenarios[0].given.info.name == "is_valid");
+    assert(feature.scenarios[0].given.info.property.description == " the card is valid");
+    assert(feature.scenarios[0].given.ands.length == 2);
+    assert(feature.scenarios[0].given.ands[0].name == "in_credit");
+    assert(feature.scenarios[0].given.ands[0].property.description == " the account is in credit");
+    assert(feature.scenarios[0].given.ands[1].name == "contains_cash");
+    assert(feature.scenarios[0].given.ands[1].property.description == " the dispenser contains cash");
+    // check when
+    assert(feature.scenarios[0].when.info.name == "request_cash");
+    assert(feature.scenarios[0].when.info.property.description == " the Customer request cash");
+    assert(feature.scenarios[0].when.ands.length == 0);
+    // check then
+    assert(feature.scenarios[0].then.info.name == "is_debited");
+    assert(feature.scenarios[0].then.info.property.description == " the account is debited");
+    assert(feature.scenarios[0].then.ands.length == 1);
+    assert(feature.scenarios[0].then.ands[0].name == "is_dispensed");
+    assert(feature.scenarios[0].then.ands[0].property.description == " the cash is dispensed");
+}
+
+unittest { /// Convert ProtoBDD_nofunc_name to Feature
+    enum name = "ProtoBDD_nofunc_name";
+    immutable filename = name.unitfile.setExtension(EXT.Markdown);
+    io.writefln("filename=%s", filename);
+
+    auto feature_byline = File(filename).byLine;
+
+    alias ByLine = typeof(feature_byline);
+    pragma(msg, "isInputRange ", isInputRange!ByLine);
+    pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
+    pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
+
+    auto feature = parser(feature_byline);
+    
+    // check feature
+    assert(feature.info.name == "tagion.behaviour.unittest.ProtoBDD_nofunc_name");
+    assert(feature.info.property.description == " Some awesome feature should print some cash out of the blue");
+    assert(feature.info.property.comments == ["Some addtion notes", ""]);
+    // check scenario
+    assert(feature.scenarios[0].info.property.description == " Some awesome money printer");
+    // check given
+    assert(feature.scenarios[0].given.info.property.description == " the card is valid");
+    assert(feature.scenarios[0].given.ands.length == 2);
+    assert(feature.scenarios[0].given.ands[0].property.description == " the account is in credit");
+    assert(feature.scenarios[0].given.ands[1].property.description == " the dispenser contains cash");
+    // check when
+    assert(feature.scenarios[0].when.info.property.description == " the Customer request cash");
+    assert(feature.scenarios[0].when.ands.length == 0);
+    // check then
+    assert(feature.scenarios[0].then.info.property.description == " the account is debited");
+    assert(feature.scenarios[0].then.ands.length == 1);
+    assert(feature.scenarios[0].then.ands[0].property.description == " the cash is dispensed");
+}
+
+unittest { /// Convert MonitorLogger_test to Feature
+    enum name = "MonitorLogger_test";
+    immutable filename = name.unitfile.setExtension(EXT.Markdown);
+    io.writefln("filename=%s", filename);
+
+    auto feature_byline = File(filename).byLine;
+
+    alias ByLine = typeof(feature_byline);
+    pragma(msg, "isInputRange ", isInputRange!ByLine);
+    pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
+    pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
+    auto feature = parser(feature_byline);
+   
+    // check feature
+    assert(feature.info.property.description == " Connection remote to the logger service.");
+    assert(feature.info.property.comments == ["Takes care of the communication between the logger client and the logger service.", "", ""]);
+    // check scenario
+    assert(feature.scenarios[0].info.property.description == " Connecting the logger client to logger service");
+    // check given
+    assert(feature.scenarios[0].given.info.property.description == " the logger client is started");
+    assert(feature.scenarios[0].given.ands[0].property.description == " the client is connected to the logger service");
+    // check when
+    assert(feature.scenarios[0].when.info.property.description == " the client is connected success fully.");
+    // check then
+    assert(feature.scenarios[0].then.info.property.description == " send credential request to the logger.");
+    assert(feature.scenarios[0].then.ands[0].property.description == " then check that the credential has been verified.");
+    assert(feature.scenarios[1].info.property.description == " Rejection of the logger client.");
+    assert(feature.scenarios[1].given.info.property.description == " the logger client is started(2)");
+    assert(feature.scenarios[1].given.ands[0].property.description == " the client is connected to the logger service(2)");
+    assert(feature.scenarios[1].when.info.property.description == " the client is connected success fully(2)");
+    assert(feature.scenarios[1].then.info.property.description == " send bad credential request to the logger.(2)");
+    assert(feature.scenarios[1].then.ands[0].property.description == " then check that the credential has been rejected.(2)");
 }
 
 version (unittest) {
@@ -116,9 +370,5 @@ version (unittest) {
     import tagion.basic.Basic : unitfile;
     import tagion.behaviour.BehaviourIssue : EXT;
     import std.stdio : File;
-
-    //    import std.file : fwrite = write, freadText = readText;
-
     import std.path;
-
 }
