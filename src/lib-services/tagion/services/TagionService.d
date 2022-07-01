@@ -336,12 +336,10 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                 opts.dart.sync.task_name);
         assert(receiveOnly!Control is Control.LIVE);
 
-        if(opts.transaction.service.port == 10800){
-            transaction_socket_tid = spawn(
-                    &transactionServiceTask,
-                    opts);
-            assert(receiveOnly!Control is Control.LIVE);
-        }
+        transaction_socket_tid = spawn(
+                &transactionServiceTask,
+                opts);
+        assert(receiveOnly!Control is Control.LIVE);
 
         enum max_gossip = 2;
         uint gossip_count = max_gossip;

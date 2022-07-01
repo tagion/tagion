@@ -585,7 +585,7 @@ int _main(string[] args) {
             "answers", "Answers for wallet creation", &answers_str,
             "generate-wallet", "Create a new wallet", &generate_wallet,
             "health", "Healthcheck the node", &check_health,
-            "Unlock bills", "Remove lock from all local bills", &unlock_bills
+            "unlock", "Remove lock from all local bills", &unlock_bills
             );
     }
     catch (GetOptException e) {
@@ -782,12 +782,13 @@ int _main(string[] args) {
     }
     if(unlock_bills){
         wallet_interface.secure_wallet.deactivate_bills;
+        options.accountfile.fwrite(wallet_interface.secure_wallet.account);
     }
-      if (update_wallet) {
+    if (update_wallet) {
         
         // writefln("looking for %s", (cast(Buffer)pkey).toHexString);
         auto to_send = wallet_interface.secure_wallet.get_request_update_wallet();
-        writeln("Sending::", to_send.toDoc.toJSON);
+        // writeln("Sending::", to_send.toDoc.toJSON);
         auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
         client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface.options.port));
         client.blocking = true;

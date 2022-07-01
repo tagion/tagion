@@ -289,7 +289,7 @@ import tagion.wallet.WalletException : check;
     TagionCurrency total_balance() const pure {
         return account.total;
     }
-
+    @trusted
     void deactivate_bills(){
         account.activated.clear;
     }
