@@ -153,11 +153,11 @@ unittest {
     }
 
     static void registerLogger(string task_name) {
-        writeln("REGISTER ", task_name);
 
         static if (is(Func == LoggerTask)) {
             register(task_name, thisTid);
             log.set_logger_task(task_name);
+            writeln("Register: ", task_name);
         }
         else {
             log.register(task_name);

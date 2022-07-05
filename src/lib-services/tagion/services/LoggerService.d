@@ -57,6 +57,14 @@ unittest {
     assert(!LogFilter(some_task_name, LoggerType.ERROR).match(another_task_name, LoggerType.ERROR));
 }
 
+@safe struct LogFilterArray {
+    immutable(LogFilter[]) array;
+
+    this(immutable(LogFilter[]) filters) nothrow {
+            this.array = filters.idup;
+        }
+}
+
 import tagion.basic.Basic : TrustedConcurrency;
 
 mixin TrustedConcurrency;
@@ -134,9 +142,11 @@ import tagion.tasks.TaskWrapper;
         printStdError(type, task_name, log_msg);
     }
 
-    @TaskMethod void receiveFilters(immutable(LogFilter[]) filters) {
+    @TaskMethod void receiveFilters(immutable(LogFilterArray) filters) {
         pragma(msg, "fixme(cbr): This accumulate alot for trach memory on the heap");
-        commonLogFilters = filters.dup;
+        log("receive Filters");
+        commonLogFilters = filters.array.dup;
+        log("Updated filters (%d filters received)", filters.array.length);
     }
 
     void onSTOP() {
@@ -162,8 +172,7 @@ import tagion.tasks.TaskWrapper;
 
         pragma(msg, "fixme(ib) Pass mask to Logger to not pass not necessary data");
 
-
-        if (options.sub_logger.enable) {
+        if (options.logSubscription.enable) {
             logSubscriptionTid = spawn(&logSubscriptionServiceTask, options);
         }
         scope (exit) {

@@ -21,14 +21,16 @@ struct SSLServiceAPI {
         Thread service_task;
         SSLFiberService service;
         SSLFiberService.Relay relay;
+        SSLFiberService.Duration conn_duration;
     }
     //    const(HiRPC) hirpc;
 
     @disable this();
 
-    this(immutable(SSLOption) opts, SSLFiberService.Relay relay) nothrow pure @trusted {
+    this(immutable(SSLOption) opts, SSLFiberService.Relay relay, SSLFiberService.Duration duration = SSLFiberService.Duration.SHORTTERM) nothrow pure @trusted {
         this.ssl_options = opts;
         this.relay = relay;
+        this.conn_duration = duration;
     }
 
     protected shared(bool) stop_service;
@@ -61,7 +63,7 @@ struct SSLServiceAPI {
             _listener.bind(new InternetAddress(ssl_options.address, ssl_options.port));
             _listener.listen(ssl_options.max_queue_length);
 
-            service = new SSLFiberService(ssl_options, _listener, relay);
+            service = new SSLFiberService(ssl_options, _listener, relay, conn_duration);
             auto response_tid = service.start(ssl_options.response_task_name);
             if (response_tid != Tid.init) {
                 if (receiveOnly!Control !is Control.LIVE) {

@@ -74,12 +74,18 @@ class SSLFiberService {
     }
     //alias Relay = bool delegate(SSLRelay) @safe;
 
+    enum Duration {
+        SHORTTERM,
+        LONGTERM
+    }
+
     @safe
-    this(immutable(SSLOption) opts, SSLSocket listener, Relay relay) {
+    this(immutable(SSLOption) opts, SSLSocket listener, Relay relay, Duration duration = Duration.SHORTTERM) {
         this.ssl_options = opts;
         this.listener = listener;
         this.relay = relay;
         handler = new Response;
+        this.conn_duration = duration;
     }
 
     protected {
@@ -100,6 +106,7 @@ class SSLFiberService {
         }
 
         shared Response handler;
+        Duration conn_duration;
     }
 
     /++
@@ -334,9 +341,11 @@ class SSLFiberService {
          an SSLSocketTimeout exception is thrown on timeout
          +/
         void checkTimeout() const {
-            const time_elapsed = MonoTime.currTime - start_timestamp;
-            if (time_elapsed > ssl_options.client_timeout.msecs) {
-                throw new SSLSocketTimeout(time_elapsed);
+            if (conn_duration == Duration.SHORTTERM) {
+                const time_elapsed = MonoTime.currTime - start_timestamp;
+                if (time_elapsed > ssl_options.client_timeout.msecs) {
+                    throw new SSLSocketTimeout(time_elapsed);
+                }
             }
         }
 
@@ -374,7 +383,7 @@ class SSLFiberService {
             uint leb128_index;
             leb128_loop: for (;;) {
                 rec_data_size = client.receive(current);
-                log("curr: %s %d %s", leb128_len_data, rec_data_size, LEB128.decode!(uint)(current));
+                //log("SSLSocketFiber receive curr: %s %d %s", leb128_len_data, rec_data_size, LEB128.decode!(uint)(current));
                 if (rec_data_size < 0) {
                     // Not ready yet
                     yield;
@@ -403,7 +412,7 @@ class SSLFiberService {
             buffer = new ubyte[leb128_len.size + leb128_len.value];
             buffer[0 .. rec_data_size] = leb128_len_data[0 .. rec_data_size];
             current = buffer[rec_data_size .. $];
-            log("curr: %s %d", buffer[0 .. leb128_len.size], buffer.length);
+            //log("curr: %s %d", buffer[0 .. leb128_len.size], buffer.length);
             while (current.length) {
                 rec_data_size = client.receive(current);
                 if (rec_data_size < 0) {
