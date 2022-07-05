@@ -3,7 +3,7 @@ module tagion.network.SSLSocket;
 import std.socket;
 import core.stdc.stdio;
 import std.range.primitives : isBidirectionalRange;
-import std.string : format;
+import std.string : format, toStringz;
 import io = std.stdio;
 
 enum EndpointType {
@@ -186,7 +186,7 @@ class SSLSocket : Socket {
             throw new SSLSocketException("Empty file paths inputs");
     }
     do {
-        if (SSL_CTX_use_certificate_file(_ctx, certificate_filename.ptr, SSL_FILETYPE_PEM) <= 0) {
+        if (SSL_CTX_use_certificate_file(_ctx, certificate_filename.toStringz, SSL_FILETYPE_PEM) <= 0) {
             ERR_print_errors_fp(stderr);
             static if (in_debugging_mode) {
                 printDebugInformation("Error in setting certificate");
@@ -194,7 +194,7 @@ class SSLSocket : Socket {
             throw new SSLSocketException("ssl ctx certificate");
         }
 
-        if (SSL_CTX_use_PrivateKey_file(_ctx, prvkey_filename.ptr, SSL_FILETYPE_PEM) <= 0) {
+        if (SSL_CTX_use_PrivateKey_file(_ctx, prvkey_filename.toStringz, SSL_FILETYPE_PEM) <= 0) {
             ERR_print_errors_fp(stderr);
             static if (in_debugging_mode) {
                 printDebugInformation("Error in setting prvkey");
@@ -467,13 +467,52 @@ class SSLSocket : Socket {
 
     static ~this() {
         reset();
-    }    
+    }
+
+    private static void optionGenKeyFiles(ref string out_cert_path, ref string out_key_path)
+    {
+        import tagion.network.SSLOptions;
+        import std.algorithm.iteration : each;
+        import std.string;
+        import std.process;
+        import std.file;
+        import std.array;
+        import std.path;
+        string test_bench_path = environment.get("DBIN");
+        auto proto_cert_path = "../tmp/tmp.pem";
+        auto proto_key_path = "../tmp/tmp.key.pem";
+        string cert_path = (test_bench_path !is null) ? buildNormalizedPath(test_bench_path, proto_cert_path) : proto_cert_path;
+        string key_path = (test_bench_path !is null) ? buildNormalizedPath(test_bench_path, proto_key_path) : proto_key_path;
+        if (!exists(cert_path) || !exists(key_path))
+        {
+            string stab = "stab";
+            OpenSSL temp = OpenSSL();
+            temp.days = 1000;
+            temp.key_size = 1024;
+            temp.private_key = key_path;
+            temp.certificate = cert_path;
+            auto process = pipeProcess(temp.command.array);
+            scope (exit) {
+                wait(process.pid);
+            }
+            temp.city = stab;
+            temp.state = stab;
+            temp.country = "UA";
+            temp.organisation = stab;
+            temp.email = stab;
+            temp.name = stab;
+            temp.config.each!(a => process.stdin.writeln(a));
+            process.stdin.writeln(".");
+            process.stdin.flush;
+        }
+        out_cert_path = cert_path;
+        out_key_path = key_path;
+    }
         
     //! [client creation circle]
     unittest
     {      
-           import std.stdio;           
-           writeln("LAUNCH UNIT TEST SSL_Socket");
+           io.writeln("LAUNCH UNIT TEST SSL_Socket");
            SSLSocket testItem_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
            assert(testItem_client._ctx !is null);
            assert(SSLSocket.server_ctx is null);
@@ -485,8 +524,7 @@ class SSLSocket : Socket {
     //! [server creation circle]
     unittest
     {
-           import std.stdio;
-           writeln("LAUNCH SERVER CREATION CIRCLE");     
+           io.writeln("LAUNCH SERVER CREATION CIRCLE");     
            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
            assert(testItem_server._ctx !is null);
            assert(SSLSocket.server_ctx !is null);
@@ -498,9 +536,8 @@ class SSLSocket : Socket {
     //! [Acception] 
     unittest
     {
-        import std.stdio;
         import std.array;
-        writeln("LAUNCH ACCEPTION");  
+        io.writeln("LAUNCH ACCEPTION");  
         SSLSocket item = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
         SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
         Socket client = new Socket(AddressFamily.UNIX, SocketType.STREAM);
@@ -510,7 +547,7 @@ class SSLSocket : Socket {
         }
         catch(SSLSocketException exception)
         {
-            writeln("EXEPTION ACCEPTION CORRECT "~exception.msg~"  "~lastSocketError);
+            io.writeln("EXEPTION ACCEPTION CORRECT "~exception.msg~"  "~lastSocketError);
             assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SSL);
         }
         assert(result == false);
@@ -520,7 +557,6 @@ class SSLSocket : Socket {
     //! [File reading - incorrect]
     unittest
     {
-        import std.stdio;
         SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
         bool result = false;
         try {
@@ -528,7 +564,7 @@ class SSLSocket : Socket {
         }
         catch(SSLSocketException _exception)
         {
-            writeln("Exception load file "~_exception.msg);
+            io.writeln("Exception load file "~_exception.msg);
             result = true;
         }
         assert(result);
@@ -537,12 +573,11 @@ class SSLSocket : Socket {
 
     //! [File reading - empty path]
     unittest
-    {
-        import std.stdio;
+    {        
         SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
         string empty_path = "";
         bool flag = false;
-        writeln("Empty filepaths checking");
+        io.writeln("Empty filepaths checking");
         try {
             testItem_server.configureContext(empty_path, empty_path);
         }
@@ -562,13 +597,9 @@ class SSLSocket : Socket {
         import std.process;
         import std.file;
         writeln("Load certificate/key files");
-        string test_bench_path = environment.get("TESTBENCH");
-        if (test_bench_path.length)
-            test_bench_path = test_bench_path~"//";        
-        string cert_path = test_bench_path~"../../../pem_files/domain.pem";       
-        string key_path = test_bench_path~"../../../pem_files/domain.key.pem";
-        if (!exists(cert_path) || !exists(key_path))
-            return; //@TODO need UT utility for resolving paths and launching UT. Temporary solution - skip tests with path problem
+        string cert_path;
+        string key_path;
+        optionGenKeyFiles(cert_path, key_path);
         SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
         try {
             testItem_server.configureContext(cert_path, key_path);
@@ -588,13 +619,9 @@ class SSLSocket : Socket {
         import std.process;
         import std.file;
         writeln("Load false key files");
-        string test_bench_path = environment.get("TESTBENCH");
-        if (test_bench_path.length)
-            test_bench_path = test_bench_path~"//";
-        string cert_path = test_bench_path~"../../../pem_files/domain.pem";
+        string cert_path, stub;
+        optionGenKeyFiles(cert_path, stub);
         auto false_key_path = cert_path;
-         if (!exists(cert_path))
-            return; //@TODO need UT utility for resolving paths and launching UT. Temporary solution - skip tests with path problem
         SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
         bool flag = false;
         try {
@@ -672,20 +699,16 @@ class SSLSocket : Socket {
         {
 	        if (socket !is null)
 	        {
-                import std.process;
-                import std.file;
-                string test_bench_path = environment.get("TESTBENCH");
-                if (test_bench_path.length)
-                    test_bench_path = test_bench_path~"//";        
-                string cert_path = test_bench_path~"../../../pem_files/domain.pem";       
-                string key_path = test_bench_path~"../../../pem_files/domain.key.pem";
+                string cert_path;
+                string key_path;
+                optionGenKeyFiles(cert_path, key_path);
 		        try
 		        {
 			        socket.configureContext(cert_path, key_path);
 		        }
 		        catch(SSLSocketException exeption)
 		        {
-			        writeln(descript~" Loading keys failed");
+			        io.writeln(descript~" Loading keys failed");
 		        }
 	        }
         }
@@ -696,22 +719,22 @@ class SSLSocket : Socket {
             static void ssl_callback_client(const SSL *ssl, int a, int b)
             {
 	            SSL_CB_POINTS point = cast(SSL_CB_POINTS)a;
-	            writeln("Client ", point);
-	            writeln("CLIENT RET ", b);
+	            io.writeln("Client ", point);
+	            io.writeln("CLIENT RET ", b);
 	            auto str = SSL_alert_desc_string_long(b);
 	            if (str != null)
-	                writeln("CLNT "~fromStringz(str));
+	                io.writeln("CLNT "~fromStringz(str));
                 assert((a & SSL_CB_POINTS.CB_ALERT) == 0);
             }
 		    auto connect_adress = new InternetAddress(ut_adress, port);
 		    SSLSocket client = new SSLSocket(protocol, EndpointType.Client);
 		    SSL_set_info_callback(client.getSSL, &ssl_callback_client);
 		    loadcerts_(client, "client");
-		    writeln("Begin client connecting");
+		    io.writeln("Begin client connecting");
 		    client.connect(connect_adress);
-		    writeln("Sending client data");		
+		    io.writeln("Sending client data");
 		    auto result = client.send(send_test_data);
-		    writeln("Send result! ", result);
+		    io.writeln("Send result! ", result);
 		    finish_flags[0] = true;
         }
 
@@ -721,17 +744,17 @@ class SSLSocket : Socket {
             {
                 import std.string;
                 SSL_CB_POINTS point = cast(SSL_CB_POINTS)a;
-                writeln("Callback here ", point);
-                writeln("SRV RET ", b);
+                io.writeln("Callback here ", point);
+                io.writeln("SRV RET ", b);
                 auto str = SSL_alert_desc_string_long(b);
                 if (str != null)
-                    writeln("SRVR "~fromStringz(str));
-                writeln("<SRVR> "~fromStringz(SSL_state_string_long(ssl)));
+                    io.writeln("SRVR "~fromStringz(str));
+                io.writeln("<SRVR> "~fromStringz(SSL_state_string_long(ssl)));
                 assert((a & SSL_CB_POINTS.CB_ALERT) == 0);
             }
             auto server_adress = new InternetAddress(ut_adress, port);
             SSLSocket server = new SSLSocket(protocol, EndpointType.Server);
-            writeln("Socket is alive : ", int(server.isAlive));
+            io.writeln("Socket is alive : ", int(server.isAlive));
             loadcerts_(server, "server");
             server.blocking = false;
             SSL_set_info_callback(server.getSSL, &ssl_callback_server);
@@ -741,18 +764,18 @@ class SSLSocket : Socket {
             }
             catch(SocketOSException except)
             {
-                writeln("BINDING FAILED "~except.msg);
+                io.writeln("BINDING FAILED "~except.msg);
             }
-            writeln("Listening launch");
+            io.writeln("Listening launch");
             try
             {
                 server.listen(100);
             }
             catch(SocketOSException except)
             {
-                writeln("LISTEN FAILED");
+                io.writeln("LISTEN FAILED");
             }
-            writeln("Try to accept!!!");
+            io.writeln("Try to accept!!!");
             SSLSocket waiter_socket = null;
             int result = -3;
             Socket acc_socket = null;
@@ -764,10 +787,13 @@ class SSLSocket : Socket {
 	            }
 	            catch (SocketOSException exception)
 	            {
-	                writeln("Accepting failed ~ "~exception.msg);
+	                io.writeln("Accepting failed ~ "~exception.msg);
 	            }
 	        }
-	        writeln("Server accepting with SSL - ", int(acc_socket !is null));
+            scope (exit) {
+                acc_socket.shutdown(SocketShutdown.BOTH);
+            }
+	        io.writeln("Server accepting with SSL - ", int(acc_socket !is null));
 	        try
 	        {
 	            while(result < 1)
@@ -779,22 +805,22 @@ class SSLSocket : Socket {
 		    }
 		    catch(SSLSocketException exception)
 		    {
-		        writeln("Accept exception ", exception.msg);
+		        io.writeln("Accept exception ", exception.msg);
 		    } //*/
-		    writeln("Server unit start "~((result == 1)?"Complete" : "Fail"));
+		    io.writeln("Server unit start "~((result == 1)?"Complete" : "Fail"));
             assert(result == 1);
 		    Thread.sleep(dur!("seconds")(2));
 		    ubyte[10] readplc;
 		    auto offset = waiter_socket.receive(readplc);
             assert(readplc[0 .. offset] == send_test_data);
             finish_flags[1] = true;
-            writeln("SSL server function DONE");
+            io.writeln("SSL server function DONE");
         }
 
         spawn(&server_);
         spawn(&client_);
         while(!finish_flags[1] || !finish_flags[0]) {}
         SSLSocket.reset();
-        writeln("Circle encrypt/decrypt complete");
+        io.writeln("Circle encrypt/decrypt complete");
     }
 }
