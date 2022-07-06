@@ -1,0 +1,64 @@
+@startuml Node Discovering Sequence
+
+skinparam Style strictuml
+skinparam SequenceMessageAlign center
+hide empty description
+title Node Discovering Sequence Diagram
+
+participant Node as node
+database DB as db
+participant NextActiveNode as cnode
+database "NextActiveNode's DB" as cdb
+
+node -> db : Init with initial list of nodes
+activate node
+activate db
+|||
+node -> db : Request latest epoch: **E_loc**
+db --> node : **E_loc**
+
+note right of node
+    **update_needed** = true
+end note
+loop while **update_needed** == true
+node -> db : Request list of nodes: **E_loc_nodes[]**
+db --> node : **E_loc_nodes[]**
+
+note right of node
+    **update_needed** = false
+end note
+
+loop foreach node N_curr in E_loc_nodes
+    node -> cnode : Request **N_curr**'s last epoch: **E_node**
+    activate cnode
+    activate cdb
+    cnode -> cdb : Request last epoch: **E_node**
+    cdb --> cnode : **E_node**
+    cnode --> node : **E_node**
+
+    alt #DCFFDC **E_node** > **E_loc**
+
+        group requestLastTrustedEpoch( E_loc ) [return **E_trust**]
+        end
+
+        alt #90F090 **E_trust** > **E_loc**
+            group syncEpochs [sync epochs (E_loc, ..., E_trust] with N_curr        ]
+            end
+            note right of node
+                **update_needed** = true
+            end note
+            node --> node : Break foreach loop
+        else #FFDCDC else
+            node --> node : Skip this node
+            deactivate cdb
+            deactivate cnode
+        end
+    else #FFDCDC
+        node --> node : Skip this node
+    end
+end
+end
+deactivate db
+deactivate node
+
+@enduml

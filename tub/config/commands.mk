@@ -68,8 +68,8 @@ env-commands:
 env: env-commands
 
 # A literal space.
-space :=
-space +=
+empty:=
+space:=$(empty) $(empty)
 # Joins elements of the list in arg 2 with the given separator.
 #   1. Element separator.
 #   2. The list.

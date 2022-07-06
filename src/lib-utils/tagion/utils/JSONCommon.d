@@ -1,9 +1,11 @@
 module tagion.utils.JSONCommon;
 
 import tagion.basic.TagionExceptions;
+import std.meta : AliasSeq;
+import std.traits : hasMember;
 
 /++
-+/
+ +/
 @safe
 class OptionException : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
@@ -13,16 +15,27 @@ class OptionException : TagionException {
 
 alias check = Check!OptionException;
 
+enum isJSONCommon(T) = is(T == struct) &&  hasMember!(T, "toJSON");
+
+
+
 /++
  mixin for implememts a JSON interface for a struct
-+/
+ +/
 mixin template JSONCommon() {
-    import tagion.basic.Basic : basename;
+    import tagion.basic.Basic : basename, isOneOf;
     import tagion.utils.JSONCommon : check;
     import JSON = std.json;
     import std.traits;
     import std.format;
     import std.conv : to;
+    import std.meta : AliasSeq;
+    import std.range : ElementType;
+//    import std.traits : isArray;
+alias ArrayElementTypes = AliasSeq!(bool, string);
+
+enum isSupportedArray(T) = isArray!T && isSupported!(ElementType!T);
+enum isSupported(T) = isOneOf!(T, ArrayElementTypes) || isNumeric!T || isSupportedArray!T || isJSONCommon!T;
 
     /++
      Returns:
@@ -35,6 +48,14 @@ mixin template JSONCommon() {
             alias type = typeof(m);
             static if (is(type == struct)) {
                 result[name] = m.toJSON;
+            }
+            else static if (isArray!type && is(ElementType!type == struct)) {
+                JSON.JSONValue[] array;
+                foreach(ref m_element; m) {
+                    array ~= m_element.toJSON;
+                }
+                result[name] = array; // ~= m_element.toJSON;
+
             }
             else {
                 static if (is(type == enum)) {
@@ -71,69 +92,108 @@ mixin template JSONCommon() {
      json_value = JSON used
      +/
     void parse(ref JSON.JSONValue json_value) {
-        ParseLoop: foreach (i, ref m; this.tupleof) {
-            enum name = basename!(this.tupleof[i]);
-            alias type = typeof(m);
-            static if (is(type == struct)) {
-                m.parse(json_value[name]);
-            }
-            else static if (is(type == enum)) {
-                if (json_value[name].type is JSON.JSONType.string) {
-                    switch (json_value[name].str) {
-                        foreach (E; EnumMembers!type) {
-                    case E.to!string:
-                            m = E;
-                            continue ParseLoop;
-                        }
-                    default:
-                        check(0, format("Illegal value of %s only %s supported not %s", name, [EnumMembers!type], json_value[name]
-                                .str));
-                    }
+        static void set_array(T)(ref T m, ref JSON.JSONValue[] json_array, string name) if (isSupportedArray!T) {
+                //check(0, format("Array %s ", m));
+                foreach(_json_value; json_array) {
+                    ElementType!T m_element;
+                    set(m_element, _json_value, name);
+                    m~=m_element;
                 }
-                else static if (isIntegral!(BuiltinTypeOf!type)) {
-                    if (json_value[name].type is JSON.JSONType.integer) {
-                        const value = json_value[name].integer;
-                        switch (value) {
-                            foreach (E; EnumMembers!type) {
-                        case E:
+            }
+            static bool set(T)(ref T m, ref JSON.JSONValue _json_value, string _name) {
+//                alias ElementOfMember = Element
+                // check(json_value[name].array is JSON.JSONType.array, format("Illegal type %s for %s must be %s",
+                //         [EnumMembers!type],
+                //         name,
+                //         JSON.JSONT.array));
+
+
+                static if (is(T == struct)) {
+                    m.parse(_json_value);
+                }
+                else static if (is(T == enum)) {
+                    if (_json_value.type is JSON.JSONType.string) {
+                        switch (_json_value.str) {
+                            foreach (E; EnumMembers!T) {
+                            case E.to!string:
                                 m = E;
-                                continue ParseLoop;
+                                return false;
+//                            continue ParseLoop;
                             }
                         default:
-                            // Fail;
-
+                            check(0, format("Illegal value of %s only %s supported not %s",
+                                    _name, [EnumMembers!T],
+                                    _json_value.str));
                         }
                     }
-                    check(0, format("Illegal value of %s only %s supported not %s", name, [EnumMembers!type], json_value[name]
-                            .uinteger));
+                    else static if (isIntegral!(BuiltinTypeOf!T)) {
+                        if (_json_value.type is JSON.JSONType.integer) {
+                            const value = _json_value.integer;
+                            switch (value) {
+                                foreach (E; EnumMembers!T) {
+                                case E:
+                                    m = E;
+                                    return false;
+                                    //continue ParseLoop;
+                                }
+                            default:
+                                // Fail;
+
+                            }
+                        }
+                        check(0, format("Illegal value of %s only %s supported not %s",
+                                _name,
+                                [EnumMembers!T],
+                                _json_value.uinteger));
+                    }
+                    check(0, format("Illegal value of %s", _name));
                 }
-                check(0, format("Illegal value of %s", name));
-            }
-            else static if (is(type == string)) {
-                m = json_value[name].str;
-            }
-            else static if (isIntegral!type || isFloatingPoint!type) {
-                static if (isIntegral!type) {
-                    auto value = json_value[name].integer;
+                else static if (is(T == string)) {
+                    m = _json_value.str;
+                }
+                else static if (isIntegral!T || isFloatingPoint!T) {
+                    static if (isIntegral!T) {
+                        auto value = _json_value.integer;
+                        check((value >= T.min) && (value <= T.max), format("Value %d out of range for type %s of %s", value, T
+                                .stringof, m.stringof));
+                    }
+                    else {
+                        auto value = _json_value.floating;
+                    }
+                    m = cast(T) value;
+
+                }
+                else static if (is(T == bool)) {
+                    check((_json_value.type == JSON.JSONType.true_) || (
+                            _json_value.type == JSON.JSONType.false_),
+                        format("Type %s expected for %s but the json type is %s", T.stringof, m.stringof, _json_value
+                            .type));
+                    m = _json_value.type == JSON.JSONType.true_;
+                }
+                else static if (isSupportedArray!T) {
+                    check(_json_value.type is JSON.JSONType.array,
+                        format("Type of member '%s' must be an %s", _name, JSON.JSONType.array));
+                    set_array(m, _json_value.array, _name);
+
+
+
                 }
                 else {
-                    auto value = json_value[name].floating;
+                    check(0, format("Unsupported type %s for '%s' member", T.stringof, _name));
                 }
-                check((value >= type.min) && (value <= type.max), format("Value %d out of range for type %s of %s", value, type
-                        .stringof, m.stringof));
-                m = cast(type) value;
+                return true;
+            }
+    ParseLoop: foreach (i, ref member; this.tupleof) {
+            enum name = basename!(this.tupleof[i]);
+            alias type = typeof(member);
+//            static if (!is(type == struct) || !is(type == class)) {
+            static assert(is(type == struct) || is(type == enum) || isSupported!type,
+                format("Unsupported type %s for '%s' member", type.stringof, name));
 
+            if (!set(member, json_value[name], name)) {
+                continue ParseLoop;
             }
-            else static if (is(type == bool)) {
-                check((json_value[name].type == JSON.JSONType.true_) || (
-                        json_value[name].type == JSON.JSONType.false_),
-                        format("Type %s expected for %s but the json type is %s", type.stringof, m.stringof, json_value[name]
-                        .type));
-                m = json_value[name].type == JSON.JSONType.true_;
-            }
-            else {
-                check(0, format("Unsupported type %s for %s member", type.stringof, m.stringof));
-            }
+
         }
     }
 
@@ -160,5 +220,147 @@ mixin template JSONConfig() {
 
     void save(string config_file) {
         config_file.write(stringify);
+    }
+}
+
+version(unittest) {
+    import tagion.basic.Types : FileExtension;
+    import Basic = tagion.basic.Basic;
+    import std.exception : assertThrown;
+    import std.json : JSONException;
+    const(Basic.FileNames) fileId(T)(string prefix = null) @safe {
+        return Basic.fileId!T(FileExtension.json, prefix);
+    }
+
+    private enum Color {
+        red,
+        green,
+        blue,
+    }
+
+}
+
+unittest {
+    static struct OptS {
+        bool _bool;
+        string _string;
+//        double _double;
+        int _int;
+        uint _uint;
+        Color color;
+        mixin JSONCommon;
+        mixin JSONConfig;
+    }
+
+    OptS opt;
+    { // Simple JSONCommon check
+        opt._bool=true;
+        opt._string="text";
+        // opt._double=4.2;
+        opt._int = -42;
+        opt._uint = 42;
+        opt.color = Color.blue;
+
+        immutable filename = fileId!OptS.fullpath;
+        opt.save(filename);
+        OptS opt_loaded;
+        opt_loaded.load(filename);
+        assert(opt == opt_loaded);
+    }
+    static struct OptMain {
+        OptS sub_opt;
+        int main_x;
+        mixin JSONCommon;
+        mixin JSONConfig;
+    }
+    immutable main_filename = fileId!OptMain.fullpath;
+
+    { // Common check with sub a sub-structure
+        OptMain opt_main;
+        opt_main.sub_opt=opt;
+        opt_main.main_x = 117;
+        opt_main.save(main_filename);
+//FileExtension
+        OptMain opt_loaded;
+        opt_loaded.load(main_filename);
+        assert(opt_main == opt_loaded);
+    }
+
+    { // Check for bad JSONCommon file
+        OptS opt_s;
+        //immutable bad_filename = fileId!OptMain("bad").fullpath;
+        assertThrown!JSONException(opt_s.load(main_filename));
+    }
+
+}
+
+unittest { // JSONCommon with array types
+//    import std.stdio;
+    static struct OptArray(T) {
+        T[] list;
+        mixin JSONCommon;
+        mixin JSONConfig;
+    }
+
+    //alias StdType=AliasSeq!(bool, int, string, Color);
+
+    { // Check JSONCommon with array of booleans
+        alias OptA=OptArray!bool;
+        OptA opt;
+        opt.list=[true, false, false, true, false];
+        immutable filename = fileId!OptA.fullpath;
+
+        opt.save(filename);
+
+        OptA opt_loaded;
+        opt_loaded.load(filename);
+
+        assert(opt_loaded == opt);
+    }
+
+    { // Check JSONCommon with array of string
+        alias OptA=OptArray!string;
+        OptA opt;
+        opt.list=["Hugo", "Borge", "Brian", "Johnny", "Sven Bendt"];
+        immutable filename = fileId!OptA.fullpath;
+
+        opt.save(filename);
+
+        OptA opt_loaded;
+        opt_loaded.load(filename);
+
+        assert(opt_loaded == opt);
+    }
+
+    { // Check JSONCommon with array of integers
+        alias OptA=OptArray!int;
+        OptA opt;
+        opt.list=[42, -16, 117];
+        immutable filename = fileId!OptA.fullpath;
+
+        opt.save(filename);
+
+        OptA opt_loaded;
+        opt_loaded.load(filename);
+
+        assert(opt_loaded == opt);
+    }
+
+    {
+        static struct OptSub {
+            string text;
+            mixin JSONCommon;
+        }
+        alias OptA=OptArray!OptSub;
+        OptA opt;
+        opt.list=[OptSub("Hugo"), OptSub("Borge"), OptSub("Brian")];
+        immutable filename = fileId!OptA.fullpath;
+
+        opt.save(filename);
+
+        OptA opt_loaded;
+        opt_loaded.load(filename);
+
+        assert(opt_loaded == opt);
     }
 }

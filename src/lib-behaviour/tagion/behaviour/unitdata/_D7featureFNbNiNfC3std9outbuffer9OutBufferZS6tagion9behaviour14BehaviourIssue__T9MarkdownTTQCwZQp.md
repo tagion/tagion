@@ -13,15 +13,15 @@
       *And* the dispenser contains cash
 
 `contains_cash`
+    *When* the Customer request cash
+
+`request_cash`
     *Then* the account is debited
 
 `is_debited`
       *And* the cash is dispensed
 
 `is_dispensed`
-    *When* the Customer request cash
-
-`request_cash`
 
 ### Scenario: Some money printer which is controlled by a bankster
 
@@ -29,15 +29,15 @@
     *Given* the card is valid
 
 `is_valid`
+    *When* the Customer request cash
+
+`request_cash`
     *Then* the account is debited
 
 `is_debited`
       *And* the cash is dispensed
 
 `is_dispensed`
-    *When* the Customer request cash
-
-`request_cash`
 
 ### Scenario: Some money printer which has run out of paper
 

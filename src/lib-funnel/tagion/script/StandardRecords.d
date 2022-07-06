@@ -39,6 +39,13 @@ enum OwnerKey = "$Y";
         // @Label("$sign") Buffer sign;    ///
         @Label("$record") Buffer record; /// Hash pointer to NRC
         mixin HiBONRecord;
+
+        import tagion.crypto.SecureInterfaceNet : HashNet;
+        static Buffer dartHash(const(HashNet) net, string name) {
+            NetworkNameCard nnc;
+            nnc.name = name;
+            return net.hashOf(nnc);
+        }
     }
 
     @RecordType("NRC") struct NetworkNameRecord {

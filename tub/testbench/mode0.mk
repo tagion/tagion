@@ -12,8 +12,23 @@ mode0: $(MODE0_DATA)/.way
 mode0: DARTDB=$(MODE0_DART)
 mode0: dart
 mode0: tagionwave
+ifdef DDD
+mode0:
+	${call header, $@ :: mode0 start with ddd}
+	cd $(MODE0_ROOT)
+	echo echo tagionwave\\\\n > .gdbinit
+	#echo "process handle --stop false --notify false SIGUSR1 SIGUSR2" >> .gdbinit
+	echo "handle SIGUSR1 nostop" >> .gdbinit
+	echo "handle SIGUSR2 nostop" >> .gdbinit
+	echo echo args is set to tagionwave\\\\n >> .gdbinit
+	echo set args tagionwave $(MODE0_FLAGS) >> .gdbinit
+	echo show args >> .gdbinit
+	ddd $(TAGIONWAVE)
+else
+mode0:
 	cd $(MODE0_ROOT)
 	script -c "$(TAGIONWAVE) $(MODE0_FLAGS)" $(MODE0_LOG)
+endif
 
 .PHONY: mode0
 testbench: mode0
@@ -46,7 +61,12 @@ help-mode0:
 	$(PRECMD)
 	${call log.header, $@ :: help}
 	${call log.help, "make mode0", "Will start the test network in mode0"}
-	${call log.help, "make mode0-dart", "Will clean all data in mode 0"}
+	${call log.help, "make mode0 DDD=1", "Will start mode0 in ddd"}
+	${call log.help, "make mode0-ddd", "Does the same as make mode0 DDD=1"}
+	${call log.help, "", "IMPORTANT: To enable ddd you need to add"}
+	${call log.help, "", "           set auto-load safe-path /"}
+	${call log.help, "", "           to the ~/.gdbinit file"}
+	${call log.help, "make mode0-dart", "Create the DART for mode0"}
 	${call log.help, "make clean-mode0", "Will clean all data in mode 0"}
 	${call log.help, "make env-mode0", "Lists the setting for mode 0"}
 	${call log.close}

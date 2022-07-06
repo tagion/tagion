@@ -31,6 +31,7 @@ import tagion.utils.Miscellaneous;
 import tagion.Keywords;
 import tagion.dart.Recorder;
 import tagion.script.StandardRecords;
+import tagion.script.NameCardScripts : readStandardRecord;
 
 import tagion.tools.Basic;
 
@@ -242,19 +243,6 @@ int _main(string[] args) {
         }
     }
 
-    Nullable!NetworkNameCard readNNC(string name, HiRPC hirpc, DART db) {
-        NetworkNameCard nnc_find;
-        nnc_find.name = name;
-
-        return readRecord!NetworkNameCard(net.hashOf(nnc_find.toDoc), hirpc, db);
-    }
-
-    bool verifyNNCSignature(NetworkNameCard nnc, HiRPC hirpc, DART db) {
-        auto check_hr = HashLock(net, nnc);
-        auto found_hr = readRecord!HashLock(net.hashOf(check_hr.toDoc), hirpc, db);
-        return !found_hr.isNull;
-    }
-
     Nullable!EpochBlock readLastEpochBlock(HiRPC hirpc, DART db) {
         auto epoch_top_read = readRecord!LastEpochRecord(LastEpochRecord.dartHash(net), hirpc, db);
         if (epoch_top_read.isNull) {
@@ -348,58 +336,58 @@ int _main(string[] args) {
         outputfilename.fwrite(tosendResult);
     }
     else if (nncread) {
-        auto nnc_read = readNNC(nncreadname, hirpc, db);
-        if (nnc_read.isNull) {
-            writefln("No %s with name '%s' in DART", typeof(nnc_read.get).stringof, nncreadname);
+        auto nnc_out = readStandardRecord!NetworkNameCard(net, hirpc, db, NetworkNameCard.dartHash(net, nncreadname));
+
+        if (nnc_out.isNull) {
+            writeln;
+            writefln("No %s with name '%s' in DART", typeof(nnc_out.get).stringof, nncreadname);
         }
         else {
-            auto nnc = nnc_read.get;
+            auto nnc = nnc_out.get;
             toConsole(nnc, true, format("\nFound %s '%s'", typeof(nnc).stringof, nncreadname));
 
+            auto signature_out = readStandardRecord!HashLock(net, hirpc, db, net.hashOf(HashLock(net, nnc)));
             writeln;
-            if (verifyNNCSignature(nnc, hirpc, db))
-                writefln("Signature for %s '%s' is verified", typeof(nnc).stringof, nnc.name);
-            else {
+            if (signature_out.isNull)
                 writefln("WARNING: Signature for %s '%s' is not verified!", typeof(nnc).stringof, nnc.name);
-            }
+            else
+                writefln("Signature for %s '%s' is verified", typeof(nnc).stringof, nnc.name);
 
-            auto nrc_read = readRecord!NetworkNameRecord(nnc.record, hirpc, db);
-            if (nrc_read.isNull) {
-                writeln;
-                writefln("No associated %s (hash='%s') with %s '%s' in DART", typeof(nrc_read.get).stringof, typeof(nnc).stringof, nnc.record.cutHex, nnc.name);
-            }
-            else {
-                auto nrc = nrc_read.get;
-                toConsole(nrc, true);
-
-                auto node_addr_read = readRecord!NodeAddress(nrc.node, hirpc, db);
-                if (node_addr_read.isNull) {
+            auto nrc_out = readStandardRecord!NetworkNameRecord(net, hirpc, db, nnc.record);
+            if (nrc_out.isNull) {
                     writeln;
-                    writefln("No associated %s (hash='%s') with %s '%s' in DART", typeof(node_addr_read.get).stringof, typeof(nnc).stringof, nrc.node.cutHex, nnc.name);
+                    writefln("No associated %s (hash='%s') with %s '%s' in DART", typeof(nrc_out.get).stringof, typeof(nnc).stringof, nnc.record.cutHex, nnc.name);
                 }
-                else {
-                    toConsole(node_addr_read.get, true);
+            else {
+                toConsole(nrc_out.get, true, format("\nFound %s for %s '%s'", typeof(nrc_out.get).stringof, typeof(nnc).stringof, nncreadname));
+
+                auto node_addr_out = readStandardRecord!NodeAddress(net, hirpc, db, nrc_out.get.node);
+                if (node_addr_out.isNull) {
+                    writeln;
+                    writefln("No associated %s (hash='%s') with %s '%s' in DART", typeof(node_addr_out.get).stringof, typeof(nnc).stringof, nrc_out.get.node.cutHex, nnc.name);
                 }
+                else
+                    toConsole(node_addr_out.get, true, format("\nFound %s for %s '%s'", typeof(node_addr_out.get).stringof, typeof(nnc).stringof, nncreadname));
             }
         }
     }
     else if (nncupdate) {
-        auto nnc_read = readNNC(nncupdatename, hirpc, db);
-        if (nnc_read.isNull) {
-            writefln("No %s with name '%s' in DART", typeof(nnc_read.get).stringof, nncupdatename);
+        auto nnc_out = readStandardRecord!NetworkNameCard(net, hirpc, db, NetworkNameCard.dartHash(net, nncupdatename));
+        if (nnc_out.isNull) {
+            writeln;
+            writefln("No %s with name '%s' in DART", typeof(nnc_out.get).stringof, nncupdatename);
         }
         else {
-            auto nnc = nnc_read.get;
-            auto nrc_read = readRecord!NetworkNameRecord(nnc.record, hirpc, db);
-            if (nrc_read.isNull) {
-                writefln("No associated %s (hash='%s') with %s '%s' in DART", typeof(nrc_read.get).stringof, typeof(nnc).stringof, nnc.record.cutHex, nnc.name);
+            auto nnc = nnc_out.get;
+            auto nrc_out = readStandardRecord!NetworkNameRecord(net, hirpc, db, nnc.record);
+            if (nrc_out.isNull) {
+                writefln("No associated %s (hash='%s') with %s '%s' in DART", typeof(nrc_out.get).stringof, typeof(nnc).stringof, nnc.record.cutHex, nnc.name);
             }
             else {
-                auto nrc = nrc_read.get;
+                auto nrc = nrc_out.get;
 
-                auto check_hr = HashLock(net, nnc);
-                auto found_hr = readRecord!HashLock(net.hashOf(check_hr.toDoc), hirpc, db);
-                if (found_hr.isNull) {
+                auto signature = readStandardRecord!HashLock(net, hirpc, db, net.hashOf(HashLock(net, nnc)));
+                if (signature.isNull) {
                     writefln("WARNING: Signature for %s '%s' is not verified! Unable to update record\nAbort", typeof(nnc).stringof, nnc.name);
                 }
                 else {
@@ -414,7 +402,6 @@ int _main(string[] args) {
 
                     writeln;
                     writefln("Updated %s with name '%s'", typeof(nnc).stringof, nnc.name);
-                    writeln;
 
                     if (verbose) {
                         writeln;
@@ -423,8 +410,10 @@ int _main(string[] args) {
                         writefln("Recorder remove %s", recorder_remove.toPretty);
                     }
 
-                    if (dump)
+                    if (dump) {
+                        writeln;
                         db.dump(true);
+                    }
                 }
             }
         }

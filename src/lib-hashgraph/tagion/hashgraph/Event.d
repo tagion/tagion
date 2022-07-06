@@ -316,10 +316,14 @@ class Round {
             uint epoch_events_count;
             // uint count;
             scope (success) {
-                hashgraph.mark_received_statistic(mark_received_iteration_count);
-                hashgraph.order_compare_statistic(order_compare_iteration_count);
-                hashgraph.rare_order_compare_statistic(rare_order_compare_count);
-                hashgraph.epoch_events_statistic(epoch_events_count);
+                with(hashgraph) {
+                mark_received_statistic(mark_received_iteration_count);
+                mixin Log!(mark_received_statistic);
+                order_compare_statistic(order_compare_iteration_count);
+                mixin Log!(order_compare_statistic);
+                epoch_events_statistic(epoch_events_count);
+                mixin Log!(epoch_events_statistic);
+                }
             }
             r._events
                 .filter!((e) => (e !is null))
@@ -710,7 +714,10 @@ class Event {
     do {
         uint iterative_witness_search_count;
         scope (exit) {
-            hashgraph.witness_search_statistic(iterative_witness_search_count);
+            with(hashgraph) {
+                witness_search_statistic(iterative_witness_search_count);
+                mixin Log!(witness_search_statistic);
+            }
         }
         const(BitMask) local_calc_witness_mask(const Event e, const BitMask voting_mask, const BitMask marker_mask) nothrow @safe {
             iterative_witness_search_count++;
@@ -786,12 +793,18 @@ class Event {
                 uint received_order_iteration_count;
                 received_order(received_order_iteration_count);
                 hashgraph.received_order_statistic(received_order_iteration_count);
+                with(hashgraph) {
+                    mixin Log!(received_order_statistic);
+                }
                 auto witness_seen_mask = calc_witness_mask(hashgraph);
                 if (witness_seen_mask.isMajority(hashgraph)) {
                     hashgraph._rounds.next_round(this);
                     _witness = new Witness(this, witness_seen_mask);
 
                     strong_seeing(hashgraph);
+                    with(hashgraph) {
+                        mixin Log!(strong_seeing_statistic);
+                    }
                     hashgraph._rounds.check_decided_round(hashgraph);
                     _witness_mask.clear;
                     _witness_mask[node_id] = true;

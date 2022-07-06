@@ -201,7 +201,7 @@ static struct Logger {
         /// Send log_info to the logger service
     }
 
-    bool opCall(T)(
+    bool env(T)(
         lazy string symbol_name,
         lazy T h,
         string file = __FILE__,
@@ -273,7 +273,9 @@ static struct Logger {
 
 mixin template Log(alias name) {
     pragma(msg, name.stringof);
-    mixin(format(q{const bool %1$s_logger = log("%1$s", %1$s);}, name.stringof));
+    pragma(msg, "__traits ", __traits(identifier, name));
+    pragma(msg, format(q{const bool %1$s_logger = log.env("%1$s", %1$s);}, __traits(identifier, name)));
+    mixin(format(q{const bool %1$s_logger = log.env("%1$s", %1$s);}, __traits(identifier, name))); //format(q{const bool %1$s_logger = log("%1$s", %1$s);}, name.stringof));
     // enum logged_code = format!(
     //     q{bool %s_logged =
     //             log(name.stringof, name);},

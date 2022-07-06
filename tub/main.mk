@@ -36,7 +36,7 @@ include $(DTUB)/tools/*.mk
 include $(DTUB)/config/git.mk
 include $(DTUB)/config/commands.mk
 
-prebuild:
+prebuild: revision
 	$(PRECMD)
 	${foreach wrap,$(WRAPS),$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) $(wrap);}
 	git submodule update --recursive
@@ -50,7 +50,11 @@ prebuild:
 #
 # This is the HOST target platform
 #
+ifdef USEHOST
+HOST=$(USEHOST)
+else
 HOST=${call join-with,-,$(GETARCH) $(GETHOSTOS) $(GETOS)}
+endif
 PLATFORM?=$(HOST)
 
 #
@@ -117,6 +121,7 @@ include $(DTUB)/testbench/mode1.mk
 #
 # Install main tool
 #
+include $(DTUB)/config/revision.mk
 include $(DTUB)/config/install.mk
 
 #

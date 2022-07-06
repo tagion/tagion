@@ -1,10 +1,9 @@
 ## Feature: Some awesome feature should print some cash out of the blue
     Some addtion notes
-`tagion.behaviour.unittest.ProtoBDD`
-
 ### Scenario: Some awesome money printer
 
 ​    *Given* the card is valid
+
 `is_valid`
       *And* the account is in credit
 
@@ -13,6 +12,7 @@
 
 `contains_cash`
     *When* the Customer request cash
+
 `request_cash`
     *Then* the account is debited
 
