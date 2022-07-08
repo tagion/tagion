@@ -22,8 +22,8 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
 
-import tagion.basic.Types : Buffer, Pubkey;
-//import tagion.basic.Basic : ;
+import tagion.basic.Basic : basename;
+import tagion.basic.Types : Buffer;
 import tagion.basic.TagionExceptions;
 import tagion.script.StandardRecords;
 import tagion.script.TagionCurrency;
@@ -543,8 +543,11 @@ int _main(string[] args) {
     bool send_flag;
     string create_invoice_command;
     bool print_amount;
+    bool unlock_bills;
     string path;
     string invoicefile = "invoice_file.hibon";
+
+    auto logo = import("logo.txt");
 
     bool check_health;
 
@@ -581,7 +584,8 @@ int _main(string[] args) {
             "questions", "Questions for wallet creation", &questions_str,
             "answers", "Answers for wallet creation", &answers_str,
             "generate-wallet", "Create a new wallet", &generate_wallet,
-            "health", "Healthcheck the node", &check_health
+            "health", "Healthcheck the node", &check_health,
+            "unlock", "Remove lock from all local bills", &unlock_bills
             );
     }
     catch (GetOptException e) {
@@ -602,6 +606,7 @@ int _main(string[] args) {
     }
 
     if (main_args.helpWanted) {
+        writeln(logo);
         defaultGetoptPrinter([
                 format("%s version %s", program, REVNO),
                 "Documentation: https://tagion.org/",
@@ -652,9 +657,10 @@ int _main(string[] args) {
 
     auto wallet_interface = WalletInterface(options);
 
+
+    HiRPC hirpc;
     if(check_health){
         writefln("HEALTHCHECK: %s %d",wallet_interface.options.addr, wallet_interface.options.port);
-        HiRPC hirpc;
         auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
         client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface.options.port));
         scope (exit) {
@@ -679,58 +685,6 @@ int _main(string[] args) {
         auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
         writeln(resp_doc.toJSON);
         return 0;
-    }
-
-    version(OLD_CODE)
-    if(update_wallet){
-        HiRPC hirpc;
-        Buffer prepareSearch(Buffer[] owners){
-            HiBON params = new HiBON;
-            foreach(i, owner; owners){
-                params[i] = owner;
-            }
-            const sender=hirpc.action("search", params);
-            immutable data=sender.toDoc.serialize;
-            return data;
-        }
-
-        // writeln(accounts.length);
-        StandardBill[] new_bills;
-        Buffer[] pkeys;
-        foreach(pkey, dkey; accounts){
-            pkeys~=cast(Buffer)pkey;
-        }
-        auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-        client.connect(new InternetAddress(addr, port));
-        scope(exit) {
-            client.close;
-        }
-        client.blocking=true;
-        // writefln("looking for %s", (cast(Buffer)pkey).toHexString);
-        auto to_send = prepareSearch(pkeys);
-        client.send(to_send);
-
-        auto rec_buf=new void[4000];
-        ptrdiff_t rec_size;
-
-        do {
-            rec_size = client.receive(rec_buf); //, current_max_size);
-            // writefln("read rec_size=%d", rec_size);
-            Thread.sleep(400.msecs);
-        } while (rec_size < 0);
-        auto resp_doc = Document(cast(Buffer)rec_buf[0..rec_size]);
-        auto received = hirpc.receive(resp_doc);
-        if(!received.error.hasMethod(Keywords.code)){
-            foreach(bill; received.params[]){
-                auto std_bill = StandardBill(bill.get!Document);
-                new_bills ~= std_bill;
-            }
-            billsfile.updateBills(new_bills);
-            bills = new_bills;
-            writeln("Wallet updated");
-        }else{
-            writeln("Wallet update failed");
-        }
     }
 
     if (generate_wallet) {
@@ -812,10 +766,12 @@ int _main(string[] args) {
     }
 
     Invoices orders;
+    Invoice invoice_to_pay;
 
     if (payfile.exists) {
         try {
-            orders = payfile.fread!Invoices;
+            // orders = payfile.fread!Invoices;
+            invoice_to_pay = payfile.fread!Invoice;
 //            orders = Invoices(order_doc);
         }
         catch (TagionException e) {
@@ -824,13 +780,58 @@ int _main(string[] args) {
             return 8;
         }
     }
+    if(unlock_bills){
+        wallet_interface.secure_wallet.deactivate_bills;
+        options.accountfile.fwrite(wallet_interface.secure_wallet.account);
+    }
+    if (update_wallet) {
+        
+        // writefln("looking for %s", (cast(Buffer)pkey).toHexString);
+        auto to_send = wallet_interface.secure_wallet.get_request_update_wallet();
+        // writeln("Sending::", to_send.toDoc.toJSON);
+        auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
+        client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface.options.port));
+        client.blocking = true;
+        scope (exit) {
+            client.close;
+        }
+        client.send(to_send.toDoc.serialize);
+
+        auto rec_buf = new void[4000];
+        ptrdiff_t rec_size;
+
+        do {
+            rec_size = client.receive(rec_buf); //, current_max_size);
+            // writefln("read rec_size=%d", rec_size);
+            Thread.sleep(400.msecs);
+        }
+        while (rec_size < 0);
+        auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
+        
+        auto received = hirpc.receive(resp_doc);
+        if (!received.isError) {
+        //    writefln("received: %s", resp_doc.toJSON);
+        // //    writefln("data: %s", received.message.toJSON);
+        //    writefln("type: %s",received.type );
+        // //    writefln("data: %s", received.method.params.toJSON);
+        //    writefln("data: %s", received.response.result.toJSON);
+        
+            auto updated = wallet_interface.secure_wallet.set_response_update_wallet(received);
+            options.accountfile.fwrite(wallet_interface.secure_wallet.account);
+            Thread.sleep(1000.msecs);
+            writeln("Wallet updated ", updated);
+        }
+        else {
+            writeln("Wallet update failed");
+        }
+    }
 
     if (wallet_ui) {
         wallet_interface.accountView;
     }
     else {
         if (print_amount) {
-            writefln("%s", wallet_interface.secure_wallet.account.total);
+            writefln("Total: %s\n Available: %s\n Locked: %s", wallet_interface.secure_wallet.total_balance, wallet_interface.secure_wallet.available_balance, wallet_interface.secure_wallet.active_balance);
         }
         if (create_invoice_command.length) {
             scope invoice_args = create_invoice_command.splitter(":");
@@ -854,28 +855,50 @@ int _main(string[] args) {
             // writefln("invoicefile=%s", invoicefile);
             invoicefile.fwrite(new_invoice);
         }
-        else if (orders !is orders.init) {
+        else if (invoice_to_pay !is invoice_to_pay.init) {
+            writeln("payment");
             SignedContract signed_contract;
-            version(none) {
-                const flag = payment(orders, bills, signed_contract);
-                if (flag) {
-                    HiRPC hirpc;
-                    const sender = hirpc.action("transaction", signed_contract);
-                    // sender.
-                    // immutable data = sender.toDoc.serialize;
-                    // const test = Document(data);
+            const flag =  wallet_interface.secure_wallet.payment([invoice_to_pay], signed_contract);
+            options.accountfile.fwrite(wallet_interface.secure_wallet.account);
 
-                    // const scontract = SignedContract(test["message"].get!Document["params"].get!Document);
-                    options.contractfile.fwrite(sender);
+            if (flag) {
+                const sender = hirpc.transaction(signed_contract.toHiBON);
+                immutable data = sender.toDoc.serialize;
+                options.contractfile.fwrite(sender.toDoc);
+                if(send_flag){
+                    auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
+                    scope (exit) {
+                        client.close;
+                    }
+                    client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface.options.port));
+                    client.blocking = true;
+                    client.send(data);
+
+                    auto rec_buf = new void[4000];
+                    ptrdiff_t rec_size;
+
+                    do {
+                        rec_size = client.receive(rec_buf);
+                        Thread.sleep(400.msecs);
+                    }
+                    while (rec_size < 0);
+
+                    auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
+                    pragma(msg, "fixme(vk) add check format (is responce form hirpc)");
+                    auto received = hirpc.receive(resp_doc);
                 }
             }
+            else {
+                writeln("payment failed");
+            }
         }
+        version(none)
         if (send_flag) {
             if (options.contractfile.exists) {
                 immutable data = options.contractfile.fread();
-                writeln(data.data[0 .. $]);
+                // writeln(data.data[0 .. $]);
                 auto doc1 = Document(data.data);
-                writeln(doc1.size);
+                writeln(doc1.toJSON);
 
                 import LEB128 = tagion.utils.LEB128;
 
@@ -897,7 +920,6 @@ int _main(string[] args) {
                 }
                 while (rec_size < 0);
 
-                HiRPC hirpc;
                 auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
                 auto received = hirpc.receive(resp_doc);
                 Thread.sleep(200.msecs);

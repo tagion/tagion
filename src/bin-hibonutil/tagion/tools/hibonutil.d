@@ -42,6 +42,7 @@ int _main(string[] args) {
     //    string passphrase="verysecret";
     ulong value = 1000_000_000;
     bool pretty;
+    auto logo = import("logo.txt");
 
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
@@ -61,6 +62,7 @@ int _main(string[] args) {
     }
 
     if (main_args.helpWanted) {
+        writeln(logo);
         defaultGetoptPrinter(
                 [
             // format("%s version %s", program, REVNO),

@@ -73,6 +73,7 @@ int _main(string[] args) {
 
     string invoicefile;
     string outputfile = "tmp/dart.hibon";
+    auto logo = import("logo.txt");
     //    StandardBill bill;
     uint number_of_bills;
     bool initbills = false;
@@ -96,6 +97,7 @@ int _main(string[] args) {
     }
 
     if (main_args.helpWanted) {
+        writeln(logo);
         defaultGetoptPrinter(
                 [
             format("%s version %s", program, REVNO),

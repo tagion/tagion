@@ -10,6 +10,11 @@ import tagion.betterC.utils.Memory;
 
 extern (C):
 
+
+void secp256k1_sha256_initialize (secp256k1_sha256* hash);
+void secp256k1_sha256_write (secp256k1_sha256* hash, const(ubyte)* data, size_t size);
+void secp256k1_sha256_finalize (secp256k1_sha256* hash, ubyte* out32);
+
 ubyte[] secp256k1_count_hash(const const(ubyte[]) data) {
     secp256k1_sha256 hash;
     ubyte[] res;
@@ -34,11 +39,6 @@ struct secp256k1_sha256
     uint[16] buf; /* In big endian */
     size_t bytes;
 }
-
-void secp256k1_sha256_initialize (secp256k1_sha256* hash);
-void secp256k1_sha256_write (secp256k1_sha256* hash, const(ubyte)* data, size_t size);
-void secp256k1_sha256_finalize (secp256k1_sha256* hash, ubyte* out32);
-
 ubyte[32] secp256k1_count_hmac_hash(const const(ubyte[]) data) {
     secp256k1_hmac_sha256 hash;
     ubyte[32] res;

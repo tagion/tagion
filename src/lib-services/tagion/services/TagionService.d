@@ -325,10 +325,10 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         log.trace("Before startinf monitor and transaction addressbook.numOfActiveNodes : %d", addressbook
                 .numOfActiveNodes);
 
-        monitor_socket_tid = spawn(
-                &monitorServiceTask,
-                opts);
-        assert(receiveOnly!Control is Control.LIVE);
+        // monitor_socket_tid = spawn(
+        //         &monitorServiceTask,
+        //         opts);
+        // assert(receiveOnly!Control is Control.LIVE);
 
         transcript_tid = spawn(
                 &transcriptServiceTask,
@@ -424,7 +424,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         while (!network_ready);
 
         log.trace("Before Main loop  addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
-
+        HiRPC empty_hirpc;
         while (!stop && !abort) {
             immutable message_received = receiveTimeout(
                     opts.timeout.msecs,
@@ -432,6 +432,17 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                     &controller,
                     &receive_wavefront,
                     &taskfailure,
+                    (string respond_task_name, Buffer data){
+                        import tagion.hibon.HiBONJSON;
+                        const doc = Document(data);
+                        const receiver = empty_hirpc.receive(doc);
+                        auto respond = new HiBON();
+                        respond["rounds"] = hashgraph.rounds.length;
+                        respond["inGraph"] = hashgraph.areWeInGraph;
+                        auto response = empty_hirpc.result(receiver, respond);
+                        log("Healthcheck: %s", response.toDoc.toJSON);
+                        locate(respond_task_name).send(response.toDoc.serialize);
+                    }
             );
             log("ROUNDS: %d AreWeInGraph: %s Active %d", hashgraph.rounds.length, hashgraph.areWeInGraph, addressbook
                     .numOfActiveNodes);

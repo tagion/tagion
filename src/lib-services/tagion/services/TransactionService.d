@@ -89,13 +89,21 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             bool agent(SSLFiber ssl_relay) {
                 import tagion.hibon.HiBONJSON;
 
-                @trusted const(Document) receivessl() nothrow {
+                @trusted const(Document) receivessl() nothrow
+                {
                     try {
+                        import tagion.hibon.Document;
+                        import tagion.hibon.HiBONRecord;
                         immutable buffer = ssl_relay.receive;
+                        log("buffer receiver %d", buffer.length);
                         const result = Document(buffer);
-                        if (result.isInorder) {
-                            return result;
+                        bool check_doc(const Document main_doc,
+                                       const Document.Element.ErrorCode error_code, const(Document.Element) current, const(Document.Element) previous) nothrow @safe
+                        {
+                            return false;
                         }
+                        result.valid(&check_doc);
+                              return result;
                     }
                     catch (Exception t) {
                         log.warning("%s", t.msg);
@@ -107,8 +115,8 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 uint respone_id;
                 try {
                     doc = receivessl();
+
                     pragma(msg, "fixme(cbr): If doc is empty then return ");
-                    log("%s", doc.toJSON);
 version(OLD_TRANSACTION) {
     pragma(msg, "OLD_TRANSACTION ",__FILE__,":",__LINE__);
 
@@ -116,7 +124,8 @@ version(OLD_TRANSACTION) {
                     // import tagion.script.ScriptBuilder;
                     // import tagion.script.ScriptParser;
                     // import tagion.script.Script;
-  const hirpc_received = hirpc.receive(doc);
+
+                    const hirpc_received = hirpc.receive(doc);
 
                     const method_name = hirpc_received.method.name;
                     const params = hirpc_received.method.params;
@@ -140,6 +149,7 @@ else {
                         const method_name = hirpc_received.method.name;
                         const params = hirpc_received.method.params;
 }
+                    log("Method name: %s", method_name);
                         switch (method_name) {
                         case "search":
                             search(params, ssl_relay.id); //epoch number?
@@ -210,12 +220,10 @@ else {
 
                                             //log("Contract:\n%s", json.toPrettyString);
                                         }
-                                        log("before send payload");
                                         sendPayload(payload);
                                         auto empty_params = new HiBON;
                                         auto empty_response = internal_hirpc.result(hirpc_received,
                                             empty_params);
-                                        log("before send");
                                         ssl_relay.send(empty_response.toDoc.serialize);
                                         //  }
                                     }
@@ -249,11 +257,9 @@ else {
                             log("constructed");
                             auto fail_code = SmartScript.check(hirpc.net, signed_contract, foreign_recorder);
                             if (!fail_code) {
-                                log("before send payload");
                                 sendPayload(signed_contract.toDoc);
                                 const empty_response = internal_hirpc.result(hirpc_received, Document());
                                 //                            empty_params);
-                                log("before send");
                                 ssl_relay.send(empty_response.toDoc.serialize);
                             }
                             if (fail_code) {
@@ -270,6 +276,12 @@ else {
                     const bad_response = hirpc.error(respone_id, e.msg, 1);
                     ssl_relay.send(bad_response.toDoc.serialize);
                 }
+                catch (Exception e){
+                    log.error("Bad connection: %s", e.msg);
+                    const bad_response = hirpc.error(respone_id, e.msg, 1);
+                    ssl_relay.send(bad_response.toDoc.serialize);
+                }
+                log("Stop connection");
                 return true;
             }
         }

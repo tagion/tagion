@@ -363,7 +363,7 @@ class SSLFiberService {
         @trusted
         immutable(ubyte[]) receive() {
             import std.stdio;
-
+            import tagion.hibon.Document : Document;
             ubyte[] buffer;
             ubyte[] current;
             ptrdiff_t rec_data_size;
@@ -406,6 +406,7 @@ class SSLFiberService {
             log("curr: %s %d", buffer[0 .. leb128_len.size], buffer.length);
             while (current.length) {
                 rec_data_size = client.receive(current);
+                log("in loop: %d %s", rec_data_size, current);
                 if (rec_data_size < 0) {
                     // Not ready yet
                     writeln("Timeout");
@@ -416,7 +417,10 @@ class SSLFiberService {
                 }
                 yield;
             }
-            return assumeUnique(buffer);
+            log("message readed: %d %s", buffer.length, buffer);
+            // Document doc = Document(cast(immutable)buffer);
+            // log("Received log %d ", doc.serialize.length);
+            return buffer.idup;
         }
 
         /++
@@ -454,8 +458,11 @@ class SSLFiberService {
             startTime;
             scope accept_client = listener.accept;
             scope (exit) {
+                log("accept_client shutdown");
                 accept_client.shutdown(SocketShutdown.BOTH);
+                log("client shutdown");
                 shutdown;
+                log("unlock shutdown");
                 unlock;
             }
             assert(accept_client.isAlive);

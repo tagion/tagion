@@ -24,7 +24,7 @@ import tagion.services.RecorderService;
 import tagion.services.LoggerService;
 import tagion.logger.Logger;
 import tagion.communication.HiRPC;
-import tagion.TaskWrapper : Task;
+import tagion.tasks.TaskWrapper : Task;
 
 mixin TrustedConcurrency;
 
