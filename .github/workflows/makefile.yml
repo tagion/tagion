@@ -1,0 +1,24 @@
+name: Makefile CI
+
+on:
+  pull_request:
+    branches: [ "develop" ]
+
+jobs:
+  unit-test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+      
+    - name: unit test
+      run: make unittest > result-unittest.txt
+    
+    - name: upload artifact 
+      uses: actions/upload-artifact@v3
+      with:
+        name: result-unittest.txt
+        path: .
+      
