@@ -207,7 +207,7 @@ else {
                                             auto std_bill = StandardBill(archive.filed);
                                             payment.bills ~= std_bill;
                                         }
-                                        signed_contract.inputs = payment.toDoc;
+                                        signed_contract.inputs = payment.bills;
                                         // Send the contract as payload to the HashGraph
                                         // The data inside HashGraph is pure payload not an HiRPC
                                         SmartScript.check(hirpc.net, signed_contract);

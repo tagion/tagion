@@ -59,7 +59,8 @@ class SmartScript {
         const message = net.hashOf(signed_contract.contract.toDoc);
 
 
-
+        log("length_signs", signed_contract.signs.length);
+        log("length_inputs", signed_contract.inputs.length);
         .check(signed_contract.signs.length != signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS);
 
@@ -67,8 +68,7 @@ class SmartScript {
 
         .check(signed_contract.contract.inputs.length != signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
-        const payment = PayContract(signed_contract.inputs);
-        foreach (i, print, input, signature; lockstep(signed_contract.contract.inputs, payment.bills, signed_contract
+        foreach (i, print, input, signature; lockstep(signed_contract.contract.inputs, signed_contract.inputs, signed_contract
                 .signs)) {
             import tagion.utils.Miscellaneous : toHexString;
 
@@ -108,8 +108,7 @@ class SmartScript {
         // auto sc = new ScriptContext(10, 10, 10, 100);
         // script.execute(transactions_name, sc);
 
-        const payment = PayContract(signed_contract.inputs);
-        const total_input = calcTotal(payment.bills);
+        const total_input = calcTotal(signed_contract.inputs);
         TagionCurrency total_output;
         foreach (pkey, doc; signed_contract.contract.output) {
             StandardBill bill;
