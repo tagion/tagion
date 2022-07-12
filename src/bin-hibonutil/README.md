@@ -7,7 +7,7 @@
 # Table of contents
 - [Tool link](#tool-link)
 - [Table of contents](#table-of-contents)
-- [just name file](#just name file)
+- [Inputfile](#inputfile)
   - [Description](#description)
   - [Use cases](#use-cases)
     - [Case 1](#case-1)
@@ -22,69 +22,100 @@
 - [outputfile](#outputfile)
   - [Description](#Description)
 - [pretty](#pretty)
-  - [Description](#Description).
+  - [Description](#Description)
 - [value](#value)
   - [Description](#Description)
 - [version](#version)
   - [Description](#Description)
 
-# just name file
-
+# Inputfile
 ## Description
 Simple comand line parameter - path to hibon/json file
-Example of using:
-```
-/folder/file.hibon
-```
 
-## Use cases
-_Brief description of both correct and error use cases_
-
-### Case 1
+## Raw inputfile
 ```
-tmp.hibon
+hibonutil inputfile.hibon
 ```
-#### Success
-**Result**:
-<br>Open hibon and show representation
-<br>_Below the console output after this scenario_
+<br>Open hibon and show in JSON format
+```
+{"$@":"Quiz","$Q":["What is your favorite book?","What is the name of the road you grew up on?","What is your mother’s maiden name?","What was the name of your first\/current\/favorite pet?"]}
+```
+## [Pretty inputfile](#pretty)
+```
+hibonutil -p inputfile.hibon
+```
+<br>Open hibon and show in pretty JSON format
 ```
 {
-    key:value
+    "$@": "Quiz",
+    "$Q": [
+        "What is your favorite book?",
+        "What is the name of the road you grew up on?",
+        "What is your mother’s maiden name?",
+        "What was the name of your first\/current\/favorite pet?"
+    ]
 }
 ```
-#### Failure
+
+## [-i inputfile.hibon](#i_inputfile)
+
+
+### Failure
 **Result** (when path not exists):
-<br>show crash exception
-##### brief : maybe need rewrite behavior for fail cases
+<br>Show crash exception
+```
+std.file.FileException@std/file.d(370): invalid.hibon: No such file or director
+```
+#### WIP : need to rewrite invalid cases
 **Result** (when path has inappropriate format):
 <br>Show unredable parse out
-##### brief : maybe need rewrite behavior for fail cases
 
-### Case 2
-```
-file.ext
-```
-#### Success
+#### WIP : need to rewrite behavior for fail cases
 **Result**:
 <br>message about unssuported extensio
 <br>_Below the console output after this scenario_
 ```
 File file.ext not valid (only .hibon .json)
 ```
+
 # bin
 ```
 -b --bin
 ```
 ## Description
-Not work yet
+WIP
 
 # help
 ```
 -h --help
 ```
 ## Description
+
+`hibonutil -h`
+
 Show a short command list with basic description
+
+```
+Documentation: https://tagion.org/
+
+Usage:
+hibonutil [<option>...] <in-file> <out-file>
+hibonutil [<option>...] <in-file>
+
+Where:
+<in-file>           Is an input file in .json or .hibon format
+<out-file>          Is an output file in .json or .hibon format
+                    stdout is used of the output is not specifed the
+
+<option>:
+      --version display the version
+-i  --inputfile Sets the HiBON input file name
+-o --outputfile Sets the output file name
+-b        --bin Use HiBON or else use JSON
+-V      --value Bill value : default: 1000000000
+-p     --pretty JSON Pretty print: Default: false
+-h       --help This help information.
+```
 
 # outputfile
 ```
@@ -103,7 +134,7 @@ Example of using:
 ```
 Example of using:
 ```
---pretty readfile.hibon
+hibonutil --pretty readfile.hibon
 ```
 ## Description
 Print formatted JSON representation of hibon file
