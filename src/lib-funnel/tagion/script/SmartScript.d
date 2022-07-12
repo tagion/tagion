@@ -53,20 +53,16 @@ class SmartScript {
     }
     do {
 
-
-
             .check(signed_contract.signs.length > 0, ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE);
         const message = net.hashOf(signed_contract.contract.toDoc);
 
 
-        log("length_signs", signed_contract.signs.length);
-        log("length_inputs", signed_contract.inputs.length);
-        .check(signed_contract.signs.length != signed_contract.inputs.length,
+        .check(signed_contract.signs.length == signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS);
 
 
 
-        .check(signed_contract.contract.inputs.length != signed_contract.inputs.length,
+        .check(signed_contract.contract.inputs.length == signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
         foreach (i, print, input, signature; lockstep(signed_contract.contract.inputs, signed_contract.inputs, signed_contract
                 .signs)) {
@@ -76,8 +72,8 @@ class SmartScript {
 
 
 
-            .check(print == fingerprint, ConsensusFailCode
-                    .SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
+            .check(print == fingerprint,
+            ConsensusFailCode.SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
             Pubkey pkey = input.owner;
 
 

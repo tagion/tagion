@@ -207,10 +207,16 @@ else {
                                             auto std_bill = StandardBill(archive.filed);
                                             payment.bills ~= std_bill;
                                         }
+                                        log("payment_bills %d", payment.bills.length);
                                         signed_contract.inputs = payment.bills;
                                         // Send the contract as payload to the HashGraph
                                         // The data inside HashGraph is pure payload not an HiRPC
+                                        log("before check");
+                                        log("signed_contract.inputs.length %d", signed_contract.inputs.length);
+                                        log("signed_contract.signs.length %d", signed_contract.signs.length);
+                                        log("signed_contract.contract.inputs.length %d", signed_contract.contract.inputs.length);
                                         SmartScript.check(hirpc.net, signed_contract);
+                                        log("After check");
                                         //log("checked");
                                         const payload = Document(signed_contract.toHiBON.serialize);
                                         {
