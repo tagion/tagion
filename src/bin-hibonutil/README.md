@@ -7,14 +7,8 @@
 # Table of contents
 - [Tool link](#tool-link)
 - [Table of contents](#table-of-contents)
-- [Inputfile](#inputfile)
-  - [Description](#description)
-  - [Use cases](#use-cases)
-    - [Case 1](#case-1)
-      - [Success](#success)
-      - [Failure](#failure)
-    - [Case 2](#case-2)
-      - [Success](#success-1)
+- [Inputfile](#Inputfile)
+  - [Description](#Description)
 - [bin](#bin)
   - [Description](#Description)
 - [help](#help)
@@ -29,6 +23,7 @@
   - [Description](#Description)
 
 # Inputfile
+
 ## Description
 Simple comand line parameter - path to hibon/json file
 
@@ -44,6 +39,7 @@ hibonutil inputfile.hibon
 ```
 hibonutil -p inputfile.hibon
 ```
+## Description
 <br>Open hibon and show in pretty JSON format
 ```
 {
@@ -57,8 +53,19 @@ hibonutil -p inputfile.hibon
 }
 ```
 
-## [-i inputfile.hibon](#i_inputfile)
-
+## -i inputfile.hibon
+```
+-i  --inputfile
+```
+## Description
+Force mark file as readable - help if more command line parameters and need mark file how need to open
+```
+hibonutil -i inputfile.hibon
+```
+<br>Open hibon and show in JSON format
+```
+{"$@":"Quiz","$Q":["What is your favorite book?","What is the name of the road you grew up on?","What is your mother’s maiden name?","What was the name of your first\/current\/favorite pet?"]}
+```
 
 ### Failure
 **Result** (when path not exists):
@@ -90,9 +97,9 @@ WIP
 -h --help
 ```
 ## Description
-
-`hibonutil -h`
-
+```
+hibonutil -h
+```
 Show a short command list with basic description
 
 ```
@@ -125,30 +132,31 @@ Where:
 Write program out to json-represented file file
 Example of using:
 ```
---outputfile outfile.json
+hibonutil --outputfile outfile.json
 ```
 
 # pretty
 ```
 -p --pretty
 ```
+
+## Description
+Print formatted JSON representation of hibon file
 Example of using:
 ```
 hibonutil --pretty readfile.hibon
 ```
-## Description
-Print formatted JSON representation of hibon file
 
 # value
 ```
 -V --value
 ```
 ## Description
-Not work yet
+WIP
 
 # version
 ```
 --version
 ```
 ## Description
-Not work yet
+WIP
