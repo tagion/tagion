@@ -21,13 +21,14 @@ import tagion.hibon.HiBON;
 import tagion.script.StandardRecords : Contract, SignedContract, PayContract;
 import tagion.script.SmartScript;
 import tagion.crypto.SecureNet : StdSecureNet;
-import std.range : lockstep;
 
 import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
 
 //import tagion.dart.DARTFile;
 import tagion.dart.DART;
 import tagion.dart.Recorder : RecordFactory;
+
+import std.range : lockstep;
 
 @safe class HiRPCNet : StdSecureNet {
     this(string passphrase) {
@@ -208,28 +209,25 @@ else {
                                             auto std_bill = StandardBill(archive.filed);
                                             payment.bills ~= std_bill;
                                         }
-
-            
-                                        @trusted void sortInputs() {
-                                            foreach (input, bill; lockstep(signed_contract.contract.inputs, payment.bills)) {
+                                        foreach (input; signed_contract.contract.inputs)
+                                            {
+                                            foreach (bill; payment.bills)
+                                            {
                                                 if (hirpc.net.hashOf(bill.toDoc) == input) {
-                                                    signed_contract.inputs ~= bill; 
+                                                    signed_contract.inputs ~= bill;
                                                 }
                                             }
                                         }
-                                        sortInputs;
-
-                                        // signed_contract.inputs = payment.bills;
+                                        
                                         // Send the contract as payload to the HashGraph
                                         // The data inside HashGraph is pure payload not an HiRPC
-                                
                                         SmartScript.check(hirpc.net, signed_contract);
                                         const payload = Document(signed_contract.toHiBON.serialize);
-
                                         {
                                             immutable data = signed_contract.toHiBON.serialize;
                                             const json_doc = Document(data);
                                             auto json = json_doc.toJSON;
+
                                             //log("Contract:\n%s", json.toPrettyString);
                                         }
                                         sendPayload(payload);
@@ -237,7 +235,6 @@ else {
                                         auto empty_response = internal_hirpc.result(hirpc_received,
                                             empty_params);
                                         ssl_relay.send(empty_response.toDoc.serialize);
-                                        //  }
                                     }
                                     catch (TagionException e) {
                                         log.error("Bad contract: %s", e.msg);
