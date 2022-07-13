@@ -184,7 +184,6 @@ else {
                                         //
                                         // Load inputs to the contract from the DART
                                         //
-
                                         auto inputs = signed_contract.contract.inputs;
                                         requestInputs(inputs, ssl_relay.id);
                                         yield;
@@ -207,11 +206,19 @@ else {
                                             auto std_bill = StandardBill(archive.filed);
                                             payment.bills ~= std_bill;
                                         }
-                                        signed_contract.inputs = payment.toDoc;
+                                        foreach (input; signed_contract.contract.inputs)
+                                            {
+                                            foreach (bill; payment.bills)
+                                            {
+                                                if (hirpc.net.hashOf(bill.toDoc) == input) {
+                                                    signed_contract.inputs ~= bill;
+                                                }
+                                            }
+                                        }
+                                        
                                         // Send the contract as payload to the HashGraph
                                         // The data inside HashGraph is pure payload not an HiRPC
                                         SmartScript.check(hirpc.net, signed_contract);
-                                        //log("checked");
                                         const payload = Document(signed_contract.toHiBON.serialize);
                                         {
                                             immutable data = signed_contract.toHiBON.serialize;
@@ -225,7 +232,6 @@ else {
                                         auto empty_response = internal_hirpc.result(hirpc_received,
                                             empty_params);
                                         ssl_relay.send(empty_response.toDoc.serialize);
-                                        //  }
                                     }
                                     catch (TagionException e) {
                                         log.error("Bad contract: %s", e.msg);
