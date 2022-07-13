@@ -5,7 +5,6 @@ import std.format;
 import std.socket;
 import core.thread;
 import std.concurrency;
-import std.algorithm : sort, map;
 import std.exception : assumeUnique, assumeWontThrow;
 
 import tagion.network.SSLServiceAPI;
@@ -27,8 +26,6 @@ import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
 //import tagion.dart.DARTFile;
 import tagion.dart.DART;
 import tagion.dart.Recorder : RecordFactory;
-
-import std.range : lockstep;
 
 @safe class HiRPCNet : StdSecureNet {
     this(string passphrase) {
