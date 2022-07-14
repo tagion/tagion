@@ -7,16 +7,16 @@
 - [dartutil v.0.1.0](#dartutil-v010)
       - [Tool link](#tool-link)
 - [Table of contents](#table-of-contents)
+  - [Exclusive functions](#exclusive-functions)
 - [read](#read)
 - [rim](#rim)
 - [modify](#modify)
 - [rpc](#rpc)
 - [generate](#generate)
 - [nncupdate](#nncupdate)
-  - [Description](#description)
   - [Parameters](#parameters)
   - [Use cases](#use-cases)
-    - [Case 1](#case-1)
+    - [Case: simple call](#case-simple-call)
       - [Success](#success)
       - [Failure](#failure)
 - [nncread](#nncread)
@@ -40,7 +40,17 @@
 - [passphrase](#passphrase)
 - [verbose](#verbose)
 
-
+## Exclusive functions
+You can call only one function from this list at a time
+- [--read](#read)
+- [--rim](#rim)
+- [--modify](#modify)
+- [--rpc](#rpc)
+- [--nncupdate](#nncupdate)
+- [--nncread](#nncread)
+- [--testaddblocks](#testaddblocks)
+- [--testdumpblocks](#testdumpblocks)
+  
 # read
 TBD
 
@@ -62,17 +72,15 @@ TBD
 --nncupdate
 ```
 
-## Description
-
 Updates existing NetworkNameCard with given name and associated records in DART. Takes name as a parameter.<br>
 Before calling `nncupdate` DART file must exist and must contain valid NetworkNameCard with given name and other associated records.<br>
-Can't be called with [--read](#read), [--rim](#rim), [--modify](#modify), [--rpc](#rpc), [--nncread](#nncread), [--testaddblocks](#testaddblocks) and [--testdumpblocks](#testdumpblocks) at the same time.<br>
+One of the [exclusive functions](#exclusive-functions) 
 
 ## Parameters
 
 [--nncupdate](#nncupdate) **required** Function takes string that contains name of NetworkNameRecord to update
 
-[--verbose](#verbose) **optional** See argument description
+[--verbose](#verbose) **optional**
 
 And also common parameters for dartutil tool:
 
@@ -98,7 +106,7 @@ Example of using:
 
 ## Use cases
 
-### Case 1 
+### Case: simple call 
 ```
 --nncupdate="test name"
 ```
