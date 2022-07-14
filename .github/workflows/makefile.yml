@@ -14,11 +14,6 @@ jobs:
     
       
     - name: unit test
-      run: apt-install a b c  -y && make unittest > result-unittest.txt
+      run: lsb_release -a && which go
     
-    - name: upload artifact 
-      uses: actions/upload-artifact@v3
-      with:
-        name: result-unittest.txt
-        path: .
       
