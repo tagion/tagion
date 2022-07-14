@@ -14,6 +14,6 @@ jobs:
     
       
     - name: unit test
-      run: make unittest
+      run: which autoconf && which gcc && which ldc2 && which dstep
     
       
