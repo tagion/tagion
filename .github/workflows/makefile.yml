@@ -14,6 +14,6 @@ jobs:
     
       
     - name: unit test
-      run: lsb_release -a && which go
+      run: make unittest
     
       
