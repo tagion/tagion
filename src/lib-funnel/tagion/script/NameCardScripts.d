@@ -18,24 +18,29 @@ import tagion.script.StandardRecords;
 
 import tagion.basic.Basic : doFront;
 
-Nullable!T readStandardRecord(T) (
-    const(HashNet) net, 
-    HiRPC hirpc, 
-    DART db, 
+Nullable!T readStandardRecord(T)(
+    const(HashNet) net,
+    HiRPC hirpc,
+    DART db,
     Buffer hash,
-    ) if (isHiBONRecord!T) {
+) if (isHiBONRecord!T)
+{
 
-    const(Document) readDocFromDB(Buffer[] fingerprints, HiRPC hirpc, DART db) {
+    const(Document) readDocFromDB(Buffer[] fingerprints, HiRPC hirpc, DART db)
+    {
         const sender = DART.dartRead(fingerprints, hirpc);
         auto receiver = hirpc.receive(sender.toDoc);
         return db(receiver, false).message["result"].get!Document;
     }
 
-    Nullable!T fromArchive(T)(const(Archive) archive) if (isHiBONRecord!T) {
-        if (archive is Archive.init) {
+    Nullable!T fromArchive(T)(const(Archive) archive) if (isHiBONRecord!T)
+    {
+        if (archive is Archive.init)
+        {
             return Nullable!T.init;
         }
-        else {
+        else
+        {
             return Nullable!T(T(archive.filed));
         }
     }
@@ -43,7 +48,6 @@ Nullable!T readStandardRecord(T) (
     auto factory = RecordFactory(net);
 
     return fromArchive!T(
-        factory.recorder(readDocFromDB([hash], hirpc, db))
-            [].doFront
-        );
+        factory.recorder(readDocFromDB([hash], hirpc, db))[].doFront
+    );
 }

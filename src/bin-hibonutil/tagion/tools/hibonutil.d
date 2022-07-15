@@ -30,7 +30,8 @@ import tagion.tools.Basic;
 
 mixin Main!_main;
 
-int _main(string[] args) {
+int _main(string[] args)
+{
     immutable program = args[0];
     bool version_switch;
 
@@ -45,26 +46,28 @@ int _main(string[] args) {
     auto logo = import("logo.txt");
 
     auto main_args = getopt(args,
-            std.getopt.config.caseSensitive,
-            std.getopt.config.bundling,
-            "version", "display the version", &version_switch,
-            "inputfile|i", "Sets the HiBON input file name", &inputfilename,
-            "outputfile|o", "Sets the output file name", &outputfilename,
-            "bin|b", "Use HiBON or else use JSON", &binary,
-            "value|V", format("Bill value : default: %d", value), &value,
-            "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
+        std.getopt.config.caseSensitive,
+        std.getopt.config.bundling,
+        "version", "display the version", &version_switch,
+        "inputfile|i", "Sets the HiBON input file name", &inputfilename,
+        "outputfile|o", "Sets the output file name", &outputfilename,
+        "bin|b", "Use HiBON or else use JSON", &binary,
+        "value|V", format("Bill value : default: %d", value), &value,
+        "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
     );
 
-    if (version_switch) {
+    if (version_switch)
+    {
         // writefln("version %s", REVNO);
         // writefln("Git handle %s", HASH);
         return 0;
     }
 
-    if (main_args.helpWanted) {
+    if (main_args.helpWanted)
+    {
         writeln(logo);
         defaultGetoptPrinter(
-                [
+            [
             // format("%s version %s", program, REVNO),
             "Documentation: https://tagion.org/",
             "",
@@ -85,18 +88,22 @@ int _main(string[] args) {
         return 0;
     }
     //    writefln("args=%s", args);
-    if (args.length > 3) {
+    if (args.length > 3)
+    {
         stderr.writefln("Only one output file name allowed (given %s)", args[1 .. $]);
         return 3;
     }
-    if (args.length > 2) {
+    if (args.length > 2)
+    {
         outputfilename = args[2];
         //        writefln("outputfilename%s", outputfilename);
     }
-    if (args.length > 1) {
+    if (args.length > 1)
+    {
         inputfilename = args[1];
     }
-    else {
+    else
+    {
         stderr.writefln("Input file missing");
         return 1;
     }
@@ -107,28 +114,35 @@ int _main(string[] args) {
     // if (standard_output) {
     //     output_extension=outputfilename.extension;
     // }
-//    const input_extension = inputfilename.extension;
+    //    const input_extension = inputfilename.extension;
     //   writefln("input_extension=%s", input_extension);
-    switch (inputfilename.fileExtension) {
+    switch (inputfilename.fileExtension)
+    {
     case FileExtension.hibon:
         immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
         const doc = Document(data);
         const error_code = doc.valid(
-                (
+            (
                 const(Document) sub_doc,
                 const Document.Element.ErrorCode error_code,
                 const(Document.Element) current, const(
-                Document.Element) previous) nothrow{ assumeWontThrow(writefln("%s", current)); return true; });
-        if (error_code !is Document.Element.ErrorCode.NONE) {
+                Document.Element) previous) nothrow{
+            assumeWontThrow(writefln("%s", current));
+            return true;
+        });
+        if (error_code !is Document.Element.ErrorCode.NONE)
+        {
             writefln("Errorcode %s", error_code);
             return 1;
         }
         auto json = doc.toJSON;
         auto json_stringify = (pretty) ? json.toPrettyString : json.toString;
-        if (standard_output) {
+        if (standard_output)
+        {
             writefln("%s", json_stringify);
         }
-        else {
+        else
+        {
             outputfilename.fwrite(json_stringify);
         }
         break;
@@ -136,10 +150,12 @@ int _main(string[] args) {
         const data = inputfilename.readText;
         auto parse = data.parseJSON;
         auto hibon = parse.toHiBON;
-        if (standard_output) {
+        if (standard_output)
+        {
             write(hibon.serialize);
         }
-        else {
+        else
+        {
             outputfilename.fwrite(hibon.serialize);
         }
         break;

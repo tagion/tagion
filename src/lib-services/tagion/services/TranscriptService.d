@@ -26,9 +26,12 @@ import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONJSON;
 
 // This function performs Smart contract executions
-void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
-    try {
-        scope (success) {
+void transcriptServiceTask(string task_name, string dart_task_name) nothrow
+{
+    try
+    {
+        scope (success)
+        {
             ownerTid.prioritySend(Control.END);
         }
         log.register(task_name);
@@ -42,52 +45,64 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
         SmartScript[Buffer] smart_scripts;
 
         bool stop;
-        void controller(Control ctrl) {
-            if (ctrl == Control.STOP) {
+        void controller(Control ctrl)
+        {
+            if (ctrl == Control.STOP)
+            {
                 stop = true;
                 log("Scripting-Api %s stopped", task_name);
             }
         }
 
-        void modifyDART(RecordFactory.Recorder recorder) {
+        void modifyDART(RecordFactory.Recorder recorder)
+        {
             auto sender = empty_hirpc.dartModify(recorder);
-            if (dart_tid !is Tid.init) {
+            if (dart_tid !is Tid.init)
+            {
                 dart_tid.send("blackhole", sender.toDoc.serialize); //TODO: remove blackhole
             }
-            else {
+            else
+            {
                 log.error("Cannot locate DART service");
                 stop = true;
             }
         }
 
-        bool to_smart_script(ref const(SignedContract) signed_contract) nothrow {
-            try {
-                version(OLD_TRANSACTION) {
-	pragma(msg, "OLD_TRANSACTION ",__FILE__,":",__LINE__);
-                auto smart_script = new SmartScript(signed_contract);
-                smart_script.check(net);
-                const signed_contract_doc = signed_contract.toDoc;
-                const fingerprint = net.HashNet.hashOf(signed_contract_doc);
-                smart_script.run(current_epoch + 1);
+        bool to_smart_script(ref const(SignedContract) signed_contract) nothrow
+        {
+            try
+            {
+                version (OLD_TRANSACTION)
+                {
+                    pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
+                    auto smart_script = new SmartScript(signed_contract);
+                    smart_script.check(net);
+                    const signed_contract_doc = signed_contract.toDoc;
+                    const fingerprint = net.HashNet.hashOf(signed_contract_doc);
+                    smart_script.run(current_epoch + 1);
 
-                smart_scripts[fingerprint] = smart_script;
+                    smart_scripts[fingerprint] = smart_script;
                 }
                 return true;
             }
-            catch (ConsensusException e) {
+            catch (ConsensusException e)
+            {
                 log.warning("ConsensusException: %s", e.msg);
                 return false;
                 // Not approved
             }
-            catch (TagionException e) {
+            catch (TagionException e)
+            {
                 log.warning("TagionException: %s", e.msg);
                 return false;
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 log.warning("Exception: %s", e.msg);
                 return false;
             }
-            catch (Error e) {
+            catch (Error e)
+            {
                 fatal(e);
                 return false;
             }
@@ -95,23 +110,28 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
 
         RecordFactory.Recorder input_recorder;
 
-        void receive_epoch(Buffer payloads_buff) nothrow {
-            try {
+        void receive_epoch(Buffer payloads_buff) nothrow
+        {
+            try
+            {
 
                 const payload_doc = Document(payloads_buff);
                 log("Received epoch: len:%d", payload_doc.length);
 
                 scope bool[Buffer] used_inputs;
-                scope (exit) {
+                scope (exit)
+                {
                     used_inputs = null;
                     smart_scripts = null;
                     current_epoch++;
                 }
                 auto recorder = rec_factory.recorder;
-                foreach (payload_el; payload_doc[]) {
+                foreach (payload_el; payload_doc[])
+                {
                     immutable doc = payload_el.get!Document;
                     log("PAYLOAD: %s", doc.toJSON);
-                    if (!SignedContract.isRecord(doc)) {
+                    if (!SignedContract.isRecord(doc))
+                    {
                         continue;
                     }
                     import std.datetime : Clock;
@@ -120,75 +140,93 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow {
                     scope signed_contract = SignedContract(doc);
                     //smart_script.check(net);
                     bool invalid;
-                    ForachInput: foreach (input; signed_contract.contract.inputs) {
-                        if (input in used_inputs) {
+                    ForachInput: foreach (input; signed_contract.contract.inputs)
+                    {
+                        if (input in used_inputs)
+                        {
                             invalid = true;
                             break ForachInput;
                         }
-                        else {
+                        else
+                        {
                             used_inputs[input] = true;
                         }
                     }
-                    if (!invalid) {
+                    if (!invalid)
+                    {
                         const signed_contract_doc = signed_contract.toDoc;
                         const fingerprint = net.hashOf(signed_contract_doc);
                         const added = to_smart_script(signed_contract);
-                        if (added && fingerprint in smart_scripts) {
+                        if (added && fingerprint in smart_scripts)
+                        {
                             scope smart_script = smart_scripts[fingerprint];
-                            version(OLD_TRANSACTION) {
-                                pragma(msg, "OLD_TRANSACTION ",__FUNCTION__," ",__FILE__,":",__LINE__);
+                            version (OLD_TRANSACTION)
+                            {
+                                pragma(msg, "OLD_TRANSACTION ", __FUNCTION__, " ", __FILE__, ":", __LINE__);
 
-                            const payment = PayContract(smart_script.signed_contract.inputs);
-}
-else {
-                            PayContract payment;
-}
-                            version(OLD_TRANSACTION) {
-                            foreach (bill; payment.bills) {
-                                const bill_doc = bill.toDoc;
-                                recorder.remove(bill_doc);
+                                const payment = PayContract(smart_script.signed_contract.inputs);
                             }
-pragma(msg, "OLD_TRANSACTION ",__FILE__,":",__LINE__);
-                            foreach (bill; smart_script.output_bills) {
-                                const bill_doc = bill.toDoc;
-                                recorder.add(bill_doc);
+                            else
+                            {
+                                PayContract payment;
                             }
-}
+                            version (OLD_TRANSACTION)
+                            {
+                                foreach (bill; payment.bills)
+                                {
+                                    const bill_doc = bill.toDoc;
+                                    recorder.remove(bill_doc);
+                                }
+                                pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
+                                foreach (bill; smart_script.output_bills)
+                                {
+                                    const bill_doc = bill.toDoc;
+                                    recorder.add(bill_doc);
+                                }
+                            }
                         }
-                        else {
+                        else
+                        {
                             log("not in smart script");
                             invalid = true;
                         }
                     }
-                    else {
+                    else
+                    {
                         log("invalid!!");
                     }
                 }
-                if (recorder.length > 0) {
+                if (recorder.length > 0)
+                {
                     log("Sending to dart len: %d", recorder.length);
                     recorder.dump;
                     modifyDART(recorder);
                 }
-                else {
+                else
+                {
                     log("Empty epoch");
                 }
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 log.warning("Epoch exception:%s ", e);
             }
-            catch (Error e) {
+            catch (Error e)
+            {
                 log.warning("Epoch throwable:%s ", e);
             }
 
         }
 
-        void register_input(immutable(RecordFactory.Recorder) recorder) {
+        void register_input(immutable(RecordFactory.Recorder) recorder)
+        {
 
         }
 
         uint counter;
         ownerTid.send(Control.LIVE);
-        while (!stop) {
+        while (!stop)
+        {
             receive(
                 &receive_epoch,
                 &register_input,
@@ -197,7 +235,8 @@ pragma(msg, "OLD_TRANSACTION ",__FILE__,":",__LINE__);
             );
         }
     }
-    catch (Throwable t) {
+    catch (Throwable t)
+    {
         fatal(t);
     }
 }

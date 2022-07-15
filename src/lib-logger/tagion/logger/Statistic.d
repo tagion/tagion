@@ -3,16 +3,19 @@ module tagion.logger.Statistic;
 import std.typecons : Tuple;
 import tagion.hibon.HiBONRecord;
 
-struct Statistic(T) {
+struct Statistic(T)
+{
     //    enum Limits : double { MEAN=10, SUM=100 }
-    private {
+    private
+    {
         double sum2 = 0.0;
         double sum = 0.0;
         T _min = T.max, _max = T.min;
         uint N;
     }
 
-    ref Statistic opCall(const T value) {
+    ref Statistic opCall(const T value)
+    {
         import std.algorithm.comparison : min, max;
 
         _min = min(_min, value);
@@ -25,7 +28,8 @@ struct Statistic(T) {
     }
 
     alias Result = Tuple!(double, "sigma", double, "mean", uint, "N", T, "min", T, "max");
-    const(Result) result() const pure nothrow {
+    const(Result) result() const pure nothrow
+    {
         immutable mx = sum / N;
         immutable mx2 = mx * mx;
         immutable M = sum2 + N * mx2 - 2 * mx * sum;
@@ -37,9 +41,11 @@ struct Statistic(T) {
     mixin HiBONRecord;
 }
 
-unittest {
+unittest
+{
     Statistic!uint s;
-    foreach (size; [10, 15, 17, 6, 8, 12, 18]) {
+    foreach (size; [10, 15, 17, 6, 8, 12, 18])
+    {
         s(size);
     }
     auto r = s.result;

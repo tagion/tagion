@@ -30,9 +30,11 @@ import std.traits : isPointer;
 
 //import core.stdc.stdio;
 
-RBTreeT!(K) RBTree(K)(const bool owns = true) {
+RBTreeT!(K) RBTree(K)(const bool owns = true)
+{
     RBTreeT!(K) result;
-    with (result) {
+    with (result)
+    {
         nill = &NILL;
         root = nill;
     }
@@ -40,18 +42,22 @@ RBTreeT!(K) RBTree(K)(const bool owns = true) {
     return result;
 }
 
-struct RBTreeT(K) {
+struct RBTreeT(K)
+{
 @nogc:
-    enum Color {
+    enum Color
+    {
         RED,
         BLACK
     }
 
-    static this() {
+    static this()
+    {
         NILL.color = Color.BLACK;
     }
 
-    struct Node {
+    struct Node
+    {
     @nogc:
         K item;
         Color color;
@@ -60,42 +66,52 @@ struct RBTreeT(K) {
         Node* right;
     }
 
-    private {
+    private
+    {
         static Node NILL;
         Node* nill;
         Node* root;
         bool owns;
     }
 
-    RBTreeT expropriate() {
+    RBTreeT expropriate()
+    {
         auto result = RBTree!K(owns);
         result.root = root;
         root = nill;
         return result;
     }
 
-    void surrender() {
+    void surrender()
+    {
         root = nill;
         owns = false;
     }
 
-    ~this() {
+    ~this()
+    {
         dispose;
     }
 
-    void dispose() {
-        void _dispose(Node* current) {
-            if (current !is nill) {
+    void dispose()
+    {
+        void _dispose(Node* current)
+        {
+            if (current !is nill)
+            {
                 _dispose(current.left);
                 _dispose(current.right);
-                if (owns) {
-                    static if (isPointer!K) {
+                if (owns)
+                {
+                    static if (isPointer!K)
+                    {
 
-
+                        
 
                             .dispose(current.item);
                     }
-                    else static if (__traits(compiles, current.item.dispose)) {
+                    else static if (__traits(compiles, current.item.dispose))
+                    {
                         current.item.dispose;
                     }
                 }
@@ -109,52 +125,69 @@ struct RBTreeT(K) {
 
     /* Print tree items by inorder tree walk */
 
-    @property empty() const pure {
+    @property empty() const pure
+    {
         return root is nill;
     }
 
-    protected Node* _search(const(K) item) {
+    protected Node* _search(const(K) item)
+    {
         Node* x = root;
-        while ((x !is nill) && (compare(x.item, item) != 0)) {
-            if (compare(x.item, item) > 0) {
+        while ((x !is nill) && (compare(x.item, item) != 0))
+        {
+            if (compare(x.item, item) > 0)
+            {
                 x = x.left;
             }
-            else {
+            else
+            {
                 x = x.right;
             }
         }
         return x;
     }
 
-    static int compare(K)(scope const(K) a, scope const(K) b) pure {
-        static if (__traits(compiles, a.opCmp(b))) {
+    static int compare(K)(scope const(K) a, scope const(K) b) pure
+    {
+        static if (__traits(compiles, a.opCmp(b)))
+        {
             return a.opCmp(b);
         }
-        else {
-            if (a < b) {
+        else
+        {
+            if (a < b)
+            {
                 return -1;
             }
-            else if (a == b) {
+            else if (a == b)
+            {
                 return 0;
             }
             return 1;
         }
     }
 
-    version (WebAssembly) {
-        void dump(int iter_max = 20) const {
+    version (WebAssembly)
+    {
+        void dump(int iter_max = 20) const
+        {
             // empty
         }
     }
-    else {
-        void dump(int iter_max = 20) const {
+    else
+    {
+        void dump(int iter_max = 20) const
+        {
             import core.stdc.stdio;
 
             const(char[4]) INDENT = "  ->";
-            void _dump(const(Node*) current, const uint level = 1) @nogc {
-                if (current !is nill) {
+            void _dump(const(Node*) current, const uint level = 1) @nogc
+            {
+                if (current !is nill)
+                {
                     _dump(current.left, level + 1);
-                    foreach (i; 0 .. level) {
+                    foreach (i; 0 .. level)
+                    {
                         printf("%s", INDENT.ptr);
                     }
                     printf("%p\n", current);
@@ -169,19 +202,25 @@ struct RBTreeT(K) {
         }
     }
 
-    const(Node*) search(const(K) item) const pure {
-        const(Node*) _search(const(Node*) current) pure {
-            if (current !is nill) {
+    const(Node*) search(const(K) item) const pure
+    {
+        const(Node*) _search(const(Node*) current) pure
+        {
+            if (current !is nill)
+            {
                 import std.traits;
 
                 const cmp = compare(current.item, item);
-                if (cmp == 0) {
+                if (cmp == 0)
+                {
                     return current;
                 }
-                else if (cmp > 0) {
+                else if (cmp > 0)
+                {
                     return _search(current.left);
                 }
-                else {
+                else
+                {
                     return _search(current.right);
                 }
             }
@@ -189,27 +228,33 @@ struct RBTreeT(K) {
         }
 
         auto result = _search(root);
-        if (result !is nill) {
+        if (result !is nill)
+        {
             return result;
         }
         return null;
     }
 
-    bool exists(K item) const {
+    bool exists(K item) const
+    {
         //        const result=search(item);
         return search(item) !is null;
     }
 
-    @property size_t length() const {
+    @property size_t length() const
+    {
         size_t count;
-        foreach (m; this[]) {
+        foreach (m; this[])
+        {
             count++;
         }
         return count;
     }
 
-    protected Node* tree_minimum(Node* x) {
-        while (x.left !is nill) {
+    protected Node* tree_minimum(Node* x)
+    {
+        while (x.left !is nill)
+        {
             x = x.left;
         }
         return x;
@@ -221,11 +266,14 @@ struct RBTreeT(K) {
      * auxilary procedure called insert_fixup is called to fix these violation.
      */
 
-    bool insert(K item) {
+    bool insert(K item)
+    {
         bool result;
         Node* z = create!Node;
-        scope (exit) {
-            if (!result) {
+        scope (exit)
+        {
+            if (!result)
+            {
                 z.dispose;
             }
         }
@@ -233,16 +281,19 @@ struct RBTreeT(K) {
         return result = insert(z);
     }
 
-    const(K) get(const(K) item) const {
+    const(K) get(const(K) item) const
+    {
         alias _K = const(K);
         auto result = search(item);
-        if (result !is null) {
+        if (result !is null)
+        {
             return result.item;
         }
         return K.init;
     }
 
-    private bool insert(Node* z) {
+    private bool insert(Node* z)
+    {
         Node* x, y;
         z.color = Color.RED;
         z.left = nill;
@@ -255,28 +306,35 @@ struct RBTreeT(K) {
          * Go through the tree untill a leaf(null) is reached. y is used for keeping
          * track of the last non-null node which will be z's parent.
          */
-        while (x !is nill) {
+        while (x !is nill)
+        {
             y = x;
             const cmp = compare(z.item, x.item);
-            if (cmp < 0) {
+            if (cmp < 0)
+            {
                 x = x.left;
             }
-            else if (cmp == 0) {
+            else if (cmp == 0)
+            {
                 // Item already exists
                 return false;
             }
-            else {
+            else
+            {
                 x = x.right;
             }
         }
 
-        if (y is nill) {
+        if (y is nill)
+        {
             root = z;
         }
-        else if (compare(z.item, y.item) <= 0) {
+        else if (compare(z.item, y.item) <= 0)
+        {
             y.left = z;
         }
-        else {
+        else
+        {
             y.right = z;
         }
 
@@ -312,14 +370,18 @@ struct RBTreeT(K) {
      * At this point only property 2 can be violated so make root BLACK
      */
 
-    protected void insert_fixup(Node* z) {
-        while (z.parent.color is Color.RED) {
+    protected void insert_fixup(Node* z)
+    {
+        while (z.parent.color is Color.RED)
+        {
 
             /* z's parent is left child of z's grand parent*/
-            if (z.parent is z.parent.parent.left) {
+            if (z.parent is z.parent.parent.left)
+            {
 
                 /* z's grand parent's right child is RED */
-                if ((z.parent.parent.right !is nill) && (z.parent.parent.right.color is Color.RED)) {
+                if ((z.parent.parent.right !is nill) && (z.parent.parent.right.color is Color.RED))
+                {
                     z.parent.color = Color.BLACK;
                     z.parent.parent.right.color = Color.BLACK;
                     z.parent.parent.color = Color.RED;
@@ -327,10 +389,12 @@ struct RBTreeT(K) {
                 }
 
                 /* z's grand parent's right child is not RED */
-            else {
+            else
+                {
 
                     /* z is z's parent's right child */
-                    if (z is z.parent.right) {
+                    if (z is z.parent.right)
+                    {
                         z = z.parent;
                         left_rotate(z);
                     }
@@ -342,10 +406,12 @@ struct RBTreeT(K) {
             }
 
             /* z's parent is z's grand parent's right child */
-            else {
+            else
+            {
 
                 /* z's left uncle or z's grand parent's left child is also RED */
-                if (z.parent.parent.left.color is Color.RED) {
+                if (z.parent.parent.left.color is Color.RED)
+                {
                     z.parent.color = Color.BLACK;
                     z.parent.parent.left.color = Color.BLACK;
                     z.parent.parent.color = Color.RED;
@@ -353,9 +419,11 @@ struct RBTreeT(K) {
                 }
 
                 /* z's left uncle is not RED */
-                else {
+                else
+                {
                     /* z is z's parents left child */
-                    if (z is z.parent.left) {
+                    if (z is z.parent.left)
+                    {
                         z = z.parent;
                         right_rotate(z);
                     }
@@ -381,25 +449,30 @@ struct RBTreeT(K) {
      *   STB   STC                      STA    STB
      */
 
-    void left_rotate(Node* x) {
+    void left_rotate(Node* x)
+    {
         Node* y;
 
         /* Make y's left child x's right child */
         y = x.right;
         x.right = y.left;
-        if (y.left !is nill) {
+        if (y.left !is nill)
+        {
             y.left.parent = x;
         }
 
         /* Make x's parent y's parent and y, x's parent's child */
         y.parent = x.parent;
-        if (y.parent is nill) {
+        if (y.parent is nill)
+        {
             root = y;
         }
-        else if (x is x.parent.left) {
+        else if (x is x.parent.left)
+        {
             x.parent.left = y;
         }
-        else {
+        else
+        {
             x.parent.right = y;
         }
 
@@ -420,25 +493,30 @@ struct RBTreeT(K) {
      *    STB   STC                                       STC   STA
      */
 
-    protected void right_rotate(Node* x) {
+    protected void right_rotate(Node* x)
+    {
         Node* y;
 
         /* Make y's right child x's left child */
         y = x.left;
         x.left = y.right;
-        if (y.right !is nill) {
+        if (y.right !is nill)
+        {
             y.right.parent = x;
         }
 
         /* Make x's parent y's parent and y, x's parent's child */
         y.parent = x.parent;
-        if (y.parent is nill) {
+        if (y.parent is nill)
+        {
             root = y;
         }
-        else if (x is x.parent.left) {
+        else if (x is x.parent.left)
+        {
             x.parent.left = y;
         }
-        else {
+        else
+        {
             x.parent.right = y;
         }
 
@@ -464,25 +542,32 @@ struct RBTreeT(K) {
      * procedure remove_fixup(x) is called to recover this.
      */
 
-    bool remove(K item) {
+    bool remove(K item)
+    {
         auto remove_node = _search(item);
-        if (remove_node !is nill) {
+        if (remove_node !is nill)
+        {
             remove(remove_node);
             return true;
         }
         return false;
     }
 
-    protected void remove(ref Node* z) {
-        scope (exit) {
-            if (owns) {
-                static if (isPointer!K) {
+    protected void remove(ref Node* z)
+    {
+        scope (exit)
+        {
+            if (owns)
+            {
+                static if (isPointer!K)
+                {
 
-
+                    
 
                         .dispose(z.item);
                 }
-                else static if (__traits(compiles, z.item.dispose)) {
+                else static if (__traits(compiles, z.item.dispose))
+                {
                     z.item.dispose;
                 }
             }
@@ -494,24 +579,29 @@ struct RBTreeT(K) {
         y = z;
         yOriginalColor = y.color;
 
-        if (z.left is nill) {
+        if (z.left is nill)
+        {
             x = z.right;
             transplant(z, z.right);
         }
-        else if (z.right is nill) {
+        else if (z.right is nill)
+        {
             x = z.left;
             transplant(z, z.left);
         }
-        else {
+        else
+        {
             y = tree_minimum(z.right);
             yOriginalColor = y.color;
 
             x = y.right;
 
-            if (y.parent == z) {
+            if (y.parent == z)
+            {
                 x.parent = y;
             }
-            else {
+            else
+            {
                 transplant(y, y.right);
                 y.right = z.right;
                 y.right.parent = y;
@@ -523,7 +613,8 @@ struct RBTreeT(K) {
             y.color = z.color;
         }
 
-        if (yOriginalColor is Color.BLACK) {
+        if (yOriginalColor is Color.BLACK)
+        {
             remove_fixup(x);
         }
     }
@@ -556,28 +647,35 @@ struct RBTreeT(K) {
      * If x is right child of it's parent do exact same thing swapping left<->right
      */
 
-    protected void remove_fixup(Node* x) {
+    protected void remove_fixup(Node* x)
+    {
         Node* w;
 
-        while (x !is root && x.color is Color.BLACK) {
-            if (x is x.parent.left) {
+        while (x !is root && x.color is Color.BLACK)
+        {
+            if (x is x.parent.left)
+            {
                 w = x.parent.right;
 
-                if (w.color is Color.RED) {
+                if (w.color is Color.RED)
+                {
                     w.color = Color.BLACK;
                     x.parent.color = Color.RED;
                     left_rotate(x.parent);
                     w = x.parent.right;
                 }
 
-                if (w.left.color is Color.BLACK && w.right.color is Color.BLACK) {
+                if (w.left.color is Color.BLACK && w.right.color is Color.BLACK)
+                {
                     w.color = Color.RED;
                     x.parent.color = Color.BLACK;
                     x = x.parent;
                 }
-                else {
+                else
+                {
 
-                    if (w.right.color is Color.BLACK) {
+                    if (w.right.color is Color.BLACK)
+                    {
                         w.color = Color.RED;
                         w.left.color = Color.BLACK;
                         right_rotate(w);
@@ -593,24 +691,29 @@ struct RBTreeT(K) {
                 }
 
             }
-            else {
+            else
+            {
                 w = x.parent.left;
 
-                if (w.color is Color.RED) {
+                if (w.color is Color.RED)
+                {
                     w.color = Color.BLACK;
                     x.parent.color = Color.BLACK;
                     right_rotate(x.parent);
                     w = x.parent.left;
                 }
 
-                if (w.left.color is Color.BLACK && w.right.color is Color.BLACK) {
+                if (w.left.color is Color.BLACK && w.right.color is Color.BLACK)
+                {
                     w.color = Color.RED;
                     x.parent.color = Color.BLACK;
                     x = x.parent;
                 }
-                else {
+                else
+                {
 
-                    if (w.left.color is Color.BLACK) {
+                    if (w.left.color is Color.BLACK)
+                    {
                         w.color = Color.RED;
                         w.right.color = Color.BLACK;
                         left_rotate(w);
@@ -632,108 +735,136 @@ struct RBTreeT(K) {
     }
 
     /* replace node u with node v */
-    protected void transplant(Node* u, Node* v) {
-        if (u.parent is nill) {
+    protected void transplant(Node* u, Node* v)
+    {
+        if (u.parent is nill)
+        {
             root = v;
         }
-        else if (u is u.parent.left) {
+        else if (u is u.parent.left)
+        {
             u.parent.left = v;
         }
-        else {
+        else
+        {
             u.parent.right = v;
         }
 
         v.parent = u.parent;
     }
 
-    Range opSlice() const {
+    Range opSlice() const
+    {
         // In betterC the descructor of RBTree is call if the argument is passed to the Range struct
         // This is the reason why the pointer to RBTree is used
         auto range = Range(root);
         return range;
     }
 
-    struct Range {
+    struct Range
+    {
         import std.traits;
 
-        private {
+        private
+        {
             Node* nill;
             Node* current;
             Node* walker;
             Stack!(Node*) stack;
         }
 
-        this(const(Node*) root) {
+        this(const(Node*) root)
+        {
             this.nill = &RBTreeT.NILL;
             walker = current = cast(Node*) root;
             popFront;
         }
 
-        ~this() {
+        ~this()
+        {
             dispose;
         }
 
-        void dispose() {
+        void dispose()
+        {
             stack.dispose;
             walker = current = null;
         }
 
-        private void push(Node* node) {
+        private void push(Node* node)
+        {
             stack.push(node);
         }
 
-        private Node* pop() {
-            if (stack.empty) {
+        private Node* pop()
+        {
+            if (stack.empty)
+            {
                 return nill;
             }
             return stack.pop;
         }
 
-        @property bool empty() const pure {
+        @property bool empty() const pure
+        {
             return (current is nill);
         }
 
-        @property const(K) front() const pure {
-            if (current is nill) {
+        @property const(K) front() const pure
+        {
+            if (current is nill)
+            {
                 return K.init;
             }
             return current.item;
         }
 
-        void popFront() {
-            while (walker !is nill) {
+        void popFront()
+        {
+            while (walker !is nill)
+            {
                 push(walker);
                 walker = walker.left;
             }
 
-            if (!stack.empty) {
+            if (!stack.empty)
+            {
                 walker = current = pop;
                 walker = walker.right;
             }
-            else {
+            else
+            {
                 current = nill;
             }
         }
     }
 }
 
-unittest {
+unittest
+{
 
-    enum tcase = [60, 140, 20, 130, 30, 160, 110, 170, 40, 120, 50, 70, 100, 10, 150, 80, 90];
-    const(int[17]) result = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170];
+    enum tcase = [
+            60, 140, 20, 130, 30, 160, 110, 170, 40, 120, 50, 70, 100, 10, 150, 80,
+            90
+        ];
+    const(int[17]) result = [
+        10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170
+    ];
 
     assert(tcase.length == result.length);
 
     auto tree = RBTree!int(false);
 
-    foreach (item; tcase) {
+    foreach (item; tcase)
+    {
         tree.insert(item);
     }
 
     // Check that all the elements has been added
     uint count;
 
-    foreach (n; tree[]) {
+    foreach (n; tree[])
+    {
         const item = result[count++];
         assert(n == item);
     }
@@ -744,13 +875,15 @@ unittest {
     enum indices = [5, 3, 14, 0, tcase.length - 1];
 
     // Check exists
-    foreach (i; indices) {
+    foreach (i; indices)
+    {
         const item = result[i];
         assert(tree.exists(item));
     }
 
     // Check search
-    foreach (i; indices) {
+    foreach (i; indices)
+    {
         const item = result[i];
         const n = tree.search(item);
         assert(n !is null);
@@ -758,7 +891,8 @@ unittest {
     }
 
     // Check remove
-    foreach (i; indices) {
+    foreach (i; indices)
+    {
         const item = result[i];
         const n_exists = tree.search(item);
         assert(n_exists !is null);
@@ -812,7 +946,8 @@ unittest {
 //     }
 // }
 
-unittest {
+unittest
+{
     auto tree = RBTree!int(false);
     tree.insert(42);
     assert(tree.length is 1);

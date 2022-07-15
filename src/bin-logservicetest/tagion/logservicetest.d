@@ -312,8 +312,6 @@ module tagion.logservicetest;
 //             // "from", format("Sets from angle: default %s", (fromAngle == toAngle) ? "full" : fromAngle.to!string), &fromAngle,
 //             // "to", format("Sets to angle: default %s", (fromAngle == toAngle) ? "full" : toAngle.to!string), &toAngle,
 
-
-
 //     );
 
 //     // /*
@@ -523,9 +521,10 @@ module tagion.logservicetest;
 //     return 0;
 // }
 
-int main(string[] args) {
-//     //return loggerServiceTest(args);
-//     return recorderCliTest(args);
-//     //return logSubscriptionTest(args);
-return 0;
+int main(string[] args)
+{
+    //     //return loggerServiceTest(args);
+    //     return recorderCliTest(args);
+    //     //return logSubscriptionTest(args);
+    return 0;
 }
