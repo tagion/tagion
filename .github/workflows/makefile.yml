@@ -22,7 +22,7 @@ jobs:
         tar -xvf ldc2-1.28.1-linux-x86_64.tar.xz
         pwd
         ls -la
-        cp -r ldc2-1.28.1-linux-x86_64/ /usr/local/bin
+        export PATH=$PATH:/home/runner/work/tagion/tagion/ldc2-1.28.1-linux-x86_64/bin
         which dstep
         which ldc2
         which gcc
