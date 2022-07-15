@@ -28,5 +28,5 @@ jobs:
         which gcc
         which autoconf
         go version
-        git submodule update --recursive
-        make unittest 
+        git submodule update --recursive --init
+        make unittest || make unittest
