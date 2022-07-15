@@ -20,7 +20,7 @@ jobs:
         cp dstep /usr/local/bin
         wget https://github.com/ldc-developers/ldc/releases/download/v1.28.1/ldc2-1.28.1-linux-x86_64.tar.xz
         tar -xvf ldc2-1.28.1-linux-x86_64.tar.xz
-        cp -r ldc2-1.28.1-linux-x86_64/ /usr/local/
+        cp -r ldc2-1.28.1-linux-x86_64/ /usr/local/bin
         which dstep
         which ldc2
         which gcc
