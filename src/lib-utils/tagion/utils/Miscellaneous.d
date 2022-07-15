@@ -9,16 +9,20 @@ import std.algorithm.iteration : fold, cumulativeFold;
 
 @trusted
 string toHexString(bool UCASE = false, BUF)(BUF buffer) pure nothrow
-if (isBufferType!BUF) {
-    static if (UCASE) {
+if (isBufferType!BUF)
+{
+    static if (UCASE)
+    {
         enum hexdigits = "0123456789ABCDEF";
     }
-    else {
+    else
+    {
         enum hexdigits = "0123456789abcdef";
     }
     uint i = 0;
     char[] text = new char[buffer.length * 2];
-    foreach (b; buffer) {
+    foreach (b; buffer)
+    {
         text[i++] = hexdigits[b >> 4];
         text[i++] = hexdigits[b & 0xf];
     }
@@ -28,7 +32,8 @@ if (isBufferType!BUF) {
 
 alias hex = toHexString;
 
-unittest {
+unittest
+{
     {
         enum value = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90";
         auto buf = decode(value);
@@ -45,18 +50,24 @@ unittest {
 }
 
 @safe immutable(ubyte[]) decode(const(char[]) hex) pure nothrow
-in {
+in
+{
     assert(hex.length % 2 == 0);
 }
-do {
-    int to_hex(const(char) c) {
-        if ((c >= '0') && (c <= '9')) {
+do
+{
+    int to_hex(const(char) c)
+    {
+        if ((c >= '0') && (c <= '9'))
+        {
             return cast(ubyte)(c - '0');
         }
-        else if ((c >= 'a') && (c <= 'f')) {
+        else if ((c >= 'a') && (c <= 'f'))
+        {
             return c - 'a' + 10;
         }
-        else if ((c >= 'A') && (c <= 'F')) {
+        else if ((c >= 'A') && (c <= 'F'))
+        {
             return cast(ubyte)(c - 'A') + 10;
         }
         assert(0, "Bad char '" ~ c ~ "'");
@@ -67,13 +78,16 @@ do {
     uint j;
     bool event;
     ubyte part;
-    foreach (c; hex) {
-        if (c != '_') {
+    foreach (c; hex)
+    {
+        if (c != '_')
+        {
             //            writefln("j=%d len=%d", j, result.length);
             part <<= 4;
             part |= to_hex(c);
 
-            if (event) {
+            if (event)
+            {
                 result[j] = part;
                 part = 0;
                 j++;
@@ -94,25 +108,30 @@ do {
  +     The 16 first hex digits of the buffer
 +/
 @safe
-string cutHex(bool UCASE = false, BUF)(BUF buf) pure if (isBufferType!BUF) {
+string cutHex(bool UCASE = false, BUF)(BUF buf) pure if (isBufferType!BUF)
+{
     import std.format;
 
     enum LEN = ulong.sizeof;
-    if (buf.length < LEN) {
+    if (buf.length < LEN)
+    {
         return buf[0 .. $].toHexString!UCASE;
     }
-    else {
+    else
+    {
         return buf[0 .. LEN].toHexString!UCASE;
     }
 }
 
 @safe
 protected Buffer _xor(const(ubyte[]) a, const(ubyte[]) b) pure nothrow
-in {
+in
+{
     assert(a.length == b.length);
     assert(a.length % ulong.sizeof == 0);
 }
-do {
+do
+{
     import tagion.utils.Gene : gene_xor;
 
     const _a = cast(const(ulong[])) a;
@@ -122,11 +141,13 @@ do {
 
 @safe
 const(Buffer) xor(scope const(ubyte[]) a, scope const(ubyte[]) b) pure nothrow
-in {
+in
+{
     assert(a.length == b.length);
     assert(a.length % ulong.sizeof == 0);
 }
-do {
+do
+{
     import tagion.utils.Gene : gene_xor;
 
     const _a = cast(const(ulong[])) a;
@@ -136,11 +157,13 @@ do {
 
 @nogc @safe
 void xor(ref scope ubyte[] result, scope const(ubyte[]) a, scope const(ubyte[]) b) pure nothrow
-in {
+in
+{
     assert(a.length == b.length);
     assert(a.length % ulong.sizeof == 0);
 }
-do {
+do
+{
     import tagion.utils.Gene : gene_xor;
 
     const _a = cast(const(ulong[])) a;
@@ -150,7 +173,8 @@ do {
 }
 
 @safe
-Buffer xor(Range)(scope Range range) pure if (isInputRange!Range) {
+Buffer xor(Range)(scope Range range) pure if (isInputRange!Range)
+{
     import std.array : array;
     import std.range : tail;
 

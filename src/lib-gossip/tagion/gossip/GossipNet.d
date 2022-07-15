@@ -32,21 +32,26 @@ import tagion.hashgraph.HashGraphBasic;
 //import tagion.logger.Logger;
 
 @safe
-abstract class StdGossipNet : StdSecureNet, GossipNet {
+abstract class StdGossipNet : StdSecureNet, GossipNet
+{
     static private shared uint _next_global_id;
     static private shared uint[immutable(Pubkey)] _node_id_pair;
 
-    uint globalNodeId(immutable(Pubkey) channel) {
-        if (channel in _node_id_pair) {
+    uint globalNodeId(immutable(Pubkey) channel)
+    {
+        if (channel in _node_id_pair)
+        {
             return _node_id_pair[channel];
         }
-        else {
+        else
+        {
             return setGlobalNodeId(channel);
         }
     }
 
     @trusted
-    static private uint setGlobalNodeId(immutable(Pubkey) channel) {
+    static private uint setGlobalNodeId(immutable(Pubkey) channel)
+    {
         import core.atomic;
 
         auto result = _next_global_id;
@@ -55,7 +60,8 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
         return result;
     }
 
-    this() {
+    this()
+    {
         super();
     }
     // this( HashGraph hashgraph) {
@@ -75,7 +81,8 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
     //     return (cast(NetCallbacks)Event.callbacks);
     // }
 
-    static struct Init {
+    static struct Init
+    {
         uint timeout;
         uint node_id;
         uint N;
@@ -85,7 +92,8 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
         string node_name;
     }
 
-    protected {
+    protected
+    {
         ulong _current_time;
         //        HashGraphI _hashgraph;
     }
@@ -97,28 +105,34 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
     protected Tid _transcript_tid;
     @property void transcript_tid(Tid tid)
     @trusted
-    in {
+    in
+    {
         assert(_transcript_tid !is _transcript_tid.init, format("%s hash already been set", __FUNCTION__));
     }
-    do {
+    do
+    {
         _transcript_tid = tid;
     }
 
-    @property Tid transcript_tid() pure nothrow {
+    @property Tid transcript_tid() pure nothrow
+    {
         return _transcript_tid;
     }
 
     protected Tid _scripting_engine_tid;
     @property void scripting_engine_tid(Tid tid) @trusted
-    in {
+    in
+    {
         assert(_scripting_engine_tid !is _scripting_engine_tid.init, format(
                 "%s hash already been set", __FUNCTION__));
     }
-    do {
+    do
+    {
         _scripting_engine_tid = tid;
     }
 
-    @property Tid scripting_engine_tid() pure nothrow {
+    @property Tid scripting_engine_tid() pure nothrow
+    {
         return _scripting_engine_tid;
     }
 }

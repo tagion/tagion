@@ -9,42 +9,50 @@ import std.string : splitLines;
 import tagion.utils.JSONCommon;
 import tagion.tools.revision;
 
-struct BehaviourOptions {
+struct BehaviourOptions
+{
     string[] paths;
     string bbd_filter;
-    void setDefault() pure nothrow {
+    void setDefault() pure nothrow
+    {
         bbd_filter = "*." ~ FileExtension.markdown;
     }
+
     mixin JSONCommon;
     mixin JSONConfig;
 }
 
-int parse_bdd(ref const(BehaviourOptions) opts) {
+int parse_bdd(ref const(BehaviourOptions) opts)
+{
 
     auto bdd_files = dirEntries("", SpanMode.depth).filter!(f => f.name.endsWith(".d"));
-foreach (d; dFiles)
-    writeln(d.name);
+    foreach (d; dFiles)
+        writeln(d.name);
 
-    foreach (d; parallel(dFiles, 1)) {
-//passes by 1 file to each thread
-//{
-        string cmd = "dmd -c "  ~ d.name;
+    foreach (d; parallel(dFiles, 1))
+    {
+        //passes by 1 file to each thread
+        //{
+        string cmd = "dmd -c " ~ d.name;
         writeln(cmd);
         executeShell(cmd);
     }
 }
 
-int main(string[] args) {
+int main(string[] args)
+{
     BehaviourOptions options;
     immutable program = args[0];
     auto config_file = "behaviour.json";
     bool version_switch;
     bool overwrite_switch;
 
-    if (config_file.exists) {
+    if (config_file.exists)
+    {
         options.load(config_file);
     }
-    else {
+    else
+    {
         options.setDefault;
     }
 
@@ -56,13 +64,16 @@ int main(string[] args) {
         "O", format("Write configure file %s", config_file), &overwrite_switch,
     );
 
-    if (version_switch) {
+    if (version_switch)
+    {
         revision_text.writeln;
         return 0;
     }
 
-    if (overwrite_switch) {
-        if (args.length == 2) {
+    if (overwrite_switch)
+    {
+        if (args.length == 2)
+        {
             config_file = args[1];
         }
         options.save(config_file);
@@ -70,22 +81,22 @@ int main(string[] args) {
         return 0;
     }
 
-    if (main_args.helpWanted) {
+    if (main_args.helpWanted)
+    {
         defaultGetoptPrinter(
-                [
-                    revision_text,
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...]", program),
-                    "",
-                    "<option>:",
+            [
+            revision_text,
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s [<option>...]", program),
+            "",
+            "<option>:",
 
-                    ].join("\n"),
-                main_args.options);
+        ].join("\n"),
+        main_args.options);
         return 0;
     }
-
 
     return 0;
 }

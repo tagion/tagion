@@ -49,11 +49,12 @@ import std.datetime;
 
 import concurrency = std.concurrency;
 
-
 @safe
 synchronized
-class ConnectionPool(T : shared(p2plib.StreamI), TKey) {
-    private shared final class ActiveConnection {
+class ConnectionPool(T : shared(p2plib.StreamI), TKey)
+{
+    private shared final class ActiveConnection
+    {
         protected T connection; //TODO: try immutable/const
         protected SysTime last_timestamp;
 
@@ -62,24 +63,29 @@ class ConnectionPool(T : shared(p2plib.StreamI), TKey) {
         /*
             update_timestamp - for long-live connection
         */
-        this(ref shared T value, const bool update_timestamp = false) {
+        this(ref shared T value, const bool update_timestamp = false)
+        {
             connection = value;
             this.update_timestamp = update_timestamp;
             this.last_timestamp = Clock.currTime();
         }
 
-        bool isExpired(const Duration dur) {
+        bool isExpired(const Duration dur)
+        {
             return (Clock.currTime - last_timestamp) > dur;
         }
 
-        void send(Buffer data) {
-            if (update_timestamp) {
+        void send(Buffer data)
+        {
+            if (update_timestamp)
+            {
                 cast() this.last_timestamp = Clock.currTime();
             }
             connection.writeBytes(data);
         }
 
-        void close() {
+        void close()
+        {
             connection.close();
         }
     }
@@ -87,89 +93,113 @@ class ConnectionPool(T : shared(p2plib.StreamI), TKey) {
     protected ActiveConnection[TKey] shared_connections;
     protected immutable Duration timeout;
 
-    this(const Duration timeout = Duration.zero) {
+    this(const Duration timeout = Duration.zero)
+    {
         this.timeout = cast(immutable) timeout;
     }
 
     void add(
-            const TKey key,
-            shared T connection,
-            const bool long_lived = false)
-    in {
+        const TKey key,
+        shared T connection,
+        const bool long_lived = false)
+    in
+    {
         assert(connection.alive);
     }
-    do {
-        if (!contains(key)) {
+    do
+    {
+        if (!contains(key))
+        {
             auto activeConnection = new shared ActiveConnection(connection, long_lived);
             shared_connections[key] = activeConnection;
         }
     }
 
-    void close(const TKey key) {
+    void close(const TKey key)
+    {
         auto connection = get(key);
-        if (connection) {
+        if (connection)
+        {
             shared_connections.remove(key);
             connection.close();
         }
     }
 
     void closeAll()
-    out {
+    out
+    {
         assert(empty);
     }
-    do {
-        foreach (key, connection; shared_connections) {
+    do
+    {
+        foreach (key, connection; shared_connections)
+        {
             shared_connections.remove(key);
             connection.close();
         }
     }
 
-    ulong size() {
+    ulong size()
+    {
         return shared_connections.length;
     }
 
-    bool empty() {
+    bool empty()
+    {
         return size == 0;
     }
 
-    bool contains(const TKey key) {
+    bool contains(const TKey key)
+    {
         return get(key) !is null;
     }
 
-    protected shared(ActiveConnection)* get(const TKey key) {
+    protected shared(ActiveConnection)* get(const TKey key)
+    {
         auto valuePtr = (key in shared_connections);
         return valuePtr;
     }
 
     bool send(const TKey key, Buffer data)
-    in {
+    in
+    {
         assert(data.length != 0);
     }
-    do {
+    do
+    {
         auto connection = this.get(key);
-        if (connection !is null) {
+        if (connection !is null)
+        {
             (*connection).send(data);
             return true;
         }
-        else {
+        else
+        {
             return false;
         }
     }
 
     void broadcast(Buffer data)
-    in {
+    in
+    {
         assert(data.length != 0);
     }
-    do {
-        foreach (connection; shared_connections) {
+    do
+    {
+        foreach (connection; shared_connections)
+        {
             connection.send(data);
         }
     }
 
-    void tick() {
-        if (timeout != Duration.zero) {
-            foreach (key, connection; shared_connections) {
-                if (connection.isExpired(timeout)) {
+    void tick()
+    {
+        if (timeout != Duration.zero)
+        {
+            foreach (key, connection; shared_connections)
+            {
+                if (connection.isExpired(timeout))
+                {
                     close(key);
                 }
             }
@@ -178,7 +208,8 @@ class ConnectionPool(T : shared(p2plib.StreamI), TKey) {
 }
 
 @safe
-unittest {
+unittest
+{
     import tagion.logger.Logger;
 
     log.push(LoggerType.NONE);
@@ -187,17 +218,21 @@ unittest {
 
     @safe
     synchronized
-    class FakeStream : Stream {
+    class FakeStream : Stream
+    {
         protected bool _writeBytesCalled = false;
-        @property bool writeBytesCalled() {
+        @property bool writeBytesCalled()
+        {
             return _writeBytesCalled;
         }
 
-        this() {
+        this()
+        {
             super(null, 0);
         }
 
-        override void writeBytes(Buffer data) {
+        override void writeBytes(Buffer data)
+        {
             _writeBytesCalled = true;
         }
     }
@@ -226,13 +261,17 @@ unittest {
 }
 
 @safe
-class ConnectionPoolBridge {
+class ConnectionPoolBridge
+{
     protected ulong[Pubkey] lookup;
 
-    void removeConnection(ulong connectionId) {
-//        log("CPB::REMOVING CONNECTION \n lookup: %s", lookup);
-        foreach (key, val; lookup) {
-            if (val == connectionId) {
+    void removeConnection(ulong connectionId)
+    {
+        //        log("CPB::REMOVING CONNECTION \n lookup: %s", lookup);
+        foreach (key, val; lookup)
+        {
+            if (val == connectionId)
+            {
                 //              log("CPB::REMOVING KEY: connection id: %s as pk: %s", val, key.cutHex);
                 lookup.remove(key);
                 // break;
@@ -240,31 +279,37 @@ class ConnectionPoolBridge {
         }
     }
 
-    ulong opIndex(const(Pubkey) channel) const pure {
+    ulong opIndex(const(Pubkey) channel) const pure
+    {
         return lookup.get(channel, 0);
     }
 
-    void opIndexAssign(const ulong i, const(Pubkey) channel) pure nothrow {
+    void opIndexAssign(const ulong i, const(Pubkey) channel) pure nothrow
+    {
         lookup[channel] = i;
     }
 
-    void remove(const(Pubkey) channel) {
+    void remove(const(Pubkey) channel)
+    {
         lookup.remove(channel);
     }
 
-    bool contains(const(Pubkey) channel) {
+    bool contains(const(Pubkey) channel)
+    {
         return (channel in lookup) !is null;
     }
 
 }
 
 @safe
-private static string convert_to_net_task_name(string task_name) {
+private static string convert_to_net_task_name(string task_name)
+{
     return task_name ~ "net";
 }
 
 @safe
-class StdP2pNet : P2pNet {
+class StdP2pNet : P2pNet
+{
     shared p2plib.NodeI node;
     Tid sender_tid;
     static uint counter;
@@ -272,16 +317,18 @@ class StdP2pNet : P2pNet {
     protected string internal_task_name;
 
     this(
-            string owner_task_name,
-            string discovery_task_name,
-            const(HostOptions) host,
-            shared p2plib.NodeI node) {
+        string owner_task_name,
+        string discovery_task_name,
+        const(HostOptions) host,
+        shared p2plib.NodeI node)
+    {
         this.owner_task_name = owner_task_name;
         this.internal_task_name = convert_to_net_task_name(owner_task_name);
         log.trace("owner_task_name %s internal_task_name %s", owner_task_name, internal_task_name);
         this.node = node;
         @trusted
-        void spawn_sender() {
+        void spawn_sender()
+        {
             this.sender_tid = concurrency.spawn(
                 &async_send,
                 internal_task_name,
@@ -294,10 +341,13 @@ class StdP2pNet : P2pNet {
     }
 
     @safe
-    void close() {
+    void close()
+    {
         @trusted
-        void send_stop() {
-            if (sender_tid !is Tid.init) {
+        void send_stop()
+        {
+            if (sender_tid !is Tid.init)
+            {
                 concurrency.prioritySend(sender_tid, Control.STOP);
                 concurrency.receiveOnly!Control;
             }
@@ -306,29 +356,35 @@ class StdP2pNet : P2pNet {
         send_stop();
     }
 
-    void send(const Pubkey channel, const(HiRPC.Sender) sender) {
+    void send(const Pubkey channel, const(HiRPC.Sender) sender)
+    {
         alias tsend = concurrency.send;
         // auto internal_sender = locate(internal_task_name);
         log("send called %s", channel.cutHex);
-        if (sender_tid !is Tid.init) {
+        if (sender_tid !is Tid.init)
+        {
             counter++;
-//            log("sending to sender %s", internal_sender);
+            //            log("sending to sender %s", internal_sender);
             auto t = sender.toDoc;
             assumeTrusted!({ tsend(sender_tid, channel, sender.toDoc, counter); });
         }
-        else {
+        else
+        {
             log.warning("sender not found");
         }
     }
 
-    protected void send_remove(Pubkey pk) {
+    protected void send_remove(Pubkey pk)
+    {
         alias tsend = concurrency.send;
         //auto sender = locate(internal_task_name);
-        if (sender_tid !is Tid.init) {
+        if (sender_tid !is Tid.init)
+        {
             counter++;
             assumeTrusted!({ tsend(sender_tid, pk, counter); });
         }
-        else {
+        else
+        {
             log.warning("sender not found");
         }
     }
@@ -336,146 +392,170 @@ class StdP2pNet : P2pNet {
 
 @trusted
 static void async_send(
-        string task_name,
-        string discovery_task_name,
-        const(HostOptions) host,
-        shared p2plib.NodeI node) nothrow {
-    try {
-    scope (exit) {
-        assumeTrusted!({ concurrency.send(concurrency.ownerTid, Control.END); });
-    }
-    const hirpc = new HiRPC(null);
-//    const internal_task_name = convert_to_net_task_name(task_name);
-    log.register(task_name);
+    string task_name,
+    string discovery_task_name,
+    const(HostOptions) host,
+    shared p2plib.NodeI node) nothrow
+{
+    try
+    {
+        scope (exit)
+        {
+            assumeTrusted!({
+                concurrency.send(concurrency.ownerTid, Control.END);
+            });
+        }
+        const hirpc = new HiRPC(null);
+        //    const internal_task_name = convert_to_net_task_name(task_name);
+        log.register(task_name);
 
-    auto connectionPool = new shared ConnectionPool!(shared p2plib.StreamI, ulong)();
-    auto connectionPoolBridge = new ConnectionPoolBridge();
+        auto connectionPool = new shared ConnectionPool!(shared p2plib.StreamI, ulong)();
+        auto connectionPoolBridge = new ConnectionPoolBridge();
 
-    log("start listening");
-    node.listen(
-        task_name,
-        &StdHandlerCallback,
-        task_name,
-        host.timeout.msecs,
-        host.max_size);
+        log("start listening");
+        node.listen(
+            task_name,
+            &StdHandlerCallback,
+            task_name,
+            host.timeout.msecs,
+            host.max_size);
 
-    scope (exit) {
-        log("close listener");
-        node.closeListener(task_name);
-    }
-
-    void send_to_channel(immutable(Pubkey) channel, Document doc) {
-
-        log("sending to: %s TIME: %s", channel.cutHex, Clock.currTime().toUTC());
-        // auto streamIdPtr = channel in connectionPoolBridge.lookup;
-        // auto streamId = streamIdPtr is null ? 0 : *streamIdPtr;
-        auto streamId = connectionPoolBridge[channel];
-        if (streamId == 0 || !connectionPool.contains(streamId)) {
-            NodeAddress node_address = addressbook[channel];
-            auto stream = node.connect(
-                node_address.address,
-                node_address.is_marshal,
-                [task_name]);
-            streamId = stream.identifier;
-            import p2p.callback;
-
-            connectionPool.add(streamId, stream, true);
-            stream.listen(
-                &StdHandlerCallback,
-                task_name,
-                host.timeout.msecs,
-                host
-                .max_size);
-            connectionPoolBridge[channel] = streamId;
+        scope (exit)
+        {
+            log("close listener");
+            node.closeListener(task_name);
         }
 
-        try {
-            log("send to:%d", streamId);
-            auto sended = connectionPool.send(streamId, doc.serialize);
-            if (!sended) {
-                log("\n\n\n not sended \n\n\n");
-            }
-        }
-        catch (Exception e) {
-            log.fatal(e.msg);
-            concurrency.send(concurrency.ownerTid, channel);
-        }
-    }
+        void send_to_channel(immutable(Pubkey) channel, Document doc)
+        {
 
-    auto stop = false;
-    do {
-        log("handling %s", thisTid);
-        concurrency.receive(
-                (const(Pubkey) channel, const(Document) doc, uint id) {
-                    log("received sender %d %s", id, channel.cutHex);
-            try {
-                send_to_channel(channel, doc);
+            log("sending to: %s TIME: %s", channel.cutHex, Clock.currTime().toUTC());
+            // auto streamIdPtr = channel in connectionPoolBridge.lookup;
+            // auto streamId = streamIdPtr is null ? 0 : *streamIdPtr;
+            auto streamId = connectionPoolBridge[channel];
+            if (streamId == 0 || !connectionPool.contains(streamId))
+            {
+                NodeAddress node_address = addressbook[channel];
+                auto stream = node.connect(
+                    node_address.address,
+                    node_address.is_marshal,
+                    [task_name]);
+                streamId = stream.identifier;
+                import p2p.callback;
+
+                connectionPool.add(streamId, stream, true);
+                stream.listen(
+                    &StdHandlerCallback,
+                    task_name,
+                    host.timeout.msecs,
+                    host
+                        .max_size);
+                connectionPoolBridge[channel] = streamId;
             }
-            catch (Exception e) {
-                log("Error on sending to channel: %s", e.msg);
-                concurrency.send(concurrency.ownerTid, channel);
-            }
-        },
-                (Pubkey channel, uint id) {
-            log("Closing connection: %s", channel.cutHex);
-            try {
-                const streamId = connectionPoolBridge[channel];
-                if (streamId !is 0) {
-                    log("connection to close: %d", streamId);
-                    connectionPool.close(streamId);
-                    connectionPoolBridge.remove(channel);
+
+            try
+            {
+                log("send to:%d", streamId);
+                auto sended = connectionPool.send(streamId, doc.serialize);
+                if (!sended)
+                {
+                    log("\n\n\n not sended \n\n\n");
                 }
             }
-            catch (Exception e) {
-                log("SDERROR: %s", e.msg);
-            }
-        },
-
-                (Response!(p2plib.ControlCode.Control_Connected) resp) {
-            log("Client Connected key: %d", resp.key);
-            connectionPool.add(resp.key, resp.stream, true);
-        },
-                (Response!(p2plib.ControlCode.Control_Disconnected) resp) {
-            synchronized (connectionPoolBridge) {
-                log("Client Disconnected key: %d", resp.key);
-                connectionPool.close(cast(void*) resp.key);
-                connectionPoolBridge.removeConnection(resp.key);
-            }
-        },
-                (Response!(p2plib.ControlCode.Control_RequestHandled) resp) {
-            import tagion.hibon.Document;
-
-            auto doc = Document(resp.data);
-            const receiver = hirpc.receive(doc);
-            Pubkey received_pubkey = receiver.pubkey;
-            const streamId = connectionPoolBridge[received_pubkey];
-            if (streamId) {
-                log("previous cpb: %d, now: %d",
-                    connectionPoolBridge[received_pubkey], resp.stream.identifier);
-            }
-            else {
-                connectionPoolBridge[received_pubkey] = resp.stream.identifier;
-            }
-            log("received in: %s", resp.stream.identifier);
-            concurrency.send(concurrency.ownerTid, receiver.toDoc);
-        },
-                (Control control) {
-            if (control == Control.STOP) {
-                stop = true;
+            catch (Exception e)
+            {
+                log.fatal(e.msg);
+                concurrency.send(concurrency.ownerTid, channel);
             }
         }
-        );
+
+        auto stop = false;
+        do
+        {
+            log("handling %s", thisTid);
+            concurrency.receive(
+                (const(Pubkey) channel, const(Document) doc, uint id) {
+                log("received sender %d %s", id, channel.cutHex);
+                try
+                {
+                    send_to_channel(channel, doc);
+                }
+                catch (Exception e)
+                {
+                    log("Error on sending to channel: %s", e.msg);
+                    concurrency.send(concurrency.ownerTid, channel);
+                }
+            },
+                (Pubkey channel, uint id) {
+                log("Closing connection: %s", channel.cutHex);
+                try
+                {
+                    const streamId = connectionPoolBridge[channel];
+                    if (streamId !is 0)
+                    {
+                        log("connection to close: %d", streamId);
+                        connectionPool.close(streamId);
+                        connectionPoolBridge.remove(channel);
+                    }
+                }
+                catch (Exception e)
+                {
+                    log("SDERROR: %s", e.msg);
+                }
+            },
+
+                (Response!(p2plib.ControlCode.Control_Connected) resp) {
+                log("Client Connected key: %d", resp.key);
+                connectionPool.add(resp.key, resp.stream, true);
+            },
+                (Response!(p2plib.ControlCode.Control_Disconnected) resp) {
+                synchronized (connectionPoolBridge)
+                {
+                    log("Client Disconnected key: %d", resp.key);
+                    connectionPool.close(cast(void*) resp.key);
+                    connectionPoolBridge.removeConnection(resp.key);
+                }
+            },
+                (Response!(p2plib.ControlCode.Control_RequestHandled) resp) {
+                import tagion.hibon.Document;
+
+                auto doc = Document(resp.data);
+                const receiver = hirpc.receive(doc);
+                Pubkey received_pubkey = receiver.pubkey;
+                const streamId = connectionPoolBridge[received_pubkey];
+                if (streamId)
+                {
+                    log("previous cpb: %d, now: %d",
+                        connectionPoolBridge[received_pubkey], resp.stream.identifier);
+                }
+                else
+                {
+                    connectionPoolBridge[received_pubkey] = resp.stream.identifier;
+                }
+                log("received in: %s", resp.stream.identifier);
+                concurrency.send(concurrency.ownerTid, receiver.toDoc);
+            },
+                (Control control) {
+                if (control == Control.STOP)
+                {
+                    stop = true;
+                }
+            }
+            );
+        }
+        while (!stop);
     }
-    while (!stop);
-    }
-    catch (Exception e) {
+    catch (Exception e)
+    {
         fatal(e);
     }
 }
 
 @safe
-class P2pGossipNet : StdP2pNet, GossipNet {
-    protected {
+class P2pGossipNet : StdP2pNet, GossipNet
+{
+    protected
+    {
         sdt_t _current_time;
         //bool[Pubkey] pks;
     }
@@ -486,38 +566,46 @@ class P2pGossipNet : StdP2pNet, GossipNet {
         string owner_task_name,
         string discovery_task_name,
         const(HostOptions) host,
-        shared p2plib.NodeI node) {
+        shared p2plib.NodeI node)
+    {
         super(owner_task_name, discovery_task_name, host, node);
         this.random = Random(unpredictableSeed);
         this.mypk = pk;
     }
 
     @property
-    void time(const(sdt_t) t) {
+    void time(const(sdt_t) t)
+    {
         _current_time = sdt_t(t);
     }
 
     @property
-    const(sdt_t) time() pure const {
+    const(sdt_t) time() pure const
+    {
         return _current_time;
     }
 
-    bool isValidChannel(const(Pubkey) channel) const nothrow {
-//        log.trace("channel %s %s isActive %s", channel.cutHex, channel != mypk,addressbook.isActive(channel));
+    bool isValidChannel(const(Pubkey) channel) const nothrow
+    {
+        //        log.trace("channel %s %s isActive %s", channel.cutHex, channel != mypk,addressbook.isActive(channel));
         return addressbook.isActive(channel);
     }
 
-    const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
+    const(Pubkey) select_channel(const(ChannelFilter) channel_filter)
+    {
         import std.range : dropExactly;
-        const active_nodes=addressbook.numOfActiveNodes;
+
+        const active_nodes = addressbook.numOfActiveNodes;
         log.trace("active_nodes=%d", active_nodes);
-        foreach (count; 0 .. active_nodes * 2) {
+        foreach (count; 0 .. active_nodes * 2)
+        {
             const node_index = uniform(0, active_nodes, random);
             log("selected index: %d %d", node_index, active_nodes);
             const send_channel = addressbook.selectActiveChannel(node_index);
             // log("trying to select: %s, valid?: %s", send_channel.cutHex, channel_filter(
             //         send_channel));
-            if ((send_channel != mypk) && channel_filter(send_channel)) {
+            if ((send_channel != mypk) && channel_filter(send_channel))
+            {
                 return send_channel;
             }
         }
@@ -526,21 +614,25 @@ class P2pGossipNet : StdP2pNet, GossipNet {
 
     const(Pubkey) gossip(
         const(ChannelFilter) channel_filter,
-        const(SenderCallBack) sender) {
+        const(SenderCallBack) sender)
+    {
         const send_channel = select_channel(channel_filter);
         log.trace("send_channel %s", send_channel.cutHex);
-        if (send_channel.length) {
+        if (send_channel.length)
+        {
             send(send_channel, sender());
         }
         return send_channel;
     }
 
-    void add_channel(const Pubkey channel) {
+    void add_channel(const Pubkey channel)
+    {
         assert(0, "addressbook should be used instead");
-//        pks[channel] = true;
+        //        pks[channel] = true;
     }
 
-    void remove_channel(const Pubkey channel) {
+    void remove_channel(const Pubkey channel)
+    {
         assert(0, "addressbook should be used instead");
         //      pks.remove(channel);
     }
