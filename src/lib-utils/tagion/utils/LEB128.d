@@ -10,8 +10,10 @@ import std.algorithm.iteration : map, sum;
 //import std.stdio;
 
 @safe @nogc
-class LEB128Exception : TagionException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
+class LEB128Exception : TagionException
+{
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow
+    {
         super(msg, file, line);
     }
 }
@@ -24,10 +26,14 @@ alias check = Check!LEB128Exception;
  No error size 0 is returned
 +/
 @safe @nogc
-size_t calc_size(const(ubyte[]) data) pure nothrow {
-    foreach (i, d; data) {
-        if ((d & 0x80) == 0) {
-            if (i > ulong.sizeof + 1) {
+size_t calc_size(const(ubyte[]) data) pure nothrow
+{
+    foreach (i, d; data)
+    {
+        if ((d & 0x80) == 0)
+        {
+            if (i > ulong.sizeof + 1)
+            {
                 return 0;
             }
             return i + 1;
@@ -37,10 +43,12 @@ size_t calc_size(const(ubyte[]) data) pure nothrow {
 }
 
 @safe @nogc
-size_t calc_size(T)(const T v) pure nothrow if (isUnsigned!(T)) {
+size_t calc_size(T)(const T v) pure nothrow if (isUnsigned!(T))
+{
     size_t result;
     ulong value = v;
-    do {
+    do
+    {
         result++;
         value >>= 7;
     }
@@ -49,13 +57,17 @@ size_t calc_size(T)(const T v) pure nothrow if (isUnsigned!(T)) {
 }
 
 @safe @nogc
-size_t calc_size(T)(const T v) pure nothrow if (isSigned!(T)) {
-    if (v == T.min) {
+size_t calc_size(T)(const T v) pure nothrow if (isSigned!(T))
+{
+    if (v == T.min)
+    {
         return T.sizeof + (is(T == int) ? 1 : 2);
     }
     T value = v;
-    static if (is(T == long)) {
-        if ((value >> (long.sizeof * 8 - 2)) == 1UL) {
+    static if (is(T == long))
+    {
+        if ((value >> (long.sizeof * 8 - 2)) == 1UL)
+        {
             return long.sizeof + 2;
         }
     }
@@ -64,7 +76,8 @@ size_t calc_size(T)(const T v) pure nothrow if (isSigned!(T)) {
     // T nv=-v;
 
     ubyte d;
-    do {
+    do
+    {
         d = value & 0x7f;
         result++;
         value >>= 7;
@@ -74,14 +87,17 @@ size_t calc_size(T)(const T v) pure nothrow if (isSigned!(T)) {
 }
 
 @safe
-immutable(ubyte[]) encode(T)(const T v) pure if (isUnsigned!T && isIntegral!T) {
+immutable(ubyte[]) encode(T)(const T v) pure if (isUnsigned!T && isIntegral!T)
+{
     ubyte[T.sizeof + 2] data;
     alias BaseT = TypedefType!T;
     BaseT value = cast(BaseT) v;
-    foreach (i, ref d; data) {
+    foreach (i, ref d; data)
+    {
         d = value & 0x7f;
         value >>= 7;
-        if (value == 0) {
+        if (value == 0)
+        {
             return data[0 .. i + 1].idup;
         }
         d |= 0x80;
@@ -90,22 +106,27 @@ immutable(ubyte[]) encode(T)(const T v) pure if (isUnsigned!T && isIntegral!T) {
 }
 
 @safe
-immutable(ubyte[]) encode(T)(const T v) pure if (isSigned!T && isIntegral!T) {
+immutable(ubyte[]) encode(T)(const T v) pure if (isSigned!T && isIntegral!T)
+{
     enum DATA_SIZE = (T.sizeof * 9 + 1) / 8 + 1;
     ubyte[DATA_SIZE] data;
-    if (v == T.min) {
-        foreach (ref d; data[0 .. $ - 1]) {
+    if (v == T.min)
+    {
+        foreach (ref d; data[0 .. $ - 1])
+        {
             d = 0x80;
         }
         data[$ - 1] = (T.min >> (7 * (DATA_SIZE - 1))) & 0x7F;
         return data.dup;
     }
     T value = v;
-    foreach (i, ref d; data) {
+    foreach (i, ref d; data)
+    {
         d = value & 0x7f;
         value >>= 7;
         /* sign bit of byte is second high order bit (0x40) */
-        if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))) {
+        if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40)))
+        {
             return data[0 .. i + 1].idup;
         }
         d |= 0x80;
@@ -124,24 +145,30 @@ enum ErrorValue(T) = DecodeLEB128!T(T.init, 0);
 +/
 @safe @nogc
 DecodeLEB128!T decode(T = ulong)(const(ubyte[]) data) pure nothrow
-if (isUnsigned!T) {
+if (isUnsigned!T)
+{
     alias BaseT = TypedefType!T;
     ulong result;
     uint shift;
     enum MAX_LIMIT = T.sizeof * 8;
     size_t len;
-    foreach (i, d; data) {
-        if (shift >= MAX_LIMIT) {
+    foreach (i, d; data)
+    {
+        if (shift >= MAX_LIMIT)
+        {
             return ErrorValue!T;
         }
         // check(shift < MAX_LIMIT,
         //     format("LEB128 decoding buffer over limit of %d %d", MAX_LIMIT, shift));
 
         result |= (d & 0x7FUL) << shift;
-        if ((d & 0x80) == 0) {
+        if ((d & 0x80) == 0)
+        {
             len = i + 1;
-            static if (!is(BaseT == ulong)) {
-                if (result > BaseT.max) {
+            static if (!is(BaseT == ulong))
+            {
+                if (result > BaseT.max)
+                {
                     return ErrorValue!T;
                 }
                 // check(result <= BaseT.max, format("LEB128 decoding overflow of %x for %s", result, T.stringof));
@@ -162,26 +189,33 @@ if (isUnsigned!T) {
  In case of an error this size is set to zero
 +/
 @safe @nogc
-DecodeLEB128!T decode(T = long)(const(ubyte[]) data) pure nothrow if (isSigned!T) {
+DecodeLEB128!T decode(T = long)(const(ubyte[]) data) pure nothrow if (isSigned!T)
+{
     alias BaseT = TypedefType!T;
     long result;
     uint shift;
     enum MAX_LIMIT = T.sizeof * 8;
     size_t len;
-    foreach (i, d; data) {
-        if (shift >= MAX_LIMIT) {
+    foreach (i, d; data)
+    {
+        if (shift >= MAX_LIMIT)
+        {
             return ErrorValue!T;
         }
         //        check(shift < MAX_LIMIT, "LEB128 decoding buffer over limit");
         result |= (d & 0x7FL) << shift;
         shift += 7;
-        if ((d & 0x80) == 0) {
-            if ((shift < long.sizeof * 8) && ((d & 0x40) != 0)) {
+        if ((d & 0x80) == 0)
+        {
+            if ((shift < long.sizeof * 8) && ((d & 0x40) != 0))
+            {
                 result |= (~0L << shift);
             }
             len = i + 1;
-            static if (!is(BaseT == long)) {
-                if (T.min > result) {
+            static if (!is(BaseT == long))
+            {
+                if (T.min > result)
+                {
                     return ErrorValue!T;
                 }
                 // check((T.min <= result) && (result <= T.max),
@@ -197,10 +231,12 @@ DecodeLEB128!T decode(T = long)(const(ubyte[]) data) pure nothrow if (isSigned!T
 }
 
 ///
-unittest {
+unittest
+{
     import std.algorithm.comparison : equal;
 
-    void ok(T)(T x, const(ubyte[]) expected) {
+    void ok(T)(T x, const(ubyte[]) expected)
+    {
         const encoded = encode(x);
         assert(equal(encoded, expected));
         assert(calc_size(x) == expected.length);

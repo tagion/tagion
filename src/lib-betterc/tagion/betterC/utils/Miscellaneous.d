@@ -3,28 +3,34 @@ module tagion.betterC.utils.Miscellaneous;
 import tagion.basic.Types : Buffer, isBufferType;
 import tagion.betterC.utils.Memory;
 import std.range.primitives : isInputRange;
+
 // import std.algorithm : map;
 // import std.array : array;
 import std.algorithm.iteration : fold, cumulativeFold;
 import tagion.betterC.utils.BinBuffer;
 
 void gene_xor(ref scope ulong[] result, scope const(ubyte[]) a, scope const(ubyte[]) b)
-in {
+in
+{
     assert(a.length == b.length);
     assert(result.length == b.length);
 }
-do {
-    foreach (i, ref r; result) {
+do
+{
+    foreach (i, ref r; result)
+    {
         r = a[i] ^ b[i];
     }
 }
 
 protected Buffer _xor(const(ubyte[]) a, const(ubyte[]) b)
-in {
+in
+{
     assert(a.length == b.length);
     assert(a.length % ulong.sizeof == 0);
 }
-do {
+do
+{
     ulong[] res;
     res.create(a.length);
     gene_xor(res, a, b);
@@ -33,11 +39,13 @@ do {
 
 @trusted
 const(Buffer) xor(scope const(ubyte[]) a, scope const(ubyte[]) b)
-in {
+in
+{
     assert(a.length == b.length);
     assert(a.length % ulong.sizeof == 0);
 }
-do {
+do
+{
     ulong[] res;
     res.create(a.length);
     gene_xor(res, a, b);
@@ -46,21 +54,25 @@ do {
 
 @trusted
 const(Buffer) xor(BinBuffer a, BinBuffer b)
-in {
+in
+{
     assert(a.length == b.length);
     assert(a.length % ulong.sizeof == 0);
 }
-do {
+do
+{
     return xor(a.serialize, b.serialize);
 }
 
 @trusted
 Buffer xor(ref scope ubyte[] result, scope const(ubyte[]) a, scope const(ubyte[]) b)
-in {
+in
+{
     assert(a.length == b.length);
     assert(a.length % ulong.sizeof == 0);
 }
-do {
+do
+{
     ulong[] res;
     res.create(a.length);
     gene_xor(res, a, b);
@@ -69,7 +81,8 @@ do {
 }
 
 @trusted
-Buffer xor(Range)(scope Range range) if (isInputRange!Range) {
+Buffer xor(Range)(scope Range range) if (isInputRange!Range)
+{
     import std.array : array;
     import std.range : tail;
 

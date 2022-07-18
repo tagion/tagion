@@ -2,7 +2,8 @@ module tagion.network.SSLOptions;
 
 import tagion.utils.JSONCommon;
 
-struct OpenSSL {
+struct OpenSSL
+{
     string certificate; /// Certificate file name
     string private_key; /// Private key
     uint key_size; /// Key size (RSA 1024,2048,4096)
@@ -17,38 +18,41 @@ struct OpenSSL {
     import std.range : zip, repeat, only;
     import std.format;
 
-    auto config() const pure nothrow @nogc {
+    auto config() const pure nothrow @nogc
+    {
         return only(
-                country,
-                state,
-                city,
-                organisation,
-                name,
-                email);
+            country,
+            state,
+            city,
+            organisation,
+            name,
+            email);
         //                "\n".repeat);
 
     }
 
-    auto command() const pure {
+    auto command() const pure
+    {
         return only(
-                "openssl",
-                "req",
-                "-newkey",
-                format!"rsa:%d"(key_size),
-                "-nodes",
-                "-keyout",
-                private_key,
-                "-x509",
-                "-days",
-                days.to!string,
-                "-out",
-                certificate);
+            "openssl",
+            "req",
+            "-newkey",
+            format!"rsa:%d"(key_size),
+            "-nodes",
+            "-keyout",
+            private_key,
+            "-x509",
+            "-days",
+            days.to!string,
+            "-out",
+            certificate);
     }
 
     mixin JSONCommon;
 }
 
-struct SSLOption {
+struct SSLOption
+{
     string task_name; /// Task name of the SSLService used
     string response_task_name; /// Name of the respose task name (If this is not set the respose service is not started)
     string prefix;

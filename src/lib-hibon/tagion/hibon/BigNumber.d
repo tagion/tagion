@@ -23,10 +23,13 @@ import tagion.hibon.HiBONException : check;
  It is a wrapper of the std.bigint
  +/
 
-@safe struct BigNumber {
-    private union {
+@safe struct BigNumber
+{
+    private union
+    {
         BigInt x;
-        struct {
+        struct
+        {
             static assert(BigDigit.sizeof == uint.sizeof);
             uint[] _data;
             bool _sign;
@@ -37,7 +40,8 @@ import tagion.hibon.HiBONException : check;
      Returns:
      the BigNumber as BigDigit array
      +/
-    @trusted @nogc const(BigDigit[]) data() const pure nothrow {
+    @trusted @nogc const(BigDigit[]) data() const pure nothrow
+    {
         return _data;
     }
 
@@ -45,11 +49,13 @@ import tagion.hibon.HiBONException : check;
      Returns:
      the sign of the BigNumber
      +/
-    @trusted @nogc bool sign() const pure nothrow {
+    @trusted @nogc bool sign() const pure nothrow
+    {
         return _sign;
     }
 
-    enum {
+    enum
+    {
         ZERO = BigNumber(0), /// BigNumber zero
         ONE = BigNumber(1), /// BigNumber one
         MINUSONE = BigNumber(-1) /// BigNumber negative one
@@ -58,25 +64,29 @@ import tagion.hibon.HiBONException : check;
     /++
      Construct a BigNumber for an integer
      +/
-    @trusted this(T)(T x) pure nothrow if (isIntegral!T) {
+    @trusted this(T)(T x) pure nothrow if (isIntegral!T)
+    {
         this.x = BigInt(x);
     }
 
     /++
      Construct an number for a BigInt
      +/
-    @nogc @trusted this(const(BigInt) x) pure nothrow {
+    @nogc @trusted this(const(BigInt) x) pure nothrow
+    {
         this.x = x;
     }
 
     /++
      Construct an number for a BigNumber
      +/
-    @trusted this(const(BigNumber) big) pure nothrow {
+    @trusted this(const(BigNumber) big) pure nothrow
+    {
         this.x = big.x;
     }
 
-    @trusted protected this(scope const(BigDigit[]) data, const bool sign) pure nothrow {
+    @trusted protected this(scope const(BigDigit[]) data, const bool sign) pure nothrow
+    {
         this._data = data.dup;
         this._sign = sign;
     }
@@ -86,14 +96,16 @@ import tagion.hibon.HiBONException : check;
      +/
     @trusted this(Range)(Range s)
             if (isBidirectionalRange!Range && isSomeChar!(ElementType!Range)
-                && !isInfinite!Range && !isSomeString!Range) {
+            && !isInfinite!Range && !isSomeString!Range)
+    {
         this.x = BitInt(s);
     }
 
     /++
      Construct an BigNumber from a string of numbers
      +/
-    @trusted this(Range)(Range s) pure if (isSomeString!Range) {
+    @trusted this(Range)(Range s) pure if (isSomeString!Range)
+    {
         this.x = BigInt(s);
     }
 
@@ -109,7 +121,8 @@ import tagion.hibon.HiBONException : check;
     /++
      constructor for BigNumber in LEB128+ formant
      +/
-    @trusted this(const(ubyte[]) buffer) pure nothrow {
+    @trusted this(const(ubyte[]) buffer) pure nothrow
+    {
         auto result = decodeLEB128(buffer);
         _data = result.value._data;
         _sign = result.value._sign;
@@ -119,11 +132,14 @@ import tagion.hibon.HiBONException : check;
      Params:
      y = is the right side value
      +/
-    @trusted BigNumber opBinary(string op, T)(T y) pure nothrow const {
-        static if (is(T : const(BigNumber))) {
+    @trusted BigNumber opBinary(string op, T)(T y) pure nothrow const
+    {
+        static if (is(T : const(BigNumber)))
+        {
             enum code = format(q{BigNumber result=x %s y.x;}, op);
         }
-        else {
+        else
+        {
             enum code = format(q{BigNumber result=x %s y;}, op);
         }
         mixin(code);
@@ -137,7 +153,8 @@ import tagion.hibon.HiBONException : check;
      Returns:
      The assign value as a BigNumber
      +/
-    @trusted BigNumber opAssign(T)(T x) pure nothrow if (isIntegral!T) {
+    @trusted BigNumber opAssign(T)(T x) pure nothrow if (isIntegral!T)
+    {
         this.x = x;
         return this;
     }
@@ -147,7 +164,8 @@ import tagion.hibon.HiBONException : check;
      the result of the unitary operation op
      +/
     @trusted BigNumber opUnary(string op)() pure nothrow const
-    if (op == "+" || op == "-" || op == "~") {
+    if (op == "+" || op == "-" || op == "~")
+    {
         enum code = format(q{return BigNumber(%s this.x);}, op);
         mixin(code);
     }
@@ -156,7 +174,8 @@ import tagion.hibon.HiBONException : check;
      Returns:
      the result of the unitary operation op
      +/
-    @trusted BigNumber opUnary(string op)() pure nothrow if (op == "++" || op == "--") {
+    @trusted BigNumber opUnary(string op)() pure nothrow if (op == "++" || op == "--")
+    {
         enum code = format(q{%s this.x;}, op);
         mixin(code);
         return BigNumber(this);
@@ -169,11 +188,14 @@ import tagion.hibon.HiBONException : check;
      Returns:
      The assign value as a BigNumber
      +/
-    @trusted BigNumber opOpAssign(string op, T)(T y) pure nothrow {
-        static if (is(T : const(BigNumber))) {
+    @trusted BigNumber opOpAssign(string op, T)(T y) pure nothrow
+    {
+        static if (is(T : const(BigNumber)))
+        {
             enum code = format("this.x %s= y.x;", op);
         }
-        else {
+        else
+        {
             enum code = format("this.x %s= y;", op);
         }
         mixin(code);
@@ -187,12 +209,14 @@ import tagion.hibon.HiBONException : check;
      Returns:
      true if the values are equal
      +/
-    @trusted @nogc bool opEquals()(auto ref const BigNumber y) const pure {
+    @trusted @nogc bool opEquals()(auto ref const BigNumber y) const pure
+    {
         return x == y.x;
     }
 
     /// ditto
-    @trusted @nogc bool opEquals(T)(T y) const pure nothrow if (isIntegral!T) {
+    @trusted @nogc bool opEquals(T)(T y) const pure nothrow if (isIntegral!T)
+    {
         return x == y;
     }
 
@@ -203,44 +227,51 @@ import tagion.hibon.HiBONException : check;
      Returns:
      true if the values are equal
      +/
-    @trusted @nogc int opCmp(ref const BigNumber y) pure nothrow const {
+    @trusted @nogc int opCmp(ref const BigNumber y) pure nothrow const
+    {
         return x.opCmp(y.x);
     }
 
     /// ditto
-    @trusted @nogc int opCmp(T)(T y) pure nothrow const if (isIntegral!T) {
+    @trusted @nogc int opCmp(T)(T y) pure nothrow const if (isIntegral!T)
+    {
         return x.opCmp(x);
     }
 
     /// ditto
-    @trusted @nogc int opCmp(T : BigNumber)(const T y) pure nothrow const {
+    @trusted @nogc int opCmp(T : BigNumber)(const T y) pure nothrow const
+    {
         return x.opCmp(y.x);
     }
 
     /// cast BigNumber to a bool
-    @trusted T opCast(T : bool)() pure nothrow const {
+    @trusted T opCast(T : bool)() pure nothrow const
+    {
         return x.opCast!bool;
     }
 
     /// cast BigNumber to a type T
-    @trusted T opCast(T : ulong)() pure const {
+    @trusted T opCast(T : ulong)() pure const
+    {
         return cast(T) x;
     }
 
-    @trusted @nogc @property size_t ulongLength() const pure nothrow {
+    @trusted @nogc @property size_t ulongLength() const pure nothrow
+    {
         return x.ulongLength;
     }
 
     /++
      Converts to type T
      +/
-    @trusted T convert(T)() const if (isIntegral!T) {
+    @trusted T convert(T)() const if (isIntegral!T)
+    {
         import std.conv : to;
 
         
 
         .check((x >= T.min) && (x <= T.max),
-                format("Coversion range violation for type %s, value %s is outside the [%d..%d]",
+            format("Coversion range violation for type %s, value %s is outside the [%d..%d]",
                 T.stringof, x, T.min, T.max));
         return x.to!T;
     }
@@ -248,26 +279,30 @@ import tagion.hibon.HiBONException : check;
     /++
      Coverts to a number string as a format
      +/
-    @trusted void toString(scope void delegate(const(char)[]) sink, string formatString) const {
+    @trusted void toString(scope void delegate(const(char)[]) sink, string formatString) const
+    {
         return x.toString(sink, formatString);
     }
 
     /// ditto
-    @trusted void toString(scope void delegate(const(char)[]) sink, const ref FormatSpec!char f) const {
+    @trusted void toString(scope void delegate(const(char)[]) sink, const ref FormatSpec!char f) const
+    {
         return x.toString(sink, f);
     }
 
     /++
      Coverts to a hexa-decimal number as a string as
      +/
-    @trusted string toHex() const {
+    @trusted string toHex() const
+    {
         return x.toHex;
     }
 
     /++
      Coverts to a decimal number as a string as
      +/
-    @trusted string toDecimalString() const pure nothrow {
+    @trusted string toDecimalString() const pure nothrow
+    {
         return x.toDecimalString;
     }
 
@@ -276,23 +311,27 @@ import tagion.hibon.HiBONException : check;
      Returns:
      Range of two complement
      +/
-    @nogc TwoComplementRange two_complement() pure const nothrow {
+    @nogc TwoComplementRange two_complement() pure const nothrow
+    {
         static assert(BigDigit.sizeof is int.sizeof);
         return TwoComplementRange(this);
     }
 
-    @trusted void check_minuz_zero() const pure {
+    @trusted void check_minuz_zero() const pure
+    {
         version (none)
 
             
 
                 .check(sign && (_data.length is 1) && (_data[0] is 0),
-                        "The number minus zero is not allowed");
+                    "The number minus zero is not allowed");
     }
 
-    struct TwoComplementRange {
+    struct TwoComplementRange
+    {
     @nogc:
-        protected {
+        protected
+        {
             bool overflow;
             const(BigDigit)[] data;
             long current;
@@ -301,49 +340,61 @@ import tagion.hibon.HiBONException : check;
         immutable bool sign;
 
         @disable this();
-        @trusted this(const BigNumber num) pure nothrow {
+        @trusted this(const BigNumber num) pure nothrow
+        {
             sign = num._sign;
             overflow = true;
             data = num._data;
             popFront;
         }
 
-        @property pure nothrow {
-            const {
-                long front() {
+        @property pure nothrow
+        {
+            const
+            {
+                long front()
+                {
                     return current;
                 }
 
-                bool empty() {
+                bool empty()
+                {
                     return _empty;
                 }
             }
-            void popFront() {
-                if (data.length) {
+            void popFront()
+            {
+                if (data.length)
+                {
                     //debug writefln("data[0]=%d sign=%s", data[0], sign);
-                    if (sign) {
+                    if (sign)
+                    {
                         current = data[0];
                         current = ~current;
-                        if (overflow) {
+                        if (overflow)
+                        {
                             overflow = (current == -1);
                             current++;
                         }
                         //debug writefln("data[0]=%08X current=%016X", data[0], current);
                     }
-                    else {
+                    else
+                    {
                         current = data[0];
                     }
                     //debug writefln("\tcurrent=%d front=%d", current, front);
                     data = data[1 .. $];
                 }
-                else {
+                else
+                {
                     _empty = true;
                 }
             }
         }
     }
 
-    unittest { // Test of Two complement
+    unittest
+    { // Test of Two complement
         import std.algorithm.comparison : equal;
 
         {
@@ -439,11 +490,14 @@ import tagion.hibon.HiBONException : check;
         }
     }
 
-    @nogc static size_t calc_size(const(ubyte[]) data) pure nothrow {
+    @nogc static size_t calc_size(const(ubyte[]) data) pure nothrow
+    {
         size_t result;
-        foreach (d; data) {
+        foreach (d; data)
+        {
             result++;
-            if ((d & 0x80) is 0) {
+            if ((d & 0x80) is 0)
+            {
                 return result;
             }
         }
@@ -451,7 +505,8 @@ import tagion.hibon.HiBONException : check;
     }
 
     alias serialize = encodeLEB128;
-    immutable(ubyte[]) encodeLEB128() const pure {
+    immutable(ubyte[]) encodeLEB128() const pure
+    {
         check_minuz_zero;
         immutable DATA_SIZE = (BigDigit.sizeof * data.length * 8) / 7 + 2;
         enum DIGITS_BIT_SIZE = BigDigit.sizeof * 8;
@@ -461,8 +516,10 @@ import tagion.hibon.HiBONException : check;
         long value = range2c.front;
         range2c.popFront;
         uint shift = DIGITS_BIT_SIZE;
-        foreach (i, ref d; buffer) {
-            if ((shift < 7) && (!range2c.empty)) {
+        foreach (i, ref d; buffer)
+        {
+            if ((shift < 7) && (!range2c.empty))
+            {
                 //debug writefln("range2c.front=%08x 0x%08x %d", range2c.front, value, shift);
                 value &= ~(~0L << shift);
                 value |= (range2c.front << shift);
@@ -472,7 +529,8 @@ import tagion.hibon.HiBONException : check;
             d = value & 0x7F;
             shift -= 7;
             value >>= 7;
-            if (range2c.empty && (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40)))) {
+            if (range2c.empty && (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))))
+            {
                 return buffer[0 .. i + 1].idup;
             }
             d |= 0x80;
@@ -480,7 +538,8 @@ import tagion.hibon.HiBONException : check;
         assert(0);
     }
 
-    @nogc size_t calc_size() const pure {
+    @nogc size_t calc_size() const pure
+    {
         immutable DATA_SIZE = (BigDigit.sizeof * data.length * 8) / 7 + 1;
         enum DIGITS_BIT_SIZE = BigDigit.sizeof * 8;
         size_t index;
@@ -491,13 +550,16 @@ import tagion.hibon.HiBONException : check;
 
         uint shift = DIGITS_BIT_SIZE;
         //debug writefln("DATA_SIZE=%d", DATA_SIZE);
-        foreach (i; 0 .. DATA_SIZE) {
-            if ((shift < 7) && (!range2c.empty)) {
+        foreach (i; 0 .. DATA_SIZE)
+        {
+            if ((shift < 7) && (!range2c.empty))
+            {
                 value &= ~(~0L << shift);
                 value |= (range2c.front << shift);
                 shift += DIGITS_BIT_SIZE;
                 version (none)
-                    if (range2c.front & int.min) {
+                    if (range2c.front & int.min)
+                    {
                         // Set sign bit
                         value |= (~0L) << shift;
                     }
@@ -508,7 +570,8 @@ import tagion.hibon.HiBONException : check;
             shift -= 7;
             value >>= 7;
 
-            if (range2c.empty && (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40)))) {
+            if (range2c.empty && (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))))
+            {
                 return i + 1;
             }
             d |= 0x80;
@@ -518,7 +581,8 @@ import tagion.hibon.HiBONException : check;
 
     alias DecodeLEB128 = Tuple!(BigNumber, "value", size_t, "size");
 
-    static DecodeLEB128 decodeLEB128(const(ubyte[]) data) pure nothrow {
+    static DecodeLEB128 decodeLEB128(const(ubyte[]) data) pure nothrow
+    {
         scope values = new uint[data.length / BigDigit.sizeof + 1];
         enum DIGITS_BIT_SIZE = uint.sizeof * 8;
         ulong result;
@@ -526,17 +590,21 @@ import tagion.hibon.HiBONException : check;
         bool sign;
         size_t index;
         size_t size;
-        foreach (i, d; data) {
+        foreach (i, d; data)
+        {
             size++;
             result |= ulong(d & 0x7F) << shift;
             shift += 7;
-            if (shift >= DIGITS_BIT_SIZE) {
+            if (shift >= DIGITS_BIT_SIZE)
+            {
                 values[index++] = result & uint.max;
                 result >>= DIGITS_BIT_SIZE;
                 shift -= DIGITS_BIT_SIZE;
             }
-            if ((d & 0x80) == 0) {
-                if ((d & 0x40) != 0) {
+            if ((d & 0x80) == 0)
+            {
+                if ((d & 0x40) != 0)
+                {
                     result |= (~0L << shift);
                     sign = true;
                 }
@@ -547,22 +615,26 @@ import tagion.hibon.HiBONException : check;
             }
         }
         auto result_data = values[0 .. index];
-        if (sign) {
+        if (sign)
+        {
             // Takes the to complement of the result because BigInt
             // is stored as a unsigned value and a sign
             long current;
             bool overflow = true;
-            foreach (i, ref r; result_data) {
+            foreach (i, ref r; result_data)
+            {
                 current = r;
                 current = ~current;
-                if (overflow) {
+                if (overflow)
+                {
                     overflow = (current == -1);
                     current++;
                 }
                 r = current & uint.max;
             }
         }
-        while ((index > 1) && (result_data[index - 1] is 0)) {
+        while ((index > 1) && (result_data[index - 1] is 0))
+        {
             index--;
         }
         return DecodeLEB128(BigNumber(result_data[0 .. index], sign), size);
@@ -570,12 +642,14 @@ import tagion.hibon.HiBONException : check;
 
 }
 
-unittest {
+unittest
+{
     import std.algorithm.comparison : equal;
     import std.stdio;
     import LEB128 = tagion.utils.LEB128;
 
-    void ok(BigNumber x, const(ubyte[]) expected) {
+    void ok(BigNumber x, const(ubyte[]) expected)
+    {
         const encoded = x.encodeLEB128;
         assert(encoded == expected);
         assert(equal(encoded, expected));
@@ -624,7 +698,7 @@ unittest {
             ok(x, [
                     129, 222, 183, 222, 154, 241, 153, 154, 146, 232, 172, 141,
                     240, 189, 243, 213, 137, 207, 209, 145, 193, 230, 42
-                    ]);
+                ]);
         }
 
     }
@@ -646,17 +720,17 @@ unittest {
             ok(x, [
                     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
                     128, 96
-                    ]);
+                ]);
             x--;
             ok(x, [
                     255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
                     255, 95
-                    ]);
+                ]);
             x--;
             ok(x, [
                     254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
                     255, 95
-                    ]);
+                ]);
         }
 
         {
@@ -664,31 +738,31 @@ unittest {
             ok(x, [
                     255, 161, 200, 161, 229, 142, 230, 229, 237, 151, 211, 242,
                     143, 194, 140, 170, 246, 176, 174, 238, 190, 153, 85
-                    ]);
+                ]);
 
             x = BigNumber("-0xAB341234_6789ABCD_EF01AB34_12346789_00000000");
             ok(x, [
                     128, 128, 128, 128, 240, 142, 230, 229, 237, 151, 211, 242,
                     143, 194, 140, 170, 246, 176, 174, 238, 190, 153, 85
-                    ]);
+                ]);
 
             x = BigNumber("-0xAB341234_6789ABCD_EF01AB34_00000000_00000000");
             ok(x, [
                     128, 128, 128, 128, 128, 128, 128, 128, 128, 152, 211, 242,
                     143, 194, 140, 170, 246, 176, 174, 238, 190, 153, 85
-                    ]);
+                ]);
 
             x = BigNumber("-0xAB341234_6789ABCD_00000000_00000000_00000000");
             ok(x, [
                     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
                     128, 224, 140, 170, 246, 176, 174, 238, 190, 153, 85
-                    ]);
+                ]);
 
             x = BigNumber("-0xAB341234_00000000_00000000_00000000_00000000");
             ok(x, [
                     128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
                     128, 128, 128, 128, 128, 128, 176, 238, 190, 153, 85
-                    ]);
+                ]);
         }
     }
 }

@@ -1,6 +1,7 @@
 module tagion.dart.DARTFile;
 
-private {
+private
+{
     import std.format;
     import std.exception : assumeWontThrow;
     import std.stdio : File;
@@ -41,9 +42,11 @@ private {
 }
 
 immutable(Buffer) hash_null;
-shared static this() @trusted {
+shared static this() @trusted
+{
     import tagion.crypto.SecureNet : StdHashNet;
     import std.exception : assumeUnique;
+
     auto _null = new ubyte[StdHashNet.HASH_SIZE];
     hash_null = assumeUnique(_null);
 }
@@ -55,7 +58,8 @@ shared static this() @trusted {
  +     fingerprint[rim]
  +/
 @safe
-ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure {
+ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure
+{
     import std.stdio;
 
     return rim_keys[rim];
@@ -67,16 +71,20 @@ ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure {
  +     Sector number of a fingerpint
  +/
 @safe
-ushort root_sector(const(ubyte[]) fingerprint) pure {
+ushort root_sector(const(ubyte[]) fingerprint) pure
+{
     return fingerprint[1] | (fingerprint[0] << 8);
 }
 
 @safe
-void printfp(string msg, const Buffer[] fingerprints) {
+void printfp(string msg, const Buffer[] fingerprints)
+{
     import std.stdio;
 
-    foreach (fp; fingerprints) {
-        if (fp) {
+    foreach (fp; fingerprints)
+    {
+        if (fp)
+        {
             writeln(msg, fp.hex);
         }
     }
@@ -96,7 +104,8 @@ alias check = Check!DARTException;
  +
  +/
 
-@safe class DARTFile {
+@safe class DARTFile
+{
     enum KEY_SPAN = ubyte.max + 1;
     enum uint request_limit = KEY_SPAN;
     enum INDEX_NULL = BlockFile.INDEX_NULL;
@@ -104,7 +113,8 @@ alias check = Check!DARTException;
 
     protected RecordFactory manufactor;
 
-    protected {
+    protected
+    {
         BlockFile blockfile;
         Buffer _fingerprint;
     }
@@ -118,10 +128,12 @@ alias check = Check!DARTException;
 
     enum MIN_BLOCK_SIZE = 0x80;
     static create(string filename, const uint block_size = MIN_BLOCK_SIZE)
-        in {
-            assert(block_size >= MIN_BLOCK_SIZE, format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
-        }
-    do {
+    in
+    {
+        assert(block_size >= MIN_BLOCK_SIZE, format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
+    }
+    do
+    {
         BlockFile.create(filename, DARTFile.stringof, block_size);
     }
     /++
@@ -142,11 +154,13 @@ alias check = Check!DARTException;
      auto dartfile=new DARTFile(net, filename);
      ---
      +/
-    this(const HashNet net, string filename) {
+    this(const HashNet net, string filename)
+    {
         blockfile = BlockFile(filename);
         this.manufactor = RecordFactory(net);
         this.filename = filename;
-        if (blockfile.root_index) {
+        if (blockfile.root_index)
+        {
             const data = blockfile.load(blockfile.root_index);
             const doc = Document(data);
             auto branches = Branches(doc);
@@ -154,13 +168,15 @@ alias check = Check!DARTException;
         }
     }
 
-    void close() @trusted {
+    void close() @trusted
+    {
         blockfile.close;
         blockfile.destroy;
         blockfile = null;
     }
 
-    immutable(Buffer) fingerprint() pure const nothrow {
+    immutable(Buffer) fingerprint() pure const nothrow
+    {
         return _fingerprint;
     }
 
@@ -169,14 +185,16 @@ alias check = Check!DARTException;
     /++
      Creates an empty Recorder
      +/
-    RecordFactory.Recorder recorder() nothrow {
+    RecordFactory.Recorder recorder() nothrow
+    {
         return manufactor.recorder;
     }
 
     /++
      Creates an empty Recorder
      +/
-    RecordFactory.Recorder recorder(const(Document) doc) {
+    RecordFactory.Recorder recorder(const(Document) doc)
+    {
         return manufactor.recorder(doc);
     }
 
@@ -186,37 +204,46 @@ alias check = Check!DARTException;
      + Params:
      +     archives = Archive list
      +/
-    RecordFactory.Recorder recorder(RecordFactory.Recorder.Archives archives) nothrow {
+    RecordFactory.Recorder recorder(RecordFactory.Recorder.Archives archives) nothrow
+    {
         return manufactor.recorder(archives);
     }
 
     static immutable(Buffer) sparsed_merkletree(const HashNet net, const(Buffer[]) tabel)
-    in {
+    in
+    {
         assert(tabel.length == KEY_SPAN);
     }
-    do {
+    do
+    {
         immutable(Buffer) merkletree(
-                const(Buffer[]) left,
-                const(Buffer[]) right) {
+            const(Buffer[]) left,
+            const(Buffer[]) right)
+        {
             Buffer _left_fingerprint;
             Buffer _right_fingerprint;
-            if ((left.length == 1) && (right.length == 1)) {
+            if ((left.length == 1) && (right.length == 1))
+            {
                 _left_fingerprint = left[0];
                 _right_fingerprint = right[0];
             }
-            else {
+            else
+            {
                 immutable left_mid = left.length >> 1;
                 immutable right_mid = right.length >> 1;
                 _left_fingerprint = merkletree(left[0 .. left_mid], left[left_mid .. $]);
                 _right_fingerprint = merkletree(right[0 .. right_mid], right[right_mid .. $]);
             }
-            if (_left_fingerprint is null) {
+            if (_left_fingerprint is null)
+            {
                 return _right_fingerprint;
             }
-            else if (_right_fingerprint is null) {
+            else if (_right_fingerprint is null)
+            {
                 return _left_fingerprint;
             }
-            else {
+            else
+            {
                 return net.calcHash(_left_fingerprint, _right_fingerprint);
             }
         }
@@ -230,10 +257,12 @@ alias check = Check!DARTException;
     //     return (leave.index is DARTFile.INDEX_NULL) && ( leave.fingerprint is null);
     // }
 
-    @safe struct Leave {
+    @safe struct Leave
+    {
         uint index;
         Buffer fingerprint;
-        bool empty() pure const nothrow {
+        bool empty() pure const nothrow
+        {
             return (index is INDEX_NULL) && (fingerprint is null);
         }
     }
@@ -241,7 +270,8 @@ alias check = Check!DARTException;
     /++
 
 +/
-    @RecordType("Branches") struct Branches {
+    @RecordType("Branches") struct Branches
+    {
         import std.stdio;
         import tagion.hibon.HiBONJSON;
 
@@ -251,27 +281,33 @@ alias check = Check!DARTException;
         @Label("") private bool done;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
         enum indicesName = GetLabel!(_indices).name;
-        this(Document doc) {
+        this(Document doc)
+        {
 
-
+            
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
-            if (doc.hasMember(indicesName)) {
+            if (doc.hasMember(indicesName))
+            {
                 _indices = new uint[KEY_SPAN];
-                foreach (e; doc[indicesName].get!Document[]) {
+                foreach (e; doc[indicesName].get!Document[])
+                {
                     _indices[e.index] = e.get!uint;
                 }
             }
-            if (doc.hasMember(fingerprintsName)) {
+            if (doc.hasMember(fingerprintsName))
+            {
                 _fingerprints = new Buffer[KEY_SPAN];
-                foreach (e; doc[fingerprintsName].get!Document) {
+                foreach (e; doc[fingerprintsName].get!Document)
+                {
                     _fingerprints[e.index] = e.get!(immutable(ubyte)[]).idup;
                 }
             }
         }
 
         @nogc
-        bool hasIndices() const pure nothrow {
+        bool hasIndices() const pure nothrow
+        {
             return _indices.length !is 0;
         }
 
@@ -286,11 +322,14 @@ alias check = Check!DARTException;
          +      The fingerprint at key
          +/
         immutable(Buffer) fingerprint(const size_t key) pure const nothrow
-        in {
+        in
+        {
             assert(key < KEY_SPAN);
         }
-        do {
-            if (_fingerprints) {
+        do
+        {
+            if (_fingerprints)
+            {
                 return _fingerprints[key];
             }
             return null;
@@ -301,7 +340,8 @@ alias check = Check!DARTException;
          +     All the fingerprints to the sub branches and archives
          +/
         @property
-        const(Buffer[]) fingerprints() pure const nothrow {
+        const(Buffer[]) fingerprints() pure const nothrow
+        {
             return _fingerprints;
         }
 
@@ -310,7 +350,8 @@ alias check = Check!DARTException;
          +     All the blockfile pointers to the sub branches and archives
          +/
         @property
-        const(uint[]) indices() pure const nothrow {
+        const(uint[]) indices() pure const nothrow
+        {
             return _indices;
         }
 
@@ -319,7 +360,8 @@ alias check = Check!DARTException;
          +     The number of index pointer which points to Leave or Branches
          +     in the blockfile
          +/
-        uint count() pure const {
+        uint count() pure const
+        {
             return cast(uint) _indices.count!("a != b")(0);
         }
 
@@ -328,31 +370,39 @@ alias check = Check!DARTException;
          +     exclude_indices = If this flag is `true` then indices is not generated
          +/
         HiBON toHiBON(const bool exclude_indices = false) const
-        in {
+        in
+        {
             assert(merkleroot is null, "Fingerprint must be calcuted before toHiBON is called");
         }
-        do {
+        do
+        {
             auto hibon = new HiBON;
             auto hibon_fingerprints = new HiBON;
-            if (!exclude_indices) {
+            if (!exclude_indices)
+            {
                 auto hibon_indices = new HiBON;
                 bool indices_set;
-                foreach (key, index; _indices) {
-                    if (index !is INDEX_NULL) {
+                foreach (key, index; _indices)
+                {
+                    if (index !is INDEX_NULL)
+                    {
                         hibon_indices[key] = index;
 
-
+                        
 
                         .check(_fingerprints[key]!is null, format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
                     }
                 }
-                if (indices_set) {
+                if (indices_set)
+                {
                     hibon[indicesName] = hibon_indices;
                 }
             }
-            foreach (key, print; _fingerprints) {
-                if (print !is null) {
+            foreach (key, print; _fingerprints)
+            {
+                if (print !is null)
+                {
                     hibon_fingerprints[key] = print;
                 }
             }
@@ -362,7 +412,8 @@ alias check = Check!DARTException;
             return hibon;
         }
 
-        const(Document) toDoc() const {
+        const(Document) toDoc() const
+        {
             return Document(toHiBON);
         }
 
@@ -385,11 +436,14 @@ alias check = Check!DARTException;
          +     key = Leave number of the branches
          +
          +/
-        uint index(const uint key) pure const {
-            if (empty) {
+        uint index(const uint key) pure const
+        {
+            if (empty)
+            {
                 return INDEX_NULL;
             }
-            else {
+            else
+            {
                 return _indices[key];
             }
         }
@@ -401,11 +455,14 @@ alias check = Check!DARTException;
          +     leave = Which contains the  archive data
          +     key   = leave number
          +/
-        void opIndexAssign(const Leave leave, const uint key) {
-            if (_indices is null) {
+        void opIndexAssign(const Leave leave, const uint key)
+        {
+            if (_indices is null)
+            {
                 _indices = new uint[KEY_SPAN];
             }
-            if (_fingerprints is null) {
+            if (_fingerprints is null)
+            {
                 _fingerprints = new Buffer[KEY_SPAN];
             }
             _indices[key] = leave.index;
@@ -420,19 +477,24 @@ alias check = Check!DARTException;
          +     The leave located at the leave-number key
          +
          +/
-        Leave opIndex(const uint key) {
-            if (empty) {
+        Leave opIndex(const uint key)
+        {
+            if (empty)
+            {
                 return Leave(INDEX_NULL, null);
             }
-            else {
+            else
+            {
                 return Leave(_indices[key], _fingerprints[key]);
             }
         }
 
         /++
          +/
-        bool empty() pure const {
-            if (_indices !is null) {
+        bool empty() pure const
+        {
+            if (_indices !is null)
+            {
                 import std.algorithm.searching : any;
 
                 return !_indices.any!("a != 0");
@@ -441,24 +503,30 @@ alias check = Check!DARTException;
         }
 
         private immutable(Buffer) fingerprint(
-                DARTFile dartfile,
-                scope bool[uint] index_used = null) {
-            if (merkleroot is null) {
-                foreach (key, index; _indices) {
-                    if ((index !is INDEX_NULL) && (_fingerprints[key] is null)) {
+            DARTFile dartfile,
+            scope bool[uint] index_used = null)
+        {
+            if (merkleroot is null)
+            {
+                foreach (key, index; _indices)
+                {
+                    if ((index !is INDEX_NULL) && (_fingerprints[key] is null))
+                    {
 
-
+                        
 
                             .check((index in index_used) is null,
-                                    format("The DART contains a recursive tree @ index %d", index));
+                                format("The DART contains a recursive tree @ index %d", index));
                         index_used[index] = true;
                         immutable data = dartfile.blockfile.load(index);
                         const doc = Document(data);
-                        if (doc.hasMember(indicesName)) {
+                        if (doc.hasMember(indicesName))
+                        {
                             auto subbranch = Branches(doc);
                             _fingerprints[key] = subbranch.fingerprint(dartfile, index_used);
                         }
-                        else {
+                        else
+                        {
                             _fingerprints[key] = dartfile.manufactor.net.hashOf(doc);
                         }
                     }
@@ -468,11 +536,14 @@ alias check = Check!DARTException;
             return merkleroot;
         }
 
-        void dump() const {
+        void dump() const
+        {
             import std.stdio;
 
-            foreach (key, index; _indices) {
-                if (index !is INDEX_NULL) {
+            foreach (key, index; _indices)
+            {
+                if (index !is INDEX_NULL)
+                {
                     writefln("branches[%02X]=%s", key, _fingerprints[key].toHex);
                 }
             }
@@ -480,56 +551,73 @@ alias check = Check!DARTException;
         }
     }
 
-    Buffer load(ref const(Branches) b, const uint key) {
-        if ((key < KEY_SPAN) && (b.indices)) {
+    Buffer load(ref const(Branches) b, const uint key)
+    {
+        if ((key < KEY_SPAN) && (b.indices))
+        {
             immutable index = b.indices[key];
-            if (index !is INDEX_NULL) {
+            if (index !is INDEX_NULL)
+            {
                 return blockfile.load(index);
             }
         }
         return null;
     }
 
-    @safe static class RimWalkerFiber : Fiber {
+    @safe static class RimWalkerFiber : Fiber
+    {
         immutable(Buffer) rims;
         protected Buffer data;
         protected bool _finished;
         protected DARTFile owner;
         ushort sector() const pure nothrow
-            in {
-                assert(rims.length >= ubyte.sizeof, assumeWontThrow(format("Rims is too short %d >= %d", rims.length, ubyte.sizeof)));
-            }
-        do {
+        in
+        {
+            assert(rims.length >= ubyte.sizeof, assumeWontThrow(format("Rims is too short %d >= %d", rims.length, ubyte
+                    .sizeof)));
+        }
+        do
+        {
             // if (data == [])
             //     return 0;
-            if (rims.length == ubyte.sizeof) {
+            if (rims.length == ubyte.sizeof)
+            {
                 return ushort(rims[0]);
             }
             import std.bitmanip : bigEndianToNative;
 
-//            assert(data.length == T.sizeof);
+            //            assert(data.length == T.sizeof);
             return bigEndianToNative!ushort(rims[0 .. ushort.sizeof]);
         }
+
         this(DARTFile owner, const(Buffer) rims) @trusted
-        in {
-            assert(rims.length >= ubyte.sizeof, format("Size of rims should have a size of %d or more", ubyte.sizeof));
+        in
+        {
+            assert(rims.length >= ubyte.sizeof, format("Size of rims should have a size of %d or more", ubyte
+                    .sizeof));
         }
-        do {
+        do
+        {
             this.rims = rims;
             this.owner = owner;
             super(&run);
             popFront;
         }
 
-        final private void run() {
+        final private void run()
+        {
             void treverse(
-                    immutable uint index,
-                    immutable uint rim = 0) @safe {
-                if (index !is INDEX_NULL) {
+                immutable uint index,
+                immutable uint rim = 0) @safe
+            {
+                if (index !is INDEX_NULL)
+                {
                     data = owner.blockfile.load(index);
                     const doc = Document(data);
-                    if (rim < rims.length) {
-                        if (Branches.isRecord(doc)) {
+                    if (rim < rims.length)
+                    {
+                        if (Branches.isRecord(doc))
+                        {
                             const branches = Branches(doc);
                             // This branches
                             immutable key = rim_key(rims, rim);
@@ -537,14 +625,18 @@ alias check = Check!DARTException;
                             treverse(next_index, rim + 1);
                         }
                     }
-                    else {
-                        if (Branches.isRecord(doc)) {
+                    else
+                    {
+                        if (Branches.isRecord(doc))
+                        {
                             const branches = Branches(doc);
-                            foreach (next_index; branches.indices) {
+                            foreach (next_index; branches.indices)
+                            {
                                 treverse(next_index, rim + 1);
                             }
                         }
-                        else {
+                        else
+                        {
                             assumeTrusted!yield;
                         }
                     }
@@ -556,15 +648,18 @@ alias check = Check!DARTException;
         }
 
         @trusted
-        final void popFront() {
+        final void popFront()
+        {
             call;
         }
 
-        final bool empty() const pure nothrow {
+        final bool empty() const pure nothrow
+        {
             return _finished;
         }
 
-        final immutable(Buffer) front() const pure nothrow {
+        final immutable(Buffer) front() const pure nothrow
+        {
             return data;
         }
     }
@@ -579,13 +674,17 @@ alias check = Check!DARTException;
      + Returns:
      +     A range on DARTFile as a Fiber
      +/
-    RimWalkerFiber rimWalkerRange(immutable(Buffer) rims) {
+    RimWalkerFiber rimWalkerRange(immutable(Buffer) rims)
+    {
         return new RimWalkerFiber(this, rims);
     }
 
-    string indent(const uint rim) {
-        string local_indent(const uint rim, string indent_str = null) {
-            if (rim > 0) {
+    string indent(const uint rim)
+    {
+        string local_indent(const uint rim, string indent_str = null)
+        {
+            if (rim > 0)
+            {
                 return local_indent(rim - 1, indent_str ~ indent_tab);
             }
             return indent_str;
@@ -595,28 +694,36 @@ alias check = Check!DARTException;
     }
 
     pragma(msg, "fixme(alex); Remove loadAll function");
-    HiBON loadAll(Archive.Type type = Archive.Type.ADD) {
+    HiBON loadAll(Archive.Type type = Archive.Type.ADD)
+    {
         auto recorder = manufactor.recorder;
         void local_load(
-                const uint branch_index,
-                const ubyte rim_key = 0,
-                const uint rim = 0) @safe {
-            if (branch_index !is INDEX_NULL) {
+            const uint branch_index,
+            const ubyte rim_key = 0,
+            const uint rim = 0) @safe
+        {
+            if (branch_index !is INDEX_NULL)
+            {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
-                if (Branches.isRecord(doc)) {
+                if (Branches.isRecord(doc))
+                {
                     const branches = Branches(doc);
-                    if (branches.indices.length) {
-                        foreach (key, index; branches._indices) {
+                    if (branches.indices.length)
+                    {
+                        foreach (key, index; branches._indices)
+                        {
                             local_load(index, cast(ubyte) key, rim + 1);
                         }
                     }
                 }
-                else if (isStub(doc)) {
+                else if (isStub(doc))
+                {
                     //                        writeln("stub");
 
                 }
-                else {
+                else
+                {
                     recorder.insert(doc, type);
                 }
             }
@@ -625,7 +732,8 @@ alias check = Check!DARTException;
         local_load(blockfile.masterBlock.root_index);
         auto result = new HiBON;
         uint i;
-        foreach (a; recorder[]) {
+        foreach (a; recorder[])
+        {
             result[i] = a.toDoc;
             i++;
         }
@@ -634,40 +742,50 @@ alias check = Check!DARTException;
     // Loads all the archives in the list of fingerprints
     RecordFactory.Recorder loads(Range)(
         Range fingerprints,
-        Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : Buffer)) {
+        Archive.Type type = Archive.Type.REMOVE)
+            if (isInputRange!Range && is(ElementType!Range : Buffer))
+    {
 
         import std.algorithm.comparison : min;
 
         auto result = recorder;
         void traverse_dart(
-                const uint branch_index,
-                Buffer[] ordered_fingerprints,
-                immutable uint rim = 0) @safe {
-            if ((ordered_fingerprints) && (branch_index !is INDEX_NULL)) {
+            const uint branch_index,
+            Buffer[] ordered_fingerprints,
+            immutable uint rim = 0) @safe
+        {
+            if ((ordered_fingerprints) && (branch_index !is INDEX_NULL))
+            {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
-                if (Branches.isRecord(doc)) {
+                if (Branches.isRecord(doc))
+                {
                     const branches = Branches(doc);
                     auto selected_fingerprints = ordered_fingerprints;
-                    foreach (rim_key, index; branches._indices) {
+                    foreach (rim_key, index; branches._indices)
+                    {
                         uint pos;
                         while ((pos < selected_fingerprints.length) &&
-                                (rim_key is selected_fingerprints[pos].rim_key(rim))) {
+                            (rim_key is selected_fingerprints[pos].rim_key(rim)))
+                        {
                             pos++;
                         }
-                        if (pos > 0) {
+                        if (pos > 0)
+                        {
                             traverse_dart(index, selected_fingerprints[0 .. pos], rim + 1);
                             selected_fingerprints = selected_fingerprints[pos .. $];
                         }
                     }
                 }
-                else {
+                else
+                {
                     // Loads the Archives into the archives
                     .check(ordered_fingerprints.length == 1, format("Data base is broken at rim=%d fingerprint=%s",
                                 rim, ordered_fingerprints[0].toHex));
                     // The archive is set in erase mode so it can be easily be erased later
                     auto archive = new Archive(manufactor.net, doc, type);
-                    if (ordered_fingerprints[0] == archive.fingerprint) {
+                    if (ordered_fingerprints[0] == archive.fingerprint)
+                    {
                         result.insert(archive);
                     }
 
@@ -685,25 +803,33 @@ alias check = Check!DARTException;
 
     // Range over a Range with the same key in the a specific rim
     @safe
-    struct RimKeyRange {
+    struct RimKeyRange
+    {
         protected Archive[] current;
         @disable this();
-        protected this(Archive[] current) pure nothrow @nogc {
+        protected this(Archive[] current) pure nothrow @nogc
+        {
             this.current = current;
         }
 
-        this(Range)(ref Range range, const uint rim) {
-            if (!range.empty) {
+        this(Range)(ref Range range, const uint rim)
+        {
+            if (!range.empty)
+            {
                 immutable key = range.front.fingerprint.rim_key(rim);
-                static if (is(Range == RimKeyRange)) {
+                static if (is(Range == RimKeyRange))
+                {
                     auto reuse_current = range.current;
-                    void build(ref Range range, const uint no = 0) @safe {
-                        if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
+                    void build(ref Range range, const uint no = 0) @safe
+                    {
+                        if (!range.empty && (range.front.fingerprint.rim_key(rim) is key))
+                        {
                             auto a = range.front;
                             range.popFront;
                             build(range, no + 1);
                         }
-                        else {
+                        else
+                        {
                             // Reuse the parent current
                             current = reuse_current[0 .. no];
                         }
@@ -711,15 +837,19 @@ alias check = Check!DARTException;
 
                     build(range);
                 }
-                else {
-                    void build(ref Range range, const uint no = 0) @safe {
-                        if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
+                else
+                {
+                    void build(ref Range range, const uint no = 0) @safe
+                    {
+                        if (!range.empty && (range.front.fingerprint.rim_key(rim) is key))
+                        {
                             auto a = range.front;
                             range.popFront;
                             build(range, no + 1);
                             (() @trusted { current[no] = cast(Archive) a; })();
                         }
-                        else {
+                        else
+                        {
                             current = new Archive[no];
                         }
                     }
@@ -729,8 +859,10 @@ alias check = Check!DARTException;
             }
         }
 
-        bool onlyRemove(const GetType get_type) const {
-            if (get_type) {
+        bool onlyRemove(const GetType get_type) const
+        {
+            if (get_type)
+            {
                 return current
                     .all!((const(Archive) a) => a.type is Archive.Type.REMOVE);
             }
@@ -738,41 +870,52 @@ alias check = Check!DARTException;
                 .all!((const(Archive) a) => a.type is Archive.Type.REMOVE);
         }
 
-        @nogc pure nothrow {
-            bool single() const {
+        @nogc pure nothrow
+        {
+            bool single() const
+            {
                 return current.length == 1;
             }
 
-            bool empty() const {
+            bool empty() const
+            {
                 return current.length == 0;
             }
 
-            void popFront() {
-                if (!empty) {
+            void popFront()
+            {
+                if (!empty)
+                {
                     current = current[1 .. $];
                 }
             }
 
-            inout(Archive) front() inout {
-                if (empty) {
+            inout(Archive) front() inout
+            {
+                if (empty)
+                {
                     return null;
                 }
                 return current[0];
             }
 
-            void force_empty() {
+            void force_empty()
+            {
                 current = null;
             }
 
-            size_t length() const {
+            size_t length() const
+            {
                 return current.length;
             }
         }
-        RimKeyRange save() {
+        RimKeyRange save()
+        {
             return RimKeyRange(current);
         }
 
-        size_t length() pure const nothrow {
+        size_t length() pure const nothrow
+        {
             return current.length;
         }
     }
@@ -799,109 +942,136 @@ alias check = Check!DARTException;
      + If the function executes succesfully then the DART is update or else it does not affect the DART
      + The function return the bulleye of the dart
      +/
-    Buffer modify(const(RecordFactory.Recorder) modify_records, GetType get_type = null) {
-        if (get_type is null) {
+    Buffer modify(const(RecordFactory.Recorder) modify_records, GetType get_type = null)
+    {
+        if (get_type is null)
+        {
             get_type = (a) => a.type;
         }
         Leave traverse_dart(R)(
-                ref R range,
-                const uint branch_index,
-                immutable uint rim = 0) @safe {
-            if (!range.empty) {
+            ref R range,
+            const uint branch_index,
+            immutable uint rim = 0) @safe
+        {
+            if (!range.empty)
+            {
                 auto archive = range.front;
                 uint erase_block_index;
-                scope (success) {
+                scope (success)
+                {
                     blockfile.erase(erase_block_index);
                 }
                 immutable sector = root_sector(archive.fingerprint);
                 Branches branches;
-                if (rim < RIMS_IN_SECTOR) {
-                    if (branch_index !is INDEX_NULL) {
+                if (rim < RIMS_IN_SECTOR)
+                {
+                    if (branch_index !is INDEX_NULL)
+                    {
                         immutable data = blockfile.load(branch_index);
                         const doc = Document(data);
                         branches = Branches(doc);
 
-
+                        
 
                         .check(branches.hasIndices,
-                                "DART failure within the sector rims the DART should contain a branch");
+                            "DART failure within the sector rims the DART should contain a branch");
                     }
 
-                    while (!range.empty) {
+                    while (!range.empty)
+                    {
                         auto sub_range = RimKeyRange(range, rim);
                         immutable rim_key = sub_range.front.fingerprint.rim_key(rim);
-                        if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
+                        if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type))
+                        {
                             branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
                         }
                     }
                     erase_block_index = branch_index;
-                    if (branches.empty) {
+                    if (branches.empty)
+                    {
                         return Leave(INDEX_NULL, null);
                     }
-                    else {
+                    else
+                    {
                         return Leave(blockfile.save(branches.toHiBON.serialize)
                                 .begin_index, branches.fingerprint(this));
                     }
                 }
-                else static if (is(R == RimKeyRange)) {
+                else static if (is(R == RimKeyRange))
+                {
                     uint lonely_rim_key;
-                    if (branch_index !is INDEX_NULL) {
+                    if (branch_index !is INDEX_NULL)
+                    {
                         immutable data = blockfile.load(branch_index);
                         const doc = Document(data);
 
-
+                        
 
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
-                        if (Branches.isRecord(doc)) {
+                        if (Branches.isRecord(doc))
+                        {
                             branches = Branches(doc);
-                            do {
+                            do
+                            {
                                 auto sub_range = RimKeyRange(range, rim);
                                 const sub_archive = sub_range.front;
                                 immutable rim_key = sub_archive.fingerprint.rim_key(rim);
-                                if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
+                                if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type))
+                                {
                                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
                                 }
                             }
                             while (!range.empty);
                         }
-                        else {
+                        else
+                        {
                             // DART does not store a branch this means that it contains a leave.
                             // Leave means and archive
                             // The new Archives is constructed to include the archive which is already in the DART
                             auto archive_in_dart = new Archive(manufactor.net, doc);
-                            scope (success) {
+                            scope (success)
+                            {
                                 // The archive is erased and it will be added again to the DART
                                 // if it not removed by and action in the record
                                 blockfile.erase(branch_index);
 
                             }
-                            if (range.single) {
+                            if (range.single)
+                            {
                                 auto single_archive = range.front;
-                                if (!single_archive.done) {
+                                if (!single_archive.done)
+                                {
                                     range.popFront;
-                                    if (single_archive.fingerprint == archive_in_dart.fingerprint) {
-                                        if (single_archive.isRemove(get_type)) {
+                                    if (single_archive.fingerprint == archive_in_dart.fingerprint)
+                                    {
+                                        if (single_archive.isRemove(get_type))
+                                        {
                                             single_archive.doit;
                                             return Leave(INDEX_NULL, null);
                                         }
-                                        else {
+                                        else
+                                        {
                                             return Leave(blockfile.save(single_archive.store.serialize)
                                                     .begin_index,
                                                     single_archive.fingerprint);
                                         }
                                     }
-                                    else {
+                                    else
+                                    {
                                         auto recorder = manufactor.recorder;
                                         recorder.insert(archive_in_dart);
                                         recorder.insert(single_archive);
                                         auto archives_range = recorder.archives[];
-                                        do {
+                                        do
+                                        {
                                             auto sub_range = RimKeyRange(archives_range, rim);
                                             const sub_archive = sub_range.front;
                                             immutable rim_key = sub_archive.fingerprint.rim_key(
-                                                    rim);
+                                                rim);
 
-                                            if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
+                                            if (!branches[rim_key].empty || !sub_range.onlyRemove(
+                                                    get_type))
+                                            {
                                                 branches[rim_key] = traverse_dart(sub_range, INDEX_NULL, rim + 1);
                                             }
                                         }
@@ -909,27 +1079,34 @@ alias check = Check!DARTException;
                                     }
                                 }
                             }
-                            else {
+                            else
+                            {
                                 scope archives = manufactor.recorder(range).archives;
                                 range.force_empty;
                                 scope equal_range = archives.equalRange(archive_in_dart);
-                                if (!equal_range.empty) {
+                                if (!equal_range.empty)
+                                {
                                     const equal_archive = equal_range.front;
-                                    if (!equal_archive.done) {
-                                        if (equal_archive.isRemove(get_type)) {
+                                    if (!equal_archive.done)
+                                    {
+                                        if (equal_archive.isRemove(get_type))
+                                        {
                                             equal_archive.doit;
                                         }
                                     }
                                 }
-                                else {
+                                else
+                                {
                                     archives.insert(archive_in_dart);
                                 }
                                 auto archive_range = archives[];
-                                do {
+                                do
+                                {
                                     auto sub_range = RimKeyRange(archive_range, rim);
                                     const sub_archive = sub_range.front;
                                     immutable rim_key = sub_archive.fingerprint.rim_key(rim);
-                                    if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
+                                    if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type))
+                                    {
                                         branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
                                     }
                                 }
@@ -937,19 +1114,25 @@ alias check = Check!DARTException;
                             }
                         }
                     }
-                    else {
+                    else
+                    {
                         // Adds archives in new branch which has not been created yet
-                        if (range.single) {
+                        if (range.single)
+                        {
                             auto single_archive = range.front;
-                            if (!single_archive.done) {
+                            if (!single_archive.done)
+                            {
                                 range.popFront;
-                                if (single_archive.isRemove(get_type)) {
+                                if (single_archive.isRemove(get_type))
+                                {
                                     return Leave(INDEX_NULL, null);
                                 }
-                                else {
+                                else
+                                {
                                     single_archive.doit;
                                     lonely_rim_key = single_archive.fingerprint.rim_key(rim);
-                                    if (rim is RIMS_IN_SECTOR) {
+                                    if (rim is RIMS_IN_SECTOR)
+                                    {
                                         // Return a branch with as single leave when the leave is on the on
                                         // the edge between the sector
                                         branches[lonely_rim_key] = Leave(blockfile.save(single_archive.store.serialize)
@@ -957,19 +1140,23 @@ alias check = Check!DARTException;
                                         return Leave(blockfile.save(branches.toHiBON.serialize)
                                                 .begin_index, branches.fingerprint(this));
                                     }
-                                    else {
+                                    else
+                                    {
                                         return Leave(blockfile.save(single_archive.store.serialize)
                                                 .begin_index, single_archive.fingerprint);
                                     }
                                 }
                             }
                         }
-                        else {
-                            do {
+                        else
+                        {
+                            do
+                            {
                                 const sub_archive = range.front;
                                 immutable rim_key = sub_archive.fingerprint.rim_key(rim);
                                 auto sub_range = RimKeyRange(range, rim);
-                                if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
+                                if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type))
+                                {
                                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
                                 }
                             }
@@ -977,47 +1164,57 @@ alias check = Check!DARTException;
                         }
                     }
                     immutable count = branches.count;
-                    if (count == 0) {
+                    if (count == 0)
+                    {
                         return Leave(INDEX_NULL, null);
                     }
-                    else if ((count == 1) && (lonely_rim_key !is INDEX_NULL)) {
+                    else if ((count == 1) && (lonely_rim_key !is INDEX_NULL))
+                    {
                         // Return the leave if the branches only contain one leave
                         return branches[lonely_rim_key];
                     }
-                    else {
+                    else
+                    {
                         return Leave(blockfile.save(branches.toHiBON.serialize)
                                 .begin_index, branches.fingerprint(this));
                     }
                     assert(0);
                 }
-                else {
+                else
+                {
                     assert(0, format("Range %s not expected", R.stringof));
                 }
             }
             return Leave(INDEX_NULL, null);
         }
 
-        if (modify_records.empty) {
+        if (modify_records.empty)
+        {
             return _fingerprint;
         }
-        else {
+        else
+        {
             auto range = modify_records.archives[];
             immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
 
-            scope (success) {
+            scope (success)
+            {
                 // On success the new root_index is set and the DART is updated
                 _fingerprint = new_root.fingerprint;
-                if ((new_root.fingerprint is null) || (new_root.index is INDEX_NULL)) {
+                if ((new_root.fingerprint is null) || (new_root.index is INDEX_NULL))
+                {
                     // All data has been delete so a new blockfile is created
                     blockfile.close;
                     blockfile = BlockFile.reset(filename);
                 }
-                else {
+                else
+                {
                     blockfile.root_index = new_root.index;
                     blockfile.store;
                 }
             }
-            scope (failure) {
+            scope (failure)
+            {
                 // On failure drop the BlockFile and reopen it
                 blockfile.close;
                 blockfile = BlockFile(filename);
@@ -1026,25 +1223,33 @@ alias check = Check!DARTException;
         }
     }
 
-    RecordFactory.Recorder readStubs() { //RIMS_IN_SECTOR
+    RecordFactory.Recorder readStubs()
+    { //RIMS_IN_SECTOR
         RecordFactory.Recorder rec = manufactor.recorder();
-        void iterate(const uint branch_index, immutable uint rim = 0) @safe {
-            if (branch_index !is INDEX_NULL) {
+        void iterate(const uint branch_index, immutable uint rim = 0) @safe
+        {
+            if (branch_index !is INDEX_NULL)
+            {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
-                if (Branches.isRecord(doc)) {
+                if (Branches.isRecord(doc))
+                {
                     auto branches = Branches(doc);
-                    if (rim == RIMS_IN_SECTOR) {
+                    if (rim == RIMS_IN_SECTOR)
+                    {
                         // writeln("ADD BRANCH FP", branches.fingerprint(this).toHex);
                         rec.stub(branches.fingerprint(this));
                     }
-                    else {
-                        foreach (rim_key, index; branches._indices) {
+                    else
+                    {
+                        foreach (rim_key, index; branches._indices)
+                        {
                             iterate(index, rim + 1);
                         }
                     }
                 }
-                else {
+                else
+                {
                     rec.stub(manufactor.net.hashOf(doc));
                 }
             }
@@ -1057,20 +1262,26 @@ alias check = Check!DARTException;
     }
 
     // Reads out a branch for rims path
-    Branches branches(const(ubyte[]) rims) {
-        Branches search(const(ubyte[]) rims, const uint index, const uint rim = 0) {
+    Branches branches(const(ubyte[]) rims)
+    {
+        Branches search(const(ubyte[]) rims, const uint index, const uint rim = 0)
+        {
             immutable data = blockfile.load(index);
             const doc = Document(data);
-            if (Branches.isRecord(doc)) {
+            if (Branches.isRecord(doc))
+            {
                 Branches branches = Branches(doc);
-                if (rim < rims.length) {
+                if (rim < rims.length)
+                {
                     immutable rim_key = rims.rim_key(rim);
                     immutable sub_index = branches._indices[rim_key];
-                    if (sub_index !is INDEX_NULL) {
+                    if (sub_index !is INDEX_NULL)
+                    {
                         return search(rims, sub_index, rim + 1);
                     }
                 }
-                else {
+                else
+                {
                     return branches;
                 }
             }
@@ -1078,40 +1289,50 @@ alias check = Check!DARTException;
             return Branches();
         }
 
-        if (blockfile.masterBlock.root_index is INDEX_NULL) {
+        if (blockfile.masterBlock.root_index is INDEX_NULL)
+        {
             return Branches();
         }
         return search(rims, blockfile.masterBlock.root_index);
     }
 
-    RimRange iterator(const(ubyte[]) rim_path) @trusted {
+    RimRange iterator(const(ubyte[]) rim_path) @trusted
+    {
         auto range = new RimRange(this, rim_path);
         range.call;
         return range;
     }
 
-    @safe class RimRange : Fiber {
-        protected {
+    @safe class RimRange : Fiber
+    {
+        protected
+        {
             DARTFile owner;
             const(ubyte[]) rim_path;
             Buffer data;
             bool _finished;
         }
 
-        this(DARTFile dart, const(ubyte[]) rim_path) @trusted {
+        this(DARTFile dart, const(ubyte[]) rim_path) @trusted
+        {
             owner = dart;
             this.rim_path = rim_path;
             super(&run);
         }
 
-        protected final void run() {
-            void local_iterator(const(ubyte[]) rims, const uint index, const uint rim = 0) {
-                if (index !is INDEX_NULL) {
+        protected final void run()
+        {
+            void local_iterator(const(ubyte[]) rims, const uint index, const uint rim = 0)
+            {
+                if (index !is INDEX_NULL)
+                {
                     data = blockfile.load(index);
                     const doc = Document(data);
-                    if (Branches.isRecord(doc)) {
+                    if (Branches.isRecord(doc))
+                    {
                         Branches branches = Branches(doc);
-                        foreach (key, sub_index; branches._indices) {
+                        foreach (key, sub_index; branches._indices)
+                        {
                             local_iterator(rims ~ cast(ubyte) key, sub_index, rim + 1);
                         }
                     }
@@ -1119,19 +1340,25 @@ alias check = Check!DARTException;
                 }
             }
 
-            uint search(const(ubyte[]) rims, const uint index, const uint rim = 0) @safe {
-                if (index !is INDEX_NULL) {
+            uint search(const(ubyte[]) rims, const uint index, const uint rim = 0) @safe
+            {
+                if (index !is INDEX_NULL)
+                {
                     immutable local_data = owner.blockfile.load(index);
                     const doc = Document(local_data);
-                    if (Branches.isRecord(doc)) {
+                    if (Branches.isRecord(doc))
+                    {
                         Branches branches = Branches(doc);
-                        if (rim < rims.length) {
+                        if (rim < rims.length)
+                        {
                             immutable rim_key = rims.rim_key(rim);
                             immutable sub_index = branches._indices[rim_key];
-                            if (rim + 1 == rims.length) {
+                            if (rim + 1 == rims.length)
+                            {
                                 return sub_index;
                             }
-                            else {
+                            else
+                            {
                                 return search(rims, sub_index, rim + 1);
                             }
                         }
@@ -1146,40 +1373,50 @@ alias check = Check!DARTException;
             _finished = true;
         }
 
-        final void popFront() @trusted {
+        final void popFront() @trusted
+        {
             call;
         }
 
-        final bool empty() pure const nothrow {
+        final bool empty() pure const nothrow
+        {
             return _finished;
         }
 
-        final Buffer front() pure const nothrow {
+        final Buffer front() pure const nothrow
+        {
             return data;
         }
     }
 
     enum indent_tab = "| .. ";
-    void dump(bool full = false) {
+    void dump(bool full = false)
+    {
         import std.stdio;
 
         writeln("EYE: ", _fingerprint.hex);
-        void local_dump(const uint branch_index, const ubyte rim_key = 0, const uint rim = 0, string indent = null) @safe {
-            if (branch_index !is INDEX_NULL) {
+        void local_dump(const uint branch_index, const ubyte rim_key = 0, const uint rim = 0, string indent = null) @safe
+        {
+            if (branch_index !is INDEX_NULL)
+            {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
-                if (Branches.isRecord(doc)) {
+                if (Branches.isRecord(doc))
+                {
                     auto branches = Branches(doc);
                     string _indent;
-                    if (rim > 0) {
+                    if (rim > 0)
+                    {
                         writefln("%s| %02X [%d]", indent, rim_key, branch_index);
                         _indent = indent ~ indent_tab;
                     }
-                    foreach (key, index; branches._indices) {
+                    foreach (key, index; branches._indices)
+                    {
                         local_dump(index, cast(ubyte) key, rim + 1, _indent);
                     }
                 }
-                else {
+                else
+                {
                     immutable fingerprint = manufactor.net.hashOf(doc);
                     auto lastRing = full ? fingerprint.length : rim + 1;
                     writefln("%s%s [%d]", indent, fingerprint[0 .. lastRing].hex, branch_index);
@@ -1190,22 +1427,29 @@ alias check = Check!DARTException;
         local_dump(blockfile.masterBlock.root_index);
     }
 
-    version (unittest) {
+    version (unittest)
+    {
         import tagion.dart.DARTFakeNet;
-        static {
 
-            bool check(const(RecordFactory.Recorder) A, const(RecordFactory.Recorder) B) {
+        static
+        {
+
+            bool check(const(RecordFactory.Recorder) A, const(RecordFactory.Recorder) B)
+            {
                 return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
             }
 
-            Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder rec, bool isStubs = false) {
+            Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder rec, bool isStubs = false)
+            {
                 rec = isStubs ? stubs(dart.manufactor, table) : records(dart.manufactor, table);
                 return dart.modify(rec);
             }
 
-            Buffer[] fingerprints(RecordFactory.Recorder recorder) {
+            Buffer[] fingerprints(RecordFactory.Recorder recorder)
+            {
                 Buffer[] results;
-                foreach (a; recorder.archives) {
+                foreach (a; recorder.archives)
+                {
                     assert(a.done);
                     results ~= a.fingerprint;
                 }
@@ -1213,7 +1457,8 @@ alias check = Check!DARTException;
 
             }
 
-            bool validate(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder recorder) {
+            bool validate(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder recorder)
+            {
                 write(dart, table, recorder);
                 auto _fingerprints = fingerprints(recorder);
 
@@ -1221,18 +1466,22 @@ alias check = Check!DARTException;
                 return check(recorder, find_recorder);
             }
 
-            RecordFactory.Recorder records(RecordFactory factory, const(ulong[]) table) {
+            RecordFactory.Recorder records(RecordFactory factory, const(ulong[]) table)
+            {
                 auto rec = factory.recorder;
-                foreach (t; table) {
+                foreach (t; table)
+                {
                     const doc = DARTFakeNet.fake_doc(t);
                     rec.add(doc);
                 }
                 return rec;
             }
 
-            RecordFactory.Recorder stubs(RecordFactory factory, const(ulong[]) table) {
+            RecordFactory.Recorder stubs(RecordFactory factory, const(ulong[]) table)
+            {
                 auto rec = factory.recorder;
-                foreach (t; table) {
+                foreach (t; table)
+                {
                     import std.bitmanip;
 
                     immutable fp = nativeToBigEndian(t).idup;
@@ -1244,7 +1493,8 @@ alias check = Check!DARTException;
 
     }
 
-    unittest {
+    unittest
+    {
         import std.algorithm.sorting : sort;
 
         //    import tagion.basic.Basic;
@@ -1318,19 +1568,22 @@ alias check = Check!DARTException;
         { // Test RimKeyRange
             auto recorder = manufactor.recorder;
             auto test_tabel = table[0 .. 8].dup;
-            foreach (t; test_tabel) {
+            foreach (t; test_tabel)
+            {
                 const doc = DARTFakeNet.fake_doc(t);
                 recorder.add(doc);
             }
 
             test_tabel.sort;
 
-            foreach (t; test_tabel) {
+            foreach (t; test_tabel)
+            {
                 const doc = DARTFakeNet.fake_doc(t);
             }
 
             uint i;
-            foreach (a; recorder.archives) {
+            foreach (a; recorder.archives)
+            {
                 assert(a.filed.data == net.fake_doc(test_tabel[i]).data);
                 i++;
             }
@@ -1341,8 +1594,10 @@ alias check = Check!DARTException;
                 auto rim_range = DARTFile.RimKeyRange(range, rim);
                 i = 0;
                 immutable key = rim_range.front.fingerprint.rim_key(rim);
-                foreach (a; rim_range) {
-                    while (net.hashOf(DARTFakeNet.fake_doc(test_tabel[i])).rim_key(rim) !is key) {
+                foreach (a; rim_range)
+                {
+                    while (net.hashOf(DARTFakeNet.fake_doc(test_tabel[i])).rim_key(rim) !is key)
+                    {
                         i++;
                     }
                     i++;
@@ -1455,7 +1710,8 @@ alias check = Check!DARTException;
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 1000;
             auto random_table = new ulong[N];
-            foreach (ref r; random_table) {
+            foreach (ref r; random_table)
+            {
                 r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
             }
             DARTFile.create(filename_A);
@@ -1482,7 +1738,8 @@ alias check = Check!DARTException;
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 1000;
             auto random_table = new ulong[N];
-            foreach (ref r; random_table) {
+            foreach (ref r; random_table)
+            {
                 r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
             }
             DARTFile.create(filename_A);
@@ -1510,7 +1767,8 @@ alias check = Check!DARTException;
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 1000;
             auto random_table = new ulong[N];
-            foreach (ref r; random_table) {
+            foreach (ref r; random_table)
+            {
                 r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
             }
             DARTFile.create(filename_A);
@@ -1556,7 +1814,8 @@ alias check = Check!DARTException;
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 1000;
             auto random_table = new ulong[N];
-            foreach (ref r; random_table) {
+            foreach (ref r; random_table)
+            {
                 r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
             }
             DARTFile.create(filename_A);
@@ -1579,7 +1838,8 @@ alias check = Check!DARTException;
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 50;
             auto random_table = new ulong[N];
-            foreach (ref r; random_table) {
+            foreach (ref r; random_table)
+            {
                 r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
             }
             DARTFile.create(filename_A);
@@ -1615,7 +1875,8 @@ alias check = Check!DARTException;
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 500;
             auto random_table = new ulong[N];
-            foreach (ref r; random_table) {
+            foreach (ref r; random_table)
+            {
                 r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
             }
             DARTFile.create(filename_A);
@@ -1631,7 +1892,8 @@ alias check = Check!DARTException;
             enum ITERATIONS = 7;
             enum SELECT_ITER = 35;
             (() @trusted {
-                foreach (i; 0 .. ITERATIONS) {
+                foreach (i; 0 .. ITERATIONS)
+                {
                     auto recorder = dart_A.recorder;
                     BitArray check_archives;
                     BitArray added_archives;
@@ -1639,15 +1901,19 @@ alias check = Check!DARTException;
                     check_archives.length = N;
                     added_archives.length = N;
                     removed_archives.length = N;
-                    foreach (j; 0 .. SELECT_ITER) {
+                    foreach (j; 0 .. SELECT_ITER)
+                    {
                         immutable index = rand_index.value(N);
-                        if (!check_archives[index]) {
+                        if (!check_archives[index])
+                        {
                             const doc = net.fake_doc(random_table[index]);
-                            if (saved_archives[index]) {
+                            if (saved_archives[index])
+                            {
                                 recorder.remove(doc);
                                 removed_archives[index] = true;
                             }
-                            else {
+                            else
+                            {
                                 recorder.add(doc);
                                 added_archives[index] = true;
                             }
@@ -1668,17 +1934,20 @@ alias check = Check!DARTException;
                 assert(dart_A.fingerprint == dart_B.fingerprint);
             })();
         }
-        version (none) { //Read stubs test
+        version (none)
+        { //Read stubs test
             writeln("FROM THIS");
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 50;
             auto random_table = new ulong[N];
             auto random_stubs = new ulong[N];
-            foreach (ref r; random_table) {
+            foreach (ref r; random_table)
+            {
                 r = rand.value(0x20_21_22_36_40_50_80_90, 0x20_26_22_36_40_50_80_90);
             }
 
-            foreach (ref r; random_stubs) {
+            foreach (ref r; random_stubs)
+            {
                 r = rand.value(0x20_27_22_36_40_50_80_90, 0x20_29_22_36_40_50_80_90);
             }
             DARTFile.create(filename_A);

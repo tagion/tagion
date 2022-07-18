@@ -24,18 +24,20 @@ import tagion.services.RecorderService;
 import tagion.services.LoggerService;
 import tagion.logger.Logger;
 import tagion.communication.HiRPC;
-import tagion.TaskWrapper : Task;
+import tagion.tasks.TaskWrapper : Task;
 
 mixin TrustedConcurrency;
 
 enum main_task = "recorderchain";
 
-int main(string[] args) {
+int main(string[] args)
+{
     writeln("bin-recorderchain run");
 
     const auto EXEC_NAME = baseName(args[0]);
 
-    if (args.length == 1) {
+    if (args.length == 1)
+    {
         writeln("Error: No arguments provided for ", EXEC_NAME, "!");
         return 1;
     }
@@ -44,14 +46,16 @@ int main(string[] args) {
     setDefaultOption(options);
 
     auto loggerService = Task!LoggerTask(options.logger.task_name, options);
-    scope (exit) {
+    scope (exit)
+    {
         loggerService.control(Control.STOP);
         receiveOnly!Control;
     }
 
     const response = receiveOnly!Control;
     stderr.writeln("Logger started");
-    if (response !is Control.LIVE) {
+    if (response !is Control.LIVE)
+    {
         stderr.writeln("ERROR:Logger %s", response);
     }
 
@@ -62,13 +66,13 @@ int main(string[] args) {
     ulong rollback, init_count;
 
     auto cli_args_config = getopt(
-            args,
-            std.getopt.config.bundling,
-            std.getopt.config.noPassThrough,
-            "print|p", "Print recorder chain to console", &print,
-            "rollback|r", "Rollback recorder chain on n steps backward", &rollback,
-            "init|i", "Init n dummy blocks", &init_count,
-            "clean|c", "Clean recorder chain folder after work", &clean,
+        args,
+        std.getopt.config.bundling,
+        std.getopt.config.noPassThrough,
+        "print|p", "Print recorder chain to console", &print,
+        "rollback|r", "Rollback recorder chain on n steps backward", &rollback,
+        "init|i", "Init n dummy blocks", &init_count,
+        "clean|c", "Clean recorder chain folder after work", &clean,
     );
 
     // TODO: add argument for selecting folder
@@ -81,9 +85,10 @@ int main(string[] args) {
     net.generateKeyPair(passphrase);
     auto hirpc = HiRPC(net);
 
-    int onHelp() {
+    int onHelp()
+    {
         defaultGetoptPrinter(
-                [
+            [
             "Documentation: https://tagion.org/",
             "",
             "Usage:",
@@ -97,7 +102,8 @@ int main(string[] args) {
         return 0;
     }
 
-    void onInit() {
+    void onInit()
+    {
         if (!exists(folder_path))
             mkdirRecurse(folder_path);
 
@@ -119,7 +125,8 @@ int main(string[] args) {
         // Spawn recorder task
         auto recorderService = Task!RecorderTask(options.recorder.task_name, options);
         receiveOnly!Control;
-        scope (exit) {
+        scope (exit)
+        {
             recorderService.control(Control.STOP);
             receiveOnly!Control;
         }
@@ -132,7 +139,8 @@ int main(string[] args) {
         writeln;
 
         // Send recorder to service
-        foreach (i; 0 .. init_count) {
+        foreach (i; 0 .. init_count)
+        {
             auto recorder = initDummyRecorderAdd(cast(int) i, to!string(i));
             addDummyRecordToDB(db, recorder, hirpc);
             recorderService.receiveRecorder(recorder, Fingerprint(db.fingerprint));
@@ -146,11 +154,13 @@ int main(string[] args) {
         writeln(format("Initialized %d dummy records in '%s'", init_count, folder_path));
     }
 
-    void onPrint() {
+    void onPrint()
+    {
         auto blocks_info = EpochBlockFileDataBase.getBlocksInfo(folder_path);
 
         Buffer fingerprint = blocks_info.last.fingerprint;
-        foreach (j; 0 .. blocks_info.amount) {
+        foreach (j; 0 .. blocks_info.amount)
+        {
             const current_block = EpochBlockFileDataBase.readBlockFromFingerprint(fingerprint, folder_path);
 
             writeln(format(">> %s block start", blocks_info.amount - j));
@@ -168,23 +178,28 @@ int main(string[] args) {
         }
     }
 
-    void onRollback() {
+    void onRollback()
+    {
         auto blocks_info = EpochBlockFileDataBase.getBlocksInfo(folder_path);
-        if (rollback > blocks_info.amount) {
-            writeln(format("Rollback count (%d) is greater than number of blocks (%d)", rollback, blocks_info.amount));
+        if (rollback > blocks_info.amount)
+        {
+            writeln(format("Rollback count (%d) is greater than number of blocks (%d)", rollback, blocks_info
+                    .amount));
             rollback = blocks_info.amount;
         }
 
         writeln("Rollback for ", rollback, " steps\n");
 
-        if (!exists(folder_path)) {
+        if (!exists(folder_path))
+        {
             writeln(format("File '%s' don't exist, failed to rollback. Abort"));
         }
 
         DART db = new DART(net, dartfilename, fromAngle, toAngle);
 
         Buffer fingerprint = blocks_info.last.fingerprint;
-        foreach (j; 0 .. rollback) {
+        foreach (j; 0 .. rollback)
+        {
             writefln("Current rollback: %d", rollback - j);
 
             const current_block = EpochBlockFileDataBase.readBlockFromFingerprint(fingerprint, folder_path);
@@ -201,7 +216,8 @@ int main(string[] args) {
         }
     }
 
-    try {
+    try
+    {
         // Calling --help or -h
         if (cli_args_config.helpWanted)
             return onHelp;
@@ -217,17 +233,21 @@ int main(string[] args) {
             onRollback;
 
         // Last action in work
-        if (clean) {
-            if (exists(folder_path)) {
+        if (clean)
+        {
+            if (exists(folder_path))
+            {
                 rmdirRecurse(folder_path);
                 writeln(format("Cleaned files in '%s'", folder_path));
             }
-            else {
+            else
+            {
                 writeln(format("Folder '%s' is already empty", folder_path));
             }
         }
     }
-    catch (Exception e) {
+    catch (Exception e)
+    {
         // Might be:
         // std.getopt.GetOptException for unrecoginzed option
         // std.conv.ConvException for unexpected values for option recognized
