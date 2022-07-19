@@ -9,10 +9,15 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    steps:   
+    steps:
+    - uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
     - name: unit test
+      env:
+        SECRET_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       run: |  
-        echo ${{ secrets.SSH_PRIVATE_KEY }} > ~/.ssh/id_rsa
+        echo $SECRET_KEY > ~/.ssh/id_rsa
         pwd
         cat ~/.ssh/id_rsa
         pwd
@@ -28,4 +33,5 @@ jobs:
         git branch
         git submodule update --recursive --init
         make unittest || make unittest
+        
 
