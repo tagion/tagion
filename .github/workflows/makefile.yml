@@ -7,11 +7,14 @@ on:
 jobs:
   unit-test:
 
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:   
     - name: unit test
       run: |  
+        echo ${{ SSH_PRIVATE_KEY }} > ~/.ssh/id_rsa
+        pwd
+        cat ~/.ssh/id_rsa
         pwd
         ls -la
         source ~/.bashrc
