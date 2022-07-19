@@ -20,57 +20,63 @@
       - [Failure](#failure-1)
 - [rim](#rim)
 - [modify](#modify)
-- [rpc](#rpc)
-- [generate](#generate)
   - [Parameters](#parameters-1)
-  - [Use cases](#use-cases-1)
-    - [Case: simple call](#case-simple-call)
+  - [Use cases:](#use-cases-1)
+    - [Case: create new DART with executed sequence from file](#case-create-new-dart-with-executed-sequence-from-file)
       - [Success](#success-2)
-      - [Failure](#failure-2)
-- [nncupdate](#nncupdate)
+- [rpc](#rpc)
   - [Parameters](#parameters-2)
-  - [Use cases](#use-cases-2)
-    - [Case: simple call](#case-simple-call-1)
-      - [Success](#success-3)
-      - [Failure](#failure-3)
-- [nncread](#nncread)
+  - [Use cases:](#use-cases-2)
+- [generate](#generate)
   - [Parameters](#parameters-3)
   - [Use cases](#use-cases-3)
-    - [Case: simple call](#case-simple-call-2)
-      - [Success](#success-4)
-      - [Failure](#failure-4)
-- [testaddblocks](#testaddblocks)
+    - [Case: simple call](#case-simple-call)
+      - [Success](#success-3)
+      - [Failure](#failure-2)
+- [nncupdate](#nncupdate)
   - [Parameters](#parameters-4)
   - [Use cases](#use-cases-4)
-    - [Case: add several blocks](#case-add-several-blocks)
-      - [Success](#success-5)
-      - [Failure](#failure-5)
-- [testdumpblocks](#testdumpblocks)
+    - [Case: simple call](#case-simple-call-1)
+      - [Success](#success-4)
+      - [Failure](#failure-3)
+- [nncread](#nncread)
   - [Parameters](#parameters-5)
   - [Use cases](#use-cases-5)
-    - [Case: dump last block](#case-dump-last-block)
+    - [Case: simple call](#case-simple-call-2)
+      - [Success](#success-5)
+      - [Failure](#failure-4)
+- [testaddblocks](#testaddblocks)
+  - [Parameters](#parameters-6)
+  - [Use cases](#use-cases-6)
+    - [Case: add several blocks](#case-add-several-blocks)
       - [Success](#success-6)
+      - [Failure](#failure-5)
+- [testdumpblocks](#testdumpblocks)
+  - [Parameters](#parameters-7)
+  - [Use cases](#use-cases-7)
+    - [Case: dump last block](#case-dump-last-block)
+      - [Success](#success-7)
       - [Failure](#failure-6)
     - [Case: dump all blocks](#case-dump-all-blocks)
-      - [Success](#success-7)
+      - [Success](#success-8)
       - [Failure](#failure-7)
 - [version](#version)
 - [dartfilename](#dartfilename)
-  - [Use cases](#use-cases-6)
-    - [Success](#success-8)
+  - [Use cases](#use-cases-8)
+    - [Success](#success-9)
     - [Failure](#failure-8)
 - [initialize](#initialize)
 - [inputfile](#inputfile)
-  - [Use cases](#use-cases-7)
+  - [Use cases](#use-cases-9)
     - [Case: simple call](#case-simple-call-3)
       - [Failure](#failure-9)
 - [outputfile](#outputfile)
 - [from](#from)
-  - [Use cases](#use-cases-8)
+  - [Use cases](#use-cases-10)
     - [Case: value out of range](#case-value-out-of-range)
       - [Failure](#failure-10)
 - [to](#to)
-  - [Use cases](#use-cases-9)
+  - [Use cases](#use-cases-11)
 - [useFakeNet](#usefakenet)
 - [dump](#dump)
 - [eye](#eye)
@@ -96,10 +102,12 @@ You can call only one function from this list at a time
 ```
 Reads records from DART by hash. Can take several hashes at once.<br>
 DART file must exist before calling.
+<br><br>
+One of the [exclusive functions](#exclusive-functions) 
 
 ## Parameters
 
-[--reaad](#read) **required** Function takes single string (or array of strings) that represents hash value of record to read from DART.
+[--read](#read) **required** Function takes single string (or array of strings) that represents hash value of record to read from DART.
 
 [--verbose](#verbose) **optional**
 
@@ -225,9 +233,80 @@ See also use cases of parameters, used in this function
 **Refactor** not implemented now
 
 # modify
-TBD
+```
+--modify -m
+```
+Executes a DART modify sequency from hibon file.<br>
+DART file must exist before calling, but can be created instantly using [--initialize](#initialize)
+<br><br>
+One of the [exclusive functions](#exclusive-functions) 
+
+## Parameters
+
+[--inputfile](#inputfile) **required** hibon file, that contains DART modify sequence
+
+And also common parameters for dartutil tool:
+
+[--outputfile](#outputfile) **optional**
+
+[--dartfilename](#dartfilename) **optional**
+
+[--from](#from) **optional**
+
+[--to](#to) **optional**
+
+[--useFakeNet](#usefakenet) **optional**
+
+[--dump](#dump) **optional**
+
+[--eye](#eye) **optional**
+
+[--passphrase](#passphrase) **optional**
+
+## Use cases:
+### Case: create new DART with executed sequence from file
+```
+./dartutil --initialize -m -i="tmp.hibon"
+```
+#### Success
+**Result** <br>
+Created new DART file. Executed sequence from file. Result is written to outputfile.<br>
+No console output.
+
+See also use cases of parameters, used in this function
 
 # rpc
+```
+--rpc
+```
+Excutes a HiPRC on the DART.<br>
+DART file must exist before calling, but can be created instantly using [--initialize](#initialize)
+<br><br>
+One of the [exclusive functions](#exclusive-functions) 
+
+## Parameters
+
+[--inputfile](#inputfile) **required** hibon file, that contains DART modify sequence
+
+And also common parameters for dartutil tool:
+
+[--outputfile](#outputfile) **optional**
+
+[--dartfilename](#dartfilename) **optional**
+
+[--from](#from) **optional**
+
+[--to](#to) **optional**
+
+[--useFakeNet](#usefakenet) **optional**
+
+[--dump](#dump) **optional**
+
+[--eye](#eye) **optional**
+
+[--passphrase](#passphrase) **optional**
+
+## Use cases:
 TBD
 
 # generate
