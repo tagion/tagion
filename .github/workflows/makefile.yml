@@ -12,6 +12,10 @@ jobs:
     steps:
     - uses: oleksiyrudenko/gha-git-credentials@v2-latest
       with:
+        global: true
+        name: 'Matlab Mehdiyev'
+        email: 'matlab.mehdiyev@gmail.com'
+        actor: 'Fencherr'
         token: '${{ secrets.ACTION_TOKEN }}'
     - run: |  
         pwd
