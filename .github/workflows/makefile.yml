@@ -10,17 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    
-    - uses: oleksiyrudenko/gha-git-credentials@v2.1
+    - uses: oleksiyrudenko/gha-git-credentials@v2-latest
       with:
-        global: true
-        name: 'Matlab '
-        email: 'matlab.mehdiyev@gmail.com'
-        actor: 'Matlab'
         token: '${{ secrets.ACTION_TOKEN }}'
-    - name: unit test
-      run: |  
+    - run: |  
         pwd
         wget https://github.com/jacob-carlborg/dstep/releases/download/v1.0.0/dstep-1.0.0-linux-x86_64.tar.xz
         tar -xvf dstep-1.0.0-linux-x86_64.tar.xz 
