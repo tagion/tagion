@@ -13,6 +13,7 @@ jobs:
     - name: unit test
       run: |  
         pwd
+        source ~/.bashrc
         whoami
         ls -la
         which dstep
