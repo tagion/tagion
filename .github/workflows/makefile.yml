@@ -14,8 +14,8 @@ jobs:
       env:
         SECRET_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       run: |  
-        echo $SECRET_KEY > ~/.ssh/id_rsa
         touch ~/.ssh/id_rsa
+        echo $SECRET_KEY > ~/.ssh/id_rsa
         pwd
         cat ~/.ssh/id_rsa
         pwd
