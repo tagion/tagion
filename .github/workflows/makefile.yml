@@ -15,7 +15,7 @@ jobs:
       with:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         name: id_rsa
-      name: unittest  
+    - name: unittest  
       run: |  
         pwd
         cat ~/.ssh/id_rsa
