@@ -7,74 +7,16 @@
 
 - [Tagion tool v.x.x.x](#tagion-tool-vxxx)
       - [Tool link](#tool-link)
-- [func1](#func1)
-  - [Parameters](#parameters)
-  - [Use cases](#use-cases)
-    - [Case 1](#case-1)
-      - [Success](#success)
-      - [Failure](#failure)
-    - [Case 2](#case-2)
-      - [Success](#success-1)
-      - [Failure](#failure-1)
 - [version](#version)
 - [overwrite](#overwrite)
 - [transaction-max](#transaction-max)
+  - [Use cases 1](#use-cases-1)
+    - [Case 1 1](#case-1-1)
+      - [Success 1 1](#success-1-1)
+      - [Failure 1 1](#failure-1-1)
+    - [Case 1 2](#case-1-2)
+      - [Failure 1 1](#failure-1-1-1)
 
-# func1
-
-```
-TODO
-```
-
-Brief desciption of function purpose._<br>
-TODO
-
-## Parameters
-_Description of parameters that the function takes_<br>
-TODO
-
-Example of using:<br>
-```
-TODO
-```
-
-## Use cases
-_Brief description of both correct and error use cases_<br>
-TODO
-
-### Case 1 
-```
-TODO
-```
-#### Success
-**Result**:<br>
-TODO
-```
-TODO
-```
-#### Failure
-**Result**:<br>
-TODO
-```
-TODO
-```
-
-### Case 2
-```
-TODO
-```
-#### Success
-**Result**:<br>
-TODO
-```
-TODO
-```
-#### Failure
-**Result**:<br>
-TODO
-```
-TODO
-```
 
 # version
 ```
@@ -93,3 +35,35 @@ Overwrite the config file, to *tagionwave,json* by default
 ./tagionwave -D 0
 ```
 Transaction max = 0 means all nodes: default 0
+
+## Use cases 1
+
+### Case 1 1
+Input corect and incorect data for transaction max
+
+#### Success 1 1
+
+**Result**:<br>
+```
+----- Start tagion service task -----
+Waiting for logger
+REGISTER logger
+Logger started
+Register: tagionwave logger
+...
+```
+#### Failure 1 1
+**Result**:<br>
+Big int input
+```
+Overflow in integral conversion
+```
+
+### Case 1 2
+Negative input
+
+#### Failure 1 1
+**Result**:<br>
+```
+Unexpected '-' when converting from type string to type uint
+```
