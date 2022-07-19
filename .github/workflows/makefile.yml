@@ -10,14 +10,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: oleksiyrudenko/gha-git-credentials@v2-latest
+    - uses: actions/checkout@v3
+    
+    - uses: oleksiyrudenko/gha-git-credentials@v2.1
       with:
         global: true
-        name: 'Matlab Mehdiyev'
+        name: 'Matlab '
         email: 'matlab.mehdiyev@gmail.com'
-        actor: 'Fencherr'
+        actor: 'Matlab'
         token: '${{ secrets.ACTION_TOKEN }}'
-    - run: |  
+    - name: unit test
+      run: |  
         pwd
         wget https://github.com/jacob-carlborg/dstep/releases/download/v1.0.0/dstep-1.0.0-linux-x86_64.tar.xz
         tar -xvf dstep-1.0.0-linux-x86_64.tar.xz 
@@ -32,5 +35,8 @@ jobs:
         which gcc
         which autoconf
         go version
+        sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
+        git clone git@github.com:tagion/tagion.git
+        cd tagion
         git submodule update --recursive --init
         make unittest || make unittest
