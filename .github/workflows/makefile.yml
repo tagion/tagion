@@ -26,12 +26,8 @@ jobs:
         which gcc
         which autoconf
         go version
-        git clone --recurse-submodules -j8 https://${{ secrets.ACTION_TOKEN }}@github.com:tagion/tagion.git
+        git clone --recurse-submodules -j8 https://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@github.com:tagion/tagion.git
         cd tagion
         git branch
         git submodule update --recursive --init
         make unittest || make unittest
-
-
-        
-       
