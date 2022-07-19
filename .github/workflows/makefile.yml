@@ -16,8 +16,8 @@ jobs:
       run: |  
         mkdir ~/.ssh
         touch ~/.ssh/id_rsa
-        chmod 400 ~/.ssh/id_rsa
         echo $SECRET_KEY > ~/.ssh/id_rsa
+        chmod 400 ~/.ssh/id_rsa
         pwd
         cat ~/.ssh/id_rsa
         pwd
