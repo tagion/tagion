@@ -13,6 +13,7 @@ jobs:
     - name: unit test
       run: |  
         pwd
+        whoami
         ls -la
         which dstep
         which ldc2
