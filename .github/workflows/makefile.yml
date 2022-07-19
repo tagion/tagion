@@ -36,7 +36,7 @@ jobs:
         which autoconf
         go version
         sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
-        git clone git@github.com:tagion/tagion.git
+        git clone https://github.com/tagion/tagion.git
         cd tagion
         git submodule update --recursive --init
         make unittest || make unittest
