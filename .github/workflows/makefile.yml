@@ -7,7 +7,7 @@ on:
 jobs:
   unit-test:
 
-    runs-on: runs-on: self-hosted
+    runs-on: self-hosted
 
     steps:
     - uses: actions/checkout@v3
