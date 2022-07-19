@@ -20,25 +20,25 @@ import tagion.behaviour.BehaviourParser;
 import tagion.behaviour.BehaviourIssue : Dlang, Markdown;
 
 enum DOT='.'; /// File extension separator (Windows and Posix is a .)
-enume ONE_ARGS_ONLY = 2; /// Opt-arg only accepts one argument
+enum ONE_ARGS_ONLY = 2; /// Opt-arg only accepts one argument
 
 struct BehaviourOptions {
-    string[] paths;
-    string bdd_ext;
+    string[] paths; /// Include paths for the BDD source files
+    string bdd_ext; /// BDD extension (default markdown .md)
     // string dsrc_ext; // Extension
-    string bdd_dext; // Extension
-    string regex_inc;
-    string regex_exc;
-    string bdd_gen;
-    string gen;
-    string dfmt;
-    string[] dfmt_flags;
+    string d_ext; /// Extension for d-source files (default .d)
+    string regex_inc;  /// Regex filter for the files to be incl
+    string regex_exc;  /// Regex for the files to be excluded
+    string bdd_gen_ext;    /// Extension for the generated BDD-files
+//    string gen;        /// Pre-extension for the generated files
+    string dfmt; /// D source formater (default dfmt)
+    string[] dfmt_flags; /// Command line flags for the dfmt
     void setDefault() {
-        gen = "gen";
+        const gen = "gen";
         bdd_ext = FileExtension.markdown;
         //  dsrc_ext = "." ~ FileExtension.dsrc;
-        bdd_gen = [gen, FileExtension.markdown].join(DOT);
-        bdd_dext = [gen, FileExtension.dsrc].join(DOT);
+        bdd_gen_ext = [gen, FileExtension.markdown].join(DOT);
+        d_ext = [gen, FileExtension.dsrc].join(DOT);
         regex_inc =   `/testbench/`;
         const which_dfmt=execute(["which", "dfmt"]);
         if (which_dfmt.status is 0) {
@@ -73,9 +73,9 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
     int result_errors; /// Error counter
     foreach (d; parallel(bdd_files)) {
         auto dsource = d.name.setExtension(FileExtension.dsrc);
-        const bdd_gen = dsource.setExtension(opts.bdd_gen);
+        const bdd_gen = dsource.setExtension(opts.bdd_gen_ext);
         if (dsource.exists) {
-            dsource = dsource.setExtension(opts.bdd_dext);
+            dsource = dsource.setExtension(opts.d_ext);
         }
         writeln(d.name);
         writeln(dsource);

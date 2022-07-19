@@ -220,7 +220,7 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
 }
 
 unittest { /// Convert ProtoDBBTestComments to Feature
-    enum name = "ProtoDBBTestComments";
+    enum name = "ProtoBDDTestComments";
     immutable filename = name.unitfile.setExtension(EXT.Markdown);
     io.writefln("filename=%s", filename);
 
