@@ -37,6 +37,7 @@ jobs:
         go version
         rm -rf tagion
         git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git
+        cd tagion
         git branch
         git submodule update --recursive --init
         make unittest || make unittest
