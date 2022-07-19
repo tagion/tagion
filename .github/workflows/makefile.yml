@@ -7,7 +7,7 @@ on:
 jobs:
   unit-test:
 
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:   
     - name: unit test
@@ -26,8 +26,7 @@ jobs:
         which gcc
         which autoconf
         go version
-        git clone --recurse-submodules -j8 https://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@github.com/tagion/tagion.git
-        cd tagion
+        git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git
         git branch
         git submodule update --recursive --init
         make unittest || make unittest
