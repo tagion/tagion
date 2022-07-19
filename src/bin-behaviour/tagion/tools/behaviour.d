@@ -19,7 +19,9 @@ import tagion.tools.revision;
 import tagion.behaviour.BehaviourParser;
 import tagion.behaviour.BehaviourIssue : Dlang, Markdown;
 
-enum DOT='.';
+enum DOT='.'; /// File extension separator (Windows and Posix is a .)
+enume ONE_ARGS_ONLY = 2; /// Opt-arg only accepts one argument
+
 struct BehaviourOptions {
     string[] paths;
     string bdd_ext;
@@ -63,12 +65,12 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
     auto bdd_files = opts.paths
         .map!(path => dirEntries(path, SpanMode.depth))
         .joiner
-        .filter!(f => f.isFile)
-        .filter!(f => f.name.extension.stripDot == opts.bdd_ext)
-        .filter!(f => (opts.regex_inc.length is 0) || !f.name.matchFirst(regex_include).empty)
-        .filter!(f => (opts.regex_exc.length is 0) || f.name.matchFirst(regex_exclude).empty);
+        .filter!(file => file.isFile)
+        .filter!(file => file.name.extension.stripDot == opts.bdd_ext)
+        .filter!(file => (opts.regex_inc.length is 0) || !file.name.matchFirst(regex_include).empty)
+        .filter!(file => (opts.regex_exc.length is 0) || file.name.matchFirst(regex_exclude).empty);
 
-    int result;
+    int result_errors; /// Error counter
     foreach (d; parallel(bdd_files)) {
         auto dsource = d.name.setExtension(FileExtension.dsrc);
         const bdd_gen = dsource.setExtension(opts.bdd_gen);
@@ -103,10 +105,10 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
         }
         catch (Exception e) {
             writeln(e.msg);
-            result++;
+            result_errors++;
         }
     }
-    return result;
+    return result_errors;
 }
 
 int main(string[] args) {
@@ -141,7 +143,7 @@ int main(string[] args) {
     }
 
     if (overwrite_switch) {
-        if (args.length == 2) {
+        if (args.length is ONE_ARGS_ONLY) {
             config_file = args[1];
         }
         options.save(config_file);
