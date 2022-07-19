@@ -10,14 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: unit test
-      env:
-        SECRET_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+    - uses: shimataro/ssh-key-action@v2
+      with:
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        name: id_rsa
       run: |  
-        mkdir ~/.ssh
-        touch ~/.ssh/id_rsa
-        echo $SECRET_KEY > ~/.ssh/id_rsa
-        chmod 400 ~/.ssh/id_rsa
         pwd
         cat ~/.ssh/id_rsa
         pwd
