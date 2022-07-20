@@ -41,4 +41,7 @@ jobs:
         git branch
         git submodule update --recursive --init
         make unittest || make unittest
-        
+    
+   - name: unittest result
+     run: |
+       tail /home/runner/work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log
