@@ -44,4 +44,4 @@ jobs:
         
     - name: unittest result
       run: |
-        tail /home/runner/work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log
+        tail -n 3 /home/runner/work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1
