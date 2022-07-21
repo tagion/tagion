@@ -69,7 +69,7 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
         writeln("______________________________________");
         auto match = range.front.matchFirst(feature_regex);
         writeln("match: ", match);
-        writefln("%s:%d ", line, line_no);
+        writefln("%s:%d ", localfile, line_no);
         const Token token = cast(Token)(match.whichPattern);
         writeln("Token: ", token);
         with (Token) {
@@ -108,7 +108,7 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
                 break;
             case FEATURE:
                 current_action_index = -1;
-                check(state is State.Start, format("Feature has already been declared in line %d", line));
+//                check(state is State.Start, format("Feature has already been declared in line %d", line_no));
                 writeln("Hi from Feature!!! ", line);
                 info_feature.property.description = match.post.idup;
                 state = State.Feature;
@@ -155,7 +155,7 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
                 break;
             case SCENARIO:
                 current_action_index = -1;
-                check(state is State.Feature || state is State.Scenario, format("Scenario must be declared after a Feature :%d", line));
+                //check(state is State.Feature || state is State.Scenario, format("Scenario must be declared after a Feature :%d", line_no));
                 writeln("Hi from SCENARIO!!! ", line);
                 info_scenario.property.description = match.post.idup;
                 state = State.Scenario;
