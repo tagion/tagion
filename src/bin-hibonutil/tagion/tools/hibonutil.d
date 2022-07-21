@@ -4,31 +4,106 @@ import std.getopt;
 import std.stdio;
 import std.file : fread = read, fwrite = write, exists, readText;
 import std.format;
-import std.path : extension, withExtension;
-import std.traits : EnumMembers;
 import std.exception : assumeUnique, assumeWontThrow;
 import std.json;
 import std.range : only;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.basic.Types : Buffer, Pubkey, FileExtension;
-import tagion.basic.Basic : basename, fileExtension;
+import tagion.basic.Types : FileExtension;
+import tagion.basic.Basic : fileExtension;
 import tagion.hibon.HiBONJSON;
+import std.utf : toUTF8;
 
-//import tagion.script.StandardRecords;
 import std.array : join;
-
-// import tagion.revision;
-
-// enum fileextensions {
-//     HIBON = ".hibon",
-//     JSON = ".json"
-// };
 
 import tagion.tools.Basic;
 
 mixin Main!_main;
+
+enum BOM_UTF8_HEADER_SIGNATURE = char(239);
+enum BOM_UTF8_HEADER_SIZE = 3;
+
+/**
+ * @brief convert raw text to JSON object
+ */
+private JSONValue raw2Json(const string text)
+{
+    JSONValue result = null;
+    auto size = text.length;
+    if (size > 0)
+    {
+        // fix issues with BOM
+        if ((text[0] == BOM_UTF8_HEADER_SIGNATURE) && (size > (BOM_UTF8_HEADER_SIZE - 1)))
+        {
+            result = raw2Json(text[BOM_UTF8_HEADER_SIZE .. size]);
+        }
+        else
+        {
+            try
+            {
+                result = text.parseJSON;
+            }
+            catch(JSONException e)
+            {
+                writeln(e.msg);
+            }
+        }
+    }
+    return result;
+}
+
+/**
+ * @brief returned swaped copy of wide char elements array. (BE->LE, LE->BE)
+ */
+private wchar[] swapedcopy(const wchar[] data)
+{
+    ulong i = 0;
+    wchar[] sw_copy = data.dup;
+    foreach(e ; data)
+    {
+        char* a = cast(char*)&e;
+        char* b = cast(char*)&sw_copy[i];
+        i++;
+        b[0] = a[1];
+        b[1] = a[0];
+    }
+    return sw_copy;
+}
+
+/**
+ * @brief convert raw data to JSON object
+ */
+private JSONValue raw2Json(const void[] data)
+{
+    import std.encoding;
+    JSONValue result = null;
+    const size = data.length;
+    if (size > 0)
+    {
+       auto bom = getBOM(cast(ubyte[])data);
+       switch (bom.schema)
+       {
+            case BOM.none:
+            case BOM.utf8:
+                const char[] line = cast(char[])data;
+                result = raw2Json(cast(string)line);
+                break;
+            case BOM.utf16be:
+                result = raw2Json(swapedcopy(cast(wchar[])data));
+                break;
+            case BOM.utf16le:
+                const wchar[] line = cast(wchar[])data;
+                auto a = line.toUTF8;
+                result = raw2Json(a);
+                break;
+            default:
+                writeln("Unsuported encoding or damaged JSON file", bom);
+
+       }
+    }
+    return result;
+}
 
 int _main(string[] args)
 {
@@ -37,11 +112,6 @@ int _main(string[] args)
 
     string inputfilename;
     string outputfilename;
-    //    StandardBill bill;
-    bool binary;
-
-    //    string passphrase="verysecret";
-    ulong value = 1000_000_000;
     bool pretty;
     auto logo = import("logo.txt");
 
@@ -51,15 +121,12 @@ int _main(string[] args)
         "version", "display the version", &version_switch,
         "inputfile|i", "Sets the HiBON input file name", &inputfilename,
         "outputfile|o", "Sets the output file name", &outputfilename,
-        "bin|b", "Use HiBON or else use JSON", &binary,
-        "value|V", format("Bill value : default: %d", value), &value,
         "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
     );
 
     if (version_switch)
     {
-        // writefln("version %s", REVNO);
-        // writefln("Git handle %s", HASH);
+        writefln("version %s", "1.9");
         return 0;
     }
 
@@ -68,7 +135,6 @@ int _main(string[] args)
         writeln(logo);
         defaultGetoptPrinter(
             [
-            // format("%s version %s", program, REVNO),
             "Documentation: https://tagion.org/",
             "",
             "Usage:",
@@ -87,35 +153,24 @@ int _main(string[] args)
         main_args.options);
         return 0;
     }
-    //    writefln("args=%s", args);
-    if (args.length > 3)
-    {
-        stderr.writefln("Only one output file name allowed (given %s)", args[1 .. $]);
-        return 3;
-    }
-    if (args.length > 2)
-    {
-        outputfilename = args[2];
-        //        writefln("outputfilename%s", outputfilename);
-    }
-    if (args.length > 1)
+
+    if (args.length == 2)
     {
         inputfilename = args[1];
     }
-    else
+    else if (args.length == 1 && !inputfilename)
     {
         stderr.writefln("Input file missing");
         return 1;
     }
 
     immutable standard_output = (outputfilename.length == 0);
-    //    auto input_extension=inputfilename.extension;
-    //    string output_extension;
-    // if (standard_output) {
-    //     output_extension=outputfilename.extension;
-    // }
-    //    const input_extension = inputfilename.extension;
-    //   writefln("input_extension=%s", input_extension);
+    if (!exists(inputfilename))
+    {
+        writeln("File " ~ inputfilename ~ " not found");
+        return 0;
+    }
+
     switch (inputfilename.fileExtension)
     {
     case FileExtension.hibon:
@@ -147,9 +202,18 @@ int _main(string[] args)
         }
         break;
     case FileExtension.json:
-        const data = inputfilename.readText;
-        auto parse = data.parseJSON;
-        auto hibon = parse.toHiBON;
+        const data = inputfilename.fread;
+        auto parse = data.raw2Json;
+        HiBON hibon = null;
+        try
+        {
+            hibon = parse.toHiBON;
+        }
+        catch(HiBON2JSONException e)
+        {
+            writeln("Conversion error, please validate input JSON file");
+            return 1;
+        }
         if (standard_output)
         {
             write(hibon.serialize);
