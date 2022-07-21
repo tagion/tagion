@@ -71,17 +71,17 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
         .filter!(file => (opts.regex_exc.length is 0) || file.name.matchFirst(regex_exclude).empty);
 
     int result_errors; /// Error counter
-    foreach (d; parallel(bdd_files)) {
-        auto dsource = d.name.setExtension(FileExtension.dsrc);
+    foreach (file; parallel(bdd_files)) {
+        auto dsource = file.name.setExtension(FileExtension.dsrc);
         const bdd_gen = dsource.setExtension(opts.bdd_gen_ext);
         if (dsource.exists) {
             dsource = dsource.setExtension(opts.d_ext);
         }
-        writeln(d.name);
+        writeln(file.name);
         writeln(dsource);
         writeln(bdd_gen);
         try {
-            auto feature=parser(d.name);
+            auto feature=parser(file.name);
             { // Generate d-source file
                 auto fout = File(dsource, "w");
                 scope(exit) {
