@@ -220,18 +220,19 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
 }
 
 unittest { /// Convert ProtoDBBTestComments to Feature
-    enum name = "ProtoBDDTestComments";
-    immutable filename = name.unitfile.setExtension(EXT.Markdown);
-    io.writefln("filename=%s", filename);
+    enum bddfile_proto = "ProtoBDDTestComments";
+    immutable bdd_filename = bddfile_proto.unitfile.setExtension(EXT.Markdown);
+    io.writefln("bdd_filename=%s", bdd_filename);
 
-    auto feature_byline = File(filename).byLine;
+    auto feature_byline = File(bdd_filename).byLine;
 
-    alias ByLine = typeof(feature_byline);
-    pragma(msg, "isInputRange ", isInputRange!ByLine);
-    pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
-    pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
+    // alias ByLine = typeof(feature_byline);
+    // pragma(msg, "isInputRange ", isInputRange!ByLine);
+    // pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
+    // pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
 
     auto feature = parser(feature_byline);
+    { // Check ProtoDBBTestComments converted to Feature
     // check feature
     assert(feature.info.name == "tagion.behaviour.unittest.ProtoBDD");
     assert(feature.info.property.description == " Some awesome feature should print some cash out of the blue(descr)");
@@ -264,6 +265,9 @@ unittest { /// Convert ProtoDBBTestComments to Feature
     assert(feature.scenarios[0].then.ands[0].name == "is_dispensed");
     assert(feature.scenarios[0].then.ands[0].property.description == " the cash is dispensed");
     assert(feature.scenarios[0].then.ands[0].property.comments == ["some comments for Then And", ""]);
+    }
+
+
     // white space at the start of description
     // only for one scenario
 }
