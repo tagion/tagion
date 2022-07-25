@@ -2,19 +2,17 @@ module tagion.tools.tagionwallet;
 
 import std.getopt;
 import std.stdio;
-import std.file : exists, mkdir;
+import std.file : exists, mkdir, FileException;
 import std.path;
 import std.format;
 import std.algorithm : map, max, min, filter, each, splitter;
-import std.range : lockstep, zip, takeExactly, only;
+import std.range : lockstep, zip;
 import std.array;
-import std.string : strip, toLower;
+import std.string : toLower;
 import std.conv : to;
 import std.array : join;
 import std.exception : assumeUnique, assumeWontThrow;
-import std.string : representation;
-import core.time : MonoTime;
-import std.socket : InternetAddress, AddressFamily;
+import std.socket : InternetAddress, AddressFamily, SocketOSException;
 import core.thread;
 
 import tagion.hibon.HiBON : HiBON;
@@ -22,7 +20,6 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
 
-import tagion.basic.Basic : basename;
 import tagion.basic.Types : Buffer;
 import tagion.basic.TagionExceptions;
 import tagion.script.StandardRecords;
@@ -33,7 +30,6 @@ import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, Quiz;
 import tagion.wallet.SecureWallet;
 import tagion.utils.Term;
 import tagion.basic.Message;
-import tagion.utils.Miscellaneous;
 
 import tagion.communication.HiRPC;
 import tagion.network.SSLSocket;
@@ -759,11 +755,19 @@ int _main(string[] args)
     {
         writefln("HEALTHCHECK: %s %d", wallet_interface.options.addr, wallet_interface.options.port);
         auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-        client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface
-                .options.port));
         scope (exit)
         {
             client.close;
+        }
+        try 
+        {
+            client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface
+                .options.port));
+        }
+        catch(SocketOSException e)
+        {
+            writeln("Health check failed: ", e.msg);
+            return 1;
         }
         client.blocking = true;
         const sender = hirpc.action("healthcheck", new HiBON());
@@ -814,7 +818,15 @@ int _main(string[] args)
         const pin_doc = options.devicefile.exists ? options.devicefile.fread : Document.init;
         if (wallet_doc.isInorder && pin_doc.isInorder)
         {
-            wallet_interface.secure_wallet = WalletInterface.StdSecureWallet(wallet_doc, pin_doc);
+            try 
+            {
+                wallet_interface.secure_wallet = WalletInterface.StdSecureWallet(wallet_doc, pin_doc);
+            }
+            catch (TagionException e)
+            {
+                writefln(e.msg);
+                return 1;
+            }
         }
         if (options.quizfile.exists)
         {
@@ -898,6 +910,10 @@ int _main(string[] args)
             return 8;
         }
     }
+    else if (payfile.length)
+    {
+        writeln("Invoice file "~payfile~" not found");
+    }
     if (unlock_bills)
     {
         wallet_interface.secure_wallet.deactivate_bills;
@@ -910,13 +926,22 @@ int _main(string[] args)
         auto to_send = wallet_interface.secure_wallet.get_request_update_wallet();
         // writeln("Sending::", to_send.toDoc.toJSON);
         auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-        client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface
-                .options.port));
-        client.blocking = true;
         scope (exit)
         {
             client.close;
         }
+        try 
+        {
+            client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface
+                .options.port));
+        }
+        catch(SocketOSException e)
+        {
+            writeln("Refused connection to address:", wallet_interface.options.addr);
+            return 1;
+        }
+        client.blocking = true;
+
         client.send(to_send.toDoc.serialize);
 
         auto rec_buf = new void[4000];
@@ -984,7 +1009,15 @@ int _main(string[] args)
             options.paymentrequestsfile.fwrite(wallet_interface.payment_requests);
             // Writes the invoice-file to a file named <name>_<invoicefile>
             // writefln("invoicefile=%s", invoicefile);
-            invoicefile.fwrite(new_invoice);
+            try
+            {
+                invoicefile.fwrite(new_invoice);
+            }
+            catch(FileException e)
+            {
+                writeln(e.msg);
+                return 1;
+            }
         }
         else if (invoice_to_pay !is invoice_to_pay.init)
         {
