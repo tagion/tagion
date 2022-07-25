@@ -626,21 +626,18 @@ Used in:
 
 ## Use cases
 ### Case: simple call
+```
+./dartutil <function> -i "tmp.txt"
+```
 #### Success
 **Result**:
 file at the specified path was opened.<br>
 No console output
 #### Failure
 **Result** (when file not found):<br>
-**Refactor** handle exception
+Tool stop working
 ```
-std.file.FileException@std/file.d(371): : No such file or directory
-----------------
-??:? [0x562969f0ba35]
-??:? [0x562969f34c06]
-??:? [0x562969f1511f]
-??:? [0x562969ee521c]
-...
+Can't open input file 'tmp.txt'. Abort
 ```
 
 # outputfile

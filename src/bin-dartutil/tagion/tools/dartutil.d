@@ -277,15 +277,22 @@ int _main(string[] args)
             "Only one of the dartrpc, dartread, dartrim, dartmodify, nncupdate and nncread switched alowed");
         return 1;
     }
-    // if (!inputfilename.exists) {
-    //     stderr.writefln("No input file '%s'", inputfilename);
-    // }
 
-    if (dartrpc)
+    bool inputfile_switch = !inputfilename.empty;
+    if (inputfile_switch)
     {
         if (!inputfilename.exists)
         {
-            writeln("No input file");
+            writefln("Can't open input file '%s'. Abort", inputfilename);
+            return 1;
+        }
+    }
+
+    if (dartrpc)
+    {
+        if (!inputfile_switch)
+        {
+            writeln("No input file provided. Use -i to specify input file");
         }
         else
         {
@@ -312,42 +319,56 @@ int _main(string[] args)
     }
     else if (dartrim)
     {
-        // Buffer root_rims;
-        // auto params=new HiBON;
-        // if(!inputfilename.exists) {
-        //     writefln("Input file: %s not exists", inputfilename);
-        //     root_rims = [];
-        // }else{
-        //     auto inputBuffer = cast(immutable(char)[])fread(inputfilename);
-        //     if(inputBuffer.length){
-        //         root_rims = decode(inputBuffer);
-        //         writeln(root_rims);
-        //     }else{
-        //         root_rims = [];
-        //     }
-        // }
-        // params[DARTFile.Params.rims]=root_rims;
-        // auto sended = hirpc.dartRim(params).toHiBON(net).serialize;
-        // auto doc = Document(sended);
-        // auto received = hirpc.receive(doc);
-        // auto result = db(received);
-        // auto tosend = hirpc.toHiBON(result);
-        // auto tosendResult = (tosend[Keywords.message].get!Document)[Keywords.result].get!Document;
-        // writeResponse(tosendResult.serialize);
+        if (!inputfile_switch)
+        {
+            writeln("No input file provided. Use -i to specify input file");
+        }
+        else
+        {
+            // Buffer root_rims;
+            // auto params=new HiBON;
+            // if(!inputfilename.exists) {
+            //     writefln("Input file: %s not exists", inputfilename);
+            //     root_rims = [];
+            // }else{
+            //     auto inputBuffer = cast(immutable(char)[])fread(inputfilename);
+            //     if(inputBuffer.length){
+            //         root_rims = decode(inputBuffer);
+            //         writeln(root_rims);
+            //     }else{
+            //         root_rims = [];
+            //     }
+            // }
+            // params[DARTFile.Params.rims]=root_rims;
+            // auto sended = hirpc.dartRim(params).toHiBON(net).serialize;
+            // auto doc = Document(sended);
+            // auto received = hirpc.receive(doc);
+            // auto result = db(received);
+            // auto tosend = hirpc.toHiBON(result);
+            // auto tosendResult = (tosend[Keywords.message].get!Document)[Keywords.result].get!Document;
+            // writeResponse(tosendResult.serialize);
+        }
     }
     else if (dartmodify)
     {
-        const doc = inputfilename.fread;
-        auto factory = RecordFactory(net);
-        auto recorder = factory.recorder(doc);
-        auto sended = DART.dartModify(recorder, hirpc);
-        auto received = hirpc.receive(sended);
-        auto result = db(received, false);
-        auto tosend = hirpc.toHiBON(result);
-        auto tosendResult = tosend.method.params;
-        if (dump)
-            db.dump(true);
-        outputfilename.fwrite(tosendResult);
+        if (!inputfile_switch)
+        {
+            writeln("No input file provided. Use -i to specify input file");
+        }
+        else
+        {
+            const doc = inputfilename.fread;
+            auto factory = RecordFactory(net);
+            auto recorder = factory.recorder(doc);
+            auto sended = DART.dartModify(recorder, hirpc);
+            auto received = hirpc.receive(sended);
+            auto result = db(received, false);
+            auto tosend = hirpc.toHiBON(result);
+            auto tosendResult = tosend.method.params;
+            if (dump)
+                db.dump(true);
+            outputfilename.fwrite(tosendResult);
+        }
     }
     else if (nncread)
     {
