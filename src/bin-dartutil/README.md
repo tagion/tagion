@@ -31,62 +31,53 @@
 - [rpc](#rpc)
   - [Parameters](#parameters-2)
   - [Use cases:](#use-cases-2)
-- [generate](#generate)
+- [nncupdate](#nncupdate)
   - [Parameters](#parameters-3)
   - [Use cases](#use-cases-3)
     - [Case: simple call](#case-simple-call)
       - [Success](#success-4)
       - [Failure](#failure-4)
-- [nncupdate](#nncupdate)
+- [nncread](#nncread)
   - [Parameters](#parameters-4)
   - [Use cases](#use-cases-4)
     - [Case: simple call](#case-simple-call-1)
       - [Success](#success-5)
       - [Failure](#failure-5)
-- [nncread](#nncread)
+- [testaddblocks](#testaddblocks)
   - [Parameters](#parameters-5)
   - [Use cases](#use-cases-5)
-    - [Case: simple call](#case-simple-call-2)
+    - [Case: add several blocks](#case-add-several-blocks)
       - [Success](#success-6)
       - [Failure](#failure-6)
-- [testaddblocks](#testaddblocks)
+- [testdumpblocks](#testdumpblocks)
   - [Parameters](#parameters-6)
   - [Use cases](#use-cases-6)
-    - [Case: add several blocks](#case-add-several-blocks)
+    - [Case: dump last block](#case-dump-last-block)
       - [Success](#success-7)
       - [Failure](#failure-7)
-- [testdumpblocks](#testdumpblocks)
-  - [Parameters](#parameters-7)
-  - [Use cases](#use-cases-7)
-    - [Case: dump last block](#case-dump-last-block)
+    - [Case: dump all blocks](#case-dump-all-blocks)
       - [Success](#success-8)
       - [Failure](#failure-8)
-    - [Case: dump all blocks](#case-dump-all-blocks)
-      - [Success](#success-9)
-      - [Failure](#failure-9)
 - [version](#version)
 - [dartfilename](#dartfilename)
-  - [Use cases](#use-cases-8)
-    - [Success](#success-10)
-    - [Failure](#failure-10)
+  - [Use cases](#use-cases-7)
+    - [Success](#success-9)
+    - [Failure](#failure-9)
 - [initialize](#initialize)
 - [inputfile](#inputfile)
-  - [Use cases](#use-cases-9)
-    - [Case: simple call](#case-simple-call-3)
-      - [Success](#success-11)
-      - [Failure](#failure-11)
+  - [Use cases](#use-cases-8)
+    - [Case: simple call](#case-simple-call-2)
+      - [Success](#success-10)
+      - [Failure](#failure-10)
 - [outputfile](#outputfile)
 - [from](#from)
 - [to](#to)
-- [useFakeNet](#usefakenet)
 - [dump](#dump)
-  - [Use cases](#use-cases-10)
+  - [Use cases](#use-cases-9)
     - [Case: dump DART](#case-dump-dart)
 - [eye](#eye)
-  - [Use cases](#use-cases-11)
+  - [Use cases](#use-cases-10)
     - [Case: print bullseye](#case-print-bullseye)
-- [width](#width)
-- [rings](#rings)
 - [passphrase](#passphrase)
 - [verbose](#verbose)
 
@@ -125,8 +116,6 @@ Example of using:
 [--outputfile](#outputfile) **optional**
 
 [--dartfilename](#dartfilename) **optional**
-
-[--useFakeNet](#usefakenet) **optional**
 
 [--dump](#dump) **optional**
 
@@ -254,8 +243,6 @@ One of the [exclusive functions](#exclusive-functions)
 
 [--dartfilename](#dartfilename) **optional**
 
-[--useFakeNet](#usefakenet) **optional**
-
 [--dump](#dump) **optional**
 
 [--eye](#eye) **optional**
@@ -274,7 +261,7 @@ No console output.
 
 #### Failure
 **Result** (input file has wrong format):<br>
-Created new DART file. No DART sequence executet. Aborted.
+Created new DART file. No DART sequence executed. Aborted.
 
 **Refactor** handle exception
 ```
@@ -322,8 +309,6 @@ One of the [exclusive functions](#exclusive-functions)
 
 [--dartfilename](#dartfilename) **optional**
 
-[--useFakeNet](#usefakenet) **optional**
-
 [--dump](#dump) **optional**
 
 [--eye](#eye) **optional**
@@ -332,44 +317,6 @@ One of the [exclusive functions](#exclusive-functions)
 
 ## Use cases:
 TBD
-
-# generate
-```
---generate
-```
-**Refactor** should be removed
-
-Generate a fake test dart. Recomended to use with [--useFakeNet](#usefakenet)
-
-## Parameters
-
-[--width](#width) **optional**
-
-[--rings](#rings) **optional**
-
-[--dartfilename](#dartfilename) **optional**
-
-[--useFakeNet](#usefakenet) **optional**
-
-[--dump](#dump) **optional**
-
-[--eye](#eye) **optional**
-
-[--passphrase](#passphrase) **optional**
-
-## Use cases
-### Case: simple call
-```
-./dartutil --generate
-```
-#### Success
-**Result:**
-```
-98%  GENERATED DART. EYE:
-```
-
-#### Failure
-Possible failure see [--dartfilename](#dartfilename)
 
 # nncupdate
 ```
@@ -392,8 +339,6 @@ Example of using:
 
 [--dartfilename](#dartfilename) **optional**
 
-[--useFakeNet](#usefakenet) **optional**
-
 [--dump](#dump) **optional**
 
 [--eye](#eye) **optional**
@@ -403,7 +348,7 @@ Example of using:
 Example of using:
 ```
 ./dartutil --nncupdate="test name"
-./dartutil --nncupdate="test name" -d="dart.drt" --usefakenet --verbose
+./dartutil --nncupdate="test name" -d="dart.drt" --verbose
 ```
 
 ## Use cases
@@ -453,8 +398,6 @@ Example of using:
 
 [--dartfilename](#dartfilename) **optional**
 
-[--useFakeNet](#usefakenet) **optional**
-
 [--dump](#dump) **optional**
 
 [--eye](#eye) **optional**
@@ -464,7 +407,7 @@ Example of using:
 Example of using:
 ```
 ./dartutil --nncread="test name"
-./dartutil --nncread="test name" -d="dart.drt" --usefakenet --verbose
+./dartutil --nncread="test name" -d="dart.drt" --verbose
 ```
 
 ## Use cases
@@ -526,8 +469,6 @@ Example of using:
 
 [--dartfilename](#dartfilename) **optional**
 
-[--useFakeNet](#usefakenet) **optional**
-
 [--dump](#dump) **optional**
 
 [--eye](#eye) **optional**
@@ -578,8 +519,6 @@ Example of using:
 [--verbose](#verbose) **optional**
 
 [--dartfilename](#dartfilename) **optional**
-
-[--useFakeNet](#usefakenet) **optional**
 
 [--dump](#dump) **optional**
 
@@ -748,16 +687,6 @@ Default value: `0`
 
 In development.
 
-# useFakeNet
-```
---useFakeNet -fn
-```
-**Refactor** should be removed
-Enables fake hash test-mode<br>
-Default value: `False`
-<br><br>
-Can be used with any function in dartutil
-
 # dump
 ```
 --dump
@@ -805,24 +734,6 @@ Can be used with any function in dartutil
 ```
 EYE: 29a444af19221a7ed3dbb6e459a946745feace5a300a5390c2e48b6b27047d3d
 ```
-
-# width
-```
---width -w
-```
-**Refactor** should be removed
-
-Sets the rings width and is used in combination with [--generate](#generate)<br>
-Default value: `4`
-
-# rings
-```
---rings
-```
-**Refactor** should be removed
-
-Sets the rings height and is used in combination with [--generate](#generate)<br>
-Default value: `4`
 
 # passphrase
 ```

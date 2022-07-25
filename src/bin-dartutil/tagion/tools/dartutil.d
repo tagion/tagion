@@ -105,7 +105,6 @@ int _main(string[] args)
     bool version_switch;
     auto logo = import("logo.txt");
 
-    bool useFakeNet = false;
     bool dump = false;
 
     bool dartread = false;
@@ -113,12 +112,9 @@ int _main(string[] args)
     bool dartmodify = false;
     bool dartrim = false;
     bool dartrpc = false;
-    bool generate = false;
     bool eye;
     bool verbose;
 
-    ubyte ringWidth = 4;
-    int rings = 4;
     bool initialize = false;
     string passphrase = "verysecret";
     string nncupdatename, nncreadname;
@@ -137,16 +133,12 @@ int _main(string[] args)
             : fromAngle.to!string), &fromAngle,
         "to", format("Sets to angle: default %s", (fromAngle == toAngle) ? "full"
             : toAngle.to!string), &toAngle,
-        "useFakeNet|fn", format("Enables fake hash test-mode: default %s", useFakeNet), &useFakeNet,
         "read|r", format("Excutes a DART read sequency: default %s", dartread), &dartread_args,
         "rim", format("Performs DART rim read: default %s", dartrim), &dartrim,
         "modify|m", format("Excutes a DART modify sequency: default %s", dartmodify), &dartmodify,
         "rpc", format("Excutes a HiPRC on the DART: default %s", dartrpc), &dartrpc,
-        "generate", "Generate a fake test dart (recomended to use with --useFakeNet)", &generate,
         "dump", "Dumps all the arcvives with in the given angle", &dump,
         "eye", "Prints the bullseye", &eye,
-        "width|w", "Sets the rings width and is used in combination with the generate", &ringWidth,
-        "rings", "Sets the rings height and is used in  combination with the generate", &rings,
         "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
         "nncupdate", "Update existing NetworkNameCard with given name", &nncupdatename,
         "nncread", "Read NetworkNameCard with given name", &nncreadname,
@@ -191,19 +183,9 @@ int _main(string[] args)
 
     SecureNet createNet()
     {
-        SecureNet result;
-        if (useFakeNet)
-        {
-            import tagion.dart.DARTFakeNet;
-
-            result = new DARTFakeNet;
-        }
-        else
-        {
-            result = new StdSecureNet;
-        }
-        result.generateKeyPair(passphrase);
-        return result;
+        SecureNet net = new StdSecureNet;
+        net.generateKeyPair(passphrase);
+        return net;
     }
 
     const net = createNet;
@@ -220,13 +202,6 @@ int _main(string[] args)
     }
 
     auto db = new DART(net, dartfilename, fromAngle, toAngle);
-    if (generate)
-    {
-        import tagion.dart.DARTFakeNet : SetInitialDataSet;
-
-        auto fp = SetInitialDataSet(db, ringWidth, rings);
-        writeln("GENERATED DART. EYE: ", fp.cutHex);
-    }
     if (dump)
     {
         db.dump(true);
