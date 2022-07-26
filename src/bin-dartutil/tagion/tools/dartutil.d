@@ -10,7 +10,7 @@ import std.array;
 import std.algorithm;
 import std.typecons;
 
-import tagion.dart.DART;
+import tagion.dart.DART : DART, tryOpenDART;
 import tagion.dart.DARTFile;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.basic.Basic : tempfile;
@@ -195,7 +195,14 @@ int _main(string[] args)
         DART.create(dartfilename);
     }
 
-    auto db = new DART(net, dartfilename);
+    string error_description;
+    DART db = tryOpenDART(net, dartfilename, error_description);
+    if (db is null)
+    {
+        writefln("Fail to open DART: %s. Abort.", error_description);
+        return 1;
+    }
+
     if (dump)
     {
         db.dump(true);
@@ -308,6 +315,7 @@ int _main(string[] args)
         const tosendResult = tosend.method.params;
 
         outputfilename.fwrite(tosendResult);
+        writefln("Result has been written to '%s'", outputfilename);
 
         toConsole!Document(result.message);
     }

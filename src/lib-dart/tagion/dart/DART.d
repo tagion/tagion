@@ -1485,3 +1485,22 @@ class DART : DARTFile
         }
     }
 }
+
+/** Open DART safely with catching possible exceptions
+*       @param net Represent SecureNet for initializing DART
+*       @param filename Represent path to DART file to open
+*       @param out_err_msg Field used for returning error message in case when function get exception
+*       \return DART object opened by filename or null in case of any exception
+*/
+DART tryOpenDART(const SecureNet net, string filename, ref string out_err_msg) @safe
+{
+    try
+    {
+        return new DART(net, filename);
+    }
+    catch (Exception e)
+    {
+        out_err_msg = e.msg;
+        return null;
+    }
+}

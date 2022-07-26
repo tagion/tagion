@@ -63,15 +63,14 @@
   - [Use cases](#use-cases-7)
     - [Success](#success-9)
     - [Failure](#failure-9)
+    - [Failure](#failure-10)
 - [initialize](#initialize)
 - [inputfile](#inputfile)
   - [Use cases](#use-cases-8)
     - [Case: simple call](#case-simple-call-2)
       - [Success](#success-10)
-      - [Failure](#failure-10)
+      - [Failure](#failure-11)
 - [outputfile](#outputfile)
-- [from](#from)
-- [to](#to)
 - [dump](#dump)
   - [Use cases](#use-cases-9)
     - [Case: dump DART](#case-dump-dart)
@@ -132,6 +131,7 @@ Example of using:
 **Result** <br>
 Found record with given hash. Written to outputfile and console:
 ```
+Result has been written to '/tmp/deleteme.dmd.unittest.pid467287FFCBD44164C'
 Document: {
     "result": {
         "$@": "Recorder",
@@ -165,6 +165,7 @@ Document: {
 **Result** (when record not found)<br>
 Empty recorder is written to outputfile and console
 ```
+Result has been written to '/tmp/deleteme.dmd.unittest.pid467287FFCBD44164C'
 Document: {
     "result": {
         "$@": "Recorder"
@@ -201,6 +202,7 @@ Document: {
 **Result** (when record not found)<br>
 Empty recorder is written to outputfile and console
 ```
+Result has been written to '/tmp/deleteme.dmd.unittest.pid467287FFCBD44164C'
 Document: {
     "result": {
         "$@": "Recorder"
@@ -596,16 +598,20 @@ Can be used with any function in dartutil
 dartutil opens specified dart file
 ### Failure
 **Result** (when DART file can't be opened):
-**Refactor** handle exception
+
+Tool stops working
 ```
-std.exception.ErrnoException@std/stdio.d(758): Cannot open file `dart.drt' in mode `r+' (No such file or directory)
-----------------
-??:? [0x5613ca716a35]
-??:? [0x5613ca73fc06]
-??:? [0x5613ca72011f]
-...exception output...
+Fail to open DART: Cannot open file `/tmp/default.drt' in mode `r+' (No such file or directory). Abort.
 ```
 **Note**: DART file can be created using [--initialize](#initialize)
+
+### Failure
+**Result** (when DART file have wrong format):
+
+Tool stops working
+```
+Fail to open DART: BlockFile should be sized in equal number of blocks of the size of 64 but the size is 578. Abort.
+```
 
 # initialize
 ```
@@ -655,34 +661,6 @@ Default value: path generated with random seed. Variants of this path:
 ```
 
 Can be used with any function in dartutil
-
-# from
-```
---from
-```
-Sets _from_ sector angle for DART in range 0:65535.<br>
-This meant to support sharding of the DART but now it's not fully supported yet.<br>
-
-**Refactor** add assertion and text message that this feature not supported yet
-
-Values when `from == to` means full.<br>
-Default value: `0`
-
-In development.
-
-# to
-```
---to
-```
-Sets _to_ sector angle for DART in range 0:65535.<br>
-This meant to support sharding of the DART but now it's not fully supported yet.<br>
-
-**Refactor** add assertion and text message that this feature not supported yet
-
-Values when `from == to` means full.<br>
-Default value: `0`
-
-In development.
 
 # dump
 ```
