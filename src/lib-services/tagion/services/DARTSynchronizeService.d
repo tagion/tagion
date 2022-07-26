@@ -120,19 +120,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         DART dart = new DART(net, filename, sector_range.from_sector, sector_range.to_sector);
         log("DART initialized with angle: %s", sector_range);
 
-        if (opts.dart.generate)
-        {
-            import tagion.dart.DARTFakeNet;
-
-            auto fp = SetInitialDataSet(dart, opts.dart.ringWidth, opts.dart.rings);
-            log("DART generated: bullseye: %s", fp.cutHex);
-            dart.dump;
-        }
-        else
-        {
-            dart.dump;
-            log("DART bullseye: %s", dart.fingerprint.cutHex);
-        }
+        dart.dump;
+        log("DART bullseye: %s", dart.fingerprint.cutHex);
 
         scope (exit)
         {

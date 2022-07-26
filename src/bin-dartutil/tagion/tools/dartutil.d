@@ -100,8 +100,6 @@ int _main(string[] args)
     string dartfilename = "/tmp/default".setExtension(FileExtension.dart);
     string inputfilename = "";
     string outputfilename = tempfile;
-    ushort fromAngle = 0;
-    ushort toAngle = 0;
     bool version_switch;
     auto logo = import("logo.txt");
 
@@ -129,10 +127,6 @@ int _main(string[] args)
         "initialize", "Create a dart file", &initialize,
         "inputfile|i", "Sets the HiBON input file name", &inputfilename,
         "outputfile|o", "Sets the output file name", &outputfilename,
-        "from", format("Sets from angle: default %s", (fromAngle == toAngle) ? "full"
-            : fromAngle.to!string), &fromAngle,
-        "to", format("Sets to angle: default %s", (fromAngle == toAngle) ? "full"
-            : toAngle.to!string), &toAngle,
         "read|r", format("Excutes a DART read sequency: default %s", dartread), &dartread_args,
         "rim", format("Performs DART rim read: default %s", dartrim), &dartrim,
         "modify|m", format("Excutes a DART modify sequency: default %s", dartmodify), &dartmodify,
@@ -201,7 +195,7 @@ int _main(string[] args)
         DART.create(dartfilename);
     }
 
-    auto db = new DART(net, dartfilename, fromAngle, toAngle);
+    auto db = new DART(net, dartfilename);
     if (dump)
     {
         db.dump(true);

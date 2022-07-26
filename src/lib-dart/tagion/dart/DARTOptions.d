@@ -19,7 +19,6 @@ struct DARTOptions
     ubyte ringWidth;
     int rings;
     bool initialize;
-    bool generate;
     bool synchronize;
     bool angle_from_port;
     bool request;
