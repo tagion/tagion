@@ -1,6 +1,6 @@
 <a href="https://tagion.org"><img alt="tagion logo" src="https://github.com/tagion/resources/raw/master/branding/logomark.svg?sanitize=true" alt="tagion.org" height="60"></a>
 # tagionboot v.0.x.x
-> This tool is used for working with local DART database. It allows to read and modify directly and also can run some test scenarios in DART structure.
+> This tool is used for creating and cusomising recorders.
 >- [tagionboot v.0.x.x](#tagionboot-v0xx)
       - [Tool link](#tool-link)
 #### [Tool link](https://github.com/tagion/tagion/tree/release/src/bin-boot)
