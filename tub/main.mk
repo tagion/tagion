@@ -136,9 +136,3 @@ include $(DTUB)/clean.mk
 # Help
 #
 include $(DTUB)/help.mk
-
-run: mode0
-	@echo "------------ DEPRECATED ----------------"
-	@echo "run target change to mode0 or mode1"
-	@echo "make mode0 : to start a network in mode 0"
-	@echo "make mode1 : to start a network in mode 1"
