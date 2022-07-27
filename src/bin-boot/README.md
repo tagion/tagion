@@ -20,12 +20,14 @@
   - [Use cases:](#use-cases-1)
     - [Case - creating dummy bills recorder](#case---creating-dummy-bills-recorder)
       - [Success](#success-1)
+      - [Failure](#failure-1)
 - [nnc](#nnc)
   - [Parameters](#parameters-1)
   - [Use cases:](#use-cases-2)
     - [Case - creating recorder with name "test"](#case---creating-recorder-with-name-test)
       - [Success](#success-2)
-      - [Failure](#failure-1)
+      - [Failure](#failure-2)
+      - [Failure](#failure-3)
 # version
 ```
 --version
@@ -45,7 +47,7 @@ tagionboot --output test.hibon
 ```
 #### Success
 **Result**
-Creates file with received filename, with empty recorder
+Created test.hibon file with empty recorder
 
 **Refactor** not change default filename, should not generate empty recorder
 
@@ -64,7 +66,7 @@ Generate recorder with bills, with next amount [4, 1, 100, 40, 956, 42, 354, 7, 
 Used for test purpose only.
 
 ## Parameters
---output **optional**
+--[output](#output) **optional**
 
 ## Use cases:
 ### Case - creating dummy bills recorder
@@ -73,9 +75,16 @@ tagionboot --initbills
 ```
 
 #### Success
-Created recorder file, with bills
+Created recorder file with bills
 
 **Refactor** should receive number of bills and their amount as parameter or from config file. Must not override file with nnc
+
+#### Failure
+**Result** (tmp directory not exists)
+**Refactor** handle exception
+```
+std.file.FileException@std/file.d(836): tmp/dart.hibon: No such file or director
+```
 
 # nnc
 ```
@@ -86,7 +95,7 @@ Create hibon file which contains recorder with initialized HashLock, NetworkName
 As default recorder will be stored in ./tmp/dart.hibon
 
 ## Parameters
---output **optional**
+--[output](#output) **optional**
 
 ## Use cases:
 ### Case - creating recorder with name "test"
@@ -94,7 +103,7 @@ As default recorder will be stored in ./tmp/dart.hibon
 tagionboot --nnc test
 ```
 #### Success
-Created output file, which contains recorder with name "test"
+Created output file which contains recorder named "test"
 
 #### Failure
 **Result** (empty name)
@@ -102,5 +111,12 @@ Created output file, which contains recorder with name "test"
 **Refactor** handle exception
 ```
 std.getopt.GetOptException@/home/lokalbruger/bin/ldc2-1.29.0-linux-x86_64/bin/../import/std/getopt.d(879): Missing value for argument --nnc.
+
+```
+#### Failure
+**Result** (tmp directory not exists)
+**Refactor** handle exception
+```
+std.file.FileException@std/file.d(836): tmp/dart.hibon: No such file or director
 ```
 
