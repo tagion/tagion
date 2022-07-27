@@ -195,11 +195,11 @@ int _main(string[] args)
         DART.create(dartfilename);
     }
 
-    string error_description;
-    DART db = tryOpenDART(net, dartfilename, error_description);
-    if (db is null)
+    Exception dart_exception;
+    auto db = new DART(net, dartfilename, dart_exception);
+    if (!(dart_exception is null))
     {
-        writefln("Fail to open DART: %s. Abort.", error_description);
+        writefln("Fail to open DART: %s. Abort.", dart_exception.msg);
         return 1;
     }
 
