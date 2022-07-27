@@ -23,12 +23,18 @@ endif
 
 match=${shell $(SCRIPT)/check_regex.d $@ -r'^(env-\w+|env|help-\w+|help|clean-\w+|clean|proper-\w+|proper|ddeps|dfiles|dstep)$$'}
 
+cloned=${sheel $(SCRIPT)/check_module. $$(REPOROOT)}
+
 ifdef RECURSIVE
-${error This makefile should to be call recursive}
+${error This makefile should not be called recursively}
 endif
+
+xxx:
+	echo $(cloned)
 
 %:
 	@
+	echo $(cloned)
 	if [ -z "${call match,$@}" ]; then
 	$(MAKE) $(MAIN_FLAGS) prebuild
 	fi
