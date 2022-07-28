@@ -40,14 +40,14 @@ enum State {
 }
 
 @trusted
-FeatureGroup parser(string filename) {
+FeatureGroup parser(string filename, out string[] errors) {
     import std.stdio : File;
     auto by_line = File(filename).byLine;
-    return parser(by_line, filename);
+    return parser(by_line, errors, filename);
 }
 
 @trusted
-FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isSomeString!(ElementType!R)) {
+FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (isInputRange!R && isSomeString!(ElementType!R)) {
     import std.stdio;
     import std.array;
     import std.stdio : write, writeln, writef, writefln;
@@ -65,13 +65,20 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
     State state;
     writeln("STARTTTTTTT--------------------------------------------------------------------------------------------------------------");
     int current_action_index = -1;
+//    string[] errors;
     foreach (line_no, line; range.enumerate(1)) {
+        void check_error(const bool flag, string msg) {
+            if (!flag) {
+                const text = format("%s:%d\n%s\n%s", localfile, line_no, line, msg);
+                errors ~= text; //format("%s:%d\n%s\n", localfile, line_no, line, msg);
+            }
+        }
         writeln("______________________________________");
         auto match = range.front.matchFirst(feature_regex);
-        writeln("match: ", match);
-        writefln("%s:%d ", localfile, line_no);
+        // writeln("match: ", match);
+        // writefln("%s:%d ", localfile, line_no);
         const Token token = cast(Token)(match.whichPattern);
-        writeln("Token: ", token);
+        // writeln("Token: ", token);
         with (Token) {
         TokenSwitch:
             final switch (token) {
@@ -103,7 +110,7 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
                     }
                     break;
                 case State.Start:
-                    check(0, format("Missing feature declaration %s:%d", line, line_no));
+                    check_error(0, "Missing feature declaration");
                 }
                 break;
             case FEATURE:
@@ -134,10 +141,10 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
                                     scenario_group.tupleof[index].ands[$ - 1].name = match[1].idup;
                                     break TokenSwitch;
                                 }
-                                writefln("scenario_group.tupleof[index].info.name = %s", scenario_group.tupleof[index]
-                                        .info.name);
-                                check(scenario_group.tupleof[index].info.name.length == 0,
-                                     format("Action name has already been defined %s", match[0], scenario_group.tupleof[index].info.name));
+                                // writefln("scenario_group.tupleof[index].info.name = %s", scenario_group.tupleof[index]
+                                //         .info.name);
+                                check_error(scenario_group.tupleof[index].info.name.length == 0,
+                                    format("Action name '%s' has already been defined for %s", match[0], scenario_group.tupleof[index].info.name));
 
                                 scenario_group.tupleof[index].info.name = match[1].idup;
                                 break TokenSwitch;
@@ -215,7 +222,8 @@ FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isS
     result.scenarios ~= scenario_group;
     import tagion.hibon.HiBONJSON : toPretty;
 
-    writefln("pretty %s", result.toPretty);
+//    writefln("pretty %s", result.toPretty);
+//    check(errors.length == 0, errors.join("\n"));
     return result;
 }
 
