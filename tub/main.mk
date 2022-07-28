@@ -38,7 +38,7 @@ include $(DTUB)/config/commands.mk
 
 prebuild:
 	$(PRECMD)
-	git submodule update --init --recursive
+	git submodule update --recursive
 	${foreach wrap,$(WRAPS),$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) $(wrap);}
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) revision
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep
@@ -136,9 +136,3 @@ include $(DTUB)/clean.mk
 # Help
 #
 include $(DTUB)/help.mk
-
-run: mode0
-	@echo "------------ DEPRECATED ----------------"
-	@echo "run target change to mode0 or mode1"
-	@echo "make mode0 : to start a network in mode 0"
-	@echo "make mode1 : to start a network in mode 1"
