@@ -69,11 +69,10 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
     foreach (line_no, line; range.enumerate(1)) {
         void check_error(const bool flag, string msg) {
             if (!flag) {
-                const text = format("%s:%d\n%s\n%s", localfile, line_no, line, msg);
-                errors ~= text; //format("%s:%d\n%s\n", localfile, line_no, line, msg);
+                errors ~= format("%s(%d): Error: %s", localfile, line_no, msg);
             }
         }
-        writeln("______________________________________");
+//        writeln("______________________________________");
         auto match = range.front.matchFirst(feature_regex);
         // writeln("match: ", match);
         // writefln("%s:%d ", localfile, line_no);
@@ -122,7 +121,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
                 break;
             case NAME:
             case MODULE:
-                check((token is MODULE) || (state !is State.Feature),
+                check_error((token is MODULE) || (state !is State.Feature),
                         format("Illegal (namespace) name %s for %s", match[1], match.pre));
                 // check(state is State.Feature, format("Module name can only be declare after the Feature declaration :%d", line)); HERE!!!
                 final switch (state) {
@@ -157,7 +156,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
                     writefln("Start %s", match);
                     break TokenSwitch;
                 }
-                check(0, format("No valid action has %s", match[1]));
+                check_error(0, format("No valid action has %s", match[1]));
                 writeln("STATEEEE: ", state);
                 break;
             case SCENARIO:
@@ -172,7 +171,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
                 state = State.Action;
                 scope const action_word = match[1].toLower;
                 if (action_word == "and") {
-                    check(current_action_index >= 0, "Missing action Given, When or Then before And");
+                    check_error(current_action_index >= 0, "Missing action Given, When or Then before And");
                     static foreach (index, Field; Fields!ScenarioGroup) {
                         static if (isBehaviourGroup!Field) {
                             if (current_action_index == index) {
