@@ -30,7 +30,7 @@ enum BOM_UTF8_HEADER_SIZE = 3;
 private JSONValue raw2Json(const string text)
 {
     JSONValue result = null;
-    auto size = text.length;
+    const size = text.length;
     if (size > 0)
     {
         // fix issues with BOM
@@ -54,51 +54,23 @@ private JSONValue raw2Json(const string text)
 }
 
 /**
- * @brief returned swaped copy of wide char elements array. (BE->LE, LE->BE)
- */
-private wchar[] swapedcopy(const wchar[] data)
-{
-    ulong i = 0;
-    wchar[] sw_copy = data.dup;
-    foreach(e ; data)
-    {
-        char* a = cast(char*)&e;
-        char* b = cast(char*)&sw_copy[i];
-        i++;
-        b[0] = a[1];
-        b[1] = a[0];
-    }
-    return sw_copy;
-}
-
-/**
  * @brief convert raw data to JSON object
  */
 private JSONValue raw2Json(const void[] data)
 {
     import std.encoding;
     JSONValue result = null;
-    const size = data.length;
-    if (size > 0)
+    if (data.length)
     {
        auto bom = getBOM(cast(ubyte[])data);
        switch (bom.schema)
        {
             case BOM.none:
             case BOM.utf8:
-                const char[] line = cast(char[])data;
-                result = raw2Json(cast(string)line);
-                break;
-            case BOM.utf16be:
-                result = raw2Json(swapedcopy(cast(wchar[])data));
-                break;
-            case BOM.utf16le:
-                const wchar[] line = cast(wchar[])data;
-                auto a = line.toUTF8;
-                result = raw2Json(a);
+                result = raw2Json(cast(string)data);
                 break;
             default:
-                writeln("Unsuported encoding or damaged JSON file", bom);
+                writeln("Unsuported encoding or damaged JSON file ", bom.schema);
 
        }
     }
