@@ -1,7 +1,7 @@
 <a href="https://tagion.org"><img alt="tagion logo" src="https://github.com/tagion/resources/raw/master/branding/logomark.svg?sanitize=true" alt="tagion.org" height="60"></a>
 # Tagion tool v.x.x.x
 > Brief tools description.
-> The main binary file starts the 'main-node.' The 'main node' connects to the network, runs the hachgraph, and synchronizes the data. It is a full-fledged network node that can be used for operations with tagions, balance checking, etc. <br>
+> The binary files starts the 'main-node.' The 'main node' connects to the network, runs the hachgraph, and synchronizes the data. It is a full-fledged network node that can be used for operations with tagions, balance checking, etc. <br>
 
 There are three modes to run the network: <br>
 [mode0](#mode0) <br>
@@ -15,13 +15,10 @@ There are three modes to run the network: <br>
 mkdir data
 cd data
 mkdir node0
-mkdir node1
-mkdir node2
-mkdir node3
 cd ..
-./dartutil --initialize --dartfilename dart.drt
+dartutil --initialize --dartfilename dart.drt
 mv dart.drt data/node0/
-./tagionwave --dart-init=false -N 4 --dart-synchronize=true
+tagionwave --dart-init=false -N 4 --dart-synchronize=true
 ```
 [dart-synchronize](#dart-synchronize) <br>
 [dart-init](#dart-init) <br>
@@ -265,7 +262,7 @@ Displays the version of tool
 --owerwrite -O
 ```
 **Refactor**, rename export
-Overwrite the config file, to *tagionwave,json* by default
+Overwrite the config file, to *tagionwave.json* by default
 ## Use cases
 
 ### Case: overwrire config file
@@ -407,7 +404,11 @@ local-tagion:FATAL: p2p.go_helper.GoException@/home/lokalbruger/work/fixed_tagio
 ```
 --pid
 ```
-Write Process IDentificator to input file
+Used to write a file with the process ID for the program.
+Which can be used to stop the program.
+kill $PID -TERM; kill $PID -TERM <br>
+It's used ex. by the make script <br>
+make mode1-stop
 
 ## Use Cases
 
@@ -1173,4 +1174,5 @@ Node_1: opts.node_name = Node_1
 
 # boot
 **flag should be deleted**
+
 
