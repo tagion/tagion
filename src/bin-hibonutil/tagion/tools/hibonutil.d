@@ -14,6 +14,7 @@ import tagion.basic.Types : FileExtension;
 import tagion.basic.Basic : fileExtension;
 import tagion.hibon.HiBONJSON;
 import std.utf : toUTF8;
+import std.encoding : BOMSeq, BOM;
 
 import std.array : join;
 
@@ -21,60 +22,14 @@ import tagion.tools.Basic;
 
 mixin Main!_main;
 
-enum BOM_UTF8_HEADER_SIGNATURE = char(239);
-enum BOM_UTF8_HEADER_SIZE = 3;
+enum VERSION_HIBONUTIL = "1.9";
 
 /**
- * @brief convert raw text to JSON object
+ * @brief wrapper for BOM extracting
  */
-private JSONValue raw2Json(const string text)
-{
-    JSONValue result = null;
-    const size = text.length;
-    if (size > 0)
-    {
-        // fix issues with BOM
-        if ((text[0] == BOM_UTF8_HEADER_SIGNATURE) && (size > (BOM_UTF8_HEADER_SIZE - 1)))
-        {
-            result = raw2Json(text[BOM_UTF8_HEADER_SIZE .. size]);
-        }
-        else
-        {
-            try
-            {
-                result = text.parseJSON;
-            }
-            catch(JSONException e)
-            {
-                writeln(e.msg);
-            }
-        }
-    }
-    return result;
-}
-
-/**
- * @brief convert raw data to JSON object
- */
-private JSONValue raw2Json(const void[] data)
-{
-    import std.encoding;
-    JSONValue result = null;
-    if (data.length)
-    {
-       auto bom = getBOM(cast(ubyte[])data);
-       switch (bom.schema)
-       {
-            case BOM.none:
-            case BOM.utf8:
-                result = raw2Json(cast(string)data);
-                break;
-            default:
-                writeln("Unsuported encoding or damaged JSON file ", bom.schema);
-
-       }
-    }
-    return result;
+const(BOMSeq) getBOM(string str) @trusted {
+    import std.encoding : _getBOM = getBOM;
+    return _getBOM(cast(ubyte[])str);
 }
 
 int _main(string[] args)
@@ -87,18 +42,27 @@ int _main(string[] args)
     bool pretty;
     auto logo = import("logo.txt");
 
-    auto main_args = getopt(args,
-        std.getopt.config.caseSensitive,
-        std.getopt.config.bundling,
-        "version", "display the version", &version_switch,
-        "inputfile|i", "Sets the HiBON input file name", &inputfilename,
-        "outputfile|o", "Sets the output file name", &outputfilename,
-        "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
-    );
+    GetoptResult main_args;
+    try
+    {
+        main_args = getopt(args,
+            std.getopt.config.caseSensitive,
+            std.getopt.config.bundling,
+            "version", "display the version", &version_switch,
+            "inputfile|i", "Sets the HiBON input file name", &inputfilename,
+            "outputfile|o", "Sets the output file name", &outputfilename,
+            "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
+        );
+    }
+    catch (std.getopt.GetOptException e)
+    {
+        writeln(e.msg);
+        return 1;
+    }
 
     if (version_switch)
     {
-        writefln("version %s", "1.9");
+        writefln("version %s", VERSION_HIBONUTIL);
         return 0;
     }
 
@@ -140,7 +104,7 @@ int _main(string[] args)
     if (!exists(inputfilename))
     {
         writeln("File " ~ inputfilename ~ " not found");
-        return 0;
+        return 1;
     }
 
     switch (inputfilename.fileExtension)
@@ -174,16 +138,51 @@ int _main(string[] args)
         }
         break;
     case FileExtension.json:
-        const data = inputfilename.fread;
-        auto parse = data.raw2Json;
-        HiBON hibon = null;
+        string text;
         try
         {
+            text = inputfilename.readText;
+        }
+        catch(Exception e)
+        {
+            writeln(e.msg);
+            return 1;
+        }
+        const bom = getBOM(text);
+        with(BOM) switch(bom.schema)
+        {
+            case utf8:
+                 text = text[bom.sequence.length..$];
+            break;
+            case none:
+            //do nothing
+            break;
+            default:
+                stderr.writefln("File type %s not supported", bom.schema);
+                return 1;
+        }
+
+        HiBON hibon;
+        try
+        {
+            auto parse = text.parseJSON;
             hibon = parse.toHiBON;
         }
         catch(HiBON2JSONException e)
         {
             writeln("Conversion error, please validate input JSON file");
+            writeln(e.msg);
+            return 1;
+        }
+        catch(JSONException e)
+        {
+            writeln("JSON syntax error");
+            writeln(e.msg);
+            return 1;
+        }
+        catch(Exception e)
+        {
+            writeln(e.msg);
             return 1;
         }
         if (standard_output)
