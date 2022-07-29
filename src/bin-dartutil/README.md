@@ -31,62 +31,52 @@
 - [rpc](#rpc)
   - [Parameters](#parameters-2)
   - [Use cases:](#use-cases-2)
-- [generate](#generate)
+- [nncupdate](#nncupdate)
   - [Parameters](#parameters-3)
   - [Use cases](#use-cases-3)
     - [Case: simple call](#case-simple-call)
       - [Success](#success-4)
       - [Failure](#failure-4)
-- [nncupdate](#nncupdate)
+- [nncread](#nncread)
   - [Parameters](#parameters-4)
   - [Use cases](#use-cases-4)
     - [Case: simple call](#case-simple-call-1)
       - [Success](#success-5)
       - [Failure](#failure-5)
-- [nncread](#nncread)
+- [testaddblocks](#testaddblocks)
   - [Parameters](#parameters-5)
   - [Use cases](#use-cases-5)
-    - [Case: simple call](#case-simple-call-2)
+    - [Case: add several blocks](#case-add-several-blocks)
       - [Success](#success-6)
       - [Failure](#failure-6)
-- [testaddblocks](#testaddblocks)
+- [testdumpblocks](#testdumpblocks)
   - [Parameters](#parameters-6)
   - [Use cases](#use-cases-6)
-    - [Case: add several blocks](#case-add-several-blocks)
+    - [Case: dump last block](#case-dump-last-block)
       - [Success](#success-7)
       - [Failure](#failure-7)
-- [testdumpblocks](#testdumpblocks)
-  - [Parameters](#parameters-7)
-  - [Use cases](#use-cases-7)
-    - [Case: dump last block](#case-dump-last-block)
+    - [Case: dump all blocks](#case-dump-all-blocks)
       - [Success](#success-8)
       - [Failure](#failure-8)
-    - [Case: dump all blocks](#case-dump-all-blocks)
-      - [Success](#success-9)
-      - [Failure](#failure-9)
 - [version](#version)
 - [dartfilename](#dartfilename)
-  - [Use cases](#use-cases-8)
-    - [Success](#success-10)
+  - [Use cases](#use-cases-7)
+    - [Success](#success-9)
+    - [Failure](#failure-9)
     - [Failure](#failure-10)
 - [initialize](#initialize)
 - [inputfile](#inputfile)
-  - [Use cases](#use-cases-9)
-    - [Case: simple call](#case-simple-call-3)
-      - [Success](#success-11)
+  - [Use cases](#use-cases-8)
+    - [Case: simple call](#case-simple-call-2)
+      - [Success](#success-10)
       - [Failure](#failure-11)
 - [outputfile](#outputfile)
-- [from](#from)
-- [to](#to)
-- [useFakeNet](#usefakenet)
 - [dump](#dump)
-  - [Use cases](#use-cases-10)
+  - [Use cases](#use-cases-9)
     - [Case: dump DART](#case-dump-dart)
 - [eye](#eye)
-  - [Use cases](#use-cases-11)
+  - [Use cases](#use-cases-10)
     - [Case: print bullseye](#case-print-bullseye)
-- [width](#width)
-- [rings](#rings)
 - [passphrase](#passphrase)
 - [verbose](#verbose)
 
@@ -126,8 +116,6 @@ Example of using:
 
 [--dartfilename](#dartfilename) **optional**
 
-[--useFakeNet](#usefakenet) **optional**
-
 [--dump](#dump) **optional**
 
 [--eye](#eye) **optional**
@@ -143,6 +131,7 @@ Example of using:
 **Result** <br>
 Found record with given hash. Written to outputfile and console:
 ```
+Result has been written to '/tmp/deleteme.dmd.unittest.pid467287FFCBD44164C'
 Document: {
     "result": {
         "$@": "Recorder",
@@ -176,6 +165,7 @@ Document: {
 **Result** (when record not found)<br>
 Empty recorder is written to outputfile and console
 ```
+Result has been written to '/tmp/deleteme.dmd.unittest.pid467287FFCBD44164C'
 Document: {
     "result": {
         "$@": "Recorder"
@@ -212,6 +202,7 @@ Document: {
 **Result** (when record not found)<br>
 Empty recorder is written to outputfile and console
 ```
+Result has been written to '/tmp/deleteme.dmd.unittest.pid467287FFCBD44164C'
 Document: {
     "result": {
         "$@": "Recorder"
@@ -254,8 +245,6 @@ One of the [exclusive functions](#exclusive-functions)
 
 [--dartfilename](#dartfilename) **optional**
 
-[--useFakeNet](#usefakenet) **optional**
-
 [--dump](#dump) **optional**
 
 [--eye](#eye) **optional**
@@ -274,7 +263,7 @@ No console output.
 
 #### Failure
 **Result** (input file has wrong format):<br>
-Created new DART file. No DART sequence executet. Aborted.
+Created new DART file. No DART sequence executed. Aborted.
 
 **Refactor** handle exception
 ```
@@ -322,8 +311,6 @@ One of the [exclusive functions](#exclusive-functions)
 
 [--dartfilename](#dartfilename) **optional**
 
-[--useFakeNet](#usefakenet) **optional**
-
 [--dump](#dump) **optional**
 
 [--eye](#eye) **optional**
@@ -332,44 +319,6 @@ One of the [exclusive functions](#exclusive-functions)
 
 ## Use cases:
 TBD
-
-# generate
-```
---generate
-```
-**Refactor** should be removed
-
-Generate a fake test dart. Recomended to use with [--useFakeNet](#usefakenet)
-
-## Parameters
-
-[--width](#width) **optional**
-
-[--rings](#rings) **optional**
-
-[--dartfilename](#dartfilename) **optional**
-
-[--useFakeNet](#usefakenet) **optional**
-
-[--dump](#dump) **optional**
-
-[--eye](#eye) **optional**
-
-[--passphrase](#passphrase) **optional**
-
-## Use cases
-### Case: simple call
-```
-./dartutil --generate
-```
-#### Success
-**Result:**
-```
-98%  GENERATED DART. EYE:
-```
-
-#### Failure
-Possible failure see [--dartfilename](#dartfilename)
 
 # nncupdate
 ```
@@ -392,8 +341,6 @@ Example of using:
 
 [--dartfilename](#dartfilename) **optional**
 
-[--useFakeNet](#usefakenet) **optional**
-
 [--dump](#dump) **optional**
 
 [--eye](#eye) **optional**
@@ -403,7 +350,7 @@ Example of using:
 Example of using:
 ```
 ./dartutil --nncupdate="test name"
-./dartutil --nncupdate="test name" -d="dart.drt" --usefakenet --verbose
+./dartutil --nncupdate="test name" -d="dart.drt" --verbose
 ```
 
 ## Use cases
@@ -453,8 +400,6 @@ Example of using:
 
 [--dartfilename](#dartfilename) **optional**
 
-[--useFakeNet](#usefakenet) **optional**
-
 [--dump](#dump) **optional**
 
 [--eye](#eye) **optional**
@@ -464,7 +409,7 @@ Example of using:
 Example of using:
 ```
 ./dartutil --nncread="test name"
-./dartutil --nncread="test name" -d="dart.drt" --usefakenet --verbose
+./dartutil --nncread="test name" -d="dart.drt" --verbose
 ```
 
 ## Use cases
@@ -526,8 +471,6 @@ Example of using:
 
 [--dartfilename](#dartfilename) **optional**
 
-[--useFakeNet](#usefakenet) **optional**
-
 [--dump](#dump) **optional**
 
 [--eye](#eye) **optional**
@@ -578,8 +521,6 @@ Example of using:
 [--verbose](#verbose) **optional**
 
 [--dartfilename](#dartfilename) **optional**
-
-[--useFakeNet](#usefakenet) **optional**
 
 [--dump](#dump) **optional**
 
@@ -657,16 +598,20 @@ Can be used with any function in dartutil
 dartutil opens specified dart file
 ### Failure
 **Result** (when DART file can't be opened):
-**Refactor** handle exception
+
+Tool stops working
 ```
-std.exception.ErrnoException@std/stdio.d(758): Cannot open file `dart.drt' in mode `r+' (No such file or directory)
-----------------
-??:? [0x5613ca716a35]
-??:? [0x5613ca73fc06]
-??:? [0x5613ca72011f]
-...exception output...
+Fail to open DART: Cannot open file `/tmp/default.drt' in mode `r+' (No such file or directory). Abort.
 ```
 **Note**: DART file can be created using [--initialize](#initialize)
+
+### Failure
+**Result** (when DART file have wrong format):
+
+Tool stops working
+```
+Fail to open DART: BlockFile should be sized in equal number of blocks of the size of 64 but the size is 578. Abort.
+```
 
 # initialize
 ```
@@ -687,21 +632,18 @@ Used in:
 
 ## Use cases
 ### Case: simple call
+```
+./dartutil <function> -i "tmp.txt"
+```
 #### Success
 **Result**:
 file at the specified path was opened.<br>
 No console output
 #### Failure
 **Result** (when file not found):<br>
-**Refactor** handle exception
+Tool stop working
 ```
-std.file.FileException@std/file.d(371): : No such file or directory
-----------------
-??:? [0x562969f0ba35]
-??:? [0x562969f34c06]
-??:? [0x562969f1511f]
-??:? [0x562969ee521c]
-...
+Can't open input file 'tmp.txt'. Abort
 ```
 
 # outputfile
@@ -718,44 +660,6 @@ Default value: path generated with random seed. Variants of this path:
 /tmp/deleteme.dmd.unittest.pid277FFE000372BC
 ```
 
-Can be used with any function in dartutil
-
-# from
-```
---from
-```
-Sets _from_ sector angle for DART in range 0:65535.<br>
-This meant to support sharding of the DART but now it's not fully supported yet.<br>
-
-**Refactor** add assertion and text message that this feature not supported yet
-
-Values when `from == to` means full.<br>
-Default value: `0`
-
-In development.
-
-# to
-```
---to
-```
-Sets _to_ sector angle for DART in range 0:65535.<br>
-This meant to support sharding of the DART but now it's not fully supported yet.<br>
-
-**Refactor** add assertion and text message that this feature not supported yet
-
-Values when `from == to` means full.<br>
-Default value: `0`
-
-In development.
-
-# useFakeNet
-```
---useFakeNet -fn
-```
-**Refactor** should be removed
-Enables fake hash test-mode<br>
-Default value: `False`
-<br><br>
 Can be used with any function in dartutil
 
 # dump
@@ -805,24 +709,6 @@ Can be used with any function in dartutil
 ```
 EYE: 29a444af19221a7ed3dbb6e459a946745feace5a300a5390c2e48b6b27047d3d
 ```
-
-# width
-```
---width -w
-```
-**Refactor** should be removed
-
-Sets the rings width and is used in combination with [--generate](#generate)<br>
-Default value: `4`
-
-# rings
-```
---rings
-```
-**Refactor** should be removed
-
-Sets the rings height and is used in combination with [--generate](#generate)<br>
-Default value: `4`
 
 # passphrase
 ```
