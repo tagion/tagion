@@ -27,7 +27,6 @@
     - [Case - creating recorder with name "test"](#case---creating-recorder-with-name-test)
       - [Success](#success-2)
       - [Failure](#failure-2)
-      - [Failure](#failure-3)
 # version
 ```
 --version
@@ -38,12 +37,12 @@ Display the tagionboot version
 --output -o
 ```
 Set new output file for generated recorder with received filename.
-Default output name - ./tmp/dart.hibon
+Default output name - /tmp/dart.hibon
 
 ## Use cases
 ### Case - set new output filename
 ```
-tagionboot --output test.hibon
+./tagionboot --output test.hibon
 ```
 #### Success
 **Result**
@@ -71,7 +70,7 @@ Used for test purpose only.
 ## Use cases:
 ### Case - creating dummy bills recorder
 ```
-tagionboot --initbills
+./tagionboot --initbills
 ```
 
 #### Success
@@ -100,7 +99,7 @@ As default recorder will be stored in ./tmp/dart.hibon
 ## Use cases:
 ### Case - creating recorder with name "test"
 ```
-tagionboot --nnc test
+./tagionboot --nnc test
 ```
 #### Success
 Created output file which contains recorder named "test"
@@ -113,7 +112,6 @@ Created output file which contains recorder named "test"
 std.getopt.GetOptException@/home/lokalbruger/bin/ldc2-1.29.0-linux-x86_64/bin/../import/std/getopt.d(879): Missing value for argument --nnc.
 
 ```
-#### Failure
 **Result** (tmp directory not exists)
 **Refactor** handle exception
 ```
