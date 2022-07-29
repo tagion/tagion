@@ -1,7 +1,7 @@
 
 
 DFORMAT?=clang-format
-DFORMAT_FLAGS+=-style=$(REPOROOT)/.format.config
+DFORMAT_FLAGS+=-style=file
 
 CHANGED_FILES=${shell git --no-pager diff  --name-only}
 CHANGED_DFILES=${filter %.d,$(CHANGED_FILES)}
@@ -10,11 +10,11 @@ ALL_DFILES=${shell find $(DSRC) -name "*.d"}
 
 format:
 	$(PRECMD)
-	$(DFORMAT) -style=file -i $(CHANGED_DFILES)
+	$(DFORMAT) $(DFORMAT_FLAGS) -$(i $(CHANGED_DFILES)
 
 format-all:
 	$(PRECMD)
-	$(DFORMAT) -style=file -i $(ALL_DFILES)
+	$(DFORMAT) $(DFORMAT_FLAGS) -i $(ALL_DFILES)
 
 
 help-format:
@@ -33,6 +33,8 @@ help: help-format
 env-format:
 	$(PRECMD)
 	$(call log.header, $@ :: env)
+	${call log.kvp, DFORMAT, $(DFORMAT)}
+	${call log.env, DFORMAT_FLAGS, $(DFORMAT_FLAGS)}
 	${call log.env, CHANGED_DFILES, $(CHANGED_DFILES)}
 	${call log.close}
 
