@@ -238,7 +238,8 @@ unittest { /// Convert ProtoDBBTestComments to Feature
     // pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
     // pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
 
-    auto feature = parser(feature_byline);
+    string[] errors;
+    auto feature = parser(feature_byline, errors);
     { // Check ProtoDBBTestComments converted to Feature
     // check feature
     assert(feature.info.name == "tagion.behaviour.unittest.ProtoBDD");
