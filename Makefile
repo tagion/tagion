@@ -24,11 +24,14 @@ endif
 match=${shell $(SCRIPT)/check_regex.d $@ -r'^(env-\w+|env|help-\w+|help|clean-\w+|clean|proper-\w+|proper|ddeps|dfiles|dstep)$$'}
 
 ifdef RECURSIVE
-${error This makefile should to be call recursive}
+${error This makefile should not be called recursively}
 endif
 
 %:
 	@
+	if [ -n "$(SCRIPT)/check_submodule.d $(REPOROOT)" ]; then
+	git submodule update --init --depth=1
+	fi
 	if [ -z "${call match,$@}" ]; then
 	$(MAKE) $(MAIN_FLAGS) prebuild
 	fi

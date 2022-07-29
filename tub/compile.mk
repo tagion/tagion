@@ -6,6 +6,7 @@ COVWAY=$(DLOGCOV)/.way
 endif
 DFLAGS+=$(DIP25) $(DIP1000)
 DFLAGS+=$(DPREVIEW)=inclusiveincontracts
+DFLAGS+=-J$(DTUB)/logos/
 
 #
 # Change extend of the LIB
