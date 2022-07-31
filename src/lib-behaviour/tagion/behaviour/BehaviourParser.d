@@ -114,7 +114,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
                 break;
             case FEATURE:
                 current_action_index = -1;
-//                check(state is State.Start, format("Feature has already been declared in line %d", line_no));
+                check_error(state is State.Start, "Feature has already been declared in line");
                 writeln("Hi from Feature!!! ", line);
                 info_feature.property.description = match.post.idup;
                 state = State.Feature;
@@ -161,7 +161,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
                 break;
             case SCENARIO:
                 current_action_index = -1;
-                //check(state is State.Feature || state is State.Scenario, format("Scenario must be declared after a Feature :%d", line_no));
+                check_error(state is State.Feature || state is State.Scenario, "Scenario must be declared after a Feature");
                 writeln("Hi from SCENARIO!!! ", line);
                 info_scenario.property.description = match.post.idup;
                 state = State.Scenario;
