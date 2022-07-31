@@ -123,7 +123,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
             case MODULE:
                 check_error((token is MODULE) || (state !is State.Feature),
                         format("Illegal (namespace) name %s for %s", match[1], match.pre));
-                // check(state is State.Feature, format("Module name can only be declare after the Feature declaration :%d", line)); HERE!!!
+                check_error(state is State.Feature, "Module name can only be declare after the Feature declaration");
                 final switch (state) {
                 case State.Feature:
                     info_feature.name = match[1].idup;
