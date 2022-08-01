@@ -4,31 +4,33 @@ import std.getopt;
 import std.stdio;
 import std.file : fread = read, fwrite = write, exists, readText;
 import std.format;
-import std.path : extension, withExtension;
-import std.traits : EnumMembers;
 import std.exception : assumeUnique, assumeWontThrow;
 import std.json;
 import std.range : only;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.basic.Types : Buffer, Pubkey, FileExtension;
-import tagion.basic.Basic : basename, fileExtension;
+import tagion.basic.Types : FileExtension;
+import tagion.basic.Basic : fileExtension;
 import tagion.hibon.HiBONJSON;
+import std.utf : toUTF8;
+import std.encoding : BOMSeq, BOM;
 
-//import tagion.script.StandardRecords;
 import std.array : join;
-
-// import tagion.revision;
-
-// enum fileextensions {
-//     HIBON = ".hibon",
-//     JSON = ".json"
-// };
 
 import tagion.tools.Basic;
 
 mixin Main!_main;
+
+enum VERSION_HIBONUTIL = "1.9";
+
+/**
+ * @brief wrapper for BOM extracting
+ */
+const(BOMSeq) getBOM(string str) @trusted {
+    import std.encoding : _getBOM = getBOM;
+    return _getBOM(cast(ubyte[])str);
+}
 
 int _main(string[] args)
 {
@@ -37,29 +39,30 @@ int _main(string[] args)
 
     string inputfilename;
     string outputfilename;
-    //    StandardBill bill;
-    bool binary;
-
-    //    string passphrase="verysecret";
-    ulong value = 1000_000_000;
     bool pretty;
     auto logo = import("logo.txt");
 
-    auto main_args = getopt(args,
-        std.getopt.config.caseSensitive,
-        std.getopt.config.bundling,
-        "version", "display the version", &version_switch,
-        "inputfile|i", "Sets the HiBON input file name", &inputfilename,
-        "outputfile|o", "Sets the output file name", &outputfilename,
-        "bin|b", "Use HiBON or else use JSON", &binary,
-        "value|V", format("Bill value : default: %d", value), &value,
-        "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
-    );
+    GetoptResult main_args;
+    try
+    {
+        main_args = getopt(args,
+            std.getopt.config.caseSensitive,
+            std.getopt.config.bundling,
+            "version", "display the version", &version_switch,
+            "inputfile|i", "Sets the HiBON input file name", &inputfilename,
+            "outputfile|o", "Sets the output file name", &outputfilename,
+            "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
+        );
+    }
+    catch (std.getopt.GetOptException e)
+    {
+        writeln(e.msg);
+        return 1;
+    }
 
     if (version_switch)
     {
-        // writefln("version %s", REVNO);
-        // writefln("Git handle %s", HASH);
+        writefln("version %s", VERSION_HIBONUTIL);
         return 0;
     }
 
@@ -68,7 +71,6 @@ int _main(string[] args)
         writeln(logo);
         defaultGetoptPrinter(
             [
-            // format("%s version %s", program, REVNO),
             "Documentation: https://tagion.org/",
             "",
             "Usage:",
@@ -87,35 +89,24 @@ int _main(string[] args)
         main_args.options);
         return 0;
     }
-    //    writefln("args=%s", args);
-    if (args.length > 3)
-    {
-        stderr.writefln("Only one output file name allowed (given %s)", args[1 .. $]);
-        return 3;
-    }
-    if (args.length > 2)
-    {
-        outputfilename = args[2];
-        //        writefln("outputfilename%s", outputfilename);
-    }
-    if (args.length > 1)
+
+    if (args.length == 2)
     {
         inputfilename = args[1];
     }
-    else
+    else if (args.length == 1 && !inputfilename)
     {
         stderr.writefln("Input file missing");
         return 1;
     }
 
     immutable standard_output = (outputfilename.length == 0);
-    //    auto input_extension=inputfilename.extension;
-    //    string output_extension;
-    // if (standard_output) {
-    //     output_extension=outputfilename.extension;
-    // }
-    //    const input_extension = inputfilename.extension;
-    //   writefln("input_extension=%s", input_extension);
+    if (!exists(inputfilename))
+    {
+        writeln("File " ~ inputfilename ~ " not found");
+        return 1;
+    }
+
     switch (inputfilename.fileExtension)
     {
     case FileExtension.hibon:
@@ -147,9 +138,53 @@ int _main(string[] args)
         }
         break;
     case FileExtension.json:
-        const data = inputfilename.readText;
-        auto parse = data.parseJSON;
-        auto hibon = parse.toHiBON;
+        string text;
+        try
+        {
+            text = inputfilename.readText;
+        }
+        catch(Exception e)
+        {
+            writeln(e.msg);
+            return 1;
+        }
+        const bom = getBOM(text);
+        with(BOM) switch(bom.schema)
+        {
+            case utf8:
+                 text = text[bom.sequence.length..$];
+            break;
+            case none:
+            //do nothing
+            break;
+            default:
+                stderr.writefln("File type %s not supported", bom.schema);
+                return 1;
+        }
+
+        HiBON hibon;
+        try
+        {
+            auto parse = text.parseJSON;
+            hibon = parse.toHiBON;
+        }
+        catch(HiBON2JSONException e)
+        {
+            writeln("Conversion error, please validate input JSON file");
+            writeln(e.msg);
+            return 1;
+        }
+        catch(JSONException e)
+        {
+            writeln("JSON syntax error");
+            writeln(e.msg);
+            return 1;
+        }
+        catch(Exception e)
+        {
+            writeln(e.msg);
+            return 1;
+        }
         if (standard_output)
         {
             write(hibon.serialize);

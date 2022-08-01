@@ -13,7 +13,6 @@
     - [Case: open file](#case-open-file)
       - [Success](#success-1)
       - [Failure](#failure-1)
-- [bin](#bin)
 - [outputfile](#outputfile)
   - [Parameters](#parameters-1)
   - [Use cases](#use-cases-1)
@@ -25,8 +24,9 @@
     - [Case: open file](#case-open-file-1)
       - [Success case](#success-case)
       - [Failure](#failure-3)
-- [value](#value)
 - [version](#version)
+    - [Case: show version](#case-show-version)
+      - [Success case](#success-case-1)
 
 # inputfile
 ```
@@ -89,17 +89,11 @@ hibonutil inputfile.json
 #### Failure
 [See](#failure)
 
-# bin
-```
--b --bin
-```
-WIP
-
 # outputfile
 ```
 -o --outputfile
 ```
-Write program out to mirored format file, json->hibon or hibon->json.
+Write program out to mirored format file, json->hibon or hibon->json.<br>
 Example of using:
 ```
 hibonutil --outputfile outfile.json --inputfile inputfile.hibon
@@ -129,8 +123,7 @@ File inputfile.txt not valid (only .hibon .json)
 ```
 -p --pretty
 ```
-
-Print formatted JSON representation of hibon file
+Print formatted JSON representation of hibon file<br>
 Example of using:
 ```
 hibonutil --pretty readfile.hibon
@@ -172,14 +165,17 @@ Console exceptions<br>
 **Result** (wrong file structure)<br>
 Dump of wrong data structures
 
-# value
-```
--V --value
-```
-WIP
-
 # version
 ```
 --version
 ```
-WIP
+Show actual ersion of util.<br>
+Example of using:
+```
+hibonutil --version
+```
+###  Case: show version
+#### Success case
+```
+version 1.9
+```
