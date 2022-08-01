@@ -126,7 +126,6 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
       - [Success](#success-3)
       - [Failure](#failure-2)
 - [port](#port)
-  - [Parameters](#parameters)
   - [Use cases](#use-cases-3)
     - [Case: set gossip port](#case-set-gossip-port)
       - [Success](#success-4)
@@ -217,7 +216,7 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
 - [dart-angle-from-port](#dart-angle-from-port)
 - [dart-master-angle-from-port](#dart-master-angle-from-port)
 - [dart-init](#dart-init)
-  - [Parameters](#parameters-1)
+  - [Parameters](#parameters)
   - [Use cases](#use-cases-19)
     - [Case: init DART](#case-init-dart)
       - [Success](#success-19)
@@ -350,11 +349,12 @@ Run network with current host gossip ip, 0.0.0.0 by default for any ip
 
 **Result**:<br>
 ```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
+transcript0: Register: transcript0 logger
+Register: collector0 logger
+
+collector0: Register: collector0 logger
+collector0: SockectThread port=10800 addresss=127.0.0.1
+Register: transaction.service0 logger
 ...
 ```
 #### Failure
@@ -372,7 +372,6 @@ Missing value for argument --ip.
 --port
 ```
 Set Host gossip port for node communication, 4001 by default
-## Parameters
 
 ## Use cases
 
@@ -456,11 +455,19 @@ Set number of nodes to run network, 4 by default (4 min)
 ```
 **Result**:<br>
 ```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
+Node_0: Register: Node_0 logger
+...
+
+Node_1: Register: Node_1 logger
+...
+
+Node_2: Register: Node_2 logger
+...
+
+Node_3: Register: Node_3 logger
+...
+
+Node_4: Register: Node_4 logger
 ...
 ```
 #### Failure
@@ -531,9 +538,10 @@ ERROR FROM GO: failed to dial QmUV9hHQSWKXYXqmh8iU1h7oiAfJWPK4mb1H7VD5Pxosku:
 
 # sockets
 ```
---sockets -M (Refactor,  should be rename --monitors)
+--sockets -M
 ```
-Set the number  max of monitor opened in mode0, is not used in other modes (really for mode 0)???
+**Refactor**,  should be rename --monitors
+Set the number  max of monitor opened in mode0, is not used in other modes
 
 ## Use Cases
 
@@ -566,7 +574,7 @@ Unexpected '-' when converting from type string to type uint
 ```
 --tmp
 ```
-Set temporary directory for network, */tmp/* by default, TODO, where use
+Set temporary directory for network, */tmp/* by default, used for temporary files
 
 ## Use Cases
 
@@ -685,11 +693,9 @@ Set port for listen transcation, 10800 by default
 
 **Result**:<br>
 ```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
+transcript0: Register: transcript0 logger
+collector0: Register: collector0 logger
+collector0: SockectThread port=10801
 ...
 ```
 #### Failure
@@ -848,11 +854,10 @@ tagionwave --transcript-log transcript_new
 ```
 **Result**:<br>
 ```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
+transcript_new0: Register: transcript_new0 logger
+collector0: Register: collector0 logger
+collector0: SockectThread port=10800 addresss=127.0.0.1
+Register: transaction.service0 logger
 ...
 ```
 #### Failure
@@ -906,11 +911,9 @@ tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-s
 ```
 **Result**:<br> 
 ```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
+dart.sync2: DART initialized with angle: (0, 0)
+dart.sync2: DART bullseye: 
+dart.sync2: SYNC: true
 ...
 ```
 
@@ -946,11 +949,8 @@ Initialize empty DART
 
 **Result**:<br>
 ```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
+dart.sync2: DART initialized with angle: (0, 0)
+dart.sync2: DART bullseye: 
 ...
 ```
 #### Failure
@@ -1048,14 +1048,13 @@ Register: tagionwave logger
 #### Failure
 Wrong path
 ```
-tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=qwe --port=4001 --transaction-port=10801 -N 4
+tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path /o/ --port=4001 --transaction-port=10801 -N 4
 ```
 **Result**:<br>
 ```
-ERROR FROM GO: protocol not supported
-dart.sync: Error, connection failed with code: InternalError
-ERROR FROM GO: protocol not supported
-Segment Fault
+dart.sync1:FATAL: From task dart.sync1 'Cannot open file `/o/1' in mode `w+' (No such file or directory)'
+dart.sync1:FATAL: From task dart.sync1 'Cannot open file `/o/1' in mode `w+' (No such file or directory)'
+
 ...
 ```
 
@@ -1176,6 +1175,7 @@ Node_1: opts.node_name = Node_1
 
 # boot
 **flag should be deleted**
+
 
 
 
