@@ -22,10 +22,11 @@ tagionwave --dart-init=false -N 4 --dart-synchronize=true
 ```
 [dart-synchronize](#dart-synchronize) <br>
 [dart-init](#dart-init) <br>
+[-N](#nodes)
 -------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------
 # mode1
-> mode1 is local mode, you can make transactions on the local machine, to run network in mode1, you need to follow the instructions below:<br>
+> mode1 is local mode, you can make transactions on the local machine, separate terminal - separate node. Essentially, mod0 is part of node1. To run network in mode1, you need to follow the instructions below:<br>
 > Add binaries to PATH
 ```
 export PATH="$PATH:$HOME/dir_name/tagion/build/x86_64-linux/bin"
@@ -64,7 +65,7 @@ cp ./data/dart.drt ./data/node0/dart.drt
 ```
 >Next we can launch network with 4 nodes
 ```
-rm -f ./shared/* ????? node creationt + amaster node + link ????????? + link to req
+rm -f ./shared/*
 gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log -N 4
 
 gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart2.drt --port=4002 --transaction-port=10802 --logger-filename=./shared/node-2.log -N 4
@@ -73,6 +74,11 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
 
 gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=false --dart-synchronize=false --dart-path=./data/dart.drt --port=4020 --transaction-port=10820 --logger-filename=./shared/node-master.log -N 4
 ```
+[tagionwallet](https://github.com/tagion/tagion/tree/develop/src/bin-wallet)
+
+[dartutil](https://github.com/tagion/tagion/tree/develop/src/bin-dartutil)
+
+[tagionboot](https://github.com/tagion/tagion/tree/develop/src/bin-boot)
 
 [boot](#boot) **required** (Set boot.hibon file)
 
@@ -97,14 +103,14 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
 
 # Table of contents
 - [Tagion tool v.x.x.x](#tagion-tool-vxxx)
-- [Table of contents](#table-of-contents)
 - [mode0](#mode0)
 - [mode1](#mode1)
 - [mode2](#mode2)
+- [Table of contents](#table-of-contents)
 - [version](#version)
 - [overwrite](#overwrite)
   - [Use cases](#use-cases)
-    - [Case: overwrire config file](#case-overwrire-config-file)
+    - [Case: overwrite config file](#case-overwrite-config-file)
       - [Success](#success)
       - [Success](#success-1)
 - [transaction-max](#transaction-max)
@@ -160,7 +166,7 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
     - [Case: set first monitor port](#case-set-first-monitor-port)
       - [Success](#success-10)
       - [Failure](#failure-9)
-- [stdout (TODO, Refactor, has no affect)](#stdout-todo-refactor-has-no-affect)
+- [stdout](#stdout)
 - [transaction-ip](#transaction-ip)
   - [Use cases](#use-cases-10)
     - [Case: input transaction ip](#case-input-transaction-ip)
@@ -259,13 +265,13 @@ Displays the version of tool
 
 # overwrite
 ```
---owerwrite -O
+--overwrite -O
 ```
 **Refactor**, rename export
 Overwrite the config file, to *tagionwave.json* by default
 ## Use cases
 
-### Case: overwrire config file
+### Case: overwrite config file
 
 #### Success
 ```
@@ -405,10 +411,6 @@ local-tagion:FATAL: p2p.go_helper.GoException@/home/lokalbruger/work/fixed_tagio
 --pid
 ```
 Used to write a file with the process ID for the program.
-Which can be used to stop the program.
-kill $PID -TERM; kill $PID -TERM <br>
-It's used ex. by the make script <br>
-make mode1-stop
 
 ## Use Cases
 
@@ -416,12 +418,12 @@ make mode1-stop
 
 #### Success
 ```
-tagionwave --pid file_for_pid
+tagionwave --pid file_for_pid.pid
 ```
 **Result**:<br>
 ```
 ----- Start tagion service task -----
-PID = 141536 written to file_for_pid
+PID = 141536 written to file_for_pid.pid
 Waiting for logger
 REGISTER logger
 Logger started
@@ -551,7 +553,7 @@ Register: tagionwave logger
 ...
 ```
 #### Failure
-Wrong num of max monitors
+Wrong format for this case
 ```
 tagionwave -M -5
 ```
@@ -626,7 +628,8 @@ Wrong port
 **Result**:<br>
 TODO Refacor, work correct
 
-# stdout (TODO, Refactor, has no affect)
+# stdout 
+**Refactor**, has no affect
 ```
 --stdout
 ```
@@ -760,12 +763,11 @@ tagionwave --transaction-maxcon
 Missing value for argument --transaction-maxcon.
 ```
 
-
 # transaction-maxqueue
 ```
 --transaction-maxqueue
 ```
-Set the max number of connection which can be handle by the transaction servives
+Set the max number of connection which can be handle by the transaction servives, 100 by default
 
 ## Use Cases
 
@@ -773,7 +775,7 @@ Set the max number of connection which can be handle by the transaction servives
 
 #### Success
 ```
-tagionwave --transaction-maxqueue 100
+tagionwave --transaction-maxqueue 200
 ```
 **Result**:<br>
 ```
@@ -1174,5 +1176,7 @@ Node_1: opts.node_name = Node_1
 
 # boot
 **flag should be deleted**
+
+
 
 
