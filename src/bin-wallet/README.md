@@ -168,7 +168,7 @@ invoice file (default name "invoice_file.hibon") created in context folder
 ```
 --generate-wallet
 ```
-Create invoice file (default name: invoice_file.hibon) in context folder<br>
+Create invoice file (default name: tagionwallet.hibon) in context folder<br>
 Example of using:
 ```
 ./tagionwallet --generate-wallet --pin 0000  --questions q1,q2,q3,q4 --answers a1,a2,a3,a4
@@ -235,7 +235,9 @@ In hashgraph: true
 Current round: 19
 ```
 #### Failure
-**Network error and console exception(Refactoring)**
+```
+Health check failed: Unable to connect socket: Connection refused
+```
 
 # Invoice
 ```
@@ -354,9 +356,9 @@ Example of using:
 payment
 payment failed
 ```
-**Refactoring**
+<br>Not work network:
 ```
-std.socket.SocketOSException@std/socket.d(2845): Unable to connect socket: Connection refused
+Health check failed: Unable to connect socket: Connection refused
 ```
 
 # Questions
@@ -456,3 +458,7 @@ Total: 100000.0
 #### Failure
 **Wrong pincode**
 **Absent file(Refactoring)**
+<br>incorrect file format
+```
+HiBON Document format failed
+```
