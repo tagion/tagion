@@ -33,4 +33,4 @@ jobs:
         
     - name: unittest result
       run: |
-        tail -n 4 /home/runner/work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep FAILED
+        tail -n 4 /home/runner/work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep completed
