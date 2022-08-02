@@ -4,7 +4,7 @@ import tagion.basic.Types : Buffer, isBufferType;
 import std.exception;
 import std.range.primitives : isInputRange;
 import std.algorithm : map;
-import std.array : array;
+import std.array;
 import std.algorithm.iteration : fold, cumulativeFold;
 
 @trusted
@@ -49,10 +49,13 @@ unittest
 
 }
 
-@safe immutable(ubyte[]) decode(const(char[]) hex) pure nothrow
+enum HEX_SEPARATOR = '_';
+
+@safe immutable(ubyte[]) decode(const(char[]) hex) pure
 in
 {
-    assert(hex.length % 2 == 0);
+    if (hex.replace("_", "").length % 2 != 0)
+        throw new Exception("Hex string length not even");
 }
 do
 {
@@ -70,7 +73,7 @@ do
         {
             return cast(ubyte)(c - 'A') + 10;
         }
-        assert(0, "Bad char '" ~ c ~ "'");
+        throw new Exception("Bad char '" ~ c ~ "'");
     }
 
     immutable buf_size = hex.length / 2;
@@ -80,7 +83,7 @@ do
     ubyte part;
     foreach (c; hex)
     {
-        if (c != '_')
+        if (c != HEX_SEPARATOR)
         {
             //            writefln("j=%d len=%d", j, result.length);
             part <<= 4;

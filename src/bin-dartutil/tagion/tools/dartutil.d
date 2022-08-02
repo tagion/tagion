@@ -10,7 +10,7 @@ import std.array;
 import std.algorithm;
 import std.typecons;
 
-import tagion.dart.DART : DART, tryOpenDART;
+import tagion.dart.DART : DART;
 import tagion.dart.DARTFile;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.basic.Basic : tempfile;
@@ -23,7 +23,6 @@ import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONRecord : fread, fwrite;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONRecord;
 
@@ -306,7 +305,17 @@ int _main(string[] args)
     }
     else if (dartread)
     {
-        auto fingerprints = dartread_args.map!(hash => decode(hash)).array;
+        immutable(ubyte[])[] fingerprints;
+        try
+        {
+            fingerprints = dartread_args
+                .map!(hash => decode(hash)).array;
+        }
+        catch (Exception e)
+        {
+            writefln("Error parsing hash string: %s. Abort", e.msg);
+            return 1;
+        }
 
         const sender = DART.dartRead(fingerprints, hirpc);
         auto receiver = hirpc.receive(sender.toDoc);
