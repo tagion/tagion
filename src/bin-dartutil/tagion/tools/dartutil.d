@@ -35,7 +35,7 @@ import tagion.script.NameCardScripts : readStandardRecord;
 import tagion.tools.Basic;
 
 pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
-void updateAddNetworkNameCard(const HashNet net, NetworkNameCard nnc, NetworkNameRecord nrc, RecordFactory
+version (none) void updateAddNetworkNameCard(const HashNet net, NetworkNameCard nnc, NetworkNameRecord nrc, RecordFactory
         .Recorder recorder)
 {
     recorder.remove(HashLock(net, nnc));
@@ -114,9 +114,6 @@ int _main(string[] args)
 
     bool initialize = false;
     string passphrase = "verysecret";
-    string nncupdatename, nncreadname;
-    uint testaddblocks;
-    int testdumpblocks = -1;
 
     auto main_args = getopt(args,
         std.getopt.config.caseSensitive,
@@ -133,17 +130,10 @@ int _main(string[] args)
         "dump", "Dumps all the arcvives with in the given angle", &dump,
         "eye", "Prints the bullseye", &eye,
         "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
-        "nncupdate", "Update existing NetworkNameCard with given name", &nncupdatename,
-        "nncread", "Read NetworkNameCard with given name", &nncreadname,
         "verbose|v", "Print output to console", &verbose,
-        "testaddblocks", "DEBUG MODE: Add N epoch blocks in chain", &testaddblocks,
-        "testdumpblocks", "DEBUG MODE: Dump last N epoch blocks in chain. Set 0 to dump all blocks in chain", &testdumpblocks,
     );
 
     dartread = !dartread_args.empty;
-    bool nncupdate = !nncupdatename.empty;
-    bool nncread = !nncreadname.empty;
-    bool testdumpblocks_enabled = testdumpblocks > -1;
 
     if (version_switch)
     {
@@ -268,13 +258,12 @@ int _main(string[] args)
         }
     }
 
-    const onehot = dartrpc + dartread + dartrim + dartmodify + nncupdate + nncread + (
-        testaddblocks > 0) + testdumpblocks_enabled;
+    const onehot = dartrpc + dartread + dartrim + dartmodify;
 
     if (onehot > 1)
     {
         stderr.writeln(
-            "Only one of the dartrpc, dartread, dartrim, dartmodify, nncupdate and nncread switched alowed");
+            "Only one of the dartrpc, dartread, dartrim, dartmodify switched alowed");
         return 1;
     }
 
@@ -381,7 +370,7 @@ int _main(string[] args)
             outputfilename.fwrite(tosendResult);
         }
     }
-    else if (nncread)
+    version (none) // else if (nncread)
     {
         auto nnc_out = readStandardRecord!NetworkNameCard(net, hirpc, db, NetworkNameCard.dartHash(net, nncreadname));
 
@@ -429,7 +418,7 @@ int _main(string[] args)
             }
         }
     }
-    else if (nncupdate)
+    version (none) // else if (nncupdate)
     {
         auto nnc_out = readStandardRecord!NetworkNameCard(net, hirpc, db, NetworkNameCard.dartHash(net, nncupdatename));
         if (nnc_out.isNull)
@@ -487,7 +476,7 @@ int _main(string[] args)
             }
         }
     }
-    else if (testaddblocks > 0)
+    version (none) // else if (testaddblocks > 0)
     {
         foreach (i; 0 .. testaddblocks)
         {
@@ -520,7 +509,7 @@ int _main(string[] args)
             }
         }
     }
-    else if (testdumpblocks_enabled)
+    version (none) // else if (testdumpblocks_enabled)
     {
         import tagion.dart.DARTFile : hash_null;
 
