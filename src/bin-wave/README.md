@@ -1,7 +1,6 @@
 <a href="https://tagion.org"><img alt="tagion logo" src="https://github.com/tagion/resources/raw/master/branding/logomark.svg?sanitize=true" alt="tagion.org" height="60"></a>
 # Tagion tool v.x.x.x
-> Brief tools description.
-> The binary files starts the 'master-node.' The 'master node' connects to the network, runs the hachgraph, and synchronizes the data. It is a full-fledged network node that can be used for operations with tagions, balance checking, etc. <br>
+> The binary files starts the 'master-node.' The 'master node' connects to the network, runs the hashgraph, and synchronizes the data. It is a full-fledged network node that can be used for operations with tagions, balance checking, etc. <br>
 
 There are three modes to run the network: <br>
 [mode0](#mode0) <br>
@@ -35,7 +34,7 @@ tagionwave --dart-init=false -N 4 --dart-synchronize=true --net-mode=internal
 -------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------
 # mode1
-> mode1 is local mode, you can make transactions on the local machine, separate terminal - separate node. Essentially, mod0 is part of node1. To run network in mode1, you need to follow the instructions below:<br>
+> mode1 is local mode, you can make transactions on the local machine, separate terminal - separate node. Essentially, mode0 is part of mode1. To run network in mode1, you need to follow the instructions below:<br>
 > Add binaries to PATH
 ```
 export PATH="$PATH:$HOME/dir_name/tagion/build/x86_64-linux/bin"
@@ -338,14 +337,6 @@ tagionwave -D 0
 #### Success
 **Result**:<br>
 Successful network launch
-```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
-...
-```
 
 ### Case: invalid input
 ```
@@ -388,7 +379,7 @@ Empty host gossip ip
 
 #### Success
 **Result**:<br>
-Sccessful network launch with similar output
+Successful network launch with similar output
 ```
 transcript0: Register: transcript0 logger
 Register: collector0 logger
@@ -430,14 +421,7 @@ Invalid number for host gossip port
 #### Success
 **Result**:<br>
 Successful network launch
-```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
-...
-```
+
 ### Case: invalid value for gossip port
 ```
 --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart1.drt --port=40201222 --transaction-port=10801 --logger-filename=./shared/node-1.log -N 4
@@ -471,14 +455,10 @@ tagionwave --pid file_for_pid.pid
 
 #### Success
 **Result**:<br>
-Sccessful network launch with similar output
+Successful network launch with similar output
 ```
 ----- Start tagion service task -----
 PID = 141536 written to file_for_pid.pid
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
 ...
 ```
 
@@ -511,7 +491,7 @@ Set amount of active nodes that < 4
 
 #### Success
 **Result**:<br>
-Sccessful network launch with similar output
+Successful network launch with provided nodes number
 ```
 Node_0: Register: Node_0 logger
 ...
@@ -552,7 +532,7 @@ The time bewteen empty gossip event generation in the hashgraph(in milliseconds)
 
 ## Use Cases
 Set time stemp bewteen empty gossip event generation<br>
-Set zero delay bewteen empty gossip event generation
+Set zero timeout bewteen empty gossip event generation
 
 ### Case: set timeout
 ```
@@ -562,14 +542,7 @@ tagionwave -t 800
 #### Success
 **Result**:<br>
 Successful network launch and similar output
-```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
-...
-```
+
 ### Case: invalid value for timeout
 ```
 tagionwave -t 0
@@ -619,14 +592,6 @@ tagionwave -M 10
 #### Success
 **Result**:<br>
 Successful network launch
-```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
-...
-```
 
 ### Case: invalid value
 ```
@@ -658,14 +623,6 @@ tagionwave --tmp tmp_dir
 #### Success
 **Result**:<br>
 Successful network launch and temp files created in tmp_dir
-```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
-...
-```
 
 ### Case: empty directory name for tmp
 ```
@@ -698,14 +655,6 @@ Set not valid port for first monitor
 #### Success
 **Result**:<br>
 Successful network launch
-```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
-...
-```
 
 ### Case: invalid value
 ```
@@ -740,14 +689,6 @@ Set empty transaction ip
 #### Success
 **Result**:<br>
 Successful network launch
-```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
-...
-```
 
 ### Case: empty transaction ip
 ```
@@ -813,14 +754,6 @@ tagionwave --transaction-queue 4
 #### Success
 **Result**:<br>
 Successful network launch
-```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
-...
-```
 
 ### Case: invalid value for max number of listeners
 ```
@@ -852,14 +785,6 @@ tagionwave --transaction-maxcon 100
 #### Success
 **Result**:<br>
 Successful network launch
-```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
-...
-```
 
 ### Case: empty value for max connections number
 ```
@@ -892,14 +817,6 @@ tagionwave --transaction-maxqueue 100
 #### Success
 **Result**:<br>
 Successful network launch
-```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
-...
-```
 
 ### Case: empty value for max connections number
 ```
@@ -931,14 +848,6 @@ tagionwave --epochs 100
 #### Success
 **Result**:<br>
 Successful network launch
-```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
-...
-```
 
 ### Case: invalid value for epochs
 ```
@@ -974,7 +883,7 @@ tagionwave --transcript-log transcript_new
 
 #### Success
 **Result**:<br>
-Sccessful network launch with similar output
+Successful network launch with similar output
 ```
 transcript_new0: Register: transcript_new0 logger
 collector0: Register: collector0 logger
@@ -1028,6 +937,7 @@ Segmentation fault (core dumped)
 --dart-synchronize
 ```
 Use if we need synchronization for dart
+**Refactor**
 
 ## Use Cases
 Synchronize nodes with master node<br>
@@ -1040,7 +950,7 @@ tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-s
 
 #### Success
 **Result**:<br> 
-Sccessful network launch with similar output
+Successful network launch with similar output
 ```
 dart.sync2: DART initialized with angle: (0, 0)
 dart.sync2: DART bullseye: 
@@ -1055,7 +965,7 @@ tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-s
 
 ### Failure
 **Result**:<br>
-Network will nor run
+Network will not run
 
 # dart-angle-from-port
 **flag should be deleted**
@@ -1067,7 +977,7 @@ Network will nor run
 ```
 --dart-init
 ```
-Initialize empty DART
+Initialize empty DART **refactor**
 
 ## Use cases
 Initialize DART<br>
@@ -1080,7 +990,7 @@ Wrong input
 
 #### Success
 **Result**:<br>
-Sccessful network launch with similar output
+Successful network launch with similar output
 ```
 dart.sync2: DART initialized with angle: (0, 0)
 dart.sync2: DART bullseye: 
@@ -1134,15 +1044,7 @@ tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-s
 
 #### Success
 **Result**:<br>
-Sccessful network launch
-```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
-...
-```
+Successful network launch
 
 ### Case: invalid value for DART file path 
 ```
@@ -1151,7 +1053,7 @@ tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-s
 
 #### Failure
 **Result**:<br>
-Network will nor run with output:
+Network will not run with output:
 ```
 dart.sync1:FATAL: From task dart.sync1 'Cannot open file `wizard_file1' in mode `w+' (No such file or directory)'
 dart.sync1:FATAL: From task dart.sync1 'Cannot open file `wizard_file1' in mode `w+' (No such file or directory)'
@@ -1172,15 +1074,7 @@ tagionwave --logger-filename /new_tmp/tagion.log
 ```
 #### Success
 **Result**:<br>
-Sccessful network launch
-```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
-...
-```
+Successful network launch and logs are in new_tmp/tagion.log file
 
 # logger-mask 
 **flag should be deleted**
@@ -1211,15 +1105,7 @@ tagionwave --net-mode pub
 
 #### Success
 **Result**:<br>
-Sccessful network launch
-```
------ Start tagion service task -----
-Waiting for logger
-REGISTER logger
-Logger started
-Register: tagionwave logger
-...
-```
+Successful network launch
 
 ### Case: run invalid mode
 ```
@@ -1249,7 +1135,7 @@ tagionwave --p2p-logger
 
 #### Success
 **Result**:<br>
-Sccessful network launch with similar output
+Successful network launch with similar output
 ```
 Node_1: Register: Node_1 logger
 Node_1: opts.node_name = Node_1
@@ -1267,10 +1153,3 @@ Node_1: opts.node_name = Node_1
 
 # boot
 **flag should be deleted**
-
-
-
-
-
-
-
