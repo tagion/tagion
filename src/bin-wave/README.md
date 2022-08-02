@@ -1,7 +1,7 @@
 <a href="https://tagion.org"><img alt="tagion logo" src="https://github.com/tagion/resources/raw/master/branding/logomark.svg?sanitize=true" alt="tagion.org" height="60"></a>
 # Tagion tool v.x.x.x
 > Brief tools description.
-> The binary files starts the 'main-node.' The 'main node' connects to the network, runs the hachgraph, and synchronizes the data. It is a full-fledged network node that can be used for operations with tagions, balance checking, etc. <br>
+> The binary files starts the 'master-node.' The 'master node' connects to the network, runs the hachgraph, and synchronizes the data. It is a full-fledged network node that can be used for operations with tagions, balance checking, etc. <br>
 
 There are three modes to run the network: <br>
 [mode0](#mode0) <br>
@@ -17,8 +17,8 @@ Tools that will be used here
 [tagionboot](https://github.com/tagion/tagion/tree/develop/src/bin-boot)
 
 # mode0
-> mode0 is internal mode, to run network in mode0, you need to follow the instructions below:<br>
-
+>mode0 is interprocess communication mode, each node in the network represented as a thread
+Main purpose of Mode0 is functional testing of the network and node, to run network in mode0, you need to follow the instructions below:<br>
 ```
 mkdir data
 cd data
@@ -26,11 +26,12 @@ mkdir node0
 cd ..
 dartutil --initialize --dartfilename dart.drt
 mv dart.drt data/node0/
-tagionwave --dart-init=false -N 4 --dart-synchronize=true
+tagionwave --dart-init=false -N 4 --dart-synchronize=true --net-mode=internal
 ```
 [--dart-synchronize](#dart-synchronize) <br>
 [--dart-init](#dart-init) <br>
-[-N](#nodes)
+[-N](#nodes)<br>
+[--net-mode](#net-mode)
 -------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------
 # mode1
@@ -374,7 +375,7 @@ Unexpected '-' when converting from type string to type uint
 ```
 --ip
 ```
-Run network with current host gossip ip, 0.0.0.0 by default for any ip
+Listen for gossip protocol on provided IP, 0.0.0.0 by default for any ip
 
 ## Use cases
 Correct input for host gossip ip <br>
@@ -1266,6 +1267,7 @@ Node_1: opts.node_name = Node_1
 
 # boot
 **flag should be deleted**
+
 
 
 
