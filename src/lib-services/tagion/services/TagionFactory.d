@@ -189,7 +189,6 @@ void tagionFactoryService(Options opts) nothrow
             log.silent = true;
         }
 
-        uint count = opts.loops;
         bool stop;
         log("Start the heart beat");
         uint node_id;

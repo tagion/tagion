@@ -51,7 +51,6 @@ struct Options
 
     uint delay; /// Delay between heart-beats in ms (Test mode)
     uint timeout; /// Timeout for between nodes
-    uint loops; /// Number of heart-beats until the program stops (Test mode)
 
     bool infinity; /// Runs forever
     uint node_id; /// This is use to set the node_id in emulator mode in normal node this is allways 0
@@ -134,11 +133,8 @@ struct Options
         // This maybe removed later used to make internal transaction test without TLS connection
         // bool enable;
 
-        uint pause_from; // Sets the from/to delay between transaction test
-        uint pause_to;
         string prefix;
 
-        bool epoch_debug;
         mixin JSONCommon;
     }
 
@@ -356,13 +352,8 @@ static ref auto all_getopt(
         "port", "Host gossip port ", &(options.port),
         "pid", format("Write the pid to %s file", options.pid_file), &(options.pid_file),
 //      "path|I",    "Sets the search path", &(options.path_arg),
-        "trace-gossip|g",    "Sets the search path",     &(options.trace_gossip),
         "nodes|N",   format("Sets the number of nodes: default %d", options.nodes), &(options.nodes),
-        "seed",      format("Sets the random seed: default %d", options.seed),       &(options.seed),
         "timeout|t", format("Sets timeout: default %d (ms)", options.timeout), &(options.timeout),
-        "delay|d",   format("Sets delay: default: %d (ms)", options.delay), &(options.delay),
-        "loops",     format("Sets the loop count (loops=0 runs forever): default %d", options.loops), &(options.loops),
-        "url",       format("Sets the url: default %s", options.common.url), &(options.common.url),
         "sockets|M", format("Sets maximum number of monitors opened: default %s", options.monitor.max), &(options.monitor.max),
         "tmp",       format("Sets temporaty work directory: default '%s'", options.tmp), &(options.tmp),
         "monitor|P", format("Sets first monitor port of the port sequency (port>=%d): default %d", options.min_port, options.monitor.port),  &(options.monitor.port),
@@ -380,28 +371,20 @@ static ref auto all_getopt(
         //   "transaction-log",  format("Scripting engine log filename: default: %s", options.transaction.service.name), &(options.transaction.service.name),
 
 
-        "transcript-from", format("Transcript test from delay: default: %d", options.transcript.pause_from), &(options.transcript.pause_from),
-        "transcript-to", format("Transcript test to delay: default: %d", options.transcript.pause_to), &(options.transcript.pause_to),
         "transcript-log",  format("Transcript log filename: default: %s", options.transcript.task_name), &(options.transcript.task_name),
-        "transcript-debug|e", format("Transcript epoch debug: default: %s", options.transcript.epoch_debug), &(options.transcript.epoch_debug),
         "dart-filename", format("DART file name. Default: %s", options.dart.path), &(options.dart.path),
         "dart-synchronize", "Need synchronization", &(options.dart.synchronize),
         "dart-angle-from-port", "Set dart from/to angle based on port", &(options.dart.angle_from_port),
         "dart-master-angle-from-port", "Master angle based on port ", &(options.dart.sync.master_angle_from_port),
 
         "dart-init", "Initialize block file", &(options.dart.initialize),
-        "dart-generate", "Generate dart with random data", &(options.dart.generate),
-        "dart-from", "DART from angle", &(options.dart.from_ang),
-        "dart-to", "DART to angle", &(options.dart.to_ang),
-        "dart-request", "Request dart data", &(options.dart.request),
         "dart-path", "Path to dart file", &(options.dart.path),
         "logger-filename" , format("Logger file name: default: %s", options.logger.file_name), &(options.logger.file_name),
-        "logger-mask|l" , format("Logger mask: default: %d", options.logger.mask), &(options.logger.mask),
         "logsub|L" , format("Logger subscription service enabled: default: %d", options.sub_logger.enable), &(options.sub_logger.enable),
         "net-mode", format("Network mode: one of [%s]: default: %s", [EnumMembers!NetworkMode].map!(t=>t.to!string).join(", "), options.net_mode), &(options.net_mode),
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
-        "server-token", format("Token to access shared server"), &(options.serverFileDiscovery.token),
-        "server-tag", format("Group tag(should be the same as in token payload)"), &(options.serverFileDiscovery.tag),
+        //"server-token", format("Token to access shared server"), &(options.serverFileDiscovery.token),
+        //"server-tag", format("Group tag(should be the same as in token payload)"), &(options.serverFileDiscovery.tag),
         "boot", format("Shared boot file: default: %s", options.path_to_shared_info), &(options.path_to_shared_info),
 //        "help!h", "Display the help text",    &help_switch,
         // dfmt on
@@ -422,11 +405,8 @@ static setDefaultOption(ref Options options)
         port_base = 4000;
         scrap_depth = 5;
         logext = "log";
-        seed = 42;
-        delay = 200;
-        timeout = delay * 4;
+        timeout = 200 * 4;
         nodes = 4;
-        loops = 30;
         infinity = false;
         //port=10900;
         //disable_sockets=false;
@@ -446,7 +426,6 @@ static setDefaultOption(ref Options options)
         {
             nodeprefix = "Node";
             separator = "_";
-            url = "127.0.0.1";
         }
     }
 
@@ -472,8 +451,6 @@ static setDefaultOption(ref Options options)
     // Transcript
     with (options.transcript)
     {
-        pause_from = 333;
-        pause_to = 888;
         task_name = "transcript";
     }
     // Transaction
@@ -614,8 +591,6 @@ static setDefaultOption(ref Options options)
         name = "dart";
         prefix = "dart_";
         path = "";
-        from_ang = 0;
-        to_ang = 0;
         ringWidth = 3;
         rings = 3;
         initialize = true;

@@ -89,33 +89,33 @@ int _main(string[] args)
 
     bool set_token = false;
     bool set_tag = false;
-    void setToken(string option, string value)
-    {
-        switch (option)
-        {
-        case "server-token":
-            local_options.serverFileDiscovery.token = value;
-            set_token = true;
-            break;
-        case "server-tag":
-            local_options.serverFileDiscovery.tag = value;
-            set_tag = true;
-            break;
-        default:
-            // Empty
-        }
-    }
+    // void setToken(string option, string value)
+    // {
+    //     switch (option)
+    //     {
+    //     case "server-token":
+    //         //local_options.serverFileDiscovery.token = value;
+    //         set_token = true;
+    //         break;
+    //     case "server-tag":
+    //         local_options.serverFileDiscovery.tag = value;
+    //         set_tag = true;
+    //         break;
+    //     default:
+    //         // Empty
+    //     }
+    // }
 
-    auto token_opts = getopt(args, std.getopt.config.passThrough,
-        "server-token", &setToken,
-        "server-tag", &setToken);
+    // auto token_opts = getopt(args, std.getopt.config.passThrough,
+    //     "server-token", &setToken,
+    //     "server-tag", &setToken);
 
-    if (set_token && set_tag)
-    {
-        local_options.save(config_file);
-        writeln("Group token and tag provided.. (remove it from parameters and run the network)");
-        return 0;
-    }
+    // if (set_token && set_tag)
+    // {
+    //     local_options.save(config_file);
+    //     writeln("Group token and tag provided.. (remove it from parameters and run the network)");
+    //     return 0;
+    // }
 
     try
     {
@@ -128,7 +128,7 @@ int _main(string[] args)
             return 0;
         }
 
-        if (main_args.helpWanted || token_opts.helpWanted)
+        if (main_args.helpWanted/*|| token_opts.helpWanted*/)
         {
             writeln(logo);
             defaultGetoptPrinter(
@@ -154,7 +154,6 @@ int _main(string[] args)
             return 0;
         }
 
-        local_options.infinity = (local_options.loops == 0);
     }
     catch (Exception e)
     {

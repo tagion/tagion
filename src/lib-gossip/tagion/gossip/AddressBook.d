@@ -333,9 +333,7 @@ struct NodeAddress
         import std.math : ceil, floor;
 
         float delta = (cast(float)(dart_opts.sync.netToAng - dart_opts.sync.netFromAng)) / max_nodes;
-        auto from_ang = to!ushort(dart_opts.from_ang + floor(node_number * delta));
-        auto to_ang = to!ushort(dart_opts.from_ang + floor((node_number + 1) * delta));
-        return DART.SectorRange(from_ang, to_ang);
+        return DART.SectorRange(0, 0);
     }
 
     static string parseAddr(string addr)

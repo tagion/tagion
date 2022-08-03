@@ -149,17 +149,12 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
       - [Success](#success-6)
     - [Case: invalid nodes number](#case-invalid-nodes-number)
       - [Failure](#failure-5)
-- [seed](#seed)
 - [timeout](#timeout)
   - [Use Cases](#use-cases-6)
     - [Case: set timeout](#case-set-timeout)
       - [Success](#success-7)
     - [Case: invalid value for timeout](#case-invalid-value-for-timeout)
       - [Failure](#failure-6)
-- [delay](#delay)
-- [trace-gossip](#trace-gossip)
-- [loops](#loops)
-- [url](#url)
 - [sockets](#sockets)
   - [Use Cases](#use-cases-7)
     - [Case: set max number of open monitors](#case-set-max-number-of-open-monitors)
@@ -215,15 +210,12 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
       - [Success](#success-16)
     - [Case: invalid value for epochs](#case-invalid-value-for-epochs)
       - [Failure](#failure-15)
-- [transcript-from](#transcript-from)
-- [transcript-to](#transcript-to)
 - [transcript-log](#transcript-log)
   - [Use Cases](#use-cases-16)
     - [Case: set filename for transcript log](#case-set-filename-for-transcript-log)
       - [Success](#success-17)
     - [Case: empty input](#case-empty-input)
       - [Failure](#failure-16)
-- [transcript-debug](#transcript-debug)
 - [dart-filename](#dart-filename)
   - [Use Cases](#use-cases-17)
     - [Case: set new DART file name](#case-set-new-dart-file-name)
@@ -234,18 +226,12 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
       - [Success](#success-18)
     - [Case: Invalid input for dart-synchronize](#case-invalid-input-for-dart-synchronize)
     - [Failure](#failure-18)
-- [dart-angle-from-port](#dart-angle-from-port)
-- [dart-master-angle-from-port](#dart-master-angle-from-port)
 - [dart-init](#dart-init)
   - [Use cases](#use-cases-19)
     - [Case: init DART](#case-init-dart)
       - [Success](#success-19)
     - [Case: invalid value for dart init](#case-invalid-value-for-dart-init)
       - [Failure](#failure-19)
-- [dart-generate](#dart-generate)
-- [dart-from](#dart-from)
-- [dart-to](#dart-to)
-- [dart-request](#dart-request)
 - [dart-path](#dart-path)
   - [Use Cases](#use-cases-20)
     - [Case: set DART file path](#case-set-dart-file-path)
@@ -256,7 +242,6 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
   - [Use Cases](#use-cases-21)
     - [Case: input loger file name](#case-input-loger-file-name)
       - [Success](#success-21)
-- [logger-mask](#logger-mask)
 - [logsub](#logsub)
 - [net-mode](#net-mode)
   - [Use Cases](#use-cases-22)
@@ -268,8 +253,6 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
   - [Use Cases](#use-cases-23)
     - [Case: p2p logs](#case-p2p-logs)
       - [Success](#success-23)
-- [server-token](#server-token)
-- [server-tag](#server-tag)
 - [boot](#boot)
 
 
@@ -521,9 +504,6 @@ discovery-internal:TRACE: update 1 02a129493216004b
 discovery-internal:TRACE: FILE NETWORK READY 5 < 3 (false) done = false
 ```
 
-# seed
-**flag should be deleted**
-
 # timeout
 ```
 --timeout -t
@@ -560,18 +540,6 @@ local-tagion:TRACE: active_nodes=5
 ERROR FROM GO: failed to dial QmUV9hHQSWKXYXqmh8iU1h7oiAfJWPK4mb1H7VD5Pxosku:
   * [/ip4/0.0.0.0/tcp/40201] dial tcp4 0.0.0.0:40201: connect: connection refused
 ```
-
-# delay
-**flag should be deleted**
-
-# trace-gossip
-**flag should be deleted**
-
-# loops
-**flag should be deleted**
-
-# url
-**flag should be deleted**
 
 # sockets
 ```
@@ -860,11 +828,6 @@ Output that the input value is too large
 ```
 Overflow in integral conversion
 ```
-# transcript-from
-**flag should be deleted**
-
-# transcript-to
-**flag should be deleted**
 
 # transcript-log
 ```
@@ -903,9 +866,6 @@ Output about the absence of a parameter
 ```
 Missing value for argument --transcript-log.
 ```
-
-# transcript-debug
-**flag should be deleted**
 
 # dart-filename
 ```
@@ -967,12 +927,6 @@ tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-s
 **Result**:<br>
 Network will not run
 
-# dart-angle-from-port
-**flag should be deleted**
-
-# dart-master-angle-from-port
-**flag should be deleted**
-
 # dart-init
 ```
 --dart-init
@@ -1005,27 +959,6 @@ dart.sync2: DART bullseye:
 #### Failure
 **Result**:<br>
 Node will not run
-
-# dart-generate
-```
---dart-generate 
-```
-**flag should be deleted**<br>
-
-# dart-from 
-```
---dart-from
-```
-**flag should be deleted**<br>
-
-# dart-to
-```
---dart-to
-```
-**flag should be deleted**<br>
-
-# dart-request 
-**flag should be deleted**
 
 # dart-path
 ```
@@ -1075,9 +1008,6 @@ tagionwave --logger-filename /new_tmp/tagion.log
 #### Success
 **Result**:<br>
 Successful network launch and logs are in new_tmp/tagion.log file
-
-# logger-mask 
-**flag should be deleted**
 
 # logsub
 ```
@@ -1145,11 +1075,6 @@ Node_1: opts.node_name = Node_1
 ...
 ```
 
-# server-token
-**flag should be deleted**
-
-# server-tag
-**flag should be deleted**
-
 # boot
 **flag should be deleted**
+

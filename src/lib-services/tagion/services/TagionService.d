@@ -142,7 +142,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 
         import std.format;
 
-        auto sector_range = DART.SectorRange(opts.dart.from_ang, opts.dart.to_ang);
+        auto sector_range = DART.SectorRange(0, 0);
         shared(p2plib.Node) p2pnode;
 
         auto master_net = new StdSecureNet;
