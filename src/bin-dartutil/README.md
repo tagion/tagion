@@ -70,9 +70,11 @@ DART file must exist before calling.
 One of the [exclusive functions](#exclusive-functions) 
 <br><br>
 This function requires value. Takes one or several strings which are hashes in DART database.<br>
+Hash should contain only characters allowed for hex numbers (digits [0..9] and letters [a..f] or [A..F]) and separator character '_'. Length of string hash should be even (ignoring separator characters).
+
 Example of using:
 ```
-./dartutil -r 1ef4e838a9aa1a80dcc2a3af4fd57190f8a91c3bf373c85142f2941687ebf127
+./dartutil -r 1ef4e838_a9aa1a80_dcc2a3af_4fd57190_f8a91c3b_373c8514_2f294168_7ebf127f
 
 ./dartutil -r 1ef4e838a9aa1a80dcc2a3af4fd57190f8a91c3bf373c85142f2941687ebf127 5d07e4bfff14a719e0b4e57dc76bfa330ffe173c9da28afa279c337a39e171d9 7d6c44500ae8d95d4287ab56cc15c85c5ddceba715648889c991b1732847ad0f
 ```
@@ -142,14 +144,14 @@ Document: {
 }
 ```
 
-**Result** (when hash has wrong format)<br>
-**Refactor** handle exception
+**Result** (when hash has wrong character)<br>
 ```
-core.exception.AssertError@/home/ivanbilan/work/tagion/src/lib-utils/tagion/utils/Miscellaneous.d(49): Assertion failure
-----------------
-??:? [0x559f9b8d6a35]
-??:? [0x559f9b8ffc06]
-...
+Error parsing hash string: Bad char 'G'. Abort
+```
+
+**Result** (when hash has wrong length)<br>
+```
+Error parsing hash string: Hex string length not even. Abort
 ```
 
 ### Case: read several records
@@ -177,16 +179,6 @@ Document: {
         "$@": "Recorder"
     }
 }
-```
-
-**Result** (when hash has wrong format)<br>
-**Refactor** handle exception
-```
-core.exception.AssertError@/home/ivanbilan/work/tagion/src/lib-utils/tagion/utils/Miscellaneous.d(49): Assertion failure
-----------------
-??:? [0x559f9b8d6a35]
-??:? [0x559f9b8ffc06]
-...
 ```
 
 See also use cases of parameters, used in this function
@@ -234,14 +226,8 @@ No console output.
 **Result** (input file has wrong format):<br>
 Created new DART file. No DART sequence executed. Aborted.
 
-**Refactor** handle exception
 ```
-tagion.hibon.HiBONException.HiBONException@/home/ivanbilan/work/tagion/src/lib-hibon/tagion/hibon/HiBONRecord.d(700): HiBON Document format failed
-----------------
-??:? [0x55f55e68fa35]
-??:? [0x55f55e6b8c06]
-??:? [0x55f55e69911f]
-...
+Error trying to modify: HiBON Document format failed. Abort
 ```
 Also see [--dartfilename](#dartfilename) and [--inputfile](#inputfile) for possible failures of this case.
 
@@ -295,8 +281,6 @@ TBD
 --version -v
 ```
 Displays the version of tool
-
-**Refactor** now `-v` not belongs to version, fix it
 
 # dartfilename
 ```
@@ -440,7 +424,7 @@ Can be used with any function in dartutil
 
 # verbose
 ```
---verbose -v
+--verbose
 ```
 Boolean flag, that enables more detailed output to console<br>
 Default value: `False`

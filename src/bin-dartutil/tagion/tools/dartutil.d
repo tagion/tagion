@@ -115,23 +115,33 @@ int _main(string[] args)
     bool initialize = false;
     string passphrase = "verysecret";
 
-    auto main_args = getopt(args,
-        std.getopt.config.caseSensitive,
-        std.getopt.config.bundling,
-        "version", "display the version", &version_switch,
-        "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
-        "initialize", "Create a dart file", &initialize,
-        "inputfile|i", "Sets the HiBON input file name", &inputfilename,
-        "outputfile|o", "Sets the output file name", &outputfilename,
-        "read|r", format("Excutes a DART read sequency: default %s", dartread), &dartread_args,
-        "rim", format("Performs DART rim read: default %s", dartrim), &dartrim,
-        "modify|m", format("Excutes a DART modify sequency: default %s", dartmodify), &dartmodify,
-        "rpc", format("Excutes a HiPRC on the DART: default %s", dartrpc), &dartrpc,
-        "dump", "Dumps all the arcvives with in the given angle", &dump,
-        "eye", "Prints the bullseye", &eye,
-        "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
-        "verbose|v", "Print output to console", &verbose,
-    );
+    GetoptResult main_args;
+
+    try
+    {
+        main_args = getopt(args,
+            std.getopt.config.caseSensitive,
+            std.getopt.config.bundling,
+            "version|v", "display the version", &version_switch,
+            "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
+            "initialize", "Create a dart file", &initialize,
+            "inputfile|i", "Sets the HiBON input file name", &inputfilename,
+            "outputfile|o", "Sets the output file name", &outputfilename,
+            "read|r", format("Excutes a DART read sequency: default %s", dartread), &dartread_args,
+            "rim", format("Performs DART rim read: default %s", dartrim), &dartrim,
+            "modify|m", format("Excutes a DART modify sequency: default %s", dartmodify), &dartmodify,
+            "rpc", format("Excutes a HiPRC on the DART: default %s", dartrpc), &dartrpc,
+            "dump", "Dumps all the arcvives with in the given angle", &dump,
+            "eye", "Prints the bullseye", &eye,
+            "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
+            "verbose", "Print output to console", &verbose,
+        );
+    }
+    catch (Exception e)
+    {
+        writefln("Error parsing argument list: %s Abort", e.msg);
+        return 1;
+    }
 
     dartread = !dartread_args.empty;
 
@@ -201,46 +211,50 @@ int _main(string[] args)
         writefln("EYE: %s", db.fingerprint.hex);
     }
 
-    static const(HiRPCSender) readFromDB(Buffer[] fingerprints, HiRPC hirpc, DART db)
+    version (none)
     {
-        const sender = DART.dartRead(fingerprints, hirpc);
-        auto receiver = hirpc.receive(sender.toDoc);
-        return db(receiver, false);
-    }
-
-    static const(HiRPCSender) writeToDB(RecordFactory.Recorder recorder, HiRPC hirpc, DART db)
-    {
-        const sender = DART.dartModify(recorder, hirpc);
-        auto receiver = hirpc.receive(sender);
-        return db(receiver, false);
-    }
-
-    Nullable!T readRecord(T)(Buffer hash, HiRPC hirpc, DART db) if (isHiBONRecord!T)
-    {
-        auto result = readFromDB([hash], hirpc, db);
-
-        auto factory = RecordFactory(net);
-        auto recorder = factory.recorder(result.message["result"].get!Document);
-
-        if (recorder[].empty)
+        static const(HiRPCSender) readFromDB(Buffer[] fingerprints, HiRPC hirpc, DART db)
         {
-            return Nullable!T.init;
-        }
-        else
-        {
-            return Nullable!T(T(recorder[].front.filed));
-        }
-    }
-
-    Nullable!EpochBlock readLastEpochBlock(HiRPC hirpc, DART db)
-    {
-        auto epoch_top_read = readRecord!LastEpochRecord(LastEpochRecord.dartHash(net), hirpc, db);
-        if (epoch_top_read.isNull)
-        {
-            return Nullable!EpochBlock.init;
+            const sender = DART.dartRead(fingerprints, hirpc);
+            auto receiver = hirpc.receive(sender.toDoc);
+            return db(receiver, false);
         }
 
-        return readRecord!EpochBlock(epoch_top_read.get.top, hirpc, db);
+        static const(HiRPCSender) writeToDB(RecordFactory.Recorder recorder, HiRPC hirpc, DART db)
+        {
+            const sender = DART.dartModify(recorder, hirpc);
+            auto receiver = hirpc.receive(sender);
+            return db(receiver, false);
+        }
+
+        Nullable!T readRecord(T)(Buffer hash, HiRPC hirpc, DART db)
+                if (isHiBONRecord!T)
+        {
+            auto result = readFromDB([hash], hirpc, db);
+
+            auto factory = RecordFactory(net);
+            auto recorder = factory.recorder(result.message["result"].get!Document);
+
+            if (recorder[].empty)
+            {
+                return Nullable!T.init;
+            }
+            else
+            {
+                return Nullable!T(T(recorder[].front.filed));
+            }
+        }
+
+        Nullable!EpochBlock readLastEpochBlock(HiRPC hirpc, DART db)
+        {
+            auto epoch_top_read = readRecord!LastEpochRecord(LastEpochRecord.dartHash(net), hirpc, db);
+            if (epoch_top_read.isNull)
+            {
+                return Nullable!EpochBlock.init;
+            }
+
+            return readRecord!EpochBlock(epoch_top_read.get.top, hirpc, db);
+        }
     }
 
     void toConsole(T)(T doc, bool indent_line = false, string alternative_text = "")
@@ -357,17 +371,25 @@ int _main(string[] args)
         }
         else
         {
-            const doc = inputfilename.fread;
-            auto factory = RecordFactory(net);
-            auto recorder = factory.recorder(doc);
-            auto sended = DART.dartModify(recorder, hirpc);
-            auto received = hirpc.receive(sended);
-            auto result = db(received, false);
-            auto tosend = hirpc.toHiBON(result);
-            auto tosendResult = tosend.method.params;
-            if (dump)
-                db.dump(true);
-            outputfilename.fwrite(tosendResult);
+            try
+            {
+                const doc = inputfilename.fread;
+                auto factory = RecordFactory(net);
+                auto recorder = factory.recorder(doc);
+                auto sended = DART.dartModify(recorder, hirpc);
+                auto received = hirpc.receive(sended);
+                auto result = db(received, false);
+                auto tosend = hirpc.toHiBON(result);
+                auto tosendResult = tosend.method.params;
+                if (dump)
+                    db.dump(true);
+                outputfilename.fwrite(tosendResult);
+            }
+            catch (Exception e)
+            {
+                writefln("Error trying to modify: %s. Abort", e.msg);
+                return 1;
+            }
         }
     }
     version (none) // else if (nncread)
