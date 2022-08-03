@@ -6,9 +6,7 @@ on:
 
 jobs:
   unit-test:
-
     runs-on: ubuntu-latest
-
     steps:
     - name: add ssh key
       uses: shimataro/ssh-key-action@v2
@@ -33,4 +31,4 @@ jobs:
         
     - name: unittest result
       run: |
-        tail -n 4 /home/runner/work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep completed
+        tail -n 3 /home/runner/work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
