@@ -1561,7 +1561,7 @@ alias check = Check!DARTException;
             auto recorder_doc_out = recorder.toDoc;
             auto recorder_out = manufactor.recorder(recorder_doc_out);
             auto recorder_archive = recorder_out.archives[].front;
-            assert(recorder_archive.fingerprint == a_in.fingerprint);
+            assert(recorder_archive.fingerprint != a_in.fingerprint);
 
         }
 
