@@ -57,7 +57,6 @@ struct Options
 
     bool trace_gossip; /// Enable the package dump for the transeived packagies
     string tmp; /// Directory for the trace files etc.
-    string stdout; /// Overwrites the standard output
 
     //bool sequential;       /// Sequential test mode, used to replace the same graph from a the seed value
 
@@ -354,10 +353,9 @@ static ref auto all_getopt(
 //      "path|I",    "Sets the search path", &(options.path_arg),
         "nodes|N",   format("Sets the number of nodes: default %d", options.nodes), &(options.nodes),
         "timeout|t", format("Sets timeout: default %d (ms)", options.timeout), &(options.timeout),
-        "sockets|M", format("Sets maximum number of monitors opened: default %s", options.monitor.max), &(options.monitor.max),
+        "monitors|M", format("Sets maximum number of monitors opened: default %s", options.monitor.max), &(options.monitor.max),
         "tmp",       format("Sets temporaty work directory: default '%s'", options.tmp), &(options.tmp),
         "monitor|P", format("Sets first monitor port of the port sequency (port>=%d): default %d", options.min_port, options.monitor.port),  &(options.monitor.port),
-        "stdout",    format("Set the stdout: default %s", options.stdout), &(options.stdout),
 
         "transaction-ip",  format("Sets the listener transaction ip address: default %s", options.transaction.service.address), &(options.transaction.service.address),
         "transaction-port|p", format("Sets the listener transcation port: default %d", options.transaction.service.port), &(options.transaction.service.port),
@@ -411,7 +409,6 @@ static setDefaultOption(ref Options options)
         //port=10900;
         //disable_sockets=false;
         tmp = "/tmp/";
-        stdout = "/dev/tty";
         //  s.network_socket_port =11900;
         //        sequential=false;
         min_port = 6000;

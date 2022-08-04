@@ -31,7 +31,7 @@ tagionwave --dart-init=false -N 4 --dart-synchronize=true --net-mode=internal
 [--dart-init](#dart-init) <br>
 [-N](#nodes)<br>
 [--net-mode](#net-mode)
--------------------------------------------------------------------------------------------------------
+
 -------------------------------------------------------------------------------------------------------
 # mode1
 > mode1 is local mode, you can make transactions on the local machine, separate terminal - separate node. Essentially, mode0 is part of mode1. To run network in mode1, you need to follow the instructions below:<br>
@@ -173,7 +173,6 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
       - [Success](#success-10)
     - [Case: invalid value](#case-invalid-value-1)
       - [Failure](#failure-9)
-- [stdout](#stdout)
 - [transaction-ip](#transaction-ip)
   - [Use cases](#use-cases-10)
     - [Case: input transaction ip](#case-input-transaction-ip)
@@ -266,7 +265,6 @@ Displays the version of tool
 ```
 --overwrite -O
 ```
-**Refactor**, rename export
 Overwrite the config file, to *tagionwave.json* by default
 ## Use cases
 Overwrite file for config to another json file <br>
@@ -390,7 +388,6 @@ Missing value for argument --ip.
 --port
 ```
 Set Host gossip port for node communication, 4001 by default
-**Refactor**, exeption
 
 ## Use cases
 Correct input for host gossip port <br>
@@ -545,7 +542,6 @@ ERROR FROM GO: failed to dial QmUV9hHQSWKXYXqmh8iU1h7oiAfJWPK4mb1H7VD5Pxosku:
 ```
 --sockets -M
 ```
-**Refactor**,  should be rename --monitors
 Set the number  max of monitor opened in mode0, is not used in other modes
 
 ## Use Cases
@@ -631,13 +627,7 @@ Successful network launch
 
 #### Failure
 **Result**:<br>
-TODO Refacor, work correct
-
-# stdout 
-**Refactor**, has no affect
-```
---stdout
-```
+**Refacor**, work correct
 
 # transaction-ip
 ```
@@ -674,7 +664,6 @@ Missing value for argument --transaction-ip.
 --transaction-port -p
 ```
 Set port for listen transcation, 10800 by default
-**Refactor**, error case
 
 ## Use cases
 Set correct port<br>
@@ -702,7 +691,10 @@ collector0: SockectThread port=10801
 
 #### Failure
 **Result**:<br>
-Node will not run
+Output that the input value is too large
+```
+Overflow in integral conversion
+```
 
 # transaction-queue
 ```
@@ -897,7 +889,6 @@ Segmentation fault (core dumped)
 --dart-synchronize
 ```
 Use if we need synchronization for dart
-**Refactor**
 
 ## Use Cases
 Synchronize nodes with master node<br>
@@ -925,13 +916,15 @@ tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-s
 
 ### Failure
 **Result**:<br>
-Network will not run
-
+Node will not run
+```
+Can't parse string: bool should be case-insensitive 'true' or 'false'
+```
 # dart-init
 ```
 --dart-init
 ```
-Initialize empty DART **refactor**
+Initialize empty DART
 
 ## Use cases
 Initialize DART<br>
@@ -953,12 +946,15 @@ dart.sync2: DART bullseye:
 
 ### Case: invalid value for dart init
 ```
---net-mode=local --boot=./shared/boot.hibon --dart-init=0 --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=111111 --logger-filename=./shared/node-1.log -N 4
+--net-mode=local --boot=./shared/boot.hibon --dart-init=0 --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log -N 4
 ```
 
 #### Failure
 **Result**:<br>
 Node will not run
+```
+Can't parse string: bool should be case-insensitive 'true' or 'false'
+```
 
 # dart-path
 ```
@@ -1077,4 +1073,5 @@ Node_1: opts.node_name = Node_1
 
 # boot
 **flag should be deleted**
+
 

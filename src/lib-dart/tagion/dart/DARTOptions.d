@@ -14,8 +14,6 @@ struct DARTOptions
     string name;
     string prefix;
     string path;
-    ushort from_ang;
-    ushort to_ang;
     ubyte ringWidth;
     int rings;
     bool initialize;

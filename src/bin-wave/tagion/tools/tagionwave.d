@@ -172,6 +172,17 @@ int _main(string[] args)
     setOptions(local_options);
 
     writeln("----- Start tagion service task -----");
+    try{
+        if(local_options.port > 65536){
+            throw new Exception("Invalid port");
+        }
+    }
+    catch (Exception e)
+    {
+        writeln("Port should be < 65537");
+        return 1;
+    }
+    
     immutable service_options = getOptions();
     // Set the shared common options for all services
     setCommonOptions(service_options.common);
