@@ -76,7 +76,7 @@ Example of using:
 ```
 ./dartutil -r 1ef4e838_a9aa1a80_dcc2a3af_4fd57190_f8a91c3b_373c8514_2f294168_7ebf127f
 
-./dartutil -r 1ef4e838a9aa1a80dcc2a3af4fd57190f8a91c3bf373c85142f2941687ebf127 5d07e4bfff14a719e0b4e57dc76bfa330ffe173c9da28afa279c337a39e171d9 7d6c44500ae8d95d4287ab56cc15c85c5ddceba715648889c991b1732847ad0f
+./dartutil -r 1ef4e838 -r 5d07e4bf -r 7d6c4450
 ```
 
 ## Parameters
@@ -161,13 +161,98 @@ Error parsing hash string: Hex string length not even. Abort
 #### Success
 **Result** <br>
 Found records with given hashes. Single recorder with all records is written to outputfile and console:
-**Refactor** not working now, takes only first argument
 ```
+Result has been written to '/tmp/deleteme.dmd.unittest.pid1546947FFF383A799C'
 Document: {
     "result": {
         "$@": "Recorder",
         "0": {
- ...
+            "$a": {
+                "#name": "test name",
+                "$@": "NNC",
+                "$Y": [
+                    "*",
+                    "@"
+                ],
+                "$lang": "",
+                "$record": [
+                    "*",
+                    "@2S4uO+DHbbiwWJKGRZjmZfWHfSZLmEerWSMYg91gZf8="
+                ],
+                "$time": [
+                    "u64",
+                    "0x0"
+                ]
+            },
+            "$t": [
+                "i32",
+                1
+            ]
+        },
+        "1": {
+            "$a": {
+                "$@": "HL",
+                "$lock": [
+                    "*",
+                    "@iL02\/dq84CuR8hWuxy2urTu6yMPf1lHfIK2hilgjpxY="
+                ]
+            },
+            "$t": [
+                "i32",
+                1
+            ]
+        },
+        "2": {
+            "$a": {
+                "$@": "$epoch0",
+                "$actives": {},
+                "$epoch": [
+                    "i32",
+                    0
+                ],
+                "$global": [
+                    "*",
+                    "@"
+                ],
+                "$prev": [
+                    "*",
+                    "@AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+                ],
+                "$recorder": [
+                    "*",
+                    "@"
+                ]
+            },
+            "$t": [
+                "i32",
+                1
+            ]
+        }
+    }
+}
+```
+**Result** (when some but not all hashes found)<br>
+Found some records with some given hashes. Single recorder with all found records is written to outputfile and console:
+```
+Result has been written to '/tmp/deleteme.dmd.unittest.pid1556907FFD5989C18C'
+Document: {
+    "result": {
+        "$@": "Recorder",
+        "0": {
+            "$a": {
+                "$@": "HL",
+                "$lock": [
+                    "*",
+                    "@iL02\/dq84CuR8hWuxy2urTu6yMPf1lHfIK2hilgjpxY="
+                ]
+            },
+            "$t": [
+                "i32",
+                1
+            ]
+        }
+    }
+}
 ```
 #### Failure
 **Result** (when record not found)<br>
