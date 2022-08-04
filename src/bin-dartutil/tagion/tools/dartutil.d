@@ -1,3 +1,5 @@
+/// \file dartutil.d
+
 module tagion.tools.dartutil;
 
 import std.getopt;
@@ -34,6 +36,10 @@ import tagion.script.NameCardScripts : readStandardRecord;
 
 import tagion.tools.Basic;
 
+/**
+ * @brief tool for working with local DART database
+ */
+
 pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
 version (none) void updateAddNetworkNameCard(const HashNet net, NetworkNameCard nnc, NetworkNameRecord nrc, RecordFactory
         .Recorder recorder)
@@ -61,7 +67,7 @@ version (none) void updateAddNetworkNameCard(const HashNet net, NetworkNameCard 
     recorder.add(hr_new);
 }
 
-void updateRemoveHashKeyRecord(const HashNet net, const RecordFactory.Recorder src, RecordFactory
+version (none) void updateRemoveHashKeyRecord(const HashNet net, const RecordFactory.Recorder src, RecordFactory
         .Recorder dest)
 in
 {
@@ -78,7 +84,8 @@ do
 }
 
 pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
-void updateAddEpochBlock(const HashNet net, EpochBlock epoch_block, RecordFactory.Recorder recorder)
+version (none) void updateAddEpochBlock(const HashNet net, EpochBlock epoch_block, RecordFactory
+        .Recorder recorder)
 {
     EpochBlock epoch_block_new;
     epoch_block_new.epoch = epoch_block.epoch + 1;
@@ -174,14 +181,8 @@ int _main(string[] args)
         return 0;
     }
 
-    SecureNet createNet()
-    {
-        SecureNet net = new StdSecureNet;
-        net.generateKeyPair(passphrase);
-        return net;
-    }
-
-    const net = createNet;
+    SecureNet net = new StdSecureNet;
+    net.generateKeyPair(passphrase);
     const hirpc = HiRPC(net);
 
     if (initialize)
@@ -257,6 +258,12 @@ int _main(string[] args)
         }
     }
 
+    /**
+     * Prints document to console depending on parameters
+     * @param doc - document to output
+     * @param indent_line - flag to put indent line in console before printing doc
+     * @param alternative_text - text to replace doc output when flag verbose is off
+     */
     void toConsole(T)(T doc, bool indent_line = false, string alternative_text = "")
             if (isHiBONRecord!T || is(T == Document))
     {
