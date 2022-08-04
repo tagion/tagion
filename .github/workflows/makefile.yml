@@ -26,6 +26,7 @@ jobs:
         rm -rf tagion
         git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git
         cd tagion
+        git checkout feature/vk-auto-ut
         git submodule update --recursive --init
         make unittest || make unittest 
         
