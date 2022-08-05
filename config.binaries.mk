@@ -26,6 +26,13 @@ ${call BIN,hibonutil,HIBONUTIL,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),
 target-dartutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-dartutil/*" -a -not -path "*/unitdata/*" }
 ${call BIN,dartutil,DARTUTIL,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETOOL)}
 
+
+# DART utility
+#
+# FIXME(CBR) should be remove when ddeps works correctly
+target-blockfile: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-blockfile/*" -a -not -path "*/unitdata/*" }
+${call BIN,blockfile,BLOCKFILE,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETOOL)}
+
 #
 # WASM utility
 #
@@ -76,6 +83,7 @@ target-tagion: DFILES+=${shell find $(DSRC)/bin-hibonutil/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-wallet/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-tools/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-boot/tagion -name "*.d"  }
+target-tagion: DFILES+=${shell find $(DSRC)/bin-blockfile/tagion -name "*.d"  }
 # target-tagion: DFILES+=${shell find $(DSRC)/bin-dartutil -name "*.d" -a -not -path "*/unitdata/*" }
 # target-tagion: DFILES+=${shell find $(DSRC)/bin-hibonutil -name "*.d" -a -not -path "*/unitdata/*" }
 # target-tagion: DFILES+=${shell find $(DSRC)/bin-wallet -name "*.d" -a -not -path "*/unitdata/*" }

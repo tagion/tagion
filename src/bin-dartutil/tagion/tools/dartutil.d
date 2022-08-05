@@ -97,6 +97,7 @@ enum ExitCode : int {
     none, /// No errors
         create_file, /// Error while creating the DART file
 }
+
 int _main(string[] args)
 {
     immutable program = args[0];
