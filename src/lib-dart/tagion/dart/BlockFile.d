@@ -911,6 +911,19 @@ class BlockFile
                 m = buf.binread!type;
             }
         }
+
+        string toString() const pure nothrow {
+            import std.exception : assumeWontThrow;
+            import std.array : join;
+            return assumeWontThrow([
+                "Master Block",
+                format("Root     @ %d", root_index),
+                format("First     @ %d", first_index),
+                format("Recycle   @ %d", recycle_header_index),
+                format("Statistic @ %d", statistic_index),
+                ].join("\n"));
+
+        }
     }
 
     /++
@@ -1464,7 +1477,7 @@ class BlockFile
     {
         allocated_chains = null;
 
-        
+
 
         .check(doc.isArray, "Document should be an array");
         foreach (a; doc[])
