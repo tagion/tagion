@@ -884,6 +884,10 @@ class BlockFile
 
     }
 
+    final uint lastBlockIndex() const pure nothrow {
+        return last_block_index;
+    }
+
     final private void seek(const uint index)
     {
         file.seek(index_to_seek(index));
@@ -934,10 +938,10 @@ class BlockFile
             import std.array : join;
             return assumeWontThrow([
                 "Master Block",
-                format("Root      @ %d", root_index),
-                format("First     @ %d", first_index),
-                format("Recycle   @ %d", recycle_header_index),
-                format("Statistic @ %d", statistic_index),
+                format("Root       @ %d", root_index),
+                format("First      @ %d", first_index),
+                format("Recycle    @ %d", recycle_header_index),
+                format("Statistic  @ %d", statistic_index),
                 ].join("\n"));
 
         }
@@ -1930,19 +1934,19 @@ class BlockFile
     /++
      + Used for debuging only to dump the Block's
      +/
-    void dump()
+    void dump(const uint block_per_line = 16)
     {
         import std.stdio;
 
-        enum block_per_line = 16;
-        char[block_per_line] line;
+        //enum block_per_line = 16;
+        auto line = new char[block_per_line];
         foreach (index; 0 .. ((last_block_index / block_per_line) + (
                 (last_block_index % block_per_line == 0) ? 0 : 1)) * block_per_line)
         {
             immutable pos = index % block_per_line;
             if ((index % block_per_line) == 0)
             {
-                line = 0;
+                line[] = 0;
             }
 
             scope block = read(index);

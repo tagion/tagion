@@ -22,6 +22,7 @@ int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
     bool display_meta;
+    bool dump;
     enum logo = import("logo.txt");
 
 
@@ -30,6 +31,7 @@ int _main(string[] args) {
         std.getopt.config.bundling,
         "version", "display the version", &version_switch,
         "info", "display blockfile metadata", &display_meta,
+        "dump", "dump block in the blockfile", &dump,
 
         );
 
@@ -77,6 +79,14 @@ int _main(string[] args) {
         blockfile_load.headerBlock.writeln;
         writeln;
         blockfile_load.masterBlock.writeln;
+        writeln;
+        writefln("Last block @ %d", blockfile_load.lastBlockIndex);
+        writeln;
+    }
+
+    if (dump) {
+        writeln("Block map");
+        blockfile_load.dump;
     }
 
     return ExitCode.noerror;
