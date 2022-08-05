@@ -27,12 +27,10 @@ dartutil --initialize --dartfilename dart.drt
 mv dart.drt data/node0/
 tagionwave --dart-init=false -N 4 --dart-synchronize=true --net-mode=internal
 ```
-[--dart-synchronize](#dart-synchronize) <br>
-[--dart-init](#dart-init) <br>
-[-N](#nodes)<br>
-[--net-mode](#net-mode)
--------------------------------------------------------------------------------------------------------
--------------------------------------------------------------------------------------------------------
+[dart-synchronize](#dart-synchronize) <br>
+[dart-init](#dart-init) <br>
+[nodes](#nodes)<br>
+[net-mode](#net-mode)
 # mode1
 > mode1 is local mode, you can make transactions on the local machine, separate terminal - separate node. Essentially, mode0 is part of mode1. To run network in mode1, you need to follow the instructions below:<br>
 > Add binaries to PATH
@@ -99,7 +97,7 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
 
 [logger-filename](#logger-filename) **optional** (Set file for logs)
 
-[-N](#nodes)  **required** (Number of active nodes)
+[nodes](#nodes)  **required** (Number of active nodes)
 # mode2
 **TBD**
 
