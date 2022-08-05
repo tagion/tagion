@@ -22,6 +22,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
 import tagion.services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
+import tagion.basic.TagionExceptions : fatal;
 
 //import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
 import tagion.gossip.AddressBook : NodeAddress;
@@ -94,7 +95,7 @@ void serverFileDiscoveryService(
                 catch (Exception e)
                 {
                     log("ERROR on sending: %s", e.msg);
-                    ownerTid.send(cast(immutable) e);
+                    fatal(e);
                 }
            // }
            // else

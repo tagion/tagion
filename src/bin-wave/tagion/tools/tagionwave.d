@@ -173,7 +173,7 @@ int _main(string[] args)
 
     writeln("----- Start tagion service task -----");
     try{
-        if(local_options.port > 65536){
+        if(local_options.port > ushort.max){
             throw new Exception("Invalid port");
         }
     }

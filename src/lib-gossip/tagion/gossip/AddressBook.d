@@ -332,7 +332,7 @@ struct NodeAddress
     {
         import std.math : ceil, floor;
 
-        float delta = (cast(float)(dart_opts.sync.netToAng - dart_opts.sync.netFromAng)) / max_nodes;
+        const delta = float(dart_opts.sync.netToAng - dart_opts.sync.netFromAng) / max_nodes;
         return DART.SectorRange(0, 0);
     }
 
