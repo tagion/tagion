@@ -1,6 +1,8 @@
 <a href="https://tagion.org"><img alt="tagion logo" src="https://github.com/tagion/resources/raw/master/branding/logomark.svg?sanitize=true" alt="tagion.org" height="60"></a>
 # Tagion tool v.x.x.x
-> The binary files starts the 'master-node.' The 'master node' connects to the network, runs the hashgraph, and synchronizes the data. It is a full-fledged network node that can be used for operations with tagions, balance checking, etc. <br>
+> The binary files starts the 'network node'. After network node connects to the network it starts to synchronizing database. When database is synchronized, node is ready to be an active node and run the hashgraph.
+Each node handle SSL connection for HiRPC request. Via HiRPC you can send a contract, request a balance, healthcheck<br>
+It is a full-fledged network node that can be used for operations with tagions, balance checking, etc. <br>
 
 There are three modes to run the network: <br>
 [mode0](#mode0) <br>
