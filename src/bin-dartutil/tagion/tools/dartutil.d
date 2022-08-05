@@ -14,6 +14,7 @@ import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.basic.Basic : tempfile;
+import tagion.basic.TagionExceptions : TagionException;
 
 import tagion.communication.HiRPC;
 import tagion.dart.DARTSynchronization;
@@ -34,7 +35,6 @@ import tagion.script.StandardRecords;
 import tagion.script.NameCardScripts : readStandardRecord;
 
 import tagion.tools.Basic;
-
 pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
 void updateAddNetworkNameCard(const HashNet net, NetworkNameCard nnc, NetworkNameRecord nrc, RecordFactory
         .Recorder recorder)
@@ -93,6 +93,10 @@ void updateAddEpochBlock(const HashNet net, EpochBlock epoch_block, RecordFactor
 
 mixin Main!_main;
 
+enum ExitCode : int {
+    none, /// No errors
+        create_file, /// Error while creating the DART file
+}
 int _main(string[] args)
 {
     immutable program = args[0];
@@ -209,6 +213,7 @@ int _main(string[] args)
     const net = createNet;
     const hirpc = HiRPC(net);
 
+    writeln("!!! Here");
     if (initialize)
     {
         if (dartfilename.length == 0)
@@ -216,8 +221,19 @@ int _main(string[] args)
             dartfilename = tempfile ~ "tmp";
             writeln("DART filename: ", dartfilename);
         }
-        DART.create(dartfilename);
+        try {
+            writeln("Before");
+            DART.create(dartfilename);
+            writeln("After");
+        }
+        catch (Exception e) {
+            stderr.writefln("Unable to create DART file %s", dartfilename);
+            stderr.writeln(e.msg);
+            return ExitCode.create_file;
+        }
     }
+
+    try {
 
     auto db = new DART(net, dartfilename, fromAngle, toAngle);
     if (generate)
@@ -550,5 +566,14 @@ int _main(string[] args)
             i += 1;
         }
     }
-    return 0;
+    }
+    catch (TagionException e) {
+        stderr.writeln(e);
+        return 1;
+    }
+    catch (Exception e) {
+        stderr.writeln(e);
+        return 2;
+    }
+    return ExitCode.none;
 }
