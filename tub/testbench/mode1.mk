@@ -147,7 +147,7 @@ check-mode1:
 	$(PRECMD)
 	${call log.header, $@ :: check}
 	echo "Bullseye mode1"
-	@${foreach node_name,$(MODE1_LIST),  dartutil --eye -d$(MODE1_DARTFILE_$(node_name));}
+	@${foreach node_name,$(MODE1_LIST),   $(DBIN)/dartutil --eye -d$(MODE1_DARTFILE_$(node_name));}
 	${call log.close}
 
 check: check-mode1

@@ -1,6 +1,8 @@
 <a href="https://tagion.org"><img alt="tagion logo" src="https://github.com/tagion/resources/raw/master/branding/logomark.svg?sanitize=true" alt="tagion.org" height="60"></a>
 # Tagion tool v.x.x.x
-> The binary files starts the 'master-node.' The 'master node' connects to the network, runs the hashgraph, and synchronizes the data. It is a full-fledged network node that can be used for operations with tagions, balance checking, etc. <br>
+> The binary files starts the 'network node'. After network node connects to the network it starts to synchronizing database. When database is synchronized, node is ready to be an active node and run the hashgraph.
+Each node handle SSL connection for HiRPC request. Via HiRPC you can send a contract, request a balance, healthcheck<br>
+It is a full-fledged network node that can be used for operations with tagions, balance checking, etc. <br>
 
 There are three modes to run the network: <br>
 [mode0](#mode0) <br>
@@ -25,22 +27,20 @@ mkdir node0
 cd ..
 dartutil --initialize --dartfilename dart.drt
 mv dart.drt data/node0/
-tagionwave --dart-init=false -N 4 --dart-synchronize=true --net-mode=internal
+tagionwave --dart-init=false --nodes 4 --dart-synchronize=true --net-mode=internal
 ```
-[--dart-synchronize](#dart-synchronize) <br>
-[--dart-init](#dart-init) <br>
-[-N](#nodes)<br>
-[--net-mode](#net-mode)
+[dart-synchronize](#dart-synchronize) **required** (Regular node should be synchronize, and not synchronize for master node)<br>
+[dart-init](#dart-init) **required** (Init empty DART)<br>
+[nodes](#nodes) **required** (Number of active nodes)<br>
+[net-mode](#net-mode) **required** (Set mode for network)
 
--------------------------------------------------------------------------------------------------------
 # mode1
 > mode1 is local mode, you can make transactions on the local machine, separate terminal - separate node. Essentially, mode0 is part of mode1. To run network in mode1, you need to follow the instructions below:<br>
 > Add binaries to PATH
 ```
 export PATH="$PATH:$HOME/dir_name/tagion/build/x86_64-linux/bin"
 ```
-> Then you need to create wallets and init DART<br>
-> Wallet 1
+> Then you need to create directory for data and init DART<br>
 ```
 mkdir -p tagion_network
 cd tagion_network
@@ -49,38 +49,18 @@ mkdir shared
 cd data
 dartutil --initialize --dartfilename dart.drt
 cd ..
-mkdir -p wallet_1
-cd wallet_1
-tagionwallet --generate-wallet --questions q1,q2,q3,q4 --answers a1,a2,a3,a4 -x 0001
-tagionwallet --create-invoice GENESIS:100000 -x 0001
-tagionboot invoice_file.hibon -o genesis.hibon
-cd ..
-dartutil --dartfilename ./data/dart.drt --modify --inputfile ./wallet_1/genesis.hibon
-```
->Wallet 2
-```
-mkdir -p wallet_2
-cd wallet_2
-tagionwallet --generate-wallet --questions q1,q2,q3,q4 --answers a1,a2,a3,a4 -x 0002
-tagionwallet --create-invoice GENESIS:100000 -x 0002
-tagionboot invoice_file.hibon -o genesis.hibon
-cd ..
-dartutil --dartfilename ./data/dart.drt --modify --inputfile ./wallet_2/genesis.hibon
-```
->Same you can create another wallets
-```
 cp ./data/dart.drt ./data/node0/dart.drt
 ```
 >Next we can launch network with 4 nodes
 ```
 rm -f ./shared/*
-gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log -N 4
+gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log --nodes 4
 
-gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart2.drt --port=4002 --transaction-port=10802 --logger-filename=./shared/node-2.log -N 4
+gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart2.drt --port=4002 --transaction-port=10802 --logger-filename=./shared/node-2.log --nodes 4
 
-gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart3.drt --port=4003 --transaction-port=10803 --logger-filename=./shared/node-3.log -N 4
+gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart3.drt --port=4003 --transaction-port=10803 --logger-filename=./shared/node-3.log --nodes 4
 
-gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=false --dart-synchronize=false --dart-path=./data/dart.drt --port=4020 --transaction-port=10820 --logger-filename=./shared/node-master.log -N 4
+gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=false --dart-synchronize=false --dart-path=./data/dart.drt --port=4020 --transaction-port=10820 --logger-filename=./shared/node-master.log --nodes 4
 ```
 
 [boot](#boot) **required** (Set boot.hibon file)
@@ -99,7 +79,7 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
 
 [logger-filename](#logger-filename) **optional** (Set file for logs)
 
-[-N](#nodes)  **required** (Number of active nodes)
+[nodes](#nodes)  **required** (Number of active nodes)
 # mode2
 **TBD**
 

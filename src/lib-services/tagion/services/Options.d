@@ -591,7 +591,6 @@ static setDefaultOption(ref Options options)
         ringWidth = 3;
         rings = 3;
         initialize = true;
-        generate = false;
         synchronize = true;
         request = false;
         fast_load = false;
