@@ -74,6 +74,8 @@ int _main(string[] args) {
     }
 
     if (display_meta) {
+        blockfile_load.headerBlock.writeln;
+        writeln;
         blockfile_load.masterBlock.writeln;
     }
 

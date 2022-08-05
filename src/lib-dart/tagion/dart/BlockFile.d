@@ -865,6 +865,23 @@ class BlockFile
                 }
             }
         }
+
+        string toString() const {
+            import std.exception : assumeWontThrow;
+            import std.array : join;
+            import std.datetime.systime;
+            import std.datetime.timezone;
+            import std.algorithm.searching : until;
+
+            return [
+                "Header Block",
+                format("Label      : %s", label[].until(char(ubyte.max))),
+                format("ID         : %s", id[].until(char.max)),
+                format("Block size : %d", block_size),
+                format("Created    : %s", SysTime.fromUnixTime(create_time).toSimpleString),
+                ].join("\n");
+        }
+
     }
 
     final private void seek(const uint index)
@@ -917,7 +934,7 @@ class BlockFile
             import std.array : join;
             return assumeWontThrow([
                 "Master Block",
-                format("Root     @ %d", root_index),
+                format("Root      @ %d", root_index),
                 format("First     @ %d", first_index),
                 format("Recycle   @ %d", recycle_header_index),
                 format("Statistic @ %d", statistic_index),
@@ -1188,6 +1205,11 @@ class BlockFile
     ref const(MasterBlock) masterBlock() pure const nothrow
     {
         return masterblock;
+    }
+
+    ref const(HeaderBlock) headerBlock() pure const nothrow
+    {
+        return headerblock;
     }
 
     // Write the master block to the filesystem and truncate the file
