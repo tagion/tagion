@@ -26,7 +26,10 @@ jobs:
         rm -rf tagion
         git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git
         cd tagion
-        git checkout feature/vk-auto-ut
+        export GITHUB_WORKFLOW_BRANCH=$GITHUB_HEAD_REF
+        echo $GITHUB_WORKFLOW_BRANCH
+        git checkout $GITHUB_WORKFLOW_BRANCH
+        git branch
         git submodule update --recursive --init
         make unittest || make unittest 
         
