@@ -25,12 +25,12 @@ mkdir node0
 cd ..
 dartutil --initialize --dartfilename dart.drt
 mv dart.drt data/node0/
-tagionwave --dart-init=false -N 4 --dart-synchronize=true --net-mode=internal
+tagionwave --dart-init=false --nodes 4 --dart-synchronize=true --net-mode=internal
 ```
-[dart-synchronize](#dart-synchronize) <br>
-[dart-init](#dart-init) <br>
-[nodes](#nodes)<br>
-[net-mode](#net-mode)
+[dart-synchronize](#dart-synchronize) **required** (Regular node should be synchronize, and not synchronize for master node)<br>
+[dart-init](#dart-init) **required** (Init empty DART)<br>
+[nodes](#nodes) **required** (Number of active nodes)<br>
+[net-mode](#net-mode) **required** (Set mode for network)
 # mode1
 > mode1 is local mode, you can make transactions on the local machine, separate terminal - separate node. Essentially, mode0 is part of mode1. To run network in mode1, you need to follow the instructions below:<br>
 > Add binaries to PATH
@@ -72,13 +72,13 @@ cp ./data/dart.drt ./data/node0/dart.drt
 >Next we can launch network with 4 nodes
 ```
 rm -f ./shared/*
-gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log -N 4
+gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log --nodes 4
 
-gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart2.drt --port=4002 --transaction-port=10802 --logger-filename=./shared/node-2.log -N 4
+gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart2.drt --port=4002 --transaction-port=10802 --logger-filename=./shared/node-2.log --nodes 4
 
-gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart3.drt --port=4003 --transaction-port=10803 --logger-filename=./shared/node-3.log -N 4
+gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart3.drt --port=4003 --transaction-port=10803 --logger-filename=./shared/node-3.log --nodes 4
 
-gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=false --dart-synchronize=false --dart-path=./data/dart.drt --port=4020 --transaction-port=10820 --logger-filename=./shared/node-master.log -N 4
+gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=false --dart-synchronize=false --dart-path=./data/dart.drt --port=4020 --transaction-port=10820 --logger-filename=./shared/node-master.log --nodes 4
 ```
 
 [boot](#boot) **required** (Set boot.hibon file)
