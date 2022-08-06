@@ -57,6 +57,7 @@ alias check = Check!BlockFileException;
 class BlockFile
 {
     enum FILE_LABEL = "DART:0.0";
+    enum DEFAULT_BLOCK_SIZE = 0x40;
     immutable uint BLOCK_SIZE;
     immutable uint DATA_SIZE;
 
@@ -82,7 +83,7 @@ class BlockFile
 
         alias Range = Indices.Range;
         @disable this();
-        this(BlockFile owner)
+        this(BlockFile owner) pure nothrow
         {
             this.owner = owner;
             indices = new Indices;
@@ -536,6 +537,33 @@ class BlockFile
         readInitial;
     }
 
+    /**
+       Used by the Inspect
+     */
+    private this(immutable uint SIZE) pure nothrow {
+        this.BLOCK_SIZE = SIZE;
+        DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
+        recycle_indices = RecycleIndices(this);
+    }
+
+    static BlockFile Inspect(string filename, out string msg) {
+        BlockFile result;
+        try {
+            File file;
+            file.open(filename, "r");
+            BlockFile.HeaderBlock headerblock;
+            file.seek(0);
+            headerblock.read(file, DEFAULT_BLOCK_SIZE);
+            result = new BlockFile(headerblock.block_size);
+            result.file = file;
+//            result.recycle_indices = RecycleIndices(this);
+            result.readInitial;
+        }
+        catch (BlockFileException e) {
+            msg = e.msg;
+        }
+        return result;
+    }
     /++
      Creates and empty BlockFile
 
@@ -590,7 +618,7 @@ class BlockFile
      +/
     static BlockFile opCall(string filename, const bool read_only = false)
     {
-        auto temp_file = new BlockFile(filename, 0x40, read_only);
+        auto temp_file = new BlockFile(filename, DEFAULT_BLOCK_SIZE, read_only);
         immutable SIZE = temp_file.headerblock.block_size;
         temp_file.close;
         return new BlockFile(filename, SIZE, read_only);
@@ -1736,7 +1764,7 @@ class BlockFile
     }
 
     /++
-     + Fail type for the checkFile function
+     + Fail type for the inspect function
      +/
     enum Fail
     {
@@ -1767,7 +1795,7 @@ class BlockFile
      +     block  = is the failed block
      +     data_flag = Set to `false` if block is a resycled block and `true` if it a data block
      +/
-    void checkFile(void delegate(const uint index, const Fail f, const Block block, const bool data_flag) @safe fail)
+    void inspect(void delegate(const uint index, const Fail f, const Block block, const bool data_flag) @safe fail)
     {
         scope bool[uint] visited;
         @safe
@@ -2042,7 +2070,7 @@ class BlockFile
 
         {
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
-            blockfile.checkFile(&failsafe);
+            blockfile.inspect(&failsafe);
 
             B[] allocators = [
                 B("++++Block 0", 5), // 0
@@ -2105,7 +2133,7 @@ class BlockFile
 
         { // Remove block
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
-            blockfile.checkFile(&failsafe);
+            blockfile.inspect(&failsafe);
             // blockfile.dump;
             //
             // Erase chain of block
@@ -2172,7 +2200,7 @@ class BlockFile
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
 
             // blockfile.dump;
-            blockfile.checkFile(&failsafe);
+            blockfile.inspect(&failsafe);
 
             blockfile.close;
         }

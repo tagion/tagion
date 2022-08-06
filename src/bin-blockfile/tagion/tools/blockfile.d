@@ -8,6 +8,7 @@ import std.array : join;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.dart.BlockFile;
+import tagion.dart.DARTException : BlockFileException;
 
 mixin Main!(_main, "blockutil");
 
@@ -15,7 +16,9 @@ enum HAS_BLOCK_FILE_ARG = 2;
 
 enum ExitCode {
     noerror,
-    missing_blockfile, /// Blockfile missing
+    missing_blockfile, /// Blockfile missing argument
+    bad_blockfile,     /// Bad blockfile format
+    open_file_failed,    /// Unable to open file
 }
 
 int _main(string[] args) {
@@ -23,7 +26,9 @@ int _main(string[] args) {
     bool version_switch;
     bool display_meta;
     bool dump;
+    bool inspect;
     enum logo = import("logo.txt");
+    auto result = ExitCode.noerror;
 
 
     auto main_args = getopt(args,
@@ -32,6 +37,7 @@ int _main(string[] args) {
         "version", "display the version", &version_switch,
         "info", "display blockfile metadata", &display_meta,
         "dump", "dump block in the blockfile", &dump,
+        "inspect|c", "inspect the blockfile format", &inspect,
 
         );
 
@@ -69,25 +75,58 @@ int _main(string[] args) {
     }
 
     immutable filename = args[1]; /// First argument is the blockfile name
-    auto blockfile_load = BlockFile(filename);
+    BlockFile blockfile;
     scope (exit)
     {
-        blockfile_load.close;
+        if (blockfile) {
+            blockfile.close;
+        }
+    }
+
+    if (inspect) {
+        if (!blockfile) {
+            string msg;
+            blockfile = BlockFile.Inspect(filename, msg);
+            stderr.writeln(msg);
+        }
+        void fail(const uint index, const BlockFile.Fail f, const BlockFile.Block block, const bool data_flag) {
+            writefln("@ %d %s %s", index, f, data_flag);
+        }
+        blockfile.inspect(&fail);
+    }
+    else {
+    try {
+        blockfile = BlockFile(filename);
+    }
+    catch (BlockFileException e) {
+        stderr.writefln("Error: Bad blockfile format for %s", filename);
+        stderr.writeln(e.msg);
+        result = ExitCode.bad_blockfile;
+        display_meta = true;
+        dump = true;
+    }
+    catch (Exception e) {
+        stderr.writefln("Error: Unable to open file %s", filename);
+        stderr.writeln(e.msg);
+        result = ExitCode.open_file_failed;
+    }
     }
 
     if (display_meta) {
-        blockfile_load.headerBlock.writeln;
+        blockfile.headerBlock.writeln;
         writeln;
-        blockfile_load.masterBlock.writeln;
+        blockfile.masterBlock.writeln;
         writeln;
-        writefln("Last block @ %d", blockfile_load.lastBlockIndex);
+        writefln("Last block @ %d", blockfile.lastBlockIndex);
         writeln;
     }
 
     if (dump) {
         writeln("Block map");
-        blockfile_load.dump;
+        writeln("H Header, # Used, _ Recycle");
+
+        blockfile.dump;
     }
 
-    return ExitCode.noerror;
+    return result;
 }
