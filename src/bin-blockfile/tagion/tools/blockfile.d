@@ -26,6 +26,7 @@ int _main(string[] args) {
     bool version_switch;
     bool display_meta;
     bool dump;
+    uint inspect_iterations =uint.max;
     bool inspect;
     enum logo = import("logo.txt");
     auto result = ExitCode.noerror;
@@ -34,10 +35,11 @@ int _main(string[] args) {
     auto main_args = getopt(args,
         std.getopt.config.caseSensitive,
         std.getopt.config.bundling,
-        "version", "display the version", &version_switch,
-        "info", "display blockfile metadata", &display_meta,
-        "dump", "dump block in the blockfile", &dump,
-        "inspect|c", "inspect the blockfile format", &inspect,
+        "version", "Display the version", &version_switch,
+        "info", "Display blockfile metadata", &display_meta,
+        "dump", "Dumps block fragmentaion pattern in the blockfile", &dump,
+        "inspect|c", "Inspect the blockfile format", &inspect,
+        "iter", "Set the max number of iterations do by the inspect", &inspect_iterations,
 
         );
 
@@ -89,10 +91,15 @@ int _main(string[] args) {
             blockfile = BlockFile.Inspect(filename, msg);
             stderr.writeln(msg);
         }
-        void fail(const uint index, const BlockFile.Fail f, const BlockFile.Block block, const bool data_flag) {
+        bool trace(const uint index, const BlockFile.Fail f, const BlockFile.Block block, const bool data_flag) {
             writefln("@ %d %s %s", index, f, data_flag);
+            if (inspect_iterations != inspect_iterations.max) {
+                inspect_iterations --;
+                return inspect_iterations == 0;
+            }
+            return false;
         }
-        blockfile.inspect(&fail);
+        blockfile.inspect(&trace);
     }
     else {
     try {

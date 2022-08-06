@@ -1795,20 +1795,21 @@ class BlockFile
      +     block  = is the failed block
      +     data_flag = Set to `false` if block is a resycled block and `true` if it a data block
      +/
-    void inspect(void delegate(const uint index, const Fail f, const Block block, const bool data_flag) @safe fail)
+    void inspect(bool delegate(const uint index, const Fail f, const Block block, const bool data_flag) @safe trace)
     {
         scope bool[uint] visited;
+        scope bool end;
         @safe
         void check_data(bool check_sequency)(ref BlockRange r, const Block previous = null)
         {
-            if (!r.empty)
+            if (!r.empty && !end)
             {
                 auto current = r.front;
                 bool failed;
                 if ((r.index in visited) && (r.index !is INDEX_NULL))
                 {
                     failed = true;
-                    fail(r.index, Fail.RECURSIVE, current, check_sequency);
+                    end |= trace(r.index, Fail.RECURSIVE, current, check_sequency);
                 }
                 visited[r.index] = true;
                 static if (!check_sequency)
@@ -1816,7 +1817,7 @@ class BlockFile
                     if (current.size != 0)
                     {
                         failed = true;
-                        fail(r.index, Fail.ZERO_SIZE, current, check_sequency);
+                        end |= trace(r.index, Fail.ZERO_SIZE, current, check_sequency);
                     }
                 }
                 if (previous)
@@ -1824,7 +1825,7 @@ class BlockFile
                     if (current.previous >= r.index)
                     {
                         failed = true;
-                        fail(r.index, Fail.INCREASING, current, check_sequency);
+                        end |= trace(r.index, Fail.INCREASING, current, check_sequency);
                     }
                     static if (check_sequency)
                     {
@@ -1833,24 +1834,24 @@ class BlockFile
                             if (previous.size != current.size + DATA_SIZE)
                             {
                                 failed = true;
-                                fail(r.index, Fail.SEQUENCY, current, check_sequency);
+                                end |= trace(r.index, Fail.SEQUENCY, current, check_sequency);
                             }
                         }
                         if (current.head && (previous.size > DATA_SIZE))
                         {
-                            fail(current.previous, Fail.BAD_SIZE, previous, check_sequency);
+                            end |= trace(current.previous, Fail.BAD_SIZE, previous, check_sequency);
                         }
                     }
                     if (r.index != previous.next)
                     {
                         failed = true;
-                        fail(r.index, Fail.LINK, current, check_sequency);
+                        end |= trace(r.index, Fail.LINK, current, check_sequency);
                     }
 
                 }
                 if (!failed)
                 {
-                    fail(r.index, Fail.NON, current, check_sequency);
+                    end |= trace(r.index, Fail.NON, current, check_sequency);
                 }
                 r.popFront;
                 check_data!check_sequency(r, current);
