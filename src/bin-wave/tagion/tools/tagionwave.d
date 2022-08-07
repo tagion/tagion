@@ -12,7 +12,6 @@ import tagion.logger.Logger;
 import tagion.services.Options;
 import tagion.options.CommonOptions : setCommonOptions;
 
-//import tagion.services.HeartBeatService;
 import tagion.services.TagionService;
 import tagion.services.LoggerService;
 import tagion.services.TagionFactory;
@@ -21,8 +20,16 @@ import tagion.network.SSLOptions;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.tasks.TaskWrapper;
 
+/**
+ * @brief tool for start the network
+ */
+
 mixin TrustedConcurrency;
 
+/**
+ * Create configures for struct OpenSSL
+ * @param openssl - struct to configure
+ */
 void create_ssl(const(OpenSSL) openssl)
 {
     import std.algorithm.iteration : each;
@@ -79,8 +86,6 @@ int _main(string[] args)
     scope Options local_options;
     import std.getopt;
 
-    // auto net_opts = getopt(args, std.getopt.config.passThrough, "net-mode", &(local_options.net_mode));
-
     setDefaultOption(local_options);
 
     auto config_file = "tagionwave.json";
@@ -89,33 +94,6 @@ int _main(string[] args)
 
     bool set_token = false;
     bool set_tag = false;
-    // void setToken(string option, string value)
-    // {
-    //     switch (option)
-    //     {
-    //     case "server-token":
-    //         //local_options.serverFileDiscovery.token = value;
-    //         set_token = true;
-    //         break;
-    //     case "server-tag":
-    //         local_options.serverFileDiscovery.tag = value;
-    //         set_tag = true;
-    //         break;
-    //     default:
-    //         // Empty
-    //     }
-    // }
-
-    // auto token_opts = getopt(args, std.getopt.config.passThrough,
-    //     "server-token", &setToken,
-    //     "server-tag", &setToken);
-
-    // if (set_token && set_tag)
-    // {
-    //     local_options.save(config_file);
-    //     writeln("Group token and tag provided.. (remove it from parameters and run the network)");
-    //     return 0;
-    // }
 
     try
     {
@@ -221,17 +199,14 @@ int _main(string[] args)
     assert(receiveOnly!Control == Control.LIVE);
     scope (exit)
     {
-        //        if (tagion_service_tid !is tagion_service_tid.init) {
         tagion_service_tid.send(Control.STOP);
         log("Wait for %s to stop", tagion_service_tid.stringof);
         receiveOnly!Control;
-        //        }
     }
     writeln("Wait for join");
 
     int result;
-    // bool stop;
-    // while (!stop) {
+  
     receive(
         (Control response) {
         with (Control)
@@ -239,13 +214,10 @@ int _main(string[] args)
             switch (response)
             {
             case STOP:
-                // stop = true;
                 break;
             case END:
-                // stop = true;
                 break;
             default:
-                // stop = true;
                 result = 1;
                 stderr.writefln("Unexpected signal %s", response);
             }
@@ -254,6 +226,5 @@ int _main(string[] args)
         (immutable(Exception) e) { stderr.writeln(e.msg); result = 2; },
         (immutable(Throwable) t) { stderr.writeln(t.msg); result = 3; }
     );
-    // }
     return result;
 }
