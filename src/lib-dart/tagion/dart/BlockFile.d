@@ -69,11 +69,16 @@ class BlockFile
         MasterBlock masterblock;
         HeaderBlock headerblock;
         bool hasheader;
-        Statistic statistic;
+        Statistic _statistic;
+    }
+
+    const(Statistic) statistic() const pure nothrow @nogc {
+        return _statistic;
     }
 
     struct RecycleIndices
     {
+        uint max_iteration = uint.max;
         alias Indices = RedBlackTree!(uint, (a, b) => a < b);
         alias Segments = RedBlackTree!(Segment, (a, b) => a.size < b.size, true);
         protected Indices indices;
@@ -154,8 +159,7 @@ class BlockFile
             return (index in recycled_blocks_which_needs_to_be_saved) !is null;
         }
 
-        bool opBinaryRight(string op)(const uint index) const if (op == "in")
-        {
+        bool isRecyclable(const uint index) const pure nothrow @nogc {
             return index in indices;
         }
 
@@ -213,13 +217,16 @@ class BlockFile
         void read()
         {
             indices.clear;
-            void read_recycle_list(const uint index)
+            void read_recycle_list(const uint start_index)
             {
-                if (index !is INDEX_NULL)
-                {
+                uint index =start_index;
+                while ( index !is INDEX_NULL) {
                     const block = owner.read(index);
+                    .check(block !is null, format("Block @ %d does not exist in the recycle list of the blockfile", index));
+                    max_iteration--;
+                    .check(max_iteration > 0, format("Block @ %d max iteration exceeds when reading of the recycle list of the blockfile", index));
                     indices.insert(index);
-                    read_recycle_list(block.next);
+                    index = block.next;
                 }
             }
 
@@ -546,21 +553,39 @@ class BlockFile
         recycle_indices = RecycleIndices(this);
     }
 
-    static BlockFile Inspect(string filename, out string msg) {
+    static BlockFile Inspect(string filename, void delegate(string msg) @safe report, const uint max_iteration = uint.max) {
         BlockFile result;
-        try {
-            File file;
-            file.open(filename, "r");
-            BlockFile.HeaderBlock headerblock;
-            file.seek(0);
-            headerblock.read(file, DEFAULT_BLOCK_SIZE);
-            result = new BlockFile(headerblock.block_size);
-            result.file = file;
-//            result.recycle_indices = RecycleIndices(this);
-            result.readInitial;
+        void try_it(void delegate() @safe dg) {
+            try {
+                report("try it out");
+                dg();
+            }
+            catch (BlockFileException e) {
+                report(e.msg);
+            }
         }
-        catch (BlockFileException e) {
-            msg = e.msg;
+
+        try_it({
+                File file;
+                file.open(filename, "r");
+                BlockFile.HeaderBlock headerblock;
+                file.seek(0);
+                headerblock.read(file, DEFAULT_BLOCK_SIZE);
+                result = new BlockFile(headerblock.block_size);
+                result.file = file;
+            });
+        if (result.file.size == 0) {
+            report(format("BlockFile %s size is 0", filename));
+        }
+        if (result) {
+            try_it(&result.readHeaderBlock);
+            result.last_block_index--;
+            try_it(&result.readMasterBlock);
+            try_it(&result.readStatistic);
+            result.recycle_indices = RecycleIndices(result);
+            result.recycle_indices.max_iteration = max_iteration;
+//            report(format("!!! recycle_indices %s", result.recycle_indices is null));
+            try_it(&result.recycle_indices.read);
         }
         return result;
     }
@@ -601,7 +626,7 @@ class BlockFile
         file.open(filename, "w+");
         auto blockfile = new BlockFile(file, old_blockfile.headerblock.block_size);
         blockfile.headerblock = old_blockfile.headerblock;
-        blockfile.statistic = old_blockfile.statistic;
+        blockfile._statistic = old_blockfile._statistic;
         blockfile.headerblock.write(file);
         blockfile.last_block_index = 1;
         blockfile.masterblock.write(file, blockfile.BLOCK_SIZE);
@@ -808,20 +833,20 @@ class BlockFile
         {
             return false;
         }
-        else if (statistic.contain(blocks) || (total_blocks >= 2 * blocks))
+        else if (_statistic.contain(blocks) || (total_blocks >= 2 * blocks))
         {
             return true;
         }
         else
         {
-            auto r = statistic.result;
-            if (r.mean > statistic.Limits.MEAN)
+            auto r = _statistic.result;
+            if (r.mean > _statistic.Limits.MEAN)
             {
                 immutable limit = (r.mean - r.sigma);
                 if (blocks > limit)
                 {
                     immutable remain_blocks = total_blocks - blocks;
-                    if (statistic.contain(remain_blocks) || (remain_blocks > r.mean))
+                    if (_statistic.contain(remain_blocks) || (remain_blocks > r.mean))
                     {
                         return true;
                     }
@@ -1100,7 +1125,7 @@ class BlockFile
             immutable uint next,
             immutable uint size,
             immutable(Buffer) buf,
-            const bool head)
+            const bool head) pure nothrow
         {
             this.previous = previous;
             this.next = next;
@@ -1223,7 +1248,7 @@ class BlockFile
         }
         immutable old_statistic_index = masterblock.statistic_index;
 
-        auto statistical_allocate = save!random_block(statistic.serialize);
+        auto statistical_allocate = save!random_block(_statistic.serialize);
         masterblock.statistic_index = statistical_allocate.begin_index;
         if (old_statistic_index !is INDEX_NULL)
         {
@@ -1286,14 +1311,14 @@ class BlockFile
         masterblock.read(file, BLOCK_SIZE);
     }
 
-    private void readStatistic()
+    private void readStatistic() @safe
     {
         if (masterblock.statistic_index !is INDEX_NULL)
         {
             immutable buffer = load(masterblock.statistic_index);
             // import tagion.services.LoggerService;
             // import std.stdio;
-            statistic = Statistic(Document(buffer));
+            _statistic = Statistic(Document(buffer));
         }
     }
 
@@ -1316,7 +1341,7 @@ class BlockFile
     {
         scope const first_block = read(index);
         // Check if this is the first block is the start of a block sequency
-        check(first_block.head, format("Block @ index %d is not the head of block sequency", index));
+        check(first_block.head, format("Block @ %d is not the head of block sequency", index));
         void build_sequency(scope const Block block, ubyte[] cache) @safe
         {
             if (block.size > DATA_SIZE)
@@ -1325,11 +1350,12 @@ class BlockFile
                 scope const next_block = read(block.next);
                 check(next_block !is null, format("Fatal error in the blockfile @ %d", block.next));
                 check(!next_block.head, format(
-                        "Block @ index %d is marked as head of block sequency but it should not be", index));
+                        "Block @ %d is marked as head of block sequency but it should not be", index));
                 build_sequency(next_block, cache[DATA_SIZE .. $]);
             }
             else
             {
+                check(block.size !is 0, format("Block @ %d has the size zero", index));
                 cache[0 .. block.size] = block.data[0 .. block.size];
             }
         }
@@ -1360,7 +1386,7 @@ class BlockFile
         @safe uint remove_sequency(bool first = false)(const uint index)
         {
             auto block = read(index);
-            check(!(index in recycle_indices), format("Block %d has already been delete", index));
+            check(!recycle_indices.isRecyclable(index), format("Block %d has already been delete", index));
 
             static if (first)
             {
@@ -1452,7 +1478,7 @@ class BlockFile
         {
             immutable size = number_of_blocks(chain.data.length);
             chain.begin_index = recycle_indices.reserve_segment!random_block(size);
-            statistic.count(size);
+            _statistic.count(size);
         }
 
         this(immutable(Buffer) buffer, immutable bool random_block = false)
@@ -1610,9 +1636,10 @@ class BlockFile
                             {
                                 auto to = from + DATA_SIZE;
                                 auto slice_data = data[from .. to];
-                                auto next_index = current + 1;
-                                blocks[current] = block(previous, next_index, cast(uint)(
-                                        data.length - from), slice_data, h);
+                                const next_index = current + 1;
+                                const size = cast(uint)(data.length - from);
+                                assert(size !is 0, "Block size should not be zero");
+                                blocks[current] = block(previous, next_index, size, slice_data, h);
                                 update_first_index(current);
                                 previous = current;
                                 current = next_index;
@@ -1621,6 +1648,7 @@ class BlockFile
                             }
                             if (from + DATA_SIZE >= data.length)
                             {
+                                assert(data[from .. $].length !is 0, "Tail data block is zero size");
                                 immutable next_index = chain(data[from .. $], current, current - 1, false);
                             }
 
@@ -1716,6 +1744,13 @@ class BlockFile
         { //write_blocks_in_sorted_order
             pragma(msg, "Block ", Block);
             auto sorted_indices = blocks.keys.dup.sort;
+            //import std.algorithm.searching : all;
+            foreach(i, b; blocks) {
+                if (b.size is 0) {
+                    console.writefln("Block @ %d has zero size head=%s recycle=%s", i, b.head, recycle_indices.isRecyclable(i));
+                }
+            }
+//            assert(blocks.byValue.all!(a => a.size !is 0), "One of more block has the size zero");
             sorted_indices.each!(index => write(index, blocks[index]));
         }
 
@@ -1800,9 +1835,10 @@ class BlockFile
         scope bool[uint] visited;
         scope bool end;
         @safe
-        void check_data(bool check_sequency)(ref BlockRange r, const Block previous = null)
+        void check_data(bool check_sequency)(ref BlockRange r)
         {
-            if (!r.empty && !end)
+            Block previous;
+            while (!r.empty && !end)
             {
                 auto current = r.front;
                 bool failed;
@@ -1812,9 +1848,9 @@ class BlockFile
                     end |= trace(r.index, Fail.RECURSIVE, current, check_sequency);
                 }
                 visited[r.index] = true;
-                static if (!check_sequency)
+                static if (check_sequency)
                 {
-                    if (current.size != 0)
+                    if (current.size == 0)
                     {
                         failed = true;
                         end |= trace(r.index, Fail.ZERO_SIZE, current, check_sequency);
@@ -1853,8 +1889,9 @@ class BlockFile
                 {
                     end |= trace(r.index, Fail.NON, current, check_sequency);
                 }
+                previous = r.front;
                 r.popFront;
-                check_data!check_sequency(r, current);
+                // check_data!check_sequency(r, current);
             }
         }
 
@@ -1907,7 +1944,7 @@ class BlockFile
             current = null;
         }
 
-        const(Block) front()
+        Block front()
         {
             return current;
         }
@@ -1960,6 +1997,15 @@ class BlockFile
         }
     }
 
+    enum BlockSymbol {
+    main_header = 'H',
+    header = 'h',
+    empty = '_',
+    recycle = 'X',
+    data = '#',
+    none_existing = 'Z',
+
+    }
     /++
      + Used for debuging only to dump the Block's
      +/
@@ -1983,24 +2029,28 @@ class BlockFile
             {
                 if (index == 0)
                 {
-                    line[pos] = 'H';
+                    line[pos] = BlockSymbol.main_header;
+                }
+                else if (block.head)
+                {
+                    line[pos] = BlockSymbol.header;
+                }
+                else if (recycle_indices.isRecyclable(index))
+                {
+                    line[pos] = BlockSymbol.recycle;
                 }
                 else if (block.size == 0)
                 {
-                    line[pos] = '_';
-                }
-                else if (index in recycle_indices)
-                {
-                    line[pos] = 'X';
+                    line[pos] = BlockSymbol.empty;
                 }
                 else
                 {
-                    line[pos] = '#';
+                    line[pos] = BlockSymbol.data;
                 }
             }
             else
             {
-                line[pos] = 'Z';
+                line[pos] = BlockSymbol.none_existing;
             }
 
             if (pos + 1 == block_per_line)
@@ -2063,10 +2113,11 @@ class BlockFile
             blockfile.close;
         }
 
-        void failsafe(const uint index, const Fail f, const Block block, const bool data_flag) @safe
+        bool failsafe(const uint index, const Fail f, const Block block, const bool data_flag) @safe
         {
-            assert(f == Fail.NON, format("Data check fails on block index %d: Fail:%s in %s",
+            assert(f == Fail.NON, format("Data check fails on block @ %d: Fail:%s in %s",
                     index, f, data_flag ? "data chain" : "recycle chain"));
+            return false;
         }
 
         {
