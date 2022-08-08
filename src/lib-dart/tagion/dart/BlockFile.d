@@ -76,6 +76,11 @@ class BlockFile
         return _statistic;
     }
 
+    bool isRecyclable(const uint index) const pure nothrow @nogc {
+        return recycle_indices.isRecyclable(index);
+    }
+
+
     struct RecycleIndices
     {
         uint max_iteration = uint.max;
@@ -1337,11 +1342,11 @@ class BlockFile
      +     BlockFileException if this not first block in a chain or
      +     some because of some other failures in the blockfile system
      +/
-    immutable(Buffer) load(const uint index)
+    immutable(Buffer) load(const uint index, const bool check_format=true)
     {
         scope const first_block = read(index);
         // Check if this is the first block is the start of a block sequency
-        check(first_block.head, format("Block @ %d is not the head of block sequency", index));
+        check(check_format || first_block.head, format("Block @ %d is not the head of block sequency", index));
         void build_sequency(scope const Block block, ubyte[] cache) @safe
         {
             if (block.size > DATA_SIZE)
@@ -1349,13 +1354,13 @@ class BlockFile
                 cache[0 .. DATA_SIZE] = block.data;
                 scope const next_block = read(block.next);
                 check(next_block !is null, format("Fatal error in the blockfile @ %d", block.next));
-                check(!next_block.head, format(
+                check(check_format || !next_block.head, format(
                         "Block @ %d is marked as head of block sequency but it should not be", index));
                 build_sequency(next_block, cache[DATA_SIZE .. $]);
             }
             else
             {
-                check(block.size !is 0, format("Block @ %d has the size zero", index));
+                check(check_format || block.size !is 0, format("Block @ %d has the size zero", index));
                 cache[0 .. block.size] = block.data[0 .. block.size];
             }
         }
@@ -1998,7 +2003,7 @@ class BlockFile
     }
 
     enum BlockSymbol {
-    main_header = 'H',
+    file_header = 'H',
     header = 'h',
     empty = '_',
     recycle = 'X',
@@ -2029,7 +2034,7 @@ class BlockFile
             {
                 if (index == 0)
                 {
-                    line[pos] = BlockSymbol.main_header;
+                    line[pos] = BlockSymbol.file_header;
                 }
                 else if (block.head)
                 {
