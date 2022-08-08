@@ -36,10 +36,14 @@ import tagion.dart.Recorder : RecordFactory;
     }
 }
 
+mixin TrustedConcurrency;
+
 @safe struct TransactionServiceTask
 {
     import tagion.tasks.TaskWrapper;
+
     mixin TaskBasic;
+
     Options options;
     HiRPC* internal_hirpc, hirpc;
     const string passphrase = "Very secret password for the server";
@@ -53,19 +57,12 @@ import tagion.dart.Recorder : RecordFactory;
         node_tid.send(payload, true);
     }
 
-    @TaskMethod void handleState(Control ts)
+    void onSTOP()
     {
-        if (Control.STOP == ts)
-        {
-            writefln("Transaction STOP %d", options.transaction.service.port);
-            log("Kill socket thread port %d", options.transaction.service.port);
-            script_api.stop;
-            this.stop = true;
-        }
-        else
-        {
-            log.error("Bad Control command %s", ts);
-        }
+        writefln("Transaction STOP %d", options.transaction.service.port);
+        log("Kill socket thread port %d", options.transaction.service.port);
+        script_api.stop;
+        this.stop = true;
     }
 
     @TaskMethod void requestInputs(const(Buffer[]) inputs, uint id)
@@ -326,7 +323,7 @@ import tagion.dart.Recorder : RecordFactory;
     @trusted void proxyCaller()
     {
         auto relay = new TransactionRelay(this);
-        script_api = new SSLServiceAPI(options.transaction.service, relay);        
+        script_api = new SSLServiceAPI(options.transaction.service, relay);
         auto script_thread = script_api.start;
 
         ownerTid.send(Control.LIVE);
