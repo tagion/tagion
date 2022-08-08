@@ -40,21 +40,22 @@ struct BlockFileAnalyzer {
     }
 
 
-    string blockType(const uint index) {
-        return blockfile.isRecyclable(index)?"Recycle":"Data";
+    static string blockType(const bool recycle_block) {
+        return recycle_block?"Recycle":"Data";
     }
 
     void display_block(const uint index, const(BlockFile.Block) b) {
         if (b) {
-            writefln("%s  [%d <- %d -> %d size %d [%s]", (b.head)?"H":"#", b.previous, index, b.next, b.size, blockType(index));
+            writefln("%s  [%d <- %d -> %d size %d [%s]", (b.head)?"H":"#", b.previous, index, b.next, b.size, blockType(blockfile.isRecyclable(index)));
             return;
         }
         writefln("Block @ %d is nil", index);
     }
 
-    bool trace(const uint index, const BlockFile.Fail f, scope const BlockFile.Block block, const bool data_flag) {
-        void error(string msg, const uint i=index, const bool flag=data_flag) {
-            writefln("Error %s: %s @ %d in %s", f, msg, i, (flag)?"Data":"Recycle");
+    bool trace(const uint index, const BlockFile.Fail f, scope const BlockFile.Block block, const bool recycle_chain) {
+        void error(string msg, const uint i=index) {
+            const is_recycle_block = blockfile.isRecyclable(index);
+            writefln("Error %s: %s @ %d in %s %s", f, msg, i, blockType(is_recycle_block), (is_recycle_block is recycle_chain)?"":"[Bad Type]");
         }
         with(BlockFile.Fail) final switch(f) {
             case NON:
@@ -69,9 +70,9 @@ struct BlockFileAnalyzer {
                     }
                     while (!range.empty && index !is range.index);
                     return true;
-                case INCREASING:
-                    error("Block sequency order is wrong");
-                    break;
+            case INCREASING:
+                error("Block sequency order is wrong");
+                break;
                 case SEQUENCY:
                     error("Chain of the block size is wrong");
                     break;
@@ -82,8 +83,15 @@ struct BlockFileAnalyzer {
                     error("Block has zero-size");
                     break;
                 case BAD_SIZE:
-                    error(format("Size of end-block is larger then %d", blockfile.DATA_SIZE), block.previous, true);
+                    error(format("Size of end-block is larger then %d", blockfile.DATA_SIZE), block.previous);
                     break;
+            case RECYCLE_HEADER:
+                error("Recycle block should not contain a header mask");
+                break;
+            case RECYCLE_NON_ZERO:
+                error("The size of an recycle block should be zero");
+                break;
+
             }
                 //writefln("@ %d %s %s", index, f, data_flag);
             if (inspect_iterations != inspect_iterations.max) {
@@ -144,6 +152,7 @@ int _main(string[] args) {
     bool ignore; /// Ignore blockfile format errors
     uint block_number; /// Block number to read (block_number > 0)
     bool sequency; /// Prints the sequency on the next header
+    bool recycle_sequence; // Lists the recycle sequence
     string output_filename;
     enum logo = import("logo.txt");
 //    auto result = ExitCode.noerror;
@@ -164,6 +173,7 @@ int _main(string[] args) {
         "max", format("Max block iteration Default : %d", analyzer.max_block_iteration), &analyzer.max_block_iteration,
         "block|b", "Read from block number", &block_number,
         "seq", "Display the block sequency starting from the block-number", &sequency,
+        "recycle-sequency", "Lists the recycle sequence", &recycle_sequence,
         "o", "Output filename", &output_filename,
         );
 
@@ -257,5 +267,8 @@ int _main(string[] args) {
             }
         }
 
+        if (recycle_sequence) {
+            analyzer.blockfile.recycleDump;
+        }
     return ExitCode.noerror;
 }

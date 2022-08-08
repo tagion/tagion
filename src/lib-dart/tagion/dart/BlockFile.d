@@ -8,7 +8,7 @@ import std.file : remove;
 import std.typecons;
 import std.algorithm.sorting : sort;
 import std.algorithm.mutation : SwapStrategy;
-import std.algorithm.iteration : filter, each;
+import std.algorithm.iteration : filter, each, map;
 
 import std.array : array;
 import std.datetime : Clock;
@@ -80,6 +80,10 @@ class BlockFile
         return recycle_indices.isRecyclable(index);
     }
 
+    void recycleDump() {
+        // import std.algorithm.iteration : each;
+        recycle_indices.dump;
+    }
 
     struct RecycleIndices
     {
@@ -246,10 +250,10 @@ class BlockFile
             auto s = recycle_segments[];
             if (!s.empty)
             {
-                writefln("segments=%s", s);
+                writefln("segments %-(%s %)", s.map!(a => a.toInfo));
                 writefln("indices =%s", indices[]);
-                writefln("s.back.end_index=%d owner.last_block_index=%d s.end_index=%d s=%s back=%s", s.back.end_index, owner
-                        .last_block_index, s.front.end_index, s, s.back);
+                writefln("s.back.end_index=%d last_block_index=%d s.end_index=%d back=%s", s.back.end_index, owner
+                        .last_block_index, s.front.end_index, s.back.toInfo);
 
             }
 
@@ -1224,6 +1228,7 @@ class BlockFile
         {
             return format("[%d..%d]:%d", begin_index, end_index, size);
         }
+
     }
 
     /++
@@ -1344,30 +1349,34 @@ class BlockFile
      +/
     immutable(Buffer) load(const uint index, const bool check_format=true)
     {
-        scope const first_block = read(index);
+        auto first_block = read(index);
         // Check if this is the first block is the start of a block sequency
         check(check_format || first_block.head, format("Block @ %d is not the head of block sequency", index));
-        void build_sequency(scope const Block block, ubyte[] cache) @safe
+        Buffer build_sequency(Block block) @safe
         {
-            if (block.size > DATA_SIZE)
+            scope buffer = new ubyte[first_block.size];
+            auto cache = buffer;
+            while (block.size > DATA_SIZE)
             {
                 cache[0 .. DATA_SIZE] = block.data;
-                scope const next_block = read(block.next);
+                auto next_block = read(block.next);
                 check(next_block !is null, format("Fatal error in the blockfile @ %d", block.next));
                 check(check_format || !next_block.head, format(
                         "Block @ %d is marked as head of block sequency but it should not be", index));
-                build_sequency(next_block, cache[DATA_SIZE .. $]);
+                block = next_block;
+                cache = cache[DATA_SIZE .. $];
             }
-            else
+
             {
                 check(check_format || block.size !is 0, format("Block @ %d has the size zero", index));
                 cache[0 .. block.size] = block.data[0 .. block.size];
             }
+            return buffer.idup;
         }
 
-        auto buffer = new ubyte[first_block.size];
-        build_sequency(first_block, buffer);
-        return buffer.idup;
+//        auto buffer = new ubyte[first_block.size];
+        return build_sequency(first_block);
+//        return buffer.idup;
     }
 
     /++
@@ -1808,21 +1817,22 @@ class BlockFile
      +/
     enum Fail
     {
-        NON = 0,
-        // Block links is recursive
-        RECURSIVE,
-        // The next pointer should be greater than the block index
-        INCREASING,
-        // Block size in a sequency should be decreased by Block.DATA_SIZE
-        // between the current and the next block in a sequency
-        SEQUENCY,
-        // Blocks should be double linked
-        LINK,
-        // The size of Recycled block should be zero
-        ZERO_SIZE,
-        // Bad size means that a block is not allowed to have a size larger than DATA_SIZE
-        // if the next block is a head block
-        BAD_SIZE
+        NON = 0,        /// No error detected in this Block
+        RECURSIVE,       /// Block links is recursive
+        INCREASING, /// The next pointer should be greater than the block index
+        SEQUENCY, /**
+                       Block size in a sequency should be decreased by Block.DATA_SIZE
+                       between the current and the next block in a sequency
+                    */
+        LINK, /// Blocks should be double linked
+        ZERO_SIZE, /// The size of Recycled block should be zero
+        BAD_SIZE,  /** Bad size means that a block is not allowed to have a size larger than DATA_SIZE
+         	if the next block is a head block
+        */
+	RECYCLE_HEADER, /// Recycle block should not contain a header mask
+	RECYCLE_NON_ZERO, /// The size of an recycle block should be zero
+
+
     }
 
     /++
@@ -1835,12 +1845,12 @@ class BlockFile
      +     block  = is the failed block
      +     data_flag = Set to `false` if block is a resycled block and `true` if it a data block
      +/
-    void inspect(bool delegate(const uint index, const Fail f, const Block block, const bool data_flag) @safe trace)
+    void inspect(bool delegate(const uint index, const Fail f, const Block block, const bool recycle_chain) @safe trace)
     {
         scope bool[uint] visited;
         scope bool end;
         @safe
-        void check_data(bool check_sequency)(ref BlockRange r)
+        void check_data(bool check_recycle_mode)(ref BlockRange r)
         {
             Block previous;
             while (!r.empty && !end)
@@ -1850,15 +1860,15 @@ class BlockFile
                 if ((r.index in visited) && (r.index !is INDEX_NULL))
                 {
                     failed = true;
-                    end |= trace(r.index, Fail.RECURSIVE, current, check_sequency);
+                    end |= trace(r.index, Fail.RECURSIVE, current, check_recycle_mode);
                 }
                 visited[r.index] = true;
-                static if (check_sequency)
+                static if (!check_recycle_mode)
                 {
                     if (current.size == 0)
                     {
                         failed = true;
-                        end |= trace(r.index, Fail.ZERO_SIZE, current, check_sequency);
+                        end |= trace(r.index, Fail.ZERO_SIZE, current, check_recycle_mode);
                     }
                 }
                 if (previous)
@@ -1866,44 +1876,53 @@ class BlockFile
                     if (current.previous >= r.index)
                     {
                         failed = true;
-                        end |= trace(r.index, Fail.INCREASING, current, check_sequency);
+                        end |= trace(r.index, Fail.INCREASING, current, check_recycle_mode);
                     }
-                    static if (check_sequency)
+                    static if (check_recycle_mode)
                     {
                         if (!current.head)
                         {
                             if (previous.size != current.size + DATA_SIZE)
                             {
                                 failed = true;
-                                end |= trace(r.index, Fail.SEQUENCY, current, check_sequency);
+                                end |= trace(r.index, Fail.SEQUENCY, current, check_recycle_mode);
                             }
                         }
                         if (current.head && (previous.size > DATA_SIZE))
                         {
-                            end |= trace(current.previous, Fail.BAD_SIZE, previous, check_sequency);
+                            end |= trace(current.previous, Fail.BAD_SIZE, previous, check_recycle_mode);
+                        }
+                    }
+                    else {
+                        if (current.head) {
+                            failed = true;
+                            end |= trace(r.index, Fail.RECYCLE_HEADER, current, check_recycle_mode);
+                        }
+                        if (current.size == 0) {
+                            failed = true;
+                            end |= trace(r.index, Fail.RECYCLE_NON_ZERO, current, check_recycle_mode);
                         }
                     }
                     if (r.index != previous.next)
                     {
                         failed = true;
-                        end |= trace(r.index, Fail.LINK, current, check_sequency);
+                        end |= trace(r.index, Fail.LINK, current, check_recycle_mode);
                     }
 
                 }
                 if (!failed)
                 {
-                    end |= trace(r.index, Fail.NON, current, check_sequency);
+                    end |= trace(r.index, Fail.NON, current, check_recycle_mode);
                 }
                 previous = r.front;
                 r.popFront;
-                // check_data!check_sequency(r, current);
             }
         }
 
         BlockRange r = blockRange;
-        check_data!true(r);
-        r = recycleRange;
         check_data!false(r);
+        r = recycleRange;
+        check_data!true(r);
     }
 
     /++
