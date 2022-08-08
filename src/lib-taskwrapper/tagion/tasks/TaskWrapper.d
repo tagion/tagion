@@ -13,6 +13,7 @@ import tagion.logger.Logger;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
 import tagion.services.RecorderService : Fingerprint;
 import tagion.services.LoggerService;
+import tagion.services.TransactionService;
 import tagion.dart.Recorder;
 
 alias Recorder = RecordFactory.Recorder;
