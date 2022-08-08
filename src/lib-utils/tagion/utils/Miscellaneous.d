@@ -2,6 +2,7 @@ module tagion.utils.Miscellaneous;
 
 import tagion.basic.Types : Buffer, isBufferType;
 import std.exception;
+import tagion.basic.TagionExceptions : TagionException;
 import std.range.primitives : isInputRange;
 import std.algorithm : map;
 import std.array;
@@ -54,8 +55,8 @@ enum HEX_SEPARATOR = '_';
 @safe immutable(ubyte[]) decode(const(char[]) hex) pure
 in
 {
-    if (hex.replace("_", "").length % 2 != 0)
-        throw new Exception("Hex string length not even");
+    if (hex.replace(HEX_SEPARATOR, "").length % 2 != 0)
+        throw new TagionException("Hex string length not even");
 }
 do
 {
@@ -73,7 +74,7 @@ do
         {
             return cast(ubyte)(c - 'A') + 10;
         }
-        throw new Exception("Bad char '" ~ c ~ "'");
+        throw new TagionException("Bad char '" ~ c ~ "'");
     }
 
     immutable buf_size = hex.length / 2;
