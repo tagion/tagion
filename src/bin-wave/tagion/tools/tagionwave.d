@@ -27,7 +27,7 @@ import tagion.tasks.TaskWrapper;
 mixin TrustedConcurrency;
 
 /**
- * Create configures for struct OpenSSL
+ * Create configs for struct OpenSSL
  * @param openssl - struct to configure
  */
 void create_ssl(const(OpenSSL) openssl)
@@ -83,17 +83,15 @@ int _main(string[] args)
     bool overwrite_switch;
     auto logo = import("logo.txt");
 
+    /** options to run network */
     scope Options local_options;
-    import std.getopt;
 
     setDefaultOption(local_options);
 
+    /** file for options */
     auto config_file = "tagionwave.json";
 
     local_options.load(config_file);
-
-    bool set_token = false;
-    bool set_tag = false;
 
     try
     {
@@ -101,12 +99,10 @@ int _main(string[] args)
 
         if (version_switch)
         {
-            // writefln("version %s", REVNO);
-            // writefln("Git handle %s", HASH);
             return 0;
         }
 
-        if (main_args.helpWanted/*|| token_opts.helpWanted*/)
+        if (main_args.helpWanted)
         {
             writeln(logo);
             defaultGetoptPrinter(

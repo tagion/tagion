@@ -23,10 +23,15 @@ import tagion.basic.TagionExceptions;
     }
 }
 
-/// check function used in the HiBON package
+/** check function used in the HiBON package */
 alias check = Check!(AddressBookException);
 
 enum lockext = "lock";
+
+/**
+ * Lock file
+ * @param filename - file to lock
+ */    
 void lock(string filename)
 {
     import std.file : fwrite = write;
@@ -35,6 +40,10 @@ void lock(string filename)
     file_lock.fwrite(null);
 }
 
+/**
+ * Unlock file
+ * @param filename - file to unlock
+ */
 void unlock(string filename) nothrow
 {
     import std.file : remove;
@@ -50,12 +59,17 @@ void unlock(string filename) nothrow
     }
 }
 
+/**
+ * Check file is locked or unlocked
+ * @param filename - file to check
+ */
 bool locked(string filename)
 {
     immutable file_lock = filename.setExtension(lockext);
     return file_lock.exists;
 }
 
+// ask
 @safe
 synchronized class AddressBook
 {
@@ -305,7 +319,7 @@ struct NodeAddress
                 else {
                     const max_sync_node_count = dart_opts.sync.master_angle_from_port
                         ? dart_opts.sync.maxSlaves : dart_opts.sync.maxMasters;
-                    sector = calcAngleRange(dart_opts, node_number, max_sync_node_count);
+                    sector = calcAngleRange(dart_opts, max_sync_node_count);
                 }
                 // }
             }
@@ -327,12 +341,8 @@ struct NodeAddress
 
     static DART.SectorRange calcAngleRange(
         immutable(DARTOptions) dart_opts,
-        const ulong node_number,
         const ulong max_nodes)
     {
-        import std.math : ceil, floor;
-
-        const delta = float(dart_opts.sync.netToAng - dart_opts.sync.netFromAng) / max_nodes;
         return DART.SectorRange(0, 0);
     }
 

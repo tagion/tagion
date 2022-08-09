@@ -602,12 +602,15 @@ Successful network launch
 
 ### Case: invalid value
 ```
---net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log -N 4 -P 500
+--net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log -N 4 -P 500000000
 ```
 
 #### Failure
 **Result**:<br>
-**Refacor**, work correct
+Output that the input value is too large
+```
+Overflow in integral conversion
+```
 
 # transaction-ip
 ```
@@ -1053,5 +1056,6 @@ Node_1: opts.node_name = Node_1
 
 # boot
 **flag should be deleted**
+
 
 

@@ -355,7 +355,7 @@ static ref auto all_getopt(
         "timeout|t", format("Sets timeout: default %d (ms)", options.timeout), &(options.timeout),
         "monitors|M", format("Sets maximum number of monitors opened: default %s", options.monitor.max), &(options.monitor.max),
         "tmp",       format("Sets temporaty work directory: default '%s'", options.tmp), &(options.tmp),
-        "monitor|P", format("Sets first monitor port of the port sequency (port>=%d): default %d", options.min_port, options.monitor.port),  &(options.monitor.port),
+        "monitor|P", format("Sets first monitor port of the port sequency: default %d", options.monitor.port),  &(options.monitor.port),
 
         "transaction-ip",  format("Sets the listener transaction ip address: default %s", options.transaction.service.address), &(options.transaction.service.address),
         "transaction-port|p", format("Sets the listener transcation port: default %d", options.transaction.service.port), &(options.transaction.service.port),
@@ -381,8 +381,6 @@ static ref auto all_getopt(
         "logsub|L" , format("Logger subscription service enabled: default: %d", options.sub_logger.enable), &(options.sub_logger.enable),
         "net-mode", format("Network mode: one of [%s]: default: %s", [EnumMembers!NetworkMode].map!(t=>t.to!string).join(", "), options.net_mode), &(options.net_mode),
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
-        //"server-token", format("Token to access shared server"), &(options.serverFileDiscovery.token),
-        //"server-tag", format("Group tag(should be the same as in token payload)"), &(options.serverFileDiscovery.tag),
         "boot", format("Shared boot file: default: %s", options.path_to_shared_info), &(options.path_to_shared_info),
 //        "help!h", "Display the help text",    &help_switch,
         // dfmt on
@@ -403,7 +401,7 @@ static setDefaultOption(ref Options options)
         port_base = 4000;
         scrap_depth = 5;
         logext = "log";
-        timeout = 200 * 4;
+        timeout = 800;
         nodes = 4;
         infinity = false;
         //port=10900;

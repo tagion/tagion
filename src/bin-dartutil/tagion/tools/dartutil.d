@@ -10,7 +10,7 @@ import std.array;
 import std.algorithm;
 import std.typecons;
 
-import tagion.dart.DART : DART, tryOpenDART;
+import tagion.dart.DART : DART/*, tryOpenDART*/;
 import tagion.dart.DARTFile;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.basic.Basic : tempfile;

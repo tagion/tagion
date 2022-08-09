@@ -76,32 +76,24 @@ void serverFileDiscoveryService(
 
         void recordOwnInfo(string addrs)
         {
-           // if (opts.serverFileDiscovery.token)
-           // {
-                auto params = new HiBON;
-                params["pkey"] = pubkey;
-                params["address"] = addrs;
-                auto doc = Document(params.serialize);
-                auto json = doc.toJSON().toString();
-                log("posting info to %s \n %s", opts.serverFileDiscovery.url ~ "/node/record", json);
-                try
-                {
-                    post(opts.serverFileDiscovery.url ~ "/node/record",
-                        [
-                            "value": json,
-                            //"token": opts.serverFileDiscovery.token
-                        ]);
-                }
-                catch (Exception e)
-                {
-                    log("ERROR on sending: %s", e.msg);
-                    fatal(e);
-                }
-           // }
-           // else
-           // {
-           //    log("Token missing.. Cannot record own info");
-           // }
+            auto params = new HiBON;
+            params["pkey"] = pubkey;
+            params["address"] = addrs;
+            auto doc = Document(params.serialize);
+            auto json = doc.toJSON().toString();
+            log("posting info to %s \n %s", opts.serverFileDiscovery.url ~ "/node/record", json);
+            try
+            {
+                post(opts.serverFileDiscovery.url ~ "/node/record",
+                    [
+                        "value": json,
+                    ]);
+            }
+            catch (Exception e)
+            {
+                log("ERROR on sending: %s", e.msg);
+                fatal(e);
+            }
         }
 
         void eraseOwnInfo()

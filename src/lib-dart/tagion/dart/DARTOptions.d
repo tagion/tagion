@@ -8,7 +8,9 @@ struct DARTOptions
     import tagion.utils.JSONCommon;
     import tagion.options.HostOptions;
 
-    string task_name; /// Name of the DART service
+    /** name of the DART service */
+    string task_name;
+    // ask
     string protocol_id;
     HostOptions host;
     string name;
@@ -24,6 +26,7 @@ struct DARTOptions
     ulong tick_timeout;
     bool master_from_port;
 
+    /** options for synchronization*/
     struct Synchronize
     {
         ulong maxSlaves;
