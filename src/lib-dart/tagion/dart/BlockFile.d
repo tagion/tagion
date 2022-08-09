@@ -1759,11 +1759,12 @@ class BlockFile
             pragma(msg, "Block ", Block);
             auto sorted_indices = blocks.keys.dup.sort;
             //import std.algorithm.searching : all;
-            foreach(i, b; blocks) {
-                if (b.size is 0) {
-                    console.writefln("Block @ %d has zero size head=%s recycle=%s", i, b.head, recycle_indices.isRecyclable(i));
-                }
-            }
+            // foreach(i; sorted_indices) {
+            //     const b=blocks[i];
+            //     if (b.size is 0) {
+            //         console.writefln("Block @ %d has zero size head=%s recycle=%s", i, b.head, recycle_indices.isRecyclable(i));
+            //     }
+            // }
 //            assert(blocks.byValue.all!(a => a.size !is 0), "One of more block has the size zero");
             sorted_indices.each!(index => write(index, blocks[index]));
         }
@@ -1880,6 +1881,16 @@ class BlockFile
                     }
                     static if (check_recycle_mode)
                     {
+                        if (current.head) {
+                            failed = true;
+                            end |= trace(r.index, Fail.RECYCLE_HEADER, current, check_recycle_mode);
+                        }
+                        if (current.size != 0) {
+                            failed = true;
+                            end |= trace(r.index, Fail.RECYCLE_NON_ZERO, current, check_recycle_mode);
+                        }
+                    }
+                    else {
                         if (!current.head)
                         {
                             if (previous.size != current.size + DATA_SIZE)
@@ -1888,19 +1899,9 @@ class BlockFile
                                 end |= trace(r.index, Fail.SEQUENCY, current, check_recycle_mode);
                             }
                         }
-                        if (current.head && (previous.size > DATA_SIZE))
+                        else if (previous.size > DATA_SIZE)
                         {
                             end |= trace(current.previous, Fail.BAD_SIZE, previous, check_recycle_mode);
-                        }
-                    }
-                    else {
-                        if (current.head) {
-                            failed = true;
-                            end |= trace(r.index, Fail.RECYCLE_HEADER, current, check_recycle_mode);
-                        }
-                        if (current.size == 0) {
-                            failed = true;
-                            end |= trace(r.index, Fail.RECYCLE_NON_ZERO, current, check_recycle_mode);
                         }
                     }
                     if (r.index != previous.next)
@@ -2030,6 +2031,38 @@ class BlockFile
     none_existing = 'Z',
 
     }
+
+    BlockSymbol getSymbol(const scope Block block, const uint index) const pure nothrow {
+            if (block)
+            {
+                if (index == 0)
+                {
+                    return BlockSymbol.file_header;
+                }
+                else if (block.head)
+                {
+                    return BlockSymbol.header;
+                }
+                else if (recycle_indices.isRecyclable(index))
+                {
+                    return BlockSymbol.recycle;
+                }
+                else if (block.size == 0)
+                {
+                    return BlockSymbol.empty;
+                }
+                else
+                {
+                    return BlockSymbol.data;
+                }
+            }
+            else
+            {
+                return BlockSymbol.none_existing;
+            }
+
+
+    }
     /++
      + Used for debuging only to dump the Block's
      +/
@@ -2049,33 +2082,34 @@ class BlockFile
             }
 
             scope block = read(index);
-            if (block)
-            {
-                if (index == 0)
-                {
-                    line[pos] = BlockSymbol.file_header;
-                }
-                else if (block.head)
-                {
-                    line[pos] = BlockSymbol.header;
-                }
-                else if (recycle_indices.isRecyclable(index))
-                {
-                    line[pos] = BlockSymbol.recycle;
-                }
-                else if (block.size == 0)
-                {
-                    line[pos] = BlockSymbol.empty;
-                }
-                else
-                {
-                    line[pos] = BlockSymbol.data;
-                }
-            }
-            else
-            {
-                line[pos] = BlockSymbol.none_existing;
-            }
+            line[pos] = getSymbol(block, index);
+            // if (block)
+            // {
+            //     if (index == 0)
+            //     {
+            //         line[pos] = BlockSymbol.file_header;
+            //     }
+            //     else if (block.head)
+            //     {
+            //         line[pos] = BlockSymbol.header;
+            //     }
+            //     else if (recycle_indices.isRecyclable(index))
+            //     {
+            //         line[pos] = BlockSymbol.recycle;
+            //     }
+            //     else if (block.size == 0)
+            //     {
+            //         line[pos] = BlockSymbol.empty;
+            //     }
+            //     else
+            //     {
+            //         line[pos] = BlockSymbol.data;
+            //     }
+            // }
+            // else
+            // {
+            //     line[pos] = BlockSymbol.none_existing;
+            // }
 
             if (pos + 1 == block_per_line)
             {
@@ -2137,14 +2171,20 @@ class BlockFile
             blockfile.close;
         }
 
-        bool failsafe(const uint index, const Fail f, const Block block, const bool data_flag) @safe
+        bool failsafe(const uint index, const Fail f, const Block block, const bool recycle_block) @safe
         {
-            assert(f == Fail.NON, format("Data check fails on block @ %d: Fail:%s in %s",
-                    index, f, data_flag ? "data chain" : "recycle chain"));
+//            version(none)
+                assert(f == Fail.NON, format("Data check fails on block @ %d: Fail:%s in %s",
+                        index, f, recycle_block ? "recycle block" : "data block"));
+            // if(f != Fail.NON) {
+            //     console.writefln("Data check fails on block @ %d: Fail:%s in %s",
+            //         index, f, recycle_block ? "recycle block" : "data block");
+            // }
             return false;
         }
 
         {
+            {
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
             blockfile.inspect(&failsafe);
 
@@ -2180,8 +2220,17 @@ class BlockFile
 
             // Note the state block is written after the last block
             blockfile.store;
+            blockfile.dump;
 
             blockfile.close;
+            }
+
+            { /// Check the blockfile
+                auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
+                blockfile.inspect(&failsafe);
+                blockfile.close;
+            }
+
         }
 
         void erase(BlockFile blockfile, immutable(uint[]) erase_list)
@@ -2210,15 +2259,17 @@ class BlockFile
         { // Remove block
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
             blockfile.inspect(&failsafe);
-            // blockfile.dump;
+            console.writeln("Remove blocks");
             //
             // Erase chain of block
             //
             erase(blockfile, [0, 2, 6, 13, 16]);
             blockfile.store;
+            blockfile.dump;
 
             blockfile.close;
         }
+
         version (none)
         { // Check the recycle list
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
@@ -2280,6 +2331,7 @@ class BlockFile
 
             blockfile.close;
         }
+
         {
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
             immutable uint[uint] size_stats = [

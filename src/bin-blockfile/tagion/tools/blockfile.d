@@ -46,7 +46,7 @@ struct BlockFileAnalyzer {
 
     void display_block(const uint index, const(BlockFile.Block) b) {
         if (b) {
-            writefln("%s  [%d <- %d -> %d size %d [%s]", (b.head)?"H":"#", b.previous, index, b.next, b.size, blockType(blockfile.isRecyclable(index)));
+            writefln("%s  [%d <- %d -> %d size %d [%s]", blockfile.getSymbol(b, index).to!char, b.previous, index, b.next, b.size, blockType(blockfile.isRecyclable(index)));
             return;
         }
         writefln("Block @ %d is nil", index);
