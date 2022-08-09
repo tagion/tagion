@@ -1599,6 +1599,18 @@ class BlockFile
             {
                 allocated_chains = null;
             }
+            scope (success) {
+                            recycle_indices.write;
+
+            { //write_blocks_in_sorted_order
+                pragma(msg, "Block ", Block);
+                auto sorted_indices = blocks.keys.dup.sort;
+                sorted_indices.each!(index => write(index, blocks[index]));
+            }
+
+            writeMasterBlock;
+            recycle_indices.build_segments;
+            }
             {
                 do_not_write = true;
                 scope(exit) {
@@ -1775,6 +1787,7 @@ class BlockFile
             //     assert(0, "Store exception");
             // }
 
+            version(none) {
             recycle_indices.write;
 
             { //write_blocks_in_sorted_order
@@ -1785,7 +1798,7 @@ class BlockFile
 
             writeMasterBlock;
             recycle_indices.build_segments;
-
+            }
         }
 
     /++
