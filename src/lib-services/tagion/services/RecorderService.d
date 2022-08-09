@@ -1,15 +1,13 @@
+/// \file RecorderService.d
+
 module tagion.services.RecorderService;
 
-import std.stdio : writeln;
-import std.stdio : File;
+import std.stdio : writeln, File;
 import std.file : exists, mkdirRecurse, rmdirRecurse, write, read, remove;
 import std.array;
 import std.typecons;
 import std.path : buildPath, baseName;
 import std.algorithm;
-import std.bigint : BigInt;
-import std.format;
-import std.string : strip;
 
 import tagion.basic.Types : Control, Buffer;
 import tagion.basic.TagionExceptions : fatal;
@@ -28,50 +26,10 @@ import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.HiBON;
 import tagion.utils.Miscellaneous : toHexString, decode;
 import tagion.communication.HiRPC;
+import tagion.utils.Fingerprint : Fingerprint;
 
-struct Fingerprint
-{
-    immutable(Buffer) buffer;
-
-    this(immutable(Buffer) buffer)
-    {
-        this.buffer = buffer;
-    }
-
-    pragma(msg, "fixme(ib) do this using toString");
-    static string format(Buffer fingerprint, bool to_hex = true, uint numbers_in_line = 16) pure
-    {
-        string format_str;
-        const string f = to_hex ? "%02X " : "%d ";
-
-        for (int i = 0; i < fingerprint.length; ++i)
-        {
-            format_str ~= std.format.format(f, BigInt(fingerprint[i]));
-
-            if ((i + 1) % numbers_in_line is 0)
-                format_str ~= "\n";
-        }
-
-        return strip(format_str);
-    }
-}
-
-unittest
-{
-    assert(Fingerprint.format([]) == "");
-    assert(Fingerprint.format([255]) == "FF");
-
-    Buffer fingerprint = [
-        143, 0, 51, 132, 41, 244, 105, 22, 182, 75, 173, 136, 17, 208, 91, 39
-    ];
-
-    assert(Fingerprint.format(fingerprint) == "8F 00 33 84 29 F4 69 16 B6 4B AD 88 11 D0 5B 27");
-    assert(Fingerprint.format(fingerprint, false) == "143 0 51 132 41 244 105 22 182 75 173 136 17 208 91 39");
-    assert(Fingerprint.format(fingerprint, true, 4) == "8F 00 33 84 \n" ~
-            "29 F4 69 16 \n" ~
-            "B6 4B AD 88 \n" ~
-            "11 D0 5B 27");
-}
+/** @brief File contains service for handling and saving recorder chain blocks
+ */
 
 pragma(msg, "fixme(ib) I don't like the way we cast immutable here. Can we get rid of it?");
 static immutable(T) castToImmutable(T)(T object) @trusted
@@ -198,7 +156,8 @@ static T castFromImmutable(T)(immutable(T) object) @trusted
 
 interface EpochBlockFileDataBaseInterface
 {
-    immutable(EpochBlockFactory.EpochBlock) addBlock(immutable(EpochBlockFactory.EpochBlock) block);
+    immutable(EpochBlockFactory.EpochBlock) addBlock(
+        immutable(EpochBlockFactory.EpochBlock) block);
     immutable(EpochBlockFactory.EpochBlock) deleteFirstBlock();
     immutable(EpochBlockFactory.EpochBlock) deleteLastBlock();
     Buffer[] getFullChainBullseye();
@@ -243,7 +202,8 @@ alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFacto
         return makePath(name, this.folder_path);
     }
 
-    immutable(EpochBlockFactory.EpochBlock) addBlock(immutable(EpochBlockFactory.EpochBlock) block)
+    immutable(EpochBlockFactory.EpochBlock) addBlock(
+        immutable(EpochBlockFactory.EpochBlock) block)
     in
     {
         assert(block.fingerprint);
@@ -549,7 +509,8 @@ import tagion.tasks.TaskWrapper;
     @TaskMethod void receiveRecorder(immutable(RecordFactory.Recorder) recorder, Fingerprint db_fingerprint)
     {
         auto last_block_fingerprint = blocks_db.lastBlockFingerprint;
-        auto block = epoch_block_factory(recorder, last_block_fingerprint, db_fingerprint.buffer);
+        auto block = epoch_block_factory(recorder, last_block_fingerprint, db_fingerprint
+                .buffer);
         blocks_db.addBlock(block);
 
         version (unittest)

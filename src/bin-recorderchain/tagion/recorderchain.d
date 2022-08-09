@@ -25,6 +25,7 @@ import tagion.services.LoggerService;
 import tagion.logger.Logger;
 import tagion.communication.HiRPC;
 import tagion.tasks.TaskWrapper : Task;
+import tagion.utils.Fingerprint : Fingerprint;
 
 mixin TrustedConcurrency;
 
@@ -165,12 +166,12 @@ int main(string[] args)
 
             writeln(format(">> %s block start", blocks_info.amount - j));
 
-            writeln("Fingerprint:\n", Fingerprint.format(current_block.fingerprint));
+            writefln("Fingerprint:\n%X", Fingerprint(current_block.fingerprint));
             const bullseye = current_block.bullseye;
             if (bullseye.empty)
                 writeln("Bullseye: <empty>");
             else
-                writeln("Bullseye:\n", Fingerprint.format(bullseye));
+                writefln("Bullseye:\n%X", Fingerprint(bullseye));
 
             writeln(format("<< %s block end\n", blocks_info.amount - j));
 
@@ -204,8 +205,8 @@ int main(string[] args)
 
             const current_block = EpochBlockFileDataBase.readBlockFromFingerprint(fingerprint, folder_path);
 
-            writeln("Current block bullseye:\n", Fingerprint.format(current_block.bullseye));
-            writeln("DB fingerprint:\n", Fingerprint.format(db.fingerprint));
+            writeln("Current block bullseye:\n%X", Fingerprint(current_block.bullseye));
+            writeln("DB fingerprint:\n%X", Fingerprint(db.fingerprint));
 
             // Add flipped recorder to DB
             addDummyRecordToDB(db, EpochBlockFileDataBase.getFlippedRecorder(current_block), hirpc);
