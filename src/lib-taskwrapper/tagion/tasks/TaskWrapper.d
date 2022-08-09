@@ -15,6 +15,8 @@ import tagion.services.RecorderService : Fingerprint;
 import tagion.services.LoggerService;
 import tagion.services.TransactionService;
 import tagion.dart.Recorder;
+import tagion.services.Options : Options;
+import tagion.hibon.Document;
 
 alias Recorder = RecordFactory.Recorder;
 

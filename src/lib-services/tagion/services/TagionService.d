@@ -2,10 +2,11 @@ module tagion.services.TagionService;
 
 import core.thread : Thread;
 import core.time;
-import std.concurrency;
+import std.concurrency : receiveTimeout;
 
 import std.datetime : Clock;
 import tagion.utils.StdTime;
+import tagion.tasks.TaskWrapper : Task;
 
 //import std.conv;
 //import std.algorithm.searching : canFind;
@@ -160,7 +161,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         Tid dart_sync_tid;
         Tid dart_tid;
         Tid monitor_socket_tid;
-        Tid transaction_socket_tid;
         Tid transcript_tid;
 
         shared StdSecureNet shared_net;
@@ -345,16 +345,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                     log("DART service stoped");
                 }
             }
-
-            if (transaction_socket_tid !is transaction_socket_tid.init)
-            {
-                transaction_socket_tid.prioritySend(Control.STOP);
-                if (receiveOnly!Control is Control.END)
-                {
-                    log("Closed transaction");
-                }
-            }
-
             if (monitor_socket_tid !is monitor_socket_tid.init)
             {
                 monitor_socket_tid.prioritySend(Control.STOP);
@@ -380,10 +370,17 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             opts.dart.sync.task_name);
         assert(receiveOnly!Control is Control.LIVE);
 
-        transaction_socket_tid = spawn(
-            &transactionServiceTask,
-            opts);
+        auto transaction_socket = Task!TransactionServiceTask(opts.transaction.task_name, opts);
         assert(receiveOnly!Control is Control.LIVE);
+
+        scope(exit)
+        {
+            transaction_socket.control(Control.STOP);
+            if (receiveOnly!Control is Control.END)
+            {
+                    log("Closed transaction");
+            }
+        }
 
         {
             immutable buf = cast(Buffer) hashgraph.channel;

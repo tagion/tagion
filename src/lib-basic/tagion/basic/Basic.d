@@ -566,6 +566,11 @@ template mangleFunc(alias T) if (isCallable!T)
         return concurrency.receiveOnly!T;
     }
 
+    static bool receiveTimeout(T...)(Duration duration, T ops) @trusted
+    {
+        return concurrency.receiveTimeout(duration, ops);
+    }
+
     static Tid ownerTid() @trusted
     {
         return concurrency.ownerTid;
