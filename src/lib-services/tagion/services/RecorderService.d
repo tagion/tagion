@@ -7,7 +7,7 @@ import std.file : exists, mkdirRecurse, rmdirRecurse, write, read, remove;
 import std.array;
 import std.typecons;
 import std.path : buildPath, baseName;
-import std.algorithm;
+import std.algorithm : filter, map, reverse;
 
 import tagion.basic.Types : Control, Buffer;
 import tagion.basic.TagionExceptions : fatal;
@@ -20,18 +20,18 @@ import tagion.dart.Recorder;
 import tagion.dart.BlockFile;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
-import tagion.hibon.Document;
-import tagion.hibon.HiBONRecord : Label, GetLabel;
-import tagion.hibon.HiBONJSON : JSONString;
+
 import tagion.hibon.HiBON;
 import tagion.utils.Miscellaneous : toHexString, decode;
 import tagion.communication.HiRPC;
 import tagion.utils.Fingerprint : Fingerprint;
+import tagion.dart.EpochBlock : EpochBlock, EpochBlockFactory;
 
 /** @brief File contains service for handling and saving recorder chain blocks
  */
 
 pragma(msg, "fixme(ib) I don't like the way we cast immutable here. Can we get rid of it?");
+
 static immutable(T) castToImmutable(T)(T object) @trusted
 {
     return cast(immutable(T)) object;
@@ -42,133 +42,12 @@ static T castFromImmutable(T)(immutable(T) object) @trusted
     return cast(T) object;
 }
 
-@safe struct EpochBlockFactory
+@safe class EpochBlockFileDataBase
 {
-    const StdHashNet net;
+    alias BlocksInfo = Tuple!(EpochBlock, "first", EpochBlock, "last", ulong, "amount");
 
-    @disable this();
-
-    this(immutable(StdHashNet) net)
-    {
-        this.net = net;
-    }
-
-    immutable(EpochBlock) opCall(const(Document) doc)
-    {
-        return new immutable(EpochBlock)(doc, this.net);
-    }
-
-    immutable(EpochBlock) opCall(immutable(RecordFactory.Recorder) recorder, immutable(Buffer) chain, immutable(
-            Buffer) bullseye)
-    {
-        return new immutable(EpochBlock)(recorder, chain, bullseye, this.net);
-    }
-
-    @safe class EpochBlock
-    {
-        @Label("") private Buffer _fingerprint;
-        Buffer bullseye;
-        Buffer _chain;
-        RecordFactory.Recorder recorder;
-        @disable this();
-        enum chainLabel = GetLabel!(_chain).name;
-        enum recorderLabel = GetLabel!(recorder).name;
-        enum bullseyeLabel = GetLabel!(bullseye).name;
-        mixin JSONString;
-
-        private this(const(Document) doc, const(StdHashNet) net) immutable
-        {
-            auto doc_keys = doc.keys.array;
-
-            Buffer doc_chain = doc[chainLabel].get!Buffer;
-
-            Document doc_recorder;
-            if (doc_keys.canFind(recorderLabel))
-                doc_recorder = doc[recorderLabel].get!Document;
-
-            Buffer doc_bullseye;
-            if (doc_keys.canFind(bullseyeLabel))
-                doc_bullseye = doc[bullseyeLabel].get!Buffer;
-
-            auto factory = RecordFactory(net);
-            auto rec = castToImmutable(factory.recorder(doc_recorder));
-
-            this.recorder = rec;
-            this._chain = doc_chain;
-            this.bullseye = doc_bullseye;
-            this._fingerprint = net.hashOf(Document(toHiBON));
-        }
-
-        private this(immutable(RecordFactory.Recorder) recorder, immutable Buffer chain, immutable Buffer bullseye, const(
-                StdHashNet) net) immutable
-        {
-            this.recorder = recorder;
-            this._chain = chain;
-            this.bullseye = bullseye;
-            this._fingerprint = net.hashOf(Document(toHiBON));
-        }
-
-        final const(HiBON) toHiBON() const
-        in
-        {
-            assert(recorder, "recorder can be empty");
-        }
-        do
-        {
-            auto hibon = new HiBON;
-            hibon[chainLabel] = chain;
-            if (recorder)
-            {
-                hibon[recorderLabel] = recorder.toDoc;
-            }
-            if (bullseye)
-            {
-                hibon[bullseyeLabel] = bullseye;
-            }
-            return hibon;
-        }
-
-        final const(Document) toDoc() const
-        {
-            auto hibon = toHiBON;
-            return Document(hibon);
-        }
-
-        @nogc
-        final const(Buffer) fingerprint() const pure nothrow
-        in
-        {
-            assert(_fingerprint);
-        }
-        do
-        {
-            return _fingerprint;
-        }
-
-        final const(Buffer) chain() const pure nothrow
-        {
-            if (_chain)
-                return _chain;
-            return null;
-        }
-    }
-}
-
-interface EpochBlockFileDataBaseInterface
-{
-    immutable(EpochBlockFactory.EpochBlock) addBlock(
-        immutable(EpochBlockFactory.EpochBlock) block);
-    immutable(EpochBlockFactory.EpochBlock) deleteFirstBlock();
-    immutable(EpochBlockFactory.EpochBlock) deleteLastBlock();
-    Buffer[] getFullChainBullseye();
-}
-
-alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFactory.EpochBlock, "last", ulong, "amount");
-
-@safe class EpochBlockFileDataBase : EpochBlockFileDataBaseInterface
-{
-    private EpochBlockFactory.EpochBlock first_block;
-    private EpochBlockFactory.EpochBlock last_block;
+    private EpochBlock first_block;
+    private EpochBlock last_block;
     private ulong _amount;
     private immutable(string) folder_path;
 
@@ -202,8 +81,8 @@ alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFacto
         return makePath(name, this.folder_path);
     }
 
-    immutable(EpochBlockFactory.EpochBlock) addBlock(
-        immutable(EpochBlockFactory.EpochBlock) block)
+    immutable(EpochBlock) addBlock(
+        immutable(EpochBlock) block)
     in
     {
         assert(block.fingerprint);
@@ -229,7 +108,7 @@ alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFacto
         return block;
     }
 
-    immutable(EpochBlockFactory.EpochBlock) deleteLastBlock()
+    immutable(EpochBlock) deleteLastBlock()
     {
         if (amount)
         {
@@ -238,12 +117,12 @@ alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFacto
             this.last_block = info.last; // because rollBack can move pointer
 
             auto block = castToImmutable(this.last_block);
-            delBlock(this.last_block._fingerprint);
+            delBlock(this.last_block.fingerprint);
             _amount--;
 
             if (amount)
             {
-                this.last_block = castFromImmutable(readBlockFromFingerprint(block._chain));
+                this.last_block = castFromImmutable(readBlockFromFingerprint(block.chain));
             }
             else
             {
@@ -255,12 +134,12 @@ alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFacto
         assert(0);
     }
 
-    immutable(EpochBlockFactory.EpochBlock) deleteFirstBlock()
+    immutable(EpochBlock) deleteFirstBlock()
     {
         if (amount)
         {
             _amount--;
-            auto block = delBlock(this.first_block._fingerprint);
+            auto block = delBlock(this.first_block.fingerprint);
             if (amount)
             {
                 import std.file;
@@ -372,7 +251,7 @@ alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFacto
         return getBlocksInfo(this.folder_path);
     }
 
-    private immutable(EpochBlockFactory.EpochBlock) delBlock(Buffer fingerprint)
+    private immutable(EpochBlock) delBlock(Buffer fingerprint)
     {
         assert(fingerprint);
 
@@ -408,11 +287,11 @@ alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFacto
         return getFiles(this.folder_path);
     }
 
-    private immutable(EpochBlockFactory.EpochBlock) rollBack()
+    private immutable(EpochBlock) rollBack()
     {
-        if (buildPath(this.folder_path, this.last_block._chain.toHexString).exists)
+        if (buildPath(this.folder_path, this.last_block.chain.toHexString).exists)
         {
-            const f_name = makePath(this.last_block._chain);
+            const f_name = makePath(this.last_block.chain);
             import tagion.hibon.HiBONRecord : fread;
 
             auto d = fread(f_name);
@@ -435,7 +314,7 @@ alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFacto
 
         while (true)
         {
-            if (this.last_block._fingerprint != this.first_block._fingerprint)
+            if (this.last_block.fingerprint != this.first_block.fingerprint)
             {
                 rollBack();
                 flipped_chain ~= this.last_block.bullseye;
@@ -451,7 +330,7 @@ alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFacto
         }
     }
 
-    static immutable(EpochBlockFactory.EpochBlock) readBlockFromFingerprint(
+    static immutable(EpochBlock) readBlockFromFingerprint(
         Buffer fingerprint, string folder_path)
     {
         const f_name = makePath(fingerprint, folder_path);
@@ -463,13 +342,13 @@ alias BlocksInfo = Tuple!(EpochBlockFactory.EpochBlock, "first", EpochBlockFacto
         return factory(doc);
     }
 
-    private immutable(EpochBlockFactory.EpochBlock) readBlockFromFingerprint(Buffer fingerprint)
+    private immutable(EpochBlock) readBlockFromFingerprint(Buffer fingerprint)
     {
         return readBlockFromFingerprint(fingerprint, this.folder_path);
     }
 
     static immutable(RecordFactory.Recorder) getFlippedRecorder(
-        immutable(EpochBlockFactory.EpochBlock) block)
+        immutable(EpochBlock) block)
     {
         const net = new StdHashNet;
         auto factory = RecordFactory(net);
@@ -531,6 +410,8 @@ import tagion.tasks.TaskWrapper;
 
 immutable(RecordFactory.Recorder) initDummyRecorderAdd(int seed = 1, string suffix = "")
 {
+    import tagion.hibon.Document;
+
     const net = new StdHashNet;
     auto factory = RecordFactory(net);
     auto rec = factory.recorder;
@@ -567,6 +448,7 @@ immutable(RecordFactory.Recorder) initDummyRecorderAdd(int seed = 1, string suff
 
 immutable(RecordFactory.Recorder) initDummyRecorderDel()
 {
+    import tagion.hibon.Document;
 
     const net = new StdHashNet;
     auto factory = RecordFactory(net);
@@ -609,6 +491,8 @@ immutable(RecordFactory.Recorder) initDummyRecorderDel()
 
 immutable(RecordFactory.Recorder) initDummyNewRecorder()
 {
+    import tagion.hibon.Document;
+
     const net = new StdHashNet;
     auto factory = RecordFactory(net);
     auto rec = factory.recorder;
@@ -654,6 +538,7 @@ void addDummyRecordToDB(ref DART db, immutable(RecordFactory.Recorder) rec, HiRP
 unittest
 {
     import std.algorithm : equal;
+    import tagion.hibon.Document;
 
     Options options;
     setDefaultOption(options);
