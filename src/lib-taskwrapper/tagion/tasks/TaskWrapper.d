@@ -13,7 +13,9 @@ import tagion.logger.Logger;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
 import tagion.services.RecorderService : Fingerprint;
 import tagion.services.LoggerService;
+import tagion.services.TranscriptService;
 import tagion.dart.Recorder;
+import tagion.services.Options : Options;
 
 alias Recorder = RecordFactory.Recorder;
 

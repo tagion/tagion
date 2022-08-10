@@ -2,10 +2,10 @@ module tagion.services.TagionService;
 
 import core.thread : Thread;
 import core.time;
-import std.concurrency;
 
 import std.datetime : Clock;
 import tagion.utils.StdTime;
+import tagion.tasks.TaskWrapper : Task;
 
 //import std.conv;
 //import std.algorithm.searching : canFind;
@@ -161,7 +161,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         Tid dart_tid;
         Tid monitor_socket_tid;
         Tid transaction_socket_tid;
-        Tid transcript_tid;
+        Task!(TrascriptServiceTask)* transcript;
 
         shared StdSecureNet shared_net;
         synchronized (master_net)
@@ -216,7 +216,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 .filter!((e) => !e.event_body.payload.empty)
                 .map!((e) => e.event_body.payload);
 
-            transcript_tid.send(params.serialize);
+            transcript.receive_epoch(params.serialize);
             epoch_num++;
             count_transactions = 0;
             epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
@@ -253,7 +253,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         log.trace("Network discovered ready");
         discovery_tid.send(DiscoveryRequestCommand.RequestTable);
         assert(receiveOnly!DiscoveryControl is DiscoveryControl.READY);
-
+        alias constDocument = const(Document);
         dart_sync_tid = spawn(
             &dartSynchronizeServiceTask!StdSecureNet,
             opts,
@@ -311,15 +311,9 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         }
         scope (exit)
         {
-            if (transcript_tid !is transcript_tid.init)
-            {
-                transcript_tid.prioritySend(Control.STOP);
-                if (receiveOnly!Control is Control.END)
-                {
-                    log("Scripting api end!!");
-                }
-            }
-
+            auto _cd_ = receiveOnly!constDocument;
+            import std.stdio;
+            writeln("<><>", _cd_);
             if (discovery_tid !is Tid.init)
             {
                 discovery_tid.prioritySend(Control.STOP);
@@ -373,11 +367,24 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         //         &monitorServiceTask,
         //         opts);
         // assert(receiveOnly!Control is Control.LIVE);
-
+        /*
         transcript_tid = spawn(
             &transcriptServiceTask,
             opts.transcript.task_name,
-            opts.dart.sync.task_name);
+            opts.dart.sync.task_name);*/
+        transcript = new Task!TrascriptServiceTask(opts.transaction.task_name, opts);
+        import std.stdio;
+        writeln(">>>YY<<<");
+        scope(exit)
+        {            
+            writeln("<>1<>", receiveOnly!DiscoveryControl);
+            writeln("<>2<>", receiveOnly!constDocument);
+            transcript.control(Control.STOP);
+            if (receiveOnly!Control is Control.END)
+            {
+                log("Scripting api end!!");
+            }
+        }
         assert(receiveOnly!Control is Control.LIVE);
 
         transaction_socket_tid = spawn(
