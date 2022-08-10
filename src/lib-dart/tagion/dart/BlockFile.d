@@ -529,7 +529,7 @@ class BlockFile
             }
     }
 
-    private this(string filename, immutable uint SIZE, const bool read_only = false)
+    protected this(string filename, immutable uint SIZE, const bool read_only = false)
         {
             File file;
             import std.stdio;
@@ -545,7 +545,7 @@ class BlockFile
             this(file, SIZE);
         }
 
-    private this(File file, immutable uint SIZE)
+    protected this(File file, immutable uint SIZE)
         {
             this.BLOCK_SIZE = SIZE;
             DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
@@ -557,7 +557,7 @@ class BlockFile
     /**
        Used by the Inspect
     */
-    private this(immutable uint SIZE) pure nothrow {
+    protected this(immutable uint SIZE) pure nothrow {
         this.BLOCK_SIZE = SIZE;
         DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
         recycle_indices = RecycleIndices(this);
@@ -671,7 +671,7 @@ class BlockFile
             file.close;
         }
 
-    void createHeader(string name)
+    protected void createHeader(string name)
         {
             check(!hasheader, "Header is already created");
             check(file.size == 0, "Header can not be created the file is not empty");
@@ -696,7 +696,7 @@ class BlockFile
             return hasheader;
         }
 
-    private void readInitial()
+    protected void readInitial()
         {
             if (file.size > 0)
             {
@@ -837,7 +837,7 @@ class BlockFile
 
     }
 
-    bool check_statistic(const uint total_blocks, const uint blocks) pure const
+    protected bool check_statistic(const uint total_blocks, const uint blocks) pure const
         {
             if (blocks > total_blocks)
             {
@@ -952,7 +952,7 @@ class BlockFile
         return last_block_index;
     }
 
-    final private void seek(const uint index)
+    final protected void seek(const uint index)
         {
             file.seek(index_to_seek(index));
         }
@@ -1058,6 +1058,25 @@ class BlockFile
             return BLOCK_SIZE * cast(ulong) index;
         }
 
+
+    //     struct BlockInfo {
+    //         uint previous; /// Points to the previous block
+    //         uint next; /// Points to the next block
+    //         uint size; /// size of the data in this block
+    //         uint index; /// Block index
+    //         bool head; /// Set to `true` this block starts a chain of blocks
+    //     }
+    //     Block block;
+    //     uint index;
+    //     this(BlockFile owner, const uint index) {
+    //         block
+    //         this.index = index;
+    //     }
+
+    //     BlockInfo front() {
+
+    //     }
+    // }
     /++
      + Block handler
      +/
@@ -1071,6 +1090,9 @@ class BlockFile
             enum uint HEAD_MASK = 1 << (uint.sizeof * 8 - 1);
             enum HEADER_SIZE = cast(uint)(previous.sizeof + next.sizeof + size.sizeof);
             immutable(Buffer) data;
+            BlockInfo info(const uint index) pure nothrow {
+                return BlockInfo(previous, next, size, index, head);
+            }
             void write(ref File file, immutable uint BLOCK_SIZE) const @trusted
             {
                 scope buffer = new ubyte[BLOCK_SIZE];
@@ -1150,7 +1172,7 @@ class BlockFile
 
         }
 
-    final Block block(immutable uint previous, immutable uint next, immutable uint size, immutable(
+    protected final Block block(immutable uint previous, immutable uint next, immutable uint size, immutable(
             Buffer) buf, const bool head)
         in
         {
@@ -1242,13 +1264,13 @@ class BlockFile
      +     index = Block index poiter where to write in the block file
      +     block = The block to be written
      +/
-    private void write(scope const uint index, const(Block) block)
+    protected void write(scope const uint index, const(Block) block)
         {
             seek(index);
             block.write(file, BLOCK_SIZE);
         }
 
-    private void writeStatistic()
+    protected void writeStatistic()
         {
             //
             // Allocate block for statistical data
@@ -1285,7 +1307,7 @@ class BlockFile
         }
 
     // Write the master block to the filesystem and truncate the file
-    void writeMasterBlock()
+    protected void writeMasterBlock()
         {
             seek(last_block_index);
             masterblock.write(file, BLOCK_SIZE);
@@ -1402,32 +1424,61 @@ class BlockFile
      +/
     uint erase(const uint index)
         {
-            @safe uint remove_sequency(bool first = false)(const uint index)
-            {
-                auto block = read(index);
-                check(!recycle_indices.isRecyclable(index), format("Block %d has already been delete", index));
-
-                static if (first)
-                {
-                    // Check if this is the first block in a block sequency
-                    check(block.head, "Load index is not pointing to the begin of a block sequency");
-                }
-                recycle_indices = index;
-                if (block.size > DATA_SIZE)
-                {
-                    return remove_sequency(block.next);
-                }
-                if (index >= masterblock.first_index)
-                {
-                    masterblock.first_index = index + 1;
-                }
-                return block.next;
-            }
-
             if (index !is INDEX_NULL)
             {
+           console.writef("%d [ ", index);
+            scope(exit) {
+                console.writeln("]");
+                console.writefln("recycle_indices = %s", recycle_indices[]);
+                console.writefln("recycled_to_save= %s", recycle_indices.recycled_blocks_which_needs_to_be_saved.keys.sort);
+            }
+
+            auto block_range = range(index);
+            if (!block_range.empty) {
+                check(block_range.front.head, format("Block @ %d is not pointing to the begin of a block sequency", index));
+                bool ok;
+                const remove_list = range
+                    .map!(block => tuple!("block", "index")(block, range.index))
+                    .tee!(a => ok &= (a.block !is null) && !recycle_indices.isRecyclable(a.index))
+                    .map!(a => tuple!("size", "index")(a.block.size, a.index));
+                    .array;
+//////////////////////////////////////////////////////////////////////////////                    .cache;
+                foreach(
+
+
+
+            version(none)
+            @safe void remove_sequency(uint index)
+            {
+                console.writef("%d", index);
+                check(!recycle_indices.isRecyclable(index), format("Block %d has already been delete", index));
+                auto block = read(index);
+                check(block.head, "Load index is not pointing to the begin of a block sequency");
+
+//                bool first=true;
+                // static if (first)
+                // {
+                //     // Check if this is the first block in a block sequency
+                // }
+                do {
+                    recycle_indices = index;
+                    console.writef(":%d ",block.size);
+                    if (index >= masterblock.first_index)
+                    {
+                        masterblock.first_index = index + 1;
+                    }
+                    if (block.size <= DATA_SIZE) {
+                        break;
+                    }
+                    block = read(index);
+                    index = block.next;
+                }
+
+//                return block.next;
+            }
+
                 //        check(index !is INDEX_NULL, "Block zero can not be ereased");
-                return remove_sequency!true(index);
+                return remove_sequency(index);
             }
             return INDEX_NULL;
         }
@@ -1572,12 +1623,9 @@ class BlockFile
             return result;
         }
 
-    void fromDoc(const(Document) doc)
+    protected void fromDoc(const(Document) doc)
         {
             allocated_chains = null;
-
-
-
             .check(doc.isArray, "Document should be an array");
             foreach (a; doc[])
             {
@@ -1590,27 +1638,42 @@ class BlockFile
      +
      + This function will erase, write, update the BlockFile and update the recyle bin
      + Stores the list of AllocatedChain to the disk
+     + If this function throws an Exception the Blockfile has not been updated
      +
      +/
     void store()
         {
+            debug scope(exit) {
+                bool failsafe(const uint index, const Fail f, const Block block, const bool recycle_block) @safe
+                {
+                    if(f != Fail.NON) {
+                        console.writefln("Data check fails on block @ [%d <- %d -> %d]: Fail:%s in %s",
+                            block.previous, index, block.next, f, recycle_block ? "recycle block" : "data block");
+                    }
+                    return false;
+                }
+                console.writeln("---------");
+                dump;
+                assert(!inspect(&failsafe), "Should not fail here");
+            }
             Block[uint] blocks;
             scope (success)
             {
                 allocated_chains = null;
             }
             scope (success) {
-                            recycle_indices.write;
+                recycle_indices.write;
 
-            { //write_blocks_in_sorted_order
-                pragma(msg, "Block ", Block);
-                auto sorted_indices = blocks.keys.dup.sort;
-                sorted_indices.each!(index => write(index, blocks[index]));
+                { //write_blocks_in_sorted_order
+                    pragma(msg, "Block ", Block);
+                    auto sorted_indices = blocks.keys.dup.sort;
+                    sorted_indices.each!(index => write(index, blocks[index]));
+                }
+
+                writeMasterBlock;
+                recycle_indices.build_segments;
             }
 
-            writeMasterBlock;
-            recycle_indices.build_segments;
-            }
             {
                 do_not_write = true;
                 scope(exit) {
@@ -1874,10 +1937,11 @@ class BlockFile
      +     block  = is the failed block
      +     data_flag = Set to `false` if block is a resycled block and `true` if it a data block
      +/
-    void inspect(bool delegate(const uint index, const Fail f, const Block block, const bool recycle_chain) @safe trace)
+    bool inspect(bool delegate(const uint index, const Fail f, const Block block, const bool recycle_chain) @safe trace)
         {
             scope bool[uint] visited;
             scope bool end;
+            bool failed;
             @safe
                 void check_data(bool check_recycle_mode)(ref BlockRange r)
             {
@@ -1885,7 +1949,6 @@ class BlockFile
                 while (!r.empty && !end)
                 {
                     auto current = r.front;
-                    bool failed;
                     if ((r.index in visited) && (r.index !is INDEX_NULL))
                     {
                         failed = true;
@@ -1952,6 +2015,7 @@ class BlockFile
             check_data!false(r);
             r = recycleRange;
             check_data!true(r);
+            return failed;
         }
 
     /++
