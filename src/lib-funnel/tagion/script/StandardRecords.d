@@ -252,6 +252,23 @@ enum OwnerKey = "$Y";
         mixin HiBONRecord;
     }
 
+    @RecordType("HEALTH") struct HealthParams
+    {
+        ulong rounds_;
+        int amount_trans;
+        int epoch_num;
+        bool in_graph;
+        mixin HiBONRecord!(
+            q{
+                this(ulong rounds_, int amount_trans, int epoch_num, bool in_graph) {
+                    this.rounds_ = rounds_;
+                    this.amount_trans = amount_trans;
+                    this.epoch_num = epoch_num;
+                    this.in_graph = in_graph;
+                }
+            });
+    }
+
     struct Script
     {
         @Label("$name") string name;

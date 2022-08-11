@@ -66,6 +66,7 @@ import tagion.services.NetworkRecordDiscoveryService;
 //mport tagion.gossip.P2pGossipNet: AddressBook;
 import tagion.services.DARTService;
 import tagion.gossip.AddressBook : addressbook;
+import tagion.script.StandardRecords;
 
 //import tagion.Keywords : NetworkMode;
 
@@ -120,6 +121,8 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         setOptions(opts);
         bool stop;
         int count_down = opts.epoch_limit;
+        int count_transactions;
+        int epoch_num;
         scope (success)
         {
             log.close;
@@ -216,6 +219,8 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             if (count_down > 0)
             {
                 count_down--;
+                count_transactions = 0;
+                epoch_num++;
                 if (count_down <= 0)
                 {
                     auto main_tid = locate(main_task);
@@ -403,6 +408,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 
         void receive_payload(Document pload, bool flag)
         { //TODO: remove flag. Maybe try switch(doc.type)
+            count_transactions++;
             log.trace("payload.size=%d", pload.size);
             payload_queue.write(pload);
         }
@@ -492,9 +498,13 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 
                 const doc = Document(data);
                 const receiver = empty_hirpc.receive(doc);
-                auto respond = new HiBON();
-                respond["rounds"] = hashgraph.rounds.length;
-                respond["inGraph"] = hashgraph.areWeInGraph;
+                auto respond = HealthParams(hashgraph.rounds.length, count_transactions, epoch_num, hashgraph.areWeInGraph);
+
+                // respond["rounds_"] = hashgraph.rounds.length;
+                // respond["in_graph"] = hashgraph.areWeInGraph;
+                // respond["amount_trans"] = count_transactions;
+                // respond["epoch_num"] = epoch_num;
+
                 auto response = empty_hirpc.result(receiver, respond);
                 log("Healthcheck: %s", response.toDoc.toJSON);
                 locate(respond_task_name).send(response.toDoc.serialize);
