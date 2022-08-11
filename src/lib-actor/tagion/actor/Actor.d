@@ -70,19 +70,19 @@ template allMethodFilter(This, alias pred) {
 
 
 mixin template TaskActor() {
-//    import concurrency = std.concurrency;
+    import concurrency = std.concurrency;
     import core.time : Duration;
     import tagion.actor.Actor;
     import tagion.basic.Types : Control;
 
-    bool stop;
+    bool _stop;
     @method void control(Control ctrl) {
-        stop = (ctrl is Control.STOP);
-        writefln("control stop %s", stop);
+        _stop = (ctrl is Control.STOP);
+        writefln("control stop %s", _stop);
     }
 
     @method @local void fail(immutable(Exception) e) @trusted {
-        stop = true;
+        _stop = true;
         concurrency.prioritySend(concurrency.ownerTid, e);
     }
 
@@ -95,15 +95,21 @@ mixin template TaskActor() {
     }
 
     void alive() @trusted {
-        send(concurrency.ownerTid, Control.LIVE);
+        concurrency.send(concurrency.ownerTid, Control.LIVE);
     }
 
 
     void end() @trusted {
-        send(concurrency.ownerTid, Control.END);
+        concurrency.send(concurrency.ownerTid, Control.END);
     }
 
-alias This = typeof(this);
+    void sendOwner(Args...)(Args args) @trusted {
+        writefln("sendOwner %s", args);
+        concurrency.send(concurrency.ownerTid, args);
+    }
+
+    alias This = typeof(this);
+
     void receive() @trusted {
         enum actor_methods = allMethodFilter!(This, isMethod);
         pragma(msg, "actor_methods ", actor_methods);
@@ -190,7 +196,11 @@ auto actor(Task, Args...)(Args args) if (is(Task == class) || is(Task == struct)
 
                 }
                 const task_func = &__traits(getMember, task, task_func_name);
-                log.register(task_name);
+                version(unittest) {
+                }
+                else {
+                    log.register(task_name);
+                }
                 task_func(args);
 
             }
@@ -222,10 +232,15 @@ auto actor(Task, Args...)(Args args) if (is(Task == class) || is(Task == struct)
         auto opCall(Args...)(string taskname, Args args) @trusted {
             import std.meta : AliasSeq;
             import std.typecons;
+            scope(failure) {
+                log.error("Task %s of %s did not go live", taskname, Task.stringof);
+            }
             alias FullArgs = Tuple!(AliasSeq!(string, Args));
             auto full_args = FullArgs(taskname, args);
             .check(concurrency.locate(taskname) == Tid.init, format("Actor %s has already been started", taskname));
             auto tid = tids[taskname] = concurrency.spawn(&run, full_args.expand);
+            const live = concurrency.receiveOnly!Control;
+            .check(live is Control.LIVE, format("%s excepted from %s of %s but got %s", Control.LIVE, taskname, Task.stringof, live));
             return Actor(tid);
         }
     }
@@ -240,48 +255,61 @@ version(unittest) {
         void send(Args...)(Tid tid, Args args) @trusted {
             concurrency.send(tid, args);
         }
-        auto receiverOnly(Args...)(Tid tid, Args args) @trusted {
-            return concurrency.receiveOnly(tid, args);
+        auto receiveOnly(Args...)() @trusted {
+            writefln("receiveOnly %s", Args.stringof);
+            return concurrency.receiveOnly!Args;
         }
+
+    }
+    enum Get {
+        Some,
+        Arg
     }
 }
 
 @safe
 unittest {
+    import core.thread.osthread : Thread;
     import std.stdio;
     @safe
     static struct MyActor {
         // protected {
             // HashGraph hashgraph;
-        int count;
+        long count;
         string some_name;
         @method void some(string str) { // reciever
             writefln("SOME %s ", str);
             some_name = str;
         }
 
-        @method void decrease(int by) {
+        @method void decreaseArg(int by) {
             count -= by;
         }
-        version(none) {
 
-        enum get {
-            Yes,
-            No,
+
+        @method void get(Get opt) { // reciever
+            writefln("Got ---- %s", opt);
+            final switch(opt) {
+            case Get.Some:
+                sendOwner(some_name);
+                break;
+            case Get.Arg:
+                sendOwner(count);
+                break;
+            }
         }
 
-        @method void getSome(get str) @trusted { // reciever
+        // @method void getArg(get_args opt) { // reciever
+        //     sendOwner(count);
+        // }
 
-            ownerTid.send(some_name);
-        }
-        }
         mixin TaskActor;
 
-        @task void runningTask(int label) {
+        @task void runningTask(long label) {
             count = label;
             writefln("Alive!!!!");
             alive; // Task is now alive
-            while (!stop) {
+            while (!_stop) {
                 receiveTimeout(100.msecs);
                 writefln("Waiting to stop");
                 // const rets=receiverMethods(100.msec);
@@ -293,23 +321,39 @@ unittest {
     //pragma(msg, "fail ", fail.stringof);
     //pragma(msg, "getUDAs!(Func, method)[0] ", getUDAs!(fail, method)[0].access);
 
-    auto my_actor_factory = actor!MyActor;
+    static void uinttestTask() {
+        auto my_actor_factory = actor!MyActor;
     /// Test of a single actor
-    {
-        enum single_actor_taskname = "task_name_for";
-        assert(!isRunning(single_actor_taskname));
-        // Starts one actor of MyActor
-        auto my_actor_1 = my_actor_factory(single_actor_taskname, 10);
-        scope(exit) {
-            // Stop and wait of the task to end
-            my_actor_1.stop;
-//            assety
-        }
-
         {
-            //
-            my_actor_1.some("Some text");
+            enum single_actor_taskname = "task_name_for";
+            assert(!isRunning(single_actor_taskname));
+            // Starts one actor of MyActor
+            auto my_actor_1 = my_actor_factory(single_actor_taskname, 10);
+            // scope(exit) {
+            //     my_actor_1.stop;
+            // }
+
+            /// Actor init args
+            {
+                writeln("Send Get.getArg");
+                my_actor_1.get(Get.Arg);
+//                writefln("get %s", receiveOnly!Control);
+                writefln("get %s", receiveOnly!long);
+                writefln("After receive");
+            }
+
+            {
+                //
+                my_actor_1.some("Some text");
+            }
             my_actor_1.stop;
         }
     }
+
+    (() @trusted {
+        auto unittest_thread = new Thread(&uinttestTask).start();
+        unittest_thread.join;
+//        auto unittest_tid = spawn(&unittestTask);
+    })();
+
 }
