@@ -499,12 +499,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 const doc = Document(data);
                 const receiver = empty_hirpc.receive(doc);
                 auto respond = HealthParams(hashgraph.rounds.length, count_transactions, epoch_num, hashgraph.areWeInGraph);
-
-                // respond["rounds_"] = hashgraph.rounds.length;
-                // respond["in_graph"] = hashgraph.areWeInGraph;
-                // respond["amount_trans"] = count_transactions;
-                // respond["epoch_num"] = epoch_num;
-
                 auto response = empty_hirpc.result(receiver, respond);
                 log("Healthcheck: %s", response.toDoc.toJSON);
                 locate(respond_task_name).send(response.toDoc.serialize);
