@@ -3,7 +3,6 @@ module tagion.actor.TaskActor;
 import std.algorithm.searching : any;
 import std.format;
 
-//import tagion.acture.concurrency : Tid;
 alias Tid = concurrency.Tid;
 import concurrency = std.concurrency;
 import tagion.basic.Types : Control;
@@ -27,10 +26,7 @@ struct task {
 
 
 enum isNotTemplate(This, string name) = !__traits(isTemplate, __traits(getMember, This, name));
-enum isType(This, string name) = __traits(compiles, __traits(getMember, This, name));
-
-
-//enum isProtected(This, string name) = __traits(getVisibility, __traits(getMember, This, name)) == q{protected};
+//enum isType(This, string name) = __traits(compiles, __traits(getMember, This, name));
 
 template isProtected(This, string name) {
     static if (__traits(compiles, __traits(getVisibility, __traits(getMember, This, name)))) {
@@ -41,18 +37,20 @@ template isProtected(This, string name) {
     }
 }
 
-enum isTask(This, string name) = __traits(compiles, hasUDA!(__traits(getMember, This, name), task)) && hasUDA!(__traits(getMember, This, name), task);
-enum isMethod(This, string name) = __traits(compiles, hasUDA!(__traits(getMember, This, name), method)) && hasUDA!(__traits(getMember, This, name), method);
+enum isTrue(alias eval) = __traits(compiles, eval) && eval;
 
-//enum isMethod(This, string name) = isTrue!(hasUDA!(__traits(getMember, This, name), method))); // && hasUDA!(__traits(getMember, This, name), method);
+enum isUDA(This, string name, UDA) = isTrue!(hasUDA!(__traits(getMember, This, name), UDA));
+//enum isTask(This, string name) = __traits(compiles, hasUDA!(__traits(getMember, This, name), task)) && hasUDA!(__traits(getMember, This, name), task);
+//enum isTask(This, string name) = isTrue!(hasUDA!(__traits(getMember, This, name), task));
 
+enum isTask(This, string name) = isUDA!(This, name, task); //isTrue!(hasUDA!(__traits(getMember, This, name), task));
+//&& hasUDA!(__traits(getMember, This, name), task);
+
+//enum isMethod(This, string name) = isTrue!(hasUDA!(__traits(getMember, This, name), method));
+enum isMethod(This, string name) = isUDA!(This, name, method);
 
 enum isCtorDtor(This, string name) =  ["__ctor", "__dtor"].any!(a => a == name);
-    //enum isCtorDtor = any!(q{a == name})(["__ctor", "__dtor"]);
-//     enum isCtorDtor = ["__ctor", "__dtor"].any!(a => a == name);
-// }
 
-enum isType(alias eval) = __traits(compiles, eval) && eval;
 
 template allMethodFilter(This, alias pred) {
     template Filter(string[] members) {
