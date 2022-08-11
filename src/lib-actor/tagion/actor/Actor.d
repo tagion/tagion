@@ -25,9 +25,6 @@ struct task {
 }
 
 
-enum isNotTemplate(This, string name) = !__traits(isTemplate, __traits(getMember, This, name));
-//enum isType(This, string name) = __traits(compiles, __traits(getMember, This, name));
-
 template isProtected(This, string name) {
     static if (__traits(compiles, __traits(getVisibility, __traits(getMember, This, name)))) {
         enum isProtected = __traits(getVisibility, __traits(getMember, This, name)) == q{protected};
@@ -40,13 +37,9 @@ template isProtected(This, string name) {
 enum isTrue(alias eval) = __traits(compiles, eval) && eval;
 
 enum isUDA(This, string name, UDA) = isTrue!(hasUDA!(__traits(getMember, This, name), UDA));
-//enum isTask(This, string name) = __traits(compiles, hasUDA!(__traits(getMember, This, name), task)) && hasUDA!(__traits(getMember, This, name), task);
-//enum isTask(This, string name) = isTrue!(hasUDA!(__traits(getMember, This, name), task));
 
 enum isTask(This, string name) = isUDA!(This, name, task); //isTrue!(hasUDA!(__traits(getMember, This, name), task));
-//&& hasUDA!(__traits(getMember, This, name), task);
 
-//enum isMethod(This, string name) = isTrue!(hasUDA!(__traits(getMember, This, name), method));
 enum isMethod(This, string name) = isUDA!(This, name, method);
 
 enum isCtorDtor(This, string name) =  ["__ctor", "__dtor"].any!(a => a == name);
@@ -54,12 +47,10 @@ enum isCtorDtor(This, string name) =  ["__ctor", "__dtor"].any!(a => a == name);
 
 template allMethodFilter(This, alias pred) {
     template Filter(string[] members) {
-        //enum nullArray : string[] = null;
         static if (members.length is 0) {
             enum Filter = [];
         }
         else static if (members.length is 1) {
-//            pragma(msg, "members[0] ", members[0]);
             static if (pred!(This, members[0])) {
                 enum Filter = [members[0]];
             }
@@ -72,20 +63,16 @@ template allMethodFilter(This, alias pred) {
         };
     }
     enum allMembers = [__traits(allMembers, This)];
-    enum allMethodFilter = Filter!(allMembers); // ~ Filter!(allMembers[$/2..$]);
+    enum allMethodFilter = Filter!(allMembers);
 }
 
 
 mixin template TaskActor() {
-    // import std.algorithm.iteration;
-    // import std.meta;
     import concurrency = std.concurrency;
     import core.time : Duration;
     import tagion.actor.TaskActor;
     import tagion.basic.Types : Control;
-//import tagion.acture.concurrency : Tid;
-//    alias Tid = concurrency.Tid;
-//    protected {
+
     bool stop;
     @method void control(Control ctrl) {
         stop = (ctrl is Control.STOP);
@@ -109,67 +96,6 @@ mixin template TaskActor() {
     }
 
     alias This = typeof(this);
-    // alias getMember(string name) = __traits(getMember, This, name);
-    // alias MemberSeq = staticMap!(getMember, FieldNameTuple!This);
-    // pragma(msg, "This ", This);
-    // pragma(msg, "Memberes ", FieldNameTuple!This);
-
-    // pragma(msg, "typeof(__traits(getMember, this, stop)) ", typeof(__traits(getMember, this, "stop")));
-    // pragma(msg, "typeof(__traits(getMember, this, run)) ", typeof(__traits(getMember, this, "run")));
-    // pragma(msg, "__traits(allMembers, This)", __traits(allMembers, This));
-
-    // alias Type = typeof(__traits(getMember, This, "run"));
-    // alias Type1 = typeof(__traits(getMember, This, "MemberSeq"));
-    // pragma(msg, "Type 1", Type1);
-
-    // pragma(msg, "hasUDA!(__traits(getMember, this, run, task)", hasUDA!(__traits(getMember, This, "run"), task));
-
-    // protected enum allMembers = [__traits(allMembers, This)];
-    // pragma(msg, "_allMembers ", allMembers);
-    // alias toType(alias T) = typeof(T);
-
-    // pragma(msg, "isNotTemplate!(stop) ", isNotTemplate!(This, "stop"));
-    // pragma(msg, "isType!(MemberSeq) ", isType!(This, "MemberSeq"));
-    // pragma(msg, "getMember!(Type) ", __traits(getMember, This, "Type"));
-    // pragma(msg, "isProtected!(This, Type) ", isProtected!(This, "Type"));
-    // pragma(msg, "isProtected!(This, stop) ", isProtected!(This, "stop"));
-
-
-    // pragma(msg, "isTask(This, stop)", isTask!(This, "stop")); //__traits(isTemplateThis, "stop"));
-    // pragma(msg, "isTask(This, run)", isTask!(This, "run")); //__traits(isTemplateThis, "stop"));
-
-    // pragma(msg, "isMethod(This, stop)", isMethod!(This, "stop")); //__traits(isTemplateThis, "stop"));
-    // pragma(msg, "isMethod(This, run)", isMethod!(This, "run")); //__traits(isTemplateThis, "stop"));
-
-    // alias test_left = ApplyLeft!(isMethod, This);
-
-    // pragma(msg, "test control ", test_left!"control");
-    // pragma(msg, "test run ", test_left!"run");
-
-//    alias isProtectedMethods = ApplyLeft!(isProtected, This);
-
-//    alias list_protected_methods = Filter!(ApplyLeft!(isMethod, This), _allMembers);
-//    enum list_protected_methods = allMembers.filter!"isMethod!(This, a)";
-    // enum isStop(alias name) = name.stringof ==  "stop";
-    // enum list_protected_methods = Filter!(isStop, AliasSeq!("stop", "control"));
-    // pragma(msg, "list_protected_methods ", list_protected_methods);
-    //pragma(msg, "list_protected_methods ", allProtected!(This, allMembers)); //list_protected_methods);
-    // alias test_right = ApplyLeft!(isMethod, This);
-    // pragma(msg, "allMethodFilter ", allMethodFilter!(This, isProtected)); //list_protected_methods);
-    // pragma(msg, "allMethod isMethod ", allMethodFilter!(This, isMethod)); //list_protected_methods);
-    // pragma(msg, "allMethod isTask ", allMethodFilter!(This, isTask)); //list_protected_methods);
-    // pragma(msg, "ctor dtor  ", allMethodFilter!(This, templateNot!isCtorDtor)); //list_protected_methods);
-
-    // enum xxx = allMethodFilter!(This, templateNot!isCtorDtor);
-    //enum public_members =  allMethodFilter!(This, templateNot!isProtected);
-    //pragma(msg, "public_members ", public_members);
-    // pragma(msg, "test stop ", test!"stop");
-//    pragma(msg, "isNotTemplate!(stop) ", isNotTemplate!("stop"));
-//    pragma(msg, "_allTypes ", Filter!(isNotTemplate, _allMembers));
-
-//    pragma(msg, "getMember!stop", typeof(getMember!"staop")); //getMember!"MemberSeq");
-//    pragma(msg, "MemberSeq ", MemberSeq);
-//    pragma(msg, "members ", );
     void receive() @trusted {
         enum actor_methods = allMethodFilter!(This, isMethod);
         pragma(msg, "actor_methods ", actor_methods);
