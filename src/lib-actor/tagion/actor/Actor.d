@@ -196,11 +196,11 @@ auto actor(Task, Args...)(Args args) if (is(Task == class) || is(Task == struct)
 
                 }
                 const task_func = &__traits(getMember, task, task_func_name);
-                version(unittest) {
-                }
-                else {
-                    log.register(task_name);
-                }
+                // version(unittest) {
+                // }
+                // else {
+                log.register(task_name);
+                // }
                 task_func(args);
 
             }
