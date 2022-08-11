@@ -27,14 +27,14 @@ struct task {
 }
 
 
-template isProtected(This, string name) {
-    static if (__traits(compiles, __traits(getVisibility, __traits(getMember, This, name)))) {
-        enum isProtected = __traits(getVisibility, __traits(getMember, This, name)) == q{protected};
-    }
-    else {
-        enum isProtected = true;
-    }
-}
+// template isProtected(This, string name) {
+//     static if (__traits(compiles, __traits(getVisibility, __traits(getMember, This, name)))) {
+//         enum isProtected = __traits(getVisibility, __traits(getMember, This, name)) == q{protected};
+//     }
+//     else {
+//         enum isProtected = true;
+//     }
+// }
 
 enum isTrue(alias eval) = __traits(compiles, eval) && eval;
 
@@ -112,17 +112,17 @@ mixin template TaskActor() {
 
     void receive() @trusted {
         enum actor_methods = allMethodFilter!(This, isMethod);
-        pragma(msg, "actor_methods ", actor_methods);
+//        pragma(msg, "actor_methods ", actor_methods);
         enum code = format("concurrency.receive(%-(&%s, %));", actor_methods);
-        pragma(msg, "code ", code);
+//        pragma(msg, "code ", code);
         mixin(code);
     }
 
     bool receiveTimeout(Duration duration) @trusted {
         enum actor_methods = allMethodFilter!(This, isMethod);
-        pragma(msg, "actor_methods ", actor_methods);
+//        pragma(msg, "actor_methods ", actor_methods);
         enum code = format("return concurrency.receiveTimeout(duration, %-(&%s, %));", actor_methods);
-        pragma(msg, "code ", code);
+//        pragma(msg, "code ", code);
         mixin(code);
     }
 }
@@ -167,16 +167,16 @@ protected static string generateAllMethods(alias This)()
 auto actor(Task, Args...)(Args args) if (is(Task == class) || is(Task == struct)) {
     import concurrency = std.concurrency;
     static struct ActorFactory {
-        enum public_members =  allMethodFilter!(Task, templateNot!isProtected);
+//        enum public_members =  allMethodFilter!(Task, templateNot!isProtected);
         enum task_members = allMethodFilter!(Task, isTask);
-        pragma(msg, "task_members ", task_members);
+        // pragma(msg, "task_members ", task_members);
         static assert(task_members.length !is 0, format("%s is missing @task (use @task UDA to mark the member function)", Task.stringof));
         static assert(task_members.length is 1, format("Only one member of %s must be mark @task", Task.stringof));
         enum task_func_name = task_members[0];
         alias TaskFunc = typeof(__traits(getMember, Task, task_func_name));
         alias Params = Parameters!TaskFunc;
         alias ParamNames = ParameterIdentifierTuple!TaskFunc;
-        pragma(msg, "Params ", Params);
+        // pragma(msg, "Params ", Params);
         protected static void run(string task_name, Params args) nothrow {
             try {
                 static if (is(Task == struct)) {
@@ -223,7 +223,7 @@ auto actor(Task, Args...)(Args args) if (is(Task == class) || is(Task == struct)
             // pragma(msg, "!!!Methods ", methods);
             // pragma(msg, generateAllMethods!(Task));
             enum members_code = generateAllMethods!(Task);
-            pragma(msg, members_code);
+//            pragma(msg, members_code);
             mixin(members_code);
         }
         /**
@@ -251,28 +251,18 @@ auto actor(Task, Args...)(Args args) if (is(Task == class) || is(Task == struct)
 version(unittest) {
     import std.stdio;
     import core.time;
-    private {
-        void send(Args...)(Tid tid, Args args) @trusted {
-            concurrency.send(tid, args);
-        }
-        auto receiveOnly(Args...)() @trusted {
-            writefln("receiveOnly %s", Args.stringof);
-            return concurrency.receiveOnly!Args;
-        }
-
+    void send(Args...)(Tid tid, Args args) @trusted {
+        concurrency.send(tid, args);
     }
-    enum Get {
+    auto receiveOnly(Args...)() @trusted {
+        return concurrency.receiveOnly!Args;
+    }
+    private enum Get {
         Some,
         Arg
     }
-}
-
-@safe
-unittest {
-    import core.thread.osthread : Thread;
-    import std.stdio;
-    @safe
-    static struct MyActor {
+        @safe
+    private static struct MyActor {
         // protected {
             // HashGraph hashgraph;
         long count;
@@ -317,11 +307,18 @@ unittest {
         }
     }
 
+}
+
+@safe
+unittest {
+    // import core.thread.osthread : Thread;
+    // import std.stdio;
+
     //alias fail = MyActor.fail;
     //pragma(msg, "fail ", fail.stringof);
     //pragma(msg, "getUDAs!(Func, method)[0] ", getUDAs!(fail, method)[0].access);
 
-    static void uinttestTask() {
+    // static void uinttestTask() {
         auto my_actor_factory = actor!MyActor;
     /// Test of a single actor
         {
@@ -329,31 +326,28 @@ unittest {
             assert(!isRunning(single_actor_taskname));
             // Starts one actor of MyActor
             auto my_actor_1 = my_actor_factory(single_actor_taskname, 10);
-            // scope(exit) {
-            //     my_actor_1.stop;
-            // }
+            scope(exit) {
+                my_actor_1.stop;
+            }
 
             /// Actor init args
             {
-                writeln("Send Get.getArg");
                 my_actor_1.get(Get.Arg);
-//                writefln("get %s", receiveOnly!Control);
-                writefln("get %s", receiveOnly!long);
-                writefln("After receive");
+                assert(receiveOnly!long is 10);
             }
 
             {
                 //
                 my_actor_1.some("Some text");
             }
-            my_actor_1.stop;
+//            my_actor_1.stop;
         }
-    }
+//     }
 
-    (() @trusted {
-        auto unittest_thread = new Thread(&uinttestTask).start();
-        unittest_thread.join;
-//        auto unittest_tid = spawn(&unittestTask);
-    })();
+//     (() @trusted {
+//         auto unittest_thread = new Thread(&uinttestTask).start();
+//         unittest_thread.join;
+// //        auto unittest_tid = spawn(&unittestTask);
+//     })();
 
 }
