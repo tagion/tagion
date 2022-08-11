@@ -1,5 +1,5 @@
-/// \file EpochBlock.d
-module tagion.dart.EpochBlock;
+/// \file RecorderChainBlock.d
+module tagion.dart.RecorderChainBlock;
 
 import std.array;
 import std.algorithm : canFind;
@@ -11,25 +11,25 @@ import tagion.hibon.Document;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.hibon.HiBON : HiBON;
 
-/** @brief File contains structure EpochBlock and EpochBlockFactory
+/** @brief File contains structure RecorderChainBlock and RecorderChainBlockFactory
  */
 
 /**
- * \struct EpochBlock
+ * \struct RecorderChainBlock
  * Struct represents block from recorder chain
  */
-@safe class EpochBlock
+@safe class RecorderChainBlock
 {
     public
     {
         /** Fingerprint of this block */
-        @Label("") const Buffer fingerprint;
+        @Label("") Buffer fingerprint;
         /** Bullseye of DART database */
-        const Buffer bullseye;
+        Buffer bullseye;
         /** Fingerprint of the chain before this block */
-        const Buffer chain;
+        Buffer chain;
         /** Recorder with database changes of this block */
-        const RecordFactory.Recorder recorder;
+        RecordFactory.Recorder recorder;
     }
 
     @disable this();
@@ -39,44 +39,19 @@ import tagion.hibon.HiBON : HiBON;
     enum bullseyeLabel = GetLabel!(bullseye).name;
     mixin JSONString;
 
-    /** Ctor creates block from Document.
-     *      @param doc - document that conatins recorder, chain and bullseye
-     *      @param net - hash net
-     */
-    private this(const(Document) doc, const(StdHashNet) net) immutable
-    {
-        auto doc_keys = doc.keys.array;
-
-        // recorder
-        Document doc_recorder;
-        if (doc_keys.canFind(recorderLabel))
-            doc_recorder = doc[recorderLabel].get!Document;
-        auto factory = RecordFactory(net);
-        this.recorder = factory.uniqueRecorder(doc_recorder);
-
-        // chain
-        this.chain = doc[chainLabel].get!Buffer;
-
-        // bullseye
-        if (doc_keys.canFind(bullseyeLabel))
-            this.bullseye = doc[bullseyeLabel].get!Buffer;
-
-        // fingerprint
-        this.fingerprint = net.hashOf(Document(toHiBON));
-    }
-
     /** Ctor creates block from recorder, chain and bullseye.
      *      @param recorder - recorder for block
      *      @param chain - fingerprint of the chain before this block
      *      @param bullseye - bullseye of database
      *      @param net - hash net
      */
-    private this(immutable(RecordFactory.Recorder) recorder, immutable Buffer chain, immutable Buffer bullseye, const(
+    private this(immutable RecordFactory.Recorder recorder, Buffer chain, Buffer bullseye, const(
             StdHashNet) net) immutable
     {
         this.recorder = recorder;
         this.chain = chain;
         this.bullseye = bullseye;
+
         this.fingerprint = net.hashOf(Document(toHiBON));
     }
 
@@ -92,13 +67,10 @@ import tagion.hibon.HiBON : HiBON;
     {
         auto hibon = new HiBON;
         hibon[chainLabel] = chain;
+        hibon[bullseyeLabel] = bullseye;
         if (recorder)
         {
             hibon[recorderLabel] = recorder.toDoc;
-        }
-        if (bullseye)
-        {
-            hibon[bullseyeLabel] = bullseye;
         }
         return hibon;
     }
@@ -114,12 +86,12 @@ import tagion.hibon.HiBON : HiBON;
 }
 
 /**
- * \struct EpochBlockFactory
- * Used for creating instance of EpochBlock
+ * \struct RecorderChainBlockFactory
+ * Used for creating instance of RecorderChainBlock
  */
-@safe struct EpochBlockFactory
+@safe struct RecorderChainBlockFactory
 {
-    /** Hash net stored for creating EpochBlocks */
+    /** Hash net stored for creating RecorderChainBlocks */
     const StdHashNet net;
 
     @disable this();
@@ -134,22 +106,30 @@ import tagion.hibon.HiBON : HiBON;
 
     /** Ctor creates block from recorder, chain and bullseye.
      *      @param doc - document that conatins recorder, chain and bullseye
-     *      \return immutable instance of EpochBlock
+     *      \return immutable instance of RecorderChainBlock
      */
-    immutable(EpochBlock) opCall(const(Document) doc)
+    @trusted immutable(RecorderChainBlock) opCall(const(Document) doc)
     {
-        return new immutable(EpochBlock)(doc, this.net);
+        auto factory = RecordFactory(net);
+        immutable recorder = doc.keys.canFind(RecorderChainBlock.recorderLabel) ? factory.uniqueRecorder(
+            doc[RecorderChainBlock.recorderLabel].get!Document) : cast(immutable) factory.recorder;
+
+        Buffer chain = doc[RecorderChainBlock.chainLabel].get!Buffer;
+        Buffer bullseye = doc[RecorderChainBlock.bullseyeLabel].get!Buffer;
+
+        return new immutable(RecorderChainBlock)(recorder, chain, bullseye, this.net);
     }
 
     /** Ctor creates block from recorder, chain and bullseye.
      *      @param recorder - recorder for block
      *      @param chain - fingerprint of previous block
      *      @param bullseye - bullseye of database
-     *      \return immutable instance of EpochBlock
+     *      \return immutable instance of RecorderChainBlock
      */
-    immutable(EpochBlock) opCall(immutable(RecordFactory.Recorder) recorder, immutable(Buffer) chain, immutable(
+    immutable(RecorderChainBlock) opCall(immutable(RecordFactory.Recorder) recorder, immutable(
+            Buffer) chain, immutable(
             Buffer) bullseye)
     {
-        return new immutable(EpochBlock)(recorder, chain, bullseye, this.net);
+        return new immutable(RecorderChainBlock)(recorder, chain, bullseye, this.net);
     }
 }

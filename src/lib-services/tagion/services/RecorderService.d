@@ -25,7 +25,7 @@ import tagion.hibon.HiBON;
 import tagion.utils.Miscellaneous : toHexString, decode;
 import tagion.communication.HiRPC;
 import tagion.utils.Fingerprint : Fingerprint;
-import tagion.dart.EpochBlock : EpochBlock, EpochBlockFactory;
+import tagion.dart.RecorderChainBlock : RecorderChainBlock, RecorderChainBlockFactory;
 
 /** @brief File contains service for handling and saving recorder chain blocks
  */
@@ -44,10 +44,10 @@ static T castFromImmutable(T)(immutable(T) object) @trusted
 
 @safe class EpochBlockFileDataBase
 {
-    alias BlocksInfo = Tuple!(EpochBlock, "first", EpochBlock, "last", ulong, "amount");
+    alias BlocksInfo = Tuple!(RecorderChainBlock, "first", RecorderChainBlock, "last", ulong, "amount");
 
-    private EpochBlock first_block;
-    private EpochBlock last_block;
+    private RecorderChainBlock first_block;
+    private RecorderChainBlock last_block;
     private ulong _amount;
     private immutable(string) folder_path;
 
@@ -81,8 +81,8 @@ static T castFromImmutable(T)(immutable(T) object) @trusted
         return makePath(name, this.folder_path);
     }
 
-    immutable(EpochBlock) addBlock(
-        immutable(EpochBlock) block)
+    immutable(RecorderChainBlock) addBlock(
+        immutable(RecorderChainBlock) block)
     in
     {
         assert(block.fingerprint);
@@ -108,7 +108,7 @@ static T castFromImmutable(T)(immutable(T) object) @trusted
         return block;
     }
 
-    immutable(EpochBlock) deleteLastBlock()
+    immutable(RecorderChainBlock) deleteLastBlock()
     {
         if (amount)
         {
@@ -134,7 +134,7 @@ static T castFromImmutable(T)(immutable(T) object) @trusted
         assert(0);
     }
 
-    immutable(EpochBlock) deleteFirstBlock()
+    immutable(RecorderChainBlock) deleteFirstBlock()
     {
         if (amount)
         {
@@ -251,7 +251,7 @@ static T castFromImmutable(T)(immutable(T) object) @trusted
         return getBlocksInfo(this.folder_path);
     }
 
-    private immutable(EpochBlock) delBlock(Buffer fingerprint)
+    private immutable(RecorderChainBlock) delBlock(Buffer fingerprint)
     {
         assert(fingerprint);
 
@@ -287,7 +287,7 @@ static T castFromImmutable(T)(immutable(T) object) @trusted
         return getFiles(this.folder_path);
     }
 
-    private immutable(EpochBlock) rollBack()
+    private immutable(RecorderChainBlock) rollBack()
     {
         if (buildPath(this.folder_path, this.last_block.chain.toHexString).exists)
         {
@@ -296,7 +296,7 @@ static T castFromImmutable(T)(immutable(T) object) @trusted
 
             auto d = fread(f_name);
             immutable(StdHashNet) net = new StdHashNet;
-            auto factory = EpochBlockFactory(net);
+            auto factory = RecorderChainBlockFactory(net);
             auto block_prev = factory(d);
             assert(block_prev.fingerprint);
             this.last_block = castFromImmutable(block_prev);
@@ -330,7 +330,7 @@ static T castFromImmutable(T)(immutable(T) object) @trusted
         }
     }
 
-    static immutable(EpochBlock) readBlockFromFingerprint(
+    static immutable(RecorderChainBlock) readBlockFromFingerprint(
         Buffer fingerprint, string folder_path)
     {
         const f_name = makePath(fingerprint, folder_path);
@@ -338,17 +338,17 @@ static T castFromImmutable(T)(immutable(T) object) @trusted
         import tagion.hibon.HiBONRecord : fread;
 
         auto doc = fread(f_name);
-        auto factory = EpochBlockFactory(new StdHashNet);
+        auto factory = RecorderChainBlockFactory(new StdHashNet);
         return factory(doc);
     }
 
-    private immutable(EpochBlock) readBlockFromFingerprint(Buffer fingerprint)
+    private immutable(RecorderChainBlock) readBlockFromFingerprint(Buffer fingerprint)
     {
         return readBlockFromFingerprint(fingerprint, this.folder_path);
     }
 
     static immutable(RecordFactory.Recorder) getFlippedRecorder(
-        immutable(EpochBlock) block)
+        immutable(RecorderChainBlock) block)
     {
         const net = new StdHashNet;
         auto factory = RecordFactory(net);
@@ -383,7 +383,7 @@ import tagion.tasks.TaskWrapper;
     mixin TaskBasic;
 
     EpochBlockFileDataBase blocks_db;
-    EpochBlockFactory epoch_block_factory = EpochBlockFactory(new StdHashNet);
+    RecorderChainBlockFactory epoch_block_factory = RecorderChainBlockFactory(new StdHashNet);
 
     @TaskMethod void receiveRecorder(immutable(RecordFactory.Recorder) recorder, Fingerprint db_fingerprint)
     {
