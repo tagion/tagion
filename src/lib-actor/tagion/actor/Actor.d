@@ -1,7 +1,8 @@
-module tagion.actor.TaskActor;
+module tagion.actor.Actor;
 
 import std.algorithm.searching : any;
 import std.format;
+import std.traits;
 
 alias Tid = concurrency.Tid;
 import concurrency = std.concurrency;
@@ -68,9 +69,9 @@ template allMethodFilter(This, alias pred) {
 
 
 mixin template TaskActor() {
-    import concurrency = std.concurrency;
+//    import concurrency = std.concurrency;
     import core.time : Duration;
-    import tagion.actor.TaskActor;
+    import tagion.actor.Actor;
     import tagion.basic.Types : Control;
 
     bool stop;
@@ -80,7 +81,7 @@ mixin template TaskActor() {
 
     @method @local void fail(immutable(Exception) e) @trusted {
         stop = true;
-        prioritySend(concurrency.ownerTid, e);
+        concurrency.prioritySend(concurrency.ownerTid, e);
     }
 
     void stopAll() @trusted {
@@ -117,7 +118,7 @@ private static Tid[string] tids;
 
 bool isRunning(string taskname) @trusted {
     if (taskname in tids) {
-        return locate(taskname) != Tid.init;
+        return concurrency.locate(taskname) != Tid.init;
     }
     return false;
 }
@@ -185,52 +186,11 @@ protected static string generateAllMethods(alias This)()
 }
 
 
-version(none)
-protected string generateAllMethods(alias This, string[] all_member_names)() {
-    import std.array : join;
-
-    string[] result;
-    This tmp_this;
-    static foreach (name; all_member_names)
-    {
-        {
-
-            alias func = __traits(getMember, tmp_this, name);
-            pragma(msg, "func ", func.stringof);
-            enum code = format!(q{alias Func=tmp_this.%s;})(name);
-            mixin(code);
-            //Func tmp_func;
-
-            // alias Func = FunctionTypeOf!(__traits(getMember, This, name));
-            // pragma(msg, "Func ", Func);
-            pragma(msg, "isFunction ", isFunction!Func);
-            pragma(msg, "hasUDA ", hasUDA!(Func, method));
-            alias func_access = getUDAs!(Func, method)[0];
-            pragma(msg, "getUDAs ", func_access.stringof); //getUDAs!(Func, method)[0]);
-
-                //enum func_access = getUDAs!(__traits(getMember, This, name), method)[0];
-            static if (func_access.access is Access.action) {
-            enum method_code = format!q{
-                alias FuncParams_%1$s=AliasSeq!%2$s;
-                void %1$s(FuncParams_%1$s args) @trusted {
-                    concurrency.send(tid, args);
-                }}(name, Parameters!(Func).stringof);
-            result ~= method_code;
-            }
-        }
-    }
-    return result.join("\n");
-}
-
-// enum send_methods = generateSendFunctions;
-//         mixin(send_methods);
-//     }
 
 @safe
 auto actor(Task, Args...)(Args args) if (is(Task == class) || is(Task == struct)) {
     import concurrency = std.concurrency;
     static struct ActorFactory {
-//        Tid tid;
         enum public_members =  allMethodFilter!(Task, templateNot!isProtected);
         enum task_members = allMethodFilter!(Task, isTask);
         pragma(msg, "task_members ", task_members);
@@ -241,7 +201,6 @@ auto actor(Task, Args...)(Args args) if (is(Task == class) || is(Task == struct)
         alias Params = Parameters!TaskFunc;
         alias ParamNames = ParameterIdentifierTuple!TaskFunc;
         pragma(msg, "Params ", Params);
-            //alias Params = int;
         protected static void run(string task_name, Params args) nothrow {
             try {
                 static if (is(Task == struct)) {
@@ -301,12 +260,13 @@ auto actor(Task, Args...)(Args args) if (is(Task == class) || is(Task == struct)
 }
 
 version(unittest) {
-    import std.concurrency;
-    void send(Args...)(Tid tid, Args args) @trusted {
-        tid.send(args);
-    }
-    auto receiverOnly(Args...)(Tid tid, Args args) @trusted {
-        return tid.receiveOnly(args);
+    private {
+        void send(Args...)(Tid tid, Args args) @trusted {
+            concurrency.send(tid, args);
+        }
+        auto receiverOnly(Args...)(Tid tid, Args args) @trusted {
+            return concurrency.receiveOnly(tid, args);
+        }
     }
 }
 
