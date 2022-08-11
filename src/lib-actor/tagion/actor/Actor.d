@@ -3,6 +3,7 @@ module tagion.actor.Actor;
 import std.algorithm.searching : any;
 import std.format;
 import std.traits;
+import std.meta;
 
 alias Tid = concurrency.Tid;
 import concurrency = std.concurrency;
@@ -77,6 +78,7 @@ mixin template TaskActor() {
     bool stop;
     @method void control(Control ctrl) {
         stop = (ctrl is Control.STOP);
+        writefln("control stop %s", stop);
     }
 
     @method @local void fail(immutable(Exception) e) @trusted {
@@ -96,7 +98,12 @@ mixin template TaskActor() {
         send(concurrency.ownerTid, Control.LIVE);
     }
 
-    alias This = typeof(this);
+
+    void end() @trusted {
+        send(concurrency.ownerTid, Control.END);
+    }
+
+alias This = typeof(this);
     void receive() @trusted {
         enum actor_methods = allMethodFilter!(This, isMethod);
         pragma(msg, "actor_methods ", actor_methods);
@@ -105,7 +112,7 @@ mixin template TaskActor() {
         mixin(code);
     }
 
-    bool receiverOnly(Duration duration) @trusted {
+    bool receiveTimeout(Duration duration) @trusted {
         enum actor_methods = allMethodFilter!(This, isMethod);
         pragma(msg, "actor_methods ", actor_methods);
         enum code = format("return concurrency.receiveTimeout(duration, %-(&%s, %));", actor_methods);
@@ -123,29 +130,6 @@ bool isRunning(string taskname) @trusted {
     return false;
 }
 
-protected string produceMethod(alias This, string member_name)() {
-    import std.array : join;
-    alias MethodFunction = typeof(__traits(getMember, This, member_name));
-    alias Params = Parameters!MethodFunction;
-    enum ParamNames = [ParameterIdentifierTuple!MethodFunction];
-    pragma(msg, "ParamsNames ", ParamNames, " : ", member_name);
-    pragma(msg, Params);
-    pragma(msg, isCallable!MethodFunction);
-    string[] result;
-    pragma(msg, "Params ", Params[]);
-    result ~= format("void %s (%-(%s, %) {", member_name, Params[]);
-    return result.join("\n");
-}
-
-protected string produceAllMethods(alias This, string[] all_member_names)() {
-    import std.array : join;
-    string[] result;
-    static foreach(name; all_member_names) {
-        result ~= produceMethod!(This, name);
-    }
-    return result.join("\n");
-}
-
 protected static string generateAllMethods(alias This)()
 {
     import std.array : join;
@@ -155,21 +139,9 @@ protected static string generateAllMethods(alias This)()
     {
         {
             enum code = format!(q{alias Func=This.%s;})(m);
-            //pragma(msg, "code ", code);
             mixin(code);
             static if (isCallable!Func && hasUDA!(Func, method))
             {
-                // alias fail = This.fail;
-                // pragma(msg, "Name ", m);
-                // pragma(msg, "Fail getUDAs!(fail, method)[0] ", getUDAs!(fail, method)[0].access);
-                // pragma(msg, "     getUDAs!(Func, method)[0] ", m, " ",  __traits(compiles, getUDAs!(Func, method)[0].access));
-
-                // enum _access = getUDAs!(Func, method)[0].access;
-                // pragma(msg, "access getUDAs!(Func, method)[0] ", _access); //m, " ",  __traits(compiles, getUDAs!(Func, method)[0].access));
-                // pragma(msg, "stop getUDAs!(stop, method)[0] ", getUDAs!(This.some, method)[0].access);
-
-                //static if (!isType!(getUDAs!(Func, method)[0].access) is Access.local) {
-                //pragma(msg, "getUDAs!(Func, method)[0] ", getUDAs!(Func, method)[0].access);
                 static if (!hasUDA!(Func, local)) {
                     enum method_code = format!q{
                         alias FuncParams_%1$s=AliasSeq!%2$s;
@@ -184,8 +156,6 @@ protected static string generateAllMethods(alias This)()
     }
     return result.join("\n");
 }
-
-
 
 @safe
 auto actor(Task, Args...)(Args args) if (is(Task == class) || is(Task == struct)) {
@@ -210,8 +180,12 @@ auto actor(Task, Args...)(Args args) if (is(Task == class) || is(Task == struct)
                     Task task = new Task;
                 }
                 scope(success) {
+                    writefln("STOP Success");
                     task.stopAll;
+                    writeln("Stop all");
                     tids.remove(task_name);
+                    writefln("Remove %s ", task_name);
+                    task.end;
                     //prioritySend(concurrency.ownerTid, Control.END);
 
                 }
@@ -260,6 +234,8 @@ auto actor(Task, Args...)(Args args) if (is(Task == class) || is(Task == struct)
 }
 
 version(unittest) {
+    import std.stdio;
+    import core.time;
     private {
         void send(Args...)(Tid tid, Args args) @trusted {
             concurrency.send(tid, args);
@@ -303,9 +279,11 @@ unittest {
 
         @task void runningTask(int label) {
             count = label;
+            writefln("Alive!!!!");
             alive; // Task is now alive
             while (!stop) {
-                receive;
+                receiveTimeout(100.msecs);
+                writefln("Waiting to stop");
                 // const rets=receiverMethods(100.msec);
             }
         }
@@ -316,8 +294,8 @@ unittest {
     //pragma(msg, "getUDAs!(Func, method)[0] ", getUDAs!(fail, method)[0].access);
 
     auto my_actor_factory = actor!MyActor;
+    /// Test of a single actor
     {
-        /// Test of a single actor
         enum single_actor_taskname = "task_name_for";
         assert(!isRunning(single_actor_taskname));
         // Starts one actor of MyActor
@@ -334,191 +312,4 @@ unittest {
             my_actor_1.stop;
         }
     }
-}
-
-
-version(none) {
-
-
-void func() {
-    auto actor = Actor!MyActor("Text");
-    actor.start("label string");
-    actor.register("taskname");
-    actor.some("Send text");
-
-    actor.stop;
-    auto actor = Actor!MyActor.start("XXX");
-
-
-
-    actor.tid.send("Test");
-}
-}
-
-// version(none) {
-// void func2()
-//     auto actor1 = Actor!MyActor1.connect("taskname");
-// //actor1.stop;
-
-//     actor1.some("xxxx");
-
-// }
-
-// void func3() {
-//     string sss;
-//     void run(string xxx) {
-//         sss = xxx;
-//     }
-
-//     spawn(&run, "xxx");
-//     sss = "yyy";
-// }
-// }
-import std.traits;
-import std.meta;
-//version(none)
-template getParent(alias A) {
-    alias getParent = __traits(parent, A);
-}
-
-
-template __isSpawnable(F, T...)
-{
-    template isParamsImplicitlyConvertible(F1, F2, int i = 0)
-    {
-        alias param1 = Parameters!F1;
-        alias param2 = Parameters!F2;
-        static if (param1.length != param2.length)
-            enum isParamsImplicitlyConvertible = false;
-        else static if (param1.length == i)
-            enum isParamsImplicitlyConvertible = true;
-        else static if (isImplicitlyConvertible!(param2[i], param1[i]))
-            enum isParamsImplicitlyConvertible = isParamsImplicitlyConvertible!(F1,
-                    F2, i + 1);
-        else
-            enum isParamsImplicitlyConvertible = false;
-    }
-
-    // template isProtected(alias A) {
-    //     enum isProtected = __traits(getVisibility, A) == q{protected};
-    // }
-
-    static if (isDelegate!F)
-    {
-        alias FuncWithArgs = void delegate(T);
-        alias parent = getParent!F;
-        pragma(msg, "parent ", parent);
-        static if (is(parent == class) || is(parent == struct)) {
-            pragma(msg, "aliasSeqOf|parent", aliasSeqOf!parent);
-
-            enum is_valid_member = true;
-        }
-        else {
-            enum is_valid_member = false;
-        }
-    }
-    else
-    {
-        alias FuncWithArgs = void function(T);
-        enum is_valid_member = false;
-    }
-
-    pragma(msg, "isParamsImplicitlyConvertible ", isParamsImplicitlyConvertible!(F, FuncWithArgs));
-    enum __isSpawnable = isCallable!F && is(ReturnType!F == void)
-            && isParamsImplicitlyConvertible!(F, FuncWithArgs)
-            && (isFunctionPointer!F || !hasUnsharedAliasing!F || is_valid_member);
-}
-
-    bool hasLocalAliasing(Types...)()
-    {
-        import tagion.acture.concurrency : Tid;
-        import std.typecons : Rebindable;
-
-        // Works around "statement is not reachable"
-        bool doesIt = false;
-        static foreach (T; Types)
-        {
-            static if (is(T == Tid))
-            { /* Allowed */ }
-            else static if (is(T : Rebindable!R, R))
-                doesIt |= hasLocalAliasing!R;
-            else static if (is(T == struct))
-                doesIt |= hasLocalAliasing!(typeof(T.tupleof));
-            else
-                doesIt |= std.traits.hasUnsharedAliasing!(T);
-        }
-        return doesIt;
-    }
-
-
-// Tid __spawn(F, T...)(bool linked, F fn, T args)
-//     if (concurrency.isSpawnable!(F, T)) {
-//         return Tid.init;
-//     }
-
-
-Tid do_spawn(S, F, T...)(F fn, T args) if (is(S == struct) || is(S == class)) {
-    alias allMembers = FieldNameTuple!S;
-    pragma(msg, allMembers);
-    return Tid.init;
-}
-
-static string str;
-pragma(msg, "getParent!(str) ", getParent!(str));
-
-//@safe
-unittest {
-    static struct Task {
-        protected string outer_string;
-        void run(string arg) pure {
-            outer_string = arg;
-        }
-    }
-
-    // template getParent(alias A) {
-    //     static if (__traits(compiles, __traits(parent, A))) {
-    //         alias getParent = __traits(parent, A);
-    //     }
-    //     else {
-    //         alias getParent = void;
-    //     }
-    // }
-
-    // template getParent(alias A) {
-    //     static if (__traits(compiles, __traits(parent, A))) {
-    //         alias getParent = __traits(parent, A);
-    //     }
-    //     else {
-    //         alias getParent = void;
-    //     }
-    // }
-
-    template isProtected(alias F) {
-        enum isProtected = __traits(getVisibility, F) == q{protected};
-    }
-
-    //auto task_run_ptr = &
-
-    Task task;
-
-    auto tid=do_spawn!Task(&task.run, "Test");
-
-    pragma(msg, "getParent!(Task.run) ", getParent!(Task.run));
-    pragma(msg, "getParent!(task.run) ", getParent!(task.run));
-//    pragma(msg, "getParent!(task.run) ", getParent!(typeof(&task.run)));
-//    pragma(msg, "getParent!(&task.run) ", getParent!(&task.run));
-    //pragma(msg, "getParent!(&Task.run) ", getParent!(typeof(&(task.run))));
-    pragma(msg, "isProtected!(Task.run) ", isProtected!(Task.run));
-    pragma(msg, "isProtected!(Task.outer_string)", isProtected!(Task.outer_string));
-    pragma(msg, "isProtected!(task.run) ", isProtected!(Task.run));
-    pragma(msg, "isProtected!(task.outer_string)", isProtected!(Task.outer_string));
-
-
-    //pragma(msg, "__isSpawnable ", __isSpawnable!(task.run, string));
-    //pragma(msg, "isSpawnable ", concurrency.isSpawnable!(typeof(&(task.run)), string));
-    //pragma(msg, "&task ", typeof(&(task.run)));
-    //pragma(msg, "hasLocalAliasing!string ", hasLocalAliasing!string);
-//    auto tid=__spawn(false, &task, "test");
-//    auto tid=concurrency.spawn(&(task.run), "test");
-    //auto tid=concurrency.spawn(&task, "test");
 }
