@@ -4,6 +4,8 @@ import std.algorithm.searching : any;
 import std.format;
 import std.traits;
 import std.meta;
+import std.typecons : Flag;
+import core.demangle : mangle;
 
 alias Tid = concurrency.Tid;
 import concurrency = std.concurrency;
@@ -26,15 +28,17 @@ struct local {
 struct task {
 }
 
+struct ActorID {
+    string taskname;
+    string mangle_name;
+//    this(string
+}
 
-// template isProtected(This, string name) {
-//     static if (__traits(compiles, __traits(getVisibility, __traits(getMember, This, name)))) {
-//         enum isProtected = __traits(getVisibility, __traits(getMember, This, name)) == q{protected};
-//     }
-//     else {
-//         enum isProtected = true;
-//     }
-// }
+alias ActorFlag = Flag!"action";
+
+immutable(ActorID) actorID(Task)(string taskname) nothrow pure {
+    return immutable(ActorID)(taskname, mangle!Task(""));
+}
 
 enum isTrue(alias eval) = __traits(compiles, eval) && eval;
 
@@ -75,15 +79,24 @@ mixin template TaskActor() {
     import tagion.actor.Actor;
     import tagion.basic.Types : Control;
 
-    bool _stop;
+    bool stop;
     @method void control(Control ctrl) {
-        _stop = (ctrl is Control.STOP);
-        writefln("control stop %s", _stop);
+        stop = (ctrl is Control.STOP);
+        .check(stop, format("Uexpected control signal %s", ctrl));
     }
 
     @method @local void fail(immutable(Exception) e) @trusted {
-        _stop = true;
+        stop = true;
         concurrency.prioritySend(concurrency.ownerTid, e);
+    }
+
+    @method @local void actorId(immutable(ActorID) id) @trusted {
+        auto tid = concurrency.locate(id.taskname);
+        if ( tid != Tid.init) {
+            enum mangle_name = mangle!This("");
+            immutable response = cast(ActorFlag)(id.mangle_name == mangle_name);
+            concurrency.prioritySend(tid, response);
+        }
     }
 
     void stopAll() @trusted {
@@ -219,17 +232,13 @@ auto actor(Task, Args...)(Args args) if (is(Task == class) || is(Task == struct)
                 concurrency.send(tid, Control.STOP);
             }
 
-            // enum methods = allMethodFilter!(Task, isMethod);
-            // pragma(msg, "!!!Methods ", methods);
-            // pragma(msg, generateAllMethods!(Task));
             enum members_code = generateAllMethods!(Task);
-//            pragma(msg, members_code);
             mixin(members_code);
         }
         /**
 
          */
-        auto opCall(Args...)(string taskname, Args args) @trusted {
+        Actor opCall(Args...)(string taskname, Args args) @trusted {
             import std.meta : AliasSeq;
             import std.typecons;
             scope(failure) {
@@ -242,6 +251,17 @@ auto actor(Task, Args...)(Args args) if (is(Task == class) || is(Task == struct)
             const live = concurrency.receiveOnly!Control;
             .check(live is Control.LIVE, format("%s excepted from %s of %s but got %s", Control.LIVE, taskname, Task.stringof, live));
             return Actor(tid);
+        }
+
+        Actor connect(string taskname) @trusted {
+            auto tid = concurrency.locate(taskname);
+            if (tid != Tid.init) {
+                concurrency.send(tid, actorID!Task(taskname));
+                if (concurrency.receiveOnly!(ActorFlag) == ActorFlag.yes) {
+                    return Actor(tid);
+                }
+            }
+            return Actor.init;
         }
     }
     ActorFactory result;
@@ -299,7 +319,7 @@ version(unittest) {
             count = label;
             writefln("Alive!!!!");
             alive; // Task is now alive
-            while (!_stop) {
+            while (!stop) {
                 receiveTimeout(100.msecs);
                 writefln("Waiting to stop");
                 // const rets=receiverMethods(100.msec);
