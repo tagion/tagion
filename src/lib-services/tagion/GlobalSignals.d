@@ -6,10 +6,12 @@ import core.stdc.stdlib : exit, system;
 import core.stdc.string : strlen;
 import tagion.logger.Logger;
 
+import tagion.basic.Version;
+
 //import core.internal.execinfo;
 // The declaration of the backtrace function in the execinfo.d is not declared @nogc
 // so they are declared here with @nogc because signal needs a @nogc function
-version (linux)
+static if (ver.linux && not_unittest)
 {
     extern (C)
     {
@@ -24,6 +26,7 @@ version (linux)
 
 shared bool abort = false;
 private shared bool fault;
+static if (ver.linux && not_unittest) {
 static extern (C) void shutdown(int sig) @nogc nothrow
 {
     if (!fault)
@@ -39,10 +42,12 @@ static extern (C) void shutdown(int sig) @nogc nothrow
         }
     }
 }
+}
 
 shared string call_stack_file;
 
-version (linux)
+
+static if (ver.linux && not_unittest)
 {
     import core.sys.posix.unistd : STDERR_FILENO;
     import core.sys.posix.signal;
@@ -106,6 +111,7 @@ static extern (C) void ignore(int sig) @nogc nothrow
 }
 
 enum backtrace_ext = "callstack";
+static if (not_unittest) {
 shared static this()
 {
     import std.path;
@@ -134,4 +140,5 @@ shared static this()
 
     signal(SIGINT, &shutdown);
     signal(SIGTERM, &shutdown);
+}
 }

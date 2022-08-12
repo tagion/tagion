@@ -1090,9 +1090,6 @@ class BlockFile
             enum uint HEAD_MASK = 1 << (uint.sizeof * 8 - 1);
             enum HEADER_SIZE = cast(uint)(previous.sizeof + next.sizeof + size.sizeof);
             immutable(Buffer) data;
-            BlockInfo info(const uint index) pure nothrow {
-                return BlockInfo(previous, next, size, index, head);
-            }
             void write(ref File file, immutable uint BLOCK_SIZE) const @trusted
             {
                 scope buffer = new ubyte[BLOCK_SIZE];
@@ -1424,8 +1421,7 @@ class BlockFile
      +/
     uint erase(const uint index)
         {
-            if (index !is INDEX_NULL)
-            {
+version(none) {
            console.writef("%d [ ", index);
             scope(exit) {
                 console.writeln("]");
@@ -1443,42 +1439,39 @@ class BlockFile
                     .map!(a => tuple!("size", "index")(a.block.size, a.index));
                     .array;
 //////////////////////////////////////////////////////////////////////////////                    .cache;
-                foreach(
-
-
-
-            version(none)
-            @safe void remove_sequency(uint index)
-            {
-                console.writef("%d", index);
-                check(!recycle_indices.isRecyclable(index), format("Block %d has already been delete", index));
-                auto block = read(index);
-                check(block.head, "Load index is not pointing to the begin of a block sequency");
-
-//                bool first=true;
-                // static if (first)
-                // {
-                //     // Check if this is the first block in a block sequency
-                // }
-                do {
-                    recycle_indices = index;
-                    console.writef(":%d ",block.size);
-                    if (index >= masterblock.first_index)
-                    {
-                        masterblock.first_index = index + 1;
-                    }
-                    if (block.size <= DATA_SIZE) {
-                        break;
-                    }
-                    block = read(index);
-                    index = block.next;
-                }
-
-//                return block.next;
+                //foreach(
             }
 
+}
+            @safe uint remove_sequency(bool first = false)(const uint index)
+            {
+                console.writef("%d", index);
+                auto block = read(index);
+                check(!recycle_indices.isRecyclable(index), format("Block %d has already been delete", index));
+//                auto block = read(index);
+//                check(block.head, "Load index is not pointing to the begin of a block sequency");
+
+                static if (first)
+                {
+                    // Check if this is the first block in a block sequency
+                    check(block.head, "Load index is not pointing to the begin of a block sequency");
+                }
+                recycle_indices = index;
+                if (block.size > DATA_SIZE)
+                {
+                    return remove_sequency(block.next);
+                }
+                if (index >= masterblock.first_index)
+                {
+                    masterblock.first_index = index + 1;
+                }
+                return block.next;
+            }
+
+            if (index !is INDEX_NULL)
+            {
                 //        check(index !is INDEX_NULL, "Block zero can not be ereased");
-                return remove_sequency(index);
+                return remove_sequency!true(index);
             }
             return INDEX_NULL;
         }
