@@ -75,7 +75,8 @@ import tagion.script.StandardRecords;
 //import std.string : indexOf;
 //import std.file : mkdir, exists;
 import std.format;
-
+import std.datetime.stopwatch;
+    
 shared(p2plib.Node) initialize_node(immutable Options opts)
 {
     import std.array : split;
@@ -117,10 +118,11 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 {
     try
     {
+        auto sw = StopWatch(AutoStart.no);
+        sw.start();
         log.register(opts.node_name);
         setOptions(opts);
         bool stop;
-        int count_down = opts.epoch_limit;
         int count_transactions;
         int epoch_num;
         scope (success)
@@ -214,14 +216,15 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             {
                 params[i] = payload;
             }
-            log("Produced epoch count down  %d", count_down);
             transcript_tid.send(params.serialize);
-            if (count_down > 0)
+            
+            if ((opts.epoch_limit - epoch_num) > 0)
             {
-                count_down--;
                 count_transactions = 0;
                 epoch_num++;
-                if (count_down <= 0)
+                sw.stop();
+                sw.start();
+                if ((opts.epoch_limit - epoch_num) <= 0)
                 {
                     auto main_tid = locate(main_task);
                     main_tid.send(Control.STOP);
@@ -496,9 +499,10 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 (string respond_task_name, Buffer data) {
                 import tagion.hibon.HiBONJSON;
 
+                long secs = sw.peek.total!"seconds";
                 const doc = Document(data);
                 const receiver = empty_hirpc.receive(doc);
-                auto respond = HealthParams(hashgraph.rounds.length, count_transactions, epoch_num, hashgraph.areWeInGraph);
+                auto respond = HealthParams(hashgraph.rounds.length, secs, count_transactions, epoch_num, hashgraph.areWeInGraph);
                 auto response = empty_hirpc.result(receiver, respond);
                 log("Healthcheck: %s", response.toDoc.toJSON);
                 locate(respond_task_name).send(response.toDoc.serialize);

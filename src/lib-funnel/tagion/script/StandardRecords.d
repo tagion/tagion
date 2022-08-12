@@ -252,16 +252,22 @@ enum OwnerKey = "$Y";
         mixin HiBONRecord;
     }
 
+    /**
+     * \struct HealthParams
+     * Struct store paramentrs for healthcheck feature
+     */
     @RecordType("HEALTH") struct HealthParams
     {
         ulong rounds_;
+        long epoch_timestamp;
         int amount_trans;
         int epoch_num;
         bool in_graph;
         mixin HiBONRecord!(
             q{
-                this(ulong rounds_, int amount_trans, int epoch_num, bool in_graph) {
+                this(ulong rounds_, long epoch_timestamp, int amount_trans, int epoch_num, bool in_graph) {
                     this.rounds_ = rounds_;
+                    this.epoch_timestamp = epoch_timestamp;
                     this.amount_trans = amount_trans;
                     this.epoch_num = epoch_num;
                     this.in_graph = in_graph;
