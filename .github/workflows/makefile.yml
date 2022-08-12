@@ -12,6 +12,8 @@ jobs:
       run: |  
         pwd
         ls -la
+        id
+        source ~/.bashrc
         which dstep
         which ldc2
         which gcc
