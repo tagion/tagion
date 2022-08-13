@@ -31,22 +31,12 @@ struct Statistic(T, Flag!"histogram" flag=No.histogram) {
             _histogram.update(
                 value,
                 () => 1,
-                (ref uint a) => a++);
+                (ref uint a) => a+=1);
         }
     }
 
 
-//     protected alias _ResultAliasSeq = AliasSeq!(double, "sigma", double, "mean", uint, "N", T, "min", T, "max");
-//     static if (flag) {
-// //        protected alias ResultAliasSeq = AliasSeq!(_ResultAliasSeq, AliasSeq!(uint[T], "histogram"));
-//         protected alias ResultAliasSeq = AliasSeq!(uint[T], "histogram");
-// //        protected alias ResultAliasSeq = _ResultAliasSeq;
-//     }
-//     else {
-//         protected alias ResultAliasSeq = _ResultAliasSeq;
-//     }
     alias Result = Tuple!(double, "sigma", double, "mean", uint, "N", T, "min", T, "max");
-//    alias Result = AliasSeq!(double, "sigma", double, "mean", uint, "N", T, "min", T, "max");
     mixin HiBONRecord;
 
     const pure nothrow @nogc {
@@ -103,15 +93,12 @@ unittest {
     const samples = [-10, 15, -10, 6, 8, -12, 18, 8, -12, 9, 4, 5, 6];
     samples.each!(n => s(n));
 
-    writefln("[%(%s %)]", samples);
     auto r = s.result;
     // Mean
-    writefln("r.mean = %s", r.mean);
     assert(approx(r.mean, 2.6923));
     // Number of samples
     assert(r.N == samples.length);
     // Sigma
-    writefln("r.sigma  = %s", r.sigma);
     assert(approx(r.sigma, 10.266));
 
     assert(r.max == samples.maxElement);
@@ -120,20 +107,21 @@ unittest {
     // samples/histogram does not contain -4
     assert(!s.contains(-4));
     // but conatians -10
-    assert(!s.contains(-10));
+    assert(s.contains(-10));
 
     // Get the statiscal histogram
     const histogram = s.histogram;
 
     assert(histogram.get(-4, 0) == 0);
     assert(histogram.get(-10, 0) > 0);
+
+    // verifier the number of samples in the histogram
     assert(histogram.get(-10, 0) == samples.filter!(a => a == -10).count);
 }
 
 version(unittest) {
     import std.algorithm.iteration : each, filter;
     import std.algorithm.searching : count, maxElement, minElement;
-    import std.stdio;
     import std.math.operations : isClose;
     alias approx = (a, b) => isClose(a, b, 0.001);
 }
