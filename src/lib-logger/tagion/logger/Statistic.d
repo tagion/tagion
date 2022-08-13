@@ -115,7 +115,7 @@ unittest {
     assert(histogram.get(-4, 0) == 0);
     assert(histogram.get(-10, 0) > 0);
 
-    // verifier the number of samples in the histogram
+    // verifies the number of samples in the histogram
     assert(histogram.get(-10, 0) == samples.filter!(a => a == -10).count);
 }
 
