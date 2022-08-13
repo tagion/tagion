@@ -1,21 +1,24 @@
 module tagion.logger.Statistic;
 
-import std.typecons : Tuple;
+import std.typecons : Tuple, Flag, Yes, No;
+import std.meta : AliasSeq;
+import std.format;
+
 import tagion.hibon.HiBONRecord;
 
-struct Statistic(T)
-{
-    //    enum Limits : double { MEAN=10, SUM=100 }
-    private
-    {
+@safe
+struct Statistic(T, Flag!"histogram" flag=No.histogram) {
+    protected {
         double sum2 = 0.0;
         double sum = 0.0;
         T _min = T.max, _max = T.min;
         uint N;
+        static if (flag) {
+            uint[T] _histogram;
+        }
     }
 
-    ref Statistic opCall(const T value)
-    {
+    void opCall(const T value) pure nothrow {
         import std.algorithm.comparison : min, max;
 
         _min = min(_min, value);
@@ -24,35 +27,113 @@ struct Statistic(T)
         sum += x;
         sum2 += x * x;
         N++;
-        return this;
+        static if (flag) {
+            _histogram.update(
+                value,
+                () => 1,
+                (ref uint a) => a++);
+        }
     }
 
+
+//     protected alias _ResultAliasSeq = AliasSeq!(double, "sigma", double, "mean", uint, "N", T, "min", T, "max");
+//     static if (flag) {
+// //        protected alias ResultAliasSeq = AliasSeq!(_ResultAliasSeq, AliasSeq!(uint[T], "histogram"));
+//         protected alias ResultAliasSeq = AliasSeq!(uint[T], "histogram");
+// //        protected alias ResultAliasSeq = _ResultAliasSeq;
+//     }
+//     else {
+//         protected alias ResultAliasSeq = _ResultAliasSeq;
+//     }
     alias Result = Tuple!(double, "sigma", double, "mean", uint, "N", T, "min", T, "max");
-    const(Result) result() const pure nothrow
-    {
+//    alias Result = AliasSeq!(double, "sigma", double, "mean", uint, "N", T, "min", T, "max");
+    mixin HiBONRecord;
+
+    const pure nothrow @nogc {
+    const(Result) result() {
         immutable mx = sum / N;
         immutable mx2 = mx * mx;
         immutable M = sum2 + N * mx2 - 2 * mx * sum;
         import std.math : sqrt;
-
         return Result(sqrt(M / (N - 1)), mx, N, _min, _max);
     }
 
-    mixin HiBONRecord;
+
+    static if (flag) {
+        bool contains(const T size) {
+            return (size in _histogram) !is null;
+        }
+
+        const(uint[T]) histogram() {
+            return _histogram;
+        }
+    }
+    }
+    string toString() const {
+        return format("N=%d sum2=%s sum=%s min=%s max=%s", N, sum2, sum, _min, _max);
+    }
+
 }
 
-unittest
-{
+///
+@safe
+unittest {
     Statistic!uint s;
-    foreach (size; [10, 15, 17, 6, 8, 12, 18])
-    {
-        s(size);
-    }
+    const samples = [10, 15, 17, 6, 8, 12, 18];
+    samples.each!(a => s(a));
+
     auto r = s.result;
     // Mean
-    assert(cast(int)(r.mean * 1_0000) == 12_2857);
-    // Sum
-    assert(r.N == 7);
+    assert(approx(r.mean, 12.2857));
+    // Number of samples
+    assert(r.N == samples.length);
     // Sigma
-    assert(cast(int)(r.sigma * 1_0000) == 4_5721);
+    assert(approx(r.sigma, 4.5721));
+
+    assert(r.max == samples.maxElement);
+    assert(r.min == samples.minElement);
+
+}
+
+///
+@safe
+unittest {
+    /// Use of the Statistic including histogram
+    Statistic!(long, Yes.histogram) s;
+    const samples = [-10, 15, -10, 6, 8, -12, 18, 8, -12, 9, 4, 5, 6];
+    samples.each!(n => s(n));
+
+    writefln("[%(%s %)]", samples);
+    auto r = s.result;
+    // Mean
+    writefln("r.mean = %s", r.mean);
+    assert(approx(r.mean, 2.6923));
+    // Number of samples
+    assert(r.N == samples.length);
+    // Sigma
+    writefln("r.sigma  = %s", r.sigma);
+    assert(approx(r.sigma, 10.266));
+
+    assert(r.max == samples.maxElement);
+    assert(r.min == samples.minElement);
+
+    // samples/histogram does not contain -4
+    assert(!s.contains(-4));
+    // but conatians -10
+    assert(!s.contains(-10));
+
+    // Get the statiscal histogram
+    const histogram = s.histogram;
+
+    assert(histogram.get(-4, 0) == 0);
+    assert(histogram.get(-10, 0) > 0);
+    assert(histogram.get(-10, 0) == samples.filter!(a => a == -10).count);
+}
+
+version(unittest) {
+    import std.algorithm.iteration : each, filter;
+    import std.algorithm.searching : count, maxElement, minElement;
+    import std.stdio;
+    import std.math.operations : isClose;
+    alias approx = (a, b) => isClose(a, b, 0.001);
 }

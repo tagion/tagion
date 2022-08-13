@@ -17,6 +17,7 @@ import std.conv : to;
 import std.traits;
 import std.exception : assumeUnique;
 import std.container.rbtree : RedBlackTree, redBlackTree;
+
 import tagion.basic.Types : Buffer;
 import tagion.basic.Basic : basename, log2, assumeTrusted;
 import tagion.basic.TagionExceptions : Check;
@@ -25,6 +26,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
 import tagion.dart.DARTException : BlockFileException;
+import tagion.logger.Statistic;
 
 import std.math : rint;
 
@@ -53,6 +55,8 @@ void truncate(ref File file, long length)
 
 alias check = Check!BlockFileException;
 
+
+
 @safe
 class BlockFile
 {
@@ -60,7 +64,7 @@ class BlockFile
     enum DEFAULT_BLOCK_SIZE = 0x40;
     immutable uint BLOCK_SIZE;
     immutable uint DATA_SIZE;
-
+    alias BlockFileStatistic = Statistic!(uint, Yes.histogram);
     static bool do_not_write;
     protected
         {
@@ -70,10 +74,10 @@ class BlockFile
             MasterBlock masterblock;
             HeaderBlock headerblock;
             bool hasheader;
-            Statistic _statistic;
+            BlockFileStatistic _statistic;
         }
 
-    const(Statistic) statistic() const pure nothrow @nogc {
+    const(BlockFileStatistic) statistic() const pure nothrow @nogc {
         return _statistic;
     }
 
@@ -329,7 +333,7 @@ class BlockFile
                 return segments;
             }
 
-        const(uint) reserve_segment(bool random = false)(const uint size)
+        const(uint) reserve_segment(bool random_block = random_)(const uint size)
             {
                 void remove_segment(const(Segment) segment_to_be_removed, const uint size)
                     in
@@ -361,7 +365,7 @@ class BlockFile
 
                 }
 
-                static if (random)
+                static if (random_block)
                 {
                     import std.random;
 
@@ -714,15 +718,16 @@ class BlockFile
         }
 
     pragma(msg, "fixme(cbr): The Statistic here should use tagion.utils.Statistic");
-
-    struct Statistic
-    {
         enum Limits : double
             {
                 MEAN = 10,
                     SUM = 100
                     }
 
+
+    version(none)
+    struct Statistic
+    {
         protected
             {
                 double sum2 = 0.0;
@@ -843,20 +848,20 @@ class BlockFile
             {
                 return false;
             }
-            else if (_statistic.contain(blocks) || (total_blocks >= 2 * blocks))
+            else if (_statistic.contains(blocks) || (total_blocks >= 2 * blocks))
             {
                 return true;
             }
             else
             {
                 auto r = _statistic.result;
-                if (r.mean > _statistic.Limits.MEAN)
+                if (r.mean > Limits.MEAN)
                 {
                     immutable limit = (r.mean - r.sigma);
                     if (blocks > limit)
                     {
                         immutable remain_blocks = total_blocks - blocks;
-                        if (_statistic.contain(remain_blocks) || (remain_blocks > r.mean))
+                        if (_statistic.contains(remain_blocks) || (remain_blocks > r.mean))
                         {
                             return true;
                         }
@@ -1272,17 +1277,9 @@ class BlockFile
             //
             // Allocate block for statistical data
             //
-            version (unittest)
-            {
-                enum random_block = false;
-            }
-            else
-            {
-                enum random_block = true;
-            }
             immutable old_statistic_index = masterblock.statistic_index;
 
-            auto statistical_allocate = save!random_block(_statistic.serialize);
+            auto statistical_allocate = save(_statistic.toDoc.serialize, random);
             masterblock.statistic_index = statistical_allocate.begin_index;
             if (old_statistic_index !is INDEX_NULL)
             {
@@ -1352,7 +1349,7 @@ class BlockFile
                 immutable buffer = load(masterblock.statistic_index);
                 // import tagion.services.LoggerService;
                 // import std.stdio;
-                _statistic = Statistic(Document(buffer));
+                _statistic = BlockFileStatistic(Document(buffer));
             }
         }
 
@@ -1532,7 +1529,7 @@ version(none) {
             //
             // This function reserves blocks and recycles blocks if possible
             //
-            protected void reserve(bool random_block = false)()
+            protected void reserve(bool random_block)()
                 in
                 {
                     assert(chain.begin_index == 0, "Block is already reserved");
@@ -1541,10 +1538,10 @@ version(none) {
             {
                 immutable size = number_of_blocks(chain.data.length);
                 chain.begin_index = recycle_indices.reserve_segment!random_block(size);
-                _statistic.count(size);
+                _statistic(size);
             }
 
-            this(immutable(Buffer) buffer, immutable bool random_block = false)
+            this(immutable(Buffer) buffer, immutable bool random_block = random)
                 in
                 {
                     assert(buffer.length > 0, "Buffer size can not be zero");
@@ -1599,7 +1596,7 @@ version(none) {
      + Params:
      +     data = Data buffer to be reserved and allocated
      +/
-    const(AllocatedChain) save(bool random_block = false)(immutable(Buffer) data)
+    const(AllocatedChain) save(immutable(Buffer) data, bool random_block = random)
         {
             auto result = new AllocatedChain(data, random_block);
             allocated_chains ~= result;
@@ -2215,9 +2212,11 @@ version(none) {
             enum TOTAL_BLOCKS = 0x100;
             auto fileid = fileId;
 
-            { // Test of BlockFile.create and BlockFile.opCall
+            /// Test of BlockFile.create and BlockFile.opCall
+            {
                 immutable filename = fileId("create").fullpath;
                 BlockFile.create(filename, "create.unittest", SMALL_BLOCK_SIZE);
+                writefln("BlockFile %s", filename);
                 auto blockfile_load = BlockFile(filename);
                 scope (exit)
                 {
@@ -2237,8 +2236,9 @@ version(none) {
                 return cast(Buffer) text;
             }
 
+            ///
+            /// Create BlockFile
             {
-                // Create Test BlockFile
                 // Delete test  blockfile
                 // Create new blockfile
                 File file = File(fileId.fullpath, "w");
@@ -2317,6 +2317,7 @@ version(none) {
                 }
 
             }
+
 
             void erase(BlockFile blockfile, immutable(uint[]) erase_list)
             {
@@ -2422,7 +2423,7 @@ version(none) {
                 immutable uint[uint] size_stats = [
                     6: 2, 2: 4, 3: 9, 10: 2, 5: 5, 4: 1, 9: 1
                     ]; //[5:6, 4:1, 3:10, 2:4, 10:2, 9:1];
-                foreach (size, count; blockfile.statistic.size_statistic)
+                foreach (size, count; blockfile.statistic.histogram)
                 {
                     assert(size in size_stats);
                     assert(count is size_stats[size]);
@@ -2435,4 +2436,16 @@ version(none) {
                 blockfile.close;
             }
         }
+}
+
+
+/// random is used in unittest mode to enable preditable tests
+version (unittest)
+{
+    import std.stdio;
+    enum random = false;
+}
+else
+{
+    enum random = true;
 }
