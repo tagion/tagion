@@ -209,26 +209,24 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             import std.algorithm;
             import std.array : array;
             import tagion.hibon.HiBONJSON;
-
             HiBON params = new HiBON;
-            //            pragma(msg, "fixme(cbr): epoch_time has not beed added to the epoch");
+
             foreach (i, payload; events.map!((e) => e.event_body.payload).array)
             {
                 params[i] = payload;
             }
+
             transcript_tid.send(params.serialize);
+            assert(opts.epoch_limit > epoch_num);
+            epoch_num++;
+            count_transactions = 0;
+            sw.stop();
+            sw.start();
             
-            if ((opts.epoch_limit - epoch_num) > 0)
+            if (epoch_num >= opts.epoch_limit)
             {
-                count_transactions = 0;
-                epoch_num++;
-                sw.stop();
-                sw.start();
-                if ((opts.epoch_limit - epoch_num) <= 0)
-                {
-                    auto main_tid = locate(main_task);
-                    main_tid.send(Control.STOP);
-                }
+                auto main_tid = locate(main_task);
+                main_tid.send(Control.STOP);
             }
         }
 
