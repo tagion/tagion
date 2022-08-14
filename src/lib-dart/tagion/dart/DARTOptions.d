@@ -3,6 +3,7 @@ module tagion.dart.DARTOptions;
 import tagion.basic.Basic : basename;
 import tagion.basic.TagionExceptions;
 
+/** Options for DART */
 struct DARTOptions
 {
     import tagion.utils.JSONCommon;
@@ -10,18 +11,24 @@ struct DARTOptions
 
     /** name of the DART service */
     string task_name;
-    // ask
+    /** pid for node listen*/
     string protocol_id;
+    /** host info */
     HostOptions host;
+    /** filename for DART file */
     string name;
     string prefix;
+    /** path to DART file */
     string path;
     ubyte ringWidth;
     int rings;
+    /** flag for initialize DART */
     bool initialize;
-    bool synchronize;
+    /** flag for synchronize DART */
+    bool synchronize;  
     bool angle_from_port;
     bool request;
+    /** flag for load full dart */
     bool fast_load;
     ulong tick_timeout;
     bool master_from_port;
@@ -36,7 +43,9 @@ struct DARTOptions
         ushort netToAng;
         ulong tick_timeout;
         ulong replay_tick_timeout;
+        /** name of the DART service */
         string task_name;
+        /** pid for node listen*/
         string protocol_id;
 
         uint attempts;
@@ -59,6 +68,7 @@ struct DARTOptions
         HostOptions host;
         string master_task_name;
         string slave_task_name;
+        /** pid for node listen*/
         string protocol_id;
         ulong tick_timeout;
         mixin JSONCommon;

@@ -69,7 +69,7 @@ bool locked(string filename)
     return file_lock.exists;
 }
 
-// ask
+/** Address book for libp2p */
 @safe
 synchronized class AddressBook
 {
@@ -84,7 +84,7 @@ synchronized class AddressBook
     }
 
     enum max_count = 3;
-    protected int timeout = 300; ///
+    protected int timeout = 300;
     protected size_t nodes;
 
     void number_of_active_nodes(const size_t nodes) pure nothrow
@@ -109,7 +109,6 @@ synchronized class AddressBook
 
     protected shared(NodeAddresses) addresses;
 
-    //    version(none)
     immutable(NodeAddress[Pubkey]) _data() @trusted
     {
         pragma(msg, "fixme(cbr): AddressBook._data This function should be removed when the addressbook has been implemented");

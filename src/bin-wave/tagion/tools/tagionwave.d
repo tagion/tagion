@@ -1,5 +1,9 @@
 module tagion.tools.tagionwave;
 
+/**
+ * @brief tool for network launch
+ */
+
 import std.stdio;
 import core.thread;
 import std.getopt;
@@ -20,9 +24,7 @@ import tagion.network.SSLOptions;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.tasks.TaskWrapper;
 
-/**
- * @brief tool for start the network
- */
+
 
 mixin TrustedConcurrency;
 
@@ -68,6 +70,7 @@ mixin Main!(_main, "wave");
 
 int _main(string[] args)
 {
+    /** task name for register in logger */
     main_task = "tagionwave";
     scope (exit)
     {
@@ -146,17 +149,11 @@ int _main(string[] args)
     setOptions(local_options);
 
     writeln("----- Start tagion service task -----");
-    try{
-        if(local_options.port > ushort.max){
-            throw new Exception("Invalid port");
-        }
-    }
-    catch (Exception e)
-    {
-        writeln("Port should be < 65537");
+
+    if(local_options.port > ushort.max) {
+        writefln("Invalid port value %d. Port should be < %d", local_options.port, ushort.max);
         return 1;
-    }
-    
+        }
     immutable service_options = getOptions();
     // Set the shared common options for all services
     setCommonOptions(service_options.common);
