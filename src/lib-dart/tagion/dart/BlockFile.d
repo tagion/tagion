@@ -33,11 +33,11 @@ import std.math : rint;
 version (unittest)
 {
     import Basic = tagion.basic.Basic;
-    import tagion.basic.Types : FileExtension;
+    //    import tagion.basic.Types : FileExtension;
 
-    const(Basic.FileNames) fileId(T = BlockFile)(string prefix = null) @safe
+    protected const(Basic.FileNames) fileId(string prefix = null) @safe
     {
-        return Basic.fileId!T(FileExtension.dart, prefix);
+        return Basic.fileId!BlockFile("blf", prefix);
     }
 }
 
@@ -60,7 +60,7 @@ alias check = Check!BlockFileException;
 @safe
 class BlockFile
 {
-    enum FILE_LABEL = "DART:0.0";
+    enum _FILE_LABEL = "BLOCKFILE:0.0";
     enum DEFAULT_BLOCK_SIZE = 0x40;
     immutable uint BLOCK_SIZE;
     immutable uint DATA_SIZE;
@@ -533,12 +533,12 @@ class BlockFile
             }
     }
 
-    protected this(string filename, immutable uint SIZE, const bool read_only = false)
+    protected this(string filename, immutable uint SIZE, const Flag!"read_only" ro = No.read_only)
         {
             File file;
             import std.stdio;
 
-            if (read_only)
+            if (ro)
             {
                 file.open(filename, "r");
             }
@@ -563,6 +563,7 @@ class BlockFile
     */
     protected this(immutable uint SIZE) pure nothrow {
         this.BLOCK_SIZE = SIZE;
+
         DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
         recycle_indices = RecycleIndices(this);
     }
@@ -613,12 +614,12 @@ class BlockFile
      $(LREF BLOCK_SIZE)  = Set the block size of the underlining BlockFile
 
      +/
-    static void create(string filename, string description, immutable uint BLOCK_SIZE)
+    static void create(string filename, string description, immutable uint BLOCK_SIZE, string file_label = _FILE_LABEL)
         {
             File file;
             file.open(filename, "w+");
             auto blockfile = new BlockFile(file, BLOCK_SIZE);
-            blockfile.createHeader(description);
+            blockfile.createHeader(description, file_label);
             blockfile.writeMasterBlock;
             scope (exit)
             {
@@ -643,7 +644,7 @@ class BlockFile
             blockfile._statistic = old_blockfile._statistic;
             blockfile.headerblock.write(file);
             blockfile.last_block_index = 1;
-            blockfile.masterblock.write(file, blockfile.BLOCK_SIZE);
+            blockfile.masterblock.write(file, blockfile.headerblock);
             blockfile.hasheader = true;
             blockfile.store;
             return blockfile;
@@ -655,12 +656,12 @@ class BlockFile
      +     filename  = Name of the blockfile
      +     read_only = If `true` the file is opened as read-only
      +/
-    static BlockFile opCall(string filename, const bool read_only = false)
+    static BlockFile opCall(string filename, const Flag!"read_only" ro = No.read_only)
         {
-            auto temp_file = new BlockFile(filename, DEFAULT_BLOCK_SIZE, read_only);
+            auto temp_file = new BlockFile(filename, DEFAULT_BLOCK_SIZE, ro);
             immutable SIZE = temp_file.headerblock.block_size;
             temp_file.close;
-            return new BlockFile(filename, SIZE, read_only);
+            return new BlockFile(filename, SIZE, ro);
         }
 
     /++
@@ -675,19 +676,20 @@ class BlockFile
             file.close;
         }
 
-    protected void createHeader(string name)
+    protected void createHeader(string name, string file_label) in (file_label.length <= HeaderBlock.LABEL_SIZE)
         {
             check(!hasheader, "Header is already created");
             check(file.size == 0, "Header can not be created the file is not empty");
             check(name.length < headerblock.id.length, format("Id is limited to a length of %d but is %d", headerblock
                     .id.length, name.length));
-            headerblock.label[0 .. FILE_LABEL.length] = FILE_LABEL;
+            headerblock.label[0 .. file_label.length] = file_label;
             headerblock.block_size = BLOCK_SIZE;
             headerblock.id[0 .. name.length] = name;
             headerblock.create_time = Clock.currTime.toUnixTime!long;
             headerblock.write(file);
             last_block_index = 1;
-            masterblock.write(file, BLOCK_SIZE);
+            masterblock.write(file, headerblock);
+            writefln("name %s file_label %s", name, file_label);
             hasheader = true;
         }
 
@@ -898,7 +900,8 @@ class BlockFile
                     alias type = typeof(m);
                     static if (isStaticArray!type)
                     {
-                        buffer[pos .. pos + type.sizeof] = (cast(ubyte*) id.ptr)[0 .. type.sizeof];
+                        buffer[pos .. pos + type.sizeof] = ubyte.max;
+                        buffer[pos .. pos + type.sizeof] = cast(ubyte[])m;
                         pos += type.sizeof;
                     }
                     else
@@ -976,15 +979,17 @@ class BlockFile
             uint statistic_index; /// Points to the statistic data
             final void write(
                 ref File file,
-                immutable uint BLOCK_SIZE) const @trusted
+                // immutable uint BLOCK_SIZE,
+                ref const(HeaderBlock) headerblock) const @trusted
             {
-                auto buffer = new ubyte[BLOCK_SIZE];
+                auto buffer = new ubyte[headerblock.block_size];
                 size_t pos;
                 foreach (i, m; this.tupleof)
                 {
                     buffer.binwrite(m, &pos);
                 }
-                buffer[$ - FILE_LABEL.length .. $] = cast(ubyte[]) FILE_LABEL;
+                assert(pos+headerblock.label.length <= headerblock.block_size, "Block size is too small");
+                buffer[$ - headerblock.label.length .. $] = cast(ubyte[])headerblock.label;
                 assert(!BlockFile.do_not_write, "Should not write here");
                 file.rawWrite(buffer);
                 // Truncate the file after the master block
@@ -1304,7 +1309,7 @@ class BlockFile
     protected void writeMasterBlock()
         {
             seek(last_block_index);
-            masterblock.write(file, BLOCK_SIZE);
+            masterblock.write(file, headerblock);
             // file.truncate(index_to_seek(last_block_index+1));
             // file.sync;
 
@@ -2205,6 +2210,7 @@ version(none) {
     // The first block is use as BlockFile header
     unittest
         {
+            enum UNITTEST_FILE_LABEL = "test-BlockFile";
             enum SMALL_BLOCK_SIZE = 0x40;
             //        if ( BLOCK_SIZE == SMALL_BLOCK_SIZE ) {
             import std.format;
@@ -2215,13 +2221,24 @@ version(none) {
             /// Test of BlockFile.create and BlockFile.opCall
             {
                 immutable filename = fileId("create").fullpath;
-                BlockFile.create(filename, "create.unittest", SMALL_BLOCK_SIZE);
+                enum unittest_id = "create.unittest";
+                BlockFile.create(filename, unittest_id, SMALL_BLOCK_SIZE, UNITTEST_FILE_LABEL);
                 writefln("BlockFile %s", filename);
-                auto blockfile_load = BlockFile(filename);
+                auto blockfile = BlockFile(filename, No.read_only);
                 scope (exit)
                 {
-                    blockfile_load.close;
+                    blockfile.close;
                 }
+                // Check header block
+                assert(blockfile.headerBlock.block_size is SMALL_BLOCK_SIZE);
+                assert(equal(blockfile.headerBlock.id[].until(char(ubyte.max)), unittest_id));
+                assert(equal(blockfile.headerBlock.label[].until(char.max), UNITTEST_FILE_LABEL));
+                // Check master block (Master block is the last block in the blockfile)
+                assert(blockfile.lastBlockIndex == 1);
+                // No data in the file so the master is empty
+                assert(blockfile.masterBlock == MasterBlock.init);
+
+                writefln("%s", blockfile.headerBlock);
             }
 
             alias B = Tuple!(string, "label", uint, "blocks");
@@ -2244,7 +2261,7 @@ version(none) {
                 File file = File(fileId.fullpath, "w");
                 auto blockfile = new BlockFile(file, SMALL_BLOCK_SIZE);
                 assert(!blockfile.hasHeader);
-                blockfile.createHeader("This is a Blockfile unittest");
+                blockfile.createHeader("This is a Blockfile unittest", UNITTEST_FILE_LABEL);
                 assert(blockfile.hasHeader);
                 file.close;
             }
@@ -2444,6 +2461,8 @@ version (unittest)
 {
     import std.stdio;
     enum random = false;
+    import std.algorithm.comparison : equal;
+    import std.algorithm.searching : until;
 }
 else
 {

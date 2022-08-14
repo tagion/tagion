@@ -56,6 +56,7 @@ struct Fingerprint
     }
 }
 
+version(none)
 unittest
 {
     assert(Fingerprint.format([]) == "");
@@ -690,6 +691,7 @@ void addDummyRecordToDB(ref DART db, immutable(RecordFactory.Recorder) rec, HiRP
     const result = db(received, false);
 }
 
+version(none)
 unittest
 {
     import std.algorithm : equal;
