@@ -203,6 +203,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 opts.host,
                 p2pnode);
         }
+
         void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted
         {
             import std.algorithm;
@@ -494,8 +495,10 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 &taskfailure,
                 (string respond_task_name, Buffer data) {
                 import tagion.hibon.HiBONJSON;
-
+                
+                /** time of the current epoch work */
                 long secs = sw.peek.total!"seconds";
+                /** document for receive request */
                 const doc = Document(data);
                 const receiver = empty_hirpc.receive(doc);
                 auto respond = HealthParams(hashgraph.rounds.length, secs, count_transactions, epoch_num, hashgraph.areWeInGraph);
