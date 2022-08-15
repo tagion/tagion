@@ -177,7 +177,7 @@ protected static string generateAllMethods(alias This)()
 }
 
 @safe
-auto actor(Task, Args...)(Args args) if (is(Task == class) || is(Task == struct)) {
+auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct)) && !hasUnsharedAliasing!Args) {
     import concurrency = std.concurrency;
     static struct ActorFactory {
 //        enum public_members =  allMethodFilter!(Task, templateNot!isProtected);
@@ -283,8 +283,6 @@ version(unittest) {
     }
         @safe
     private static struct MyActor {
-        // protected {
-            // HashGraph hashgraph;
         long count;
         string some_name;
         @method void some(string str) { // reciever
@@ -309,15 +307,12 @@ version(unittest) {
             }
         }
 
-        // @method void getArg(get_args opt) { // reciever
-        //     sendOwner(count);
-        // }
-
         mixin TaskActor;
 
         @task void runningTask(long label) {
             count = label;
             writefln("Alive!!!!");
+            //...
             alive; // Task is now alive
             while (!stop) {
                 receiveTimeout(100.msecs);
@@ -331,43 +326,26 @@ version(unittest) {
 
 @safe
 unittest {
-    // import core.thread.osthread : Thread;
-    // import std.stdio;
-
-    //alias fail = MyActor.fail;
-    //pragma(msg, "fail ", fail.stringof);
-    //pragma(msg, "getUDAs!(Func, method)[0] ", getUDAs!(fail, method)[0].access);
-
-    // static void uinttestTask() {
-        auto my_actor_factory = actor!MyActor;
+    auto my_actor_factory = actor!MyActor;
     /// Test of a single actor
-        {
-            enum single_actor_taskname = "task_name_for";
-            assert(!isRunning(single_actor_taskname));
-            // Starts one actor of MyActor
-            auto my_actor_1 = my_actor_factory(single_actor_taskname, 10);
-            scope(exit) {
-                my_actor_1.stop;
-            }
-
-            /// Actor init args
-            {
-                my_actor_1.get(Get.Arg);
-                assert(receiveOnly!long is 10);
-            }
-
-            {
-                //
-                my_actor_1.some("Some text");
-            }
-//            my_actor_1.stop;
+    {
+        enum single_actor_taskname = "task_name_for";
+        assert(!isRunning(single_actor_taskname));
+        // Starts one actor of MyActor
+        auto my_actor_1 = my_actor_factory(single_actor_taskname, 10);
+        scope(exit) {
+            my_actor_1.stop;
         }
-//     }
 
-//     (() @trusted {
-//         auto unittest_thread = new Thread(&uinttestTask).start();
-//         unittest_thread.join;
-// //        auto unittest_tid = spawn(&unittestTask);
-//     })();
+        /// Actor init args
+        {
+            my_actor_1.get(Get.Arg); /// tid.send(Get.Arg); my_actor_1.send(Get.Arg)
+            assert(receiveOnly!long is 10);
+        }
 
+        {
+            //
+            my_actor_1.some("Some text");
+        }
+    }
 }
