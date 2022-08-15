@@ -372,8 +372,6 @@ static ref auto all_getopt(
         "transcript-log",  format("Transcript log filename: default: %s", options.transcript.task_name), &(options.transcript.task_name),
         "dart-filename", format("DART file name. Default: %s", options.dart.path), &(options.dart.path),
         "dart-synchronize", "Need synchronization", &(options.dart.synchronize),
-        "dart-angle-from-port", "Set dart from/to angle based on port", &(options.dart.angle_from_port),
-        "dart-master-angle-from-port", "Master angle based on port ", &(options.dart.sync.master_angle_from_port),
 
         "dart-init", "Initialize block file", &(options.dart.initialize),
         "dart-path", "Path to dart file", &(options.dart.path),
@@ -586,30 +584,16 @@ static setDefaultOption(ref Options options)
         name = "dart";
         prefix = "dart_";
         path = "";
-        ringWidth = 3;
-        rings = 3;
         initialize = true;
         synchronize = true;
-        request = false;
         fast_load = false;
-        angle_from_port = false;
         tick_timeout = 500;
-        master_from_port = true;
         with (sync)
         {
-            maxMasters = 1;
-            maxSlaves = 4;
-            maxSlavePort = 4020;
-            netFromAng = 0;
-            netToAng = 0;
             tick_timeout = 50;
             replay_tick_timeout = 5;
             protocol_id = "tagion_dart_sync_pid";
             task_name = "dart.sync";
-
-            attempts = 20;
-
-            master_angle_from_port = false;
 
             max_handlers = 20;
 
@@ -659,7 +643,6 @@ static setDefaultOption(ref Options options)
             options.dart.fast_load = true;
             options.dart.path = "./data/dart".setExtension(FileExtension.dart);
             options.hostbootrap.enabled = true;
-            options.dart.master_from_port = false;
             break;
         }
     }

@@ -173,6 +173,11 @@ synchronized class AddressBook
         }
     }
 
+    /**
+     * Save addresses to file
+     * @param filename - file to save addresses
+     * @param nonelock - flag tolock file for save operation
+     */
     void save(string filename, bool nonelock = false) @trusted
     {
         void local_write()
@@ -334,6 +339,10 @@ shared static this()
     addressbook = new shared(AddressBook);
 }
 
+/** 
+ * \struct NodeAddress
+ * Struct for node addresses 
+ */
 @safe
 @RecordType("NNR")
 struct NodeAddress
@@ -343,11 +352,15 @@ struct NodeAddress
     enum intrn_token = "/node/";
     /** node address */
     string address;
+    /** If true, then struct with node addresses is used as an address
+     * If false, then the local address used 
+     */
     bool is_marshal;
     /** node id */
     string id;
     /** node port */
     uint port;
+    /** DART sector */
     DART.SectorRange sector;
 
     mixin HiBONRecord!(
@@ -369,15 +382,9 @@ struct NodeAddress
                 this.port = to!uint(address[tcpIndex .. tcpIndex + 4]);
 
                 const node_number = this.port - port_base;
-                if (this.port >= dart_opts.sync.maxSlavePort) {
-                    sector = DART.SectorRange(dart_opts.sync.netFromAng, dart_opts.sync.netToAng);
-                }
-                else {
-                    const max_sync_node_count = dart_opts.sync.master_angle_from_port
-                        ? dart_opts.sync.maxSlaves : dart_opts.sync.maxMasters;
-                    sector = calcAngleRange(dart_opts, max_sync_node_count);
-                }
-                // }
+                
+                sector = DART.SectorRange(0, 0);
+                
             }
             else if (address[0..intrn_token.length] != intrn_token) {
                 import std.json;
@@ -394,16 +401,6 @@ struct NodeAddress
         }
     }
         });
-
-    /**
-     * Calculate angle range (should be deleted)
-     */
-    static DART.SectorRange calcAngleRange(
-        immutable(DARTOptions) dart_opts,
-        const ulong max_nodes)
-    {
-        return DART.SectorRange(0, 0);
-    }
 
     /**
      * Parse node address
