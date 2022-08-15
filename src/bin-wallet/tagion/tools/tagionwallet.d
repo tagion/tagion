@@ -1,3 +1,4 @@
+/// \file tagionwallet.d
 module tagion.tools.tagionwallet;
 
 import std.getopt;
@@ -37,29 +38,53 @@ import tagion.Keywords;
 
 enum LINE = "------------------------------------------------------";
 
+/**
+ * @brief Write in console warning message
+ */
 void warning()
 {
     writefln("%sWARNING%s: This wallet should only be used for the Tagion Dev-net%s", RED, BLUE, RESET);
 }
 
+/**
+ * \struct Invoices
+ * Struct invoices array
+ */
 struct Invoices
 {
+    /** internal array */
     Invoice[] list;
     mixin HiBONRecord;
 }
 
+/**
+ * \struct WalletOptions
+ * Struct wallet options files and network status storage models
+ */
 struct WalletOptions
 {
+    /** account file name/path */
     string accountfile;
+    /** wallet file name/path */
     string walletfile;
+    /** questions file name/path */
     string quizfile;
+    /** device file name/path */
     string devicefile;
+    /** contract file name/path */
     string contractfile;
+    /** bills file name/path */
     string billsfile;
+    /** payments request file name/path */
     string paymentrequestsfile;
+    /** address part of network socket */
     string addr;
+    /** port part of network socket */
     ushort port;
 
+    /**
+    * @brief set default values for wallet
+    */
     void setDefault() pure nothrow
     {
         accountfile = "account.hibon";
@@ -78,7 +103,11 @@ struct WalletOptions
 }
 
 enum MAX_PINCODE_SIZE = 128;
-//Wallet* wallet;
+
+/**
+ * \struct WalletInterface
+ * Interface struct for wallet
+ */
 struct WalletInterface
 {
     const(WalletOptions) options;
@@ -92,6 +121,10 @@ struct WalletInterface
         this.options = options;
     }
 
+    /**
+    * @brief pseudographical UI interface, pin code reading
+    * \return Check pin code result
+    */
     bool loginPincode()
     {
         CLEARSCREEN.write;
@@ -130,6 +163,9 @@ struct WalletInterface
         return false;
     }
 
+    /**
+    * @brief wallet pseudographical UI interface
+    */
     void accountView()
     {
 
@@ -237,13 +273,18 @@ struct WalletInterface
     }
 
     enum FKEY = YELLOW;
-
+    /**
+    * @brief console UI waiting cursor
+    */
     static void pressKey()
     {
         writefln("Press %1$sEnter%2$s", YELLOW, RESET);
         readln;
     }
 
+    /**
+    * @brief chenge pin code interface
+    */
     void changePin()
     {
         CLEARSCREEN.write;
@@ -316,6 +357,11 @@ struct WalletInterface
         }
     }
 
+    /**
+    * @brief generate q/a pair keys
+    * @param questions - string array
+    * @param recover_flag - recover/create flag (true mean creating)
+    */
     void generateSeed(const(string[]) questions, const bool recover_flag)
     {
         auto answers = new char[][questions.length];
@@ -535,6 +581,11 @@ struct WalletInterface
 enum REVNO = 0;
 enum HASH = "xxx";
 
+/**
+ * @brief strip white spaces in begin/end of text
+ * @param word - input parameter with out
+ * \return dublicate out parameter
+ */
 const(char[]) trim(return scope const(char)[] word) pure nothrow @safe @nogc
 {
     import std.ascii : isWhite;
@@ -550,6 +601,11 @@ const(char[]) trim(return scope const(char)[] word) pure nothrow @safe @nogc
     return word;
 }
 
+/**
+ * @brief strip all whitespaces in text
+ * @param word_strip - input/output parameter for white spaces striping
+ *
+ */
 void word_strip(scope ref char[] word_strip) pure nothrow @safe @nogc
 {
     import std.ascii : isWhite;
@@ -570,12 +626,18 @@ void word_strip(scope ref char[] word_strip) pure nothrow @safe @nogc
     word_strip = word_strip[0 .. current_i];
 }
 
+/*
+ * @brief build file path if needed file with folder long path
+ * @param file - input/output parameter with filename
+ * @param path - forlders destination to file
+ */
 @safe
 static void set_path(ref string file, string path)
 {
     file = buildPath(path, file.baseName);
 }
 
+//! [check function word_strip]
 @safe
 unittest
 {
@@ -814,7 +876,16 @@ int _main(string[] args)
 
     if (options.walletfile.exists)
     {
-        const wallet_doc = options.walletfile.fread;
+        Document wallet_doc;
+        try
+        {
+            wallet_doc = options.walletfile.fread;
+        }
+        catch(TagionException e)
+        {
+            writeln(e.msg);
+            return 1;
+        }
         const pin_doc = options.devicefile.exists ? options.devicefile.fread : Document.init;
         if (wallet_doc.isInorder && pin_doc.isInorder)
         {

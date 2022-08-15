@@ -32,7 +32,7 @@
 ```
 -i  --inputfile
 ```
-Force mark file as readable - help if more command line parameters and need mark file how need to open (support only json/hibon files) **Refactoring**
+Force mark file as readable - help if more command line parameters and need mark file how need to open (support only json/hibon files)
 In case with absent any keys - single path be marked as for read
 ```
 hibonutil -i inputfile.hibon
@@ -60,18 +60,22 @@ hibonutil --inputfile inputfile.hibon
 
 #### Failure
 **Result** (when path not exists):
-<br>Show crash exception
+<br>Show message
 ```
-std.file.FileException@std/file.d(370): invalid.hibon: No such file or director
+File inputfile.hibon not found
 ```
 
 **WIP : need to rewrite invalid cases**
 **Result** (when path has inappropriate format):
-<br>Show unredable parse out
+<br>Show unredable parse out (only hibon)
+<br>Json parsing fail example
+```
+Conversion error, please validate input JSON file
+```
 
 **WIP : need to rewrite behavior for fail cases**
 **Result**:
-<br>message about unssuported extensio
+<br>message about unssuported extension
 <br>_Below the console output after this scenario_
 ```
 File file.ext not valid (only .hibon .json)
@@ -117,7 +121,13 @@ hibonutil --outputfile outfile.json --inputfile inputfile.hibon
 File inputfile.txt not valid (only .hibon .json)
 ```
 **Result** (absent file)
-**Console exceptions**
+```
+File inputfile.hibon not found
+```
+**Result** (can not write out to file)
+```
+outfile.json: No such file or directory
+```
 
 # pretty
 ```
@@ -161,9 +171,11 @@ hibonutil --pretty device.hibon
 File device.txt not valid (only .hibon .json)
 ```
 **Result** (absent file)<br>
-Console exceptions<br>
+```
+File inputfile.hibon not found
+```
 **Result** (wrong file structure)<br>
-Dump of wrong data structures
+Dump of wrong data structures or JSON parsing error [see](#failure)
 
 # version
 ```
