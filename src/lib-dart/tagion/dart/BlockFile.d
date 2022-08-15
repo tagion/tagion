@@ -712,7 +712,7 @@ class BlockFile
                 // writeln("read statistic ", file.name);
                 readStatistic;
                 // writeln("read recycle ", file.name);
-                recycle_indices.read;
+                version(blockfile_recycle) recycle_indices.read;
                 // writeln("end reading ", file.name);
             }
         }
@@ -1453,7 +1453,7 @@ version(none) {
                     // Check if this is the first block in a block sequency
                     check(block.head, "Load index is not pointing to the begin of a block sequency");
                 }
-                recycle_indices = index;
+                version(blockfile_recycle) recycle_indices = index;
                 if (block.size > DATA_SIZE)
                 {
                     return remove_sequency(block.next);
