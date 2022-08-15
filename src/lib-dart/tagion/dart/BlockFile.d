@@ -571,7 +571,6 @@ class BlockFile
         BlockFile result;
         void try_it(void delegate() @safe dg) {
             try {
-                report("try it out");
                 dg();
             }
             catch (BlockFileException e) {
@@ -723,124 +722,6 @@ class BlockFile
                 MEAN = 10,
                     SUM = 100
                     }
-
-
-    version(none)
-    struct Statistic
-    {
-        protected
-            {
-                double sum2 = 0.0;
-                double sum = 0.0;
-                uint N;
-                uint[uint] size_statistic;
-            }
-        this(Document doc)
-            {
-                foreach (i, ref m; this.tupleof)
-                {
-                    alias typeof(m) type;
-                    enum name = basename!(this.tupleof[i]);
-                    if (doc.hasMember(name))
-                    {
-                        static if (is(type == uint[uint]))
-                        {
-                            auto stats_doc = doc[name].get!Document;
-                            foreach (elm; stats_doc[])
-                            {
-                                const index = elm.key.to!uint;
-                                m[index] = elm.get!uint;
-                            }
-                        }
-                        else
-                        {
-                            m = doc[name].get!type;
-                        }
-                    }
-                }
-            }
-
-        HiBON toHiBON() const
-            {
-                auto hibon = new HiBON;
-                foreach (i, m; this.tupleof)
-                {
-                    alias type = typeof(m);
-                    enum name = basename!(this.tupleof[i]);
-                    static if (is(type : const(uint[uint])))
-                    {
-                        auto state_hibon = new HiBON;
-                        foreach (index, value; m)
-                        {
-                            state_hibon[index] = value;
-                        }
-                        hibon[name] = state_hibon;
-                    }
-                    else
-                    {
-                        hibon[name] = m;
-                    }
-                }
-                return hibon;
-            }
-
-        immutable(Buffer) serialize() const
-            {
-                return toHiBON.serialize;
-            }
-
-        void count(const uint size)
-            {
-                if ((size in size_statistic) && (size_statistic[size] == uint.max))
-                {
-                    return;
-                }
-                size_statistic[size]++;
-                immutable double x = size;
-                sum += x;
-                sum2 += x * x;
-                N++;
-            }
-
-        alias Result = Tuple!(double, "sigma", double, "mean", uint, "N");
-        const(Result) result() const pure nothrow
-            {
-                immutable mx = sum / N;
-                immutable mx2 = mx * mx;
-                immutable M = sum2 + N * mx2 - 2 * mx * sum;
-                import std.math : sqrt;
-
-                return Result(sqrt(M / (N - 1)), mx, N);
-            }
-
-        bool contain(const uint size) const pure nothrow
-            {
-
-                return (size in size_statistic) !is null;
-            }
-
-        string toInfo() const
-            {
-                return format("N=%d sum2=%s sum=%s", N, sum2, sum);
-            }
-
-        unittest
-            {
-                Statistic s;
-                foreach (size; [10, 15, 17, 6, 8, 12, 18])
-                {
-                    s.count(size);
-                }
-                auto r = s.result;
-                // Mean
-                assert(cast(int)(r.mean * 1_0000) == 12_2857);
-                // Sum
-                assert(r.N == 7);
-                // Sigma
-                assert(cast(int)(r.sigma * 1_0000) == 4_5721);
-            }
-
-    }
 
     protected bool check_statistic(const uint total_blocks, const uint blocks) pure const
         {
@@ -1442,7 +1323,7 @@ version(none) {
 }
             @safe uint remove_sequency(bool first = false)(const uint index)
             {
-                console.writef("%d", index);
+                //console.writef("%d", index);
                 auto block = read(index);
                 check(!recycle_indices.isRecyclable(index), format("Block %d has already been delete", index));
 //                auto block = read(index);
@@ -1642,8 +1523,8 @@ version(none) {
                     }
                     return false;
                 }
-                console.writeln("---------");
-                dump;
+                //console.writeln("---------");
+                //dump;
                 assert(!inspect(&failsafe), "Should not fail here");
             }
             Block[uint] blocks;
@@ -2305,7 +2186,7 @@ version(none) {
 
                     // Note the state block is written after the last block
                     blockfile.store;
-                    blockfile.dump;
+                    //blockfile.dump;
 
                     blockfile.close;
                 }
@@ -2345,13 +2226,13 @@ version(none) {
             { // Remove block
                 auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
                 blockfile.inspect(&failsafe);
-                console.writeln("Remove blocks");
+                //console.writeln("Remove blocks");
                 //
                 // Erase chain of block
                 //
                 erase(blockfile, [0, 2, 6, 13, 16]);
                 blockfile.store;
-                blockfile.dump;
+                //blockfile.dump;
 
                 blockfile.close;
             }
