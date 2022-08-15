@@ -166,7 +166,6 @@ class DART : DARTFile
             return format("(%d, %d)", _from_sector, _to_sector);
         }
 
-        version(none)
         unittest
         {
             enum full_dart_sectors_count = ushort.max + 1;
@@ -589,7 +588,7 @@ class DART : DARTFile
         this(RecordFactory manufactor, const Document doc)
         {
 
-
+            
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!uint;
@@ -856,7 +855,7 @@ class DART : DARTFile
      +/
     void replay(const(string) journal_filename)
     {
-        auto journalfile = BlockFile(journal_filename, Yes.read_only);
+        auto journalfile = BlockFile(journal_filename, true);
         scope (exit)
         {
             journalfile.close;
@@ -866,7 +865,7 @@ class DART : DARTFile
         {
             for (uint index = journalfile.masterBlock.root_index; index !is INDEX_NULL;
 
-
+                
 
                 )
             {
@@ -950,7 +949,6 @@ class DART : DARTFile
 
     }
 
-    version(none)
     unittest
     {
         import tagion.utils.Random;
@@ -1485,17 +1483,5 @@ class DART : DARTFile
                 assert(dart_A.fingerprint == dart_B.fingerprint);
             }
         }
-    }
-}
-
-version (unittest)
-{
-    import std.typecons : Yes;
-    import Basic = tagion.basic.Basic;
-    import tagion.basic.Types : FileExtension;
-
-    protected const(Basic.FileNames) fileId(string prefix = null) @safe
-    {
-        return Basic.fileId!DARTFile(FileExtension.dart, prefix);
     }
 }
