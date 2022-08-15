@@ -5,7 +5,7 @@ import std.stdio;
 import std.format;
 import std.path : extension, setExtension;
 import std.file : exists, dirEntries, SpanMode;
-import std.string : join, splitLines;
+import std.string : join, splitLines, strip;
 import std.algorithm.iteration : filter, map, joiner;
 import std.algorithm.searching : endsWith;
 import std.regex;
@@ -70,8 +70,9 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
         .filter!(file => (opts.regex_inc.length is 0) || !file.name.matchFirst(regex_include).empty)
         .filter!(file => (opts.regex_exc.length is 0) || file.name.matchFirst(regex_exclude).empty);
 
-    int result_errors; /// Error counter
-    foreach (file; parallel(bdd_files)) {
+    int result_errors; /// Error counter'
+LoopFiles:
+    foreach (file; bdd_files) {
         auto dsource = file.name.setExtension(FileExtension.dsrc);
         const bdd_gen = dsource.setExtension(opts.bdd_gen_ext);
         if (dsource.exists) {
@@ -81,16 +82,26 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
         writeln(dsource);
         writeln(bdd_gen);
         try {
-            auto feature=parser(file.name);
+            string[] errors;
+            auto feature=parser(file.name, errors);
+            writefln("!!!!!!!!!!!!!!! %s", errors.length);
+            if (errors.length) {
+                errors.join("\n").writeln;
+                result_errors++;
+                break LoopFiles;
+            }
             { // Generate d-source file
                 auto fout = File(dsource, "w");
+                writefln("dsource file %s", dsource);
                 scope(exit) {
                     fout.close;
                 }
                 auto dlang = Dlang(fout);
                 dlang.issue(feature);
                 if (opts.dfmt.length) {
-                    execute(opts.dfmt ~ opts.dfmt_flags ~ dsource);
+                    writefln("%s", opts.dfmt.strip ~ opts.dfmt_flags ~ dsource);
+
+                    execute(opts.dfmt.strip ~ opts.dfmt_flags ~ dsource);
                 }
             }
             { // Generate bdd-md file
@@ -105,6 +116,7 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
         }
         catch (Exception e) {
             writeln(e.msg);
+            writeln(e);
             result_errors++;
         }
     }

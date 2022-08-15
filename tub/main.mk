@@ -95,6 +95,7 @@ include $(DTUB)/config/compiler.mk
 include $(DTUB)/config/dstep.mk
 include $(DTUB)/config/ddeps.mk
 include $(DTUB)/config/bins.mk
+include $(DTUB)/config/format.mk
 
 include $(DTUB)/compile.mk
 
