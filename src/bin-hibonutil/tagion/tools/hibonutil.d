@@ -1,3 +1,4 @@
+/// \file hibonutil.d
 module tagion.tools.hibonutil;
 
 import std.getopt;
@@ -26,6 +27,8 @@ enum VERSION_HIBONUTIL = "1.9";
 
 /**
  * @brief wrapper for BOM extracting
+ * @param str - extract BOM (byte order marker) for next correcting parsing text
+ * \return BOM representation
  */
 const(BOMSeq) getBOM(string str) @trusted {
     import std.encoding : _getBOM = getBOM;
@@ -191,7 +194,15 @@ int _main(string[] args)
         }
         else
         {
-            outputfilename.fwrite(hibon.serialize);
+            try
+            {
+                outputfilename.fwrite(hibon.serialize);
+            }
+            catch(Exception e)
+            {
+                writeln(e.msg);
+                return 1;
+            }
         }
         break;
     default:
