@@ -203,27 +203,25 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 opts.host,
                 p2pnode);
         }
-
         void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted
         {
             import std.algorithm;
             import std.array : array;
             import tagion.hibon.HiBONJSON;
             HiBON params = new HiBON;
-
             foreach (i, payload; events.map!((e) => e.event_body.payload).array)
             {
                 params[i] = payload;
             }
 
             transcript_tid.send(params.serialize);
-            assert(opts.epoch_limit > epoch_num);
+            assert(opts.epoch_limit > epoch_num && !opts.epoch_limit);
             epoch_num++;
             count_transactions = 0;
             sw.stop();
             sw.start();
             
-            if (epoch_num >= opts.epoch_limit)
+            if (epoch_num == opts.epoch_limit)
             {
                 auto main_tid = locate(main_task);
                 main_tid.send(Control.STOP);

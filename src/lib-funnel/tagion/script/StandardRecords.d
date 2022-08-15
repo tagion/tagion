@@ -258,17 +258,22 @@ enum OwnerKey = "$Y";
      */
     @RecordType("HEALTH") struct HealthParams
     {
-        ulong rounds_;
-        long epoch_timestamp;
-        int amount_trans;
-        int epoch_num;
-        bool in_graph;
+        /** amount of hashgraph raunds */
+        @Label("$hashgraph_rounds") ulong rounds;
+        /** time since the beginning of the epoch */
+        @Label("$epoch_timestamp") ulong epoch_timestamp;
+        /** amount of transactions in this epoch */
+        @Label("$transactions_amount") uint transactions_amount;
+        /** number of current epoch */
+        @Label("$epoch_number") int epoch_num;
+        /** check we not in last round */
+        @Label("$in_graph") bool in_graph;
         mixin HiBONRecord!(
             q{
-                this(ulong rounds_, long epoch_timestamp, int amount_trans, int epoch_num, bool in_graph) {
-                    this.rounds_ = rounds_;
+                this(ulong rounds, long epoch_timestamp, int transactions_amount, int epoch_num, bool in_graph) {
+                    this.rounds = rounds;
                     this.epoch_timestamp = epoch_timestamp;
-                    this.amount_trans = amount_trans;
+                    this.transactions_amount = transactions_amount;
                     this.epoch_num = epoch_num;
                     this.in_graph = in_graph;
                 }
