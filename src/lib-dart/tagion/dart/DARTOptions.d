@@ -17,9 +17,11 @@ struct DARTOptions
     HostOptions host;
     /** filename for DART file */
     string name;
+    /** prefixt for DART file name */
     string prefix;
     /** path to DART file */
     string path;
+    
     ubyte ringWidth;
     int rings;
     /** flag for initialize DART */

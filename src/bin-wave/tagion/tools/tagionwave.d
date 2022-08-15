@@ -150,7 +150,7 @@ int _main(string[] args)
 
     writeln("----- Start tagion service task -----");
 
-    if(local_options.port > ushort.max) {
+    if(local_options.port >= ushort.max) {
         writefln("Invalid port value %d. Port should be < %d", local_options.port, ushort.max);
         return 1;
         }
