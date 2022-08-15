@@ -8,6 +8,7 @@ import std.path : buildPath, baseName;
 import std.algorithm : filter, map, reverse;
 
 import tagion.basic.Types : Buffer;
+import tagion.basic.TagionExceptions : TagionException;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.dart.RecorderChainBlock : RecorderChainBlock, RecorderChainBlockFactory;
 import tagion.dart.Recorder : RecordFactory, Archive;
@@ -94,7 +95,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
         fwrite(makePath(block.fingerprint, folder_path), block.toHiBON);
 
         m_last_block = block;
-        if (amount == 0)
+        if (m_amount == 0)
         {
             m_first_block = block;
         }
@@ -108,22 +109,23 @@ import tagion.utils.Miscellaneous : toHexString, decode;
      */
     static string[] getBlockFilenames(string folder_path) @trusted
     {
-        string[] file_names;
+        string[] block_filenames;
 
-        auto files = dirEntries(folder_path, SpanMode.shallow).filter!(a => a.isFile())
+        auto all_filenames = dirEntries(folder_path, SpanMode.shallow).filter!(a => a.isFile())
             .map!(a => baseName(a));
-        foreach (f; files)
+        foreach (filename; all_filenames)
         {
-            if (f.length == EPOCH_BLOCK_FILENAME_LEN)
+            if (filename.length == EPOCH_BLOCK_FILENAME_LEN)
             {
-                file_names ~= f;
+                block_filenames ~= filename;
             }
         }
-        return file_names;
+        return block_filenames;
     }
 
     /** Static method that collects info about blocks in given folder 
      *      @param folder_path - path to folder with blocks
+     *      @param net - hash net
      *      \return BlocksInfo - first, last blocks and amount
      */
     static BlocksInfo getBlocksInfo(string folder_path, const StdHashNet net)
@@ -201,15 +203,27 @@ import tagion.utils.Miscellaneous : toHexString, decode;
      *      @param net - hash net
      *      @param fingerprint - fingerprint of block to read
      *      @param folder_path - path to folder with blocks
-     *      \return recorder chain block
+     *      \return recorder chain block, or null if block file doesn't exist
      */
     static RecorderChainBlock readBlock(Buffer fingerprint, string folder_path, const StdHashNet net)
     {
         const block_filename = makePath(fingerprint, folder_path);
+        if (!block_filename.exists)
+        {
+            return null;
+        }
 
-        auto doc = fread(block_filename);
-        auto factory = RecorderChainBlockFactory(net);
-        return factory(doc);
+        try
+        {
+            auto doc = fread(block_filename);
+            auto factory = RecorderChainBlockFactory(net);
+            return factory(doc);
+
+        }
+        catch (TagionException e)
+        {
+            return null;
+        }
     }
 
     /** Static method that creates path to block with given fingerprint

@@ -134,3 +134,75 @@ import tagion.hibon.HiBON : HiBON;
         return new RecorderChainBlock(recorder, chain, bullseye, net);
     }
 }
+
+unittest
+{
+    HiBON test_hibon = new HiBON;
+    test_hibon["dummy1"] = 1;
+    test_hibon["dummy2"] = 2;
+
+    const net = new StdHashNet;
+    auto factory = RecordFactory(net);
+    auto dummy_recorder = factory.recorder;
+    dummy_recorder.add(Document(test_hibon));
+
+    immutable imm_recorder = factory.uniqueRecorder(dummy_recorder);
+
+    Buffer bullseye = [1, 2, 3, 4, 5, 6, 7, 8];
+    Buffer chain = [1, 2, 4, 8, 16, 32, 64, 128];
+
+    auto block_hibon = new HiBON;
+    block_hibon[RecorderChainBlock.chainLabel] = chain;
+    block_hibon[RecorderChainBlock.bullseyeLabel] = bullseye;
+    block_hibon[RecorderChainBlock.recorderLabel] = imm_recorder.toDoc;
+
+    auto block_factory = RecorderChainBlockFactory(net);
+
+    /// RecorderChainBlock_create_block
+    {
+        auto block = block_factory(imm_recorder, chain, bullseye);
+
+        assert(block.chain == chain);
+        assert(block.bullseye == bullseye);
+        assert(block.recorder.toDoc == imm_recorder.toDoc);
+    }
+
+    /// RecorderChainBlock_toHiBON
+    {
+        auto block = block_factory(imm_recorder, chain, bullseye);
+
+        assert(block.toHiBON.serialize == block_hibon.serialize);
+    }
+
+    /// RecorderChainBlock_fingerprint
+    {
+        auto block = block_factory(imm_recorder, chain, bullseye);
+
+        assert(block.fingerprint == net.hashOf(Document(block_hibon)));
+    }
+
+    /// RecorderChainBlock_from_doc
+    {
+        auto block = block_factory(Document(block_hibon));
+
+        assert(block.chain == chain);
+        assert(block.bullseye == bullseye);
+        assert(block.recorder.toDoc == imm_recorder.toDoc);
+    }
+
+    /// RecorderChainBlock_from_doc_no_recorder
+    {
+        auto wrong_hibon = new HiBON;
+        wrong_hibon[RecorderChainBlock.chainLabel] = chain;
+        wrong_hibon[RecorderChainBlock.bullseyeLabel] = bullseye;
+
+        try
+        {
+            auto block = block_factory(Document(wrong_hibon));
+            assert(false);
+        }
+        catch (TagionException e)
+        {
+        }
+    }
+}
