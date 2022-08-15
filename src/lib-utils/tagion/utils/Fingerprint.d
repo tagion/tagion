@@ -64,44 +64,59 @@ import tagion.basic.Types : Buffer;
     }
 }
 
-/** Unittest for testing struct Fingerprint
- */
 unittest
 {
-    assert(format("%s", Fingerprint([])) == "");
-    assert(format("%X", Fingerprint([255])) == "FF");
+    /// Fingerprint_empty_sequence
+    {
+        assert(format("%s", Fingerprint([])) == "");
+    }
+
+    /// Fingerprint_single_number
+    {
+        assert(format("%X", Fingerprint([255])) == "FF");
+    }
 
     Buffer fingerprint = [
         143, 0, 51, 132, 41, 244, 105, 22, 182, 75, 173, 136, 17, 208, 91, 39
     ];
 
-    // Specifiers %s and %X are equal
-    assert(format("%X", Fingerprint(
-            fingerprint)) == format("%s", Fingerprint(
-            fingerprint)));
-
-    // Output of uppercase hex
-    assert(format("%X", Fingerprint(
-            fingerprint)) == "8F 00 33 84 29 F4 69 16 B6 4B AD 88 11 D0 5B 27");
-
-    // Output of decimal
-    assert(format("%d", Fingerprint(
-            fingerprint)) == "143 0 51 132 41 244 105 22 182 75 173 136 17 208 91 39");
-
-    // Output of lowercase hex with width 4
-    assert(format("%4x", Fingerprint(
-            fingerprint)) == "8f 00 33 84 \n" ~
-            "29 f4 69 16 \n" ~
-            "b6 4b ad 88 \n" ~
-            "11 d0 5b 27");
-
-    // Exception for any wrong specifier
-    try
+    /// Fingerprint_equal_s_and_X_format
     {
-        format("%i", Fingerprint([]));
-        assert(false); // Expecting exception
+        assert(format("%X", Fingerprint(
+                fingerprint)) == format("%s", Fingerprint(
+                fingerprint)));
     }
-    catch (Exception e)
+
+    /// Fingerprint_format_X
     {
+        assert(format("%X", Fingerprint(
+                fingerprint)) == "8F 00 33 84 29 F4 69 16 B6 4B AD 88 11 D0 5B 27");
+    }
+
+    /// Fingerprint_format_d
+    {
+        assert(format("%d", Fingerprint(
+                fingerprint)) == "143 0 51 132 41 244 105 22 182 75 173 136 17 208 91 39");
+    }
+
+    /// Fingerprint_format_4x
+    {
+        assert(format("%4x", Fingerprint(
+                fingerprint)) == "8f 00 33 84 \n" ~
+                "29 f4 69 16 \n" ~
+                "b6 4b ad 88 \n" ~
+                "11 d0 5b 27");
+    }
+
+    /// Fingerprint_wrong_format_specifier
+    {
+        try
+        {
+            format("%i", Fingerprint([]));
+            assert(false); // Expecting exception
+        }
+        catch (Exception e)
+        {
+        }
     }
 }

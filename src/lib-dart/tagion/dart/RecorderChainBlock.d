@@ -3,12 +3,14 @@ module tagion.dart.RecorderChainBlock;
 
 import std.array;
 import std.algorithm : canFind;
-import tagion.hibon.HiBONRecord : Label, GetLabel;
-import tagion.hibon.HiBONJSON : JSONString;
+
+import tagion.basic.TagionExceptions : TagionException;
 import tagion.basic.Types : Buffer;
 import tagion.dart.Recorder;
-import tagion.hibon.Document;
 import tagion.crypto.SecureNet : StdHashNet;
+import tagion.hibon.HiBONRecord : Label, GetLabel;
+import tagion.hibon.HiBONJSON : JSONString;
+import tagion.hibon.Document;
 import tagion.hibon.HiBON : HiBON;
 
 /** @brief File contains structure RecorderChainBlock and RecorderChainBlockFactory
@@ -29,7 +31,7 @@ import tagion.hibon.HiBON : HiBON;
         /** Fingerprint of the chain before this block */
         Buffer chain;
         /** Recorder with database changes of this block */
-        RecordFactory.Recorder recorder;
+        immutable(RecordFactory.Recorder) recorder;
     }
 
     @disable this();
@@ -45,33 +47,29 @@ import tagion.hibon.HiBON : HiBON;
      *      @param bullseye - bullseye of database
      *      @param net - hash net
      */
-    private this(immutable RecordFactory.Recorder recorder, Buffer chain, Buffer bullseye, const(
-            StdHashNet) net) immutable
+    private this(
+        immutable(RecordFactory.Recorder) recorder,
+        Buffer chain,
+        Buffer bullseye,
+        const(StdHashNet) net)
     {
         this.recorder = recorder;
         this.chain = chain;
         this.bullseye = bullseye;
 
-        this.fingerprint = net.hashOf(Document(toHiBON));
+        this.fingerprint = net.hashOf(toDoc);
     }
 
     /** Generates \link HiBON from this block
      *      \return HiBON that contains this block
      */
     final const(HiBON) toHiBON() const
-    in
-    {
-        assert(recorder, "recorder can't be empty");
-    }
-    do
     {
         auto hibon = new HiBON;
         hibon[chainLabel] = chain;
         hibon[bullseyeLabel] = bullseye;
-        if (recorder)
-        {
-            hibon[recorderLabel] = recorder.toDoc;
-        }
+        hibon[recorderLabel] = recorder.toDoc;
+
         return hibon;
     }
 
@@ -80,8 +78,7 @@ import tagion.hibon.HiBON : HiBON;
      */
     final const(Document) toDoc() const
     {
-        auto hibon = toHiBON;
-        return Document(hibon);
+        return Document(toHiBON);
     }
 }
 
@@ -99,37 +96,41 @@ import tagion.hibon.HiBON : HiBON;
     /** Ctor passes hash net to factory.
      *      @param net - hash net
      */
-    this(immutable(StdHashNet) net)
+    this(const StdHashNet net)
     {
         this.net = net;
     }
 
     /** Ctor creates block from recorder, chain and bullseye.
      *      @param doc - document that conatins recorder, chain and bullseye
-     *      \return immutable instance of RecorderChainBlock
+     *      \return instance of RecorderChainBlock
      */
-    @trusted immutable(RecorderChainBlock) opCall(const(Document) doc)
+    @trusted RecorderChainBlock opCall(const(Document) doc)
     {
         auto factory = RecordFactory(net);
-        immutable recorder = doc.keys.canFind(RecorderChainBlock.recorderLabel) ? factory.uniqueRecorder(
-            doc[RecorderChainBlock.recorderLabel].get!Document) : cast(immutable) factory.recorder;
+
+        if (!doc.keys.canFind(RecorderChainBlock.recorderLabel))
+        {
+            throw new TagionException("Document must contain recorder for recorder chain block");
+        }
+
+        immutable recorder = factory.uniqueRecorder(
+            doc[RecorderChainBlock.recorderLabel].get!Document);
 
         Buffer chain = doc[RecorderChainBlock.chainLabel].get!Buffer;
         Buffer bullseye = doc[RecorderChainBlock.bullseyeLabel].get!Buffer;
 
-        return new immutable(RecorderChainBlock)(recorder, chain, bullseye, this.net);
+        return new RecorderChainBlock(recorder, chain, bullseye, net);
     }
 
     /** Ctor creates block from recorder, chain and bullseye.
      *      @param recorder - recorder for block
      *      @param chain - fingerprint of previous block
      *      @param bullseye - bullseye of database
-     *      \return immutable instance of RecorderChainBlock
+     *      \return instance of RecorderChainBlock
      */
-    immutable(RecorderChainBlock) opCall(immutable(RecordFactory.Recorder) recorder, immutable(
-            Buffer) chain, immutable(
-            Buffer) bullseye)
+    RecorderChainBlock opCall(immutable(RecordFactory.Recorder) recorder, Buffer chain, Buffer bullseye)
     {
-        return new immutable(RecorderChainBlock)(recorder, chain, bullseye, this.net);
+        return new RecorderChainBlock(recorder, chain, bullseye, net);
     }
 }

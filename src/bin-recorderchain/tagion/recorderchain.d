@@ -26,6 +26,7 @@ import tagion.logger.Logger;
 import tagion.communication.HiRPC;
 import tagion.tasks.TaskWrapper : Task;
 import tagion.utils.Fingerprint : Fingerprint;
+import tagion.dart.RecorderChain : RecorderChain;
 
 mixin TrustedConcurrency;
 
@@ -136,19 +137,19 @@ int main(string[] args)
         recorderService.receiveRecorder(rec_im, Fingerprint(db.fingerprint));
         writeln;
         writeln("db\n", db.fingerprint);
-        writeln("bl\n", EpochBlockFileDataBase.getBlocksInfo(folder_path).last.bullseye);
+        writeln("bl\n", RecorderChain.getBlocksInfo(folder_path).last.bullseye);
         writeln;
 
         // Send recorder to service
         foreach (i; 0 .. init_count)
         {
-            auto recorder = initDummyRecorderAdd(cast(int) i, to!string(i));
+            //auto recorder = initDummyRecorderAdd(cast(int) i, to!string(i));
             addDummyRecordToDB(db, recorder, hirpc);
             recorderService.receiveRecorder(recorder, Fingerprint(db.fingerprint));
 
             writeln;
             writeln("-db\n", db.fingerprint);
-            writeln("-bl\n", EpochBlockFileDataBase.getBlocksInfo(folder_path).last.bullseye);
+            writeln("-bl\n", RecorderChain.getBlocksInfo(folder_path).last.bullseye);
             writeln;
         }
 
@@ -157,12 +158,12 @@ int main(string[] args)
 
     void onPrint()
     {
-        auto blocks_info = EpochBlockFileDataBase.getBlocksInfo(folder_path);
+        auto blocks_info = RecorderChain.getBlocksInfo(folder_path);
 
         Buffer fingerprint = blocks_info.last.fingerprint;
         foreach (j; 0 .. blocks_info.amount)
         {
-            const current_block = EpochBlockFileDataBase.readBlockFromFingerprint(fingerprint, folder_path);
+            const current_block = RecorderChain.readBlock(fingerprint, folder_path, net);
 
             writeln(format(">> %s block start", blocks_info.amount - j));
 
@@ -181,7 +182,7 @@ int main(string[] args)
 
     void onRollback()
     {
-        auto blocks_info = EpochBlockFileDataBase.getBlocksInfo(folder_path);
+        auto blocks_info = RecorderChain.getBlocksInfo(folder_path);
         if (rollback > blocks_info.amount)
         {
             writeln(format("Rollback count (%d) is greater than number of blocks (%d)", rollback, blocks_info
@@ -203,15 +204,15 @@ int main(string[] args)
         {
             writefln("Current rollback: %d", rollback - j);
 
-            const current_block = EpochBlockFileDataBase.readBlockFromFingerprint(fingerprint, folder_path);
+            const current_block = RecorderChain.readBlock(fingerprint, folder_path, net);
 
             writeln("Current block bullseye:\n%X", Fingerprint(current_block.bullseye));
             writeln("DB fingerprint:\n%X", Fingerprint(db.fingerprint));
 
             // Add flipped recorder to DB
-            addDummyRecordToDB(db, EpochBlockFileDataBase.getFlippedRecorder(current_block), hirpc);
+            // addDummyRecordToDB(db, RecorderChain.getFlippedRecorder(current_block), hirpc);
             // Remove local file with this block
-            EpochBlockFileDataBase.makePath(fingerprint, folder_path).remove;
+            RecorderChain.makePath(fingerprint, folder_path).remove;
 
             fingerprint = current_block.chain;
         }
