@@ -117,7 +117,6 @@ mixin template TaskActor() {
     }
 
     void sendOwner(Args...)(Args args) @trusted {
-        writefln("sendOwner %s", args);
         concurrency.send(concurrency.ownerTid, args);
     }
 
@@ -125,17 +124,13 @@ mixin template TaskActor() {
 
     void receive() @trusted {
         enum actor_methods = allMethodFilter!(This, isMethod);
-//        pragma(msg, "actor_methods ", actor_methods);
         enum code = format("concurrency.receive(%-(&%s, %));", actor_methods);
-//        pragma(msg, "code ", code);
         mixin(code);
     }
 
     bool receiveTimeout(Duration duration) @trusted {
         enum actor_methods = allMethodFilter!(This, isMethod);
-//        pragma(msg, "actor_methods ", actor_methods);
         enum code = format("return concurrency.receiveTimeout(duration, %-(&%s, %));", actor_methods);
-//        pragma(msg, "code ", code);
         mixin(code);
     }
 }
@@ -181,7 +176,7 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
     import concurrency = std.concurrency;
     static struct ActorFactory {
         static if (Args.length) {
-            static Args init_args;
+            private static shared Args init_args;
         }
 //        enum public_members =  allMethodFilter!(Task, templateNot!isProtected);
         enum task_members = allMethodFilter!(Task, isTask);
@@ -197,10 +192,10 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
             try {
                 static if (Args.length) {
                     static if (is(Task == struct)) {
-                        Task task=Task(ActonFactoy.init_args);
+                        Task task=Task(ActorFactory.init_args);
                     }
                     else {
-                        Task task = new Task(ActonFactoy.init_args);
+                        Task task = new Task(ActorFactory.init_args);
                     }
                 }
                 else {
@@ -279,9 +274,8 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
     }
     ActorFactory result;
     static if (Args.length) {
-        if (ActorFactory.init_args != Args.init) {
-            ActorFactory.init_args = args;
-        }
+        assert (ActorFactory.init_args == Args.init, format("Argument for %s has already been set", Task.stringof));
+        ActorFactory.init_args = args;
     }
     return result;
 }
@@ -375,14 +369,14 @@ unittest {
             enum some_text ="Some text";
             my_actor_1.some(some_text);
             my_actor_1.get(Get.Some); /// tid.send(Get.Arg); my_actor_1.send(Get.Arg)
-            assert(receiveOnly!string is some_text);
+            assert(receiveOnly!string == some_text);
         }
     }
 }
 
 
 version(unittest) {
-    struct ActorWithCtor {
+    struct MyActorWithCtor {
         immutable(string) common_text;
         @disable this();
         this(string text) {
@@ -411,6 +405,23 @@ version(unittest) {
     }
 }
 
+/// Test of actor with common constructor
 @safe
 unittest {
+    enum common_text = "common_text";
+    // Creates the actor factory with common argument
+    auto my_actor_factory = actor!MyActorWithCtor(common_text);
+    auto actor_1 = my_actor_factory("task1");
+    auto actor_2 = my_actor_factory("task2");
+    scope(exit) {
+        actor_1.stop;
+        actor_2.stop;
+    }
+    actor_1.get(Get.Some);
+    actor_2.get(Get.Some);
+//    assert(my_actor_factory.init_args == common_text);
+    // Receive the common argument given to the factory constructor
+    assert(receiveOnly!string == common_text);
+    assert(receiveOnly!string == common_text);
+
 }
