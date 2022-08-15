@@ -84,8 +84,11 @@ synchronized class AddressBook
         mixin HiBONRecord;
     }
 
+    /** used for lock, unlock file */
     enum max_count = 3;
+    /** used for lock, unlock file */
     protected int timeout = 300;
+    /** nodes amount */
     protected size_t nodes;
 
     /**
