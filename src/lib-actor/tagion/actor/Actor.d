@@ -180,6 +180,9 @@ protected static string generateAllMethods(alias This)()
 auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct)) && !hasUnsharedAliasing!Args) {
     import concurrency = std.concurrency;
     static struct ActorFactory {
+        static if (Args.length) {
+            static Args init_args;
+        }
 //        enum public_members =  allMethodFilter!(Task, templateNot!isProtected);
         enum task_members = allMethodFilter!(Task, isTask);
         // pragma(msg, "task_members ", task_members);
@@ -192,11 +195,21 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
         // pragma(msg, "Params ", Params);
         protected static void run(string task_name, Params args) nothrow {
             try {
+                static if (Args.length) {
+                    static if (is(Task == struct)) {
+                        Task task=Task(ActonFactoy.init_args);
+                    }
+                    else {
+                        Task task = new Task(ActonFactoy.init_args);
+                    }
+                }
+                else {
                 static if (is(Task == struct)) {
                     Task task;
                 }
                 else {
                     Task task = new Task;
+                }
                 }
                 scope(success) {
                     writefln("STOP Success");
@@ -265,6 +278,11 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
         }
     }
     ActorFactory result;
+    static if (Args.length) {
+        if (ActorFactory.init_args != Args.init) {
+            ActorFactory.init_args = args;
+        }
+    }
     return result;
 }
 
@@ -281,8 +299,8 @@ version(unittest) {
         Some,
         Arg
     }
-        @safe
-    private static struct MyActor {
+    @safe
+    private struct MyActor {
         long count;
         string some_name;
         @method void some(string str) { // reciever
@@ -290,7 +308,7 @@ version(unittest) {
             some_name = str;
         }
 
-        @method void decreaseArg(int by) {
+        @method void decrease(int by) {
             count -= by;
         }
 
@@ -324,8 +342,11 @@ version(unittest) {
 
 }
 
+
+///
 @safe
 unittest {
+    /// Simple actor test
     auto my_actor_factory = actor!MyActor;
     /// Test of a single actor
     {
@@ -344,8 +365,52 @@ unittest {
         }
 
         {
+            my_actor_1.decrease(3);
+            my_actor_1.get(Get.Arg); /// tid.send(Get.Arg); my_actor_1.send(Get.Arg)
+            assert(receiveOnly!long is 10-3);
+        }
+
+        {
             //
-            my_actor_1.some("Some text");
+            enum some_text ="Some text";
+            my_actor_1.some(some_text);
+            my_actor_1.get(Get.Some); /// tid.send(Get.Arg); my_actor_1.send(Get.Arg)
+            assert(receiveOnly!string is some_text);
         }
     }
+}
+
+
+version(unittest) {
+    struct ActorWithCtor {
+        immutable(string) common_text;
+        @disable this();
+        this(string text) {
+            common_text = text;
+        }
+        @method void get(Get opt) { // reciever
+            final switch(opt) {
+            case Get.Some:
+                sendOwner(common_text);
+                break;
+            case Get.Arg:
+                assert(0);
+                break;
+            }
+        }
+
+        mixin TaskActor;
+
+        @task void runningTask() {
+            alive;
+            while(!stop) {
+                receive;
+            }
+        }
+
+    }
+}
+
+@safe
+unittest {
 }
