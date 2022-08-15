@@ -419,9 +419,18 @@ unittest {
     }
     actor_1.get(Get.Some);
     actor_2.get(Get.Some);
-//    assert(my_actor_factory.init_args == common_text);
     // Receive the common argument given to the factory constructor
     assert(receiveOnly!string == common_text);
     assert(receiveOnly!string == common_text);
 
 }
+
+/*
+version(unittest) {
+    struct ActorWithResponce {
+        @method void request(string text, void delegate(string) response) {
+            response(format("<%s>". text);
+        }
+    }
+}
+*/
