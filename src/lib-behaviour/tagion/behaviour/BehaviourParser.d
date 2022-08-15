@@ -40,14 +40,14 @@ enum State {
 }
 
 @trusted
-FeatureGroup parser(string filename, out string[] errors) {
+FeatureGroup parser(string filename) {
     import std.stdio : File;
     auto by_line = File(filename).byLine;
-    return parser(by_line, errors, filename);
+    return parser(by_line, filename);
 }
 
 @trusted
-FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (isInputRange!R && isSomeString!(ElementType!R)) {
+FeatureGroup parser(R)(R range, string localfile=null) if (isInputRange!R && isSomeString!(ElementType!R)) {
     import std.stdio;
     import std.array;
     import std.stdio : write, writeln, writef, writefln;
@@ -65,19 +65,13 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
     State state;
     writeln("STARTTTTTTT--------------------------------------------------------------------------------------------------------------");
     int current_action_index = -1;
-//    string[] errors;
     foreach (line_no, line; range.enumerate(1)) {
-        void check_error(const bool flag, string msg) {
-            if (!flag) {
-                errors ~= format("%s(%d): Error: %s", localfile, line_no, msg);
-            }
-        }
-//        writeln("______________________________________");
+        writeln("______________________________________");
         auto match = range.front.matchFirst(feature_regex);
-        // writeln("match: ", match);
-        // writefln("%s:%d ", localfile, line_no);
+        writeln("match: ", match);
+        writefln("%s:%d ", line, line_no);
         const Token token = cast(Token)(match.whichPattern);
-        // writeln("Token: ", token);
+        writeln("Token: ", token);
         with (Token) {
         TokenSwitch:
             final switch (token) {
@@ -109,21 +103,21 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
                     }
                     break;
                 case State.Start:
-                    check_error(0, "Missing feature declaration");
+                    check(0, format("Missing feature declaration %s:%d", line, line_no));
                 }
                 break;
             case FEATURE:
                 current_action_index = -1;
-                check_error(state is State.Start, "Feature has already been declared in line");
+                check(state is State.Start, format("Feature has already been declared in line %d", line));
                 writeln("Hi from Feature!!! ", line);
                 info_feature.property.description = match.post.idup;
                 state = State.Feature;
                 break;
             case NAME:
             case MODULE:
-                check_error((token is MODULE) || (state !is State.Feature),
+                check((token is MODULE) || (state !is State.Feature),
                         format("Illegal (namespace) name %s for %s", match[1], match.pre));
-                check_error(state is State.Feature, "Module name can only be declare after the Feature declaration");
+                // check(state is State.Feature, format("Module name can only be declare after the Feature declaration :%d", line)); HERE!!!
                 final switch (state) {
                 case State.Feature:
                     info_feature.name = match[1].idup;
@@ -140,10 +134,10 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
                                     scenario_group.tupleof[index].ands[$ - 1].name = match[1].idup;
                                     break TokenSwitch;
                                 }
-                                // writefln("scenario_group.tupleof[index].info.name = %s", scenario_group.tupleof[index]
-                                //         .info.name);
-                                check_error(scenario_group.tupleof[index].info.name.length == 0,
-                                    format("Action name '%s' has already been defined for %s", match[0], scenario_group.tupleof[index].info.name));
+                                writefln("scenario_group.tupleof[index].info.name = %s", scenario_group.tupleof[index]
+                                        .info.name);
+                                check(scenario_group.tupleof[index].info.name.length == 0,
+                                     format("Action name has already been defined %s", match[0], scenario_group.tupleof[index].info.name));
 
                                 scenario_group.tupleof[index].info.name = match[1].idup;
                                 break TokenSwitch;
@@ -156,12 +150,12 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
                     writefln("Start %s", match);
                     break TokenSwitch;
                 }
-                check_error(0, format("No valid action has %s", match[1]));
+                check(0, format("No valid action has %s", match[1]));
                 writeln("STATEEEE: ", state);
                 break;
             case SCENARIO:
                 current_action_index = -1;
-                check_error(state is State.Feature || state is State.Scenario, "Scenario must be declared after a Feature");
+                check(state is State.Feature || state is State.Scenario, format("Scenario must be declared after a Feature :%d", line));
                 writeln("Hi from SCENARIO!!! ", line);
                 info_scenario.property.description = match.post.idup;
                 state = State.Scenario;
@@ -171,7 +165,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
                 state = State.Action;
                 scope const action_word = match[1].toLower;
                 if (action_word == "and") {
-                    check_error(current_action_index >= 0, "Missing action Given, When or Then before And");
+                    check(current_action_index >= 0, "Missing action Given, When or Then before And");
                     static foreach (index, Field; Fields!ScenarioGroup) {
                         static if (isBehaviourGroup!Field) {
                             if (current_action_index == index) {
@@ -221,26 +215,23 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
     result.scenarios ~= scenario_group;
     import tagion.hibon.HiBONJSON : toPretty;
 
-//    writefln("pretty %s", result.toPretty);
-//    check(errors.length == 0, errors.join("\n"));
+    writefln("pretty %s", result.toPretty);
     return result;
 }
 
 unittest { /// Convert ProtoDBBTestComments to Feature
-    enum bddfile_proto = "ProtoBDDTestComments";
-    immutable bdd_filename = bddfile_proto.unitfile.setExtension(EXT.Markdown);
-    io.writefln("bdd_filename=%s", bdd_filename);
+    enum name = "ProtoBDDTestComments";
+    immutable filename = name.unitfile.setExtension(EXT.Markdown);
+    io.writefln("filename=%s", filename);
 
-    auto feature_byline = File(bdd_filename).byLine;
+    auto feature_byline = File(filename).byLine;
 
-    // alias ByLine = typeof(feature_byline);
-    // pragma(msg, "isInputRange ", isInputRange!ByLine);
-    // pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
-    // pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
+    alias ByLine = typeof(feature_byline);
+    pragma(msg, "isInputRange ", isInputRange!ByLine);
+    pragma(msg, "ElementType!ByLine ", ElementType!ByLine);
+    pragma(msg, "isSomeString!(ElementType!ByLine) ", isSomeString!(ElementType!ByLine));
 
-    string[] errors;
-    auto feature = parser(feature_byline, errors);
-    { // Check ProtoDBBTestComments converted to Feature
+    auto feature = parser(feature_byline);
     // check feature
     assert(feature.info.name == "tagion.behaviour.unittest.ProtoBDD");
     assert(feature.info.property.description == " Some awesome feature should print some cash out of the blue(descr)");
@@ -273,9 +264,6 @@ unittest { /// Convert ProtoDBBTestComments to Feature
     assert(feature.scenarios[0].then.ands[0].name == "is_dispensed");
     assert(feature.scenarios[0].then.ands[0].property.description == " the cash is dispensed");
     assert(feature.scenarios[0].then.ands[0].property.comments == ["some comments for Then And", ""]);
-    }
-
-
     // white space at the start of description
     // only for one scenario
 }
