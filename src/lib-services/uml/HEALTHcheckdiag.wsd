@@ -6,16 +6,25 @@ hide empty description
 title HealthCheck Sequence Diagram
 
 participant Tagionwallet as tagionwallet
-participant TagionService as tagionservice
+participant SSLServise as SSL_service
+participant SSLFiberService as SSL_fiber_service
 participant TransactionService as transactionservice
+participant TagionService as tagionservice
 
 activate tagionwallet
-tagionwallet -> tagionservice : SSl send document with requested data
-activate tagionservice
-tagionservice ->  transactionservice: create, send hirpc respons
+tagionwallet -> SSL_service : connect
+activate SSL_service
+SSL_service -> SSL_fiber_service : send document with requested data
+activate SSL_fiber_service
+SSL_fiber_service -> transactionservice  : response
 activate transactionservice
-transactionservice -> tagionwallet: create, send SSL respons
+transactionservice -> tagionservice: HiRPC send
+activate tagionservice
+tagionservice -> transactionservice: send HiRPC response
 deactivate tagionservice
+transactionservice -> SSL_fiber_service: send respons 
 deactivate transactionservice
+SSL_fiber_service -> SSL_service: send
+deactivate SSL_fiber_service
+SSL_service -> tagionwallet: send response
 deactivate tagionwallet
-@enduml
