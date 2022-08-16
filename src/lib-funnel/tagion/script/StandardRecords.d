@@ -261,7 +261,7 @@ enum OwnerKey = "$Y";
         /** amount of hashgraph rounds */
         @Label("$hashgraph_rounds") ulong rounds;
         /** time since the beginning of the epoch */
-        @Label("$epoch_timestamp") ulong epoch_timestamp;
+        @Label("epoch_timestamp") string epoch_timestamp;
         /** amount of transactions in this epoch */
         @Label("$transactions_amount") uint transactions_amount;
         /** number of current epoch */
@@ -270,7 +270,7 @@ enum OwnerKey = "$Y";
         @Label("$in_graph") bool in_graph;
         mixin HiBONRecord!(
             q{
-                this(ulong rounds, ulong epoch_timestamp, uint transactions_amount, uint epoch_num, bool in_graph) {
+                this(ulong rounds, string epoch_timestamp, uint transactions_amount, uint epoch_num, bool in_graph) {
                     this.rounds = rounds;
                     this.epoch_timestamp = epoch_timestamp;
                     this.transactions_amount = transactions_amount;

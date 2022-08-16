@@ -118,8 +118,8 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 {
     try
     {
+        /** Epoch start time */
         SysTime start = Clock.currTime();
-        Duration delta;
         log.register(opts.node_name);
         setOptions(opts);
         bool stop;
@@ -494,14 +494,10 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 (string respond_task_name, Buffer data) {
                 import tagion.hibon.HiBONJSON;
                 
-                /** Duration of the current epoch */
-                delta = Clock.currTime() - start;
-                /** time of the current epoch work */
-                ulong seconds = delta.total!"seconds";
                 /** document for receive request */
                 const doc = Document(data);
                 const receiver = empty_hirpc.receive(doc);
-                auto respond = HealthParams(hashgraph.rounds.length, seconds, count_transactions, epoch_num, hashgraph.areWeInGraph);
+                auto respond = HealthParams(hashgraph.rounds.length, start.toString, count_transactions, epoch_num, hashgraph.areWeInGraph);
                 auto response = empty_hirpc.result(receiver, respond);
                 log("Healthcheck: %s", response.toDoc.toJSON);
                 locate(respond_task_name).send(response.toDoc.serialize);
