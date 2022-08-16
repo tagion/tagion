@@ -67,7 +67,7 @@ struct Info(alias Property) {
 enum isInfo(alias I) = __traits(isSame, TemplateOf!I, Info);
 
 struct BehaviourGroup(Property) if (isOneOf!(Property, UniqueBehaviourProperties)) {
-    Info!Property info;
+    Info!Property[] info;
 //    @Label(VOID, true) Info!And[] ands;
     mixin HiBONRecord!();
 }
@@ -150,7 +150,7 @@ template getAllCallables(T) if (is(T == class) || is(T == struct)) {
 
 static unittest { // Test of getAllCallable
     alias all_callables = getAllCallables!Some_awesome_feature;
-    static assert(all_callables.length == 13);
+    static assert(all_callables.length == 14);
     static assert(allSatisfy!(isCallable, all_callables));
 }
 
@@ -172,7 +172,7 @@ template getBehaviours(T) if (is(T == class) || is(T == struct)) {
 
 static unittest { // Test of getBehaviours
     alias behaviours = getBehaviours!Some_awesome_feature;
-    static assert(behaviours.length == 6);
+    static assert(behaviours.length == 7);
     static assert(allSatisfy!(isCallable, behaviours));
     static assert(allSatisfy!(hasBehaviours, behaviours));
 }
@@ -186,10 +186,10 @@ static unittest { // Test of getBehaviours
 template getBehaviour(T, Property) if (is(T == class) || is(T == struct)) {
     alias behaviours = getBehaviours!T;
     alias behaviour_with_property = Filter!(ApplyRight!(hasUDA, Property), behaviours);
-    static assert(behaviour_with_property.length <= 1,
-            format!"More than 1 behaviour %s has been declared in %s"(Property.stringof, T.stringof));
-    static if (behaviour_with_property.length is 1) {
-        alias getBehaviour = behaviour_with_property[0];
+    // static assert(behaviour_with_property.length <= 1,
+    //         format!"More than 1 behaviour %s has been declared in %s"(Property.stringof, T.stringof));
+    static if (behaviour_with_property.length > 0) {
+        alias getBehaviour = behaviour_with_property;
     }
     else {
         alias getBehaviour = void;
@@ -199,7 +199,8 @@ template getBehaviour(T, Property) if (is(T == class) || is(T == struct)) {
 
 unittest {
     alias behaviour_with_given = getBehaviour!(Some_awesome_feature, Given);
-    static assert(isCallable!(behaviour_with_given));
+    static assert(allSatisfy!(isCallable, behaviour_with_given));
+
     static assert(hasUDA!(behaviour_with_given, Given));
     static assert(is(getBehaviour!(Some_awesome_feature_bad_format_missing_given, Given) == void));
 

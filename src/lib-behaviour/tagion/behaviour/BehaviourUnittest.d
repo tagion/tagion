@@ -37,14 +37,14 @@ version (unittest)
             return result(__FUNCTION__);
         }
 
-        @And("the account is in credit")
+        @Given("the account is in credit")
         Document in_credit()
         {
             count++;
             return result(__FUNCTION__);
         }
 
-        @And("the dispenser contains cash")
+        @Given("the dispenser contains cash")
         Document contains_cash()
         {
             count++;
@@ -65,9 +65,15 @@ version (unittest)
             return result(__FUNCTION__);
         }
 
-        @And("the cash is dispensed")
+        @Then("the cash is dispensed")
         Document is_dispensed()
         {
+            count++;
+            return result(__FUNCTION__);
+        }
+
+        @But("if there is Customer does not his card, the swollow the card")
+        Document swollow_the_card() {
             count++;
             return result(__FUNCTION__);
         }
