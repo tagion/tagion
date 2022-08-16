@@ -1,5 +1,6 @@
 module tagion.behaviour.BehaviourParser;
 
+version(none_and) {
 import tagion.behaviour.BehaviourFeature;
 
 import std.range.primitives : isInputRange, ElementType;
@@ -112,7 +113,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
                     static foreach (index, Field; Fields!ScenarioGroup) {
                         static if (hasMember!(Field, "info")) {
                             if (current_action_index is index) {
-                                if (state == State.And_Action) {
+                                version(none_and) if (state == State.And_Action) {
                                     scenario_group.tupleof[index].ands[$ - 1].property.comments ~= comment;
                                     break StateSwitch;
                                 }
@@ -150,7 +151,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
                     static foreach (index, Field; Fields!ScenarioGroup) {
                         static if (hasMember!(Field, "info")) {
                             if (current_action_index is index) {
-                                if (state is State.And_Action) {
+                                version(none_and) if (state is State.And_Action) {
                                     scenario_group.tupleof[index].ands[$ - 1].name = match[1].idup;
                                     break TokenSwitch;
                                 }
@@ -195,8 +196,8 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
                                 and.property.description = match.post.idup;
                                 pragma(msg, "Field ", Fields!ScenarioGroup[index]);
                                 pragma(msg, ":::", FieldNameTuple!(typeof(scenario_group.tupleof[index])));
-                                scenario_group.tupleof[index].ands ~= and;
-                                pragma(msg, ":::", typeof(scenario_group.tupleof[index].ands));
+                                version(none_and) scenario_group.tupleof[index].ands ~= and;
+                                version(none_and) pragma(msg, ":::", typeof(scenario_group.tupleof[index].ands));
                             }
                         }
                     }
@@ -269,26 +270,30 @@ unittest { /// Convert ProtoDBBTestComments to Feature
     assert(feature.scenarios[0].given.info.name == "is_valid");
     assert(feature.scenarios[0].given.info.property.description == " the card is valid");
     assert(feature.scenarios[0].given.info.property.comments == ["some comments scenario", ""]);
-    assert(feature.scenarios[0].given.ands.length == 2);
-    assert(feature.scenarios[0].given.ands[0].name == "in_credit");
-    assert(feature.scenarios[0].given.ands[0].property.description == " the account is in credit");
-    assert(feature.scenarios[0].given.ands[0].property.comments == ["some comments Given And", ""]);
-    assert(feature.scenarios[0].given.ands[1].name == "contains_cash");
-    assert(feature.scenarios[0].given.ands[1].property.description == " the dispenser contains cash");
-    assert(feature.scenarios[0].given.ands[1].property.comments == [""]);
+    version(none_and) {
+        assert(feature.scenarios[0].given.ands.length == 2);
+        assert(feature.scenarios[0].given.ands[0].name == "in_credit");
+        assert(feature.scenarios[0].given.ands[0].property.description == " the account is in credit");
+        assert(feature.scenarios[0].given.ands[0].property.comments == ["some comments Given And", ""]);
+        assert(feature.scenarios[0].given.ands[1].name == "contains_cash");
+        assert(feature.scenarios[0].given.ands[1].property.description == " the dispenser contains cash");
+        assert(feature.scenarios[0].given.ands[1].property.comments == [""]);
+    }
     // check when
     assert(feature.scenarios[0].when.info.name == "request_cash");
     assert(feature.scenarios[0].when.info.property.description == " the Customer request cash");
     assert(feature.scenarios[0].when.info.property.comments == ["some comments for When"]);
-    assert(feature.scenarios[0].when.ands.length == 0);
+    version(none_ands) assert(feature.scenarios[0].when.ands.length == 0);
     // check then
     assert(feature.scenarios[0].then.info.name == "is_debited");
     assert(feature.scenarios[0].then.info.property.description == " the account is debited");
     assert(feature.scenarios[0].then.info.property.comments == ["some comments for Then", ""]);
-    assert(feature.scenarios[0].then.ands.length == 1);
-    assert(feature.scenarios[0].then.ands[0].name == "is_dispensed");
-    assert(feature.scenarios[0].then.ands[0].property.description == " the cash is dispensed");
-    assert(feature.scenarios[0].then.ands[0].property.comments == ["some comments for Then And", ""]);
+    version(none_and) {
+        assert(feature.scenarios[0].then.ands.length == 1);
+        assert(feature.scenarios[0].then.ands[0].name == "is_dispensed");
+        assert(feature.scenarios[0].then.ands[0].property.description == " the cash is dispensed");
+        assert(feature.scenarios[0].then.ands[0].property.comments == ["some comments for Then And", ""]);
+    }
     }
 
 
@@ -302,4 +307,5 @@ version (unittest) {
     import tagion.behaviour.BehaviourIssue : EXT;
     import std.stdio : File;
     import std.path;
+}
 }

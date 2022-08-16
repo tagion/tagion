@@ -1,5 +1,5 @@
 module tagion.behaviour.BehaviourIssue;
-
+version(none_and) {
 import tagion.behaviour.BehaviourFeature;
 import std.traits;
 import std.algorithm : each, map;
@@ -267,4 +267,5 @@ version (unittest) {
     import std.path;
     import std.outbuffer;
     import io = std.stdio;
+}
 }

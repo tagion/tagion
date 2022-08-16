@@ -17,6 +17,7 @@ version (unittest)
    Returns:
    true if all the behavios has been runned
 */
+version(none)
 @safe
 auto scenario(T)(T test) if (isScenario!T)
 {
@@ -37,6 +38,7 @@ auto scenario(T)(T test) if (isScenario!T)
             %1$s.%2$s.ands[%5$d].result = and;
         }, string, string, string, string, size_t);
     auto scenario_group = getScenarioGroup!T;
+    version(none)
     ScenarioGroup run(S...)()
     {
         static if (S.length is 0)
@@ -79,7 +81,7 @@ auto scenario(T)(T test) if (isScenario!T)
 
     return &run!UniqueBehaviourProperties;
 }
-
+version(none)
 unittest
 {
     import tagion.hibon.HiBONJSON;
@@ -138,6 +140,7 @@ ScenarioGroup getScenarioGroup(T)() if (isScenario!T)
                 static foreach (under_behaviour; getUnderBehaviour!(T, _Property))
                 {
                     {
+                        version(none_and) {
                         Info!And and;
                         scope (exit)
                         {
@@ -145,6 +148,7 @@ ScenarioGroup getScenarioGroup(T)() if (isScenario!T)
                         }
                         and.property = getProperty!(under_behaviour);
                         and.name = __traits(identifier, under_behaviour);
+                        }
                     }
                 }
             }

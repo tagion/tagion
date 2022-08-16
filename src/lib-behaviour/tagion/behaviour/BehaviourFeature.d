@@ -51,6 +51,10 @@ struct Then {
     mixin Property;
 }
 
+struct But {
+    mixin Property;
+}
+
 enum isDescriptor(T) = hasMember!(T, "description");
 
 struct Info(alias Property) {
@@ -64,7 +68,7 @@ enum isInfo(alias I) = __traits(isSame, TemplateOf!I, Info);
 
 struct BehaviourGroup(Property) if (isOneOf!(Property, UniqueBehaviourProperties)) {
     Info!Property info;
-    @Label(VOID, true) Info!And[] ands;
+//    @Label(VOID, true) Info!And[] ands;
     mixin HiBONRecord!();
 }
 
@@ -75,6 +79,7 @@ struct ScenarioGroup {
     BehaviourGroup!(Given) given;
     @Label(VOID, true) BehaviourGroup!(When) when;
     BehaviourGroup!(Then) then;
+    @Label(VOID, true) BehaviourGroup!(But) but;
     mixin HiBONRecord!();
 }
 
@@ -88,7 +93,7 @@ version (unittest) {
     private import tagion.behaviour.BehaviourUnittest;
 }
 /// All behaviour-properties of a Scenario
-alias BehaviourProperties = AliasSeq!(Given, And, When, Then);
+alias BehaviourProperties = AliasSeq!(Given, And, When, Then, But);
 /// The behaviour-properties which only occurrences once in a Scenario
 alias UniqueBehaviourProperties = Erase!(And, BehaviourProperties);
 
