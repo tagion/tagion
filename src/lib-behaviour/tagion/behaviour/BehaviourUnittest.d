@@ -1,6 +1,6 @@
 module tagion.behaviour.BehaviourUnittest;
 
-import tagion.behaviour.BehaviourBase;
+import tagion.behaviour.BehaviourFeature;
 
 /// This module is only use to support the unittest
 version (unittest)

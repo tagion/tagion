@@ -1,6 +1,6 @@
 module tagion.behaviour.Behaviour;
 
-public import tagion.behaviour.BehaviourBase;
+public import tagion.behaviour.BehaviourFeature;
 
 import std.traits;
 import std.format;

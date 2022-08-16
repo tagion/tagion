@@ -1,6 +1,6 @@
 module tagion.behaviour.BehaviourParser;
 
-import tagion.behaviour.BehaviourBase;
+import tagion.behaviour.BehaviourFeature;
 
 import std.range.primitives : isInputRange, ElementType;
 import std.traits;
@@ -12,14 +12,14 @@ import std.traits : Fields;
 import std.meta;
 import std.uni : toLower;
 import tagion.behaviour.BehaviourException;
-import tagion.behaviour.BehaviourBase : UniqueBehaviourProperties;
+import tagion.behaviour.BehaviourFeature : UniqueBehaviourProperties;
 
 enum feature_regex = regex([
         `feature(?:\s+|\:)`, /// Feature
         `scenario(?:\s+|\:)`, /// Scenario
         r"\s*\*(\w+)\*", /// Action
-        r"\s*`(\w+)`", /// Name
-        r"`((?:\w+\.?)+)`", /// Module
+        //  r"\s*`(\w+)`", /// Name
+        r"`((?:\w+\.?)+)`", /// Name
     ], "i");
 
 enum Token {
@@ -28,7 +28,12 @@ enum Token {
     SCENARIO,
     ACTION,
     NAME,
-    MODULE,
+    // MODULE,
+}
+
+bool validAction(const(char[]) name) pure {
+    import std.algorithm.searching : any;
+    return !name.any!q{a == '.'};
 }
 
 enum State {
@@ -63,7 +68,15 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
     writeln(typeid(scenario_group.given));
 
     State state;
+    bool got_feature;
     writeln("STARTTTTTTT--------------------------------------------------------------------------------------------------------------");
+    enum CurrentAction {
+        none,
+        given,
+        when,
+        then
+    }
+    CurrentAction current_action;
     int current_action_index = -1;
 //    string[] errors;
     foreach (line_no, line; range.enumerate(1)) {
@@ -118,17 +131,18 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
                 writeln("Hi from Feature!!! ", line);
                 info_feature.property.description = match.post.idup;
                 state = State.Feature;
+                got_feature = true;
                 break;
             case NAME:
-            case MODULE:
-                check_error((token is MODULE) || (state !is State.Feature),
-                        format("Illegal (namespace) name %s for %s", match[1], match.pre));
-                check_error(state is State.Feature, "Module name can only be declare after the Feature declaration");
+                // check_error(match[1].validAction || (state !is State.Feature),
+                //         format("Illegal (namespace) name %s for %s", match[1], match.pre));
+                // check_error(state is State.Feature, "Module name can only be declare after the Feature declaration");
                 final switch (state) {
                 case State.Feature:
                     info_feature.name = match[1].idup;
                     break TokenSwitch;
                 case State.Scenario:
+                    check_error(match[1].validAction, format("Not a valid action name %s,  '.' is not allowed", match[1]));
                     info_scenario.name = match[1].idup;
                     break TokenSwitch;
                 case State.Action:
@@ -160,8 +174,10 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile=null) if (
                 writeln("STATEEEE: ", state);
                 break;
             case SCENARIO:
+                current_action = CurrentAction.none;
+                check_error(got_feature, "Scenario without feature");
                 current_action_index = -1;
-                check_error(state is State.Feature || state is State.Scenario, "Scenario must be declared after a Feature");
+                //check_error(state is State.Feature || state is State.Scenario, "Scenario must be declared after a Feature");
                 writeln("Hi from SCENARIO!!! ", line);
                 info_scenario.property.description = match.post.idup;
                 state = State.Scenario;

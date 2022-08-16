@@ -1,4 +1,4 @@
-module tagion.behaviour.BehaviourBase;
+module tagion.behaviour.BehaviourFeature;
 
 import std.traits;
 import std.meta : AliasSeq, Filter, aliasSeqOf, ApplyLeft, ApplyRight, allSatisfy, anySatisfy, Alias, Erase, aliasSeqOf;
@@ -308,7 +308,7 @@ template isFeature(alias M) if (__traits(isModule, M)) {
 //
 unittest {
     static assert(isFeature!(tagion.behaviour.BehaviourUnittest));
-    static assert(!isFeature!(tagion.behaviour.BehaviourBase));
+    static assert(!isFeature!(tagion.behaviour.BehaviourFeature));
 }
 
 /**
@@ -330,7 +330,7 @@ unittest { // The obtainFeature of a module
     static assert(obtainFeature!(tagion.behaviour.BehaviourUnittest) ==
             Feature(
                 "Some awesome feature should print some cash out of the blue", null));
-    static assert(!obtainFeature!(tagion.behaviour.BehaviourBase));
+    static assert(!obtainFeature!(tagion.behaviour.BehaviourFeature));
 
 }
 

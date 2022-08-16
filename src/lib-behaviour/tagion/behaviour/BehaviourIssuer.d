@@ -1,6 +1,6 @@
 module tagion.behaviour.BehaviourIssue;
 
-import tagion.behaviour.BehaviourBase;
+import tagion.behaviour.BehaviourFeature;
 import std.traits;
 import std.algorithm : each, map;
 import std.range : tee, chain;
