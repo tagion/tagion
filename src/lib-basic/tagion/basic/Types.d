@@ -58,11 +58,24 @@ enum Control
 
 enum FileExtension
 {
-    json = "json", // JSON File format
-    hibon = "hibon", // HiBON file format
-    wasm = "wasm", // WebAssembler binary format
-    wast = "wast", // WebAssembler text format
-    dart = "drt", // DART data-base
-    markdown = "md", // DART data-base
-    dsrc = "d", // DART data-base
+    json = "json", /// JSON File format
+    hibon = "hibon", /// HiBON file format
+    wasm = "wasm", /// WebAssembler binary format
+    wast = "wast", /// WebAssembler text format
+    dart = "drt", /// DART data-base
+    markdown = "md", /// markdown
+    dsrc = "d", /// d-source
+}
+
+enum DOT = '.'; /// File extension separator
+
+@safe
+string withDot(FileExtension ext) pure nothrow {
+
+    return DOT~ext;
+}
+
+@safe
+unittest {
+    assert(FileExtension.markdown.withDot == ".md");
 }
