@@ -390,7 +390,6 @@ static ref auto all_getopt(
         "dart-master-angle-from-port", "Master angle based on port ", &(options.dart.sync.master_angle_from_port),
 
         "dart-init", "Initialize block file", &(options.dart.initialize),
-        "dart-generate", "Generate dart with random data", &(options.dart.generate),
         "dart-from", "DART from angle", &(options.dart.from_ang),
         "dart-to", "DART to angle", &(options.dart.to_ang),
         "dart-request", "Request dart data", &(options.dart.request),
@@ -619,7 +618,6 @@ static setDefaultOption(ref Options options)
         ringWidth = 3;
         rings = 3;
         initialize = true;
-        generate = false;
         synchronize = true;
         request = false;
         fast_load = false;

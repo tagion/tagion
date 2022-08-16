@@ -1,20 +1,19 @@
+/// \file tagionwallet.d
 module tagion.tools.tagionwallet;
 
 import std.getopt;
 import std.stdio;
-import std.file : exists, mkdir;
+import std.file : exists, mkdir, FileException;
 import std.path;
 import std.format;
 import std.algorithm : map, max, min, filter, each, splitter;
-import std.range : lockstep, zip, takeExactly, only;
+import std.range : lockstep, zip;
 import std.array;
-import std.string : strip, toLower;
+import std.string : toLower;
 import std.conv : to;
 import std.array : join;
 import std.exception : assumeUnique, assumeWontThrow;
-import std.string : representation;
-import core.time : MonoTime;
-import std.socket : InternetAddress, AddressFamily;
+import std.socket : InternetAddress, AddressFamily, SocketOSException;
 import core.thread;
 
 import tagion.hibon.HiBON : HiBON;
@@ -22,7 +21,6 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
 
-import tagion.basic.Basic : basename;
 import tagion.basic.Types : Buffer;
 import tagion.basic.TagionExceptions;
 import tagion.script.StandardRecords;
@@ -33,7 +31,6 @@ import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, Quiz;
 import tagion.wallet.SecureWallet;
 import tagion.utils.Term;
 import tagion.basic.Message;
-import tagion.utils.Miscellaneous;
 
 import tagion.communication.HiRPC;
 import tagion.network.SSLSocket;
@@ -41,29 +38,53 @@ import tagion.Keywords;
 
 enum LINE = "------------------------------------------------------";
 
+/**
+ * @brief Write in console warning message
+ */
 void warning()
 {
     writefln("%sWARNING%s: This wallet should only be used for the Tagion Dev-net%s", RED, BLUE, RESET);
 }
 
+/**
+ * \struct Invoices
+ * Struct invoices array
+ */
 struct Invoices
 {
+    /** internal array */
     Invoice[] list;
     mixin HiBONRecord;
 }
 
+/**
+ * \struct WalletOptions
+ * Struct wallet options files and network status storage models
+ */
 struct WalletOptions
 {
+    /** account file name/path */
     string accountfile;
+    /** wallet file name/path */
     string walletfile;
+    /** questions file name/path */
     string quizfile;
+    /** device file name/path */
     string devicefile;
+    /** contract file name/path */
     string contractfile;
+    /** bills file name/path */
     string billsfile;
+    /** payments request file name/path */
     string paymentrequestsfile;
+    /** address part of network socket */
     string addr;
+    /** port part of network socket */
     ushort port;
 
+    /**
+    * @brief set default values for wallet
+    */
     void setDefault() pure nothrow
     {
         accountfile = "account.hibon";
@@ -82,7 +103,11 @@ struct WalletOptions
 }
 
 enum MAX_PINCODE_SIZE = 128;
-//Wallet* wallet;
+
+/**
+ * \struct WalletInterface
+ * Interface struct for wallet
+ */
 struct WalletInterface
 {
     const(WalletOptions) options;
@@ -96,6 +121,10 @@ struct WalletInterface
         this.options = options;
     }
 
+    /**
+    * @brief pseudographical UI interface, pin code reading
+    * \return Check pin code result
+    */
     bool loginPincode()
     {
         CLEARSCREEN.write;
@@ -134,6 +163,9 @@ struct WalletInterface
         return false;
     }
 
+    /**
+    * @brief wallet pseudographical UI interface
+    */
     void accountView()
     {
 
@@ -241,13 +273,18 @@ struct WalletInterface
     }
 
     enum FKEY = YELLOW;
-
+    /**
+    * @brief console UI waiting cursor
+    */
     static void pressKey()
     {
         writefln("Press %1$sEnter%2$s", YELLOW, RESET);
         readln;
     }
 
+    /**
+    * @brief chenge pin code interface
+    */
     void changePin()
     {
         CLEARSCREEN.write;
@@ -320,6 +357,11 @@ struct WalletInterface
         }
     }
 
+    /**
+    * @brief generate q/a pair keys
+    * @param questions - string array
+    * @param recover_flag - recover/create flag (true mean creating)
+    */
     void generateSeed(const(string[]) questions, const bool recover_flag)
     {
         auto answers = new char[][questions.length];
@@ -539,6 +581,11 @@ struct WalletInterface
 enum REVNO = 0;
 enum HASH = "xxx";
 
+/**
+ * @brief strip white spaces in begin/end of text
+ * @param word - input parameter with out
+ * \return dublicate out parameter
+ */
 const(char[]) trim(return scope const(char)[] word) pure nothrow @safe @nogc
 {
     import std.ascii : isWhite;
@@ -554,6 +601,11 @@ const(char[]) trim(return scope const(char)[] word) pure nothrow @safe @nogc
     return word;
 }
 
+/**
+ * @brief strip all whitespaces in text
+ * @param word_strip - input/output parameter for white spaces striping
+ *
+ */
 void word_strip(scope ref char[] word_strip) pure nothrow @safe @nogc
 {
     import std.ascii : isWhite;
@@ -574,12 +626,18 @@ void word_strip(scope ref char[] word_strip) pure nothrow @safe @nogc
     word_strip = word_strip[0 .. current_i];
 }
 
+/*
+ * @brief build file path if needed file with folder long path
+ * @param file - input/output parameter with filename
+ * @param path - forlders destination to file
+ */
 @safe
 static void set_path(ref string file, string path)
 {
     file = buildPath(path, file.baseName);
 }
 
+//! [check function word_strip]
 @safe
 unittest
 {
@@ -759,11 +817,19 @@ int _main(string[] args)
     {
         writefln("HEALTHCHECK: %s %d", wallet_interface.options.addr, wallet_interface.options.port);
         auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-        client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface
-                .options.port));
         scope (exit)
         {
             client.close;
+        }
+        try 
+        {
+            client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface
+                .options.port));
+        }
+        catch(SocketOSException e)
+        {
+            writeln("Health check failed: ", e.msg);
+            return 1;
         }
         client.blocking = true;
         const sender = hirpc.action("healthcheck", new HiBON());
@@ -810,11 +876,28 @@ int _main(string[] args)
 
     if (options.walletfile.exists)
     {
-        const wallet_doc = options.walletfile.fread;
+        Document wallet_doc;
+        try
+        {
+            wallet_doc = options.walletfile.fread;
+        }
+        catch(TagionException e)
+        {
+            writeln(e.msg);
+            return 1;
+        }
         const pin_doc = options.devicefile.exists ? options.devicefile.fread : Document.init;
         if (wallet_doc.isInorder && pin_doc.isInorder)
         {
-            wallet_interface.secure_wallet = WalletInterface.StdSecureWallet(wallet_doc, pin_doc);
+            try 
+            {
+                wallet_interface.secure_wallet = WalletInterface.StdSecureWallet(wallet_doc, pin_doc);
+            }
+            catch (TagionException e)
+            {
+                writefln(e.msg);
+                return 1;
+            }
         }
         if (options.quizfile.exists)
         {
@@ -898,6 +981,10 @@ int _main(string[] args)
             return 8;
         }
     }
+    else if (payfile.length)
+    {
+        writeln("Invoice file "~payfile~" not found");
+    }
     if (unlock_bills)
     {
         wallet_interface.secure_wallet.deactivate_bills;
@@ -910,13 +997,22 @@ int _main(string[] args)
         auto to_send = wallet_interface.secure_wallet.get_request_update_wallet();
         // writeln("Sending::", to_send.toDoc.toJSON);
         auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-        client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface
-                .options.port));
-        client.blocking = true;
         scope (exit)
         {
             client.close;
         }
+        try 
+        {
+            client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface
+                .options.port));
+        }
+        catch(SocketOSException e)
+        {
+            writeln("Refused connection to address:", wallet_interface.options.addr);
+            return 1;
+        }
+        client.blocking = true;
+
         client.send(to_send.toDoc.serialize);
 
         auto rec_buf = new void[4000];
@@ -984,7 +1080,15 @@ int _main(string[] args)
             options.paymentrequestsfile.fwrite(wallet_interface.payment_requests);
             // Writes the invoice-file to a file named <name>_<invoicefile>
             // writefln("invoicefile=%s", invoicefile);
-            invoicefile.fwrite(new_invoice);
+            try
+            {
+                invoicefile.fwrite(new_invoice);
+            }
+            catch(FileException e)
+            {
+                writeln(e.msg);
+                return 1;
+            }
         }
         else if (invoice_to_pay !is invoice_to_pay.init)
         {
