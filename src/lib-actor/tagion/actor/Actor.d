@@ -124,13 +124,13 @@ mixin template TaskActor() {
 
     void receive() @trusted {
         enum actor_methods = allMethodFilter!(This, isMethod);
-        enum code = format("concurrency.receive(%-(&%s, %));", actor_methods);
+        enum code = format(q{concurrency.receive(%-(&%s, %));}, actor_methods);
         mixin(code);
     }
 
     bool receiveTimeout(Duration duration) @trusted {
         enum actor_methods = allMethodFilter!(This, isMethod);
-        enum code = format("return concurrency.receiveTimeout(duration, %-(&%s, %));", actor_methods);
+        enum code = format(q{return concurrency.receiveTimeout(duration, %-(&%s, %));}, actor_methods);
         mixin(code);
     }
 }
@@ -425,12 +425,41 @@ unittest {
 
 }
 
-/*
+
 version(unittest) {
-    struct ActorWithResponce {
-        @method void request(string text, void delegate(string) response) {
-            response(format("<%s>". text);
+    struct MyRequestActor {
+
+        @method void request(string task_name, string some_text) {
+            response(42, format("<%s>", text));
         }
+
+    }
+
+    struct MyResponseActor {
+
+        @method void response(string task_name) {
+            response(42, format("<%s>", text));
+        }
+
+    }
+    enum x = isRequestCallback!(ActorWithResponce.request);
+    pragma(msg, "xxxx ", x);
+}
+
+template isRequestCallback(alias F) {
+    static if (isCallable!F) {
+        alias Params = Parameters!F;
+        alias ParamNames = ParameterIdentifierTuple!F;
+        pragma(msg, "Params ", Params);
+        pragma(msg, "ParamNames ", ParamNames);
+        enum isRequestCallback = (Params.length >= 2) && isDelegate!(Params[$-1]);
+    }
+    else {
+        enum isRequestCallback = false;
     }
 }
-*/
+
+
+
+//enum isRequestCallback(alias F) = isCallable!F
+//enum isRequest(This, string name)
