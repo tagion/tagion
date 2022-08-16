@@ -1,5 +1,5 @@
 
-bddfiles: behaviour
+bdd: behaviour
 	$(PRECMD)
 	echo $(BEHAVIOUR) $(BDD_FLAGS)
 	$(BEHAVIOUR) $(BDD_FLAGS)
