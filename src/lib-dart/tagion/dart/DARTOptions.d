@@ -40,12 +40,12 @@ struct DARTOptions
         /** timeout in miliseconds */
         ulong tick_timeout;
         /** timeout in miliseconds before receive*/
-        ulong replay_tick_timeout;
+        ulong reply_tick_timeout;
         /** name of the DART service */
         string task_name;
         /** pid for node listen*/
         string protocol_id;
-        /** max amount of node synchronization */
+        /** max amount of nodes, that could be synchronized */
         uint max_handlers;
         import tagion.options.HostOptions;
 
@@ -68,9 +68,9 @@ struct DARTOptions
         /** host info */
         HostOptions host;
 
-        /** task name for register */
+        /** task name for register master task name*/
         string master_task_name;
-        /** task name for register */
+        /** task name for register slave task name*/
         string slave_task_name;
         /** pid for node listen*/
         string protocol_id;

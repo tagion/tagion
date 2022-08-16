@@ -1,3 +1,4 @@
+/// \file tagionwave
 module tagion.tools.tagionwave;
 
 /**
@@ -5,7 +6,6 @@ module tagion.tools.tagionwave;
  */
 
 import std.stdio;
-import core.thread;
 import std.getopt;
 import std.format;
 import std.array : join;
@@ -21,7 +21,6 @@ import tagion.services.LoggerService;
 import tagion.services.TagionFactory;
 import tagion.GlobalSignals;
 import tagion.network.SSLOptions;
-import tagion.gossip.EmulatorGossipNet;
 import tagion.tasks.TaskWrapper;
 
 
@@ -83,6 +82,7 @@ int _main(string[] args)
 
     immutable program = args[0];
     bool version_switch;
+    /** flag for overwrite config file */
     bool overwrite_switch;
     auto logo = import("logo.txt");
 
@@ -150,10 +150,13 @@ int _main(string[] args)
 
     writeln("----- Start tagion service task -----");
 
-    if(local_options.port >= ushort.max) {
+    if(local_options.port >= ushort.max) 
+    {
         writefln("Invalid port value %d. Port should be < %d", local_options.port, ushort.max);
         return 1;
-        }
+    }
+
+    /** Options for SSL service */
     immutable service_options = getOptions();
     // Set the shared common options for all services
     setCommonOptions(service_options.common);

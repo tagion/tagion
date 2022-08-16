@@ -591,7 +591,7 @@ static setDefaultOption(ref Options options)
         with (sync)
         {
             tick_timeout = 50;
-            replay_tick_timeout = 5;
+            reply_tick_timeout = 5;
             protocol_id = "tagion_dart_sync_pid";
             task_name = "dart.sync";
 
