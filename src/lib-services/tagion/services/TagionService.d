@@ -75,8 +75,8 @@ import tagion.script.StandardRecords;
 //import std.string : indexOf;
 //import std.file : mkdir, exists;
 import std.format;
-import std.datetime.stopwatch;
-    
+import std.datetime.systime;
+
 shared(p2plib.Node) initialize_node(immutable Options opts)
 {
     import std.array : split;
@@ -118,8 +118,8 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 {
     try
     {
-        auto sw = StopWatch(AutoStart.no);
-        sw.start();
+        SysTime start = Clock.currTime();
+        Duration delta;
         log.register(opts.node_name);
         setOptions(opts);
         bool stop;
@@ -218,8 +218,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             transcript_tid.send(params.serialize);
             epoch_num++;
             count_transactions = 0;
-            sw.stop();
-            sw.start();
+            start = Clock.currTime();
             
             if (opts.epoch_limit && epoch_num >= opts.epoch_limit)
             {
@@ -495,12 +494,14 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 (string respond_task_name, Buffer data) {
                 import tagion.hibon.HiBONJSON;
                 
+                /** Duration of the current epoch */
+                delta = Clock.currTime() - start;
                 /** time of the current epoch work */
-                long secs = sw.peek.total!"seconds";
+                ulong seconds = delta.total!"seconds";
                 /** document for receive request */
                 const doc = Document(data);
                 const receiver = empty_hirpc.receive(doc);
-                auto respond = HealthParams(hashgraph.rounds.length, secs, count_transactions, epoch_num, hashgraph.areWeInGraph);
+                auto respond = HealthParams(hashgraph.rounds.length, seconds, count_transactions, epoch_num, hashgraph.areWeInGraph);
                 auto response = empty_hirpc.result(receiver, respond);
                 log("Healthcheck: %s", response.toDoc.toJSON);
                 locate(respond_task_name).send(response.toDoc.serialize);
