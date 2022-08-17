@@ -256,13 +256,13 @@ enum OwnerKey = "$Y";
      * \struct HealthParams
      * Struct store paramentrs for healthcheck request
      */
-    @RecordType("HEALTH") struct HealthParams
+    @RecordType("HEALTH") struct HealthcheckParams
     {
         /** amount of hashgraph rounds */
         @Label("$hashgraph_rounds") ulong rounds;
         /** time since the beginning of the epoch */
         @Label("epoch_timestamp") string epoch_timestamp;
-        /** amount of transactions in this epoch */
+        /** amount of transactions in last epoch */
         @Label("$transactions_amount") uint transactions_amount;
         /** number of current epoch */
         @Label("$epoch_number") uint epoch_num;

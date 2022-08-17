@@ -220,7 +220,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             count_transactions = 0;
             start = Clock.currTime();
             
-            if (opts.epoch_limit && epoch_num >= opts.epoch_limit)
+            if (epoch_num >= opts.epoch_limit)
             {
                 auto main_tid = locate(main_task);
                 main_tid.send(Control.STOP);
@@ -497,7 +497,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 /** document for receive request */
                 const doc = Document(data);
                 const receiver = empty_hirpc.receive(doc);
-                auto respond = HealthParams(hashgraph.rounds.length, start.toString, count_transactions, epoch_num, hashgraph.areWeInGraph);
+                auto respond = HealthcheckParams(hashgraph.rounds.length, start.toString, count_transactions, epoch_num, hashgraph.areWeInGraph);
                 auto response = empty_hirpc.result(receiver, respond);
                 log("Healthcheck: %s", response.toDoc.toJSON);
                 locate(respond_task_name).send(response.toDoc.serialize);

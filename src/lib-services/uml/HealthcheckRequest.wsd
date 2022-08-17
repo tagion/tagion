@@ -6,7 +6,7 @@ hide empty description
 title HealthCheck Sequence Diagram
 
 participant Tagionwallet as tagionwallet
-participant SSLSockete as SSL_socket
+participant SSLSocket as SSL_socket
 participant SSLFiberService as SSL_fiber_service
 participant TransactionService as trans_service
 participant TagionService as tagionservice
