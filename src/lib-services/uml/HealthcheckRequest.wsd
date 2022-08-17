@@ -5,26 +5,26 @@ skinparam SequenceMessageAlign center
 hide empty description
 title HealthCheck Sequence Diagram
 
-participant Tagionwallet as tagionwallet
-participant SSLSocket as SSL_socket
-participant SSLFiberService as SSL_fiber_service
+participant Tagionwallet as tagion_wallet
+participant SSLSocket as ssl_socket
+participant SSLFiberService as ssl_fiber_service
 participant TransactionService as trans_service
-participant TagionService as tagionservice
+participant TagionService as tagion_service
 
-activate tagionwallet
-tagionwallet -> SSL_socket : connect
-activate SSL_socket
-SSL_socket -> SSL_fiber_service : send("healthcheck")
+activate tagionw_allet
+tagion_wallet -> ssl_socket : connect
+activate ssl_socket
+ssl_socket -> ssl_fiber_service : send("healthcheck")
 activate SSL_fiber_service
-SSL_fiber_service -> trans_service : send("healthcheck")
+ssl_fiber_service -> trans_service : send("healthcheck")
 activate trans_service
-trans_service -> tagionservice: send("transactionservice_task_name, "healthcheck"")
-activate tagionservice
-tagionservice -> trans_service: send(healthcheck responce))
-deactivate tagionservice
-trans_service -> SSL_fiber_service: send(healthcheck respons)
+trans_service -> tagion_service: send("transactionservice_task_name, "healthcheck"")
+activate tagion_service
+tagion_service -> trans_service: send(healthcheck response)
+deactivate tagion_service
+trans_service -> ssl_fiber_service: send(healthcheck response)
 deactivate trans_service
-SSL_fiber_service -> SSL_socket: send
-deactivate SSL_fiber_service
-SSL_socket -> tagionwallet: send response
-deactivate tagionwallet
+ssl_fiber_service -> ssl_socket: send
+deactivate ssl_fiber_service
+ssl_socket -> tagion_wallet: send response
+deactivate tagion_wallet
