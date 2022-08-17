@@ -253,7 +253,7 @@ enum OwnerKey = "$Y";
     }
 
     /**
-     * \struct HealthParams
+     * \struct HealthcheckParams
      * Struct store paramentrs for healthcheck request
      */
     @RecordType("HEALTH") struct HealthcheckParams
