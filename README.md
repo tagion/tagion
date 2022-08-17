@@ -20,7 +20,7 @@ This repository is a home for all core units, also containing scripts for cross-
 ./Makefile # Pre-build Make file
 ```
 ### Tools 
-[See tools](tagion/src/bin-tools/tagion/tools/README.md)
+[See tools](src/bin-tools/tagion/tools/README.md)
 
 ### Unit types
 
