@@ -37,6 +37,10 @@ Contains CLI interface to libraries, compiles to executable;
 
 Contains external libraries integrated in Tagion build system compiles to the static or shared library.
 
+
+
+[BDD for the core MVP](bdd/Core_MVP.md)
+
 ## Maintainers
 
 - [@cbleser](https://github.com/cbleser)
