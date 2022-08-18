@@ -12,6 +12,7 @@ import tagion.hibon.HiBONRecord : Label, GetLabel;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONRecord : HiBONRecord, RecordType;
 
 /** @brief File contains structure RecorderChainBlock and RecorderChainBlockFactory
  */
@@ -20,65 +21,54 @@ import tagion.hibon.HiBON : HiBON;
  * \struct RecorderChainBlock
  * Struct represents block from recorder chain
  */
+@RecordType("RCB")
 @safe class RecorderChainBlock
 {
-    public
-    {
-        /** Fingerprint of this block */
-        @Label("") Buffer fingerprint;
-        /** Bullseye of DART database */
-        Buffer bullseye;
-        /** Fingerprint of the chain before this block */
-        Buffer chain;
-        /** Recorder with database changes of this block */
-        immutable(RecordFactory.Recorder) recorder;
-    }
+    /** Fingerprint of this block */
+    @Label("") Buffer fingerprint;
+    /** Bullseye of DART database */
+    @Label("eye") Buffer bullseye;
+    /** Fingerprint of the chain before this block */
+    @Label("chain") Buffer chain;
+    /** Recorder with database changes of this block */
+    @Label("recorder") Document recorder_doc;
 
-    @disable this();
-
-    enum chainLabel = GetLabel!(chain).name;
-    enum recorderLabel = GetLabel!(recorder).name;
-    enum bullseyeLabel = GetLabel!(bullseye).name;
     mixin JSONString;
 
     /** Ctor creates block from recorder, chain and bullseye.
-     *      @param recorder - recorder for block
+     *      @param recorder_doc - Document with recorder for block
      *      @param chain - fingerprint of the chain before this block
      *      @param bullseye - bullseye of database
      *      @param net - hash net
      */
-    private this(
-        immutable(RecordFactory.Recorder) recorder,
-        Buffer chain,
-        Buffer bullseye,
-        const(StdHashNet) net)
+    mixin HiBONRecord!(
+        q{
+            private this(
+                Document recorder_doc,
+                Buffer chain,
+                Buffer bullseye,
+                const(StdHashNet) net)
+            {
+                this.recorder_doc = recorder_doc;
+                this.chain = chain;
+                this.bullseye = bullseye;
+
+                this.fingerprint = net.hashOf(toDoc);
+            }
+
+            private this(
+                const(Document) doc,
+                const(StdHashNet) net)
+            {
+                this(doc);
+                this.fingerprint = net.hashOf(toDoc);
+            }
+        });
+
+    const RecordFactory.Recorder getRecorder(const(StdHashNet) net)
     {
-        this.recorder = recorder;
-        this.chain = chain;
-        this.bullseye = bullseye;
-
-        this.fingerprint = net.hashOf(toDoc);
-    }
-
-    /** Generates \link HiBON from this block
-     *      \return HiBON that contains this block
-     */
-    final const(HiBON) toHiBON() const
-    {
-        auto hibon = new HiBON;
-        hibon[chainLabel] = chain;
-        hibon[bullseyeLabel] = bullseye;
-        hibon[recorderLabel] = recorder.toDoc;
-
-        return hibon;
-    }
-
-    /** Generates \link Document from this block
-     *      \return Document that contains this block
-     */
-    final const(Document) toDoc() const
-    {
-        return Document(toHiBON);
+        auto factory = RecordFactory(net);
+        return factory.recorder(recorder_doc);
     }
 }
 
@@ -107,20 +97,7 @@ import tagion.hibon.HiBON : HiBON;
      */
     @trusted RecorderChainBlock opCall(const(Document) doc)
     {
-        auto factory = RecordFactory(net);
-
-        if (!doc.keys.canFind(RecorderChainBlock.recorderLabel))
-        {
-            throw new TagionException("Document must contain recorder for recorder chain block");
-        }
-
-        immutable recorder = factory.uniqueRecorder(
-            doc[RecorderChainBlock.recorderLabel].get!Document);
-
-        Buffer chain = doc[RecorderChainBlock.chainLabel].get!Buffer;
-        Buffer bullseye = doc[RecorderChainBlock.bullseyeLabel].get!Buffer;
-
-        return new RecorderChainBlock(recorder, chain, bullseye, net);
+        return new RecorderChainBlock(doc, net);
     }
 
     /** Ctor creates block from recorder, chain and bullseye.
@@ -131,7 +108,7 @@ import tagion.hibon.HiBON : HiBON;
      */
     RecorderChainBlock opCall(immutable(RecordFactory.Recorder) recorder, Buffer chain, Buffer bullseye)
     {
-        return new RecorderChainBlock(recorder, chain, bullseye, net);
+        return new RecorderChainBlock(recorder.toDoc, chain, bullseye, net);
     }
 }
 
@@ -151,11 +128,6 @@ unittest
     Buffer bullseye = [1, 2, 3, 4, 5, 6, 7, 8];
     Buffer chain = [1, 2, 4, 8, 16, 32, 64, 128];
 
-    auto block_hibon = new HiBON;
-    block_hibon[RecorderChainBlock.chainLabel] = chain;
-    block_hibon[RecorderChainBlock.bullseyeLabel] = bullseye;
-    block_hibon[RecorderChainBlock.recorderLabel] = imm_recorder.toDoc;
-
     auto block_factory = RecorderChainBlockFactory(net);
 
     /// RecorderChainBlock_create_block
@@ -164,41 +136,46 @@ unittest
 
         assert(block.chain == chain);
         assert(block.bullseye == bullseye);
-        assert(block.recorder.toDoc == imm_recorder.toDoc);
+        assert(block.recorder_doc == imm_recorder.toDoc);
+        assert(block.getRecorder(net).toDoc.serialize == imm_recorder.toDoc.serialize);
+
+        assert(block.fingerprint == net.hashOf(block.toDoc));
     }
 
     /// RecorderChainBlock_toHiBON
     {
+        enum chainLabel = GetLabel!(RecorderChainBlock.chain).name;
+        enum recorderLabel = GetLabel!(RecorderChainBlock.recorder_doc).name;
+        enum bullseyeLabel = GetLabel!(RecorderChainBlock.bullseye).name;
+
         auto block = block_factory(imm_recorder, chain, bullseye);
 
-        assert(block.toHiBON.serialize == block_hibon.serialize);
+        assert(block.toHiBON[chainLabel].get!Buffer == chain);
+        assert(block.toHiBON[bullseyeLabel].get!Buffer == bullseye);
+        assert(block.toHiBON[recorderLabel].get!Document.serialize == imm_recorder.toDoc.serialize);
+
+        assert(net.hashOf(Document(block.toHiBON)) == block.fingerprint);
     }
 
-    /// RecorderChainBlock_fingerprint
+    /// RecorderChainBlock_restore_from_doc
     {
         auto block = block_factory(imm_recorder, chain, bullseye);
+        auto block_doc = block.toDoc;
 
-        assert(block.fingerprint == net.hashOf(Document(block_hibon)));
+        auto restored_block = block_factory(block_doc);
+
+        assert(block.toDoc.serialize == restored_block.toDoc.serialize);
     }
 
-    /// RecorderChainBlock_from_doc
+    /// RecorderChainBlock_from_doc_no_member
     {
-        auto block = block_factory(Document(block_hibon));
-
-        assert(block.chain == chain);
-        assert(block.bullseye == bullseye);
-        assert(block.recorder.toDoc == imm_recorder.toDoc);
-    }
-
-    /// RecorderChainBlock_from_doc_no_recorder
-    {
-        auto wrong_hibon = new HiBON;
-        wrong_hibon[RecorderChainBlock.chainLabel] = chain;
-        wrong_hibon[RecorderChainBlock.bullseyeLabel] = bullseye;
+        auto block = block_factory(imm_recorder, chain, bullseye);
+        auto block_hibon = block.toHiBON;
+        block_hibon.remove(GetLabel!(RecorderChainBlock.bullseye).name);
 
         try
         {
-            auto block = block_factory(Document(wrong_hibon));
+            block_factory(Document(block_hibon));
             assert(false);
         }
         catch (TagionException e)

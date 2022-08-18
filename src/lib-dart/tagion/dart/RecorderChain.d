@@ -4,10 +4,10 @@ module tagion.dart.RecorderChain;
 import std.file : exists, mkdirRecurse, remove, dirEntries, SpanMode;
 import std.array : array;
 import std.typecons : Tuple;
-import std.path : buildPath, baseName;
+import std.path : buildPath, baseName, extension, setExtension, stripExtension;
 import std.algorithm : filter, map, reverse;
 
-import tagion.basic.Types : Buffer;
+import tagion.basic.Types : Buffer, FileExtension, withDot;
 import tagion.basic.TagionExceptions : TagionException;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.dart.RecorderChainBlock : RecorderChainBlock, RecorderChainBlockFactory;
@@ -26,22 +26,22 @@ import tagion.utils.Miscellaneous : toHexString, decode;
 {
     alias BlocksInfo = Tuple!(RecorderChainBlock, "first", RecorderChainBlock, "last", ulong, "amount");
 
-    public
+    /** Path to local folder where recorder chain files are stored */
+    const string folder_path;
+    /** Hash net */
+    const StdHashNet net;
+
+    private
     {
-        /** Path to local folder where recorder chain files are stored */
-        const string folder_path;
-        /** Hash net */
-        const StdHashNet net;
+        /** First block in local chain */
+        RecorderChainBlock _first_block;
+        /** Last block in local chain */
+        RecorderChainBlock _last_block;
+        /** Amount of files in local chain */
+        ulong _amount;
     }
 
-    /** First block in local chain */
-    RecorderChainBlock m_first_block;
-    /** Last block in local chain */
-    RecorderChainBlock m_last_block;
-    /** Amount of files in local chain */
-    ulong m_amount;
-
-    enum EPOCH_BLOCK_FILENAME_LEN = 64;
+    enum EPOCH_BLOCK_FILENAME_LEN = StdHashNet.HASH_SIZE * 2;
 
     /** Ctor initializes database and reads existing data.
      *      @param folder_path - path to folder with block biles
@@ -57,34 +57,34 @@ import tagion.utils.Miscellaneous : toHexString, decode;
         if (getBlockFilenames(folder_path).length)
         {
             auto info = getBlocksInfo(this.folder_path, this.net);
-            this.m_first_block = info.first;
-            this.m_last_block = info.last;
-            this.m_amount = info.amount;
+            this._first_block = info.first;
+            this._last_block = info.last;
+            this._amount = info.amount;
         }
     }
 
     /** Get amount
      *      \return member amount
      */
-    @property ulong amount() const pure nothrow @nogc
+    @property ulong getAmount() const pure nothrow @nogc
     {
-        return m_amount;
+        return _amount;
     }
 
     /** Get first block
      *      \return member first block
      */
-    @property const(RecorderChainBlock) first_block() const pure nothrow @nogc
+    @property const(RecorderChainBlock) getFirstBlock() const pure nothrow @nogc
     {
-        return m_first_block;
+        return _first_block;
     }
 
     /** Get last block
      *      \return member last block
      */
-    @property const(RecorderChainBlock) last_block() const pure nothrow @nogc
+    @property const(RecorderChainBlock) getLastBlock() const pure nothrow @nogc
     {
-        return m_last_block;
+        return _last_block;
     }
 
     /** Adds given block to the end of recorder chain
@@ -94,13 +94,13 @@ import tagion.utils.Miscellaneous : toHexString, decode;
     {
         fwrite(makePath(block.fingerprint, folder_path), block.toHiBON);
 
-        m_last_block = block;
-        if (m_amount == 0)
+        _last_block = block;
+        if (_amount == 0)
         {
-            m_first_block = block;
+            _first_block = block;
         }
 
-        m_amount++;
+        _amount++;
     }
 
     /** Static method that collects all block filenames in given folder 
@@ -109,18 +109,12 @@ import tagion.utils.Miscellaneous : toHexString, decode;
      */
     static string[] getBlockFilenames(string folder_path) @trusted
     {
-        string[] block_filenames;
-
-        auto all_filenames = dirEntries(folder_path, SpanMode.shallow).filter!(a => a.isFile())
-            .map!(a => baseName(a));
-        foreach (filename; all_filenames)
-        {
-            if (filename.length == EPOCH_BLOCK_FILENAME_LEN)
-            {
-                block_filenames ~= filename;
-            }
-        }
-        return block_filenames;
+        return folder_path.dirEntries(SpanMode.shallow)
+            .filter!(a => a.isFile())
+            .map!(a => baseName(a))
+            .filter!(filename => filename.extension == FileExtension.recchainblock.withDot)
+            .filter!(filename => filename.stripExtension.length == EPOCH_BLOCK_FILENAME_LEN)
+            .array;
     }
 
     /** Static method that collects info about blocks in given folder 
@@ -139,7 +133,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
         Buffer[Buffer] link_table;
         foreach (block_filename; filenames)
         {
-            auto fingerprint = decode(block_filename);
+            auto fingerprint = decode(block_filename.stripExtension);
             auto block = readBlock(fingerprint, folder_path, net);
 
             link_table[fingerprint] = block.chain;
@@ -233,6 +227,89 @@ import tagion.utils.Miscellaneous : toHexString, decode;
      */
     static string makePath(Buffer fingerprint, string folder_path)
     {
-        return buildPath(folder_path, fingerprint.toHexString);
+        return buildPath(
+            folder_path,
+            fingerprint.toHexString.setExtension(FileExtension.recchainblock));
+    }
+}
+
+unittest
+{
+    import tagion.basic.Basic : tempfile;
+
+    const temp_folder = tempfile ~ "/";
+    scope (exit)
+    {
+        import std.file : rmdirRecurse;
+
+        rmdirRecurse(temp_folder);
+    }
+
+    const net = new StdHashNet;
+
+    auto factory = RecordFactory(net);
+    immutable empty_recorder = cast(immutable) factory.recorder;
+    const Buffer empty_bullseye = [];
+
+    RecorderChain recorder_chain;
+
+    /// RecorderChain_empty_folder
+    {
+        recorder_chain = new RecorderChain(temp_folder, net);
+
+        assert(recorder_chain.getAmount == 0);
+        assert(recorder_chain.getFirstBlock is null);
+        assert(recorder_chain.getLastBlock is null);
+    }
+
+    /// RecorderChain_getBlockFilenames_empty
+    {
+        import std.range;
+
+        assert(RecorderChain.getBlockFilenames(temp_folder).empty);
+    }
+
+    auto block_factory = RecorderChainBlockFactory(net);
+    auto block0 = block_factory(empty_recorder, [], empty_bullseye);
+
+    /// RecorderChain_single_block
+    {
+        recorder_chain.push(block0);
+
+        assert(recorder_chain.getAmount == 1);
+        assert(recorder_chain.getFirstBlock is block0);
+        assert(recorder_chain.getLastBlock is block0);
+    }
+
+    auto block1 = block_factory(empty_recorder, block0.fingerprint, empty_bullseye);
+    auto block2 = block_factory(empty_recorder, block1.fingerprint, empty_bullseye);
+
+    /// RecorderChain_many_blocks
+    {
+        recorder_chain.push(block1);
+        recorder_chain.push(block2);
+
+        assert(recorder_chain.getAmount == 3);
+        assert(recorder_chain.getFirstBlock is block0);
+        assert(recorder_chain.getLastBlock is block2);
+    }
+
+    /// RecorderChain_static_getBlocksInfo
+    {
+        auto info = RecorderChain.getBlocksInfo(temp_folder, net);
+
+        assert(info.amount == 3);
+        assert(info.first.toDoc.serialize == block0.toDoc.serialize);
+        assert(info.last.toDoc.serialize == block2.toDoc.serialize);
+    }
+
+    /// RecorderChain_getBlockFilenames_non_empty
+    {
+        auto block_filenames = RecorderChain.getBlockFilenames(temp_folder);
+        assert(block_filenames.length == 3);
+        foreach (filename; block_filenames)
+        {
+            assert(filename.extension == FileExtension.recchainblock.withDot);
+        }
     }
 }
