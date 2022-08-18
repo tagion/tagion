@@ -118,13 +118,13 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 {
     try
     {
-        /** Epoch start time */
-        SysTime start = Clock.currTime();
+        /** last epoch timestamp */
+        long epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
         log.register(opts.node_name);
         setOptions(opts);
         bool stop;
-        int count_transactions;
-        int epoch_num;
+        uint count_transactions;
+        uint epoch_num;
         scope (success)
         {
             log.close;
@@ -209,17 +209,18 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             import std.algorithm;
             import std.array : array;
             import tagion.hibon.HiBONJSON;
+
             HiBON params = new HiBON;
-            
+
             params = events
-            .filter!((e) => !e.event_body.payload.empty)
-            .map!((e) => e.event_body.payload);
+                .filter!((e) => !e.event_body.payload.empty)
+                .map!((e) => e.event_body.payload);
 
             transcript_tid.send(params.serialize);
             epoch_num++;
             count_transactions = 0;
-            start = Clock.currTime();
-            
+            epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
+
             if (epoch_num >= opts.epoch_limit)
             {
                 auto main_tid = locate(main_task);
@@ -384,11 +385,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             opts);
         assert(receiveOnly!Control is Control.LIVE);
 
-        enum max_gossip = 2;
-        uint gossip_count = max_gossip;
-        enum timeout_end = 10;
-        uint timeout_count;
-
         {
             immutable buf = cast(Buffer) hashgraph.channel;
             const nonce = net.calcHash(buf);
@@ -442,7 +438,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 
         void receive_wavefront(const Document doc)
         {
-            timeout_count = 0;
             log("\n*\n*\n*\n******* receive %s %s", opts.node_name,
                 doc.data.length);
             const receiver = HiRPC.Receiver(doc);
@@ -493,11 +488,12 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 &taskfailure,
                 (string respond_task_name, Buffer data) {
                 import tagion.hibon.HiBONJSON;
-                
+
                 /** document for receive request */
                 const doc = Document(data);
                 const receiver = empty_hirpc.receive(doc);
-                auto respond = HealthcheckParams(hashgraph.rounds.length, start.toString, count_transactions, epoch_num, hashgraph.areWeInGraph);
+                auto respond = HealthcheckParams(hashgraph.rounds.length, epoch_timestamp, count_transactions, epoch_num, hashgraph
+                    .areWeInGraph);
                 auto response = empty_hirpc.result(receiver, respond);
                 log("Healthcheck: %s", response.toDoc.toJSON);
                 locate(respond_task_name).send(response.toDoc.serialize);

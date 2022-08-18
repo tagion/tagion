@@ -256,12 +256,12 @@ enum OwnerKey = "$Y";
      * \struct HealthcheckParams
      * Struct store paramentrs for healthcheck request
      */
-    @RecordType("HEALTH") struct HealthcheckParams
+    @RecordType("Healthcheck") struct HealthcheckParams
     {
         /** amount of hashgraph rounds */
         @Label("$hashgraph_rounds") ulong rounds;
-        /** time since the beginning of the epoch */
-        @Label("epoch_timestamp") string epoch_timestamp;
+        /**last epoch timestamp */
+        @Label("epoch_timestamp") long epoch_timestamp;
         /** amount of transactions in last epoch */
         @Label("$transactions_amount") uint transactions_amount;
         /** number of current epoch */
@@ -270,7 +270,7 @@ enum OwnerKey = "$Y";
         @Label("$in_graph") bool in_graph;
         mixin HiBONRecord!(
             q{
-                this(ulong rounds, string epoch_timestamp, uint transactions_amount, uint epoch_num, bool in_graph) {
+                this(ulong rounds, long epoch_timestamp, uint transactions_amount, uint epoch_num, bool in_graph) {
                     this.rounds = rounds;
                     this.epoch_timestamp = epoch_timestamp;
                     this.transactions_amount = transactions_amount;

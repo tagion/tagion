@@ -72,7 +72,7 @@ struct Options
     string path_to_shared_info;
     bool p2plogs;
     uint scrap_depth;
-    int epoch_limit; /// The round until it has produced epoch_limit
+    uint epoch_limit; /// The round until it has produced epoch_limit
     NetworkMode net_mode;
     import tagion.options.CommonOptions;
 
