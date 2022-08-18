@@ -131,15 +131,7 @@ mixin TrustedConcurrency;
      */
     const HiRPC.Receiver receive(ref Document document) @trusted
     {
-        try
-        {
-            return this.hirpc.receive(document);
-        }
-        catch(ArraySliceError e)
-        {
-            writeln(e.msg);
-            return HiRPC.Receiver();
-        }
+        return this.hirpc.receive(document);        
     }
 
     /**
@@ -157,59 +149,6 @@ mixin TrustedConcurrency;
         this(TransactionServiceTask* p_owner)
         {
             owner = p_owner;
-        }
-
-        /**
-         * @brief generate signed contact from doc
-         * @param document - document for conversion
-         * \return Signed contact with content if complete and empty if fail
-         */
-        private static SignedContract toSign(ref Document document) @trusted
-        {
-            try
-            {
-                return SignedContract(document);
-            }
-            catch (ArraySliceError e)
-            {
-                return SignedContract();
-            }
-        }
-
-        /**
-         * @brief extarct method id without exception
-         * @param rec - receiver for method id extraction
-         * \return method id or 0 complete/fail
-         */
-        static uint methodID(ref const HiRPC.Receiver rec) @trusted
-        {
-            try
-            {
-                return rec.method.id;
-            }
-            catch(Exception e)
-            {
-                writeln(e.msg);
-                return 0;
-            }
-        }
-
-        /**
-         * @brief get method name without exception
-         * @param rec - receiver for method name extraction
-         * \return name/null if complete/fail
-         */
-        static string methodName(ref const HiRPC.Receiver rec) @trusted
-        {
-            try
-            {
-                return rec.method.name;
-            }
-            catch(Exception e)
-            {
-                writeln(e.msg);
-                return null;
-            }
         }
 
         /**
@@ -261,17 +200,16 @@ mixin TrustedConcurrency;
 
                     pragma(msg, "fixme(cbr): smartscipt should be services not a local");
                     const hirpc_received = this.owner.receive(doc); //this.owner.hirpc.receive(doc);
-
-                    const method_name = this.methodName(hirpc_received); //hirpc_received.method.name;
+                    const method_name = hirpc_received.method.name;
                     const params = hirpc_received.method.params;
                 }
                 else
                     {
                         pragma(msg, "fixme(cbr): smartscipt should be services not a local");
-                        const signed_contract = this.toSign(doc); //SignedContract(doc);
+                        const signed_contract = SignedContract(doc);
                         auto smartscript = new SmartScript(this.owner.hirpc.net, signed_contract);
                         const hirpc_received = owner.receive(doc); //owner.hirpc.receive(doc);
-                        respone_id = this.methodID(hirpc_received); //hirpc_received.method.id;
+                        respone_id = hirpc_received.method.id;
                     }
                     {
                         void yield() @trusted
@@ -286,7 +224,7 @@ mixin TrustedConcurrency;
                         }
                         else
                         {
-                            const method_name = this.methodName(hirpc_received); //hirpc_received.method.name;
+                            const method_name = hirpc_received.method.name;
                             const params = hirpc_received.method.params;
                         }
                         log("Method name: %s", method_name);
@@ -474,7 +412,7 @@ mixin TrustedConcurrency;
 
 unittest
 {
-    ///Check_data_calling
+    ///TransactionServiceTask_check_data_calling
     {
         TransactionServiceTask task;
         task.hirpc = new HiRPC(new HiRPCNet("STUB"));
@@ -492,7 +430,7 @@ unittest
             void checkTimeout() const @safe {}
             immutable(ubyte[]) receive() @safe
             {
-                static immutable ubyte[] stub = ['{', 'A', ':',  'B', '}', 0];
+                static ubyte[75] stub;
                 this.flag = true;
                 return stub;
             }
@@ -516,7 +454,7 @@ unittest
         assert(fiber.flag);
     }
 
-    ///Create_Stop_Thread
+    ///TransactionServiceTask_create_stop_thread
     {
         import tagion.services.Options : getOptions;
         import tagion.tasks.TaskWrapper : Task;
@@ -526,6 +464,7 @@ unittest
         scope(exit)
         {
             serviceTask.control(Control.STOP);
+            assert(receiveOnly!Control == Control.END);
         }
     }
 }
