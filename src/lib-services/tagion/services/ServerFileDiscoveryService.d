@@ -16,13 +16,13 @@ import std.net.curl;
 import tagion.logger.Logger;
 import tagion.basic.Types : Buffer, Control, Pubkey;
 import tagion.basic.Basic : nameOf;
-import tagion.basic.TagionExceptions : fatal;
+import tagion.basic.TagionExceptions : fatal, TagionException;
+
 import tagion.services.Options;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
 import tagion.services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
-import tagion.basic.TagionExceptions : fatal;
 
 //import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
 import tagion.gossip.AddressBook : NodeAddress;
@@ -89,7 +89,7 @@ void serverFileDiscoveryService(
                         "value": json,
                     ]);
             }
-            catch (Exception e)
+            catch (TagionException e)
             {
                 log("ERROR on sending: %s", e.msg);
                 fatal(e);

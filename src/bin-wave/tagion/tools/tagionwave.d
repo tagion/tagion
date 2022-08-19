@@ -102,6 +102,7 @@ int _main(string[] args)
 
         if (version_switch)
         {
+            writeln("Tagion 0.9.3 release");
             return 0;
         }
 

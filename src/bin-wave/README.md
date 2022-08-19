@@ -233,6 +233,9 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
     - [Case: p2p logs](#case-p2p-logs)
       - [Success](#success-23)
 - [boot](#boot)
+  - [Use cases](#use-cases-24)
+    - [Case: init DART](#case-init-dart-1)
+      - [Success](#success-24)
 
 
 # version
@@ -1055,7 +1058,19 @@ Node_1: opts.node_name = Node_1
 ```
 
 # boot
-**flag should be deleted**
+```
+tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path wizard_file --port=4001 --transaction-port=10801 -N 4
+```
+Set path to shared file that mode1 require for node addresses
 
+## Use cases
+Set boot file<br>
 
+### Case: init DART
+```
+--net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log -N 4
+```
 
+#### Success
+**Result**:<br>
+Successful network launch

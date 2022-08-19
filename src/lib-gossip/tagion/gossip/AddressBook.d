@@ -62,6 +62,7 @@ void unlock(string filename) nothrow
 /**
  * Check file is locked or unlocked
  * @param filename - file to check
+ * @return true if locked
  */
 bool locked(string filename)
 {
@@ -78,8 +79,12 @@ synchronized class AddressBook
     alias NodeAddresses = NodeAddress[Pubkey];
     alias NodePair = typeof((cast(NodeAddresses) addresses).byKeyValue.front);
 
+    /** \struct AddressDirectory
+     * Storage for node addresses
+     */
     static struct AddressDirectory
     {
+        /* associative array with node addresses */
         NodeAddresses addresses;
         mixin HiBONRecord;
     }
@@ -119,7 +124,8 @@ synchronized class AddressBook
     protected shared(NodeAddresses) addresses;
 
     /**
-     * Creaate associative array with public keys and addresses of nodes
+     * Create associative array with public keys and addresses of nodes
+     * @return addresses of nodes
      */
     immutable(NodeAddress[Pubkey]) _data() @trusted
     {
@@ -133,7 +139,7 @@ synchronized class AddressBook
     }
     
     /**
-     * Overwrite associative array from function _data()
+     * Overwrite node addresses associative array
      * @param addrs - array to overwrite
      */
     private void overwrite(const(NodeAddress[Pubkey]) addrs)
@@ -205,6 +211,7 @@ synchronized class AddressBook
     /**
      * Init NodeAddress if public key exist
      * @param pkey - public key for check
+     * @return initialized node address
      */
     immutable(NodeAddress) opIndex(const Pubkey pkey) const pure nothrow
     {
@@ -252,8 +259,9 @@ synchronized class AddressBook
     }
 
     /**
-     * Check for a public key
+     * Check for a public key in network
      * @param pkey - public key fo check
+     * @return true if public key exist
      */
     bool exists(const Pubkey pkey) const nothrow
     {
@@ -261,8 +269,9 @@ synchronized class AddressBook
     }
 
     /**
-     * Check for an active public key
+     * Check for an active public key in network
      * @param pkey - public key fo check
+     * @return true if pkey active
      */
     bool isActive(const Pubkey pkey) const pure nothrow
     {
@@ -270,7 +279,8 @@ synchronized class AddressBook
     }
 
     /**
-     * Return active node channels
+     * Return active node channels in network
+     * @return active node channels
      */
     immutable(Pubkey[]) activeNodeChannels() @trusted const pure nothrow
     {
@@ -281,7 +291,8 @@ synchronized class AddressBook
     }
 
     /**
-     * Return amount of active nodes
+     * Return amount of active nodes in network
+     * @return amount of active nodes
      */
     size_t numOfActiveNodes() const pure nothrow
     {
@@ -289,7 +300,8 @@ synchronized class AddressBook
     }
 
     /**
-     * Return amount of nodes
+     * Return amount of nodes in networt
+     * @return amount of nodes
      */
     size_t numOfNodes() const pure nothrow
     {
@@ -299,7 +311,8 @@ synchronized class AddressBook
     import tagion.services.Options;
 
     /**
-     * Check that nodes > 4 and addresses > nodes
+     * Check that nodes >= 4 and addresses >= nodes
+     * @return true if network ready
      */
     bool isReady() const pure nothrow
     {
@@ -308,6 +321,7 @@ synchronized class AddressBook
 
     /**
      * For random generation node pair
+     * @return node pair
      */
     immutable(NodePair) random() @trusted const pure
     {
@@ -325,6 +339,7 @@ synchronized class AddressBook
     /**
      * Select active channel by index
      * @param index - index to select active channel
+     * @return active channel
      */
     const(Pubkey) selectActiveChannel(const size_t index) @trusted const pure
     {
@@ -408,6 +423,7 @@ struct NodeAddress
     /**
      * Parse node address
      * @param addr - address to parse
+     * @return parsed address
      */
     static string parseAddr(string addr)
     {
@@ -425,7 +441,8 @@ struct NodeAddress
     }
 
     /**
-     * Return string address
+     * Parse node address to string
+     * @return string address
      */
     public string toString()
     {

@@ -126,18 +126,17 @@ struct Options
 
     //SSLService scripting_engine;
 
-    struct Transcript
+    /** \struct TranscriptOptions
+     * Options for Transcript service
+     */
+    struct TranscriptOptions
     {
-        string task_name; /// Name of the transcript service
-        // This maybe removed later used to make internal transaction test without TLS connection
-        // bool enable;
-
-        string prefix;
-
+        /** Name of the transcript service */
+        string task_name;
+     
         mixin JSONCommon;
     }
-
-    import tagion.script.TranscriptOptions;
+    
 
     TranscriptOptions transcript;
 
@@ -164,8 +163,6 @@ struct Options
     // }
 
     // ContactCollector collector;
-
-    import tagion.script.TranscriptOptions;
 
     Monitor monitor;
 
