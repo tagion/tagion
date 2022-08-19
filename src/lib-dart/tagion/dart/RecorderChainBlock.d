@@ -2,17 +2,13 @@
 module tagion.dart.RecorderChainBlock;
 
 import std.array;
-import std.algorithm : canFind;
 
-import tagion.basic.TagionExceptions : TagionException;
 import tagion.basic.Types : Buffer;
-import tagion.dart.Recorder;
 import tagion.crypto.SecureNet : StdHashNet;
-import tagion.hibon.HiBONRecord : Label, GetLabel;
+import tagion.dart.Recorder;
+import tagion.hibon.HiBONRecord : Label, GetLabel, HiBONRecord, RecordType;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.Document;
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : HiBONRecord, RecordType;
 
 /** @brief File contains structure RecorderChainBlock and RecorderChainBlockFactory
  */
@@ -114,6 +110,9 @@ import tagion.hibon.HiBONRecord : HiBONRecord, RecordType;
 
 unittest
 {
+    import tagion.basic.TagionExceptions : TagionException;
+    import tagion.hibon.HiBON : HiBON;
+
     HiBON test_hibon = new HiBON;
     test_hibon["dummy1"] = 1;
     test_hibon["dummy2"] = 2;

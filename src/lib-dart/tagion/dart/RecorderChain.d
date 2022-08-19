@@ -1,17 +1,17 @@
 /// \file RecorderChain.d
 module tagion.dart.RecorderChain;
 
-import std.file : exists, mkdirRecurse, remove, dirEntries, SpanMode;
+import std.file : exists, mkdirRecurse, dirEntries, SpanMode;
 import std.array : array;
 import std.typecons : Tuple;
 import std.path : buildPath, baseName, extension, setExtension, stripExtension;
-import std.algorithm : filter, map, reverse;
+import std.algorithm : filter, map;
 
 import tagion.basic.Types : Buffer, FileExtension, withDot;
 import tagion.basic.TagionExceptions : TagionException;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.dart.RecorderChainBlock : RecorderChainBlock, RecorderChainBlockFactory;
-import tagion.dart.Recorder : RecordFactory, Archive;
+import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONRecord : fread, fwrite;
 import tagion.utils.Miscellaneous : toHexString, decode;
 
