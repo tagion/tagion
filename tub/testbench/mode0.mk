@@ -4,10 +4,8 @@ MODE0_DART:=$(MODE0_DATA)/node0/dart.drt
 MODE0_LOG:=$(MODE0_ROOT)/mode0_script.log
 MODE0_FLAGS:=-N 7 -t 200
 MODE0_FLAGS+=--pid=$(MODE0_ROOT)/tagionwave.pid
-MODE0_FLAGS+=--dart-init=false
-MODE0_FLAGS+=--epochs=$(EPOCHS)
-
-mode0-ddd: DDD=1
+MODE0_FLAGS+=--dart-init=false;
+# MODE0_FLAGS+=--epochs=$(EPOCHS);
 
 mode0: mode0-dart
 mode0: $(MODE0_DATA)/.way
@@ -91,7 +89,7 @@ check-mode0:
 	$(PRECMD)
 	${call log.header, $@ :: check}
 	echo "Bullseye mode0"
-	@${foreach node_no,0 1 2 3 4 5 6, dartutil --eye -d$(MODE0_DATA)/node$(node_no)/dart.drt;}
+	@${foreach node_no,0 1 2 3 4 5 6, $(DBIN)/dartutil --eye -d$(MODE0_DATA)/node$(node_no)/dart.drt;}
 	${call log.close}
 
 check: check-mode0

@@ -11,69 +11,44 @@ import tagion.hibon.Document;
 
 @safe:
 
+mixin template Property() {
+    string description;
+    @Label(VOID, true) string[] comments;
+    mixin HiBONRecord!(q{
+            this(string description, string[] comments=null ) pure nothrow {
+                this.description = description;
+                this.comments = comments;
+            }
+            this(T)(T prop) pure nothrow {
+                description = prop.description;
+                comments = prop.comments;
+            }
+        });
+}
+
 @RecordType("Feature")
 struct Feature {
-    string description;
-    @Label(VOID, true) string[] comments;
-    string name;
-    mixin HiBONRecord!(q{
-            this(string description, string[] comments=null ) {
-                this.description = description;
-                this.comments = comments;
-            }
-        });
+    mixin Property;
 }
 
-@RecordType("Scenario")
 struct Scenario {
-    string description;
-    @Label(VOID, true) string[] comments;
-    mixin HiBONRecord!(q{
-            this(string description, string[] comments=null ) {
-                this.description = description;
-                this.comments = comments;
-            }
-        });
+    mixin Property;
 }
 
-@RecordType("Give")
 struct Given {
-    string description;
-    mixin HiBONRecord!(q{
-            this(string description) {
-                this.description = description;
-            }
-        });
+    mixin Property;
 }
 
-@RecordType("And")
 struct And {
-    string description;
-    mixin HiBONRecord!(q{
-            this(string description) {
-                this.description = description;
-            }
-        });
+    mixin Property;
 }
 
-@RecordType("When")
 struct When {
-    string description;
-    mixin HiBONRecord!(q{
-            this(string description) {
-                this.description = description;
-            }
-        });
+    mixin Property;
 }
 
-@RecordType("Then")
 struct Then {
-    string description;
-    mixin HiBONRecord!(q{
-            this(string description) {
-                this.description = description;
-            }
-        });
+    mixin Property;
 }
 
 enum isDescriptor(T) = hasMember!(T, "description");
@@ -96,10 +71,10 @@ struct BehaviourGroup(Property) if (isOneOf!(Property, UniqueBehaviourProperties
 enum isBehaviourGroup(alias I) = __traits(isSame, TemplateOf!I, BehaviourGroup);
 
 struct ScenarioGroup {
-    Info!Scenario info;
+    @("Scenario") Info!Scenario info;
     BehaviourGroup!(Given) given;
-    @Label(VOID, true) BehaviourGroup!(Then) then;
-    BehaviourGroup!(When) when;
+    @Label(VOID, true) BehaviourGroup!(When) when;
+    BehaviourGroup!(Then) then;
     mixin HiBONRecord!();
 }
 

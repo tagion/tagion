@@ -16,29 +16,37 @@ import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.utils.Miscellaneous : toHexString;
 
 @safe
-class HiRPCException : HiBONException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
+class HiRPCException : HiBONException
+{
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
+    {
         super(msg, file, line);
     }
 }
 
-struct HiRPCMethod {
+struct HiRPCMethod
+{
     string name;
 }
 
-private static string[] _Callers(T)() {
+private static string[] _Callers(T)()
+{
     import std.traits : isCallable, hasUDA, getUDAs;
 
     string[] result;
-    static foreach (name; __traits(derivedMembers, T)) {
+    static foreach (name; __traits(derivedMembers, T))
+    {
         {
-            static if (is(typeof(__traits(getMember, T, name)))) {
+            static if (is(typeof(__traits(getMember, T, name))))
+            {
                 enum prot = __traits(getProtection,
-                            __traits(getMember, T, name));
-                static if (prot == "public") {
+                        __traits(getMember, T, name));
+                static if (prot == "public")
+                {
                     enum code = format(q{alias MemberA=T.%s;}, name);
                     mixin(code);
-                    static if (hasUDA!(MemberA, HiRPCMethod)) {
+                    static if (hasUDA!(MemberA, HiRPCMethod))
+                    {
                         enum hirpc_method = getUDAs!(MemberA, HiRPCMethod)[0];
                         result ~= name;
                     }
@@ -51,24 +59,31 @@ private static string[] _Callers(T)() {
 
 enum Callers(T) = _Callers!T();
 
-private static string[] _Methods(T)() {
+private static string[] _Methods(T)()
+{
     import std.traits : isCallable, hasUDA, getUDAs;
 
     string[] result;
-    static foreach (name; __traits(derivedMembers, T)) {
+    static foreach (name; __traits(derivedMembers, T))
+    {
         {
-            static if (is(typeof(__traits(getMember, T, name)))) {
+            static if (is(typeof(__traits(getMember, T, name))))
+            {
                 enum prot = __traits(getProtection,
-                            __traits(getMember, T, name));
-                static if (prot == "public") {
+                        __traits(getMember, T, name));
+                static if (prot == "public")
+                {
                     enum code = format(q{alias MemberA=T.%s;}, name);
                     mixin(code);
-                    static if (hasUDA!(MemberA, HiRPCMethod)) {
+                    static if (hasUDA!(MemberA, HiRPCMethod))
+                    {
                         enum hirpc_method = getUDAs!(MemberA, HiRPCMethod)[0];
-                        static if (hirpc_method.name) {
+                        static if (hirpc_method.name)
+                        {
                             enum method_name = hirpc_method.name;
                         }
-                        else {
+                        else
+                        {
                             enum method_name = name;
                         }
                         result ~= method_name;
@@ -83,10 +98,12 @@ private static string[] _Methods(T)() {
 enum Methods(T) = _Methods!T();
 
 @safe
-struct HiRPC {
+struct HiRPC
+{
     import tagion.hibon.HiBONRecord;
 
-    struct Method {
+    struct Method
+    {
         @Label("*", true) @(Filter.Initialized) uint id;
         @Label("*", true) @Filter(q{!a.empty}) Document params;
         @Label("method") @(Inspect.Initialized) string name;
@@ -94,19 +111,22 @@ struct HiRPC {
         mixin HiBONRecord;
     }
 
-    struct Response {
+    struct Response
+    {
         @Label("*", true) @(Filter.Initialized) uint id;
         Document result;
         mixin HiBONRecord;
     }
 
-    struct Error {
+    struct Error
+    {
         @Label("*", true) @(Filter.Initialized) uint id;
         @Label("*", true) @Filter(q{!a.empty}) Document data;
         @Label("*", true) @(Filter.Initialized) string message;
         @Label("*", true) @(Filter.Initialized) int code;
 
-        static bool valid(const Document doc) {
+        static bool valid(const Document doc)
+        {
             enum codeName = GetLabel!(code).name;
             enum messageName = GetLabel!(message).name;
             enum dataName = GetLabel!(data).name;
@@ -116,50 +136,60 @@ struct HiRPC {
         mixin HiBONRecord;
     }
 
-
     enum isMessage(T) = is(T : const(Method)) || is(T : const(Response)) || is(T : const(Error));
 
-    enum SignedState {
+    enum SignedState
+    {
         INVALID = -1,
         NOSIGN = 0,
         VALID = 1
     }
 
-    enum Type : uint {
+    enum Type : uint
+    {
         none, /// No valid Type
         method, /// Action method
         result, /// Respose
         error
     }
 
-    enum Direction {
+    enum Direction
+    {
         SEND,
         RECEIVE
     }
 
-    static Type getType(T)(const T message) if (isHiBONRecord!T) {
-        static if (is(T : const(Method))) {
+    static Type getType(T)(const T message) if (isHiBONRecord!T)
+    {
+        static if (is(T : const(Method)))
+        {
             return Type.method;
         }
-        else static if (is(T : const(Response))) {
+        else static if (is(T : const(Response)))
+        {
             return Type.result;
         }
-        else static if (is(T : const(Error))) {
+        else static if (is(T : const(Error)))
+        {
             return Type.error;
         }
-        else {
+        else
+        {
             return getType(message.toDoc);
         }
     }
 
-    static Type getType(const Document doc) {
+    static Type getType(const Document doc)
+    {
         import std.conv : to;
 
         enum messageName = GetLabel!(Sender.message).name;
         const message_doc = doc[messageName].get!Document;
-        foreach (E; EnumMembers!(Type)[1 .. $]) {
+        foreach (E; EnumMembers!(Type)[1 .. $])
+        {
             enum name = E.to!string;
-            if (message_doc.hasMember(name)) {
+            if (message_doc.hasMember(name))
+            {
                 return E;
             }
         }
@@ -167,13 +197,16 @@ struct HiRPC {
     }
 
     @RecordType("HiPRC")
-    struct Post(Direction DIRECTION) {
-        union Message {
+    struct Post(Direction DIRECTION)
+    {
+        union Message
+        {
             Method method;
             Response response;
             Error error;
             uint id;
         }
+
         static assert(Message.method.id.alignof == Message.id.alignof);
         static assert(Message.response.id.alignof == Message.id.alignof);
         static assert(Message.error.id.alignof == Message.id.alignof);
@@ -185,40 +218,53 @@ struct HiRPC {
         @Label("$msg") Document message;
         @Label("") immutable Type type;
 
-        @nogc const pure nothrow {
-            bool isMethod() {
+        @nogc const pure nothrow
+        {
+            bool isMethod()
+            {
                 return type is Type.method;
             }
 
-            bool isResponse() {
+            bool isResponse()
+            {
                 return type is Type.result;
             }
 
-            bool isError() {
-                return type is Type.method;
+            bool isError()
+            {
+                return type is Type.error;
             }
         }
 
-        bool supports(T)() const {
+        bool supports(T)() const
+        {
             import std.traits : isCallable, hasUDA, getUDAs;
 
-            if (type is Type.method) {
+            if (type is Type.method)
+            {
             CaseMethod:
-                switch (method.name) {
-                    static foreach (name; __traits(derivedMembers, T)) {
+                switch (method.name)
+                {
+                    static foreach (name; __traits(derivedMembers, T))
+                    {
                         {
-                            static if (is(typeof(__traits(getMember, T, name)))) {
+                            static if (is(typeof(__traits(getMember, T, name))))
+                            {
                                 enum prot = __traits(getProtection,
-                                            __traits(getMember, T, name));
-                                static if (prot == "public") {
+                                        __traits(getMember, T, name));
+                                static if (prot == "public")
+                                {
                                     enum code = format(q{alias MemberA=T.%s;}, name);
                                     mixin(code);
-                                    static if (hasUDA!(MemberA, HiRPCMethod)) {
+                                    static if (hasUDA!(MemberA, HiRPCMethod))
+                                    {
                                         enum hirpc_method = getUDAs!(MemberA, HiRPCMethod)[0];
-                                        static if (hirpc_method.name) {
+                                        static if (hirpc_method.name)
+                                        {
                                             enum method_name = hirpc_method.name;
                                         }
-                                        else {
+                                        else
+                                        {
                                             enum method_name = name;
                                         }
                 case method_name:
@@ -235,62 +281,78 @@ struct HiRPC {
             return false;
         }
 
-        bool verify(const Document doc) {
-            if (pubkey.length) {
+        bool verify(const Document doc)
+        {
+            if (pubkey.length)
+            {
                 check(signature.length !is 0, "Message Post has a public key without signature");
             }
             return true;
         }
         //        @Label("") protected Buffer fingerprint;
-        static if (DIRECTION is Direction.RECEIVE) {
+        static if (DIRECTION is Direction.RECEIVE)
+        {
             @Label("") protected Message _message;
             @Label("") immutable SignedState signed;
             enum signName = GetLabel!(signature).name;
             enum pubkeyName = GetLabel!(pubkey).name;
             enum messageName = GetLabel!(message).name;
-            this(const Document doc) {
+            this(const Document doc)
+            {
                 this(null, doc);
             }
 
             this(const SecureNet net, const Document doc)
-            in {
-                if (signature.length) {
+            in
+            {
+                if (signature.length)
+                {
                     assert(net !is null, "The signature can't be veified because the SecureNet is missing");
                 }
             }
-            do {
+            do
+            {
                 check(!doc.hasHashKey, "Document containing hashkey can not be used as a message in HiPRC");
 
                 type = getType(doc);
                 message = doc[messageName].get!Document;
                 signature = doc.hasMember(signName) ? doc[signName].get!(
-                        TypedefType!Signature) : null;
+                    TypedefType!Signature) : null;
                 pubkey = doc.hasMember(pubkeyName) ? doc[pubkeyName].get!(
-                        TypedefType!Pubkey) : null;
+                    TypedefType!Pubkey) : null;
                 Pubkey used_pubkey;
-                static SignedState verifySignature(const SecureNet net, const Document doc, const Signature sgn, const Pubkey pkey) {
-                    if (sgn.length) {
+                static SignedState verifySignature(const SecureNet net, const Document doc, const Signature sgn, const Pubkey pkey)
+                {
+                    if (sgn.length)
+                    {
                         //immutable fingerprint=net.hashOf(msg);
-                        if (net is null) {
+                        if (net is null)
+                        {
                             return SignedState.INVALID;
                         }
                         Pubkey used_pubkey = pkey;
-                        if (!used_pubkey.length) {
+                        if (!used_pubkey.length)
+                        {
                             used_pubkey = net.pubkey;
                         }
-                        if (net.verify(doc, sgn, pkey)) {
+                        if (net.verify(doc, sgn, pkey))
+                        {
                             return SignedState.VALID;
                         }
-                        else {
+                        else
+                        {
                             return SignedState.INVALID;
                         }
                     }
                     return SignedState.NOSIGN;
                 }
 
-                void set_message() @trusted {
-                    with (Type) {
-                        final switch (type) {
+                void set_message() @trusted
+                {
+                    with (Type)
+                    {
+                        final switch (type)
+                        {
                         case none:
                             check(0, "Invalid HiPRC message");
                             break;
@@ -310,37 +372,46 @@ struct HiRPC {
                 signed = verifySignature(net, message, signature, pubkey);
             }
 
-            this(T)(const SecureNet net, T pack) if (isHiBONRecord!T) {
+            this(T)(const SecureNet net, T pack) if (isHiBONRecord!T)
+            {
                 this(net, pack.toDoc);
             }
 
-            @trusted const(Error) error() const pure {
+            @trusted const(Error) error() const pure
+            {
                 check(type is Type.error, format("Message type %s expected not %s", Type.error, type));
                 return _message.error;
             }
 
-            @trusted const(Response) response() const pure {
+            @trusted const(Response) response() const pure
+            {
                 check(type is Type.result, format("Message type %s expected not %s", Type.result, type));
                 return _message.response;
             }
 
-            @trusted const(Method) method() const pure {
+            @trusted const(Method) method() const pure
+            {
                 check(type is Type.method, format("Message type %s expected not %s", Type.method, type));
                 return _message.method;
             }
 
-            const(T) params(T, Args...)(Args args) const if (isHiBONRecord!T) {
+            const(T) params(T, Args...)(Args args) const if (isHiBONRecord!T)
+            {
                 return T(args, method.params);
             }
 
-            const(T) result(T, Args...)(Args args) const if (isHiBONRecord!T) {
+            const(T) result(T, Args...)(Args args) const if (isHiBONRecord!T)
+            {
                 return T(response.result);
             }
 
             @trusted
-            bool isRecord(T)() const {
-                with (Type) {
-                    final switch (type) {
+            bool isRecord(T)() const
+            {
+                with (Type)
+                {
+                    final switch (type)
+                    {
                     case none, error:
                         return false;
                     case method:
@@ -352,16 +423,22 @@ struct HiRPC {
                 assert(0);
             }
         }
-        else {
-            this(T)(const SecureNet net, const T post) if (isHiBONRecord!T || is(T : const Document)) {
-                static if (isHiBONRecord!T) {
+        else
+        {
+            this(T)(const SecureNet net, const T post)
+                    if (isHiBONRecord!T || is(T : const Document))
+            {
+                static if (isHiBONRecord!T)
+                {
                     message = post.toDoc;
                 }
-                else {
+                else
+                {
                     message = post;
                 }
                 type = getType(post);
-                if (net !is null) {
+                if (net !is null)
+                {
                     // immutable signed=net.sign(message);
                     // fingerprint=signed.message;
                     signature = net.sign(message).signature;
@@ -370,26 +447,32 @@ struct HiRPC {
             }
 
             Error error() const
-            in {
+            in
+            {
                 assert(type is Type.error, format("Message type %s expected not %s", Type.error, type));
             }
-            do {
+            do
+            {
                 return Error(message);
             }
 
             Response response() const
-            in {
+            in
+            {
                 assert(type is Type.result, format("Message type %s expected not %s", Type.result, type));
             }
-            do {
+            do
+            {
                 return Response(message);
             }
 
             Method method() const
-            in {
+            in
+            {
                 assert(type is Type.method, format("Message type %s expected not %s", Type.method, type));
             }
-            do {
+            do
+            {
                 return Method(message);
             }
 
@@ -399,7 +482,8 @@ struct HiRPC {
              Returns:
              True if the message has been signed
              +/
-            @nogc bool isSigned() const pure nothrow {
+            @nogc bool isSigned() const pure nothrow
+            {
                 return (signature.length !is 0);
             }
         }
@@ -413,27 +497,33 @@ struct HiRPC {
     alias check = Check!HiRPCException;
     const SecureNet net;
 
-    const(uint) generateId() const {
+    const(uint) generateId() const
+    {
         uint id = 0;
         import tagion.utils.Random;
         import stdrnd = std.random;
 
         auto rnd = Random!uint(stdrnd.unpredictableSeed);
-        do {
+        do
+        {
             id = rnd.value();
         }
         while (id is 0 || id is uint.max);
         return id;
     }
 
-    immutable(Sender) opDispatch(string method, T)(ref auto const T params, const uint id = uint.max) const {
+    immutable(Sender) opDispatch(string method, T)(ref auto const T params, const uint id = uint
+            .max) const
+    {
         return action(method, params, id);
     }
 
-    immutable(Sender) action(string method, const Document params, const uint id = uint.max) const {
+    immutable(Sender) action(string method, const Document params, const uint id = uint.max) const
+    {
         Method message;
         message.id = (id is uint.max) ? generateId : id;
-        if (!params.empty) {
+        if (!params.empty)
+        {
             message.params = params;
         }
         message.name = method;
@@ -443,16 +533,19 @@ struct HiRPC {
     }
 
     immutable(Sender) action(T)(string method, T params, const uint id = uint.max) const
-    if (isHiBONRecord!T) {
+            if (isHiBONRecord!T)
+    {
         return action(method, params.toDoc, id);
     }
 
-    immutable(Sender) action(string method, const(HiBON) params = null, const uint id = uint.max) const {
+    immutable(Sender) action(string method, const(HiBON) params = null, const uint id = uint.max) const
+    {
         const doc = Document(params);
         return action(method, doc, id);
     }
 
-    immutable(Sender) result(ref const(Receiver) receiver, const Document params) const {
+    immutable(Sender) result(ref const(Receiver) receiver, const Document params) const
+    {
         Response message;
         message.id = receiver.method.id;
         message.result = params;
@@ -462,19 +555,23 @@ struct HiRPC {
     }
 
     immutable(Sender) result(T)(ref const(Receiver) receiver, T params) const
-    if (isHiBONRecord!T) {
+    if (isHiBONRecord!T)
+    {
         return result(receiver, params.toDoc);
     }
 
-    immutable(Sender) result(ref const(Receiver) receiver, const(HiBON) params) const {
+    immutable(Sender) result(ref const(Receiver) receiver, const(HiBON) params) const
+    {
         return result(receiver, Document(params));
     }
 
-    immutable(Sender) error(ref const(Receiver) receiver, string msg, const int code = 0, Document data = Document()) const {
+    immutable(Sender) error(ref const(Receiver) receiver, string msg, const int code = 0, Document data = Document()) const
+    {
         return error(receiver.method.id, msg, code, data);
     }
 
-    immutable(Sender) error(const uint id, string msg, const int code = 0, Document data = Document()) const {
+    immutable(Sender) error(const uint id, string msg, const int code = 0, Document data = Document()) const
+    {
         Error message;
         message.id = id;
         message.code = code;
@@ -483,39 +580,46 @@ struct HiRPC {
         return Sender(net, message);
     }
 
-    final immutable(Receiver) receive(Document doc) const {
+    final immutable(Receiver) receive(Document doc) const
+    {
         auto receiver = Receiver(net, doc);
         return receiver;
     }
 
-    final immutable(Receiver) receive(T)(T sender) const if (isHiBONRecord!T) {
+    final immutable(Receiver) receive(T)(T sender) const if (isHiBONRecord!T)
+    {
         auto receiver = Receiver(net, sender.toDoc);
         return receiver;
     }
 
-    static void check_type(T)(Document doc, string key) {
+    static void check_type(T)(Document doc, string key)
+    {
         immutable msg = format("Wrong type of member '%s', expected type but the type was",
-                key);
+            key);
         enum E = Document.Value.asType!T;
         // immutable msg=format("Wrong type of member '%s', expected type %s but the type was %s",
         //     key, TypeString!T, doc[key].typeString);
         check(doc[key].type is E, msg);
     }
 
-    static void check_element(T)(Document doc, string key) {
+    static void check_element(T)(Document doc, string key)
+    {
         check(doc.hasMember(key), format("Member '%s' missing", key));
         check_type!T(doc, key);
     }
 }
 
 ///
-unittest {
+unittest
+{
     import tagion.hibon.HiBONRecord;
     import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
     import tagion.crypto.secp256k1.NativeSecp256k1;
 
-    class HiRPCNet : StdSecureNet {
-        this(string passphrase) {
+    class HiRPCNet : StdSecureNet
+    {
+        this(string passphrase)
+        {
             super();
             generateKeyPair(passphrase);
         }
@@ -546,7 +650,8 @@ unittest {
         assert(invalid_receiver.method.name == sender.method.name);
         assert(invalid_receiver.signed is HiRPC.SignedState.INVALID);
 
-        static struct ResultStruct {
+        static struct ResultStruct
+        {
             int x;
             mixin HiBONRecord;
         }

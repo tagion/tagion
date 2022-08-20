@@ -5,8 +5,10 @@ import tagion.basic.TagionExceptions;
 /++
  Exception type used by tagion.hibon.HiBON module
  +/
-@safe class BehaviourException : TagionException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
+@safe class BehaviourException : TagionException
+{
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
+    {
         super(msg, file, line);
     }
 }

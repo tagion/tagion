@@ -234,13 +234,7 @@ unittest {
             .setExtension(EXT.Dlang);
         dlang.issue(feature_group);
         immutable expected = filename.freadText;
-            // .splitLines
-            // .map!(a => a.strip)
-            // .join("\n");
         immutable result = bout.toString;
-            // .splitLines
-            // .map!(a => a.strip)
-            // .join("\n");
         // filename.setExtension("dtest").fwrite(result);
         assert(equal(
                 result

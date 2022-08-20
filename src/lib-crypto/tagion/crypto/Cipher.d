@@ -9,7 +9,8 @@ import std.exception : assumeUnique;
 // import tagion.utils.Miscellaneous: toHexString, decode;
 // import tagion.hibon.HiBONJSON;
 @safe
-struct Cipher {
+struct Cipher
+{
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import tagion.crypto.SecureNet : scramble, check;
     import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -28,7 +29,8 @@ struct Cipher {
     // }
 
     @RecordType("TCD")
-    struct CipherDocument {
+    struct CipherDocument
+    {
         @Label("$m") Buffer ciphermsg;
         @Label("$n") Buffer nonce;
         @Label("$a") Buffer authTag;
@@ -36,15 +38,18 @@ struct Cipher {
         mixin HiBONRecord;
     }
 
-    static const(CipherDocument) encrypt(const(SecureNet) net, const(Pubkey) pubkey, const(Document) msg) {
+    static const(CipherDocument) encrypt(const(SecureNet) net, const(Pubkey) pubkey, const(Document) msg)
+    {
 
         //        immutable(ubyte[]) create_secret_key() {
         scope ubyte[32] secret_key_alloc;
         scope ubyte[] secret_key = secret_key_alloc;
-        scope (exit) {
+        scope (exit)
+        {
             scramble(secret_key);
         }
-        do {
+        do
+        {
             scramble(secret_key);
             scramble(secret_key, net.HMAC(secret_key));
         }
@@ -72,7 +77,8 @@ struct Cipher {
         // writefln("sharedECCKey = %s", sharedECCKey.toHexString);
         // writefln("result.nonce = %d", result.nonce.length);
         AES.encrypt(sharedECCKey, result.nonce, ciphermsg, ciphermsg);
-        Buffer get_ciphermsg() @trusted {
+        Buffer get_ciphermsg() @trusted
+        {
             return assumeUnique(ciphermsg);
         }
 
@@ -80,17 +86,20 @@ struct Cipher {
         return result;
     }
 
-    static const(CipherDocument) encrypt(const(SecureNet) net, const(Document) msg) {
+    static const(CipherDocument) encrypt(const(SecureNet) net, const(Document) msg)
+    {
         return encrypt(net, net.pubkey, msg);
     }
 
-    static const(Document) decrypt(const(SecureNet) net, const(CipherDocument) cipher_doc) {
+    static const(Document) decrypt(const(SecureNet) net, const(CipherDocument) cipher_doc)
+    {
         scope sharedECCKey = net.ECDHSecret(cipher_doc.cipherPubkey);
         // writefln("sharedECCKey = %s", sharedECCKey.toHexString);
         auto clearmsg = new ubyte[cipher_doc.ciphermsg.length];
         AES.decrypt(sharedECCKey, cipher_doc.nonce, cipher_doc.ciphermsg, clearmsg);
         // writefln("clearmsg = %s", cast(string)clearmsg);
-        Buffer get_clearmsg() @trusted {
+        Buffer get_clearmsg() @trusted
+        {
             return assumeUnique(clearmsg);
         }
         //        import LEB128 = tagion.utils.LEB128;
@@ -98,7 +107,8 @@ struct Cipher {
         const result = Document(data);
         immutable full_size = result.full_size;
         //        writefln("full_size=%d data.length=%d", full_size, data.length);
-        check(full_size + CRC_SIZE <= data.length && full_size !is 0, ConsensusFailCode.CIPHER_DECRYPT_ERROR);
+        check(full_size + CRC_SIZE <= data.length && full_size !is 0, ConsensusFailCode
+                .CIPHER_DECRYPT_ERROR);
 
         const crc = data[0 .. full_size].crc32Of;
         // writefln("crc calc   %s", crc);
@@ -110,7 +120,8 @@ struct Cipher {
         return result;
     }
 
-    unittest {
+    unittest
+    {
         import tagion.utils.Miscellaneous : toHexString, decode;
         import tagion.crypto.SecureNet : StdSecureNet;
         import tagion.hibon.HiBON : HiBON;
@@ -146,17 +157,22 @@ struct Cipher {
             immutable wrong_passphrase = "wrong word";
             wrong_net.generateKeyPair(wrong_passphrase);
             bool[3] passed;
-            do {
-                try {
+            do
+            {
+                try
+                {
                     const secret_cipher_doc = Cipher.encrypt(dummy_net, wrong_net.pubkey, secret_doc);
                     const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
                     //                writefln("encrypted_doc.full_size %d", encrypted_doc.full_size);
                     passed[0] = true;
-                    if (encrypted_doc.isInorder) {
+                    if (encrypted_doc.isInorder)
+                    {
                         import std.stdio : writefln;
                         import tagion.hibon.HiBONRecord : fwrite;
-                        immutable filename = fileId!Cipher(FileExtension.hibon, encrypted_doc.stringof).fullpath;
-                        writefln("Cipher unittest file %s",filename);
+
+                        immutable filename = fileId!Cipher(FileExtension.hibon, encrypted_doc
+                                .stringof).fullpath;
+                        writefln("Cipher unittest file %s", filename);
                         filename.fwrite(encrypted_doc);
                     }
                     assert(!encrypted_doc.isInorder);
@@ -164,7 +180,8 @@ struct Cipher {
                     // assert(encrypted_doc.full_size != secret_doc.full_size);
                     // passed[2] = true;
                 }
-                catch (SecurityConsensusException e) {
+                catch (SecurityConsensusException e)
+                {
                     passed[2] = true;
                     //                passed = true;
                 }

@@ -12,10 +12,12 @@ import tagion.hashgraph.HashGraphBasic : EventPackage;
 import tagion.script.StandardRecords : SignedContract;
 import tagion.services.DARTSynchronizeService : DARTReadRequest;
 
-
-void contractCollectorTask(immutable(Options) opts) nothrow {
-    try {
-        scope (success) {
+void contractCollectorTask(immutable(Options) opts) nothrow
+{
+    try
+    {
+        scope (success)
+        {
             ownerTid.prioritySend(Control.END);
         }
         immutable task_name = opts.collector.task_name;
@@ -26,52 +28,66 @@ void contractCollectorTask(immutable(Options) opts) nothrow {
         auto transcript_tid = locate(opts.transcript.task_name);
         auto dart_sync_tid = locate(opts.dart.sync.task_name);
         bool stop;
-        void control(Control ts) {
-            switch (ts) {
+        void control(Control ts)
+        {
+            switch (ts)
+            {
             case Control.STOP:
-                stop=true;
+                stop = true;
                 break;
             default:
                 // empty
             }
         }
 
-//        DARTReadRequest.Cache! cache;
+        //        DARTReadRequest.Cache! cache;
         /// If the response_task_name is set
-        version(none)
-        void register_epack(immutable(EventPackage*) epack, immutable(ResponseRequest*) response) {
+        version (none) void register_epack(immutable(EventPackage*) epack, immutable(
+                ResponseRequest*) response)
+        {
             import std.exception : assumeUnique;
+
             const doc = epack.event_body.payload;
-            try {
-                if (SignedContract.isRecord(doc)) {
+            try
+            {
+                if (SignedContract.isRecord(doc))
+                {
                     const sigend_contract = SignedContract(doc);
                     // hirpc.dartRead(
                     //     chain(sigend_contract.contract.inputs, sigend_contract.contract.reads),
                     //     response.id);
-//                    hirpc.opDispatch!"dartRead"(
-                    immutable list_of_inputs =() @trusted => assumeUnique([sigend_contract.contract.inputs, sigend_contract.contract.reads]);
+                    //                    hirpc.opDispatch!"dartRead"(
+                    immutable list_of_inputs = () @trusted => assumeUnique([
+                        sigend_contract.contract.inputs,
+                        sigend_contract.contract.reads
+                    ]);
                     dart_sync_tid.send(list_of_inputs,
                         response.id);
 
-//                    response(task_name, true);
+                    //                    response(task_name, true);
                     return;
                 }
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 log.error("Package %s:", e.msg);
             }
             response(task_name, true);
         }
 
         ownerTid.send(Control.LIVE);
-        while (!stop) {
+        while (!stop)
+        {
             receive(
-                &control,
-//                &register_epack
-                );
+                &control, //                &register_epack
+
+                
+
+            );
         }
     }
-    catch (Exception e) {
+    catch (Exception e)
+    {
         fatal(e);
     }
 }

@@ -1,8 +1,10 @@
 module tagion.utils.Term;
 
-version (MOBILE) {
+version (MOBILE)
+{
 }
-else {
+else
+{
     import std.format;
     private import core.stdc.stdio;
     private import core.sys.posix.termios;
@@ -13,7 +15,8 @@ else {
 
     //import std.algorithm : sort;
 
-    enum {
+    enum
+    {
         BLACK = Color.Black.code,
         RED = Color.Red.code,
         GREEN = Color.Green.code,
@@ -42,7 +45,8 @@ else {
         HOME = "\u001b[f",
     }
 
-    enum Color {
+    enum Color
+    {
         Black,
         Red,
         Green,
@@ -55,13 +59,16 @@ else {
     }
 
     string code(
-            immutable Color c,
-            immutable bool background = false,
-            immutable bool bright = false) {
-        if (c is Color.Reset) {
+        immutable Color c,
+        immutable bool background = false,
+        immutable bool bright = false)
+    {
+        if (c is Color.Reset)
+        {
             return "\u001b[0m";
         }
-        else {
+        else
+        {
             immutable background_color = (background) ? "4" : "3";
             immutable bright_color = (bright) ? "m" : ";1m";
             return format("\u001b[%s%d%s", background_color, c, bright_color);
@@ -69,7 +76,8 @@ else {
         assert(0);
     }
 
-    enum Cursor : char {
+    enum Cursor : char
+    {
         Up = 'A', /// Moves cursor up by n
         Down = 'B', /// Moves cursor down by n
         Right = 'C', /// Moves cursor right by n
@@ -81,11 +89,13 @@ else {
         ClearLine = 'K' /// clears the current line
     }
 
-    string code(immutable Cursor c, immutable uint n = 1) {
+    string code(immutable Cursor c, immutable uint n = 1)
+    {
         return format("\u001b[%d%s", n, char(c));
     }
 
-    enum Mode {
+    enum Mode
+    {
         None = 0, /// All attributes off
         Bold = 1, /// Bold on
         Underscore = 4, /// Underscore (on monochrome display adapter only)
@@ -94,11 +104,13 @@ else {
         Concealed = 8, /// Concealed on
     }
 
-    string code(immutable Mode m) {
+    string code(immutable Mode m)
+    {
         return format("\u001b[%dm", m);
     }
 
-    string setCursor(immutable uint row, immutable uint column) {
+    string setCursor(immutable uint row, immutable uint column)
+    {
         return format("\u001b[%d;%dH", row, column);
     }
 
@@ -107,25 +119,29 @@ else {
 
     extern (C) void cfmakeraw(termios* termios_p);
 
-    struct KeyStroke {
+    struct KeyStroke
+    {
 
         termios ostate; /* saved tty state */
         termios nstate; /* values for editor mode */
 
-        int get() {
+        int get()
+        {
             // Open stdin in raw mode
             // Adjust output channel
             tcgetattr(1, &ostate); // save old state
             tcgetattr(1, &nstate); // get base of new state
             cfmakeraw(&nstate);
             tcsetattr(1, TCSADRAIN, &nstate); // set mode
-            scope (exit) {
+            scope (exit)
+            {
                 tcsetattr(1, TCSADRAIN, &ostate); // return to original mode
             }
             return fgetc(stdin);
         }
 
-        enum KeyCode {
+        enum KeyCode
+        {
             NONE,
             UP,
             DOWN,
@@ -138,45 +154,56 @@ else {
             ENTER
         }
 
-        struct KeyStrain {
+        struct KeyStrain
+        {
             KeyCode code;
             int[] branch;
-            int opComp(const KeyStrain b) const {
+            int opComp(const KeyStrain b) const
+            {
                 return branch < b.branch;
             }
         }
 
         alias strain = AliasSeq!(
-                KeyStrain(KeyCode.UP, [27, 91, 65]),
-                KeyStrain(KeyCode.DOWN, [27, 91, 66]),
-                KeyStrain(KeyCode.RIGHT, [27, 91, 67]),
-                KeyStrain(KeyCode.LEFT, [27, 91, 68]),
-                KeyStrain(KeyCode.HOME, [27, 91, 49, 59, 50, 72]),
-                KeyStrain(KeyCode.END, [27, 91, 49, 59, 50, 70]),
-                KeyStrain(KeyCode.PAGEDOWN, [27, 91, 54, 126]),
-                KeyStrain(KeyCode.PAGEUP, [27, 91, 53, 126]),
-                KeyStrain(KeyCode.ENTER, [13]),
+            KeyStrain(KeyCode.UP, [27, 91, 65]),
+            KeyStrain(KeyCode.DOWN, [27, 91, 66]),
+            KeyStrain(KeyCode.RIGHT, [27, 91, 67]),
+            KeyStrain(KeyCode.LEFT, [27, 91, 68]),
+            KeyStrain(KeyCode.HOME, [27, 91, 49, 59, 50, 72]),
+            KeyStrain(KeyCode.END, [27, 91, 49, 59, 50, 70]),
+            KeyStrain(KeyCode.PAGEDOWN, [27, 91, 54, 126]),
+            KeyStrain(KeyCode.PAGEUP, [27, 91, 53, 126]),
+            KeyStrain(KeyCode.ENTER, [13]),
         );
 
-        KeyCode getKey(ref int ch) {
+        KeyCode getKey(ref int ch)
+        {
             enum StaticComp(KeyStrain a, KeyStrain b) = a.branch < b.branch;
             alias sorted_strain = staticSort!(StaticComp, strain);
-            KeyCode select(uint index = 0, uint pos = 0)(ref int ch) {
-                static if (index < sorted_strain.length) {
-                    static if (pos < sorted_strain[index].branch.length) {
-                        if (ch == sorted_strain[index].branch[pos]) {
-                            static if (pos + 1 is sorted_strain[index].branch.length) {
+            KeyCode select(uint index = 0, uint pos = 0)(ref int ch)
+            {
+                static if (index < sorted_strain.length)
+                {
+                    static if (pos < sorted_strain[index].branch.length)
+                    {
+                        if (ch == sorted_strain[index].branch[pos])
+                        {
+                            static if (pos + 1 is sorted_strain[index].branch.length)
+                            {
                                 return sorted_strain[index].code;
                             }
-                            else {
+                            else
+                            {
                                 ch = get;
                                 return select!(index, pos + 1)(ch);
                             }
                         }
-                        else if (ch > sorted_strain[index].branch[pos]) {
+                        else if (ch > sorted_strain[index].branch[pos])
+                        {
                             return select!(index + 1, pos)(ch);
                         }
-                        else {
+                        else
+                        {
                             return KeyCode.NONE;
                         }
                     }

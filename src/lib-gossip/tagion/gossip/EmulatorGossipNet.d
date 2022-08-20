@@ -11,7 +11,6 @@ import std.conv : to;
 import tagion.basic.Types : Buffer, Pubkey, isBufferType;
 import tagion.basic.Basic : EnumText, buf_idup, basename;
 
-
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous : cutHex;
 
@@ -44,13 +43,16 @@ import std.datetime;
 import core.thread;
 
 @trusted
-static uint getTids(Tid[] tids) {
+static uint getTids(Tid[] tids)
+{
     uint result = uint.max;
-    foreach (i, ref tid; tids) {
+    foreach (i, ref tid; tids)
+    {
         immutable uint_i = cast(uint) i;
         immutable taskname = uint_i.get_node_name;
         tid = locate(taskname);
-        if (tid is thisTid) {
+        if (tid is thisTid)
+        {
             result = uint_i;
         }
     }
@@ -58,11 +60,13 @@ static uint getTids(Tid[] tids) {
 }
 
 @safe
-class EmulatorGossipNet : GossipNet {
+class EmulatorGossipNet : GossipNet
+{
     private uint node_counter = 0;
     private Duration duration;
     @trusted
-    static Tid getTidByNodeNumber(const uint i) {
+    static Tid getTidByNodeNumber(const uint i)
+    {
         immutable taskname = i.get_node_name;
         log("trying to locate: %s", taskname);
         auto tid = locate(taskname);
@@ -75,20 +79,23 @@ class EmulatorGossipNet : GossipNet {
     protected sdt_t _current_time;
     immutable(Pubkey) mypk;
     Random random;
-    this(const Pubkey mypk, Duration duration) {
+    this(const Pubkey mypk, Duration duration)
+    {
         this.random = Random(unpredictableSeed);
         this.duration = duration;
         this.mypk = mypk;
     }
 
-    void add_channel(const Pubkey channel) {
+    void add_channel(const Pubkey channel)
+    {
         _pkeys ~= channel;
         _tids[channel] = getTidByNodeNumber(node_counter);
         log("channel: %s tid: %s", channel.cutHex, _tids[channel]);
         node_counter++;
     }
 
-    void remove_channel(const Pubkey channel) {
+    void remove_channel(const Pubkey channel)
+    {
         import std.algorithm.searching;
 
         const channel_index = countUntil(_pkeys, channel);
@@ -97,21 +104,25 @@ class EmulatorGossipNet : GossipNet {
     }
 
     @safe
-    void close() {
+    void close()
+    {
 
     }
 
     @property
-    void time(const(sdt_t) t) {
+    void time(const(sdt_t) t)
+    {
         _current_time = sdt_t(t);
     }
 
     @property
-    const(sdt_t) time() pure const {
+    const(sdt_t) time() pure const
+    {
         return _current_time;
     }
 
-    bool isValidChannel(const(Pubkey) channel) const pure nothrow {
+    bool isValidChannel(const(Pubkey) channel) const pure nothrow
+    {
         // debug {
         //     import std.exception : assumeWontThrow;
         //     assumeWontThrow(log.trace("(channel in _tids) %s ((channel != mypk) %s", !!(channel in _tids), ((channel != mypk))));
@@ -119,15 +130,18 @@ class EmulatorGossipNet : GossipNet {
         return (channel in _tids) !is null;
     }
 
-    const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
+    const(Pubkey) select_channel(const(ChannelFilter) channel_filter)
+    {
         import std.range : dropExactly;
 
-        foreach (count; 0 .. _tids.length * 2) {
+        foreach (count; 0 .. _tids.length * 2)
+        {
             const node_index = uniform(0, cast(uint) _tids.length, random);
             // log("selected index: %d %d", node_index, _tids.length);
             const send_channel = _pkeys[node_index];
             // log("trying to select: %s, valid?: %s", send_channel.cutHex, channel_filter(send_channel));
-            if ((send_channel != mypk) && channel_filter(send_channel)) {
+            if ((send_channel != mypk) && channel_filter(send_channel))
+            {
                 return send_channel;
             }
         }
@@ -136,10 +150,12 @@ class EmulatorGossipNet : GossipNet {
 
     const(Pubkey) gossip(
         const(ChannelFilter) channel_filter,
-        const(SenderCallBack) sender) {
+        const(SenderCallBack) sender)
+    {
         const send_channel = select_channel(channel_filter);
         log("selected channel: %s", send_channel.cutHex);
-        if (send_channel.length) {
+        if (send_channel.length)
+        {
             send(send_channel, sender());
         }
         return send_channel;
@@ -154,8 +170,10 @@ class EmulatorGossipNet : GossipNet {
     //         }
     //     }
 
-    version (none) void dump(const(HiBON[]) events) const {
-        foreach (e; events) {
+    version (none) void dump(const(HiBON[]) events) const
+    {
+        foreach (e; events)
+        {
             auto pack_doc = Document(e.serialize);
             immutable pack = buildEventPackage(this, pack_doc);
             //            immutable fingerprint=pack.event_body.fingerprint;
@@ -165,7 +183,8 @@ class EmulatorGossipNet : GossipNet {
     }
 
     @trusted
-    void send(const Pubkey channel, const(HiRPC.Sender) sender) {
+    void send(const Pubkey channel, const(HiRPC.Sender) sender)
+    {
         import std.algorithm.searching : countUntil;
         import tagion.hibon.HiBONJSON;
 

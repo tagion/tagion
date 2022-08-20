@@ -15,9 +15,11 @@ import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions : TagionException, fatal;
 
 @safe
-struct SSLServiceAPI {
+struct SSLServiceAPI
+{
     immutable(SSLOption) ssl_options;
-    protected {
+    protected
+    {
         Thread service_task;
         SSLFiberService service;
         SSLFiberService.Relay relay;
@@ -27,7 +29,8 @@ struct SSLServiceAPI {
 
     @disable this();
 
-    this(immutable(SSLOption) opts, SSLFiberService.Relay relay, SSLFiberService.Duration duration = SSLFiberService.Duration.SHORTTERM) nothrow pure @trusted {
+    this(immutable(SSLOption) opts, SSLFiberService.Relay relay) nothrow pure @trusted
+    {
         this.ssl_options = opts;
         this.relay = relay;
         this.conn_duration = duration;
@@ -36,28 +39,35 @@ struct SSLServiceAPI {
     protected shared(bool) stop_service;
 
     @trusted
-    static final void sleep(Duration time) {
+    static final void sleep(Duration time)
+    {
         Thread.sleep(time);
     }
 
-    final void stop() nothrow {
+    final void stop() nothrow
+    {
         stop_service = true;
     }
 
-    void send(uint id, immutable(ubyte[]) buffer) {
+    void send(uint id, immutable(ubyte[]) buffer)
+    {
         writeln("Send data to listener_id");
         service.send(id, buffer);
     }
 
     @system
-    void run() nothrow {
-        try {
+    void run() nothrow
+    {
+        try
+        {
             log.register(ssl_options.task_name);
             auto _listener = new SSLSocket(AddressFamily.INET, EndpointType.Server);
             assert(_listener.isAlive);
-            log("certificate=%s, ssl_options.private_key=%s", ssl_options.openssl.certificate, ssl_options.openssl
+            log("certificate=%s, ssl_options.private_key=%s", ssl_options.openssl.certificate, ssl_options
+                    .openssl
                     .private_key);
-            _listener.configureContext(ssl_options.openssl.certificate, ssl_options.openssl.private_key);
+            _listener.configureContext(ssl_options.openssl.certificate, ssl_options
+                    .openssl.private_key);
             //_listener.configureContext(ssl_options.certificate, ssl_options.private_key);
             _listener.blocking = false;
             _listener.bind(new InternetAddress(ssl_options.address, ssl_options.port));
@@ -65,31 +75,38 @@ struct SSLServiceAPI {
 
             service = new SSLFiberService(ssl_options, _listener, relay, conn_duration);
             auto response_tid = service.start(ssl_options.response_task_name);
-            if (response_tid != Tid.init) {
-                if (receiveOnly!Control !is Control.LIVE) {
+            if (response_tid != Tid.init)
+            {
+                if (receiveOnly!Control !is Control.LIVE)
+                {
                     throw new TagionException("SSL service task %s is not alive", ssl_options
                             .response_task_name);
                     //                ownerTid.send(Control.FAIL);
                 }
             }
-            scope (exit) {
+            scope (exit)
+            {
                 response_tid.send(Control.STOP);
                 const ctrl = receiveOnly!Control;
-                if (ctrl !is Control.END) {
+                if (ctrl !is Control.END)
+                {
                     log.warning("Unexpected control %s code", ctrl);
                     //                    ownerTid.send(Control.FAIL);
                 }
             }
             auto socket_set = new SocketSet(ssl_options.max_connections + 1);
-            scope (exit) {
+            scope (exit)
+            {
                 socket_set.reset;
                 service.closeAll;
                 _listener.shutdown(SocketShutdown.BOTH);
                 _listener = null;
             }
 
-            while (!stop_service) {
-                if (!_listener.isAlive) {
+            while (!stop_service)
+            {
+                if (!_listener.isAlive)
+                {
                     stop_service = true;
                     break;
                 }
@@ -100,8 +117,10 @@ struct SSLServiceAPI {
 
                 const sel_res = Socket.select(socket_set, null, null, ssl_options
                         .select_timeout.msecs);
-                if (sel_res > 0) {
-                    if (socket_set.isSet(_listener)) {
+                if (sel_res > 0)
+                {
+                    if (socket_set.isSet(_listener))
+                    {
                         service.allocateFiber;
                     }
                 }
@@ -109,7 +128,8 @@ struct SSLServiceAPI {
                 socket_set.reset;
             }
         }
-        catch (Throwable e) {
+        catch (Throwable e)
+        {
             fatal(e);
             // import tagion.basic.TagionExceptions;
             // ownerTid.send(e.taskException);
@@ -119,7 +139,8 @@ struct SSLServiceAPI {
     }
 
     @system
-    final Thread start() {
+    final Thread start()
+    {
         service_task = new Thread(&run).start;
         return service_task;
     }

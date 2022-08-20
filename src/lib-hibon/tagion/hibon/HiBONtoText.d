@@ -20,36 +20,45 @@ import std.base64;
 
 enum BASE64Indetifyer = '@';
 
-enum {
+enum
+{
     hex_prefix = "0x",
     HEX_PREFIX = "0X"
 }
 
-@safe string encodeBase64(const(ubyte[]) data) pure {
+@safe string encodeBase64(const(ubyte[]) data) pure
+{
     const result = BASE64Indetifyer ~ Base64.encode(data);
     return result.idup;
 }
 
-@nogc @safe bool isHexPrefix(const(char[]) str) pure nothrow {
-    if (str.length >= hex_prefix.length) {
+@nogc @safe bool isHexPrefix(const(char[]) str) pure nothrow
+{
+    if (str.length >= hex_prefix.length)
+    {
         return (str[0 .. hex_prefix.length] == hex_prefix)
             || (str[0 .. HEX_PREFIX.length] == HEX_PREFIX);
     }
     return false;
 }
 
-@nogc @safe bool isBase64Prefix(const(char[]) str) pure nothrow {
+@nogc @safe bool isBase64Prefix(const(char[]) str) pure nothrow
+{
     return (str.length > 0) && (str[0] is BASE64Indetifyer);
 }
 
-@safe immutable(ubyte[]) HiBONdecode(const(char[]) str) pure {
-    if (str[0] is BASE64Indetifyer) {
+@safe immutable(ubyte[]) HiBONdecode(const(char[]) str) pure
+{
+    if (str[0] is BASE64Indetifyer)
+    {
         return Base64.decode(str[1 .. $]).idup;
     }
-    else if (isHexPrefix(str)) {
+    else if (isHexPrefix(str))
+    {
         return decode(str[hex_prefix.length .. $]);
     }
-    else {
+    else
+    {
         throw new HiBONException(format("HiBON binary data missing the hex '%s' or Base64 identifier '%s'",
                 hex_prefix, BASE64Indetifyer));
     }

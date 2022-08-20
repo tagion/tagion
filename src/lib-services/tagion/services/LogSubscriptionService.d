@@ -29,7 +29,8 @@ import tagion.basic.TagionExceptions : fatal, taskfailure;
  * \struct LogSubscriptionFilter
  * Struct store valid filters for each client
  */
-struct LogSubscriptionFilter {
+struct LogSubscriptionFilter
+{
     /** Tid for communicating with LoggerService */
     Tid logger_service_tid;
     /** filters array for storing all curent filters, received for subscribers */
@@ -40,8 +41,9 @@ struct LogSubscriptionFilter {
       *     @param listener_id - unique identification of new listener
       *     @param log_info - log level of needed messages for listener
       */
-    void addSubscription(uint listener_id, LogFilter log_info) @trusted {
-        log("ADDDDDDDDDDD SUBSCRPTIOOOOOOOOOOOOOOON");
+    void addSubscription(uint listener_id, LogFilter log_info) @trusted
+    {
+        writeln("Added new listener ", listener_id);
         filters[listener_id] ~= log_info;
         log("Added new listener %s", listener_id);
         notifyLogService;
@@ -52,16 +54,19 @@ struct LogSubscriptionFilter {
      *      @param listener_id - unique identification of new listener
      *      @see \link LoggerService
      */
-    void removeSubscription(uint listener_id) @trusted {
+    void removeSubscription(uint listener_id) @trusted
+    {
         filters.remove(listener_id);
         notifyLogService;
     }
 
     /// Send all current filters to LoggerService
-    void notifyLogService() {
+    void notifyLogService()
+    {
         import std.array;
 
-        if (logger_service_tid != Tid.init) {
+        if (logger_service_tid != Tid.init)
+        {
             immutable filters = LogFilterArray(filters.values.join.idup);
             logger_service_tid.send(filters);
         }
@@ -72,11 +77,15 @@ struct LogSubscriptionFilter {
      *      @param log_level Represent log level for all logs from task
      *      @return Array of all clients_id that need this logs
      */
-    uint[] matchFilters(string task_name, LoggerType log_level) {
+    uint[] matchFilters(string task_name, LoggerType log_level)
+    {
         uint[] clients;
-        foreach (client_id; filters.keys) {
-            foreach (filter; filters[client_id]) {
-                if (filter.match(task_name, log_level)) {
+        foreach (client_id; filters.keys)
+        {
+            foreach (filter; filters[client_id])
+            {
+                if (filter.match(task_name, log_level))
+                {
                     clients ~= client_id;
                 }
             }
@@ -98,9 +107,12 @@ alias binread(T, R) = MyStruct.read!(T, Endian.littleEndian, R);
      * Main task for LogSubscriptionService
      * @param opts - options for running this task
      */
-void logSubscriptionServiceTask(Options opts) nothrow {
-    try {
-        scope (success) {
+void logSubscriptionServiceTask(Options opts) nothrow
+{
+    try
+    {
+        scope (success)
+        {
             ownerTid.prioritySend(Control.END);
         }
 
@@ -110,22 +122,28 @@ void logSubscriptionServiceTask(Options opts) nothrow {
 
         log.register(opts.logSubscription.task_name);
 
-        log("SockectThread port=%d addresss=%s", opts.logSubscription.service.port, opts.logSubscription.service.address);
+        log("SockectThread port=%d addresss=%s", opts.logSubscription.service.port, opts
+                .logSubscription.service.address);
 
         import std.conv;
 
-        @safe class LogSubscriptionRelay : SSLFiberService.Relay {
-            bool agent(SSLFiber ssl_relay) {
+        @safe class LogSubscriptionRelay : SSLFiberService.Relay
+        {
+            bool agent(SSLFiber ssl_relay)
+            {
                 import tagion.hibon.HiBONJSON;
 
-                @trusted const(Document) receivessl() {
-                    try {
+                @trusted const(Document) receivessl()
+                {
+                    try
+                    {
                         immutable buffer = ssl_relay.receive;
                         const result = Document(buffer);
 
                         return result;
                     }
-                    catch (Exception t) {
+                    catch (Exception t)
+                    {
                         log.warning("Receivessl exception in \'%s:%s\' %s", t.file, t.line, t.msg);
                     }
                     log("recievessl end Document()");
@@ -139,25 +157,29 @@ void logSubscriptionServiceTask(Options opts) nothrow {
                 log("filter received (\"%s\", LoggerType.%s)", filters.task_name, filters.log_level);
 
                 // TODO: check is it LogFilter
-                {                    
+                {
                     subscribers.addSubscription(listener_id, filters);
                 }
 
                 return false;
             }
 
-            void terminate(uint id) {
+            void terminate(uint id)
+            {
                 subscribers.removeSubscription(id);
             }
         }
 
         auto relay = new LogSubscriptionRelay;
-        auto logsubscription_api = SSLServiceAPI(opts.logSubscription.service, relay, SSLFiberService.Duration.LONGTERM);
+        auto logsubscription_api = SSLServiceAPI(opts.logSubscription.service, relay, SSLFiberService
+                .Duration.LONGTERM);
         auto logsubscription_thread = logsubscription_api.start;
 
         bool stop;
-        void handleState(Control ts) {
-            with (Control) switch (ts) {
+        void handleState(Control ts)
+        {
+            with (Control) switch (ts)
+            {
             case STOP:
                 writefln("Subscription STOP %d", opts.logSubscription.service.port);
                 log("Kill socket thread port %d", opts.logSubscription.service.port);
@@ -169,10 +191,12 @@ void logSubscriptionServiceTask(Options opts) nothrow {
             }
         }
 
-        @trusted void receiver(string task_name, LoggerType log_level, string log_output) {
+        @trusted void receiver(string task_name, LoggerType log_level, string log_output)
+        {
             writeln(subscribers.filters.length);
             auto clients = subscribers.matchFilters(task_name, log_level);
-            foreach (client; clients) {
+            foreach (client; clients)
+            {
                 HiRPC hirpc;
                 const sender = hirpc.action(log_output);
                 immutable log_buffer = sender.toDoc.serialize();
@@ -181,15 +205,17 @@ void logSubscriptionServiceTask(Options opts) nothrow {
         }
 
         ownerTid.send(Control.LIVE);
-        while (!stop) {
+        while (!stop)
+        {
             receiveTimeout(500.msecs, //Control the thread
-                    &handleState,
-                    &taskfailure,
-                    &receiver,
+                &handleState,
+                &taskfailure,
+                &receiver,
             );
         }
     }
-    catch (Throwable t) {
+    catch (Throwable t)
+    {
         fatal(t);
     }
 }
@@ -200,7 +226,8 @@ void logSubscriptionServiceTask(Options opts) nothrow {
  * logSubscriptionServiceTask
  */
 
-unittest {
+unittest
+{
     import std.algorithm;
     import std.getopt;
     import std.stdio;
@@ -261,11 +288,13 @@ unittest {
     /** \struct ClientOptions
     *  Client options used to set up socket connection
     */
-    struct ClientOptions {
+    struct ClientOptions
+    {
         string addr; /// @brief client's addres
         ushort port; /// @brief client's port
 
-        void setDefault() {
+        void setDefault()
+        {
             addr = "127.0.0.1";
             port = 10700;
         }
@@ -286,10 +315,12 @@ unittest {
     // Set the shared common options for all services
     setCommonOptions(service_options.common);
 
-    writefln("input port: %d; options port: %d.", port, service_options.logSubscription.service.port);
+    writefln("input port: %d; options port: %d.", port, service_options
+            .logSubscription.service.port);
 
     auto loggerService = Task!LoggerTask(service_options.logger.task_name, service_options);
-    scope (exit) {
+    scope (exit)
+    {
         loggerService.control(Control.STOP);
         receiveOnly!Control;
     }
@@ -301,7 +332,8 @@ unittest {
     const response = receiveOnly!Control;
     stderr.flush();
     std.stdio.stdout.flush();
-    if (response !is Control.LIVE) {
+    if (response !is Control.LIVE)
+    {
         stderr.writeln("ERROR:Logger %s", response);
     }
     writeln("...................2");
@@ -314,10 +346,12 @@ unittest {
     /// @see SSLSocket
     auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
     writeln("...................4");
-    client.connect(new InternetAddress(service_options.logSubscription.service.address, service_options.logSubscription.service.port));
+    client.connect(new InternetAddress(service_options.logSubscription.service.address, service_options
+            .logSubscription.service.port));
     writeln("...................5");
 
-    scope (exit) {
+    scope (exit)
+    {
         client.close;
     }
 
@@ -336,9 +370,11 @@ unittest {
     uint count;
     uint max_count = 5;
 
-    do {
+    do
+    {
         writeln(".........................................do outside");
-        do {
+        do
+        {
             writeln(".......................do inside try receive");
             rec_size = client.receive(rec_buf); //, current_max_size);
             writeln(".......................do inside done receive");
