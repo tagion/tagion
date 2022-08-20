@@ -1,0 +1,25 @@
+@startuml Logger Subscription Sequence
+
+skinparam Style strictuml
+skinparam SequenceMessageAlign center
+hide empty description
+title Subscription to logs Sequence Diagram
+
+participant Subscriber as sub
+participant LogSubscriptionService as subservice
+participant LoggerService as logservice
+participant Logger as logger
+
+sub -> subservice : send(LogFilter[])
+subservice -> subservice : addSubscription(listener_id, LogFilter[])
+subservice -> subservice : collectFilters()
+subservice -> logservice : send(requestLogs(task_name[]))
+note right
+Check naming
+end note
+
+deactivate sub
+deactivate subservice
+deactivate logservice
+
+@enduml

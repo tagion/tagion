@@ -1,0 +1,35 @@
+@startuml Logger Subscription Sequence
+
+skinparam Style strictuml
+skinparam SequenceMessageAlign center
+hide empty description
+title Subscription to logs Sequence Diagram
+
+participant Subscriber as sub
+participant LogSubscriptionService as subservice
+participant LoggerService as logservice
+participant Logger as logger
+participant Task as task
+
+alt log function was called
+task -> logger : log(...)
+logger -> logservice : send(task_name, log)
+logservice -> logservice : match(task_name, log_level)
+logservice -> subservice : send(task_name, log)
+subservice -> sub : send(log)
+else observable variable was changed
+task -> logger : log(var)
+note right
+Need to be designed
+end note
+logger -> logservice : send(task_name, log)
+logservice -> logservice : match(task_name, log_level)
+logservice -> subservice : send(task_name, log)
+subservice -> sub : send(log)
+end
+
+deactivate sub
+deactivate subservice
+deactivate logservice
+
+@enduml
