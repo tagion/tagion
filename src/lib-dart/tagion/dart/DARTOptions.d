@@ -1,3 +1,4 @@
+/// \file DARTOptions.d
 module tagion.dart.DARTOptions;
 
 import tagion.basic.Basic : basename;

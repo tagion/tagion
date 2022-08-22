@@ -234,8 +234,10 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
       - [Success](#success-23)
 - [boot](#boot)
   - [Use cases](#use-cases-24)
-    - [Case: init DART](#case-init-dart-1)
+    - [Case: set correct boot file](#case-set-correct-boot-file)
       - [Success](#success-24)
+    - [Case: invalid filepath](#case-invalid-filepath)
+      - [Failure](#failure-22)
 
 
 # version
@@ -1066,7 +1068,7 @@ Set path to shared file that mode1 require for node addresses
 ## Use cases
 Set boot file<br>
 
-### Case: init DART
+### Case: set correct boot file
 ```
 --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log -N 4
 ```
@@ -1074,3 +1076,17 @@ Set boot file<br>
 #### Success
 **Result**:<br>
 Successful network launch
+
+### Case: invalid filepath 
+```
+--net-mode=local --boot=./invalid_path/file --dart-init=true --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log -N 4
+```
+
+#### Failure
+**Result**:<br>
+Network will not run with output:
+```
+discovery-internal:FATAL: std.file.FileException@std/file.d(836): ./invalid_path/file.lock: No such file or directory
+...
+```
+

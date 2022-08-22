@@ -84,7 +84,9 @@ synchronized class AddressBook
      */
     static struct AddressDirectory
     {
-        /* associative array with node addresses */
+        /* associative array with node addresses 
+         * node address - value, public key - key
+         */
         NodeAddresses addresses;
         mixin HiBONRecord;
     }

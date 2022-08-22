@@ -1,4 +1,4 @@
-/// \file tagionwave
+/// \file tagionwave.d
 module tagion.tools.tagionwave;
 
 /**
@@ -81,6 +81,7 @@ int _main(string[] args)
     import std.path : setExtension;
 
     immutable program = args[0];
+    /** flag for print current version of the network */
     bool version_switch;
     /** flag for overwrite config file */
     bool overwrite_switch;
