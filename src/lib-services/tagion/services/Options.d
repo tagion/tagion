@@ -70,7 +70,7 @@ struct Options
     string path_to_shared_info;
     bool p2plogs;
     uint scrap_depth;
-    int epoch_limit; /// If epoch_limit > 0 the round until it has produced epoch_limit
+    uint epoch_limit; /// The round until it has produced epoch_limit
     NetworkMode net_mode;
     import tagion.options.CommonOptions;
 
@@ -397,6 +397,8 @@ static setDefaultOption(ref Options options)
         scrap_depth = 5;
         logext = "log";
         timeout = 800;
+        epoch_limit = uint.max;
+
         nodes = 4;
         infinity = false;
         //port=10900;
