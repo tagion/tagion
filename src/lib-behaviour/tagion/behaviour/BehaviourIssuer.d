@@ -79,6 +79,7 @@ struct MarkdownT(Stream) {
     }
 }
 
+@safe
 unittest { // Markdown scenario test
     auto bout = new OutBuffer;
     auto markdown = Markdown(bout);
@@ -116,6 +117,7 @@ unittest { // Markdown scenario test
     //    assert(bout.toString == "Not code");
 }
 
+@safe
 unittest {
     auto bout = new OutBuffer;
     auto markdown = Markdown(bout);
@@ -131,7 +133,7 @@ unittest {
 
         immutable expected = filename.freadText;
         markdown.issue(feature_group);
-//        filename.setExtension("mdtest").fwrite(bout.toString);
+        filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
     }
 
