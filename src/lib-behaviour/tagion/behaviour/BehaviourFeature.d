@@ -185,6 +185,7 @@ static unittest { // Test of getBehaviours
  */
 template getBehaviour(T, Property) if (is(T == class) || is(T == struct)) {
     alias behaviours = getBehaviours!T;
+    pragma(msg, "behaviours ", behaviours);
     alias behaviour_with_property = Filter!(ApplyRight!(hasUDA, Property), behaviours);
     // static assert(behaviour_with_property.length <= 1,
     //         format!"More than 1 behaviour %s has been declared in %s"(Property.stringof, T.stringof));
@@ -199,9 +200,11 @@ template getBehaviour(T, Property) if (is(T == class) || is(T == struct)) {
 
 unittest {
     alias behaviour_with_given = getBehaviour!(Some_awesome_feature, Given);
+    pragma(msg, "behaviour_with_given ", behaviour_with_given);
     static assert(allSatisfy!(isCallable, behaviour_with_given));
 
-    static assert(hasUDA!(behaviour_with_given, Given));
+    static assert(allSatisfy!(ApplyRight!(hasUDA, Given), behaviour_with_given));
+        //static assert(hasUDA!(behaviour_with_given, Given));
     static assert(is(getBehaviour!(Some_awesome_feature_bad_format_missing_given, Given) == void));
 
     alias behaviour_with_when = getBehaviour!(Some_awesome_feature, When);
@@ -238,57 +241,34 @@ unittest {
 
 enum hasProperty(alias T) = !is(getProperty!(T) == void);
 
+@safe
 unittest {
     static assert(hasProperty!(Some_awesome_feature.request_cash));
     static assert(!(hasProperty!(Some_awesome_feature.helper_function)));
 }
 
-protected template _getUnderBehaviour(bool property_found, Property, L...) {
-    static if (L.length == 0) {
-        alias _getUnderBehaviour = AliasSeq!();
-    }
-    else static if (property_found) {
-        alias behavior_property = getProperty!(L[0]);
-        alias other_unique_propeties = Erase!(Property, UniqueBehaviourProperties);
-        alias behavior_property_type = typeof(behavior_property);
-        static if (isOneOf!(behavior_property_type, other_unique_propeties)) {
-            alias _getUnderBehaviour = AliasSeq!();
-        }
-        else {
-            alias _getUnderBehaviour = AliasSeq!(
-                    L[0],
-                    _getUnderBehaviour!(property_found, Property, L[1 .. $])
-            );
-        }
-    }
-    else static if (is(typeof(getProperty!(L[0])) == Property)) {
-        alias _getUnderBehaviour = _getUnderBehaviour!(true, Property, L[1 .. $]);
-    }
-    else {
-        alias _getUnderBehaviour = _getUnderBehaviour!(property_found, Property, L[1 .. $]);
-    }
-}
-
-template getUnderBehaviour(T, Property) if (is(T == class) || is(T == struct)) {
-    alias behaviours = getBehaviours!T;
-
-    alias getUnderBehaviour = _getUnderBehaviour!(false, Property, behaviours);
-}
-
+@safe
 unittest {
-    alias under_behaviour_of_given = getUnderBehaviour!(Some_awesome_feature, Given);
-    static assert(under_behaviour_of_given.length is 2);
-    static assert(getProperty!(under_behaviour_of_given[0]) == And("the account is in credit"));
-    static assert(getProperty!(under_behaviour_of_given[1]) == And("the dispenser contains cash"));
+    alias behaviour_of_given = getBehaviour!(Some_awesome_feature, Given);
+    static assert(behaviour_of_given.length is 3);
+    static assert(getProperty!(behaviour_of_given[0]) == Given("the card is valid"));
+    static assert(getProperty!(behaviour_of_given[1]) == Given("the account is in credit"));
+    static assert(getProperty!(behaviour_of_given[2]) == Given("the dispenser contains cash"));
 
-    alias under_behaviour_of_when = getUnderBehaviour!(Some_awesome_feature, When);
-    static assert(under_behaviour_of_when.length is 0);
+    alias behaviour_of_when = getBehaviour!(Some_awesome_feature, When);
+    static assert(behaviour_of_when.length is 1);
+    static assert(getProperty!(behaviour_of_when[0]) == When("the Customer request cash"));
 
-    alias under_behaviour_of_then = getUnderBehaviour!(Some_awesome_feature, Then);
-    assert(getProperty!(under_behaviour_of_then[0]) == And("the cash is dispensed"));
-    static assert(under_behaviour_of_then.length is 1);
+    alias behaviour_of_then = getBehaviour!(Some_awesome_feature, Then);
+    static assert(behaviour_of_then.length is 2);
+    static assert(getProperty!(behaviour_of_then[0]) == Then("the account is debited"));
+    static assert(getProperty!(behaviour_of_then[1]) == Then("the cash is dispensed"));
 
+    alias behaviour_of_but = getBehaviour!(Some_awesome_feature, But);
+    static assert(behaviour_of_but.length is 1);
+    static assert(getProperty!(behaviour_of_but[0]) == But("if there is Customer does not take his card, the swollow the card"));
 }
+
 
 enum isScenario(T) = hasUDA!(T, Scenario);
 
