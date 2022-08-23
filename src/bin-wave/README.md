@@ -1086,7 +1086,7 @@ Successful network launch
 **Result**:<br>
 Network will not run with output:
 ```
-discovery-internal:FATAL: std.file.FileException@std/file.d(836): ./invalid_path/file.lock: No such file or directory
-...
+File /invalid_path/file not exist
 ```
+
 
