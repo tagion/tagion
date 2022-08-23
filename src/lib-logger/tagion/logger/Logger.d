@@ -113,7 +113,7 @@ static struct Logger
     }
 
     @property @trusted
-    bool isTask() const nothrow
+    bool isTaskRegistered() const nothrow
     {
         import std.exception : assumeWontThrow;
 
@@ -144,7 +144,7 @@ static struct Logger
             import std.exception : assumeWontThrow;
             import std.conv : to;
 
-            if (!isTask)
+            if (!isTaskRegistered)
             {
                 import core.stdc.stdio;
 
@@ -308,7 +308,7 @@ static struct Logger
     @trusted
     void close() const nothrow
     {
-        if (isTask)
+        if (isTaskRegistered)
         {
             import std.exception : assumeWontThrow;
 
@@ -350,4 +350,98 @@ unittest
     const s = S(10);
     mixin Log!s;
 
+}
+
+/*
+1. Format of registraton variables: logger-taskname-[list of vars]
+2. Format of passing logs: task name, LogLevel(including ENV), Document(which is HiBONRecord for ENV and string for others)
+3. Filter algorithm for LogFilers
+4.  
+*/
+
+mixin template RegisterLogVariable(alias type, string name, string task_name = "")
+{
+    string generateCode()
+    {
+        string[] codelines;
+        enum typename = type.stringof;
+
+        // struct definition
+        codelines ~= format(q{struct %s_%s_logger}, name, task_name);
+        codelines ~= "{";
+
+        // Member field
+        codelines ~= format(q{private static %s _value;}, typename);
+
+        // Getter
+        codelines ~= format(q{@property static %s value()}, typename);
+        codelines ~= "{";
+        codelines ~= "return _value;";
+        codelines ~= "}";
+
+        // Setter with logging
+        codelines ~= format(q{@property static void value(%s v)}, typename);
+        codelines ~= "{";
+        codelines ~= "this._value = v;";
+        codelines ~= q{import std.stdio; writeln("LOOOOOOOOOOOOOOG ", _value);}; // <- HERE LOG CODE
+        codelines ~= "}";
+
+        codelines ~= "}";
+
+        // Alias
+        codelines ~= format(q{%1$s_%2$s_logger %1$s_%2$s_instance;}, name, task_name);
+        codelines ~= format(q{alias %1$s = %1$s_%2$s_instance.value;}, name, task_name);
+
+        return codelines.join('\n');
+    }
+
+    // REGISTER var in logger
+
+    enum code = generateCode;
+    pragma(msg, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+    pragma(msg, code);
+    pragma(msg, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+    mixin(code);
+}
+
+unittest
+{
+    enum task = "unittest";
+
+    /// RegisterLogVariable_int
+    {
+        mixin RegisterLogVariable!(int, "some_variable_int", task);
+
+        some_variable_int = 99;
+        assert(some_variable_int == 99);
+    }
+
+    /// RegisterLogVariable_string
+    {
+        enum s = "hello, mixin!";
+        mixin RegisterLogVariable!(string, "some_variable_string", task);
+
+        some_variable_string = s;
+        assert(some_variable_string == s);
+    }
+
+    /// RegisterLogVariable_HiBON_and_Doc
+    {
+        import tagion.hibon.HiBON;
+        import tagion.hibon.HiBONRecord;
+        import tagion.hibon.Document;
+
+        HiBON hibon = new HiBON;
+        hibon["key"] = "value";
+
+        mixin RegisterLogVariable!(HiBON, "some_variable_HiBON", task);
+
+        some_variable_HiBON = hibon;
+        assert(some_variable_HiBON == hibon);
+
+        mixin RegisterLogVariable!(Document, "some_variable_Doc", task);
+
+        some_variable_Doc = Document(hibon);
+        assert(some_variable_Doc == Document(hibon));
+    }
 }
