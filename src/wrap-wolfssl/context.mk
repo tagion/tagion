@@ -1,4 +1,4 @@
-﻿#openssl
+#openssl
 #LIBOPENSSL
 DSRC_WOLFSSL := ${call dir.resolve, wolfssl}
 DTMP_WOLFSSL := $(DTMP)/wolfssl
@@ -16,10 +16,13 @@ proper-wolfssl:
 
 proper: proper-wolfssl
 
-wolfssl: $(DTMP)/.way
+$(LIBWOLFSSL): $(DTMP)/.way
 	$(PRECMD)
 	${call log.kvp, $@}
 	$(CP) $(DSRC_WOLFSSL) $(DTMP_WOLFSSL)
 	$(PRECMD)cd $(DTMP_WOLFSSL); sh autogen.sh
 	$(PRECMD)cd $(DTMP_WOLFSSL); ./configure $(CONFIGUREFLAGS_WOLFSSL)
 	$(PRECMD)cd $(DTMP_WOLFSSL); make
+
+wolfssl: $(LIBWOLFSSL)
+
