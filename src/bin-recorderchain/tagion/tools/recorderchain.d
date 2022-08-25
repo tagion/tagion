@@ -10,6 +10,7 @@ import std.getopt;
 import std.path;
 import std.format;
 import std.file;
+import std.array;
 
 import tagion.basic.Types : Buffer;
 import tagion.basic.TagionExceptions;
@@ -27,6 +28,8 @@ import tagion.utils.Fingerprint : Fingerprint;
 import tagion.utils.Miscellaneous : toHexString, decode;
 import tagion.dart.RecorderChainBlock;
 import tagion.dart.RecorderChain;
+
+auto logo = import("logo.txt");
 
 /** 
  * Used to add recorder to DART database
@@ -91,8 +94,6 @@ RecorderChainBlock findCurrentBlock(Buffer cur_bullseye, string blocks_folder, c
 
 int main(string[] args)
 {
-    writeln("bin-recorderchain run");
-
     if (args.length == 1)
     {
         writeln("Error: No arguments provided for ", baseName(args[0]), "!");
@@ -126,6 +127,21 @@ int main(string[] args)
         "dartfile|d", "Path to dart file", &dart_file,
         "initialize|i", "Initialize empty DART", &initialize,
     );
+
+    if (main_args.helpWanted)
+    {
+        writeln(logo);
+        defaultGetoptPrinter(
+            [
+            // format("%s version %s", program, REVNO),
+            "Documentation: https://tagion.org/",
+            "",
+            "<option>:",
+
+        ].join("\n"),
+        main_args.options);
+        return 0;
+    }
     
     chain_directory = args[1];
     dart_file = args[2];
