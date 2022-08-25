@@ -6,11 +6,6 @@ import std.range.primitives : isBidirectionalRange;
 import std.string : format, toStringz;
 import io = std.stdio;
 
-version(WOLFSSL) {
-}
-else {
-}
-
 enum EndpointType
 {
     Client,
