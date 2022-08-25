@@ -3,7 +3,8 @@ module tagion.dart.DARTOptions;
 import tagion.basic.Basic : basename;
 import tagion.basic.TagionExceptions;
 
-struct DARTOptions {
+struct DARTOptions
+{
     import tagion.utils.JSONCommon;
     import tagion.options.HostOptions;
 
@@ -18,7 +19,6 @@ struct DARTOptions {
     ubyte ringWidth;
     int rings;
     bool initialize;
-    bool generate;
     bool synchronize;
     bool angle_from_port;
     bool request;
@@ -26,7 +26,8 @@ struct DARTOptions {
     ulong tick_timeout;
     bool master_from_port;
 
-    struct Synchronize {
+    struct Synchronize
+    {
         ulong maxSlaves;
         ulong maxMasters;
         ushort maxSlavePort;
@@ -49,7 +50,8 @@ struct DARTOptions {
 
     Synchronize sync;
 
-    struct Subscribe {
+    struct Subscribe
+    {
         ulong master_port;
         import tagion.utils.JSONCommon;
 
@@ -63,7 +65,8 @@ struct DARTOptions {
 
     Subscribe subs;
 
-    struct Commands {
+    struct Commands
+    {
         ulong read_timeout;
         mixin JSONCommon;
     }

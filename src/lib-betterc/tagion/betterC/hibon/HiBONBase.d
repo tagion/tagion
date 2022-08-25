@@ -8,10 +8,12 @@ import std.meta : AliasSeq;
 import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, Unqual, getUDAs, hasUDA;
 import std.range.primitives : isInputRange;
 
-version (WebAssembly) {
+version (WebAssembly)
+{
     pragma(msg, "WebAssembler");
 }
-else {
+else
+{
     import core.stdc.stdio;
 }
 
@@ -31,7 +33,8 @@ enum HIBON_VERSION = 0;
 /**
  * HiBON Type codes
  */
-enum Type : ubyte {
+enum Type : ubyte
+{
     NONE = 0x00, /// End Of Document
     FLOAT64 = 0x01, /// Floating point
     STRING = 0x02, /// UTF8 STRING
@@ -62,43 +65,52 @@ enum Type : ubyte {
     NATIVE_STRING_ARRAY = DEFINED_ARRAY | DEFINED_NATIVE | STRING, /// Represetents (string[]) is convert to an ARRAY of string's
 }
 
-struct DataBlock {
+struct DataBlock
+{
 @nogc:
-    protected {
+    protected
+    {
         uint _type;
         immutable(ubyte)[] _data;
     }
-    @property uint type() const pure nothrow {
+    @property uint type() const pure nothrow
+    {
         return _type;
     }
 
-    @property immutable(ubyte[]) data() const pure nothrow {
+    @property immutable(ubyte[]) data() const pure nothrow
+    {
         return _data;
     }
 
-    this(const DataBlock x) {
+    this(const DataBlock x)
+    {
         _type = x._type;
         _data = x._data;
     }
 
-    this(const uint type, immutable(ubyte[]) data) {
+    this(const uint type, immutable(ubyte[]) data)
+    {
         _type = type;
         _data = data;
     }
 
-    this(immutable(ubyte[]) data) {
+    this(immutable(ubyte[]) data)
+    {
         const leb128 = LEB128.decode!uint(data);
         _type = leb128.value;
         this._data = data[leb128.size .. $];
     }
 
-    void serialize(ref BinBuffer buffer) const {
+    void serialize(ref BinBuffer buffer) const
+    {
         size_t index;
         LEB128.encode(buffer, _type);
         buffer.write(_data);
     }
 
-    @property size_t size() pure const {
+    @property size_t size() pure const
+    {
         return LEB128.calc_size(_type) + _data.length;
     }
 }
@@ -107,17 +119,21 @@ struct DataBlock {
 
 enum isDataBlock(T) = is(T : const(DataBlock));
 
-version (none) struct Key {
+version (none) struct Key
+{
 @nogc:
-    enum KeyType {
+    enum KeyType
+    {
         NONE,
         DATA,
         TEXT,
         INDEX
     }
 
-    protected {
-        union {
+    protected
+    {
+        union
+        {
             const(ubyte[]) data;
             Text text;
             uint index;
@@ -126,32 +142,40 @@ version (none) struct Key {
         KeyType key_type;
     }
 
-    this(const(char[]) key) {
+    this(const(char[]) key)
+    {
         text = Text(key);
         key_type = KeyType.TEXT;
     }
 
-    this(const uint index) {
+    this(const uint index)
+    {
         this.index = index;
         key_type = KeyType.INDEX;
     }
 
-    this(const(ubyte[]) data) {
+    this(const(ubyte[]) data)
+    {
         this.data = data;
         key_type = KeyType.DATA;
     }
 
-    ~this() {
+    ~this()
+    {
         dispose;
     }
 
-    size_t size() const pure {
-        with (KeyType) {
-            final switch (key_type) {
+    size_t size() const pure
+    {
+        with (KeyType)
+        {
+            final switch (key_type)
+            {
             case NONE:
                 break;
             case DATA:
-                if (data[0] is 0) {
+                if (data[0] is 0)
+                {
                     return ubyte.sizeof + LEB128.calc_size(data[1 .. $]);
                 }
                 break;
@@ -166,15 +190,20 @@ version (none) struct Key {
         assert(0);
     }
 
-    void dispose() {
-        if (key_type is KeyType.DATA) {
+    void dispose()
+    {
+        if (key_type is KeyType.DATA)
+        {
             text.dispose;
         }
     }
 
-    void serialize(ref BinBuffer bin) const {
-        with (KeyType) {
-            final switch (key_type) {
+    void serialize(ref BinBuffer bin) const
+    {
+        with (KeyType)
+        {
+            final switch (key_type)
+            {
             case NONE:
                 break;
             case DATA:
@@ -190,9 +219,12 @@ version (none) struct Key {
         assert(0);
     }
 
-    bool isIndex() const pure {
-        with (KeyType) {
-            final switch (key_type) {
+    bool isIndex() const pure
+    {
+        with (KeyType)
+        {
+            final switch (key_type)
+            {
             case DATA:
                 return (data[0] is 0);
             case TEXT:
@@ -207,35 +239,47 @@ version (none) struct Key {
         assert(0);
     }
 
-    T to(T)() const if (is(T : const(char)[]) || is(T == uint)) {
-        with (KeyType) {
-            final switch (key_type) {
+    T to(T)() const if (is(T : const(char)[]) || is(T == uint))
+    {
+        with (KeyType)
+        {
+            final switch (key_type)
+            {
             case DATA:
-                if (data[0] is 0) {
-                    static if (is(T == uint)) {
+                if (data[0] is 0)
+                {
+                    static if (is(T == uint))
+                    {
                         return LEB128.decode!uint(data[1 .. $]).value;
                     }
                 }
-                else {
-                    static if (is(T : const(char)[])) {
+                else
+                {
+                    static if (is(T : const(char)[]))
+                    {
                         const leb128_len = LEB128.decode!uint(data);
-                        return (cast(immutable(char)*) data.ptr)[leb128_len.size .. leb128_len.size + leb128_len.value];
+                        return (cast(immutable(char)*) data.ptr)[leb128_len.size .. leb128_len.size + leb128_len
+                            .value];
                     }
                 }
                 break;
             case TEXT:
-                static if (is(T : const(char)[])) {
+                static if (is(T : const(char)[]))
+                {
                     return text.serialize;
                 }
-                else {
+                else
+                {
                     uint key_index;
-                    if (is_index(text.serialize, key_index)) {
+                    if (is_index(text.serialize, key_index))
+                    {
                         return key_index;
                     }
                 }
                 break;
             case INDEX:
-                static if (is(T == uint)) {
+                static if (is(T == uint))
+                {
                     return index;
                 }
             case NONE:
@@ -245,19 +289,23 @@ version (none) struct Key {
         }
     }
 
-    int opCmp(const(char[]) b) const pure {
+    int opCmp(const(char[]) b) const pure
+    {
         return key_compare(data, b);
     }
 
-    int opCmp(ref const Key b) const pure {
+    int opCmp(ref const Key b) const pure
+    {
         return opCmp(b.data);
     }
 
-    int opCmp(const(Key*) b) const pure {
+    int opCmp(const(Key*) b) const pure
+    {
         return opCmp(b.data);
     }
 
-    bool opEquals(T)(T b) const pure {
+    bool opEquals(T)(T b) const pure
+    {
         return opCmp(b) == 0;
     }
 
@@ -266,8 +314,10 @@ version (none) struct Key {
 /**
  * @return true if the type is a internal native HiBON type
  */
-bool isNative(Type type) pure nothrow {
-    with (Type) {
+bool isNative(Type type) pure nothrow
+{
+    with (Type)
+    {
         return ((type & DEFINED_NATIVE) !is 0) && (type !is DEFINED_NATIVE);
     }
 }
@@ -285,8 +335,10 @@ bool isNative(Type type) pure nothrow {
 /**
  * @return true if the type is a HiBON data array (This is not the same as HiBON.isArray)
  */
-bool isArray(Type type) pure nothrow {
-    with (Type) {
+bool isArray(Type type) pure nothrow
+{
+    with (Type)
+    {
         return ((type & DEFINED_ARRAY) !is 0) && (type !is DEFINED_ARRAY) && (!isNative(type));
     }
 }
@@ -296,30 +348,38 @@ mixin(Init_HiBON_Types!("__gshared immutable hibon_types=", 0));
 /**
  * @return true if the type is a valid HiBONType excluding narive types
  */
-bool isHiBONType(Type type) {
+bool isHiBONType(Type type)
+{
     return hibon_types[type];
 }
 
-bool isDataBlock(Type type) pure nothrow {
-    with (Type) {
+bool isDataBlock(Type type) pure nothrow
+{
+    with (Type)
+    {
         return (type is HASHDOC);
     }
 }
 
-template Init_HiBON_Types(string text, uint i) {
-    static if (i is ubyte.max + 1) {
+template Init_HiBON_Types(string text, uint i)
+{
+    static if (i is ubyte.max + 1)
+    {
         enum Init_HiBON_Types = text ~ "];";
     }
-    else {
+    else
+    {
         enum start_bracket = (i is 0) ? "[" : "";
         enum E = cast(Type) i;
-        enum flag = (!isNative(E) && (E !is Type.NONE) && (E !is Type.VER) && (E !is Type.DEFINED_ARRAY) && (E !is Type
+        enum flag = (!isNative(E) && (E !is Type.NONE) && (E !is Type.VER) && (
+                    E !is Type.DEFINED_ARRAY) && (E !is Type
                     .DEFINED_NATIVE));
         enum Init_HiBON_Types = Init_HiBON_Types!(text ~ start_bracket ~ flag.stringof ~ ",", i + 1);
     }
 }
 
-version (none) {
+version (none)
+{
 
     enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
 }
@@ -327,7 +387,8 @@ version (none) {
  * HiBON Generic value used by the HiBON class and the Document struct
  */
 //@safe
-union ValueT(bool NATIVE = false, HiBON, Document) {
+union ValueT(bool NATIVE = false, HiBON, Document)
+{
 @nogc:
     @Type(Type.FLOAT32) float float32;
     @Type(Type.FLOAT64) double float64;
@@ -335,17 +396,22 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
     @Type(Type.STRING) string text;
     @Type(Type.BOOLEAN) bool boolean;
     //  @Type(Type.LIST)
-    static if (!is(HiBON == void)) {
+    static if (!is(HiBON == void))
+    {
         @Type(Type.DOCUMENT) HiBON document;
-        void dispose() {
-            version (WebAssembly) {
+        void dispose()
+        {
+            version (WebAssembly)
+            {
             }
-            else {
+            else
+            {
                 printf("VALUE Dispose\n");
             }
         }
     }
-    else static if (!is(Document == void)) {
+    else static if (!is(Document == void))
+    {
         @Type(Type.DOCUMENT) Document document;
     }
     @Type(Type.TIME) sdt_t date;
@@ -358,11 +424,13 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
     @Type(Type.BIGINT) BigNumber bigint;
     @Type(Type.HASHDOC) DataBlock hashdoc;
 
-    static if (!is(Document == void)) {
+    static if (!is(Document == void))
+    {
         @Type(Type.NATIVE_DOCUMENT) Document native_document;
     }
     @Type(Type.BINARY) immutable(ubyte)[] binary;
-    static if (NATIVE) {
+    static if (NATIVE)
+    {
         @Type(Type.NATIVE_HIBON_ARRAY) HiBON[] native_hibon_array;
         @Type(Type.NATIVE_DOCUMENT_ARRAY) Document[] native_document_array;
         @Type(Type.NATIVE_STRING_ARRAY) string[] native_string_array;
@@ -371,27 +439,34 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
     // else {
     alias NativeValueDataTypes = AliasSeq!();
     // }
-    protected template GetFunctions(string text, bool first, TList...) {
-        static if (TList.length is 0) {
+    protected template GetFunctions(string text, bool first, TList...)
+    {
+        static if (TList.length is 0)
+        {
             enum GetFunctions = text ~ "else {\n    static assert(0, \"Not support illegal \"); \n}";
         }
-        else {
+        else
+        {
             enum name = TList[0];
             enum member_code = "alias member=ValueT." ~ name ~ ";";
             mixin(member_code);
-            static if (__traits(compiles, typeof(member)) && hasUDA!(member, Type)) {
+            static if (__traits(compiles, typeof(member)) && hasUDA!(member, Type))
+            {
                 enum MemberType = getUDAs!(member, Type)[0];
                 alias MemberT = typeof(member);
-                static if ((MemberType is Type.NONE) || (!NATIVE && isOneOf!(MemberT, NativeValueDataTypes))) {
+                static if ((MemberType is Type.NONE) || (!NATIVE && isOneOf!(MemberT, NativeValueDataTypes)))
+                {
                     enum code = "";
                 }
-                else {
+                else
+                {
                     enum code_else = (first) ? "" : "else ";
                     enum code = code_else ~ "static if ( type is " ~ MemberType.stringof ~ " ) {\n    return " ~ name ~ ";\n}\n";
                 }
                 enum GetFunctions = GetFunctions!(text ~ code, false, TList[1 .. $]);
             }
-            else {
+            else
+            {
                 enum GetFunctions = GetFunctions!(text, false, TList[1 .. $]);
             }
         }
@@ -401,34 +476,43 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
     /**
      * @return the value as HiBON type E
       */
-    auto by(Type type)() pure const {
+    auto by(Type type)() pure const
+    {
         enum code = GetFunctions!("", true, __traits(allMembers, ValueT));
         mixin(code);
         assert(0);
     }
 
-    protected template GetType(T, TList...) {
-        static if (TList.length is 0) {
+    protected template GetType(T, TList...)
+    {
+        static if (TList.length is 0)
+        {
             enum GetType = Type.NONE;
         }
-        else {
+        else
+        {
             enum name = TList[0];
             enum member_code = "alias member=ValueT." ~ name ~ ";";
             mixin(member_code);
-            static if (__traits(compiles, typeof(member)) && hasUDA!(member, Type)) {
+            static if (__traits(compiles, typeof(member)) && hasUDA!(member, Type))
+            {
                 enum MemberType = getUDAs!(member, Type)[0];
                 alias MemberT = typeof(member);
-                static if ((MemberType is Type.TIME) && is(T == sdt_t)) {
+                static if ((MemberType is Type.TIME) && is(T == sdt_t))
+                {
                     enum GetType = MemberType;
                 }
-                else static if (is(T == MemberT)) {
+                else static if (is(T == MemberT))
+                {
                     enum GetType = MemberType;
                 }
-                else {
+                else
+                {
                     enum GetType = GetType!(T, TList[1 .. $]);
                 }
             }
-            else {
+            else
+            {
                 enum GetType = GetType!(T, TList[1 .. $]);
             }
         }
@@ -444,14 +528,18 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
       */
     enum hasType(T) = asType!T !is Type.NONE;
 
-    static if (!is(Document == void) && is(HiBON == void)) {
-        this(Document doc) {
+    static if (!is(Document == void) && is(HiBON == void))
+    {
+        this(Document doc)
+        {
             document = doc;
         }
     }
 
-    static if (!is(Document == void) && !is(HiBON == void)) {
-        this(Document doc) {
+    static if (!is(Document == void) && !is(HiBON == void))
+    {
+        this(Document doc)
+        {
             native_document = doc;
         }
     }
@@ -459,15 +547,20 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
     /**
      * Construct a Value of the type T
      */
-    this(T)(T x) if (isOneOf!(Unqual!T, typeof(this.tupleof)) && !is(T == struct)) {
+    this(T)(T x) if (isOneOf!(Unqual!T, typeof(this.tupleof)) && !is(T == struct))
+    {
         alias MutableT = Unqual!T;
-        static foreach (m; __traits(allMembers, ValueT)) {
-            static if (is(typeof(__traits(getMember, this, m)) == MutableT)) {
+        static foreach (m; __traits(allMembers, ValueT))
+        {
+            static if (is(typeof(__traits(getMember, this, m)) == MutableT))
+            {
                 enum code = "alias member=ValueT." ~ m ~ ";";
                 mixin(code);
-                static if (hasUDA!(member, Type)) {
+                static if (hasUDA!(member, Type))
+                {
                     alias MemberT = typeof(member);
-                    static if (is(MutableT == MemberT)) {
+                    static if (is(MutableT == MemberT))
+                    {
                         __traits(getMember, this, m) = x;
                         return;
                     }
@@ -480,15 +573,18 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
     /**
      * Constructs a Value of the type BigNumber
      */
-    this(const BigNumber big) pure {
+    this(const BigNumber big) pure
+    {
         bigint = cast(BigNumber) big;
     }
 
-    this(DataBlock datablock) pure {
+    this(DataBlock datablock) pure
+    {
         hashdoc = datablock;
     }
 
-    @trusted this(const sdt_t x) pure {
+    @trusted this(const sdt_t x) pure
+    {
         date = x;
     }
 
@@ -496,18 +592,23 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
      * Assign the value to x
      * @param x = value to be assigned
      */
-    void opAssign(T)(T x) if (isOneOf!(T, typeof(this.tupleof))) {
+    void opAssign(T)(T x) if (isOneOf!(T, typeof(this.tupleof)))
+    {
         alias UnqualT = Unqual!T;
-        static foreach (m; __traits(allMembers, ValueT)) {
-            static if (is(typeof(__traits(getMember, this, m)) == T)) {
-                static if ((is(T == struct) || is(T == class)) && !__traits(compiles, __traits(getMember, this, m) = x)) {
+        static foreach (m; __traits(allMembers, ValueT))
+        {
+            static if (is(typeof(__traits(getMember, this, m)) == T))
+            {
+                static if ((is(T == struct) || is(T == class)) && !__traits(compiles, __traits(getMember, this, m) = x))
+                {
                     enum code = "alias member=ValueT." ~ m ~ ";";
                     mixin(code);
                     enum MemberType = getUDAs!(member, Type)[0];
                     static assert(MemberType !is Type.NONE, T.stringof ~ " is not supported");
                     x.copy(__traits(getMember, this, m));
                 }
-                else {
+                else
+                {
                     __traits(getMember, this, m) = cast(UnqualT) x;
                 }
             }
@@ -536,20 +637,26 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
     /**
      * @return the size on bytes of the value as a HiBON type E
      */
-    uint size(Type E)() const pure nothrow {
-        static if (isHiBONType(E)) {
+    uint size(Type E)() const pure nothrow
+    {
+        static if (isHiBONType(E))
+        {
             alias T = TypeT!E;
-            static if (isBasicValueType!T || (E is Type.UTC)) {
+            static if (isBasicValueType!T || (E is Type.UTC))
+            {
                 return T.sizeof;
             }
-            else static if (is(T : U[], U) && isBasicValueType!U) {
+            else static if (is(T : U[], U) && isBasicValueType!U)
+            {
                 return cast(uint)(by!(E).length * U.sizeof);
             }
-            else {
+            else
+            {
                 static assert(0, "Type " ~ E.stringof ~ " of " ~ T.stringof ~ " is not defined");
             }
         }
-        else {
+        else
+        {
             static assert(0, "Illegal type " ~ E.stringof);
         }
     }
@@ -616,19 +723,25 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
  * @return true if a is an index
  */
 // memcpy(return void* s1, scope const void* s2, size_t n);
-bool is_index(const(char[]) a, out uint result) pure {
+bool is_index(const(char[]) a, out uint result) pure
+{
     enum MAX_UINT_SIZE = uint.max.stringof.length;
-    if (a.length <= MAX_UINT_SIZE) {
-        if ((a[0] is '0') && (a.length > 1)) {
+    if (a.length <= MAX_UINT_SIZE)
+    {
+        if ((a[0] is '0') && (a.length > 1))
+        {
             return false;
         }
-        foreach (c; a) {
-            if ((c < '0') || (c > '9')) {
+        foreach (c; a)
+        {
+            if ((c < '0') || (c > '9'))
+            {
                 return false;
             }
         }
         immutable number = a.to_ulong;
-        if (number <= uint.max) {
+        if (number <= uint.max)
+        {
             result = cast(uint) number;
             return true;
         }
@@ -636,16 +749,19 @@ bool is_index(const(char[]) a, out uint result) pure {
     return false;
 }
 
-ulong to_ulong(const(char[]) num) pure {
+ulong to_ulong(const(char[]) num) pure
+{
     ulong result;
-    foreach (a; num) {
+    foreach (a; num)
+    {
         result *= 10;
         result += (a - '0');
     }
     return result;
 }
 
-uint to_uint(string num) pure {
+uint to_uint(string num) pure
+{
     ulong result = to_ulong(num);
     //    .check(result <= uint.max, "Bad uint overflow");
     return cast(uint) result;
@@ -655,12 +771,17 @@ uint to_uint(string num) pure {
  * Check if all the keys in range is indices and are consecutive
  * @return true if keys is the indices of an HiBON array
  */
-version (none) bool isArray(R)(R keys) {
-    bool check_array_index(const uint previous_index) {
-        if (!keys.empty) {
+version (none) bool isArray(R)(R keys)
+{
+    bool check_array_index(const uint previous_index)
+    {
+        if (!keys.empty)
+        {
             uint current_index;
-            if (is_index(keys.front, current_index)) {
-                if (previous_index + 1 is current_index) {
+            if (is_index(keys.front, current_index))
+            {
+                if (previous_index + 1 is current_index)
+                {
                     keys.popFront;
                     return check_array_index(current_index);
                 }
@@ -670,9 +791,11 @@ version (none) bool isArray(R)(R keys) {
         return true;
     }
 
-    if (!keys.empty) {
+    if (!keys.empty)
+    {
         uint previous_index = uint.max;
-        if (is_index(keys.front, previous_index) && (previous_index is 0)) {
+        if (is_index(keys.front, previous_index) && (previous_index is 0))
+        {
             keys.popFront;
             return check_array_index(previous_index);
         }
@@ -705,34 +828,42 @@ version (none) bool isArray(R)(R keys) {
  * This function decides the order of the HiBON keys
  */
 int key_compare(const(char[]) a, const(char[]) b) pure
-in {
+in
+{
     assert(a.length > 0);
     assert(b.length > 0);
 }
-do {
+do
+{
     int res = 1;
     uint a_index;
     uint b_index;
-    if (is_index(a, a_index) && is_index(b, b_index)) {
-        if (a_index < b_index) {
+    if (is_index(a, a_index) && is_index(b, b_index))
+    {
+        if (a_index < b_index)
+        {
             res = -1;
         }
-        else if (a_index == b_index) {
+        else if (a_index == b_index)
+        {
             res = 0;
         }
         res = 1;
     }
-    if (a.length == b.length) {
+    if (a.length == b.length)
+    {
         res = 0;
         foreach (i, elem; a)
         {
-            if (elem != b[i]) {
+            if (elem != b[i])
+            {
                 res = 1;
                 break;
             }
         }
     }
-    else if (a < b) {
+    else if (a < b)
+    {
         res = -1;
     }
     return res;
@@ -742,14 +873,18 @@ do {
  * Checks if the keys in the range is ordred
  * @return true if all keys in the range is ordered
  */
-bool is_key_ordered(R)(R range) if (isInputRange!R) {
+bool is_key_ordered(R)(R range) if (isInputRange!R)
+{
     string prev_key;
-    while (!range.empty) {
-        if ((prev_key.length == 0) || (key_compare(prev_key, range.front) < 0)) {
+    while (!range.empty)
+    {
+        if ((prev_key.length == 0) || (key_compare(prev_key, range.front) < 0))
+        {
             prev_key = range.front;
             range.popFront;
         }
-        else {
+        else
+        {
             return false;
         }
     }
@@ -771,21 +906,26 @@ bool is_key_ordered(R)(R range) if (isInputRange!R) {
 /**
  * @return true if the key is a valid HiBON key
  */
-@safe bool is_key_valid(const(char[]) a) pure nothrow {
-    enum : char {
+@safe bool is_key_valid(const(char[]) a) pure nothrow
+{
+    enum : char
+    {
         SPACE = 0x20,
         DEL = 0x7F,
         DOUBLE_QUOTE = 34,
         QUOTE = 39,
         BACK_QUOTE = 0x60
     }
-    if (a.length > 0) {
-        foreach (c; a) {
+    if (a.length > 0)
+    {
+        foreach (c; a)
+        {
             // Chars between SPACE and DEL is valid
             // except for " ' ` is not valid
             if ((c <= SPACE) || (c >= DEL) ||
-                    (c == DOUBLE_QUOTE) || (c == QUOTE) ||
-                    (c == BACK_QUOTE)) {
+                (c == DOUBLE_QUOTE) || (c == QUOTE) ||
+                (c == BACK_QUOTE))
+            {
                 return false;
             }
         }
@@ -822,14 +962,18 @@ bool is_key_ordered(R)(R range) if (isInputRange!R) {
 //     assert(is_key_valid(max_key_size));
 // }
 
-template isOneOf(T, TList...) {
-    static if (TList.length == 0) {
+template isOneOf(T, TList...)
+{
+    static if (TList.length == 0)
+    {
         enum isOneOf = false;
     }
-    else static if (is(T == TList[0])) {
+    else static if (is(T == TList[0]))
+    {
         enum isOneOf = true;
     }
-    else {
+    else
+    {
         alias isOneOf = isOneOf!(T, TList[1 .. $]);
     }
 }

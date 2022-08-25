@@ -37,10 +37,12 @@ import tagion.tools.Basic;
 
 pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
 void createNetworkNameCard(const HashNet net, string name, RecordFactory.Recorder recorder)
-in {
+in
+{
     assert(recorder);
 }
-do {
+do
+{
     NetworkNameCard nnc;
     nnc.name = name;
     // TODO: set also time?
@@ -65,7 +67,8 @@ do {
 
 mixin Main!(_main, "boot");
 
-int _main(string[] args) {
+int _main(string[] args)
+{
     immutable program = args[0];
     writefln("BOOT ", program);
     immutable initial_gene = iota(256 / 8).map!(i => immutable(ubyte)(0b10101010)).array;
@@ -79,27 +82,29 @@ int _main(string[] args) {
     bool initbills = false;
     string nnc_name;
     auto main_args = getopt(args,
-            std.getopt.config.caseSensitive,
-            std.getopt.config.bundling,
-            "version", "display the version", &version_switch, //        "invoice|i","Sets the HiBON input file name", &invoicefile,
-            "output|o", format("Output filename : Default %s", outputfile), &outputfile, // //        "outputfile|o", format("Sets the output file name: default : %s", outputfilename), &outputfilename,
-            //         "bills|b", "Generate bills", &number_of_bills,
-            // "value|V", format("Bill value : default: %d", value), &value,
-            // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
-            "initbills|b", "Testing mode", &initbills,
-            "nnc", "Initialize NetworkNameCard with given name", &nnc_name,
+        std.getopt.config.caseSensitive,
+        std.getopt.config.bundling,
+        "version", "display the version", &version_switch, //        "invoice|i","Sets the HiBON input file name", &invoicefile,
+        "output|o", format("Output filename : Default %s", outputfile), &outputfile, // //        "outputfile|o", format("Sets the output file name: default : %s", outputfilename), &outputfilename,
+        //         "bills|b", "Generate bills", &number_of_bills,
+        // "value|V", format("Bill value : default: %d", value), &value,
+        // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
+        "initbills|b", "Testing mode", &initbills,
+        "nnc", "Initialize NetworkNameCard with given name", &nnc_name,
     );
 
-    if (version_switch) {
+    if (version_switch)
+    {
         writefln("version %s", REVNO);
         writefln("Git handle %s", HASH);
         return 0;
     }
 
-    if (main_args.helpWanted) {
+    if (main_args.helpWanted)
+    {
         writeln(logo);
         defaultGetoptPrinter(
-                [
+            [
             format("%s version %s", program, REVNO),
             "Documentation: https://tagion.org/",
             "",
@@ -129,8 +134,10 @@ int _main(string[] args) {
     auto factory = RecordFactory(net);
     auto recorder = factory.recorder;
 
-    void addGenesisEpoch(RecordFactory.Recorder recorder) {
+    void addGenesisEpoch(RecordFactory.Recorder recorder)
+    {
         import tagion.dart.DARTFile : hash_null;
+
         EpochBlock block;
         block.previous = hash_null;
 
@@ -139,27 +146,32 @@ int _main(string[] args) {
         recorder.add(block);
         recorder.add(top_record);
     }
+
     addGenesisEpoch(recorder);
 
     const onehot = initbills + (!nnc_name.empty);
 
-    if (onehot > 1) {
+    if (onehot > 1)
+    {
         stderr.writeln("Only one of the --stdrecords and --initbills switches alowed");
         return 1;
     }
 
-    if (!nnc_name.empty) {
+    if (!nnc_name.empty)
+    {
         writeln("TEST MODE: Initialize standart records");
         createNetworkNameCard(net, nnc_name, recorder);
     }
-    else if (initbills) {
+    else if (initbills)
+    {
         writeln("TEST MODE: Initialize dummy bills");
         alias StdSecureWallet = SecureWallet!StdSecureNet;
 
         auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN);
 
         const label = "some_name";
-        foreach (amount; bill_amounts) {
+        foreach (amount; bill_amounts)
+        {
             const invoice = StdSecureWallet.createInvoice(label, amount);
             const bill = StandardBill(invoice.amount, 0, invoice.pkey, initial_gene);
 
@@ -167,14 +179,18 @@ int _main(string[] args) {
             recorder.add(bill);
         }
     }
-    else {
-        foreach (file; args[1 .. $]) {
-            if (!file.exists) {
+    else
+    {
+        foreach (file; args[1 .. $])
+        {
+            if (!file.exists)
+            {
                 writefln("Error: File %s does not exists", file);
                 return 3;
             }
             const invoice_doc = file.fread;
-            if (!invoice_doc.isInorder) {
+            if (!invoice_doc.isInorder)
+            {
                 writefln("Invoice file %s is not a HiBON file", file);
                 return 1;
             }
@@ -188,7 +204,8 @@ int _main(string[] args) {
         }
     }
 
-    if (recorder.empty) {
+    if (recorder.empty)
+    {
         writefln("Error: Nothing has been added to the recorder");
     }
 

@@ -1,6 +1,7 @@
 module tagion.options.HostOptions;
 
-struct HostOptions {
+struct HostOptions
+{
     import tagion.utils.JSONCommon : JSONCommon;
 
     ulong timeout;

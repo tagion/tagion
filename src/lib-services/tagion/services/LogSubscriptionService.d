@@ -27,13 +27,15 @@ import tagion.network.SSLServiceAPI;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.basic.TagionExceptions : fatal, taskfailure;
+
 //import tagion.script.ScriptBuilder;
 
 /**
  * \struct LogSubscriptionFilter
  * Struct store valid filters for each client
  */
-struct LogSubscriptionFilter {
+struct LogSubscriptionFilter
+{
     /** Tid for communicating with LoggerService */
     Tid logger_service_tid;
     /** filters array for storing all curent filters, received for subscribers */
@@ -44,7 +46,8 @@ struct LogSubscriptionFilter {
       *     @param listener_id - unique identification of new listener
       *     @param log_info - log level of needed messages for listener
       */
-    void addSubscription(uint listener_id, LogFilter log_info) @trusted {
+    void addSubscription(uint listener_id, LogFilter log_info) @trusted
+    {
         writeln("Added new listener ", listener_id);
         filters[listener_id] ~= log_info;
         notifyLogService;
@@ -54,16 +57,19 @@ struct LogSubscriptionFilter {
      *      @param listener_id - unique identification of new listener
      *      @see \link LoggerService
      */
-    void removeSubscription(uint listener_id) @trusted {
+    void removeSubscription(uint listener_id) @trusted
+    {
         filters.remove(listener_id);
         notifyLogService;
     }
 
     /// Send all current filters to LoggerService
-    void notifyLogService() {
+    void notifyLogService()
+    {
         import std.array;
 
-        if (logger_service_tid != Tid.init) {
+        if (logger_service_tid != Tid.init)
+        {
             logger_service_tid.send(filters.values.join.idup);
         }
     }
@@ -73,11 +79,15 @@ struct LogSubscriptionFilter {
      *      @param log_level Represent log level for all logs from task
      *      @return Array of all clients_id that need this logs
      */
-    uint[] matchFilters(string task_name, LoggerType log_level) {
+    uint[] matchFilters(string task_name, LoggerType log_level)
+    {
         uint[] clients;
-        foreach (client_id; filters.keys) {
-            foreach (filter; filters[client_id]) {
-                if (filter.match(task_name, log_level)) {
+        foreach (client_id; filters.keys)
+        {
+            foreach (filter; filters[client_id])
+            {
+                if (filter.match(task_name, log_level))
+                {
                     clients ~= client_id;
                 }
             }
@@ -99,9 +109,12 @@ alias binread(T, R) = MyStruct.read!(T, Endian.littleEndian, R);
      * Main task for LogSubscriptionService
      * @param opts - options for running this task
      */
-void logSubscriptionServiceTask(Options opts) nothrow {
-    try {
-        scope (success) {
+void logSubscriptionServiceTask(Options opts) nothrow
+{
+    try
+    {
+        scope (success)
+        {
             ownerTid.prioritySend(Control.END);
         }
 
@@ -111,18 +124,23 @@ void logSubscriptionServiceTask(Options opts) nothrow {
 
         log.register(opts.logSubscription.task_name);
 
-        log("SockectThread port=%d addresss=%s", opts.logSubscription.service.port, opts.logSubscription.service.address);
+        log("SockectThread port=%d addresss=%s", opts.logSubscription.service.port, opts
+                .logSubscription.service.address);
 
         import std.conv;
 
-        @safe class LogSubscriptionRelay : SSLFiberService.Relay {
-            bool agent(SSLFiber ssl_relay) {
+        @safe class LogSubscriptionRelay : SSLFiberService.Relay
+        {
+            bool agent(SSLFiber ssl_relay)
+            {
                 import tagion.hibon.HiBONJSON;
 
                 writeln("bool agent");
 
-                @trusted const(Document) receivessl() {
-                    try {
+                @trusted const(Document) receivessl()
+                {
+                    try
+                    {
                         writeln(ssl_relay is null);
                         immutable buffer = ssl_relay.receive;
                         writeln("%s", buffer);
@@ -131,7 +149,8 @@ void logSubscriptionServiceTask(Options opts) nothrow {
                         return result;
                         // }
                     }
-                    catch (Exception t) {
+                    catch (Exception t)
+                    {
                         log.warning("%s", t.msg);
                     }
                     return Document();
@@ -141,11 +160,13 @@ void logSubscriptionServiceTask(Options opts) nothrow {
                 log("%s", doc.toPretty);
                 {
                     const listener_id = ssl_relay.id();
-                    if (doc.hasMember("task_name") && doc.hasMember("log_level")) {
+                    if (doc.hasMember("task_name") && doc.hasMember("log_level"))
+                    {
                         auto task_name = doc.opIndex("task_name").data;
                         auto log_levels = doc.opIndex("log_level").data;
                         ubyte result = 0;
-                        foreach (log_level; log_levels) {
+                        foreach (log_level; log_levels)
+                        {
                             result += log_level;
                         }
                         LogFilter filter = LogFilter(cast(string) task_name, cast(LoggerType) result);
@@ -156,7 +177,8 @@ void logSubscriptionServiceTask(Options opts) nothrow {
                 return false;
             }
 
-            void terminate(uint id) {
+            void terminate(uint id)
+            {
                 subscribers.removeSubscription(id);
             }
         }
@@ -166,8 +188,10 @@ void logSubscriptionServiceTask(Options opts) nothrow {
         auto logsubscription_thread = logsubscription_api.start;
 
         bool stop;
-        void handleState(Control ts) {
-            with (Control) switch (ts) {
+        void handleState(Control ts)
+        {
+            with (Control) switch (ts)
+            {
             case STOP:
                 writefln("Subscription STOP %d", opts.logSubscription.service.port);
                 log("Kill socket thread port %d", opts.logSubscription.service.port);
@@ -179,10 +203,12 @@ void logSubscriptionServiceTask(Options opts) nothrow {
             }
         }
 
-        @trusted void receiver(string task_name, LoggerType log_level, string log_output) {
+        @trusted void receiver(string task_name, LoggerType log_level, string log_output)
+        {
             writeln(subscribers.filters.length);
             auto clients = subscribers.matchFilters(task_name, log_level);
-            foreach (client; clients) {
+            foreach (client; clients)
+            {
                 HiRPC hirpc;
                 const sender = hirpc.action(log_output);
                 immutable log_buffer = sender.toDoc.serialize();
@@ -191,15 +217,17 @@ void logSubscriptionServiceTask(Options opts) nothrow {
         }
 
         ownerTid.send(Control.LIVE);
-        while (!stop) {
+        while (!stop)
+        {
             receiveTimeout(500.msecs, //Control the thread
-                    &handleState,
-                    &taskfailure,
-                    &receiver,
+                &handleState,
+                &taskfailure,
+                &receiver,
             );
         }
     }
-    catch (Throwable t) {
+    catch (Throwable t)
+    {
         fatal(t);
     }
 }

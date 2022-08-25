@@ -33,23 +33,27 @@ import tagion.utils.Miscellaneous : cutHex;
  +     Returns `true` if the votes are more thna 2/3
  +/
 @safe @nogc
-bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
+bool isMajority(const size_t voting, const size_t node_size) pure nothrow
+{
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }
 
 @safe @nogc
-bool isMajority(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
+bool isMajority(const(BitMask) mask, const HashGraph hashgraph) pure nothrow
+{
     return isMajority(mask.count, hashgraph.node_size);
 }
 
 @safe @nogc
-bool isAllVotes(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
+bool isAllVotes(const(BitMask) mask, const HashGraph hashgraph) pure nothrow
+{
     return mask.count is hashgraph.node_size;
 }
 
 enum int eva_altitude = -77;
 @safe @nogc
-int nextAltitide(const Event event) pure nothrow {
+int nextAltitide(const Event event) pure nothrow
+{
     return (event) ? event.altitude + 1 : eva_altitude;
 }
 
@@ -60,7 +64,8 @@ protected enum _params = [
 
 mixin(EnumText!("Params", _params));
 
-enum ExchangeState : uint {
+enum ExchangeState : uint
+{
     NONE,
     INIT_TIDE,
     TIDAL_WAVE,
@@ -79,8 +84,10 @@ enum ExchangeState : uint {
 alias convertState = convertEnum!(ExchangeState, GossipConsensusException);
 
 @safe
-interface EventMonitorCallbacks {
-    nothrow {
+interface EventMonitorCallbacks
+{
+    nothrow
+    {
         void create(const(Event) e);
         void connect(const(Event) e);
         void witness(const(Event) e);
@@ -95,19 +102,22 @@ interface EventMonitorCallbacks {
         void forked(const(Event) e);
         void epoch(const(Event[]) received_event);
         void send(const Pubkey channel, lazy const Document doc);
-        final void send(T)(const Pubkey channel, lazy T pack) if (isHiBONRecord!T) {
+        final void send(T)(const Pubkey channel, lazy T pack) if (isHiBONRecord!T)
+        {
             send(channel, pack.toDoc);
         }
 
         void receive(lazy const Document doc);
-        final void receive(T)(lazy const T pack) if (isHiBONRecord!T) {
+        final void receive(T)(lazy const T pack) if (isHiBONRecord!T)
+        {
             receive(pack.toDoc);
         }
     }
 }
 
 // EventView is used to store event has a
-struct EventView {
+struct EventView
+{
     enum eventsName = "$events";
     uint id;
     @Label("$m", true) @(Filter.Initialized) uint mother;
@@ -126,7 +136,7 @@ struct EventView {
     bool father_less;
 
     mixin HiBONRecord!(
-            q{
+        q{
             this(const Event event, const size_t relocate_node_id=size_t.max) {
                 import std.algorithm : each;
                 id=event.id;
@@ -163,7 +173,8 @@ struct EventView {
 }
 
 @safe
-struct EventBody {
+struct EventBody
+{
     enum int eva_altitude = -77;
     import tagion.basic.ConsensusExceptions;
 
@@ -176,12 +187,13 @@ struct EventBody {
     @Label("$a") int altitude;
     @Label("$t") sdt_t time;
 
-    bool verify() {
+    bool verify()
+    {
         return (father is null) ? true : (mother !is null);
     }
 
     mixin HiBONRecord!(
-            q{
+        q{
             this(
                 Document payload,
                 const Event mother,
@@ -212,26 +224,33 @@ struct EventBody {
 
         });
 
-    invariant {
-        if ((mother.length != 0) && (father.length != 0)) {
+    invariant
+    {
+        if ((mother.length != 0) && (father.length != 0))
+        {
             assert(mother.length == father.length);
         }
     }
 
     @nogc
-    bool isEva() pure const nothrow {
+    bool isEva() pure const nothrow
+    {
         return (mother.length == 0);
     }
 
     immutable(EventBody) eva();
 
-    void consensus() inout {
-        if (mother.length == 0) {
+    void consensus() inout
+    {
+        if (mother.length == 0)
+        {
             // Seed event first event in the chain
             check(father.length == 0, ConsensusFailCode.NO_MOTHER);
         }
-        else {
-            if (father.length != 0) {
+        else
+        {
+            if (father.length != 0)
+            {
                 // If the Event has a father
                 check(mother.length == father.length, ConsensusFailCode.MOTHER_AND_FATHER_SAME_SIZE);
             }
@@ -242,14 +261,15 @@ struct EventBody {
 }
 
 @safe
-struct EventPackage {
+struct EventPackage
+{
     @Label("") Buffer fingerprint;
     @Label("$sign") Signature signature;
     @Label("$pkey") Pubkey pubkey;
     @Label("$body") EventBody event_body;
 
     mixin HiBONRecord!(
-            q{
+        q{
             import tagion.basic.ConsensusExceptions: ConsensusCheck=Check, EventConsensusException, ConsensusFailCode;
             protected alias consensus_check=ConsensusCheck!EventConsensusException;
             import std.stdio;
@@ -287,7 +307,8 @@ struct EventPackage {
 alias Tides = int[Pubkey];
 
 @RecordType("Wavefront") @safe
-struct Wavefront {
+struct Wavefront
+{
     @Label("$tides", true) @Filter(q{a.length is 0}) private Tides _tides;
     @Label("$events", true) @Filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;
     @Label("$state") ExchangeState state;
@@ -298,34 +319,40 @@ struct Wavefront {
     mixin HiBONRecordType;
     mixin JSONString;
 
-    this(Tides tides) pure nothrow {
+    this(Tides tides) pure nothrow
+    {
         _tides = tides;
         epacks = null;
         state = ExchangeState.TIDAL_WAVE;
     }
 
-    this(immutable(EventPackage)*[] epacks, Tides tides, const ExchangeState state) pure nothrow {
+    this(immutable(EventPackage)*[] epacks, Tides tides, const ExchangeState state) pure nothrow
+    {
         this.epacks = epacks;
         this._tides = tides;
         this.state = state;
     }
 
-    private struct LoadTides {
+    private struct LoadTides
+    {
         @Label(tidesName) Tides tides;
         mixin HiBONRecord!(
-                q{
+            q{
                 this(const(Tides) _tides) const {
                     tides=_tides;
                 }
             });
     }
 
-    this(const SecureNet net, const Document doc) {
+    this(const SecureNet net, const Document doc)
+    {
         state = doc[stateName].get!ExchangeState;
         immutable(EventPackage)*[] event_packages;
-        if (doc.hasMember(epacksName)) {
+        if (doc.hasMember(epacksName))
+        {
             const sub_doc = doc[epacksName].get!Document;
-            foreach (e; sub_doc[]) {
+            foreach (e; sub_doc[])
+            {
                 (() @trusted {
                     immutable epack = cast(immutable)(new EventPackage(net, e.get!Document));
                     event_packages ~= epack;
@@ -333,54 +360,59 @@ struct Wavefront {
             }
         }
         epacks = event_packages;
-        if (doc.hasMember(tidesName)) {
+        if (doc.hasMember(tidesName))
+        {
             auto load_tides = LoadTides(doc);
             _tides = load_tides.tides;
         }
         update_tides;
     }
 
-    const(Document) toDoc() const {
+    const(Document) toDoc() const
+    {
         auto h = new HiBON;
         h[stateName] = state;
-        if (epacks.length) {
+        if (epacks.length)
+        {
             auto epacks_hibon = new HiBON;
-            foreach (i, epack; epacks) {
+            foreach (i, epack; epacks)
+            {
                 epacks_hibon[i] = epack.toDoc;
             }
             h[epacksName] = epacks_hibon;
         }
-        if (_tides.length) {
+        if (_tides.length)
+        {
             const load_tides = const(LoadTides)(_tides);
             h[tidesName] = load_tides.toDoc[tidesName].get!Document;
         }
         return Document(h);
     }
 
-    private void update_tides() pure nothrow {
-        foreach (e; epacks) {
+    private void update_tides() pure nothrow
+    {
+        foreach (e; epacks)
+        {
             _tides.update(e.pubkey,
-                {
-                    return e.event_body.altitude;
-                },
-                (int altitude) {
-                    return highest(altitude, e.event_body.altitude);
-                });
+            { return e.event_body.altitude; },
+                (int altitude) { return highest(altitude, e.event_body.altitude); });
         }
     }
 
     @nogc
-    const(Tides) tides() const pure nothrow {
+    const(Tides) tides() const pure nothrow
+    {
         return _tides;
     }
 }
 
 @safe
-struct EvaPayload {
+struct EvaPayload
+{
     @Label("$channel") Pubkey channel;
     @Label("$nonce") Buffer nonce;
     mixin HiBONRecord!(
-            q{
+        q{
             this(const Pubkey channel, const Buffer nonce) pure {
                 this.channel=channel;
                 this.nonce=nonce;

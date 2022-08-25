@@ -12,7 +12,8 @@ import LEB128 = tagion.betterC.utils.LEB128;
 /**
  * BigNumber used in the HiBON format
  */
-struct BigNumber {
+struct BigNumber
+{
 @nogc:
     /**
      * Store actual number, which is split into array
@@ -23,7 +24,8 @@ struct BigNumber {
      * Constructor for BigNumber
      * @param data - input data about number
      */
-    this(const(ubyte)[] data) {
+    this(const(ubyte)[] data)
+    {
         this.data = data[0 .. LEB128.calc_size(data)];
     }
 
@@ -31,7 +33,8 @@ struct BigNumber {
      * Used for calculating size in LEB128 format
      * @return size of data
      */
-    size_t calc_size() const {
+    size_t calc_size() const
+    {
         return LEB128.calc_size(data);
     }
 
@@ -39,7 +42,8 @@ struct BigNumber {
      * Serialize data
      * @return serialized data
      */
-    const(ubyte[]) serialize() const {
+    const(ubyte[]) serialize() const
+    {
         return data;
     }
 }
