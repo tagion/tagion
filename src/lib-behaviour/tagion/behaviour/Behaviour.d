@@ -114,7 +114,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T)
         }
     }
 
-    return ScenarioGroup.init;
+    return scenario_group; //ScenarioGroup.init;
 }
 
 @safe
@@ -124,15 +124,16 @@ unittest {
     const result = run(awesome);
 }
 
+@safe
 unittest
 {
-    import tagion.hibon.HiBONJSON;
     import std.algorithm.iteration : map;
     import std.algorithm.comparison : equal;
     import std.array;
 
     auto awesome = new Some_awesome_feature;
     const runner_result = run(awesome);
+    io.writefln("runner_result = %s", runner_result.toPretty);
     //    ScenarioGroup scenario=getScenarioGroup!Some_awesome_feature;
 //    const result = runner_awesome();
     auto expected = only(
@@ -141,10 +142,19 @@ unittest
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.contains_cash",
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.request_cash",
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_debited",
-        "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_dispensed"
+        "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_dispensed",
+        "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.swollow_the_card",
         )
         .map!(a => Some_awesome_feature.result(a));
-    assert(awesome.count == 6);
+    io.writefln("awesome.count = %d", awesome.count);
+    assert(awesome.count == 7);
+    // const results = chain(
+    //     runner_result.given,
+    //     runner_result.when,
+    //     runner_result.then,
+    //     runner_result.but,
+    //     )
+    //     .map!(
     Document[] results;
     // results = chain(
     //     runner_result.given,
@@ -167,8 +177,9 @@ unittest
     results ~= runner_result.but.infos
         .map!(info => info.result)
         .array;
-    io.writefln("results %s", results);
-    io.writefln("expected %s", expected);
+    io.writefln("runner_result %s", runner_result.toPretty);
+    io.writefln("results %-(%s %)", results.map!(doc => doc.toPretty));
+    io.writefln("expected %-(%s %)", expected.map!(doc => doc.toPretty));
     assert(equal(results, expected));
 }
 
@@ -188,15 +199,8 @@ ScenarioGroup getScenarioGroup(T)() if (isScenario!T)
                 enum group_name = _Property.stringof.toLower;
                 auto group = &__traits(getMember, scenario_group, group_name);
                 group.infos.length = behaviours.length;
-//                auto group = __traits(getMember, scenario_group, group_name);
-//                group.infos.length = behaviours.length;
-
-                pragma(msg, "behaviour ", behaviours, " length ", behaviours.length );
                 static foreach (i, behaviour; behaviours)
                 {{
-                        //BehaviourGroup!_Property group;
-                    pragma(msg, "behaviour, ", typeof(behaviour));
-                    pragma(msg, "group, ", typeof(group));
                     Info!_Property info;
                     info.property = getProperty!behaviour;
                     info.name = __traits(identifier, behaviour);
