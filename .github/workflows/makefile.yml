@@ -15,6 +15,7 @@ jobs:
         echo $GITHUB_WORKFLOW_BRANCH
         git checkout $GITHUB_WORKFLOW_BRANCH
         git branch
+        make proper 
         make unittest
         
     - name: unittest result
