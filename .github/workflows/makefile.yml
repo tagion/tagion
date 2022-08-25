@@ -22,4 +22,4 @@ jobs:
         
     - name: unittest result
       run: |
-        tail -n 3 /home/moonbase/actions-runner/_work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
+        tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
