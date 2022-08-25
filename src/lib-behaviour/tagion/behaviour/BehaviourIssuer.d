@@ -96,7 +96,8 @@ unittest { // Markdown scenario test
             .unitfile
             .setExtension(EXT.Markdown);
         immutable expected = filename.freadText;
-        markdown.issue(scenario_result.given.info, null, markdown.master.property);
+        io.writefln("scenario_result.given.infos %s", scenario_result.given.infos);
+        markdown.issue(scenario_result.given.infos[0], null, markdown.master.property);
 //        filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
     }
