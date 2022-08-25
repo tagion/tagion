@@ -18,6 +18,7 @@ jobs:
         git checkout $GITHUB_WORKFLOW_BRANCH
         git branch
         git submodule update --recursive --init
+        make proper
         make unittest 
         
     - name: unittest result
