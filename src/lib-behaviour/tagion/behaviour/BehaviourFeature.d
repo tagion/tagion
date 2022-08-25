@@ -39,10 +39,6 @@ struct Given {
     mixin Property;
 }
 
-struct And {
-    mixin Property;
-}
-
 struct When {
     mixin Property;
 }
@@ -66,8 +62,8 @@ struct Info(alias Property) {
 
 enum isInfo(alias I) = __traits(isSame, TemplateOf!I, Info);
 
-struct BehaviourGroup(Property) if (isOneOf!(Property, UniqueBehaviourProperties)) {
-    Info!Property[] info;
+struct BehaviourGroup(Property) if (isOneOf!(Property, BehaviourProperties)) {
+    Info!Property[] infos;
 //    @Label(VOID, true) Info!And[] ands;
     mixin HiBONRecord!();
 }
@@ -93,9 +89,9 @@ version (unittest) {
     private import tagion.behaviour.BehaviourUnittest;
 }
 /// All behaviour-properties of a Scenario
-alias BehaviourProperties = AliasSeq!(Given, And, When, Then, But);
+alias BehaviourProperties = AliasSeq!(Given, When, Then, But);
 /// The behaviour-properties which only occurrences once in a Scenario
-alias UniqueBehaviourProperties = Erase!(And, BehaviourProperties);
+//alias UniqueBehaviourProperties = Erase!(And, BehaviourProperties);
 
 // alias MemberProperty=Tuple!(string, "member", string, "goal");
 // alias PropertyFormat(T)=format!(T.stringof~".%s", string);
@@ -165,13 +161,14 @@ static unittest {
     static assert(!hasBehaviours!(Some_awesome_feature.helper_function));
 }
 
-template getBehaviours(T) if (is(T == class) || is(T == struct)) {
+template getBehaviours_(T) if (is(T == class) || is(T == struct)) {
     alias get_all_callable = getAllCallables!T;
-    alias getBehaviours = Filter!(hasBehaviours, get_all_callable);
+    alias getBehaviours_ = Filter!(hasBehaviours, get_all_callable);
 }
 
 static unittest { // Test of getBehaviours
-    alias behaviours = getBehaviours!Some_awesome_feature;
+    alias behaviours = getBehaviours_!Some_awesome_feature;
+    pragma(msg, "!!!! behaviours ", behaviours);
     static assert(behaviours.length == 7);
     static assert(allSatisfy!(isCallable, behaviours));
     static assert(allSatisfy!(hasBehaviours, behaviours));
@@ -184,7 +181,7 @@ static unittest { // Test of getBehaviours
    and returns void if no behaviour-Property has been found
  */
 template getBehaviour(T, Property) if (is(T == class) || is(T == struct)) {
-    alias behaviours = getBehaviours!T;
+    alias behaviours = getBehaviours_!T;
     pragma(msg, "behaviours ", behaviours);
     alias behaviour_with_property = Filter!(ApplyRight!(hasUDA, Property), behaviours);
     // static assert(behaviour_with_property.length <= 1,
@@ -239,13 +236,13 @@ unittest {
     static assert(is(getProperty!(Some_awesome_feature.helper_function) == void));
 }
 
-enum hasProperty(alias T) = !is(getProperty!(T) == void);
+// enum hasProperty(alias T) = !is(getProperty!(T) == void);
 
-@safe
-unittest {
-    static assert(hasProperty!(Some_awesome_feature.request_cash));
-    static assert(!(hasProperty!(Some_awesome_feature.helper_function)));
-}
+// @safe
+// unittest {
+//     static assert(hasProperty!(Some_awesome_feature.request_cash));
+//     static assert(!(hasProperty!(Some_awesome_feature.helper_function)));
+// }
 
 @safe
 unittest {

@@ -1,5 +1,5 @@
 module tagion.behaviour.BehaviourIssue;
-version(none_and) {
+
 import tagion.behaviour.BehaviourFeature;
 import std.traits;
 import std.algorithm : each, map;
@@ -58,9 +58,9 @@ struct MarkdownT(Stream) {
 
     void issue(Group)(const(Group) group, string indent, string fmt) if (isBehaviourGroup!Group) {
         if (group !is group.init) {
-            issue(group.info, indent, master.property);
-            group.ands
-                .each!(a => issue(a, indent ~ master.indent, fmt));
+            group.infos.each!(info =>issue(info, indent, master.property));
+            // group.ands
+            //     .each!(a => issue(a, indent ~ master.indent, fmt));
         }
     }
 
@@ -69,6 +69,7 @@ struct MarkdownT(Stream) {
         issue(scenario_group.given, indent ~ master.indent, master.property);
         issue(scenario_group.when, indent ~ master.indent, master.property);
         issue(scenario_group.then, indent ~ master.indent, master.property);
+        issue(scenario_group.but, indent ~ master.indent, master.property);
     }
 
     void issue(const(FeatureGroup) feature_group, string indent = null) {
@@ -85,8 +86,8 @@ unittest { // Markdown scenario test
     auto markdown = Markdown(bout);
     alias unit_mangle = mangleFunc!(MarkdownU);
     auto awesome = new Some_awesome_feature;
-    const runner_awesome = scenario(awesome);
-    const scenario_result = runner_awesome();
+    const scenario_result = run(awesome);
+    //const scenario_result = runner_awesome();
     {
         scope (exit) {
             bout.clear;
@@ -169,9 +170,8 @@ struct DlangT(Stream) {
 
     string[] issue(Group)(const(Group) group) if (isBehaviourGroup!Group) {
         if (group !is group.init) {
-            return chain([issue(group.info)],
-                    group.ands
-                    .map!(a => issue(a)))
+            return group.infos
+                .map!(info => issue(info))
                 .array;
         }
         return null;
@@ -187,6 +187,7 @@ struct DlangT(Stream) {
                 issue(scenario_group.given),
                 issue(scenario_group.when),
                 issue(scenario_group.then),
+                issue(scenario_group.but),
         );
         return format(q{
                 @safe @Scenario(%1$s)
@@ -269,5 +270,4 @@ version (unittest) {
     import std.path;
     import std.outbuffer;
     import io = std.stdio;
-}
 }

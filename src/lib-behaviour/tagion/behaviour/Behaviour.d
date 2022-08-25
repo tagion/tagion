@@ -15,29 +15,53 @@ version (unittest)
 
 /**
    Returns:
-   true if all the behavios has been runned
+   true if all the behaviours has been runned
 */
-version(none)
 @safe
-auto scenario(T)(T test) if (isScenario!T)
+ScenarioGroup run(T)(T scenario) if (isScenario!T)
 {
     alias memberCode = format!(q{
             // Scenario group      %1$s
             // Unique propery info %2$s
-            // Test scenario       %3$s
-            // Test member         %4$s
-            %1$s.%2$s.info.result = %3$s.%4$s;
-        }, string, string, string, string);
-    alias underMemberCode = format!(q{
-            // Scenario group      %1$s
-            // Unique propery info %2$s
-            // Test scenario       %3$s
-            // Test member         %4$s
-            // Under index         %5$d
-            auto and = %3$s.%4$s;
-            %1$s.%2$s.ands[%5$d].result = and;
-        }, string, string, string, string, size_t);
-    auto scenario_group = getScenarioGroup!T;
+            // Info index          %3$d
+            // Test scenario       %4$s
+            // Test member         %5$s
+            %1$s.%2$s.infos[%3$d].result = %4$s.%5$s;
+        }, string, string, size_t,string, string);
+    // alias underMemberCode = format!(q{
+    //         // Scenario group      %1$s
+    //         // Unique propery info %2$s
+    //         // Test scenario       %3$s
+    //         // Test member         %4$s
+    //         // Under index         %5$d
+    //         auto and = %3$s.%4$s;
+    //         %1$s.%2$s.ands[%5$d].result = and;
+    //     }, string, string, string, string, size_t);
+    pragma(msg, "Dav do", T);
+    ScenarioGroup scenario_group = getScenarioGroup!T;
+    // alias all_behaviours = getBehaviours_!(T);
+    // pragma(msg, "- - - all_behaviours ", all_behaviours);
+
+    static foreach(_Property; BehaviourProperties) {
+        //pragma(msg, "FieldTupleNames!T ", FieldNameTuple!T);
+        {
+            alias all_behaviours = getBehaviour!(T, _Property);
+            pragma(msg, "all_behaviour ", all_behaviours, " ", _Property);
+            static foreach(i, behaviour; all_behaviours) {
+                pragma(msg, "i ", i, " behaviour ", typeof(behaviour));
+            }
+        // static foreach(name; [ __traits(allMembers, T) ]) {
+        //     static if (__traits(compiles, typeof(__traits(getMember, scenario, name)))) {{
+        //         pragma(msg, "--- Name ", name);
+        //         const m = __traits(getMember, scenario, name);
+        //         static if (hasUDA!(m, _BehaviourProperty))  {
+        //             pragma(msg, "Member ", name, " has ", _BehaviourProperty);
+        //             }
+
+        //         }}
+        // }
+            }
+    }
     version(none)
     ScenarioGroup run(S...)()
     {
@@ -47,7 +71,7 @@ auto scenario(T)(T test) if (isScenario!T)
         }
         else
         {
-            alias behaviour = getBehaviour!(T, S[0]);
+            alias behaviours = getBehaviour!(T, S[0]);
             static foreach (Property; AliasSeq!(Given, Then))
             {
                 static if (is(S[0] == Property))
@@ -79,8 +103,16 @@ auto scenario(T)(T test) if (isScenario!T)
         }
     }
 
-    return &run!UniqueBehaviourProperties;
+    return ScenarioGroup.init;
 }
+
+@safe
+unittest {
+    pragma(msg, "UNITTEST ", Some_awesome_feature);
+    auto awesome = new Some_awesome_feature;
+    const result = run(awesome);
+}
+
 version(none)
 unittest
 {
@@ -125,20 +157,26 @@ ScenarioGroup getScenarioGroup(T)() if (isScenario!T)
     ScenarioGroup scenario_group;
     scenario_group.info.property = getScenario!T;
     scenario_group.info.name = T.stringof;
-    static foreach (_Property; UniqueBehaviourProperties)
+    static foreach (_Property; BehaviourProperties)
     {
         {
-            alias behaviour = getBehaviour!(T, _Property);
-            static if (!is(behaviour == void))
+            alias behaviours = getBehaviour!(T, _Property);
+            static if (!is(behaviours == void))
             {
                 import std.uni : toLower;
 
-                auto group = &__traits(getMember, scenario_group, _Property.stringof.toLower);
+                auto group = __traits(getMember, scenario_group, _Property.stringof.toLower);
 
-                group.info.property = getProperty!behaviour;
-                group.info.name = __traits(identifier, behaviour);
-                static foreach (under_behaviour; getUnderBehaviour!(T, _Property))
-                {
+                pragma(msg, "behaviour ", behaviours);
+                static foreach (behaviour; behaviours)
+                {{
+                        //BehaviourGroup!_Property group;
+                    pragma(msg, "behaviour, ", typeof(behaviour));
+                    pragma(msg, "group, ", typeof(group));
+                    Info!_Property info;
+                    info.property = getProperty!behaviour;
+                    info.name = __traits(identifier, behaviour);
+                    group.infos~=info;
                     {
                         version(none_and) {
                         Info!And and;
@@ -150,7 +188,7 @@ ScenarioGroup getScenarioGroup(T)() if (isScenario!T)
                         and.name = __traits(identifier, under_behaviour);
                         }
                     }
-                }
+                    }}
             }
         }
     }

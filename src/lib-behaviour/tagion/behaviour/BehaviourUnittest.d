@@ -104,7 +104,7 @@ version (unittest)
             return Document();
         }
 
-        @And("the cash is dispensed")
+        @Then("the cash is dispensed")
         Document is_dispensed()
         {
             return Document();
@@ -123,7 +123,7 @@ version (unittest)
             return Document();
         }
 
-        @And("the cash is dispensed")
+        @Then("the cash is dispensed")
         Document is_dispensed()
         {
             return Document();
@@ -142,3 +142,8 @@ version (unittest)
     }
 
 }
+
+
+// {
+//     const result = run!(tagion.behaviour.BehaviourUnittest);
+// }

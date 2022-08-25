@@ -526,6 +526,7 @@ enum unitdata = "unitdata";
    Returns:
    unittest data filename
  */
+@safe
 string unitfile(string filename, string file = __FILE__)
 {
     import std.path;
