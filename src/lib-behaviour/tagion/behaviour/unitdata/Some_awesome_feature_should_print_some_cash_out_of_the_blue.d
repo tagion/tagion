@@ -18,13 +18,13 @@ class Some_awesome_feature {
         return Document();
     }
 
-    @And("the account is in credit")
+    @Given("the account is in credit")
     Document in_credit() {
         check(false, "Check for 'in_credit' not implemented");
         return Document();
     }
 
-    @And("the dispenser contains cash")
+    @Given("the dispenser contains cash")
     Document contains_cash() {
         check(false, "Check for 'contains_cash' not implemented");
         return Document();
@@ -42,7 +42,7 @@ class Some_awesome_feature {
         return Document();
     }
 
-    @And("the cash is dispensed")
+    @Then("the cash is dispensed")
     Document is_dispensed() {
         check(false, "Check for 'is_dispensed' not implemented");
         return Document();
@@ -60,7 +60,7 @@ class Some_awesome_feature_bad_format_double_property {
         return Document();
     }
 
-    @When("the Customer request cash")
+    @Given("the Customer request cash")
     Document request_cash() {
         check(false, "Check for 'request_cash' not implemented");
         return Document();
@@ -72,7 +72,7 @@ class Some_awesome_feature_bad_format_double_property {
         return Document();
     }
 
-    @And("the cash is dispensed")
+    @Then("the cash is dispensed")
     Document is_dispensed() {
         check(false, "Check for 'is_dispensed' not implemented");
         return Document();
@@ -90,7 +90,7 @@ class Some_awesome_feature_bad_format_missing_given {
         return Document();
     }
 
-    @And("the cash is dispensed")
+    @Then("the cash is dispensed")
     Document is_dispensed() {
         check(false, "Check for 'is_dispensed' not implemented");
         return Document();
