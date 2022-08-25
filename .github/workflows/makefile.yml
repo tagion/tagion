@@ -13,12 +13,13 @@ jobs:
         rm -rf tagion
         git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git
         cd tagion
+        pwd
+        id
         export GITHUB_WORKFLOW_BRANCH=$GITHUB_HEAD_REF
         echo $GITHUB_WORKFLOW_BRANCH
         git checkout $GITHUB_WORKFLOW_BRANCH
         git branch
         git submodule update --recursive --init
-        make proper
         make unittest 
         
     - name: unittest result
