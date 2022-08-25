@@ -220,6 +220,56 @@ import tagion.utils.Miscellaneous : toHexString, decode;
         }
     }
 
+    /** 
+    * Used find next block in recorder block chain
+    * @param cur_fingerprint - fingerprint of current block from recorder block chain
+    * @param blocks_folder - folder with blocks from recorder block chain
+    * @param net - to read block from file
+    * @return block from recorder block chain
+    */
+    static RecorderChainBlock findNextDARTBlock(Buffer cur_fingerprint, string blocks_folder, const StdHashNet net) 
+    {
+        auto block_filenames = RecorderChain.getBlockFilenames(blocks_folder);
+        foreach (filename; block_filenames)
+        {
+            auto fingerprint = decode(filename.stripExtension);
+            auto block = RecorderChain.readBlock(fingerprint, blocks_folder, net);
+            if(block.chain) 
+            {
+                if (block.chain == cur_fingerprint)
+                {
+                    return block;
+                }
+            }
+        }
+        throw new TagionException("Next block not exist");
+        return null;
+    }
+    
+    /** 
+     * Used find current block in recorder block chain
+     * @param cur_bullseye - bullseye of DART database
+     * @param blocks_folder - folder with blocks from recorder block chain
+     * @param net - to read block from file
+     * @return block from recorder block chain
+     */
+    static RecorderChainBlock findCurrentDARTBlock(Buffer cur_bullseye, string blocks_folder, const StdHashNet net)
+    {
+        auto block_filenames = RecorderChain.getBlockFilenames(blocks_folder);
+        foreach (filename; block_filenames)
+        {
+            auto fingerprint = decode(filename.stripExtension);
+            auto block = RecorderChain.readBlock(fingerprint, blocks_folder, net);
+        
+            if (block.bullseye == cur_bullseye)
+            {
+               return block;
+            }  
+        }
+        throw new TagionException("Current block not exist");
+        return null;
+    }
+    
     /** Static method that creates path to block with given fingerprint
      *      @param fingerprint - fingerprint of block to make path
      *      @param folder_path - path to folder with blocks

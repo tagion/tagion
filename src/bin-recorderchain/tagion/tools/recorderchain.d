@@ -44,54 +44,6 @@ void addRecordToDB(DART db, RecordFactory.Recorder recorder, HiRPC hirpc)
     auto result = db(received, false);
 }
 
-/** 
- * Used find next block in recorder block chain
- * @param cur_fingerprint - fingerprint of current block from recorder block chain
- * @param blocks_folder - folder with blocks from recorder block chain
- * @param net - to read block from file
- * @return block from recorder block chain
- */
-RecorderChainBlock findNextBlock(Buffer cur_fingerprint, string blocks_folder, const StdHashNet net) 
-{
-    auto block_filenames = RecorderChain.getBlockFilenames(blocks_folder);
-    foreach (filename; block_filenames)
-    {
-        auto fingerprint = decode(filename.stripExtension);
-        auto block = RecorderChain.readBlock(fingerprint, blocks_folder, net);
-        if(block.chain) 
-        {
-            if (block.chain == cur_fingerprint)
-            {
-                return block;
-            }
-        }
-    }
-    assert(0);
-}
-
-/** 
- * Used find current block in recorder block chain
- * @param cur_bullseye - bullseye of DART database
- * @param blocks_folder - folder with blocks from recorder block chain
- * @param net - to read block from file
- * @return block from recorder block chain
- */
-RecorderChainBlock findCurrentBlock(Buffer cur_bullseye, string blocks_folder, const StdHashNet net)
-{
-    auto block_filenames = RecorderChain.getBlockFilenames(blocks_folder);
-    foreach (filename; block_filenames)
-    {
-        auto fingerprint = decode(filename.stripExtension);
-        auto block = RecorderChain.readBlock(fingerprint, blocks_folder, net);
-        
-        if (block.bullseye == cur_bullseye)
-        {
-            return block;
-        }  
-    }
-    assert(0);
-}
-
 int main(string[] args)
 {
     if (args.length == 1)
@@ -179,7 +131,7 @@ int main(string[] args)
             RecorderChainBlock next_block;
             if(!i)
             {
-                next_block = findNextBlock(info.first.fingerprint, chain_directory, hash_net);
+                next_block = RecorderChain.findNextDARTBlock(info.first.fingerprint, chain_directory, hash_net);
             }
             else if (i == info.amount - 2)
             {
@@ -187,7 +139,7 @@ int main(string[] args)
             }
             else
             {
-                next_block = findNextBlock(next_block.fingerprint, chain_directory, hash_net);
+                next_block = RecorderChain.findNextDARTBlock(next_block.fingerprint, chain_directory, hash_net);
             }
 
             remove(chain_directory~"/"~next_block.fingerprint.toHexString~".rcb");
@@ -215,9 +167,9 @@ int main(string[] args)
             return 0;
         }
         /** Bullseye of this block same with DART database fingerprint */
-        auto cur_block = findCurrentBlock(db.fingerprint, chain_directory, hash_net);
+        auto cur_block = RecorderChain.findCurrentDARTBlock(db.fingerprint, chain_directory, hash_net);
         /** Block, recorder from which will be added to DART database next */
-        auto next_block = findNextBlock(cur_block.fingerprint, chain_directory, hash_net);
+        auto next_block = RecorderChain.findNextDARTBlock(cur_block.fingerprint, chain_directory, hash_net);
 
         while(next_block.fingerprint != info.last.fingerprint)
         {
@@ -232,7 +184,7 @@ int main(string[] args)
                 return 1;
             }
             
-            next_block = findNextBlock(next_block.fingerprint, chain_directory, hash_net);
+            next_block = RecorderChain.findNextDARTBlock(next_block.fingerprint, chain_directory, hash_net);
         }
         /** Recorder from *next* block */
         auto recorder = factory.recorder(next_block.recorder_doc);
