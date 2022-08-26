@@ -6,6 +6,8 @@ import std.traits;
 import std.format;
 import std.meta : AliasSeq;
 import std.range : only;
+import tagion.basic.Types : FileExtension;
+
 version (unittest)
 {
     //    import std.stdio;
@@ -16,8 +18,9 @@ version (unittest)
 }
 
 /**
+   Run the scenario in Given, When, Then, But order
    Returns:
-   true if all the behaviours has been runned
+   The ScenarioGroup including the result of each action
 */
 @safe
 ScenarioGroup run(T)(T scenario) if (isScenario!T)
@@ -63,9 +66,6 @@ unittest
 
     auto awesome = new Some_awesome_feature;
     const runner_result = run(awesome);
-    io.writefln("runner_result = %s", runner_result.toPretty);
-    //    ScenarioGroup scenario=getScenarioGroup!Some_awesome_feature;
-//    const result = runner_awesome();
     auto expected = only(
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_valid",
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.in_credit",
@@ -78,23 +78,7 @@ unittest
         .map!(a => Some_awesome_feature.result(a));
     io.writefln("awesome.count = %d", awesome.count);
     assert(awesome.count == 7);
-    // const results = chain(
-    //     runner_result.given,
-    //     runner_result.when,
-    //     runner_result.then,
-    //     runner_result.but,
-    //     )
-    //     .map!(
     Document[] results;
-    // results = chain(
-    //     runner_result.given,
-    //     runner_result.when,
-    //     runner_result.then,
-    //     runner_result.but,
-    //     )
-    //     .map!(group => group.infos)
-
-
     results ~= runner_result.given.infos
         .map!(info => info.result)
         .array;
@@ -107,9 +91,6 @@ unittest
     results ~= runner_result.but.infos
         .map!(info => info.result)
         .array;
-    io.writefln("runner_result %s", runner_result.toPretty);
-    io.writefln("results %-(%s %)", results.map!(doc => doc.toPretty));
-    io.writefln("expected %-(%s %)", expected.map!(doc => doc.toPretty));
     assert(equal(results, expected));
 }
 
@@ -149,18 +130,22 @@ FeatureGroup getFeature(alias M)() if (isFeature!M)
     FeatureGroup result;
     result.info.property = obtainFeature!M;
     result.info.name = moduleName!M;
-    static foreach (_Scenario; Scenarios!M)
+    alias ScenariosSeq = Scenarios!M;
+    result.scenarios.length = ScenariosSeq.length;
+    static foreach (i, _Scenario; ScenariosSeq)
     {
         {
+            result.scenarios[i] =getScenarioGroup!_Scenario;
+            version(none) {
             ScenarioGroup scenario_group = getScenarioGroup!_Scenario;
             scope (exit)
             {
                 result.scenarios ~= scenario_group;
             }
-            version (none)
             {
                 scenario.info.property = getScenario!(_Scenario);
                 scenario.info.name = _Scenario.stringof;
+                version(none)
                 static foreach (_Property; UniqueBehaviourProperties)
                 {
                     {
@@ -191,10 +176,11 @@ FeatureGroup getFeature(alias M)() if (isFeature!M)
             }
         }
     }
+    }
     return result;
 }
 
-version (CBR) @safe
+@safe
 unittest
 { //
     import tagion.hibon.HiBONRecord;
@@ -206,9 +192,13 @@ unittest
 
     enum filename = mangle!(FunctionTypeOf!(getFeature!Module))("unittest")
             .unitfile
-            .setExtension("hibon");
+            .setExtension(FileExtension.hibon);
     const feature = getFeature!(Module);
-    //    filename.fwrite(feature);
+    (filename.stripExtension~"_test")
+        .setExtension(FileExtension.hibon)
+        .fwrite(feature);
+    // io.writefln("extected_filename %s", extected_filename);
+    io.writefln("         filename %s", filename);
     const expected = filename.fread!FeatureGroup;
     assert(feature.toDoc == expected.toDoc);
 }
