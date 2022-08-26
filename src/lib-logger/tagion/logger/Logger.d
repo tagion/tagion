@@ -66,7 +66,7 @@ static struct Logger
         {
             logger_tid = locate(logger_task_name);
 
-            
+
 
             .register(task_name, thisTid);
             _task_name = task_name;
@@ -319,6 +319,11 @@ static struct Logger
 
 mixin template Log(alias name)
 {
+    version(GenerateLoggerNames) {
+        import std.format;
+        pragma(msg, format("logger:%s", __traits(indentifier, name))); /// | loggernamegenerated.d > LoggerNames.d
+    }
+    else {
     pragma(msg, name.stringof);
     pragma(msg, "__traits ", __traits(identifier, name));
     pragma(msg, format(q{const bool %1$s_logger = log.env("%1$s", %1$s);}, __traits(identifier, name)));
@@ -330,6 +335,7 @@ mixin template Log(alias name)
     //    const x=log(name.stringof, name);
     // pragma(msg, logged_code);
     // mixin(logged_code);
+    }
 
 }
 
@@ -356,7 +362,7 @@ unittest
 1. Format of registraton variables: logger-taskname-[list of vars]
 2. Format of passing logs: task name, LogLevel(including ENV), Document(which is HiBONRecord for ENV and string for others)
 3. Filter algorithm for LogFilers
-4.  
+4.
 */
 
 mixin template RegisterLogVariable(alias type, string name, string task_name = "")
