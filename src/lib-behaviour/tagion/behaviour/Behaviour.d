@@ -6,6 +6,8 @@ import std.traits;
 import std.format;
 import std.meta : AliasSeq;
 import std.range : only;
+import std.array : join;
+
 import tagion.basic.Types : FileExtension;
 
 /**
@@ -137,17 +139,67 @@ unittest
             .unitfile
             .setExtension(FileExtension.hibon);
     const feature = getFeature!(Module);
-    (filename.stripExtension~"_test")
-        .setExtension(FileExtension.hibon)
-        .fwrite(feature);
+    /+ test file printout
+     (filename.stripExtension~"_test")
+     .setExtension(FileExtension.hibon)
+     .fwrite(feature);
+     +/
     const expected = filename.fread!FeatureGroup;
     assert(feature.toDoc == expected.toDoc);
+}
+
+protected string _scenarioTupleCode(alias M, string tuple_name)() if (isFeature!M) {
+    string[] result;
+    {
+        result ~= format("alias %s = Tuple!(", tuple_name);
+        scope(exit) {
+            result ~= ");";
+        }
+        static foreach(_Scenario; Scenarios!M) {
+            result~=format(q{%1$s, "%1$s",}, _Scenario.stringof);
+        }
+    }
+    return result.join("\n");
+}
+
+mixin template ScenarioTuple(alias M, string tuple_name) {
+    import std.array : join;
+    import std.format;
+    enum code = _scenarioTupleCode!(M, tuple_name);
+    mixin(code);
+}
+
+@safe
+auto automation(alias M)() if (isFeature!M) {
+    import std.typecons;
+    alias ScenariosSeq = Scenarios!M;
+    pragma(msg, "ScenariosSeq ", ScenariosSeq);
+    pragma(msg, "ScenariosSeq ", ScenariosSeq[0], " : ", ScenariosSeq[0].stringof);
+//    const xxx=_scenarioTupleCode!(M)("ScenarionTuple");
+    pragma(msg, _scenarioTupleCode!(M, "ScenarioTuple")());
+    static class FeatureFactory {
+        Feature feature;
+        // Defines the tuple of the Feature scenarios
+        mixin ScenarioTuple!(M, "Scenarios");
+        Scenarios scenarios;
+
+    }
+    FeatureFactory result;
+//    auto feature
+    return result;
+}
+
+/// Test Feature automation
+@safe
+unittest {
+    auto feature_with_ctor = automation!(WithCtor)();
 }
 
 version (unittest)
 {
     //    import std.stdio;
-    public import tagion.behaviour.BehaviourUnittest;
+    import tagion.behaviour.BehaviourUnittest;
+    import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
     import tagion.hibon.Document;
     import io=std.stdio;
     import tagion.hibon.HiBONJSON;
