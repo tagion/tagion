@@ -7,6 +7,7 @@
 
 module tagion.services.LoggerService;
 
+import std.array;
 import std.stdio;
 import std.format;
 import core.thread;

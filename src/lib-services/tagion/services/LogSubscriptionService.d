@@ -14,8 +14,11 @@ import std.exception : assumeUnique, assumeWontThrow;
 
 import tagion.communication.HiRPC;
 
+// import tagion.network.SSLServiceAPI;
+// import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
+
 import tagion.logger.Logger;
-import tagion.services.LoggerService : LogFilter, LogFilterArray;
+import tagion.services.LoggerService : LogFilter;
 import tagion.services.Options : Options, setOptions, setDefaultOption;
 import tagion.options.CommonOptions : commonOptions;
 import tagion.basic.Types : Control, Buffer;
@@ -24,6 +27,8 @@ import tagion.network.SSLServiceAPI;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.basic.TagionExceptions : fatal, taskfailure;
+
+//import tagion.script.ScriptBuilder;
 
 /**
  * \struct LogSubscriptionFilter
@@ -45,9 +50,7 @@ struct LogSubscriptionFilter
     {
         writeln("Added new listener ", listener_id);
         filters[listener_id] ~= log_info;
-        log("Added new listener %s", listener_id);
         notifyLogService;
-        log("Notify Log Service done");
     }
     /** Used when listener want to stop receiving logs or disconnected
      *  Update current filters and notify LoggerService about them
@@ -67,8 +70,7 @@ struct LogSubscriptionFilter
 
         if (logger_service_tid != Tid.init)
         {
-            immutable filters = LogFilterArray(filters.values.join.idup);
-            logger_service_tid.send(filters);
+            logger_service_tid.send(filters.values.join.idup);
         }
     }
 
@@ -122,7 +124,7 @@ void logSubscriptionServiceTask(Options opts) nothrow
 
         log.register(opts.logSubscription.task_name);
 
-        log("SockectThread port=%d addresss=%s", opts.logSubscription.service.port, opts
+        log("SocketThread port=%d addresss=%s", opts.logSubscription.service.port, opts
                 .logSubscription.service.address);
 
         import std.conv;
@@ -133,34 +135,45 @@ void logSubscriptionServiceTask(Options opts) nothrow
             {
                 import tagion.hibon.HiBONJSON;
 
+                writeln("bool agent");
+
                 @trusted const(Document) receivessl()
                 {
                     try
                     {
+                        writeln(ssl_relay is null);
                         immutable buffer = ssl_relay.receive;
+                        writeln("%s", buffer);
                         const result = Document(buffer);
-
+                        // if (result.isInorder) {
                         return result;
+                        // }
                     }
                     catch (Exception t)
                     {
-                        log.warning("Receivessl exception in \'%s:%s\' %s", t.file, t.line, t.msg);
+                        log.warning("%s", t.msg);
                     }
-                    log("recievessl end Document()");
                     return Document();
                 }
 
-                const listener_id = ssl_relay.id();
-
                 const doc = receivessl();
-                const filters = doc["$msg"].get!Document["params"].get!LogFilter;
-                log("filter received (\"%s\", LoggerType.%s)", filters.task_name, filters.log_level);
-
-                // TODO: check is it LogFilter
+                log("%s", doc.toPretty);
                 {
-                    subscribers.addSubscription(listener_id, filters);
-                }
+                    const listener_id = ssl_relay.id();
+                    if (doc.hasMember("task_name") && doc.hasMember("log_level"))
+                    {
+                        auto task_name = doc.opIndex("task_name").data;
+                        auto log_levels = doc.opIndex("log_level").data;
+                        ubyte result = 0;
+                        foreach (log_level; log_levels)
+                        {
+                            result += log_level;
+                        }
+                        LogFilter filter = LogFilter(cast(string) task_name, cast(LoggerType) result);
 
+                        subscribers.addSubscription(listener_id, filter);
+                    }
+                }
                 return false;
             }
 
@@ -171,8 +184,7 @@ void logSubscriptionServiceTask(Options opts) nothrow
         }
 
         auto relay = new LogSubscriptionRelay;
-        auto logsubscription_api = SSLServiceAPI(opts.logSubscription.service, relay, SSLFiberService
-                .Duration.LONGTERM);
+        SSLServiceAPI logsubscription_api = SSLServiceAPI(opts.logSubscription.service, relay);
         auto logsubscription_thread = logsubscription_api.start;
 
         bool stop;
@@ -225,169 +237,3 @@ void logSubscriptionServiceTask(Options opts) nothrow
  * How to link?
  * logSubscriptionServiceTask
  */
-
-unittest
-{
-    import std.algorithm;
-    import std.getopt;
-    import std.stdio;
-    import core.thread;
-    import std.getopt;
-    import std.stdio;
-    import std.format;
-    import std.socket : InternetAddress, AddressFamily;
-
-    import tagion.hibon.Document : Document;
-    import tagion.network.SSLSocket;
-    import tagion.services.Options;
-    import tagion.options.CommonOptions : setCommonOptions;
-    import tagion.services.LogSubscriptionService;
-    import tagion.basic.Types : Control, Buffer;
-
-    import tagion.communication.HiRPC;
-
-    import core.thread;
-
-    import std.array : join;
-    import tagion.logger.Logger : LoggerType;
-    import tagion.services.Options : Options, setDefaultOption;
-    import tagion.options.CommonOptions : setCommonOptions;
-    import tagion.utils.Miscellaneous;
-    import tagion.utils.Gene;
-
-    import std.path;
-    import std.getopt;
-    import std.stdio;
-    import std.file : exists;
-    import std.format;
-    import std.conv : to;
-    import std.array;
-    import tagion.utils.Miscellaneous;
-    import tagion.utils.Gene;
-    import tagion.services.Options : Options, setDefaultOption;
-    import tagion.services.LoggerService;
-    import tagion.services.RecorderService;
-    import tagion.basic.Basic : TrustedConcurrency;
-    import tagion.basic.Types : Control, Buffer;
-    import tagion.dart.DART : DART;
-    import tagion.dart.Recorder : RecordFactory;
-    import tagion.communication.HiRPC;
-    import tagion.hibon.HiBON;
-    import tagion.crypto.SecureInterfaceNet : SecureNet;
-    import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
-    import tagion.dart.BlockFile;
-    import tagion.hibon.Document;
-    import tagion.dart.DARTFile;
-
-    import tagion.tasks.TaskWrapper;
-
-    mixin TrustedConcurrency;
-
-    writeln("START MY TEST...............................................................................................................");
-
-    /** \struct ClientOptions
-    *  Client options used to set up socket connection
-    */
-    struct ClientOptions
-    {
-        string addr; /// @brief client's addres
-        ushort port; /// @brief client's port
-
-        void setDefault()
-        {
-            addr = "127.0.0.1";
-            port = 10700;
-        }
-    }
-
-    ushort port = 10700;
-    string task_name = "faketaskname";
-    LoggerType log_info = LoggerType.ERROR;
-
-    /// \link LogFilter
-    LogFilter filter = LogFilter(task_name, log_info);
-
-    /// @see Options
-    Options service_options;
-    service_options.setDefaultOption;
-    service_options.logSubscription.enable = true;
-    service_options.logSubscription.service.port = port;
-    // Set the shared common options for all services
-    setCommonOptions(service_options.common);
-
-    writefln("input port: %d; options port: %d.", port, service_options
-            .logSubscription.service.port);
-
-    auto loggerService = Task!LoggerTask(service_options.logger.task_name, service_options);
-    scope (exit)
-    {
-        loggerService.control(Control.STOP);
-        receiveOnly!Control;
-    }
-
-    import std.stdio : stderr;
-
-    writeln("...................1");
-
-    const response = receiveOnly!Control;
-    stderr.flush();
-    std.stdio.stdout.flush();
-    if (response !is Control.LIVE)
-    {
-        stderr.writeln("ERROR:Logger %s", response);
-    }
-    writeln("...................2");
-
-    // ClientOptions options;
-    // options.setDefault();
-    writeln("...................3");
-    Thread.sleep(3.seconds);
-
-    /// @see SSLSocket
-    auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-    writeln("...................4");
-    client.connect(new InternetAddress(service_options.logSubscription.service.address, service_options
-            .logSubscription.service.port));
-    writeln("...................5");
-
-    scope (exit)
-    {
-        client.close;
-    }
-
-    /// @see HiRPC
-    HiRPC hirpc;
-    const sender = hirpc.action("test", filter.toDoc);
-    writeln("...................6");
-    immutable data = sender.toDoc.serialize;
-    writeln(data);
-    writeln("try send");
-    client.send(data);
-    writeln("done send");
-    ptrdiff_t rec_size;
-    auto rec_buf = new byte[4000];
-
-    uint count;
-    uint max_count = 5;
-
-    do
-    {
-        writeln(".........................................do outside");
-        do
-        {
-            writeln(".......................do inside try receive");
-            rec_size = client.receive(rec_buf); //, current_max_size);
-            writeln(".......................do inside done receive");
-            //Thread.sleep(1000.msecs);
-            string reply = cast(string) rec_buf.idup;
-            writeln(reply);
-            writeln(".......................do inside reply");
-            writeln(".......................do inside sleep");
-            ++count;
-        }
-        while (rec_size < 0);
-    }
-    while (client.isAlive() && count < max_count);
-
-    writeln("END MY TEST...............................................................................................................");
-}
