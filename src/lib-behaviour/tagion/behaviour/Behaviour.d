@@ -31,6 +31,11 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T)
     static foreach(_Property; BehaviourProperties) {
         {
             alias all_behaviours = getBehaviour!(T, _Property);
+            static if (is(all_behaviours == void)) {
+                static assert(0, format("%s is missing a @%s action", T.stringof, _Property.stringof));
+            }
+            else {
+            pragma(msg, "all_behaviours ", all_behaviours);
             static foreach(i, behaviour; all_behaviours) {{
                 enum group_name = __traits(identifier, typeof(getProperty!(behaviour))).toLower;
                 enum code = memberCode(
@@ -39,6 +44,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T)
                 mixin(code);
                 }}
             }
+        }
     }
     return scenario_group;
 }
@@ -172,16 +178,48 @@ mixin template ScenarioTuple(alias M, string tuple_name) {
 @safe
 auto automation(alias M)() if (isFeature!M) {
     import std.typecons;
-    alias ScenariosSeq = Scenarios!M;
-    pragma(msg, "ScenariosSeq ", ScenariosSeq);
-    pragma(msg, "ScenariosSeq ", ScenariosSeq[0], " : ", ScenariosSeq[0].stringof);
-//    const xxx=_scenarioTupleCode!(M)("ScenarionTuple");
-    pragma(msg, _scenarioTupleCode!(M, "ScenarioTuple")());
-    static class FeatureFactory {
+//     alias ScenariosSeq = Scenarios!M;
+//     pragma(msg, "ScenariosSeq ", ScenariosSeq);
+//     pragma(msg, "ScenariosSeq ", ScenariosSeq[0], " : ", ScenariosSeq[0].stringof);
+// //    const xxx=_scenarioTupleCode!(M)("ScenarionTuple");
+//     pragma(msg, _scenarioTupleCode!(M, "ScenarioTuple")());
+    static struct FeatureFactory {
         Feature feature;
         // Defines the tuple of the Feature scenarios
-        mixin ScenarioTuple!(M, "Scenarios");
-        Scenarios scenarios;
+        mixin ScenarioTuple!(M, "ScenariosT");
+        ScenariosT scenarios;
+        void opDispatch(string scenario_name, Args...)(Args args) {
+            pragma(msg, "Scenarios.fieldNames ", ScenariosT.fieldNames);
+
+            enum code = format(q{scenarios.%1$s = new ScenariosT.%1$s(args);}, scenario_name);
+            pragma(msg, code);
+
+        }
+        FeatureGroup run() nothrow {
+            import tagion.behaviour.BehaviourException : BehaviourError;
+            FeatureGroup result;
+            result.info.property = obtainFeature!M;
+            result.info.name = moduleName!M;
+            alias ScenariosSeq = Scenarios!M;
+            result.scenarios.length = ScenariosSeq.length;
+            static foreach (i, _Scenario; ScenariosSeq)
+            {
+                try {
+                    // static if (__traits(compile, new _Scenario)) {
+
+                    // }
+                    // else {
+
+                    // }
+                    pragma(msg, "scenarios[i] ", typeof(scenarios[i]));
+                    result.scenarios[i] = .run(scenarios[i]);
+                }
+                catch (Exception e) {
+                    result.scenarios[i].info.result = BehaviourError(e).toDoc;
+                }
+            }
+            return result;
+        }
 
     }
     FeatureFactory result;
@@ -193,6 +231,7 @@ auto automation(alias M)() if (isFeature!M) {
 @safe
 unittest {
     auto feature_with_ctor = automation!(WithCtor)();
+    feature_with_ctor.Some_awesome_feature(42, "with_ctor");
 }
 
 version (unittest)
