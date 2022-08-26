@@ -263,7 +263,7 @@ unittest {
 
     alias behaviour_of_but = getBehaviour!(Some_awesome_feature, But);
     static assert(behaviour_of_but.length is 1);
-    static assert(getProperty!(behaviour_of_but[0]) == But("if there is Customer does not take his card, the swollow the card"));
+    static assert(getProperty!(behaviour_of_but[0]) == But("if the Customer does not take his card, then the card must be swollowed"));
 }
 
 

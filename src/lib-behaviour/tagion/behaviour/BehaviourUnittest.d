@@ -73,7 +73,7 @@ version (unittest)
             return result(__FUNCTION__);
         }
 
-        @But("if there is Customer does not take his card, the swollow the card")
+        @But("if the Customer does not take his card, then the card must be swollowed")
         Document swollow_the_card() {
             count++;
             return result(__FUNCTION__);
