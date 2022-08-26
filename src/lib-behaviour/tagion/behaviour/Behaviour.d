@@ -8,15 +8,6 @@ import std.meta : AliasSeq;
 import std.range : only;
 import tagion.basic.Types : FileExtension;
 
-version (unittest)
-{
-    //    import std.stdio;
-    public import tagion.behaviour.BehaviourUnittest;
-    import tagion.hibon.Document;
-    import io=std.stdio;
-    import tagion.hibon.HiBONJSON;
-}
-
 /**
    Run the scenario in Given, When, Then, But order
    Returns:
@@ -48,13 +39,6 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T)
             }
     }
     return scenario_group;
-}
-
-@safe
-unittest {
-    pragma(msg, "UNITTEST ", Some_awesome_feature);
-    auto awesome = new Some_awesome_feature;
-    const result = run(awesome);
 }
 
 @safe
@@ -158,4 +142,13 @@ unittest
         .fwrite(feature);
     const expected = filename.fread!FeatureGroup;
     assert(feature.toDoc == expected.toDoc);
+}
+
+version (unittest)
+{
+    //    import std.stdio;
+    public import tagion.behaviour.BehaviourUnittest;
+    import tagion.hibon.Document;
+    import io=std.stdio;
+    import tagion.hibon.HiBONJSON;
 }
