@@ -3,9 +3,18 @@ module tagion.services.LoggerNames;
 enum LoggerNames {
     test,
     test2,
+    test2,
+
 }
 
+/++
+static bool[EnumMembers!(LoggerNames).length] active_logger;
+
+
 unittest {
+    if (active_logger[oggerNames]) {
+
+    }
     // make loggernames
     LoggerNames logger_id;
     // Inside the code you use enum LoggerServices
@@ -30,3 +39,4 @@ unittest {
         }
     }
 }
++/
