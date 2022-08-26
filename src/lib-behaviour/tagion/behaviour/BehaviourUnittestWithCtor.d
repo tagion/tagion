@@ -90,41 +90,4 @@ version (unittest)
         }
     }
 
-    @safe
-    @Scenario("Some money printer which has run out of paper")
-    class Some_awesome_feature_bad_format_missing_given
-    {
-        @Then("the account is debited ")
-        Document is_debited_bad_one()
-        {
-            import std.exception;
-
-            throw new Exception("Bad debit");
-            return Document();
-        }
-
-        @Then("the cash is dispensed")
-        Document is_dispensed()
-        {
-            return Document();
-        }
-    }
-
-    @safe
-    @Scenario("Some money printer which is gone wild and prints toilet paper")
-    class Some_awesome_feature_bad_format_missing_then
-    {
-        @Given("the card is valid")
-        Document is_valid()
-        {
-            assert(0);
-            return Document();
-        }
-    }
-
 }
-
-
-// {
-//     const result = run!(tagion.behaviour.BehaviourUnittest);
-// }

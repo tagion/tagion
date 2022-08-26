@@ -7,6 +7,7 @@ import std.format;
 import std.meta : AliasSeq;
 import std.range : only;
 import std.array : join;
+import tagion.behaviour.BehaviourException;
 
 import tagion.basic.Types : FileExtension;
 
@@ -18,6 +19,8 @@ import tagion.basic.Types : FileExtension;
 @safe
 ScenarioGroup run(T)(T scenario) if (isScenario!T)
 {
+    ScenarioGroup scenario_group = getScenarioGroup!T;
+    try {
     alias memberCode = format!(q{
             // Scenario group      %1$s
             // Unique propery info %2$s
@@ -26,8 +29,8 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T)
             // Test member         %5$s
             %1$s.%2$s.infos[%3$d].result = %4$s.%5$s;
         }, string, string, size_t,string, string);
-    ScenarioGroup scenario_group = getScenarioGroup!T;
     import std.uni : toLower;
+    .check(scenario !is null, format("The constructor must be call for %s before it's runned", T.stringof));
     static foreach(_Property; BehaviourProperties) {
         {
             alias all_behaviours = getBehaviour!(T, _Property);
@@ -46,6 +49,12 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T)
             }
         }
     }
+    }
+    catch (Exception e) {
+        io.writefln("RUN %s", e.msg);
+        scenario_group.info.result = BehaviourError(e).toDoc;
+        io.writefln("scenario_group.info.result = %s", scenario_group.info.result.toPretty);
+    }
     return scenario_group;
 }
 
@@ -62,6 +71,7 @@ unittest
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_valid",
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.in_credit",
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.contains_cash",
+
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.request_cash",
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_debited",
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_dispensed",
@@ -205,17 +215,21 @@ auto automation(alias M)() if (isFeature!M) {
             static foreach (i, _Scenario; ScenariosSeq)
             {
                 try {
-                    // static if (__traits(compile, new _Scenario)) {
-
-                    // }
-                    // else {
-
-                    // }
+                    io.writefln("run %s ", _Scenario.stringof);
+                    static if (__traits(compiles, new _Scenario())) {
+                        if (result.scenarios[i] is null) {
+                            result.scenarios[i] = new _Scenario();
+                        }
+                    }
                     pragma(msg, "scenarios[i] ", typeof(scenarios[i]));
                     result.scenarios[i] = .run(scenarios[i]);
                 }
                 catch (Exception e) {
-                    result.scenarios[i].info.result = BehaviourError(e).toDoc;
+                    import std.exception : assumeWontThrow;
+                    // assumeWontThrow({
+                    //         io.writefln("FeatureGroup run %s", e.msg);
+                    result.scenarios[i].info.result = assumeWontThrow(BehaviourError(e).toDoc);
+                        // });
                 }
             }
             return result;
@@ -231,7 +245,9 @@ auto automation(alias M)() if (isFeature!M) {
 @safe
 unittest {
     auto feature_with_ctor = automation!(WithCtor)();
-    feature_with_ctor.Some_awesome_feature(42, "with_ctor");
+    const feature_result=feature_with_ctor.run;
+    io.writefln("feature_result_with_ctor=%s", feature_result.toPretty);
+//    feature_with_ctor.Some_awesome_feature(42, "with_ctor");
 }
 
 version (unittest)

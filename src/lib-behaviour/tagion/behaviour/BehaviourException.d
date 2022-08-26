@@ -16,14 +16,33 @@ import tagion.hibon.HiBONRecord;
 /// check function used in the HiBON package
 alias check = Check!(BehaviourException);
 
+@safe
+@RecordType("BDDError")
 struct BehaviourError {
     string msg;
     string[] trace;
     mixin HiBONRecord!(q{
-            this(Exception e) {
+            this(Exception e) nothrow @trusted {
+                import std.exception : assumeWontThrow;
                 import std.string : splitLines;
-                msg=e.msg;
-                trace=e.toString.splitLines;
+                import std.stdio;
+                //msg = "Daw do";
+//                assumeWontThrow({
+                msg =e.msg;
+                trace= assumeWontThrow(e.toString.splitLines);
+//                    });
+                // assumeWontThrow({
+
+                // writefln("---- %s ", BehaviourError.stringof);
+                //     });
+                // assumeWontThrow({
+                //         writefln("BehaviourError %s", e.msg);
+                //         // msg=e.msg.idup;
+                //     });
+                // assumeWontThrow({
+
+                //         trace=e.toString.splitLines;
+                //     });
             }
         });
 
