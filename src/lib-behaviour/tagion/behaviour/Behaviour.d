@@ -134,48 +134,7 @@ FeatureGroup getFeature(alias M)() if (isFeature!M)
     result.scenarios.length = ScenariosSeq.length;
     static foreach (i, _Scenario; ScenariosSeq)
     {
-        {
-            result.scenarios[i] =getScenarioGroup!_Scenario;
-            version(none) {
-            ScenarioGroup scenario_group = getScenarioGroup!_Scenario;
-            scope (exit)
-            {
-                result.scenarios ~= scenario_group;
-            }
-            {
-                scenario.info.property = getScenario!(_Scenario);
-                scenario.info.name = _Scenario.stringof;
-                version(none)
-                static foreach (_Property; UniqueBehaviourProperties)
-                {
-                    {
-                        alias behaviour = getBehaviour!(_Scenario, _Property);
-                        static if (!is(behaviour == void))
-                        {
-                            import std.uni : toLower;
-
-                            auto group = &__traits(getMember, scenario, _Property.stringof.toLower);
-
-                            group.info.property = getProperty!behaviour;
-                            group.info.name = __traits(identifier, behaviour);
-                            static foreach (under_behaviour; getUnderBehaviour!(_Scenario, _Property))
-                            {
-                                {
-                                    Info!And and;
-                                    scope (exit)
-                                    {
-                                        group.ands ~= and;
-                                    }
-                                    and.property = getProperty!(under_behaviour);
-                                    and.name = __traits(identifier, under_behaviour);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+        result.scenarios[i] =getScenarioGroup!_Scenario;
     }
     return result;
 }
@@ -197,8 +156,6 @@ unittest
     (filename.stripExtension~"_test")
         .setExtension(FileExtension.hibon)
         .fwrite(feature);
-    // io.writefln("extected_filename %s", extected_filename);
-    io.writefln("         filename %s", filename);
     const expected = filename.fread!FeatureGroup;
     assert(feature.toDoc == expected.toDoc);
 }
