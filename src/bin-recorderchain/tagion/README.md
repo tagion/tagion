@@ -26,12 +26,12 @@
 --chain_directory -c
 ```
 *Require* 
-Directory for store recorder block chain
+Directory that contains recorder block chain
 
 ## Use cases
 ### Case - set chain directory
 ```
-./recorderchain ./recorderchain ../../../test_chain/TMPFILE ../../../test_chain/DARTNEW
+./recorderchain /test_chain/TMPFILE /test_chain/DARTNEW
 ```
 #### Success
 **Result**
@@ -53,7 +53,7 @@ Path to dart file
 ## Use cases
 ### Case - set dart file directory
 ```
-./recorderchain ./recorderchain ../../../test_chain/TMPFILE ../../../test_chain/DARTNEW --initialize=true
+./recorderchain test_chain/TMPFILE test_chain/DARTNEW --initialize=true
 ```
 #### Success
 **Result**
