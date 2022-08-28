@@ -17,19 +17,21 @@ version (unittest)
         assert(REPOROOT, format!"%s must be defined"(REPOROOT.stringof));
     }
 
+    @safe
+    Document result(string test)
+    {
+        auto h = new HiBON;
+        h["test"] = test;
+        return Document(h);
+    }
+
+
     enum feature = Feature("Some awesome feature should print some cash out of the blue");
     // Behavioral examples
     @safe
     @Scenario("Some awesome money printer")
     class Some_awesome_feature
     {
-        static Document result(string test)
-        {
-            auto h = new HiBON;
-            h["test"] = test;
-            return Document(h);
-        }
-
         uint count;
         string text;
         this(const uint count, string text) {
@@ -89,5 +91,40 @@ version (unittest)
         {
         }
     }
+
+    @safe
+    @Scenario("Some money printer which is controlled by a bankster")
+    class Some_awesome_feature_bad_format_double_property
+    {
+        uint count;
+        this(const uint count) {
+            this.count = count;
+        }
+
+        @Given("the card is valid")
+        Document is_valid()
+        {
+            return Document();
+        }
+
+        @When("the Customer request cash")
+        Document request_cash()
+        {
+            return Document();
+        }
+
+        @Then("the account is debited")
+        Document is_debited()
+        {
+            return Document();
+        }
+
+        @Then("the cash is dispensed")
+        Document is_dispensed()
+        {
+            return Document();
+        }
+    }
+
 
 }

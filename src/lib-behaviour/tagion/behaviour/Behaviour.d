@@ -7,9 +7,12 @@ import std.format;
 import std.meta : AliasSeq;
 import std.range : only;
 import std.array : join;
-import tagion.behaviour.BehaviourException;
+import std.algorithm.searching: any;
 
+import tagion.behaviour.BehaviourException;
 import tagion.basic.Types : FileExtension;
+import tagion.hibon.HiBONRecord : isRecordType;
+import tagion.basic.Basic : isOneOf;
 
 /**
    Run the scenario in Given, When, Then, But order
@@ -35,7 +38,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T)
         {
             alias all_behaviours = getBehaviour!(T, _Property);
             static if (is(all_behaviours == void)) {
-                static assert(0, format("%s is missing a @%s action", T.stringof, _Property.stringof));
+                static assert(!isOneOf!(_Property, MandatoryBehaviourProperties), format("%s is missing a @%s action", T.stringof, _Property.stringof));
             }
             else {
             pragma(msg, "all_behaviours ", all_behaviours);
@@ -258,13 +261,18 @@ bool hasErrors(ref const FeatureGroup feature) {
  */
 @safe
 bool hasErrors(ref const ScenarioGroup scenario) {
-    // static foreach(i, Type; Fields!ScenarioGroup) {
-    //     static if (__traits(isSame, TemplateOf!(Type), ActionGroup)) {
-
-    //     }
-    //     static if (__traits(isSame, TemplateOf!(Type), Info)) {
-    //     }
-    // }
+    static foreach(i, Type; Fields!ScenarioGroup) {
+        static if (__traits(isSame, TemplateOf!(Type), ActionGroup)) {
+            if (scenario.tupleof[i].infos.any!(info => info.result.isRecordType!BehaviourError)) {
+                return true;
+            }
+        }
+        else static if (__traits(isSame, TemplateOf!(Type), Info)) {
+            if (scenario.tupleof[i].result.isRecordType!BehaviourError) {
+                return true;
+            }
+        }
+    }
     return false;
 }
 
@@ -273,8 +281,13 @@ bool hasErrors(ref const ScenarioGroup scenario) {
 unittest {
     auto feature_with_ctor = automation!(WithCtor)();
     const feature_result=feature_with_ctor.run;
-    io.writefln("feature_result_with_ctor=%s", feature_result.toPretty);
+    {
+        io.writefln("feature_result_with_ctor=%s", feature_result.toPretty);
+        assert(feature_result.scenarios[0].hasErrors);
+        assert(feature_result.scenarios[1].hasErrors);
+//            feature_resu
 //    feature_with_ctor.Some_awesome_feature(42, "with_ctor");
+    }
 }
 
 version (unittest)

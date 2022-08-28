@@ -93,7 +93,7 @@ version (unittest) {
 /// All behaviour-properties of a Scenario
 alias BehaviourProperties = AliasSeq!(Given, When, Then, But);
 /// The behaviour-properties which only occurrences once in a Scenario
-//alias UniqueBehaviourProperties = Erase!(And, BehaviourProperties);
+alias MandatoryBehaviourProperties = Erase!(When, Erase!(But, BehaviourProperties));
 
 // alias MemberProperty=Tuple!(string, "member", string, "goal");
 // alias PropertyFormat(T)=format!(T.stringof~".%s", string);
