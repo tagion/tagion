@@ -80,7 +80,6 @@ struct MarkdownT(Stream) {
     }
 }
 
-version(none)
 @safe
 unittest { // Markdown scenario test
     auto bout = new OutBuffer;
@@ -120,7 +119,6 @@ unittest { // Markdown scenario test
     //    assert(bout.toString == "Not code");
 }
 
-version(none)
 @safe
 unittest {
     auto bout = new OutBuffer;
@@ -226,7 +224,6 @@ struct DlangT(Stream) {
     }
 }
 
-version(none)
 @safe
 unittest {
     auto bout = new OutBuffer;
