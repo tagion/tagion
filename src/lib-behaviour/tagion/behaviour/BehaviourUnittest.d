@@ -17,19 +17,21 @@ version (unittest)
         assert(REPOROOT, format!"%s must be defined"(REPOROOT.stringof));
     }
 
+    @safe
+    Document result(string test)
+    {
+        auto h = new HiBON;
+        h["test"] = test;
+        return Document(h);
+    }
+
+
     enum feature = Feature("Some awesome feature should print some cash out of the blue");
     // Behavioral examples
     @safe
     @Scenario("Some awesome money printer")
     class Some_awesome_feature
     {
-        static Document result(string test)
-        {
-            auto h = new HiBON;
-            h["test"] = test;
-            return Document(h);
-        }
-
         uint count;
         @Given("the card is valid")
         Document is_valid()

@@ -61,12 +61,14 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T)
     return scenario_group;
 }
 
+version(none)
 @safe
 unittest
 {
     import std.algorithm.iteration : map;
     import std.algorithm.comparison : equal;
     import std.array;
+    import tagion.behaviour.BehaviourUnittest;
 
     auto awesome = new Some_awesome_feature;
     const runner_result = run(awesome);
@@ -144,6 +146,7 @@ FeatureGroup getFeature(alias M)() if (isFeature!M)
     return result;
 }
 
+version(none)
 @safe
 unittest
 { //
@@ -151,7 +154,7 @@ unittest
     import tagion.basic.Basic : unitfile;
     import core.demangle : mangle;
 
-    alias Module = tagion.behaviour.BehaviourUnittest;
+    import Module = tagion.behaviour.BehaviourUnittest;
     import std.path;
 
     enum filename = mangle!(FunctionTypeOf!(getFeature!Module))("unittest")
@@ -192,6 +195,9 @@ mixin template ScenarioTuple(alias M, string tuple_name) {
 @safe
 auto automation(alias M)() if (isFeature!M) {
     import std.typecons;
+    pragma(msg, "M ", moduleName!M);
+    mixin(format(q{import %s;}, moduleName!M));
+
 //     alias ScenariosSeq = Scenarios!M;
 //     pragma(msg, "ScenariosSeq ", ScenariosSeq);
 //     pragma(msg, "ScenariosSeq ", ScenariosSeq[0], " : ", ScenariosSeq[0].stringof);
@@ -203,10 +209,22 @@ auto automation(alias M)() if (isFeature!M) {
         mixin ScenarioTuple!(M, "ScenariosT");
         ScenariosT scenarios;
         void opDispatch(string scenario_name, Args...)(Args args) {
-            pragma(msg, "Scenarios.fieldNames ", ScenariosT.fieldNames);
+            pragma(msg, "Scenarios.fieldNames ", ScenariosT.fieldNames, "Args ", Args);
+            pragma(msg, "ScenariosT ", ScenariosT);
 
-            enum code = format(q{scenarios.%1$s = new ScenariosT.%1$s(args);}, scenario_name);
+            enum code_1 = format(q{alias Scenario=typeof(ScenariosT.%1$s);}, scenario_name);
+            pragma(msg, "code_1 ", code_1);
+            mixin(code_1);
+            pragma(msg, "X ", Scenario, " ", is(Scenario == class));
+            auto x= new Scenario();
+//            auto y= new Scenario(args);
+            alias PickCtorParams = ParameterTypeTuple!(__traits(getOverloads, Scenario,
+"__ctor")[0]);
+            pragma(msg, "PickCtorParams ", PickCtorParams);
+
+            enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
             pragma(msg, code);
+            mixin(code);
 
         }
         FeatureGroup run() nothrow {
@@ -250,9 +268,11 @@ auto automation(alias M)() if (isFeature!M) {
    true if one of more actions in the Feature has failed
  */
 @safe
-bool hasErrors(ref const FeatureGroup feature) {
-
-    return true;
+bool hasErrors(ref const FeatureGroup feature_group) {
+    if (feature_group.info.result.isRecordType!BehaviourError) {
+        return true;
+    }
+    return feature_group.scenarios.any!(scenario => scenario.hasErrors);
 }
 
 /**
@@ -260,15 +280,15 @@ bool hasErrors(ref const FeatureGroup feature) {
    true if one of more actions in the Scenario has failed
  */
 @safe
-bool hasErrors(ref const ScenarioGroup scenario) {
+bool hasErrors(ref const ScenarioGroup scenario_group) {
     static foreach(i, Type; Fields!ScenarioGroup) {
         static if (__traits(isSame, TemplateOf!(Type), ActionGroup)) {
-            if (scenario.tupleof[i].infos.any!(info => info.result.isRecordType!BehaviourError)) {
+            if (scenario_group.tupleof[i].infos.any!(info => info.result.isRecordType!BehaviourError)) {
                 return true;
             }
         }
         else static if (__traits(isSame, TemplateOf!(Type), Info)) {
-            if (scenario.tupleof[i].result.isRecordType!BehaviourError) {
+            if (scenario_group.tupleof[i].result.isRecordType!BehaviourError) {
                 return true;
             }
         }
@@ -276,25 +296,40 @@ bool hasErrors(ref const ScenarioGroup scenario) {
     return false;
 }
 
-/// Test Feature automation
+/// Test Feature automation with errors via the hasError function
+version(none)
 @safe
 unittest {
+    import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
+
     auto feature_with_ctor = automation!(WithCtor)();
-    const feature_result=feature_with_ctor.run;
     {
+        const feature_result=feature_with_ctor.run;
+        assert(feature_result.scenarios[0].hasErrors);
+        assert(feature_result.scenarios[1].hasErrors);
+        assert(feature_result.hasErrors);
+
+//            feature_resu
+//    feature_with_ctor.Some_awesome_feature(42, "with_ctor");
+    }
+
+    {
+        // Calls the construction for the Some_awesome_feature scenario
+//        feature_with_ctor.Some_awesome_feature(42, "with_ctor");
+        feature_with_ctor.opDispatch!"Some_awesome_feature"(42, "with_ctor");
+        const feature_result=feature_with_ctor.run;
         io.writefln("feature_result_with_ctor=%s", feature_result.toPretty);
         assert(feature_result.scenarios[0].hasErrors);
         assert(feature_result.scenarios[1].hasErrors);
-//            feature_resu
-//    feature_with_ctor.Some_awesome_feature(42, "with_ctor");
+        assert(feature_result.hasErrors);
     }
 }
 
 version (unittest)
 {
     //    import std.stdio;
-    import tagion.behaviour.BehaviourUnittest;
-    import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
+    // import WithoutCtor =tagion.behaviour.BehaviourUnittest;
+    // import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
     import tagion.hibon.Document;
     import io=std.stdio;
     import tagion.hibon.HiBONJSON;

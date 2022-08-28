@@ -7,6 +7,7 @@ version (unittest)
 {
     import tagion.hibon.HiBON;
     import tagion.hibon.Document;
+    import tagion.behaviour.BehaviourException;
     import std.format;
     import std.process;
 
@@ -22,7 +23,7 @@ version (unittest)
     {
         auto h = new HiBON;
         h["test"] = test;
-        return Document(h);
+        return Result(h).toDoc;
     }
 
 
@@ -34,6 +35,7 @@ version (unittest)
     {
         uint count;
         string text;
+        @disable this();
         this(const uint count, string text) {
             this.count = count;
             this.text = text;

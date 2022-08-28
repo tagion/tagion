@@ -34,8 +34,9 @@ struct BehaviourError {
 
 @safe
 @RecordType("BDDResult")
-struct BevavourResult {
-    int x;
-//    Document result;
+struct Result {
+    import tagion.hibon.Document;
+//    int x;
+    Document result;
     mixin HiBONRecord!();
 }
