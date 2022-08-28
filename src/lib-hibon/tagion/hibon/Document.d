@@ -402,7 +402,7 @@ static assert(uint.sizeof == 4);
      Returns:
      true if the key exist in the Document
      +/
-    bool hasMember(scope string key) const
+    bool hasMember(scope string key) const nothrow
     {
         return !opBinaryRight!("in")(key).isEod();
     }
@@ -464,9 +464,6 @@ static assert(uint.sizeof == 4);
     const(Element) opIndex(in string key) const
     {
         auto result = key in this;
-
-
-
         .check(!result.isEod, message("Member named '%s' not found", key));
         return result;
     }

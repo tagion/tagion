@@ -2,6 +2,7 @@ module tagion.behaviour.BehaviourException;
 
 import tagion.basic.TagionExceptions;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.Document;
 /++
  Exception type used by tagion.hibon.HiBON module
  +/
@@ -39,4 +40,16 @@ struct Result {
 //    int x;
     Document outcome;
     mixin HiBONRecord!();
+}
+
+@safe
+Result result(const Document doc) nothrow {
+    Result result;
+    result.outcome = Document(doc.data);
+    return result;
+}
+
+@safe
+Result result(T)(T hibon_record) if (isHiBONRecord!T) {
+    return result(hibon_record.toDoc);
 }

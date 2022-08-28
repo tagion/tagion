@@ -18,14 +18,20 @@ version (unittest)
         assert(REPOROOT, format!"%s must be defined"(REPOROOT.stringof));
     }
 
+    bool pass;
+
     @safe
-    Document result(string test)
+        Document result(string test)
     {
-        auto h = new HiBON;
-        h["test"] = test;
-        Result result;
-        result.outcome = Document(h);
-        return result.toDoc;
+        if (pass) {
+            auto h = new HiBON;
+            h["test"] = test;
+            Result result;
+            result.outcome = Document(h);
+            return result.toDoc;
+        }
+        // Return a docunent which is not a Result
+        return Document();
     }
 
 
@@ -37,6 +43,7 @@ version (unittest)
     {
         uint count;
         string text;
+        bool pass;
         @disable this();
         this(const uint count, string text) {
             this.count = count;
@@ -101,6 +108,7 @@ version (unittest)
     class Some_awesome_feature_bad_format_double_property
     {
         uint count;
+        @disable this();
         this(const uint count) {
             this.count = count;
         }
@@ -108,25 +116,29 @@ version (unittest)
         @Given("the card is valid")
         Document is_valid()
         {
-            return Document();
+            count++;
+            return result(__FUNCTION__);
         }
 
         @When("the Customer request cash")
         Document request_cash()
         {
-            return Document();
+            count++;
+            return result(__FUNCTION__);
         }
 
         @Then("the account is debited")
         Document is_debited()
         {
-            return Document();
+            count++;
+            return result(__FUNCTION__);
         }
 
         @Then("the cash is dispensed")
         Document is_dispensed()
         {
-            return Document();
+            count++;
+            return result(__FUNCTION__);
         }
     }
 

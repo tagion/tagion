@@ -8,10 +8,11 @@ import std.meta : AliasSeq;
 import std.range : only;
 import std.array : join;
 import std.algorithm.searching: any;
+import std.exception : assumeWontThrow;
 
 import tagion.behaviour.BehaviourException;
 import tagion.basic.Types : FileExtension;
-import tagion.hibon.HiBONRecord : isRecordType;
+import tagion.hibon.HiBONRecord;
 import tagion.basic.Basic : isOneOf;
 
 /**
@@ -58,9 +59,32 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T)
         scenario_group.info.result = BehaviourError(e).toDoc;
 //        io.writefln("scenario_group.info.result = %s", scenario_group.info.result.toPretty);
     }
+    scenario_group.info.result = result(ScenarioResult(true)).toDoc;
     return scenario_group;
 }
 
+@safe
+struct ScenarioResult {
+    bool end;
+    mixin HiBONRecord!(q{
+            this(bool flag) {
+                end=flag;
+            }
+        });
+}
+
+version(none) {
+private static Document scenario_ends;
+static this() {
+    // import tagion.hibon.HiBON;
+    // auto h=new HiBON;
+    // h["end"]=true;
+    Result result;
+//    auto x = ScenarioResult
+    result.outcome = ScenarioResult(true).toDoc;
+    scenario_ends = result.toDoc;
+}
+}
 @safe
 unittest
 {
@@ -193,14 +217,8 @@ mixin template ScenarioTuple(alias M, string tuple_name) {
 @safe
 auto automation(alias M)() if (isFeature!M) {
     import std.typecons;
-    pragma(msg, "M ", moduleName!M);
     mixin(format(q{import %s;}, moduleName!M));
 
-//     alias ScenariosSeq = Scenarios!M;
-//     pragma(msg, "ScenariosSeq ", ScenariosSeq);
-//     pragma(msg, "ScenariosSeq ", ScenariosSeq[0], " : ", ScenariosSeq[0].stringof);
-// //    const xxx=_scenarioTupleCode!(M)("ScenarionTuple");
-//     pragma(msg, _scenarioTupleCode!(M, "ScenarioTuple")());
     static struct FeatureFactory {
         Feature feature;
         // Defines the tuple of the Feature scenarios
@@ -266,7 +284,7 @@ auto automation(alias M)() if (isFeature!M) {
    true if one of more actions in the Feature has failed
  */
 @safe
-bool hasErrors(ref const FeatureGroup feature_group) {
+bool hasErrors(ref const FeatureGroup feature_group) nothrow {
     if (feature_group.info.result.isRecordType!BehaviourError) {
         return true;
     }
@@ -278,7 +296,7 @@ bool hasErrors(ref const FeatureGroup feature_group) {
    true if one of more actions in the Scenario has failed
  */
 @safe
-bool hasErrors(ref const ScenarioGroup scenario_group) {
+bool hasErrors(ref const ScenarioGroup scenario_group) nothrow {
     static foreach(i, Type; Fields!ScenarioGroup) {
         static if (__traits(isSame, TemplateOf!(Type), ActionGroup)) {
             if (scenario_group.tupleof[i].infos.any!(info => info.result.isRecordType!BehaviourError)) {
@@ -342,4 +360,63 @@ version (unittest)
     import tagion.hibon.Document;
     import io=std.stdio;
     import tagion.hibon.HiBONJSON;
+}
+
+/**
+   Returns:
+   true if one of more actions in the Feature has failed
+ */
+@safe
+bool hasPassed(ref const FeatureGroup feature_group) nothrow {
+    if (feature_group.info.result.isRecordType!Result) {
+        return true;
+    }
+    return feature_group.scenarios.any!(scenario => scenario.hasPassed);
+}
+
+@safe
+bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
+     static foreach(i, Type; Fields!ScenarioGroup) {
+        static if (__traits(isSame, TemplateOf!(Type), ActionGroup)) {
+            if (scenario_group.tupleof[i].infos.any!(info => !info.result.isRecordType!Result)) {
+                return false;
+            }
+        }
+        else static if (__traits(isSame, TemplateOf!(Type), Info)) {
+            assumeWontThrow(io.writefln("scenario_group.tupleof[i].result = %s", scenario_group.tupleof[i].result.toPretty));
+            if (!scenario_group.tupleof[i].result.isRecordType!Result) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+
+///
+@safe
+unittest {
+    // Test of hasPassed function on Scenarios and Feature
+    import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
+
+    auto feature_with_ctor = automation!(WithCtor)();
+    feature_with_ctor.Some_awesome_feature(42, "with_ctor");
+    feature_with_ctor.Some_awesome_feature_bad_format_double_property(17);
+
+    { // None of the scenario passes
+        const feature_result=feature_with_ctor.run;
+        assert(!feature_result.scenarios[0].hasPassed);
+        assert(!feature_result.scenarios[1].hasPassed);
+        assert(!feature_result.hasPassed);
+    }
+
+    { // None of the scenario passes
+        WithCtor.pass = true; /// Pass all tests!
+        const feature_result=feature_with_ctor.run;
+        assert(feature_result.scenarios[0].hasPassed);
+        assert(feature_result.scenarios[1].hasPassed);
+        io.writefln("feature_result =%s", feature_result.toPretty);
+//        assert(!feature_result.hasPassed);
+    }
+
 }

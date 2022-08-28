@@ -4,7 +4,7 @@ import std.stdio;
 import tagion.hibon.HiBONJSON;
 
 import file = std.file;
-import std.exception : assumeUnique;
+import std.exception : assumeUnique, assumeWontThrow;
 import std.typecons : Tuple;
 import std.traits : hasMember, ReturnType, isArray, ForeachType, isUnsigned, isIntegral, hasUDA, getUDAs;
 
@@ -28,9 +28,9 @@ enum isHiBONRecord(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
 enum isHiBONRecordArray(T) = isArray!T && isHiBONRecord!(ForeachType!T);
 
 @safe
-bool isRecordType(T)(const Document doc) if (hasUDA!(T, RecordType)) {
+bool isRecordType(T)(const Document doc) nothrow if (hasUDA!(T, RecordType)) {
     enum record_type = getUDAs!(T, RecordType)[0].name;
-    return doc.hasMember(TYPENAME) && (doc[TYPENAME] == record_type);
+    return doc.hasMember(TYPENAME) && assumeWontThrow(doc[TYPENAME] == record_type);
 }
 
 enum STUB = HiBONPrefix.HASH ~ "";
