@@ -61,7 +61,6 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T)
     return scenario_group;
 }
 
-version(none)
 @safe
 unittest
 {
@@ -82,7 +81,7 @@ unittest
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_dispensed",
         "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.swollow_the_card",
         )
-        .map!(a => Some_awesome_feature.result(a));
+        .map!(a => result(a));
     io.writefln("awesome.count = %d", awesome.count);
     assert(awesome.count == 7);
     Document[] results;
@@ -146,7 +145,6 @@ FeatureGroup getFeature(alias M)() if (isFeature!M)
     return result;
 }
 
-version(none)
 @safe
 unittest
 { //
@@ -216,7 +214,7 @@ auto automation(alias M)() if (isFeature!M) {
             pragma(msg, "code_1 ", code_1);
             mixin(code_1);
             pragma(msg, "X ", Scenario, " ", is(Scenario == class));
-            auto x= new Scenario();
+            //auto x= new Scenario();
 //            auto y= new Scenario(args);
             alias PickCtorParams = ParameterTypeTuple!(__traits(getOverloads, Scenario,
 "__ctor")[0]);
@@ -297,7 +295,6 @@ bool hasErrors(ref const ScenarioGroup scenario_group) {
 }
 
 /// Test Feature automation with errors via the hasError function
-version(none)
 @safe
 unittest {
     import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
