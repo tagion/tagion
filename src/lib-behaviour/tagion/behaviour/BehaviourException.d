@@ -37,6 +37,6 @@ struct BehaviourError {
 struct Result {
     import tagion.hibon.Document;
 //    int x;
-    Document result;
+    Document outcome;
     mixin HiBONRecord!();
 }

@@ -54,9 +54,9 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T)
     }
     }
     catch (Exception e) {
-        io.writefln("RUN %s", e.msg);
+//        io.writefln("RUN %s", e.msg);
         scenario_group.info.result = BehaviourError(e).toDoc;
-        io.writefln("scenario_group.info.result = %s", scenario_group.info.result.toPretty);
+//        io.writefln("scenario_group.info.result = %s", scenario_group.info.result.toPretty);
     }
     return scenario_group;
 }
@@ -300,25 +300,37 @@ unittest {
     import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
 
     auto feature_with_ctor = automation!(WithCtor)();
-    {
+
+    { // No constructor has been called for the scenarios, this means that scenarios and the feature will have errors
         const feature_result=feature_with_ctor.run;
         assert(feature_result.scenarios[0].hasErrors);
         assert(feature_result.scenarios[1].hasErrors);
         assert(feature_result.hasErrors);
-
-//            feature_resu
-//    feature_with_ctor.Some_awesome_feature(42, "with_ctor");
     }
 
-    {
+    { // Fails in second scenario because the constructor has not been called
         // Calls the construction for the Some_awesome_feature scenario
-//        feature_with_ctor.Some_awesome_feature(42, "with_ctor");
-        feature_with_ctor.opDispatch!"Some_awesome_feature"(42, "with_ctor");
+        feature_with_ctor.Some_awesome_feature(42, "with_ctor");
         const feature_result=feature_with_ctor.run;
-        io.writefln("feature_result_with_ctor=%s", feature_result.toPretty);
-        assert(feature_result.scenarios[0].hasErrors);
+//        io.writefln("feature_result_with_ctor=%s", feature_result.toPretty);
+        // io.writefln("feature_result.scenarios[0]=%s", feature_result.scenarios[0].toPretty);
+        assert(!feature_result.scenarios[0].hasErrors);
+        // io.writefln("feature_result.scenarios[1]=%s", feature_result.scenarios[1].toPretty);
         assert(feature_result.scenarios[1].hasErrors);
         assert(feature_result.hasErrors);
+    }
+
+    { // The constructor of both scenarios has been called, this means that no errors is reported
+        // Calls the construction for the Some_awesome_feature scenario
+        feature_with_ctor.Some_awesome_feature(42, "with_ctor");
+        feature_with_ctor.Some_awesome_feature_bad_format_double_property(17);
+        const feature_result=feature_with_ctor.run;
+//        io.writefln("feature_result_with_ctor=%s", feature_result.toPretty);
+        // io.writefln("feature_result.scenarios[0]=%s", feature_result.scenarios[0].toPretty);
+        assert(!feature_result.scenarios[0].hasErrors);
+        // io.writefln("feature_result.scenarios[1]=%s", feature_result.scenarios[1].toPretty);
+        assert(!feature_result.scenarios[1].hasErrors);
+        assert(!feature_result.hasErrors);
     }
 }
 

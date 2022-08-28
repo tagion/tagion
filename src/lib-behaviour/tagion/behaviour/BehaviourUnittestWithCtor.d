@@ -23,7 +23,9 @@ version (unittest)
     {
         auto h = new HiBON;
         h["test"] = test;
-        return Result(h).toDoc;
+        Result result;
+        result.outcome = Document(h);
+        return result.toDoc;
     }
 
 
