@@ -30,7 +30,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T)
             %1$s.%2$s.infos[%3$d].result = %4$s.%5$s;
         }, string, string, size_t,string, string);
     import std.uni : toLower;
-    .check(scenario !is null, format("The constructor must be call for %s before it's runned", T.stringof));
+    .check(scenario !is null, format("The constructor must be called for %s before it's runned", T.stringof));
     static foreach(_Property; BehaviourProperties) {
         {
             alias all_behaviours = getBehaviour!(T, _Property);
@@ -242,6 +242,9 @@ auto automation(alias M)() if (isFeature!M) {
     return result;
 }
 
+bool hasError(const Feature) {
+    return false;
+}
 /// Test Feature automation
 @safe
 unittest {

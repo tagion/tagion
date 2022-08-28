@@ -6,7 +6,7 @@ import tagion.hibon.HiBONJSON;
 import file = std.file;
 import std.exception : assumeUnique;
 import std.typecons : Tuple;
-import std.traits : hasMember, ReturnType, isArray, ForeachType, isUnsigned, isIntegral;
+import std.traits : hasMember, ReturnType, isArray, ForeachType, isUnsigned, isIntegral, hasUDA, getUDAs;
 
 import tagion.basic.Basic : basename, EnumContinuousSequency;
 import tagion.hibon.HiBONBase : ValueT;
@@ -27,6 +27,12 @@ enum isHiBONRecord(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
 
 enum isHiBONRecordArray(T) = isArray!T && isHiBONRecord!(ForeachType!T);
 
+@safe
+bool isRecordType(T)(const Document doc) if (hasUDA!(T, RecordType)) {
+    enum record_type = getUDAs!(T, RecordType)[0].name;
+    return doc.hasMember(TYPENAME) && (doc[TYPENAME] == record_type);
+}
+
 enum STUB = HiBONPrefix.HASH ~ "";
 @safe bool isStub(const Document doc)
 {
@@ -39,11 +45,13 @@ enum HiBONPrefix
     PARAM = '$'
 }
 
+@safe
 bool hasHashKey(T)(T doc) if (is(T : const(HiBON)) || is(T : const(Document)))
 {
     return !doc.empty && doc.keys.front[0] is HiBONPrefix.HASH && doc.keys.front != STUB;
 }
 
+@safe
 unittest
 {
     import std.range : iota;
@@ -918,7 +926,7 @@ T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T)
     }
 
     { // Simpel basic type check
-    {
+        {
             const s = Simpel(-42, "some text");
             const docS = s.toDoc;
             // writefln("keys=%s", docS.keys);
@@ -930,6 +938,9 @@ T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T)
             // const s_check=Simpel(s);
             assert(s == s_check);
             assert(s_check.toJSON.toString == format("%j", s_check));
+
+            assert(isRecordType!Simpel(docS));
+            assert(!isRecordType!SimpelLabel(docS));
         }
 
         {

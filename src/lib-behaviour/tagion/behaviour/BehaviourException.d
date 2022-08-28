@@ -26,25 +26,16 @@ struct BehaviourError {
                 import std.exception : assumeWontThrow;
                 import std.string : splitLines;
                 import std.stdio;
-                //msg = "Daw do";
-//                assumeWontThrow({
                 msg =e.msg;
                 trace= assumeWontThrow(e.toString.splitLines);
-//                    });
-                // assumeWontThrow({
-
-                // writefln("---- %s ", BehaviourError.stringof);
-                //     });
-                // assumeWontThrow({
-                //         writefln("BehaviourError %s", e.msg);
-                //         // msg=e.msg.idup;
-                //     });
-                // assumeWontThrow({
-
-                //         trace=e.toString.splitLines;
-                //     });
             }
         });
+}
 
-
+@safe
+@RecordType("BDDResult")
+struct BevavourResult {
+    int x;
+//    Document result;
+    mixin HiBONRecord!();
 }
