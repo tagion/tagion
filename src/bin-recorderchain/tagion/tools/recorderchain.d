@@ -24,7 +24,6 @@ import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.services.RecorderService;
 import tagion.communication.HiRPC;
-import tagion.utils.Fingerprint : Fingerprint;
 import tagion.utils.Miscellaneous : toHexString, decode;
 import tagion.dart.RecorderChainBlock;
 import tagion.dart.RecorderChain;
@@ -41,7 +40,7 @@ void addRecordToDB(DART db, RecordFactory.Recorder recorder, HiRPC hirpc)
 {
     auto sended = DART.dartModify(recorder, hirpc);
     auto received = hirpc.receive(sended);
-    auto result = db(received, false);
+    db(received, false);
 }
 
 int main(string[] args)

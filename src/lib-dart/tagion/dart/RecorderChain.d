@@ -223,17 +223,17 @@ import tagion.utils.Miscellaneous : toHexString, decode;
     /** 
     * Used find next block in recorder block chain
     * @param cur_fingerprint - fingerprint of current block from recorder block chain
-    * @param blocks_folder - folder with blocks from recorder block chain
+    * @param folder_path - folder with blocks from recorder block chain
     * @param net - to read block from file
     * @return block from recorder block chain
     */
-    static RecorderChainBlock findNextDARTBlock(Buffer cur_fingerprint, string blocks_folder, const StdHashNet net) 
+    static RecorderChainBlock findNextDARTBlock(Buffer cur_fingerprint, string folder_path, const StdHashNet net) 
     {
-        auto block_filenames = RecorderChain.getBlockFilenames(blocks_folder);
+        auto block_filenames = RecorderChain.getBlockFilenames(folder_path);
         foreach (filename; block_filenames)
         {
             auto fingerprint = decode(filename.stripExtension);
-            auto block = RecorderChain.readBlock(fingerprint, blocks_folder, net);
+            auto block = RecorderChain.readBlock(fingerprint, folder_path, net);
             if(block.chain) 
             {
                 if (block.chain == cur_fingerprint)
@@ -249,17 +249,17 @@ import tagion.utils.Miscellaneous : toHexString, decode;
     /** 
      * Used find current block in recorder block chain
      * @param cur_bullseye - bullseye of DART database
-     * @param blocks_folder - folder with blocks from recorder block chain
+     * @param folder_path - folder with blocks from recorder block chain
      * @param net - to read block from file
      * @return block from recorder block chain
      */
-    static RecorderChainBlock findCurrentDARTBlock(Buffer cur_bullseye, string blocks_folder, const StdHashNet net)
+    static RecorderChainBlock findCurrentDARTBlock(Buffer cur_bullseye, string folder_path, const StdHashNet net)
     {
-        auto block_filenames = RecorderChain.getBlockFilenames(blocks_folder);
+        auto block_filenames = RecorderChain.getBlockFilenames(folder_path);
         foreach (filename; block_filenames)
         {
             auto fingerprint = decode(filename.stripExtension);
-            auto block = RecorderChain.readBlock(fingerprint, blocks_folder, net);
+            auto block = RecorderChain.readBlock(fingerprint, folder_path, net);
         
             if (block.bullseye == cur_bullseye)
             {
@@ -361,5 +361,41 @@ unittest
         {
             assert(filename.extension == FileExtension.recchainblock.withDot);
         }
+    }
+
+    /// RecorderChain_findNextDARTBlock
+    {
+        recorder_chain = new RecorderChain(temp_folder, net);    
+
+        auto block_next = RecorderChain.findNextDARTBlock(block0.fingerprint, temp_folder, net);
+        assert(block_next.fingerprint ==  block1.fingerprint);
+        block_next = RecorderChain.findNextDARTBlock(block_next.fingerprint, temp_folder, net);
+        assert(block_next.fingerprint ==  block2.fingerprint);
+    }
+
+    /// RecorderChain_findCurrentDARTBlock
+    {
+        import tagion.dart.DART;
+        import tagion.communication.HiRPC;
+        import tagion.crypto.SecureNet;
+        import tagion.dart.BlockFile;
+        import tagion.dart.DARTFile;
+        import tagion.crypto.SecureInterfaceNet : SecureNet;
+
+        SecureNet secure_net = new StdSecureNet;
+        string passphrase = "verysecret";
+        secure_net.generateKeyPair(passphrase);
+        auto hirpc = HiRPC(secure_net);
+        string dart_file = "tmp_DART";
+        enum BLOCK_SIZE = 0x80;
+        BlockFile.create(dart_file, DARTFile.stringof, BLOCK_SIZE);
+        DART db = new DART(secure_net, dart_file, 0, 0);
+        
+        auto recorder = factory.recorder(block0.recorder_doc);
+        auto sended = DART.dartModify(recorder, hirpc);
+        auto received = hirpc.receive(sended);
+        db(received, false);
+        auto current_block = RecorderChain.findNextDARTBlock(db.fingerprint, temp_folder, net);
+        assert(block0.fingerprint == current_block.fingerprint);
     }
 }
