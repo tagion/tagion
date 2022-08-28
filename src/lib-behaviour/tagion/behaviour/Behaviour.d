@@ -242,9 +242,32 @@ auto automation(alias M)() if (isFeature!M) {
     return result;
 }
 
-bool hasError(const Feature) {
+/**
+   Returns:
+   true if one of more actions in the Feature has failed
+ */
+@safe
+bool hasErrors(ref const FeatureGroup feature) {
+
+    return true;
+}
+
+/**
+   Returns:
+   true if one of more actions in the Scenario has failed
+ */
+@safe
+bool hasErrors(ref const ScenarioGroup scenario) {
+    // static foreach(i, Type; Fields!ScenarioGroup) {
+    //     static if (__traits(isSame, TemplateOf!(Type), ActionGroup)) {
+
+    //     }
+    //     static if (__traits(isSame, TemplateOf!(Type), Info)) {
+    //     }
+    // }
     return false;
 }
+
 /// Test Feature automation
 @safe
 unittest {

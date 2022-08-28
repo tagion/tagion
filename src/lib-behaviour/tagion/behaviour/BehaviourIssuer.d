@@ -56,7 +56,7 @@ struct MarkdownT(Stream) {
         bout.writefln(master.name, indent ~ master.indent, info.name); //
     }
 
-    void issue(Group)(const(Group) group, string indent, string fmt) if (isBehaviourGroup!Group) {
+    void issue(Group)(const(Group) group, string indent, string fmt) if (isActionGroup!Group) {
         if (group !is group.init) {
             group.infos.each!(info =>issue(info, indent, master.property));
             // group.ands
@@ -169,7 +169,7 @@ struct DlangT(Stream) {
         );
     }
 
-    string[] issue(Group)(const(Group) group) if (isBehaviourGroup!Group) {
+    string[] issue(Group)(const(Group) group) if (isActionGroup!Group) {
         if (group !is group.init) {
             return group.infos
                 .map!(info => issue(info))

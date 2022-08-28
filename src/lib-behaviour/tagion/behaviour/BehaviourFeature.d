@@ -62,23 +62,25 @@ struct Info(alias Property) {
 
 enum isInfo(alias I) = __traits(isSame, TemplateOf!I, Info);
 
-struct BehaviourGroup(Property) if (isOneOf!(Property, BehaviourProperties)) {
+struct ActionGroup(Property) if (isOneOf!(Property, BehaviourProperties)) {
     Info!Property[] infos;
 //    @Label(VOID, true) Info!And[] ands;
     mixin HiBONRecord!();
 }
 
-enum isBehaviourGroup(alias I) = __traits(isSame, TemplateOf!I, BehaviourGroup);
+enum isActionGroup(alias I) = __traits(isSame, TemplateOf!I, ActionGroup);
 
+@safe
 struct ScenarioGroup {
     @("Scenario") Info!Scenario info;
-    BehaviourGroup!(Given) given;
-    @Label(VOID, true) BehaviourGroup!(When) when;
-    BehaviourGroup!(Then) then;
-    @Label(VOID, true) BehaviourGroup!(But) but;
+    ActionGroup!(Given) given; /// Given actions
+    @Label(VOID, true) ActionGroup!(When) when; /// When actions
+    ActionGroup!(Then) then; /// Then actions
+    @Label(VOID, true) ActionGroup!(But) but; /// But actions
     mixin HiBONRecord!();
 }
 
+@safe
 struct FeatureGroup {
     Info!Feature info;
     ScenarioGroup[] scenarios;
