@@ -132,21 +132,21 @@ alias MandatoryBehaviourProperties = Erase!(When, Erase!(But, BehaviourPropertie
 //             expected));
 // }
 
-template getMemberAlias(string main, string name) {
-    enum code = format!q{alias getMemberAlias=%s.%s;}(main, name);
-    pragma(msg, "code ", code);
-    mixin(code);
-}
-
-template getMemberAlias_(alias main, string name) {
-//     pragma(msg, "modulename ", moduleName!main);
-//     mixin(format(q{import %s;}, moduleName!main));
-// //    mixin Import!main;
-//     enum code = format!q{alias getMemberAlias=%s.%s;}(main.stringof, name);
+// template getMemberAlias(string main, string name) {
+//     enum code = format!q{alias getMemberAlias=%s.%s;}(main, name);
 //     pragma(msg, "code ", code);
 //     mixin(code);
-    alias getMemberAlias_= __traits(getMember, main, name);
-}
+// }
+
+// template getMemberAlias_(alias main, string name) {
+// //     pragma(msg, "modulename ", moduleName!main);
+// //     mixin(format(q{import %s;}, moduleName!main));
+// // //    mixin Import!main;
+// //     enum code = format!q{alias getMemberAlias=%s.%s;}(main.stringof, name);
+// //     pragma(msg, "code ", code);
+// //     mixin(code);
+//     alias getMemberAlias_= __traits(getMember, main, name);
+// }
 
 template getMethod(alias T, string name) {
     alias method = __traits(getOverloads, T, name);
@@ -159,25 +159,14 @@ template getMethod(alias T, string name) {
 }
 
 static unittest {
-    pragma(msg, "BehaviourUnittest.Some_awesome_feature.stringof ", BehaviourUnittest.Some_awesome_feature.stringof);
-    // pragma(msg, getMemberAlias_!(BehaviourUnittest.Some_awesome_feature, "is_debited"));
-    // pragma(msg, getMemberAlias_!(BehaviourUnittest.Some_awesome_feature, "count"));
-    // static assert(isMethod!(BehaviourUnittest.Some_awesome_feature, "is_debited"));
-    // static assert(!isMethod!(BehaviourUnittest.Some_awesome_feature, "count"));
     static assert(isCallable!(getMethod!(BehaviourUnittest.Some_awesome_feature, "is_debited")));
     static assert(!isCallable!(getMethod!(BehaviourUnittest.Some_awesome_feature, "count")));
-    // static assert(isCallable!(getMemberAlias__!(BehaviourUnittest.Some_awesome_feature.stringof, "is_debited")));
-    // static assert(!isCallable!(getMemberAlias__!(BehaviourUnittest.Some_awesome_feature.stringof, "count")));
 }
 
 template getAllCallables(T) if (is(T == class) || is(T == struct)) {
     alias all_members = aliasSeqOf!([__traits(allMembers, T)]);
-    pragma(msg, "all_members ", all_members);
-    pragma(msg, "T.stringof ", T.stringof);
     alias all_members_as_aliases = staticMap!(ApplyLeft!(getMethod, T), all_members);
-    pragma(msg, "all_members_as_aliases ", all_members_as_aliases);
     alias getAllCallables = Filter!(isCallable, all_members_as_aliases);
-    pragma(msg, "getAllCallables  ", getAllCallables); //all_members_as_aliases);
 }
 
 static unittest { // Test of getAllCallable
@@ -199,14 +188,12 @@ static unittest {
 }
 
 template getBehaviours_(T) if (is(T == class) || is(T == struct)) {
-    pragma(msg, "get_all_callable ", T);
     alias get_all_callable = getAllCallables!T;
     alias getBehaviours_ = Filter!(hasBehaviours, get_all_callable);
 }
 
 static unittest { // Test of getBehaviours
     alias behaviours = getBehaviours_!(BehaviourUnittest.Some_awesome_feature);
-    pragma(msg, "!!!! behaviours ", behaviours);
     static assert(behaviours.length == 7);
     static assert(allSatisfy!(isCallable, behaviours));
     static assert(allSatisfy!(hasBehaviours, behaviours));
@@ -220,10 +207,7 @@ static unittest { // Test of getBehaviours
  */
 template getBehaviour(T, Property) if (is(T == class) || is(T == struct)) {
     alias behaviours = getBehaviours_!T;
-    pragma(msg, "behaviours ", behaviours);
     alias behaviour_with_property = Filter!(ApplyRight!(hasUDA, Property), behaviours);
-    // static assert(behaviour_with_property.length <= 1,
-    //         format!"More than 1 behaviour %s has been declared in %s"(Property.stringof, T.stringof));
     static if (behaviour_with_property.length > 0) {
         alias getBehaviour = behaviour_with_property;
     }
@@ -235,11 +219,9 @@ template getBehaviour(T, Property) if (is(T == class) || is(T == struct)) {
 
 unittest {
     alias behaviour_with_given = getBehaviour!(BehaviourUnittest.Some_awesome_feature, Given);
-    pragma(msg, "behaviour_with_given ", behaviour_with_given);
     static assert(allSatisfy!(isCallable, behaviour_with_given));
 
     static assert(allSatisfy!(ApplyRight!(hasUDA, Given), behaviour_with_given));
-        //static assert(hasUDA!(behaviour_with_given, Given));
     static assert(is(getBehaviour!(BehaviourUnittest.Some_awesome_feature_bad_format_missing_given, Given) == void));
 
     alias behaviour_with_when = getBehaviour!(BehaviourUnittest.Some_awesome_feature, When);
@@ -273,14 +255,6 @@ unittest {
     static assert(is(typeof(properties) == When));
     static assert(is(getProperty!(BehaviourUnittest.Some_awesome_feature.helper_function) == void));
 }
-
-// enum hasProperty(alias T) = !is(getProperty!(T) == void);
-
-// @safe
-// unittest {
-//     static assert(hasProperty!(Some_awesome_feature.request_cash));
-//     static assert(!(hasProperty!(Some_awesome_feature.helper_function)));
-// }
 
 @safe
 unittest {
@@ -364,24 +338,15 @@ protected template _Scenarios(alias M, string[] names) if (__traits(isModule, M)
         alias _Scenarios = AliasSeq!();
     }
     else {
-        //enum compiles = __traits(compiles, getMemberAlias!(moduleName!M, names[0]));
-        pragma(msg, "names ", names[0]);
         alias member = __traits(getMember, M, names[0]);
-        pragma(msg, "__traits(isModule, module_member) ", __traits(isModule, member));
-        pragma(msg, "is(module_member == class) ", is(member == class), " ", moduleName!M);
-//        pragma(msg, "module_member ", module_member.stringof);
-        //      enum compiles =false;
         enum is_object = is(member == class) || is(member == struct);
         static if (is_object) {
             enum is_scenario  = hasUDA!(member, Scenario);
-
-//            alias member = getMemberAlias!(moduleName!M, names[0]);
         }
         else {
             enum is_scenario = false;
-//            alias member = void;
         }
-        static if (is_scenario && (is(member == class) || is(member == struct))) {
+        static if (is_scenario) {
             alias _Scenarios =
                 AliasSeq!(
                         member,
@@ -415,7 +380,6 @@ static unittest { //
 
 template getScenario(T) if (is(T == class) || is(T == struct)) {
     enum scenario_attr = getUDAs!(T, Scenario);
-    pragma(msg, "scenario_attr ", scenario_attr);
     static assert(scenario_attr.length <= 1,
             format!"%s is not a %s"(T.stringof, Scenario.stringof));
     static if (scenario_attr.length is 1) {
@@ -424,7 +388,6 @@ template getScenario(T) if (is(T == class) || is(T == struct)) {
     else {
         enum getScenario = false;
     }
-    pragma(msg, "getScenario ", getScenario);
 }
 
 static unittest {
