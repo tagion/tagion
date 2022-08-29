@@ -184,11 +184,10 @@ unittest
             .setExtension(FileExtension.hibon);
     const feature = getFeature!(Module);
     /+ test file printout
-+/
      (filename.stripExtension~"_test")
      .setExtension(FileExtension.hibon)
      .fwrite(feature);
-//     +/
+     +/
     const expected = filename.fread!FeatureGroup;
     assert(feature.toDoc == expected.toDoc);
 }
