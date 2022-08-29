@@ -53,13 +53,13 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T)
             }
         }
     }
+    scenario_group.info.result = result(ScenarioResult(true)).toDoc;
     }
     catch (Exception e) {
 //        io.writefln("RUN %s", e.msg);
         scenario_group.info.result = BehaviourError(e).toDoc;
 //        io.writefln("scenario_group.info.result = %s", scenario_group.info.result.toPretty);
     }
-    scenario_group.info.result = result(ScenarioResult(true)).toDoc;
     return scenario_group;
 }
 
