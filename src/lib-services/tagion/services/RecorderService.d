@@ -64,6 +64,7 @@ mixin TrustedConcurrency;
     }
 }
 
+/// RecorderService_add_many_blocks
 unittest
 {
     import tagion.basic.Basic : tempfile;
@@ -91,24 +92,18 @@ unittest
 
     enum blocks_count = 10;
 
-    /// RecorderService_add_blocks
-    {
-        auto factory = RecordFactory(new StdHashNet);
-        immutable empty_recorder = cast(immutable) factory.recorder;
-        immutable empty_bullseye = Fingerprint([]);
+    auto factory = RecordFactory(new StdHashNet);
+    immutable empty_recorder = cast(immutable) factory.recorder;
+    immutable empty_bullseye = Fingerprint([]);
 
-        foreach (i; 0 .. blocks_count)
-        {
-            recorderService.receiveRecorder(empty_recorder, empty_bullseye);
-            assert(receiveOnly!Control == Control.LIVE);
-        }
+    foreach (i; 0 .. blocks_count)
+    {
+        recorderService.receiveRecorder(empty_recorder, empty_bullseye);
+        assert(receiveOnly!Control == Control.LIVE);
     }
 
-    /// RecorderService_getBlocksInfo
-    {
-        auto blocks_info = RecorderChain.getBlocksInfo(temp_folder, new StdHashNet);
-        assert(blocks_info.amount == blocks_count);
-        assert(blocks_info.first);
-        assert(blocks_info.last);
-    }
+    auto blocks_info = RecorderChain.getBlocksInfo(temp_folder, new StdHashNet);
+    assert(blocks_info.amount == blocks_count);
+    assert(blocks_info.first);
+    assert(blocks_info.last);
 }
