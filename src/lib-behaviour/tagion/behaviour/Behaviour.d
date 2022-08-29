@@ -73,8 +73,9 @@ struct ScenarioResult {
         });
 }
 
+private static Document scenario_ends=result(ScenarioResult(true)).toDoc;
+
 version(none) {
-private static Document scenario_ends;
 static this() {
     // import tagion.hibon.HiBON;
     // auto h=new HiBON;

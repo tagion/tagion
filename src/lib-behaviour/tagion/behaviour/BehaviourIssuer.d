@@ -98,7 +98,7 @@ unittest { // Markdown scenario test
         immutable expected = filename.freadText;
         io.writefln("scenario_result.given.infos %s", scenario_result.given.infos);
         markdown.issue(scenario_result.given.infos[0], null, markdown.master.property);
-//        filename.setExtension("mdtest").fwrite(bout.toString);
+        filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
     }
     {
@@ -110,7 +110,7 @@ unittest { // Markdown scenario test
             .setExtension(EXT.Markdown);
         immutable expected = filename.freadText;
         markdown.issue(scenario_result);
-//        filename.setExtension("mdtest").fwrite(bout.toString);
+        filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
         //io.writefln("bout=%s", bout);
         //        filename.fwrite(bout.toString);
@@ -240,7 +240,7 @@ unittest {
         dlang.issue(feature_group);
         immutable expected = filename.freadText;
         immutable result = bout.toString;
-        // filename.setExtension("dtest").fwrite(result);
+        filename.setExtension("dtest").fwrite(result);
         assert(equal(
                 result
                 .splitLines
