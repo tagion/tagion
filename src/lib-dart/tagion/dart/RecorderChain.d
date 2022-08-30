@@ -400,7 +400,7 @@ unittest
 
         rmdirRecurse(temp_folder);
     }
-// разделить + подписать???? + кар блок с валидными данными + валид не вадид чейн(в тесты добавить 2 блока ссылка на 1 (мб))
+
     /// RecorderChain_isValidChain_branch_chain
     {
         auto recorder_chain = new RecorderChain(temp_folder, net);
