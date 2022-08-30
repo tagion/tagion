@@ -91,7 +91,8 @@ void transactionServiceTask(immutable(Options) opts) nothrow
         {
             auto sender = internal_hirpc.healthcheck(new HiBON(), id);
             auto tosend = sender.toDoc.serialize;
-            send(node_tid, opts.transaction.service.response_task_name, tosend);
+            // hirpc send
+            locate(opts.transcript.task_name).send(task_name, tosend);
         }
 
         @safe class TransactionRelay : SSLFiberService.Relay
@@ -196,7 +197,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                             }
                             while (!ssl_relay.available());
                             const response = ssl_relay.response;
-                            log("sending healthcheck response %s", Document(response).toJSON);
+                            // log("sending healthcheck response %s", Document(response).toJSON);
                             ssl_relay.send(response);
                             break;
                             version (OLD_TRANSACTION)

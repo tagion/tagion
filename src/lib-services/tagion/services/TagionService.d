@@ -75,7 +75,6 @@ import tagion.script.StandardRecords;
 //import std.string : indexOf;
 //import std.file : mkdir, exists;
 import std.format;
-import std.datetime.systime;
 
 shared(p2plib.Node) initialize_node(immutable Options opts)
 {
@@ -118,12 +117,9 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 {
     try
     {
-        /** last epoch timestamp */
-        long epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
         log.register(opts.node_name);
         setOptions(opts);
         bool stop;
-        uint count_transactions;
         uint epoch_num;
         scope (success)
         {
@@ -218,8 +214,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 
             transcript_tid.send(params.serialize);
             epoch_num++;
-            count_transactions = 0;
-            epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
 
             if (epoch_num >= opts.epoch_limit)
             {
@@ -402,7 +396,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 
         void receive_payload(Document pload, bool flag)
         { //TODO: remove flag. Maybe try switch(doc.type)
-            count_transactions++;
             log.trace("payload.size=%d", pload.size);
             payload_queue.write(pload);
         }
@@ -486,18 +479,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 &controller,
                 &receive_wavefront,
                 &taskfailure,
-                (string respond_task_name, Buffer data) {
-                import tagion.hibon.HiBONJSON;
-
-                /** document for receive request */
-                const doc = Document(data);
-                const receiver = empty_hirpc.receive(doc);
-                auto respond = HealthcheckParams(hashgraph.rounds.length, epoch_timestamp, count_transactions, epoch_num, hashgraph
-                    .areWeInGraph);
-                auto response = empty_hirpc.result(receiver, respond);
-                log("Healthcheck: %s", response.toDoc.toJSON);
-                locate(respond_task_name).send(response.toDoc.serialize);
-            }
             );
             log("ROUNDS: %d AreWeInGraph: %s Active %d", hashgraph.rounds.length, hashgraph.areWeInGraph, addressbook
                     .numOfActiveNodes);

@@ -4,6 +4,7 @@ import std.format;
 import std.concurrency;
 import core.thread;
 import std.array : join;
+import std.datetime.systime;
 import std.exception : assumeUnique;
 
 import tagion.services.Options;
@@ -16,7 +17,7 @@ import tagion.logger.Logger;
 
 import tagion.basic.TagionExceptions;
 import tagion.script.SmartScript;
-import tagion.script.StandardRecords : Contract, SignedContract, PayContract;
+import tagion.script.StandardRecords : Contract, SignedContract, PayContract, HealthcheckParams;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.communication.HiRPC;
@@ -30,13 +31,20 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
 {
     try
     {
+        HealthcheckParams health_params;
+
+        HiRPC internal_hirpc = HiRPC(null);
+
         scope (success)
         {
             ownerTid.prioritySend(Control.END);
         }
         log.register(task_name);
+        log("Transcript service started");
 
         uint current_epoch;
+        uint count_transactions;
+        long epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
 
         const net = new StdSecureNet;
         auto rec_factory = RecordFactory(net);
@@ -108,13 +116,28 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
             }
         }
 
+        void receive_healthcheck_request(string respond_task_name, Buffer data)
+        {
+            import std.stdio;
+
+            // hirpc receive
+            const received = internal_hirpc.receive(Document(data));
+            writeln("recived healthcheck request");
+            health_params.epoch_timestamp = epoch_timestamp;
+            health_params.transactions_amount = count_transactions;
+            health_params.epoch_num = current_epoch;
+            const response = internal_hirpc.result(received, health_params.toDoc);
+            log("Healthcheck: %s", response.toDoc.toJSON);
+            locate(respond_task_name).send(response.toDoc.serialize);
+        }
+
         RecordFactory.Recorder input_recorder;
 
         void receive_epoch(Buffer payloads_buff) nothrow
         {
             try
             {
-
+                epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
                 const payload_doc = Document(payloads_buff);
                 log("Received epoch: len:%d", payload_doc.length);
 
@@ -159,6 +182,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
                         const added = to_smart_script(signed_contract);
                         if (added && fingerprint in smart_scripts)
                         {
+                            count_transactions++;
                             scope smart_script = smart_scripts[fingerprint];
                             version (OLD_TRANSACTION)
                             {
@@ -232,9 +256,11 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
                 &register_input,
                 &controller,
                 &taskfailure,
+                &receive_healthcheck_request,
             );
         }
     }
+
     catch (Throwable t)
     {
         fatal(t);

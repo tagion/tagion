@@ -149,6 +149,7 @@ static struct Logger
                 import core.stdc.stdio;
 
                 scope const _type = assumeWontThrow(type.to!string);
+                pragma(msg, "Fixme(vk) why string.toString?");
                 scope const _text = assumeWontThrow(toStringz(text));
                 if (_task_name.length > 0)
                 {
