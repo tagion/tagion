@@ -123,11 +123,14 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
             // hirpc receive
             const received = internal_hirpc.receive(Document(data));
             writeln("recived healthcheck request");
+
             health_params.epoch_timestamp = epoch_timestamp;
             health_params.transactions_amount = count_transactions;
             health_params.epoch_num = current_epoch;
+
             const response = internal_hirpc.result(received, health_params.toDoc);
             log("Healthcheck: %s", response.toDoc.toJSON);
+
             locate(respond_task_name).send(response.toDoc.serialize);
         }
 
@@ -186,17 +189,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
                             scope smart_script = smart_scripts[fingerprint];
                             version (OLD_TRANSACTION)
                             {
-                                pragma(msg, "OLD_TRANSACTION ", __FUNCTION__, " ", __FILE__, ":", __LINE__);
-
-                                const payment = PayContract(smart_script.signed_contract.inputs);
-                            }
-                            else
-                            {
-                                PayContract payment;
-                            }
-                            version (OLD_TRANSACTION)
-                            {
-                                foreach (bill; payment.bills)
+                                foreach (bill; signed_contract.inputs)
                                 {
                                     const bill_doc = bill.toDoc;
                                     recorder.remove(bill_doc);

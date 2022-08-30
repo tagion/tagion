@@ -92,7 +92,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow
             auto sender = internal_hirpc.healthcheck(new HiBON(), id);
             auto tosend = sender.toDoc.serialize;
             // hirpc send
-            locate(opts.transcript.task_name).send(task_name, tosend);
+            locate(opts.transcript.task_name).send(opts.transaction.service.response_task_name, tosend);
         }
 
         @safe class TransactionRelay : SSLFiberService.Relay
@@ -237,7 +237,17 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                                         auto std_bill = StandardBill(archive.filed);
                                         payment.bills ~= std_bill;
                                     }
-                                    signed_contract.inputs = payment.toDoc;
+
+                                    foreach (input; signed_contract.contract.inputs)
+                                    {
+                                        foreach (bill; payment.bills)
+                                        {
+                                            if (hirpc.net.hashOf(bill.toDoc) == input)
+                                            {
+                                                signed_contract.inputs ~= bill;
+                                            }
+                                        }
+                                    }
                                     // Send the contract as payload to the HashGraph
                                     // The data inside HashGraph is pure payload not an HiRPC
                                     SmartScript.check(hirpc.net, signed_contract);
@@ -250,11 +260,15 @@ void transactionServiceTask(immutable(Options) opts) nothrow
 
                                         //log("Contract:\n%s", json.toPrettyString);
                                     }
+                                    log("before sending payload");
                                     sendPayload(payload);
+                                    log("payload sended");
                                     auto empty_params = new HiBON;
                                     auto empty_response = internal_hirpc.result(hirpc_received,
                                         empty_params);
+                                    log("before sending responce");
                                     ssl_relay.send(empty_response.toDoc.serialize);
+                                    log("after sending responce");
                                     //  }
                                 }
                                 catch (TagionException e)
@@ -286,7 +300,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                                 const received = internal_hirpc.receive(Document(response));
                                 immutable foreign_recorder = rec_factory.uniqueRecorder(
                                     received.response.result);
-                                log("constructed");
+                                log("constructed, but something went wrong");
                                 auto fail_code = SmartScript.check(hirpc.net, signed_contract, foreign_recorder);
                                 if (!fail_code)
                                 {
