@@ -112,46 +112,40 @@ int main(string[] args)
         auto info = RecorderChain.getBlocksInfo(chain_directory, hash_net);
         /** Recorder from the first block in recorder block chain */
         auto first_recorder = factory.recorder(info.first.recorder_doc);
-        remove(chain_directory~"/"~info.first.fingerprint.toHexString~".rcb");
 
         addRecordToDB(db, first_recorder, hirpc);
 
-        
         if(info.first.bullseye != db.fingerprint)
         {
             throw new TagionException("DART fingerprint should be the same with recorder block bullseye");
             return 1;
         }
-       
+        
+        /** Block, recorder from which will be added to DART database next */
+        RecorderChainBlock next_block;
+        next_block = RecorderChain.findNextDARTBlock(info.first.fingerprint, chain_directory, hash_net);
+        /** Recorder of next block */
+        auto next_recorder = factory.recorder(next_block.recorder_doc);
 
-        foreach(i; 0..(info.amount - 1)) 
+        addRecordToDB(db, next_recorder, hirpc);
+
+        if(next_block.bullseye != db.fingerprint)
         {
-            /** Block, recorder from which will be added to DART database next */
-            RecorderChainBlock next_block;
-            if(!i)
-            {
-                next_block = RecorderChain.findNextDARTBlock(info.first.fingerprint, chain_directory, hash_net);
-            }
-            else if (i == info.amount - 2)
-            {
-                next_block = info.last;
-            }
-            else
-            {
-                next_block = RecorderChain.findNextDARTBlock(next_block.fingerprint, chain_directory, hash_net);
-            }
+            throw new TagionException("DART fingerprint should be the same with recorder block bullseye");
+            return 1;
+        }
 
-            remove(chain_directory~"/"~next_block.fingerprint.toHexString~".rcb");
+        foreach(cur_block; 0..(info.amount - 2)) 
+        {
+            next_block = RecorderChain.findNextDARTBlock(next_block.fingerprint, chain_directory, hash_net);  
             /** Recorder from *next* block */
             auto recorder = factory.recorder(next_block.recorder_doc);
             addRecordToDB(db, recorder, hirpc);
-    
             if(next_block.bullseye != db.fingerprint)
             {
                 throw new TagionException("DART fingerprint should be the same with recorder block bullseye");
                 return 1;
             }
-            
         }
     }
     else
@@ -174,7 +168,6 @@ int main(string[] args)
         {
             /** Recorder from *next* block */
             auto recorder = factory.recorder(next_block.recorder_doc);
-            remove(chain_directory~"/"~next_block.fingerprint.toHexString~".rcb");
             addRecordToDB(db, recorder, hirpc);
 
             if(next_block.bullseye != db.fingerprint)
@@ -187,7 +180,6 @@ int main(string[] args)
         }
         /** Recorder from *next* block */
         auto recorder = factory.recorder(next_block.recorder_doc);
-        remove(chain_directory~"/"~next_block.fingerprint.toHexString~".rcb");
         addRecordToDB(db, recorder, hirpc);
 
         if(next_block.bullseye != db.fingerprint)

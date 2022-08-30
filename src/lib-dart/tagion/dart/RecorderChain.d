@@ -382,6 +382,8 @@ unittest
         import tagion.dart.DARTFile;
         import tagion.crypto.SecureInterfaceNet : SecureNet;
 
+        import std.stdio;
+
         SecureNet secure_net = new StdSecureNet;
         string passphrase = "verysecret";
         secure_net.generateKeyPair(passphrase);
@@ -391,11 +393,31 @@ unittest
         BlockFile.create(dart_file, DARTFile.stringof, BLOCK_SIZE);
         DART db = new DART(secure_net, dart_file, 0, 0);
         
-        auto recorder = factory.recorder(block0.recorder_doc);
-        auto sended = DART.dartModify(recorder, hirpc);
-        auto received = hirpc.receive(sended);
-        db(received, false);
-        auto current_block = RecorderChain.findNextDARTBlock(db.fingerprint, temp_folder, net);
-        assert(block0.fingerprint == current_block.fingerprint);
+        {
+            auto recorder = factory.recorder(block0.recorder_doc);
+            auto sended = DART.dartModify(recorder, hirpc);
+            auto received = hirpc.receive(sended);
+            db(received, false);
+            auto current_block = RecorderChain.findCurrentDARTBlock(db.fingerprint, temp_folder, net);
+            assert(db.fingerprint == current_block.bullseye);
+        }
+
+        {
+            auto recorder = factory.recorder(block1.recorder_doc);
+            auto sended = DART.dartModify(recorder, hirpc);
+            auto received = hirpc.receive(sended);
+            db(received, false);
+            auto current_block = RecorderChain.findCurrentDARTBlock(db.fingerprint, temp_folder, net);
+            assert(db.fingerprint == current_block.bullseye);
+        }
+
+        {
+            auto recorder = factory.recorder(block2.recorder_doc);
+            auto sended = DART.dartModify(recorder, hirpc);
+            auto received = hirpc.receive(sended);
+            db(received, false);
+            auto current_block = RecorderChain.findCurrentDARTBlock(db.fingerprint, temp_folder, net);
+            assert(db.fingerprint == current_block.bullseye);
+        }
     }
 }
