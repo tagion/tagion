@@ -220,6 +220,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
         }
     }
 
+<<<<<<< HEAD
     /** 
     * Used find next block in recorder block chain
     * @param cur_fingerprint - fingerprint of current block from recorder block chain
@@ -270,6 +271,44 @@ import tagion.utils.Miscellaneous : toHexString, decode;
         return null;
     }
     
+    static bool isValidChain(string folder_path, const StdHashNet net)
+    {
+        try
+        {
+            auto info = getBlocksInfo(folder_path, net);
+            if (info.amount == 0 && info.first is null && info.last is null)
+            {
+                // empty chain
+                return true;
+            }
+
+            if (info.first is null || info.last is null)
+            {
+                // chain is invalid
+                return false;
+            }
+
+            RecorderChainBlock cur_block = info.last;
+            // iterate to the first block
+            foreach (i; 1 .. info.amount)
+            {
+                auto block = readBlock(cur_block.chain, folder_path, net);
+                if (block is null)
+                {
+                    return false;
+                }
+                cur_block = block;
+            }
+            // if reached block is first block - chain is valid
+            return cur_block.toDoc.serialize == info.first.toDoc.serialize;
+        }
+        catch (Exception e)
+        {
+            // any other scenario - chain is invalid
+            return false;
+        }
+    }
+
     /** Static method that creates path to block with given fingerprint
      *      @param fingerprint - fingerprint of block to make path
      *      @param folder_path - path to folder with blocks
@@ -285,15 +324,9 @@ import tagion.utils.Miscellaneous : toHexString, decode;
 
 unittest
 {
+    import std.range;
+    import std.file : rmdirRecurse;
     import tagion.basic.Basic : tempfile;
-
-    const temp_folder = tempfile ~ "/";
-    scope (exit)
-    {
-        import std.file : rmdirRecurse;
-
-        rmdirRecurse(temp_folder);
-    }
 
     const net = new StdHashNet;
 
@@ -301,66 +334,127 @@ unittest
     immutable empty_recorder = cast(immutable) factory.recorder;
     const Buffer empty_bullseye = [];
 
-    RecorderChain recorder_chain;
+    auto block_factory = RecorderChainBlockFactory(net);
+
+    const temp_folder = tempfile ~ "/";
 
     /// RecorderChain_empty_folder
     {
-        recorder_chain = new RecorderChain(temp_folder, net);
+        auto recorder_chain = new RecorderChain(temp_folder, net);
 
         assert(recorder_chain.getAmount == 0);
         assert(recorder_chain.getFirstBlock is null);
         assert(recorder_chain.getLastBlock is null);
-    }
-
-    /// RecorderChain_getBlockFilenames_empty
-    {
-        import std.range;
 
         assert(RecorderChain.getBlockFilenames(temp_folder).empty);
-    }
+        assert(RecorderChain.isValidChain(temp_folder, net));
 
-    auto block_factory = RecorderChainBlockFactory(net);
-    auto block0 = block_factory(empty_recorder, [], empty_bullseye);
+        rmdirRecurse(temp_folder);
+    }
 
     /// RecorderChain_single_block
     {
+        auto recorder_chain = new RecorderChain(temp_folder, net);
+
+        auto block0 = block_factory(empty_recorder, [], empty_bullseye);
         recorder_chain.push(block0);
 
         assert(recorder_chain.getAmount == 1);
         assert(recorder_chain.getFirstBlock is block0);
         assert(recorder_chain.getLastBlock is block0);
-    }
 
-    auto block1 = block_factory(empty_recorder, block0.fingerprint, empty_bullseye);
-    auto block2 = block_factory(empty_recorder, block1.fingerprint, empty_bullseye);
+        assert(RecorderChain.isValidChain(temp_folder, net));
+
+        rmdirRecurse(temp_folder);
+    }
 
     /// RecorderChain_many_blocks
     {
+        auto recorder_chain = new RecorderChain(temp_folder, net);
+
+        auto block0 = block_factory(empty_recorder, [], empty_bullseye);
+        recorder_chain.push(block0);
+        auto block1 = block_factory(empty_recorder, block0.fingerprint, empty_bullseye);
         recorder_chain.push(block1);
+        auto block2 = block_factory(empty_recorder, block1.fingerprint, empty_bullseye);
         recorder_chain.push(block2);
 
+        // Check chain info
         assert(recorder_chain.getAmount == 3);
         assert(recorder_chain.getFirstBlock is block0);
         assert(recorder_chain.getLastBlock is block2);
-    }
 
-    /// RecorderChain_static_getBlocksInfo
-    {
+        // Chain validity
+        assert(RecorderChain.isValidChain(temp_folder, net));
+
+        // Static info
         auto info = RecorderChain.getBlocksInfo(temp_folder, net);
-
         assert(info.amount == 3);
         assert(info.first.toDoc.serialize == block0.toDoc.serialize);
         assert(info.last.toDoc.serialize == block2.toDoc.serialize);
-    }
 
-    /// RecorderChain_getBlockFilenames_non_empty
-    {
+        // Files in folder
         auto block_filenames = RecorderChain.getBlockFilenames(temp_folder);
         assert(block_filenames.length == 3);
         foreach (filename; block_filenames)
         {
             assert(filename.extension == FileExtension.recchainblock.withDot);
         }
+
+        rmdirRecurse(temp_folder);
+    }
+
+    /// RecorderChain_isValidChain_branch_chain
+    {
+        auto recorder_chain = new RecorderChain(temp_folder, net);
+
+        auto block0 = block_factory(empty_recorder, [], empty_bullseye);
+        recorder_chain.push(block0);
+        auto block1 = block_factory(empty_recorder, block0.fingerprint, empty_bullseye);
+        recorder_chain.push(block1);
+        auto block2 = block_factory(empty_recorder, block1.fingerprint, empty_bullseye);
+        recorder_chain.push(block2);
+
+        // create another block that points to some block in the middle of chain
+        // thus we have Y-style linked list which is invalid chain
+        Buffer another_bullseye = [0, 1, 2, 3];
+        auto block1_branch = block_factory(empty_recorder, block0.fingerprint, another_bullseye);
+        recorder_chain.push(block1_branch);
+        auto block2_branch = block_factory(empty_recorder, block1_branch.fingerprint, empty_bullseye);
+        recorder_chain.push(block2_branch);
+
+        // chain should be invalid
+        assert(!RecorderChain.isValidChain(temp_folder, net));
+
+        rmdirRecurse(temp_folder);
+    }
+
+    /// RecorderChain_loop_blocks
+    {
+        auto recorder_chain = new RecorderChain(temp_folder, net);
+
+        auto block0 = block_factory(empty_recorder, [], empty_bullseye);
+        auto block1 = block_factory(empty_recorder, block0.fingerprint, empty_bullseye);
+        auto block2 = block_factory(empty_recorder, block1.fingerprint, empty_bullseye);
+
+        // create looped linked list where the first block points on the last one
+        block0.chain = block2.fingerprint;
+
+        recorder_chain.push(block0);
+        recorder_chain.push(block1);
+        recorder_chain.push(block2);
+
+        // chain should be invalid
+        assert(!RecorderChain.isValidChain(temp_folder, net));
+
+        auto info = RecorderChain.getBlocksInfo(temp_folder, net);
+
+        // amount not 0, but chain can't find first and last blocks
+        assert(info.amount > 0);
+        assert(info.first is null);
+        assert(info.last is null);
+
+        rmdirRecurse(temp_folder);
     }
 
     /// RecorderChain_findNextDARTBlock
