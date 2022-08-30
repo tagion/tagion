@@ -220,7 +220,6 @@ import tagion.utils.Miscellaneous : toHexString, decode;
         }
     }
 
-<<<<<<< HEAD
     /** 
     * Used find next block in recorder block chain
     * @param cur_fingerprint - fingerprint of current block from recorder block chain
@@ -243,7 +242,6 @@ import tagion.utils.Miscellaneous : toHexString, decode;
                 }
             }
         }
-        throw new TagionException("Next block not exist");
         return null;
     }
     
@@ -267,7 +265,6 @@ import tagion.utils.Miscellaneous : toHexString, decode;
                return block;
             }  
         }
-        throw new TagionException("Current block not exist");
         return null;
     }
     
@@ -458,13 +455,45 @@ unittest
     }
 
     /// RecorderChain_findNextDARTBlock
-    {
-        recorder_chain = new RecorderChain(temp_folder, net);    
+    {   
+        {
+            auto recorder_chain = new RecorderChain(temp_folder, net);
 
-        auto block_next = RecorderChain.findNextDARTBlock(block0.fingerprint, temp_folder, net);
-        assert(block_next.fingerprint ==  block1.fingerprint);
-        block_next = RecorderChain.findNextDARTBlock(block_next.fingerprint, temp_folder, net);
-        assert(block_next.fingerprint ==  block2.fingerprint);
+            auto block0 = block_factory(empty_recorder, [], empty_bullseye);
+            auto block1 = block_factory(empty_recorder, block0.fingerprint, empty_bullseye);
+            auto block2 = block_factory(empty_recorder, block1.fingerprint, empty_bullseye);
+
+            recorder_chain.push(block0);
+            recorder_chain.push(block1);
+            recorder_chain.push(block2);
+
+            auto block_next = RecorderChain.findNextDARTBlock(block0.fingerprint, temp_folder, net);
+            assert(block_next.fingerprint ==  block1.fingerprint);
+            block_next = RecorderChain.findNextDARTBlock(block_next.fingerprint, temp_folder, net);
+            assert(block_next.fingerprint ==  block2.fingerprint);
+
+            rmdirRecurse(temp_folder);
+        }
+
+        {
+            auto recorder_chain = new RecorderChain(temp_folder, net);
+
+            auto block0 = block_factory(empty_recorder, [], empty_bullseye);
+            auto block1 = block_factory(empty_recorder, [], empty_bullseye);
+
+            recorder_chain.push(block0);
+            recorder_chain.push(block1);
+
+            auto block_next = RecorderChain.findNextDARTBlock(block0.fingerprint, temp_folder, net);
+            assert(block_next is null);
+
+            rmdirRecurse(temp_folder);
+        }
+
+        {
+            auto recorder_chain = new RecorderChain(temp_folder, net);
+            assert(RecorderChain.findNextDARTBlock([], temp_folder, net) is null);
+        }
     }
 
     /// RecorderChain_findCurrentDARTBlock
@@ -476,8 +505,6 @@ unittest
         import tagion.dart.DARTFile;
         import tagion.crypto.SecureInterfaceNet : SecureNet;
 
-        import std.stdio;
-
         SecureNet secure_net = new StdSecureNet;
         string passphrase = "verysecret";
         secure_net.generateKeyPair(passphrase);
@@ -486,6 +513,16 @@ unittest
         enum BLOCK_SIZE = 0x80;
         BlockFile.create(dart_file, DARTFile.stringof, BLOCK_SIZE);
         DART db = new DART(secure_net, dart_file, 0, 0);
+        
+        auto recorder_chain = new RecorderChain(temp_folder, net);
+
+        auto block0 = block_factory(empty_recorder, [], empty_bullseye);
+        auto block1 = block_factory(empty_recorder, block0.fingerprint, empty_bullseye);
+        auto block2 = block_factory(empty_recorder, block1.fingerprint, empty_bullseye);
+
+        recorder_chain.push(block0);
+        recorder_chain.push(block1);
+        recorder_chain.push(block2);
         
         {
             auto recorder = factory.recorder(block0.recorder_doc);
@@ -512,6 +549,15 @@ unittest
             db(received, false);
             auto current_block = RecorderChain.findCurrentDARTBlock(db.fingerprint, temp_folder, net);
             assert(db.fingerprint == current_block.bullseye);
+        }
+
+        rmdirRecurse(temp_folder);
+
+        {
+            recorder_chain = new RecorderChain(temp_folder, net);
+            auto current_block = RecorderChain.findCurrentDARTBlock(db.fingerprint, temp_folder, net);
+            assert(current_block is null);
+            rmdirRecurse(temp_folder);
         }
     }
 }
