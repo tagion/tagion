@@ -601,13 +601,13 @@ private import tagion.basic.Types : FileExtension;
 string fileExtension(string path)
 {
     import std.path : extension;
+    import tagion.basic.Types : DOT;
 
-    enum dot = ".";
     switch (path.extension)
     {
         static foreach (ext; EnumMembers!FileExtension)
         {
-    case dot ~ ext:
+    case DOT ~ ext:
             return ext;
         }
     default:
