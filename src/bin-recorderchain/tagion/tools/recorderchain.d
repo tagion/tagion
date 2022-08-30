@@ -97,6 +97,12 @@ int main(string[] args)
     chain_directory = args[1];
     dart_file = args[2];
 
+    if(!RecorderChain.isValidChain(chain_directory, hash_net))
+    {
+        throw new TagionException("Recorder block chain is not valid");
+        return 1;
+    }  
+
     if(initialize)
     {
         /** Used for create new DART database */
@@ -187,8 +193,6 @@ int main(string[] args)
             throw new TagionException("DART fingerprint should be the same with recorder block bullseye");
             return 1;
         }
-
     }
-
     return 0;
 }
