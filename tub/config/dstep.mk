@@ -8,10 +8,16 @@ DSTEP_ATTRIBUTES+= --global-attribute=@nogc
 	# $2 Include directory for the .h c-header files
 # $3 Target directory for the .di files
 # $4 .d files which depends on the the .di files
+# $5 Custom dstep flags
+# $6 HFILES
 #
 define DSTEP_DO
 ${eval
+ifdef 6
+HFILES.$1 = $6
+else
 HFILES.$1= $${wildcard $2/*.h}
+endif
 DIFILES_notdir.$1 = $${notdir $$(HFILES.$1)}
 DIFILES.$1 = $${addprefix $3/,$${DIFILES_notdir.$1:.h=.di}}
 DESTROOT.$1 = $3
