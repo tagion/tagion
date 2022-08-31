@@ -27,6 +27,11 @@ class SSLSocketException : SocketException
     }
 }
 
+version(WOLFSSL) {
+    import tagion.network.wolfss.c.ssl;
+
+}
+else{
 extern (C)
 {
     enum SSL_VERIFY_NONE = 0;
@@ -109,6 +114,7 @@ enum SSL_CB_POINTS : int
     CB_ALERT = ST_ACCEPT * 2,
     CB_READ_ALERT = CB_ALERT + CB_READ,
     CB_WRITE_ALERT = CB_ALERT + CB_WRITE
+}
 }
 
 /++
