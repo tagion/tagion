@@ -1,6 +1,7 @@
-module tagion.behaviour.Behaviour;
+	module tagion.behaviour.Behaviour;
 
 public import tagion.behaviour.BehaviourFeature;
+import tagion.hibon.Document;
 
 import std.traits;
 import std.format;
@@ -86,7 +87,7 @@ static this() {
     scenario_ends = result.toDoc;
 }
 }
-@safe
+	@safe
 unittest
 {
     import std.algorithm.iteration : map;
@@ -383,7 +384,7 @@ bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
             }
         }
         else static if (__traits(isSame, TemplateOf!(Type), Info)) {
-            assumeWontThrow(io.writefln("scenario_group.tupleof[i].result = %s", scenario_group.tupleof[i].result.toPretty));
+            //assumeWontThrow(io.writefln("scenario_group.tupleof[i].result = %s", scenario_group.tupleof[i].result.toPretty));
             if (!scenario_group.tupleof[i].result.isRecordType!Result) {
                 return false;
             }
