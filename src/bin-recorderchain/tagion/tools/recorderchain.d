@@ -11,6 +11,7 @@ import std.path;
 import std.format;
 import std.file;
 import std.array;
+import std.stdio;
 
 import tagion.basic.Types : Buffer;
 import tagion.basic.TagionExceptions;
@@ -68,7 +69,6 @@ int main(string[] args)
     /** Initialize new DART database */
     bool initialize;
 
-   
     GetoptResult main_args;
 
     main_args = getopt(args,
@@ -102,84 +102,63 @@ int main(string[] args)
         throw new TagionException("Recorder block chain is not valid");
         return 1;
     }  
-
-    if(initialize)
+    
+    /** DART database */
+    DART db;
+    /** First, last, amount of blocks in chain */ 
+    auto info = RecorderChain.getBlocksInfo(chain_directory, hash_net);
+    if(!info.amount) 
     {
-        /** Used for create new DART database */
+        writeln("Recorder block chain is empty");
+        return 1;
+    }
+
+    /** Block that should be pushed to DART database next*/
+    RecorderChainBlock current_block;
+    if (initialize)
+    {
         enum BLOCK_SIZE = 0x80;
         BlockFile.create(dart_file, DARTFile.stringof, BLOCK_SIZE);
-        /** New DART database */
-        DART db = new DART(secure_net, dart_file, 0, 0);
-        /** Contains first, last, amount of recorder block */
-        auto info = RecorderChain.getBlocksInfo(chain_directory, hash_net);
-        /** Recorder from the first block in recorder block chain */
-        auto first_recorder = factory.recorder(info.first.recorder_doc);
-
-        addRecordToDB(db, first_recorder, hirpc);
-
-        if(info.first.bullseye != db.fingerprint)
-        {
-            throw new TagionException("DART fingerprint should be the same with recorder block bullseye");
-            return 1;
-        }
-        /** Block, recorder from which will be added to DART database next */
-        RecorderChainBlock next_block;
-        next_block = info.first;
-        /** Recorder of next block */
-        auto next_recorder = factory.recorder(next_block.recorder_doc);
-
-        foreach(cur_block; 0..(info.amount - 1)) 
-        {
-            next_block = RecorderChain.findNextDARTBlock(next_block.fingerprint, chain_directory, hash_net);  
-            /** Recorder from *next* block */
-            auto recorder = factory.recorder(next_block.recorder_doc);
-            addRecordToDB(db, recorder, hirpc);
-            if(next_block.bullseye != db.fingerprint)
-            {
-                throw new TagionException("DART fingerprint should be the same with recorder block bullseye");
-                return 1;
-            }
-        }
+        /** Initialize DART database */
+        db = new DART(secure_net, dart_file, 0, 0);
+        current_block = info.first;
     }
     else
     {
-        /** DART databse from file */
-        DART db = new DART(secure_net, dart_file, 0, 0);
-
-        /** Contains first, last, amount of recorder block */
-        auto info = RecorderChain.getBlocksInfo(chain_directory, hash_net);
-        if (info.last.bullseye == db.fingerprint)
+        db = new DART(secure_net, dart_file, 0, 0);
+        /** Used to find block that should be pushed to DART database next */
+        auto block = RecorderChain.findCurrentDARTBlock(db.fingerprint, chain_directory, hash_net);
+        if (block.fingerprint == info.last.fingerprint)
         {
-            return 0;
+            return 1;
         }
-        /** Bullseye of this block same with DART database fingerprint */
-        auto cur_block = RecorderChain.findCurrentDARTBlock(db.fingerprint, chain_directory, hash_net);
-        /** Block, recorder from which will be added to DART database next */
-        auto next_block = RecorderChain.findNextDARTBlock(cur_block.fingerprint, chain_directory, hash_net);
-
-        while(next_block.fingerprint != info.last.fingerprint)
-        {
-            /** Recorder from *next* block */
-            auto recorder = factory.recorder(next_block.recorder_doc);
-            addRecordToDB(db, recorder, hirpc);
-
-            if(next_block.bullseye != db.fingerprint)
-            {
-                throw new TagionException("DART fingerprint should be the same with recorder block bullseye");
-                return 1;
-            }
-            
-            next_block = RecorderChain.findNextDARTBlock(next_block.fingerprint, chain_directory, hash_net);
-        }
-        /** Recorder from *next* block */
-        auto recorder = factory.recorder(next_block.recorder_doc);
+        current_block = RecorderChain.findNextDARTBlock(block.fingerprint, chain_directory, hash_net);
+    }
+    /** Block, recorder from which will be added to DART database next */
+    auto next_block = RecorderChain.findNextDARTBlock(current_block.fingerprint, chain_directory, hash_net);
+    while (current_block.fingerprint != info.last.fingerprint)
+    {
+        /** Recorder to modify DART database */
+        auto recorder = factory.recorder(current_block.recorder_doc);
         addRecordToDB(db, recorder, hirpc);
 
-        if(next_block.bullseye != db.fingerprint)
+        if (current_block.bullseye != db.fingerprint)
         {
             throw new TagionException("DART fingerprint should be the same with recorder block bullseye");
             return 1;
         }
+        current_block = next_block;
+        next_block = RecorderChain.findNextDARTBlock(current_block.fingerprint, chain_directory, hash_net);
     }
+    /** Recorder of the last block */
+    auto recorder_last = factory.recorder(info.last.recorder_doc);
+    addRecordToDB(db, recorder_last, hirpc);
+
+    if (info.last.bullseye != db.fingerprint)
+    {
+        throw new TagionException("DART fingerprint should be the same with recorder block bullseye");
+        return 1;
+    }
+
     return 0;
 }
