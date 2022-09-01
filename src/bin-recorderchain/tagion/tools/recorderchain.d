@@ -8,12 +8,9 @@ module tagion.recorderchain;
 import std.stdio;
 import std.getopt;
 import std.path;
-import std.format;
 import std.file;
 import std.array;
-import std.stdio;
 
-import tagion.basic.Types : Buffer;
 import tagion.basic.TagionExceptions;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -21,11 +18,8 @@ import tagion.dart.Recorder;
 import tagion.dart.BlockFile;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
-import tagion.hibon.HiBON;
-import tagion.hibon.Document;
 import tagion.services.RecorderService;
 import tagion.communication.HiRPC;
-import tagion.utils.Miscellaneous : toHexString, decode;
 import tagion.dart.RecorderChainBlock;
 import tagion.dart.RecorderChain;
 
@@ -37,10 +31,10 @@ auto logo = import("logo.txt");
  * @param recorder - recorder to add
  * @param hirpc - to modify DART database
  */
-void addRecordToDB(DART db, RecordFactory.Recorder recorder, HiRPC hirpc) 
+void addRecordToDB(DART db, RecordFactory.Recorder recorder, HiRPC hirpc) @safe
 {
-    auto sended = DART.dartModify(recorder, hirpc);
-    auto received = hirpc.receive(sended);
+    auto sent = DART.dartModify(recorder, hirpc);
+    auto received = hirpc.receive(sent);
     db(received, false);
 }
 
@@ -97,7 +91,13 @@ int main(string[] args)
     chain_directory = args[1];
     dart_file = args[2];
 
-    if(!RecorderChain.isValidChain(chain_directory, hash_net))
+    if (!chain_directory || !dart_file)
+    {
+        throw new TagionException("3 parameters should be entered");
+        return 0;
+    }
+
+    if(chain_directory.exists && !RecorderChain.isValidChain(chain_directory, hash_net))
     {
         throw new TagionException("Recorder block chain is not valid");
         return 1;
@@ -132,10 +132,9 @@ int main(string[] args)
         {
             return 1;
         }
-        current_block = RecorderChain.findNextDARTBlock(block.fingerprint, chain_directory, hash_net);
+        current_block = RecorderChain.findNextBlock(block.fingerprint, chain_directory, hash_net);
     }
-    /** Block, recorder from which will be added to DART database next */
-    auto next_block = RecorderChain.findNextDARTBlock(current_block.fingerprint, chain_directory, hash_net);
+   
     while (current_block.fingerprint != info.last.fingerprint)
     {
         /** Recorder to modify DART database */
@@ -147,8 +146,7 @@ int main(string[] args)
             throw new TagionException("DART fingerprint should be the same with recorder block bullseye");
             return 1;
         }
-        current_block = next_block;
-        next_block = RecorderChain.findNextDARTBlock(current_block.fingerprint, chain_directory, hash_net);
+        current_block = RecorderChain.findNextBlock(current_block.fingerprint, chain_directory, hash_net);
     }
     /** Recorder of the last block */
     auto recorder_last = factory.recorder(info.last.recorder_doc);
