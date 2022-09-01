@@ -77,17 +77,7 @@ struct ScenarioResult {
 
 private static Document scenario_ends = result(ScenarioResult(true)).toDoc;
 
-version (none) {
-    static this() {
-        // import tagion.hibon.HiBON;
-        // auto h=new HiBON;
-        // h["end"]=true;
-        Result result;
-        //    auto x = ScenarioResult
-        result.outcome = ScenarioResult(true).toDoc;
-        scenario_ends = result.toDoc;
-    }
-}
+///Examples: How use the rub fuction on a feature
 @safe
 unittest {
     import std.algorithm.iteration : map;
@@ -167,7 +157,7 @@ FeatureGroup getFeature(alias M)() if (isFeature!M) {
     }
     return result;
 }
-
+///Examples: How to use getFeature on a feature
 @safe
 unittest { //
     import tagion.hibon.HiBONRecord;
@@ -301,7 +291,7 @@ bool hasErrors(ref const ScenarioGroup scenario_group) nothrow {
     return false;
 }
 
-/// Test Feature automation with errors via the hasError function
+///Examples: Show how to use the automation function and the hasError on a feature group
 @safe
 unittest {
     import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
@@ -342,6 +332,7 @@ version(unittest) {
 }
 
 /**
+Checks if a feature has passed all tests
    Returns:
    true if one of more actions in the Feature has failed
  */
@@ -353,6 +344,12 @@ bool hasPassed(ref const FeatureGroup feature_group) nothrow {
     return feature_group.scenarios.any!(scenario => scenario.hasPassed);
 }
 
+/**
+Check of scenario has passed all tests
+Params: 
+scenario_group = The scenario which been runned
+Returns: true if the scenario has passed all tests
+*/
 @safe
 bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
     static foreach (i, Type; Fields!ScenarioGroup) {
@@ -370,7 +367,7 @@ bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
     return true;
 }
 
-///
+///Examples: Shows how to use a automation on scenarios with constructor and the hasParssed 
 @safe
 unittest {
     // Test of hasPassed function on Scenarios and Feature
