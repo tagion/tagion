@@ -11,7 +11,7 @@ import tagion.basic.Types : Control;
 import tagion.basic.Basic : TrustedConcurrency;
 import tagion.logger.Logger;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
-import tagion.services.RecorderService : Fingerprint;
+import tagion.utils.Fingerprint : Fingerprint;
 import tagion.services.LoggerService;
 import tagion.dart.Recorder;
 
