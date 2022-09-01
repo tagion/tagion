@@ -3,7 +3,7 @@
 DSRC_WOLFSSL := ${call dir.resolve, wolfssl}
 DTMP_WOLFSSL := $(DTMP)/wolfssl
 
-CONFIGUREFLAGS_WOLFSSL := --enable-static
+CONFIGUREFLAGS_WOLFSSL := --enable-static --enable-aescbc --enable-all  
 
 .PHONY: wolfssl
 
@@ -16,7 +16,7 @@ proper-wolfssl:
 
 proper: proper-wolfssl
 
-wolfss: $(LIBWOLFSSL)
+wolfssl: $(LIBWOLFSSL)
 
 $(LIBWOLFSSL): $(DTMP)/.way
 	$(PRECMD)
