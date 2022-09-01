@@ -64,8 +64,8 @@ struct MarkdownT(Stream) {
 
     void issue(I)(const(I) info, string indent, string fmt) if (isInfo!I) {
         issue(info.property, indent, fmt);
+        bout.writefln(master.name, indent ~ master.indent, info.name);
         bout.write("\n");
-        bout.writefln(master.name, indent ~ master.indent, info.name); //
     }
 
     void issue(Group)(const(Group) group, string indent, string fmt) if (isActionGroup!Group) {
