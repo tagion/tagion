@@ -37,10 +37,10 @@ static MarkdownFMT masterMarkdown = {
     comments: "%-(%s\n%)",
 };
 
-enum EXT {
-    Markdown = "md",
-    Dlang = "d",
-}
+// enum EXT {
+//     Markdown = "md",
+//     Dlang = "d",
+// }
 
 @safe
 struct MarkdownT(Stream) {
@@ -106,7 +106,7 @@ unittest { // Markdown scenario test
         }
         immutable filename = unit_mangle("descriptor")
             .unitfile
-            .setExtension(EXT.Markdown);
+            .setExtension(FileExtension.markdown);
         immutable expected = filename.freadText;
         io.writefln("scenario_result.given.infos %s", scenario_result.given.infos);
         markdown.issue(scenario_result.given.infos[0], null, markdown.master.property);
@@ -119,7 +119,7 @@ unittest { // Markdown scenario test
         }
         immutable filename = unit_mangle("scenario")
             .unitfile
-            .setExtension(EXT.Markdown);
+            .setExtension(FileExtension.markdown);
         markdown.issue(scenario_result);
         filename.setExtension("mdtest").fwrite(bout.toString);
         immutable expected = filename.freadText;
@@ -144,7 +144,7 @@ unittest {
         }
         immutable filename = unit_mangle("feature")
             .unitfile
-            .setExtension(EXT.Markdown);
+            .setExtension(FileExtension.markdown);
         markdown.issue(feature_group);
         io.writefln("mdtest = %s", filename.setExtension("mdtest"));
         filename.setExtension("mdtest").fwrite(bout.toString);
@@ -250,7 +250,7 @@ unittest {
         }
         immutable filename = unit_mangle("feature")
             .unitfile
-            .setExtension(EXT.Dlang);
+            .setExtension(FileExtension.dsrc);
         dlang.issue(feature_group);
         immutable result = bout.toString;
         filename.setExtension("dtest").fwrite(result);
@@ -271,6 +271,7 @@ unittest {
 
 version (unittest) {
     import tagion.basic.Basic : mangleFunc, unitfile;
+    import tagion.basic.Types : FileExtension;
     import tagion.behaviour.BehaviourUnittest;
     import tagion.behaviour.Behaviour;
     import tagion.hibon.Document;

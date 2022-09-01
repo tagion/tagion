@@ -239,9 +239,9 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                                                 format("Bad action order for action %s", action_word));
                                         current_action_index = index;
                                         pragma(msg, "label ", typeof(label));
-                                        io.writefln("label %s", action_word);
+                                        //io.writefln("label %s", action_word);
                                         infos.length++; // ~= typeof(Field.infos).init;
-                                        io.writefln("length %s index=%d", scenario_group.tupleof[index].infos.length, index);
+                                        //io.writefln("length %s index=%d", scenario_group.tupleof[index].infos.length, index);
                                         infos[$ - 1].property.description = match.post.idup;
                                     }
                                 }
@@ -279,7 +279,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
 
 unittest { /// Convert ProtoDBBTestComments to Feature
     enum bddfile_proto = "ProtoBDDTestComments";
-    immutable bdd_filename = bddfile_proto.unitfile.setExtension(EXT.Markdown);
+    immutable bdd_filename = bddfile_proto.unitfile.setExtension(FileExtension.markdown);
     io.writefln("bdd_filename=%s", bdd_filename);
 
     auto feature_byline = File(bdd_filename).byLine;
@@ -291,14 +291,32 @@ unittest { /// Convert ProtoDBBTestComments to Feature
 
     string[] errors;
     auto feature = parser(feature_byline, errors);
-    auto fout = File("/tmp/parser.md", "w");
+
+    enum bddfile_proto_test = bddfile_proto~"_test";
+    immutable markdown_filename = bddfile_proto_test
+        .unitfile.setExtension(FileExtension.markdown);
+
 
     import tagion.behaviour.BehaviourIssue;
 
+    auto fout = File(markdown_filename, "w");
+    scope(exit) {
+        fout.close;
+    }
     auto markdown = Markdown(fout);
     markdown.issue(feature);
-    fout.writeln("------");
-    fout.writefln("feature.comments %s", feature.info.property.comments);
+    // fout.writeln("------");
+    // fout.writefln("feature.comments %s", feature.info.property.comments);
+    immutable hibon_filename = markdown_filename
+        // bddfile_proto_test
+        // .unitfile
+        .setExtension(FileExtension.hibon);
+
+    import tagion.hibon.HiBONRecord : fwrite;
+
+//    markdown_filename.fwrite(bout.toString);
+
+    hibon_filename.fwrite(feature);
     // { // Check ProtoDBBTestComments converted to check
     //     // Feature feature
     //     assert(feature.info.name == "tagion.behaviour.unittest.ProtoBDD");
@@ -346,7 +364,7 @@ unittest { /// Convert ProtoDBBTestComments to Feature
 version (unittest) {
     import io = std.stdio;
     import tagion.basic.Basic : unitfile;
-    import tagion.behaviour.BehaviourIssue : EXT;
+    import tagion.basic.Types : FileExtension;
     import std.stdio : File;
     import std.path;
 }

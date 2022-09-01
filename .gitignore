@@ -24,6 +24,11 @@ gen.*
 *.i
 # Revision file
 revision.d
+# Unittest temp files
+*_test.md
+*_test.hibon
+*_test.json
+
 
 # Local backup
 *.parked*
