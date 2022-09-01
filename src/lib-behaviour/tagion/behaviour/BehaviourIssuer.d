@@ -25,6 +25,7 @@ struct MarkdownFMT {
     string scenario;
     string feature;
     string property;
+    string comments;
 }
 
 static MarkdownFMT masterMarkdown = {
@@ -33,6 +34,7 @@ static MarkdownFMT masterMarkdown = {
     scenario: "### %2$s: %3$s",
     feature: "## %2$s: %3$s",
     property: "%s*%s* %s",
+    comments: "%-(%s\n%)",
 };
 
 enum EXT {
@@ -46,8 +48,18 @@ struct MarkdownT(Stream) {
     //  enum property_fmt="%s*%s* %s"; //=function(string indent, string propery, string description);
     static MarkdownFMT master;
 
-    void issue(Descriptor)(const(Descriptor) descriptor, string indent, string fmt) if (isDescriptor!Descriptor) {
+    void issue(Descriptor)(const(Descriptor) descriptor, string indent, string fmt, string comment_fmt=null) if (isDescriptor!Descriptor) {
         bout.writefln(fmt, indent, Descriptor.stringof, descriptor.description);
+        if (descriptor.comments) {
+            comment_fmt=(comment_fmt is null)?master.comments:comment_fmt;
+            bout.writefln(comment_fmt, descriptor.comments);
+        }
+    }
+
+    void issue(string[] comments) {
+        if (comments) {
+
+        }
     }
 
     void issue(I)(const(I) info, string indent, string fmt) if (isInfo!I) {

@@ -5,28 +5,28 @@
 `tagion.behaviour.unittest.ProtoBDD`
 
 ### Scenario: Some awesome money printer
-​   comments
+​   Comment after scenario
 `Some_awesome_money_printer`
 
     *Given* the card is valid
-    some comments scenario
+    Some comments after first Given
 
 `is_valid`
-      *And* the account is in credit
-    some comments Given And
+      *Given* the account is in credit
+    Some comments after second Given
 
 `in_credit`
-      *And* the dispenser contains cash
+      *Given* the dispenser contains cash
 
 `contains_cash`
     *When* the Customer request cash
-    some comments for When
+    An other comments after When
 `request_cash`
     *Then* the account is debited
-    some comments for Then
+    And a comment after then some
 
 `is_debited`
-      *And* the cash is dispensed
-      some comments for Then And
+      *Then* the cash is dispensed
+      Final comment some+
 
 `is_dispensed`

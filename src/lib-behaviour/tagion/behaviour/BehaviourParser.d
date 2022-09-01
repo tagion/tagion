@@ -297,6 +297,8 @@ unittest { /// Convert ProtoDBBTestComments to Feature
 
     auto markdown = Markdown(fout);
     markdown.issue(feature);
+    fout.writeln("------");
+    fout.writefln("feature.comments %s", feature.info.property.comments);
     // { // Check ProtoDBBTestComments converted to check
     //     // Feature feature
     //     assert(feature.info.name == "tagion.behaviour.unittest.ProtoBDD");
