@@ -135,7 +135,7 @@ int main(string[] args)
         current_block = RecorderChain.findNextBlock(block.fingerprint, chain_directory, hash_net);
     }
    
-    while (current_block.fingerprint != info.last.fingerprint)
+    do
     {
         /** Recorder to modify DART database */
         auto recorder = factory.recorder(current_block.recorder_doc);
@@ -148,15 +148,7 @@ int main(string[] args)
         }
         current_block = RecorderChain.findNextBlock(current_block.fingerprint, chain_directory, hash_net);
     }
-    /** Recorder of the last block */
-    auto recorder_last = factory.recorder(info.last.recorder_doc);
-    addRecordToDB(db, recorder_last, hirpc);
-
-    if (info.last.bullseye != db.fingerprint)
-    {
-        throw new TagionException("DART fingerprint should be the same with recorder block bullseye");
-        return 1;
-    }
+    while (current_block !is null);
 
     return 0;
 }
