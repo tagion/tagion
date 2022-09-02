@@ -47,7 +47,8 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
                     pragma(msg, "all_behaviours ", all_behaviours);
                     static foreach (i, behaviour; all_behaviours) {
                         {
-                            enum group_name = __traits(identifier, typeof(getProperty!(behaviour))).toLower;
+                            enum group_name = __traits(identifier, 
+							typeof(getProperty!(behaviour))).toLower;
                             enum code = memberCode(
                                         scenario_group.stringof, group_name, i,
                                         scenario.stringof, __traits(identifier, behaviour));
@@ -91,7 +92,6 @@ unittest {
             "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_valid",
             "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.in_credit",
             "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.contains_cash",
-
             "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.request_cash",
             "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_debited",
             "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_dispensed",
@@ -222,7 +222,6 @@ auto automation(alias M)() if (isFeature!M) {
             enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
             // pragma(msg, code);
             mixin(code);
-
         }
 
         FeatureGroup run() nothrow {
