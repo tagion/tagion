@@ -73,10 +73,10 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
     int result_errors; /// Error counter'
 LoopFiles:
     foreach (file; bdd_files) {
-        auto dsource = file.name.setExtension(FileExtension.dsrc);
+        auto dsource = file.name.setExtension(FileExtension.dsrc); // .d
         const bdd_gen = dsource.setExtension(opts.bdd_gen_ext);
         if (dsource.exists) {
-            dsource = dsource.setExtension(opts.d_ext);
+            dsource = dsource.setExtension(opts.d_ext); // .gen.d
         }
         writeln(file.name);
         writeln(dsource);
