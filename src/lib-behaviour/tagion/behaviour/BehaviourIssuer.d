@@ -7,14 +7,12 @@ import std.range : tee, chain;
 import std.array : join, array;
 import std.format;
 
-@safe
 MarkdownT!(Stream) Markdown(Stream)(Stream bout) {
     alias MasterT = MarkdownT!Stream;
     MasterT.master = masterMarkdown;
     return MasterT(bout);
 }
 
-@safe
 DlangT!(Stream) Dlang(Stream)(Stream bout) {
     alias MasterT = DlangT!Stream;
     auto result = MasterT(bout);
@@ -45,17 +43,12 @@ struct MarkdownT(Stream) {
     //  enum property_fmt="%s*%s* %s"; //=function(string indent, string propery, string description);
     static MarkdownFMT master;
 
-    void issue(Descriptor)(const(Descriptor) descriptor, string indent, string fmt, string comment_fmt=null) if (isDescriptor!Descriptor) {
+    void issue(Descriptor)(const(Descriptor) descriptor, string indent, string fmt, 
+string comment_fmt=null) if (isDescriptor!Descriptor) {
         bout.writefln(fmt, indent, Descriptor.stringof, descriptor.description);
         if (descriptor.comments) {
             comment_fmt=(comment_fmt is null)?master.comments:comment_fmt;
             bout.writefln(comment_fmt, descriptor.comments);
-        }
-    }
-
-    void issue(string[] comments) {
-        if (comments) {
-
         }
     }
 
@@ -68,8 +61,6 @@ struct MarkdownT(Stream) {
     void issue(Group)(const(Group) group, string indent, string fmt) if (isActionGroup!Group) {
         if (group !is group.init) {
             group.infos.each!(info =>issue(info, indent, master.property));
-            // group.ands
-            //     .each!(a => issue(a, indent ~ master.indent, fmt));
         }
     }
 
@@ -96,7 +87,6 @@ unittest { // Markdown scenario test
     alias unit_mangle = mangleFunc!(MarkdownU);
     auto awesome = new Some_awesome_feature;
     const scenario_result = run(awesome);
-    //const scenario_result = runner_awesome();
     {
         scope (exit) {
             bout.clear;
@@ -105,7 +95,7 @@ unittest { // Markdown scenario test
             .unitfile
             .setExtension(FileExtension.markdown);
         immutable expected = filename.freadText;
-        io.writefln("scenario_result.given.infos %s", scenario_result.given.infos);
+        //io.writefln("scenario_result.given.infos %s", scenario_result.given.infos);
         markdown.issue(scenario_result.given.infos[0], null, markdown.master.property);
         filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
@@ -120,13 +110,8 @@ unittest { // Markdown scenario test
         markdown.issue(scenario_result);
         filename.setExtension("mdtest").fwrite(bout.toString);
         immutable expected = filename.freadText;
-//        filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
-        //io.writefln("bout=%s", bout);
-        //        filename.fwrite(bout.toString);
-        //        im
     }
-    //    assert(bout.toString == "Not code");
 }
 
 @safe
@@ -143,8 +128,7 @@ unittest {
             .unitfile
             .setExtension(FileExtension.markdown);
         markdown.issue(feature_group);
-        io.writefln("mdtest = %s", filename.setExtension("mdtest"));
-        filename.setExtension("mdtest").fwrite(bout.toString);
+        // filename.setExtension("mdtest").fwrite(bout.toString);
 
         immutable expected = filename.freadText;
         assert(bout.toString == expected);
@@ -250,8 +234,8 @@ unittest {
             .setExtension(FileExtension.dsrc);
         dlang.issue(feature_group);
         immutable result = bout.toString;
-        filename.setExtension("dtest").fwrite(result);
-        io.writefln("dtest =%s", filename.setExtension("dtest"));
+        //filename.setExtension("dtest").fwrite(result);
+       // io.writefln("dtest =%s", filename.setExtension("dtest"));
 
         immutable expected = filename.freadText;
         assert(equal(
@@ -285,5 +269,5 @@ version (unittest) {
     //    import std.stdio;
     import std.path;
     import std.outbuffer;
-    import io = std.stdio;
+    // import io = std.stdio;
 }

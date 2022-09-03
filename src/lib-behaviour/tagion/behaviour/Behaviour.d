@@ -98,7 +98,7 @@ unittest {
             "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.swollow_the_card",
     )
         .map!(a => result(a));
-    io.writefln("awesome.count = %d", awesome.count);
+ //   io.writefln("awesome.count = %d", awesome.count);
     assert(awesome.count == 7);
     Document[] results;
     results ~= runner_result.given.infos
@@ -234,7 +234,7 @@ auto automation(alias M)() if (isFeature!M) {
             result.scenarios.length = ScenariosSeq.length;
             static foreach (i, _Scenario; ScenariosSeq) {
                 try {
-                    io.writefln("run %s ", _Scenario.stringof);
+                    //io.writefln("run %s ", _Scenario.stringof);
                     static if (__traits(compiles, new _Scenario())) {
                         if (result.scenarios[i] is null) {
                             result.scenarios[i] = new _Scenario();
@@ -324,12 +324,6 @@ unittest {
     }
 }
 
-version(unittest) {
-    import tagion.hibon.Document;
-    import io = std.stdio;
-    import tagion.hibon.HiBONJSON;
-}
-
 /**
 Checks if a feature has passed all tests
    Returns:
@@ -388,6 +382,14 @@ unittest {
         const feature_result = feature_with_ctor.run;
         assert(feature_result.scenarios[0].hasPassed);
         assert(feature_result.scenarios[1].hasPassed);
-        io.writefln("feature_result =%s", feature_result.toPretty);
+        //io.writefln("feature_result =%s", feature_result.toPretty);
     }
 }
+
+version(unittest) {
+    import tagion.hibon.Document;
+//    import io = std.stdio;
+    import tagion.hibon.HiBONJSON;
+}
+
+
