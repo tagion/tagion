@@ -43,6 +43,12 @@ logs
 tools/*
 *.log
 *.way
+# Temporary file use in BDD
+*.gen.d
+*.gen.md
+*.mdtest
+*.dtest
+
 
 #
 # Temporary wallet files
