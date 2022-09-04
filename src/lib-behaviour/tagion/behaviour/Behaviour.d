@@ -38,7 +38,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
                 format("The constructor must be called for %s before it's runned", T.stringof));
         static foreach (_Property; BehaviourProperties) {
             {
-                alias all_behaviours = getAction!(T, _Property);
+                alias all_behaviours = getActions!(T, _Property);
                 static if (is(all_behaviours == void)) {
                     static assert(!isOneOf!(_Property, MandatoryBehaviourProperties),
                             format("%s is missing a @%s action", T.stringof, _Property.stringof));
@@ -123,7 +123,7 @@ ScenarioGroup getScenarioGroup(T)() if (isScenario!T) {
     scenario_group.info.name = T.stringof;
     static foreach (_Property; BehaviourProperties) {
         {
-            alias behaviours = getAction!(T, _Property);
+            alias behaviours = getActions!(T, _Property);
             static if (!is(behaviours == void)) {
                 import std.uni : toLower;
 

@@ -139,7 +139,7 @@ template getAllActions(T) if (is(T == class) || is(T == struct)) {
 }
 
 ///
-static unittest { // Test of getActionss
+static unittest { // Test of getAllActions
     alias actions = getAllActions!(BehaviourUnittest.Some_awesome_feature);
     static assert(actions.length == 7);
     static assert(allSatisfy!(isCallable, actions));
@@ -152,34 +152,34 @@ static unittest { // Test of getActionss
    The function fails if there is more than one behaviour with this behaviour
    and returns void if no behaviour-Property has been found
  */
-template getAction(T, Property) if (is(T == class) || is(T == struct)) {
+template getActions(T, Property) if (is(T == class) || is(T == struct)) {
     alias behaviours = getAllActions!T;
     alias behaviour_with_property = Filter!(ApplyRight!(hasUDA, Property), behaviours);
     static if (behaviour_with_property.length > 0) {
-        alias getAction = behaviour_with_property;
+        alias getActions = behaviour_with_property;
     }
     else {
-        alias getAction = void;
+        alias getActions = void;
     }
 
 }
 
 ///
 unittest {
-    alias behaviour_with_given = getAction!(BehaviourUnittest.Some_awesome_feature, Given);
+    alias behaviour_with_given = getActions!(BehaviourUnittest.Some_awesome_feature, Given);
     static assert(allSatisfy!(isCallable, behaviour_with_given));
 
     static assert(allSatisfy!(ApplyRight!(hasUDA, Given), behaviour_with_given));
-    static assert(is(getAction!(BehaviourUnittest.Some_awesome_feature_bad_format_missing_given, Given) == void));
+    static assert(is(getActions!(BehaviourUnittest.Some_awesome_feature_bad_format_missing_given, Given) == void));
 
-    alias behaviour_with_when = getAction!(BehaviourUnittest.Some_awesome_feature, When);
+    alias behaviour_with_when = getActions!(BehaviourUnittest.Some_awesome_feature, When);
     static assert(isCallable!(behaviour_with_when));
     static assert(hasUDA!(behaviour_with_when, When));
 
 }
 
 /// Returns: true if T has the Property
-enum hasProperty(alias T, Property) = !is(getAction!(T, Property) == void);
+enum hasProperty(alias T, Property) = !is(getActions!(T, Property) == void);
 
 ///
 unittest {
@@ -211,25 +211,25 @@ unittest {
     static assert(is(getProperty!(BehaviourUnittest.Some_awesome_feature.helper_function) == void));
 }
 
-	// Test of the getAction of a specific behaviour property
+	// Test of the getActions of a specific behaviour property
 @safe
 unittest {
-    alias behaviour_of_given = getAction!(BehaviourUnittest.Some_awesome_feature, Given);
+    alias behaviour_of_given = getActions!(BehaviourUnittest.Some_awesome_feature, Given);
     static assert(behaviour_of_given.length is 3);
     static assert(getProperty!(behaviour_of_given[0]) == Given("the card is valid"));
     static assert(getProperty!(behaviour_of_given[1]) == Given("the account is in credit"));
     static assert(getProperty!(behaviour_of_given[2]) == Given("the dispenser contains cash"));
 
-    alias behaviour_of_when = getAction!(BehaviourUnittest.Some_awesome_feature, When);
+    alias behaviour_of_when = getActions!(BehaviourUnittest.Some_awesome_feature, When);
     static assert(behaviour_of_when.length is 1);
     static assert(getProperty!(behaviour_of_when[0]) == When("the Customer request cash"));
 
-    alias behaviour_of_then = getAction!(BehaviourUnittest.Some_awesome_feature, Then);
+    alias behaviour_of_then = getActions!(BehaviourUnittest.Some_awesome_feature, Then);
     static assert(behaviour_of_then.length is 2);
     static assert(getProperty!(behaviour_of_then[0]) == Then("the account is debited"));
     static assert(getProperty!(behaviour_of_then[1]) == Then("the cash is dispensed"));
 
-    alias behaviour_of_but = getAction!(BehaviourUnittest.Some_awesome_feature, But);
+    alias behaviour_of_but = getActions!(BehaviourUnittest.Some_awesome_feature, But);
     static assert(behaviour_of_but.length is 1);
     static assert(getProperty!(behaviour_of_but[0]) ==
             But("if the Customer does not take his card, then the card must be swollowed"));
