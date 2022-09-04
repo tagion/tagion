@@ -7,18 +7,21 @@ import std.range : tee, chain;
 import std.array : join, array;
 import std.format;
 
+@safe
 MarkdownT!(Stream) Markdown(Stream)(Stream bout) {
     alias MasterT = MarkdownT!Stream;
     MasterT.master = masterMarkdown;
     return MasterT(bout);
 }
 
+@safe
 DlangT!(Stream) Dlang(Stream)(Stream bout) {
     alias MasterT = DlangT!Stream;
     auto result = MasterT(bout);
     return result;
 }
 
+@safe
 struct MarkdownFMT {
     string indent;
     string name;
@@ -28,6 +31,7 @@ struct MarkdownFMT {
     string comments;
 }
 
+@safe
 static MarkdownFMT masterMarkdown = {
     indent: "  ",
     name: "`%2$s`",

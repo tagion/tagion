@@ -32,6 +32,7 @@ enum Token {
     NAME, // MODULE,
 }
 
+@safe
 bool validAction(scope const(char[]) name) pure {
     import std.algorithm.searching : any;
 
@@ -58,7 +59,6 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
         if (isInputRange!R && isSomeString!(ElementType!R)) {
     import std.stdio;
     import std.array;
-//    import std.stdio : write, writeln, writef, writefln;
     import std.algorithm.searching;
     import std.string;
     import std.range : enumerate;
@@ -78,6 +78,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                 errors ~= format("%s(%d): Error: %s", localfile, line_no, msg);
             }
         }
+
         auto match = range.front.matchFirst(feature_regex);
         const Token token = cast(Token)(match.whichPattern);
         with (Token) {
@@ -120,8 +121,8 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                     info_feature.name = match[1].idup;
                     break TokenSwitch;
                 case State.Scenario:
-                    check_error(match[1].validAction, 
-							format("Not a valid action name %s,  '.' is not allowed", match[1]));
+                    check_error(match[1].validAction,
+                            format("Not a valid action name %s,  '.' is not allowed", match[1]));
                     info_scenario.name = match[1].idup;
                     break TokenSwitch;
                 case State.Action:
@@ -154,7 +155,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
             case ACTION:
                 state = State.Action;
                 const action_word = match[1].toLower;
-               alias ActionGroups = staticMap!(ActionGroup, BehaviourProperties);
+                alias ActionGroups = staticMap!(ActionGroup, BehaviourProperties);
                 pragma(msg, "ActionGroups ", ActionGroups);
                 static foreach (index, Field; Fields!ScenarioGroup) {
                     {
@@ -190,24 +191,24 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
     return result;
 }
 
+/// Examples: How to parse a markdown file
 unittest { /// Convert ProtoDBBTestComments to Feature
-    enum bddfile_proto = "ProtoBDDTestComments";
-    immutable bdd_filename = bddfile_proto.unitfile.setExtension(FileExtension.markdown);
+    enum bddfile_proto = "ProtoBDDTestComments".unitfile;
+    immutable bdd_filename = bddfile_proto.setExtension(FileExtension.markdown);
 
     auto feature_byline = File(bdd_filename).byLine;
 
     string[] errors;
     auto feature = parser(feature_byline, errors);
 
-    enum bddfile_proto_test = bddfile_proto~"_test";
+    enum bddfile_proto_test = bddfile_proto ~ "_test";
     immutable markdown_filename = bddfile_proto_test
         .unitfile.setExtension(FileExtension.markdown);
-
 
     import tagion.behaviour.BehaviourIssue;
 
     auto fout = File(markdown_filename, "w");
-    scope(exit) {
+    scope (exit) {
         fout.close;
     }
     auto markdown = Markdown(fout);
@@ -215,14 +216,18 @@ unittest { /// Convert ProtoDBBTestComments to Feature
     immutable hibon_filename = markdown_filename
         .setExtension(FileExtension.hibon);
 
-    import tagion.hibon.HiBONRecord : fwrite;
+    import tagion.hibon.HiBONRecord : fwrite, fread;
 
     hibon_filename.fwrite(feature);
+
+    const expected_feature = hibon_filename.fread!FeatureGroup;
+    assert(feature.toDoc == expected_feature.toDoc);
 }
 
 version (unittest) {
     import io = std.stdio;
-    import tagion.basic.Basic : unitfile;
+	import tagion.hibon.HiBONJSON;
+	import tagion.basic.Basic : unitfile;
     import tagion.basic.Types : FileExtension;
     import std.stdio : File;
     import std.path;

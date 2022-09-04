@@ -188,6 +188,13 @@ static assert(uint.sizeof == 4);
         return cast(uint)(this[].walkLength);
     }
 
+	/* 
+	 * 
+	 * Returns: If both documents are the same
+	 */
+	bool opEqual(const Document rhs) const pure nothrow @nogc {
+	return _data == rhs._data;
+	}
     /++
      The deligate used by the valid function to report errors
      +/
