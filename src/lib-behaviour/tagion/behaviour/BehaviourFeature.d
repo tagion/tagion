@@ -131,14 +131,14 @@ static unittest {
     static assert(!hasActions!(BehaviourUnittest.Some_awesome_feature.helper_function));
 }
 
-template getBehaviours_(T) if (is(T == class) || is(T == struct)) {
+template getActions(T) if (is(T == class) || is(T == struct)) {
     alias get_all_callable = getAllCallables!T;
-    alias getBehaviours_ = Filter!(hasActions, get_all_callable);
+    alias getActions = Filter!(hasActions, get_all_callable);
 }
 
 ///
 static unittest { // Test of getBehaviours
-    alias behaviours = getBehaviours_!(BehaviourUnittest.Some_awesome_feature);
+    alias behaviours = getActions!(BehaviourUnittest.Some_awesome_feature);
     static assert(behaviours.length == 7);
     static assert(allSatisfy!(isCallable, behaviours));
     static assert(allSatisfy!(hasActions, behaviours));
@@ -151,7 +151,7 @@ static unittest { // Test of getBehaviours
    and returns void if no behaviour-Property has been found
  */
 template getBehaviour(T, Property) if (is(T == class) || is(T == struct)) {
-    alias behaviours = getBehaviours_!T;
+    alias behaviours = getActions!T;
     alias behaviour_with_property = Filter!(ApplyRight!(hasUDA, Property), behaviours);
     static if (behaviour_with_property.length > 0) {
         alias getBehaviour = behaviour_with_property;
