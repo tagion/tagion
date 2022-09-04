@@ -38,7 +38,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
                 format("The constructor must be called for %s before it's runned", T.stringof));
         static foreach (_Property; BehaviourProperties) {
             {
-                alias all_behaviours = getBehaviour!(T, _Property);
+                alias all_behaviours = getAction!(T, _Property);
                 static if (is(all_behaviours == void)) {
                     static assert(!isOneOf!(_Property, MandatoryBehaviourProperties),
                             format("%s is missing a @%s action", T.stringof, _Property.stringof));
@@ -47,7 +47,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
                     pragma(msg, "all_behaviours ", all_behaviours);
                     static foreach (i, behaviour; all_behaviours) {
                         {
-                            enum group_name = __traits(identifier, 
+                            enum group_name = __traits(identifier,
 							typeof(getProperty!(behaviour))).toLower;
                             enum code = memberCode(
                                         scenario_group.stringof, group_name, i,
@@ -123,7 +123,7 @@ ScenarioGroup getScenarioGroup(T)() if (isScenario!T) {
     scenario_group.info.name = T.stringof;
     static foreach (_Property; BehaviourProperties) {
         {
-            alias behaviours = getBehaviour!(T, _Property);
+            alias behaviours = getAction!(T, _Property);
             static if (!is(behaviours == void)) {
                 import std.uni : toLower;
 
@@ -339,7 +339,7 @@ bool hasPassed(ref const FeatureGroup feature_group) nothrow {
 
 /**
 Check of scenario has passed all tests
-Params: 
+Params:
 scenario_group = The scenario which been runned
 Returns: true if the scenario has passed all tests
 */
@@ -360,7 +360,7 @@ bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
     return true;
 }
 
-///Examples: Shows how to use a automation on scenarios with constructor and the hasParssed 
+///Examples: Shows how to use a automation on scenarios with constructor and the hasParssed
 @safe
 unittest {
     // Test of hasPassed function on Scenarios and Feature
@@ -391,5 +391,3 @@ version(unittest) {
 //    import io = std.stdio;
     import tagion.hibon.HiBONJSON;
 }
-
-
