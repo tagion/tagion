@@ -510,7 +510,6 @@ unittest
     SecureNet secure_net = new StdSecureNet;
     string passphrase = "verysecret";
     secure_net.generateKeyPair(passphrase);
-    enum BLOCK_SIZE = 0x80;
     BlockFile.create(dart_file, DARTFile.stringof, BLOCK_SIZE);
     DART db = new DART(secure_net, dart_file, 0, 0);
 

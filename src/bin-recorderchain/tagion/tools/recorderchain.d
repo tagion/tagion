@@ -87,7 +87,7 @@ int main(string[] args)
         main_args.options);
         return 0;
     }
-    
+
     chain_directory = args[1];
     dart_file = args[2];
 
@@ -102,7 +102,7 @@ int main(string[] args)
         throw new TagionException("Recorder block chain is not valid");
         return 1;
     }  
-    
+
     /** DART database */
     DART db;
     /** First, last, amount of blocks in chain */ 
@@ -117,7 +117,6 @@ int main(string[] args)
     RecorderChainBlock current_block;
     if (initialize)
     {
-        enum BLOCK_SIZE = 0x80;
         BlockFile.create(dart_file, DARTFile.stringof, BLOCK_SIZE);
         /** Initialize DART database */
         db = new DART(secure_net, dart_file, 0, 0);
@@ -134,8 +133,8 @@ int main(string[] args)
         }
         current_block = RecorderChain.findNextBlock(block.fingerprint, chain_directory, hash_net);
     }
-   
-    do
+
+    foreach (i; 0..info.amount)
     {
         /** Recorder to modify DART database */
         auto recorder = factory.recorder(current_block.recorder_doc);
@@ -147,8 +146,10 @@ int main(string[] args)
             return 1;
         }
         current_block = RecorderChain.findNextBlock(current_block.fingerprint, chain_directory, hash_net);
+        if(!current_block)
+        {
+            return 1;
+        }
     }
-    while (current_block !is null);
-
     return 0;
 }

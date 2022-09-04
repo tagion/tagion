@@ -28,6 +28,8 @@ import tagion.dart.DARTException : BlockFileException;
 
 import std.math : rint;
 
+enum BLOCK_SIZE = 0x80;
+
 version (unittest)
 {
     import Basic = tagion.basic.Basic;
