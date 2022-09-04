@@ -86,10 +86,6 @@ struct FeatureGroup {
     mixin HiBONRecord!();
 }
 
-// version (unittest) {
-//     private import tagion.behaviour.BehaviourUnittest;
-// }
-
 /// All behaviour-properties of a Scenario
 alias BehaviourProperties = AliasSeq!(Given, When, Then, But);
 /// The behaviour-properties which only occurrences once in a Scenario
@@ -124,20 +120,20 @@ static unittest { // Test of getAllCallable
     static assert(allSatisfy!(isCallable, all_callables));
 }
 
-template hasBehaviours(alias T) if (isCallable!T) {
+template hasActions(alias T) if (isCallable!T) {
     alias hasProperty = ApplyLeft!(hasUDA, T);
-    enum hasBehaviours = anySatisfy!(hasProperty, BehaviourProperties);
+    enum hasActions = anySatisfy!(hasProperty, BehaviourProperties);
 }
 
-///
+// Check if a function is an action or not
 static unittest {
-    static assert(hasBehaviours!(BehaviourUnittest.Some_awesome_feature.is_valid));
-    static assert(!hasBehaviours!(BehaviourUnittest.Some_awesome_feature.helper_function));
+    static assert(hasActions!(BehaviourUnittest.Some_awesome_feature.is_valid));
+    static assert(!hasActions!(BehaviourUnittest.Some_awesome_feature.helper_function));
 }
 
 template getBehaviours_(T) if (is(T == class) || is(T == struct)) {
     alias get_all_callable = getAllCallables!T;
-    alias getBehaviours_ = Filter!(hasBehaviours, get_all_callable);
+    alias getBehaviours_ = Filter!(hasActions, get_all_callable);
 }
 
 ///
@@ -145,7 +141,7 @@ static unittest { // Test of getBehaviours
     alias behaviours = getBehaviours_!(BehaviourUnittest.Some_awesome_feature);
     static assert(behaviours.length == 7);
     static assert(allSatisfy!(isCallable, behaviours));
-    static assert(allSatisfy!(hasBehaviours, behaviours));
+    static assert(allSatisfy!(hasActions, behaviours));
 }
 
 /**
@@ -231,7 +227,7 @@ unittest {
 
 enum isScenario(T) = hasUDA!(T, Scenario);
 
-/// 
+///
 static unittest {
     static assert(isScenario!(BehaviourUnittest.Some_awesome_feature));
 }
