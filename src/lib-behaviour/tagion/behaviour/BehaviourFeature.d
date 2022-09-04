@@ -132,7 +132,10 @@ static unittest {
 }
 
 
-// Collects all the actions in a scenario
+/**
+Returns:
+all the actions in a scenario
+*/
 template getAllActions(T) if (is(T == class) || is(T == struct)) {
     alias get_all_callable = getAllCallables!T;
     alias getAllActions = Filter!(hasActions, get_all_callable);
@@ -235,15 +238,23 @@ unittest {
             But("if the Customer does not take his card, then the card must be swollowed"));
 }
 
+	///Returns: true of T is a Scenario
 enum isScenario(T) = hasUDA!(T, Scenario);
 
 ///
 static unittest {
     static assert(isScenario!(BehaviourUnittest.Some_awesome_feature));
+static assert(!isScenario!(BehaviourUnittest.This_is_not_a_scenario));
 }
 
 enum feature_name = "feature";
 
+/** 
+  
+  Params:
+    M = the module
+	Returns: true if M is a feature module
+*/
 template isFeature(alias M) if (__traits(isModule, M)) {
     import std.algorithm.searching : any;
 
@@ -291,7 +302,8 @@ unittest { // The obtainFeature of a module
     static assert(!obtainFeature!(tagion.behaviour.BehaviourFeature));
 }
 
-protected template _Scenarios(alias M, string[] names) if (__traits(isModule, M)) {
+/// Helper template for Scenarios
+protected template _Scenarios(alias M, string[] names) if (isFeature!M) {
     static if (names.length is 0) {
         alias _Scenarios = AliasSeq!();
     }
@@ -317,7 +329,10 @@ protected template _Scenarios(alias M, string[] names) if (__traits(isModule, M)
     }
 }
 
-template Scenarios(alias M) if (__traits(isModule, M)) {
+/**
+	Returns: All scenarios in the feature module M
+*/
+template Scenarios(alias M) if (isFeature!M) {
     alias Scenarios = _Scenarios!(M, [__traits(allMembers, M)]);
 }
 

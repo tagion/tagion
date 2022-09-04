@@ -150,6 +150,6 @@ version (unittest)
 }
 
 
-// {
-//     const result = run!(tagion.behaviour.BehaviourUnittest);
-// }
+@safe
+struct This_is_not_a_scenario {
+}
