@@ -137,11 +137,11 @@ template getActions(T) if (is(T == class) || is(T == struct)) {
 }
 
 ///
-static unittest { // Test of getBehaviours
-    alias behaviours = getActions!(BehaviourUnittest.Some_awesome_feature);
-    static assert(behaviours.length == 7);
-    static assert(allSatisfy!(isCallable, behaviours));
-    static assert(allSatisfy!(hasActions, behaviours));
+static unittest { // Test of getActionss
+    alias actions = getActions!(BehaviourUnittest.Some_awesome_feature);
+    static assert(actions.length == 7);
+    static assert(allSatisfy!(isCallable, actions));
+    static assert(allSatisfy!(hasActions, actions));
 }
 
 /**
