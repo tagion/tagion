@@ -276,12 +276,12 @@ bool hasErrors(ref const FeatureGroup feature_group) nothrow {
 @safe
 bool hasErrors(ref const ScenarioGroup scenario_group) nothrow {
     static foreach (i, Type; Fields!ScenarioGroup) {
-        static if (__traits(isSame, TemplateOf!(Type), ActionGroup)) {
+        static if (isActionGroup!Type) {
             if (scenario_group.tupleof[i].infos.any!(info => info.result.isRecordType!BehaviourError)) {
                 return true;
             }
         }
-        else static if (__traits(isSame, TemplateOf!(Type), Info)) {
+        else static if (isInfo!Type) {
             if (scenario_group.tupleof[i].result.isRecordType!BehaviourError) {
                 return true;
             }
@@ -346,12 +346,12 @@ Returns: true if the scenario has passed all tests
 @safe
 bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
     static foreach (i, Type; Fields!ScenarioGroup) {
-        static if (__traits(isSame, TemplateOf!(Type), ActionGroup)) {
+        static if (isActionGroup!Type) {
             if (scenario_group.tupleof[i].infos.any!(info => !info.result.isRecordType!Result)) {
                 return false;
             }
         }
-        else static if (__traits(isSame, TemplateOf!(Type), Info)) {
+        else static if (isInfo!Type) {
             if (!scenario_group.tupleof[i].result.isRecordType!Result) {
                 return false;
             }

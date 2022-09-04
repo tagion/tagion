@@ -59,14 +59,15 @@ struct Info(alias Property) {
     mixin HiBONRecord!();
 }
 
+/// Returns: true if I is a Info template
 enum isInfo(alias I) = __traits(isSame, TemplateOf!I, Info);
 
 struct ActionGroup(Property) if (isOneOf!(Property, BehaviourProperties)) {
     Info!Property[] infos;
-    //    @Label(VOID, true) Info!And[] ands;
     mixin HiBONRecord!();
 }
 
+/// Returns: true if I is a ActionGroup
 enum isActionGroup(alias I) = __traits(isSame, TemplateOf!I, ActionGroup);
 
 @safe
@@ -352,6 +353,9 @@ static unittest { //
     static assert(__traits(isSame, scenarios, expected_scenarios));
 }
 
+	/**
+Returns: The Scenario UDA of T and if T is not a Scenario then result is false 
+*/
 template getScenario(T) if (is(T == class) || is(T == struct)) {
     enum scenario_attr = getUDAs!(T, Scenario);
     static assert(scenario_attr.length <= 1,
@@ -364,12 +368,15 @@ template getScenario(T) if (is(T == class) || is(T == struct)) {
     }
 }
 
+// Checks the getScenario
 static unittest {
     import tagion.behaviour.BehaviourUnittest;
 
     enum scenario = getScenario!(Some_awesome_feature);
     static assert(is(typeof(scenario) == Scenario));
     static assert(scenario is Scenario("Some awesome money printer", null));
+	enum not_a_scenario = getScenario!(This_is_not_a_scenario);
+	static assert(!not_a_scenario); 
 }
 
 version (unittest) {
