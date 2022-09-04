@@ -131,27 +131,29 @@ static unittest {
     static assert(!hasActions!(BehaviourUnittest.Some_awesome_feature.helper_function));
 }
 
-template getActions(T) if (is(T == class) || is(T == struct)) {
+
+// Collects all the actions in a scenario
+template getAllActions(T) if (is(T == class) || is(T == struct)) {
     alias get_all_callable = getAllCallables!T;
-    alias getActions = Filter!(hasActions, get_all_callable);
+    alias getAllActions = Filter!(hasActions, get_all_callable);
 }
 
 ///
 static unittest { // Test of getActionss
-    alias actions = getActions!(BehaviourUnittest.Some_awesome_feature);
+    alias actions = getAllActions!(BehaviourUnittest.Some_awesome_feature);
     static assert(actions.length == 7);
     static assert(allSatisfy!(isCallable, actions));
     static assert(allSatisfy!(hasActions, actions));
 }
 
 /**
-   This template get the behaviour with the behaviour-Property from a Behaviour object
+   This template get the action with the behaviour-Property from a Behaviour object
    Returns: The function with the behaviour-Property
    The function fails if there is more than one behaviour with this behaviour
    and returns void if no behaviour-Property has been found
  */
 template getAction(T, Property) if (is(T == class) || is(T == struct)) {
-    alias behaviours = getActions!T;
+    alias behaviours = getAllActions!T;
     alias behaviour_with_property = Filter!(ApplyRight!(hasUDA, Property), behaviours);
     static if (behaviour_with_property.length > 0) {
         alias getAction = behaviour_with_property;
@@ -176,13 +178,19 @@ unittest {
 
 }
 
+/// Returns: true if T has the Property
 enum hasProperty(alias T, Property) = !is(getAction!(T, Property) == void);
 
+///
 unittest {
     static assert(hasProperty!(BehaviourUnittest.Some_awesome_feature, Then));
     static assert(!hasProperty!(BehaviourUnittest.Some_awesome_feature_bad_format_missing_given, Given));
 }
 
+	/**
+	  Get the action propery of the alias T
+	 Returns: The behaviour property of T and void if T does not have a behaviour property
+	 */
 template getProperty(alias T) {
     alias getUDAsProperty = ApplyLeft!(getUDAs, T);
     alias all_behaviour_properties = staticMap!(getUDAsProperty, BehaviourProperties);
@@ -196,12 +204,14 @@ template getProperty(alias T) {
     }
 }
 
+/// Examples: How get the behaviour property
 unittest {
     alias properties = getProperty!(BehaviourUnittest.Some_awesome_feature.request_cash);
     static assert(is(typeof(properties) == When));
     static assert(is(getProperty!(BehaviourUnittest.Some_awesome_feature.helper_function) == void));
 }
 
+	// Test of the getAction of a specific behaviour property
 @safe
 unittest {
     alias behaviour_of_given = getAction!(BehaviourUnittest.Some_awesome_feature, Given);
