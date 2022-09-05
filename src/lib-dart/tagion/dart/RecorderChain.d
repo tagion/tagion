@@ -516,9 +516,9 @@ unittest
     /// RecorderChain_findCurrentDARTBlock_valid_chain
     {
         auto hirpc = HiRPC(secure_net);
-        
-        Buffer checkCurrentBlock(RecordFactory.Recorder recorder, 
-                           DART db, 
+
+        Buffer checkCurrentBlock(RecordFactory.Recorder recorder,
+                           DART db,
                            HiRPC hirpc,
                            RecorderChain recorder_chain,
                            Buffer chain) const @trusted
@@ -535,7 +535,7 @@ unittest
             assert(current_block.fingerprint.toHexString == block.fingerprint.toHexString);
             assert(current_block.chain.toHexString == block.chain.toHexString);
             assert(current_block.bullseye.toHexString == block.bullseye.toHexString);
-            assert(current_block.recorder_doc == block.recorder_doc);      
+            assert(current_block.recorder_doc == block.recorder_doc); 
 
             return block.fingerprint;
         }
@@ -554,7 +554,7 @@ unittest
         h3["ttt"] = "tttest";
         recorder1_test.add(Document(h1));
         recorder2_test.add(Document(h2));
-        recorder3_test.add(Document(h3));    
+        recorder3_test.add(Document(h3));
 
         Buffer fingerprint_1 = checkCurrentBlock(recorder1_test, db, hirpc, recorder_chain, []);
         Buffer fingerprint_2 = checkCurrentBlock(recorder2_test, db, hirpc, recorder_chain, fingerprint_1);
@@ -568,7 +568,7 @@ unittest
         auto recorder_chain = new RecorderChain(temp_folder, net);
         auto current_block = RecorderChain.findCurrentDARTBlock(db.fingerprint, temp_folder, net);
         assert(current_block is null);
-         
+
         rmdirRecurse(temp_folder);
     }
 }

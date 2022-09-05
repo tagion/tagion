@@ -88,9 +88,6 @@ int main(string[] args)
         return 0;
     }
 
-    chain_directory = args[1];
-    dart_file = args[2];
-
     if (!chain_directory || !dart_file)
     {
         throw new TagionException("3 parameters should be entered");
@@ -134,22 +131,19 @@ int main(string[] args)
         current_block = RecorderChain.findNextBlock(block.fingerprint, chain_directory, hash_net);
     }
 
-    foreach (i; 0..info.amount)
+    do
     {
         /** Recorder to modify DART database */
         auto recorder = factory.recorder(current_block.recorder_doc);
         addRecordToDB(db, recorder, hirpc);
-
         if (current_block.bullseye != db.fingerprint)
         {
             throw new TagionException("DART fingerprint should be the same with recorder block bullseye");
             return 1;
         }
         current_block = RecorderChain.findNextBlock(current_block.fingerprint, chain_directory, hash_net);
-        if(!current_block)
-        {
-            return 1;
-        }
     }
+    while (current_block !is null);
+    
     return 0;
 }

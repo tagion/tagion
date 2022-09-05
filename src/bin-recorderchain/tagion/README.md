@@ -31,7 +31,7 @@ Directory that contains recorder block chain
 ## Use cases
 ### Case - set chain directory
 ```
-./recorderchain /test_chain/TMPFILE /test_chain/DARTNEW
+./recorderchain -c /test_chain/TMPFILE -d /test_chain/DARTNEW
 ```
 #### Success
 **Result**
@@ -53,7 +53,7 @@ Path to dart file
 ## Use cases
 ### Case - set dart file directory
 ```
-./recorderchain test_chain/TMPFILE test_chain/DARTNEW --initialize=true
+./recorderchain -c test_chain/TMPFILE -d test_chain/DARTNEW --initialize=true
 ```
 #### Success
 **Result**
