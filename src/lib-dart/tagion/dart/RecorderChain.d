@@ -532,9 +532,9 @@ unittest
             recorder_chain.push(block);
             auto current_block = RecorderChain.findCurrentDARTBlock(db.fingerprint, temp_folder, net);
 
-            assert(current_block.fingerprint.toHexString == block.fingerprint.toHexString);
-            assert(current_block.chain.toHexString == block.chain.toHexString);
-            assert(current_block.bullseye.toHexString == block.bullseye.toHexString);
+            assert(current_block.fingerprint == block.fingerprint);
+            assert(current_block.chain == block.chain);
+            assert(current_block.bullseye == block.bullseye);
             assert(current_block.recorder_doc == block.recorder_doc); 
 
             return block.fingerprint;

@@ -53,7 +53,7 @@ Path to dart file
 ## Use cases
 ### Case - set dart file directory
 ```
-./recorderchain -c test_chain/TMPFILE -d test_chain/DARTNEW --initialize=true
+./recorderchain -c test_chain/TMPFILE -d test_chain/DARTNEW -i
 ```
 #### Success
 **Result**
@@ -69,5 +69,4 @@ bash: ./recorderchain: No such file or directory
 ```
 --initialize -i
 ```
-*Require*
 Bool, initialize empty DART

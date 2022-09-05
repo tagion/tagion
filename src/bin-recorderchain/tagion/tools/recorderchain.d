@@ -68,45 +68,47 @@ int main(string[] args)
 
     GetoptResult main_args;
 
-    main_args = getopt(args,
-        std.getopt.config.caseSensitive,
-        std.getopt.config.bundling,
-        "chaindirectory|c", "Path to recorder chain directory", &chain_directory,
-        "dartfile|d", "Path to dart file", &dart_file,
-        "initialize|i", "Initialize empty DART", &initialize,
-    );
-
-    if (main_args.helpWanted)
+    try
     {
-        writeln(logo);
-        defaultGetoptPrinter(
-            [
-            // format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...]", program),
-            "",
-            "Examples:",
-            "# To run recorer chain specify 2 required parameters",
-            format("%s -с chain_directory -d DART_directory -i true", program),
-            "",
-            "<option>:",
+        main_args = getopt(args,
+            std.getopt.config.caseSensitive,
+            std.getopt.config.bundling,
+            "chaindirectory|c", "Path to recorder chain directory", &chain_directory,
+            "dartfile|d", "Path to dart file", &dart_file,
+            "initialize|i", "Initialize empty DART", &initialize,
+        );
 
-        ].join("\n"),
-        main_args.options);
-        return 0;
+        if (main_args.helpWanted)
+        {
+            writeln(logo);
+            defaultGetoptPrinter(
+                [
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...]", program),
+                "",
+                "Examples:",
+                "# To run recorer chain specify 2 required parameters",
+                format("%s -с chain_directory -d DART_directory -i true", program),
+                "",
+                "<option>:",
+
+            ].join("\n"),
+            main_args.options);
+            return 0;
+        }
     }
-
+    catch (Exception e)
+    {
+        stderr.writefln(e.msg);
+        return 1;
+    }
+    
     if(!chain_directory.exists)
     {
         writeln(chain_directory, " directory does not exist");
-        return 1;
-    }
-
-    if(!dart_file.exists)
-    {
-        writeln(dart_file, " directory does not exist");
         return 1;
     }
 
@@ -130,14 +132,31 @@ int main(string[] args)
     RecorderChainBlock current_block;
     if (initialize)
     {
-        BlockFile.create(dart_file, DARTFile.stringof, BLOCK_SIZE);
-        /** Initialize DART database */
-        db = new DART(secure_net, dart_file, 0, 0);
+        try
+        {
+            BlockFile.create(dart_file, DARTFile.stringof, BLOCK_SIZE);
+            /** Initialize DART database */
+            db = new DART(secure_net, dart_file, 0, 0);
+        }
+        catch (Exception e)
+        {
+            writeln("Can not create DART file: ", dart_file);
+            return 0;
+        }
         current_block = info.first;
     }
     else
     {
-        db = new DART(secure_net, dart_file, 0, 0);
+        try
+        {
+            db = new DART(secure_net, dart_file, 0, 0);
+        }
+        catch (Exception e)
+        {
+            writeln("Can not open DART file: ", dart_file);
+            return 0;
+        }
+
         /** Used to find block that should be pushed to DART database next */
         auto block = RecorderChain.findCurrentDARTBlock(db.fingerprint, chain_directory, hash_net);
         if (block.fingerprint == info.last.fingerprint)
