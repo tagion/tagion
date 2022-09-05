@@ -1,4 +1,9 @@
+/// \file behaviour.d
 module tagion.tools.behaviour;
+
+/**
+ * @brief tool generate d files from bdd md files and vice versa
+ */
 
 import std.getopt;
 import std.stdio;
@@ -19,24 +24,35 @@ import tagion.tools.revision;
 import tagion.behaviour.BehaviourParser;
 import tagion.behaviour.BehaviourIssue : Dlang, Markdown;
 
-enum DOT='.'; /// File extension separator (Windows and Posix is a .)
-enum ONE_ARGS_ONLY = 2; /// Opt-arg only accepts one argument
+/* File extension separator (Windows and Posix is a .) */
+enum DOT='.';
+/* Opt-arg only accepts one argument */
+enum ONE_ARGS_ONLY = 2;
 
 struct BehaviourOptions {
-    string[] paths; /// Include paths for the BDD source files
-    string bdd_ext; /// BDD extension (default markdown .md)
-    // string dsrc_ext; // Extension
-    string d_ext; /// Extension for d-source files (default .d)
-    string regex_inc;  /// Regex filter for the files to be incl
-    string regex_exc;  /// Regex for the files to be excluded
-    string bdd_gen_ext;    /// Extension for the generated BDD-files
-//    string gen;        /// Pre-extension for the generated files
-    string dfmt; /// D source formater (default dfmt)
-    string[] dfmt_flags; /// Command line flags for the dfmt
+    /* Include paths for the BDD source files */
+    string[] paths;
+    /* BDD extension (default markdown .md) */
+    string bdd_ext;
+    /* Extension for d-source files (default .d) */
+    string d_ext;
+    /* Regex filter for the files to be incl */
+    string regex_inc;
+    /* Regex for the files to be excluded */
+    string regex_exc;
+    /* Extension for the generated BDD-files */
+    string bdd_gen_ext;
+    /* D source formater (default dfmt) */
+    string dfmt;
+    /* Command line flags for the dfmt */
+    string[] dfmt_flags;
+
+    /** 
+     * Used to set default options if config file not provided
+     */
     void setDefault() {
         const gen = "gen";
         bdd_ext = FileExtension.markdown;
-        //  dsrc_ext = "." ~ FileExtension.dsrc;
         bdd_gen_ext = [gen, FileExtension.markdown].join(DOT);
         d_ext = [gen, FileExtension.dsrc].join(DOT);
         regex_inc =   `/testbench/`;
@@ -50,7 +66,10 @@ struct BehaviourOptions {
     mixin JSONConfig;
 }
 
-
+/** 
+ * Used to remove dot
+ * @param ext - lines to remove dot
+ */
 const(char[]) stripDot(const(char[]) ext) pure nothrow @nogc {
     if ((ext.length > 0) && (ext[0] == DOT)) {
         return ext[1..$];
@@ -58,10 +77,14 @@ const(char[]) stripDot(const(char[]) ext) pure nothrow @nogc {
     return ext;
 }
 
+/** 
+ * Used to remove dot
+ * @param opts - options for behaviour
+ * @return amount of erros in md files
+ */
 int parse_bdd(ref const(BehaviourOptions) opts) {
     const regex_include = regex(opts.regex_inc);
     const regex_exclude = regex(opts.regex_exc);
-//    const do_format=
     auto bdd_files = opts.paths
         .map!(path => dirEntries(path, SpanMode.depth))
         .joiner
@@ -70,26 +93,33 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
         .filter!(file => (opts.regex_inc.length is 0) || !file.name.matchFirst(regex_include).empty)
         .filter!(file => (opts.regex_exc.length is 0) || file.name.matchFirst(regex_exclude).empty);
 
-    int result_errors; /// Error counter'
-LoopFiles:
+    /* Error counter */
+    int result_errors;
     foreach (file; bdd_files) {
-        auto dsource = file.name.setExtension(FileExtension.dsrc); // .d
+        //checkFileGen();
+        auto dsource = file.name.setExtension(FileExtension.dsrc);
         const bdd_gen = dsource.setExtension(opts.bdd_gen_ext);
         if (dsource.exists) {
-            dsource = dsource.setExtension(opts.d_ext); // .gen.d
+            dsource = dsource.setExtension(opts.d_ext);
         }
-        writeln(file.name);
-        writeln(dsource);
-        writeln(bdd_gen);
         try {
             string[] errors;
             auto feature=parser(file.name, errors);
-            writefln("!!!!!!!!!!!!!!! %s", errors.length);
+            if (!errors.length)
+            {
+                writefln("%s -> succsess!!! ", file.name);
+            }
+            else
+            {
+                writefln("Amount of erros in %s: %s", file.name, errors.length);
+            }
+            writeln("----------------------------------");
             if (errors.length) {
                 errors.join("\n").writeln;
                 result_errors++;
-                break LoopFiles;
+                continue;
             }
+            
             { // Generate d-source file
                 auto fout = File(dsource, "w");
                 writefln("dsource file %s", dsource);
@@ -126,8 +156,11 @@ LoopFiles:
 int main(string[] args) {
     BehaviourOptions options;
     immutable program = args[0];
+    /** file for configurations */
     auto config_file = "behaviour.json";
+    /** flag for print current version of behaviour */
     bool version_switch;
+    /** flag for overwrite config file */
     bool overwrite_switch;
 
     if (config_file.exists) {
@@ -180,6 +213,6 @@ int main(string[] args) {
     }
 
     auto result = parse_bdd(options);
-
+    writeln(result);
     return result;
 }
