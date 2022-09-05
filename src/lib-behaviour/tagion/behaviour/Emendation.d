@@ -1,6 +1,8 @@
 module tagion.behaviour.Emenedation;
 
 import tagion.behaviour.BehaviourFeature;
+import std.traits : Fields;
+import std.algorithm.iteration : map, cache;
 
 enum function_word_separator = "_";
 
@@ -15,12 +17,12 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
     if (module_name && feature_group.info.name.length is 0) {
         feature_group.info.name = module_name;
     }
-    static void emendation(ref ScenaionGroup scenario_group) {
+    static void emendation(ref ScenarioGroup scenario_group) {
         size_t countActionInfos() nothrow {
             size_t result;
-            static foreach (i, Type; Field!ScenarionGroup) {
+            static foreach (i, Type; Fields!ScenarioGroup) {
                 static if (isActionGroup!Type) {
-                    result += scenario_group.typeleof[i].infos.length;
+                    result += scenario_group.tupleof[i].infos.length;
                 }
             }
             return result;
@@ -32,11 +34,13 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
             import std.algorithm.iteration : splitter;
             import std.range.primitives : walkLength;
             import std.ascii : isWhite;
+            import std.range : retro, take;
+            import std.array : split;
 
             const action_subwords = action_name
                 .splitter(function_word_separator).walkLength;
             action_name = description
-                .splitter!isWhite
+                .split!isWhite
                 .retro
                 .take(action_subwords + 1)
                 .retro
@@ -44,16 +48,16 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
         }
 
         // Collects all the action function name and if name hasn't been defined, a name will be suggested
-        void collectName() {
-            static foreach (i, Type; Field!ScenarionGroup) {
+        void collectNames() {
+            static foreach (i, Type; Fields!ScenarioGroup) {
                 static if (isActionGroup!Type) {
                     with (scenario_group.tupleof[i]) {
                         foreach (ref info; infos) {
                             if (info.name.length) {
-                                names[i].name = info.name;
+                                names[i] = info.name;
                             }
                             else {
-                                suggestName(names[i].name, info.description);
+                                suggestName(names[i], info.description);
                             }
                         }
                     }
@@ -75,14 +79,16 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
 // Returns: true if all the functions names in the scenario are unique
 @safe
 bool isUnique(scope const(string[]) list_of_names) nothrow {
-    import std.algorithm.sorting : sort, isStrictlyMonotonic;
+    import std.algorithm.sorting : isStrictlyMonotonic;
     import std.algorithm.iteration : cache;
+    import std.array : array;
+    import std.algorithm.searching : any;
 
     return list_of_names
         .any!(name => name.length !is 0)
         &&
         list_of_names
-        .cashe
+        .array
         .sort
         .isStrictlyMonotonic;
 }
