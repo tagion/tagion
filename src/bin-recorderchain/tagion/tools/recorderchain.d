@@ -10,6 +10,7 @@ import std.getopt;
 import std.path;
 import std.file;
 import std.array;
+import std.format;
 
 import tagion.basic.TagionExceptions;
 import tagion.crypto.SecureNet;
@@ -40,6 +41,8 @@ void addRecordToDB(DART db, RecordFactory.Recorder recorder, HiRPC hirpc) @safe
 
 int main(string[] args)
 {
+    immutable program = args[0];
+
     if (args.length == 1)
     {
         writeln("Error: No arguments provided for ", baseName(args[0]), "!");
@@ -81,6 +84,13 @@ int main(string[] args)
             // format("%s version %s", program, REVNO),
             "Documentation: https://tagion.org/",
             "",
+            "Usage:",
+            format("%s [<option>...]", program),
+            "",
+            "Examples:",
+            "# To run recorer chain specify 2 required parameters",
+            format("%s -с chain_directory -d DART_directory -i true", program),
+            "",
             "<option>:",
 
         ].join("\n"),
@@ -88,17 +98,23 @@ int main(string[] args)
         return 0;
     }
 
-    if (!chain_directory || !dart_file)
+    if(!chain_directory.exists)
     {
-        throw new TagionException("3 parameters should be entered");
-        return 0;
+        writeln(chain_directory, " directory does not exist");
+        return 1;
     }
 
-    if(chain_directory.exists && !RecorderChain.isValidChain(chain_directory, hash_net))
+    if(!dart_file.exists)
     {
-        throw new TagionException("Recorder block chain is not valid");
+        writeln(dart_file, " directory does not exist");
         return 1;
-    }  
+    }
+
+    if(!RecorderChain.isValidChain(chain_directory, hash_net))
+    {
+        writeln("Recorder block chain is not valid");
+        return 1;
+    }
 
     /** DART database */
     DART db;
@@ -106,7 +122,7 @@ int main(string[] args)
     auto info = RecorderChain.getBlocksInfo(chain_directory, hash_net);
     if(!info.amount) 
     {
-        writeln("Recorder block chain is empty");
+        writeln("Directory for recorder block chain is empty");
         return 1;
     }
 
@@ -144,6 +160,6 @@ int main(string[] args)
         current_block = RecorderChain.findNextBlock(current_block.fingerprint, chain_directory, hash_net);
     }
     while (current_block !is null);
-    
+
     return 0;
 }
