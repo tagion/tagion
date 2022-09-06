@@ -32,6 +32,7 @@ jobs:
         cd core-playnet
         git checkout ib-dartutil-refactor
         make bins
+        id
     #    #docker run --net host --rm -v ${PWD}:/tgn/workspace tagion/playnet TOOLNAME
         
         
