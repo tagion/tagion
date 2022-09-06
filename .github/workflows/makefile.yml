@@ -32,9 +32,9 @@ jobs:
         rm -rf tagion || ls -l 
         id
         docker pull tagion/playnet
-        #git clone https://github.com/tagion/core-playnet.git
+        #git clone git@github.com:tagion/tagion/core-playnet.git
         #cd core-playnet
-        https://github.com/tagion/tagion.git
+        git clone git@github.com:tagion/tagion.git
         cd tagion
         git checkout ib-dartutil-refactor
         make bins
