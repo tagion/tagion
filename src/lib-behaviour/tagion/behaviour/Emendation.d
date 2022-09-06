@@ -3,6 +3,10 @@ module tagion.behaviour.Emenedation;
 import tagion.behaviour.BehaviourFeature;
 import std.traits : Fields;
 import std.algorithm.iteration : map, cache;
+import std.string : join;
+import std.ascii : isWhite;
+import std.algorithm;
+import std.algorithm.sorting : sort;
 
 enum function_word_separator = "_";
 
@@ -30,7 +34,7 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
 
         auto names = new string[countActionInfos];
 
-        static void suggestName(ref string action_name, string description) nothrow {
+        static void suggestName(ref string action_name, string description){
             import std.algorithm.iteration : splitter;
             import std.range.primitives : walkLength;
             import std.ascii : isWhite;
@@ -57,7 +61,7 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
                                 names[i] = info.name;
                             }
                             else {
-                                suggestName(names[i], info.description);
+                                suggestName(names[i], info.property.description);
                             }
                         }
                     }
@@ -66,7 +70,7 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
         }
 
         collectNames;
-        while (!names.map!q{a.name}.isUnique) {
+        while (!names.isUnique) {
 
         }
     }
@@ -78,12 +82,12 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
 
 // Returns: true if all the functions names in the scenario are unique
 @safe
-bool isUnique(scope const(string[]) list_of_names) nothrow {
+bool isUnique(string[] list_of_names) nothrow {
     import std.algorithm.sorting : isStrictlyMonotonic;
     import std.algorithm.iteration : cache;
     import std.array : array;
     import std.algorithm.searching : any;
-
+pragma(msg, "typeof(list_of_names.array)",typeof(list_of_names.array));
     return list_of_names
         .any!(name => name.length !is 0)
         &&
