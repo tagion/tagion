@@ -17,7 +17,7 @@ import tagion.behaviour.BehaviourException;
 import tagion.behaviour.BehaviourFeature : BehaviourProperties;
 
 enum feature_regex = regex([
-        `feature(?:\s+|\:)`, /// Feature
+        `^\W*feature(?:\s+|\:)`, /// Feature
         `scenario(?:\s+|\:)`, /// Scenario
         r"\s*\*(\w+)\*", /// Action
         //  r"\s*`(\w+)`", /// Name

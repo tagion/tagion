@@ -34,9 +34,9 @@ struct MarkdownFMT {
 @safe
 static MarkdownFMT masterMarkdown = {
     indent: "  ",
-    name: "`%2$s`",
-    scenario: "### %2$s: %3$s",
-    feature: "## %2$s: %3$s",
+    name: "%2$s",
+    scenario: "%2$s: %3$s",
+    feature: "%2$s: %3$s",
     property: "%s*%s* %s",
     comments: "%-(%s\n%)",
 };
@@ -179,7 +179,7 @@ struct DlangT(Stream) {
 
     string issue(const(ScenarioGroup) scenario_group) {
         immutable scenario_param = format(
-                "\"%s\",\n[%-(\"%3$s\",\n%)]",
+                "\"%s\",\n[%-(\"%3$s\",\n%)\"]",
                 scenario_group.info.property.description,
                 scenario_group.info.property.comments
         );
@@ -203,7 +203,7 @@ struct DlangT(Stream) {
     }
 
     void issue(const(FeatureGroup) feature_group, string indent = null) {
-        immutable comments = format("[%-(\"%s\", %)]", feature_group.info.property.comments);
+        immutable comments = format("[%-(\"%s\", %) \"]", feature_group.info.property.comments);
         bout.writefln(q{
                 module %1$s;
                 %4$s
