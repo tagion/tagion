@@ -8,24 +8,24 @@ jobs:
   unit-test:
     runs-on: self-hosted
     steps:
-    - name: unittest  
-      run: |  
-        pwd
-        id
-        rm -rf tagion || ls -l
-        git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git
-        cd tagion
-        pwd
-        export GITHUB_WORKFLOW_BRANCH=$GITHUB_HEAD_REF
-        echo $GITHUB_WORKFLOW_BRANCH
-        git checkout $GITHUB_WORKFLOW_BRANCH
-        git branch
-        make unittest 
+    #- name: unittest  
+    #  run: |  
+    #    pwd
+    #    id
+    #    rm -rf tagion || ls -l
+    #    git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git
+    #    cd tagion
+    #    pwd
+    #    export GITHUB_WORKFLOW_BRANCH=$GITHUB_HEAD_REF
+    #    echo $GITHUB_WORKFLOW_BRANCH
+    #    git checkout $GITHUB_WORKFLOW_BRANCH
+    #    git branch
+    #    make unittest 
         
-    - name: unittest result
-      run: |
-        tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
-        
+    #- name: unittest result
+    #  run: |
+    #    tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
+    #    
     - name: regretion test
       run: |
         rm -rf core-playnet || ls -l
@@ -37,7 +37,7 @@ jobs:
         https://github.com/tagion/tagion.git
         cd tagion
         git checkout ib-dartutil-refactor
-        ls -l
-        #make bins
+        make bins
+        ls -l /home/moonbase/actions-runner/_work/tagion/tagion/tagion/build/x86_64-linux/bin
         
     #    #docker run --net host --rm -v ${PWD}:/tgn/workspace tagion/playnet TOOLNAME
