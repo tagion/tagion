@@ -11,8 +11,6 @@ jobs:
     - name: unittest  
       run: |  
         pwd
-        cd tagion
-        pwd
         id
         export GITHUB_WORKFLOW_BRANCH=$GITHUB_HEAD_REF
         echo $GITHUB_WORKFLOW_BRANCH
