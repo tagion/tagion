@@ -24,14 +24,14 @@ jobs:
       run: |
         tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
         
-    #- name: regretion test
-    #  run: |
-    #    rm -rf core-playnet
-    #    docker pull tagion/playnet
-    #    git clone https://github.com/tagion/core-playnet.git
-    #    cd core-playnet
-    #    git checkout ib-dartutil-refactor
-    #    make bins
+    - name: regretion test
+      run: |
+        rm -rf core-playnet
+        docker pull tagion/playnet
+        git clone https://github.com/tagion/core-playnet.git
+        cd core-playnet
+        git checkout ib-dartutil-refactor
+        make bins
     #    #docker run --net host --rm -v ${PWD}:/tgn/workspace tagion/playnet TOOLNAME
         
         
