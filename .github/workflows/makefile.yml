@@ -12,6 +12,7 @@ jobs:
       run: |  
         pwd
         id
+        git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git
         cd tagion
         pwd
         export GITHUB_WORKFLOW_BRANCH=$GITHUB_HEAD_REF
