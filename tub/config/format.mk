@@ -1,7 +1,7 @@
 
 
-DFORMAT?=clang-format
-DFORMAT_FLAGS+=-style=file
+DFORMAT?=dfmt
+DFORMAT_FLAGS+=-i --config $(REPOROOT)/.editconfig
 
 CHANGED_FILES=${shell git --no-pager diff  --name-only}
 CHANGED_DFILES=${filter %.d,$(CHANGED_FILES)}
