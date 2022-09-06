@@ -37,7 +37,9 @@ jobs:
         git clone git@github.com:tagion/tagion.git
         cd tagion
         git checkout ib-dartutil-refactor
+        pwd
+        ls -l
         make bins
-        ls -l /home/moonbase/actions-runner/_work/tagion/tagion/tagion/build/x86_64-linux/bin
+        ls -l /home/moonbase/actions-runner/_work/tagion/tagion/tagion/build/
         
     #    #docker run --net host --rm -v ${PWD}:/tgn/workspace tagion/playnet TOOLNAME
