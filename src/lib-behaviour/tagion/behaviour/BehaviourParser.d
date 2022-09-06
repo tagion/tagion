@@ -17,13 +17,52 @@ import tagion.behaviour.BehaviourException;
 import tagion.behaviour.BehaviourFeature : BehaviourProperties;
 
 enum feature_regex = regex([
-        `^\W*feature(?:\s+|\:)`, /// Feature
-        `scenario(?:\s+|\:)`, /// Scenario
-        r"\s*\*(\w+)\*", /// Action
+        `^\W*(feature)\W`, /// Feature
+        `^\W*(scenario)\W`, /// Scenario
+        // r"\s*\*(\w+)\*", 
+        r"^\W*(given|when|then|but)\W", /// Action
         //  r"\s*`(\w+)`", /// Name
         r"`((?:\w+\.?)+)`", /// Name
     ], "i");
 
+unittest
+{
+    import std.stdio;
+    {
+        const test="--\\given when xxx";
+	    auto match = test.matchFirst(feature_regex);
+        assert(match[1] == "given");
+        assert(match.whichPattern == Token.ACTION);
+    }
+    {
+        const test="+++when rrrr when xxx";
+	    auto match = test.matchFirst(feature_regex);
+        assert(match[1] == "when");
+        assert(match.whichPattern == Token.ACTION);
+    }
+    {
+        const test="+-+-then fff rrrr when xxx";
+	    auto match = test.matchFirst(feature_regex);
+        assert(match[1] == "then");
+        assert(match.whichPattern == Token.ACTION);
+    }
+    {
+        const test="****feature** fff rrrr when xxx";
+	    auto match = test.matchFirst(feature_regex);
+        writeln(match);
+        assert(match[1] == "feature");
+        assert(match.whichPattern == Token.FEATURE);
+    }
+    {
+        const test="----++scenario* ddd fff rrrr when xxx";
+	    auto match = test.matchFirst(feature_regex);
+        assert(match[1] == "scenario");
+        assert(match.whichPattern == Token.SCENARIO);
+    }
+    writeln("*******************************************************");
+  
+ 
+}
 enum Token {
     NONE,
     FEATURE,
@@ -63,6 +102,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
     import std.string;
     import std.range : enumerate;
 
+    writeln(localfile);
     FeatureGroup result;
     ScenarioGroup scenario_group;
 
@@ -80,6 +120,9 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
         }
 
         auto match = range.front.matchFirst(feature_regex);
+        
+        writeln(match);
+        writeln(match.post);
         const Token token = cast(Token)(match.whichPattern);
         with (Token) {
         TokenSwitch:
@@ -157,7 +200,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                 const action_word = match[1].toLower;
                 alias ActionGroups = staticMap!(ActionGroup, BehaviourProperties);
                 pragma(msg, "ActionGroups ", ActionGroups);
-                static foreach (index, Field; Fields!ScenarioGroup) {
+                static foreach (int index, Field; Fields!ScenarioGroup) {
                     {
                         pragma(msg, "ActionGroups Field ", Field);
                         enum field_index = staticIndexOf!(Field, ActionGroups);
@@ -165,8 +208,18 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                             enum label = GetLabel!(scenario_group.tupleof[index]);
                             enum action_name = label.name;
                             static if (hasMember!(Field, "infos")) {
+                                
                                 if (action_word == action_name) {
+                                    writeln("++++++++++++++++++++++++++++++++++");
+                                writeln("WORD-> ", action_word);
+                                writeln("NAME-> ", action_name);
+                                writeln("INDEX-> ", index);
+                                writeln("current_action_index-> ", current_action_index);
                                     with (scenario_group.tupleof[index]) {
+                                        writeln(current_action_index, "()", index);
+                                        writeln(current_action_index <= cast(int)index);
+                                        writeln(current_action_index <= index);
+
                                         check_error(current_action_index <= index,
                                                 format("Bad action order for action %s", action_word));
                                         current_action_index = index;
