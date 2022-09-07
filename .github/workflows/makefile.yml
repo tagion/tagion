@@ -19,7 +19,7 @@ jobs:
         git checkout $GITHUB_WORKFLOW_BRANCH
         git branch
         make unittest
-        make bins
+        #make bins
         ls -l 
         
     - name: unittest result
