@@ -70,7 +70,7 @@ DIMPORTFILE=-J
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
-DDEBUG := -f-d-debug
+DDEBUG := -fno-debug
 DUNITTEST := -fno-unittest
 DMAIN := -f-d-main
 DIP := unknown-dip
