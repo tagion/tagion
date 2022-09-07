@@ -19,26 +19,9 @@ jobs:
         echo $GITHUB_WORKFLOW_BRANCH
         git checkout $GITHUB_WORKFLOW_BRANCH
         git branch
-        make unittest
-        #make bins
-        ls -l 
+        make unittest 
         
     - name: unittest result
       run: |
         tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
-        
-    #- name: regretion test
-    #  run: |
-    #    rm -rf core-playnet || ls -l
-    #    rm -rf tagion || ls -l 
-    #    id
-    #    docker pull tagion/playnet
-    #    #git clone https://github.com/tagion/core-playnet.git
-    #    #cd core-playnet
-    #    https://github.com/tagion/tagion.git
-    #    cd tagion
-    #    git checkout ib-dartutil-refactor
-    #    ls -l
-    #    #make bins
-        
-    #    #docker run --net host --rm -v ${PWD}:/tgn/workspace tagion/playnet TOOLNAME
+  
