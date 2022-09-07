@@ -5,6 +5,7 @@ module tagion.tools.behaviour;
  * @brief tool generate d files from bdd md files and vice versa
  */
 
+import std.algorithm.searching;
 import std.getopt;
 import std.stdio;
 import std.format;
@@ -77,6 +78,15 @@ const(char[]) stripDot(const(char[]) ext) pure nothrow @nogc {
     return ext;
 }
 
+bool checkValifFile(string file_name) {
+    if(canFind(file_name, ".gen") || !canFind(file_name, ".md"))
+    {
+        return false;
+    }
+    return true;
+}
+
+
 /** 
  * Used to remove dot
  * @param opts - options for behaviour
@@ -96,7 +106,10 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
     /* Error counter */
     int result_errors;
     foreach (file; bdd_files) {
-        //checkFileGen();
+        if(!checkValifFile(file))
+        {
+            continue;
+        }
         auto dsource = file.name.setExtension(FileExtension.dsrc);
         const bdd_gen = dsource.setExtension(opts.bdd_gen_ext);
         if (dsource.exists) {
@@ -113,7 +126,6 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
             {
                 writefln("Amount of erros in %s: %s", file.name, errors.length);
             }
-            writeln("----------------------------------");
             if (errors.length) {
                 errors.join("\n").writeln;
                 result_errors++;
