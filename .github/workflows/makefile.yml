@@ -13,7 +13,6 @@ jobs:
         which gdc || echo test
         pwd
         ls -l
-        which gdc
         id
         git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git
         cd tagion
