@@ -14,6 +14,7 @@ jobs:
         pwd
         ls -l
         id
+        rm -rf tagion
         git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git
         cd tagion
         pwd
