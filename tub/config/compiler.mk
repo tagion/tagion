@@ -71,7 +71,7 @@ else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
 DDEBUG := -f-d-debug
-DUNITTEST := -f-d-unittest
+DUNITTEST := -fno-unittest
 DMAIN := -f-d-main
 DIP := unknown-dip
 DDEBUG_SYMBOLS := -g
