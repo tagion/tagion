@@ -11,6 +11,7 @@ jobs:
     - name: unittest  
       run: |
         pwd
+        source ~/.bashrc
         which ldc2
         which gdc
         id
