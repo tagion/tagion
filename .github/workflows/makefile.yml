@@ -9,7 +9,8 @@ jobs:
     runs-on: self-hosted
     steps:
     - name: unittest  
-      run: |  
+      run: |
+        echo test
         pwd
         which gdc
         id
@@ -22,6 +23,7 @@ jobs:
         make unittest
         #make bins
         ls -l 
+        
         
     - name: unittest result
       run: |
