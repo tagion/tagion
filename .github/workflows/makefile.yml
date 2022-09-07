@@ -24,7 +24,9 @@ jobs:
         make unittest
         echo "unittest finished"
         make bins 
-        ls -l build/x86_64-linux/bin/ 
+        ls -l build/x86_64-linux/bin/
+        cd build/x86_64-linux/bin/
+        ./tagionwave -h 
         
     - name: unittest result
       run: |
