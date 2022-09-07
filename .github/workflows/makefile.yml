@@ -31,6 +31,7 @@ jobs:
         rm -rf core-playnet || ls -l
         rm -rf tagion || ls -l
         which gdc
+        ls -l
         id
         docker pull tagion/playnet
         #git clone git@github.com:tagion/tagion/core-playnet.git
