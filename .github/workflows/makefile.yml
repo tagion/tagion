@@ -22,6 +22,7 @@ jobs:
         echo $GITHUB_WORKFLOW_BRANCH
         git checkout $GITHUB_WORKFLOW_BRANCH
         git branch
+        git submodule update --recursive --init
         make unittest || make unittest
         ls -l 
         
