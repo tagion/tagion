@@ -11,6 +11,7 @@ jobs:
     - name: unittest  
       run: |  
         pwd
+        which gdc
         id
         cd tagion
         pwd
