@@ -11,8 +11,10 @@ jobs:
     - name: unittest  
       run: |  
         pwd
+        ls -l
         which gdc
         id
+        git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git
         cd tagion
         pwd
         export GITHUB_WORKFLOW_BRANCH=$GITHUB_HEAD_REF
