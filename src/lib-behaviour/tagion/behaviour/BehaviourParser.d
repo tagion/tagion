@@ -49,7 +49,6 @@ unittest
     {
         const test="****feature** fff rrrr when xxx";
 	    auto match = test.matchFirst(feature_regex);
-        writeln(match);
         assert(match[1] == "feature");
         assert(match.whichPattern == Token.FEATURE);
     }
@@ -59,9 +58,6 @@ unittest
         assert(match[1] == "scenario");
         assert(match.whichPattern == Token.SCENARIO);
     }
-    writeln("*******************************************************");
-  
- 
 }
 enum Token {
     NONE,
@@ -108,21 +104,38 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
 
     Info!Feature info_feature;
     Info!Scenario info_scenario;
-
+int count = 0;
     State state;
     bool got_feature;
     int current_action_index = -1;
+
     foreach (line_no, line; range.enumerate(1)) {
         void check_error(const bool flag, string msg) {
             if (!flag) {
                 errors ~= format("%s(%d): Error: %s", localfile, line_no, msg);
             }
         }
+                writeln("line: ", line);
 
         auto match = range.front.matchFirst(feature_regex);
         
-        writeln(match);
-        writeln(match.post);
+        if(match.whichPattern == Token.SCENARIO)
+        {
+            if(count)
+            {
+                writeln("add S");
+                result.scenarios ~= scenario_group;
+                info_scenario = Info!Scenario();
+                scenario_group = ScenarioGroup();
+            }
+            else
+            {
+                writeln("+1");
+                count++;
+            } 
+        }
+
+        // writeln(match.post);
         const Token token = cast(Token)(match.whichPattern);
         with (Token) {
         TokenSwitch:
@@ -134,7 +147,15 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                     info_feature.property.comments ~= comment;
                     break;
                 case State.Scenario:
-                    info_scenario.property.comments ~= comment;
+                    
+                        scenario_group.info = info_scenario;
+                        
+                        // ScenarioGroup scenario_group;
+                        
+                    
+                    if(comment.length){
+                        info_scenario.property.comments ~= comment;
+                    }
                     break;
                 case State.Action:
                     static foreach (index, Field; Fields!ScenarioGroup) {
@@ -193,6 +214,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                 check_error(got_feature, "Scenario without feature");
                 current_action_index = -1;
                 info_scenario.property.description = match.post.idup;
+                writeln("Descr: ", info_scenario.property.description);
                 state = State.Scenario;
                 break;
             case ACTION:
@@ -210,15 +232,15 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                             static if (hasMember!(Field, "infos")) {
                                 
                                 if (action_word == action_name) {
-                                    writeln("++++++++++++++++++++++++++++++++++");
-                                writeln("WORD-> ", action_word);
-                                writeln("NAME-> ", action_name);
-                                writeln("INDEX-> ", index);
-                                writeln("current_action_index-> ", current_action_index);
+                                //     writeln("++++++++++++++++++++++++++++++++++");
+                                // writeln("WORD-> ", action_word);
+                                // writeln("NAME-> ", action_name);
+                                // writeln("INDEX-> ", index);
+                                // writeln("current_action_index-> ", current_action_index);
                                     with (scenario_group.tupleof[index]) {
-                                        writeln(current_action_index, "()", index);
-                                        writeln(current_action_index <= cast(int)index);
-                                        writeln(current_action_index <= index);
+                                        // writeln(current_action_index, "()", index);
+                                        // writeln(current_action_index <= cast(int)index);
+                                        // writeln(current_action_index <= index);
 
                                         check_error(current_action_index <= index,
                                                 format("Bad action order for action %s", action_word));
@@ -236,6 +258,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
             }
         }
     }
+     writeln(info_scenario.name," -->");
     scenario_group.info = info_scenario;
     result.info = info_feature;
     result.scenarios ~= scenario_group;
