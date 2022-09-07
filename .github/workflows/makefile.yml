@@ -29,4 +29,13 @@ jobs:
     - name: unittest result
       run: |
         tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
-        
+    
+    - name: regretion test
+      run: |
+        pwd
+        docker pull tagion/playnet
+        #git clone https://github.com/tagion/core-playnet.git
+        #cd tagion
+        git checkout Fencherr-patch-5
+        make bins
+        ls -l build/x86_64-linux/bin/
