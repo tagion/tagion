@@ -84,7 +84,6 @@ void tagionFactoryService(Options opts) nothrow
                     {
                         service_options.dart.initialize = opts.dart.initialize;
                         service_options.dart.synchronize = false;
-                        local_port = opts.dart.sync.maxSlavePort;
                         service_options.discovery.notify_enabled = true;
                     }
 
@@ -189,7 +188,6 @@ void tagionFactoryService(Options opts) nothrow
             log.silent = true;
         }
 
-        uint count = opts.loops;
         bool stop;
         log("Start the heart beat");
         uint node_id;

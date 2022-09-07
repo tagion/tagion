@@ -16,7 +16,8 @@ import std.net.curl;
 import tagion.logger.Logger;
 import tagion.basic.Types : Buffer, Control, Pubkey;
 import tagion.basic.Basic : nameOf;
-import tagion.basic.TagionExceptions : fatal;
+import tagion.basic.TagionExceptions : fatal, TagionException;
+
 import tagion.services.Options;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
@@ -75,31 +76,23 @@ void serverFileDiscoveryService(
 
         void recordOwnInfo(string addrs)
         {
-            if (opts.serverFileDiscovery.token)
+            auto params = new HiBON;
+            params["pkey"] = pubkey;
+            params["address"] = addrs;
+            auto doc = Document(params.serialize);
+            auto json = doc.toJSON().toString();
+            log("posting info to %s \n %s", opts.serverFileDiscovery.url ~ "/node/record", json);
+            try
             {
-                auto params = new HiBON;
-                params["pkey"] = pubkey;
-                params["address"] = addrs;
-                auto doc = Document(params.serialize);
-                auto json = doc.toJSON().toString();
-                log("posting info to %s \n %s", opts.serverFileDiscovery.url ~ "/node/record", json);
-                try
-                {
-                    post(opts.serverFileDiscovery.url ~ "/node/record",
-                        [
-                            "value": json,
-                            "token": opts.serverFileDiscovery.token
-                        ]);
-                }
-                catch (Exception e)
-                {
-                    log("ERROR on sending: %s", e.msg);
-                    ownerTid.send(cast(immutable) e);
-                }
+                post(opts.serverFileDiscovery.url ~ "/node/record",
+                    [
+                        "value": json,
+                    ]);
             }
-            else
+            catch (TagionException e)
             {
-                log("Token missing.. Cannot record own info");
+                log("ERROR on sending: %s", e.msg);
+                fatal(e);
             }
         }
 
