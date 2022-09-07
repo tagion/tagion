@@ -10,7 +10,7 @@ jobs:
     steps:
     - name: unittest  
       run: |  
-        which gdc || echo test
+        which gdc
         pwd
         ls -l
         id
