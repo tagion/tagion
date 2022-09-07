@@ -78,12 +78,8 @@ const(char[]) stripDot(const(char[]) ext) pure nothrow @nogc {
     return ext;
 }
 
-bool checkValifFile(string file_name) {
-    if(canFind(file_name, ".gen") || !canFind(file_name, ".md"))
-    {
-        return false;
-    }
-    return true;
+bool checkValidFile(string file_name) {
+    return !(canFind(file_name, ".gen") || !canFind(file_name, ".md"));
 }
 
 
@@ -106,7 +102,7 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
     /* Error counter */
     int result_errors;
     foreach (file; bdd_files) {
-        if(!checkValifFile(file))
+        if(!checkValidFile(file))
         {
             continue;
         }

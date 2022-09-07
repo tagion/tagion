@@ -121,20 +121,6 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
 
         auto match = range.front.matchFirst(feature_regex);
 
-        if(match.whichPattern == Token.SCENARIO)
-        {
-            if(first_scenario)
-            {
-                result.scenarios ~= scenario_group;
-                info_scenario = Info!Scenario();
-                scenario_group = ScenarioGroup();
-            }
-            else
-            {
-                first_scenario = true;
-            } 
-        }
-
         const Token token = cast(Token)(match.whichPattern);
         with (Token) {
         TokenSwitch:
@@ -208,6 +194,12 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                 break;
             case SCENARIO:
                 check_error(got_feature, "Scenario without feature");
+                if (state != State.Feature)
+                {
+                    result.scenarios ~= scenario_group;
+                    info_scenario = Info!Scenario();
+                    scenario_group = ScenarioGroup();
+                }
                 current_action_index = -1;
                 info_scenario.property.description = match.post.idup;
                 state = State.Scenario;
