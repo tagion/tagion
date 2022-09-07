@@ -15,7 +15,6 @@ jobs:
         which ldc2
         which gdc
         id
-        rm -rf tagion 
         cd tagion
         pwd
         export GITHUB_WORKFLOW_BRANCH=$GITHUB_HEAD_REF
