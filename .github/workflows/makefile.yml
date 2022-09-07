@@ -10,6 +10,7 @@ jobs:
     steps:
     - name: unittest  
       run: |  
+        which ldc2
         which gdc
         pwd
         ls -l
