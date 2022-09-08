@@ -215,7 +215,12 @@ void transactionServiceTask(immutable(Options) opts) nothrow
 
                                     auto inputs = signed_contract.contract.inputs;
                                     requestInputs(inputs, ssl_relay.id);
-                                    yield;
+                                    do
+                                    {
+                                        yield;
+                                        log("available - %s", ssl_relay.available());
+                                    }
+                                    while (!ssl_relay.available());
                                     //() @trusted => Fiber.yield; // Expect an Recorder resonse for the DART service
                                     const response = ssl_relay.response;
                                     const received = internal_hirpc.receive(Document(response));

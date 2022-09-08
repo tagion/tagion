@@ -31,12 +31,6 @@ void fileDiscoveryService(
         }
         log.register(task_name);
 
-        if(!opts.path_to_shared_info.exists) 
-        {
-            string exc = "File " ~ opts.path_to_shared_info ~ " not exist";
-            throw new TagionException(exc);
-        }
-
         string shared_storage = opts.path_to_shared_info;
 
         bool stop = false;
