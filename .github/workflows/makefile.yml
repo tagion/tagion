@@ -31,4 +31,11 @@ jobs:
     - name: unittest result
       run: |
         tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
+        
+        
+    - name: regression test
+      run: |
+        docker pull tagion/playnet
+        docker run --net host -v ${PWD}:/usr/local/bin tagion/playnet
+        docker ps
     
