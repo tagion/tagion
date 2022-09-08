@@ -18,7 +18,7 @@ import tagion.communication.HiRPC;
 // import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
 
 import tagion.logger.Logger;
-import tagion.services.LoggerService : LogFilter;
+import tagion.logger.LogRecords;
 import tagion.services.Options : Options, setOptions, setDefaultOption;
 import tagion.options.CommonOptions : commonOptions;
 import tagion.basic.Types : Control, Buffer;
@@ -70,7 +70,11 @@ struct LogSubscriptionFilter
 
         if (logger_service_tid != Tid.init)
         {
-            logger_service_tid.send(filters.values.join.idup);
+            logger_service_tid.send(LogFilterArray(filters.values.join.idup));
+        }
+        else
+        {
+            log.warning("Unable to notify logger service");
         }
     }
 
@@ -79,16 +83,18 @@ struct LogSubscriptionFilter
      *      @param log_level Represent log level for all logs from task
      *      @return Array of all clients_id that need this logs
      */
-    uint[] matchFilters(string task_name, LoggerType log_level)
+    uint[] matchFilters(LogFilter filter)
     {
         uint[] clients;
         foreach (client_id; filters.keys)
         {
-            foreach (filter; filters[client_id])
+            foreach (client_filter; filters[client_id])
             {
-                if (filter.match(task_name, log_level))
+                // temporary debug solution - send to all connected subscribers
+                //if (client_filter.match(filter))
                 {
                     clients ~= client_id;
+                    break;
                 }
             }
         }
@@ -135,15 +141,11 @@ void logSubscriptionServiceTask(Options opts) nothrow
             {
                 import tagion.hibon.HiBONJSON;
 
-                writeln("bool agent");
-
                 @trusted const(Document) receivessl()
                 {
                     try
                     {
-                        writeln(ssl_relay is null);
                         immutable buffer = ssl_relay.receive;
-                        writeln("%s", buffer);
                         const result = Document(buffer);
                         // if (result.isInorder) {
                         return result;
@@ -157,23 +159,20 @@ void logSubscriptionServiceTask(Options opts) nothrow
                 }
 
                 const doc = receivessl();
-                log("%s", doc.toPretty);
+
+                try
                 {
                     const listener_id = ssl_relay.id();
-                    if (doc.hasMember("task_name") && doc.hasMember("log_level"))
-                    {
-                        auto task_name = doc.opIndex("task_name").data;
-                        auto log_levels = doc.opIndex("log_level").data;
-                        ubyte result = 0;
-                        foreach (log_level; log_levels)
-                        {
-                            result += log_level;
-                        }
-                        LogFilter filter = LogFilter(cast(string) task_name, cast(LoggerType) result);
+                    auto filter_received = LogFilter(
+                        doc["$msg"].get!Document["params"].get!Document);
 
-                        subscribers.addSubscription(listener_id, filter);
-                    }
+                    subscribers.addSubscription(listener_id, filter_received);
                 }
+                catch (Exception e)
+                {
+                    log.error("Recieved document is wrong");
+                }
+
                 return false;
             }
 
@@ -185,10 +184,10 @@ void logSubscriptionServiceTask(Options opts) nothrow
 
         auto relay = new LogSubscriptionRelay;
         SSLServiceAPI logsubscription_api = SSLServiceAPI(opts.logSubscription.service, relay);
-        auto logsubscription_thread = logsubscription_api.start;
+        logsubscription_api.start;
 
         bool stop;
-        void handleState(Control ts)
+        void control(Control ts)
         {
             with (Control) switch (ts)
             {
@@ -203,16 +202,28 @@ void logSubscriptionServiceTask(Options opts) nothrow
             }
         }
 
-        @trusted void receiver(string task_name, LoggerType log_level, string log_output)
+        @trusted void receiver(LogFilter filter, Document data)
         {
+            // THIS IS DRAFT IMPLEMENTATION
+            import std.stdio;
+            import tagion.hibon.HiBONJSON;
+
+            // writeln("......................................................");
+            // writefln("receiver: %s: %s: %s", filter.log_level, filter.task_name, data.toPretty);
+            writefln("......................... log from %s (text: %s) .............................", filter
+                    .task_name, filter
+                    .isTextLog);
+
             writeln(subscribers.filters.length);
-            auto clients = subscribers.matchFilters(task_name, log_level);
+            auto clients = subscribers.matchFilters(filter);
+            writefln("clients: %s", clients);
             foreach (client; clients)
             {
                 HiRPC hirpc;
-                const sender = hirpc.action(log_output);
-                immutable log_buffer = sender.toDoc.serialize();
-                logsubscription_api.send(client, log_buffer);
+                // TODO: send both filter and document
+                const sender = hirpc.action("letter from LogSubscription!", data);
+                immutable sender_data = sender.toDoc.serialize();
+                logsubscription_api.send(client, sender_data);
             }
         }
 
@@ -220,7 +231,7 @@ void logSubscriptionServiceTask(Options opts) nothrow
         while (!stop)
         {
             receiveTimeout(500.msecs, //Control the thread
-                &handleState,
+                &control,
                 &taskfailure,
                 &receiver,
             );

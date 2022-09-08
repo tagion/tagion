@@ -212,7 +212,7 @@ unittest
 {
     import tagion.logger.Logger;
 
-    log.push(LoggerType.NONE);
+    log.push(LogLevel.NONE);
 
     import p2p.node : Stream;
 

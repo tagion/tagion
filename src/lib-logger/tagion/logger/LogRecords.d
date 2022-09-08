@@ -1,0 +1,91 @@
+module tagion.logger.LogRecords;
+
+import tagion.hibon.HiBONRecord;
+import tagion.logger.Logger : LogLevel;
+
+// TODO: doxygen
+
+@safe struct LogFilter
+{
+    @Label("task") string task_name;
+    @Label("level") LogLevel level;
+    @Label("symbol") string symbol_name;
+
+    mixin HiBONRecord!(q{
+        this(string task_name, LogLevel level) nothrow {
+            this.task_name = task_name;
+            this.level = level;
+            this.symbol_name = "";
+        }
+
+        this(string task_name, string symbol_name) nothrow {
+            this.task_name = task_name;
+            this.level = LogLevel.ALL;
+            this.symbol_name = symbol_name;
+        }
+    });
+
+    @nogc bool match(LogFilter filter) pure const nothrow
+    {
+        return this.task_name == filter.task_name && this.level & filter.level && this.symbol_name == filter
+            .symbol_name;
+    }
+
+    @nogc bool isTextLog() pure const nothrow
+    {
+        import std.range;
+
+        return symbol_name.empty;
+    }
+}
+
+unittest
+{
+    enum task1 = "sometaskname";
+    enum task2 = "anothertaskname";
+
+    /// LogFilter_match_text_logs
+    {
+        assert(LogFilter(task1, LogLevel.ERROR).match(LogFilter(task1, LogLevel.STDERR)));
+        assert(LogFilter(task1, LogLevel.ALL).match(LogFilter(task1, LogLevel.INFO)));
+        assert(LogFilter(task2, LogLevel.ERROR).match(LogFilter(task2, LogLevel.ERROR)));
+
+        assert(!LogFilter(task1, LogLevel.STDERR).match(LogFilter(task1, LogLevel.INFO)));
+        assert(!LogFilter(task1, LogLevel.ERROR).match(LogFilter(task2, LogLevel.ERROR)));
+    }
+
+    /// LogFilter_match_symbol_log
+    {
+        enum symbol1 = "some_symbol";
+        enum symbol2 = "another_symbol";
+
+        assert(LogFilter(task1, symbol1).match(LogFilter(task1, symbol1)));
+        assert(LogFilter(task2, symbol2).match(LogFilter(task2, symbol2)));
+
+        assert(!LogFilter(task1, symbol1).match(LogFilter(task1, LogLevel.ALL)));
+        assert(!LogFilter(task1, symbol1).match(LogFilter(task1, symbol2)));
+
+    }
+}
+
+@safe struct LogFilterArray
+{
+    immutable(LogFilter[]) array;
+
+    this(immutable(LogFilter[]) filters) nothrow
+    {
+        this.array = filters;
+    }
+}
+
+@safe struct TextLog
+{
+    @Label("msg") string message;
+    enum label = GetLabel!(message).name;
+
+    mixin HiBONRecord!(q{
+        this(string msg) nothrow {
+            this.message = msg;
+        }
+    });
+}

@@ -13,63 +13,19 @@ import std.format;
 import core.thread;
 import core.sys.posix.pthread;
 import std.string;
+import std.algorithm : any;
 
 //extern(C) int pthread_setname_np(pthread_t, const char*);
 
 import tagion.basic.Types : Control;
-import tagion.logger.Logger;
-import tagion.services.LogSubscriptionService : logSubscriptionServiceTask;
-
-import tagion.hibon.HiBONRecord;
-
-import tagion.services.Options : Options, setOptions, options;
 import tagion.basic.TagionExceptions;
 import tagion.GlobalSignals : abort;
-
-/** Struct with log filter
- */
-@safe struct LogFilter
-{
-    enum any_task_name = "";
-
-    string task_name;
-    LoggerType log_level;
-    mixin HiBONRecord!(q{
-        this(string task_name, LoggerType log_level) nothrow {
-            this.task_name = task_name;
-            this.log_level = log_level;
-        }
-    });
-
-    @nogc bool match(string task_name, LoggerType log_level) pure const nothrow
-    {
-        return (this.task_name == any_task_name || this.task_name == task_name)
-            && this.log_level & log_level;
-    }
-}
-
-unittest
-{
-    enum some_task_name = "sometaskname";
-    enum another_task_name = "anothertaskname";
-
-    assert(LogFilter("", LoggerType.ERROR).match(some_task_name, LoggerType.STDERR));
-    assert(LogFilter(some_task_name, LoggerType.ALL).match(some_task_name, LoggerType.INFO));
-    assert(LogFilter(some_task_name, LoggerType.ERROR).match(some_task_name, LoggerType.ERROR));
-
-    assert(!LogFilter(some_task_name, LoggerType.STDERR).match(some_task_name, LoggerType.INFO));
-    assert(!LogFilter(some_task_name, LoggerType.ERROR).match(another_task_name, LoggerType.ERROR));
-}
-
-@safe struct LogFilterArray
-{
-    immutable(LogFilter[]) array;
-
-    this(immutable(LogFilter[]) filters) nothrow
-    {
-        this.array = filters.idup;
-    }
-}
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONRecord;
+import tagion.services.LogSubscriptionService : logSubscriptionServiceTask;
+import tagion.services.Options : Options, setOptions, options;
+import tagion.logger.Logger;
+import tagion.logger.LogRecords;
 
 import tagion.basic.Basic : TrustedConcurrency;
 
@@ -94,83 +50,85 @@ import tagion.tasks.TaskWrapper;
     File file;
     bool logging;
 
-    @nogc bool matchAnyFilter(string task_name, LoggerType type) const nothrow pure
+    void sendToLogSubService(Args...)(Args args)
     {
-        foreach (filter; commonLogFilters)
+        if (logSubscriptionTid is Tid.init)
         {
-            if (filter.match(task_name, type))
-            {
-                return true;
-            }
+            logSubscriptionTid = locate(options.logSubscription.task_name);
         }
-        return false;
-        // return commonLogFilters.any({lambda...})
+
+        if (logSubscriptionTid !is Tid.init)
+        {
+            logSubscriptionTid.send(args);
+        }
     }
 
-    @TaskMethod void receiveLogs(LoggerType type, string task_name, string log_msg)
+    bool matchAnyFilter(LogFilter filter)
     {
-        void printToConsole(string s) @trusted
+        return commonLogFilters.any!(f => (f.match(filter)));
+    }
+
+    @TaskMethod void receiveLogs(LogFilter filter, Document data)
+    {
+        if (matchAnyFilter(filter))
         {
-            if (options.logger.to_console)
+            sendToLogSubService(filter, data);
+        }
+
+        if (filter.isTextLog)
+        {
+            if (data.hasMember(TextLog.label))
             {
-                writeln(s);
-                if (options.logger.flush)
+                const log_msg = data[TextLog.label].get!string;
+
+                string output;
+                if (filter.level is LogLevel.INFO)
                 {
-                    stdout.flush();
+                    output = format("%s: %s", filter.task_name, log_msg);
                 }
+                else
+                {
+                    output = format("%s:%s: %s", filter.task_name, filter.level, log_msg);
+                }
+
+                if (logging)
+                {
+                    file.writeln(output);
+                }
+
+                void printToConsole(string s) @trusted
+                {
+                    if (options.logger.to_console)
+                    {
+                        writeln(s);
+                        if (options.logger.flush)
+                        {
+                            stdout.flush();
+                        }
+                    }
+                }
+
+                printToConsole(output);
+
+                void printStdError(LogLevel level, string task_name, string log_msg) @trusted
+                {
+                    if (level & LogLevel.STDERR)
+                    {
+                        stderr.writefln("%s:%s: %s", task_name, level, log_msg);
+                    }
+                }
+
+                printStdError(filter.level, filter.task_name, log_msg);
+
             }
         }
-
-        void sendToLogSubscriptionService(LoggerType type, string task_name, string log_output)
-        {
-            if (logSubscriptionTid is Tid.init)
-            {
-                logSubscriptionTid = locate(options.logSubscription.task_name);
-            }
-
-            if (logSubscriptionTid !is Tid.init)
-            {
-                logSubscriptionTid.send(task_name, type, log_output);
-            }
-        }
-
-        void printStdError(LoggerType type, string task_name, string log_msg) @trusted
-        {
-            if (type & LoggerType.STDERR)
-            {
-                stderr.writefln("%s:%s: %s", task_name, type, log_msg);
-            }
-        }
-
-        string output;
-        if (type is LoggerType.INFO)
-        {
-            output = format("%s: %s", task_name, log_msg);
-        }
-        else
-        {
-            output = format("%s:%s: %s", task_name, type, log_msg);
-        }
-
-        if (logging)
-        {
-            file.writeln(output);
-        }
-        printToConsole(output);
-        if (matchAnyFilter(task_name, type))
-        {
-            sendToLogSubscriptionService(type, task_name, output);
-        }
-
-        printStdError(type, task_name, log_msg);
     }
 
-    @TaskMethod void receiveFilters(immutable(LogFilter[]) filters)
+    @TaskMethod void receiveFilters(LogFilterArray filters)
     {
         pragma(msg, "fixme(cbr): This accumulate alot for trach memory on the heap");
-        log("receive Filters");
+
         commonLogFilters = filters.array.dup;
-        log("Updated filters (%d filters received)", filters.array.length);
     }
 
     void onSTOP()
@@ -201,7 +159,7 @@ import tagion.tasks.TaskWrapper;
 
         pragma(msg, "fixme(ib) Pass mask to Logger to not pass not necessary data");
 
-        if (options.sub_logger.enable)
+        if (options.logSubscription.enable)
         {
             logSubscriptionTid = spawn(&logSubscriptionServiceTask, options);
         }

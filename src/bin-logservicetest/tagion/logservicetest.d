@@ -27,6 +27,7 @@ import tagion.hibon.Document;
 import tagion.dart.DARTFile;
 import tagion.tasks.TaskWrapper;
 import tagion.logger.Logger;
+import tagion.logger.LogRecords;
 import tagion.network.SSLOptions;
 import tagion.network.SSLSocket;
 import std.socket : InternetAddress, AddressFamily, SocketOSException;
@@ -34,6 +35,27 @@ import tagion.options.CommonOptions : setCommonOptions;
 import tagion.hibon.HiBONJSON;
 
 mixin TrustedConcurrency;
+
+void sendingLoop(Task!LoggerTask loggerService)
+{
+    import core.thread;
+    import std.stdio;
+
+    writeln("I'm alive!");
+
+    while (true)
+    {
+
+        writeln("Wait...");
+        Thread.sleep(2000.msecs);
+
+        auto filter = LogFilter("some task", LogLevel.INFO);
+
+        // loggerService.receiveFilters(LogFilterArray([filter].idup));
+        writeln("Sending logs from LOOP...");
+        loggerService.receiveLogs(filter, filter.toDoc);
+    }
+}
 
 void create_ssl(const(OpenSSL) openssl)
 {
@@ -96,7 +118,7 @@ int _main(string[] args)
             .service.openssl.private_key);
 
     /// tarting Logger task
-    auto logger_service_tid = Task!LoggerTask(service_options.logger.task_name, service_options);
+    auto logger_service = Task!LoggerTask(service_options.logger.task_name, service_options);
     import std.stdio : stderr;
 
     stderr.writeln("Waiting for logger");
@@ -109,7 +131,7 @@ int _main(string[] args)
     }
     scope (exit)
     {
-        logger_service_tid.control(Control.STOP);
+        logger_service.control(Control.STOP);
         receiveOnly!Control;
     }
     log.register(main_task);
@@ -154,8 +176,9 @@ int _main(string[] args)
     }
     HiRPC hirpc;
     client.blocking = true;
-    const sender = hirpc.action("healthcheck", new HiBON());
 
+    auto filter = LogFilter("some task", LogLevel.INFO);
+    const sender = hirpc.action("subscription", filter.toHiBON);
     immutable data = sender.toDoc.serialize;
     writeln(sender.toDoc.toJSON);
     client.send(data);
@@ -163,15 +186,17 @@ int _main(string[] args)
     auto rec_buf = new void[4000];
     ptrdiff_t rec_size;
 
+    spawn(&sendingLoop, logger_service);
+
     do
     {
         rec_size = client.receive(rec_buf); //, current_max_size);
         writefln("read rec_size=%d", rec_size);
-        Thread.sleep(400.msecs);
+        Thread.sleep(1000.msecs);
     }
     while (rec_size < 0);
     auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
-    writeln(resp_doc.toJSON);
+    writefln("Response document toJSON: %s", resp_doc.toJSON);
 
     receive(
         (Control response) {

@@ -12,7 +12,7 @@ import std.string : strip;
 import tagion.basic.Types : FileExtension;
 import tagion.basic.Basic : basename;
 import tagion.basic.TagionExceptions;
-import tagion.logger.Logger : LoggerType;
+import tagion.logger.Logger : LogLevel;
 import tagion.utils.JSONCommon;
 
 /++
@@ -232,14 +232,6 @@ struct Options
     }
 
     Logger logger;
-
-    struct LoggerSubscription
-    {
-        bool enable; // Enable logger subscribtion  service
-        mixin JSONCommon;
-    }
-
-    LoggerSubscription sub_logger;
 
     struct Recorder
     {
@@ -531,6 +523,7 @@ static setDefaultOption(ref Options options)
         task_name = prefix;
         net_task_name = "logsubscription_net";
         timeout = 10000;
+        enable = true;
         with (service)
         {
             prefix = "logsubscriptionservice";
@@ -579,7 +572,7 @@ static setDefaultOption(ref Options options)
         file_name = "/tmp/tagion.log";
         flush = true;
         to_console = true;
-        mask = LoggerType.ALL;
+        mask = LogLevel.ALL;
     }
     // Recorder
     with (options.recorder)
