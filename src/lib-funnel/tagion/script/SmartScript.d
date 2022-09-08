@@ -66,68 +66,67 @@ version (OLD_TRANSACTION)
 
             
 
-            .check(signed_contract.signs.length != signed_contract.inputs.length,
+            .check(signed_contract.signs.length == signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS);
 
             
 
-            .check(signed_contract.contract.inputs.length != signed_contract.inputs.length,
+            .check(signed_contract.contract.inputs.length == signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
-            const payment = PayContract(signed_contract.inputs);
-            foreach (i, print, input, signature; lockstep(signed_contract.contract.inputs, payment.bills, signed_contract
-                    .signs))
-            {
-                import tagion.utils.Miscellaneous : toHexString;
+            foreach (i, print, input, signature; lockstep(signed_contract.contract.inputs, signed_contract.inputs, signed_contract
+                .signs)) {
+            import tagion.utils.Miscellaneous : toHexString;
 
-                immutable fingerprint = net.hashOf(input.toDoc);
+            immutable fingerprint = net.hashOf(input.toDoc);
 
-                
 
-                .check(print == fingerprint, ConsensusFailCode
-                        .SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
-                Pubkey pkey = input.owner;
 
-                
+            .check(print == fingerprint,
+            ConsensusFailCode.SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
+            Pubkey pkey = input.owner;
 
-                .check(net.verify(message, signature, pkey),
+
+
+            .check(net.verify(message, signature, pkey),
                     ConsensusFailCode.SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY);
 
-            }
         }
+    }
 
         protected StandardBill[] _output_bills;
 
-    const(StandardBill[]) output_bills() const pure nothrow {
-        return _output_bills;
-    }
+        const(StandardBill[]) output_bills() const pure nothrow {
+            return _output_bills;
+        }
 
-    void run(const uint epoch) {
-        // immutable source=signed_contract.contract.script;
-        enum transactions_name = "#trans";
-        immutable source = (() @trusted =>
+        void run(const uint epoch) {
+            // immutable source=signed_contract.contract.script;
+            enum transactions_name = "#trans";
+            immutable source = (() @trusted =>
                 format(": %s %s ;", transactions_name, signed_contract.contract.script)
-        )();
-        // auto src = ScriptParser(source);
-        // Script script;
-        // auto builder = ScriptBuilder(src[]);
-        // builder.build(script);
+            )();
+            // auto src = ScriptParser(source);
+            // Script script;
+            // auto builder = ScriptBuilder(src[]);
+            // builder.build(script);
 
-        // auto sc = new ScriptContext(10, 10, 10, 100);
-        // script.execute(transactions_name, sc);
+            // auto sc = new ScriptContext(10, 10, 10, 100);
+            // script.execute(transactions_name, sc);
 
-        const total_input = calcTotal(signed_contract.inputs);
-        TagionCurrency total_output;
-        foreach (pkey, doc; signed_contract.contract.output) {
-            StandardBill bill;
-            bill.epoch = epoch;
-            //const num = sc.pop.get!Number;
-            pragma(msg, "fixme(cbr): Check for overflow");
-            const amount = TagionCurrency(doc);
-            total_output += amount;
-            bill.value = amount;
-            bill.owner = pkey;
-            //            bill.bill_type = "TGN";
-            _output_bills ~= bill;
+            const total_input = calcTotal(signed_contract.inputs);
+            TagionCurrency total_output;
+            foreach (pkey, doc; signed_contract.contract.output) {
+                StandardBill bill;
+                bill.epoch = epoch;
+                //const num = sc.pop.get!Number;
+                pragma(msg, "fixme(cbr): Check for overflow");
+                const amount = TagionCurrency(doc);
+                total_output += amount;
+                bill.value = amount;
+                bill.owner = pkey;
+                //            bill.bill_type = "TGN";
+                _output_bills ~= bill;
+            }
         }
     }
 }

@@ -163,17 +163,20 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
                             version (OLD_TRANSACTION)
                             {
                                 pragma(msg, "OLD_TRANSACTION ", __FUNCTION__, " ", __FILE__, ":", __LINE__);
-
                             }
-                        else 
-                        {
-                            PayContract payment;
-                            }                       
-                            version(OLD_TRANSACTION) {
-                            foreach (bill; signed_contract.inputs) {
+                            else 
+                            {
+                                PayContract payment;
+                            }
+                            version(OLD_TRANSACTION) 
+                            {
+                            foreach (bill; signed_contract.inputs) 
+                            {
                                 const bill_doc = bill.toDoc;
                                 recorder.remove(bill_doc);
+                            }
                             
+
                                 pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
                                 foreach (bill; smart_script.output_bills)
                                 {

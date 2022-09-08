@@ -241,7 +241,16 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                                         auto std_bill = StandardBill(archive.filed);
                                         payment.bills ~= std_bill;
                                     }
-                                    signed_contract.inputs = payment.toDoc;
+                                    foreach (input; signed_contract.contract.inputs)
+                                    {
+                                        foreach (bill; payment.bills)
+                                        {
+                                            if (hirpc.net.hashOf(bill.toDoc) == input) 
+                                            {
+                                                signed_contract.inputs ~= bill;
+                                            }
+                                        }
+                                    }
                                     // Send the contract as payload to the HashGraph
                                     // The data inside HashGraph is pure payload not an HiRPC
                                     SmartScript.check(hirpc.net, signed_contract);
