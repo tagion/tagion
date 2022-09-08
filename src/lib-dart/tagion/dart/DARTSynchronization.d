@@ -383,14 +383,6 @@ class P2pSynchronizationFactory : SynchronizationFactory
                 const node_port = node_addr.value.port;
                 if (node_addr.key == pkey)
                     continue;
-                if (dart_opts.master_from_port)
-                {
-                    enum isSlave = (ulong port) => port < dart_opts.sync.maxSlavePort;
-                    if (isSlave(own_port) && isSlave(node_port))
-                        continue; //ignore slave nodes
-                    if (!isSlave(own_port) && !isSlave(node_port))
-                        continue; //ignore master nodes
-                }
                 auto response = syncWith(node_addr.value);
                 if (response[1] is null)
                     continue;
@@ -566,7 +558,6 @@ version (none) unittest
     Options opts;
     setDefaultOption(opts);
     dart_opts.sync.host.timeout = 50;
-    dart_opts.sync.master_angle_from_port = false;
 
     NodeAddress[string] address_table;
     auto addr1 = NodeAddress();
@@ -939,7 +930,6 @@ unittest
     DARTOptions dart_opts;
     //    setDefaultOption(opts);
     dart_opts.sync.host.timeout = 50;
-    dart_opts.sync.master_angle_from_port = false;
     void emptyFunc(string jf)
     {
         return;

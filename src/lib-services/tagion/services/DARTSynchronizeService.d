@@ -276,7 +276,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         {
             const tick_timeout = state.checkState(DARTSynchronizeState.REPLAYING_JOURNALS,
                 DARTSynchronizeState.REPLAYING_RECORDERS)
-                ? opts.dart.sync.replay_tick_timeout.msecs : opts.dart.sync.tick_timeout.msecs;
+                ? opts.dart.sync.reply_tick_timeout.msecs : opts.dart.sync.tick_timeout.msecs;
             receiveTimeout(tick_timeout, &handleControl,
                 (immutable(RecordFactory.Recorder) recorder) {
                 log("DSS: recorder received");
