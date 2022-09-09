@@ -118,6 +118,7 @@ version (OLD_TRANSACTION)
                 //            bill.bill_type = "TGN";
                 _output_bills ~= bill;
             }
+            .check(total_output <= total_input, ConsensusFailCode.SMARTSCRIPT_NOT_ENOUGH_MONEY);
         }
     }
 }

@@ -245,7 +245,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                                     {
                                         foreach (bill; payment.bills)
                                         {
-                                            if (hirpc.net.hashOf(bill.toDoc) == input) 
+                                            if (hirpc.net.hashOf(bill.toDoc) == input)
                                             {
                                                 signed_contract.inputs ~= bill;
                                             }
