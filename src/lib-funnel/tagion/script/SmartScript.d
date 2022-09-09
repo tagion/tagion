@@ -83,12 +83,12 @@ version (OLD_TRANSACTION)
 
         protected StandardBill[] _output_bills;
 
-        const(StandardBill[]) output_bills() const pure nothrow 
+        const(StandardBill[]) output_bills() const pure nothrow
         {
             return _output_bills;
         }
 
-        void run(const uint epoch) 
+        void run(const uint epoch)
         {
             // immutable source=signed_contract.contract.script;
             enum transactions_name = "#trans";
