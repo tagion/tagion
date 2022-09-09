@@ -163,9 +163,6 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
                             version (OLD_TRANSACTION)
                             {
                                 pragma(msg, "OLD_TRANSACTION ", __FUNCTION__, " ", __FILE__, ":", __LINE__);
-                            }
-                            version(OLD_TRANSACTION)
-                            {
                                 foreach (bill; signed_contract.inputs) 
                                 {
                                     const bill_doc = bill.toDoc;

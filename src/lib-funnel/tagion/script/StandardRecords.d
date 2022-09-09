@@ -247,7 +247,7 @@ enum OwnerKey = "$Y";
         version(OLD_TRANSACTION) {
             pragma(msg, "OLD_TRANSACTION ",__FILE__,":",__LINE__);
             @Label("$in", true) StandardBill[] inputs; /// The actual inputs
-    }
+        }
         mixin HiBONRecord;
     }
 
