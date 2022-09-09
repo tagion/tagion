@@ -108,7 +108,7 @@ int main(string[] args)
     
     if(!chain_directory.exists)
     {
-        writeln(chain_directory, " directory does not exist");
+        writeln("No chain files in directory: ", chain_directory);
         return 1;
     }
 
@@ -124,7 +124,7 @@ int main(string[] args)
     auto info = RecorderChain.getBlocksInfo(chain_directory, hash_net);
     if(!info.amount) 
     {
-        writeln("Directory for recorder block chain is empty");
+        writeln("No recorder chain block files in current directory");
         return 1;
     }
 

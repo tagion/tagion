@@ -220,7 +220,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
         }
     }
 
-    /** 
+    /**
     * Used to find next block in recorder block chain
     * @param cur_fingerprint - fingerprint of current block from recorder block chain
     * @param folder_path - folder with blocks from recorder block chain
@@ -518,10 +518,10 @@ unittest
         auto hirpc = HiRPC(secure_net);
 
         Buffer checkCurrentBlock(RecordFactory.Recorder recorder,
-                           DART db,
-                           HiRPC hirpc,
-                           RecorderChain recorder_chain,
-                           Buffer chain) const @trusted
+                                DART db,
+                                HiRPC hirpc,
+                                RecorderChain recorder_chain,
+                                Buffer chain) const @trusted
         {
             immutable recorder_im = cast(immutable) recorder;
             auto sent = DART.dartModify(recorder_im, hirpc);
@@ -535,7 +535,7 @@ unittest
             assert(current_block.fingerprint == block.fingerprint);
             assert(current_block.chain == block.chain);
             assert(current_block.bullseye == block.bullseye);
-            assert(current_block.recorder_doc == block.recorder_doc); 
+            assert(current_block.recorder_doc == block.recorder_doc);
 
             return block.fingerprint;
         }
