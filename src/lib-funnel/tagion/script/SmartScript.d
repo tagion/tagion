@@ -58,48 +58,38 @@ version (OLD_TRANSACTION)
         }
         do
         {
-
-            
-
-                .check(signed_contract.signs.length > 0, ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE);
+            .check(signed_contract.signs.length > 0, ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE);
             const message = net.hashOf(signed_contract.contract.toDoc);
-
-            
 
             .check(signed_contract.signs.length == signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS);
 
-            
-
             .check(signed_contract.contract.inputs.length == signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
             foreach (i, print, input, signature; lockstep(signed_contract.contract.inputs, signed_contract.inputs, signed_contract
-                .signs)) {
-            import tagion.utils.Miscellaneous : toHexString;
+                .signs))
+            {
 
-            immutable fingerprint = net.hashOf(input.toDoc);
+                immutable fingerprint = net.hashOf(input.toDoc);
 
+                .check(print == fingerprint,
+                ConsensusFailCode.SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
+                Pubkey pkey = input.owner;
 
-
-            .check(print == fingerprint,
-            ConsensusFailCode.SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
-            Pubkey pkey = input.owner;
-
-
-
-            .check(net.verify(message, signature, pkey),
-                    ConsensusFailCode.SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY);
-
+                .check(net.verify(message, signature, pkey),
+                        ConsensusFailCode.SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY);
+            }
         }
-    }
 
         protected StandardBill[] _output_bills;
 
-        const(StandardBill[]) output_bills() const pure nothrow {
+        const(StandardBill[]) output_bills() const pure nothrow 
+        {
             return _output_bills;
         }
 
-        void run(const uint epoch) {
+        void run(const uint epoch) 
+        {
             // immutable source=signed_contract.contract.script;
             enum transactions_name = "#trans";
             immutable source = (() @trusted =>
@@ -115,7 +105,8 @@ version (OLD_TRANSACTION)
 
             const total_input = calcTotal(signed_contract.inputs);
             TagionCurrency total_output;
-            foreach (pkey, doc; signed_contract.contract.output) {
+            foreach (pkey, doc; signed_contract.contract.output) 
+            {
                 StandardBill bill;
                 bill.epoch = epoch;
                 //const num = sc.pop.get!Number;
@@ -195,8 +186,6 @@ else
                         inputs[],
                         signed_contract.signs))
                 {
-                    import tagion.utils.Miscellaneous : toHexString;
-
                     immutable fingerprint = net.hashOf(input);
 
                     if (print != fingerprint)
