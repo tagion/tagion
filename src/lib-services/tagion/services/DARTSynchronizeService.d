@@ -16,7 +16,7 @@ import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
-import tagion.dart.BlockFile : BlockFile;
+import tagion.dart.BlockFile : BlockFile, BLOCK_SIZE;
 import tagion.basic.Basic;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
@@ -110,7 +110,6 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         }
         if (opts.dart.initialize)
         {
-            enum BLOCK_SIZE = 0x80;
             DART.create(filename, BLOCK_SIZE);
         }
         log("DART file created with filename: %s", filename);
