@@ -1,20 +1,24 @@
 module tagion.mobile.Recycle;
 
-struct Recycle(T) {
+struct Recycle(T)
+{
     pragma(msg, "fixme(cbr): Why is it offset by one with (START_INDEX = 1) ?");
     enum START_INDEX = 1;
 
     enum to_index = (uint i) => cast(const(uint))(i + START_INDEX);
     enum to_doc_id = (uint i) => cast(const(uint))(i - START_INDEX);
 
-    private {
+    private
+    {
         T[] _active;
         const(uint)[] _reuse;
     }
 
     /// Create an object of T and return it's index in '_active'
-    const(uint) create(T x) {
-        if (_reuse.length > 0) {
+    const(uint) create(T x)
+    {
+        if (_reuse.length > 0)
+        {
             const reuse_id = _reuse[$ - 1];
             _reuse.length--;
             _active[reuse_id] = x;
@@ -24,8 +28,10 @@ struct Recycle(T) {
         return to_index(cast(uint) _active.length - 1);
     }
 
-    bool put(T x, const uint id) {
-        if (exists(id)) {
+    bool put(T x, const uint id)
+    {
+        if (exists(id))
+        {
             const doc_id = to_doc_id(id);
             _active[doc_id] = x;
             return true;
@@ -35,38 +41,45 @@ struct Recycle(T) {
 
     /// Erase by index
     void erase(const uint id)
-    in {
+    in
+    {
         const doc_id = to_doc_id(id);
         assert(doc_id >= 0);
         assert(doc_id < _active.length);
     }
-    do {
+    do
+    {
         const doc_id = to_doc_id(id);
         import std.algorithm.searching : count;
 
         _active[doc_id] = T.init;
         // Check for avoiding the multiple append the same id
-        if (_reuse.count(doc_id) is 0) {
+        if (_reuse.count(doc_id) is 0)
+        {
             _reuse ~= doc_id;
         }
     }
 
     /// overloading function call operator
     T opCall(const uint id)
-    in {
+    in
+    {
         const doc_id = to_doc_id(id);
         assert(doc_id < _active.length);
         assert(_active[doc_id]!is T.init);
     }
-    do {
+    do
+    {
         const doc_id = to_doc_id(id);
         return _active[doc_id];
     }
 
     /// Checking for existence by id
-    bool exists(const uint id) const pure nothrow {
+    bool exists(const uint id) const pure nothrow
+    {
         const doc_id = to_doc_id(id);
-        if (doc_id < _active.length) {
+        if (doc_id < _active.length)
+        {
             return _active[doc_id]!is T.init;
         }
         return false;
@@ -74,7 +87,8 @@ struct Recycle(T) {
 }
 
 pragma(msg, "fixme(cbr): This unittest does not pass (", __FILE__, ":", __LINE__, ")");
-version (none) unittest {
+version (none) unittest
+{
     import tagion.hibon.Document : Document;
     import std.stdio;
 

@@ -26,9 +26,12 @@ import tagion.betterC.utils.BinBuffer;
 
 // alias check=Check!LEB128Exception;
 
-size_t calc_size(const(ubyte[]) data) {
-    foreach (i, d; data) {
-        if ((d & 0x80) == 0) {
+size_t calc_size(const(ubyte[]) data)
+{
+    foreach (i, d; data)
+    {
+        if ((d & 0x80) == 0)
+        {
             //check(i <= ulong.sizeof+1, "LEB128 overflow");
             return i + 1;
         }
@@ -38,10 +41,12 @@ size_t calc_size(const(ubyte[]) data) {
 }
 
 @safe
-size_t calc_size(T)(const T v) pure if (isUnsigned!(T)) {
+size_t calc_size(T)(const T v) pure if (isUnsigned!(T))
+{
     size_t result;
     ulong value = v;
-    do {
+    do
+    {
         result++;
         value >>= 7;
     }
@@ -50,13 +55,17 @@ size_t calc_size(T)(const T v) pure if (isUnsigned!(T)) {
 }
 
 @safe
-size_t calc_size(T)(const T v) pure if (isSigned!(T)) {
-    if (v == T.min) {
+size_t calc_size(T)(const T v) pure if (isSigned!(T))
+{
+    if (v == T.min)
+    {
         return T.sizeof + (is(T == int) ? 1 : 2);
     }
     ulong value = ulong((v < 0) ? -v : v);
-    static if (is(T == long)) {
-        if ((value >> (long.sizeof * 8 - 2)) == 1UL) {
+    static if (is(T == long))
+    {
+        if ((value >> (long.sizeof * 8 - 2)) == 1UL)
+        {
             return long.sizeof + 2;
         }
     }
@@ -65,7 +74,8 @@ size_t calc_size(T)(const T v) pure if (isSigned!(T)) {
     // T nv=-v;
 
     ubyte d;
-    do {
+    do
+    {
         d = value & 0x7f;
         result++;
         value >>= 7;
@@ -74,14 +84,17 @@ size_t calc_size(T)(const T v) pure if (isSigned!(T)) {
     return result;
 }
 
-void encode(T)(ref BinBuffer buffer, const T v) if (isUnsigned!T && isIntegral!T) {
+void encode(T)(ref BinBuffer buffer, const T v) if (isUnsigned!T && isIntegral!T)
+{
     ubyte[T.sizeof + 2] data;
     alias BaseT = TypedefType!T;
     BaseT value = cast(BaseT) v;
-    foreach (i, ref d; data) {
+    foreach (i, ref d; data)
+    {
         d = value & 0x7f;
         value >>= 7;
-        if (value == 0) {
+        if (value == 0)
+        {
             buffer.write(data[0 .. i + 1]);
             return;
         }
@@ -90,12 +103,15 @@ void encode(T)(ref BinBuffer buffer, const T v) if (isUnsigned!T && isIntegral!T
     assert(0);
 }
 
-void encode(T)(ref BinBuffer buffer, const T v) if (isSigned!T && isIntegral!T) {
+void encode(T)(ref BinBuffer buffer, const T v) if (isSigned!T && isIntegral!T)
+{
     enum DATA_SIZE = (T.sizeof * 9 + 1) / 8 + 1;
     ubyte[DATA_SIZE] data;
     //    size_t index;
-    if (v == T.min) {
-        foreach (ref d; data[0 .. $ - 1]) {
+    if (v == T.min)
+    {
+        foreach (ref d; data[0 .. $ - 1])
+        {
             d = 0x80;
         }
         data[$ - 1] = (T.min >> (7 * (DATA_SIZE - 1))) & 0x7F;
@@ -103,11 +119,13 @@ void encode(T)(ref BinBuffer buffer, const T v) if (isSigned!T && isIntegral!T) 
         return;
     }
     T value = v;
-    foreach (i, ref d; data) {
+    foreach (i, ref d; data)
+    {
         d = value & 0x7f;
         value >>= 7;
         /* sign bit of byte is second high order bit (0x40) */
-        if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40))) {
+        if (((value == 0) && !(d & 0x40)) || ((value == -1) && (d & 0x40)))
+        {
             buffer.write(data[0 .. i + 1]);
             return;
         }
@@ -119,21 +137,26 @@ void encode(T)(ref BinBuffer buffer, const T v) if (isSigned!T && isIntegral!T) 
 
 alias DecodeLEB128(T) = Tuple!(T, "value", size_t, "size");
 
-DecodeLEB128!T decode(T = ulong)(const(ubyte[]) data) if (isUnsigned!T) {
+DecodeLEB128!T decode(T = ulong)(const(ubyte[]) data) if (isUnsigned!T)
+{
     alias BaseT = TypedefType!T;
     ulong result;
     uint shift;
     enum MAX_LIMIT = T.sizeof * 8;
     size_t len;
-    foreach (i, d; data) {
+    foreach (i, d; data)
+    {
         // check(shift < MAX_LIMIT,
         //     message("LEB128 decoding buffer over limit of %d %d", MAX_LIMIT, shift));
 
         result |= (d & 0x7FUL) << shift;
-        if ((d & 0x80) == 0) {
+        if ((d & 0x80) == 0)
+        {
             len = i + 1;
-            static if (!is(BaseT == ulong)) {
-                check(result <= BaseT.max, message("LEB128 decoding overflow of %x for %s", result, T.stringof));
+            static if (!is(BaseT == ulong))
+            {
+                check(result <= BaseT.max, message("LEB128 decoding overflow of %x for %s", result, T
+                        .stringof));
             }
             return DecodeLEB128!T(cast(BaseT) result, len);
         }
@@ -143,18 +166,22 @@ DecodeLEB128!T decode(T = ulong)(const(ubyte[]) data) if (isUnsigned!T) {
     assert(0);
 }
 
-DecodeLEB128!T decode(T = long)(const(ubyte[]) data) if (isSigned!T) {
+DecodeLEB128!T decode(T = long)(const(ubyte[]) data) if (isSigned!T)
+{
     alias BaseT = TypedefType!T;
     long result;
     uint shift;
     enum MAX_LIMIT = T.sizeof * 8;
     size_t len;
-    foreach (i, d; data) {
+    foreach (i, d; data)
+    {
         // check(shift < MAX_LIMIT, "LEB128 decoding buffer over limit");
         result |= (d & 0x7FL) << shift;
         shift += 7;
-        if ((d & 0x80) == 0) {
-            if ((shift < long.sizeof * 8) && ((d & 0x40) != 0)) {
+        if ((d & 0x80) == 0)
+        {
+            if ((shift < long.sizeof * 8) && ((d & 0x40) != 0))
+            {
                 result |= (~0L << shift);
             }
             len = i + 1;
@@ -170,10 +197,12 @@ DecodeLEB128!T decode(T = long)(const(ubyte[]) data) if (isSigned!T) {
 }
 
 ///
-unittest {
+unittest
+{
     import std.algorithm.comparison : equal;
 
-    void ok(T)(T x, const(ubyte[]) expected) {
+    void ok(T)(T x, const(ubyte[]) expected)
+    {
         BinBuffer encoded;
         encode(encoded, x);
         assert(equal(encoded.serialize, expected));
@@ -198,7 +227,9 @@ unittest {
         ok!ulong(27272727, buffer_4);
         const(ubyte[5]) buffer_5 = [181, 202, 212, 168, 5];
         ok!ulong(1427449141, buffer_5);
-        const(ubyte[10]) buffer_6 = [255, 255, 255, 255, 255, 255, 255, 255, 255, 1];
+        const(ubyte[10]) buffer_6 = [
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 1
+        ];
         ok!ulong(ulong.max, buffer_6);
     }
 
@@ -245,13 +276,21 @@ unittest {
         const(ubyte[1]) buffer_17 = [127];
         ok!long(-1L, buffer_17);
 
-        const(ubyte[10]) buffer_18 = [254, 255, 255, 255, 255, 255, 255, 255, 255, 0];
+        const(ubyte[10]) buffer_18 = [
+            254, 255, 255, 255, 255, 255, 255, 255, 255, 0
+        ];
         ok!long(long.max - 1, buffer_18);
-        const(ubyte[10]) buffer_19 = [255, 255, 255, 255, 255, 255, 255, 255, 255, 0];
+        const(ubyte[10]) buffer_19 = [
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 0
+        ];
         ok!long(long.max, buffer_19);
-        const(ubyte[10]) buffer_20 = [129, 128, 128, 128, 128, 128, 128, 128, 128, 127];
+        const(ubyte[10]) buffer_20 = [
+            129, 128, 128, 128, 128, 128, 128, 128, 128, 127
+        ];
         ok!long(long.min + 1, buffer_20);
-        const(ubyte[10]) buffer_21 = [128, 128, 128, 128, 128, 128, 128, 128, 128, 127];
+        const(ubyte[10]) buffer_21 = [
+            128, 128, 128, 128, 128, 128, 128, 128, 128, 127
+        ];
         ok!long(long.min, buffer_21);
     }
 

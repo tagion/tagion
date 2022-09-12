@@ -11,7 +11,7 @@ import tagion.basic.Types : Control;
 import tagion.basic.Basic : TrustedConcurrency;
 import tagion.logger.Logger;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
-import tagion.services.RecorderService : Fingerprint;
+import tagion.utils.Fingerprint : Fingerprint;
 import tagion.services.LoggerService;
 import tagion.dart.Recorder;
 
@@ -19,41 +19,51 @@ alias Recorder = RecordFactory.Recorder;
 
 mixin TrustedConcurrency;
 
-@safe struct TaskMethod {
+@safe struct TaskMethod
+{
 }
 
 alias TaskInfo = Tuple!(Tid, "tid", string, "task_name");
-@safe struct TidTable {
+@safe struct TidTable
+{
     import std.container;
+
     private TaskInfo[] array;
 
-    bool empty() const {
+    bool empty() const
+    {
         return array.empty;
     }
 
-    void push_back(TaskInfo elem) {
+    void push_back(TaskInfo elem)
+    {
         array ~= elem;
     }
 
-    TaskInfo pop_back() {
+    TaskInfo pop_back()
+    {
         if (array.empty)
             return TaskInfo();
 
         auto e = back;
-        array = array.remove(array.length-1);
+        array = array.remove(array.length - 1);
         return e;
     }
 
-    TaskInfo back() {
+    TaskInfo back()
+    {
         if (array.empty)
             return TaskInfo();
 
-        return array[$-1];
+        return array[$ - 1];
     }
 
-    bool removeTask(string task_name) {
-        foreach (i; 0..array.length) {
-            if (array[i].task_name == task_name) {
+    bool removeTask(string task_name)
+    {
+        foreach (i; 0 .. array.length)
+        {
+            if (array[i].task_name == task_name)
+            {
                 array = array.remove(i);
                 return true;
             }
@@ -62,13 +72,14 @@ alias TaskInfo = Tuple!(Tid, "tid", string, "task_name");
     }
 }
 
-unittest {
+unittest
+{
     TidTable table;
     assert(table.empty);
 
-    auto info0 = TaskInfo(thisTid,  "info0");
+    auto info0 = TaskInfo(thisTid, "info0");
     auto info1 = TaskInfo(Tid.init, "info1");
-    auto info2 = TaskInfo(thisTid,  "info2");
+    auto info2 = TaskInfo(thisTid, "info2");
 
     table.push_back(info0);
     assert(!table.empty);
@@ -91,7 +102,8 @@ unittest {
     assert(table.empty);
 }
 
-@safe struct Task(alias Func) {
+@safe struct Task(alias Func)
+{
     static assert(is(Func == struct));
     import std.traits : Parameters, ParameterIdentifierTuple, isFunction, isDelegate, isFunctionPointer, hasUDA, getUDAs;
     import std.meta : AliasSeq;
@@ -105,7 +117,8 @@ unittest {
 
     private static TidTable _tid_table;
 
-    this(string task_name, Params args) {
+    this(string task_name, Params args)
+    {
         this.task_name = task_name;
         _tid = spawn(&run, task_name, args);
 
@@ -113,16 +126,20 @@ unittest {
         _tid_table.push_back(TaskInfo(_tid, task_name));
     }
 
-    static if (is(Func == struct)) {
-        static string generateSendFunctions() {
+    static if (is(Func == struct))
+    {
+        static string generateSendFunctions()
+        {
             import std.array : join;
 
             string[] result;
-            static foreach (m; __traits(allMembers, Func)) {
+            static foreach (m; __traits(allMembers, Func))
+            {
                 {
                     enum code = format!(q{alias Type=Func.%s;})(m);
                     mixin(code);
-                    static if (isCallable!Type && hasUDA!(Type, TaskMethod)) {
+                    static if (isCallable!Type && hasUDA!(Type, TaskMethod))
+                    {
                         enum method_code = format!q{
                             alias FuncParams_%1$s=AliasSeq!%2$s;
                             void %1$s(FuncParams_%1$s args) {
@@ -139,12 +156,13 @@ unittest {
         mixin(send_methods);
     }
 
-    version(none)
-    static void stopTasks() {
+    version (none) static void stopTasks()
+    {
         writeln("stopTasks");
 
         // Stop tasks in LIFO order
-        while (!_tid_table.empty) {
+        while (!_tid_table.empty)
+        {
             auto task_info = _tid_table.pop_back;
             writeln("stopTasks step ", task_info);
             send(task_info.tid, Control.STOP);
@@ -152,27 +170,35 @@ unittest {
         }
     }
 
-    static void registerLogger(string task_name) {
+    static void registerLogger(string task_name)
+    {
         writeln("REGISTER ", task_name);
 
-        static if (is(Func == LoggerTask)) {
+        static if (is(Func == LoggerTask))
+        {
             register(task_name, thisTid);
             log.set_logger_task(task_name);
         }
-        else {
+        else
+        {
             log.register(task_name);
         }
     }
 
-    static void run(string task_name, Params args) nothrow {
-        try {
-            scope (success) {
+    static void run(string task_name, Params args) nothrow
+    {
+        try
+        {
+            scope (success)
+            {
                 log.trace(format("Success: TaskWrapper<%s>", task_name));
             }
-            scope (failure) {
+            scope (failure)
+            {
                 log.trace(format("Fail: TaskWrapper<%s>", task_name));
             }
-            scope (exit) {
+            scope (exit)
+            {
                 _tid_table.removeTask(task_name);
                 prioritySend(ownerTid, Control.END);
             }
@@ -183,34 +209,42 @@ unittest {
             // Boiler coded
             task(args);
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             fatal(e);
         }
     }
 }
 
-@safe mixin template TaskBasic() {
+@safe mixin template TaskBasic()
+{
     bool stop;
     // TODO Do we need handle also "abort"?
 
     // Task can redefine this method to customize actions when receiving Control.STOP
-    void onSTOP() {
+    void onSTOP()
+    {
         stop = true;
     }
 
     // Task can redefine this method to customize actions when receiving Control.LIVE
-    void onLIVE() {
+    void onLIVE()
+    {
         /// Should throw something
     }
 
     // Task can redefine this method to customize actions when receiving Control.END
-    void onEND() {
+    void onEND()
+    {
         // If the task can spawn another tasks then it could receive LIVE and END
     }
 
-    @TaskMethod void control(immutable(Control) control) {
-        with (Control) {
-            final switch (control) {
+    @TaskMethod void control(immutable(Control) control)
+    {
+        with (Control)
+        {
+            final switch (control)
+            {
             case STOP:
                 onSTOP;
                 break;
@@ -225,31 +259,37 @@ unittest {
     }
 }
 
-version (unittest) @safe struct FakeTask {
+version (unittest) @safe struct FakeTask
+{
     import std.string : StringException;
 
     mixin TaskBasic;
 
-    @TaskMethod void echo_string(string test_string) {
+    @TaskMethod void echo_string(string test_string)
+    {
         send(ownerTid, test_string);
     }
 
-    @TaskMethod void throwing_method(int n) {
+    @TaskMethod void throwing_method(int n)
+    {
         throw new StringException("You shall not pass");
     }
 
-    void opCall(int x, uint y) {
+    void opCall(int x, uint y)
+    {
         send(ownerTid, Control.LIVE);
-        while (!stop) {
+        while (!stop)
+        {
             receive(
-                    &control,
-                    &echo_string,
-                    &throwing_method);
+                &control,
+                &echo_string,
+                &throwing_method);
         }
     }
 }
 
-@safe unittest {
+@safe unittest
+{
     import tagion.services.Options : Options, setDefaultOption;
     import tagion.services.LoggerService;
     import tagion.logger.Logger;
@@ -260,7 +300,8 @@ version (unittest) @safe struct FakeTask {
     setDefaultOption(options);
 
     auto loggerService = Task!LoggerTask(options.logger.task_name, options);
-    scope (exit) {
+    scope (exit)
+    {
         loggerService.control(Control.STOP);
         assert(receiveOnly!Control is Control.END);
     }

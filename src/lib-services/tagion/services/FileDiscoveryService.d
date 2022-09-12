@@ -3,6 +3,7 @@ module tagion.services.FileDiscoveryService;
 import core.time;
 import std.format;
 import std.concurrency;
+import std.file;
 
 import p2plib = p2p.node;
 import tagion.utils.Miscellaneous : cutHex;
@@ -20,17 +21,22 @@ void fileDiscoveryService(
     Pubkey pubkey,
     shared p2plib.Node node,
     string task_name,
-    immutable(Options) opts) nothrow { //TODO: for test
-    try {
-        scope (success) {
+    immutable(Options) opts) nothrow
+{ //TODO: for test
+    try
+    {
+        scope (success)
+        {
             ownerTid.prioritySend(Control.END);
         }
         log.register(task_name);
+
         string shared_storage = opts.path_to_shared_info;
 
         bool stop = false;
 
-        void initialize() {
+        void initialize()
+        {
             static uint count;
             count++;
             log("initializing %d %s", count, pubkey.cutHex);
@@ -40,7 +46,8 @@ void fileDiscoveryService(
             addressbook.save(shared_storage, true);
         }
 
-        void updateAddressbook() {
+        void updateAddressbook()
+        {
             static uint count;
             count++;
             log.trace("update %d %s", count, pubkey.cutHex);
@@ -51,45 +58,54 @@ void fileDiscoveryService(
         log("File Discovery started");
         ownerTid.send(Control.LIVE);
         bool addressbook_done;
-        while (!stop) {
+        while (!stop)
+        {
             const message = receiveTimeout(
                 500.msecs,
                 (Control control) {
-                    if (control is Control.STOP) {
-                        log("stop");
-                        stop = true;
-                    }
-                },
+                if (control is Control.STOP)
+                {
+                    log("stop");
+                    stop = true;
+                }
+            },
                 (DiscoveryRequestCommand request) {
-                    with (DiscoveryRequestCommand) {
-                        final switch (request) {
-                        case RequestTable:
-                            addressbook_done=false;
-                            break;
-                        case BecomeOnline:
-                        case BecomeOffline:
-                            break;
-                        case UpdateTable:
-                            throw new TagionException(format("DiscoveryRequestCommand %s has not function", request));
-                            break;
+                with (DiscoveryRequestCommand)
+                {
+                    final switch (request)
+                    {
+                    case RequestTable:
+                        addressbook_done = false;
+                        break;
+                    case BecomeOnline:
+                    case BecomeOffline:
+                        break;
+                    case UpdateTable:
+                        throw new TagionException(format("DiscoveryRequestCommand %s has not function", request));
+                        break;
 
-                        }
                     }
                 }
-                );
-            if (!addressbook_done) {
-                if (!message) {
+            }
+            );
+            if (!addressbook_done)
+            {
+                if (!message)
+                {
                     updateAddressbook;
                 }
-                log.trace("FILE NETWORK READY %d < %d (%s) done = %s", addressbook.numOfNodes, opts.nodes, addressbook.isReady, addressbook_done);
-                if (addressbook.isReady) {
+                log.trace("FILE NETWORK READY %d < %d (%s) done = %s", addressbook.numOfNodes, opts.nodes, addressbook
+                        .isReady, addressbook_done);
+                if (addressbook.isReady)
+                {
                     ownerTid.send(DiscoveryControl.READY);
-                    addressbook_done=true;
+                    addressbook_done = true;
                 }
             }
         }
     }
-    catch (Throwable t) {
+    catch (Throwable t)
+    {
         fatal(t);
     }
 }

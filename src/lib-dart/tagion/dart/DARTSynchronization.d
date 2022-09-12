@@ -17,6 +17,7 @@ import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;
+
 //import tagion.dart.DARTBasic;
 import tagion.dart.Recorder;
 
@@ -35,9 +36,11 @@ import tagion.communication.HandlerPool;
 alias HiRPCSender = HiRPC.Sender;
 alias HiRPCReceiver = HiRPC.Receiver;
 
-mixin template StateT(T) {
+mixin template StateT(T)
+{
     protected T _state;
-    protected bool checkState(T[] expected...) nothrow {
+    protected bool checkState(T[] expected...) nothrow
+    {
         import std.algorithm : canFind;
 
         return expected.canFind(_state);
@@ -45,38 +48,48 @@ mixin template StateT(T) {
 }
 
 @safe
-class ModifyRequestHandler : ResponseHandler {
-    private {
+class ModifyRequestHandler : ResponseHandler
+{
+    private
+    {
         Buffer response;
         HiRPC hirpc;
         const string task_name;
         HiRPCReceiver receiver;
     }
-    this(HiRPC hirpc, const string task_name, const HiRPCReceiver receiver) {
+    this(HiRPC hirpc, const string task_name, const HiRPCReceiver receiver)
+    {
         this.hirpc = hirpc;
         this.task_name = task_name;
         this.receiver = receiver;
     }
 
-    void setResponse(Buffer response) {
+    void setResponse(Buffer response)
+    {
         this.response = response;
         close();
     }
 
-    bool alive() {
+    bool alive()
+    {
         return response.length is 0;
     }
 
-    void close() @trusted {
-        if (alive) {
+    void close() @trusted
+    {
+        if (alive)
+        {
             log("ModifyRequestHandler: Close alive");
         }
-        else {
+        else
+        {
             auto tid = locate(task_name);
-            if (tid != Tid.init) {
+            if (tid != Tid.init)
+            {
                 send(tid, response);
             }
-            else {
+            else
+            {
                 log("ModifyRequestHandler: couldn't locate task: %s", task_name);
             }
         }
@@ -84,8 +97,10 @@ class ModifyRequestHandler : ResponseHandler {
 }
 
 @safe
-class ReadRequestHandler : ResponseHandler {
-    private {
+class ReadRequestHandler : ResponseHandler
+{
+    private
+    {
         pragma(msg, "Fixme: Why is this a Document[Buffer], why not just a Recorder? It seems to solve the same problem");
         Document[Buffer] fp_result;
         Buffer[] requested_fp;
@@ -94,7 +109,8 @@ class ReadRequestHandler : ResponseHandler {
         RecordFactory manufactor;
     }
     immutable(string) task_name;
-    this(const Buffer[] fp, HiRPC hirpc, const string task_name, const HiRPCReceiver receiver) {
+    this(const Buffer[] fp, HiRPC hirpc, const string task_name, const HiRPCReceiver receiver)
+    {
         this.requested_fp = fp.dup;
         this.hirpc = hirpc;
         this.task_name = task_name;
@@ -102,12 +118,14 @@ class ReadRequestHandler : ResponseHandler {
         manufactor = RecordFactory(hirpc.net);
     }
 
-    void setResponse(Buffer response) {
+    void setResponse(Buffer response)
+    {
         const doc = Document(response); //TODO: check response
         pragma(msg, "fixme(alex): Add the Document check here (Comment abow)");
         auto received = hirpc.receive(doc);
         const foreign_recoder = manufactor.recorder(received.method.params);
-        foreach (archive; foreign_recoder[]) {
+        foreach (archive; foreign_recoder[])
+        {
             fp_result[archive.fingerprint] = archive.toDoc;
             import std.algorithm : arrRemove = remove, countUntil;
 
@@ -115,34 +133,42 @@ class ReadRequestHandler : ResponseHandler {
         }
     }
 
-    bool alive() {
+    bool alive()
+    {
         return requested_fp.length != 0;
     }
 
-    void close() @trusted {
-        if (alive) {
+    void close() @trusted
+    {
+        if (alive)
+        {
             log("ReadRequestHandler: Close alive");
             // onFailed()?
         }
-        else {
+        else
+        {
             auto empty_hirpc = HiRPC(null);
             auto recorder = manufactor.recorder;
-            foreach (fp, doc; fp_result) {
+            foreach (fp, doc; fp_result)
+            {
                 recorder.insert(doc);
             }
             auto tid = locate(task_name); //TODO: moveout outside
-            if (tid != Tid.init) {
+            if (tid != Tid.init)
+            {
                 const result = empty_hirpc.result(receiver, recorder);
                 send(tid, result.toDoc.serialize);
             }
-            else {
+            else
+            {
                 log("ReadRequestHandler: couldn't locate task: %s", task_name);
             }
         }
     }
 }
 
-version (none) unittest {
+version (none) unittest
+{
     pragma(msg, "Fixme(Alex); Why doesn't this unittest not compile anymore!!!");
     import std.bitmanip : nativeToBigEndian;
     import tagion.dart.DARTFakeNet;
@@ -174,71 +200,86 @@ version (none) unittest {
 import core.thread;
 
 @safe
-class ReplayPool(T) {
-    protected {
+class ReplayPool(T)
+{
+    protected
+    {
         void delegate(T) @safe replayFunc;
         uint current_index;
         T[] modifications;
     }
-    this(void delegate(T) @safe replayFunc) {
+    this(void delegate(T) @safe replayFunc)
+    {
         this.replayFunc = replayFunc;
     }
 
-    void execute() {
-        try {
-            if (!empty) {
+    void execute()
+    {
+        try
+        {
+            if (!empty)
+            {
                 log("%d i: %d", modifications.length, current_index);
                 replayFunc(modifications[current_index]);
                 current_index++;
             }
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             log("Replay fiber exception: %s", e);
         }
     }
 
-    void insert(T value) {
+    void insert(T value)
+    {
         modifications ~= value;
     }
 
-    void clear() {
+    void clear()
+    {
         modifications = [];
         current_index = 0;
     }
 
-    size_t count() const pure nothrow {
+    size_t count() const pure nothrow
+    {
         return modifications.length;
     }
 
-    bool empty() const pure nothrow {
+    bool empty() const pure nothrow
+    {
         return count == 0;
     }
 
-    bool isOver() const pure nothrow {
+    bool isOver() const pure nothrow
+    {
         return current_index >= count;
     }
 }
 
 @safe
-interface SynchronizationFactory {
+interface SynchronizationFactory
+{
     alias OnFailure = void delegate(const DART.Rims sector) @safe;
     alias OnComplete = void delegate(string) @safe;
     alias SyncSectorResponse = Tuple!(uint, ResponseHandler);
     pragma(msg, "SyncSectorResponse :", SyncSectorResponse);
     bool canSynchronize();
     SyncSectorResponse syncSector(
-            const DART.Rims sector,
-            const OnComplete oncomplete,
-            const OnFailure onfailure);
+        const DART.Rims sector,
+        const OnComplete oncomplete,
+        const OnFailure onfailure);
 }
 
 alias ConnectionPoolT = ConnectionPool!(shared p2plib.StreamI, ulong);
 @safe
-class P2pSynchronizationFactory : SynchronizationFactory {
+class P2pSynchronizationFactory : SynchronizationFactory
+{
     import tagion.dart.DARTOptions;
     import tagion.basic.Basic : tempfile;
 
-    protected {
+    protected
+    {
         DART dart;
         shared ConnectionPoolT connection_pool;
         shared p2plib.NodeI node;
@@ -251,11 +292,12 @@ class P2pSynchronizationFactory : SynchronizationFactory {
     immutable(Pubkey) pkey;
 
     this(DART dart,
-            const ulong port,
-            shared p2plib.NodeI node,
-            shared ConnectionPoolT connection_pool,
-            immutable(DARTOptions) dart_opts,
-            immutable(Pubkey) pkey) {
+        const ulong port,
+        shared p2plib.NodeI node,
+        shared ConnectionPoolT connection_pool,
+        immutable(DARTOptions) dart_opts,
+        immutable(Pubkey) pkey)
+    {
         this.dart = dart;
         this.rnd = Random(unpredictableSeed);
         this.node = node;
@@ -265,49 +307,60 @@ class P2pSynchronizationFactory : SynchronizationFactory {
         this.pkey = pkey;
     }
 
-//    protected NodeAddress[Pubkey] node_address;
-    void setNodeTable(const(NodeAddress[Pubkey]) node_address) {
-//        this.node_address = node_address;
+    //    protected NodeAddress[Pubkey] node_address;
+    void setNodeTable(const(NodeAddress[Pubkey]) node_address)
+    {
+        //        this.node_address = node_address;
     }
 
-    bool canSynchronize() {
+    bool canSynchronize()
+    {
         return addressbook.isReady; //node_address !is null && node_address.length > 0;
     }
 
     SyncSectorResponse syncSector(
-            const DART.Rims sector,
-            const OnComplete oncomplete,
-            const OnFailure onfailure) {
-        SyncSectorResponse syncWith(ref const(NodeAddress) node_address) @safe {
+        const DART.Rims sector,
+        const OnComplete oncomplete,
+        const OnFailure onfailure)
+    {
+        SyncSectorResponse syncWith(ref const(NodeAddress) node_address) @safe
+        {
             import p2p.go_helper;
 
-            ulong connect() @safe {
-                if (node_address.address in synchronizing) {
+            ulong connect() @safe
+            {
+                if (node_address.address in synchronizing)
+                {
                     return synchronizing[node_address.address];
                 }
-                auto stream = node.connect(node_address.address, node_address.is_marshal, [dart_opts.sync.protocol_id]);
+                auto stream = node.connect(node_address.address, node_address.is_marshal, [
+                        dart_opts.sync.protocol_id
+                    ]);
                 connection_pool.add(stream.identifier, stream, true);
                 stream.listen(&StdHandlerCallback,
-                        dart_opts.sync.task_name, dart_opts.sync.host.timeout.msecs, dart_opts.sync.host.max_size);
+                    dart_opts.sync.task_name, dart_opts.sync.host.timeout.msecs, dart_opts
+                        .sync.host.max_size);
                 synchronizing[node_address.address] = stream.identifier;
                 return stream.identifier;
             }
 
-            try {
+            try
+            {
                 const stream_id = connect;
                 auto filename = format("%s_%s", tempfile, sector);
                 pragma(msg, "fixme(alex): Why 0x80");
-                enum BLOCK_SIZE = 0x80;
                 BlockFile.create(filename, DART.stringof, BLOCK_SIZE);
                 auto sync = new P2pSynchronizer(filename, stream_id, oncomplete, onfailure);
                 auto db_sync = dart.synchronizer(sync, sector);
                 (() @trusted { db_sync.call; })();
                 return SyncSectorResponse(db_sync.id, sync);
             }
-            catch (GoException e) {
+            catch (GoException e)
+            {
                 log("Error, connection failed with code: %s", e.Code); //TODO: add address to blacklist
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 log("Error: %s", e);
             }
             return SyncSectorResponse(0, null);
@@ -315,25 +368,20 @@ class P2pSynchronizationFactory : SynchronizationFactory {
 
         pragma(msg, "fixme(alex): Why 20?");
         int iteration = 20;
-        while(iteration > 0) {
+        while (iteration > 0)
+        {
             iteration++;
-/+
+            /+
             import std.range : dropExactly;
             const random_key_index = uniform(0, node_address.length, rnd);
             const node_addr = node_address.byKeyValue.dropExactly(random_key_index).front;
 +/
             const node_addr = addressbook.random;
-            if (node_addr.value.sector.inRange(sector)) {
+            if (node_addr.value.sector.inRange(sector))
+            {
                 const node_port = node_addr.value.port;
                 if (node_addr.key == pkey)
                     continue;
-                if (dart_opts.master_from_port) {
-                    enum isSlave = (ulong port) => port < dart_opts.sync.maxSlavePort;
-                    if (isSlave(own_port) && isSlave(node_port))
-                        continue; //ignore slave nodes
-                    if (!isSlave(own_port) && !isSlave(node_port))
-                        continue; //ignore master nodes
-                }
                 auto response = syncWith(node_addr.value);
                 if (response[1] is null)
                     continue;
@@ -345,24 +393,28 @@ class P2pSynchronizationFactory : SynchronizationFactory {
     }
 
     @safe
-    class P2pSynchronizer : DART.StdSynchronizer, ResponseHandler {
+    class P2pSynchronizer : DART.StdSynchronizer, ResponseHandler
+    {
         protected const ulong key;
         protected Buffer response;
         protected const OnComplete oncomplete;
         protected const OnFailure onfailure;
         string filename;
-        void setResponse(Buffer resp) @trusted {
+        void setResponse(Buffer resp) @trusted
+        {
             response = resp;
             fiber.call;
         }
 
-        bool alive() @trusted {
+        bool alive() @trusted
+        {
             import core.thread : Fiber;
 
             return fiber.state != Fiber.State.TERM && connection_pool.contains(key);
         }
 
-        this(string journal_filename, const ulong key, const OnComplete oncomplete, const OnFailure onfailure) {
+        this(string journal_filename, const ulong key, const OnComplete oncomplete, const OnFailure onfailure)
+        {
             filename = journal_filename;
             this.key = key;
             this.oncomplete = oncomplete;
@@ -370,13 +422,17 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             super(journal_filename);
         }
 
-        const(HiRPCReceiver) query(ref const(HiRPCSender) request) {
-            scope (failure) {
+        const(HiRPCReceiver) query(ref const(HiRPCSender) request)
+        {
+            scope (failure)
+            {
                 close();
             }
-            void send_request_to_forien_dart(const Document doc) @trusted {
+            void send_request_to_forien_dart(const Document doc) @trusted
+            {
                 const sended = connection_pool.send(key, doc.serialize);
-                if (!sended) {
+                if (!sended)
+                {
                     log("P2pSynchronizer: connection closed");
                     close();
                 }
@@ -385,10 +441,12 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             const foreign_doc = request.toDoc;
             import p2p.go_helper;
 
-            try {
+            try
+            {
                 send_request_to_forien_dart(foreign_doc);
             }
-            catch (GoException e) {
+            catch (GoException e)
+            {
                 log("P2pSynchronizer: Exception on sending request: %s", e);
                 close();
             }
@@ -399,17 +457,22 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             return received;
         }
 
-        void close() @trusted {
-            scope (exit) {
+        void close() @trusted
+        {
+            scope (exit)
+            {
                 finish;
             }
-            if (alive) {
+            if (alive)
+            {
                 log("P2pSynchronizer: close alive. Sector: %d", fiber.root_rims.sector);
                 onfailure(fiber.root_rims);
                 fiber.reset();
             }
-            else {
-                log("P2pSynchronizer: Synchronization Completed! Sector: %d", fiber.root_rims.sector);
+            else
+            {
+                log("P2pSynchronizer: Synchronization Completed! Sector: %d", fiber
+                        .root_rims.sector);
                 oncomplete(filename);
             }
             // connection_pool.close(key); //TODO: if one connnection used for one synchronization
@@ -418,24 +481,30 @@ class P2pSynchronizationFactory : SynchronizationFactory {
 }
 
 pragma(msg, "fixme(cbr): Why is the unittest uncommented (P2pSynchronizationFactory has no unittest)");
-version (none) unittest {
+version (none) unittest
+{
     import tagion.services.Options;
-    import p2p.node :RequestStream, Node;
+    import p2p.node : RequestStream, Node;
+
     @trusted
     synchronized
-    class FakeRequestStream : RequestStream {
+    class FakeRequestStream : RequestStream
+    {
         public static ulong id = 1;
-        this() {
+        this()
+        {
             super(null, id);
         }
 
         private uint write_counter = 0;
         private bool throwException = false;
-        override void writeBytes(Buffer data) {
+        override void writeBytes(Buffer data)
+        {
             import core.atomic;
 
             atomicOp!"+="(this.write_counter, 1);
-            if (throwException) {
+            if (throwException)
+            {
                 import p2p.go_helper;
 
                 throw new GoException(ErrorCode.InternalError);
@@ -443,33 +512,39 @@ version (none) unittest {
         }
 
         override void listen(HandlerCallback handler, string tid,
-                Duration timeout, int maxSize) {
+            Duration timeout, int maxSize)
+        {
 
         }
 
-        ~this() {
+        ~this()
+        {
             disposed = true;
         }
     }
 
     @trusted
     synchronized
-    class FakeNode : Node {
-        this() {
+    class FakeNode : Node
+    {
+        this()
+        {
             fake_stream = new shared FakeRequestStream();
             super();
         }
 
         private uint connect_counter = 0;
         private FakeRequestStream fake_stream;
-        override shared(p2plib.RequestStreamI) connect(string addr, string[] pids...) {
+        override shared(p2plib.RequestStreamI) connect(string addr, string[] pids...)
+        {
             import core.atomic;
 
             atomicOp!"+="(this.connect_counter, 1);
             return fake_stream;
         }
 
-        ~this() {
+        ~this()
+        {
             disposed = true;
             destroy(fake_stream);
         }
@@ -482,7 +557,6 @@ version (none) unittest {
     Options opts;
     setDefaultOption(opts);
     dart_opts.sync.host.timeout = 50;
-    dart_opts.sync.master_angle_from_port = false;
 
     NodeAddress[string] address_table;
     auto addr1 = NodeAddress();
@@ -494,14 +568,17 @@ version (none) unittest {
     DART.create_dart(filename);
     auto dart = new DART(net, filename, 0, 5); // 5 P2p Synchronizers
 
-    template controlFuncs() {
+    template controlFuncs()
+    {
         bool completedCalled = false;
-        void oncomplete(string journal) {
+        void oncomplete(string journal)
+        {
             completedCalled = true;
         }
 
         bool failedCalled = false;
-        void onfailed(Buffer sector) {
+        void onfailed(Buffer sector)
+        {
             failedCalled = true;
         }
     }
@@ -549,10 +626,12 @@ version (none) unittest {
     fast_load - load full dart
 +/
 @safe
-class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)) : Fiber { //TODO: move fiber inside as a field
+class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)) : Fiber
+{ //TODO: move fiber inside as a field
     enum root = DART.Rims.root;
     bool fast_load;
-    enum State {
+    enum State
+    {
         READY,
         FIBER_RUNNING,
         RUNNING,
@@ -562,26 +641,33 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     }
 
     mixin StateT!State;
-    State sync_state() @nogc const pure nothrow {
+    State sync_state() @nogc const pure nothrow
+    {
         return _state;
     }
 
-    bool isReady() nothrow {
+    bool isReady() nothrow
+    {
         return checkState(State.READY);
     }
 
-    bool isOver() nothrow {
+    bool isOver() nothrow
+    {
         return checkState(State.OVER);
     }
 
-    bool isError() nothrow {
+    bool isError() nothrow
+    {
         return checkState(State.ERROR);
     }
 
-    void stop() @trusted {
-        if (!checkState(State.STOP)) {
+    void stop() @trusted
+    {
+        if (!checkState(State.STOP))
+        {
             log("Stop dart sync pool");
-            if (handlerTid != Tid.init) {
+            if (handlerTid != Tid.init)
+            {
                 send(handlerTid, Control.STOP);
                 const control = receiveOnly!Control;
                 assert(control == Control.END);
@@ -601,10 +687,12 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     protected bool[DART.Rims] sync_sectors;
     protected DART.Rims[] failed_sync_sectors;
     HiRPC hirpc;
-    this(DART.SectorRange sectors, ReplayPool!string journal_replay, immutable(DARTOptions) dart_opts) @trusted {
+    this(DART.SectorRange sectors, ReplayPool!string journal_replay, immutable(DARTOptions) dart_opts) @trusted
+    {
         this.fast_load = dart_opts.fast_load;
         // writefln("Fast load: %s", fast_load);
-        if (fast_load) {
+        if (fast_load)
+        {
             assert(fast_load && sectors.isFullRange, "Fast load will load full dart");
         }
         hirpc = HiRPC();
@@ -612,67 +700,86 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
         this.journal_replay = journal_replay;
         this.dart_opts = dart_opts;
         this.handlerPool = new THandlerPool(dart_opts.sync.host.timeout.msecs);
-        if (!fast_load) {
-            foreach (i; sectors) {
+        if (!fast_load)
+        {
+            foreach (i; sectors)
+            {
                 sync_sectors[DART.Rims(i)] = false;
             }
         }
-        else {
+        else
+        {
             sync_sectors[root] = false;
         }
         super(&run);
     }
 
-    protected void run() {
+    protected void run()
+    {
         import std.algorithm : filter, reduce;
         import std.array : array;
 
-        if (fast_load) {
+        if (fast_load)
+        {
             auto result = sync_factory.syncSector(DART.Rims.root, &onComplete, &onFailure);
-            if (result[1] is null) {
+            if (result[1] is null)
+            {
                 onFailure(root); //TODO: or just ignore?
             }
-            else {
+            else
+            {
                 handlerPool.add(result[0], result[1], true);
                 sync_sectors[root] = true;
             }
         }
-        else {
-            foreach (sector, is_synchronized; sync_sectors) {
+        else
+        {
+            foreach (sector, is_synchronized; sync_sectors)
+            {
                 if (is_synchronized)
                     continue;
                 auto result = sync_factory.syncSector(sector, &onComplete, &onFailure);
-                if (result[1] is null) {
+                if (result[1] is null)
+                {
                     onFailure(sector); //TODO: or just ignore?
                 }
-                else {
+                else
+                {
                     sync_sectors[sector] = true;
                     handlerPool.add(result[0], result[1], true);
                 }
                 (() @trusted { yield(); })();
             }
         }
-        if (failed_sync_sectors.length > 0) {
+        if (failed_sync_sectors.length > 0)
+        {
             log.error("DART Sync sectors greater than 0 value is %d", failed_sync_sectors.length);
             _state = State.ERROR;
         }
-        else {
+        else
+        {
             _state = State.RUNNING;
         }
     }
 
     void start(SynchronizationFactory factory) //restart with new factory
-    in {
+    in
+    {
         assert(checkState(State.STOP, State.READY, State.ERROR));
     }
-    do {
+    do
+    {
         this.sync_factory = factory;
-        if (factory.canSynchronize) {
-            if (state == Fiber.State.TERM) {
+        if (factory.canSynchronize)
+        {
+            if (state == Fiber.State.TERM)
+            {
                 (() @trusted { reset(); })();
             }
-            if (checkState(State.ERROR) && failed_sync_sectors.length > 0) {
-                foreach (sector; failed_sync_sectors) {
+            if (checkState(State.ERROR) && failed_sync_sectors.length > 0)
+            {
+                foreach (sector; failed_sync_sectors)
+                {
                     sync_sectors[sector] = false;
                 }
                 failed_sync_sectors = [];
@@ -683,10 +790,12 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     }
 
     void setResponse(Response!(ControlCode.Control_RequestHandled) resp)
-    in {
+    in
+    {
         assert(checkState(State.RUNNING, State.FIBER_RUNNING, State.ERROR));
     }
-    do {
+    do
+    {
         auto doc = Document(resp.data);
         import tagion.hibon.HiBONJSON;
 
@@ -695,32 +804,42 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
         handlerPool.setResponse(response);
     }
 
-    private void onComplete(string journal_filename) {
+    private void onComplete(string journal_filename)
+    {
         journal_replay.insert(journal_filename);
     }
 
-    private void onFailure(const DART.Rims sector) {
-        if (checkState(State.FIBER_RUNNING)) {
+    private void onFailure(const DART.Rims sector)
+    {
+        if (checkState(State.FIBER_RUNNING))
+        {
             failed_sync_sectors ~= sector;
         }
-        else {
+        else
+        {
             sync_sectors[sector] = false;
             log.error("Sync on RIM %s fiber-service not running", sector);
             _state = State.ERROR;
         }
     }
 
-    void tick() {
-        if (checkState(State.RUNNING, State.FIBER_RUNNING, State.ERROR)) {
+    void tick()
+    {
+        if (checkState(State.RUNNING, State.FIBER_RUNNING, State.ERROR))
+        {
             handlerPool.tick;
         }
-        if (checkState(State.FIBER_RUNNING)) {
-            if (handlerPool.size <= dart_opts.sync.max_handlers || dart_opts.sync.max_handlers == 0) {
+        if (checkState(State.FIBER_RUNNING))
+        {
+            if (handlerPool.size <= dart_opts.sync.max_handlers || dart_opts.sync.max_handlers == 0)
+            {
                 (() @trusted { call; })();
             }
         }
-        if (checkState(State.RUNNING)) {
-            if (handlerPool.empty) {
+        if (checkState(State.RUNNING))
+        {
+            if (handlerPool.empty)
+            {
                 _state = State.OVER;
             }
         }
@@ -728,44 +847,55 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
 }
 
 @safe
-unittest {
+unittest
+{
     import std.algorithm : count;
+
     log.push(LoggerType.ALL);
 
     @safe
-    static class FakeResponseHandler : ResponseHandler {
-        void setResponse(Buffer response) {
+    static class FakeResponseHandler : ResponseHandler
+    {
+        void setResponse(Buffer response)
+        {
         }
 
-        bool alive() {
+        bool alive()
+        {
             return true;
         }
 
-        void close() {
+        void close()
+        {
         }
     }
 
     @safe
-    static class FakeSynchronizationFactory : SynchronizationFactory {
+    static class FakeSynchronizationFactory : SynchronizationFactory
+    {
         private bool _canSynchronize = true;
-        bool canSynchronize() {
+        bool canSynchronize()
+        {
             return _canSynchronize;
         }
 
         private SyncSectorResponse mockReturn;
         private uint sync_counter = 0;
         SyncSectorResponse syncSector(
-                const DART.Rims sector,
-                OnComplete oncomplete,
-                OnFailure onfailure) {
+            const DART.Rims sector,
+            OnComplete oncomplete,
+            OnFailure onfailure)
+        {
             sync_counter++;
             return mockReturn;
         }
     }
 
     @safe
-    static class FakeHandlerPool(TValue : ResponseHandler, TKey) : StdHandlerPool!(TValue, TKey) {
-        this(const Duration timeout) {
+    static class FakeHandlerPool(TValue : ResponseHandler, TKey) : StdHandlerPool!(TValue, TKey)
+    {
+        this(const Duration timeout)
+        {
             super(timeout);
         }
 
@@ -773,20 +903,25 @@ unittest {
         static bool set_expired = false;
         static bool is_empty = false;
 
-        override void add(const TKey key, ref TValue value, bool long_lived = false) {
+        override void add(const TKey key, ref TValue value, bool long_lived = false)
+        {
             keys ~= key;
             super.add(key, value, long_lived);
         }
 
-        override void tick() {
-            if (set_expired) {
-                foreach (key, activeHandler; handlers) {
+        override void tick()
+        {
+            if (set_expired)
+            {
+                foreach (key, activeHandler; handlers)
+                {
                     remove(key);
                 }
             }
         }
 
-        override bool empty() {
+        override bool empty()
+        {
             return is_empty;
         }
     }
@@ -794,8 +929,8 @@ unittest {
     DARTOptions dart_opts;
     //    setDefaultOption(opts);
     dart_opts.sync.host.timeout = 50;
-    dart_opts.sync.master_angle_from_port = false;
-    void emptyFunc(string jf) {
+    void emptyFunc(string jf)
+    {
         return;
     }
 
@@ -804,12 +939,13 @@ unittest {
 
     { //DARTSynchronizationPool: reconect on synchronizer failed after fiber finish
         auto pool = new DARTSynchronizationPool!(FakeHandlerPool!(ResponseHandler, uint))(
-                DART.SectorRange(0, 5), journal_replay, dart_opts);
+            DART.SectorRange(0, 5), journal_replay, dart_opts);
         auto sync_factory = new FakeSynchronizationFactory();
         sync_factory.mockReturn = tuple(1, new FakeResponseHandler());
         pool.start(sync_factory);
         auto iterations = 0;
-        do {
+        do
+        {
             iterations++;
             pool.tick;
         }
@@ -829,14 +965,16 @@ unittest {
 
     { //DARTSynchronizationPool: reconect on synchronizer failed before fiber finish
         auto pool = new DARTSynchronizationPool!(
-                FakeHandlerPool!(ResponseHandler, uint))(DART.SectorRange(0, 5), journal_replay, dart_opts);
+            FakeHandlerPool!(ResponseHandler, uint))(DART.SectorRange(0, 5), journal_replay, dart_opts);
         auto sync_factory = new FakeSynchronizationFactory();
         sync_factory.mockReturn = tuple(1, new FakeResponseHandler());
         pool.start(sync_factory);
         auto iterations = 0;
-        do {
+        do
+        {
             iterations++;
-            if (iterations == 2) {
+            if (iterations == 2)
+            {
                 pool.onFailure(DART.Rims(0));
             }
             pool.tick;
@@ -855,12 +993,13 @@ unittest {
 
     { //DARTSynchronizationPool: synchronization over
         auto pool = new DARTSynchronizationPool!(FakeHandlerPool!(ResponseHandler, uint))(
-                DART.SectorRange(0, 5), journal_replay, dart_opts);
+            DART.SectorRange(0, 5), journal_replay, dart_opts);
         auto sync_factory = new FakeSynchronizationFactory();
         sync_factory.mockReturn = tuple(1, new FakeResponseHandler());
         pool.start(sync_factory);
         auto iterations = 0;
-        do {
+        do
+        {
             iterations++;
             pool.tick;
         }

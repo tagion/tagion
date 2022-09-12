@@ -18,8 +18,10 @@ import tagion.utils.JSONCommon;
 /++
 +/
 @safe
-class OptionException : TagionException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
+class OptionException : TagionException
+{
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
+    {
         super(msg, file, line);
     }
 }
@@ -27,7 +29,8 @@ class OptionException : TagionException {
 alias check = Check!OptionException;
 // @safe
 
-enum NetworkMode {
+enum NetworkMode
+{
     internal,
     local,
     pub
@@ -36,7 +39,8 @@ enum NetworkMode {
 /++
  Options for the network
 +/
-struct Options {
+struct Options
+{
     import tagion.options.HostOptions;
 
     HostOptions host;
@@ -47,14 +51,12 @@ struct Options {
 
     uint delay; /// Delay between heart-beats in ms (Test mode)
     uint timeout; /// Timeout for between nodes
-    uint loops; /// Number of heart-beats until the program stops (Test mode)
 
     bool infinity; /// Runs forever
     uint node_id; /// This is use to set the node_id in emulator mode in normal node this is allways 0
 
     bool trace_gossip; /// Enable the package dump for the transeived packagies
     string tmp; /// Directory for the trace files etc.
-    string stdout; /// Overwrites the standard output
 
     //bool sequential;       /// Sequential test mode, used to replace the same graph from a the seed value
 
@@ -68,7 +70,7 @@ struct Options {
     string path_to_shared_info;
     bool p2plogs;
     uint scrap_depth;
-    int epoch_limit; /// If epoch_limit > 0 the round until it has produced epoch_limit
+    uint epoch_limit; /// The round until it has produced epoch_limit
     NetworkMode net_mode;
     import tagion.options.CommonOptions;
 
@@ -76,7 +78,8 @@ struct Options {
 
     mixin JSONCommon;
 
-    struct HostBootstrap {
+    struct HostBootstrap
+    {
         bool enabled;
         ulong check_timeout;
         string bootstrapNodes;
@@ -86,7 +89,8 @@ struct Options {
 
     HostBootstrap hostbootrap;
 
-    struct ServerFileDiscovery {
+    struct ServerFileDiscovery
+    {
         string url;
         ulong delay_before_start;
         ulong update;
@@ -99,7 +103,8 @@ struct Options {
 
     ServerFileDiscovery serverFileDiscovery;
 
-    struct Discovery {
+    struct Discovery
+    {
         string protocol_id;
         string task_name;
         HostOptions host;
@@ -111,7 +116,8 @@ struct Options {
 
     Discovery discovery;
 
-    struct Heatbeat {
+    struct Heatbeat
+    {
         string task_name; /// Name of the Heart task
         mixin JSONCommon;
     }
@@ -120,24 +126,22 @@ struct Options {
 
     //SSLService scripting_engine;
 
-    struct Transcript {
-        string task_name; /// Name of the transcript service
-        // This maybe removed later used to make internal transaction test without TLS connection
-        // bool enable;
-
-        uint pause_from; // Sets the from/to delay between transaction test
-        uint pause_to;
-        string prefix;
-
-        bool epoch_debug;
+    /** \struct TranscriptOptions
+     * Options for Transcript service
+     */
+    struct TranscriptOptions
+    {
+        /** Name of the transcript service */
+        string task_name;
+     
         mixin JSONCommon;
     }
-
-    import tagion.script.TranscriptOptions;
+    
 
     TranscriptOptions transcript;
 
-    struct Monitor {
+    struct Monitor
+    {
         string task_name; /// Use for the montor task name
         string prefix;
         uint max; /++ Maximum number of monitor sockets open
@@ -160,11 +164,10 @@ struct Options {
 
     // ContactCollector collector;
 
-    import tagion.script.TranscriptOptions;
-
     Monitor monitor;
 
-    struct Transaction {
+    struct Transaction
+    {
         string protocol_id;
         string task_name; /// Transaction task name
         string net_task_name;
@@ -180,14 +183,16 @@ struct Options {
 
     Transaction transaction;
 
-    struct ContractCollector {
+    struct ContractCollector
+    {
         string task_name; /// Transaction task name
         mixin JSONCommon;
     }
 
     ContractCollector collector;
 
-    struct LogSubscription {
+    struct LogSubscription
+    {
         string protocol_id;
         string task_name; /// Transaction task name
         string net_task_name;
@@ -207,7 +212,8 @@ struct Options {
 
     DARTOptions dart;
 
-    struct Logger {
+    struct Logger
+    {
         string task_name; /// Name of the logger task
         string file_name; /// File used for the logger
         bool flush; /// Will automatic flush the logger file when a message has been received
@@ -218,14 +224,16 @@ struct Options {
 
     Logger logger;
 
-    struct LoggerSubscription {
+    struct LoggerSubscription
+    {
         bool enable; // Enable logger subscribtion  service
         mixin JSONCommon;
     }
 
     LoggerSubscription sub_logger;
 
-    struct Recorder {
+    struct Recorder
+    {
         string task_name; /// Name of the recorder task
         string folder_path; /// Folder used for the recorder service files
         mixin JSONCommon;
@@ -233,7 +241,8 @@ struct Options {
 
     Recorder recorder;
 
-    struct Message {
+    struct Message
+    {
         string language; /// Language used to print message
         bool update; /// Update the translation tabel
         enum default_lang = "en";
@@ -248,7 +257,8 @@ struct Options {
 protected static Options options_memory;
 static immutable(Options*) options;
 
-shared static this() {
+shared static this()
+{
     options = cast(immutable)(&options_memory);
 }
 
@@ -257,7 +267,8 @@ shared static this() {
 +  Sets the thread global options opt
 +/
 @safe
-static void setOptions(ref const(Options) opt) {
+static void setOptions(ref const(Options) opt)
+{
     options_memory = opt;
 }
 
@@ -265,12 +276,14 @@ static void setOptions(ref const(Options) opt) {
 + Returns:
 +     a copy of the options
 +/
-static Options getOptions() {
+static Options getOptions()
+{
     Options result = options_memory;
     return result;
 }
 
-struct TransactionMiddlewareOptions {
+struct TransactionMiddlewareOptions
+{
     // port for the socket
     ushort port;
     // address for the socket
@@ -286,22 +299,27 @@ struct TransactionMiddlewareOptions {
 
     mixin JSONCommon;
 
-    void parseJSON(string json_text) {
+    void parseJSON(string json_text)
+    {
         auto json = JSON.parseJSON(json_text);
         parse(json);
     }
 
-    void load(string config_file) {
-        if (config_file.exists) {
+    void load(string config_file)
+    {
+        if (config_file.exists)
+        {
             auto json_text = readText(config_file);
             parseJSON(json_text);
         }
-        else {
+        else
+        {
             save(config_file);
         }
     }
 
-    void save(string config_file) {
+    void save(string config_file)
+    {
         config_file.write(stringify);
     }
 
@@ -313,7 +331,8 @@ static ref auto all_getopt(
     ref string[] args,
     ref bool version_switch,
     ref bool overwrite_switch,
-    ref scope Options options) {
+    ref scope Options options)
+{
     import std.getopt;
     import std.algorithm;
     import std.conv;
@@ -329,17 +348,11 @@ static ref auto all_getopt(
         "port", "Host gossip port ", &(options.port),
         "pid", format("Write the pid to %s file", options.pid_file), &(options.pid_file),
 //      "path|I",    "Sets the search path", &(options.path_arg),
-        "trace-gossip|g",    "Sets the search path",     &(options.trace_gossip),
         "nodes|N",   format("Sets the number of nodes: default %d", options.nodes), &(options.nodes),
-        "seed",      format("Sets the random seed: default %d", options.seed),       &(options.seed),
         "timeout|t", format("Sets timeout: default %d (ms)", options.timeout), &(options.timeout),
-        "delay|d",   format("Sets delay: default: %d (ms)", options.delay), &(options.delay),
-        "loops",     format("Sets the loop count (loops=0 runs forever): default %d", options.loops), &(options.loops),
-        "url",       format("Sets the url: default %s", options.common.url), &(options.common.url),
-        "sockets|M", format("Sets maximum number of monitors opened: default %s", options.monitor.max), &(options.monitor.max),
+        "monitors|M", format("Sets maximum number of monitors opened: default %s", options.monitor.max), &(options.monitor.max),
         "tmp",       format("Sets temporaty work directory: default '%s'", options.tmp), &(options.tmp),
-        "monitor|P", format("Sets first monitor port of the port sequency (port>=%d): default %d", options.min_port, options.monitor.port),  &(options.monitor.port),
-        "stdout",    format("Set the stdout: default %s", options.stdout), &(options.stdout),
+        "monitor|P", format("Sets first monitor port of the port sequency: default %d", options.monitor.port),  &(options.monitor.port),
 
         "transaction-ip",  format("Sets the listener transaction ip address: default %s", options.transaction.service.address), &(options.transaction.service.address),
         "transaction-port|p", format("Sets the listener transcation port: default %d", options.transaction.service.port), &(options.transaction.service.port),
@@ -353,81 +366,73 @@ static ref auto all_getopt(
         //   "transaction-log",  format("Scripting engine log filename: default: %s", options.transaction.service.name), &(options.transaction.service.name),
 
 
-        "transcript-from", format("Transcript test from delay: default: %d", options.transcript.pause_from), &(options.transcript.pause_from),
-        "transcript-to", format("Transcript test to delay: default: %d", options.transcript.pause_to), &(options.transcript.pause_to),
         "transcript-log",  format("Transcript log filename: default: %s", options.transcript.task_name), &(options.transcript.task_name),
-        "transcript-debug|e", format("Transcript epoch debug: default: %s", options.transcript.epoch_debug), &(options.transcript.epoch_debug),
         "dart-filename", format("DART file name. Default: %s", options.dart.path), &(options.dart.path),
         "dart-synchronize", "Need synchronization", &(options.dart.synchronize),
-        "dart-angle-from-port", "Set dart from/to angle based on port", &(options.dart.angle_from_port),
-        "dart-master-angle-from-port", "Master angle based on port ", &(options.dart.sync.master_angle_from_port),
 
         "dart-init", "Initialize block file", &(options.dart.initialize),
-        "dart-generate", "Generate dart with random data", &(options.dart.generate),
-        "dart-from", "DART from angle", &(options.dart.from_ang),
-        "dart-to", "DART to angle", &(options.dart.to_ang),
-        "dart-request", "Request dart data", &(options.dart.request),
         "dart-path", "Path to dart file", &(options.dart.path),
         "logger-filename" , format("Logger file name: default: %s", options.logger.file_name), &(options.logger.file_name),
-        "logger-mask|l" , format("Logger mask: default: %d", options.logger.mask), &(options.logger.mask),
         "logsub|L" , format("Logger subscription service enabled: default: %d", options.sub_logger.enable), &(options.sub_logger.enable),
         "net-mode", format("Network mode: one of [%s]: default: %s", [EnumMembers!NetworkMode].map!(t=>t.to!string).join(", "), options.net_mode), &(options.net_mode),
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
-        "server-token", format("Token to access shared server"), &(options.serverFileDiscovery.token),
-        "server-tag", format("Group tag(should be the same as in token payload)"), &(options.serverFileDiscovery.tag),
         "boot", format("Shared boot file: default: %s", options.path_to_shared_info), &(options.path_to_shared_info),
 //        "help!h", "Display the help text",    &help_switch,
         // dfmt on
 
-
+    
 
     );
 }
 
-static setDefaultOption(ref Options options) {
+static setDefaultOption(ref Options options)
+{
     // Main
 
-    with (options) {
+    with (options)
+    {
         ip = "0.0.0.0";
         port = 4001;
         port_base = 4000;
         scrap_depth = 5;
         logext = "log";
-        seed = 42;
-        delay = 200;
-        timeout = delay * 4;
+        timeout = 800;
+        epoch_limit = uint.max;
+
         nodes = 4;
-        loops = 30;
         infinity = false;
         //port=10900;
         //disable_sockets=false;
         tmp = "/tmp/";
-        stdout = "/dev/tty";
         //  s.network_socket_port =11900;
         //        sequential=false;
         min_port = 6000;
         path_to_shared_info = "/tmp/boot.hibon";
         p2plogs = false;
-        with (host) {
+        with (host)
+        {
             timeout = 3000;
             max_size = 1024 * 100;
         }
-        with (common) {
+        with (common)
+        {
             nodeprefix = "Node";
             separator = "_";
-            url = "127.0.0.1";
         }
     }
 
-    with (options.heartbeat) {
+    with (options.heartbeat)
+    {
         task_name = "heartbeat";
     }
-    with (options.hostbootrap) {
+    with (options.hostbootrap)
+    {
         enabled = false;
         check_timeout = 1000;
         bootstrapNodes = "";
     }
-    with (options.serverFileDiscovery) {
+    with (options.serverFileDiscovery)
+    {
         url = "";
         delay_before_start = 60_000;
         update = 20_000;
@@ -436,20 +441,21 @@ static setDefaultOption(ref Options options) {
         task_name = "server_file_discovery";
     }
     // Transcript
-    with (options.transcript) {
-        pause_from = 333;
-        pause_to = 888;
+    with (options.transcript)
+    {
         task_name = "transcript";
     }
     // Transaction
-    with (options.transaction) {
+    with (options.transaction)
+    {
         //        port=10800;
         max = 0;
         prefix = "transaction";
         task_name = prefix;
         net_task_name = "transaction_net";
         timeout = 250;
-        with (service) {
+        with (service)
+        {
             prefix = "transervice";
             task_name = prefix;
             response_task_name = "respose";
@@ -465,7 +471,8 @@ static setDefaultOption(ref Options options) {
             //            max_number_of_fiber_reuse = 1000;
             //            min_number_of_fibers = 10;
             //            min_duration_for_accept_ms = 3000;
-            with (openssl) {
+            with (openssl)
+            {
                 certificate = "pem_files/domain.pem";
                 private_key = "pem_files/domain.key.pem";
                 days = 365;
@@ -473,23 +480,27 @@ static setDefaultOption(ref Options options) {
             }
             task_name = "transaction.service";
         }
-        with (host) {
+        with (host)
+        {
             timeout = 3000;
             max_size = 1024 * 100;
         }
     }
-    with (options.transaction) {
+    with (options.transaction)
+    {
         task_name = "collector";
     }
     // LogSubscription
-    with (options.logSubscription) {
+    with (options.logSubscription)
+    {
         //        port=10700;
         max = 0;
         prefix = "logsubscription";
         task_name = prefix;
         net_task_name = "logsubscription_net";
         timeout = 10000;
-        with (service) {
+        with (service)
+        {
             prefix = "logsubscriptionservice";
             task_name = prefix;
             response_task_name = "respose";
@@ -505,20 +516,23 @@ static setDefaultOption(ref Options options) {
             //            max_number_of_fiber_reuse = 1000;
             //            min_number_of_fibers = 10;
             //            min_duration_for_accept_ms = 3000;
-            with (openssl) {
+            with (openssl)
+            {
                 certificate = "pem_files/domain.pem";
                 private_key = "pem_files/domain.key.pem";
                 days = 365;
                 key_size = 4096;
             }
         }
-        with (host) {
+        with (host)
+        {
             timeout = 3000;
             max_size = 1024 * 100;
         }
     }
     // Monitor
-    with (options.monitor) {
+    with (options.monitor)
+    {
         port = 10900;
         max = 0;
         prefix = "monitor";
@@ -527,7 +541,8 @@ static setDefaultOption(ref Options options) {
         dataformat = FileExtension.json;
     }
     // Logger
-    with (options.logger) {
+    with (options.logger)
+    {
         task_name = "logger";
         file_name = "/tmp/tagion.log";
         flush = true;
@@ -535,90 +550,85 @@ static setDefaultOption(ref Options options) {
         mask = LoggerType.ALL;
     }
     // Recorder
-    with (options.recorder) {
+    with (options.recorder)
+    {
         task_name = "recorder";
         folder_path = "tmp/epoch_blocks/";
     }
     // Discovery
-    with (options.discovery) {
+    with (options.discovery)
+    {
         protocol_id = "tagion_dart_mdns_pid";
         task_name = "discovery";
         delay_before_start = 10_000;
         interval = 400;
         notify_enabled = false;
-        with (host) {
+        with (host)
+        {
             timeout = 3000;
             max_size = 1024 * 100;
         }
     }
 
     // DART
-    with (options.dart) {
+    with (options.dart)
+    {
         task_name = "tagion.dart";
         protocol_id = "tagion_dart_pid";
-        with (host) {
+        with (host)
+        {
             timeout = 3000;
             max_size = 1024 * 100;
         }
         name = "dart";
         prefix = "dart_";
         path = "";
-        from_ang = 0;
-        to_ang = 0;
-        ringWidth = 3;
-        rings = 3;
         initialize = true;
-        generate = false;
         synchronize = true;
-        request = false;
         fast_load = false;
-        angle_from_port = false;
         tick_timeout = 500;
-        master_from_port = true;
-        with (sync) {
-            maxMasters = 1;
-            maxSlaves = 4;
-            maxSlavePort = 4020;
-            netFromAng = 0;
-            netToAng = 0;
+        with (sync)
+        {
             tick_timeout = 50;
-            replay_tick_timeout = 5;
+            reply_tick_timeout = 5;
             protocol_id = "tagion_dart_sync_pid";
             task_name = "dart.sync";
 
-            attempts = 20;
-
-            master_angle_from_port = false;
-
             max_handlers = 20;
 
-            with (host) {
+            with (host)
+            {
                 timeout = 3_000;
                 max_size = 1024 * 100;
             }
         }
 
-        with (subs) {
+        with (subs)
+        {
             master_port = 4030;
             master_task_name = "tagion_dart_subs_master_tid";
             slave_task_name = "tagion_dart_subs_slave_tid";
             protocol_id = "tagion_dart_subs_pid";
             tick_timeout = 500;
-            with (host) {
+            with (host)
+            {
                 timeout = 3_000_000;
                 max_size = 1024 * 100;
             }
         }
 
-        with (commands) {
+        with (commands)
+        {
             read_timeout = 10_000;
         }
     }
     // if (options.net_mode.length == 0) {
     //     options.net_mode = NetworkMode.internal;
     // }
-    with (NetworkMode) {
-        final switch (options.net_mode) {
+    with (NetworkMode)
+    {
+        final switch (options.net_mode)
+        {
         case internal:
             options.dart.fast_load = true;
             options.dart.path = "./data/%dir%/dart".setExtension(FileExtension.dart);
@@ -632,7 +642,6 @@ static setDefaultOption(ref Options options) {
             options.dart.fast_load = true;
             options.dart.path = "./data/dart".setExtension(FileExtension.dart);
             options.hostbootrap.enabled = true;
-            options.dart.master_from_port = false;
             break;
         }
     }
