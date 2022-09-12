@@ -17,19 +17,58 @@ import tagion.behaviour.BehaviourException;
 import tagion.behaviour.BehaviourFeature : BehaviourProperties;
 
 enum feature_regex = regex([
-        `feature(?:\s+|\:)`, /// Feature
-        `scenario(?:\s+|\:)`, /// Scenario
-        r"\s*\*(\w+)\*", /// Action
-        //  r"\s*`(\w+)`", /// Name
+        `^\W*(feature)\W`, /// Feature
+        `^\W*(scenario)\W`, /// Scenario
+        r"^\W*(given|when|then|but)\W", /// Action
         r"`((?:\w+\.?)+)`", /// Name
     ], "i");
+
+
+unittest
+{
+    /// regex_given
+    {
+        const test="---given when xxx";
+	    auto match = test.matchFirst(feature_regex);
+        assert(match[1] == "given");
+        assert(match.whichPattern == Token.ACTION);
+    }
+    /// regex_when
+    {
+        const test="+++when rrrr when xxx";
+	    auto match = test.matchFirst(feature_regex);
+        assert(match[1] == "when");
+        assert(match.whichPattern == Token.ACTION);
+    }
+    /// regex_then
+    {
+        const test="+-+-then fff rrrr when xxx";
+	    auto match = test.matchFirst(feature_regex);
+        assert(match[1] == "then");
+        assert(match.whichPattern == Token.ACTION);
+    }
+    /// regex_feature
+    {
+        const test="****feature** fff rrrr when xxx";
+	    auto match = test.matchFirst(feature_regex);
+        assert(match[1] == "feature");
+        assert(match.whichPattern == Token.FEATURE);
+    }
+    /// regex_scenario
+    {
+        const test="----++scenario* ddd fff rrrr when xxx";
+	    auto match = test.matchFirst(feature_regex);
+        assert(match[1] == "scenario");
+        assert(match.whichPattern == Token.SCENARIO);
+    }
+}
 
 enum Token {
     NONE,
     FEATURE,
     SCENARIO,
     ACTION,
-    NAME, // MODULE,
+    NAME,
 }
 
 @safe
@@ -43,7 +82,7 @@ enum State {
     Start,
     Feature,
     Scenario,
-    Action, //    And_Action,
+    Action,
 }
 
 @trusted
@@ -57,7 +96,6 @@ FeatureGroup parser(string filename, out string[] errors) {
 @trusted
 FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
         if (isInputRange!R && isSomeString!(ElementType!R)) {
-    import std.stdio;
     import std.array;
     import std.algorithm.searching;
     import std.string;
@@ -69,9 +107,11 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
     Info!Feature info_feature;
     Info!Scenario info_scenario;
 
+    bool first_scenario;
     State state;
     bool got_feature;
     int current_action_index = -1;
+
     foreach (line_no, line; range.enumerate(1)) {
         void check_error(const bool flag, string msg) {
             if (!flag) {
@@ -80,6 +120,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
         }
 
         auto match = range.front.matchFirst(feature_regex);
+
         const Token token = cast(Token)(match.whichPattern);
         with (Token) {
         TokenSwitch:
@@ -91,13 +132,19 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                     info_feature.property.comments ~= comment;
                     break;
                 case State.Scenario:
-                    info_scenario.property.comments ~= comment;
+                    scenario_group.info = info_scenario;
+
+                    if(comment.length)
+                    {
+                        info_scenario.property.comments ~= comment;
+                    }
                     break;
                 case State.Action:
                     static foreach (index, Field; Fields!ScenarioGroup) {
                         static if (hasMember!(Field, "infos")) {
                             with (scenario_group.tupleof[index]) {
-                                if (current_action_index is index) {
+                                if (current_action_index is index) 
+                                {
                                     infos[$ - 1].property.comments ~= comment;
                                 }
                             }
@@ -146,8 +193,13 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                 check_error(0, format("No valid action has %s", match[1]));
                 break;
             case SCENARIO:
-                //current_action = CurrentAction.none;
                 check_error(got_feature, "Scenario without feature");
+                if (state != State.Feature)
+                {
+                    result.scenarios ~= scenario_group;
+                    info_scenario = Info!Scenario();
+                    scenario_group = ScenarioGroup();
+                }
                 current_action_index = -1;
                 info_scenario.property.description = match.post.idup;
                 state = State.Scenario;
@@ -157,7 +209,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                 const action_word = match[1].toLower;
                 alias ActionGroups = staticMap!(ActionGroup, BehaviourProperties);
                 pragma(msg, "ActionGroups ", ActionGroups);
-                static foreach (index, Field; Fields!ScenarioGroup) {
+                static foreach (int index, Field; Fields!ScenarioGroup) {
                     {
                         pragma(msg, "ActionGroups Field ", Field);
                         enum field_index = staticIndexOf!(Field, ActionGroups);
@@ -165,13 +217,15 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                             enum label = GetLabel!(scenario_group.tupleof[index]);
                             enum action_name = label.name;
                             static if (hasMember!(Field, "infos")) {
+                                
                                 if (action_word == action_name) {
                                     with (scenario_group.tupleof[index]) {
+
                                         check_error(current_action_index <= index,
                                                 format("Bad action order for action %s", action_word));
                                         current_action_index = index;
                                         pragma(msg, "label ", typeof(label));
-                                        infos.length++; // ~= typeof(Field.infos).init;
+                                        infos.length++;
                                         infos[$ - 1].property.description = match.post.idup;
                                     }
                                 }
