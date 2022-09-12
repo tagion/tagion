@@ -41,11 +41,23 @@ extern (C)
                         int rounds;
                 }
         }
+
+        struct wolf_aes_key_st
+        {
+                ubyte[296] data;
+        }
 }
 
 extern (C)
 {
-        alias AES_KEY = aes_key_st;
+        version(WOLFSSL)
+        {
+                alias AES_KEY = wolf_aes_key_st;
+        }
+        else
+        {
+                alias AES_KEY = aes_key_st;
+        }
 
         const(char)* AES_options();
 
@@ -92,4 +104,20 @@ extern (C)
         int AES_unwrap_key(AES_KEY* key, const ubyte* iv,
                 ubyte* output,
                 const ubyte* input, uint inlen);
+}
+
+AES_KEY* Aes_Key_Alloc(ref bool needFree, bool side)
+{
+        //version(unittest)
+        //{
+                static AES_KEY left_key, right_key;
+                needFree = false;
+                return side ? &left_key : &right_key; /*
+        }
+        else
+        {
+                needFree = true;
+                import core.stdc.stdlib;
+                return cast(AES_KEY*)malloc(AES_KEY.sizeof);
+        } //*/
 }

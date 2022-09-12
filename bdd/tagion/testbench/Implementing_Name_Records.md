@@ -22,4 +22,7 @@ Then the epoch should contain the completed contract for the name A.
 
 Scenario: Request the name record of for name A.
 
-Given the user request 
+Given the user sends requests of '#<name>'
+
+When network receives a
+
