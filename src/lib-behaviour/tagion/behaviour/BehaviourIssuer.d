@@ -34,9 +34,9 @@ struct MarkdownFMT {
 @safe
 static MarkdownFMT masterMarkdown = {
     indent: "  ",
-    name: "%2$s",
-    scenario: "%2$s: %3$s",
-    feature: "%2$s: %3$s",
+    name: "`%2$s`",
+    scenario: "### %2$s: %3$s",
+    feature: "## %2$s: %3$s",
     property: "%s*%s* %s",
     comments: "%-(%s\n%)",
 };
@@ -102,7 +102,8 @@ unittest { // Markdown scenario test
         //io.writefln("scenario_result.given.infos %s", scenario_result.given.infos);
         markdown.issue(scenario_result.given.infos[0], null, markdown.master.property);
         filename.setExtension("mdtest").fwrite(bout.toString);
-        assert(bout.toString == expected);
+		"/tmp/filename.txt".fwrite( filename.setExtension("mdtest"));
+		assert(bout.toString == expected);
     }
     {
         scope (exit) {
@@ -114,7 +115,8 @@ unittest { // Markdown scenario test
         markdown.issue(scenario_result);
         filename.setExtension("mdtest").fwrite(bout.toString);
         immutable expected = filename.freadText;
-        assert(bout.toString == expected);
+	"/tmp/filename_1.txt".fwrite( filename.setExtension("mdtest"));
+		assert(bout.toString == expected);
     }
 }
 
@@ -132,10 +134,11 @@ unittest {
             .unitfile
             .setExtension(FileExtension.markdown);
         markdown.issue(feature_group);
-        // filename.setExtension("mdtest").fwrite(bout.toString);
+        filename.setExtension("mdtest").fwrite(bout.toString);
 
         immutable expected = filename.freadText;
-        assert(bout.toString == expected);
+		"/tmp/filename_2.txt".fwrite( filename.setExtension("mdtest"));
+		assert(bout.toString == expected);
     }
 
 }
@@ -238,9 +241,14 @@ unittest {
             .setExtension(FileExtension.dsrc);
         dlang.issue(feature_group);
         immutable result = bout.toString;
-        //filename.setExtension("dtest").fwrite(result);
+        filename.setExtension("dtest").fwrite(result);
        // io.writefln("dtest =%s", filename.setExtension("dtest"));
-
+"/tmp/filename_d.d".fwrite( filename.setExtension("dtest"));
+filename.setExtension("dtest").fwrite(                 result
+                .splitLines
+                .map!(a => a.strip)
+                .filter!(a => a.length !is 0).join("\n"));
+ 
         immutable expected = filename.freadText;
         assert(equal(
                 result
