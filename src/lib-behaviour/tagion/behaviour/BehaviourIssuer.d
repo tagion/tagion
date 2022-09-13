@@ -47,11 +47,11 @@ struct MarkdownT(Stream) {
     //  enum property_fmt="%s*%s* %s"; //=function(string indent, string propery, string description);
     static MarkdownFMT master;
 
-    void issue(Descriptor)(const(Descriptor) descriptor, string indent, string fmt, 
-string comment_fmt=null) if (isDescriptor!Descriptor) {
+    void issue(Descriptor)(const(Descriptor) descriptor, string indent, string fmt,
+            string comment_fmt = null) if (isDescriptor!Descriptor) {
         bout.writefln(fmt, indent, Descriptor.stringof, descriptor.description);
         if (descriptor.comments) {
-            comment_fmt=(comment_fmt is null)?master.comments:comment_fmt;
+            comment_fmt = (comment_fmt is null) ? master.comments : comment_fmt;
             bout.writefln(comment_fmt, descriptor.comments);
         }
     }
@@ -64,7 +64,7 @@ string comment_fmt=null) if (isDescriptor!Descriptor) {
 
     void issue(Group)(const(Group) group, string indent, string fmt) if (isActionGroup!Group) {
         if (group !is group.init) {
-            group.infos.each!(info =>issue(info, indent, master.property));
+            group.infos.each!(info => issue(info, indent, master.property));
         }
     }
 
@@ -102,8 +102,7 @@ unittest { // Markdown scenario test
         //io.writefln("scenario_result.given.infos %s", scenario_result.given.infos);
         markdown.issue(scenario_result.given.infos[0], null, markdown.master.property);
         filename.setExtension("mdtest").fwrite(bout.toString);
-		"/tmp/filename.txt".fwrite( filename.setExtension("mdtest"));
-		assert(bout.toString == expected);
+        assert(bout.toString == expected);
     }
     {
         scope (exit) {
@@ -115,8 +114,7 @@ unittest { // Markdown scenario test
         markdown.issue(scenario_result);
         filename.setExtension("mdtest").fwrite(bout.toString);
         immutable expected = filename.freadText;
-	"/tmp/filename_1.txt".fwrite( filename.setExtension("mdtest"));
-		assert(bout.toString == expected);
+        assert(bout.toString == expected);
     }
 }
 
@@ -137,8 +135,7 @@ unittest {
         filename.setExtension("mdtest").fwrite(bout.toString);
 
         immutable expected = filename.freadText;
-		"/tmp/filename_2.txt".fwrite( filename.setExtension("mdtest"));
-		assert(bout.toString == expected);
+        assert(bout.toString == expected);
     }
 
 }
@@ -241,14 +238,8 @@ unittest {
             .setExtension(FileExtension.dsrc);
         dlang.issue(feature_group);
         immutable result = bout.toString;
-        filename.setExtension("dtest").fwrite(result);
-       // io.writefln("dtest =%s", filename.setExtension("dtest"));
-"/tmp/filename_d.d".fwrite( filename.setExtension("dtest"));
-filename.setExtension("dtest").fwrite(                 result
-                .splitLines
-                .map!(a => a.strip)
-                .filter!(a => a.length !is 0).join("\n"));
- 
+        //filename.setExtension("dtest").fwrite(result);
+        // io.writefln("dtest =%s", filename.setExtension("dtest"));
         immutable expected = filename.freadText;
         assert(equal(
                 result
@@ -281,5 +272,6 @@ version (unittest) {
     //    import std.stdio;
     import std.path;
     import std.outbuffer;
+
     // import io = std.stdio;
 }
