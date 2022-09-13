@@ -68,7 +68,7 @@ import tagion.tasks.TaskWrapper;
         return commonLogFilters.any!(f => (f.match(filter)));
     }
 
-    @TaskMethod void receiveLogs(LogFilter filter, Document data)
+    @TaskMethod void receiveLogs(immutable(LogFilter) filter, immutable(Document) data) @trusted // was safe by default
     {
         if (matchAnyFilter(filter))
         {
@@ -165,10 +165,16 @@ import tagion.tasks.TaskWrapper;
         }
         scope (exit)
         {
+            import std.stdio;
+
             if (logSubscriptionTid !is Tid.init)
             {
                 logSubscriptionTid.send(Control.STOP);
-                receiveOnly!Control;
+                if (receiveOnly!Control == Control.END) // TODO: can't receive END when stopping after logservicetest, fix it
+                {
+                    writeln("Canceled task LogSubscriptionService");
+                    writeln("Received END from LogSubscriptionService");
+                }
             }
         }
 

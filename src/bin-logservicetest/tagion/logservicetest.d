@@ -36,25 +36,17 @@ import tagion.hibon.HiBONJSON;
 
 mixin TrustedConcurrency;
 
-void sendingLoop(Task!LoggerTask loggerService)
+void sendingLoop()
 {
     import core.thread;
     import std.stdio;
 
     writeln("I'm alive!");
+    log.register("sendingLoop");
+    writeln("Wait...");
+    Thread.sleep(3000.msecs);
 
-    while (true)
-    {
-
-        writeln("Wait...");
-        Thread.sleep(2000.msecs);
-
-        auto filter = LogFilter("some task", LogLevel.INFO);
-
-        // loggerService.receiveFilters(LogFilterArray([filter].idup));
-        writeln("Sending logs from LOOP...");
-        loggerService.receiveLogs(filter, filter.toDoc);
-    }
+    log("---------------------- Test logs from sendingLoop ----------------------");
 }
 
 void create_ssl(const(OpenSSL) openssl)
@@ -137,21 +129,6 @@ int _main(string[] args)
     log.register(main_task);
 
     create_ssl(service_options.logSubscription.service.openssl);
-    // Starting TagionService task - inside LogSub task starts 
-
-    Tid logsubscription;
-    if (logsubscription !is logsubscription.init)
-    {
-        logsubscription.prioritySend(Control.STOP);
-        if (receiveOnly!Control is Control.END)
-        {
-            writeln("Closed logsubscription");
-        }
-    }
-    logsubscription = spawn(
-        &logSubscriptionServiceTask,
-        service_options);
-    assert(receiveOnly!Control is Control.LIVE);
 
     writeln("Creating SSLSocket");
     Thread.sleep(1.seconds);
@@ -177,7 +154,7 @@ int _main(string[] args)
     HiRPC hirpc;
     client.blocking = true;
 
-    auto filter = LogFilter("some task", LogLevel.INFO);
+    auto filter = LogFilter("sendingLoop", LogLevel.INFO);
     const sender = hirpc.action("subscription", filter.toHiBON);
     immutable data = sender.toDoc.serialize;
     writeln(sender.toDoc.toJSON);
@@ -186,7 +163,7 @@ int _main(string[] args)
     auto rec_buf = new void[4000];
     ptrdiff_t rec_size;
 
-    spawn(&sendingLoop, logger_service);
+    spawn(&sendingLoop);
 
     do
     {
@@ -198,26 +175,5 @@ int _main(string[] args)
     auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
     writefln("Response document toJSON: %s", resp_doc.toJSON);
 
-    receive(
-        (Control response) {
-        with (Control)
-        {
-            switch (response)
-            {
-            case STOP:
-                // stop = true;
-                break;
-            case END:
-                // stop = true;
-                break;
-            default:
-                // stop = true;
-                stderr.writefln("Unexpected signal %s", response);
-            }
-        }
-    },
-        (immutable(Exception) e) { stderr.writeln(e.msg); },
-        (immutable(Throwable) t) { stderr.writeln(t.msg); }
-    );
-    return 1;
+    return 0;
 }

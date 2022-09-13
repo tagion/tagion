@@ -14,9 +14,6 @@ import std.exception : assumeUnique, assumeWontThrow;
 
 import tagion.communication.HiRPC;
 
-// import tagion.network.SSLServiceAPI;
-// import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
-
 import tagion.logger.Logger;
 import tagion.logger.LogRecords;
 import tagion.services.Options : Options, setOptions, setDefaultOption;
@@ -28,17 +25,15 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.basic.TagionExceptions : fatal, taskfailure;
 
-//import tagion.script.ScriptBuilder;
-
 /**
- * \struct LogSubscriptionFilter
- * Struct store valid filters for each client
+ * \struct LogSubscribersInfo
+ * Struct stores info about clients' subscription 
  */
-struct LogSubscriptionFilter
+struct LogSubscribersInfo
 {
     /** Tid for communicating with LoggerService */
     Tid logger_service_tid;
-    /** filters array for storing all curent filters, received for subscribers */
+    /** Array of filters for each connected listener_id */
     LogFilter[][uint] filters;
 
     /** Used when new listener want to receive logs
@@ -90,8 +85,7 @@ struct LogSubscriptionFilter
         {
             foreach (client_filter; filters[client_id])
             {
-                // temporary debug solution - send to all connected subscribers
-                //if (client_filter.match(filter))
+                if (client_filter.match(filter))
                 {
                     clients ~= client_id;
                     break;
@@ -119,12 +113,15 @@ void logSubscriptionServiceTask(Options opts) nothrow
 {
     try
     {
-        scope (success)
+        scope (exit)
         {
-            ownerTid.prioritySend(Control.END);
+            import std.stdio;
+
+            writeln("Sending END from LogSubService");
+            ownerTid.send(Control.END);
         }
 
-        LogSubscriptionFilter subscribers;
+        LogSubscribersInfo subscribers;
 
         subscribers.logger_service_tid = locate(opts.logger.task_name);
 
@@ -160,6 +157,7 @@ void logSubscriptionServiceTask(Options opts) nothrow
 
                 const doc = receivessl();
 
+                // TODO: receive array of filters
                 try
                 {
                     const listener_id = ssl_relay.id();
@@ -202,21 +200,14 @@ void logSubscriptionServiceTask(Options opts) nothrow
             }
         }
 
-        @trusted void receiver(LogFilter filter, Document data)
+        @trusted void receiveLogs(immutable(LogFilter) filter, immutable(Document) data)
         {
             // THIS IS DRAFT IMPLEMENTATION
             import std.stdio;
-            import tagion.hibon.HiBONJSON;
 
-            // writeln("......................................................");
-            // writefln("receiver: %s: %s: %s", filter.log_level, filter.task_name, data.toPretty);
-            writefln("......................... log from %s (text: %s) .............................", filter
-                    .task_name, filter
-                    .isTextLog);
-
-            writeln(subscribers.filters.length);
+            writefln("subscribers: %d", subscribers.filters.length);
             auto clients = subscribers.matchFilters(filter);
-            writefln("clients: %s", clients);
+            writefln("subscribers(send): %d", clients.length);
             foreach (client; clients)
             {
                 HiRPC hirpc;
@@ -233,7 +224,7 @@ void logSubscriptionServiceTask(Options opts) nothrow
             receiveTimeout(500.msecs, //Control the thread
                 &control,
                 &taskfailure,
-                &receiver,
+                &receiveLogs,
             );
         }
     }

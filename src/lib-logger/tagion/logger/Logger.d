@@ -166,7 +166,9 @@ static struct Logger
             {
                 try
                 {
-                    logger_tid.send(LogFilter(_task_name, level), TextLog(text).toDoc);
+                    immutable filter = LogFilter(_task_name, level);
+                    immutable doc = TextLog(text).toDoc;
+                    logger_tid.send(filter, doc);
                 }
                 catch (Exception e)
                 {
