@@ -2,6 +2,7 @@ module tagion.behaviour.Emendation;
 
 import tagion.behaviour.BehaviourFeature;
 import std.traits : Fields;
+import std.meta : Filter;
 import std.algorithm.iteration : map, cache;
 import std.string : join;
 import std.ascii : isWhite;
@@ -21,48 +22,40 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
     if (module_name && feature_group.info.name.length is 0) {
         feature_group.info.name = module_name;
     }
+	alias ScenarioActionGroups = Filter!(isActionGroup, Fields!ScenarioGroup);
+	pragma(msg, "ScenarioActionGroups ", ScenarioActionGroups); 
     static void emendation(ref ScenarioGroup scenario_group) {
-        size_t countActionInfos() nothrow {
+        size_t countActionInfos() { //nothrow {
             size_t result;
             static foreach (i, Type; Fields!ScenarioGroup) {
                 static if (isActionGroup!Type) {
+			//		io.writefln("-count=%d", scenario_group.tupleof[i].infos.length);
+ pragma(msg, i, " Type ", Type, " isActionGroup ", isActionGroup!Type);
                     result += scenario_group.tupleof[i].infos.length;
                 }
             }
             return result;
         }
 
+			pragma(msg, "Scenario ", ScenarioActionGroups.length);
         auto names = new string[countActionInfos];
-
-        static void suggestName(ref string action_name, string description){
-            import std.algorithm.iteration : splitter;
-            import std.range.primitives : walkLength;
-            import std.ascii : isWhite;
-            import std.range : retro, take;
-            import std.array : split;
-
-            const action_subwords = action_name
-                .splitter(function_word_separator).walkLength;
-            action_name = description
-                .split!isWhite
-                .retro
-                .take(action_subwords + 1)
-                .retro
-                .join(function_word_separator);
-        }
 
         // Collects all the action function name and if name hasn't been defined, a name will be suggested
         void collectNames() {
-            static foreach (i, Type; Fields!ScenarioGroup) {
-                static if (isActionGroup!Type) {
+            uint name_index;
+			static foreach (i, Type; Fields!ScenarioGroup) {
+				static if (isActionGroup!Type) {
                     with (scenario_group.tupleof[i]) {
                         foreach (ref info; infos) {
                             if (info.name.length) {
-                                names[i] = info.name;
+                                names[name_index] = info.name;
                             }
                             else {
-                                suggestName(names[i], info.property.description);
-                            }
+                                suggestName(names[name_index], info.property.description);
+
+							}
+	io.writefln("names[%d]=%s", names[name_index]);
+								name_index++;
                         }
                     }
                 }
@@ -90,12 +83,36 @@ unittest {
 
     string[] errors;
     auto feature = parser(feature_byline, errors);
-    /* immutable markdown_filename = bddfile_proto_test */
+	"/tmp/feature_no_emendation".setExtension("hibon").fwrite(feature);
+	feature.emendation("test.emendation");
+
+	"/tmp/feature_with_emendation".setExtension("hibon").fwrite(feature);
+
+	/* immutable markdown_filename = bddfile_proto_test */
     /*     .unitfile.setExtension(FileExtension.markdown); */
 
 
 
 }
+
+	@safe
+void suggestName(ref string action_name, string description){
+            import std.algorithm.iteration : splitter;
+            import std.range.primitives : walkLength;
+            import std.ascii : isWhite;
+            import std.range : retro, take;
+            import std.array : split;
+
+            const action_subwords = action_name
+                .splitter(function_word_separator).walkLength;
+            action_name = description
+                .split!isWhite
+                .retro
+                .take(action_subwords + 1)
+                .retro
+                .join(function_word_separator);
+        }
+
 
 // Returns: true if all the functions names in the scenario are unique
 @safe
@@ -131,12 +148,16 @@ unittest {
 }
 
 
-	version(unittest) {
 	import io=std.stdio;
+	version(unittest) {
+	//import io=std.stdio;
 import std.exception;
     import tagion.basic.Types : FileExtension;
     import std.stdio : File;
     import std.path;
+import std.file : fwrite = write;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord : fwrite;
 	import tagion.basic.Basic : unitfile;
 	import tagion.behaviour.BehaviourParser;
 }
