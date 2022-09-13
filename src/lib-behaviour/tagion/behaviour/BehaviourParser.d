@@ -208,10 +208,8 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                 state = State.Action;
                 const action_word = match[1].toLower;
                 alias ActionGroups = staticMap!(ActionGroup, BehaviourProperties);
-                pragma(msg, "ActionGroups ", ActionGroups);
                 static foreach (int index, Field; Fields!ScenarioGroup) {
                     {
-                        pragma(msg, "ActionGroups Field ", Field);
                         enum field_index = staticIndexOf!(Field, ActionGroups);
                         static if (field_index >= 0) {
                             enum label = GetLabel!(scenario_group.tupleof[index]);
@@ -224,7 +222,6 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                                         check_error(current_action_index <= index,
                                                 format("Bad action order for action %s", action_word));
                                         current_action_index = index;
-                                        pragma(msg, "label ", typeof(label));
                                         infos.length++;
                                         infos[$ - 1].property.description = match.post.idup;
                                     }

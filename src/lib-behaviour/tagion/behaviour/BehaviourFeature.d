@@ -342,7 +342,6 @@ static unittest { //
     import tagion.behaviour.BehaviourUnittest;
 
     alias scenarios = Scenarios!(tagion.behaviour.BehaviourUnittest);
-    pragma(msg, "scenarios ", scenarios);
     alias expected_scenarios = AliasSeq!(
             Some_awesome_feature,
             Some_awesome_feature_bad_format_double_property,

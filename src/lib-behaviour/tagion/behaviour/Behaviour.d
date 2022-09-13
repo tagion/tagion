@@ -44,7 +44,6 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
                             format("%s is missing a @%s action", T.stringof, _Property.stringof));
                 }
                 else {
-                    pragma(msg, "all_behaviours ", all_behaviours);
                     static foreach (i, behaviour; all_behaviours) {
                         {
                             enum group_name = __traits(identifier,
