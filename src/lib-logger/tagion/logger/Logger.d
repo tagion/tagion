@@ -193,7 +193,9 @@ static struct Logger
         {
             try
             {
-                logger_tid.send(LogFilter(_task_name, symbol_name), h.toDoc);
+                immutable filter = LogFilter(_task_name, symbol_name);
+                immutable doc = h.toDoc;
+                logger_tid.send(filter, doc);
             }
             catch (Exception e)
             {
@@ -248,11 +250,6 @@ static struct Logger
         {
             // Register the task name and the symbol_name
         }
-        /+
-        if (is the filter set for this symbol the call the opCall) {
-        opCall(symbol_name, h.toDoc, file, line);
-        }
-        +/
         report(symbol_name, h);
 
         return registered;
@@ -323,18 +320,7 @@ static struct Logger
 
 mixin template Log(alias name)
 {
-    pragma(msg, name.stringof);
-    pragma(msg, "__traits ", __traits(identifier, name));
-    pragma(msg, format(q{const bool %1$s_logger = log.env("%1$s", %1$s);}, __traits(identifier, name)));
-    mixin(format(q{const bool %1$s_logger = log.env("%1$s", %1$s);}, __traits(identifier, name))); //format(q{const bool %1$s_logger = log("%1$s", %1$s);}, name.stringof));
-    // enum logged_code = format!(
-    //     q{bool %s_logged =
-    //             log(name.stringof, name);},
-    //     name.stringof);
-    //    const x=log(name.stringof, name);
-    // pragma(msg, logged_code);
-    // mixin(logged_code);
-
+    mixin(format(q{const bool %1$s_logger = log.env("%1$s", %1$s);}, __traits(identifier, name)));
 }
 
 static Logger log;

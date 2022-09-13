@@ -23,6 +23,7 @@ import tagion.network.SSLFiberService;
 import tagion.network.SSLServiceAPI;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
+import tagion.hibon.HiBONRecord : GetLabel;
 import tagion.basic.TagionExceptions : fatal, taskfailure;
 
 /**
@@ -78,7 +79,7 @@ struct LogSubscribersInfo
      *      @param log_level Represent log level for all logs from task
      *      @return Array of all clients_id that need this logs
      */
-    uint[] matchFilters(LogFilter filter)
+    @safe uint[] matchFilters(LogFilter filter)
     {
         uint[] clients;
         foreach (client_id; filters.keys)
@@ -200,19 +201,17 @@ void logSubscriptionServiceTask(Options opts) nothrow
             }
         }
 
-        @trusted void receiveLogs(immutable(LogFilter) filter, immutable(Document) data)
+        @safe void receiveLogs(immutable(LogFilter) filter, immutable(Document) data)
         {
-            // THIS IS DRAFT IMPLEMENTATION
-            import std.stdio;
+            auto log_hibon = new HiBON;
+            log_hibon[GetLabel!(typeof(filter)).name] = filter;
+            log_hibon[GetLabel!(typeof(data)).name] = data;
 
-            writefln("subscribers: %d", subscribers.filters.length);
-            auto clients = subscribers.matchFilters(filter);
-            writefln("subscribers(send): %d", clients.length);
-            foreach (client; clients)
+            foreach (client; subscribers.matchFilters(filter))
             {
                 HiRPC hirpc;
-                // TODO: send both filter and document
-                const sender = hirpc.action("letter from LogSubscription!", data);
+                const sender = hirpc.action(opts.logSubscription.prefix, Document(log_hibon));
+
                 immutable sender_data = sender.toDoc.serialize();
                 logsubscription_api.send(client, sender_data);
             }

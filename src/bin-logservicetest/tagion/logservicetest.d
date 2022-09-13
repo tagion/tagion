@@ -47,6 +47,19 @@ void sendingLoop()
     Thread.sleep(3000.msecs);
 
     log("---------------------- Test logs from sendingLoop ----------------------");
+
+    import tagion.hibon.HiBONRecord;
+
+    static struct S
+    {
+        int x;
+        mixin HiBONRecord!(
+            q{this(int x) {this.x = x;}}
+        );
+    }
+
+    const test_variable = S(10);
+    mixin Log!test_variable;
 }
 
 void create_ssl(const(OpenSSL) openssl)
@@ -109,7 +122,7 @@ int _main(string[] args)
     writeln("LogSubService: private_key", service_options.logSubscription
             .service.openssl.private_key);
 
-    /// tarting Logger task
+    /// starting Logger task
     auto logger_service = Task!LoggerTask(service_options.logger.task_name, service_options);
     import std.stdio : stderr;
 
@@ -154,7 +167,7 @@ int _main(string[] args)
     HiRPC hirpc;
     client.blocking = true;
 
-    auto filter = LogFilter("sendingLoop", LogLevel.INFO);
+    auto filter = LogFilter("sendingLoop", "test_variable");
     const sender = hirpc.action("subscription", filter.toHiBON);
     immutable data = sender.toDoc.serialize;
     writeln(sender.toDoc.toJSON);
@@ -173,7 +186,7 @@ int _main(string[] args)
     }
     while (rec_size < 0);
     auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
-    writefln("Response document toJSON: %s", resp_doc.toJSON);
+    writefln("Response document toJSON: %s", resp_doc.toPretty);
 
     return 0;
 }
