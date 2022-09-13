@@ -87,22 +87,8 @@ bool isUnique(string[] list_of_names) nothrow {
     import std.algorithm.iteration : cache;
     import std.array : array;
     import std.algorithm.searching : any;
-pragma(msg, "typeof(list_of_names.array)",typeof(list_of_names.array));
-assumeWontThrow(
-	io.writefln("list_of_names
-        .any!(name => name.length !is 0) %s", list_of_names
-        .any!(name => name.length !is 0)));
-
-	assumeWontThrow(io.writefln("      list_of_names
-        .array
-        .sort
-        .isStrictlyMonotonic %s",
-	      list_of_names
-        .array
-        .sort
-        .isStrictlyMonotonic));
 	return 
-	(list_of_names.length is 0) ||
+	(list_of_names.length == 0) ||
 	list_of_names
         .all!(name => name.length != 0)
         &&
