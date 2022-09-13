@@ -1,4 +1,4 @@
-module tagion.behaviour.Emenedation;
+module tagion.behaviour.Emendation;
 
 import tagion.behaviour.BehaviourFeature;
 import std.traits : Fields;
@@ -80,13 +80,30 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
     }
 }
 
+// Test emendation on a BDD with none function names
+unittest {
+    enum bddfile_proto = "ProtoBDD_nofunc_name".unitfile;
+    immutable bdd_filename = bddfile_proto.setExtension(FileExtension.markdown);
+
+
+    auto feature_byline = (() @trusted => File(bdd_filename).byLine)();
+
+    string[] errors;
+    auto feature = parser(feature_byline, errors);
+    /* immutable markdown_filename = bddfile_proto_test */
+    /*     .unitfile.setExtension(FileExtension.markdown); */
+
+
+
+}
+
 // Returns: true if all the functions names in the scenario are unique
 @safe
 bool isUnique(string[] list_of_names) nothrow {
     import std.algorithm.sorting : isStrictlyMonotonic;
     import std.algorithm.iteration : cache;
     import std.array : array;
-    import std.algorithm.searching : any;
+    import std.algorithm.searching : all;
 	return 
 	(list_of_names.length == 0) ||
 	list_of_names
@@ -98,6 +115,7 @@ bool isUnique(string[] list_of_names) nothrow {
         .isStrictlyMonotonic;
 }
 
+// Test of the isUnique
 @safe
 unittest {
     string[] names;
@@ -112,7 +130,13 @@ unittest {
     assert(names.isUnique);
 }
 
+
 	version(unittest) {
 	import io=std.stdio;
 import std.exception;
+    import tagion.basic.Types : FileExtension;
+    import std.stdio : File;
+    import std.path;
+	import tagion.basic.Basic : unitfile;
+	import tagion.behaviour.BehaviourParser;
 }
