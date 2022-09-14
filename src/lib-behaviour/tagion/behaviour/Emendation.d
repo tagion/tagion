@@ -9,7 +9,7 @@ import std.ascii : isWhite;
 import std.algorithm;
 import std.algorithm.sorting : sort;
 import std.typecons : Flag, No, Yes;
-import std.ascii : toUpper;
+import std.ascii : toUpper, toLower;
 import std.array : split;
 
 enum function_word_separator = "_";
@@ -114,6 +114,26 @@ void takeName(ref string action_name, string description) {
         .join(" ");
 }
 
+///Examples: camel case name convertion
+@safe
+string camelName(string names_with_space, const Flag!"BigCamel" flag = No.BigCamel) {
+    bool not_first;
+    string camelCase(string name) {
+        if (not_first) {
+            return toUpper(name[0]) ~ name[1 .. $];
+        }
+        not_first = true;
+        return (flag is Yes.BigCamel ? toUpper(name[0]) : toLower(name[0])) ~ name[1 .. $];
+
+    }
+
+    return names_with_space
+        .split!isWhite
+        .map!camelCase
+        .join;
+    //	return "";
+}
+
 /// Examples: takeName
 @safe
 unittest {
@@ -138,28 +158,11 @@ unittest {
     io.writefln("takeName %s", name);
     io.writefln("camelName %s", camelName(name));
     io.writefln("camelName %s", camelName(name, Yes.BigCamel));
+    io.writeln("------");
     takeName(name, some_description);
     assert(name == "This is some description");
     io.writefln("camelName %s", camelName(name));
     io.writefln("camelName %s", camelName(name, Yes.BigCamel));
-}
-
-@safe
-string camelName(string names_with_space, const Flag!"BigCamel" flag = No.BigCamel) {
-    bool not_first;
-    string camelCase(string name) {
-        if (!not_first || flag is Yes.BigCamel) {
-            return toUpper(name[0]) ~ name[1 .. $];
-        }
-        not_first = true;
-        return name;
-    }
-
-    return names_with_space
-        .split!isWhite
-        .map!camelCase
-        .join;
-    //	return "";
 }
 
 /// Returns: true if all the functions names in the scenario are unique
