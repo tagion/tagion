@@ -116,8 +116,7 @@ struct AESCrypto(int KEY_LENGTH)
         {
             auto aes_key = key.ptr;
             ubyte[BLOCK_SIZE] mem_iv = iv[0 .. BLOCK_SIZE];
-            bool allocation_flag = 1;
-            AES_KEY* crypt_key = Aes_Key_Alloc(allocation_flag, ENCRYPT);
+            AES_KEY crypt_key;
             if (outdata is null)
             {
                 outdata = new ubyte[enclength(indata.length)];
@@ -127,23 +126,17 @@ struct AESCrypto(int KEY_LENGTH)
             {
                 auto aes_input = indata.ptr;
                 auto enc_output = outdata.ptr;
-                AES_set_encrypt_key(aes_key, KEY_LENGTH, crypt_key);
+                AES_set_encrypt_key(aes_key, KEY_LENGTH, &crypt_key);
                 //writefln("crypt_key=%s", crypt_key.hex);
-                AES_cbc_encrypt(aes_input, enc_output, indata.length, crypt_key, mem_iv.ptr, AES_ENCRYPT);
+                AES_cbc_encrypt(aes_input, enc_output, indata.length, &crypt_key, mem_iv.ptr, AES_ENCRYPT);
             }
             else
             {
                 auto enc_input = indata.ptr;
                 auto dec_output = outdata.ptr;
-                AES_set_decrypt_key(aes_key, KEY_LENGTH, crypt_key);
-                AES_cbc_encrypt(enc_input, dec_output, enclength(indata.length), crypt_key, mem_iv.ptr, AES_DECRYPT);
+                AES_set_decrypt_key(aes_key, KEY_LENGTH, &crypt_key);
+                AES_cbc_encrypt(enc_input, dec_output, enclength(indata.length), &crypt_key, mem_iv.ptr, AES_DECRYPT);
 
-            }
-
-            if (allocation_flag)
-            {
-                import core.stdc.stdlib;
-                free(crypt_key);
             }
         }
 
