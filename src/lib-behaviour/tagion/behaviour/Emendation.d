@@ -26,21 +26,17 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
         feature_group.info.name = module_name;
     }
     alias ScenarioActionGroups = Filter!(isActionGroup, Fields!ScenarioGroup);
-    pragma(msg, "ScenarioActionGroups ", ScenarioActionGroups);
     static void emendation(ref ScenarioGroup scenario_group) {
         size_t countActionInfos() { //nothrow {
             size_t result;
             static foreach (i, Type; Fields!ScenarioGroup) {
                 static if (isActionGroup!Type) {
-                    //		io.writefln("-count=%d", scenario_group.tupleof[i].infos.length);
-                    pragma(msg, i, " Type ", Type, " isActionGroup ", isActionGroup!Type);
                     result += scenario_group.tupleof[i].infos.length;
                 }
             }
             return result;
         }
 
-        pragma(msg, "Scenario ", ScenarioActionGroups.length);
         auto names = new string[countActionInfos];
 
         // Collects all the action function name and if name hasn't been defined, a name will be suggested
@@ -56,8 +52,6 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
                             else {
                                 takeName(names[name_index], info.property.description);
                             }
-                            io.writefln("names[%d]=%s", name_index, names[name_index]);
-                            info.name = names[name_index];
                             name_index++;
                         }
                     }
@@ -65,11 +59,31 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
             }
         }
 
+        void setCollectNames() {
+            uint name_index;
+            static foreach (i, Type; Fields!ScenarioGroup) {
+                static if (isActionGroup!Type) {
+                    with (scenario_group.tupleof[i]) {
+                        foreach (ref info; infos) {
+                            if (!info.name.length) {
+                                info.name = names[name_index].camelName;
+                            }
+                            name_index++;
+                        }
+                    }
+                }
+            }
+        }
+
+        scenario_group.info.name = scenario_group.info.property.description.camelName(Yes.BigCamel);
         collectNames;
-        while (!names.isUnique) {
+        int bail_out = 6;
+        while (!names.isUnique && bail_out > 0) {
 
             collectNames;
+            bail_out--;
         }
+        setCollectNames;
     }
 
     foreach (ref scenario_group; feature_group.scenarios) {
@@ -78,7 +92,7 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
 }
 
 // Test emendation on a BDD with none function names
-version (none) unittest {
+unittest {
     enum bddfile_proto = "ProtoBDD_nofunc_name".unitfile;
     immutable bdd_filename = bddfile_proto.setExtension(FileExtension.markdown);
 
@@ -86,16 +100,23 @@ version (none) unittest {
 
     string[] errors;
     auto feature = parser(feature_byline, errors);
-    "/tmp/feature_no_emendation".setExtension("hibon").fwrite(feature);
+    //"/tmp/feature_no_emendation".setExtension("hibon").fwrite(feature);
     feature.emendation("test.emendation");
 
-    "/tmp/feature_with_emendation".setExtension("hibon").fwrite(feature);
+    //"/tmp/feature_with_emendation".setExtension("hibon").fwrite(feature);
 
-    /* immutable markdown_filename = bddfile_proto_test */
-    /*     .unitfile.setExtension(FileExtension.markdown); */
+    //bdd_filename.setExtension(FileExtension.hibon).fwrite(feature);
+    const expected_feature = bdd_filename.setExtension(FileExtension.hibon).fread!FeatureGroup;
+    assert(feature.toDoc == expected_feature.toDoc);
 
 }
 
+/++ 
++ This function add a word in reverse order from the description
++ Params:
++   action_name = names which alreay was take
++   description = description of the action or scenario
++/
 @safe
 void takeName(ref string action_name, string description) {
     import std.algorithm.iteration : splitter;
@@ -114,7 +135,13 @@ void takeName(ref string action_name, string description) {
         .join(" ");
 }
 
-///Examples: camel case name convertion
+/++
++ 
++ Params:
++   names_with_space = list of name separated with white-space
++   flag = No means function camel case and Yes means object camel case
++ Returns: the a camel case name 
++/
 @safe
 string camelName(string names_with_space, const Flag!"BigCamel" flag = No.BigCamel) {
     bool not_first;
@@ -123,15 +150,16 @@ string camelName(string names_with_space, const Flag!"BigCamel" flag = No.BigCam
             return toUpper(name[0]) ~ name[1 .. $];
         }
         not_first = true;
-        return (flag is Yes.BigCamel ? toUpper(name[0]) : toLower(name[0])) ~ name[1 .. $];
-
+        if (name.length > 0) {
+            return (flag is Yes.BigCamel ? toUpper(name[0]) : toLower(name[0])) ~ name[1 .. $];
+        }
+        return null;
     }
 
     return names_with_space
         .split!isWhite
         .map!camelCase
         .join;
-    //	return "";
 }
 
 /// Examples: takeName and camelName
@@ -161,7 +189,12 @@ unittest {
     assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
 }
 
-/// Returns: true if all the functions names in the scenario are unique
+/++ 
+ + 
+ + Params:
+ +   list_of_names = list of names which is goint to be checked
+ + Returns: true if all the names in the list is unique and not empty
+ +/
 @safe
 bool isUnique(string[] list_of_names) nothrow {
     import std.algorithm.sorting : isStrictlyMonotonic;
@@ -194,17 +227,15 @@ unittest {
     assert(names.isUnique);
 }
 
-import io = std.stdio;
-
 version (unittest) {
-    //import io=std.stdio;
+//    import io=std.stdio;
     import std.exception;
     import tagion.basic.Types : FileExtension;
     import std.stdio : File;
     import std.path;
     import std.file : fwrite = write;
     import tagion.hibon.HiBONJSON;
-    import tagion.hibon.HiBONRecord : fwrite;
+    import tagion.hibon.HiBONRecord : fwrite, fread;
     import tagion.basic.Basic : unitfile;
     import tagion.behaviour.BehaviourParser;
 }
