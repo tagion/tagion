@@ -143,40 +143,22 @@ unittest {
     assert(name == "description");
     assert(name.camelName == "description");
     assert(name.camelName(Yes.BigCamel) == "Description");
-    io.writefln("takeName %s", name);
-    io.writefln("camelName %s", camelName(name));
-    io.writefln("camelName %s", camelName(name, Yes.BigCamel));
     takeName(name, some_description);
-    io.writefln("takeName %s", name);
-    io.writefln("camelName %s", camelName(name));
-    io.writefln("camelName %s", camelName(name, Yes.BigCamel));
     assert(name == "some description");
     assert(name.camelName == "someDescription");
     assert(name.camelName(Yes.BigCamel) == "SomeDescription");
     takeName(name, some_description);
-    io.writefln("takeName %s", name);
-    io.writefln("camelName %s", camelName(name));
-    io.writefln("camelName %s", camelName(name, Yes.BigCamel));
     assert(name == "is some description");
     assert(name.camelName == "isSomeDescription");
     assert(name.camelName(Yes.BigCamel) == "IsSomeDescription");
     takeName(name, some_description);
-    io.writefln("takeName %s", name);
-    io.writefln("camelName %s", camelName(name));
-    io.writefln("camelName %s", camelName(name, Yes.BigCamel));
-    io.writeln("------");
+    assert(name == "This is some description");
+    assert(name.camelName == "thisIsSomeDescription");
+    assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
     takeName(name, some_description);
     assert(name == "This is some description");
     assert(name.camelName == "thisIsSomeDescription");
     assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
-    io.writefln("camelName %s", camelName(name));
-    io.writefln("camelName %s", camelName(name, Yes.BigCamel));
-    takeName(name, some_description);
-    assert(name == "This is some description");
-    assert(name.camelName == "thisIsSomeDescription");
-    assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
-    io.writefln("camelName %s", camelName(name));
-    io.writefln("camelName %s", camelName(name, Yes.BigCamel));
 }
 
 /// Returns: true if all the functions names in the scenario are unique
