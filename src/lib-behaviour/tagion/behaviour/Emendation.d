@@ -134,13 +134,15 @@ string camelName(string names_with_space, const Flag!"BigCamel" flag = No.BigCam
     //	return "";
 }
 
-/// Examples: takeName
+/// Examples: takeName and camelName
 @safe
 unittest {
     string name;
     auto some_description = "This is some description";
     takeName(name, some_description);
     assert(name == "description");
+    assert(name.camelName == "description");
+    assert(name.camelName(Yes.BigCamel) == "Description");
     io.writefln("takeName %s", name);
     io.writefln("camelName %s", camelName(name));
     io.writefln("camelName %s", camelName(name, Yes.BigCamel));
@@ -149,11 +151,15 @@ unittest {
     io.writefln("camelName %s", camelName(name));
     io.writefln("camelName %s", camelName(name, Yes.BigCamel));
     assert(name == "some description");
+    assert(name.camelName == "someDescription");
+    assert(name.camelName(Yes.BigCamel) == "SomeDescription");
     takeName(name, some_description);
     io.writefln("takeName %s", name);
     io.writefln("camelName %s", camelName(name));
     io.writefln("camelName %s", camelName(name, Yes.BigCamel));
     assert(name == "is some description");
+    assert(name.camelName == "isSomeDescription");
+    assert(name.camelName(Yes.BigCamel) == "IsSomeDescription");
     takeName(name, some_description);
     io.writefln("takeName %s", name);
     io.writefln("camelName %s", camelName(name));
@@ -161,6 +167,14 @@ unittest {
     io.writeln("------");
     takeName(name, some_description);
     assert(name == "This is some description");
+    assert(name.camelName == "thisIsSomeDescription");
+    assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
+    io.writefln("camelName %s", camelName(name));
+    io.writefln("camelName %s", camelName(name, Yes.BigCamel));
+    takeName(name, some_description);
+    assert(name == "This is some description");
+    assert(name.camelName == "thisIsSomeDescription");
+    assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
     io.writefln("camelName %s", camelName(name));
     io.writefln("camelName %s", camelName(name, Yes.BigCamel));
 }
