@@ -3,16 +3,14 @@ module tagion.behaviour.Emendation;
 import tagion.behaviour.BehaviourFeature;
 import std.traits : Fields;
 import std.meta : Filter;
-import std.algorithm.iteration : map, cache;
+import std.algorithm.iteration : map, cache, joiner;
 import std.string : join;
 import std.ascii : isWhite;
 import std.algorithm;
 import std.algorithm.sorting : sort;
 import std.typecons : Flag, No, Yes;
-import std.ascii : toUpper, toLower;
-import std.array : split;
-
-enum function_word_separator = "_";
+import std.ascii : toUpper, toLower, isAlphaNum;
+import std.array : split, array;
 
 /**
 This function try to add functions name to a feature group for the action description
@@ -100,10 +98,10 @@ unittest {
 
     string[] errors;
     auto feature = parser(feature_byline, errors);
-    //"/tmp/feature_no_emendation".setExtension("hibon").fwrite(feature);
+    "/tmp/feature_no_emendation".setExtension("hibon").fwrite(feature);
     feature.emendation("test.emendation");
 
-    //"/tmp/feature_with_emendation".setExtension("hibon").fwrite(feature);
+    "/tmp/feature_with_emendation".setExtension("hibon").fwrite(feature);
 
     //bdd_filename.setExtension(FileExtension.hibon).fwrite(feature);
     const expected_feature = bdd_filename.setExtension(FileExtension.hibon).fread!FeatureGroup;
@@ -146,27 +144,50 @@ void takeName(ref string action_name, string description) {
 string camelName(string names_with_space, const Flag!"BigCamel" flag = No.BigCamel) {
     bool not_first;
     string camelCase(string name) {
-        if (not_first) {
+if (name.length) {
+		if (not_first) {
             return toUpper(name[0]) ~ name[1 .. $];
         }
         not_first = true;
         if (name.length > 0) {
             return (flag is Yes.BigCamel ? toUpper(name[0]) : toLower(name[0])) ~ name[1 .. $];
         }
+		}
         return null;
     }
 
-    return names_with_space
-        .split!isWhite
+		pragma(msg, "@@@@@@@@@", typeof(names_with_space
+   .splitter!isWhite
         .map!camelCase
-        .join;
+	.joiner.array));
+		pragma(msg, "@@@@@@@@@", typeof(
+	names_with_space
+   .splitter!isWhite
+        .map!camelCase.array));
+		pragma(msg, "@@@@@@@@@", typeof(
+	names_with_space
+   .splitter!isWhite
+        .map!camelCase
+  .joiner
+	.map!(c => cast(immutable(char))c)
+	.array));
+///	.joiner.map!(c => c).array));
+return
+	names_with_space
+   .splitter!isWhite
+        .map!camelCase
+  .joiner
+	.map!(c => cast(immutable(char))c)
+	.array;
+
+
 }
 
 /// Examples: takeName and camelName
 @safe
 unittest {
     string name;
-    auto some_description = "This is some description";
+    auto some_description = "This is some description.";
     takeName(name, some_description);
     assert(name == "description");
     assert(name.camelName == "description");
