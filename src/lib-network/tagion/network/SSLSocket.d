@@ -116,6 +116,11 @@ version(WOLFSSL)
             wolfSSL_CTX_set_info_callback(ctx_ssl, b);
         }
         char* strerror(int errnum) @trusted;
+
+        int SSL_get_state(const WOLFSSL* ssl) @trusted
+        {
+            return wolfSSL_state(ssl);
+        }
     }
 }
 else
@@ -154,6 +159,7 @@ else
             int SSL_CTX_check_private_key(SSL_CTX* ctx);
 
             int SSL_get_error(const SSL* ssl, int ret);
+            int SSL_get_state(const SSL* ssl);
 
             void ERR_clear_error();
             void ERR_print_errors_fp(FILE* file);
@@ -329,7 +335,9 @@ class SSLSocket : Socket
     override void connect(Address to)
     {
         super.connect(to);
+        io.writeln("before", cast(SSL_CB_POINTS)SSL_get_state(_ssl));
         const res = SSL_connect(_ssl);
+        io.writeln("after", cast(SSL_CB_POINTS)SSL_get_state(_ssl));
         check_error(res, true);
     }
 
@@ -353,12 +361,36 @@ class SSLSocket : Socket
         return send(buf, SocketFlags.NONE);
     }
 
+    version(WOLFSSL)
+    {
+        static void check_wolfssl_error(ref SSLErrorCodes error)
+        {
+            io.writeln("<"~str_error(error)~'>');
+            with (wolfSSL_ErrorCodes) switch (cast(wolfSSL_ErrorCodes)error)
+            {
+                case SOCKET_ERROR_E:
+                    error = SSLErrorCodes.SSL_ERROR_SYSCALL;
+                    return;
+                default:
+                    return;
+            }
+        }
+    }
+
     /++
      Check the return result for a SSL system function
      +/
     void check_error(const int res, const bool check_read_write = false) const
     {
-        const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, res);
+        auto ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, res);
+        version(WOLFSSL)
+        {
+            enum WOLFSSL_ERROR_MARKER = -299;
+            if (ssl_error < WOLFSSL_ERROR_MARKER)
+            {
+                this.check_wolfssl_error(ssl_error);              
+            }
+        }
         with (SSLErrorCodes) final switch (ssl_error)
         {
         case SSL_ERROR_NONE:
@@ -908,7 +940,7 @@ class SSLSocket : Socket
         * possible test infinite circle (wait socket acception)
         */
         //! [encrypt/decrypt message exchange test]
-        //version (none) // @NOTE: remove that for launch circle
+        version (none) // @NOTE: remove that for launch circle
         {
             import core.thread;
 

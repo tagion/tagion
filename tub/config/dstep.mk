@@ -22,6 +22,7 @@ DIFILES_notdir.$1 = $${notdir $$(HFILES.$1)}
 DIFILES.$1 = $${addprefix $3/,$${DIFILES_notdir.$1:.h=.di}}
 DESTROOT.$1 = $3
 HPATH.$1 = $2
+DSTEPFLAGS.$1 = $5
 
 DIFILES+=$$(DIFILES.$1)
 
@@ -29,7 +30,7 @@ DIFILES_DEPS+=$4
 
 $$(DESTROOT.$1)/%.di: $$(HPATH.$1)/%.h | $$(DESTROOT.$1)
 	$$(PRECMD)${call log.kvp, dstep, $$(@F)}
-	$$(DSTEP) $$(DSTEP_ATTRIBUTES) $$(DSTEPFLAGS) --package $1 $$< -o $$@
+	$$(DSTEP) $$(DSTEP_ATTRIBUTES) $$(DSTEPFLAGS.$1) --package $1 $$< -o $$@
 
 $$(DESTROOT.$1):
 	$$(PRECMD)mkdir -p $$@
@@ -49,7 +50,7 @@ env-dstep-$1:
 	$${call log.env, DFILES, $4}
 	$${call log.env, DIFILES.$1, $$(DIFILES.$1)}
 	$${call log.env, DSTEP_ATTRIBUTES, $$(DSTEP_ATTRIBUTES)}
-	$${call log.env, DSTEPFLAGS, $$(DSTEPFLAGS)}
+	$${call log.env, DSTEPFLAGS.$1, $$(DSTEPFLAGS.$1)}
 	$${call log.close}
 
 env-dstep: env-dstep-$1
