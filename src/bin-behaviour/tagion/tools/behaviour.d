@@ -9,21 +9,24 @@ import std.algorithm.searching;
 import std.getopt;
 import std.stdio;
 import std.format;
-import std.path : extension, setExtension;
+import std.path : extension, setExtension, stripExtension, absolutePath, pathSplitter;
 import std.file : exists, dirEntries, SpanMode;
 import std.string : join, splitLines, strip;
 import std.algorithm.iteration : filter, map, joiner;
 import std.algorithm.searching : endsWith;
+import std.algorithm.comparison : equal;
+import std.range.primitives :walkLength;
+import std.range : take, drop;
 import std.regex;
 import std.parallelism : parallel;
 import std.array : join;
 import std.process : execute;
-
 import tagion.utils.JSONCommon;
 import tagion.basic.Types : FileExtension;
 import tagion.tools.revision;
 import tagion.behaviour.BehaviourParser;
 import tagion.behaviour.BehaviourIssue : Dlang, Markdown;
+import tagion.behaviour.Emendation : emendation;
 
 /* File extension separator (Windows and Posix is a .) */
 enum DOT='.';
@@ -78,10 +81,32 @@ const(char[]) stripDot(const(char[]) ext) pure nothrow @nogc {
     return ext;
 }
 
+/** 
+ * Params:
+ *   filename = filename to be checked
+ * Returns: true if the file is not a generated or markdown
+ */
 bool checkValidFile(string file_name) {
     return !(canFind(file_name, ".gen") || !canFind(file_name, ".md"));
 }
 
+/** 
+ * Suggest a module name from the paths and the filename
+ * Params:
+ *   paths = list of search paths
+ *   filename = name of the file to be mapped to module name
+ * Returns: return a suggestion of a module name
+ */
+string suggestModuleName(string[] paths, string filename) {
+	auto filename_path = filename.stripExtension.absolutePath.pathSplitter;
+	foreach(path; paths) {
+	auto path_split = path.absolutePath.pathSplitter;
+		if (equal(path_split, filename_path.take(path_split.walkLength))) {
+			return filename_path.drop(path_split.walkLength).join(".");
+		}
+	}
+		return null;
+}
 
 /** 
  * Used to remove dot
@@ -113,7 +138,10 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
         }
         try {
             string[] errors;
+
             auto feature=parser(file.name, errors);
+			feature.emendation(file.name);
+
             if (!errors.length)
             {
                 writefln("%s -> succsess!!! ", file.name);
@@ -221,6 +249,6 @@ int main(string[] args) {
     }
 
     auto result = parse_bdd(options);
-    writeln(result);
+//    writeln(result);
     return result;
 }
