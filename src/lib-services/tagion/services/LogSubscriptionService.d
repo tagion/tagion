@@ -5,6 +5,8 @@
 
 module tagion.services.LogSubscriptionService;
 
+import std.algorithm : map;
+import std.array;
 import std.stdio : writeln, writefln;
 import std.format;
 import std.socket;
@@ -42,10 +44,10 @@ struct LogSubscribersInfo
       *     @param listener_id - unique identification of new listener
       *     @param log_info - log level of needed messages for listener
       */
-    void addSubscription(uint listener_id, LogFilter log_info) @trusted
+    void addSubscription(uint listener_id, LogFilter[] sub_filters) @trusted
     {
         writeln("Added new listener ", listener_id);
-        filters[listener_id] ~= log_info;
+        filters[listener_id] = sub_filters;
         notifyLogService;
     }
     /** Used when listener want to stop receiving logs or disconnected
@@ -158,14 +160,14 @@ void logSubscriptionServiceTask(Options opts) nothrow
 
                 const doc = receivessl();
 
-                // TODO: receive array of filters
                 try
                 {
                     const listener_id = ssl_relay.id();
-                    auto filter_received = LogFilter(
-                        doc["$msg"].get!Document["params"].get!Document);
 
-                    subscribers.addSubscription(listener_id, filter_received);
+                    auto params_doc = doc["$msg"].get!Document["params"].get!Document;
+                    auto filters_received = params_doc[].map!(e => e.get!LogFilter).array;
+
+                    subscribers.addSubscription(listener_id, filters_received);
                 }
                 catch (Exception e)
                 {

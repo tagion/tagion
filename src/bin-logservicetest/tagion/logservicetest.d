@@ -167,8 +167,11 @@ int _main(string[] args)
     HiRPC hirpc;
     client.blocking = true;
 
-    auto filter = LogFilter("sendingLoop", "test_variable");
-    const sender = hirpc.action("subscription", filter.toHiBON);
+    auto hibon_filters = new HiBON;
+    hibon_filters[0] = LogFilter("sendingLoop", "test_variable");
+    hibon_filters[1] = LogFilter("sendingLoop", LogLevel.INFO);
+
+    const sender = hirpc.action("subscription", hibon_filters);
     immutable data = sender.toDoc.serialize;
     writeln(sender.toDoc.toJSON);
     client.send(data);

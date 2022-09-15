@@ -43,6 +43,8 @@ unittest
 {
     enum task1 = "sometaskname";
     enum task2 = "anothertaskname";
+    enum symbol1 = "some_symbol";
+    enum symbol2 = "another_symbol";
 
     /// LogFilter_match_text_logs
     {
@@ -52,19 +54,28 @@ unittest
 
         assert(!LogFilter(task1, LogLevel.STDERR).match(LogFilter(task1, LogLevel.INFO)));
         assert(!LogFilter(task1, LogLevel.ERROR).match(LogFilter(task2, LogLevel.ERROR)));
+        assert(!LogFilter(task1, LogLevel.INFO).match(LogFilter("", LogLevel.INFO)));
+
+        assert(!LogFilter(task1, LogLevel.NONE).match(LogFilter(task1, LogLevel.NONE)));
     }
 
     /// LogFilter_match_symbol_log
     {
-        enum symbol1 = "some_symbol";
-        enum symbol2 = "another_symbol";
-
         assert(LogFilter(task1, symbol1).match(LogFilter(task1, symbol1)));
         assert(LogFilter(task2, symbol2).match(LogFilter(task2, symbol2)));
 
         assert(!LogFilter(task1, symbol1).match(LogFilter(task1, LogLevel.ALL)));
         assert(!LogFilter(task1, symbol1).match(LogFilter(task1, symbol2)));
+        assert(!LogFilter(task1, symbol1).match(LogFilter(task1, "")));
+    }
 
+    /// LogFilter_isTextLog
+    {
+        assert(LogFilter(task1, LogLevel.ERROR).isTextLog);
+        assert(LogFilter(task1, LogLevel.NONE).isTextLog);
+        assert(LogFilter(task1, "").isTextLog);
+
+        assert(!LogFilter(task1, symbol1).isTextLog);
     }
 }
 

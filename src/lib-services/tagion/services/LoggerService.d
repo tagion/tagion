@@ -75,52 +75,49 @@ import tagion.tasks.TaskWrapper;
             sendToLogSubService(filter, data);
         }
 
-        if (filter.isTextLog)
+        if (filter.isTextLog && data.hasMember(TextLog.label))
         {
-            if (data.hasMember(TextLog.label))
+            const log_msg = data[TextLog.label].get!string;
+
+            string output;
+            if (filter.level is LogLevel.INFO)
             {
-                const log_msg = data[TextLog.label].get!string;
-
-                string output;
-                if (filter.level is LogLevel.INFO)
-                {
-                    output = format("%s: %s", filter.task_name, log_msg);
-                }
-                else
-                {
-                    output = format("%s:%s: %s", filter.task_name, filter.level, log_msg);
-                }
-
-                if (logging)
-                {
-                    file.writeln(output);
-                }
-
-                void printToConsole(string s) @trusted
-                {
-                    if (options.logger.to_console)
-                    {
-                        writeln(s);
-                        if (options.logger.flush)
-                        {
-                            stdout.flush();
-                        }
-                    }
-                }
-
-                printToConsole(output);
-
-                void printStdError(LogLevel level, string task_name, string log_msg) @trusted
-                {
-                    if (level & LogLevel.STDERR)
-                    {
-                        stderr.writefln("%s:%s: %s", task_name, level, log_msg);
-                    }
-                }
-
-                printStdError(filter.level, filter.task_name, log_msg);
-
+                output = format("%s: %s", filter.task_name, log_msg);
             }
+            else
+            {
+                output = format("%s:%s: %s", filter.task_name, filter.level, log_msg);
+            }
+
+            if (logging)
+            {
+                file.writeln(output);
+            }
+
+            void printToConsole(string s) @trusted
+            {
+                if (options.logger.to_console)
+                {
+                    writeln(s);
+                    if (options.logger.flush)
+                    {
+                        stdout.flush();
+                    }
+                }
+            }
+
+            printToConsole(output);
+
+            void printStdError(LogLevel level, string task_name, string log_msg) @trusted
+            {
+                if (level & LogLevel.STDERR)
+                {
+                    stderr.writefln("%s:%s: %s", task_name, level, log_msg);
+                }
+            }
+
+            printStdError(filter.level, filter.task_name, log_msg);
+
         }
     }
 
