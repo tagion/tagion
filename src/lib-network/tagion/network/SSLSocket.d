@@ -48,7 +48,7 @@ class SSLSocketException : SocketException
 
 version(WOLFSSL)
 {
-    import tagion.network.wolfssl.c.ssl_mod;
+    import tagion.network.wolfssl.c.ssl;
     import tagion.network.wolfssl.c.error_ssl;
     alias SSL_new = wolfSSL_new;
     enum SSLErrorCodes : wolfSSL_ErrorCodes
