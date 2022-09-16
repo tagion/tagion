@@ -106,7 +106,6 @@ unittest {
     //bdd_filename.setExtension(FileExtension.hibon).fwrite(feature);
     const expected_feature = bdd_filename.setExtension(FileExtension.hibon).fread!FeatureGroup;
     assert(feature.toDoc == expected_feature.toDoc);
-
 }
 
 /++ 
@@ -142,44 +141,26 @@ void takeName(ref string action_name, string description) {
 +/
 @safe
 string camelName(string names_with_space, const Flag!"BigCamel" flag = No.BigCamel) {
-    bool not_first;
-    string camelCase(string name) {
-if (name.length) {
-		if (not_first) {
-            return toUpper(name[0]) ~ name[1 .. $];
-        }
-        not_first = true;
-        if (name.length > 0) {
+    string camelCase(string name, ref bool not_first) {
+        if (name.length) {
+            if (not_first) {
+                return toUpper(name[0]) ~ name[1 .. $];
+            }
+            not_first = true;
             return (flag is Yes.BigCamel ? toUpper(name[0]) : toLower(name[0])) ~ name[1 .. $];
         }
-		}
         return null;
     }
 
-		pragma(msg, "@@@@@@@@@", typeof(names_with_space
-   .splitter!isWhite
-        .map!camelCase
-	.joiner.array));
-		pragma(msg, "@@@@@@@@@", typeof(
-	names_with_space
-   .splitter!isWhite
-        .map!camelCase.array));
-		pragma(msg, "@@@@@@@@@", typeof(
-	names_with_space
-   .splitter!isWhite
-        .map!camelCase
-  .joiner
-	.map!(c => cast(immutable(char))c)
-	.array));
-///	.joiner.map!(c => c).array));
-return
-	names_with_space
-   .splitter!isWhite
-        .map!camelCase
-  .joiner
-	.map!(c => cast(immutable(char))c)
-	.array;
+    bool not_first = false;
+    return names_with_space
+        .splitter!isWhite
+        .map!(a => camelCase(a, not_first))
+        .join
+        .filter!isAlphaNum
+        .map!(c => cast(immutable(char)) c)
 
+        .array;
 
 }
 
@@ -189,23 +170,23 @@ unittest {
     string name;
     auto some_description = "This is some description.";
     takeName(name, some_description);
-    assert(name == "description");
+    assert(name == "description.");
     assert(name.camelName == "description");
     assert(name.camelName(Yes.BigCamel) == "Description");
     takeName(name, some_description);
-    assert(name == "some description");
+    assert(name == "some description.");
     assert(name.camelName == "someDescription");
     assert(name.camelName(Yes.BigCamel) == "SomeDescription");
     takeName(name, some_description);
-    assert(name == "is some description");
+    assert(name == "is some description.");
     assert(name.camelName == "isSomeDescription");
     assert(name.camelName(Yes.BigCamel) == "IsSomeDescription");
     takeName(name, some_description);
-    assert(name == "This is some description");
+    assert(name == "This is some description.");
     assert(name.camelName == "thisIsSomeDescription");
     assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
     takeName(name, some_description);
-    assert(name == "This is some description");
+    assert(name == "This is some description.");
     assert(name.camelName == "thisIsSomeDescription");
     assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
 }
@@ -249,7 +230,7 @@ unittest {
 }
 
 version (unittest) {
-//    import io=std.stdio;
+    import io = std.stdio;
     import std.exception;
     import tagion.basic.Types : FileExtension;
     import std.stdio : File;
