@@ -1,3 +1,7 @@
+/**
+ * Handels all BDD information concerning the Feature
+ *    Comments, description, function-names, scenarios and actions
+ */
 module tagion.behaviour.BehaviourFeature;
 
 import std.traits;
@@ -9,6 +13,10 @@ import tagion.basic.Basic : isOneOf, staticSearchIndexOf;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 
+/* 
+ * Set the common propery for
+ * Feature, Scenario and the Actions (Given,When,Then and But)
+ */
 @safe:
 mixin template Property() {
     string description;
@@ -52,9 +60,12 @@ struct But {
 
 enum isDescriptor(T) = hasMember!(T, "description");
 
+/* 
+ * Contains the information of for the Protorty including the name id of the property
+ */
 struct Info(alias Property) {
     Property property;
-    string name; /// Name of the function member
+    string name; /// Name of the function member, scenario call or feature module
     Document result;
     mixin HiBONRecord!();
 }
@@ -62,6 +73,10 @@ struct Info(alias Property) {
 /// Returns: true if I is a Info template
 enum isInfo(alias I) = __traits(isSame, TemplateOf!I, Info);
 
+/* 
+ * The Action group contains a list of acrion with the property defined which is a part of the 
+ * behaviour property
+ */
 struct ActionGroup(Property) if (isOneOf!(Property, BehaviourProperties)) {
     Info!Property[] infos;
     mixin HiBONRecord!();
@@ -70,6 +85,11 @@ struct ActionGroup(Property) if (isOneOf!(Property, BehaviourProperties)) {
 /// Returns: true if I is a ActionGroup
 enum isActionGroup(alias I) = __traits(isSame, TemplateOf!I, ActionGroup);
 
+/** 
+ * Contains all infomation of a scenario
+ * the class name of the scenario and the description
+ * it also contains all the action groups of the scenario
+ */
 @safe
 struct ScenarioGroup {
     @("Scenario") Info!Scenario info;
@@ -80,6 +100,9 @@ struct ScenarioGroup {
     mixin HiBONRecord!();
 }
 
+/** 
+ * Conatins add the information of a Feature
+ */
 @safe
 struct FeatureGroup {
     Info!Feature info;
@@ -92,6 +115,9 @@ alias BehaviourProperties = AliasSeq!(Given, When, Then, But);
 /// The behaviour-properties which only occurrences once in a Scenario
 alias MandatoryBehaviourProperties = Erase!(When, Erase!(But, BehaviourProperties));
 
+/**
+ * Returns: nethod in a scenario class
+ */
 template getMethod(alias T, string name) {
     alias method = __traits(getOverloads, T, name);
     static if (method.length > 0) {
@@ -107,6 +133,9 @@ static unittest {
     static assert(!isCallable!(getMethod!(BehaviourUnittest.Some_awesome_feature, "count")));
 }
 
+/**
+ * Returns: an alias-sequency of all the callable members of an object
+ */
 template getAllCallables(T) if (is(T == class) || is(T == struct)) {
     alias all_members = aliasSeqOf!([__traits(allMembers, T)]);
     alias all_members_as_aliases = staticMap!(ApplyLeft!(getMethod, T), all_members);
@@ -121,6 +150,9 @@ static unittest { // Test of getAllCallable
     static assert(allSatisfy!(isCallable, all_callables));
 }
 
+/**
+ * Returns: true if the alias T is an Action
+ */
 template hasActions(alias T) if (isCallable!T) {
     alias hasProperty = ApplyLeft!(hasUDA, T);
     enum hasActions = anySatisfy!(hasProperty, BehaviourProperties);
@@ -215,7 +247,7 @@ unittest {
     static assert(is(getProperty!(BehaviourUnittest.Some_awesome_feature.helper_function) == void));
 }
 
-	// Test of the getActions of a specific behaviour property
+// Test of the getActions of a specific behaviour property
 @safe
 unittest {
     alias behaviour_of_given = getActions!(BehaviourUnittest.Some_awesome_feature, Given);
@@ -239,7 +271,7 @@ unittest {
             But("if the Customer does not take his card, then the card must be swollowed"));
 }
 
-	///Returns: true of T is a Scenario
+///Returns: true of T is a Scenario
 enum isScenario(T) = hasUDA!(T, Scenario);
 
 ///
@@ -248,13 +280,12 @@ static unittest {
 static assert(!isScenario!(BehaviourUnittest.This_is_not_a_scenario));
 }
 
-enum feature_name = "feature";
+enum feature_name = "feature"; /// Default enum name of an Feature module
 
 /** 
-  
-  Params:
-    M = the module
-	Returns: true if M is a feature module
+ * Params:
+ *   M = the module
+*	Returns: true if M is a feature module
 */
 template isFeature(alias M) if (__traits(isModule, M)) {
     import std.algorithm.searching : any;
@@ -352,8 +383,8 @@ static unittest { //
     static assert(__traits(isSame, scenarios, expected_scenarios));
 }
 
-	/**
-Returns: The Scenario UDA of T and if T is not a Scenario then result is false 
+/**
+* Returns: The Scenario UDA of T and if T is not a Scenario then result is false 
 */
 template getScenario(T) if (is(T == class) || is(T == struct)) {
     enum scenario_attr = getUDAs!(T, Scenario);

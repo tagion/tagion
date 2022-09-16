@@ -23,41 +23,39 @@ enum feature_regex = regex([
         r"`((?:\w+\.?)+)`", /// Name
     ], "i");
 
-
-unittest
-{
+unittest {
     /// regex_given
     {
-        const test="---given when xxx";
-	    auto match = test.matchFirst(feature_regex);
+        const test = "---given when xxx";
+        auto match = test.matchFirst(feature_regex);
         assert(match[1] == "given");
         assert(match.whichPattern == Token.ACTION);
     }
     /// regex_when
     {
-        const test="+++when rrrr when xxx";
-	    auto match = test.matchFirst(feature_regex);
+        const test = "+++when rrrr when xxx";
+        auto match = test.matchFirst(feature_regex);
         assert(match[1] == "when");
         assert(match.whichPattern == Token.ACTION);
     }
     /// regex_then
     {
-        const test="+-+-then fff rrrr when xxx";
-	    auto match = test.matchFirst(feature_regex);
+        const test = "+-+-then fff rrrr when xxx";
+        auto match = test.matchFirst(feature_regex);
         assert(match[1] == "then");
         assert(match.whichPattern == Token.ACTION);
     }
     /// regex_feature
     {
-        const test="****feature** fff rrrr when xxx";
-	    auto match = test.matchFirst(feature_regex);
+        const test = "****feature** fff rrrr when xxx";
+        auto match = test.matchFirst(feature_regex);
         assert(match[1] == "feature");
         assert(match.whichPattern == Token.FEATURE);
     }
     /// regex_scenario
     {
-        const test="----++scenario* ddd fff rrrr when xxx";
-	    auto match = test.matchFirst(feature_regex);
+        const test = "----++scenario* ddd fff rrrr when xxx";
+        auto match = test.matchFirst(feature_regex);
         assert(match[1] == "scenario");
         assert(match.whichPattern == Token.SCENARIO);
     }
@@ -134,8 +132,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                 case State.Scenario:
                     scenario_group.info = info_scenario;
 
-                    if(comment.length)
-                    {
+                    if (comment.length) {
                         info_scenario.property.comments ~= comment;
                     }
                     break;
@@ -143,8 +140,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                     static foreach (index, Field; Fields!ScenarioGroup) {
                         static if (hasMember!(Field, "infos")) {
                             with (scenario_group.tupleof[index]) {
-                                if (current_action_index is index) 
-                                {
+                                if (current_action_index is index) {
                                     infos[$ - 1].property.comments ~= comment;
                                 }
                             }
@@ -194,8 +190,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                 break;
             case SCENARIO:
                 check_error(got_feature, "Scenario without feature");
-                if (state != State.Feature)
-                {
+                if (state != State.Feature) {
                     result.scenarios ~= scenario_group;
                     info_scenario = Info!Scenario();
                     scenario_group = ScenarioGroup();
@@ -215,7 +210,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                             enum label = GetLabel!(scenario_group.tupleof[index]);
                             enum action_name = label.name;
                             static if (hasMember!(Field, "infos")) {
-                                
+
                                 if (action_word == action_name) {
                                     with (scenario_group.tupleof[index]) {
 
@@ -277,8 +272,8 @@ unittest { /// Convert ProtoDBBTestComments to Feature
 
 version (unittest) {
     import io = std.stdio;
-	import tagion.hibon.HiBONJSON;
-	import tagion.basic.Basic : unitfile;
+    import tagion.hibon.HiBONJSON;
+    import tagion.basic.Basic : unitfile;
     import tagion.basic.Types : FileExtension;
     import std.stdio : File;
     import std.path;

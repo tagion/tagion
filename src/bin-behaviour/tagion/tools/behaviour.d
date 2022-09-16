@@ -33,6 +33,9 @@ enum DOT='.';
 /* Opt-arg only accepts one argument */
 enum ONE_ARGS_ONLY = 2;
 
+/** 
+ * Option setting for the optarg and behaviour.json config file
+ */
 struct BehaviourOptions {
     /* Include paths for the BDD source files */
     string[] paths;
@@ -124,15 +127,8 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
             auto feature=parser(file.name, errors);
 			feature.emendation(file.name.suggestModuleName(opts.paths));
 
-            if (!errors.length)
-            {
-                writefln("%s -> succsess!!! ", file.name);
-            }
-            else
-            {
-                writefln("Amount of erros in %s: %s", file.name, errors.length);
-            }
             if (errors.length) {
+                writefln("Amount of erros in %s: %s", file.name, errors.length);
                 errors.join("\n").writeln;
                 result_errors++;
                 continue;
@@ -224,7 +220,6 @@ int main(string[] args) {
                     format("%s [<option>...]", program),
                     "",
                     "<option>:",
-
                     ].join("\n"),
                 main_args.options);
         return 0;

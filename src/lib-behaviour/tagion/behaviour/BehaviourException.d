@@ -1,3 +1,6 @@
+/**
+Exception use by the BDD runtime
+*/
 module tagion.behaviour.BehaviourException;
 
 import tagion.basic.TagionExceptions;
@@ -14,14 +17,17 @@ import tagion.hibon.Document;
     }
 }
 
-/// check function used in the HiBON package
+/// check function used in the behaviour package
 alias check = Check!(BehaviourException);
 
+/** 
+ * Contains the Exception information  
+*/
 @safe
 @RecordType("BDDError")
 struct BehaviourError {
-    string msg;
-    string[] trace;
+    string msg; ///  Error message in the Exception
+    string[] trace; ///. Exception line trace of in the exception
     mixin HiBONRecord!(q{
             this(Exception e) nothrow @trusted {
                 import std.exception : assumeWontThrow;
@@ -37,11 +43,16 @@ struct BehaviourError {
 @RecordType("BDDResult")
 struct Result {
     import tagion.hibon.Document;
-//    int x;
-    Document outcome;
+    Document outcome; /// BDD test return document
     mixin HiBONRecord!();
 }
 
+/** 
+ * 
+ * Params:
+ *   doc = to encapsulated in the result
+ * Returns: document wrapped as a Result
+ */
 @safe
 Result result(const Document doc) nothrow {
     Result result;
@@ -49,6 +60,9 @@ Result result(const Document doc) nothrow {
     return result;
 }
 
+/*"
+ * dito but takes a HiBONRecord instead of a Document
+ */
 @safe
 Result result(T)(T hibon_record) if (isHiBONRecord!T) {
     return result(hibon_record.toDoc);
