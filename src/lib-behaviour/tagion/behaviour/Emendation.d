@@ -258,13 +258,11 @@ unittest {
     ];
     const filename = buildPath(["another", "path", "to", "some", "module", "path", "ModuleName"])
         .setExtension(FileExtension.dsrc);
-
-    io.writefln("suggestModuleName %s", filename.suggestModuleName(paths));
     assert(filename.suggestModuleName(paths) == "some.module.path.ModuleName");
 }
 
 version (unittest) {
-    import io = std.stdio;
+//    import io = std.stdio;
     import std.exception;
     import tagion.basic.Types : FileExtension;
     import std.stdio : File;
