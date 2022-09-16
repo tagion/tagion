@@ -5,11 +5,10 @@ import std.traits : Fields;
 import std.meta : Filter;
 import std.algorithm.iteration : map, cache, joiner;
 import std.string : join;
-import std.ascii : isWhite;
 import std.algorithm;
 import std.algorithm.sorting : sort;
 import std.typecons : Flag, No, Yes;
-import std.ascii : toUpper, toLower, isAlphaNum;
+import std.ascii : toUpper, toLower, isAlphaNum, isWhite;
 import std.array : split, array;
 
 /**
@@ -98,10 +97,10 @@ unittest {
 
     string[] errors;
     auto feature = parser(feature_byline, errors);
-    "/tmp/feature_no_emendation".setExtension("hibon").fwrite(feature);
+    //"/tmp/feature_no_emendation".setExtension("hibon").fwrite(feature);
     feature.emendation("test.emendation");
 
-    "/tmp/feature_with_emendation".setExtension("hibon").fwrite(feature);
+    //"/tmp/feature_with_emendation".setExtension("hibon").fwrite(feature);
 
     //bdd_filename.setExtension(FileExtension.hibon).fwrite(feature);
     const expected_feature = bdd_filename.setExtension(FileExtension.hibon).fread!FeatureGroup;
@@ -222,11 +221,46 @@ unittest {
     names = [null, "test"];
     assert(!names.isUnique);
     names = ["test", "test"];
-
     assert(!names.isUnique);
-
     names = ["test", "test1"];
     assert(names.isUnique);
+}
+
+/** 
+ * Suggest a module name from the paths and the filename
+ * Params:
+ *   paths = list of search paths
+ *   filename = name of the file to be mapped to module name
+ * Returns: return a suggestion of a module name
+ */
+@safe
+string suggestModuleName(string filename, const(string)[] paths) {
+    import std.path : stripExtension, absolutePath, pathSplitter;
+
+    import std.range.primitives : walkLength;
+    import std.range : take, drop;
+
+    auto filename_path = filename.stripExtension.absolutePath.pathSplitter;
+    foreach (path; paths) {
+        auto path_split = path.absolutePath.pathSplitter;
+        if (equal(path_split, filename_path.take(path_split.walkLength))) {
+            return filename_path.drop(path_split.walkLength).join(".");
+        }
+    }
+    return null;
+}
+
+@safe
+unittest {
+    auto paths = [
+        buildPath(["some", "path", "to", "modules"]),
+        buildPath(["another", "path", "to"])
+    ];
+    const filename = buildPath(["another", "path", "to", "some", "module", "path", "ModuleName"])
+        .setExtension(FileExtension.dsrc);
+
+    io.writefln("suggestModuleName %s", filename.suggestModuleName(paths));
+    assert(filename.suggestModuleName(paths) == "some.module.path.ModuleName");
 }
 
 version (unittest) {

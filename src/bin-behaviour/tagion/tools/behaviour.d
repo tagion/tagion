@@ -26,7 +26,7 @@ import tagion.basic.Types : FileExtension;
 import tagion.tools.revision;
 import tagion.behaviour.BehaviourParser;
 import tagion.behaviour.BehaviourIssue : Dlang, Markdown;
-import tagion.behaviour.Emendation : emendation;
+import tagion.behaviour.Emendation : emendation, suggestModuleName;
 
 /* File extension separator (Windows and Posix is a .) */
 enum DOT='.';
@@ -91,24 +91,6 @@ bool checkValidFile(string file_name) {
 }
 
 /** 
- * Suggest a module name from the paths and the filename
- * Params:
- *   paths = list of search paths
- *   filename = name of the file to be mapped to module name
- * Returns: return a suggestion of a module name
- */
-string suggestModuleName(string[] paths, string filename) {
-	auto filename_path = filename.stripExtension.absolutePath.pathSplitter;
-	foreach(path; paths) {
-	auto path_split = path.absolutePath.pathSplitter;
-		if (equal(path_split, filename_path.take(path_split.walkLength))) {
-			return filename_path.drop(path_split.walkLength).join(".");
-		}
-	}
-		return null;
-}
-
-/** 
  * Used to remove dot
  * @param opts - options for behaviour
  * @return amount of erros in md files
@@ -140,7 +122,7 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
             string[] errors;
 
             auto feature=parser(file.name, errors);
-			feature.emendation(file.name);
+			feature.emendation(file.name.suggestModuleName(opts.paths));
 
             if (!errors.length)
             {
