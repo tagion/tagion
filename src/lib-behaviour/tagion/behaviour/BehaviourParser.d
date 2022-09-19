@@ -103,9 +103,9 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
     ScenarioGroup scenario_group;
 
     Info!Feature info_feature;
-    Info!Scenario info_scenario;
+ //   Info!Scenario info_scenario;
 
-    bool first_scenario;
+//    bool first_scenario;
     State state;
     bool got_feature;
     int current_action_index = -1;
@@ -130,10 +130,10 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                     info_feature.property.comments ~= comment;
                     break;
                 case State.Scenario:
-                    scenario_group.info = info_scenario;
+                   // scenario_group.info = info_scenario;
 
                     if (comment.length) {
-                        info_scenario.property.comments ~= comment;
+                        scenario_group.info.property.comments ~= comment;
                     }
                     break;
                 case State.Action:
@@ -166,7 +166,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                 case State.Scenario:
                     check_error(match[1].validAction,
                             format("Not a valid action name %s,  '.' is not allowed", match[1]));
-                    info_scenario.name = match[1].idup;
+                    scenario_group.info.name = match[1].idup;
                     break TokenSwitch;
                 case State.Action:
                     static foreach (index, Field; Fields!ScenarioGroup) {
@@ -192,11 +192,11 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                 check_error(got_feature, "Scenario without feature");
                 if (state != State.Feature) {
                     result.scenarios ~= scenario_group;
-                    info_scenario = Info!Scenario();
-                    scenario_group = ScenarioGroup();
+//                    info_scenario = Info!Scenario();
+                    scenario_group = ScenarioGroup.init;
                 }
                 current_action_index = -1;
-                info_scenario.property.description = match.post.idup;
+                scenario_group.info.property.description = match.post.idup;
                 state = State.Scenario;
                 break;
             case ACTION:
@@ -229,9 +229,12 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
             }
         }
     }
-    scenario_group.info = info_scenario;
     result.info = info_feature;
+ //   if (info_scenatio != info_scenario.init) {
+//    scenario_group.info = info_scenario;
+if (scenario_group != scenario_group.init) {
     result.scenarios ~= scenario_group;
+    }
     import tagion.hibon.HiBONJSON : toPretty;
 
     return result;

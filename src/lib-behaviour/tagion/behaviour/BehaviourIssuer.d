@@ -217,9 +217,11 @@ struct DlangT(Stream) {
                 comments,
                 preparations.join
         );
+        if (feature_group.scenarios.length) {
         feature_group.scenarios
             .map!(s => issue(s))
             .each!(a => bout.write(a));
+    }
     }
 }
 
