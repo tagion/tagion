@@ -28,8 +28,6 @@ import tagion.behaviour.BehaviourParser;
 import tagion.behaviour.BehaviourIssue : Dlang, Markdown;
 import tagion.behaviour.Emendation : emendation, suggestModuleName;
 
-/* File extension separator (Windows and Posix is a .) */
-enum DOT='.';
 /* Opt-arg only accepts one argument */
 enum ONE_ARGS_ONLY = 2;
 
