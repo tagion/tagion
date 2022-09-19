@@ -15,11 +15,11 @@
     *Then* the start the tagionwave program.
 
 `is_running`
-      *And* stop the program.
+      *Then* stop the program.
 
 `is_stopped`
 
-​     *And*  check that the program returns no errors.
+​     *Then*  check that the program returns no errors.
 
 `noerror`
 
@@ -36,6 +36,6 @@
     *Then* stop the program.
 
 `is_stopped`
-      *And*  check that the program return fail.
+      *Then*  check that the program return fail.
 
 `faild`

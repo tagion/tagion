@@ -103,9 +103,6 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
     ScenarioGroup scenario_group;
 
     Info!Feature info_feature;
- //   Info!Scenario info_scenario;
-
-//    bool first_scenario;
     State state;
     bool got_feature;
     int current_action_index = -1;
@@ -130,8 +127,6 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                     info_feature.property.comments ~= comment;
                     break;
                 case State.Scenario:
-                   // scenario_group.info = info_scenario;
-
                     if (comment.length) {
                         scenario_group.info.property.comments ~= comment;
                     }
@@ -192,7 +187,6 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                 check_error(got_feature, "Scenario without feature");
                 if (state != State.Feature) {
                     result.scenarios ~= scenario_group;
-//                    info_scenario = Info!Scenario();
                     scenario_group = ScenarioGroup.init;
                 }
                 current_action_index = -1;
@@ -230,10 +224,8 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
         }
     }
     result.info = info_feature;
- //   if (info_scenatio != info_scenario.init) {
-//    scenario_group.info = info_scenario;
-if (scenario_group != scenario_group.init) {
-    result.scenarios ~= scenario_group;
+    if (scenario_group != scenario_group.init) {
+        result.scenarios ~= scenario_group;
     }
     import tagion.hibon.HiBONJSON : toPretty;
 
