@@ -5,6 +5,12 @@ import tagion.logger.Logger : LogLevel;
 
 // TODO: doxygen
 
+enum LogFiltersAction
+{
+    ADD,
+    REMOVE
+}
+
 @safe struct LogFilter
 {
     @Label("task") string task_name;
@@ -45,6 +51,15 @@ unittest
     enum task2 = "anothertaskname";
     enum symbol1 = "some_symbol";
     enum symbol2 = "another_symbol";
+
+    /// LogFilter_match_symmetrical
+    {
+        auto f1 = LogFilter(task1, LogLevel.STDERR);
+        auto f2 = LogFilter(task1, LogLevel.ERROR);
+
+        assert(f1.match(f2));
+        assert(f2.match(f1));
+    }
 
     /// LogFilter_match_text_logs
     {

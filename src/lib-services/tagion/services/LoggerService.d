@@ -13,7 +13,8 @@ import std.format;
 import core.thread;
 import core.sys.posix.pthread;
 import std.string;
-import std.algorithm : any;
+import std.algorithm : any, filter;
+import std.algorithm.searching : canFind;
 
 //extern(C) int pthread_setname_np(pthread_t, const char*);
 
@@ -42,7 +43,6 @@ import tagion.tasks.TaskWrapper;
     mixin TaskBasic;
 
     LogFilter[] commonLogFilters;
-    pragma(msg, "fixme(ib) Spawn LogSubscriptionService from LoggerService");
     Tid logSubscriptionTid;
 
     Options options;
@@ -121,11 +121,16 @@ import tagion.tasks.TaskWrapper;
         }
     }
 
-    @TaskMethod void receiveFilters(LogFilterArray filters)
+    @TaskMethod void receiveFilters(LogFilterArray filters, LogFiltersAction action)
     {
-        pragma(msg, "fixme(cbr): This accumulate alot for trach memory on the heap");
-
-        commonLogFilters = filters.array.dup;
+        if (action == LogFiltersAction.ADD)
+        {
+            commonLogFilters ~= filters.array;
+        }
+        else
+        {
+            commonLogFilters = commonLogFilters.filter!(f => filters.array.canFind(f)).array;
+        }
     }
 
     void onSTOP()

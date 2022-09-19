@@ -5,7 +5,8 @@
 
 module tagion.services.LogSubscriptionService;
 
-import std.algorithm : map;
+import std.algorithm : map, filter;
+import std.algorithm.searching : canFind;
 import std.array;
 import std.stdio : writeln, writefln;
 import std.format;
@@ -47,8 +48,12 @@ struct LogSubscribersInfo
     void addSubscription(uint listener_id, LogFilter[] sub_filters) @trusted
     {
         writeln("Added new listener ", listener_id);
+
+        // Firstly get filter updates
+        updateLogServiceFilters(getFilterUpdates(sub_filters), LogFiltersAction.ADD);
+
+        // Secondly update filters map
         filters[listener_id] = sub_filters;
-        notifyLogService;
     }
     /** Used when listener want to stop receiving logs or disconnected
      *  Update current filters and notify LoggerService about them
@@ -57,18 +62,21 @@ struct LogSubscribersInfo
      */
     void removeSubscription(uint listener_id) @trusted
     {
+        auto filters_to_remove = filters[listener_id];
+
+        // Firstly remove subscriber from filters map
         filters.remove(listener_id);
-        notifyLogService;
+
+        // Secondly get filter updates
+        updateLogServiceFilters(getFilterUpdates(filters_to_remove), LogFiltersAction.REMOVE);
     }
 
     /// Send all current filters to LoggerService
-    void notifyLogService()
+    void updateLogServiceFilters(LogFilter[] update_filters, LogFiltersAction action)
     {
-        import std.array;
-
         if (logger_service_tid != Tid.init)
         {
-            logger_service_tid.send(LogFilterArray(filters.values.join.idup));
+            logger_service_tid.send(LogFilterArray(update_filters.idup), action);
         }
         else
         {
@@ -96,6 +104,69 @@ struct LogSubscribersInfo
             }
         }
         return clients;
+    }
+
+    /** Get list of unique LogFilters that updates current list of filters.
+     *  Function filters out elements that already exists in some LogFilters and leaves only LogFilters that are absent
+     *      @param received_filters - array of LogFilters to filter
+     *      @return Array of LogFilters that are not present in current stored filters
+     */
+    LogFilter[] getFilterUpdates(LogFilter[] received_filters)
+    {
+        return received_filters.filter!(a => !filters.values.join.canFind(a)).array;
+    }
+}
+
+unittest
+{
+    enum task1 = "task1";
+    enum task2 = "task2";
+    enum task3 = "task3";
+    enum symbol1 = "symbol1";
+    enum symbol2 = "symbol2";
+
+    auto log_symbol1 = LogFilter(task1, symbol1);
+    auto log_symbol2 = LogFilter(task2, symbol2);
+    auto log_text1 = LogFilter(task1, LogLevel.INFO);
+    auto log_text2 = LogFilter(task3, LogLevel.INFO);
+
+    LogFilter[][uint] filters;
+    filters[1] = [log_symbol1, log_symbol2];
+    filters[2] = [log_text1];
+    filters[3] = [log_symbol1];
+
+    LogSubscribersInfo test_info;
+    test_info.filters = filters;
+
+    /// LogSubscribersInfo_matchFilters
+    {
+        assert(test_info.matchFilters(log_text2) == []);
+        assert(test_info.matchFilters(log_text1) == [2]);
+        assert(test_info.matchFilters(log_symbol1) == [3, 1]);
+
+        auto no_match_filter = LogFilter(task1, LogLevel.NONE);
+        assert(test_info.matchFilters(no_match_filter) == []);
+    }
+
+    /// LogSubscribersInfo_getFilterUpdates
+    {
+        enum new_symbol = "new_symbol";
+        auto new_log1 = LogFilter(task1, new_symbol);
+        auto new_log2 = LogFilter(task1, LogLevel.ALL);
+
+        LogFilter[] no_updates = [log_symbol1];
+        assert(test_info.getFilterUpdates(no_updates).empty);
+
+        LogFilter[] new_filters = [new_log1, new_log2];
+        assert(test_info.getFilterUpdates(new_filters) == new_filters);
+
+        LogFilter[] mixed_filters = [
+            log_symbol1, // miss
+            log_text1, // miss 
+            new_log1, // remain
+            new_log2, // remain
+        ];
+        assert(test_info.getFilterUpdates(mixed_filters) == [new_log1, new_log2]);
     }
 }
 
