@@ -22,7 +22,7 @@ import std.parallelism : parallel;
 import std.array : join;
 import std.process : execute;
 import tagion.utils.JSONCommon;
-import tagion.basic.Types : FileExtension;
+import tagion.basic.Types : FileExtension,DOT;
 import tagion.tools.revision;
 import tagion.behaviour.BehaviourParser;
 import tagion.behaviour.BehaviourIssue : Dlang, Markdown;
