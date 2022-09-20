@@ -91,3 +91,6 @@ ${call BIN,tagion,TAGION,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
 #
 target-behaviour: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-behaviour/*" -a -not -path "*/unitdata/*" }
 ${call BIN,behaviour,BEHAVIOUR,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
+
+target-behaviour_test: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-behaviour_test/*" -a -not -path "*/unitdata/*" }
+${call BIN,behaviour_test,BEHAVIOUR_TEST,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
