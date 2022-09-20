@@ -172,7 +172,8 @@ class SSLFiberService
     {
         foreach (fiber; active_fibers)
         {
-            if (!fiber.locked)
+            // @TODO: fiber.isComplete() - DEBUG CODE, remove later
+            if (!fiber.locked && fiber.isComplete())
             {
                 socket_set.add(fiber.client);
             }
@@ -336,6 +337,21 @@ class SSLFiberService
             bool _lock;
             SSLFiber.Time start_timestamp;
             uint fiber_id;
+            // @TODO: DEBUG CODE - remove how need
+            bool _isComlete;
+        }
+
+        // @TODO: DEBUG CODE - remove how need
+        @property public bool isComplete()
+        {
+            version(WOLFSSL) 
+            {
+                return _isComlete;
+            }
+            else 
+            {
+                return 1;
+            }
         }
 
         @property uint id() const pure nothrow
@@ -453,7 +469,7 @@ class SSLFiberService
                 else
                 {
 
-                    
+
 
                         .check(leb128_index < LEN_MAX, message("Invalid size of len128 length field %d", leb128_index));
                     break leb128_loop;
@@ -527,14 +543,75 @@ class SSLFiberService
             client.send(buffer);
         }
 
+        static private void _callback_srvr(SSL* pointer, int a, int b)
+        {
+            import std.stdio;
+            writeln(">><<", cast(SSL_CB_POINTS)a, '_', b);
+        }
+
+        version(WOLFSSL)
+        {
+            private void waitAcception(ref Socket accept_client) @trusted
+            {
+                SSLSocket waiter = null;
+                int result = -8;
+                while(result < 1)
+                {
+                    result = listener.acceptSSL(waiter, accept_client);
+                    if ((waiter !is null) && result == 1)
+                    {
+                        import std.stdio;
+                        writeln("<<Accept process complete>>");
+                        this.client = waiter;
+                        this.client.setCallback(&this._callback_srvr);
+                        ownerTid.send(true);
+                    }
+                }
+            }
+            // @TODO: DEBUG structure - remove how need
+            struct SocketPair
+            {
+                SSLSocketFiber* fiber;
+                Socket* socket;
+                protected
+                {
+                    static __gshared SSLSocketFiber* _fiber;
+                    static __gshared Socket* _socket;
+                }
+
+                this(bool a) @trusted
+                {
+                    this.fiber = this._fiber;
+                    this.socket = this._socket;
+                }
+
+                this(SSLSocketFiber* a, Socket* b) @trusted
+                {
+                    this._fiber = a;
+                    this._socket = b;
+                    this.fiber = a;
+                    this.socket = b;
+                }
+
+                void print_static()  @trusted
+                {
+                    import std.stdio;
+                    writeln("Values:", &fiber, '_',&socket);
+                }
+            }
+        }
+
         /++
          Fiber service loop
          +/
         @trusted
         void run()
         {
+            import std.stdio;
+            writeln("SSLFiberService.run");
             startTime;
             scope accept_client = listener.accept;
+            this._isComlete = false;
             scope (exit)
             {
                 log("accept_client shutdown");
@@ -545,12 +622,37 @@ class SSLFiberService
                 unlock;
             }
             assert(accept_client.isAlive);
-
-            while (!listener.acceptSSL(client, accept_client))
+            writeln("Accept ", client, '_', &client);
+            version(WOLFSSL)
             {
-                checkTimeout;
-                yield;
+                // @TODO: DEBUG CASE for wolfssl - remove how need
+                auto self = this;
+                SocketPair pair = SocketPair(&self, &accept_client);
+                pair.print_static();
+                // @TODO: workaround
+                spawn({
+                    SocketPair caller = SocketPair(true);
+                    caller.print_static();
+                    caller.fiber.waitAcception(*caller.socket);
+                });
+
+                if (receiveOnly!bool)
+                {
+                    writeln("<<Launch found>>");
+                    client = pair.fiber.client;
+                }
             }
+            else
+            {
+                while (!listener.acceptSSL(client, accept_client))
+                {
+                    checkTimeout;
+                    yield;
+                }
+                client.setCallback(&this._callback_srvr);
+            }
+            writeln("Accept finish", client);
+            this._isComlete = true;
             assert(client.isAlive);
 
             bool stop;

@@ -108,11 +108,11 @@ extern (C)
 
 AES_KEY* Aes_Key_Alloc(ref bool needFree, bool side)
 {
-        //version(unittest)
-        //{
+        version(unittest)
+        {
                 static AES_KEY left_key, right_key;
                 needFree = false;
-                return side ? &left_key : &right_key; /*
+                return side ? &left_key : &right_key;
         }
         else
         {

@@ -93,22 +93,6 @@ version(WOLFSSL)
     alias ERR_error_string_n = wolfSSL_ERR_error_string_n;
     extern (C) 
     {
-        import tagion.crypto.aes.openssl_aes.aes;
-        void AES_cbc_encrypt(const char* inputdata, char* outdata, size_t count, AES_KEY* keydata, char* iv, int enc)
-        {
-            return wolfSSL_AES_cbc_encrypt(inputdata, outdata, count, keydata, iv, enc);
-        }
-
-        int AES_set_encrypt_key(const ubyte* userKey, const int bits, AES_KEY* key)
-        {
-            return wolfSSL_AES_set_encrypt_key(userKey, bits, key);
-        }
-
-        int AES_set_decrypt_key(const ubyte* userKey, const int bits, AES_KEY* key) 
-        {
-            return wolfSSL_AES_set_decrypt_key(userKey, bits, key);
-        }
-
         void SSL_set_info_callback(void* a, void* b)
         {
             auto ctx_ssl = wolfSSL_get_SSL_CTX(cast(WOLFSSL*)a);
@@ -335,9 +319,7 @@ class SSLSocket : Socket
     override void connect(Address to)
     {
         super.connect(to);
-        io.writeln("before", cast(SSL_CB_POINTS)SSL_get_state(_ssl));
         const res = SSL_connect(_ssl);
-        io.writeln("after", cast(SSL_CB_POINTS)SSL_get_state(_ssl));
         check_error(res, true);
     }
 
@@ -388,7 +370,7 @@ class SSLSocket : Socket
             enum WOLFSSL_ERROR_MARKER = -299;
             if (ssl_error < WOLFSSL_ERROR_MARKER)
             {
-                this.check_wolfssl_error(ssl_error);              
+                this.check_wolfssl_error(ssl_error);
             }
         }
         with (SSLErrorCodes) final switch (ssl_error)
@@ -550,7 +532,9 @@ class SSLSocket : Socket
         const res = SSL_accept(c_ssl);
         bool accepted;
         const int_error = SSL_get_error(c_ssl, res);
-        const ssl_error = cast(SSLErrorCodes) int_error;
+        auto ssl_error = cast(SSLErrorCodes) int_error;
+
+        io.writeln("<SSLErrorCodes>", ssl_error);
 
         version(WOLFSSL)
         {
@@ -558,6 +542,10 @@ class SSLSocket : Socket
             if (int_error < WOLFSSL_ERROR_MARKER)
             {
                 this.processingWolfSSLError(ssl_error);
+                if (int_error == wolfSSL_ErrorCodes.BUFFER_ERROR)
+                {
+                    ssl_error = SSLErrorCodes.SSL_ERROR_SYSCALL;
+                }
             }
         }
 
@@ -679,6 +667,12 @@ class SSLSocket : Socket
             SSL_CTX_free(client_ctx);
             client_ctx = null;
         }
+    }
+
+    @trusted
+    public void setCallback(void* _function) // func (void*, int, int)
+    {
+        return SSL_set_info_callback(this.getSSL, _function);
     }
 
     static ~this()
@@ -940,7 +934,7 @@ class SSLSocket : Socket
         * possible test infinite circle (wait socket acception)
         */
         //! [encrypt/decrypt message exchange test]
-        version (none) // @NOTE: remove that for launch circle
+        //version (none) // @NOTE: remove that for launch circle
         {
             import core.thread;
 
