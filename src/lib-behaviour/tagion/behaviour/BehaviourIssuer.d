@@ -148,7 +148,7 @@ struct DlangT(Stream) {
         preparations ~=
             q{
             // Auto generated imports
-            import tagion.behaviour.BehaviourBase;
+            import tagion.behaviour.BehaviourFeature;
             import tagion.behaviour.BehaviourException;
         };
     }
