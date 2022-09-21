@@ -7,71 +7,79 @@ module tagion.services.LogSubscriptionService;
 
 import std.algorithm : map, filter;
 import std.algorithm.searching : canFind;
-import std.array;
-import std.stdio : writeln, writefln;
-import std.format;
-import std.socket;
-import core.thread;
-import std.concurrency;
-import std.exception : assumeUnique, assumeWontThrow;
+import std.array : array, join;
+import std.stdio : writeln;
+import core.thread : msecs;
 
-import tagion.communication.HiRPC;
-
-import tagion.logger.Logger;
-import tagion.logger.LogRecords;
-import tagion.services.Options : Options, setOptions, setDefaultOption;
-import tagion.options.CommonOptions : commonOptions;
-import tagion.basic.Types : Control, Buffer;
-import tagion.network.SSLFiberService;
-import tagion.network.SSLServiceAPI;
-import tagion.hibon.Document;
-import tagion.hibon.HiBON;
-import tagion.hibon.HiBONRecord : GetLabel;
+import tagion.basic.Basic : TrustedConcurrency;
+import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions : fatal, taskfailure;
+import tagion.communication.HiRPC : HiRPC;
+import tagion.logger.Logger : log, LogLevel;
+import tagion.logger.LogRecords;
+import tagion.services.Options : Options;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONRecord : GetLabel;
+import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
+import tagion.network.SSLServiceAPI : SSLServiceAPI;
+
+mixin TrustedConcurrency;
 
 /**
  * \struct LogSubscribersInfo
- * Struct stores info about clients' subscription 
+ * Struct stores info about connected subscribers
  */
 struct LogSubscribersInfo
 {
     /** Tid for communicating with LoggerService */
     Tid logger_service_tid;
-    /** Array of filters for each connected listener_id */
+    /** Array of filters for each connected subscriber_id */
     LogFilter[][uint] filters;
 
-    /** Used when new listener want to receive logs
-      * As soon as new listener is added, update filters and notify LoggerService
-      *     @param listener_id - unique identification of new listener
-      *     @param log_info - log level of needed messages for listener
-      */
-    void addSubscription(uint listener_id, LogFilter[] sub_filters) @trusted
+    this(Tid logger_service_tid)
     {
-        writeln("Added new listener ", listener_id);
+        this.logger_service_tid = logger_service_tid;
+    }
+
+    /** Method that saves filters for newly added subscriber
+      * As soon as new subscriber is added, method updates filters and notify LoggerService
+      *     @param subscriber_id - unique identificator of new subscriber
+      *     @param subscriber_filters - filters received from new subscriber
+      *     @see \link LoggerService
+      */
+    void addSubscription(uint subscriber_id, LogFilter[] subscriber_filters) @trusted
+    {
+        log("Added new subscriber: %s", subscriber_id);
 
         // Firstly get filter updates
-        updateLogServiceFilters(getFilterUpdates(sub_filters), LogFiltersAction.ADD);
+        updateLogServiceFilters(getFilterUpdates(subscriber_filters), LogFiltersAction.ADD);
 
-        // Secondly update filters map
-        filters[listener_id] = sub_filters;
+        // Secondly update filters storage
+        filters[subscriber_id] = subscriber_filters;
     }
-    /** Used when listener want to stop receiving logs or disconnected
-     *  Update current filters and notify LoggerService about them
-     *      @param listener_id - unique identification of new listener
-     *      @see \link LoggerService
-     */
-    void removeSubscription(uint listener_id) @trusted
+
+    /** Method that used when subscriber want to stop receiving logs or disconnected
+      * Updates current filters and notify LoggerService about them
+      *     @param subscriber_id - unique identificator of new subscriber
+      *     @see \link LoggerService
+      */
+    void removeSubscription(uint subscriber_id) @trusted
     {
-        auto filters_to_remove = filters[listener_id];
+        auto filters_to_remove = filters[subscriber_id];
 
         // Firstly remove subscriber from filters map
-        filters.remove(listener_id);
+        filters.remove(subscriber_id);
 
         // Secondly get filter updates
         updateLogServiceFilters(getFilterUpdates(filters_to_remove), LogFiltersAction.REMOVE);
     }
 
-    /// Send all current filters to LoggerService
+    /** Method that sends filter updates to LoggerService
+      *     @param update_filters - list of filters to update
+      *     @param action - type of update action ADD or REMOVE
+      *     @see \link LoggerService
+      */
     void updateLogServiceFilters(LogFilter[] update_filters, LogFiltersAction action)
     {
         if (logger_service_tid != Tid.init)
@@ -80,38 +88,37 @@ struct LogSubscribersInfo
         }
         else
         {
-            log.warning("Unable to notify logger service");
+            log.error("Unable to notify logger service");
         }
     }
 
-    /** Check received from LoggerService logs
-     *      @param task_name Represent from which task we received logs
-     *      @param log_level Represent log level for all logs from task
-     *      @return Array of all clients_id that need this logs
-     */
-    @safe uint[] matchFilters(LogFilter filter)
+    /** Method creates list of subscribers interested in given filter
+      *     @param filter - log filter of received log
+      *     @return list of all subscriber_ids that need this log
+      */
+    @safe uint[] getInterestedSubscribers(LogFilter filter) const
     {
-        uint[] clients;
-        foreach (client_id; filters.keys)
+        uint[] result;
+        foreach (subscriber_id; filters.keys)
         {
-            foreach (client_filter; filters[client_id])
+            foreach (subscriber_filter; filters[subscriber_id])
             {
-                if (client_filter.match(filter))
+                if (subscriber_filter.match(filter))
                 {
-                    clients ~= client_id;
+                    result ~= subscriber_id;
                     break;
                 }
             }
         }
-        return clients;
+        return result;
     }
 
     /** Get list of unique LogFilters that updates current list of filters.
-     *  Function filters out elements that already exists in some LogFilters and leaves only LogFilters that are absent
-     *      @param received_filters - array of LogFilters to filter
-     *      @return Array of LogFilters that are not present in current stored filters
-     */
-    LogFilter[] getFilterUpdates(LogFilter[] received_filters)
+      * Function filters out elements that already exists in some LogFilters and leaves only LogFilters that differs
+      *     @param received_filters - array of LogFilters to filter
+      *     @return Array of LogFilters that are not present in current stored filters
+      */
+    LogFilter[] getFilterUpdates(LogFilter[] received_filters) const
     {
         return received_filters.filter!(a => !filters.values.join.canFind(a)).array;
     }
@@ -135,21 +142,23 @@ unittest
     filters[2] = [log_text1];
     filters[3] = [log_symbol1];
 
-    LogSubscribersInfo test_info;
+    auto test_info = LogSubscribersInfo(Tid.init);
     test_info.filters = filters;
 
-    /// LogSubscribersInfo_matchFilters
+    /// LogSubscribersInfo_getInterestedSubscribers
     {
-        assert(test_info.matchFilters(log_text2) == []);
-        assert(test_info.matchFilters(log_text1) == [2]);
-        assert(test_info.matchFilters(log_symbol1) == [3, 1]);
+        assert(test_info.getInterestedSubscribers(log_text2) == []);
+        assert(test_info.getInterestedSubscribers(log_text1) == [2]);
+        assert(test_info.getInterestedSubscribers(log_symbol1) == [3, 1]);
 
         auto no_match_filter = LogFilter(task1, LogLevel.NONE);
-        assert(test_info.matchFilters(no_match_filter) == []);
+        assert(test_info.getInterestedSubscribers(no_match_filter) == []);
     }
 
     /// LogSubscribersInfo_getFilterUpdates
     {
+        import std.range : empty;
+
         enum new_symbol = "new_symbol";
         auto new_log1 = LogFilter(task1, new_symbol);
         auto new_log2 = LogFilter(task1, LogLevel.ALL);
@@ -170,48 +179,33 @@ unittest
     }
 }
 
-/**
- * Alias for something to read
- * @tparam T my param
- * @tparam R not my param
- */
-/// \snippet HiBON.d Zero Test
-alias binread(T, R) = MyStruct.read!(T, Endian.littleEndian, R);
-
-/** Service interact with ... / receive and store messages from ...
-     * All usefull stuff also mys be here
-     * Main task for LogSubscriptionService
-     * @param opts - options for running this task
-     */
+/** LogSubscriptionService handles network subscription to logs.
+  * Service receives logs from LoggerService and dispatch them to interested subscribers
+  * Main task for LogSubscriptionService
+  *     @param opts - service options for this task
+  *     @see \link LoggerService
+  */
 void logSubscriptionServiceTask(Options opts) nothrow
 {
     try
     {
         scope (exit)
         {
-            import std.stdio;
-
             writeln("Sending END from LogSubService");
             ownerTid.send(Control.END);
         }
 
-        LogSubscribersInfo subscribers;
-
-        subscribers.logger_service_tid = locate(opts.logger.task_name);
+        auto subscribers = LogSubscribersInfo(locate(opts.logger.task_name));
 
         log.register(opts.logSubscription.task_name);
 
         log("SocketThread port=%d addresss=%s", opts.logSubscription.service.port, opts
                 .logSubscription.service.address);
 
-        import std.conv;
-
         @safe class LogSubscriptionRelay : SSLFiberService.Relay
         {
             bool agent(SSLFiber ssl_relay)
             {
-                import tagion.hibon.HiBONJSON;
-
                 @trusted const(Document) receivessl()
                 {
                     try
@@ -233,12 +227,12 @@ void logSubscriptionServiceTask(Options opts) nothrow
 
                 try
                 {
-                    const listener_id = ssl_relay.id();
+                    const subscriber_id = ssl_relay.id();
 
                     auto params_doc = doc["$msg"].get!Document["params"].get!Document;
                     auto filters_received = params_doc[].map!(e => e.get!LogFilter).array;
 
-                    subscribers.addSubscription(listener_id, filters_received);
+                    subscribers.addSubscription(subscriber_id, filters_received);
                 }
                 catch (Exception e)
                 {
@@ -255,45 +249,53 @@ void logSubscriptionServiceTask(Options opts) nothrow
         }
 
         auto relay = new LogSubscriptionRelay;
-        SSLServiceAPI logsubscription_api = SSLServiceAPI(opts.logSubscription.service, relay);
+        auto logsubscription_api = SSLServiceAPI(opts.logSubscription.service, relay);
         logsubscription_api.start;
 
         bool stop;
-        void control(Control ts)
+
+        /** Handler of Control signals
+          * STOP signal stops service, all other signals are invalid here
+          *     @param control - received signal
+          */
+        void control(Control control)
         {
-            with (Control) switch (ts)
+            with (Control) switch (control)
             {
             case STOP:
-                writefln("Subscription STOP %d", opts.logSubscription.service.port);
                 log("Kill socket thread port %d", opts.logSubscription.service.port);
                 logsubscription_api.stop;
                 stop = true;
                 break;
             default:
-                log.error("Bad Control command %s", ts);
+                log.error("Bad Control command %s", control);
             }
         }
 
+        /** Method that receives logs from \link LoggerService
+          *     @param filter - metadata about received log
+          *     @param data - Document that contains either TextLog or any \link HiBONRecord variable
+          */
         @safe void receiveLogs(immutable(LogFilter) filter, immutable(Document) data)
         {
-            auto log_hibon = new HiBON;
-            log_hibon[GetLabel!(typeof(filter)).name] = filter;
-            log_hibon[GetLabel!(typeof(data)).name] = data;
+            auto log_data = new HiBON;
+            log_data[GetLabel!(typeof(filter)).name] = filter;
+            log_data[GetLabel!(typeof(data)).name] = data;
 
-            foreach (client; subscribers.matchFilters(filter))
+            foreach (subscriber_id; subscribers.getInterestedSubscribers(filter))
             {
                 HiRPC hirpc;
-                const sender = hirpc.action(opts.logSubscription.prefix, Document(log_hibon));
+                const sender = hirpc.action(opts.logSubscription.prefix, Document(log_data));
 
                 immutable sender_data = sender.toDoc.serialize();
-                logsubscription_api.send(client, sender_data);
+                logsubscription_api.send(subscriber_id, sender_data);
             }
         }
 
         ownerTid.send(Control.LIVE);
         while (!stop)
         {
-            receiveTimeout(500.msecs, //Control the thread
+            receiveTimeout(500.msecs,
                 &control,
                 &taskfailure,
                 &receiveLogs,
@@ -305,9 +307,3 @@ void logSubscriptionServiceTask(Options opts) nothrow
         fatal(t);
     }
 }
-
-/** \page LogSubscriptionService
- * Some stuff about service
- * How to link?
- * logSubscriptionServiceTask
- */

@@ -336,9 +336,9 @@ void transactionServiceTask(immutable(Options) opts) nothrow
             }
         }
 
-        // auto relay = new TransactionRelay;
-        // SSLServiceAPI script_api = SSLServiceAPI(opts.transaction.service, relay);
-        // auto script_thread = script_api.start;
+        auto relay = new TransactionRelay;
+        SSLServiceAPI script_api = SSLServiceAPI(opts.transaction.service, relay);
+        auto script_thread = script_api.start;
 
         bool stop;
         void handleState(Control ts)
@@ -348,9 +348,9 @@ void transactionServiceTask(immutable(Options) opts) nothrow
             case STOP:
                 writefln("Transaction STOP %d", opts.transaction.service.port);
                 log("Kill socket thread port %d", opts.transaction.service.port);
-                // script_api.stop;
+                script_api.stop;
                 //                script_thread.join;
-                // stop = true;
+                stop = true;
                 break;
                 // case LIVE:
                 //     stop = false;

@@ -1,54 +1,37 @@
 module tagion.logservicetest;
 
-import core.thread;
-import std.path;
-import std.getopt;
-import std.stdio;
-import std.file : exists;
-import std.format;
-import std.conv : to;
-import std.array;
-import tagion.utils.Miscellaneous;
-import tagion.utils.Gene;
-import tagion.services.Options;
-import tagion.services.LoggerService;
-import tagion.services.RecorderService;
-import tagion.services.LogSubscriptionService;
+import std.format : format;
+import std.socket : InternetAddress, AddressFamily, SocketOSException;
+import std.stdio : writeln, writefln, stderr;
+import core.thread : Thread, seconds;
+
 import tagion.basic.Basic : TrustedConcurrency;
 import tagion.basic.Types : Control, Buffer;
-import tagion.dart.DART : DART;
-import tagion.dart.Recorder : RecordFactory;
-import tagion.communication.HiRPC;
-import tagion.hibon.HiBON;
-import tagion.crypto.SecureInterfaceNet : SecureNet;
-import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
-import tagion.dart.BlockFile;
-import tagion.hibon.Document;
-import tagion.dart.DARTFile;
-import tagion.tasks.TaskWrapper;
-import tagion.logger.Logger;
-import tagion.logger.LogRecords;
-import tagion.network.SSLOptions;
-import tagion.network.SSLSocket;
-import std.socket : InternetAddress, AddressFamily, SocketOSException;
+import tagion.communication.HiRPC : HiRPC;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONJSON : toJSON, toPretty;
+import tagion.hibon.HiBONRecord : HiBONRecord, RecordType;
+import tagion.logger.Logger : log, LogLevel, Log;
+import tagion.logger.LogRecords : LogFilter;
+import tagion.network.SSLOptions : configureOpenSSL;
+import tagion.network.SSLSocket : SSLSocket, EndpointType;
 import tagion.options.CommonOptions : setCommonOptions;
-import tagion.hibon.HiBONJSON;
+import tagion.services.LoggerService : LoggerTask;
+import tagion.services.Options : Options, setDefaultOption, setOptions, getOptions;
+import tagion.tasks.TaskWrapper : Task;
+import tagion.tools.Basic : Main;
 
 mixin TrustedConcurrency;
 
-void sendingLoop()
+private void sendingLoop()
 {
-    import core.thread;
-    import std.stdio;
-
     writeln("I'm alive!");
     log.register("sendingLoop");
     writeln("Wait...");
-    Thread.sleep(3000.msecs);
+    Thread.sleep(3.seconds);
 
     log("---------------------- Test logs from sendingLoop ----------------------");
-
-    import tagion.hibon.HiBONRecord;
 
     static struct S
     {
@@ -62,49 +45,11 @@ void sendingLoop()
     mixin Log!test_variable;
 }
 
-void create_ssl(const(OpenSSL) openssl)
-{
-    import std.algorithm.iteration : each;
-    import std.file : exists, mkdirRecurse;
-    import std.process : pipeProcess, wait, Redirect;
-    import std.array : array;
-    import std.path : dirName;
-
-    writeln(openssl.certificate.exists, openssl.private_key.exists);
-
-    if (!openssl.certificate.exists || !openssl.private_key.exists)
-    {
-        writeln(openssl.certificate.dirName);
-        openssl.certificate.dirName.mkdirRecurse;
-        openssl.private_key.dirName.mkdirRecurse;
-        auto pipes = pipeProcess(openssl.command.array);
-        scope (exit)
-        {
-            wait(pipes.pid);
-        }
-        openssl.config.each!(a => pipes.stdin.writeln(a));
-        pipes.stdin.writeln(".");
-        pipes.stdin.flush;
-        foreach (s; pipes.stderr.byLine)
-        {
-            stderr.writeln(s);
-        }
-        foreach (s; pipes.stdout.byLine)
-        {
-            writeln(s);
-        }
-        assert(openssl.certificate.exists && openssl.private_key.exists);
-    }
-}
-
-import tagion.tools.Basic;
-
 mixin Main!(_main, "logsub");
 
 int _main(string[] args)
 {
     scope Options local_options;
-    import std.getopt;
 
     setDefaultOption(local_options);
 
@@ -112,7 +57,7 @@ int _main(string[] args)
 
     local_options.load(config_file);
     setOptions(local_options);
-    main_task = "logservicetest";
+    enum main_task = "logservicetest";
 
     immutable service_options = getOptions();
     // Set the shared common options for all services
@@ -124,7 +69,6 @@ int _main(string[] args)
 
     /// starting Logger task
     auto logger_service = Task!LoggerTask(service_options.logger.task_name, service_options);
-    import std.stdio : stderr;
 
     stderr.writeln("Waiting for logger");
     const response = receiveOnly!Control;
@@ -141,7 +85,7 @@ int _main(string[] args)
     }
     log.register(main_task);
 
-    create_ssl(service_options.logSubscription.service.openssl);
+    configureOpenSSL(service_options.logSubscription.service.openssl);
 
     writeln("Creating SSLSocket");
     Thread.sleep(1.seconds);
@@ -185,7 +129,7 @@ int _main(string[] args)
     {
         rec_size = client.receive(rec_buf); //, current_max_size);
         writefln("read rec_size=%d", rec_size);
-        Thread.sleep(1000.msecs);
+        Thread.sleep(1.seconds);
     }
     while (rec_size < 0);
     auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);

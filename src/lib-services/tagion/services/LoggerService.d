@@ -2,7 +2,7 @@
 
 /// \page LoggerService
 
-/** @brief Service for logging everythinh
+/** @brief Service for handling both text logs and variable logging
  */
 
 module tagion.services.LoggerService;
@@ -16,8 +16,7 @@ import std.string;
 import std.algorithm : any, filter;
 import std.algorithm.searching : canFind;
 
-//extern(C) int pthread_setname_np(pthread_t, const char*);
-
+import tagion.basic.Basic : TrustedConcurrency, assumeTrusted;
 import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions;
 import tagion.GlobalSignals : abort;
@@ -27,29 +26,34 @@ import tagion.services.LogSubscriptionService : logSubscriptionServiceTask;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.logger.Logger;
 import tagion.logger.LogRecords;
-
-import tagion.basic.Basic : TrustedConcurrency;
+import tagion.tasks.TaskWrapper;
 
 mixin TrustedConcurrency;
 
-import tagion.tasks.TaskWrapper;
-
 /**
- * Main function of LoggerService
- * @param optiions
+ * \struct LoggerTask
+ * Struct represents LoggerService which handles logs and provides passing them to LogSubscriptionService
  */
 @safe struct LoggerTask
 {
     mixin TaskBasic;
 
+    /** Storage of current log filters, received from LogSubscriptionService */
     LogFilter[] commonLogFilters;
+    /** LogSubscriptionService thread id */
     Tid logSubscriptionTid;
 
+    /** Service options */
     Options options;
 
+    /** File for writing text logs */
     File file;
+    /** Flag that enables logging output to file */
     bool logging;
 
+    /** Method that helps sending arguments to LogSubscriptionService 
+     *      @param args - arbitrary list of arguments to send to service
+     */
     void sendToLogSubService(Args...)(Args args)
     {
         if (logSubscriptionTid is Tid.init)
@@ -63,12 +67,20 @@ import tagion.tasks.TaskWrapper;
         }
     }
 
+    /** Method that checks whether given filter matches at least one stored filter 
+     *      @param filter - log filter to check
+     *      \return boolean result of checking
+     */
     bool matchAnyFilter(LogFilter filter)
     {
         return commonLogFilters.any!(f => (f.match(filter)));
     }
 
-    @TaskMethod void receiveLogs(immutable(LogFilter) filter, immutable(Document) data) @trusted // was safe by default
+    /** Task method that receives logs from Logger and sends them to console, file and LogSubscriptionService
+     *      @param filter - log filter that contains info about passed log
+     *      @param data - log itself, that can be either TextLog or some HiBONRecord variable
+     */
+    @TaskMethod void receiveLogs(immutable(LogFilter) filter, immutable(Document) data)
     {
         if (matchAnyFilter(filter))
         {
@@ -94,33 +106,27 @@ import tagion.tasks.TaskWrapper;
                 file.writeln(output);
             }
 
-            void printToConsole(string s) @trusted
+            // Output text log to console
+            if (options.logger.to_console)
             {
-                if (options.logger.to_console)
+                writeln(output);
+                if (options.logger.flush)
                 {
-                    writeln(s);
-                    if (options.logger.flush)
-                    {
-                        stdout.flush();
-                    }
+                    assumeTrusted!stdout.flush();
                 }
             }
 
-            printToConsole(output);
-
-            void printStdError(LogLevel level, string task_name, string log_msg) @trusted
+            // Output error log
+            if (filter.level & LogLevel.STDERR)
             {
-                if (level & LogLevel.STDERR)
-                {
-                    stderr.writefln("%s:%s: %s", task_name, level, log_msg);
-                }
+                assumeTrusted!stderr.writefln("%s:%s: %s", filter.task_name, filter.level, log_msg);
             }
-
-            printStdError(filter.level, filter.task_name, log_msg);
-
         }
     }
 
+    /** Task method that receives filter updates from LogSubscriptionService
+     *      @param filters - array of filter updates
+     */
     @TaskMethod void receiveFilters(LogFilterArray filters, LogFiltersAction action)
     {
         if (action == LogFiltersAction.ADD)
@@ -133,6 +139,9 @@ import tagion.tasks.TaskWrapper;
         }
     }
 
+    /** Method that triggered when service receives Control.STOP.
+     *  Receiving this signal means that LoggerService should be stopped
+     */
     void onSTOP()
     {
         stop = true;
@@ -144,16 +153,25 @@ import tagion.tasks.TaskWrapper;
         }
     }
 
+    /** Method that triggered when service receives Control.LIVE.
+     *  Receiving this signal means that LogSubscriptionService successfully running
+     */
     void onLIVE()
     {
         writeln("LogSubscriptionService is working...");
     }
 
+    /** Method that triggered when service receives Control.STOP.
+     *  Receiving this signal means that LogSubsacriptionService successfully stopped
+     */
     void onEND()
     {
         writeln("LogSubscriptionService was stopped");
     }
 
+    /** Main method that starts service
+     *      @param options - service options
+     */
     void opCall(immutable(Options) options)
     {
         this.options = options;

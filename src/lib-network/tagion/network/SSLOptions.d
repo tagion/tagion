@@ -1,5 +1,12 @@
 module tagion.network.SSLOptions;
 
+import std.algorithm.iteration : each;
+import std.array : array;
+import std.file : exists, mkdirRecurse;
+import std.process : pipeProcess, wait;
+import std.path : dirName;
+import std.stdio : stderr, writeln;
+
 import tagion.utils.JSONCommon;
 
 struct OpenSSL
@@ -69,4 +76,30 @@ struct SSLOption
     uint client_timeout; /// Client timeout
     OpenSSL openssl; ///
     mixin JSONCommon;
+}
+
+void configureOpenSSL(const(OpenSSL) openssl)
+{
+    if (!openssl.certificate.exists || !openssl.private_key.exists)
+    {
+        openssl.certificate.dirName.mkdirRecurse;
+        openssl.private_key.dirName.mkdirRecurse;
+        auto pipes = pipeProcess(openssl.command.array);
+        scope (exit)
+        {
+            wait(pipes.pid);
+        }
+        openssl.config.each!(a => pipes.stdin.writeln(a));
+        pipes.stdin.writeln(".");
+        pipes.stdin.flush;
+        foreach (s; pipes.stderr.byLine)
+        {
+            stderr.writeln(s);
+        }
+        foreach (s; pipes.stdout.byLine)
+        {
+            writeln(s);
+        }
+        assert(openssl.certificate.exists && openssl.private_key.exists);
+    }
 }

@@ -542,55 +542,63 @@ template mangleFunc(alias T) if (isCallable!T)
 
 @safe mixin template TrustedConcurrency()
 {
-    import concurrency = std.concurrency;
-
-    alias Tid = concurrency.Tid;
-
-    static void send(Args...)(Tid tid, Args args) @trusted
+    private
     {
-        concurrency.send(tid, args);
-    }
+        import concurrency = std.concurrency;
+        import core.time : Duration;
 
-    static void prioritySend(Args...)(Tid tid, Args args) @trusted
-    {
-        concurrency.prioritySend(tid, args);
-    }
+        alias Tid = concurrency.Tid;
 
-    static void receive(Args...)(Args args) @trusted
-    {
-        concurrency.receive(args);
-    }
+        static void send(Args...)(Tid tid, Args args) @trusted
+        {
+            concurrency.send(tid, args);
+        }
 
-    static auto receiveOnly(T...)() @trusted
-    {
-        return concurrency.receiveOnly!T;
-    }
+        static void prioritySend(Args...)(Tid tid, Args args) @trusted
+        {
+            concurrency.prioritySend(tid, args);
+        }
 
-    static Tid ownerTid() @trusted
-    {
-        return concurrency.ownerTid;
-    }
+        static void receive(Args...)(Args args) @trusted
+        {
+            concurrency.receive(args);
+        }
 
-    static Tid thisTid() @safe
-    {
-        return concurrency.thisTid;
-    }
+        static auto receiveOnly(T...)() @trusted
+        {
+            return concurrency.receiveOnly!T;
+        }
 
-    static Tid spawn(F, Args...)(F fn, Args args) @trusted
-    {
-        return concurrency.spawn(fn, args);
-    }
+        static bool receiveTimeout(T...)(Duration duration, T ops) @trusted
+        {
+            return concurrency.receiveTimeout!T(duration, ops);
+        }
 
-    static Tid locate(string name) @trusted
-    {
-        return concurrency.locate(name);
-    }
+        static Tid ownerTid() @trusted
+        {
+            return concurrency.ownerTid;
+        }
 
-    static bool register(string name, Tid tid) @trusted
-    {
-        return concurrency.register(name, tid);
-    }
+        static Tid thisTid() @safe
+        {
+            return concurrency.thisTid;
+        }
 
+        static Tid spawn(F, Args...)(F fn, Args args) @trusted
+        {
+            return concurrency.spawn(fn, args);
+        }
+
+        static Tid locate(string name) @trusted
+        {
+            return concurrency.locate(name);
+        }
+
+        static bool register(string name, Tid tid) @trusted
+        {
+            return concurrency.register(name, tid);
+        }
+    }
 }
 
 private import std.range;
