@@ -3,6 +3,10 @@ name: Makefile CI
 on:
   pull_request:
     branches: [ "develop" ]
+env:
+  ## Sets environment variable
+  BINS_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/tagion/build/x86_64-linux/bin
+  SCRIPTS_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/core-test-scripts
 
 jobs:
   unit-test:
@@ -34,5 +38,5 @@ jobs:
       run: |
         pwd
         docker pull tagion/playnet
-        docker run --net host -v ${PWD}:/usr/local/bin tagion/playnet tagionwave -h
+        docker run --net host -v $BINS_DIR:/usr/local/bin -v $SCRIPTS_DIR:/usr/local/bin tagion/playnet tagionwave -h
     
