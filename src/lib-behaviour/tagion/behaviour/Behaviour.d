@@ -47,7 +47,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
                     static foreach (i, behaviour; all_behaviours) {
                         {
                             enum group_name = __traits(identifier,
-							typeof(getProperty!(behaviour))).toLower;
+                            typeof(getProperty!(behaviour))).toLower;
                             enum code = memberCode(
                                         scenario_group.stringof, group_name, i,
                                         scenario.stringof, __traits(identifier, behaviour));
@@ -223,7 +223,7 @@ auto automation(alias M)() if (isFeature!M) {
             mixin(code);
         }
 
-        FeatureGroup run() nothrow {
+        FeatureGroup run() /*nothrow*/ {
             import tagion.behaviour.BehaviourException : BehaviourError;
 
             FeatureGroup result;
@@ -233,12 +233,13 @@ auto automation(alias M)() if (isFeature!M) {
             result.scenarios.length = ScenariosSeq.length;
             static foreach (i, _Scenario; ScenariosSeq) {
                 try {
-                    //io.writefln("run %s ", _Scenario.stringof);
-                    static if (__traits(compiles, new _Scenario())) {
-                        if (result.scenarios[i] is null) {
-                            result.scenarios[i] = new _Scenario();
-                        }
-                    }
+                    // static if (__traits(compiles, new _Scenario())) {
+                    // pragma(msg, typeid(_Scenario), " TYPEOOOOOOOO");
+                    //     // if (result.scenarios[i] is null) { //HERE
+                    //     if (!result.scenarios[i].info.property.description) {   
+                    //         result.scenarios[i] = new _Scenario(); //Scenario?
+                    //     }
+                    // }
                     result.scenarios[i] = .run(scenarios[i]);
                 }
                 catch (Exception e) {
@@ -387,6 +388,5 @@ unittest {
 
 version(unittest) {
     import tagion.hibon.Document;
-//    import io = std.stdio;
     import tagion.hibon.HiBONJSON;
 }
