@@ -14,6 +14,7 @@ main: help
 #
 export DSRC := $(abspath $(REPOROOT)/src)
 export DTUB := $(abspath $(REPOROOT)/tub)
+export DBDD := $(abspath $(REPOROOT)/bdd)
 ifndef REPOROOT
 ${error REPOROOT must be defined}
 endif

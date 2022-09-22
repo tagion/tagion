@@ -76,6 +76,7 @@ target-tagion: DFILES+=${shell find $(DSRC)/bin-hibonutil/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-wallet/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-tools/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-boot/tagion -name "*.d"  }
+
 # target-tagion: DFILES+=${shell find $(DSRC)/bin-dartutil -name "*.d" -a -not -path "*/unitdata/*" }
 # target-tagion: DFILES+=${shell find $(DSRC)/bin-hibonutil -name "*.d" -a -not -path "*/unitdata/*" }
 # target-tagion: DFILES+=${shell find $(DSRC)/bin-wallet -name "*.d" -a -not -path "*/unitdata/*" }
@@ -94,3 +95,6 @@ ${call BIN,behaviour,BEHAVIOUR,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
 
 target-behaviour_test: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-behaviour_test/*" -a -not -path "*/unitdata/*" }
 ${call BIN,behaviour_test,BEHAVIOUR_TEST,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
+
+# target-behaviour_test: BDDFILES+=${shell find $(DBDD) -name "*.d" -a path "*/bdd/tagion/testbench/*" }
+# target-behaviour_test: DFILES+=${shell find $(DSRC) -maxdepth 1 -type d -path "*bdd/bin-FOO" }
