@@ -231,16 +231,19 @@ auto automation(alias M)() if (isFeature!M) {
             result.info.name = moduleName!M;
             alias ScenariosSeq = Scenarios!M;
             result.scenarios.length = ScenariosSeq.length;
+            
             static foreach (i, _Scenario; ScenariosSeq) {
                 try {
-                    // static if (__traits(compiles, new _Scenario())) {
-                    // pragma(msg, typeid(_Scenario), " TYPEOOOOOOOO");
-                    //     // if (result.scenarios[i] is null) { //HERE
-                    //     if (!result.scenarios[i].info.property.description) {   
-                    //         result.scenarios[i] = new _Scenario(); //Scenario?
-                    //     }
-                    // }
-                    result.scenarios[i] = .run(scenarios[i]);
+                    static if (__traits(compiles, new _Scenario())) {
+                        if (!result.scenarios[i].info.property.description) {  
+                            auto scenario = new _Scenario();
+                            result.scenarios[i] = .run(scenario);
+                        }
+                        else {
+                            result.scenarios[i] = .run(scenarios[i]);
+
+                        }
+                    }
                 }
                 catch (Exception e) {
                     import std.exception : assumeWontThrow;
