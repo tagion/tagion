@@ -39,5 +39,5 @@ jobs:
         pwd
         #docker pull tagion/playnet
         docker images
-        docker run --net host  simple-transaction-container
+        docker run --net host -v $BINS_DIR:/usr/local/bin simple-transaction-container
     
