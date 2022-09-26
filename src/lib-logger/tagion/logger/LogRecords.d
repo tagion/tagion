@@ -45,6 +45,28 @@ enum LogFiltersAction
     }
 }
 
+@safe struct LogFilterArray
+{
+    immutable(LogFilter[]) array;
+
+    this(immutable(LogFilter[]) filters) nothrow
+    {
+        this.array = filters;
+    }
+}
+
+@safe struct TextLog
+{
+    @Label("msg") string message;
+    enum label = GetLabel!(message).name;
+
+    mixin HiBONRecord!(q{
+        this(string msg) nothrow {
+            this.message = msg;
+        }
+    });
+}
+
 unittest
 {
     enum task1 = "sometaskname";
@@ -92,26 +114,4 @@ unittest
 
         assert(!LogFilter(task1, symbol1).isTextLog);
     }
-}
-
-@safe struct LogFilterArray
-{
-    immutable(LogFilter[]) array;
-
-    this(immutable(LogFilter[]) filters) nothrow
-    {
-        this.array = filters;
-    }
-}
-
-@safe struct TextLog
-{
-    @Label("msg") string message;
-    enum label = GetLabel!(message).name;
-
-    mixin HiBONRecord!(q{
-        this(string msg) nothrow {
-            this.message = msg;
-        }
-    });
 }

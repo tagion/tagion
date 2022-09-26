@@ -100,6 +100,5 @@ void configureOpenSSL(const(OpenSSL) openssl)
         {
             writeln(s);
         }
-        assert(openssl.certificate.exists && openssl.private_key.exists);
     }
 }

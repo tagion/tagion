@@ -227,16 +227,18 @@ void logSubscriptionServiceTask(Options opts) nothrow
 
                 try
                 {
-                    const subscriber_id = ssl_relay.id();
+                    HiRPC hirpc;
+                    const hirpc_received = hirpc.receive(doc);
+                    const params = hirpc_received.method.params;
 
-                    auto params_doc = doc["$msg"].get!Document["params"].get!Document;
-                    auto filters_received = params_doc[].map!(e => e.get!LogFilter).array;
+                    const subscriber_id = ssl_relay.id();
+                    auto filters_received = params[].map!(e => e.get!LogFilter).array;
 
                     subscribers.addSubscription(subscriber_id, filters_received);
                 }
                 catch (Exception e)
                 {
-                    log.error("Recieved document is wrong");
+                    log.error("Received document is wrong");
                 }
 
                 return false;
