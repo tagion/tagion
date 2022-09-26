@@ -39,5 +39,5 @@ jobs:
         pwd
         #docker pull tagion/playnet
         docker images
-        docker run --net host integration-test-image
+        docker run --name first-container --net host integration-test-image && echo test && docker run --name second-container --net host integration-test-image
     
