@@ -39,5 +39,5 @@ jobs:
         pwd
         #docker pull tagion/playnet
         docker images
-        docker run --net host -v /home/moonbase/actions-runner/_work/tagion/tagion/tagion/build/x86_64-linux/bin:/usr/local/bin simple-transaction-container
+        docker run --net host integration-test-image
     
