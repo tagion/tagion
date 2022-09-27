@@ -1239,5 +1239,120 @@ static size_t size(U)(const(U[]) array) pure
                 assert(range.empty);
             }
         }
+
+        enum TYPE_MARKERS : ubyte
+        {
+            BOOL = 8,
+            BYTE_UINT = 20,
+            INT = 17,
+            LONG,
+            ULONG = BYTE_UINT + 1,
+        }
+
+        enum HEADER_SIZE = 4;
+
+        enum QUALIFIERS : byte
+        {
+            SIZE = 1,
+            HEADER = SIZE << 1,
+            PAYLOAD_VALUE = HEADER << 1,
+            QUALIFIED = 7
+        }
+
+        QUALIFIERS expectSingleNumEncode(T)(TYPE_MARKERS marker, T singleValue) @trusted
+        {
+            auto hibon = new HiBON;
+            hibon[0] = singleValue;
+            const ubyte[] bytes = hibon.serialize();
+            const int expectedSize = HEADER_SIZE + 1;
+            QUALIFIERS result = cast(QUALIFIERS)(bytes.length >= expectedSize);
+            if (result)
+            {
+                result |= ((bytes[1] == marker) * QUALIFIERS.HEADER);
+                auto valueInLEB128 = bytes[HEADER_SIZE .. $];
+                static if (is(T == bool))
+                {
+                    auto valueReal = cast(T*)valueInLEB128.ptr;
+                }
+                else
+                {
+                    auto valueReal = LEB128.decode!T(valueInLEB128);
+                }
+                result |= (valueReal[0] == singleValue) * QUALIFIERS.PAYLOAD_VALUE;
+            }
+            return result;
+        }
+
+        void multyAssert(QUALIFIERS flags, string message)
+        {
+            assert(flags & QUALIFIERS.SIZE, "Incorrect size for "~message);
+            assert(flags & QUALIFIERS.HEADER, "Incorrect header for "~message);
+            assert(flags & QUALIFIERS.PAYLOAD_VALUE, "Incorrect payload for "~message);
+        }
+
+        {
+            auto result = expectSingleNumEncode!ubyte(TYPE_MARKERS.BYTE_UINT, 3);
+            multyAssert(result, "ubyte value 3");
+        }
+
+        {
+            auto result = expectSingleNumEncode!ubyte(TYPE_MARKERS.BYTE_UINT, 0);
+            multyAssert(result, "ubyte value 0");
+        }
+
+        {
+            auto result = expectSingleNumEncode!ubyte(TYPE_MARKERS.BYTE_UINT, 255);
+            multyAssert(result, "ubyte value 255");
+        }
+
+        {
+            auto result = expectSingleNumEncode!bool(TYPE_MARKERS.BOOL, 0);
+            multyAssert(result, "bool value false");
+        }
+
+        {
+            auto result = expectSingleNumEncode!bool(TYPE_MARKERS.BOOL, 1);
+            multyAssert(result, "bool value true");
+        }
+
+        {
+            auto result = expectSingleNumEncode!int(TYPE_MARKERS.INT, 9000);
+            multyAssert(result, "int value 9000");
+        }
+
+        {
+            auto result = expectSingleNumEncode!int(TYPE_MARKERS.INT, int.max);
+            multyAssert(result, "int value int.max");
+        }
+
+        {
+            auto result = expectSingleNumEncode!uint(TYPE_MARKERS.BYTE_UINT, uint.max);
+            multyAssert(result, "uint value uint.max");
+        }
+
+        {
+            auto result = expectSingleNumEncode!uint(TYPE_MARKERS.BYTE_UINT, uint.min);
+            multyAssert(result, "uint value uint.min");
+        }
+
+        {
+            auto result = expectSingleNumEncode!long(TYPE_MARKERS.LONG, long.max);
+            multyAssert(result, "long value long.max");
+        }
+
+        {
+            auto result = expectSingleNumEncode!long(TYPE_MARKERS.LONG, long.min);
+            multyAssert(result, "long value long.min");
+        }
+
+        {
+            auto result = expectSingleNumEncode!ulong(TYPE_MARKERS.ULONG, ulong.max);
+            multyAssert(result, "ulong value ulong.max");
+        }
+
+        {
+            auto result = expectSingleNumEncode!ulong(TYPE_MARKERS.ULONG, ulong.min);
+            multyAssert(result, "ulong value ulong.min");
+        }
     }
 }
