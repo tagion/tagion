@@ -39,5 +39,5 @@ jobs:
         pwd
         #docker pull tagion/playnet
         docker images
-        docker run --name 1-container --rm integration-test-image simple_transaction.sh; echo "second script successful"; docker run --name 2-container --rm integration-test-image second_transaction.sh; echo "second script successful"
+        docker run --name 1-container --rm integration-test-image simple_transaction.sh; echo "first script successful"; docker run --name 2-container --rm integration-test-image second_transaction.sh; echo "second script successful"
     
