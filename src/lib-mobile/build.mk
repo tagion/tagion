@@ -21,13 +21,13 @@ LIBMOBILE_TRIAL_DEPS:=$(LIBMOBILE_SRC_DIR)/gen.configure.trial.mk
 $(DBIN)/$(PROGRAM): $(DTMP)/libsecp256k1.so
 
 DINC=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*"}
-DINC+=${shell find $(DBDD) -maxdepth 1 -type d -path "*bdd" }#
+DINC+=${shell find $(BDD) -maxdepth 1 -type d -path "*bdd" }#
 
 DCFALGS_INC=${addprefix -I,$(DINC)}
 
 #DFILES=${shell find $(DSRC) -name "*.d" -o -name "*.di" }
 DFILES=${shell find $(DSRC) -path "*/lib-*" -a -name "*.d" }
-DBDDFILES=${shell find $(DBDD) -path "*" -a -name "*.d" }
+BDDFILES=${shell find $(BDD) -path "*" -a -name "*.d" }
 
 libmobileinfo:
 	$(PRECMD)
@@ -36,7 +36,7 @@ libmobileinfo:
 	echo $(DINC)
 	echo $(DROOT)
 	echo $(DSRC)
-	echo $(DBDD)
+	echo $(BDD)
 	echo DBUILD=$(DBUILD)
 	echo DBIN=$(DBIN)
 	echo LIBMOBILE=$(LIBMOBILE)

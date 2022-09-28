@@ -10,7 +10,9 @@ $(DBUILD)/gen.dfiles.mk:
 	if [ ! -f "$@" ]; then
 	$(PRECMD)
 	printf "%s += %s\n" ${addprefix DFILES , $(DFILES)} >> $@
-	printf "%s += %s\n" ${addprefix DFILES , $(DBDDFILES)} >> $@
+	fi
+	if [ "$(BDDFILES)" != "" ]; then
+	printf "%s += %s\n" ${addprefix DFILES , $(BDDFILES)} >> $@
 	fi
 
 $(DBUILD)/gen.ddeps.json: $(DBUILD)/gen.dfiles.mk
