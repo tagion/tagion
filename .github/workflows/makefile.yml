@@ -34,10 +34,16 @@ jobs:
         tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
         
         
-    - name: regression test
+    - name: regression test container 1
       run: |
         pwd
         #docker pull tagion/playnet
         docker images
-        docker run --name 1-container --rm integration-test-image simple_transaction.sh; echo "first script successful"; docker run --name 2-container --rm integration-test-image second_transaction.sh; echo "second script successful"
+        docker run --name 1-container --rm integration-test-image simple_transaction.sh; echo "first script successful";
+        
+    - name: regression test container 2
+      run: |
+        docker run --name 2-container --rm integration-test-image second_transaction.sh; echo "second script successful"
+    
+
     
