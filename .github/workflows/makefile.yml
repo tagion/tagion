@@ -39,5 +39,5 @@ jobs:
         pwd
         #docker pull tagion/playnet
         docker images
-        docker run --name first-container --net host integration-test-image && echo test && docker run --name second-container --net host integration-test-image
+        docker run --name 1-container --rm integration-test-image simple_transaction.sh; ecgo test; docker run --name 2-container --rm integration-test-image second_transaction.sh; echo "successful test"
     
