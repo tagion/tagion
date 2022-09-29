@@ -16,11 +16,7 @@ jobs:
       run: |
         pwd
         source ~/.bashrc
-        which ldc2
-        which gdc
-        id
         cd tagion
-        pwd
         export GITHUB_WORKFLOW_BRANCH=$GITHUB_HEAD_REF
         echo $GITHUB_WORKFLOW_BRANCH
         git checkout $GITHUB_WORKFLOW_BRANCH
@@ -28,22 +24,24 @@ jobs:
         make unittest
         make bins 
         cd build/x86_64-linux/bin/
-        
+  
     - name: unittest result
       run: |
         tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
         
-        
-    - name: regression test container 1
+  regression-test-container-1:
+    runs-on: self-hosted
+    steps:
+    - name: run container 1
       run: |
-        pwd
-        #docker pull tagion/playnet
-        docker images
         docker run --name 1-container --rm integration-test-image simple_transaction.sh; echo "first script successful";
         
-    - name: regression test container 2
+  regression-test-container-2:
+    runs-on: self-hosted
+    steps:
+    - name: run container 2
       run: |
-        docker run --name 2-container --rm integration-test-image second_transaction.sh; echo "second script successful"
+        docker run --name 2-container --rm integration-test-image second_transaction.sh; echo "second script successful";
     
 
     
