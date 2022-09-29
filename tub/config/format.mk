@@ -1,7 +1,8 @@
 
 
 DFORMAT?=dfmt
-DFORMAT_FLAGS+=-i --config $(REPOROOT)/.editconfig
+DFORMAT_FLAGS+=-i -c $(REPOROOT)/
+#.editorconfig
 
 CHANGED_FILES=${shell git --no-pager diff  --name-only}
 CHANGED_DFILES=${filter %.d,$(CHANGED_FILES)}
@@ -10,11 +11,14 @@ ALL_DFILES=${shell find $(DSRC) -name "*.d"}
 
 format:
 	$(PRECMD)
-	$(DFORMAT) $(DFORMAT_FLAGS) -$(i $(CHANGED_DFILES)
+	if [ -z "$(CHANGED_FILES)" ]; then
+	echo $(CHANGED_DFILES)
+	$(DFORMAT) $(DFORMAT_FLAGS) $(CHANGED_DFILES)
+	fi
 
 format-all:
 	$(PRECMD)
-	$(DFORMAT) $(DFORMAT_FLAGS) -i $(ALL_DFILES)
+	$(DFORMAT) $(DFORMAT_FLAGS) $(ALL_DFILES)
 
 
 help-format:
