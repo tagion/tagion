@@ -57,10 +57,17 @@ uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure not
  +/
 @safe
 class DART : DARTFile
-{ //, HiRPC.Supports {
+{
     immutable ushort from_sector;
     immutable ushort to_sector;
     const HiRPC hirpc;
+
+    /** Creates DART with given net and by given file path
+    *       @param net Represent SecureNet for initializing DART
+    *       @param filename Represent path to DART file to open
+    *       @param from_sector Represents from angle for DART sharding. In development.
+    *       @param to_sector Represents to angle for DART sharding. In development.
+    */
     this(const SecureNet net,
         string filename,
         const ushort from_sector = 0,
@@ -70,6 +77,29 @@ class DART : DARTFile
         this.from_sector = from_sector;
         this.to_sector = to_sector;
         this.hirpc = HiRPC(net);
+    }
+
+    /** Creates DART with given net and by given file path safely with catching possible exceptions
+    *       @param net Represent SecureNet for initializing DART
+    *       @param filename Represent path to DART file to open
+    *       @param exception Field used for returning exception in case when something gone wrong
+    *       @param from_sector Represents from angle for DART sharding. In development.
+    *       @param to_sector Represents to angle for DART sharding. In development.
+    */
+    this(const SecureNet net,
+        string filename,
+        out Exception exception,
+        const ushort from_sector = 0,
+        const ushort to_sector = 0) nothrow @safe
+    {
+        try
+        {
+            this(net, filename, from_sector, to_sector);
+        }
+        catch (Exception e)
+        {
+            exception = e;
+        }
     }
 
     bool inRange(const ushort sector) pure nothrow

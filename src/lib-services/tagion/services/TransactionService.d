@@ -215,7 +215,12 @@ void transactionServiceTask(immutable(Options) opts) nothrow
 
                                     auto inputs = signed_contract.contract.inputs;
                                     requestInputs(inputs, ssl_relay.id);
-                                    yield;
+                                    do
+                                    {
+                                        yield;
+                                        log("available - %s", ssl_relay.available());
+                                    }
+                                    while (!ssl_relay.available());
                                     //() @trusted => Fiber.yield; // Expect an Recorder resonse for the DART service
                                     const response = ssl_relay.response;
                                     const received = internal_hirpc.receive(Document(response));
@@ -236,7 +241,16 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                                         auto std_bill = StandardBill(archive.filed);
                                         payment.bills ~= std_bill;
                                     }
-                                    signed_contract.inputs = payment.toDoc;
+                                    foreach (input; signed_contract.contract.inputs)
+                                    {
+                                        foreach (bill; payment.bills)
+                                        {
+                                            if (hirpc.net.hashOf(bill.toDoc) == input)
+                                            {
+                                                signed_contract.inputs ~= bill;
+                                            }
+                                        }
+                                    }
                                     // Send the contract as payload to the HashGraph
                                     // The data inside HashGraph is pure payload not an HiRPC
                                     SmartScript.check(hirpc.net, signed_contract);

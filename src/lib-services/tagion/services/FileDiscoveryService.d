@@ -3,6 +3,7 @@ module tagion.services.FileDiscoveryService;
 import core.time;
 import std.format;
 import std.concurrency;
+import std.file;
 
 import p2plib = p2p.node;
 import tagion.utils.Miscellaneous : cutHex;
@@ -29,6 +30,7 @@ void fileDiscoveryService(
             ownerTid.prioritySend(Control.END);
         }
         log.register(task_name);
+
         string shared_storage = opts.path_to_shared_info;
 
         bool stop = false;

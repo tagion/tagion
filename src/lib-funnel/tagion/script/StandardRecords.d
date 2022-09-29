@@ -244,12 +244,39 @@ enum OwnerKey = "$Y";
     {
         @Label("$signs") Signature[] signs; /// Signature of all inputs
         @Label("$contract") Contract contract; /// The contract must signed by all inputs
-        version (OLD_TRANSACTION)
-        {
-            pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
-            @Label("$in", true) Document inputs; /// The actual inputs
+        version(OLD_TRANSACTION) {
+            pragma(msg, "OLD_TRANSACTION ",__FILE__,":",__LINE__);
+            @Label("$in", true) StandardBill[] inputs; /// The actual inputs
         }
         mixin HiBONRecord;
+    }
+
+    /**
+     * \struct HealthcheckParams
+     * Struct store paramentrs for healthcheck request
+     */
+    @RecordType("Healthcheck") struct HealthcheckParams
+    {
+        /** amount of hashgraph rounds */
+        @Label("$hashgraph_rounds") ulong rounds;
+        /**last epoch timestamp */
+        @Label("epoch_timestamp") long epoch_timestamp;
+        /** amount of transactions in last epoch */
+        @Label("$transactions_amount") uint transactions_amount;
+        /** number of current epoch */
+        @Label("$epoch_number") uint epoch_num;
+        /** check we not in last round */
+        @Label("$in_graph") bool in_graph;
+        mixin HiBONRecord!(
+            q{
+                this(ulong rounds, long epoch_timestamp, uint transactions_amount, uint epoch_num, bool in_graph) {
+                    this.rounds = rounds;
+                    this.epoch_timestamp = epoch_timestamp;
+                    this.transactions_amount = transactions_amount;
+                    this.epoch_num = epoch_num;
+                    this.in_graph = in_graph;
+                }
+            });
     }
 
     struct Script

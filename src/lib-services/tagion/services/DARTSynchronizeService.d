@@ -16,7 +16,7 @@ import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
-import tagion.dart.BlockFile : BlockFile;
+import tagion.dart.BlockFile : BlockFile, BLOCK_SIZE;
 import tagion.basic.Basic;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
@@ -110,7 +110,6 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         }
         if (opts.dart.initialize)
         {
-            enum BLOCK_SIZE = 0x80;
             DART.create(filename, BLOCK_SIZE);
         }
         log("DART file created with filename: %s", filename);
@@ -120,19 +119,8 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         DART dart = new DART(net, filename, sector_range.from_sector, sector_range.to_sector);
         log("DART initialized with angle: %s", sector_range);
 
-        if (opts.dart.generate)
-        {
-            import tagion.dart.DARTFakeNet;
-
-            auto fp = SetInitialDataSet(dart, opts.dart.ringWidth, opts.dart.rings);
-            log("DART generated: bullseye: %s", fp.cutHex);
-            dart.dump;
-        }
-        else
-        {
-            dart.dump;
-            log("DART bullseye: %s", dart.fingerprint.cutHex);
-        }
+        dart.dump;
+        log("DART bullseye: %s", dart.fingerprint.cutHex);
 
         scope (exit)
         {
@@ -287,7 +275,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         {
             const tick_timeout = state.checkState(DARTSynchronizeState.REPLAYING_JOURNALS,
                 DARTSynchronizeState.REPLAYING_RECORDERS)
-                ? opts.dart.sync.replay_tick_timeout.msecs : opts.dart.sync.tick_timeout.msecs;
+                ? opts.dart.sync.reply_tick_timeout.msecs : opts.dart.sync.tick_timeout.msecs;
             receiveTimeout(tick_timeout, &handleControl,
                 (immutable(RecordFactory.Recorder) recorder) {
                 log("DSS: recorder received");

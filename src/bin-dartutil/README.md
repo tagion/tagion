@@ -31,62 +31,25 @@
 - [rpc](#rpc)
   - [Parameters](#parameters-2)
   - [Use cases:](#use-cases-2)
-- [generate](#generate)
-  - [Parameters](#parameters-3)
-  - [Use cases](#use-cases-3)
-    - [Case: simple call](#case-simple-call)
-      - [Success](#success-4)
-      - [Failure](#failure-4)
-- [nncupdate](#nncupdate)
-  - [Parameters](#parameters-4)
-  - [Use cases](#use-cases-4)
-    - [Case: simple call](#case-simple-call-1)
-      - [Success](#success-5)
-      - [Failure](#failure-5)
-- [nncread](#nncread)
-  - [Parameters](#parameters-5)
-  - [Use cases](#use-cases-5)
-    - [Case: simple call](#case-simple-call-2)
-      - [Success](#success-6)
-      - [Failure](#failure-6)
-- [testaddblocks](#testaddblocks)
-  - [Parameters](#parameters-6)
-  - [Use cases](#use-cases-6)
-    - [Case: add several blocks](#case-add-several-blocks)
-      - [Success](#success-7)
-      - [Failure](#failure-7)
-- [testdumpblocks](#testdumpblocks)
-  - [Parameters](#parameters-7)
-  - [Use cases](#use-cases-7)
-    - [Case: dump last block](#case-dump-last-block)
-      - [Success](#success-8)
-      - [Failure](#failure-8)
-    - [Case: dump all blocks](#case-dump-all-blocks)
-      - [Success](#success-9)
-      - [Failure](#failure-9)
 - [version](#version)
 - [dartfilename](#dartfilename)
-  - [Use cases](#use-cases-8)
-    - [Success](#success-10)
-    - [Failure](#failure-10)
+  - [Use cases](#use-cases-3)
+    - [Success](#success-4)
+    - [Failure](#failure-4)
+    - [Failure](#failure-5)
 - [initialize](#initialize)
 - [inputfile](#inputfile)
-  - [Use cases](#use-cases-9)
-    - [Case: simple call](#case-simple-call-3)
-      - [Success](#success-11)
-      - [Failure](#failure-11)
+  - [Use cases](#use-cases-4)
+    - [Case: simple call](#case-simple-call)
+      - [Success](#success-5)
+      - [Failure](#failure-6)
 - [outputfile](#outputfile)
-- [from](#from)
-- [to](#to)
-- [useFakeNet](#usefakenet)
 - [dump](#dump)
-  - [Use cases](#use-cases-10)
+  - [Use cases](#use-cases-5)
     - [Case: dump DART](#case-dump-dart)
 - [eye](#eye)
-  - [Use cases](#use-cases-11)
+  - [Use cases](#use-cases-6)
     - [Case: print bullseye](#case-print-bullseye)
-- [width](#width)
-- [rings](#rings)
 - [passphrase](#passphrase)
 - [verbose](#verbose)
 
@@ -96,10 +59,6 @@ You can call only one function from this list at a time
 - [--rim](#rim)
 - [--modify](#modify)
 - [--rpc](#rpc)
-- [--nncupdate](#nncupdate)
-- [--nncread](#nncread)
-- [--testaddblocks](#testaddblocks)
-- [--testdumpblocks](#testdumpblocks)
   
 # read
 ```
@@ -111,11 +70,13 @@ DART file must exist before calling.
 One of the [exclusive functions](#exclusive-functions) 
 <br><br>
 This function requires value. Takes one or several strings which are hashes in DART database.<br>
+Hash should contain only characters allowed for hex numbers (digits [0..9] and letters [a..f] or [A..F]) and separator character '_'. Length of string hash should be even (ignoring separator characters).
+
 Example of using:
 ```
-./dartutil -r 1ef4e838a9aa1a80dcc2a3af4fd57190f8a91c3bf373c85142f2941687ebf127
+./dartutil -r 1ef4e838_a9aa1a80_dcc2a3af_4fd57190_f8a91c3b_373c8514_2f294168_7ebf127f
 
-./dartutil -r 1ef4e838a9aa1a80dcc2a3af4fd57190f8a91c3bf373c85142f2941687ebf127 5d07e4bfff14a719e0b4e57dc76bfa330ffe173c9da28afa279c337a39e171d9 7d6c44500ae8d95d4287ab56cc15c85c5ddceba715648889c991b1732847ad0f
+./dartutil -r 1ef4e838 -r 5d07e4bf -r 7d6c4450
 ```
 
 ## Parameters
@@ -125,8 +86,6 @@ Example of using:
 [--outputfile](#outputfile) **optional**
 
 [--dartfilename](#dartfilename) **optional**
-
-[--useFakeNet](#usefakenet) **optional**
 
 [--dump](#dump) **optional**
 
@@ -143,6 +102,7 @@ Example of using:
 **Result** <br>
 Found record with given hash. Written to outputfile and console:
 ```
+Result has been written to '/tmp/deleteme.dmd.unittest.pid467287FFCBD44164C'
 Document: {
     "result": {
         "$@": "Recorder",
@@ -176,6 +136,7 @@ Document: {
 **Result** (when record not found)<br>
 Empty recorder is written to outputfile and console
 ```
+Result has been written to '/tmp/deleteme.dmd.unittest.pid467287FFCBD44164C'
 Document: {
     "result": {
         "$@": "Recorder"
@@ -183,14 +144,14 @@ Document: {
 }
 ```
 
-**Result** (when hash has wrong format)<br>
-**Refactor** handle exception
+**Result** (when hash has wrong character)<br>
 ```
-core.exception.AssertError@/home/ivanbilan/work/tagion/src/lib-utils/tagion/utils/Miscellaneous.d(49): Assertion failure
-----------------
-??:? [0x559f9b8d6a35]
-??:? [0x559f9b8ffc06]
-...
+Error parsing hash string: Bad char 'G'. Abort
+```
+
+**Result** (when hash has wrong length)<br>
+```
+Error parsing hash string: Hex string length not even. Abort
 ```
 
 ### Case: read several records
@@ -200,33 +161,109 @@ core.exception.AssertError@/home/ivanbilan/work/tagion/src/lib-utils/tagion/util
 #### Success
 **Result** <br>
 Found records with given hashes. Single recorder with all records is written to outputfile and console:
-**Refactor** not working now, takes only first argument
 ```
+Result has been written to '/tmp/deleteme.dmd.unittest.pid1546947FFF383A799C'
 Document: {
     "result": {
         "$@": "Recorder",
         "0": {
- ...
+            "$a": {
+                "#name": "test name",
+                "$@": "NNC",
+                "$Y": [
+                    "*",
+                    "@"
+                ],
+                "$lang": "",
+                "$record": [
+                    "*",
+                    "@2S4uO+DHbbiwWJKGRZjmZfWHfSZLmEerWSMYg91gZf8="
+                ],
+                "$time": [
+                    "u64",
+                    "0x0"
+                ]
+            },
+            "$t": [
+                "i32",
+                1
+            ]
+        },
+        "1": {
+            "$a": {
+                "$@": "HL",
+                "$lock": [
+                    "*",
+                    "@iL02\/dq84CuR8hWuxy2urTu6yMPf1lHfIK2hilgjpxY="
+                ]
+            },
+            "$t": [
+                "i32",
+                1
+            ]
+        },
+        "2": {
+            "$a": {
+                "$@": "$epoch0",
+                "$actives": {},
+                "$epoch": [
+                    "i32",
+                    0
+                ],
+                "$global": [
+                    "*",
+                    "@"
+                ],
+                "$prev": [
+                    "*",
+                    "@AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+                ],
+                "$recorder": [
+                    "*",
+                    "@"
+                ]
+            },
+            "$t": [
+                "i32",
+                1
+            ]
+        }
+    }
+}
+```
+**Result** (when some but not all hashes found)<br>
+Found some records with some given hashes. Single recorder with all found records is written to outputfile and console:
+```
+Result has been written to '/tmp/deleteme.dmd.unittest.pid1556907FFD5989C18C'
+Document: {
+    "result": {
+        "$@": "Recorder",
+        "0": {
+            "$a": {
+                "$@": "HL",
+                "$lock": [
+                    "*",
+                    "@iL02\/dq84CuR8hWuxy2urTu6yMPf1lHfIK2hilgjpxY="
+                ]
+            },
+            "$t": [
+                "i32",
+                1
+            ]
+        }
+    }
+}
 ```
 #### Failure
 **Result** (when record not found)<br>
 Empty recorder is written to outputfile and console
 ```
+Result has been written to '/tmp/deleteme.dmd.unittest.pid467287FFCBD44164C'
 Document: {
     "result": {
         "$@": "Recorder"
     }
 }
-```
-
-**Result** (when hash has wrong format)<br>
-**Refactor** handle exception
-```
-core.exception.AssertError@/home/ivanbilan/work/tagion/src/lib-utils/tagion/utils/Miscellaneous.d(49): Assertion failure
-----------------
-??:? [0x559f9b8d6a35]
-??:? [0x559f9b8ffc06]
-...
 ```
 
 See also use cases of parameters, used in this function
@@ -254,8 +291,6 @@ One of the [exclusive functions](#exclusive-functions)
 
 [--dartfilename](#dartfilename) **optional**
 
-[--useFakeNet](#usefakenet) **optional**
-
 [--dump](#dump) **optional**
 
 [--eye](#eye) **optional**
@@ -274,16 +309,10 @@ No console output.
 
 #### Failure
 **Result** (input file has wrong format):<br>
-Created new DART file. No DART sequence executet. Aborted.
+Created new DART file. No DART sequence executed. Aborted.
 
-**Refactor** handle exception
 ```
-tagion.hibon.HiBONException.HiBONException@/home/ivanbilan/work/tagion/src/lib-hibon/tagion/hibon/HiBONRecord.d(700): HiBON Document format failed
-----------------
-??:? [0x55f55e68fa35]
-??:? [0x55f55e6b8c06]
-??:? [0x55f55e69911f]
-...
+Error trying to modify: HiBON Document format failed. Abort
 ```
 Also see [--dartfilename](#dartfilename) and [--inputfile](#inputfile) for possible failures of this case.
 
@@ -322,8 +351,6 @@ One of the [exclusive functions](#exclusive-functions)
 
 [--dartfilename](#dartfilename) **optional**
 
-[--useFakeNet](#usefakenet) **optional**
-
 [--dump](#dump) **optional**
 
 [--eye](#eye) **optional**
@@ -333,310 +360,12 @@ One of the [exclusive functions](#exclusive-functions)
 ## Use cases:
 TBD
 
-# generate
-```
---generate
-```
-**Refactor** should be removed
-
-Generate a fake test dart. Recomended to use with [--useFakeNet](#usefakenet)
-
-## Parameters
-
-[--width](#width) **optional**
-
-[--rings](#rings) **optional**
-
-[--dartfilename](#dartfilename) **optional**
-
-[--useFakeNet](#usefakenet) **optional**
-
-[--dump](#dump) **optional**
-
-[--eye](#eye) **optional**
-
-[--passphrase](#passphrase) **optional**
-
-## Use cases
-### Case: simple call
-```
-./dartutil --generate
-```
-#### Success
-**Result:**
-```
-98%  GENERATED DART. EYE:
-```
-
-#### Failure
-Possible failure see [--dartfilename](#dartfilename)
-
-# nncupdate
-```
---nncupdate
-```
-
-Updates existing NetworkNameCard with given name and associated records in DART. Takes name as a parameter.<br>
-Before calling `nncupdate` DART file must exist and must contain valid NetworkNameCard with given name and other associated records.<br>
-One of the [exclusive functions](#exclusive-functions) 
-<br><br>
-This function requires value. Takes string which is a name of NetworkNameCard to be updated in DART database.<br>
-Example of using:
-```
-./dartutil --nncupdate "test name"
-```
-**Refactor** forbid to use here system names (like "tagion")
-## Parameters
-
-[--verbose](#verbose) **optional**
-
-[--dartfilename](#dartfilename) **optional**
-
-[--useFakeNet](#usefakenet) **optional**
-
-[--dump](#dump) **optional**
-
-[--eye](#eye) **optional**
-
-[--passphrase](#passphrase) **optional**
-
-Example of using:
-```
-./dartutil --nncupdate="test name"
-./dartutil --nncupdate="test name" -d="dart.drt" --usefakenet --verbose
-```
-
-## Use cases
-
-### Case: simple call 
-```
-./dartutil --nncupdate="test name"
-```
-#### Success
-**Result**:
-NetworkNameCard with name "test name" and its associated records were updated
-```
-Updated NetworkNameCard with name 'test name'
-```
-#### Failure
-**Result** (no correct signature in DART):<br>
-No actions
-```
-WARNING: Signature for NetworkNameCard 'test name' is not verified! Unable to update record
-Abort
-```
-**Result** (when NNC with given name not found):
-```
-No NetworkNameCard with name 'test name' in DART
-```
-
-See also use cases of parameters, used in this function
-
-# nncread
-```
---nncread
-```
-
-Read existing NetworkNameCard with given name and associated records from DART. Takes name as a parameter.<br>
-Before calling `nncread` DART file must exist.<br>
-One of the [exclusive functions](#exclusive-functions) 
-<br><br>
-This function requires value. Takes string which is a name of NetworkNameCard to be read in DART database.<br>
-Example of using:
-```
-./dartutil --nncread "test name"
-```
-**Refactor** forbid to use here system names (like "tagion")
-## Parameters
-
-[--verbose](#verbose) **optional**
-
-[--dartfilename](#dartfilename) **optional**
-
-[--useFakeNet](#usefakenet) **optional**
-
-[--dump](#dump) **optional**
-
-[--eye](#eye) **optional**
-
-[--passphrase](#passphrase) **optional**
-
-Example of using:
-```
-./dartutil --nncread="test name"
-./dartutil --nncread="test name" -d="dart.drt" --usefakenet --verbose
-```
-
-## Use cases
-
-### Case: simple call 
-```
-./dartutil --nncread="test name"
-```
-#### Success
-**Result**:
-NetworkNameCard with name "test name" and its associated records were read and written to console and output file (**Refactor** now we have only output to console)
-```
-Found NetworkNameCard 'test name'
-
-Signature for %s '%s' is verified
-
-Found NetworkNameRecord for NetworkNameCard 'test name'
-
-Found NodeAddress for NetworkNameCard 'test name'
-```
-#### Failure
-**Result** (no correct signature in DART):<br>
-NetworkNameCard with name "test name" and its associated records were read and written to console and output file (**Refactor** now we have only output to console) but with WARNING about missing signature
-```
-Found NetworkNameCard 'test name'
-
-WARNING: Signature for %s '%s' is not verified!
-
-Found NetworkNameRecord for NetworkNameCard 'test name'
-
-Found NodeAddress for NetworkNameCard 'test name'
-```
-**Result** (when NNC with given name not found):
-```
-No NetworkNameCard with name 'test name' in DART
-```
-
-See also use cases of parameters, used in this function
-
-
-# testaddblocks
-```
---testaddblocks
-```
-Function used for debug purposes.
-Add N epoch blocks to epoch chain in DART.<br>
-DART file must exist and contain valid epoch block chain.<br>
-One of the [exclusive functions](#exclusive-functions) 
-<br><br>
-This function requires value. Takes number of blocks to add.<br>
-Example of using:
-```
-./dartutil --testaddblocks 1
-./dartutil --testaddblocks 20
-```
-## Parameters
-
-[--verbose](#verbose) **optional**
-
-[--dartfilename](#dartfilename) **optional**
-
-[--useFakeNet](#usefakenet) **optional**
-
-[--dump](#dump) **optional**
-
-[--eye](#eye) **optional**
-
-[--passphrase](#passphrase) **optional**
-
-## Use cases
-### Case: add several blocks
-```
-./dartutil --testaddblocks=3
-```
-#### Success
-**Result**<br>
-N blocks was added to chain
-```
-Adding block 1... Done!
-Adding block 2... Done!
-Adding block 3... Done!
-```
-Also you can see added blocks in JSON format using [--verbose](#verbose)
-
-#### Failure
-**Result** (no last epoch block was found in DART)<br>
-```
-DART is corrupted! Top epoch block in chain was not found. Abort
-```
-
-See also use cases of parameters, used in this function.
-
-# testdumpblocks
-```
---testdumpblocks
-```
-Function used for debug purposes.
-Dump last N epoch blocks in epoch chain in DART.<br>
-Set 0 to dump all blocks in chain.<br>
-DART file must exist and contain valid epoch block chain.<br>
-One of the [exclusive functions](#exclusive-functions) 
-<br><br>
-This function requires value. Takes number of blocks to dump.<br>
-Example of using:
-```
-./dartutil --testdumpblocks 0
-./dartutil --testdumpblocks 3
-```
-## Parameters
-
-[--verbose](#verbose) **optional**
-
-[--dartfilename](#dartfilename) **optional**
-
-[--useFakeNet](#usefakenet) **optional**
-
-[--dump](#dump) **optional**
-
-[--eye](#eye) **optional**
-
-[--passphrase](#passphrase) **optional**
-
-## Use cases
-### Case: dump last block
-```
-./dartutil --testdumpblocks=1
-```
-#### Success
-**Result**<br>
-The last epoch block was read and printed to console
-```
-Last block is read successfully
-```
-Also you can see last block in JSON format using [--verbose](#verbose)
-
-#### Failure
-**Result** (no last epoch block was found in DART)<br>
-```
-DART is corrupted! Top epoch block in chain was not found. Abort
-```
-
-### Case: dump all blocks
-```
-./dartutil --testdumpblocks=0
-```
-#### Success
-**Result**<br>
-All epoch block from the last to the first were read and printed to console
-```
-Last block is read successfully.
-N-1 epoch block is read successfully.
-N-2 epoch block is read successfully.
-N-3 epoch block is read successfully.
-Reached first block in chain. Stop
-```
-Also you can see blocks in JSON format using [--verbose](#verbose)
-
-#### Failure
-**Result** (no previous block in chain was found in DART)<br>
-```
-DART is corrupted! Epoch block in chain was not found. Abort
-```
-
-See also use cases of parameters, used in this function.
 
 # version
 ```
 --version -v
 ```
 Displays the version of tool
-
-**Refactor** now `-v` not belongs to version, fix it
 
 # dartfilename
 ```
@@ -657,16 +386,20 @@ Can be used with any function in dartutil
 dartutil opens specified dart file
 ### Failure
 **Result** (when DART file can't be opened):
-**Refactor** handle exception
+
+Tool stops working
 ```
-std.exception.ErrnoException@std/stdio.d(758): Cannot open file `dart.drt' in mode `r+' (No such file or directory)
-----------------
-??:? [0x5613ca716a35]
-??:? [0x5613ca73fc06]
-??:? [0x5613ca72011f]
-...exception output...
+Fail to open DART: Cannot open file `/tmp/default.drt' in mode `r+' (No such file or directory). Abort.
 ```
 **Note**: DART file can be created using [--initialize](#initialize)
+
+### Failure
+**Result** (when DART file have wrong format):
+
+Tool stops working
+```
+Fail to open DART: BlockFile should be sized in equal number of blocks of the size of 64 but the size is 578. Abort.
+```
 
 # initialize
 ```
@@ -687,21 +420,18 @@ Used in:
 
 ## Use cases
 ### Case: simple call
+```
+./dartutil <function> -i "tmp.txt"
+```
 #### Success
 **Result**:
 file at the specified path was opened.<br>
 No console output
 #### Failure
 **Result** (when file not found):<br>
-**Refactor** handle exception
+Tool stop working
 ```
-std.file.FileException@std/file.d(371): : No such file or directory
-----------------
-??:? [0x562969f0ba35]
-??:? [0x562969f34c06]
-??:? [0x562969f1511f]
-??:? [0x562969ee521c]
-...
+Can't open input file 'tmp.txt'. Abort
 ```
 
 # outputfile
@@ -718,44 +448,6 @@ Default value: path generated with random seed. Variants of this path:
 /tmp/deleteme.dmd.unittest.pid277FFE000372BC
 ```
 
-Can be used with any function in dartutil
-
-# from
-```
---from
-```
-Sets _from_ sector angle for DART in range 0:65535.<br>
-This meant to support sharding of the DART but now it's not fully supported yet.<br>
-
-**Refactor** add assertion and text message that this feature not supported yet
-
-Values when `from == to` means full.<br>
-Default value: `0`
-
-In development.
-
-# to
-```
---to
-```
-Sets _to_ sector angle for DART in range 0:65535.<br>
-This meant to support sharding of the DART but now it's not fully supported yet.<br>
-
-**Refactor** add assertion and text message that this feature not supported yet
-
-Values when `from == to` means full.<br>
-Default value: `0`
-
-In development.
-
-# useFakeNet
-```
---useFakeNet -fn
-```
-**Refactor** should be removed
-Enables fake hash test-mode<br>
-Default value: `False`
-<br><br>
 Can be used with any function in dartutil
 
 # dump
@@ -806,24 +498,6 @@ Can be used with any function in dartutil
 EYE: 29a444af19221a7ed3dbb6e459a946745feace5a300a5390c2e48b6b27047d3d
 ```
 
-# width
-```
---width -w
-```
-**Refactor** should be removed
-
-Sets the rings width and is used in combination with [--generate](#generate)<br>
-Default value: `4`
-
-# rings
-```
---rings
-```
-**Refactor** should be removed
-
-Sets the rings height and is used in combination with [--generate](#generate)<br>
-Default value: `4`
-
 # passphrase
 ```
 --passphrase -P
@@ -835,7 +509,7 @@ Can be used with any function in dartutil
 
 # verbose
 ```
---verbose -v
+--verbose
 ```
 Boolean flag, that enables more detailed output to console<br>
 Default value: `False`

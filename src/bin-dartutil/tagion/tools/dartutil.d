@@ -1,3 +1,5 @@
+/// \file dartutil.d
+
 module tagion.tools.dartutil;
 
 import std.getopt;
@@ -10,7 +12,7 @@ import std.array;
 import std.algorithm;
 import std.typecons;
 
-import tagion.dart.DART;
+import tagion.dart.DART : DART;
 import tagion.dart.DARTFile;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.basic.Basic : tempfile;
@@ -23,7 +25,6 @@ import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONRecord : fread, fwrite;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONRecord;
 
@@ -35,8 +36,12 @@ import tagion.script.NameCardScripts : readStandardRecord;
 
 import tagion.tools.Basic;
 
+/**
+ * @brief tool for working with local DART database
+ */
+
 pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
-void updateAddNetworkNameCard(const HashNet net, NetworkNameCard nnc, NetworkNameRecord nrc, RecordFactory
+version (none) void updateAddNetworkNameCard(const HashNet net, NetworkNameCard nnc, NetworkNameRecord nrc, RecordFactory
         .Recorder recorder)
 {
     recorder.remove(HashLock(net, nnc));
@@ -62,7 +67,7 @@ void updateAddNetworkNameCard(const HashNet net, NetworkNameCard nnc, NetworkNam
     recorder.add(hr_new);
 }
 
-void updateRemoveHashKeyRecord(const HashNet net, const RecordFactory.Recorder src, RecordFactory
+version (none) void updateRemoveHashKeyRecord(const HashNet net, const RecordFactory.Recorder src, RecordFactory
         .Recorder dest)
 in
 {
@@ -79,7 +84,8 @@ do
 }
 
 pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
-void updateAddEpochBlock(const HashNet net, EpochBlock epoch_block, RecordFactory.Recorder recorder)
+version (none) void updateAddEpochBlock(const HashNet net, EpochBlock epoch_block, RecordFactory
+        .Recorder recorder)
 {
     EpochBlock epoch_block_new;
     epoch_block_new.epoch = epoch_block.epoch + 1;
@@ -100,12 +106,9 @@ int _main(string[] args)
     string dartfilename = "/tmp/default".setExtension(FileExtension.dart);
     string inputfilename = "";
     string outputfilename = tempfile;
-    ushort fromAngle = 0;
-    ushort toAngle = 0;
     bool version_switch;
     auto logo = import("logo.txt");
 
-    bool useFakeNet = false;
     bool dump = false;
 
     bool dartread = false;
@@ -113,52 +116,41 @@ int _main(string[] args)
     bool dartmodify = false;
     bool dartrim = false;
     bool dartrpc = false;
-    bool generate = false;
     bool eye;
     bool verbose;
 
-    ubyte ringWidth = 4;
-    int rings = 4;
     bool initialize = false;
     string passphrase = "verysecret";
-    string nncupdatename, nncreadname;
-    uint testaddblocks;
-    int testdumpblocks = -1;
 
-    auto main_args = getopt(args,
-        std.getopt.config.caseSensitive,
-        std.getopt.config.bundling,
-        "version", "display the version", &version_switch,
-        "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
-        "initialize", "Create a dart file", &initialize,
-        "inputfile|i", "Sets the HiBON input file name", &inputfilename,
-        "outputfile|o", "Sets the output file name", &outputfilename,
-        "from", format("Sets from angle: default %s", (fromAngle == toAngle) ? "full"
-            : fromAngle.to!string), &fromAngle,
-        "to", format("Sets to angle: default %s", (fromAngle == toAngle) ? "full"
-            : toAngle.to!string), &toAngle,
-        "useFakeNet|fn", format("Enables fake hash test-mode: default %s", useFakeNet), &useFakeNet,
-        "read|r", format("Excutes a DART read sequency: default %s", dartread), &dartread_args,
-        "rim", format("Performs DART rim read: default %s", dartrim), &dartrim,
-        "modify|m", format("Excutes a DART modify sequency: default %s", dartmodify), &dartmodify,
-        "rpc", format("Excutes a HiPRC on the DART: default %s", dartrpc), &dartrpc,
-        "generate", "Generate a fake test dart (recomended to use with --useFakeNet)", &generate,
-        "dump", "Dumps all the arcvives with in the given angle", &dump,
-        "eye", "Prints the bullseye", &eye,
-        "width|w", "Sets the rings width and is used in combination with the generate", &ringWidth,
-        "rings", "Sets the rings height and is used in  combination with the generate", &rings,
-        "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
-        "nncupdate", "Update existing NetworkNameCard with given name", &nncupdatename,
-        "nncread", "Read NetworkNameCard with given name", &nncreadname,
-        "verbose|v", "Print output to console", &verbose,
-        "testaddblocks", "DEBUG MODE: Add N epoch blocks in chain", &testaddblocks,
-        "testdumpblocks", "DEBUG MODE: Dump last N epoch blocks in chain. Set 0 to dump all blocks in chain", &testdumpblocks,
-    );
+    GetoptResult main_args;
+
+    try
+    {
+        main_args = getopt(args,
+            std.getopt.config.caseSensitive,
+            std.getopt.config.bundling,
+            "version|v", "display the version", &version_switch,
+            "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
+            "initialize", "Create a dart file", &initialize,
+            "inputfile|i", "Sets the HiBON input file name", &inputfilename,
+            "outputfile|o", "Sets the output file name", &outputfilename,
+            "read|r", format("Excutes a DART read sequency: default %s", dartread), &dartread_args,
+            "rim", format("Performs DART rim read: default %s", dartrim), &dartrim,
+            "modify|m", format("Excutes a DART modify sequency: default %s", dartmodify), &dartmodify,
+            "rpc", format("Excutes a HiPRC on the DART: default %s", dartrpc), &dartrpc,
+            "dump", "Dumps all the arcvives with in the given angle", &dump,
+            "eye", "Prints the bullseye", &eye,
+            "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
+            "verbose", "Print output to console", &verbose,
+        );
+    }
+    catch (Exception e)
+    {
+        writefln("Error parsing argument list: %s Abort", e.msg);
+        return 1;
+    }
 
     dartread = !dartread_args.empty;
-    bool nncupdate = !nncupdatename.empty;
-    bool nncread = !nncreadname.empty;
-    bool testdumpblocks_enabled = testdumpblocks > -1;
 
     if (version_switch)
     {
@@ -189,24 +181,8 @@ int _main(string[] args)
         return 0;
     }
 
-    SecureNet createNet()
-    {
-        SecureNet result;
-        if (useFakeNet)
-        {
-            import tagion.dart.DARTFakeNet;
-
-            result = new DARTFakeNet;
-        }
-        else
-        {
-            result = new StdSecureNet;
-        }
-        result.generateKeyPair(passphrase);
-        return result;
-    }
-
-    const net = createNet;
+    SecureNet net = new StdSecureNet;
+    net.generateKeyPair(passphrase);
     const hirpc = HiRPC(net);
 
     if (initialize)
@@ -219,14 +195,14 @@ int _main(string[] args)
         DART.create(dartfilename);
     }
 
-    auto db = new DART(net, dartfilename, fromAngle, toAngle);
-    if (generate)
+    Exception dart_exception;
+    auto db = new DART(net, dartfilename, dart_exception);
+    if (!(dart_exception is null))
     {
-        import tagion.dart.DARTFakeNet : SetInitialDataSet;
-
-        auto fp = SetInitialDataSet(db, ringWidth, rings);
-        writeln("GENERATED DART. EYE: ", fp.cutHex);
+        writefln("Fail to open DART: %s. Abort.", dart_exception.msg);
+        return 1;
     }
+
     if (dump)
     {
         db.dump(true);
@@ -236,48 +212,58 @@ int _main(string[] args)
         writefln("EYE: %s", db.fingerprint.hex);
     }
 
-    static const(HiRPCSender) readFromDB(Buffer[] fingerprints, HiRPC hirpc, DART db)
+    version (none)
     {
-        const sender = DART.dartRead(fingerprints, hirpc);
-        auto receiver = hirpc.receive(sender.toDoc);
-        return db(receiver, false);
-    }
-
-    static const(HiRPCSender) writeToDB(RecordFactory.Recorder recorder, HiRPC hirpc, DART db)
-    {
-        const sender = DART.dartModify(recorder, hirpc);
-        auto receiver = hirpc.receive(sender);
-        return db(receiver, false);
-    }
-
-    Nullable!T readRecord(T)(Buffer hash, HiRPC hirpc, DART db) if (isHiBONRecord!T)
-    {
-        auto result = readFromDB([hash], hirpc, db);
-
-        auto factory = RecordFactory(net);
-        auto recorder = factory.recorder(result.message["result"].get!Document);
-
-        if (recorder[].empty)
+        static const(HiRPCSender) readFromDB(Buffer[] fingerprints, HiRPC hirpc, DART db)
         {
-            return Nullable!T.init;
-        }
-        else
-        {
-            return Nullable!T(T(recorder[].front.filed));
-        }
-    }
-
-    Nullable!EpochBlock readLastEpochBlock(HiRPC hirpc, DART db)
-    {
-        auto epoch_top_read = readRecord!LastEpochRecord(LastEpochRecord.dartHash(net), hirpc, db);
-        if (epoch_top_read.isNull)
-        {
-            return Nullable!EpochBlock.init;
+            const sender = DART.dartRead(fingerprints, hirpc);
+            auto receiver = hirpc.receive(sender.toDoc);
+            return db(receiver, false);
         }
 
-        return readRecord!EpochBlock(epoch_top_read.get.top, hirpc, db);
+        static const(HiRPCSender) writeToDB(RecordFactory.Recorder recorder, HiRPC hirpc, DART db)
+        {
+            const sender = DART.dartModify(recorder, hirpc);
+            auto receiver = hirpc.receive(sender);
+            return db(receiver, false);
+        }
+
+        Nullable!T readRecord(T)(Buffer hash, HiRPC hirpc, DART db)
+                if (isHiBONRecord!T)
+        {
+            auto result = readFromDB([hash], hirpc, db);
+
+            auto factory = RecordFactory(net);
+            auto recorder = factory.recorder(result.message["result"].get!Document);
+
+            if (recorder[].empty)
+            {
+                return Nullable!T.init;
+            }
+            else
+            {
+                return Nullable!T(T(recorder[].front.filed));
+            }
+        }
+
+        Nullable!EpochBlock readLastEpochBlock(HiRPC hirpc, DART db)
+        {
+            auto epoch_top_read = readRecord!LastEpochRecord(LastEpochRecord.dartHash(net), hirpc, db);
+            if (epoch_top_read.isNull)
+            {
+                return Nullable!EpochBlock.init;
+            }
+
+            return readRecord!EpochBlock(epoch_top_read.get.top, hirpc, db);
+        }
     }
 
+    /**
+     * Prints document to console depending on parameters
+     * @param doc - document to output
+     * @param indent_line - flag to put indent line in console before printing doc
+     * @param alternative_text - text to replace doc output when flag verbose is off
+     */
     void toConsole(T)(T doc, bool indent_line = false, string alternative_text = "")
             if (isHiBONRecord!T || is(T == Document))
     {
@@ -293,24 +279,30 @@ int _main(string[] args)
         }
     }
 
-    const onehot = dartrpc + dartread + dartrim + dartmodify + nncupdate + nncread + (
-        testaddblocks > 0) + testdumpblocks_enabled;
+    const onehot = dartrpc + dartread + dartrim + dartmodify;
 
     if (onehot > 1)
     {
         stderr.writeln(
-            "Only one of the dartrpc, dartread, dartrim, dartmodify, nncupdate and nncread switched alowed");
+            "Only one of the dartrpc, dartread, dartrim, dartmodify switched alowed");
         return 1;
     }
-    // if (!inputfilename.exists) {
-    //     stderr.writefln("No input file '%s'", inputfilename);
-    // }
 
-    if (dartrpc)
+    bool inputfile_switch = !inputfilename.empty;
+    if (inputfile_switch)
     {
         if (!inputfilename.exists)
         {
-            writeln("No input file");
+            writefln("Can't open input file '%s'. Abort", inputfilename);
+            return 1;
+        }
+    }
+
+    if (dartrpc)
+    {
+        if (!inputfile_switch)
+        {
+            writeln("No input file provided. Use -i to specify input file");
         }
         else
         {
@@ -323,7 +315,17 @@ int _main(string[] args)
     }
     else if (dartread)
     {
-        auto fingerprints = dartread_args.map!(hash => decode(hash)).array;
+        immutable(ubyte[])[] fingerprints;
+        try
+        {
+            fingerprints = dartread_args
+                .map!(hash => decode(hash)).array;
+        }
+        catch (Exception e)
+        {
+            writefln("Error parsing hash string: %s. Abort", e.msg);
+            return 1;
+        }
 
         const sender = DART.dartRead(fingerprints, hirpc);
         auto receiver = hirpc.receive(sender.toDoc);
@@ -332,49 +334,72 @@ int _main(string[] args)
         const tosendResult = tosend.method.params;
 
         outputfilename.fwrite(tosendResult);
+        writefln("Result has been written to '%s'", outputfilename);
 
         toConsole!Document(result.message);
     }
     else if (dartrim)
     {
-        // Buffer root_rims;
-        // auto params=new HiBON;
-        // if(!inputfilename.exists) {
-        //     writefln("Input file: %s not exists", inputfilename);
-        //     root_rims = [];
-        // }else{
-        //     auto inputBuffer = cast(immutable(char)[])fread(inputfilename);
-        //     if(inputBuffer.length){
-        //         root_rims = decode(inputBuffer);
-        //         writeln(root_rims);
-        //     }else{
-        //         root_rims = [];
-        //     }
-        // }
-        // params[DARTFile.Params.rims]=root_rims;
-        // auto sended = hirpc.dartRim(params).toHiBON(net).serialize;
-        // auto doc = Document(sended);
-        // auto received = hirpc.receive(doc);
-        // auto result = db(received);
-        // auto tosend = hirpc.toHiBON(result);
-        // auto tosendResult = (tosend[Keywords.message].get!Document)[Keywords.result].get!Document;
-        // writeResponse(tosendResult.serialize);
+        if (!inputfile_switch)
+        {
+            writeln("No input file provided. Use -i to specify input file");
+        }
+        else
+        {
+            // Buffer root_rims;
+            // auto params=new HiBON;
+            // if(!inputfilename.exists) {
+            //     writefln("Input file: %s not exists", inputfilename);
+            //     root_rims = [];
+            // }else{
+            //     auto inputBuffer = cast(immutable(char)[])fread(inputfilename);
+            //     if(inputBuffer.length){
+            //         root_rims = decode(inputBuffer);
+            //         writeln(root_rims);
+            //     }else{
+            //         root_rims = [];
+            //     }
+            // }
+            // params[DARTFile.Params.rims]=root_rims;
+            // auto sended = hirpc.dartRim(params).toHiBON(net).serialize;
+            // auto doc = Document(sended);
+            // auto received = hirpc.receive(doc);
+            // auto result = db(received);
+            // auto tosend = hirpc.toHiBON(result);
+            // auto tosendResult = (tosend[Keywords.message].get!Document)[Keywords.result].get!Document;
+            // writeResponse(tosendResult.serialize);
+        }
     }
     else if (dartmodify)
     {
-        const doc = inputfilename.fread;
-        auto factory = RecordFactory(net);
-        auto recorder = factory.recorder(doc);
-        auto sended = DART.dartModify(recorder, hirpc);
-        auto received = hirpc.receive(sended);
-        auto result = db(received, false);
-        auto tosend = hirpc.toHiBON(result);
-        auto tosendResult = tosend.method.params;
-        if (dump)
-            db.dump(true);
-        outputfilename.fwrite(tosendResult);
+        if (!inputfile_switch)
+        {
+            writeln("No input file provided. Use -i to specify input file");
+        }
+        else
+        {
+            try
+            {
+                const doc = inputfilename.fread;
+                auto factory = RecordFactory(net);
+                auto recorder = factory.recorder(doc);
+                auto sended = DART.dartModify(recorder, hirpc);
+                auto received = hirpc.receive(sended);
+                auto result = db(received, false);
+                auto tosend = hirpc.toHiBON(result);
+                auto tosendResult = tosend.method.params;
+                if (dump)
+                    db.dump(true);
+                outputfilename.fwrite(tosendResult);
+            }
+            catch (Exception e)
+            {
+                writefln("Error trying to modify: %s. Abort", e.msg);
+                return 1;
+            }
+        }
     }
-    else if (nncread)
+    version (none) // else if (nncread)
     {
         auto nnc_out = readStandardRecord!NetworkNameCard(net, hirpc, db, NetworkNameCard.dartHash(net, nncreadname));
 
@@ -422,7 +447,7 @@ int _main(string[] args)
             }
         }
     }
-    else if (nncupdate)
+    version (none) // else if (nncupdate)
     {
         auto nnc_out = readStandardRecord!NetworkNameCard(net, hirpc, db, NetworkNameCard.dartHash(net, nncupdatename));
         if (nnc_out.isNull)
@@ -480,7 +505,7 @@ int _main(string[] args)
             }
         }
     }
-    else if (testaddblocks > 0)
+    version (none) // else if (testaddblocks > 0)
     {
         foreach (i; 0 .. testaddblocks)
         {
@@ -513,7 +538,7 @@ int _main(string[] args)
             }
         }
     }
-    else if (testdumpblocks_enabled)
+    version (none) // else if (testdumpblocks_enabled)
     {
         import tagion.dart.DARTFile : hash_null;
 
