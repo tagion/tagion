@@ -2,6 +2,7 @@
 module tagion.behaviour.BehaviourFeature;
 
 /**
+ * @brief
  * Handels all BDD information concerning the Feature
  * Comments, description, function-names, scenarios and actions
  */
