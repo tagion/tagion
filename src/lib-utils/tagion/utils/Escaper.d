@@ -1,14 +1,25 @@
 module tagion.utils.Escaper;
 
 import std.format;
-import std.algorithm.iteration : map;
+import std.algorithm.iteration : map, joiner;
 import std.array : join;
- import std.range.primitives : isInputRange;
-import std.range.primitives : ElementType;
+import std.range.primitives : isInputRange;
+//import std.range.primitives : ElementType;
+import std.traits : ForeachType;
+import std.range;
 
+    
+enum special_chars = "ntr'\"\\";
+enum code_esc_special_chars = 
+format(q{enum code_esc_special="%s";},
+                        zip('\\'.repeat(special_chars.length),
+                        special_chars.map!(c => cast(char)c))
+                        .map!(m => only(m[0],m[1])).array.join);
+pragma(msg, code_esc_special_chars);
+mixin(code_esc_special_chars);
 
 @safe
-struct Escaper(S) if (isInputRange!S && is(ElementType!S : const(char))) {
+struct Escaper(S) if (isInputRange!S && is(ForeachType!S : const(char))) {
     protected {
         char escape_char;
         S range;
@@ -17,10 +28,7 @@ struct Escaper(S) if (isInputRange!S && is(ElementType!S : const(char))) {
     this(S range) @nogc {
         this.range = range;
     }
-        enum special_chars = "ntr'\"\\";
-        enum x =
-            special_chars.map!(c => c).join;
-    @nogc pure nothrow {
+    pure {
         bool empty() const {
             return range.empty;
         }
@@ -29,14 +37,10 @@ struct Escaper(S) if (isInputRange!S && is(ElementType!S : const(char))) {
             if (escape_char is char.init) {
                 return escape_char;
             }
-            return range.front;
+            return cast(char)range.front;
         }
  
-enum code_esc_special_chars = format("enum code_esc_special=%s;",
-                    special_chars.map!(c => c));
-
-            pragma(msg, code_esc_special_chars);
-        /+ 
+       /+ 
     void popFront() const {
         if (escape_char is char.init) {
             switch(range.front) {
@@ -60,13 +64,13 @@ enum code_esc_special_chars = format("enum code_esc_special=%s;",
 
 @safe
 Escaper!S escaper(S)(S range) {
-    return Escaper(S)(range);
+    return Escaper!S(range);
 }
 
 @safe
 unittest {
     import std.stdio;
-  //  auto test=escaper("text");
+    auto test=escaper("text");
     pragma(msg, isInputRange!(typeof("text")));
-    pragma(msg, ElementType!(typeof("text")));
+    pragma(msg, ForeachType!(typeof("text")));
 }
