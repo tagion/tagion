@@ -1,11 +1,14 @@
 module tagion.utils.Escaper;
 
 import std.format;
-import std.algorithm.iterationi : map;
+import std.algorithm.iteration : map;
 import std.array : join;
+ import std.range.primitives : isInputRange;
+import std.range.primitives : ElementType;
+
 
 @safe
-struct Excaper(S) if (isInputRange!S && is(ElementType!S : const(char))) {
+struct Escaper(S) if (isInputRange!S && is(ElementType!S : const(char))) {
     protected {
         char escape_char;
         S range;
@@ -14,7 +17,9 @@ struct Excaper(S) if (isInputRange!S && is(ElementType!S : const(char))) {
     this(S range) @nogc {
         this.range = range;
     }
-
+        enum special_chars = "ntr'\"\\";
+        enum x =
+            special_chars.map!(c => c).join;
     @nogc pure nothrow {
         bool empty() const {
             return range.empty;
@@ -26,15 +31,11 @@ struct Excaper(S) if (isInputRange!S && is(ElementType!S : const(char))) {
             }
             return range.front;
         }
-
-        enum special_chars = "ntr'\"\\";
-        enum x =
-            special_chars.map!(c => c).json;
-/+ 
+ 
 enum code_esc_special_chars = format("enum code_esc_special=%s;",
                     special_chars.map!(c => c));
-+/
-        //    pragma(msg, code_esc_special_chars);
+
+            pragma(msg, code_esc_special_chars);
         /+ 
     void popFront() const {
         if (escape_char is char.init) {
@@ -54,4 +55,18 @@ enum code_esc_special_chars = format("enum code_esc_special=%s;",
 
     }
 +/
-    }
+}
+}
+
+@safe
+Escaper!S escaper(S)(S range) {
+    return Escaper(S)(range);
+}
+
+@safe
+unittest {
+    import std.stdio;
+  //  auto test=escaper("text");
+    pragma(msg, isInputRange!(typeof("text")));
+    pragma(msg, ElementType!(typeof("text")));
+}
