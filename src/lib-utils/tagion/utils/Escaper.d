@@ -29,10 +29,11 @@ struct Excaper(S) if (isInputRange!S && is(ElementType!S : const(char))) {
 
         enum special_chars = "ntr'\"\\";
         enum x =
-            special_chars.map!(c => c);
-        enum code_esc_special_chars = format("enum code_esc_special=%s;",
+            special_chars.map!(c => c).json;
+/+ 
+enum code_esc_special_chars = format("enum code_esc_special=%s;",
                     special_chars.map!(c => c));
-
++/
         //    pragma(msg, code_esc_special_chars);
         /+ 
     void popFront() const {
