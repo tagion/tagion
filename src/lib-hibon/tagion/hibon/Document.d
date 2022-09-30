@@ -190,9 +190,9 @@ static assert(uint.sizeof == 4);
 
 	/* 
 	 * 
-	 * Returns: If both documents are the same
+	 * Returns: true If both documents are the same
 	 */
-	bool opEqual(const Document rhs) const pure nothrow @nogc {
+	bool opEquals(const Document rhs) const pure nothrow @nogc {
 	return _data == rhs._data;
 	}
     /++
@@ -1604,8 +1604,4 @@ unittest
         assert(!doc.isInorder);
         assert(doc.valid is Document.Element.ErrorCode.DOCUMENT_OVERFLOW);
     }
-}
-
-@safe
-unittest { // Test of Element.opEquals
 }
