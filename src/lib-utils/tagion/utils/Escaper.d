@@ -28,9 +28,10 @@ char escape_char;
 }
 
     enum special_chars="ntr'\"\\";
-    enum code_esc_special_chars=format("enum code_esc_special=%s;", special.map!(c => '\'~c).join);
+    enum code_esc_special_chars=format("enum code_esc_special=%s;", 
+special_chars.map!((char c) => '\'~c));
 
-    pragma(msg, code_esc_special_chars);
+//    pragma(msg, code_esc_special_chars);
 /+ 
     void popFront() const {
         if (escape_char is char.init) {
