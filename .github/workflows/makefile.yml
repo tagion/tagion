@@ -29,19 +29,17 @@ jobs:
       run: |
         tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
         
-  regression-test-container-1:
+  regression-test:
     runs-on: self-hosted
     steps:
-    - name: run container 1
+    - name: run container2
       run: |
+        pwd
+        rm -rf test_scripts/ || ls -l
+        git clone git@github.com:holyanytskyy/test_scripts.git
         docker run --name 1-container --rm integration-test-image simple_transaction.sh; echo "first script successful";
         
-  regression-test-container-2:
-    runs-on: self-hosted
-    steps:
-    - name: run container 2
-      run: |
-        docker run --name 2-container --rm integration-test-image second_transaction.sh; echo "second script successful";
+
     
 
     
