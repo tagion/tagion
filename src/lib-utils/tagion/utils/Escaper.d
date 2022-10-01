@@ -27,13 +27,13 @@ struct Escaper(S) if (isInputRange!S && is(ForeachType!S : const(char))) {
     protected {
         char escape_char;
         S range;
-ESCMmode mode;
-}
-enum ESCMode {
-    none, /// Normal  char
-    esc, /// Esc char '\'
-    symbol /// Escaped symbol
-}
+        ESCMmode mode;
+    }
+    enum ESCMode {
+        none, /// Normal  char
+     esc, /// Esc char '\'
+        symbol /// Escaped symbol
+    }
     @disable this();
     this(S range) @nogc {
         this.range = range;
@@ -57,22 +57,23 @@ enum ESCMode {
        }
 
         void popFront() {
-    with(ESCMode) final switch(mode) {
-    case none:
+            with(ESCMode) final switch(mode) {
+            case none:
                 const index = escaped_special_chars.indexOf(range.front);
                 if (index < 0) {
-                mode=esc;
+                    mode=esc;
 
-                escape_char = special_chars[index];
-            }
+                    escape_char = special_chars[index];
+                }
                 range.popFront;
             break;
-        case esc:
-        mode=symbol;
-        break;
-        case symbol:
-        mode=none;
-    }
+            case esc:
+                mode=symbol;
+                break;
+            case symbol:
+                mode=none;
+            }
+        }
     }
 }
 
