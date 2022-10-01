@@ -5,37 +5,38 @@ import std.algorithm.iteration : map, joiner;
 import std.array : join;
 import std.range.primitives : isInputRange;
 
-//import std.range.primitives : ElementType;
 import std.traits : ForeachType;
 import std.range;
 import std.string : indexOf;
 
-enum special_chars = "ntr'\"\\";
+enum special_chars = "ntr'\"\\"; /// List of special chars which will be escapes
+
 enum code_esc_special_chars =
     format(q{enum escaped_special_chars="%s";},
             zip('\\'.repeat(special_chars.length),
             special_chars.map!(c => cast(char) c))
             .map!(m => only(m[0], m[1])).array.join);
-//pragma(msg, code_esc_special_chars);
 mixin(code_esc_special_chars);
 
 /** 
-    Range which takes a range of char and translate it to raw range of char 
+    Range which takes a range of chars and converts to a range with added esc '\\' 
+infront of a list fo special chars.
 */
 @safe
 struct Escaper(S) if (isInputRange!S && is(ForeachType!S : const(char))) {
     protected {
         char escape_char;
         S range;
-        ESCMmode mode;
+        ESCMode mode;
     }
     enum ESCMode {
         none, /// Normal  char
-     esc, /// Esc char '\'
+        esc, /// Esc char '\'
         symbol /// Escaped symbol
     }
+
     @disable this();
-    this(S range) @nogc {
+    this(S range) pure {
         this.range = range;
     }
 
@@ -44,34 +45,41 @@ struct Escaper(S) if (isInputRange!S && is(ForeachType!S : const(char))) {
             return range.empty;
         }
 
-        char front() const {
-        with(ESCMode) final switch(mode) {
-        case none:
-            return range.front;
-        case esc:
-            return '\';
-            case symbol;
-            return escape_char;
+        char front() {
+            prepareEscape;
+            with (ESCMode) final switch (mode) {
+            case none:
+                return cast(char) range.front;
+            case esc:
+                return '\\';
+            case symbol:
+                return escape_char;
+            }
+            assert(0);
         }
-        assert(0);
-       }
 
         void popFront() {
-            with(ESCMode) final switch(mode) {
+            with (ESCMode) final switch (mode) {
             case none:
-                const index = escaped_special_chars.indexOf(range.front);
-                if (index < 0) {
-                    mode=esc;
-
-                    escape_char = special_chars[index];
-                }
+                prepareEscape;
                 range.popFront;
-            break;
+                break;
             case esc:
-                mode=symbol;
+                mode = symbol;
                 break;
             case symbol:
-                mode=none;
+                mode = none;
+                range.popFront;
+            }
+        }
+
+        void prepareEscape() {
+            if (mode is ESCMode.none) {
+                const index = escaped_special_chars.indexOf(range.front);
+                if (index >= 0) {
+                    mode = ESCMode.esc;
+                    escape_char = special_chars[index];
+                }
             }
         }
     }
@@ -82,21 +90,23 @@ Escaper!S escaper(S)(S range) {
     return Escaper!S(range);
 }
 
-///Examples: Escaping a text
+///Examples: Escaping a text range
 @safe
 unittest {
-    import std.stdio;
+//    import std.stdio;
     import std.algorithm.comparison : equal;
 
-    { //
+    { /// Simple string unchanged
         auto test = escaper("text");
-        writefln("test = '%s'\n", test);
         assert(equal(test, "text"));
     }
-    {
-        auto test = escaper("t\n \"#name\" \r");
-        writefln("test2=%(<%s> %)", test.take(5));
+    { /// Unsert esc in front of control chars
+        auto test = escaper("t\n #name \r");
+        assert(equal(test, r"t\n #name \r"));
     }
-    pragma(msg, isInputRange!(typeof("text")));
-    pragma(msg, ForeachType!(typeof("text")));
+
+    { /// Inserts esc in front of  "
+        auto test = escaper("t \"#name\" ");
+        assert(equal(test, `t \"#name\" `));
+    }
 }
