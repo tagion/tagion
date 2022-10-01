@@ -52,24 +52,27 @@ enum ESCMode {
             return '\';
             case symbol;
             return escape_char;
-    }
+        }
         assert(0);
        }
 
         void popFront() {
-            if (escape_char is char.init) {
+    with(ESCMode) final switch(mode) {
+    case none:
                 const index = escaped_special_chars.indexOf(range.front);
                 if (index < 0) {
-                    range.popFront;
+                mode=esc;
 
-                    return;
-                }
                 escape_char = special_chars[index];
-                return;
             }
-            range.popFront;
-    escape_char=char.init;
-        }
+                range.popFront;
+            break;
+        case esc:
+        mode=symbol;
+        break;
+        case symbol:
+        mode=none;
+    }
     }
 }
 
