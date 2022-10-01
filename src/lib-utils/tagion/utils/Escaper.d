@@ -27,7 +27,13 @@ struct Escaper(S) if (isInputRange!S && is(ForeachType!S : const(char))) {
     protected {
         char escape_char;
         S range;
-    }
+ESCMmode mode;
+}
+enum ESCMode {
+    none, /// Normal  char
+    esc, /// Esc char '\'
+    symbol /// Escaped symbol
+}
     @disable this();
     this(S range) @nogc {
         this.range = range;
@@ -39,11 +45,16 @@ struct Escaper(S) if (isInputRange!S && is(ForeachType!S : const(char))) {
         }
 
         char front() const {
-            if (escape_char !is char.init) {
-                return escape_char;
-            }
-            return cast(char) range.front;
-        }
+        with(ESCMode) final switch(mode) {
+        case none:
+            return range.front;
+        case esc:
+            return '\';
+            case symbol;
+            return escape_char;
+    }
+        assert(0);
+       }
 
         void popFront() {
             if (escape_char is char.init) {
@@ -56,7 +67,8 @@ struct Escaper(S) if (isInputRange!S && is(ForeachType!S : const(char))) {
                 escape_char = special_chars[index];
                 return;
             }
-            
+            range.popFront;
+    escape_char=char.init;
         }
     }
 }
@@ -66,16 +78,21 @@ Escaper!S escaper(S)(S range) {
     return Escaper!S(range);
 }
 
-    ///Examples: Escaping a text
+///Examples: Escaping a text
 @safe
 unittest {
     import std.stdio;
+    import std.algorithm.comparison : equal;
 
     { //
-    auto test = escaper("text");
-    writefln("test = '%s'\n", test);
-    assert(equal(test, "text");
-
+        auto test = escaper("text");
+        writefln("test = '%s'\n", test);
+        assert(equal(test, "text"));
+    }
+    {
+        auto test = escaper("t\n \"#name\" \r");
+        writefln("test2=%(<%s> %)", test.take(5));
+    }
     pragma(msg, isInputRange!(typeof("text")));
     pragma(msg, ForeachType!(typeof("text")));
 }
