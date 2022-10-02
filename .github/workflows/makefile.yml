@@ -42,4 +42,5 @@ jobs:
         docker rmi npm-scenario-image || docker images
         docker build -t npm-scenario-image .
         for SCENARIO in scenarios.txt; do docker run --name $SCENARIO --rm npm-scenario $SCENARIO ; done
+        echo successful
         
