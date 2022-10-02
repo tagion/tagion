@@ -32,16 +32,14 @@ jobs:
   regression-test:
     runs-on: self-hosted
     steps:
-    - name: run container2
+    - name: npm scenario
       run: |
         pwd
         rm -rf test_scripts/ || ls -l
         git clone git@github.com:holyanytskyy/test_scripts.git
         cat test_scripts/readme.md | grep start | awk '{print $6}' > scenarios.txt
         cat scenarios.txt
-        docker run --name 1-container --rm integration-test-image simple_transaction.sh; echo "first script successful";
+        docker rmi npm-scenario-image || docker images
+        docker build -t npm-scenario-image .
+        for SCENARIO in scenarios.txt; do docker run --name $SCENARIO --rm npm-scenario SCENARIO ; done
         
-
-    
-
-    
