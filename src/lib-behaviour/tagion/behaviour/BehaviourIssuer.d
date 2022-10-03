@@ -25,7 +25,7 @@ DlangT!(Stream) Dlang(Stream)(Stream bout) {
 
 /**
  * \struct MarkdownFMT
- * Storage for bdd components
+ * Formator of the issuer
  */
 
 @safe
@@ -38,6 +38,9 @@ struct MarkdownFMT {
     string comments;
 }
 
+/** 
+ * Default formater for Markdown 
+ */
 @safe
 static MarkdownFMT masterMarkdown = {
     indent: "  ",
@@ -90,6 +93,7 @@ struct MarkdownT(Stream) {
     }
 }
 
+/// Examples: Converting a Scenario to Markdown 
 @safe
 unittest { // Markdown scenario test
     auto bout = new OutBuffer;
@@ -107,7 +111,7 @@ unittest { // Markdown scenario test
         immutable expected = filename.freadText;
         //io.writefln("scenario_result.given.infos %s", scenario_result.given.infos);
         markdown.issue(scenario_result.given.infos[0], null, markdown.master.property);
-        filename.setExtension("mdtest").fwrite(bout.toString);
+        //filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
     }
     {
@@ -118,12 +122,13 @@ unittest { // Markdown scenario test
             .unitfile
             .setExtension(FileExtension.markdown);
         markdown.issue(scenario_result);
-        filename.setExtension("mdtest").fwrite(bout.toString);
+        //filename.setExtension("mdtest").fwrite(bout.toString);
         immutable expected = filename.freadText;
         assert(bout.toString == expected);
     }
 }
 
+/// Examples: Convering a FeatureGroup to Markdown
 @safe
 unittest {
     auto bout = new OutBuffer;
@@ -138,7 +143,7 @@ unittest {
             .unitfile
             .setExtension(FileExtension.markdown);
         markdown.issue(feature_group);
-        filename.setExtension("mdtest").fwrite(bout.toString);
+        //filename.setExtension("mdtest").fwrite(bout.toString);
 
         immutable expected = filename.freadText;
         assert(bout.toString == expected);
@@ -149,7 +154,7 @@ unittest {
 
 /**
  * \struct DlangT
- * BDD D source generator
+ * D-source generator
  */
 @safe
 struct DlangT(Stream) {
@@ -236,6 +241,7 @@ struct DlangT(Stream) {
     }
 }
 
+/// Examples: Converting a FeatureGroup to a D-source skeleten
 @safe
 unittest {
     auto bout = new OutBuffer;
@@ -251,7 +257,7 @@ unittest {
             .setExtension(FileExtension.dsrc);
         dlang.issue(feature_group);
         immutable result = bout.toString;
-        filename.setExtension("dtest").fwrite(result.trim_source.join("\n"));
+        //filename.setExtension("dtest").fwrite(result.trim_source.join("\n"));
         //io.writefln("dtest =%s", filename.setExtension("dtest"));
         immutable expected = filename.freadText;
         assert(equal(
@@ -279,6 +285,7 @@ version (unittest) {
     import tagion.hibon.Document;
     alias MarkdownU = Markdown!OutBuffer;
     alias DlangU = Dlang!OutBuffer;
+    ///Returns: a stripped version of a d-source text
     auto trim_source(S)(S source) {
         return source
                 .splitLines

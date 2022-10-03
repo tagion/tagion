@@ -374,19 +374,22 @@ unittest {
         assert(!feature_result.scenarios[0].hasPassed);
         assert(!feature_result.scenarios[1].hasPassed);
         assert(!feature_result.hasPassed);
+        "/tmp/test_sample_fail.hibon".fwrite(feature_result);
     }
 
-    { // None of the scenario passes
+    { // All of the scenario passes
         WithCtor.pass = true; /// Pass all tests!
         const feature_result = feature_with_ctor.run;
         assert(feature_result.scenarios[0].hasPassed);
         assert(feature_result.scenarios[1].hasPassed);
+        "/tmp/test_sample.hibon".fwrite(feature_result);
         //io.writefln("feature_result =%s", feature_result.toPretty);
     }
 }
 
 version(unittest) {
     import tagion.hibon.Document;
+    import tagion.hibon.HiBONRecord;
 //    import io = std.stdio;
     import tagion.hibon.HiBONJSON;
 }
