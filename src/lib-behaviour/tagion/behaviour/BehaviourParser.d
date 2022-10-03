@@ -1,3 +1,6 @@
+/**
+BDD markdown parser
+*/
 module tagion.behaviour.BehaviourParser;
 
 import tagion.behaviour.BehaviourFeature;
@@ -227,8 +230,6 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
     if (scenario_group != scenario_group.init) {
         result.scenarios ~= scenario_group;
     }
-    import tagion.hibon.HiBONJSON : toPretty;
-
     return result;
 }
 

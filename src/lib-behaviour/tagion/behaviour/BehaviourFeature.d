@@ -73,7 +73,7 @@ struct Info(alias Property) {
 /// Returns: true if I is a Info template
 enum isInfo(alias I) = __traits(isSame, TemplateOf!I, Info);
 
-/* 
+/**
  * The Action group contains a list of acrion with the property defined which is a part of the 
  * behaviour property
  */
