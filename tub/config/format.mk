@@ -1,7 +1,7 @@
 
 
 DFORMAT?=dfmt
-DFORMAT_FLAGS+=-i -c $(REPOROOT)/
+DFORMAT_FLAGS+= -c $(REPOROOT)/
 #.editorconfig
 
 CHANGED_FILES=${shell git --no-pager diff  --name-only}
@@ -9,16 +9,11 @@ CHANGED_DFILES=${filter %.d,$(CHANGED_FILES)}
 
 ALL_DFILES=${shell find $(DSRC) -name "*.d"}
 
-format:
-	$(PRECMD)
-	if [ -z "$(CHANGED_FILES)" ]; then
-	echo $(CHANGED_DFILES)
-	$(DFORMAT) $(DFORMAT_FLAGS) $(CHANGED_DFILES)
-	fi
+format: ${addprefix .tmp,$(CHANGED_FILES)
 
-format-all:
-	$(PRECMD)
-	$(DFORMAT) $(DFORMAT_FLAGS) $(ALL_DFILES)
+format-all: $(addprefix .tmp,$(ALL_DFILES)}
+
+.PHONY: format format-all
 
 
 help-format:
@@ -36,7 +31,7 @@ help: help-format
 
 env-format:
 	$(PRECMD)
-	$(call log.header, $@ :: env)
+	${call log.header, $@ :: env}
 	${call log.kvp, DFORMAT, $(DFORMAT)}
 	${call log.env, DFORMAT_FLAGS, $(DFORMAT_FLAGS)}
 	${call log.env, CHANGED_DFILES, $(CHANGED_DFILES)}
@@ -45,3 +40,11 @@ env-format:
 .PHONY: env-format
 
 env: env-format
+
+%.d.tmp: %.d
+	$(DFORMAT) $(DFORMAT_FLAGS) $< >$@
+	size=`stat -c%s $@ 2>/dev/null`
+	if [ $stat -ne 0 ]; then
+	cp -a $@ > $<
+	endif
+
