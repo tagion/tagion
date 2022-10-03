@@ -1,11 +1,13 @@
+/// \file BehaviourIssue.d
 module tagion.behaviour.BehaviourIssue;
 
-import tagion.behaviour.BehaviourFeature;
 import std.traits;
 import std.algorithm : each, map;
 import std.range : tee, chain;
 import std.array : join, array;
 import std.format;
+
+import tagion.behaviour.BehaviourFeature;
 
 @safe
 MarkdownT!(Stream) Markdown(Stream)(Stream bout) {
@@ -20,6 +22,11 @@ DlangT!(Stream) Dlang(Stream)(Stream bout) {
     auto result = MasterT(bout);
     return result;
 }
+
+/**
+ * \struct MarkdownFMT
+ * Storage for bdd components
+ */
 
 @safe
 struct MarkdownFMT {
@@ -44,7 +51,6 @@ static MarkdownFMT masterMarkdown = {
 @safe
 struct MarkdownT(Stream) {
     Stream bout;
-    //  enum property_fmt="%s*%s* %s"; //=function(string indent, string propery, string description);
     static MarkdownFMT master;
 
     void issue(Descriptor)(const(Descriptor) descriptor, string indent, string fmt,
@@ -101,7 +107,7 @@ unittest { // Markdown scenario test
         immutable expected = filename.freadText;
         //io.writefln("scenario_result.given.infos %s", scenario_result.given.infos);
         markdown.issue(scenario_result.given.infos[0], null, markdown.master.property);
-//        filename.setExtension("mdtest").fwrite(bout.toString);
+        filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
     }
     {
@@ -112,7 +118,7 @@ unittest { // Markdown scenario test
             .unitfile
             .setExtension(FileExtension.markdown);
         markdown.issue(scenario_result);
-//        filename.setExtension("mdtest").fwrite(bout.toString);
+        filename.setExtension("mdtest").fwrite(bout.toString);
         immutable expected = filename.freadText;
         assert(bout.toString == expected);
     }
@@ -132,7 +138,7 @@ unittest {
             .unitfile
             .setExtension(FileExtension.markdown);
         markdown.issue(feature_group);
-     //   filename.setExtension("mdtest").fwrite(bout.toString);
+        filename.setExtension("mdtest").fwrite(bout.toString);
 
         immutable expected = filename.freadText;
         assert(bout.toString == expected);
@@ -140,6 +146,11 @@ unittest {
 
 }
 
+
+/**
+ * \struct DlangT
+ * BDD D source generator
+ */
 @safe
 struct DlangT(Stream) {
     Stream bout;
@@ -179,7 +190,7 @@ struct DlangT(Stream) {
 
     string issue(const(ScenarioGroup) scenario_group) {
         immutable scenario_param = format(
-                "\"%s\",\n[%-(\"%3$s\",\n%)]",
+                "\"%s\",\n[%-(%3$s,\n%)]",
                 scenario_group.info.property.description,
                 scenario_group.info.property.comments
         );
@@ -203,7 +214,7 @@ struct DlangT(Stream) {
     }
 
     void issue(const(FeatureGroup) feature_group, string indent = null) {
-        immutable comments = format("[%-(\"%s\", %)\"]", feature_group.info.property.comments);
+        immutable comments = format("[%(%s,\n%)]", feature_group.info.property.comments);
         bout.writefln(q{
                 module %1$s;
                 %4$s
@@ -240,40 +251,39 @@ unittest {
             .setExtension(FileExtension.dsrc);
         dlang.issue(feature_group);
         immutable result = bout.toString;
-        //filename.setExtension("dtest").fwrite(result);
-        // io.writefln("dtest =%s", filename.setExtension("dtest"));
+        filename.setExtension("dtest").fwrite(result.trim_source.join("\n"));
+        //io.writefln("dtest =%s", filename.setExtension("dtest"));
         immutable expected = filename.freadText;
         assert(equal(
                 result
-                .splitLines
-                .map!(a => a.strip)
-                .filter!(a => a.length !is 0),
+        .trim_source,
                 expected
-                .splitLines
-                .map!(a => a.strip)
-                .filter!(a => a.length !is 0)));
+        .trim_source
+    ));
     }
 }
 
 version (unittest) {
+    import std.algorithm.comparison : equal;
+    import std.algorithm.iteration : filter;
+    import std.string : strip, splitLines;
+    import std.file : fwrite = write, freadText = readText;
+    import std.range : zip, enumerate;
+    import std.path;
+    import std.outbuffer;
+
     import tagion.basic.Basic : mangleFunc, unitfile;
     import tagion.basic.Types : FileExtension;
     import tagion.behaviour.BehaviourUnittest;
     import tagion.behaviour.Behaviour;
     import tagion.hibon.Document;
-    import std.algorithm.comparison : equal;
-    import std.algorithm.iteration : filter;
-    import std.string : strip, splitLines;
-    import std.range : zip, enumerate;
-
     alias MarkdownU = Markdown!OutBuffer;
     alias DlangU = Dlang!OutBuffer;
-
-    import std.file : fwrite = write, freadText = readText;
-
-    //    import std.stdio;
-    import std.path;
-    import std.outbuffer;
-
-    // import io = std.stdio;
+    auto trim_source(S)(S source) {
+        return source
+                .splitLines
+                .map!(a => a.strip)
+                .filter!(a => a.length !is 0);
+ 
+    }
 }

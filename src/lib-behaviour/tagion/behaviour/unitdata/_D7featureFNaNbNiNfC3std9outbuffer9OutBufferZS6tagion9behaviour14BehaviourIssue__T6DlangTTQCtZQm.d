@@ -4,7 +4,7 @@ import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.BehaviourException;
 enum feature = Feature(
 "Some awesome feature should print some cash out of the blue",
-["]);
+[]);
 @safe @Scenario("Some awesome money printer",
 [])
 class Some_awesome_feature {
