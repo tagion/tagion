@@ -5,10 +5,11 @@ module tagion.behaviour.BehaviourException;
 
 import tagion.basic.TagionExceptions;
 import tagion.hibon.HiBONRecord;
-import tagion.hibon.Document;
-/++
+import tagion.hibon.Document : Document;
+
+/**
  Exception type used by tagion.hibon.HiBON module
- +/
+ */
 @safe class BehaviourException : TagionException
 {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure
@@ -39,6 +40,10 @@ struct BehaviourError {
         });
 }
 
+/**
+ * \struct Result
+ * Struct for store BDD result
+ */
 @safe
 @RecordType("BDDResult")
 struct Result {
@@ -60,8 +65,8 @@ Result result(const Document doc) nothrow {
     return result;
 }
 
-/*"
- * dito but takes a HiBONRecord instead of a Document
+/**
+ * ditto but takes a HiBONRecord instead of a Document
  */
 @safe
 Result result(T)(T hibon_record) if (isHiBONRecord!T) {
