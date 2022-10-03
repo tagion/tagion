@@ -1,8 +1,9 @@
 
 
 DFORMAT?=dfmt
+
+# The .editorconfig is placed in the REPOROOT
 DFORMAT_FLAGS+= -c $(REPOROOT)/
-#.editorconfig
 
 CHANGED_FILES=${shell git --no-pager diff  --name-only}
 CHANGED_DFILES=${filter %.d,$(CHANGED_FILES)}
