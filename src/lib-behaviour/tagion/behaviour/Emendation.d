@@ -12,7 +12,7 @@ import std.ascii : toUpper, toLower, isAlphaNum, isWhite;
 import std.array : split, array;
 
 /**
-This function try to add functions name to a feature group for the action description
+This function tries to add functions name to a feature group for the action description
 Params:
 feature_group = Is the feature which have an emendation with function name
 module_name = Will add the module name to the feature group if it's not already given
@@ -107,12 +107,13 @@ unittest {
     assert(feature.toDoc == expected_feature.toDoc);
 }
 
-/++ 
-+ This function add a word in reverse order from the description
-+ Params:
-+   action_name = names which alreay was take
-+   description = description of the action or scenario
-+/
+/** 
+* This function add a word in reverse order from the description
+* Params:
+*   action_name = names which alreay was take
+*   description = description of the action or scenario
+* Returns: The camel case name
+*/
 @safe
 void takeName(ref string action_name, string description) {
     import std.algorithm.iteration : splitter;
@@ -122,7 +123,6 @@ void takeName(ref string action_name, string description) {
 
     const action_subwords = action_name
         .split!isWhite.walkLength;
-    // .splitter(function_word_separator).walkLength;
     action_name = description
         .split!isWhite
         .retro
@@ -158,9 +158,7 @@ string camelName(string names_with_space, const Flag!"BigCamel" flag = No.BigCam
         .join
         .filter!isAlphaNum
         .map!(c => cast(immutable(char)) c)
-
         .array;
-
 }
 
 /// Examples: takeName and camelName
@@ -190,12 +188,12 @@ unittest {
     assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
 }
 
-/++ 
- + 
- + Params:
- +   list_of_names = list of names which is goint to be checked
- + Returns: true if all the names in the list is unique and not empty
- +/
+/** 
+ * 
+ * Params:
+ *   list_of_names = list of names which is goint to be checked
+ * Returns: true if all the names in the list is unique and not empty
+ */
 @safe
 bool isUnique(string[] list_of_names) nothrow {
     import std.algorithm.sorting : isStrictlyMonotonic;
@@ -250,6 +248,7 @@ string suggestModuleName(string filename, const(string)[] paths) {
     return null;
 }
 
+/// Example: suggestModuleName
 @safe
 unittest {
     auto paths = [
