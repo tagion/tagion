@@ -8,6 +8,7 @@ import std.array : join, array;
 import std.format;
 
 import tagion.behaviour.BehaviourFeature;
+import tagion.utils.Escaper : escaper;
 
 @safe
 MarkdownT!(Stream) Markdown(Stream)(Stream bout) {
@@ -197,7 +198,7 @@ struct DlangT(Stream) {
         immutable scenario_param = format(
                 "\"%s\",\n[%-(%3$s,\n%)]",
                 scenario_group.info.property.description,
-                scenario_group.info.property.comments
+                scenario_group.info.property.comments.map!(comment => comment.escaper)
         );
         auto behaviour_groups = chain(
                 issue(scenario_group.given),
@@ -219,7 +220,8 @@ struct DlangT(Stream) {
     }
 
     void issue(const(FeatureGroup) feature_group, string indent = null) {
-        immutable comments = format("[%(%s,\n%)]", feature_group.info.property.comments);
+        immutable comments = format("[%(%s,\n%)]", 
+    feature_group.info.property.comments.map!(comment => comment.escaper));
         bout.writefln(q{
                 module %1$s;
                 %4$s
