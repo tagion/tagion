@@ -13,5 +13,5 @@
 * Make target which can merge a branch with a specific TAG to the "pilot" branch if all tests has passed
 * Implementing continues code-review tool (using the criticize tool)
 * Make target for the cogito-tool and aggregate an visual report.
-
+* Make target which should pre-install the dstep,dfmt,cogito,dmd,ldc2 ... using dub
 
