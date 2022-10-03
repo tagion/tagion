@@ -152,7 +152,6 @@ unittest {
 
 }
 
-
 /**
  * \struct DlangT
  * D-source generator
@@ -181,7 +180,7 @@ struct DlangT(Stream) {
             },
                 info.name,
                 Property.stringof,
-                info.property.description
+                info.property.description.escaper
         );
     }
 
@@ -198,7 +197,8 @@ struct DlangT(Stream) {
         immutable scenario_param = format(
                 "\"%s\",\n[%-(%3$s,\n%)]",
                 scenario_group.info.property.description,
-                scenario_group.info.property.comments.map!(comment => comment.escaper)
+                scenario_group.info.property.comments
+                .map!(comment => comment.escaper.array)
         );
         auto behaviour_groups = chain(
                 issue(scenario_group.given),
@@ -220,8 +220,10 @@ struct DlangT(Stream) {
     }
 
     void issue(const(FeatureGroup) feature_group, string indent = null) {
-        immutable comments = format("[%(%s,\n%)]", 
-    feature_group.info.property.comments.map!(comment => comment.escaper));
+        immutable comments = format("[%(%s,\n%)]",
+                feature_group.info.property.comments
+                .map!(comment => comment.escaper.array)
+        );
         bout.writefln(q{
                 module %1$s;
                 %4$s
@@ -236,10 +238,10 @@ struct DlangT(Stream) {
                 preparations.join
         );
         if (feature_group.scenarios.length) {
-        feature_group.scenarios
-            .map!(s => issue(s))
-            .each!(a => bout.write(a));
-    }
+            feature_group.scenarios
+                .map!(s => issue(s))
+                .each!(a => bout.write(a));
+        }
     }
 }
 
@@ -264,10 +266,10 @@ unittest {
         immutable expected = filename.freadText;
         assert(equal(
                 result
-        .trim_source,
+                .trim_source,
                 expected
-        .trim_source
-    ));
+                .trim_source
+        ));
     }
 }
 
@@ -285,14 +287,15 @@ version (unittest) {
     import tagion.behaviour.BehaviourUnittest;
     import tagion.behaviour.Behaviour;
     import tagion.hibon.Document;
+
     alias MarkdownU = Markdown!OutBuffer;
     alias DlangU = Dlang!OutBuffer;
     ///Returns: a stripped version of a d-source text
     auto trim_source(S)(S source) {
         return source
-                .splitLines
-                .map!(a => a.strip)
-                .filter!(a => a.length !is 0);
- 
+            .splitLines
+            .map!(a => a.strip)
+            .filter!(a => a.length !is 0);
+
     }
 }
