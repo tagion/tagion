@@ -258,7 +258,7 @@ auto automation(alias M)() if (isFeature!M) {
 
 /**
    Returns:
-   true if one of more actions in the Feature has failed
+   true if one of more scenarios in the Feature has failed
  */
 @safe
 bool hasErrors(ref const FeatureGroup feature_group) nothrow {
@@ -326,7 +326,7 @@ unittest {
 /**
 Checks if a feature has passed all tests
    Returns:
-   true if one of more actions in the Feature has failed
+   true if all scenarios in a Feature has passed all tests
  */
 @safe
 bool hasPassed(ref const FeatureGroup feature_group) nothrow {
@@ -337,7 +337,7 @@ bool hasPassed(ref const FeatureGroup feature_group) nothrow {
 }
 
 /**
-Check of scenario has passed all tests
+Used to checks if a scenario has passed all tests
 Params:
 scenario_group = The scenario which been runned
 Returns: true if the scenario has passed all tests
