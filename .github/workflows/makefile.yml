@@ -41,6 +41,6 @@ jobs:
         cat scenarios.txt
         docker rmi npm-scenario-image || docker images
         docker build -t npm-scenario-image .
-        for SCENARIO in $(cat scenarios.txt); do docker run -d --name $SCENARIO --rm npm-scenario-image $SCENARIO ; done
+        for SCENARIO in $(cat scenarios.txt); do docker run -d npm-scenario-image $SCENARIO ; done
         echo successful
         
