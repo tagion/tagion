@@ -5,25 +5,22 @@ module tagion.tools.behaviour;
  * @brief tool generate d files from bdd md files and vice versa
  */
 
-import std.algorithm.searching;
+import std.algorithm.searching : canFind;
 import std.getopt;
-import std.stdio;
+import std.stdio : writefln, writeln, File;
 import std.format;
-import std.path : extension, setExtension, stripExtension, absolutePath, pathSplitter;
+import std.path : extension, setExtension;
 import std.file : exists, dirEntries, SpanMode;
-import std.string : join, splitLines, strip;
+import std.string : join, strip;
 import std.algorithm.iteration : filter, map, joiner;
-import std.algorithm.searching : endsWith;
-import std.algorithm.comparison : equal;
-import std.range.primitives :walkLength;
-import std.range : take, drop;
 import std.regex;
 import std.parallelism : parallel;
 import std.array : join;
 import std.process : execute;
+
 import tagion.utils.JSONCommon;
-import tagion.basic.Types : FileExtension,DOT;
-import tagion.tools.revision;
+import tagion.basic.Types : FileExtension, DOT;
+import tagion.tools.revision : revision_text;
 import tagion.behaviour.BehaviourParser;
 import tagion.behaviour.BehaviourIssue : Dlang, Markdown;
 import tagion.behaviour.Emendation : emendation, suggestModuleName;
@@ -34,7 +31,8 @@ enum ONE_ARGS_ONLY = 2;
 /** 
  * Option setting for the optarg and behaviour.json config file
  */
-struct BehaviourOptions {
+struct BehaviourOptions
+{
     /* Include paths for the BDD source files */
     string[] paths;
     /* BDD extension (default markdown .md) */
@@ -55,18 +53,21 @@ struct BehaviourOptions {
     /** 
      * Used to set default options if config file not provided
      */
-    void setDefault() {
+    void setDefault()
+    {
         const gen = "gen";
         bdd_ext = FileExtension.markdown;
         bdd_gen_ext = [gen, FileExtension.markdown].join(DOT);
         d_ext = [gen, FileExtension.dsrc].join(DOT);
-        regex_inc =   `/testbench/`;
-        const which_dfmt=execute(["which", "dfmt"]);
-        if (which_dfmt.status is 0) {
+        regex_inc = `/testbench/`;
+        const which_dfmt = execute(["which", "dfmt"]);
+        if (which_dfmt.status is 0)
+        {
             dfmt = which_dfmt.output;
-            dfmt_flags=["-i"];
+            dfmt_flags = ["-i"];
         }
     }
+
     mixin JSONCommon;
     mixin JSONConfig;
 }
@@ -74,20 +75,24 @@ struct BehaviourOptions {
 /** 
  * Used to remove dot
  * @param ext - lines to remove dot
+ * @return stripted
  */
-const(char[]) stripDot(const(char[]) ext) pure nothrow @nogc {
-    if ((ext.length > 0) && (ext[0] == DOT)) {
-        return ext[1..$];
+const(char[]) stripDot(const(char[]) ext) pure nothrow @nogc
+{
+    if ((ext.length > 0) && (ext[0] == DOT))
+    {
+        return ext[1 .. $];
     }
     return ext;
 }
 
 /** 
- * Params:
- *   filename = filename to be checked
- * Returns: true if the file is not a generated or markdown
+ * Used to check valid filename
+ * @param filename - filename to be checked
+ * @return true if the file is not a generated or markdown
  */
-bool checkValidFile(string file_name) {
+bool checkValidFile(string file_name)
+{
     return !(canFind(file_name, ".gen") || !canFind(file_name, ".md"));
 }
 
@@ -96,7 +101,8 @@ bool checkValidFile(string file_name) {
  * @param opts - options for behaviour
  * @return amount of erros in md files
  */
-int parse_bdd(ref const(BehaviourOptions) opts) {
+int parse_bdd(ref const(BehaviourOptions) opts)
+{
     const regex_include = regex(opts.regex_inc);
     const regex_exclude = regex(opts.regex_exc);
     auto bdd_files = opts.paths
@@ -109,38 +115,44 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
 
     /* Error counter */
     int result_errors;
-    foreach (file; bdd_files) {
-        if(!checkValidFile(file))
+    foreach (file; bdd_files)
+    {
+        if (!checkValidFile(file))
         {
             continue;
         }
         auto dsource = file.name.setExtension(FileExtension.dsrc);
         const bdd_gen = dsource.setExtension(opts.bdd_gen_ext);
-        if (dsource.exists) {
+        if (dsource.exists)
+        {
             dsource = dsource.setExtension(opts.d_ext);
         }
-        try {
+        try
+        {
             string[] errors;
 
-            auto feature=parser(file.name, errors);
-			feature.emendation(file.name.suggestModuleName(opts.paths));
+            auto feature = parser(file.name, errors);
+            feature.emendation(file.name.suggestModuleName(opts.paths));
 
-            if (errors.length) {
+            if (errors.length)
+            {
                 writefln("Amount of erros in %s: %s", file.name, errors.length);
                 errors.join("\n").writeln;
                 result_errors++;
                 continue;
             }
-            
+
             { // Generate d-source file
                 auto fout = File(dsource, "w");
                 writefln("dsource file %s", dsource);
-                scope(exit) {
+                scope (exit)
+                {
                     fout.close;
                 }
                 auto dlang = Dlang(fout);
                 dlang.issue(feature);
-                if (opts.dfmt.length) {
+                if (opts.dfmt.length)
+                {
                     writefln("%s", opts.dfmt.strip ~ opts.dfmt_flags ~ dsource);
 
                     execute(opts.dfmt.strip ~ opts.dfmt_flags ~ dsource);
@@ -148,7 +160,8 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
             }
             { // Generate bdd-md file
                 auto fout = File(bdd_gen, "w");
-                scope(exit) {
+                scope (exit)
+                {
                     fout.close;
                 }
                 auto markdown = Markdown(fout);
@@ -156,7 +169,8 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
             }
 
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             writeln(e.msg);
             writeln(e);
             result_errors++;
@@ -165,7 +179,8 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
     return result_errors;
 }
 
-int main(string[] args) {
+int main(string[] args)
+{
     BehaviourOptions options;
     immutable program = args[0];
     /** file for configurations */
@@ -175,32 +190,32 @@ int main(string[] args) {
     /** flag for overwrite config file */
     bool overwrite_switch;
 
-    if (config_file.exists) {
+    if (config_file.exists)
+    {
         options.load(config_file);
     }
-    else {
+    else
+    {
         options.setDefault;
     }
 
-    auto main_args = getopt(args,
-        std.getopt.config.caseSensitive,
-        "version", "display the version", &version_switch,
-        "I", "Include directory", &options.paths,
-        std.getopt.config.bundling,
-        "O", format("Write configure file %s", config_file), &overwrite_switch,
-        "i|regex_inc", format("Include regex `%s`", options.regex_inc),
-        &options.regex_inc,
-        "x|regex_exc", format("Exclude regex `%s`", options.regex_exc),
-        &options.regex_exc
-    );
+    auto main_args = getopt(args, std.getopt.config.caseSensitive, "version", "display the version",
+            &version_switch, "I", "Include directory", &options.paths, std.getopt.config.bundling, "O",
+            format("Write configure file %s", config_file), &overwrite_switch,
+            "i|regex_inc", format("Include regex `%s`",
+                options.regex_inc), &options.regex_inc, "x|regex_exc",
+            format("Exclude regex `%s`", options.regex_exc), &options.regex_exc);
 
-    if (version_switch) {
+    if (version_switch)
+    {
         revision_text.writeln;
         return 0;
     }
 
-    if (overwrite_switch) {
-        if (args.length is ONE_ARGS_ONLY) {
+    if (overwrite_switch)
+    {
+        if (args.length is ONE_ARGS_ONLY)
+        {
             config_file = args[1];
         }
         options.save(config_file);
@@ -208,22 +223,15 @@ int main(string[] args) {
         return 0;
     }
 
-    if (main_args.helpWanted) {
-        defaultGetoptPrinter(
-                [
-                    revision_text,
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...]", program),
-                    "",
-                    "<option>:",
-                    ].join("\n"),
-                main_args.options);
+    if (main_args.helpWanted)
+    {
+        defaultGetoptPrinter([
+                revision_text, "Documentation: https://tagion.org/", "", "Usage:",
+                format("%s [<option>...]", program), "", "<option>:",
+                ].join("\n"), main_args.options);
         return 0;
     }
 
     auto result = parse_bdd(options);
-//    writeln(result);
     return result;
 }

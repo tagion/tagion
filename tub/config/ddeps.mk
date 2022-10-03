@@ -11,6 +11,9 @@ $(DBUILD)/gen.dfiles.mk:
 	$(PRECMD)
 	printf "%s += %s\n" ${addprefix DFILES , $(DFILES)} >> $@
 	fi
+	if [ "$(BDDFILES)" != "" ]; then
+	printf "%s += %s\n" ${addprefix DFILES , $(BDDFILES)} >> $@
+	fi
 
 $(DBUILD)/gen.ddeps.json: $(DBUILD)/gen.dfiles.mk
 	$(PRECMD)
