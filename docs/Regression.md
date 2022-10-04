@@ -2,7 +2,7 @@
 
 * Environment setup for the BDD logfiles
 * Make target to generated the .d and .md files from the BDD's
-* Make target for  compilation/link of BDD.
+* Make target for compilation/link of BDD.
 * Make target execute all the BDD as binaries
 * Aggregate all the bdd logfile and generate a visual representation (HTML or markdown)
 	* Same for unittest.
