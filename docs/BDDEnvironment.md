@@ -1,7 +1,7 @@
 ## BDD Environment
 
 The root directory of the BDD source should be placed in $BDD.
-All the test logs should be placed in $TESTBENCH and the name of the should be name $TESTBENCH/<name of bdd>.hibon.
+All the test logs should be placed in $TESTBENCH and the name of the should be name $TESTBENCH/`<iname of bdd>`.hibon.
 
 
 Make target
