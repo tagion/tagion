@@ -16,7 +16,7 @@ import std.algorithm.iteration : filter, map, joiner;
 import std.regex;
 import std.parallelism : parallel;
 import std.array : join;
-import std.process : execute;
+import std.process : execute, environment;
 
 import tagion.utils.JSONCommon;
 import tagion.basic.Types : FileExtension, DOT;
@@ -96,6 +96,8 @@ bool checkValidFile(string file_name)
     return !(canFind(file_name, ".gen") || !canFind(file_name, ".md"));
 }
 
+DFMT_ENV="DFMT"; /// Set the path and argument d-format including the flags
+
 /** 
  * Used to remove dot
  * @param opts - options for behaviour
@@ -151,6 +153,14 @@ int parse_bdd(ref const(BehaviourOptions) opts)
                 }
                 auto dlang = Dlang(fout);
                 dlang.issue(feature);
+                stringi[] dfmt;
+
+                if (opts.dfmt.length) {
+                    dfmt=opts.dfmt.strip ~ opt.dfmt.flags;
+                }
+                else {
+                    dfmt= std.process.environment.get(DFMT_ENV, null);
+                }
                 if (opts.dfmt.length)
                 {
                     writefln("%s", opts.dfmt.strip ~ opts.dfmt_flags ~ dsource);
@@ -199,12 +209,13 @@ int main(string[] args)
         options.setDefault;
     }
 
-    auto main_args = getopt(args, std.getopt.config.caseSensitive, "version", "display the version",
-            &version_switch, "I", "Include directory", &options.paths, std.getopt.config.bundling, "O",
-            format("Write configure file %s", config_file), &overwrite_switch,
-            "i|regex_inc", format("Include regex `%s`",
-                options.regex_inc), &options.regex_inc, "x|regex_exc",
-            format("Exclude regex `%s`", options.regex_exc), &options.regex_exc);
+    auto main_args = getopt(args, std.getopt.config.caseSensitive, 
+            "version", "display the version", &version_switch, 
+            "I", "Include directory", &options.paths, std.getopt.config.bundling,
+    "O", format("Write configure file %s", config_file), &overwrite_switch,
+            "i|regex_inc", format("Include regex `%s`", options.regex_inc), &options.regex_inc, 
+    "x|regex_exc", format("Exclude regex `%s`", options.regex_exc), &options.regex_exc
+    );
 
     if (version_switch)
     {
@@ -226,8 +237,13 @@ int main(string[] args)
     if (main_args.helpWanted)
     {
         defaultGetoptPrinter([
-                revision_text, "Documentation: https://tagion.org/", "", "Usage:",
-                format("%s [<option>...]", program), "", "<option>:",
+                revision_text, 
+        "Documentation: https://tagion.org/", 
+                "", 
+            "Usage:",
+                format("%s [<option>...]", program), 
+                "", 
+        "<option>:",
                 ].join("\n"), main_args.options);
         return 0;
     }
