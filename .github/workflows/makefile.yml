@@ -50,7 +50,7 @@ jobs:
       uses: actions/upload-artifact@v2.2.0
       with:
          name: artifacts
-         path: shared/*.log
+         path: shared/*
          if-no-files-found: error
          retention-days: 14
     
