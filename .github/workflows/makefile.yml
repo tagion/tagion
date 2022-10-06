@@ -50,6 +50,7 @@ jobs:
         for SCENARIO in $(cat scenarios.txt); do docker run -d -v ${{env.SHARED_DIR}}:${{env.SHARED_PATH}} npm-scenario-image $SCENARIO ; done
         echo successful 
         pwd
+        sudo chown -R moonbase shared/
         sudo ls -l shared
      
     - name: upload artifacts 1
