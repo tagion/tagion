@@ -1,5 +1,4 @@
 name: Makefile CI
-
 on:
   pull_request:
     branches: [ "develop" ]
@@ -9,7 +8,6 @@ env:
   SCRIPTS_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/core-test-scripts
   SHARED_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/shared
   SHARED_PATH: /tgn/test_scripts/shared
-
 jobs:
   unit-test:
     runs-on: self-hosted
@@ -25,8 +23,8 @@ jobs:
         git branch
         make unittest
         make bins 
-        cd build/x86_64-linux/bin/ 
-    
+        cd build/x86_64-linux/bin/
+  
     - name: unittest result
       run: |
         tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
@@ -34,31 +32,22 @@ jobs:
   regression-test:
     runs-on: self-hosted
     steps:
-    - name: npm scenario task 1
+    - name: npm scenario
       run: |
-        whoami
-        sudo su -
-        id
         pwd
-        sudo rm -rf test_scripts/ || ls -l
-        sudo rm -rf ${{env.SHARED_DIR}} || ls -l
-        mkdir -p ${{env.SHARED_DIR}}
+        rm -rf test_scripts/ || ls -l
         git clone git@github.com:holyanytskyy/test_scripts.git
         grep scenarios.set test_scripts/src/scenarios/scenarios.map.ts | cut -d "'" -f2 > scenarios.txt
         cat scenarios.txt
-        docker rmi -f npm-scenario-image || docker images
+        docker rmi npm-scenario-image || docker images
         docker build -t npm-scenario-image .
         for SCENARIO in $(cat scenarios.txt); do docker run -d -v ${{env.SHARED_DIR}}:${{env.SHARED_PATH}} npm-scenario-image $SCENARIO ; done
-        echo successful 
-        pwd
-        sudo chown -R moonbase shared/
-        sudo ls -l shared
+        echo successful
      
-    - name: upload artifacts 1
+    - name: upload artifacts
       uses: actions/upload-artifact@v2.2.0
       with:
          name: artifacts
-         path: /home/moonbase/actions-runner/_work/tagion/tagion/shared/*
+         path: shared/*
          if-no-files-found: error
-         retention-days: 6
-         
+         retention-days: 14
