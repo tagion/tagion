@@ -49,13 +49,13 @@ jobs:
         docker build -t npm-scenario-image .
         for SCENARIO in $(cat scenarios.txt); do docker run -d -v /home/moonbase/actions-runner/_work/tagion/tagion/shared:/tgn/test_scripts/shared npm-scenario-image $SCENARIO ; done
         echo successful 
-        ls -l ${{env.SHARED_DIR}}
+        ls -l /home/moonbase/actions-runner/_work/tagion/tagion/shared
      
     - name: upload artifacts 1
       uses: actions/upload-artifact@v2.2.0
       with:
          name: artifacts
-         path: ${{env.SHARED_DIR}}/*
+         path: /home/moonbase/actions-runner/_work/tagion/tagion/shared
          if-no-files-found: error
          retention-days: 16
          
