@@ -25,7 +25,7 @@ jobs:
         git branch
         make unittest
         make bins 
-        cd build/x86_64-linux/bin/
+        cd build/x86_64-linux/bin/ 
     
     - name: unittest result
       run: |
@@ -34,7 +34,7 @@ jobs:
   regression-test:
     runs-on: self-hosted
     steps:
-    - name: npm scenario
+    - name: npm scenario task
       run: |
         pwd
         rm -rf test_scripts/ || ls -l
@@ -53,12 +53,3 @@ jobs:
          path: shared/*
          if-no-files-found: error
          retention-days: 14
-    
-    
-    
-    
-    
-      
-        
-    
-        
