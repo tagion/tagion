@@ -35,7 +35,7 @@ jobs:
     - name: npm scenario
       run: |
         pwd
-        git clone git@github.com:holyanytskyy/test_scripts.git
+        #git clone git@github.com:holyanytskyy/test_scripts.git
         grep scenarios.set test_scripts/src/scenarios/scenarios.map.ts | cut -d "'" -f2 > scenarios.txt
         cat scenarios.txt
         docker rmi npm-scenario-image || docker images
