@@ -50,13 +50,13 @@ jobs:
         for SCENARIO in $(cat scenarios.txt); do docker run -d -v ${{env.SHARED_DIR}}:${{env.SHARED_PATH}} npm-scenario-image $SCENARIO ; done
         echo successful 
         pwd
-        sudo ls -l ${{env.SHARED_DIR}}/
+        sudo ls -l shared
      
     - name: upload artifacts 1
       uses: actions/upload-artifact@v2.2.0
       with:
          name: artifacts
-         path: ${{env.SHARED_DIR}}/*
+         path: shared/*
          if-no-files-found: error
          retention-days: 5
          
