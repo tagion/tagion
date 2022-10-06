@@ -40,22 +40,22 @@ jobs:
         id
         pwd
         sudo rm -rf test_scripts/ || ls -l
-        sudo rm -rf shared/ || ls -l
-        mkdir shared
+        sudo rm -rf ${{env.SHARED_DIR}} || ls -l
+        mkdir -p ${{env.SHARED_DIR}}
         git clone git@github.com:holyanytskyy/test_scripts.git
         grep scenarios.set test_scripts/src/scenarios/scenarios.map.ts | cut -d "'" -f2 > scenarios.txt
         cat scenarios.txt
         docker rmi -f npm-scenario-image || docker images
         docker build -t npm-scenario-image .
-        for SCENARIO in $(cat scenarios.txt); do docker run -d -v shared:/tgn/test_scripts/shared npm-scenario-image $SCENARIO ; done
+        for SCENARIO in $(cat scenarios.txt); do docker run -d -v ${{env.SHARED_DIR}}:${{env.SHARED_PATH}} npm-scenario-image $SCENARIO ; done
         echo successful 
-        ls -l shared
+        ls -l ${{env.SHARED_DIR}}
      
     - name: upload artifacts 1
       uses: actions/upload-artifact@v2.2.0
       with:
          name: artifacts
-         path: shared/*
+         path: ${{env.SHARED_DIR}}
          if-no-files-found: error
-         retention-days: 16
+         retention-days: 5
          
