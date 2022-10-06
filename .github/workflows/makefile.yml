@@ -43,6 +43,9 @@ jobs:
         docker build -t npm-scenario-image .
         for SCENARIO in $(cat scenarios.txt); do docker run -d -v ${{env.SHARED_DIR}}:${{env.SHARED_PATH}} npm-scenario-image $SCENARIO ; done
         echo successful
+        cd ${{env.SHARED_DIR}}
+        pwd 
+        ls -l
      
     - name: upload artifacts
       uses: actions/upload-artifact@v2.2.0
@@ -50,4 +53,4 @@ jobs:
          name: artifacts
          path: shared/*
          if-no-files-found: error
-         retention-days: 11
+         retention-days: 14
