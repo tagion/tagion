@@ -39,7 +39,7 @@ jobs:
         whoami
         id
         pwd
-        rm -rf test_scripts/ || ls -l
+        sudo rm -rf test_scripts/ || ls -l
         rm -rf shared/ || ls -l
         mkdir shared
         git clone git@github.com:holyanytskyy/test_scripts.git
