@@ -31,7 +31,13 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
             // Info index          %3$d
             // Test scenario       %4$s
             // Test member         %5$s
+try {
             %1$s.%2$s.infos[%3$d].result = %4$s.%5$s;
+}
+            catch (Exception e) {
+                                %1$s.%2$s.infos[%3$d].result= BehaviourError(e).toDoc;
+    
+}
         }, string, string, size_t, string, string);
         import std.uni : toLower;
         .check(scenario !is null,
@@ -377,10 +383,10 @@ unittest {
 
     { // None of the scenario passes
         const feature_result = feature_with_ctor.run;
+        "/tmp/bdd_sample_has_failed.hibon".fwrite(feature_result);
         assert(!feature_result.scenarios[0].hasPassed);
         assert(!feature_result.scenarios[1].hasPassed);
         assert(!feature_result.hasPassed);
-        "/tmp/bdd_sample_has_failed.hibon".fwrite(feature_result);
     }
 
     { // One of the scenario passed
@@ -413,9 +419,9 @@ unittest {
         WithCtor.pass_some = false;
 
         const feature_result = feature_with_ctor.run;
+        "/tmp/bdd_sample_has_passed.hibon".fwrite(feature_result);
         assert(feature_result.scenarios[0].hasPassed);
         assert(feature_result.scenarios[1].hasPassed);
-        "/tmp/bdd_sample_has_passed.hibon".fwrite(feature_result);
         //io.writefln("feature_result =%s", feature_result.toPretty);
     }
 }
