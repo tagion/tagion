@@ -37,6 +37,7 @@ jobs:
     - name: npm scenario task 1
       run: |
         whoami
+        sudo su -
         id
         pwd
         sudo rm -rf test_scripts/ || ls -l
@@ -57,7 +58,7 @@ jobs:
       uses: actions/upload-artifact@v2.2.0
       with:
          name: artifacts
-         path: shared/*
+         path: /home/moonbase/actions-runner/_work/tagion/tagion/shared/*
          if-no-files-found: error
          retention-days: 6
          
