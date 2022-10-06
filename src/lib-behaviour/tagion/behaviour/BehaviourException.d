@@ -1,4 +1,6 @@
-/// \file BehaviourException.d
+/**
+Exception use by the BDD runtime
+*/
 module tagion.behaviour.BehaviourException;
 
 import tagion.basic.TagionExceptions;
@@ -6,8 +8,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document : Document;
 
 /**
- * \class BehaviourException
- * Exception type used by tagion.hibon.HiBON module
+ Exception type used by tagion.hibon.HiBON module
  */
 @safe class BehaviourException : TagionException
 {
@@ -17,24 +18,17 @@ import tagion.hibon.Document : Document;
     }
 }
 
-/** Check function used in the behaviour package */
+/// check function used in the behaviour package
 alias check = Check!(BehaviourException);
 
 /** 
  * Contains the Exception information  
 */
-
-/**
- * \struct BehaviourError
- * Behaviour Error struct
- */
-@safe @RecordType("BDDError")
-struct BehaviourError
-{
-    /** Error message in the Exception */
-    string msg;
-    /** Exception line trace of in the exception */
-    string[] trace;
+@safe
+@RecordType("BDDError")
+struct BehaviourError {
+    string msg; ///  Error message in the Exception
+    string[] trace; ///. Exception line trace of in the exception
     mixin HiBONRecord!(q{
             this(Exception e) nothrow @trusted {
                 import std.exception : assumeWontThrow;
@@ -50,32 +44,31 @@ struct BehaviourError
  * \struct Result
  * Struct for store BDD result
  */
-@safe @RecordType("BDDResult")
-struct Result
-{
-    /** BDD test return document */
-    Document outcome;
+@safe
+@RecordType("BDDResult")
+struct Result {
+    import tagion.hibon.Document;
+    Document outcome; /// BDD test return document
     mixin HiBONRecord!();
 }
 
 /** 
- * Used to get document result 
- * @param doc - to encapsulated in the result
- * @return document wrapped as a Result
+ * 
+ * Params:
+ *   doc = to encapsulated in the result
+ * Returns: document wrapped as a Result
  */
-@safe Result result(const Document doc) nothrow
-{
+@safe
+Result result(const Document doc) nothrow {
     Result result;
     result.outcome = Document(doc.data);
     return result;
 }
 
-/** 
- * Used to get document result 
- * @param hibon_record - to encapsulated in the result
- * @return document wrapped as a Result
+/**
+ * ditto but takes a HiBONRecord instead of a Document
  */
-@safe Result result(T)(T hibon_record) if (isHiBONRecord!T)
-{
+@safe
+Result result(T)(T hibon_record) if (isHiBONRecord!T) {
     return result(hibon_record.toDoc);
 }

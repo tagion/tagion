@@ -15,8 +15,8 @@ import std.string : join, strip;
 import std.algorithm.iteration : filter, map, joiner;
 import std.regex;
 import std.parallelism : parallel;
-import std.array : join;
-import std.process : execute;
+import std.array : join, split, array;
+import std.process : execute, environment;
 
 import tagion.utils.JSONCommon;
 import tagion.basic.Types : FileExtension, DOT;
@@ -25,8 +25,8 @@ import tagion.behaviour.BehaviourParser;
 import tagion.behaviour.BehaviourIssue : Dlang, Markdown;
 import tagion.behaviour.Emendation : emendation, suggestModuleName;
 
-/* Opt-arg only accepts one argument */
 enum ONE_ARGS_ONLY = 2;
+enum DFMT_ENV="DFMT"; /// Set the path and argument d-format including the flags
 
 /** 
  * Option setting for the optarg and behaviour.json config file
@@ -60,12 +60,14 @@ struct BehaviourOptions
         bdd_gen_ext = [gen, FileExtension.markdown].join(DOT);
         d_ext = [gen, FileExtension.dsrc].join(DOT);
         regex_inc = `/testbench/`;
+        if (!(DFMT_ENV in environment)) {
         const which_dfmt = execute(["which", "dfmt"]);
         if (which_dfmt.status is 0)
         {
             dfmt = which_dfmt.output;
             dfmt_flags = ["-i"];
         }
+    }
     }
 
     mixin JSONCommon;
@@ -96,6 +98,7 @@ bool checkValidFile(string file_name)
     return !(canFind(file_name, ".gen") || !canFind(file_name, ".md"));
 }
 
+
 /** 
  * Used to remove dot
  * @param opts - options for behaviour
@@ -112,7 +115,15 @@ int parse_bdd(ref const(BehaviourOptions) opts)
         .filter!(file => file.name.extension.stripDot == opts.bdd_ext)
         .filter!(file => (opts.regex_inc.length is 0) || !file.name.matchFirst(regex_include).empty)
         .filter!(file => (opts.regex_exc.length is 0) || file.name.matchFirst(regex_exclude).empty);
+                string[] dfmt;
 
+                if (opts.dfmt.length) {
+                    dfmt=opts.dfmt.strip ~ opts.dfmt_flags.dup;
+                }
+                else {
+                    dfmt= environment.get(DFMT_ENV, null).split.array.dup;
+                }
+ 
     /* Error counter */
     int result_errors;
     foreach (file; bdd_files)
@@ -145,17 +156,18 @@ int parse_bdd(ref const(BehaviourOptions) opts)
             { // Generate d-source file
                 auto fout = File(dsource, "w");
                 writefln("dsource file %s", dsource);
-                scope (exit)
-                {
-                    fout.close;
-                }
                 auto dlang = Dlang(fout);
                 dlang.issue(feature);
-                if (opts.dfmt.length)
+                    fout.close;
+               if (dfmt.length)
                 {
-                    writefln("%s", opts.dfmt.strip ~ opts.dfmt_flags ~ dsource);
+                    writefln("%s", dfmt~ dsource);
 
-                    execute(opts.dfmt.strip ~ opts.dfmt_flags ~ dsource);
+                    const exit_code = execute(dfmt ~ dsource);
+writefln("%-(%s %)", dfmt ~ dsource);
+                    if (exit_code.status) {
+                        writefln("Format error %s", exit_code.output);
+                    }
                 }
             }
             { // Generate bdd-md file
@@ -199,12 +211,13 @@ int main(string[] args)
         options.setDefault;
     }
 
-    auto main_args = getopt(args, std.getopt.config.caseSensitive, "version", "display the version",
-            &version_switch, "I", "Include directory", &options.paths, std.getopt.config.bundling, "O",
-            format("Write configure file %s", config_file), &overwrite_switch,
-            "i|regex_inc", format("Include regex `%s`",
-                options.regex_inc), &options.regex_inc, "x|regex_exc",
-            format("Exclude regex `%s`", options.regex_exc), &options.regex_exc);
+    auto main_args = getopt(args, std.getopt.config.caseSensitive, 
+            "version", "display the version", &version_switch, 
+            "I", "Include directory", &options.paths, std.getopt.config.bundling,
+    "O", format("Write configure file %s", config_file), &overwrite_switch,
+            "i|regex_inc", format("Include regex `%s`", options.regex_inc), &options.regex_inc, 
+    "x|regex_exc", format("Exclude regex `%s`", options.regex_exc), &options.regex_exc
+    );
 
     if (version_switch)
     {
@@ -226,8 +239,13 @@ int main(string[] args)
     if (main_args.helpWanted)
     {
         defaultGetoptPrinter([
-                revision_text, "Documentation: https://tagion.org/", "", "Usage:",
-                format("%s [<option>...]", program), "", "<option>:",
+                revision_text, 
+        "Documentation: https://tagion.org/", 
+                "", 
+            "Usage:",
+                format("%s [<option>...]", program), 
+                "", 
+        "<option>:",
                 ].join("\n"), main_args.options);
         return 0;
     }

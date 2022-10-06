@@ -18,7 +18,7 @@ import std.typecons : TypedefType;
 import core.exception : RangeError;
 
 //import std.stdio;
-import tagion.hibon.HiBON : HiBON;
+
 import tagion.utils.StdTime;
 import tagion.basic.Basic : isOneOf, EnumContinuousSequency;
 import tagion.basic.Message : message;
@@ -77,6 +77,8 @@ static assert(uint.sizeof == 4);
     {
         this._data = doc._data;
     }
+
+    import tagion.hibon.HiBON : HiBON;
 
     this(const HiBON hibon)
     {
@@ -186,14 +188,12 @@ static assert(uint.sizeof == 4);
         return cast(uint)(this[].walkLength);
     }
 
-	/**
-     * Used to compare documents
-	 * @param rhs - doument to compare
-	 * @return true if both documents are the same
+	/* 
+	 * 
+	 * Returns: true If both documents are the same
 	 */
-	bool opEqual(const Document doc) const pure nothrow @nogc
-    {
-	    return _data == doc._data;
+	bool opEquals(const Document rhs) const pure nothrow @nogc {
+	return _data == rhs._data;
 	}
     /++
      The deligate used by the valid function to report errors
@@ -1314,6 +1314,17 @@ static assert(uint.sizeof == 4);
             return (rhs_type is type) && (assumeWontThrow(by!rhs_type) == rhs);
         }
 
+        unittest { // Test if opEquals can handle types
+            auto h= new HiBON;
+            h["number"] = 42;
+            h["text"] = "42";
+            const doc = Document(h);
+            assert(doc["number"] == 42);
+            assert(doc["number"] != "42");
+            assert(doc["text"] != 42);
+            assert(doc["text"] == "42");
+        }
+
         @property @nogc const pure nothrow
         {
             /++
@@ -1580,21 +1591,9 @@ static assert(uint.sizeof == 4);
 }
 
 @safe
-unittest 
-{ 
-    /// Test_if_opEquals_can_handle_types
-    {
-        auto test_hibon = new HiBON;
-        test_hibon["number"] = 42;
-        test_hibon["text"] = "42";
-        const doc = Document(test_hibon);
-        assert(doc["number"] == 42);
-        assert(doc["number"] != "42");
-        assert(doc["text"] != 42);
-        assert(doc["text"] == "42");
-    }
-
-    /// isInorder
+unittest
+{ // Bugfix (Fails in isInorder);
+    //    import std.stdio;
     {
         immutable(ubyte[]) data = [
             220, 252, 73, 35, 27, 55, 228, 198, 34, 5, 5, 13, 153, 209, 212,

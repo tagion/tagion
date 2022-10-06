@@ -1,4 +1,9 @@
 
+
+bdd: bddfiles
+
+.PHONY: bdd
+
 bddfiles: behaviour
 	$(PRECMD)
 	echo $(BEHAVIOUR) $(BDD_FLAGS)
@@ -20,7 +25,10 @@ help-bdd:
 	$(PRECMD)
 	${call log.header, $@ :: help}
 	${call log.help, "make help-bdd", "Will display this part"}
-	${call log.help, "make bdd", "Generated the bdd files"}
+	${call log.help, "make bdd", "Builds and executes all BDD's"}
+	${call log.help, "make bddreport", "Produce visualization of the BDD-reports"}
+	${call log.help, "make bddfiles", "Generated the bdd files"}
+	${call log.help, "make behaviour", "Builds the BDD tool"}
 	${call log.close}
 
 .PHONY: help-bdd
