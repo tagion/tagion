@@ -47,6 +47,7 @@ jobs:
         docker build -t npm-scenario-image .
         for SCENARIO in $(cat scenarios.txt); do docker run -d -v ${{env.SHARED_DIR}}:${{env.SHARED_PATH}} npm-scenario-image $SCENARIO ; done
         echo successful 
+        ls -l ${{env.SHARED_DIR}}
      
     - name: upload artifacts 1
       uses: actions/upload-artifact@v2.2.0
