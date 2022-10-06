@@ -35,12 +35,14 @@ jobs:
     - name: npm scenario
       run: |
         pwd
-        #git clone git@github.com:holyanytskyy/test_scripts.git
+        rm -rf test_scripts/ || ls -l
+        sudo rm -rf shared/ || ls -l 
+        git clone git@github.com:holyanytskyy/test_scripts.git
         grep scenarios.set test_scripts/src/scenarios/scenarios.map.ts | cut -d "'" -f2 > scenarios.txt
         cat scenarios.txt
-        docker rmi npm-scenario-image || docker images
+        docker rmi -f npm-scenario-image || docker images
         docker build -t npm-scenario-image .
-        for SCENARIO in $(cat scenarios.txt); do docker run -d -v /home/moonbase/actions-runner/_work/tagion/tagion/shared:/tgn/test_scripts/shared npm-scenario-image $SCENARIO ; done
+        docker run -v /home/moonbase/actions-runner/_work/tagion/tagion/shared:/tgn/test_scripts/shared -it npm-scenario-image
         echo successful
         cd ${{env.SHARED_DIR}}
         pwd 
