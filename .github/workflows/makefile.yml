@@ -50,4 +50,4 @@ jobs:
          name: artifacts
          path: shared/*
          if-no-files-found: error
-         retention-days: 8
+         retention-days: 9
