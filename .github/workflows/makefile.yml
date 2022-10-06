@@ -52,8 +52,6 @@ jobs:
       uses: actions/upload-artifact@v2.2.0
       with:
          name: artifacts
-         path: 
-           - ${{env.SHARED_DIR}}/
-           - ${{env.SHARED_DIR}}/*.*.log
+         path: shared
          if-no-files-found: error
          retention-days: 15
