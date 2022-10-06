@@ -26,7 +26,7 @@ jobs:
         make unittest
         make bins 
         cd build/x86_64-linux/bin/
-  
+    
     - name: unittest result
       run: |
         tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
@@ -44,7 +44,7 @@ jobs:
         docker rmi npm-scenario-image || docker images
         docker build -t npm-scenario-image .
         for SCENARIO in $(cat scenarios.txt); do docker run -d -v ${{env.SHARED_DIR}}:${{env.SHARED_PATH}} npm-scenario-image $SCENARIO ; done
-        echo successful
+        echo successful 
      
     - name: upload artifacts
       uses: actions/upload-artifact@v2.2.0
