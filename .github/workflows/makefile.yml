@@ -34,7 +34,7 @@ jobs:
   regression-test:
     runs-on: self-hosted
     steps:
-    - name: npm scenario task
+    - name: npm scenario task 1
       run: |
         pwd
         rm -rf test_scripts/ || ls -l
