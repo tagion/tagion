@@ -24,8 +24,6 @@ jobs:
         make unittest
         make bins 
         cd build/x86_64-linux/bin/
-        sudo rm -rf ${{env.SHARED_DIR}}
-        mkdir ${{env.SHARED_DIR}}
   
     - name: unittest result
       run: |
