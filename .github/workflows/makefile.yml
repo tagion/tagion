@@ -24,6 +24,8 @@ jobs:
         make unittest
         make bins 
         cd build/x86_64-linux/bin/
+        sudo rm -rf ${{env.SHARED_DIR}}
+        mkdir ${{env.SHARED_DIR}}
   
     - name: unittest result
       run: |
@@ -36,8 +38,6 @@ jobs:
       run: |
         pwd
         rm -rf test_scripts/ || ls -l
-        sudo rm -rf shared | ls -l
-        mkdir shared
         git clone git@github.com:holyanytskyy/test_scripts.git
         grep scenarios.set test_scripts/src/scenarios/scenarios.map.ts | cut -d "'" -f2 > scenarios.txt
         cat scenarios.txt
