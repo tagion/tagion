@@ -8,7 +8,7 @@ import std.format;
 import std.meta : AliasSeq;
 import std.range : only;
 import std.array : join;
-import std.algorithm.searching : any;
+import std.algorithm.searching : any, all;
 import std.exception : assumeWontThrow;
 
 import tagion.behaviour.BehaviourException;
@@ -47,7 +47,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
                     static foreach (i, behaviour; all_behaviours) {
                         {
                             enum group_name = __traits(identifier,
-							typeof(getProperty!(behaviour))).toLower;
+                                        typeof(getProperty!(behaviour))).toLower;
                             enum code = memberCode(
                                         scenario_group.stringof, group_name, i,
                                         scenario.stringof, __traits(identifier, behaviour));
@@ -57,7 +57,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
                 }
             }
         }
-        scenario_group.info.result = result(ScenarioResult(true)).toDoc;
+        scenario_group.info.result = result_ok;
     }
     catch (Exception e) {
         scenario_group.info.result = BehaviourError(e).toDoc;
@@ -66,7 +66,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
 }
 
 @safe
-struct ScenarioResult {
+struct ResultBool {
     bool end;
     mixin HiBONRecord!(q{
             this(bool flag) {
@@ -75,7 +75,7 @@ struct ScenarioResult {
         });
 }
 
-private static Document scenario_ends = result(ScenarioResult(true)).toDoc;
+static Document result_ok = result(ResultBool(true)).toDoc;
 
 ///Examples: How use the rub fuction on a feature
 @safe
@@ -97,7 +97,7 @@ unittest {
             "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.swollow_the_card",
     )
         .map!(a => result(a));
- //   io.writefln("awesome.count = %d", awesome.count);
+    //   io.writefln("awesome.count = %d", awesome.count);
     assert(awesome.count == 7);
     Document[] results;
     results ~= runner_result.given.infos
@@ -226,6 +226,7 @@ auto automation(alias M)() if (isFeature!M) {
         FeatureGroup run() nothrow {
             import tagion.behaviour.BehaviourException : BehaviourError;
 
+            uint error_count;
             FeatureGroup result;
             result.info.property = obtainFeature!M;
             result.info.name = moduleName!M;
@@ -242,14 +243,18 @@ auto automation(alias M)() if (isFeature!M) {
                     result.scenarios[i] = .run(scenarios[i]);
                 }
                 catch (Exception e) {
+                    error_count++;
                     import std.exception : assumeWontThrow;
 
                     result.scenarios[i].info.result = assumeWontThrow(BehaviourError(e).toDoc);
                 }
             }
+            if (error_count == 0) {
+                result.info.result = result_ok;
+
+            }
             return result;
         }
-
     }
 
     FeatureFactory result;
@@ -301,6 +306,7 @@ unittest {
         assert(feature_result.scenarios[0].hasErrors);
         assert(feature_result.scenarios[1].hasErrors);
         assert(feature_result.hasErrors);
+        "/tmp/bdd_which_has_feature_errors.hibon".fwrite(feature_result);
     }
 
     { // Fails in second scenario because the constructor has not been called
@@ -310,6 +316,7 @@ unittest {
         assert(!feature_result.scenarios[0].hasErrors);
         assert(feature_result.scenarios[1].hasErrors);
         assert(feature_result.hasErrors);
+        "/tmp/bdd_which_has_scenario_errors.hibon".fwrite(feature_result);
     }
 
     { // The constructor of both scenarios has been called, this means that no errors is reported
@@ -320,6 +327,7 @@ unittest {
         assert(!feature_result.scenarios[0].hasErrors);
         assert(!feature_result.scenarios[1].hasErrors);
         assert(!feature_result.hasErrors);
+        "/tmp/bdd_which_has_no_errors.hibon".fwrite(feature_result);
     }
 }
 
@@ -330,10 +338,8 @@ Checks if a feature has passed all tests
  */
 @safe
 bool hasPassed(ref const FeatureGroup feature_group) nothrow {
-    if (feature_group.info.result.isRecordType!Result) {
-        return true;
-    }
-    return feature_group.scenarios.any!(scenario => scenario.hasPassed);
+    return feature_group.info.result.isRecordType!Result &&
+        feature_group.scenarios.all!(scenario => scenario.hasPassed);
 }
 
 /**
@@ -374,22 +380,50 @@ unittest {
         assert(!feature_result.scenarios[0].hasPassed);
         assert(!feature_result.scenarios[1].hasPassed);
         assert(!feature_result.hasPassed);
-        "/tmp/test_sample_fail.hibon".fwrite(feature_result);
+        "/tmp/bdd_sample_has_failed.hibon".fwrite(feature_result);
+    }
+
+    { // One of the scenario passed
+        WithCtor.pass_one = true;
+        const feature_result = feature_with_ctor.run;
+        "/tmp/bdd_sample_one_has_passed.hibon".fwrite(feature_result);
+        io.writefln("feature_result.scenarios[0].hasPassed=%s", feature_result.scenarios[0].hasPassed);
+        io.writefln("feature_result.scenarios[1].hasPassed=%s", feature_result.scenarios[1].hasPassed);
+        io.writefln("feature_result.hasPassed=%s", feature_result.hasPassed);
+        assert(!feature_result.scenarios[0].hasPassed);
+        assert(feature_result.scenarios[1].hasPassed);
+        assert(!feature_result.hasPassed);
+    }
+
+    { // Some actions passed passes
+        WithCtor.pass_some = true;
+        WithCtor.pass_one = false;
+        const feature_result = feature_with_ctor.run;
+        io.writefln("feature_result.scenarios[0].hasPassed=%s", feature_result.scenarios[0].hasPassed);
+        io.writefln("feature_result.scenarios[1].hasPassed=%s", feature_result.scenarios[1].hasPassed);
+        io.writefln("feature_result.hasPassed=%s", feature_result.hasPassed);
+        "/tmp/bdd_sample_some_actions_has_passed.hibon".fwrite(feature_result);
+        assert(!feature_result.scenarios[0].hasPassed);
+        assert(!feature_result.scenarios[1].hasPassed);
+        assert(!feature_result.hasPassed);
     }
 
     { // All of the scenario passes
         WithCtor.pass = true; /// Pass all tests!
+        WithCtor.pass_some = false;
+
         const feature_result = feature_with_ctor.run;
         assert(feature_result.scenarios[0].hasPassed);
         assert(feature_result.scenarios[1].hasPassed);
-        "/tmp/test_sample.hibon".fwrite(feature_result);
+        "/tmp/bdd_sample_has_passed.hibon".fwrite(feature_result);
         //io.writefln("feature_result =%s", feature_result.toPretty);
     }
 }
 
-version(unittest) {
+version (unittest) {
     import tagion.hibon.Document;
     import tagion.hibon.HiBONRecord;
-//    import io = std.stdio;
+
+    import io = std.stdio;
     import tagion.hibon.HiBONJSON;
 }

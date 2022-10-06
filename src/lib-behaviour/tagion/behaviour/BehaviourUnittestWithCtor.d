@@ -18,7 +18,9 @@ version (unittest)
         assert(REPOROOT, format!"%s must be defined"(REPOROOT.stringof));
     }
 
-    bool pass;
+    bool pass; /// Pass the test
+bool pass_one; /// Pass only one scenario
+bool pass_some; /// Pass some of the scenario
 
     @safe
         Document result(string test)
@@ -43,7 +45,6 @@ version (unittest)
     {
         uint count;
         string text;
-        bool pass;
         @disable this();
         this(const uint count, string text) {
             this.count = count;
@@ -53,6 +54,9 @@ version (unittest)
         @Given("the card is valid")
         Document is_valid()
         {
+    if (pass_some) {
+        pass=true;
+    }
             count++;
             return result(__FUNCTION__);
         }
@@ -74,6 +78,9 @@ version (unittest)
         @When("the Customer request cash")
         Document request_cash()
         {
+    if (pass_some) {
+        pass=false;
+    }
             count++;
             return result(__FUNCTION__);
         }
@@ -116,6 +123,9 @@ version (unittest)
         @Given("the card is valid")
         Document is_valid()
         {
+    if (pass_some || pass_one) {
+    pass=true;
+    }
             count++;
             return result(__FUNCTION__);
         }
@@ -137,6 +147,9 @@ version (unittest)
         @Then("the cash is dispensed")
         Document is_dispensed()
         {
+    if (pass_some) {
+        pass=false;
+    }
             count++;
             return result(__FUNCTION__);
         }
