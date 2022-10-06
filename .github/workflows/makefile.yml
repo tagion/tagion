@@ -36,8 +36,9 @@ jobs:
     steps:
     - name: npm scenario task 1
       run: |
-        pwd
         rm -rf test_scripts/ || ls -l
+        rm -rf shared || ls -l
+        mkdir shared
         git clone git@github.com:holyanytskyy/test_scripts.git
         grep scenarios.set test_scripts/src/scenarios/scenarios.map.ts | cut -d "'" -f2 > scenarios.txt
         cat scenarios.txt
