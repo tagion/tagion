@@ -67,38 +67,38 @@ mixin TrustedConcurrency;
         }
     }
 
-    /** Method that checks whether given filter matches at least one stored filter 
-     *      @param filter - log filter to check
+    /** Method that checks whether given log info matches at least one stored filter 
+     *      @param info - log info to check
      *      \return boolean result of checking
      */
-    bool matchAnyFilter(LogFilter filter)
+    bool matchAnyFilter(LogInfo info)
     {
-        return commonLogFilters.any!(f => (f.match(filter)));
+        return commonLogFilters.any!(f => (f.match(info)));
     }
 
     /** Task method that receives logs from Logger and sends them to console, file and LogSubscriptionService
-     *      @param filter - log filter that contains info about passed log
-     *      @param data - log itself, that can be either TextLog or some HiBONRecord variable
+     *      @param info - log info about passed log
+     *      @param doc - log itself, that can be either TextLog or some HiBONRecord variable
      */
-    @TaskMethod void receiveLogs(immutable(LogFilter) filter, immutable(Document) data)
+    @TaskMethod void receiveLogs(immutable(LogInfo) info, immutable(Document) doc)
     {
-        if (matchAnyFilter(filter))
+        if (matchAnyFilter(info))
         {
-            sendToLogSubService(filter, data);
+            sendToLogSubService(info, doc);
         }
 
-        if (filter.isTextLog && data.hasMember(TextLog.label))
+        if (info.isTextLog && doc.hasMember(TextLog.label))
         {
-            const log_msg = data[TextLog.label].get!string;
+            const log_msg = doc[TextLog.label].get!string;
 
             string output;
-            if (filter.level is LogLevel.INFO)
+            if (info.level is LogLevel.INFO)
             {
-                output = format("%s: %s", filter.task_name, log_msg);
+                output = format("%s: %s", info.task_name, log_msg);
             }
             else
             {
-                output = format("%s:%s: %s", filter.task_name, filter.level, log_msg);
+                output = format("%s:%s: %s", info.task_name, info.level, log_msg);
             }
 
             if (logging)
@@ -117,9 +117,9 @@ mixin TrustedConcurrency;
             }
 
             // Output error log
-            if (filter.level & LogLevel.STDERR)
+            if (info.level & LogLevel.STDERR)
             {
-                assumeTrusted!stderr.writefln("%s:%s: %s", filter.task_name, filter.level, log_msg);
+                assumeTrusted!stderr.writefln("%s:%s: %s", info.task_name, info.level, log_msg);
             }
         }
     }

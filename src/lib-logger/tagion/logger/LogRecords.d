@@ -29,12 +29,43 @@ enum LogFiltersAction
             this.level = LogLevel.ALL;
             this.symbol_name = symbol_name;
         }
+
+        this(in LogInfo info) nothrow
+        {
+            if (info.isTextLog)
+            {
+                this(info.task_name, info.level);
+            }
+            else
+            {
+                this(info.task_name, info.symbol_name);
+            }
+        }
     });
 
-    @nogc bool match(LogFilter filter) pure const nothrow
+    @nogc bool match(in LogFilter filter) pure const nothrow
     {
         return this.task_name == filter.task_name && this.level & filter.level && this.symbol_name == filter
             .symbol_name;
+    }
+
+    @nogc bool match(in LogInfo info) pure const nothrow
+    {
+        if (this.isTextLog != info.isTextLog)
+        {
+            return false;
+        }
+
+        bool result;
+        if (info.isTextLog)
+        {
+            result = this.task_name == info.task_name && this.level & info.level;
+        }
+        else
+        {
+            result = this.task_name == info.task_name && this.symbol_name == info.symbol_name;
+        }
+        return result;
     }
 
     @nogc bool isTextLog() pure const nothrow
@@ -67,6 +98,39 @@ enum LogFiltersAction
     });
 }
 
+@safe struct LogInfo
+{
+    private
+    {
+        const bool _is_text_log;
+    }
+
+    const string task_name;
+    const LogLevel level;
+    const string symbol_name;
+
+    this(string task_name, LogLevel level)
+    {
+        this.task_name = task_name;
+        this.level = level;
+
+        _is_text_log = true;
+    }
+
+    this(string task_name, string symbol_name)
+    {
+        this.task_name = task_name;
+        this.symbol_name = symbol_name;
+
+        _is_text_log = false;
+    }
+
+    @nogc bool isTextLog() pure const nothrow
+    {
+        return _is_text_log;
+    }
+}
+
 unittest
 {
     enum task1 = "sometaskname";
@@ -96,6 +160,17 @@ unittest
         assert(!LogFilter(task1, LogLevel.NONE).match(LogFilter(task1, LogLevel.NONE)));
     }
 
+    /// LogFilter_match_text_log_info
+    {
+        assert(LogFilter(task1, LogLevel.STDERR).match(LogInfo(task1, LogLevel.ERROR)));
+        assert(LogFilter(task1, LogLevel.ALL).match(LogInfo(task1, LogLevel.INFO)));
+
+        assert(!LogFilter(task1, LogLevel.STDERR).match(LogInfo(task1, LogLevel.INFO)));
+        assert(!LogFilter(task1, LogLevel.INFO).match(LogInfo(task2, LogLevel.INFO)));
+
+        assert(!LogFilter(task1, LogLevel.NONE).match(LogInfo(task1, LogLevel.NONE)));
+    }
+
     /// LogFilter_match_symbol_log
     {
         assert(LogFilter(task1, symbol1).match(LogFilter(task1, symbol1)));
@@ -106,6 +181,14 @@ unittest
         assert(!LogFilter(task1, symbol1).match(LogFilter(task1, "")));
     }
 
+    /// LogFilter_match_symbol_log_info
+    {
+        assert(LogFilter(task1, symbol1).match(LogInfo(task1, symbol1)));
+
+        assert(!LogFilter(task1, symbol1).match(LogInfo(task1, symbol2)));
+        assert(!LogFilter(task1, symbol1).match(LogInfo(task1, LogLevel.ALL)));
+    }
+
     /// LogFilter_isTextLog
     {
         assert(LogFilter(task1, LogLevel.ERROR).isTextLog);
@@ -113,5 +196,14 @@ unittest
         assert(LogFilter(task1, "").isTextLog);
 
         assert(!LogFilter(task1, symbol1).isTextLog);
+    }
+
+    /// LogInfo_isTextLog
+    {
+        assert(LogInfo(task1, LogLevel.ERROR).isTextLog);
+        assert(LogInfo(task1, LogLevel.NONE).isTextLog);
+
+        assert(!LogInfo(task1, symbol1).isTextLog);
+        assert(!LogInfo(task1, "").isTextLog);
     }
 }

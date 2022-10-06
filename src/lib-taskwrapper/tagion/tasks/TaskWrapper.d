@@ -10,7 +10,7 @@ import std.algorithm.mutation : remove;
 import tagion.basic.Types : Control;
 import tagion.basic.Basic : TrustedConcurrency;
 import tagion.logger.Logger;
-import tagion.logger.LogRecords : LogFilter, LogFilterArray, LogFiltersAction;
+import tagion.logger.LogRecords : LogFilter, LogFilterArray, LogFiltersAction, LogInfo;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
 import tagion.utils.Fingerprint : Fingerprint;
 import tagion.services.LoggerService;

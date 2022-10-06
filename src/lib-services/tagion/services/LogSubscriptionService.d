@@ -93,17 +93,17 @@ struct LogSubscribersInfo
     }
 
     /** Method creates list of subscribers interested in given filter
-      *     @param filter - log filter of received log
+      *     @param info - log info of received log
       *     @return list of all subscriber_ids that need this log
       */
-    @safe uint[] getInterestedSubscribers(LogFilter filter) const
+    @safe uint[] getInterestedSubscribers(LogInfo info) const
     {
         uint[] result;
         foreach (subscriber_id; filters.keys)
         {
             foreach (subscriber_filter; filters[subscriber_id])
             {
-                if (subscriber_filter.match(filter))
+                if (subscriber_filter.match(info))
                 {
                     result ~= subscriber_id;
                     break;
@@ -147,12 +147,16 @@ unittest
 
     /// LogSubscribersInfo_getInterestedSubscribers
     {
-        assert(test_info.getInterestedSubscribers(log_text2) == []);
-        assert(test_info.getInterestedSubscribers(log_text1) == [2]);
-        assert(test_info.getInterestedSubscribers(log_symbol1) == [3, 1]);
+        auto log_text2_info = LogInfo(task3, LogLevel.INFO);
+        auto log_text1_info = LogInfo(task1, LogLevel.INFO);
+        auto log_symbol1_info = LogInfo(task1, symbol1);
 
-        auto no_match_filter = LogFilter(task1, LogLevel.NONE);
-        assert(test_info.getInterestedSubscribers(no_match_filter) == []);
+        assert(test_info.getInterestedSubscribers(log_text2_info) == []);
+        assert(test_info.getInterestedSubscribers(log_text1_info) == [2]);
+        assert(test_info.getInterestedSubscribers(log_symbol1_info) == [3, 1]);
+
+        auto no_match_info = LogInfo(task1, LogLevel.NONE);
+        assert(test_info.getInterestedSubscribers(no_match_info) == []);
     }
 
     /// LogSubscribersInfo_getFilterUpdates
@@ -278,13 +282,13 @@ void logSubscriptionServiceTask(Options opts) nothrow
           *     @param filter - metadata about received log
           *     @param data - Document that contains either TextLog or any \link HiBONRecord variable
           */
-        @safe void receiveLogs(immutable(LogFilter) filter, immutable(Document) data)
+        @safe void receiveLogs(immutable(LogInfo) info, immutable(Document) doc)
         {
             auto log_data = new HiBON;
-            log_data[GetLabel!(typeof(filter)).name] = filter;
-            log_data[GetLabel!(typeof(data)).name] = data;
+            log_data[GetLabel!(LogFilter).name] = LogFilter(info);
+            log_data[GetLabel!(typeof(doc)).name] = doc;
 
-            foreach (subscriber_id; subscribers.getInterestedSubscribers(filter))
+            foreach (subscriber_id; subscribers.getInterestedSubscribers(info))
             {
                 HiRPC hirpc;
                 const sender = hirpc.action(opts.logSubscription.prefix, Document(log_data));

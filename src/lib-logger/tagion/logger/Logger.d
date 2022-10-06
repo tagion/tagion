@@ -139,7 +139,7 @@ static struct Logger
     }
 
     @trusted
-    void report(LogLevel level, lazy scope string text) const nothrow
+    void report(const LogLevel level, lazy scope string text) const nothrow
     {
         if ((level & masks[$ - 1]) && !silent)
         {
@@ -166,9 +166,9 @@ static struct Logger
             {
                 try
                 {
-                    immutable filter = LogFilter(_task_name, level);
+                    immutable info = LogInfo(_task_name, level);
                     immutable doc = TextLog(text).toDoc;
-                    logger_tid.send(filter, doc);
+                    logger_tid.send(info, doc);
                 }
                 catch (Exception e)
                 {
@@ -193,9 +193,9 @@ static struct Logger
         {
             try
             {
-                immutable filter = LogFilter(_task_name, symbol_name);
+                immutable info = LogInfo(_task_name, symbol_name);
                 immutable doc = h.toDoc;
-                logger_tid.send(filter, doc);
+                logger_tid.send(info, doc);
             }
             catch (Exception e)
             {
