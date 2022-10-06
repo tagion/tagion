@@ -40,7 +40,7 @@ jobs:
         cat scenarios.txt
         docker rmi npm-scenario-image || docker images
         docker build -t npm-scenario-image .
-        for SCENARIO in $(cat scenarios.txt); do docker run -d -v ${{env.SHARED_DIR}}:${{env.SHARED_PATH}} npm-scenario-image $SCENARIO ; done
+        for SCENARIO in $(cat scenarios.txt); do docker run -d -v /home/moonbase/actions-runner/_work/tagion/tagion/shared:/tgn/test_scripts/shared npm-scenario-image $SCENARIO ; done
         echo successful
         cd ${{env.SHARED_DIR}}
         pwd 
@@ -50,6 +50,6 @@ jobs:
       uses: actions/upload-artifact@v2.2.0
       with:
          name: artifacts
-         path: shared/*
+         path: /home/moonbase/actions-runner/_work/tagion/tagion/shared/*
          if-no-files-found: error
          retention-days: 15
