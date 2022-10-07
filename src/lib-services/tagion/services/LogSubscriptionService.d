@@ -291,7 +291,10 @@ void logSubscriptionServiceTask(Options opts) nothrow
             foreach (subscriber_id; subscribers.getInterestedSubscribers(info))
             {
                 HiRPC hirpc;
-                const sender = hirpc.action(opts.logSubscription.prefix, Document(log_data));
+                HiRPC.Response message;
+                message.id = subscriber_id;
+                message.result = Document(log_data);
+                const sender = HiRPC.Sender(hirpc.net, message);
 
                 immutable sender_data = sender.toDoc.serialize();
                 logsubscription_api.send(subscriber_id, sender_data);
