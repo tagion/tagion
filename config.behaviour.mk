@@ -1,5 +1,5 @@
 
 BDD_FLAGS+=${addprefix -I,$(DINC)}
 
-BDD_LOG=$(LOG)/bdd
+BDD_LOG=$(DLOG)/bdd
 
