@@ -5,21 +5,26 @@ skinparam SequenceMessageAlign center
 hide empty description
 title Subscription to logs Sequence Diagram
 
-participant Subscriber as sub
+participant subscriber as sub
+participant SSLSocket as socket
+participant SSLServiceAPI as api
 participant LogSubscriptionService as subservice
+participant LogSubscribersInfo as subinfo
 participant LoggerService as logservice
-participant Logger as logger
 
-sub -> subservice : send(LogFilter[])
-subservice -> subservice : addSubscription(listener_id, LogFilter[])
-subservice -> subservice : collectFilters()
-subservice -> logservice : send(requestLogs(task_name[]))
-note right
-Check naming
-end note
-
-deactivate sub
-deactivate subservice
-deactivate logservice
+subservice -> api : start
+subservice -> subinfo : create empty
+...
+sub -> socket : create
+sub -> socket : connect(InternetAddress)
+socket -> api : SSL_connect
+sub -> sub : create HiBON with LogFilters
+sub -> socket : send(data : serialized HiBON filters)
+socket -> api : SSL_write(data)
+api -> subservice : receive(data)
+subservice -> subinfo : addSubscription(subscriber_id, LogFilter[])
+subinfo -> subinfo : updateLogServiceFilters
+subinfo -> logservice : send(LogFilter[] : new added filters)
+logservice -> logservice : save LogFilters
 
 @enduml

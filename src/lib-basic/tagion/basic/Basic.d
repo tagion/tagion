@@ -540,6 +540,7 @@ template mangleFunc(alias T) if (isCallable!T)
     alias mangleFunc = mangle!(FunctionTypeOf!(T));
 }
 
+pragma(msg, "ib: replace template with functions like sendTrusted");
 @safe mixin template TrustedConcurrency()
 {
     private

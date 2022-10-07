@@ -82,6 +82,7 @@ struct LogSubscribersInfo
       */
     void updateLogServiceFilters(LogFilter[] update_filters, LogFiltersAction action)
     {
+        pragma(msg, "ib: could be redesigned using shared storage");
         if (logger_service_tid != Tid.init)
         {
             logger_service_tid.send(LogFilterArray(update_filters.idup), action);
@@ -135,7 +136,6 @@ unittest
     auto log_symbol1 = LogFilter(task1, symbol1);
     auto log_symbol2 = LogFilter(task2, symbol2);
     auto log_text1 = LogFilter(task1, LogLevel.INFO);
-    auto log_text2 = LogFilter(task3, LogLevel.INFO);
 
     LogFilter[][uint] filters;
     filters[1] = [log_symbol1, log_symbol2];
