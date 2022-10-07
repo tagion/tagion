@@ -30,6 +30,7 @@ env-dirs:
 	$(call log.kvp, DSRC, $(DSRC))
 	$(call log.kvp, DTUB, $(DTUB))
 	$(call log.kvp, BDD, $(BDD))
+	$(call log.kvp, BDD_LOG, $(BDD_LOG))
 	$(call log.kvp, DLOGCOV, $(DLOGCOV))
 	$(call log.kvp, TESTBENCH, $(TESTBENCH))
 	$(call log.kvp, FUND, $(FUND))
