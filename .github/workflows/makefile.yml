@@ -32,7 +32,7 @@ jobs:
   regression-test:
     runs-on: self-hosted
     steps:
-    - name: npm scenario
+    - name: npm-scenario
       run: |
         pwd
         rm -rf test_scripts/ || ls -l
@@ -60,21 +60,24 @@ jobs:
          
   create-wallet-status:
     runs-on: self-hosted
+    needs: regression-test
     steps:
-    - name: create wallet status
+    - name: create-wallet-status
       run: |
         grep '"passed":true' shared/create-wallet.log
       
   run-network-status:
     runs-on: self-hosted
+    needs: create-wallet-status
     steps:        
-    - name: run network status
+    - name: run-network-status
       run: |
         grep '"passed":true' shared/run-network.log
         
   transaction-status:
     runs-on: self-hosted
+    needs: run-network-status
     steps:      
-    - name: transaction status
+    - name: transaction-status
       run: |
         grep '"passed":true' shared/transaction.log
