@@ -42,7 +42,7 @@ jobs:
         docker rmi -f  npm-scenario-image || docker images
         docker build -t npm-scenario-image .
         for SCENARIO in $(cat scenarios.txt); do docker run --name $SCENARIO -d -v ${{env.SHARED_DIR}}:${{env.SHARED_PATH}} npm-scenario-image $SCENARIO ; done
-        sudo chmod -R 777 /home/moonbase/actions-runner/_work/tagion/tagion/shared/network/pem_files/domain.key.pem
+        sudo chmod -R 777 shared/
         ./script2.sh
         echo test
   
