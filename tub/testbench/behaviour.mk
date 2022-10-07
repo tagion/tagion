@@ -1,6 +1,6 @@
 
 
-bddtest: bddfiles 
+bddtest: bddexec bddfiles 
 
 .PHONY: bddtest bddfiles
 
@@ -9,7 +9,11 @@ bddfiles: behaviour
 	echo $(BEHAVIOUR) $(BDD_FLAGS)
 	$(BEHAVIOUR) $(BDD_FLAGS)
 
-#echo $(DINC)
+bddexec:
+	$(PRECMD)
+	echo "WARRING!!! Not impemented yet"
+
+.PHONY: bddexec
 
 env-bdd:
 	$(PRECMD)
@@ -26,6 +30,7 @@ help-bdd:
 	${call log.header, $@ :: help}
 	${call log.help, "make help-bdd", "Will display this part"}
 	${call log.help, "make bddtest", "Builds and executes all BDD's"}
+	${call log.help, "make bddexec", "Compiles and links all the BDD executables"}
 	${call log.help, "make bddreport", "Produce visualization of the BDD-reports"}
 	${call log.help, "make bddfiles", "Generated the bdd files"}
 	${call log.help, "make behaviour", "Builds the BDD tool"}
@@ -38,7 +43,7 @@ help: help-bdd
 
 clean-bddtest:
 	$(PRECMD)
-	echo "Not implemented yet"
+	echo "WARNING!! Not implemented yet"
 
 .PHONY: help-bdd
 
