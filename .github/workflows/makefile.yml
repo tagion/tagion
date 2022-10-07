@@ -57,3 +57,16 @@ jobs:
          path: /home/moonbase/actions-runner/_work/tagion/tagion/shared/*
          if-no-files-found: error
          retention-days: 15
+         
+    - name: create wallet status
+      run: |
+        grep '"passed":true' shared/create-wallet.log
+        
+    - name: run network status
+      run: |
+        grep '"passed":true' shared/run-network.log
+        
+    - name: transaction status
+      run: |
+        grep '"passed":true' shared/transaction.log
+        
