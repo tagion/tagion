@@ -53,7 +53,7 @@ jobs:
          name: artifacts
          path: /home/moonbase/actions-runner/_work/tagion/tagion/shared/*
          if-no-files-found: error
-         retention-days: 15
+         retention-days: 14
          
 
 
