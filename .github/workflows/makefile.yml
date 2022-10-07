@@ -64,11 +64,17 @@ jobs:
     - name: create wallet status
       run: |
         grep '"passed":true' shared/create-wallet.log
-          
+      
+  run-network-status:
+    runs-on: self-hosted
+    steps:        
     - name: run network status
       run: |
         grep '"passed":true' shared/run-network.log
         
+  transaction-status:
+    runs-on: self-hosted
+    steps:      
     - name: transaction status
       run: |
         grep '"passed":true' shared/transaction.log
