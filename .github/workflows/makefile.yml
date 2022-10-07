@@ -34,6 +34,7 @@ jobs:
     if: always()
     steps:
     - name: npm scenario
+      if: always()
       run: |
         pwd
         rm -rf test_scripts/ || ls -l
