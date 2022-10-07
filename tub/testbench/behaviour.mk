@@ -8,9 +8,11 @@ bddfiles: behaviour
 	$(PRECMD)
 	echo $(BEHAVIOUR) $(BDD_FLAGS)
 	$(BEHAVIOUR) $(BDD_FLAGS)
-
-bddexec:
+# move
+#collect all D files in BDD, compile, 
+bddexec: bdd_test
 	$(PRECMD)
+	echo $(BDDFILES)
 	echo "WARRING!!! Not impemented yet"
 
 .PHONY: bddexec
@@ -41,9 +43,11 @@ help-bdd:
 
 help: help-bdd
 
+# del hibon filse
 clean-bddtest:
 	$(PRECMD)
-	echo "WARNING!! Not implemented yet"
+	rm bdd/tagion/testbench/*.d
+	rm bdd/tagion/testbench/*.gen.md
 
 .PHONY: help-bdd
 
