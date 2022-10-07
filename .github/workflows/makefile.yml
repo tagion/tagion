@@ -32,23 +32,18 @@ jobs:
   regression-test:
     runs-on: self-hosted
     steps:
-    - name: npm-scenario
+    - name: npm scenario
       run: |
         pwd
         rm -rf test_scripts/ || ls -l
-        sudo rm -rf shared/ || ls -l 
-        mkdir shared
         git clone git@github.com:holyanytskyy/test_scripts.git
         grep scenarios.set test_scripts/src/scenarios/scenarios.map.ts | cut -d "'" -f2 > scenarios.txt
         cat scenarios.txt
-        docker rmi -f npm-scenario-image || docker images
+        docker rmi npm-scenario-image || docker images
         docker build -t npm-scenario-image .
-        docker run -v /home/moonbase/actions-runner/_work/tagion/tagion/shared:/tgn/test_scripts/shared  npm-scenario-image
-        sudo chmod -R 777 shared/
-        echo successful
-        cd ${{env.SHARED_DIR}}
-        pwd 
-        ls -l
+        for SCENARIO in $(cat scenarios.txt); do docker run -d  --name $SCENARIOS -v ${{env.SHARED_DIR}}:${{env.SHARED_PATH}} npm-scenario-image $SCENARIO ; done
+        ./script2.sh
+        echo test
   
     - name: upload artifacts
       uses: actions/upload-artifact@v2.2.0
@@ -58,26 +53,5 @@ jobs:
          if-no-files-found: error
          retention-days: 15
          
-  create-wallet-status:
-    runs-on: self-hosted
-    needs: regression-test
-    steps:
-    - name: create-wallet-status
-      run: |
-        grep '"passed":true' shared/create-wallet.log
-      
-  run-network-status:
-    runs-on: self-hosted
-    needs: create-wallet-status
-    steps:        
-    - name: run-network-status
-      run: |
-        grep '"passed":true' shared/run-network.log
-        
-  transaction-status:
-    runs-on: self-hosted
-    needs: run-network-status
-    steps:      
-    - name: transaction-status
-      run: |
-        grep '"passed":true' shared/transaction.log
+
+
