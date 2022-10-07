@@ -1,8 +1,8 @@
 
 
-bdd: bddfiles
+bddtest: bddfiles 
 
-.PHONY: bdd
+.PHONY: bddtest bddfiles
 
 bddfiles: behaviour
 	$(PRECMD)
@@ -25,7 +25,7 @@ help-bdd:
 	$(PRECMD)
 	${call log.header, $@ :: help}
 	${call log.help, "make help-bdd", "Will display this part"}
-	${call log.help, "make bdd", "Builds and executes all BDD's"}
+	${call log.help, "make bddtest", "Builds and executes all BDD's"}
 	${call log.help, "make bddreport", "Produce visualization of the BDD-reports"}
 	${call log.help, "make bddfiles", "Generated the bdd files"}
 	${call log.help, "make behaviour", "Builds the BDD tool"}
@@ -33,4 +33,7 @@ help-bdd:
 
 .PHONY: help-bdd
 
-help: help-bdd
+help: 
+
+.FORCE: 
+
