@@ -7,12 +7,16 @@ DFORMAT_FLAGS+= -c $(REPOROOT)/
 
 CHANGED_FILES=${shell git --no-pager diff  --name-only}
 CHANGED_DFILES=${filter %.d,$(CHANGED_FILES)}
+CHANGED_DFILES_TMP=${addsuffix .tmp,$(CHANGED_DFILES)}
 
 ALL_DFILES=${shell find $(DSRC) -name "*.d"}
+ALL_DFILES_TMP=${addsuffix .tmp,$(ALL_DFILES)}
 
-format: ${addprefix .tmp,$(CHANGED_FILES)
 
-format-all: $(addprefix .tmp,$(ALL_DFILES)}
+format: $(CHANGED_FILES_TMP)
+
+format-all: $(ALL_DFILES_TMP)
+
 
 .PHONY: format format-all
 
@@ -36,6 +40,7 @@ env-format:
 	${call log.kvp, DFORMAT, $(DFORMAT)}
 	${call log.env, DFORMAT_FLAGS, $(DFORMAT_FLAGS)}
 	${call log.env, CHANGED_DFILES, $(CHANGED_DFILES)}
+	${call log.env, CHANGED_DFILES_TMP, $(CHANGED_DFILES_TMP)}
 	${call log.close}
 
 .PHONY: env-format
@@ -43,9 +48,12 @@ env-format:
 env: env-format
 
 %.d.tmp: %.d
+	$(PRECMD)
 	$(DFORMAT) $(DFORMAT_FLAGS) $< >$@
 	size=`stat -c%s $@ 2>/dev/null`
-	if [ $stat -ne 0 ]; then
-	cp -a $@ > $<
-	endif
+	echo "$@ size $stat" > /tmp/$(F@).log
+	if [ $$size -ne 0 ]; then
+	cp -a $@ $<
+	fi
+	$(RM) $@
 

@@ -1,4 +1,3 @@
-
 .SUFFIXES:
 .SECONDARY:
 .ONESHELL:
@@ -14,6 +13,7 @@ main: help
 #
 export DSRC := $(abspath $(REPOROOT)/src)
 export DTUB := $(abspath $(REPOROOT)/tub)
+export BDD := $(abspath $(REPOROOT)/bdd)
 ifndef REPOROOT
 ${error REPOROOT must be defined}
 endif
