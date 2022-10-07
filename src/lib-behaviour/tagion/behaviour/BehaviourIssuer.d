@@ -195,7 +195,7 @@ struct DlangT(Stream) {
 
     string issue(const(ScenarioGroup) scenario_group) {
         immutable scenario_param = format(
-                "\"%s\",\n[%-(%3$s,\n%)]",
+                "\"%s\",\n[%(%3$s,\n%)]",
                 scenario_group.info.property.description,
                 scenario_group.info.property.comments
                 .map!(comment => comment.escaper.array)
