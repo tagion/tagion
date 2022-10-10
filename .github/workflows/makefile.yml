@@ -51,6 +51,7 @@ jobs:
         ./script2.sh
   
     - name: upload artifacts
+      continue-on-error: true
       uses: actions/upload-artifact@v2.2.0
       with:
          name: artifacts
