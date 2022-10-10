@@ -29,7 +29,7 @@ jobs:
       run: |
         tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
         
-  regression-test:
+  run-scenario-containers:
     runs-on: self-hosted
     if: always()
     steps:
@@ -45,7 +45,10 @@ jobs:
         docker build -t npm-scenario-image .
         for SCENARIO in $(cat scenarios.txt); do docker run --name $SCENARIO -d --rm -v ${{env.SHARED_DIR}}:${{env.SHARED_PATH}} npm-scenario-image $SCENARIO ; done
         sudo chmod -R 777 shared/
-        
+    
+  log-status:
+    runs-on: self-hosted
+    steps:  
     - name: log status
       run: |
         ./script2.sh
