@@ -34,7 +34,7 @@ jobs:
     if: always()
     steps:
     - name: npm scenario
-      continue-on-error: true
+      #continue-on-error: true
       run: |
         pwd
         rm -rf test_scripts/ || ls -l
@@ -45,8 +45,10 @@ jobs:
         docker build -t npm-scenario-image .
         for SCENARIO in $(cat scenarios.txt); do docker run --name $SCENARIO -d --rm -v ${{env.SHARED_DIR}}:${{env.SHARED_PATH}} npm-scenario-image $SCENARIO ; done
         sudo chmod -R 777 shared/
+        
+    - name: log status
+      run: |
         ./script2.sh
-        echo test
   
     - name: upload artifacts
       uses: actions/upload-artifact@v2.2.0
