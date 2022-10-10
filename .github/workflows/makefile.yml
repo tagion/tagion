@@ -39,8 +39,7 @@ jobs:
         pwd
         #rm -rf test_scripts/ || ls -l
         #git clone git@github.com:holyanytskyy/test_scripts.git
-        cd test_scripts && git pull
-        pwd
+        git --git-dir=test_scripts/.git pull
         grep scenarios.set test_scripts/src/scenarios/scenarios.map.ts | cut -d "'" -f2 > scenarios.txt
         cat scenarios.txt
         docker rmi -f  npm-scenario-image || docker images
