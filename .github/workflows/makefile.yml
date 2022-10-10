@@ -51,7 +51,7 @@ jobs:
     steps:  
     - name: log status
       run: |
-        ./script2.sh
+        ./log-script.sh
   
     - name: upload artifacts
       if: always()
