@@ -46,7 +46,7 @@ jobs:
         docker build -t npm-scenario-image .
         for SCENARIO in $(cat scenarios.txt); do mkdir $SCENARIO; done || echo "directory already exists"
         for SCENARIO in $(cat scenarios.txt); do docker run --name $SCENARIO -d --rm -v /home/moonbase/actions-runner/_work/tagion/tagion/$SCENARIO:${{env.SHARED_PATH}} npm-scenario-image $SCENARIO ; done
-        sudo chmod -R 777 shared/
+        sudo chmod -R 777 run-network/
     
   log-status:
     runs-on: self-hosted
