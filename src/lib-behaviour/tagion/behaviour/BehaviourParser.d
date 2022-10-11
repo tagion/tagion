@@ -127,11 +127,11 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                 immutable comment = match.post.strip.idup;
                 final switch (state) {
                 case State.Feature:
-                    info_feature.property.comments ~= comment;
+                    info_feature.property.comments ~= comment.stripRight;
                     break;
                 case State.Scenario:
                     if (comment.length) {
-                        scenario_group.info.property.comments ~= comment;
+                        scenario_group.info.property.comments ~= comment.stripRight;
                     }
                     break;
                 case State.Action:
@@ -139,7 +139,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                         static if (hasMember!(Field, "infos")) {
                             with (scenario_group.tupleof[index]) {
                                 if (current_action_index is index) {
-                                    infos[$ - 1].property.comments ~= comment;
+                                    infos[$ - 1].property.comments ~= comment.stripRight;
                                 }
                             }
                         }
@@ -152,7 +152,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
             case FEATURE:
                 current_action_index = -1;
                 check_error(state is State.Start, "Feature has already been declared in line");
-                info_feature.property.description = match.post.idup;
+                info_feature.property.description = match.post.strip.idup;
                 state = State.Feature;
                 got_feature = true;
                 break;
@@ -193,7 +193,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                     scenario_group = ScenarioGroup.init;
                 }
                 current_action_index = -1;
-                scenario_group.info.property.description = match.post.idup;
+                scenario_group.info.property.description = match.post.strip.idup;
                 state = State.Scenario;
                 break;
             case ACTION:
@@ -215,7 +215,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                                                 format("Bad action order for action %s", action_word));
                                         current_action_index = index;
                                         infos.length++;
-                                        infos[$ - 1].property.description = match.post.idup;
+                                        infos[$ - 1].property.description = match.post.strip.idup;
                                     }
                                 }
                             }
