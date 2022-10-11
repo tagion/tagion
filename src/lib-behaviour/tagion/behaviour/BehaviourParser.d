@@ -174,7 +174,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                                     check_error(infos[$ - 1].name.length == 0,
                                             format("Action name '%s' has already been defined for %s", match[0],
                                             infos[$ - 1].name));
-                                    infos[$ - 1].name = match[1].idup;
+                                    infos[$ - 1].name = match[1].strip.idup;
                                 }
                                 break TokenSwitch;
                             }

@@ -66,7 +66,7 @@ Given the logger creates a HiPRC which set the logger-mask to no log for task A.
 
 When the logger send the HiPRC to the network
 
-Then the logger will receive information form task B.
+Then the logger will receive information from task B.
 
 But the logger will not receive information from task A
 
