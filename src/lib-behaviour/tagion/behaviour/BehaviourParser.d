@@ -13,7 +13,10 @@ import std.format;
 import std.traits : Fields;
 import std.meta;
 import std.uni : toLower;
+import std.ascii : isWhite, isAlphaNum;
 import std.conv : to;
+import std.algorithm.iteration : filter, map;
+
 
 import tagion.hibon.HiBONRecord : RecordType, GetLabel;
 import tagion.behaviour.BehaviourException;
@@ -174,7 +177,11 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                                     check_error(infos[$ - 1].name.length == 0,
                                             format("Action name '%s' has already been defined for %s", match[0],
                                             infos[$ - 1].name));
-                                    infos[$ - 1].name = match[1].strip.idup;
+                                    infos[$ - 1].name = match[1]
+                                            .strip
+                                            .filter!(a => a.isAlphaNum || a.isWhite)
+                                            .map!(a => cast(immutable(char))a)
+                                            .array;
                                 }
                                 break TokenSwitch;
                             }
