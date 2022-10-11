@@ -40,6 +40,8 @@ try {
 }
         }, string, string, size_t, string, string);
         import std.uni : toLower;
+
+        
         .check(scenario !is null,
                 format("The constructor must be called for %s before it's runned", T.stringof));
         static foreach (_Property; BehaviourProperties) {
@@ -242,8 +244,9 @@ auto automation(alias M)() if (isFeature!M) {
                 try {
                     //io.writefln("run %s ", _Scenario.stringof);
                     static if (__traits(compiles, new _Scenario())) {
-                        if (result.scenarios[i] is null) {
-                            result.scenarios[i] = new _Scenario();
+                        pragma(msg, "result.scenario ", i, " ", typeof(scenarios[i]), " ", _Scenario);
+                        if (scenarios[i] is null) {
+                            scenarios[i] = new _Scenario();
                         }
                     }
                     result.scenarios[i] = .run(scenarios[i]);
@@ -369,6 +372,21 @@ bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
         }
     }
     return true;
+}
+
+@safe
+unittest {
+
+    import WithoutCtor = tagion.behaviour.BehaviourUnittestWithoutCtor;
+
+    auto feature_without_ctor = automation!(WithoutCtor)();
+
+    { // None of the scenario passes
+        const feature_result = feature_without_ctor.run;
+        assert(!feature_result.scenarios[0].hasPassed);
+        assert(!feature_result.scenarios[1].hasPassed);
+        assert(!feature_result.hasPassed);
+    }
 }
 
 ///Examples: Shows how to use a automation on scenarios with constructor and the hasParssed

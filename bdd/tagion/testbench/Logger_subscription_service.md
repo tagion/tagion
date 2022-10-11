@@ -68,7 +68,7 @@ When the logger send the HiPRC to the network
 
 Then the logger will receive information from task B.
 
-But the logger will not receive information from task A
+But the logger will not receive information from task A.
 
 
 
