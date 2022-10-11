@@ -44,7 +44,8 @@ jobs:
         cat scenarios.txt
         docker rmi -f  npm-scenario-image || docker images
         docker build -t npm-scenario-image .
-        for SCENARIO in $(cat scenarios.txt); do docker run --name $SCENARIO -d --rm -v ${{env.SHARED_DIR}}/$SCENARIO:${{env.SHARED_PATH}} npm-scenario-image $SCENARIO ; done
+        for SCENARIO in $(cat scenarios.txt); do mkdir $SCENARIO; done || echo "directory already exists"
+        for SCENARIO in $(cat scenarios.txt); do docker run --name $SCENARIO -d --rm -v $SCENARIO:${{env.SHARED_PATH}} npm-scenario-image $SCENARIO ; done
         sudo chmod -R 777 shared/
     
   log-status:
