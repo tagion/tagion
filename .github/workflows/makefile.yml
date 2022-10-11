@@ -49,6 +49,7 @@ jobs:
     
   log-status:
     runs-on: self-hosted
+    needs: run-scenario-containers
     steps:  
     - name: log status
       run: |
