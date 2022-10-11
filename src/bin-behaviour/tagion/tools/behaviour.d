@@ -10,8 +10,8 @@ import std.getopt;
 import std.stdio : writefln, writeln, File;
 import std.format;
 import std.path : extension, setExtension;
-import std.file : exists, dirEntries, SpanMode;
-import std.string : join, strip;
+import std.file : exists, dirEntries, SpanMode, readText;
+import std.string : join, strip, splitLines;
 import std.algorithm.iteration : filter, map, joiner;
 import std.regex;
 import std.parallelism : parallel;
@@ -22,7 +22,7 @@ import tagion.utils.JSONCommon;
 import tagion.basic.Types : FileExtension, DOT;
 import tagion.tools.revision : revision_text;
 import tagion.behaviour.BehaviourParser;
-import tagion.behaviour.BehaviourIssue : Dlang, Markdown;
+import tagion.behaviour.BehaviourIssue : Dlang, DlangT, Markdown;
 import tagion.behaviour.Emendation : emendation, suggestModuleName;
 
 enum ONE_ARGS_ONLY = 2;
@@ -49,6 +49,8 @@ struct BehaviourOptions
     string dfmt;
     /* Command line flags for the dfmt */
     string[] dfmt_flags;
+
+    string importfile; /// Import file preappended to the generated skeleton
 
     /** 
      * Used to set default options if config file not provided
@@ -108,6 +110,11 @@ int parse_bdd(ref const(BehaviourOptions) opts)
 {
     const regex_include = regex(opts.regex_inc);
     const regex_exclude = regex(opts.regex_exc);
+    alias DlangFile=DlangT!File;
+ if(opts.importfile) {
+    DlangFile.preparations=opts.importfile.readText.splitLines;
+    writefln("DlangFile.preparations=%s", DlangFile.preparations);
+    }
     auto bdd_files = opts.paths
         .map!(path => dirEntries(path, SpanMode.depth))
         .joiner
@@ -201,6 +208,7 @@ int main(string[] args)
     bool version_switch;
     /** flag for overwrite config file */
     bool overwrite_switch;
+    string importfile;
 
     if (config_file.exists)
     {
@@ -215,8 +223,9 @@ int main(string[] args)
             "version", "display the version", &version_switch, 
             "I", "Include directory", &options.paths, std.getopt.config.bundling,
     "O", format("Write configure file %s", config_file), &overwrite_switch,
-            "i|regex_inc", format("Include regex `%s`", options.regex_inc), &options.regex_inc, 
-    "x|regex_exc", format("Exclude regex `%s`", options.regex_exc), &options.regex_exc
+            "r|regex_inc", format("Include regex `%s`", options.regex_inc), &options.regex_inc, 
+    "x|regex_exc", format("Exclude regex `%s`", options.regex_exc), &options.regex_exc,
+    "i|import", "Include file", &options.importfile,
     );
 
     if (version_switch)
@@ -250,6 +259,9 @@ int main(string[] args)
         return 0;
     }
 
+        if (importfile) {
+    
+    }
     auto result = parse_bdd(options);
     return result;
 }

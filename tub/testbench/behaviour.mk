@@ -1,6 +1,6 @@
 
 
-bddtest: bddexec bddfiles 
+bddtest: bddfiles bddexec 
 
 .PHONY: bddtest bddfiles
 
@@ -8,6 +8,7 @@ bddfiles: behaviour
 	$(PRECMD)
 	echo $(BEHAVIOUR) $(BDD_FLAGS)
 	$(BEHAVIOUR) $(BDD_FLAGS)
+
 # move
 #collect all D files in BDD, compile, 
 bddexec: bdd_test
@@ -21,6 +22,8 @@ env-bdd:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.env, BDD_FLAGS, $(BDD_FLAGS)}
+	${call log.env, BDD_DFLAGS, $(BDD_DFLAGS)}
+	${call log.env, BDD_DFILES, $(BDD_DFILES)}
 	${call log.close}
 
 .PHONY: env-bdd

@@ -235,7 +235,7 @@ struct DlangT(Stream) {
                 feature_group.info.name,
                 feature_group.info.property.description,
                 comments,
-                preparations.join
+                preparations.join("\n")
         );
         if (feature_group.scenarios.length) {
             feature_group.scenarios

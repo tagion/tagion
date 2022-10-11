@@ -4,7 +4,7 @@ import tagion.behaviour.BehaviourFeature;
 import std.traits : Fields;
 import std.meta : Filter;
 import std.algorithm.iteration : map, cache, joiner;
-import std.string : join;
+import std.string : join, strip;
 import std.algorithm;
 import std.algorithm.sorting : sort;
 import std.typecons : Flag, No, Yes;
@@ -153,6 +153,7 @@ string camelName(string names_with_space, const Flag!"BigCamel" flag = No.BigCam
 
     bool not_first = false;
     return names_with_space
+    .strip
         .splitter!isWhite
         .map!(a => camelCase(a, not_first))
         .join
@@ -182,10 +183,20 @@ unittest {
     assert(name == "This is some description.");
     assert(name.camelName == "thisIsSomeDescription");
     assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
-    takeName(name, some_description);
-    assert(name == "This is some description.");
+}
+
+/// Test of camelName with traling white white space
+@safe 
+unittest {
+    string name = "  This is some description ";
     assert(name.camelName == "thisIsSomeDescription");
     assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
+
+  name = "  This is some description . ";
+    assert(name.camelName == "thisIsSomeDescription");
+    assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
+
+
 }
 
 /** 
