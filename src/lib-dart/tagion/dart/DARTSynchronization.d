@@ -851,7 +851,7 @@ unittest
 {
     import std.algorithm : count;
 
-    log.push(LoggerType.ALL);
+    log.push(LogLevel.ALL);
 
     @safe
     static class FakeResponseHandler : ResponseHandler
