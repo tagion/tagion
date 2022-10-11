@@ -12,7 +12,7 @@ import std.string : strip;
 import tagion.basic.Types : FileExtension;
 import tagion.basic.Basic : basename;
 import tagion.basic.TagionExceptions;
-import tagion.logger.Logger : LoggerType;
+import tagion.logger.Logger : LogLevel;
 import tagion.utils.JSONCommon;
 
 /++
@@ -133,10 +133,9 @@ struct Options
     {
         /** Name of the transcript service */
         string task_name;
-     
+
         mixin JSONCommon;
     }
-    
 
     TranscriptOptions transcript;
 
@@ -203,6 +202,7 @@ struct Options
         SSLOption service; /// SSL Service used by the transaction service
         HostOptions host;
         ushort max; // max == 0 means all
+        bool enable; // Enable logger subscribtion  service
         mixin JSONCommon;
     }
 
@@ -223,14 +223,6 @@ struct Options
     }
 
     Logger logger;
-
-    struct LoggerSubscription
-    {
-        bool enable; // Enable logger subscribtion  service
-        mixin JSONCommon;
-    }
-
-    LoggerSubscription sub_logger;
 
     struct Recorder
     {
@@ -373,7 +365,8 @@ static ref auto all_getopt(
         "dart-init", "Initialize block file", &(options.dart.initialize),
         "dart-path", "Path to dart file", &(options.dart.path),
         "logger-filename" , format("Logger file name: default: %s", options.logger.file_name), &(options.logger.file_name),
-        "logsub|L" , format("Logger subscription service enabled: default: %d", options.sub_logger.enable), &(options.sub_logger.enable),
+        "logger-mask|l" , format("Logger mask: default: %d", options.logger.mask), &(options.logger.mask),
+        "logsub|L" , format("Logger subscription service enabled: default: %d", options.logSubscription.enable), &(options.logSubscription.enable),
         "net-mode", format("Network mode: one of [%s]: default: %s", [EnumMembers!NetworkMode].map!(t=>t.to!string).join(", "), options.net_mode), &(options.net_mode),
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
         "boot", format("Shared boot file: default: %s", options.path_to_shared_info), &(options.path_to_shared_info),
@@ -499,11 +492,12 @@ static setDefaultOption(ref Options options)
         task_name = prefix;
         net_task_name = "logsubscription_net";
         timeout = 10000;
+        enable = true;
         with (service)
         {
             prefix = "logsubscriptionservice";
             task_name = prefix;
-            response_task_name = "respose";
+            response_task_name = "response" ~ prefix;
             address = "0.0.0.0";
             port = 10_700;
             select_timeout = 300;
@@ -547,7 +541,7 @@ static setDefaultOption(ref Options options)
         file_name = "/tmp/tagion.log";
         flush = true;
         to_console = true;
-        mask = LoggerType.ALL;
+        mask = LogLevel.ALL;
     }
     // Recorder
     with (options.recorder)

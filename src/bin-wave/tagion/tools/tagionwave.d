@@ -20,10 +20,8 @@ import tagion.services.TagionService;
 import tagion.services.LoggerService;
 import tagion.services.TagionFactory;
 import tagion.GlobalSignals;
-import tagion.network.SSLOptions;
+import tagion.network.SSLOptions : OpenSSL, configureOpenSSL;
 import tagion.tasks.TaskWrapper;
-
-
 
 mixin TrustedConcurrency;
 
@@ -152,7 +150,7 @@ int _main(string[] args)
 
     writeln("----- Start tagion service task -----");
 
-    if(local_options.port >= ushort.max) 
+    if (local_options.port >= ushort.max)
     {
         writefln("Invalid port value %d. Port should be < %d", local_options.port, ushort.max);
         return 1;
@@ -171,7 +169,7 @@ int _main(string[] args)
         service_options.pid_file.fwrite("export PID=%s\n".format(thisProcessID));
     }
 
-    create_ssl(service_options.transaction.service.openssl);
+    configureOpenSSL(service_options.transaction.service.openssl);
 
     auto logger_service_tid = Task!LoggerTask(service_options.logger.task_name, service_options);
     import std.stdio : stderr;
@@ -204,7 +202,7 @@ int _main(string[] args)
     writeln("Wait for join");
 
     int result;
-  
+
     receive(
         (Control response) {
         with (Control)
