@@ -61,7 +61,10 @@ jobs:
       uses: actions/upload-artifact@v2.2.0
       with:
          name: artifacts
-         path: /home/moonbase/actions-runner/_work/tagion/tagion/shared/*
+         path: |
+           /home/moonbase/actions-runner/_work/tagion/tagion/create-wallet/*
+           /home/moonbase/actions-runner/_work/tagion/tagion/run-network/*
+           /home/moonbase/actions-runner/_work/tagion/tagion/transaction/*
          if-no-files-found: error
          retention-days: 13
          
