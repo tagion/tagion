@@ -153,7 +153,7 @@ string camelName(string names_with_space, const Flag!"BigCamel" flag = No.BigCam
 
     bool not_first = false;
     return names_with_space
-    .strip
+        .strip
         .splitter!isWhite
         .map!(a => camelCase(a, not_first))
         .join
@@ -186,16 +186,18 @@ unittest {
 }
 
 /// Test of camelName with traling white white space
-@safe 
+@safe
 unittest {
     string name = "  This is some description ";
     assert(name.camelName == "thisIsSomeDescription");
     assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
 
-  name = "  This is some description . ";
+    name = "  This is some description . ";
     assert(name.camelName == "thisIsSomeDescription");
     assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
-
+    name = " the client is connected success fully ";
+    assert(name.camelName == "theClientIsConnectedSuccessFully");
+    assert(name.camelName(Yes.BigCamel) == "TheClientIsConnectedSuccessFully");
 
 }
 

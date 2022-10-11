@@ -5,13 +5,15 @@ A data-package is defined as a string of bytes which a send to the transaction s
 
 
 Scenario A data package which exceed the maximum size.
+
 Given a data package with larger than the maximum size.
 
-Given that a connection to the logs on the transaction service     
+Given that a connection to the logs on the transaction service
 
 Given the data package is send to the selected active node A in the network.
 
 
 Scenario A malformed data packed should be rejected
+
 Given a data 
 
