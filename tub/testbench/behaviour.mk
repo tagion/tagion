@@ -13,7 +13,7 @@ bddfiles: behaviour
 #collect all D files in BDD, compile, 
 bddexec: bdd_test
 	$(PRECMD)
-	echo $(BDDFILES)
+	echo $(BDDTESTS)
 	echo "WARRING!!! Not impemented yet"
 
 .PHONY: bddexec

@@ -26,8 +26,6 @@ $(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 # Compile and link or split link
 #
 ifdef SPLIT_LINKER
-#$(DOBJ)/%.$(OBJEXT): $(PREBUILD)
-
 $(DOBJ)/lib%.$(OBJEXT): $(DOBJ)/.way
 	$(PRECMD)
 	${call log.kvp, compile$(MODE)}
