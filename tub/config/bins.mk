@@ -5,7 +5,7 @@
 # $3 : List of libraries used by the program
 # $4 : Set if the program is tagion tool
 #
-define DO_BIN
+define BIN
 ${eval
 export $2?=$$(DBIN)/$1
 
