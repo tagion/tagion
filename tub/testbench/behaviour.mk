@@ -11,7 +11,7 @@ bddfiles: behaviour
 
 # move
 #collect all D files in BDD, compile, 
-bddexec: bdd_test
+bddexec: $(BDDTESTS) 
 	$(PRECMD)
 	echo $(BDDTESTS)
 	echo "WARRING!!! Not impemented yet"
