@@ -281,8 +281,6 @@ void dartServiceTask(Net : SecureNet)(
                 {
                     send(subscribe_handler_tid, recorder);
                 }
-                // auto params=new HiBON;
-                // params[DARTFile.Params.recorder]=recorder.toHiBON;
                 auto request = empty_hirpc.dartModify(recorder, recorder_hrpc_id); //TODO: remove out of range archives
                 auto request_data = request.toDoc.serialize;
                 auto dstid = locate(opts.dart.sync.task_name);
@@ -358,10 +356,6 @@ private void subscibeHandler(immutable(Options) opts)
             (immutable(RecordFactory.Recorder) recorder) { //TODO: change to HiRPC
             log("DS-subs: received recorder");
             connectionPool.broadcast(recorder.toDoc.serialize); //+save to journal etc..
-            // if not ready/started => send error
-            // if(dartSyncTid != Tid.init){
-            //     send(dartSyncTid, recorder);
-            // }
         },);
         connectionPool.tick();
     }
