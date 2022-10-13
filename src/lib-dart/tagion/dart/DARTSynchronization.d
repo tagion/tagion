@@ -102,6 +102,7 @@ class ReadRequestHandler : ResponseHandler
     private
     {
         pragma(msg, "Fixme: Why is this a Document[Buffer], why not just a Recorder? It seems to solve the same problem");
+        pragma(msg, "Answer(cbr): This is because you get an unpredictable order. So you can not see who the sender and who is the receiver. Because of the why Document[Buffer] is stored. See! HiBONRecord");
         Document[Buffer] fp_result;
         Buffer[] requested_fp;
         HiRPC hirpc;
@@ -263,7 +264,6 @@ interface SynchronizationFactory
     alias OnFailure = void delegate(const DART.Rims sector) @safe;
     alias OnComplete = void delegate(string) @safe;
     alias SyncSectorResponse = Tuple!(uint, ResponseHandler);
-    pragma(msg, "SyncSectorResponse :", SyncSectorResponse);
     bool canSynchronize();
     SyncSectorResponse syncSector(
         const DART.Rims sector,
