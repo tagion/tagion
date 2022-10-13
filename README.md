@@ -53,8 +53,6 @@ Contains external libraries integrated in Tagion build system compiles to the st
 
 
 
-[BDD for the core MVP](bdd/Core_MVP.md)
-
 ## Maintainers
 
 - [@cbleser](https://github.com/cbleser)
