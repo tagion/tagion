@@ -1,5 +1,5 @@
 
-BDD_FLAGS+=-I$(BDD)/bdd_import.di
+BDD_FLAGS+=-i$(BDD)/bdd_import.di
 BDD_FLAGS+=${addprefix -I,$(BDD)}
 
 BDD_DFLAGS+=${addprefix -I,$(BDD)}

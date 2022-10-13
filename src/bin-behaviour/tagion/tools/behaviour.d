@@ -259,9 +259,6 @@ int main(string[] args)
         return 0;
     }
 
-        if (importfile) {
-    
-    }
     auto result = parse_bdd(options);
     return result;
 }
