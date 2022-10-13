@@ -8,13 +8,13 @@ Scenario a data package which exceed the maximum size.
 
 Given a data package with size larger than the maximum.
 
-Given that a connection to the logs on the transaction service
+Given that a connection to the logs on the transaction service.
 
 Given the data package is send to the selected active node A in the network.
 
-When the data package has been received by the network
+When the data package has been received by the network.
 
-Then the size of the data package should be check and the should be rejected
+Then the size of the data package should be check and the should be rejected.
 if the size larger than the maximum size.
 
 

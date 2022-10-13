@@ -11,7 +11,7 @@ int main(string[] args)
     auto recorder_chain_feature = automation!(recorderchain)();
     auto result = recorder_chain_feature.run;
 
-    "./tmp/result.hibon".fwrite(result);
+    "/tmp/result.hibon".fwrite(result);
 
     return 0;
 }
