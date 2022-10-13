@@ -1,5 +1,5 @@
 
-BDD_FLAGS+=-i$(BDD)/bdd_import.di
+BDD_FLAGS+=-I$(BDD)/bdd_import.di
 BDD_FLAGS+=${addprefix -I,$(BDD)}
 
 BDD_DFLAGS+=${addprefix -I,$(BDD)}
@@ -7,7 +7,7 @@ BDD_DFLAGS+=${addprefix -I,$(BDD)}
 BDD_LOG=$(DLOG)/bdd
 
 BDD_DFILES+=${shell find $(BDD) -type f -name "*.d" -path "*/tagion/*" -a -not -name "*.gen.d"}
-BDD_DFILES+=${shell find $(BDD) -type f -name "*.d" -path "*/bin/*"}
+BDD_DFILES+=${shell find $(BDD) -type f -name "*.d" -path "*/tests/*"}
 
 target-bdd_test: DFLAGS+=$(BDD_DFLAGS)
 
