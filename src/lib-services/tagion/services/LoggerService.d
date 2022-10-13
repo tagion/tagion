@@ -34,11 +34,11 @@ mixin TrustedConcurrency;
 
 private
 {
-    enum TIMESTAMP_UTC_WIDTH = 29;
+    enum TIMESTAMP_WIDTH = 10;
     enum LOG_LEVEL_MAX_WIDTH = 5;
 
     enum LOG_FORMAT = "%-" ~ to!string(
-            TIMESTAMP_UTC_WIDTH) ~ "s | %-" ~ to!string(
+            TIMESTAMP_WIDTH) ~ "s | %-" ~ to!string(
             LOG_LEVEL_MAX_WIDTH) ~ "s | %s: %s";
 }
 
@@ -90,7 +90,7 @@ private
 
     static string formatLog(LogLevel level, string task_name, string text)
     {
-        return format(LOG_FORMAT, Clock.currTime.toUTC.toString, level, task_name, text);
+        return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, level, task_name, text);
     }
 
     /** Task method that receives logs from Logger and sends them to console, file and LogSubscriptionService
