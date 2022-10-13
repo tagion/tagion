@@ -101,9 +101,8 @@ class ReadRequestHandler : ResponseHandler
 {
     private
     {
-        pragma(msg, "fixme: Why is this a Document[Buffer], why not just a Recorder? It seems to solve the same problem");
-        pragma(msg, "answer(cbr): This is because you get an unpredictable order. So you can not see who the sender and who is the receiver. Because of the why Document[Buffer] is stored. See! HiBONRecord");
-        Document[Buffer] fp_result;
+        pragma(msg, "fixme(cbr): Why is this a Document[Buffer], why not just a Recorder? It seems to solve the same problem");
+        Document[Buffer] fp_result;  
         Buffer[] requested_fp;
         HiRPC hirpc;
         HiRPCReceiver receiver;
@@ -129,7 +128,6 @@ class ReadRequestHandler : ResponseHandler
         {
             fp_result[archive.fingerprint] = archive.toDoc;
             import std.algorithm : arrRemove = remove, countUntil;
-
             requested_fp = requested_fp.arrRemove(countUntil(requested_fp, archive.fingerprint));
         }
     }
