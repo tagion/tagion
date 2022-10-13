@@ -78,10 +78,6 @@ target-tagion: DFILES+=${shell find $(DSRC)/bin-wallet/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-tools/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-boot/tagion -name "*.d"  }
 
-# target-tagion: DFILES+=${shell find $(DSRC)/bin-dartutil -name "*.d" -a -not -path "*/unitdata/*" }
-# target-tagion: DFILES+=${shell find $(DSRC)/bin-hibonutil -name "*.d" -a -not -path "*/unitdata/*" }
-# target-tagion: DFILES+=${shell find $(DSRC)/bin-wallet -name "*.d" -a -not -path "*/unitdata/*" }
-
 target-tagion:
 ${call DO_BIN,tagion,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
 

@@ -7,7 +7,7 @@
 define DO_BIN
 ${eval
 ENV_BIN_$1=$$(DBIN)/$1
-#export ENV_BIN_$1?=$$(DBIN)/$1
+$${call DO_UPPER,$1}=$$(ENV_BIN_$1)
 
 BINS+=$$(ENV_BIN_$1)
 
