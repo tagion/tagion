@@ -82,7 +82,7 @@ struct LogSubscribersInfo
       */
     void updateLogServiceFilters(LogFilter[] update_filters, LogFiltersAction action)
     {
-        pragma(msg, "ib: could be redesigned using shared storage");
+        pragma(msg, "fixme(ib): could be redesigned using shared storage");
         if (logger_service_tid != Tid.init)
         {
             logger_service_tid.send(LogFilterArray(update_filters.idup), action);
