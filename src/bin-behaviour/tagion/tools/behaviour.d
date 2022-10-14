@@ -26,13 +26,12 @@ import tagion.behaviour.BehaviourIssue : Dlang, DlangT, Markdown;
 import tagion.behaviour.Emendation : emendation, suggestModuleName;
 
 enum ONE_ARGS_ONLY = 2;
-enum DFMT_ENV="DFMT"; /// Set the path and argument d-format including the flags
+enum DFMT_ENV = "DFMT"; /// Set the path and argument d-format including the flags
 
 /** 
  * Option setting for the optarg and behaviour.json config file
  */
-struct BehaviourOptions
-{
+struct BehaviourOptions {
     /* Include paths for the BDD source files */
     string[] paths;
     /* BDD extension (default markdown .md) */
@@ -55,21 +54,19 @@ struct BehaviourOptions
     /** 
      * Used to set default options if config file not provided
      */
-    void setDefault()
-    {
+    void setDefault() {
         const gen = "gen";
         bdd_ext = FileExtension.markdown;
         bdd_gen_ext = [gen, FileExtension.markdown].join(DOT);
         d_ext = [gen, FileExtension.dsrc].join(DOT);
         regex_inc = `/testbench/`;
         if (!(DFMT_ENV in environment)) {
-        const which_dfmt = execute(["which", "dfmt"]);
-        if (which_dfmt.status is 0)
-        {
-            dfmt = which_dfmt.output;
-            dfmt_flags = ["-i"];
+            const which_dfmt = execute(["which", "dfmt"]);
+            if (which_dfmt.status is 0) {
+                dfmt = which_dfmt.output;
+                dfmt_flags = ["-i"];
+            }
         }
-    }
     }
 
     mixin JSONCommon;
@@ -81,10 +78,8 @@ struct BehaviourOptions
  * @param ext - lines to remove dot
  * @return stripted
  */
-const(char[]) stripDot(const(char[]) ext) pure nothrow @nogc
-{
-    if ((ext.length > 0) && (ext[0] == DOT))
-    {
+const(char[]) stripDot(const(char[]) ext) pure nothrow @nogc {
+    if ((ext.length > 0) && (ext[0] == DOT)) {
         return ext[1 .. $];
     }
     return ext;
@@ -95,25 +90,22 @@ const(char[]) stripDot(const(char[]) ext) pure nothrow @nogc
  * @param filename - filename to be checked
  * @return true if the file is not a generated or markdown
  */
-bool checkValidFile(string file_name)
-{
+bool checkValidFile(string file_name) {
     return !(canFind(file_name, ".gen") || !canFind(file_name, ".md"));
 }
-
 
 /** 
  * Used to remove dot
  * @param opts - options for behaviour
  * @return amount of erros in md files
  */
-int parse_bdd(ref const(BehaviourOptions) opts)
-{
+int parse_bdd(ref const(BehaviourOptions) opts) {
     const regex_include = regex(opts.regex_inc);
     const regex_exclude = regex(opts.regex_exc);
-    alias DlangFile=DlangT!File;
- if(opts.importfile) {
-    DlangFile.preparations=opts.importfile.readText.splitLines;
-    writefln("DlangFile.preparations=%s", DlangFile.preparations);
+    alias DlangFile = DlangT!File;
+    if (opts.importfile) {
+        DlangFile.preparations = opts.importfile.readText.splitLines;
+        writefln("DlangFile.preparations=%s", DlangFile.preparations);
     }
     auto bdd_files = opts.paths
         .map!(path => dirEntries(path, SpanMode.depth))
@@ -122,38 +114,33 @@ int parse_bdd(ref const(BehaviourOptions) opts)
         .filter!(file => file.name.extension.stripDot == opts.bdd_ext)
         .filter!(file => (opts.regex_inc.length is 0) || !file.name.matchFirst(regex_include).empty)
         .filter!(file => (opts.regex_exc.length is 0) || file.name.matchFirst(regex_exclude).empty);
-                string[] dfmt;
+    string[] dfmt;
 
-                if (opts.dfmt.length) {
-                    dfmt=opts.dfmt.strip ~ opts.dfmt_flags.dup;
-                }
-                else {
-                    dfmt= environment.get(DFMT_ENV, null).split.array.dup;
-                }
- 
+    if (opts.dfmt.length) {
+        dfmt = opts.dfmt.strip ~ opts.dfmt_flags.dup;
+    }
+    else {
+        dfmt = environment.get(DFMT_ENV, null).split.array.dup;
+    }
+
     /* Error counter */
     int result_errors;
-    foreach (file; bdd_files)
-    {
-        if (!checkValidFile(file))
-        {
+    foreach (file; bdd_files) {
+        if (!checkValidFile(file)) {
             continue;
         }
         auto dsource = file.name.setExtension(FileExtension.dsrc);
         const bdd_gen = dsource.setExtension(opts.bdd_gen_ext);
-        if (dsource.exists)
-        {
+        if (dsource.exists) {
             dsource = dsource.setExtension(opts.d_ext);
         }
-        try
-        {
+        try {
             string[] errors;
 
             auto feature = parser(file.name, errors);
             feature.emendation(file.name.suggestModuleName(opts.paths));
 
-            if (errors.length)
-            {
+            if (errors.length) {
                 writefln("Amount of erros in %s: %s", file.name, errors.length);
                 errors.join("\n").writeln;
                 result_errors++;
@@ -165,13 +152,12 @@ int parse_bdd(ref const(BehaviourOptions) opts)
                 writefln("dsource file %s", dsource);
                 auto dlang = Dlang(fout);
                 dlang.issue(feature);
-                    fout.close;
-               if (dfmt.length)
-                {
-                    writefln("%s", dfmt~ dsource);
+                fout.close;
+                if (dfmt.length) {
+                    writefln("%s", dfmt ~ dsource);
 
                     const exit_code = execute(dfmt ~ dsource);
-writefln("%-(%s %)", dfmt ~ dsource);
+                    writefln("%-(%s %)", dfmt ~ dsource);
                     if (exit_code.status) {
                         writefln("Format error %s", exit_code.output);
                     }
@@ -179,8 +165,7 @@ writefln("%-(%s %)", dfmt ~ dsource);
             }
             { // Generate bdd-md file
                 auto fout = File(bdd_gen, "w");
-                scope (exit)
-                {
+                scope (exit) {
                     fout.close;
                 }
                 auto markdown = Markdown(fout);
@@ -188,8 +173,7 @@ writefln("%-(%s %)", dfmt ~ dsource);
             }
 
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             writeln(e.msg);
             writeln(e);
             result_errors++;
@@ -198,8 +182,7 @@ writefln("%-(%s %)", dfmt ~ dsource);
     return result_errors;
 }
 
-int main(string[] args)
-{
+int main(string[] args) {
     BehaviourOptions options;
     immutable program = args[0];
     /** file for configurations */
@@ -208,36 +191,32 @@ int main(string[] args)
     bool version_switch;
     /** flag for overwrite config file */
     bool overwrite_switch;
-    string importfile;
 
-    if (config_file.exists)
-    {
+    bool enable_package; /// This produce the package 
+
+    if (config_file.exists) {
         options.load(config_file);
     }
-    else
-    {
+    else {
         options.setDefault;
     }
-
-    auto main_args = getopt(args, std.getopt.config.caseSensitive, 
-            "version", "display the version", &version_switch, 
+    auto main_args = getopt(args, std.getopt.config.caseSensitive,
+            "version", "display the version", &version_switch,
             "I", "Include directory", &options.paths, std.getopt.config.bundling,
-    "O", format("Write configure file %s", config_file), &overwrite_switch,
-            "r|regex_inc", format("Include regex `%s`", options.regex_inc), &options.regex_inc, 
-    "x|regex_exc", format("Exclude regex `%s`", options.regex_exc), &options.regex_exc,
-    "i|import", "Include file", &options.importfile,
+            "O", format("Write configure file %s", config_file), &overwrite_switch,
+            "r|regex_inc", format(`Include regex Default:"%s"`, options.regex_inc), &options.regex_inc,
+            "x|regex_exc", format(`Exclude regex Default:"%s"`, options.regex_exc), &options.regex_exc,
+            "i|import", format(`Set include file Default:"%s"`, options.importfile), &options.importfile,
+            "p|package", "Generates D package to the source files", &enable_package,
     );
 
-    if (version_switch)
-    {
+    if (version_switch) {
         revision_text.writeln;
         return 0;
     }
 
-    if (overwrite_switch)
-    {
-        if (args.length is ONE_ARGS_ONLY)
-        {
+    if (overwrite_switch) {
+        if (args.length is ONE_ARGS_ONLY) {
             config_file = args[1];
         }
         options.save(config_file);
@@ -245,17 +224,16 @@ int main(string[] args)
         return 0;
     }
 
-    if (main_args.helpWanted)
-    {
+    if (main_args.helpWanted) {
         defaultGetoptPrinter([
-                revision_text, 
-        "Documentation: https://tagion.org/", 
-                "", 
+            revision_text,
+            "Documentation: https://tagion.org/",
+            "",
             "Usage:",
-                format("%s [<option>...]", program), 
-                "", 
-        "<option>:",
-                ].join("\n"), main_args.options);
+            format("%s [<option>...]", program),
+            "",
+            "<option>:",
+        ].join("\n"), main_args.options);
         return 0;
     }
 
