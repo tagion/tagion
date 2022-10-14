@@ -12,8 +12,8 @@ import std.format;
 import std.path : extension, setExtension, dirName, buildPath;
 import std.file : exists, dirEntries, SpanMode, readText;
 import std.string : join, strip, splitLines;
-import std.algorithm.iteration : filter, map, joiner, fold, uniq;
-import std.regex;
+import std.algorithm.iteration : filter, map, joiner, fold, uniq, splitter, each;
+import std.regex : regex, matchFirst;
 import std.parallelism : parallel;
 import std.array : join, split, array;
 import std.process : execute, environment;
@@ -76,7 +76,7 @@ struct BehaviourOptions {
     mixin JSONConfig;
 }
 
-alias ModuleInfo=Tuple!(string, "name", string, "file"); /// Holds the filename and the module name for a d-module
+alias ModuleInfo = Tuple!(string, "name", string, "file"); /// Holds the filename and the module name for a d-module
 
 /** 
  * Used to remove dot
@@ -129,8 +129,7 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
         dfmt = environment.get(DFMT_ENV, null).split.array.dup;
     }
 
-
-        ModuleInfo[] list_of_modules;
+    ModuleInfo[] list_of_modules;
 
     /* Error counter */
     int result_errors;
@@ -157,7 +156,7 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
             }
 
             if (opts.enable_package && feature.info.name) {
-                list_of_modules~=ModuleInfo(feature.info.name, file.setExtension(FileExtension.dsrc));
+                list_of_modules ~= ModuleInfo(feature.info.name, file.setExtension(FileExtension.dsrc));
             }
             { // Generate d-source file
                 auto fout = File(dsource, "w");
@@ -166,10 +165,10 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
                 dlang.issue(feature);
                 fout.close;
                 if (dfmt.length) {
-//                    writefln("%s", dfmt ~ dsource);
+                    //                    writefln("%s", dfmt ~ dsource);
 
                     const exit_code = execute(dfmt ~ dsource);
-//                    writefln("%-(%s %)", dfmt ~ dsource);
+                    //                    writefln("%-(%s %)", dfmt ~ dsource);
                     if (exit_code.status) {
                         writefln("Format error %s", exit_code.output);
                     }
@@ -195,29 +194,40 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
     return result_errors;
 }
 
-    enum package_filename = "package".setExtension(FileExtension.dsrc);
-void generate_packages(const(ModuleInfo)[] list_of_modules) {
-    const module_paths = list_of_modules
-        .map!(mod => mod.file.dirName)
-    .array;
-    pragma(msg, "array ", typeof(array));
-   // .uniq;
+enum package_filename = "package".setExtension(FileExtension.dsrc);
+void generate_packages(const(ModuleInfo[]) list_of_modules) {
+    auto module_paths = list_of_modules
+        .map!(mod => mod.file.dirName) //.array
+        .uniq;
+    pragma(msg, "array ", typeof(module_paths));
+    pragma(msg, "array... ", typeof(list_of_modules.front.file.dirName));
+    pragma(msg, "array--- ", typeof(module_paths[].front));
+
+    // .uniq;
 
     pragma(msg, typeof(module_paths[].front));
-    foreach(path; module_paths) {
-    const modules_in_the_same_package = list_of_modules
-        .filter!(mod => mod.file.dirName == path);
-    const package_file = buildPath(path, package_filename);
-        auto fout=File(package_filename, "w");
-        scope(exit) {
+    foreach (path; module_paths) {
+        writefln("path %s", path);
+        auto modules_in_the_same_package = list_of_modules
+            .filter!(mod => mod.file.dirName == path);
+        const package_path = buildPath(path, package_filename);
+        auto fout = File(package_path, "w");
+        scope (exit) {
             fout.close;
         }
-        auto module_split = modules_in_the_same_package.front
-    .splitter(DOT);
-        
-            fout.writefln(q{module %(%s.%);}, 
-    module_split.
-take(module_split.walkLength));
+        auto module_split = modules_in_the_same_package.front.name
+            .splitter(DOT);
+
+        const count_without_module_mame = module_split.walkLength - 1;
+
+        fout.writefln(q{module %-(%s.%);},
+                module_split.take(count_without_module_mame));
+
+        fout.writeln;
+        modules_in_the_same_package
+            .map!(mod => mod.name)
+            .each!(module_name => fout.writefln(q{public import %s;}, module_name));
+
     }
 }
 
@@ -274,5 +284,5 @@ int main(string[] args) {
         return 0;
     }
 
-            return parse_bdd(options);
+    return parse_bdd(options);
 }
