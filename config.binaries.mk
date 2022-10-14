@@ -81,11 +81,8 @@ target-tagion: DFILES+=${shell find $(DSRC)/bin-boot/tagion -name "*.d"  }
 target-tagion:
 ${call DO_BIN,tagion,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
 
-# tagion-info:
-# 	@echo $(DFILES)
-
 #
-# Binary of BBD
+# Binary of BBD generator tool
 #
 target-behaviour: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-behaviour/*" -a -not -path "*/unitdata/*" }
 ${call DO_BIN,behaviour,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
