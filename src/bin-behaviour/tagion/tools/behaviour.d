@@ -9,14 +9,16 @@ import std.algorithm.searching : canFind;
 import std.getopt;
 import std.stdio : writefln, writeln, File;
 import std.format;
-import std.path : extension, setExtension;
+import std.path : extension, setExtension, dirName, buildPath;
 import std.file : exists, dirEntries, SpanMode, readText;
 import std.string : join, strip, splitLines;
-import std.algorithm.iteration : filter, map, joiner;
+import std.algorithm.iteration : filter, map, joiner, fold, uniq;
 import std.regex;
 import std.parallelism : parallel;
 import std.array : join, split, array;
 import std.process : execute, environment;
+import std.range;
+import std.typecons : Tuple;
 
 import tagion.utils.JSONCommon;
 import tagion.basic.Types : FileExtension, DOT;
@@ -51,6 +53,7 @@ struct BehaviourOptions {
 
     string importfile; /// Import file preappended to the generated skeleton
 
+    bool enable_package; /// This produce the package 
     /** 
      * Used to set default options if config file not provided
      */
@@ -72,6 +75,8 @@ struct BehaviourOptions {
     mixin JSONCommon;
     mixin JSONConfig;
 }
+
+alias ModuleInfo=Tuple!(string, "name", string, "file"); /// Holds the filename and the module name for a d-module
 
 /** 
  * Used to remove dot
@@ -95,9 +100,10 @@ bool checkValidFile(string file_name) {
 }
 
 /** 
- * Used to remove dot
+ * Parses markdown BDD and produce a new format markdown
+* and a d-source skeleton
  * @param opts - options for behaviour
- * @return amount of erros in md files
+ * @return amount of erros in markdown files
  */
 int parse_bdd(ref const(BehaviourOptions) opts) {
     const regex_include = regex(opts.regex_inc);
@@ -123,6 +129,9 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
         dfmt = environment.get(DFMT_ENV, null).split.array.dup;
     }
 
+
+        ModuleInfo[] list_of_modules;
+
     /* Error counter */
     int result_errors;
     foreach (file; bdd_files) {
@@ -135,7 +144,7 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
             dsource = dsource.setExtension(opts.d_ext);
         }
         try {
-            string[] errors;
+            string[] errors; /// List of parse errors
 
             auto feature = parser(file.name, errors);
             feature.emendation(file.name.suggestModuleName(opts.paths));
@@ -147,6 +156,9 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
                 continue;
             }
 
+            if (opts.enable_package && feature.info.name) {
+                list_of_modules~=ModuleInfo(feature.info.name, file.setExtension(FileExtension.dsrc));
+            }
             { // Generate d-source file
                 auto fout = File(dsource, "w");
                 writefln("dsource file %s", dsource);
@@ -154,10 +166,10 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
                 dlang.issue(feature);
                 fout.close;
                 if (dfmt.length) {
-                    writefln("%s", dfmt ~ dsource);
+//                    writefln("%s", dfmt ~ dsource);
 
                     const exit_code = execute(dfmt ~ dsource);
-                    writefln("%-(%s %)", dfmt ~ dsource);
+//                    writefln("%-(%s %)", dfmt ~ dsource);
                     if (exit_code.status) {
                         writefln("Format error %s", exit_code.output);
                     }
@@ -179,7 +191,34 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
             result_errors++;
         }
     }
+    list_of_modules.generate_packages;
     return result_errors;
+}
+
+    enum package_filename = "package".setExtension(FileExtension.dsrc);
+void generate_packages(const(ModuleInfo)[] list_of_modules) {
+    const module_paths = list_of_modules
+        .map!(mod => mod.file.dirName)
+    .array;
+    pragma(msg, "array ", typeof(array));
+   // .uniq;
+
+    pragma(msg, typeof(module_paths[].front));
+    foreach(path; module_paths) {
+    const modules_in_the_same_package = list_of_modules
+        .filter!(mod => mod.file.dirName == path);
+    const package_file = buildPath(path, package_filename);
+        auto fout=File(package_filename, "w");
+        scope(exit) {
+            fout.close;
+        }
+        auto module_split = modules_in_the_same_package.front
+    .splitter(DOT);
+        
+            fout.writefln(q{module %(%s.%);}, 
+    module_split.
+take(module_split.walkLength));
+    }
 }
 
 int main(string[] args) {
@@ -191,8 +230,6 @@ int main(string[] args) {
     bool version_switch;
     /** flag for overwrite config file */
     bool overwrite_switch;
-
-    bool enable_package; /// This produce the package 
 
     if (config_file.exists) {
         options.load(config_file);
@@ -207,7 +244,7 @@ int main(string[] args) {
             "r|regex_inc", format(`Include regex Default:"%s"`, options.regex_inc), &options.regex_inc,
             "x|regex_exc", format(`Exclude regex Default:"%s"`, options.regex_exc), &options.regex_exc,
             "i|import", format(`Set include file Default:"%s"`, options.importfile), &options.importfile,
-            "p|package", "Generates D package to the source files", &enable_package,
+            "p|package", "Generates D package to the source files", &options.enable_package,
     );
 
     if (version_switch) {
@@ -237,6 +274,5 @@ int main(string[] args) {
         return 0;
     }
 
-    auto result = parse_bdd(options);
-    return result;
+            return parse_bdd(options);
 }
