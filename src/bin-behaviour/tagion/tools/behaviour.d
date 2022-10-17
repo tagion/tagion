@@ -49,7 +49,7 @@ struct BehaviourOptions {
     /** Command line flags for the dfmt */
     string[] dfmt_flags;
 
-    string importfile; /// Import file preappended to the generated skeleton
+    string importfile; /// Import file which are included into the generated skeleton
 
     /** 
      * Used to set default options if config file not provided
@@ -94,7 +94,8 @@ bool checkValidFile(string file_name) {
 }
 
 /** 
- * Process a list of BDD and generates D-source skeletor file and formated markdown file
+ * Process a list of BDD's and generates D-source skeleton files and 
+ * the function also produce a formated markdown files
  * If the a .d source file exists then an .gen.d file is produced 
  * @param opts - opt-arg for the behaviour tool
  * @return amount of erros in md files

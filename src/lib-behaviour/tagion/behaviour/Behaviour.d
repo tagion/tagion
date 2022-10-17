@@ -18,7 +18,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.basic.Basic : isOneOf;
 
 /**
-   Run the scenario in Given, When, Then, But order
+   Runs the scenario in Given, When, Then, But order
    Returns:
    The ScenarioGroup including the result of each action
 */
