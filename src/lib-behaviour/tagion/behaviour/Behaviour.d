@@ -46,9 +46,6 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
             }
         }, string, string, size_t, string, string);
         import std.uni : toLower;
-
-        
-
         .check(scenario !is null,
                 format("The constructor must be called for %s before it's runned", T.stringof));
         static foreach (_Property; ActionProperties) {
