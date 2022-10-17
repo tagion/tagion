@@ -74,9 +74,8 @@ struct BehaviourOptions {
 }
 
 /** 
- * Used to remove dot
- * @param ext - lines to remove dot
- * @return stripted
+ * @param ext - file extension with or without dot
+ * @return the extension without dot
  */
 const(char[]) stripDot(const(char[]) ext) pure nothrow @nogc {
     if ((ext.length > 0) && (ext[0] == DOT)) {
@@ -95,8 +94,9 @@ bool checkValidFile(string file_name) {
 }
 
 /** 
- * Used to remove dot
- * @param opts - options for behaviour
+ * Process a list of BDD and generates D-source skeletor file and formated markdown file
+ * If the a .d source file exists then an .gen.d file is produced 
+ * @param opts - opt-arg for the behaviour tool
  * @return amount of erros in md files
  */
 int parse_bdd(ref const(BehaviourOptions) opts) {
