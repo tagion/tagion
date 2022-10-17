@@ -483,7 +483,6 @@ protected template _staticSearchIndexOf(int index, alias find, L...)
         else
         {
             enum found = find!(L[index]);
-            pragma(msg, "found ", found);
             static if (found)
             {
                 enum _staticSearchIndexOf = index;
@@ -515,7 +514,6 @@ static unittest
     import std.traits : isIntegral, isFloatingPoint;
 
     alias seq = AliasSeq!(string, int, long, char);
-    pragma(msg, "staticSearchIndexOf ", staticSearchIndexOf!(long, seq));
     static assert(staticSearchIndexOf!(long, seq) is 2);
     static assert(staticSearchIndexOf!(isIntegral, seq) is 1);
     static assert(staticSearchIndexOf!(isFloatingPoint, seq) is -1);
@@ -540,7 +538,7 @@ template mangleFunc(alias T) if (isCallable!T)
     alias mangleFunc = mangle!(FunctionTypeOf!(T));
 }
 
-pragma(msg, "ib: replace template with functions like sendTrusted");
+pragma(msg, "fixme(ib): replace template with functions like sendTrusted");
 @safe mixin template TrustedConcurrency()
 {
     private
