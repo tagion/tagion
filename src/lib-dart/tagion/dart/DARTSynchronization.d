@@ -102,7 +102,7 @@ class ReadRequestHandler : ResponseHandler
     private
     {
         pragma(msg, "fixme(cbr): Why is this a Document[Buffer], why not just a Recorder? It seems to solve the same problem");
-        Document[Buffer] fp_result;  
+        Document[Buffer] fp_result;
         Buffer[] requested_fp;
         HiRPC hirpc;
         HiRPCReceiver receiver;
