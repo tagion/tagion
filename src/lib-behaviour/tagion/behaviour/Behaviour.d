@@ -102,7 +102,6 @@ unittest {
             "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.swollow_the_card",
     )
         .map!(a => result(a));
-    //   io.writefln("awesome.count = %d", awesome.count);
     assert(awesome.count == 7);
     Document[] results;
     results ~= runner_result.given.infos
