@@ -26,41 +26,50 @@ import tagion.basic.Basic : isOneOf;
 ScenarioGroup run(T)(T scenario) if (isScenario!T) {
     ScenarioGroup scenario_group = getScenarioGroup!T;
     try {
+        // Mixin code to produce the action Given, When, Then, But
         alias memberCode = format!(q{
             // Scenario group      %1$s
-            // Unique propery info %2$s
-            // Info index          %3$d
+            // Action propery info %2$s
+            // Info index (i)      %3$d
             // Test scenario       %4$s
             // Test member         %5$s
-try {
-            %1$s.%2$s.infos[%3$d].result = %4$s.%5$s;
-}
+            try {
+                // Example.
+                // scenario_group.when.info[i].result = scenario.member_function;
+                %1$s.%2$s.infos[%3$d].result = %4$s.%5$s;
+            }
             catch (Exception e) {
-                                %1$s.%2$s.infos[%3$d].result= BehaviourError(e).toDoc;
-    
-}
+                // In case of an exception error the result is set to a BehaviourError
+                // Example.
+                // scemario_group.when.info[i].result = BehaviourError(e).toDoc;
+                %1$s.%2$s.infos[%3$d].result= BehaviourError(e).toDoc;
+            }
         }, string, string, size_t, string, string);
         import std.uni : toLower;
 
         
-
         .check(scenario !is null,
                 format("The constructor must be called for %s before it's runned", T.stringof));
         static foreach (_Property; BehaviourProperties) {
             {
-                alias all_behaviours = getActions!(T, _Property);
-                static if (is(all_behaviours == void)) {
+                alias all_actions = getActions!(T, _Property);
+                static if (is(all_actions == void)) {
                     static assert(!isOneOf!(_Property, MandatoryBehaviourProperties),
                             format("%s is missing a @%s action", T.stringof, _Property.stringof));
                 }
                 else {
-                    static foreach (i, behaviour; all_behaviours) {
+                    // Traverse all the actions the scenario
+                    static foreach (i, behaviour; all_actions) {
                         {
-                            enum group_name = __traits(identifier,
+                            // This action_name is the action of the scenario
+                            // The action is the lower case of Action type (ex. Given is given)
+                            // See the definition of ScenarioGroup
+                            enum action_name = __traits(identifier,
                                         typeof(getProperty!(behaviour))).toLower;
                             enum code = memberCode(
-                                        scenario_group.stringof, group_name, i,
+                                        scenario_group.stringof, action_name, i,
                                         scenario.stringof, __traits(identifier, behaviour));
+                            // The memberCode is used here
                             mixin(code);
                         }
                     }
@@ -232,7 +241,6 @@ auto automation(alias M)() if (isFeature!M) {
                 try {
                     //io.writefln("run %s ", _Scenario.stringof);
                     static if (__traits(compiles, new _Scenario())) {
-                        pragma(msg, "result.scenario ", i, " ", typeof(scenarios[i]), " ", _Scenario);
                         if (scenarios[i] is null) {
                             scenarios[i] = new _Scenario();
                         }
