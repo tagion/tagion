@@ -13,12 +13,6 @@
     - [Case: open file](#case-open-file)
       - [Success](#success-1)
       - [Failure](#failure-1)
-- [outputfile](#outputfile)
-  - [Parameters](#parameters-1)
-  - [Use cases](#use-cases-1)
-    - [Case: convert file](#case-convert-file)
-      - [Success](#success-2)
-      - [Failure](#failure-2)
 - [pretty](#pretty)
   - [Use cases](#use-cases-2)
     - [Case: open file](#case-open-file-1)
@@ -29,22 +23,20 @@
       - [Success case](#success-case-1)
 
 # inputfile
+Takes list of  .json and .hibon files.
 ```
--i  --inputfile
+hibonutil inputfile1.hibon inputfile2.json 
 ```
-Force mark file as readable - help if more command line parameters and need mark file how need to open (support only json/hibon files)
-In case with absent any keys - single path be marked as for read
-```
-hibonutil -i inputfile.hibon
-```
+The `inputfile1.hibon` will be converted to a json output
+and the `inputfile1.json` will be converted into a hibon output.
 ## Parameters
-[--pretty](#pretty) **optional**
-
+[--pretty](#pretty) or
+[--stdout](#stdout) **optional**
 ## Use cases
 
 ###  Case: open file with key
 ```
-hibonutil --inputfile inputfile.hibon
+hibonutil inputfile.hibon
 ```
 #### Success
 **Result**:
@@ -87,47 +79,11 @@ hibonutil inputfile.json
 ```
 #### Success
 **Result**:
-```
-[17, 1, 7, 112, 97, 121, 109, 101, 110, 116, 7, 112, 97, 121, 109, 101, 110, 116]
-```
+produces an output file `inputfile.hibon` in hibon format
+
 #### Failure
 [See](#failure)
 
-# outputfile
-```
--o --outputfile
-```
-Write program out to mirored format file, json->hibon or hibon->json.<br>
-Example of using:
-```
-hibonutil --outputfile outfile.json --inputfile inputfile.hibon
-```
-## Parameters
-[--pretty](#pretty) **optional** Only for JSON out files
-
-## Use cases
-
-###  Case: convert file
-```
-hibonutil --outputfile outfile.json --inputfile inputfile.hibon
-```
-#### Success
-**Result**
-<br>Creating new converted file
-
-#### Failure
-**Result** (wrong file extension)
-```
-File inputfile.txt not valid (only .hibon .json)
-```
-**Result** (absent file)
-```
-File inputfile.hibon not found
-```
-**Result** (can not write out to file)
-```
-outfile.json: No such file or directory
-```
 
 # pretty
 ```
@@ -146,7 +102,8 @@ hibonutil --pretty device.hibon
 ```
 #### Success case
 **Result**:
-<br>Pretty formatted out to console
+Pretty formatted out a file `device.json` or to the console with [-c](#stdout) switch
+
 ```
 {
     "$@": "PIN",
@@ -164,6 +121,11 @@ hibonutil --pretty device.hibon
     ]
 }
 ```
+# stdout
+```
+-c --stdout
+```
+Prints file to the standard output instead a file<br>
 
 #### Failure
 **Result** (wrong file extension)
@@ -181,7 +143,7 @@ Dump of wrong data structures or JSON parsing error [see](#failure)
 ```
 --version
 ```
-Show actual ersion of util.<br>
+
 Example of using:
 ```
 hibonutil --version
