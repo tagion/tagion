@@ -267,14 +267,11 @@ class ConnectionPoolBridge
 
     void removeConnection(ulong connectionId)
     {
-        //        log("CPB::REMOVING CONNECTION \n lookup: %s", lookup);
         foreach (key, val; lookup)
         {
             if (val == connectionId)
             {
-                //              log("CPB::REMOVING KEY: connection id: %s as pk: %s", val, key.cutHex);
                 lookup.remove(key);
-                // break;
             }
         }
     }
@@ -359,18 +356,14 @@ class StdP2pNet : P2pNet
     void send(const Pubkey channel, const(HiRPC.Sender) sender)
     {
         alias tsend = concurrency.send;
-        // auto internal_sender = locate(internal_task_name);
-        log("send called %s", channel.cutHex);
         if (sender_tid !is Tid.init)
         {
             counter++;
-            //            log("sending to sender %s", internal_sender);
-            auto t = sender.toDoc;
             assumeTrusted!({ tsend(sender_tid, channel, sender.toDoc, counter); });
         }
         else
         {
-            log.warning("sender not found");
+            log.warning("Sender not found");
         }
     }
 
@@ -412,7 +405,7 @@ static void async_send(
         auto connectionPool = new shared ConnectionPool!(shared p2plib.StreamI, ulong)();
         auto connectionPoolBridge = new ConnectionPoolBridge();
 
-        log("start listening");
+        log("Start listening %s", task_name);
         node.listen(
             task_name,
             &StdHandlerCallback,
@@ -422,16 +415,13 @@ static void async_send(
 
         scope (exit)
         {
-            log("close listener");
+            log("Close listener %s", task_name);
             node.closeListener(task_name);
         }
 
         void send_to_channel(immutable(Pubkey) channel, Document doc)
         {
-
-            log("sending to: %s TIME: %s", channel.cutHex, Clock.currTime().toUTC());
-            // auto streamIdPtr = channel in connectionPoolBridge.lookup;
-            // auto streamId = streamIdPtr is null ? 0 : *streamIdPtr;
+            log.trace("Sending to channel: %s", channel.cutHex);
             auto streamId = connectionPoolBridge[channel];
             if (streamId == 0 || !connectionPool.contains(streamId))
             {
@@ -455,11 +445,11 @@ static void async_send(
 
             try
             {
-                log("send to:%d", streamId);
-                auto sended = connectionPool.send(streamId, doc.serialize);
-                if (!sended)
+                log("Send to: %d", streamId);
+                auto is_sent = connectionPool.send(streamId, doc.serialize);
+                if (!is_sent)
                 {
-                    log("\n\n\n not sended \n\n\n");
+                    log.warning("Sending to %d failed", streamId);
                 }
             }
             catch (Exception e)
@@ -472,35 +462,34 @@ static void async_send(
         auto stop = false;
         do
         {
-            log("handling %s", thisTid);
             concurrency.receive(
                 (const(Pubkey) channel, const(Document) doc, uint id) {
-                log("received sender %d %s", id, channel.cutHex);
+                log.trace("Received sender %d %s", id, channel.cutHex);
                 try
                 {
                     send_to_channel(channel, doc);
                 }
                 catch (Exception e)
                 {
-                    log("Error on sending to channel: %s", e.msg);
+                    log.warning("Error on sending to channel: %s", e);
                     concurrency.send(concurrency.ownerTid, channel);
                 }
             },
                 (Pubkey channel, uint id) {
-                log("Closing connection: %s", channel.cutHex);
+                log("Closing connection: channel %s", channel.cutHex);
                 try
                 {
                     const streamId = connectionPoolBridge[channel];
                     if (streamId !is 0)
                     {
-                        log("connection to close: %d", streamId);
+                        log("Closing connection: streamId %d", streamId);
                         connectionPool.close(streamId);
                         connectionPoolBridge.remove(channel);
                     }
                 }
                 catch (Exception e)
                 {
-                    log("SDERROR: %s", e.msg);
+                    log.warning("Exception caught: %s", e);
                 }
             },
 
@@ -525,14 +514,14 @@ static void async_send(
                 const streamId = connectionPoolBridge[received_pubkey];
                 if (streamId)
                 {
-                    log("previous cpb: %d, now: %d",
+                    log.trace("Previous cpb: %d, now: %d",
                         connectionPoolBridge[received_pubkey], resp.stream.identifier);
                 }
                 else
                 {
                     connectionPoolBridge[received_pubkey] = resp.stream.identifier;
                 }
-                log("received in: %s", resp.stream.identifier);
+                log.trace("Received in: %s", resp.stream.identifier);
                 concurrency.send(concurrency.ownerTid, receiver.toDoc);
             },
                 (Control control) {
@@ -587,7 +576,6 @@ class P2pGossipNet : StdP2pNet, GossipNet
 
     bool isValidChannel(const(Pubkey) channel) const nothrow
     {
-        //        log.trace("channel %s %s isActive %s", channel.cutHex, channel != mypk,addressbook.isActive(channel));
         return addressbook.isActive(channel);
     }
 
@@ -600,10 +588,7 @@ class P2pGossipNet : StdP2pNet, GossipNet
         foreach (count; 0 .. active_nodes * 2)
         {
             const node_index = uniform(0, active_nodes, random);
-            log("selected index: %d %d", node_index, active_nodes);
             const send_channel = addressbook.selectActiveChannel(node_index);
-            // log("trying to select: %s, valid?: %s", send_channel.cutHex, channel_filter(
-            //         send_channel));
             if ((send_channel != mypk) && channel_filter(send_channel))
             {
                 return send_channel;

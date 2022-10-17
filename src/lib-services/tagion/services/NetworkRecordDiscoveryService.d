@@ -47,7 +47,7 @@ void networkRecordDiscoveryService(
 
         scope (exit)
         {
-            log("exit");
+            log("Stop");
             ownerTid.prioritySend(Control.END);
         }
         log.register(task_name);
@@ -102,19 +102,17 @@ void networkRecordDiscoveryService(
         while (!stop)
         {
             receive(
-                //&receiveAddrBook,
                 (DiscoveryRequestCommand request) {
-                log("send request: %s", request);
+                log("Send request: %s", request);
                 bootstrap_tid.send(request);
             },
                 (DiscoveryControl state) {
-                log.trace("state %s", state);
+                log.trace("State %s", state);
                 ownerTid.send(state);
             },
                 (Control control) {
                 if (control is Control.STOP)
                 {
-                    log("stop");
                     stop = true;
                 }
             });

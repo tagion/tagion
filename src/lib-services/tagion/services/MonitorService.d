@@ -40,35 +40,31 @@ void monitorServiceTask(immutable(Options) opts) nothrow
 
         scope (exit)
         {
-            log("In exit of soc. port=%d th", opts.monitor.port);
+            log.trace("In exit of soc.port=%d th", opts.monitor.port);
             listener_socket.stop;
 
             version (none)
                 if (listener_socket_thread !is null)
                 {
-                    //  listener_socket.close;
                     listener_socket.stop;
 
-                    log("Kill listener socket. %d", opts.monitor.port);
+                    log.trace("Kill listener socket. %d", opts.monitor.port);
                     //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
-                    //            if ( ldo.active ) {
+
                     auto ping = new TcpSocket(new InternetAddress(opts.url, opts.monitor.port));
-                    //                receive( &handleClient);
+
                     writefln("Pause for %d to close", opts.monitor.port);
                     Thread.sleep(500.msecs);
-                    // run_listener = false;
-                    log("run_listerner %s %s", listener_socket.active, opts.monitor.port);
-                    //            }
+
+                    log.trace("Run listerner %s %s", listener_socket.active, opts.monitor.port);
+
                     writefln("Wait for %d to close", opts.monitor.port);
                     listener_socket_thread.join();
-                    //          ping.close;
-                    //            listener_socket.close;
 
-                    log("Thread joined %d", opts.monitor.port);
+                    log.trace("Thread joined %d", opts.monitor.port);
                 }
         }
 
-        // try{
         bool stop;
         void handleState(Control ts)
         {
@@ -96,29 +92,8 @@ void monitorServiceTask(immutable(Options) opts) nothrow
                 &handleState, (string json) { listener_socket.broadcast(json); }, (
                     immutable(ubyte)[] hibon_bytes) {
                 listener_socket.broadcast(hibon_bytes);
-            }, (Document doc) { listener_socket.broadcast(doc); }, &taskfailure // (immutable(TagionException) e) {
-                //     // log.error(e.msg);
-                //     stop=true;
-                //     ownerTid.send(e);
-                //     //throw e;
-                // },
-                // (immutable(Exception) e) {
-                //     // log.fatal(e.msg);
-                //     stop=true;
-                //     ownerTid.send(e);
-                //     //throw e;
-                // },
-                // (immutable(Throwable) t) {
-                //     // log.fatal(t.msg);
-                //     stop=true;
-                //     ownerTid.send(t);
-                //     // throw t;
-                // }
-
-            
-
+            }, (Document doc) { listener_socket.broadcast(doc); }, &taskfailure
             );
-            //        log("Running");
         }
     }
     catch (Throwable t)

@@ -52,9 +52,7 @@ void tagionFactoryService(Options opts) nothrow
             final switch (opts.net_mode)
             {
             case internal:
-                //    if (opts.net_mode == NetworkMode.internal) {
                 Options[] node_opts;
-                log("in ineternal");
                 import std.array : replace;
                 import std.string : indexOf;
                 import std.file : mkdir, exists;
@@ -126,9 +124,6 @@ void tagionFactoryService(Options opts) nothrow
                     {
                         service_options.monitor.port = get_port(opts.monitor.port);
                     }
-                    // if ( (opts.transaction.port >= opts.min_port) && ((opts.transaction.max == 0) || (i < opts.transaction.max)) ) {
-                    //     service_options.transaction.port=cast(ushort)(opts.transaction.port + i);
-                    // }
                     if ((opts.transaction.service.port >= opts.min_port)
                         && ((opts.transaction.max == 0) || (i < opts.transaction.max)))
                     {
@@ -139,7 +134,7 @@ void tagionFactoryService(Options opts) nothrow
                     service_options.node_name = i.get_node_name;
                     node_opts ~= service_options;
                 }
-                log("options configurated");
+                log.trace("Options configurated");
                 Pubkey[] pkeys;
                 foreach (node_opt; node_opts)
                 {
@@ -158,14 +153,10 @@ void tagionFactoryService(Options opts) nothrow
                 }
                 break;
             case local:
-                // }
-                // else if (opts.net_mode == NetworkMode.local) {
                 opts.node_name = "local-tagion";
                 tids ~= spawn(&tagionService, opts.net_mode, opts);
                 break;
             case pub:
-                // }
-                // else if (opts.net_mode == NetworkMode.pub) {
                 opts.node_name = "public-tagion";
                 tids ~= spawn(&tagionService, opts.net_mode, opts);
                 break;
@@ -190,14 +181,12 @@ void tagionFactoryService(Options opts) nothrow
 
         bool stop;
         log("Start the heart beat");
-        uint node_id;
         uint time = opts.delay;
         Random!uint rand;
         rand.seed(opts.seed);
         ownerTid.send(Control.LIVE);
         while (!stop && !abort)
         {
-            //            Thread.sleep(opts.delay.msecs);
             immutable message_received = receiveTimeout(
                 opts.delay.msecs,
                 (Control ctrl) {

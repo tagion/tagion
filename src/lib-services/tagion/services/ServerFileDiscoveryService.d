@@ -58,7 +58,7 @@ void serverFileDiscoveryService(
     {
         scope (success)
         {
-            log("exit");
+            log("Stop");
             ownerTid.prioritySend(Control.END);
         }
 
@@ -81,7 +81,7 @@ void serverFileDiscoveryService(
             params["address"] = addrs;
             auto doc = Document(params.serialize);
             auto json = doc.toJSON().toString();
-            log("posting info to %s \n %s", opts.serverFileDiscovery.url ~ "/node/record", json);
+            log("Posting info to %s \n %s", opts.serverFileDiscovery.url ~ "/node/record", json);
             try
             {
                 post(opts.serverFileDiscovery.url ~ "/node/record",
@@ -91,14 +91,13 @@ void serverFileDiscoveryService(
             }
             catch (TagionException e)
             {
-                log("ERROR on sending: %s", e.msg);
                 fatal(e);
             }
         }
 
         void eraseOwnInfo()
         {
-            log("posting info to %s", opts.serverFileDiscovery.url ~ "/node/erase");
+            log("Posting info to %s", opts.serverFileDiscovery.url ~ "/node/erase");
             post(opts.serverFileDiscovery.url ~ "/node/erase",
                 [
                     "value": (cast(string) pubkey),
@@ -139,7 +138,6 @@ void serverFileDiscoveryService(
                         node_addresses[pkey] = node_addr;
                     }
                 }
-                log("initialized %d", node_addresses.length);
             }
             catch (Exception e)
             {
@@ -214,12 +212,11 @@ void serverFileDiscoveryService(
             receiveTimeout(500.msecs, (immutable(Pubkey) key, Tid tid) {
                 import tagion.utils.Miscellaneous : toHexString, cutHex;
 
-                log("looking for key: %s", key.cutHex);
+                log.trace("Looking for key: %s", key.cutHex);
                 tid.send(node_addresses[key]);
             }, (Control control) {
                 if (control == Control.STOP)
                 {
-                    log("stop");
                     stop = true;
                 }
             }, (string updated_address) {
@@ -277,7 +274,7 @@ void handleAddrChanedEvent(shared p2plib.Node node) nothrow
         ownerTid.send(Control.LIVE);
         scope (exit)
         {
-            log("stop");
+            log("Stop");
             ownerTid.prioritySend(Control.END);
         }
         auto stop = false;
@@ -294,7 +291,6 @@ void handleAddrChanedEvent(shared p2plib.Node node) nothrow
             }, (Control control) {
                 if (control == Control.STOP)
                 {
-                    log("stop");
                     stop = true;
                 }
             });
@@ -303,7 +299,6 @@ void handleAddrChanedEvent(shared p2plib.Node node) nothrow
     }
     catch (Throwable t)
     {
-        log("ERROR: %s", t.msg);
         fatal(t);
     }
 
@@ -318,7 +313,7 @@ void handleRechabilityChanged(shared p2plib.Node node) nothrow
         ownerTid.send(Control.LIVE);
         scope (exit)
         {
-            log("stop");
+            log("Stop");
             ownerTid.prioritySend(Control.END);
         }
         auto stop = false;
@@ -336,7 +331,6 @@ void handleRechabilityChanged(shared p2plib.Node node) nothrow
             }, (Control control) {
                 if (control == Control.STOP)
                 {
-                    log("stop");
                     stop = true;
                 }
             });
@@ -345,7 +339,6 @@ void handleRechabilityChanged(shared p2plib.Node node) nothrow
     }
     catch (Throwable t)
     {
-        log("ERROR: %s", t.msg);
         fatal(t);
     }
 }
