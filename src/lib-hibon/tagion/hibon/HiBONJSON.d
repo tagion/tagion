@@ -434,7 +434,7 @@ mixin template JSONString()
 
             
 
-            .check((label in labelMap) !is null, "HiBON type name '%s' is not valid", label);
+            .check((label in labelMap) !is null, format("HiBON type name '%s' is not valid", label));
             immutable type = labelMap[label];
 
             with (Type)

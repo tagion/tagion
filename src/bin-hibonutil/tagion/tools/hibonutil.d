@@ -37,6 +37,16 @@ const(BOMSeq) getBOM(string str) @trusted {
     return _getBOM(cast(ubyte[]) str);
 }
 
+static bool verbose;
+void printError(const Exception e) {
+    if (verbose) {
+        stderr.writefln("%s", e);
+        return;
+    }
+    stderr.writeln(e.msg);
+
+}
+
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
@@ -45,6 +55,7 @@ int _main(string[] args) {
     bool standard_output;
     //    string outputfilename;
     bool pretty;
+    // bool verbose;
     auto logo = import("logo.txt");
 
     GetoptResult main_args;
@@ -52,10 +63,10 @@ int _main(string[] args) {
         main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
-                "version", "display the version", &version_switch,//          "inputfile|i", "Sets the HiBON input file name", &inputfilename,
-                //          "outputfile|o", "Sets the output file name", &outputfilename,
+                "version", "display the version", &version_switch,
                 "c|stdout", "Print to standard output", &standard_output,
                 "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
+                "v|verbose", "Print more debug information", &verbose,
         );
     }
     catch (std.getopt.GetOptException e) {
@@ -93,11 +104,11 @@ int _main(string[] args) {
         return 1;
     }
 
-    foreach (inputfilename; args[1..$]) {
-            if (!inputfilename.exists) {
-                stderr.writefln("Error: file %s does not exist", inputfilename);
-                return 1;
-            }
+    foreach (inputfilename; args[1 .. $]) {
+        if (!inputfilename.exists) {
+            stderr.writefln("Error: file %s does not exist", inputfilename);
+            return 1;
+        }
         switch (inputfilename.fileExtension) {
         case FileExtension.hibon:
             immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
@@ -127,7 +138,7 @@ int _main(string[] args) {
                 text = inputfilename.readText;
             }
             catch (Exception e) {
-                stderr.writeln(e.msg);
+                printError(e);
                 return 1;
             }
             const bom = getBOM(text);
@@ -146,16 +157,17 @@ int _main(string[] args) {
             HiBON hibon;
             try {
                 auto parse = text.parseJSON;
+                writefln("%s", text);
                 hibon = parse.toHiBON;
             }
             catch (HiBON2JSONException e) {
                 stderr.writefln("Error: HiBON-JSON format in the %s file", inputfilename);
-                stderr.writeln(e.msg);
+                printError(e);
                 return 1;
             }
             catch (JSONException e) {
                 stderr.writeln("Error: JSON syntax");
-                stderr.writeln(e.msg);
+                printError(e);
                 return 1;
             }
             catch (Exception e) {
@@ -175,7 +187,7 @@ int _main(string[] args) {
                     }
                 }
                 catch (Exception e) {
-                    writeln(e.msg);
+                    printError(e);
                     return 1;
                 }
             }
