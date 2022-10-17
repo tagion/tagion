@@ -10,10 +10,12 @@ import std.algorithm.mutation : remove;
 import tagion.basic.Types : Control;
 import tagion.basic.Basic : TrustedConcurrency;
 import tagion.logger.Logger;
+import tagion.logger.LogRecords : LogFilter, LogFilterArray, LogFiltersAction, LogInfo;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
-import tagion.services.RecorderService : Fingerprint;
+import tagion.utils.Fingerprint : Fingerprint;
 import tagion.services.LoggerService;
 import tagion.dart.Recorder;
+import tagion.hibon.Document : Document;
 
 alias Recorder = RecordFactory.Recorder;
 
@@ -178,6 +180,7 @@ unittest
         {
             register(task_name, thisTid);
             log.set_logger_task(task_name);
+            writeln("Register: ", task_name);
         }
         else
         {

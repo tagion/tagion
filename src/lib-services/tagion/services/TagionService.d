@@ -66,6 +66,7 @@ import tagion.services.NetworkRecordDiscoveryService;
 //mport tagion.gossip.P2pGossipNet: AddressBook;
 import tagion.services.DARTService;
 import tagion.gossip.AddressBook : addressbook;
+import tagion.script.StandardRecords;
 
 //import tagion.Keywords : NetworkMode;
 
@@ -74,6 +75,7 @@ import tagion.gossip.AddressBook : addressbook;
 //import std.string : indexOf;
 //import std.file : mkdir, exists;
 import std.format;
+import std.datetime.systime;
 
 shared(p2plib.Node) initialize_node(immutable Options opts)
 {
@@ -116,10 +118,13 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 {
     try
     {
+        /** last epoch timestamp */
+        long epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
         log.register(opts.node_name);
         setOptions(opts);
         bool stop;
-        int count_down = opts.epoch_limit;
+        uint count_transactions;
+        uint epoch_num;
         scope (success)
         {
             log.close;
@@ -142,7 +147,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 
         import std.format;
 
-        auto sector_range = DART.SectorRange(opts.dart.from_ang, opts.dart.to_ang);
+        auto sector_range = DART.SectorRange(0, 0);
         shared(p2plib.Node) p2pnode;
 
         auto master_net = new StdSecureNet;
@@ -206,21 +211,20 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             import tagion.hibon.HiBONJSON;
 
             HiBON params = new HiBON;
-            //            pragma(msg, "fixme(cbr): epoch_time has not beed added to the epoch");
-            foreach (i, payload; events.map!((e) => e.event_body.payload).array)
-            {
-                params[i] = payload;
-            }
-            log("Produced epoch count down  %d", count_down);
+
+            params = events
+                .filter!((e) => !e.event_body.payload.empty)
+                .map!((e) => e.event_body.payload);
+
             transcript_tid.send(params.serialize);
-            if (count_down > 0)
+            epoch_num++;
+            count_transactions = 0;
+            epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
+
+            if (epoch_num >= opts.epoch_limit)
             {
-                count_down--;
-                if (count_down <= 0)
-                {
-                    auto main_tid = locate(main_task);
-                    main_tid.send(Control.STOP);
-                }
+                auto main_tid = locate(main_task);
+                main_tid.send(Control.STOP);
             }
         }
 
@@ -381,11 +385,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             opts);
         assert(receiveOnly!Control is Control.LIVE);
 
-        enum max_gossip = 2;
-        uint gossip_count = max_gossip;
-        enum timeout_end = 10;
-        uint timeout_count;
-
         {
             immutable buf = cast(Buffer) hashgraph.channel;
             const nonce = net.calcHash(buf);
@@ -403,6 +402,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 
         void receive_payload(Document pload, bool flag)
         { //TODO: remove flag. Maybe try switch(doc.type)
+            count_transactions++;
             log.trace("payload.size=%d", pload.size);
             payload_queue.write(pload);
         }
@@ -438,7 +438,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 
         void receive_wavefront(const Document doc)
         {
-            timeout_count = 0;
             log("\n*\n*\n*\n******* receive %s %s", opts.node_name,
                 doc.data.length);
             const receiver = HiRPC.Receiver(doc);
@@ -490,11 +489,11 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 (string respond_task_name, Buffer data) {
                 import tagion.hibon.HiBONJSON;
 
+                /** document for receive request */
                 const doc = Document(data);
                 const receiver = empty_hirpc.receive(doc);
-                auto respond = new HiBON();
-                respond["rounds"] = hashgraph.rounds.length;
-                respond["inGraph"] = hashgraph.areWeInGraph;
+                auto respond = HealthcheckParams(hashgraph.rounds.length, epoch_timestamp, count_transactions, epoch_num, hashgraph
+                    .areWeInGraph);
                 auto response = empty_hirpc.result(receiver, respond);
                 log("Healthcheck: %s", response.toDoc.toJSON);
                 locate(respond_task_name).send(response.toDoc.serialize);

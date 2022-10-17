@@ -1312,9 +1312,9 @@ class HashGraph
         import std.conv;
         import std.datetime;
         import tagion.hibon.HiBONJSON;
-        import tagion.logger.Logger : log, LoggerType;
+        import tagion.logger.Logger : log, LogLevel;
 
-        log.push(LoggerType.NONE);
+        log.push(LogLevel.NONE);
 
         enum NodeLabel
         {

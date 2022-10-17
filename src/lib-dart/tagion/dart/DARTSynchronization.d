@@ -349,7 +349,6 @@ class P2pSynchronizationFactory : SynchronizationFactory
                 const stream_id = connect;
                 auto filename = format("%s_%s", tempfile, sector);
                 pragma(msg, "fixme(alex): Why 0x80");
-                enum BLOCK_SIZE = 0x80;
                 BlockFile.create(filename, DART.stringof, BLOCK_SIZE);
                 auto sync = new P2pSynchronizer(filename, stream_id, oncomplete, onfailure);
                 auto db_sync = dart.synchronizer(sync, sector);
@@ -383,14 +382,6 @@ class P2pSynchronizationFactory : SynchronizationFactory
                 const node_port = node_addr.value.port;
                 if (node_addr.key == pkey)
                     continue;
-                if (dart_opts.master_from_port)
-                {
-                    enum isSlave = (ulong port) => port < dart_opts.sync.maxSlavePort;
-                    if (isSlave(own_port) && isSlave(node_port))
-                        continue; //ignore slave nodes
-                    if (!isSlave(own_port) && !isSlave(node_port))
-                        continue; //ignore master nodes
-                }
                 auto response = syncWith(node_addr.value);
                 if (response[1] is null)
                     continue;
@@ -566,7 +557,6 @@ version (none) unittest
     Options opts;
     setDefaultOption(opts);
     dart_opts.sync.host.timeout = 50;
-    dart_opts.sync.master_angle_from_port = false;
 
     NodeAddress[string] address_table;
     auto addr1 = NodeAddress();
@@ -861,7 +851,7 @@ unittest
 {
     import std.algorithm : count;
 
-    log.push(LoggerType.ALL);
+    log.push(LogLevel.ALL);
 
     @safe
     static class FakeResponseHandler : ResponseHandler
@@ -939,7 +929,6 @@ unittest
     DARTOptions dart_opts;
     //    setDefaultOption(opts);
     dart_opts.sync.host.timeout = 50;
-    dart_opts.sync.master_angle_from_port = false;
     void emptyFunc(string jf)
     {
         return;

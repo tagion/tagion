@@ -489,7 +489,7 @@ class SSLFiberService
                 }
                 yield;
             }
-            log("message readed: %d %s", buffer.length, buffer);
+            log("message read: %d %s", buffer.length, buffer);
             // Document doc = Document(cast(immutable)buffer);
             // log("Received log %d ", doc.serialize.length);
             return buffer.idup;

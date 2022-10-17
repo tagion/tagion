@@ -80,8 +80,7 @@ void dartServiceTask(Net : SecureNet)(
             }
         }
 
-        const is_active_node = (!opts.dart.master_from_port)
-            || opts.port == opts.dart.subs.master_port;
+        const is_active_node = opts.port == opts.dart.subs.master_port;
         Tid subscribe_handler_tid;
         if (is_active_node)
         {
