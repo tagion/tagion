@@ -189,7 +189,6 @@ int main(string[] args) {
     bool version_switch;
     /** flag for overwrite config file */
     bool overwrite_switch;
-    string importfile;
 
     if (config_file.exists) {
         options.load(config_file);
