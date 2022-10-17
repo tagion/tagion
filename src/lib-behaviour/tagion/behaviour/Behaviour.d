@@ -12,6 +12,7 @@ import std.algorithm.searching : any, all;
 import std.exception : assumeWontThrow;
 
 import tagion.behaviour.BehaviourException;
+import tagion.behaviour.BehaviourResult;
 import tagion.basic.Types : FileExtension;
 import tagion.hibon.HiBONRecord;
 import tagion.basic.Basic : isOneOf;
@@ -42,6 +43,7 @@ try {
         import std.uni : toLower;
 
         
+
         .check(scenario !is null,
                 format("The constructor must be called for %s before it's runned", T.stringof));
         static foreach (_Property; BehaviourProperties) {
@@ -72,18 +74,6 @@ try {
     }
     return scenario_group;
 }
-
-@safe
-struct ResultBool {
-    bool end;
-    mixin HiBONRecord!(q{
-            this(bool flag) {
-                end=flag;
-            }
-        });
-}
-
-static Document result_ok = result(ResultBool(true)).toDoc;
 
 ///Examples: How use the rub fuction on a feature
 @safe
@@ -232,8 +222,6 @@ auto automation(alias M)() if (isFeature!M) {
         }
 
         FeatureGroup run() nothrow {
-            import tagion.behaviour.BehaviourException : BehaviourError;
-
             uint error_count;
             FeatureGroup result;
             result.info.property = obtainFeature!M;
