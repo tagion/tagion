@@ -46,11 +46,8 @@ help-bdd:
 
 help: help-bdd
 
-# del hibon filse
 clean-bddtest:
 	$(PRECMD)
-	rm bdd/tagion/testbench/*.d
-	rm bdd/tagion/testbench/*.gen.md
 
 .PHONY: help-bdd
 
