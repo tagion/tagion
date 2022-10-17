@@ -48,13 +48,14 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
         import std.uni : toLower;
 
         
+
         .check(scenario !is null,
                 format("The constructor must be called for %s before it's runned", T.stringof));
-        static foreach (_Property; BehaviourProperties) {
+        static foreach (_Property; ActionProperties) {
             {
                 alias all_actions = getActions!(T, _Property);
                 static if (is(all_actions == void)) {
-                    static assert(!isOneOf!(_Property, MandatoryBehaviourProperties),
+                    static assert(!isOneOf!(_Property, MandatoryActionProperties),
                             format("%s is missing a @%s action", T.stringof, _Property.stringof));
                 }
                 else {
@@ -127,7 +128,7 @@ ScenarioGroup getScenarioGroup(T)() if (isScenario!T) {
     ScenarioGroup scenario_group;
     scenario_group.info.property = getScenario!T;
     scenario_group.info.name = T.stringof;
-    static foreach (_Property; BehaviourProperties) {
+    static foreach (_Property; ActionProperties) {
         {
             alias behaviours = getActions!(T, _Property);
             static if (!is(behaviours == void)) {
@@ -220,13 +221,7 @@ auto automation(alias M)() if (isFeature!M) {
         mixin ScenarioTuple!(M, "ScenariosT");
         ScenariosT scenarios;
         void opDispatch(string scenario_name, Args...)(Args args) {
-            enum code_1 = format(q{alias Scenario=typeof(ScenariosT.%1$s);}, scenario_name);
-            // pragma(msg, "code_1 ", code_1);
-            mixin(code_1);
-            alias PickCtorParams = ParameterTypeTuple!(
-                    __traits(getOverloads, Scenario, "__ctor")[0]);
             enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
-            // pragma(msg, code);
             mixin(code);
         }
 
@@ -239,7 +234,6 @@ auto automation(alias M)() if (isFeature!M) {
             result.scenarios.length = ScenariosSeq.length;
             static foreach (i, _Scenario; ScenariosSeq) {
                 try {
-                    //io.writefln("run %s ", _Scenario.stringof);
                     static if (__traits(compiles, new _Scenario())) {
                         if (scenarios[i] is null) {
                             scenarios[i] = new _Scenario();
@@ -397,7 +391,8 @@ unittest {
 
     { // None of the scenario passes
         const feature_result = feature_with_ctor.run;
-        "/tmp/bdd_sample_has_failed.hibon".fwrite(feature_result);
+        version (none)
+            "/tmp/bdd_sample_has_failed.hibon".fwrite(feature_result);
         assert(!feature_result.scenarios[0].hasPassed);
         assert(!feature_result.scenarios[1].hasPassed);
         assert(!feature_result.hasPassed);
@@ -406,10 +401,8 @@ unittest {
     { // One of the scenario passed
         WithCtor.pass_one = true;
         const feature_result = feature_with_ctor.run;
-        "/tmp/bdd_sample_one_has_passed.hibon".fwrite(feature_result);
-        io.writefln("feature_result.scenarios[0].hasPassed=%s", feature_result.scenarios[0].hasPassed);
-        io.writefln("feature_result.scenarios[1].hasPassed=%s", feature_result.scenarios[1].hasPassed);
-        io.writefln("feature_result.hasPassed=%s", feature_result.hasPassed);
+        version (none)
+            "/tmp/bdd_sample_one_has_passed.hibon".fwrite(feature_result);
         assert(!feature_result.scenarios[0].hasPassed);
         assert(feature_result.scenarios[1].hasPassed);
         assert(!feature_result.hasPassed);
@@ -419,10 +412,8 @@ unittest {
         WithCtor.pass_some = true;
         WithCtor.pass_one = false;
         const feature_result = feature_with_ctor.run;
-        io.writefln("feature_result.scenarios[0].hasPassed=%s", feature_result.scenarios[0].hasPassed);
-        io.writefln("feature_result.scenarios[1].hasPassed=%s", feature_result.scenarios[1].hasPassed);
-        io.writefln("feature_result.hasPassed=%s", feature_result.hasPassed);
-        "/tmp/bdd_sample_some_actions_has_passed.hibon".fwrite(feature_result);
+        version (none)
+            "/tmp/bdd_sample_some_actions_has_passed.hibon".fwrite(feature_result);
         assert(!feature_result.scenarios[0].hasPassed);
         assert(!feature_result.scenarios[1].hasPassed);
         assert(!feature_result.hasPassed);
@@ -433,17 +424,15 @@ unittest {
         WithCtor.pass_some = false;
 
         const feature_result = feature_with_ctor.run;
-        "/tmp/bdd_sample_has_passed.hibon".fwrite(feature_result);
+        version (none)
+            "/tmp/bdd_sample_has_passed.hibon".fwrite(feature_result);
         assert(feature_result.scenarios[0].hasPassed);
         assert(feature_result.scenarios[1].hasPassed);
-        //io.writefln("feature_result =%s", feature_result.toPretty);
     }
 }
 
 version (unittest) {
     import tagion.hibon.Document;
     import tagion.hibon.HiBONRecord;
-
-    import io = std.stdio;
     import tagion.hibon.HiBONJSON;
 }
