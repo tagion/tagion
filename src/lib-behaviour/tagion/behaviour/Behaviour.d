@@ -152,7 +152,6 @@ ScenarioGroup getScenarioGroup(T)() if (isScenario!T) {
 
 @safe
 FeatureGroup getFeature(alias M)() if (isFeature!M) {
-    //    import std.stdio;
     FeatureGroup result;
     result.info.property = obtainFeature!M;
     result.info.name = moduleName!M;
@@ -163,6 +162,7 @@ FeatureGroup getFeature(alias M)() if (isFeature!M) {
     }
     return result;
 }
+
 ///Examples: How to use getFeature on a feature
 @safe
 unittest { //
