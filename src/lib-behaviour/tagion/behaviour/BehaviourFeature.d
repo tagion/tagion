@@ -5,7 +5,7 @@
 module tagion.behaviour.BehaviourFeature;
 
 import std.traits;
-import std.meta;
+import std.meta : AliasSeq, Filter, aliasSeqOf, ApplyLeft, ApplyRight, allSatisfy, anySatisfy, Alias, Erase, aliasSeqOf;
 import std.format;
 import std.typecons;
 import tagion.basic.Basic : isOneOf, staticSearchIndexOf;

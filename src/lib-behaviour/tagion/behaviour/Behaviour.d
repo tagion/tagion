@@ -82,7 +82,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
     return scenario_group;
 }
 
-///Examples: How use the rub fuction on a feature
+///Examples: How use the run function on a feature
 @safe
 unittest {
     import std.algorithm.iteration : map;
@@ -91,7 +91,7 @@ unittest {
     import tagion.behaviour.BehaviourUnittest;
 
     auto awesome = new Some_awesome_feature;
-    const runner_result = run(awesome);
+    const runner_result = run(awesome); // Executes all the actions in the Scenario
     auto expected = only(
             "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_valid",
             "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.in_credit",
@@ -102,7 +102,8 @@ unittest {
             "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.swollow_the_card",
     )
         .map!(a => result(a));
-    assert(awesome.count == 7);
+    assert(awesome.count == 7); // Checks that all the scenarios has been executed
+    
     Document[] results;
     results ~= runner_result.given.infos
         .map!(info => info.result)
@@ -116,6 +117,7 @@ unittest {
     results ~= runner_result.but.infos
         .map!(info => info.result)
         .array;
+    // Checks that the results for all scenarios are correct 
     assert(equal(results, expected));
 }
 
@@ -147,6 +149,14 @@ ScenarioGroup getScenarioGroup(T)() if (isScenario!T) {
     return scenario_group;
 }
 
+/**
+ * 
+ * Params:
+ *   M = is the Feature module contaning a list of Scenario's 
+ * Returns: 
+ *   a FeatureGroup contaning the information about the feature
+ *   and also a list of all the ScenarioGroup's in the feature.
+ */
 @safe
 FeatureGroup getFeature(alias M)() if (isFeature!M) {
     FeatureGroup result;
