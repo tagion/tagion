@@ -41,21 +41,12 @@ int main(string[] args)
 
     string inputfilename;
     string outputfilename;
-    //    StandardBill bill;
-    // bool binary;
-
-    //    string passphrase="verysecret";
-    // ulong value=1000_000_000;
     bool print;
     bool inject_gas;
     bool verbose_switch;
-    //    WasmVerbose verbose_mode;
     string[] modify_from;
     string[] modify_to;
 
-    //    bill.toHiBON;
-
-    //   pragma(msg, "bill_type ", GetLabel!(StandardBill.bill_type));
     auto main_args = getopt(args,
         std.getopt.config.caseSensitive,
         std.getopt.config.bundling,
@@ -70,9 +61,6 @@ int main(string[] args)
         "print|p", format("Print the wasm as wast: %s", print), &print,
     );
 
-    // writefln("%s", modify_from);
-    // writefln("%s", modify_to);
-    // return 0;
     void help()
     {
         defaultGetoptPrinter(

@@ -61,7 +61,6 @@ void tagionFactoryService(Options opts) nothrow
 
                 foreach (ushort i; 0 .. opts.nodes)
                 {
-                    pragma(msg, "foreach (i; 0 .. opts.nodes) ", typeof(i), "  ", typeof(opts.nodes));
                     string new_task_name(string task_name)
                     {
                         import std.format;

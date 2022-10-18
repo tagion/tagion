@@ -1649,7 +1649,6 @@ class BlockFile
         //
 
         { //write_blocks_in_sorted_order
-            pragma(msg, "Block ", Block);
             auto sorted_indices = blocks.keys.dup.sort;
             sorted_indices.each!(index => write(index, blocks[index]));
         }
