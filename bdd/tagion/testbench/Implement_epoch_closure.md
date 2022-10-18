@@ -1,2 +1,0 @@
-Feature: Implement epoch closure.
-
