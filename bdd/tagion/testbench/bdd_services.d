@@ -1,5 +1,6 @@
-/// \file behaviour_test.d
-module tagion.tools.behaviour_test;
+module tagion.testbench.bdd_services;
+
+import tangion.testbench.services;
 
 import tagion.behaviour.Behaviour;
 import tagion.hibon.HiBONRecord : fwrite;
