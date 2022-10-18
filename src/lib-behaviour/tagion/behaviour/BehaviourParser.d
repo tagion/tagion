@@ -17,7 +17,7 @@ import std.conv : to;
 
 import tagion.hibon.HiBONRecord : RecordType, GetLabel;
 import tagion.behaviour.BehaviourException;
-import tagion.behaviour.BehaviourFeature : BehaviourProperties;
+import tagion.behaviour.BehaviourFeature : ActionProperties;
 
 enum feature_regex = regex([
         `^\W*(feature)\W`, /// Feature
@@ -199,7 +199,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
             case ACTION:
                 state = State.Action;
                 const action_word = match[1].toLower;
-                alias ActionGroups = staticMap!(ActionGroup, BehaviourProperties);
+                alias ActionGroups = staticMap!(ActionGroup, ActionProperties);
                 static foreach (int index, Field; Fields!ScenarioGroup) {
                     {
                         enum field_index = staticIndexOf!(Field, ActionGroups);
