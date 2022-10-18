@@ -128,6 +128,7 @@ class ReadRequestHandler : ResponseHandler
         {
             fp_result[archive.fingerprint] = archive.toDoc;
             import std.algorithm : arrRemove = remove, countUntil;
+
             requested_fp = requested_fp.arrRemove(countUntil(requested_fp, archive.fingerprint));
         }
     }
@@ -353,7 +354,7 @@ class P2pSynchronizationFactory : SynchronizationFactory
             }
             catch (GoException e)
             {
-                log.warning("Connection failed with code: %s", e.Code); //TODO: add address to blacklist
+                log.error("Connection failed with code: %s", e.Code); //TODO: add address to blacklist
             }
             catch (Exception e)
             {
@@ -438,7 +439,7 @@ class P2pSynchronizationFactory : SynchronizationFactory
             }
             catch (GoException e)
             {
-                log.warning("P2pSynchronizer: Exception on sending request: %s", e);
+                log.error("P2pSynchronizer: Exception on sending request: %s", e);
                 close();
             }
             (() @trusted { fiber.yield; })();

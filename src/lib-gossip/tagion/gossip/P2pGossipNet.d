@@ -445,7 +445,6 @@ static void async_send(
 
             try
             {
-                log("Send to: %d", streamId);
                 auto is_sent = connectionPool.send(streamId, doc.serialize);
                 if (!is_sent)
                 {
@@ -464,7 +463,6 @@ static void async_send(
         {
             concurrency.receive(
                 (const(Pubkey) channel, const(Document) doc, uint id) {
-                log.trace("Received sender %d %s", id, channel.cutHex);
                 try
                 {
                     send_to_channel(channel, doc);
@@ -476,13 +474,11 @@ static void async_send(
                 }
             },
                 (Pubkey channel, uint id) {
-                log("Closing connection: channel %s", channel.cutHex);
                 try
                 {
                     const streamId = connectionPoolBridge[channel];
                     if (streamId !is 0)
                     {
-                        log("Closing connection: streamId %d", streamId);
                         connectionPool.close(streamId);
                         connectionPoolBridge.remove(channel);
                     }
@@ -500,7 +496,6 @@ static void async_send(
                 (Response!(p2plib.ControlCode.Control_Disconnected) resp) {
                 synchronized (connectionPoolBridge)
                 {
-                    log("Client Disconnected key: %d", resp.key);
                     connectionPool.close(cast(void*) resp.key);
                     connectionPoolBridge.removeConnection(resp.key);
                 }
@@ -512,16 +507,10 @@ static void async_send(
                 const receiver = hirpc.receive(doc);
                 Pubkey received_pubkey = receiver.pubkey;
                 const streamId = connectionPoolBridge[received_pubkey];
-                if (streamId)
-                {
-                    log.trace("Previous cpb: %d, now: %d",
-                        connectionPoolBridge[received_pubkey], resp.stream.identifier);
-                }
-                else
+                if (!streamId)
                 {
                     connectionPoolBridge[received_pubkey] = resp.stream.identifier;
                 }
-                log.trace("Received in: %s", resp.stream.identifier);
                 concurrency.send(concurrency.ownerTid, receiver.toDoc);
             },
                 (Control control) {

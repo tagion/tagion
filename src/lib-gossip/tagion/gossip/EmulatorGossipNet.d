@@ -172,7 +172,7 @@ class EmulatorGossipNet : GossipNet
         import std.algorithm.searching : countUntil;
         import tagion.hibon.HiBONJSON;
 
-        log.trace("Send to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
+        log("Send to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
                 .toDoc.serialize.length);
         Thread.sleep(duration);
         _tids[channel].send(sender.toDoc);

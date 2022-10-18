@@ -40,29 +40,7 @@ void monitorServiceTask(immutable(Options) opts) nothrow
 
         scope (exit)
         {
-            log.trace("In exit of soc.port=%d th", opts.monitor.port);
             listener_socket.stop;
-
-            version (none)
-                if (listener_socket_thread !is null)
-                {
-                    listener_socket.stop;
-
-                    log.trace("Kill listener socket. %d", opts.monitor.port);
-                    //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
-
-                    auto ping = new TcpSocket(new InternetAddress(opts.url, opts.monitor.port));
-
-                    writefln("Pause for %d to close", opts.monitor.port);
-                    Thread.sleep(500.msecs);
-
-                    log.trace("Run listerner %s %s", listener_socket.active, opts.monitor.port);
-
-                    writefln("Wait for %d to close", opts.monitor.port);
-                    listener_socket_thread.join();
-
-                    log.trace("Thread joined %d", opts.monitor.port);
-                }
         }
 
         bool stop;

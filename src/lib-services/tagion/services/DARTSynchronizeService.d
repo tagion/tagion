@@ -98,7 +98,6 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
 
         auto state = ServiceState!DARTSynchronizeState(DARTSynchronizeState.WAITING);
         auto pid = opts.dart.sync.protocol_id;
-        log("Start DART Sync service");
         version (unittest)
         {
             immutable filename = opts.dart.path.length == 0
@@ -194,7 +193,6 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                 auto tid = locate(taskName);
                 if (tid !is Tid.init)
                 {
-                    log.trace("Sending response back to %s", taskName);
                     send(tid, result);
                 }
                 else
@@ -260,13 +258,10 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                 ? opts.dart.sync.reply_tick_timeout.msecs : opts.dart.sync.tick_timeout.msecs;
             receiveTimeout(tick_timeout, &handleControl,
                 (immutable(RecordFactory.Recorder) recorder) {
-                log("DSS: Recorder received");
                 recorderReplayFiber.insert(recorder);
             }, (Response!(ControlCode.Control_Connected) resp) {
-                log("DSS: Client Connected key: %d", resp.key);
                 connectionPool.add(resp.key, resp.stream, true);
             }, (Response!(ControlCode.Control_Disconnected) resp) {
-                log("DSS: Client Disconnected key: %d", resp.key);
                 connectionPool.close(cast(void*) resp.key);
             }, (Response!(ControlCode.Control_RequestHandled) resp) {
                 scope (exit)
@@ -281,7 +276,6 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
 
                 void closeConnection()
                 {
-                    log.trace("DSS: Forced close connection");
                     connectionPool.close(resp.key);
                 }
 
@@ -520,11 +514,6 @@ private struct ActiveNodeSubscribtion(Net : HashNet)
 
     protected static void handleSubscription(string taskName)
     { //TODO: moveout
-        scope (exit)
-        {
-            log.trace("Exit handleSubscription");
-            // ownerTid.prioritySend(Control.END);
-        }
         auto net = new Net;
         log.register(taskName);
         auto stop = false;

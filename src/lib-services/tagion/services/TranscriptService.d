@@ -135,7 +135,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
                     }
 
                     scope signed_contract = SignedContract(doc);
-                    log("Signed contract received");
+                    log("Executing contract: %s", doc.toJSON);
 
                     bool invalid;
                     ForachInput: foreach (input; signed_contract.contract.inputs)
@@ -182,7 +182,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
                     }
                     else
                     {
-                        log.warning("Invalid epoch");
+                        log.warning("Invalid input");
                     }
                 }
                 if (recorder.length > 0)

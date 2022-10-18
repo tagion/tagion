@@ -65,7 +65,6 @@ void dartServiceTask(Net : SecureNet)(
         auto pid = opts.dart.protocol_id;
         log.register(task_name);
 
-        log("Start DART service");
         bool stop = false;
         void handleControl(Control ts)
         {
@@ -251,11 +250,9 @@ void dartServiceTask(Net : SecureNet)(
                 connectionPool.add(resp.key, resp.stream, true);
             },
                 (Response!(ControlCode.Control_Disconnected) resp) {
-                log("Client Disconnected key: %d", resp.key);
                 connectionPool.close(cast(void*) resp.key);
             },
                 (Response!(ControlCode.Control_RequestHandled) resp) {
-                log("Response received");
 
                 scope (exit)
                 {
@@ -268,7 +265,6 @@ void dartServiceTask(Net : SecureNet)(
                 auto message_doc = doc[Keywords.message].get!Document;
                 void closeConnection()
                 {
-                    log.trace("Forced close connection");
                     connectionPool.close(resp.key);
                 }
 
@@ -278,7 +274,6 @@ void dartServiceTask(Net : SecureNet)(
 
             },
                 (immutable(RecordFactory.Recorder) recorder) { //TODO: change to HiRPC
-                log.trace("Received recorder");
                 if (subscribe_handler_tid != Tid.init)
                 {
                     send(subscribe_handler_tid, recorder);
@@ -347,15 +342,12 @@ private void subscibeHandler(immutable(Options) opts)
         pragma(msg, "fixme(alex): 1000.msecs shoud be an option");
         receiveTimeout(1000.msecs, &handleControl,
             (Response!(ControlCode.Control_Connected) resp) {
-            log.trace("Client Connected key: %d", resp.key);
             connectionPool.add(resp.key, resp.stream, true);
         },
             (Response!(ControlCode.Control_Disconnected) resp) {
-            log.trace("Client Disconnected key: %d", resp.key);
             connectionPool.close(resp.key);
         },
             (immutable(RecordFactory.Recorder) recorder) { //TODO: change to HiRPC
-            log.trace("Received recorder");
             connectionPool.broadcast(recorder.toDoc.serialize); //+save to journal etc..
             // if not ready/started => send error
             // if(dartSyncTid != Tid.init){

@@ -269,7 +269,6 @@ void logSubscriptionServiceTask(Options opts) nothrow
             with (Control) switch (control)
             {
             case STOP:
-                log("Stop service on port %d", opts.logSubscription.service.port);
                 logsubscription_api.stop;
                 stop = true;
                 break;

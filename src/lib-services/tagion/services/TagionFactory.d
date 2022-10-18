@@ -133,7 +133,6 @@ void tagionFactoryService(Options opts) nothrow
                     service_options.node_name = i.get_node_name;
                     node_opts ~= service_options;
                 }
-                log.trace("Options configurated");
                 Pubkey[] pkeys;
                 foreach (node_opt; node_opts)
                 {

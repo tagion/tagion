@@ -52,13 +52,10 @@ struct ListenerSocket
             stop_listener = true;
             if (listerner_thread !is null)
             {
-                log("Stop listener socket. %d", port);
                 //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
                 auto ping = new TcpSocket(new InternetAddress(commonOptions.url, port));
                 ping.close;
-                log("Wait for %d to close", port);
                 listerner_thread.join();
-                log.trace("Thread joined %d", port);
             }
         }
     }
@@ -320,9 +317,6 @@ struct ListenerSocket
                     try
                     {
                         auto client = listener.accept;
-                        log.trace("Client connection to %s established, is blocking: %s.", client
-                                .remoteAddress.toString, client
-                                .blocking);
                         assert(client.isAlive);
                         assert(listener.isAlive);
                         this.add(client);

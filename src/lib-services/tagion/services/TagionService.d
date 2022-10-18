@@ -85,12 +85,7 @@ shared(p2plib.Node) initialize_node(immutable Options opts)
         format("/ip4/%s/tcp/%s",
             opts.ip,
             opts.port), 0);
-    log.trace("Start initialize_node");
-    scope (exit)
-    {
-        log.trace("End initialize_node");
 
-    }
     if (opts.p2plogs)
     {
         p2plib.EnableLogger();
@@ -299,7 +294,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 
         scope (exit)
         {
-            log("Close listener");
             p2pnode.closeListener(opts.transaction.protocol_id);
         }
         scope (exit)
@@ -307,10 +301,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             if (transcript_tid !is transcript_tid.init)
             {
                 transcript_tid.prioritySend(Control.STOP);
-                if (receiveOnly!Control is Control.END)
-                {
-                    log("Scripting api stopped");
-                }
+                receiveOnly!Control;
             }
 
             if (discovery_tid !is Tid.init)

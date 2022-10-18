@@ -530,11 +530,8 @@ class SSLFiberService
             scope accept_client = listener.accept;
             scope (exit)
             {
-                log.trace("accept_client shutdown");
                 accept_client.shutdown(SocketShutdown.BOTH);
-                log.trace("Client shutdown");
                 shutdown;
-                log.trace("Unlock shutdown");
                 unlock;
             }
             assert(accept_client.isAlive);

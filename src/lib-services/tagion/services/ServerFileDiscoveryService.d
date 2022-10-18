@@ -58,7 +58,6 @@ void serverFileDiscoveryService(
     {
         scope (success)
         {
-            log("Stop");
             ownerTid.prioritySend(Control.END);
         }
 
@@ -212,7 +211,6 @@ void serverFileDiscoveryService(
             receiveTimeout(500.msecs, (immutable(Pubkey) key, Tid tid) {
                 import tagion.utils.Miscellaneous : toHexString, cutHex;
 
-                log.trace("Looking for key: %s", key.cutHex);
                 tid.send(node_addresses[key]);
             }, (Control control) {
                 if (control == Control.STOP)
@@ -274,7 +272,6 @@ void handleAddrChanedEvent(shared p2plib.Node node) nothrow
         ownerTid.send(Control.LIVE);
         scope (exit)
         {
-            log("Stop");
             ownerTid.prioritySend(Control.END);
         }
         auto stop = false;
@@ -313,7 +310,6 @@ void handleRechabilityChanged(shared p2plib.Node node) nothrow
         ownerTid.send(Control.LIVE);
         scope (exit)
         {
-            log("Stop");
             ownerTid.prioritySend(Control.END);
         }
         auto stop = false;
