@@ -78,8 +78,7 @@ struct Info(alias Property) {
 enum isInfo(alias I) = __traits(isSame, TemplateOf!I, Info);
 
 /**
- * The Action group contains a list of acrion with the property defined which is a part of the 
- * behaviour property
+ * The Action group contains a list of action information properties
  */
 struct ActionGroup(Property) if (isOneOf!(Property, ActionProperties)) {
     Info!Property[] infos;
