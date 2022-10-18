@@ -39,6 +39,7 @@ help-bdd:
 	${call log.help, "make bddreport", "Produce visualization of the BDD-reports"}
 	${call log.help, "make bddfiles", "Generated the bdd files"}
 	${call log.help, "make behaviour", "Builds the BDD tool"}
+	${call log.help, "make env-bdd", "Display the BDD environment"}
 	${call log.help, "make clean-bddtest", "Will remove the bdd log files"}
 	${call log.close}
 
