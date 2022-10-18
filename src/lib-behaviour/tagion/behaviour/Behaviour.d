@@ -304,6 +304,7 @@ unittest {
         assert(feature_result.scenarios[0].hasErrors);
         assert(feature_result.scenarios[1].hasErrors);
         assert(feature_result.hasErrors);
+        version(none)
         "/tmp/bdd_which_has_feature_errors.hibon".fwrite(feature_result);
     }
 
@@ -314,6 +315,7 @@ unittest {
         assert(!feature_result.scenarios[0].hasErrors);
         assert(feature_result.scenarios[1].hasErrors);
         assert(feature_result.hasErrors);
+        version(none)
         "/tmp/bdd_which_has_scenario_errors.hibon".fwrite(feature_result);
     }
 
@@ -325,6 +327,7 @@ unittest {
         assert(!feature_result.scenarios[0].hasErrors);
         assert(!feature_result.scenarios[1].hasErrors);
         assert(!feature_result.hasErrors);
+        version(none)
         "/tmp/bdd_which_has_no_errors.hibon".fwrite(feature_result);
     }
 }
@@ -363,8 +366,9 @@ bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
     return true;
 }
 
+///Examples: automation where all the scenario does not pass
 @safe
-unittest {
+unittest { 
 
     import WithoutCtor = tagion.behaviour.BehaviourUnittestWithoutCtor;
 

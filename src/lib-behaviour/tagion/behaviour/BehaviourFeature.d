@@ -5,14 +5,13 @@
 module tagion.behaviour.BehaviourFeature;
 
 import std.traits;
-import std.meta : AliasSeq, Filter, aliasSeqOf, ApplyLeft, ApplyRight, allSatisfy, anySatisfy, Alias, Erase, aliasSeqOf;
+import std.meta;
 import std.format;
 import std.typecons;
 import tagion.basic.Basic : isOneOf, staticSearchIndexOf;
 
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, Label, VOID, isSpecialKeyType;
 import tagion.hibon.Document;
-
 /* 
  * Set the common propery for
  * Feature, Scenario and the Actions (Given,When,Then and But)
@@ -186,9 +185,9 @@ template getAllActions(T) if (is(T == class) || is(T == struct)) {
 ///
 static unittest { // Test of getAllActions
     alias actions = getAllActions!(BehaviourUnittest.Some_awesome_feature);
-    static assert(actions.length == 7);
-    static assert(allSatisfy!(isCallable, actions));
-    static assert(allSatisfy!(hasActions, actions));
+    static assert(actions.length == 7); // The Scenario has 7 actions
+    static assert(allSatisfy!(isCallable, actions)); // Checks if all actions is callable
+    static assert(allSatisfy!(hasActions, actions)); // Checks if all actions is indeed 'actions'
 }
 
 /**
