@@ -2,6 +2,7 @@ module tagion.behaviour.BehaviourUnittest;
 // Auto generated imports
 import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.BehaviourException;
+import tagion.behaviour.BehaviourResult;
 enum feature = Feature(
 "Some awesome feature should print some cash out of the blue",
 []);
