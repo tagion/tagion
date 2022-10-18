@@ -101,7 +101,7 @@ class ReadRequestHandler : ResponseHandler
 {
     private
     {
-        pragma(msg, "Fixme: Why is this a Document[Buffer], why not just a Recorder? It seems to solve the same problem");
+        pragma(msg, "fixme(cbr): Why is this a Document[Buffer], why not just a Recorder? It seems to solve the same problem");
         Document[Buffer] fp_result;
         Buffer[] requested_fp;
         HiRPC hirpc;
@@ -128,7 +128,6 @@ class ReadRequestHandler : ResponseHandler
         {
             fp_result[archive.fingerprint] = archive.toDoc;
             import std.algorithm : arrRemove = remove, countUntil;
-
             requested_fp = requested_fp.arrRemove(countUntil(requested_fp, archive.fingerprint));
         }
     }
@@ -261,7 +260,6 @@ interface SynchronizationFactory
     alias OnFailure = void delegate(const DART.Rims sector) @safe;
     alias OnComplete = void delegate(string) @safe;
     alias SyncSectorResponse = Tuple!(uint, ResponseHandler);
-    pragma(msg, "SyncSectorResponse :", SyncSectorResponse);
     bool canSynchronize();
     SyncSectorResponse syncSector(
         const DART.Rims sector,

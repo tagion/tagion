@@ -1,20 +1,20 @@
 
 #
 # $1 : Program name
-# $2 : Path to the program
-# $3 : List of libraries used by the program
-# $4 : Set if the program is tagion tool
+# $2 : List of libraries used by the program
+# $3 : Set if the program is tagion tool
 #
-define BIN
+define DO_BIN
 ${eval
-export $2?=$$(DBIN)/$1
+ENV_BIN_$1=$$(DBIN)/$1
+$${call DO_UPPER,$1}=$$(ENV_BIN_$1)
 
-BINS+=$$($2)
+BINS+=$$(ENV_BIN_$1)
 
 $1: target-$1
 bins: $1
 
-_TOOLS=$4
+_TOOLS=$3
 
 ifdef _TOOLS
 info-$1:
@@ -22,14 +22,13 @@ info-$1:
 
 target-$1: target-tagion
 	@echo Tools enabled $1
-	rm -f $$($2)
-	ln -s $$(TAGION) $$($2)
+	rm -f $$(ENV_BIN_$1)
+	ln -s $$(TAGION) $$(ENV_BIN_$1)
 else
 info-$1:
 	@echo _TOOLS undefined
-LIBS_$1+=$3
-#DFILES_$1+=xxx
-#DFILES_$1+=$${shell find $$(DSRC) -name "*.d" -a -path "*/src/bin-tagionwave/*" -a -not -path "*/unitdata/*"}
+LIBS_$1+=$2
+
 target-$1: LIBS+=$$(LIBS_$1)
 
 target-$1: $$(DBIN)/$1
@@ -38,7 +37,7 @@ endif
 env-$1:
 	$$(PRECMD)
 	$${call log.header, $$@ :: env}
-	$${call log.kvp, $2, $$($2)}
+	$${call log.kvp, ENV_BIN_$1, $$(ENV_BIN_$1)}
 	$${call log.env, LIBS_$1,$$(LIBS_$1)}
 	$${call log.env, DFILES_$1,$$(DFILES_$1)}
 	$${call log.close}

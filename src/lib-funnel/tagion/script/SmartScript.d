@@ -181,7 +181,6 @@ else
                 {
                     return ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS;
                 }
-                //        pragma(msg, typeof(inputs[].front.filed[OwnerKey].get!Pubkey));
                 if (!inputs[].all!(a => a.filed.hasMember(OwnerKey) && a
                         .filed[OwnerKey].isType!Pubkey))
                 {
