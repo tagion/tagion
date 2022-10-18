@@ -20,7 +20,7 @@ import tagion.basic.Basic : isOneOf;
 /**
    Runs the scenario in Given, When, Then, But order
    Returns:
-   The ScenarioGroup including the result of each action
+   The ScenarioGroup including the results of each action
 */
 @safe
 ScenarioGroup run(T)(T scenario) if (isScenario!T) {
@@ -267,10 +267,8 @@ auto automation(alias M)() if (isFeature!M) {
  */
 @safe
 bool hasErrors(ref const FeatureGroup feature_group) nothrow {
-    if (feature_group.info.result.isRecordType!BehaviourError) {
-        return true;
-    }
-    return feature_group.scenarios.any!(scenario => scenario.hasErrors);
+    return feature_group.info.result.isRecordType!BehaviourError ||
+     feature_group.scenarios.any!(scenario => scenario.hasErrors);
 }
 
 /**
