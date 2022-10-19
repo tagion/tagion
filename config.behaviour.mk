@@ -9,13 +9,14 @@ BDD_DFLAGS+=${addprefix -I,$(BDD)}
 BDD_LOG=$(DLOG)/bdd
 
 BDD_DFILES+=${shell find $(BDD) -type f -name "*.d" -path "*/tagion/*" -a -not -name "*.gen.d"}
-BDD_DFILES+=${shell find $(BDD) -type f -name "*.d" -path "*/tests/*"}
+#BDD_DFILES+=${shell find $(BDD) -type f -name "*.d" -path "*/tests/*"}
 
-target-bdd_test: DFLAGS+=$(BDD_DFLAGS)
-target-bdd_test: DFILES+=$(BDD_DFILES)
+target-bdd_testbench: DFLAGS+=$(BDD_DFLAGS)
+target-bdd_testbench: DFILES+=$(BDD_DFILES)
 
-target-bdd_test: 
-${call DO_BIN,bdd_test,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
+target-bdd_testbench: 
+${call DO_BIN,bdd_testbench,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
 
-BDDTESTS+=bdd_test
+BDDTESTS+=bdd_services
+
 

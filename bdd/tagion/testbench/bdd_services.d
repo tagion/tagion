@@ -1,16 +1,16 @@
 module tagion.testbench.bdd_services;
 
-import tangion.testbench.services;
+import tagion.behaviour;
+import tagion.testbench.services;
 
-import tagion.behaviour.Behaviour;
 import tagion.hibon.HiBONRecord : fwrite;
 
 int main(string[] args)
 {
-    import recorderchain = tagion.testbench.Add_the_recorder_chain_backup;
+    import transaction_service = Transcation_service;
 
-    auto recorder_chain_feature = automation!(recorderchain)();
-    auto result = recorder_chain_feature.run;
+    auto transaction_feature = automation!(Transaction_service)();
+    auto result = transaction_feature.run;
 
     "/tmp/result.hibon".fwrite(result);
 
