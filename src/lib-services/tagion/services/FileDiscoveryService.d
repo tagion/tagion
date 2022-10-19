@@ -39,7 +39,6 @@ void fileDiscoveryService(
         {
             static uint count;
             count++;
-            log("initializing %d %s", count, pubkey.cutHex);
             addressbook.load(shared_storage, false);
             addressbook.erase(pubkey);
             addressbook[pubkey] = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
@@ -65,7 +64,6 @@ void fileDiscoveryService(
                 (Control control) {
                 if (control is Control.STOP)
                 {
-                    log("stop");
                     stop = true;
                 }
             },
