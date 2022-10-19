@@ -215,7 +215,6 @@ protected string _scenarioTupleCode(alias M, string tuple_name)() if (isFeature!
 * Makes scenario tuple from a Feature module, 
 * which contains a tuple of all the Scenario objects
 */
-
 mixin template ScenarioTuple(alias M, string tuple_name) {
     enum code = _scenarioTupleCode!(M, tuple_name);
     mixin(code);

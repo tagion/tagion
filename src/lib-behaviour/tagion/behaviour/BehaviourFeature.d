@@ -65,11 +65,11 @@ enum isDescriptor(T) = hasMember!(T, "description");
 
 /* 
  * Contains the information for the Protorty including the name id and the result of the Property
-* The Property is as a general container for the Feature, Sceanrio and Actions
+ * The Property is a general container for the Feature, Sceanrio and Actions
  */
 struct Info(alias Property) {
-    Property property; /// The property is a Feature, Scenario or an Action
-    string name; /// Name of the function member, scenario call or feature module
+    Property property; /// The property of a Feature, Scenario or an Action
+    string name; /// Name of the member function, scenario class or feature module
     Document result; /// The result after execution of the property (See BehaviourResult)
     mixin HiBONRecord!();
 }
@@ -78,7 +78,7 @@ struct Info(alias Property) {
 enum isInfo(alias I) = __traits(isSame, TemplateOf!I, Info);
 
 /**
- * The Action group contains a list of action information properties
+ * The Action group contains a list of actions information properties
  */
 struct ActionGroup(Property) if (isOneOf!(Property, ActionProperties)) {
     Info!Property[] infos;
@@ -91,7 +91,7 @@ enum isActionGroup(alias I) = __traits(isSame, TemplateOf!I, ActionGroup);
 /** 
  * Contains all information of a scenario
  * the class name of the scenario and the description
- * it also contains all the action groups of the scenario
+ * it also contains all the action groups in the scenario 
  */
 @safe
 struct ScenarioGroup {
@@ -108,8 +108,8 @@ struct ScenarioGroup {
  */
 @safe
 struct FeatureGroup {
-    Info!Feature info; /// Information of the Feature
-    ScenarioGroup[] scenarios; /// This all the information of each Sceanrio
+    Info!Feature info; /// Information of the feature
+    ScenarioGroup[] scenarios; /// This is a list of Sceanrio groups in the feature
     mixin HiBONRecord!();
 }
 
