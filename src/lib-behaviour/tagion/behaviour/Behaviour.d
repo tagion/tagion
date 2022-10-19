@@ -45,6 +45,9 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
             }
         }, string, string, size_t, string, string);
         import std.uni : toLower;
+
+        
+
         .check(scenario !is null,
                 format("The constructor must be called for %s before it's runned", T.stringof));
         static foreach (_Property; ActionProperties) {
@@ -102,7 +105,7 @@ unittest {
     )
         .map!(a => result(a));
     assert(awesome.count == 7); // Checks that all the scenarios has been executed
-    
+
     Document[] results;
     results ~= runner_result.given.infos
         .map!(info => info.result)
@@ -175,20 +178,20 @@ FeatureGroup getFeature(alias M)() if (isFeature!M) {
 
 ///Examples: How to use getFeature on a feature
 @safe
-unittest { //
+unittest {
     import tagion.basic.Basic : unitfile;
     import core.demangle : mangle;
 
     import Module = tagion.behaviour.BehaviourUnittest;
     import std.path;
 
-    // filename to the expected Feature
+    // filename which contains the expected FeatureGroup
     enum filename = mangle!(FunctionTypeOf!(getFeature!Module))("unittest")
             .unitfile
             .setExtension(FileExtension.hibon);
-    const feature = getFeature!(Module);
+    const feature_group = getFeature!(Module);
     const expected = filename.fread!FeatureGroup;
-    assert(feature.toDoc == expected.toDoc);
+    assert(feature_group.toDoc == expected.toDoc);
 }
 
 /* 
@@ -214,9 +217,6 @@ protected string _scenarioTupleCode(alias M, string tuple_name)() if (isFeature!
 */
 
 mixin template ScenarioTuple(alias M, string tuple_name) {
-    import std.array : join;
-    import std.format;
-
     enum code = _scenarioTupleCode!(M, tuple_name);
     mixin(code);
 }
@@ -236,8 +236,8 @@ auto automation(alias M)() if (isFeature!M) {
          * Caller to the Sceanrio constructor 
          * Params:
          *   args = construct arguments to the Scenarion calss
-         */  
-    void opDispatch(string scenario_name, Args...)(Args args) {
+         */
+        void opDispatch(string scenario_name, Args...)(Args args) {
             enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
             mixin(code);
         }
@@ -284,7 +284,7 @@ auto automation(alias M)() if (isFeature!M) {
 @safe
 bool hasErrors(ref const FeatureGroup feature_group) nothrow {
     return feature_group.info.result.isRecordType!BehaviourError ||
-     feature_group.scenarios.any!(scenario => scenario.hasErrors);
+        feature_group.scenarios.any!(scenario => scenario.hasErrors);
 }
 
 /**
@@ -320,8 +320,8 @@ unittest {
         assert(feature_result.scenarios[0].hasErrors);
         assert(feature_result.scenarios[1].hasErrors);
         assert(feature_result.hasErrors);
-        version(none)
-        "/tmp/bdd_which_has_feature_errors.hibon".fwrite(feature_result);
+        version (none)
+            "/tmp/bdd_which_has_feature_errors.hibon".fwrite(feature_result);
     }
 
     { // Fails in second scenario because the constructor has not been called
@@ -331,8 +331,8 @@ unittest {
         assert(!feature_result.scenarios[0].hasErrors);
         assert(feature_result.scenarios[1].hasErrors);
         assert(feature_result.hasErrors);
-        version(none)
-        "/tmp/bdd_which_has_scenario_errors.hibon".fwrite(feature_result);
+        version (none)
+            "/tmp/bdd_which_has_scenario_errors.hibon".fwrite(feature_result);
     }
 
     { // The constructor of both scenarios has been called, this means that no errors is reported
@@ -343,8 +343,8 @@ unittest {
         assert(!feature_result.scenarios[0].hasErrors);
         assert(!feature_result.scenarios[1].hasErrors);
         assert(!feature_result.hasErrors);
-        version(none)
-        "/tmp/bdd_which_has_no_errors.hibon".fwrite(feature_result);
+        version (none)
+            "/tmp/bdd_which_has_no_errors.hibon".fwrite(feature_result);
     }
 }
 
@@ -384,7 +384,7 @@ bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
 
 ///Examples: automation where all the scenario does not pass
 @safe
-unittest { 
+unittest {
 
     import WithoutCtor = tagion.behaviour.BehaviourUnittestWithoutCtor;
 
@@ -451,7 +451,7 @@ unittest {
 }
 
 version (unittest) {
-import tagion.hibon.HiBONRecord : fread;
+    import tagion.hibon.HiBONRecord : fread;
     import tagion.hibon.Document;
     import tagion.hibon.HiBONJSON;
 }
