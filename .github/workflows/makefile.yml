@@ -2,6 +2,8 @@ name: Makefile CI
 on:
   pull_request:
     branches: [ "develop" ]
+  push: 
+    branches: [ "develop" ]
 env:
   ## Sets environment variable
   BINS_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/tagion/build/x86_64-linux/bin
@@ -12,18 +14,17 @@ jobs:
   unit-test:
     runs-on: self-hosted
     steps:
+    - uses: actions/checkout@v3
+
     - name: unittest  
       run: |
         pwd
         source ~/.bashrc
+        ls
         cd tagion
-        export GITHUB_WORKFLOW_BRANCH=$GITHUB_HEAD_REF
-        echo $GITHUB_WORKFLOW_BRANCH
-        git checkout $GITHUB_WORKFLOW_BRANCH
+        ls
         git branch
         make unittest
-        make bins 
-        cd build/x86_64-linux/bin/
   
     - name: unittest result
       run: |
