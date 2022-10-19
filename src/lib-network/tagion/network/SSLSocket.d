@@ -5,6 +5,7 @@ import core.stdc.stdio;
 import std.range.primitives : isBidirectionalRange;
 import std.string : format, toStringz;
 import io = std.stdio;
+import std.file;
 
 enum EndpointType
 {
@@ -207,6 +208,14 @@ class SSLSocket : Socket
         auto empty_pvk_fn = prvkey_filename.length == 0;
         if (empty_cfn || empty_pvk_fn)
             throw new SSLSocketException("Empty file paths inputs");
+        uint cermission = getAttributes(certificate_filename);
+        uint prvkmission = getAttributes(prvkey_filename);
+        enum etalon = 384; // 600
+        if (!(cermission & etalon) || !(prvkmission & etalon))
+        {
+           auto message = "Please check permisons for files " ~ certificate_filename ~ " and " ~ prvkey_filename;
+           throw new SSLSocketException(message);
+        }
     }
     do
     {
@@ -540,7 +549,6 @@ class SSLSocket : Socket
     {
         import std.array;
         import std.string;
-        import std.file;
         import tagion.basic.Basic : fileId;
 
         static void optionGenKeyFiles(ref string out_cert_path, ref string out_key_path)

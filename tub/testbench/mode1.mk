@@ -71,7 +71,8 @@ $$(MODE1_CONFIG_$1): $$(MODE1_ROOT)/.way
 $$(MODE1_CONFIG_$1): target-tagionwave
 $$(MODE1_CONFIG_$1):
 	$$(PRECMD)
-	$$(TAGIONWAVE) $$@ $$(MODE1_FLAGS) --port $$(HOSTPORT) -p $$(TRANSACTIONPORT) -P $$(MONITORPORT) --dart-filename=$$(MODE1_DARTFILE_$1) --dart-synchronize=$$(DARTSYNC) --dart-init=$$(DARTINIT) --pid=$$(MODE1_PID_$1) -O
+	$$(TAGIONWAVE) $$@ $$(MODE1_FLAGS) --port $$(HOSTPORT) -p $$(TRANSACTIONPORT) -P $$(MONITORPORT) --dart-filename=$$(MODE1_DARTFILE_$1) --dart-synchronize=$$(DARTSYNC) --dart-init=$$(DARTINIT) --pid=$$(MODE1_PID_$1) -O --certificate=$$(CERTFILE) --private-key=$$(KEYFILE)
+
 
 mode1-config: $$(MODE1_CONFIG_$1)
 

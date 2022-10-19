@@ -241,6 +241,11 @@ struct Options
         mixin JSONCommon;
     }
 
+    public void syncWithLoggerOptions()
+    {
+        this.logSubscription.service = this.transaction.service;
+    }
+
     Message message;
 
     mixin JSONConfig;
@@ -370,6 +375,8 @@ static ref auto all_getopt(
         "net-mode", format("Network mode: one of [%s]: default: %s", [EnumMembers!NetworkMode].map!(t=>t.to!string).join(", "), options.net_mode), &(options.net_mode),
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
         "boot", format("Shared boot file: default: %s", options.path_to_shared_info), &(options.path_to_shared_info),
+        "certificate", format("Certificate SSL, default: %s", options.transaction.service.openssl.certificate), &(options.transaction.service.openssl.certificate),
+        "private-key", format("Private key SSL, default: %s", options.transaction.service.openssl.private_key), &(options.transaction.service.openssl.private_key),
 //        "help!h", "Display the help text",    &help_switch,
         // dfmt on
 

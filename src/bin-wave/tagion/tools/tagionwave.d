@@ -29,6 +29,7 @@ mixin TrustedConcurrency;
  * Create configs for struct OpenSSL
  * @param openssl - struct to configure
  */
+ /*
 void create_ssl(const(OpenSSL) openssl)
 {
     import std.algorithm.iteration : each;
@@ -59,7 +60,7 @@ void create_ssl(const(OpenSSL) openssl)
         }
         assert(openssl.certificate.exists && openssl.private_key.exists);
     }
-}
+}*/
 
 import tagion.tools.Basic;
 
@@ -98,6 +99,8 @@ int _main(string[] args)
     try
     {
         auto main_args = all_getopt(args, version_switch, overwrite_switch, local_options);
+
+        //local_options.syncWithLoggerOptions();
 
         if (version_switch)
         {
