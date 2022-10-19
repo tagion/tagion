@@ -1,7 +1,6 @@
 module tagion.behaviour.Behaviour;
 
-public import tagion.behaviour.BehaviourFeature;
-import tagion.hibon.Document;
+import tagion.behaviour.BehaviourFeature;
 
 import std.traits;
 import std.format;
@@ -14,7 +13,7 @@ import std.exception : assumeWontThrow;
 import tagion.behaviour.BehaviourException;
 import tagion.behaviour.BehaviourResult;
 import tagion.basic.Types : FileExtension;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONRecord : isRecordType;
 import tagion.basic.Basic : isOneOf;
 
 /**
@@ -121,6 +120,10 @@ unittest {
     assert(equal(results, expected));
 }
 
+/**
+ * Creates a Scenario group from a Scenario class or struct
+ * Returns: a ScenarioGroup from T
+ */
 @safe
 ScenarioGroup getScenarioGroup(T)() if (isScenario!T) {
     ScenarioGroup scenario_group;
@@ -150,7 +153,7 @@ ScenarioGroup getScenarioGroup(T)() if (isScenario!T) {
 }
 
 /**
- * 
+ * Creates a FeatureGroup from a feature module
  * Params:
  *   M = is the Feature module contaning a list of Scenario's 
  * Returns: 
@@ -173,13 +176,13 @@ FeatureGroup getFeature(alias M)() if (isFeature!M) {
 ///Examples: How to use getFeature on a feature
 @safe
 unittest { //
-    import tagion.hibon.HiBONRecord;
     import tagion.basic.Basic : unitfile;
     import core.demangle : mangle;
 
     import Module = tagion.behaviour.BehaviourUnittest;
     import std.path;
 
+    // filename to the expected Feature
     enum filename = mangle!(FunctionTypeOf!(getFeature!Module))("unittest")
             .unitfile
             .setExtension(FileExtension.hibon);
@@ -188,6 +191,9 @@ unittest { //
     assert(feature.toDoc == expected.toDoc);
 }
 
+/* 
+ * Generated mixin code used by in the ScenarioTuple template
+ */
 protected string _scenarioTupleCode(alias M, string tuple_name)() if (isFeature!M) {
     string[] result;
     {
@@ -201,6 +207,11 @@ protected string _scenarioTupleCode(alias M, string tuple_name)() if (isFeature!
     }
     return result.join("\n");
 }
+
+/*
+* Makes scenario tuple from a Feature module, 
+* which contains a tuple of all the Scenario objects
+*/
 
 mixin template ScenarioTuple(alias M, string tuple_name) {
     import std.array : join;
@@ -221,7 +232,12 @@ auto automation(alias M)() if (isFeature!M) {
         // Defines the tuple of the Feature scenarios
         mixin ScenarioTuple!(M, "ScenariosT");
         ScenariosT scenarios;
-        void opDispatch(string scenario_name, Args...)(Args args) {
+        /* 
+         * Caller to the Sceanrio constructor 
+         * Params:
+         *   args = construct arguments to the Scenarion calss
+         */  
+    void opDispatch(string scenario_name, Args...)(Args args) {
             enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
             mixin(code);
         }
@@ -333,9 +349,9 @@ unittest {
 }
 
 /**
-Checks if a feature has passed all tests
-   Returns:
-   true if all scenarios in a Feature has passed all tests
+* Checks if a feature has passed all tests
+*   Returns:
+*   true if all scenarios in a Feature has passed all tests
  */
 @safe
 bool hasPassed(ref const FeatureGroup feature_group) nothrow {
@@ -344,10 +360,10 @@ bool hasPassed(ref const FeatureGroup feature_group) nothrow {
 }
 
 /**
-Used to checks if a scenario has passed all tests
-Params:
-scenario_group = The scenario which been runned
-Returns: true if the scenario has passed all tests
+* Used to checks if a scenario has passed all tests
+* Params:
+* scenario_group = The scenario which been runned
+* Returns: true if the scenario has passed all tests
 */
 @safe
 bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
@@ -435,7 +451,7 @@ unittest {
 }
 
 version (unittest) {
+import tagion.hibon.HiBONRecord : fread;
     import tagion.hibon.Document;
-    import tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONJSON;
 }
