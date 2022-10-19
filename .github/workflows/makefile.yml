@@ -15,7 +15,9 @@ jobs:
     runs-on: self-hosted
     steps:
     - name: cleanup
-      run: sudo rm -rf /home/moonbase/actions-runner/_work/tagion/
+      run: | 
+        sudo rm -rf /home/moonbase/actions-runner/_work/tagion/tagion/
+        mkdir /home/moonbase/actions-runner/_work/tagion/tagion/
     - uses: actions/checkout@v3
 
     - name: unittest  
