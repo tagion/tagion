@@ -6,7 +6,7 @@ on:
     branches: [ "develop" ]
 env:
   ## Sets environment variable
-  BINS_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/tagion/build/x86_64-linux/bin
+  BINS_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin
   SCRIPTS_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/core-test-scripts
   SHARED_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/shared
   SHARED_PATH: /tgn/test_scripts/shared
@@ -25,12 +25,10 @@ jobs:
         pwd
         source ~/.bashrc
         ls
-        cd tagion
-        ls
         git branch
         make unittest
   
     - name: unittest result
       run: |
-        tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
+        tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
         
