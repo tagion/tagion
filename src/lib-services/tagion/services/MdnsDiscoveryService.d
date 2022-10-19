@@ -30,9 +30,7 @@ void mdnsDiscoveryService(
 
         p2plib.MdnsService discovery = node.startMdns("tagion_mdns", opts.discovery.interval.msecs);
 
-        log("Run mdns service");
         p2plib.MdnsNotifee notifee;
-        log("Mdns: notify enabled");
         notifee = discovery.registerNotifee(&StdHandlerCallback, task_name);
 
         scope (exit)

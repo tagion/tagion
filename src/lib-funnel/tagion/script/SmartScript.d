@@ -58,26 +58,37 @@ version (OLD_TRANSACTION)
         }
         do
         {
-            .check(signed_contract.signs.length > 0, ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE);
+
+            
+
+                .check(signed_contract.signs.length > 0, ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE);
             const message = net.hashOf(signed_contract.contract.toDoc);
+
+            
 
             .check(signed_contract.signs.length == signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS);
 
+            
+
             .check(signed_contract.contract.inputs.length == signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
             foreach (i, print, input, signature; lockstep(signed_contract.contract.inputs, signed_contract.inputs, signed_contract
-                .signs))
+                    .signs))
             {
 
                 immutable fingerprint = net.hashOf(input.toDoc);
 
+                
+
                 .check(print == fingerprint,
-                ConsensusFailCode.SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
+                    ConsensusFailCode.SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
                 Pubkey pkey = input.owner;
 
+                
+
                 .check(net.verify(message, signature, pkey),
-                        ConsensusFailCode.SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY);
+                    ConsensusFailCode.SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY);
             }
         }
 
@@ -93,7 +104,7 @@ version (OLD_TRANSACTION)
             // immutable source=signed_contract.contract.script;
             enum transactions_name = "#trans";
             immutable source = (() @trusted =>
-                format(": %s %s ;", transactions_name, signed_contract.contract.script)
+                    format(": %s %s ;", transactions_name, signed_contract.contract.script)
             )();
             // auto src = ScriptParser(source);
             // Script script;
@@ -105,7 +116,7 @@ version (OLD_TRANSACTION)
 
             const total_input = calcTotal(signed_contract.inputs);
             TagionCurrency total_output;
-            foreach (pkey, doc; signed_contract.contract.output) 
+            foreach (pkey, doc; signed_contract.contract.output)
             {
                 StandardBill bill;
                 bill.epoch = epoch;
@@ -118,6 +129,9 @@ version (OLD_TRANSACTION)
                 //            bill.bill_type = "TGN";
                 _output_bills ~= bill;
             }
+
+            
+
             .check(total_output <= total_input, ConsensusFailCode.SMARTSCRIPT_NOT_ENOUGH_MONEY);
         }
     }
@@ -202,12 +216,12 @@ else
             }
             catch (TagionException e)
             {
-                log.trace(e.msg);
+                log.warning(e.msg);
                 return ConsensusFailCode.SMARTSCRIPT_CAUGHT_TAGIONEXCEPTION;
             }
             catch (Exception e)
             {
-                log.trace(e.msg);
+                log.warning(e.msg);
                 return ConsensusFailCode.SMARTSCRIPT_CAUGHT_EXCEPTION;
             }
             return ConsensusFailCode.NONE;

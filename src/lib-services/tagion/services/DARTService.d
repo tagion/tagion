@@ -58,12 +58,11 @@ void dartServiceTask(Net : SecureNet)(
         auto pid = opts.dart.protocol_id;
         log.register(task_name);
 
-        log("-----Start DART service-----");
         bool stop = false;
         void handleControl(Control ts) {
             with (Control) switch (ts) {
             case STOP:
-                log("Kill dart service");
+                log("Kill DART service");
                 stop = true;
                 break;
             default:
@@ -118,10 +117,9 @@ void dartServiceTask(Net : SecureNet)(
         void dartHiRPC(string taskName, immutable(HiRPC.Sender) sender) {
             /// Note use to be (string taskName, Buffer data) {
 
-            log("DS: Received request from service: %s", taskName);
+            log("Received request from service: %s", taskName);
 
             immutable receiver = empty_hirpc.receive(sender);
-            //immutable method = receiver.method.name; ;
 
             void readDART() {
                 scope doc_fingerprints = receiver.method.params[DARTFile.Params.fingerprints].get!(
@@ -209,23 +207,20 @@ void dartServiceTask(Net : SecureNet)(
         }
 
         enum recorder_hrpc_id = 1;
-        log("sending live");
         ownerTid.send(Control.LIVE);
         while (!stop) {
             pragma(msg, "fixme(alex): 1000.msecs shoud be an option");
             receiveTimeout(
-                    1000.msecs,
-                    &handleControl,
-                    (Response!(ControlCode.Control_Connected) resp) {
-                log("DS: Client Connected key: %d", resp.key);
+                1000.msecs,
+                &handleControl,
+                (Response!(ControlCode.Control_Connected) resp) {
+                log("Client Connected key: %d", resp.key);
                 connectionPool.add(resp.key, resp.stream, true);
             },
                     (Response!(ControlCode.Control_Disconnected) resp) {
-                log("DS: Client Disconnected key: %d", resp.key);
                 connectionPool.close(cast(void*) resp.key);
             },
                     (Response!(ControlCode.Control_RequestHandled) resp) {
-                log("DS: response received");
 
                 scope (exit) {
                     if (resp.stream !is null) {
@@ -235,7 +230,6 @@ void dartServiceTask(Net : SecureNet)(
                 auto doc = Document(resp.data);
                 auto message_doc = doc[Keywords.message].get!Document;
                 void closeConnection() {
-                    log("DSS: Forced close connection");
                     connectionPool.close(resp.key);
                 }
 
@@ -245,7 +239,6 @@ void dartServiceTask(Net : SecureNet)(
 
             },
                     (immutable(RecordFactory.Recorder) recorder) { //TODO: change to HiRPC
-                log("DS: received recorder");
                 if (subscribe_handler_tid != Tid.init) {
                     send(subscribe_handler_tid, recorder);
                 }
@@ -255,8 +248,9 @@ void dartServiceTask(Net : SecureNet)(
                 if (dstid != Tid.init) {
                     send(dstid, task_name, request_data); //TODO: => handle for the bullseye from dart
                 }
-                else {
-                    log("Cannot locate DART synchronize service");
+                else
+                {
+                    log.warning("Cannot locate DART synchronize service");
                 }
             },
                     (Buffer data, bool flag) {
@@ -270,7 +264,6 @@ void dartServiceTask(Net : SecureNet)(
                 else {
                     auto result_doc = message_doc[Keywords.result].get!Document;
                     auto bullseye = result_doc[DARTFile.Params.bullseye].get!Buffer;
-                    log(bullseye.cutHex);
                 }
             },
                     &dartHiRPC,
@@ -305,15 +298,12 @@ private void subscibeHandler(immutable(Options) opts) {
         pragma(msg, "fixme(alex): 1000.msecs shoud be an option");
         receiveTimeout(1000.msecs, &handleControl,
                 (Response!(ControlCode.Control_Connected) resp) {
-            log("DS-subs: Client Connected key: %d", resp.key);
             connectionPool.add(resp.key, resp.stream, true);
         },
                 (Response!(ControlCode.Control_Disconnected) resp) {
-            log("DS-subs: Client Disconnected key: %d", resp.key);
             connectionPool.close(resp.key);
         },
                 (immutable(RecordFactory.Recorder) recorder) { //TODO: change to HiRPC
-            log("DS-subs: received recorder");
             connectionPool.broadcast(recorder.toDoc.serialize); //+save to journal etc..
         },);
         connectionPool.tick();

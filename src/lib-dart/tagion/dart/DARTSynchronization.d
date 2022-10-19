@@ -79,7 +79,7 @@ class ModifyRequestHandler : ResponseHandler
     {
         if (alive)
         {
-            log("ModifyRequestHandler: Close alive");
+            log.trace("ModifyRequestHandler: Close alive");
         }
         else
         {
@@ -90,7 +90,7 @@ class ModifyRequestHandler : ResponseHandler
             }
             else
             {
-                log("ModifyRequestHandler: couldn't locate task: %s", task_name);
+                log.warning("ModifyRequestHandler: couldn't locate task: %s", task_name);
             }
         }
     }
@@ -128,6 +128,7 @@ class ReadRequestHandler : ResponseHandler
         {
             fp_result[archive.fingerprint] = archive.toDoc;
             import std.algorithm : arrRemove = remove, countUntil;
+
             requested_fp = requested_fp.arrRemove(countUntil(requested_fp, archive.fingerprint));
         }
     }
@@ -141,8 +142,7 @@ class ReadRequestHandler : ResponseHandler
     {
         if (alive)
         {
-            log("ReadRequestHandler: Close alive");
-            // onFailed()?
+            log.trace("ReadRequestHandler: Close alive");
         }
         else
         {
@@ -160,7 +160,7 @@ class ReadRequestHandler : ResponseHandler
             }
             else
             {
-                log("ReadRequestHandler: couldn't locate task: %s", task_name);
+                log.warning("ReadRequestHandler: couldn't locate task: %s", task_name);
             }
         }
     }
@@ -218,14 +218,13 @@ class ReplayPool(T)
         {
             if (!empty)
             {
-                log("%d i: %d", modifications.length, current_index);
                 replayFunc(modifications[current_index]);
                 current_index++;
             }
         }
         catch (Exception e)
         {
-            log("Replay fiber exception: %s", e);
+            log.warning("Replay fiber exception: %s", e);
         }
     }
 
@@ -355,11 +354,11 @@ class P2pSynchronizationFactory : SynchronizationFactory
             }
             catch (GoException e)
             {
-                log("Error, connection failed with code: %s", e.Code); //TODO: add address to blacklist
+                log.error("Connection failed with code: %s", e.Code); //TODO: add address to blacklist
             }
             catch (Exception e)
             {
-                log("Error: %s", e);
+                log.warning("Exception caught: %s", e);
             }
             return SyncSectorResponse(0, null);
         }
@@ -369,11 +368,6 @@ class P2pSynchronizationFactory : SynchronizationFactory
         while (iteration > 0)
         {
             iteration++;
-            /+
-            import std.range : dropExactly;
-            const random_key_index = uniform(0, node_address.length, rnd);
-            const node_addr = node_address.byKeyValue.dropExactly(random_key_index).front;
-+/
             const node_addr = addressbook.random;
             if (node_addr.value.sector.inRange(sector))
             {
@@ -386,7 +380,7 @@ class P2pSynchronizationFactory : SynchronizationFactory
                 return response;
             }
         }
-        log("master not found");
+        log.warning("Master not found");
         return SyncSectorResponse(0, null);
     }
 
@@ -445,7 +439,7 @@ class P2pSynchronizationFactory : SynchronizationFactory
             }
             catch (GoException e)
             {
-                log("P2pSynchronizer: Exception on sending request: %s", e);
+                log.error("P2pSynchronizer: Exception on sending request: %s", e);
                 close();
             }
             (() @trusted { fiber.yield; })();
@@ -463,13 +457,13 @@ class P2pSynchronizationFactory : SynchronizationFactory
             }
             if (alive)
             {
-                log("P2pSynchronizer: close alive. Sector: %d", fiber.root_rims.sector);
+                log.trace("P2pSynchronizer: Close alive. Sector: %d", fiber.root_rims.sector);
                 onfailure(fiber.root_rims);
                 fiber.reset();
             }
             else
             {
-                log("P2pSynchronizer: Synchronization Completed! Sector: %d", fiber
+                log.trace("P2pSynchronizer: Synchronization Completed! Sector: %d", fiber
                         .root_rims.sector);
                 oncomplete(filename);
             }

@@ -31,7 +31,7 @@ private void sendingLoop()
     writeln("Wait...");
     Thread.sleep(3.seconds);
 
-    log("---------------------- Test logs from sendingLoop ----------------------");
+    log("Test logs from sendingLoop");
 
     static struct S
     {

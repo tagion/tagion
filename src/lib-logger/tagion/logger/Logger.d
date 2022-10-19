@@ -19,11 +19,11 @@ enum LogLevel
     NONE = 0,
     INFO = 1,
     TRACE = INFO << 1,
-    WARNING = TRACE << 1,
-    ERROR = WARNING << 1,
+    WARN = TRACE << 1,
+    ERROR = WARN << 1,
     FATAL = ERROR << 1,
-    ALL = INFO | TRACE | WARNING | ERROR | FATAL,
-    STDERR = WARNING | ERROR | FATAL
+    ALL = INFO | TRACE | WARN | ERROR | FATAL,
+    STDERR = WARN | ERROR | FATAL
 }
 
 private static Tid logger_tid;
@@ -278,12 +278,12 @@ static struct Logger
 
     void warning(lazy string text) const nothrow
     {
-        report(LogLevel.WARNING, text);
+        report(LogLevel.WARN, text);
     }
 
     void warning(Args...)(string fmt, Args args) const nothrow
     {
-        report(LogLevel.WARNING, fmt, args);
+        report(LogLevel.WARN, fmt, args);
     }
 
     void error(lazy string text) const nothrow
