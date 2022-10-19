@@ -44,15 +44,12 @@ alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
 void dartServiceTask(Net : SecureNet)(
-    immutable(Options) opts,
-    shared(p2plib.Node) node,
-    shared(Net) master_net,
-    immutable(DART.SectorRange) sector_range) nothrow
-{
-    try
-    {
-        scope (success)
-        {
+        immutable(Options) opts,
+        shared(p2plib.Node) node,
+        shared(Net) master_net,
+        immutable(DART.SectorRange) sector_range) nothrow {
+    try {
+        scope (success) {
             ownerTid.prioritySend(Control.END);
         }
 
@@ -61,14 +58,11 @@ void dartServiceTask(Net : SecureNet)(
         auto pid = opts.dart.protocol_id;
         log.register(task_name);
 
-        log("-----Start DART service-----");
         bool stop = false;
-        void handleControl(Control ts)
-        {
-            with (Control) switch (ts)
-            {
+        void handleControl(Control ts) {
+            with (Control) switch (ts) {
             case STOP:
-                log("Kill dart service");
+                log("Kill DART service");
                 stop = true;
                 break;
             default:
@@ -78,21 +72,18 @@ void dartServiceTask(Net : SecureNet)(
 
         const is_active_node = opts.port == opts.dart.subs.master_port;
         Tid subscribe_handler_tid;
-        if (is_active_node)
-        {
+        if (is_active_node) {
             log("Handling for subscription");
             node.listen(
-                opts.dart.subs.protocol_id,
-                &StdHandlerCallback,
-                opts.dart.subs.master_task_name,
-                opts.dart.subs.host.timeout.msecs,
-                cast(uint) opts.dart.subs.host.max_size);
+                    opts.dart.subs.protocol_id,
+                    &StdHandlerCallback,
+                    opts.dart.subs.master_task_name,
+                    opts.dart.subs.host.timeout.msecs,
+                    cast(uint) opts.dart.subs.host.max_size);
             subscribe_handler_tid = spawn(&subscibeHandler, opts);
         }
-        scope (exit)
-        {
-            if (is_active_node)
-            {
+        scope (exit) {
+            if (is_active_node) {
                 node.closeListener(opts.dart.subs.protocol_id);
                 send(subscribe_handler_tid, Control.STOP);
                 receiveOnly!Control;
@@ -100,14 +91,13 @@ void dartServiceTask(Net : SecureNet)(
         }
 
         node.listen(pid, &StdHandlerCallback, task_name,
-            opts.dart.host.timeout.msecs, cast(uint) opts.dart.host.max_size);
-        scope (exit)
-        {
+                opts.dart.host.timeout.msecs, cast(uint) opts.dart.host.max_size);
+        scope (exit) {
             node.closeListener(pid);
         }
 
         auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(
-            opts.dart.host.timeout.msecs);
+                opts.dart.host.timeout.msecs);
 
         auto dart_sync_tid = locate(opts.dart.sync.task_name);
 
@@ -119,51 +109,41 @@ void dartServiceTask(Net : SecureNet)(
         //hirpc.net = net;
 
         auto requestPool = new StdHandlerPool!(ResponseHandler, uint)(
-            opts.dart.commands.read_timeout.msecs);
+                opts.dart.commands.read_timeout.msecs);
 
         pragma(msg, "fixme(cbr): shared address book should be used instead of local address book");
         NodeAddress[string] node_addrses;
 
-        void dartHiRPC(string taskName, immutable(HiRPC.Sender) sender)
-        {
+        void dartHiRPC(string taskName, immutable(HiRPC.Sender) sender) {
             /// Note use to be (string taskName, Buffer data) {
 
-            log("DS: Received request from service: %s", taskName);
+            log("Received request from service: %s", taskName);
 
             immutable receiver = empty_hirpc.receive(sender);
-            //immutable method = receiver.method.name; ;
 
-            void readDART()
-            {
+            void readDART() {
                 scope doc_fingerprints = receiver.method.params[DARTFile.Params.fingerprints].get!(
-                    Document);
+                        Document);
                 scope fingerprints = doc_fingerprints.range!(Buffer[]);
                 alias bufArr = Buffer[];
                 bufArr[NodeAddress] remote_fp_requests;
                 Buffer[] local_fp;
-                fpIterator: foreach (fp; fingerprints)
-                {
+                fpIterator: foreach (fp; fingerprints) {
                     const rims = DART.Rims(fp);
-                    if (sector_range.inRange(rims))
-                    {
+                    if (sector_range.inRange(rims)) {
                         local_fp ~= fp;
                         continue fpIterator;
                     }
-                    else
-                    {
-                        foreach (address, fps; remote_fp_requests)
-                        {
-                            if (address.sector.inRange(rims))
-                            {
+                    else {
+                        foreach (address, fps; remote_fp_requests) {
+                            if (address.sector.inRange(rims)) {
                                 fps ~= fp;
                                 remote_fp_requests[address] = fps;
                                 continue fpIterator;
                             }
                         }
-                        foreach (id, address; node_addrses)
-                        {
-                            if (address.sector.inRange(rims))
-                            {
+                        foreach (id, address; node_addrses) {
+                            if (address.sector.inRange(rims)) {
                                 remote_fp_requests[address] = [fp];
                                 continue fpIterator;
                             }
@@ -178,14 +158,11 @@ void dartServiceTask(Net : SecureNet)(
                 //     requestPool.setResponse(ResponseHandler.Response!uint(hrpc_id, empty_hirpc.result(receiver, recorder.toHiBON).toHiBON(net).serialize));
                 // }
                 requestPool.add(receiver.method.id, rs);
-                Buffer requestData(HiRPC hirpc, bufArr fps)
-                {
+                Buffer requestData(HiRPC hirpc, bufArr fps) {
                     auto params = new HiBON;
                     auto params_fingerprints = new HiBON;
-                    foreach (i, b; fps)
-                    {
-                        if (b.length !is 0)
-                        {
+                    foreach (i, b; fps) {
+                        if (b.length !is 0) {
                             params_fingerprints[i] = b;
                         }
                     }
@@ -194,30 +171,26 @@ void dartServiceTask(Net : SecureNet)(
                     return request.toDoc.serialize;
                 }
 
-                if (remote_fp_requests.length > 0)
-                {
+                if (remote_fp_requests.length > 0) {
                     import std.array;
 
-                    foreach (addr, fps; remote_fp_requests)
-                    {
+                    foreach (addr, fps; remote_fp_requests) {
                         auto stream = node.connect(addr.address,
-                            addr.is_marshal, [opts.dart.sync.protocol_id]);
+                                addr.is_marshal, [opts.dart.sync.protocol_id]);
                         // connectionPool.add(stream.Identifier, stream);
                         stream.listen(&StdHandlerCallback, task_name,
-                            opts.dart.sync.host.timeout.msecs, opts.dart.sync.host.max_size);
+                                opts.dart.sync.host.timeout.msecs, opts.dart.sync.host.max_size);
                         immutable foreign_data = requestData(hirpc, fps);
                         stream.writeBytes(foreign_data);
                     }
                 }
-                if (local_fp.length > 0)
-                {
+                if (local_fp.length > 0) {
                     immutable foreign_data = requestData(empty_hirpc, local_fp);
                     dart_sync_tid.send(opts.dart.task_name, foreign_data);
                 }
             }
 
-            void modifyDART()
-            { //TODO: not implemented yet
+            void modifyDART() { //TODO: not implemented yet
                 //HiRPC.check_element!Document(receiver.params, DARTFile.Params.recorder);
                 auto mrh = cast(ResponseHandler)(new ModifyRequestHandler(hirpc,
                         taskName, receiver));
@@ -225,48 +198,38 @@ void dartServiceTask(Net : SecureNet)(
                 dart_sync_tid.send(sender);
             }
 
-            if (receiver.method.name == DART.Quries.dartRead)
-            {
+            if (receiver.method.name == DART.Quries.dartRead) {
                 readDART();
             }
-            else if (receiver.method.name == DART.Quries.dartModify)
-            {
+            else if (receiver.method.name == DART.Quries.dartModify) {
                 modifyDART();
             }
         }
 
         enum recorder_hrpc_id = 1;
-        log("sending live");
         ownerTid.send(Control.LIVE);
-        while (!stop)
-        {
+        while (!stop) {
             pragma(msg, "fixme(alex): 1000.msecs shoud be an option");
             receiveTimeout(
                 1000.msecs,
                 &handleControl,
                 (Response!(ControlCode.Control_Connected) resp) {
-                log("DS: Client Connected key: %d", resp.key);
+                log("Client Connected key: %d", resp.key);
                 connectionPool.add(resp.key, resp.stream, true);
             },
-                (Response!(ControlCode.Control_Disconnected) resp) {
-                log("DS: Client Disconnected key: %d", resp.key);
+                    (Response!(ControlCode.Control_Disconnected) resp) {
                 connectionPool.close(cast(void*) resp.key);
             },
-                (Response!(ControlCode.Control_RequestHandled) resp) {
-                log("DS: response received");
+                    (Response!(ControlCode.Control_RequestHandled) resp) {
 
-                scope (exit)
-                {
-                    if (resp.stream !is null)
-                    {
+                scope (exit) {
+                    if (resp.stream !is null) {
                         destroy(resp.stream);
                     }
                 }
                 auto doc = Document(resp.data);
                 auto message_doc = doc[Keywords.message].get!Document;
-                void closeConnection()
-                {
-                    log("DSS: Forced close connection");
+                void closeConnection() {
                     connectionPool.close(resp.key);
                 }
 
@@ -275,63 +238,53 @@ void dartServiceTask(Net : SecureNet)(
                 requestPool.setResponse(response);
 
             },
-                (immutable(RecordFactory.Recorder) recorder) { //TODO: change to HiRPC
-                log("DS: received recorder");
-                if (subscribe_handler_tid != Tid.init)
-                {
+                    (immutable(RecordFactory.Recorder) recorder) { //TODO: change to HiRPC
+                if (subscribe_handler_tid != Tid.init) {
                     send(subscribe_handler_tid, recorder);
                 }
                 auto request = empty_hirpc.dartModify(recorder, recorder_hrpc_id); //TODO: remove out of range archives
                 auto request_data = request.toDoc.serialize;
                 auto dstid = locate(opts.dart.sync.task_name);
-                if (dstid != Tid.init)
-                {
+                if (dstid != Tid.init) {
                     send(dstid, task_name, request_data); //TODO: => handle for the bullseye from dart
                 }
                 else
                 {
-                    log("Cannot locate DART synchronize service");
+                    log.warning("Cannot locate DART synchronize service");
                 }
             },
-                (Buffer data, bool flag) {
+                    (Buffer data, bool flag) {
                 auto doc = Document(data);
                 auto message_doc = doc[Keywords.message].get!Document;
                 const hirpc_id = message_doc[Keywords.id].get!uint;
-                if (hirpc_id != recorder_hrpc_id)
-                {
+                if (hirpc_id != recorder_hrpc_id) {
                     auto response = ResponseHandler.Response!uint(hirpc_id, data);
                     requestPool.setResponse(response);
                 }
-                else
-                {
+                else {
                     auto result_doc = message_doc[Keywords.result].get!Document;
                     auto bullseye = result_doc[DARTFile.Params.bullseye].get!Buffer;
-                    log(bullseye.cutHex);
                 }
             },
-                &dartHiRPC, 
-                (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); },
+                    &dartHiRPC,
+                    (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); },
             );
             requestPool.tick();
         }
     }
-    catch (Throwable e)
-    {
+    catch (Throwable e) {
         fatal(e);
     }
 }
 
-private void subscibeHandler(immutable(Options) opts)
-{
+private void subscibeHandler(immutable(Options) opts) {
     log.register(opts.dart.subs.master_task_name);
     auto connectionPool = new shared(ConnectionPool!(shared p2plib.Stream, ulong))(
-        opts.dart.subs.host.timeout.msecs);
+            opts.dart.subs.host.timeout.msecs);
     bool stop = false;
 
-    void handleControl(Control ts)
-    {
-        with (Control) switch (ts)
-        {
+    void handleControl(Control ts) {
+        with (Control) switch (ts) {
         case STOP:
             log("Kill dart service");
             stop = true;
@@ -341,20 +294,16 @@ private void subscibeHandler(immutable(Options) opts)
         }
     }
 
-    do
-    {
+    do {
         pragma(msg, "fixme(alex): 1000.msecs shoud be an option");
         receiveTimeout(1000.msecs, &handleControl,
-            (Response!(ControlCode.Control_Connected) resp) {
-            log("DS-subs: Client Connected key: %d", resp.key);
+                (Response!(ControlCode.Control_Connected) resp) {
             connectionPool.add(resp.key, resp.stream, true);
         },
-            (Response!(ControlCode.Control_Disconnected) resp) {
-            log("DS-subs: Client Disconnected key: %d", resp.key);
+                (Response!(ControlCode.Control_Disconnected) resp) {
             connectionPool.close(resp.key);
         },
-            (immutable(RecordFactory.Recorder) recorder) { //TODO: change to HiRPC
-            log("DS-subs: received recorder");
+                (immutable(RecordFactory.Recorder) recorder) { //TODO: change to HiRPC
             connectionPool.broadcast(recorder.toDoc.serialize); //+save to journal etc..
         },);
         connectionPool.tick();
