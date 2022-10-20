@@ -199,15 +199,7 @@ void generate_packages(const(ModuleInfo[]) list_of_modules) {
     auto module_paths = list_of_modules
         .map!(mod => mod.file.dirName) //.array
         .uniq;
-    pragma(msg, "array ", typeof(module_paths));
-    pragma(msg, "array... ", typeof(list_of_modules.front.file.dirName));
-    pragma(msg, "array--- ", typeof(module_paths[].front));
-
-    // .uniq;
-
-    pragma(msg, typeof(module_paths[].front));
     foreach (path; module_paths) {
-        writefln("path %s", path);
         auto modules_in_the_same_package = list_of_modules
             .filter!(mod => mod.file.dirName == path);
         const package_path = buildPath(path, package_filename);
@@ -224,10 +216,12 @@ void generate_packages(const(ModuleInfo[]) list_of_modules) {
                 module_split.take(count_without_module_mame));
 
         fout.writeln;
+
         modules_in_the_same_package
             .map!(mod => mod.name)
-            .each!(module_name => fout.writefln(q{public import %s;}, module_name));
-
+            .each!(module_name => fout.writefln(q{public import %s=%s;},
+                    module_name.split(DOT).tail(1).front, // Module identifier
+                    module_name));
     }
 }
 
