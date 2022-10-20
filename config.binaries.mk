@@ -24,9 +24,7 @@ ${call DO_BIN,hibonutil,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETO
 #
 # FIXME(CBR) should be remove when ddeps works correctly
 target-dartutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-dartutil/*" -a -not -path "*/unitdata/*" }
-
 ${call DO_BIN,dartutil,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETOOL)}
-
 
 #
 # WASM utility
@@ -87,6 +85,3 @@ ${call DO_BIN,tagion,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
 #
 target-behaviour: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-behaviour/*" -a -not -path "*/unitdata/*" }
 ${call DO_BIN,behaviour,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
-
-#target-behaviour_test: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-behaviour_test/*" -a -not -path "*/unitdata/*" }
-#${call DO_BIN,behaviour_test,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}

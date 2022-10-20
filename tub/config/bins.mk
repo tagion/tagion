@@ -6,10 +6,11 @@
 #
 define DO_BIN
 ${eval
-ENV_BIN_$1=$$(DBIN)/$1
-$${call DO_UPPER,$1}=$$(ENV_BIN_$1)
+export _$1=$$(DBIN)/$1
 
-BINS+=$$(ENV_BIN_$1)
+export $${call DO_UPPER,$1}=$$(_$1)
+
+BINS+=$$(_$1)
 
 $1: target-$1
 bins: $1
@@ -22,8 +23,8 @@ info-$1:
 
 target-$1: target-tagion
 	@echo Tools enabled $1
-	rm -f $$(ENV_BIN_$1)
-	ln -s $$(TAGION) $$(ENV_BIN_$1)
+	rm -f $$(_$1)
+	ln -s $$(TAGION) $$(_$1)
 else
 info-$1:
 	@echo _TOOLS undefined
@@ -37,7 +38,7 @@ endif
 env-$1:
 	$$(PRECMD)
 	$${call log.header, $$@ :: env}
-	$${call log.kvp, ENV_BIN_$1, $$(ENV_BIN_$1)}
+	$${call log.kvp, $${call DO_UPPER,$1}, $$(_$1)}
 	$${call log.env, LIBS_$1,$$(LIBS_$1)}
 	$${call log.env, DFILES_$1,$$(DFILES_$1)}
 	$${call log.close}
