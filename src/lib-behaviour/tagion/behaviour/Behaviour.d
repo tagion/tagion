@@ -1,6 +1,5 @@
 module tagion.behaviour.Behaviour;
 
-public import tagion.behaviour.BehaviourFeature;
 import tagion.hibon.Document;
 
 import std.traits;
@@ -8,13 +7,13 @@ import std.format;
 import std.meta : AliasSeq;
 import std.range : only, tail, front;
 import std.array : join, split;
-
-//import std.algorithm.iteration : map;
 import std.path;
 import std.algorithm.searching : any, all;
 import std.exception : assumeWontThrow;
 
 import tagion.behaviour.BehaviourException;
+import tagion.behaviour.BehaviourEnvironment : env;
+import tagion.behaviour.BehaviourFeature;
 import tagion.basic.Types : FileExtension, DOT;
 import tagion.hibon.HiBONRecord;
 import tagion.basic.Basic : isOneOf;
@@ -448,6 +447,12 @@ unittest {
     }
 }
 
+/* 
+ * 
+ * Params:
+ *   feature_group = the feature group
+ * Returns: the module identifier of the feature
+ */
 @safe
 string identifier(const FeatureGroup feature_group) pure {
     return feature_group.info.name
@@ -455,8 +460,9 @@ string identifier(const FeatureGroup feature_group) pure {
         .tail(1).front;
 }
 
+///
 @safe
-unittest {
+unittest { /// Check's that the identifier is correct for a given module
     import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
 
     const feature_group = getFeature!WithCtor;
@@ -464,6 +470,12 @@ unittest {
     assert(feature_group.identifier == q{BehaviourUnittestWithCtor});
 }
 
+/* 
+ * 
+ * Params:
+ *   feature_group = the feature group
+ * Returns: 
+ */
 @safe
 string logFilename(const FeatureGroup feature_group) {
     return buildPath(env.bdd_log, feature_group.identifier)
@@ -471,8 +483,9 @@ string logFilename(const FeatureGroup feature_group) {
 
 }
 
+///
 @safe
-unittest {
+unittest { /// Checks that the feature logfile-name is correct
     import std.stdio;
     import tagion.hibon.HiBONJSON;
     import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
@@ -488,6 +501,11 @@ unittest {
 
 }
 
+/* 
+ *  Save the feature data to the logFilename
+ * Params:
+ *   feature_group = the feature group
+ */
 @safe
 void save(const FeatureGroup feature_group) {
     import tagion.hibon.HiBONRecord : fwrite;
@@ -495,8 +513,9 @@ void save(const FeatureGroup feature_group) {
     feature_group.logFilename.fwrite(feature_group);
 }
 
+///
 @safe
-unittest {
+unittest { /// Checks that the save'ed log-files is correct
     import std.file : remove, tempDir, exists;
     import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
 
@@ -518,7 +537,5 @@ version (unittest) {
     import tagion.hibon.HiBONJSON;
     import tagion.behaviour.BehaviourEnvironment : _bdd_env;
 }
-
-import tagion.behaviour.BehaviourEnvironment : env;
 
 //import tagion.basic.Types : FileExtension;
