@@ -85,12 +85,7 @@ shared(p2plib.Node) initialize_node(immutable Options opts)
         format("/ip4/%s/tcp/%s",
             opts.ip,
             opts.port), 0);
-    log("initialize_node");
-    scope (exit)
-    {
-        log("END initialize_node");
 
-    }
     if (opts.p2plogs)
     {
         p2plib.EnableLogger();
@@ -142,12 +137,11 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             passpharse = format("Secret_word_%d", opts.port).idup;
         }
 
-        //        log.trace("passphrase %s", passpharse);
         bool force_stop = false;
 
         import std.format;
 
-        auto sector_range = DART.SectorRange(opts.dart.from_ang, opts.dart.to_ang);
+        auto sector_range = DART.SectorRange(0, 0);
         shared(p2plib.Node) p2pnode;
 
         auto master_net = new StdSecureNet;
@@ -170,7 +164,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 
             master_net.generateKeyPair(passpharse);
             shared_net = cast(shared) master_net;
-            log("opts.node_name = %s", opts.node_name);
             net.derive(opts.node_name, shared_net);
             p2pnode = initialize_node(opts);
         }
@@ -237,9 +230,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 
         log.trace("Hashgraph pubkey=%s", net.pubkey.cutHex);
         hashgraph = new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, &receive_epoch, &register_epack);
-        // hashgraph.print_flag = true;
         hashgraph.scrap_depth = opts.scrap_depth;
-        log("\n\n\n\nMY PUBKEY: %s \n\n\n\n", net.pubkey.cutHex);
 
         discovery_tid = spawn(
             &networkRecordDiscoveryService,
@@ -300,13 +291,9 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         log("Ready: %s", ready);
 
         discovery_tid.send(DiscoveryRequestCommand.BecomeOnline);
-        // scope (exit) {
-        //     discovery_tid.send(DiscoveryRequestCommand.BecomeOffline);
-        // }
 
         scope (exit)
         {
-            log("close listener");
             p2pnode.closeListener(opts.transaction.protocol_id);
         }
         scope (exit)
@@ -314,10 +301,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             if (transcript_tid !is transcript_tid.init)
             {
                 transcript_tid.prioritySend(Control.STOP);
-                if (receiveOnly!Control is Control.END)
-                {
-                    log("Scripting api end!!");
-                }
+                receiveOnly!Control;
             }
 
             if (discovery_tid !is Tid.init)
@@ -413,20 +397,19 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             {
                 return Document();
             }
-            log("Payload readed %s", Clock.currTime().toUTC());
+            log.trace("Payload read");
             return payload_queue.read;
         }
 
         void controller(Control ctrl)
         {
-            log("Ctrl: %s", ctrl);
             with (Control)
             {
                 switch (ctrl)
                 {
                 case STOP:
                     stop = true;
-                    log("##### Stop %s", opts.node_name);
+                    log("Stop %s", opts.node_name);
                     break;
                 case LIVE:
                     break;
@@ -438,8 +421,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 
         void receive_wavefront(const Document doc)
         {
-            log("\n*\n*\n*\n******* receive %s %s", opts.node_name,
-                doc.data.length);
             const receiver = HiRPC.Receiver(doc);
             hashgraph.wavefront(
                 receiver,
@@ -475,7 +456,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         }
         while (!network_ready);
 
-        log.trace("Before Main loop  addressbook.numOfActiveNodes : %d", addressbook
+        log.trace("Before Main loop addressbook.numOfActiveNodes : %d", addressbook
                 .numOfActiveNodes);
         HiRPC empty_hirpc;
         while (!stop && !abort)
@@ -506,7 +487,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 const init_tide = random.value(0, 2) is 1;
                 if (init_tide)
                 {
-                    log("init_tide");
                     hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);
                 }
             }

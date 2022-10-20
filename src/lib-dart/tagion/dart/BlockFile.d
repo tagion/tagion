@@ -28,6 +28,8 @@ import tagion.dart.DARTException : BlockFileException;
 
 import std.math : rint;
 
+enum BLOCK_SIZE = 0x80;
+
 version (unittest)
 {
     import Basic = tagion.basic.Basic;
@@ -1647,7 +1649,6 @@ class BlockFile
         //
 
         { //write_blocks_in_sorted_order
-            pragma(msg, "Block ", Block);
             auto sorted_indices = blocks.keys.dup.sort;
             sorted_indices.each!(index => write(index, blocks[index]));
         }
