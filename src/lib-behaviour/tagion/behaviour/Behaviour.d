@@ -6,13 +6,16 @@ import tagion.hibon.Document;
 import std.traits;
 import std.format;
 import std.meta : AliasSeq;
-import std.range : only;
-import std.array : join;
+import std.range : only, tail, front;
+import std.array : join, split;
+
+//import std.algorithm.iteration : map;
+import std.path;
 import std.algorithm.searching : any, all;
 import std.exception : assumeWontThrow;
 
 import tagion.behaviour.BehaviourException;
-import tagion.basic.Types : FileExtension;
+import tagion.basic.Types : FileExtension, DOT;
 import tagion.hibon.HiBONRecord;
 import tagion.basic.Basic : isOneOf;
 
@@ -42,6 +45,7 @@ try {
         import std.uni : toLower;
 
         
+
         .check(scenario !is null,
                 format("The constructor must be called for %s before it's runned", T.stringof));
         static foreach (_Property; BehaviourProperties) {
@@ -444,10 +448,77 @@ unittest {
     }
 }
 
+@safe
+string identifier(const FeatureGroup feature_group) pure {
+    return feature_group.info.name
+        .split(DOT)
+        .tail(1).front;
+}
+
+@safe
+unittest {
+    import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
+
+    const feature_group = getFeature!WithCtor;
+    assert(feature_group.identifier != WithCtor.stringof);
+    assert(feature_group.identifier == q{BehaviourUnittestWithCtor});
+}
+
+@safe
+string logFilename(const FeatureGroup feature_group) {
+    return buildPath(env.bdd_log, feature_group.identifier)
+        .setExtension(FileExtension.hibon);
+
+}
+
+@safe
+unittest {
+    import std.stdio;
+    import tagion.hibon.HiBONJSON;
+    import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
+
+    const feature_group = getFeature!WithCtor;
+    writefln("logfilename = %s", feature_group.logFilename);
+    assert(feature_group.logFilename == "BehaviourUnittestWithCtor.hibon");
+
+    _bdd_env.bdd_log = "/some/log/directory";
+    writefln("full path %s", feature_group.logFilename);
+
+    assert(feature_group.logFilename == "/some/log/directory/BehaviourUnittestWithCtor.hibon");
+
+}
+
+@safe
+void save(const FeatureGroup feature_group) {
+    import tagion.hibon.HiBONRecord : fwrite;
+
+    feature_group.logFilename.fwrite(feature_group);
+}
+
+@safe
+unittest {
+    import std.file : remove, tempDir, exists;
+    import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
+
+    const feature_group = getFeature!WithCtor;
+    _bdd_env.bdd_log = tempDir;
+    feature_group.save;
+    scope (exit) {
+        feature_group.logFilename.remove;
+    }
+    const feature_read_doc = feature_group.logFilename.fread;
+    assert(feature_group.toDoc == feature_read_doc);
+}
+
 version (unittest) {
     import tagion.hibon.Document;
     import tagion.hibon.HiBONRecord;
 
     import io = std.stdio;
     import tagion.hibon.HiBONJSON;
+    import tagion.behaviour.BehaviourEnvironment : _bdd_env;
 }
+
+import tagion.behaviour.BehaviourEnvironment : env;
+
+//import tagion.basic.Types : FileExtension;
