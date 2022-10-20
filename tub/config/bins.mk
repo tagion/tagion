@@ -1,27 +1,21 @@
 
 #
 # $1 : Program name
-# $2 : Path to the program
-# $3 : List of libraries used by the program
-# $4 : Set if the program is tagion tool
+# $2 : List of libraries used by the program
+# $3 : Set if the program is tagion tool
 #
 define DO_BIN
 ${eval
-#export $2?=$$(DBIN)/$1
 export _$1=$$(DBIN)/$1
 
 export $${call DO_UPPER,$1}=$$(_$1)
 
 BINS+=$$(_$1)
 
-test-$1:
-	echo 1 $$($${call DO_UPPER,$1})
-	echo 2 $$(_$1)
-
 $1: target-$1
 bins: $1
 
-_TOOLS=$4
+_TOOLS=$3
 
 ifdef _TOOLS
 info-$1:
@@ -34,9 +28,8 @@ target-$1: target-tagion
 else
 info-$1:
 	@echo _TOOLS undefined
-LIBS_$1+=$3
-#DFILES_$1+=xxx
-#DFILES_$1+=$${shell find $$(DSRC) -name "*.d" -a -path "*/src/bin-tagionwave/*" -a -not -path "*/unitdata/*"}
+LIBS_$1+=$2
+
 target-$1: LIBS+=$$(LIBS_$1)
 
 target-$1: $$(DBIN)/$1
