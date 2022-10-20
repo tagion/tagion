@@ -5,11 +5,18 @@
 # $3 : List of libraries used by the program
 # $4 : Set if the program is tagion tool
 #
-define BIN
+define DO_BIN
 ${eval
-export $2?=$$(DBIN)/$1
+#export $2?=$$(DBIN)/$1
+export _$1=$$(DBIN)/$1
 
-BINS+=$$($2)
+export $${call DO_UPPER,$1}=$$(_$1)
+
+BINS+=$$(_$1)
+
+test-$1:
+	echo 1 $$($${call DO_UPPER,$1})
+	echo 2 $$(_$1)
 
 $1: target-$1
 bins: $1
@@ -22,8 +29,8 @@ info-$1:
 
 target-$1: target-tagion
 	@echo Tools enabled $1
-	rm -f $$($2)
-	ln -s $$(TAGION) $$($2)
+	rm -f $$(_$1)
+	ln -s $$(TAGION) $$(_$1)
 else
 info-$1:
 	@echo _TOOLS undefined
@@ -38,7 +45,7 @@ endif
 env-$1:
 	$$(PRECMD)
 	$${call log.header, $$@ :: env}
-	$${call log.kvp, $2, $$($2)}
+	$${call log.kvp, $${call DO_UPPER,$1}, $$(_$1)}
 	$${call log.env, LIBS_$1,$$(LIBS_$1)}
 	$${call log.env, DFILES_$1,$$(DFILES_$1)}
 	$${call log.close}
