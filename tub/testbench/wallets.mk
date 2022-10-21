@@ -1,10 +1,4 @@
 
-# TAGIONWAVE?=$(DBIN)/tagionwave
-# TAGIONBOOT?=$(DBIN)/tagionboot
-
-# DARTUTIL?=$(DBIN)/dartutil
-# HIBONUTIL?=$(DBIN)/hibonutil
-# TAGIONWALLET?=$(DBIN)/wallet
 
 DARTBOOTRECORD = $(TESTBENCH)/bootrecord.hibon
 DARTDB = $(TESTBENCH)/dart.drt
@@ -13,7 +7,6 @@ WALLETFILES+=tagionwallet.hibon
 WALLETFILES+=quiz.hibon
 WALLETFILES+=device.hibon
 
-# $1:name $2:testbench-path
 define CREATE_WALLET
 ${eval
 TESTBENCH_$1=$${abspath $2/$1}
@@ -33,7 +26,6 @@ INVOICES+=$$(INVOICE_$1)
 .SECONDARY: $$(TESTWALLETFILES_$1)
 .SECONDARY: $$(WALLET_CONFIG_$1)
 
-#$1-wallet: target-wallet
 $1-wallet: | $$(TESTBENCH_$1)/.way
 $1-wallet: $$(INVOICE_$1)
 
@@ -52,7 +44,6 @@ $$(INVOICE_$1): $$(WALLET_CONFIG_$1)
 $1-config: $$(TESTWALLETFILES_$1)
 .PHONY: $1-config
 
-#$$(WALLET_CONFIG_$1): |target-wallet
 $$(WALLET_CONFIG_$1): $$(TESTBENCH_$1)/tagionwallet.hibon
 	$$(PRECMD)
 	$${call log.kvp, $$(@F) $1}
@@ -63,7 +54,6 @@ $$(TESTBENCH_$1)/tagionwallet.hibon: $$(BASEWALLET_$1)/tagionwallet.hibon
 	$${call log.kvp, $$(@F) $1}
 	cp $$(BASEWALLETFILES_$1) $$(@D)
 
-#$$(BASEWALLET_$1)/%.hibon: $$(BASEWALLETFILES_$1)
 $$(BASEWALLET_$1)/tagionwallet.hibon: | target-tagionwallet
 $$(BASEWALLET_$1)/tagionwallet.hibon: $$(STDINWALLET_$1)
 	$$(PRECMD)
@@ -126,17 +116,6 @@ proper: remove-wallets
 }
 endef
 
-#include testbench_setup.mk
-
-# create-recorder: tools $(DARTBOOTRECORDER)
-# 	$(PRECMD)
-# 	$(TAGIONBOOT) $(INVOICES) -o $(DARTBOOTRECORDER)
-
-# create-invoices: tools $(INVOICES)
-
-# $(DARTBOOTRECORDER): $(INVOICES)
-# 	$(PRECMD)
-# 	$(TAGIONBOOT) $? -o $@
 
 env-wallets:
 	$(PRECMD)

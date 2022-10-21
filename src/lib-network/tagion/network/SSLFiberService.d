@@ -454,8 +454,6 @@ class SSLFiberService
             leb128_loop: for (;;)
             {
                 rec_data_size = client.receive(current);
-                log("curr: %s %d %s", leb128_len_data, rec_data_size, LEB128.decode!(
-                        uint)(current));
                 if (rec_data_size < 0)
                 {
                     // Not ready yet
@@ -488,11 +486,9 @@ class SSLFiberService
             buffer = new ubyte[leb128_len.size + leb128_len.value];
             buffer[0 .. rec_data_size] = leb128_len_data[0 .. rec_data_size];
             current = buffer[rec_data_size .. $];
-            log("curr: %s %d", buffer[0 .. leb128_len.size], buffer.length);
             while (current.length)
             {
                 rec_data_size = client.receive(current);
-                log("in loop: %d %s", rec_data_size, current);
                 if (rec_data_size < 0)
                 {
                     // Not ready yet
@@ -505,9 +501,6 @@ class SSLFiberService
                 }
                 yield;
             }
-            log("message readed: %d %s", buffer.length, buffer);
-            // Document doc = Document(cast(immutable)buffer);
-            // log("Received log %d ", doc.serialize.length);
             return buffer.idup;
         }
 
@@ -614,11 +607,8 @@ class SSLFiberService
             this._isComlete = false;
             scope (exit)
             {
-                log("accept_client shutdown");
                 accept_client.shutdown(SocketShutdown.BOTH);
-                log("client shutdown");
                 shutdown;
-                log("unlock shutdown");
                 unlock;
             }
             assert(accept_client.isAlive);

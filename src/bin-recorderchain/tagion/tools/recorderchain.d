@@ -1,5 +1,5 @@
 /// \file recorderchain.d
-module tagion.recorderchain;
+module tagion.tools.recorderchain;
 
 /**
  * @brief tool replay whole recorder chain in DART database

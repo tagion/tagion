@@ -395,7 +395,6 @@ export uint validate(const uint32_t doc_id, const uint32_t dev_pin_doc_id,
 
 import std.traits;
 
-pragma(msg, "dscript ", fullyQualifiedName!Document);
 Buffer decrypt(Buffer encrypted_seed, Document aes_key_doc)
 {
     import std.digest.sha : SHA256;

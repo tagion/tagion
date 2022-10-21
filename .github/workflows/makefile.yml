@@ -1,0 +1,34 @@
+name: Makefile CI
+on:
+  pull_request:
+    branches: [ "develop" ]
+  push: 
+    branches: [ "develop" ]
+env:
+  ## Sets environment variable
+  BINS_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin
+  SCRIPTS_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/core-test-scripts
+  SHARED_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/shared
+  SHARED_PATH: /tgn/test_scripts/shared
+jobs:
+  unit-test:
+    runs-on: self-hosted
+    steps:
+    - name: cleanup
+      run: | 
+        sudo rm -rf /home/moonbase/actions-runner/_work/tagion/tagion/
+        mkdir /home/moonbase/actions-runner/_work/tagion/tagion/
+    - uses: actions/checkout@v3
+
+    - name: unittest  
+      run: |
+        pwd
+        source ~/.bashrc
+        ls
+        git branch
+        make unittest
+  
+    - name: unittest result
+      run: |
+        tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
+        

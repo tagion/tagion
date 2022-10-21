@@ -2,164 +2,154 @@
 
 /// \page LoggerService
 
-/** @brief Service for logging everythinh
+/** @brief Service for handling both text logs and variable logging
  */
 
 module tagion.services.LoggerService;
 
+import std.array;
 import std.stdio;
 import std.format;
 import core.thread;
 import core.sys.posix.pthread;
 import std.string;
+import std.algorithm : any, filter;
+import std.algorithm.searching : canFind;
+import std.datetime.systime : Clock;
+import std.conv : to;
 
-//extern(C) int pthread_setname_np(pthread_t, const char*);
-
+import tagion.basic.Basic : TrustedConcurrency, assumeTrusted;
 import tagion.basic.Types : Control;
-import tagion.logger.Logger;
-import tagion.services.LogSubscriptionService : logSubscriptionServiceTask;
-
-import tagion.hibon.HiBONRecord;
-
-import tagion.services.Options : Options, setOptions, options;
 import tagion.basic.TagionExceptions;
 import tagion.GlobalSignals : abort;
-
-/** Struct with log filter
- */
-@safe struct LogFilter
-{
-    enum any_task_name = "";
-
-    string task_name;
-    LoggerType log_level;
-    mixin HiBONRecord!(q{
-        this(string task_name, LoggerType log_level) nothrow {
-            this.task_name = task_name;
-            this.log_level = log_level;
-        }
-    });
-
-    @nogc bool match(string task_name, LoggerType log_level) pure const nothrow
-    {
-        return (this.task_name == any_task_name || this.task_name == task_name)
-            && this.log_level & log_level;
-    }
-}
-
-unittest
-{
-    enum some_task_name = "sometaskname";
-    enum another_task_name = "anothertaskname";
-
-    assert(LogFilter("", LoggerType.ERROR).match(some_task_name, LoggerType.STDERR));
-    assert(LogFilter(some_task_name, LoggerType.ALL).match(some_task_name, LoggerType.INFO));
-    assert(LogFilter(some_task_name, LoggerType.ERROR).match(some_task_name, LoggerType.ERROR));
-
-    assert(!LogFilter(some_task_name, LoggerType.STDERR).match(some_task_name, LoggerType.INFO));
-    assert(!LogFilter(some_task_name, LoggerType.ERROR).match(another_task_name, LoggerType.ERROR));
-}
-
-import tagion.basic.Basic : TrustedConcurrency;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONRecord;
+import tagion.services.LogSubscriptionService : logSubscriptionServiceTask;
+import tagion.services.Options : Options, setOptions, options;
+import tagion.logger.Logger;
+import tagion.logger.LogRecords;
+import tagion.tasks.TaskWrapper;
 
 mixin TrustedConcurrency;
 
-import tagion.tasks.TaskWrapper;
+private
+{
+    enum TIMESTAMP_WIDTH = 10;
+    enum LOG_LEVEL_MAX_WIDTH = 5;
+
+    enum LOG_FORMAT = "%-" ~ to!string(
+            TIMESTAMP_WIDTH) ~ "s | %-" ~ to!string(
+            LOG_LEVEL_MAX_WIDTH) ~ "s | %s: %s";
+}
 
 /**
- * Main function of LoggerService
- * @param optiions
+ * \struct LoggerTask
+ * Struct represents LoggerService which handles logs and provides passing them to LogSubscriptionService
  */
 @safe struct LoggerTask
 {
     mixin TaskBasic;
 
+    /** Storage of current log filters, received from LogSubscriptionService */
     LogFilter[] commonLogFilters;
-    pragma(msg, "fixme(ib) Spawn LogSubscriptionService from LoggerService");
+    /** LogSubscriptionService thread id */
     Tid logSubscriptionTid;
 
+    /** Service options */
     Options options;
 
+    /** File for writing text logs */
     File file;
+    /** Flag that enables logging output to file */
     bool logging;
 
-    @nogc bool matchAnyFilter(string task_name, LoggerType type) const nothrow pure
+    /** Method that helps sending arguments to LogSubscriptionService 
+     *      @param args - arbitrary list of arguments to send to service
+     */
+    void sendToLogSubService(Args...)(Args args)
     {
-        foreach (filter; commonLogFilters)
+        if (logSubscriptionTid is Tid.init)
         {
-            if (filter.match(task_name, type))
-            {
-                return true;
-            }
+            logSubscriptionTid = locate(options.logSubscription.task_name);
         }
-        return false;
-        // return commonLogFilters.any({lambda...})
+
+        if (logSubscriptionTid !is Tid.init)
+        {
+            logSubscriptionTid.send(args);
+        }
     }
 
-    @TaskMethod void receiveLogs(LoggerType type, string task_name, string log_msg)
+    /** Method that checks whether given log info matches at least one stored filter 
+     *      @param info - log info to check
+     *      \return boolean result of checking
+     */
+    bool matchAnyFilter(LogInfo info)
     {
-        void printToConsole(string s) @trusted
+        return commonLogFilters.any!(f => (f.match(info)));
+    }
+
+    static string formatLog(LogLevel level, string task_name, string text)
+    {
+        return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, level, task_name, text);
+    }
+
+    /** Task method that receives logs from Logger and sends them to console, file and LogSubscriptionService
+     *      @param info - log info about passed log
+     *      @param doc - log itself, that can be either TextLog or some HiBONRecord variable
+     */
+    @TaskMethod void receiveLogs(immutable(LogInfo) info, immutable(Document) doc)
+    {
+        if (matchAnyFilter(info))
         {
+            sendToLogSubService(info, doc);
+        }
+
+        if (info.isTextLog && doc.hasMember(TextLog.label))
+        {
+            string output = formatLog(info.level, info.task_name, doc[TextLog.label].get!string);
+
+            // Output text log to file
+            if (logging)
+            {
+                file.writeln(output);
+            }
+
+            // Output text log to console
             if (options.logger.to_console)
             {
-                writeln(s);
+                writeln(output);
                 if (options.logger.flush)
                 {
-                    stdout.flush();
+                    assumeTrusted!stdout.flush();
                 }
             }
-        }
 
-        void sendToLogSubscriptionService(LoggerType type, string task_name, string log_output)
-        {
-            if (logSubscriptionTid is Tid.init)
+            // Output error log
+            if (info.level & LogLevel.STDERR)
             {
-                logSubscriptionTid = locate(options.logSubscription.task_name);
-            }
-
-            if (logSubscriptionTid !is Tid.init)
-            {
-                logSubscriptionTid.send(task_name, type, log_output);
+                assumeTrusted!stderr.writefln(output);
             }
         }
+    }
 
-        void printStdError(LoggerType type, string task_name, string log_msg) @trusted
+    /** Task method that receives filter updates from LogSubscriptionService
+     *      @param filters - array of filter updates
+     */
+    @TaskMethod void receiveFilters(LogFilterArray filters, LogFiltersAction action)
+    {
+        if (action == LogFiltersAction.ADD)
         {
-            if (type & LoggerType.STDERR)
-            {
-                stderr.writefln("%s:%s: %s", task_name, type, log_msg);
-            }
-        }
-
-        string output;
-        if (type is LoggerType.INFO)
-        {
-            output = format("%s: %s", task_name, log_msg);
+            commonLogFilters ~= filters.array;
         }
         else
         {
-            output = format("%s:%s: %s", task_name, type, log_msg);
+            commonLogFilters = commonLogFilters.filter!(f => filters.array.canFind(f)).array;
         }
-
-        if (logging)
-        {
-            file.writeln(output);
-        }
-        printToConsole(output);
-        if (matchAnyFilter(task_name, type))
-        {
-            sendToLogSubscriptionService(type, task_name, output);
-        }
-
-        printStdError(type, task_name, log_msg);
     }
 
-    @TaskMethod void receiveFilters(immutable(LogFilter[]) filters)
-    {
-        pragma(msg, "fixme(cbr): This accumulate alot for trach memory on the heap");
-        commonLogFilters = filters.dup;
-    }
-
+    /** Method that triggered when service receives Control.STOP.
+     *  Receiving this signal means that LoggerService should be stopped
+     */
     void onSTOP()
     {
         stop = true;
@@ -171,16 +161,25 @@ import tagion.tasks.TaskWrapper;
         }
     }
 
+    /** Method that triggered when service receives Control.LIVE.
+     *  Receiving this signal means that LogSubscriptionService successfully running
+     */
     void onLIVE()
     {
         writeln("LogSubscriptionService is working...");
     }
 
+    /** Method that triggered when service receives Control.STOP.
+     *  Receiving this signal means that LogSubsacriptionService successfully stopped
+     */
     void onEND()
     {
         writeln("LogSubscriptionService was stopped");
     }
 
+    /** Main method that starts service
+     *      @param options - service options
+     */
     void opCall(immutable(Options) options)
     {
         this.options = options;
@@ -188,16 +187,22 @@ import tagion.tasks.TaskWrapper;
 
         pragma(msg, "fixme(ib) Pass mask to Logger to not pass not necessary data");
 
-        if (options.sub_logger.enable)
+        if (options.logSubscription.enable)
         {
             logSubscriptionTid = spawn(&logSubscriptionServiceTask, options);
         }
         scope (exit)
         {
+            import std.stdio;
+
             if (logSubscriptionTid !is Tid.init)
             {
                 logSubscriptionTid.send(Control.STOP);
-                receiveOnly!Control;
+                if (receiveOnly!Control == Control.END) // TODO: can't receive END when stopping after logservicetest, fix it
+                {
+                    writeln("Canceled task LogSubscriptionService");
+                    writeln("Received END from LogSubscriptionService");
+                }
             }
         }
 
