@@ -16,9 +16,12 @@ WRAPS+=secp256k1 p2pgowrapper $(SSLIMPLEMENTATION)
 
 $(UNITTEST_BIN): $(DFILES)
 
-unittest: LIBS+=$(SSLIMPLEMENTATION)
-unittest: LIBS+=$(LIBSECP256K1)
-unittest: LIBS+=$(LIBP2PGOWRAPPER)
+proto-unittest-build: LIBS+=$(SSLIMPLEMENTATION)
+proto-unittest-build: LIBS+=$(LIBSECP256K1)
+proto-unittest-build: LIBS+=$(LIBP2PGOWRAPPER)
+
 unittest: proto-unittest-run
+
+build-unittest: proto-unittest-build
 
 endif

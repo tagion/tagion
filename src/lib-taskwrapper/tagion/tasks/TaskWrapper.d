@@ -74,6 +74,7 @@ alias TaskInfo = Tuple!(Tid, "tid", string, "task_name");
     }
 }
 
+version(none)
 unittest
 {
     TidTable table;
@@ -291,6 +292,7 @@ version (unittest) @safe struct FakeTask
     }
 }
 
+version(none)
 @safe unittest
 {
     import tagion.services.Options : Options, setDefaultOption;

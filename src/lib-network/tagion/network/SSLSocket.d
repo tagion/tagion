@@ -1003,10 +1003,12 @@ class SSLSocket : Socket
                     io.writeln("Callback here ", point);
                     io.writeln("SRV RET ", b);
                     auto str = SSL_alert_desc_string_long(b);
-                    if (str != null)
+                    if (str !is null)
                         io.writeln("SRVR " ~ fromStringz(str));
                     static if (SSLErrorCodes.SSL_ERROR_WANT_ASYNC == 9)
                     {
+                    import core.stdc.stdio : printf;
+                        printf("ssl %p\n", ssl);
                         io.writeln("<SRVR> " ~ fromStringz(SSL_state_string_long(ssl)));
                     }
                     assert((a & SSL_CB_POINTS.CB_ALERT) == 0);
