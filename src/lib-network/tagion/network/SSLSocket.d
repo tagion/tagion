@@ -90,6 +90,7 @@ else {
     }
 }
 
+version(none)
 enum SSL_CB_POINTS : int {
     CB_LOOP = 0x1,
     CB_EXIT = 0x2,
@@ -249,6 +250,19 @@ class SSLSocket : Socket {
         return send(buf, SocketFlags.NONE);
     }
 
+    version (WOLFSSL) {
+        static void check_wolfssl_error(ref SSLErrorCodes error) {
+            io.writeln("<" ~ str_error(error) ~ '>');
+            with (wolfSSL_ErrorCodes) switch (cast(wolfSSL_ErrorCodes) error) {
+            case SOCKET_ERROR_E:
+                error = SSLErrorCodes.SSL_ERROR_SYSCALL;
+                return;
+            default:
+                return;
+            }
+        }
+    }
+
     /++
      Check the return result for a SSL system function
      +/
@@ -347,6 +361,12 @@ class SSLSocket : Socket {
         return fromStringz(err_text.ptr).idup;
     }
 
+    static bool isKnownError(ref const string error_descr) {
+        import std.algorithm;
+
+        return error_descr.startsWith("Unknown error ") == 0;
+    }
+
     /++
        Create a SSL socket from a socket
        Returns:
@@ -404,6 +424,18 @@ class SSLSocket : Socket {
         return !SSL_pending(c_ssl) && accepted;
     }
 
+    version (WOLFSSL) {
+        static void processingWolfSSLError(wolfSSL_ErrorCodes _error) {
+            switch (_error) {
+            case wolfSSL_ErrorCodes.SOCKET_ERROR_E:
+            case wolfSSL_ErrorCodes.SIDE_ERROR:
+                throw new SSLSocketException(str_error(_error), SSLErrorCodes.SSL_ERROR_SSL);
+            default:
+                return;
+            }
+        }
+    }
+
     /++
        Reject a client connect and close the socket
      +/
@@ -454,8 +486,10 @@ class SSLSocket : Socket {
     /++
      Constructs a new socket
      +/
-    this(AddressFamily af, EndpointType et,
-            SocketType type = SocketType.STREAM, bool verifyPeer = true) {
+    this(AddressFamily af, 
+EndpointType et,
+            SocketType type = SocketType.STREAM, 
+bool verifyPeer = true) {
         super(af, type);
         init(verifyPeer, et);
     }
