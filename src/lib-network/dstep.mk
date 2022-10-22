@@ -48,6 +48,9 @@ $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcry
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
 
 $(WOLFSSL_DIROOT)/wolfcrypt/types.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_types.pl
+$(WOLFSSL_DIROOT)/ssl.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_ssl.pl
+
+$(WOLFSSL_DIROOT)/wolfcrypt/asn_public.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
 
 find_test=${shell find $(REPOROOT) -type d -path "*wolfcrypt"}
 

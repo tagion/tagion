@@ -10,6 +10,8 @@ while (<>) {
         }
         $found=1;
     }
+    s/^(\s*)enum(\s+XSNPRINTF\s+=\s+snprintf;)/$1alias$2/;
+    s/^(\s*)enum(\s+XGETENV\s+=\s+getenv;)/$1alias$2/;
     print;
 }
 
