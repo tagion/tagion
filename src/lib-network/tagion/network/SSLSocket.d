@@ -25,6 +25,28 @@ class SSLSocketException : SocketException {
 }
 
 version (WOLFSSL) {
+import tagion.network.wolfssl.c.ssl;
+alias SSL=WOLFSSL;
+alias CTX=WOLFSSL_CTX;
+
+alias SSL_CTX_use_certificate_file = WOLFSSL_CTX_use_certificate_file;
+
+alias SSL_write = WOLFSSL_write;
+alias SSL_read= WOLFSSL_read;
+alias SSL_CTX_new = WOLFSSL_CTX_new;
+alias SSL_set_fd =  WOLFSSL_set_fd;
+alias SSL_get_fd = WOLFSSL_get_fd;
+alias SSL_set_verify = WOLFSSL_set_verify;
+
+
+
+/*
+int WOLFSSL_write(
+    WOLFSSL * ssl,
+    const void * data,
+    int sz
+)
+*/
 }
 else {
     extern (C) {
@@ -187,8 +209,7 @@ class SSLSocket : Socket {
     in {
         auto empty_cfn = certificate_filename.length == 0;
         auto empty_pvk_fn = prvkey_filename.length == 0;
-        if (empty_cfn || empty_pvk_fn)
-            throw new SSLSocketException("Empty file paths inputs");
+        assert(!empty_cfn && !empty_pvk_fn, "Empty file paths inputs");
     }
     do {
         if (SSL_CTX_use_certificate_file(_ctx, certificate_filename.toStringz,
@@ -238,7 +259,7 @@ class SSLSocket : Socket {
     @trusted
     override ptrdiff_t send(const(void)[] buf, SocketFlags flags) {
         auto res_val = SSL_write(_ssl, buf.ptr, cast(int) buf.length);
-        const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, res_val);
+       // const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, res_val);
         check_error(res_val);
         return res_val;
     }
@@ -251,9 +272,9 @@ class SSLSocket : Socket {
     }
 
     version (WOLFSSL) {
-        static void check_wolfssl_error(ref SSLErrorCodes error) {
+        static void check_WOLFSSL_error(ref SSLErrorCodes error) {
             io.writeln("<" ~ str_error(error) ~ '>');
-            with (wolfSSL_ErrorCodes) switch (cast(wolfSSL_ErrorCodes) error) {
+            with (WOLFSSL_ErrorCodes) switch (cast(wolfSSL_ErrorCodes) error) {
             case SOCKET_ERROR_E:
                 error = SSLErrorCodes.SSL_ERROR_SYSCALL;
                 return;
@@ -425,10 +446,10 @@ class SSLSocket : Socket {
     }
 
     version (WOLFSSL) {
-        static void processingWolfSSLError(wolfSSL_ErrorCodes _error) {
+        static void processingWolfSSLError(WOLFSSL_ErrorCodes _error) {
             switch (_error) {
-            case wolfSSL_ErrorCodes.SOCKET_ERROR_E:
-            case wolfSSL_ErrorCodes.SIDE_ERROR:
+            case WOLFSSL_ErrorCodes.SOCKET_ERROR_E:
+            case WOLFSSL_ErrorCodes.SIDE_ERROR:
                 throw new SSLSocketException(str_error(_error), SSLErrorCodes.SSL_ERROR_SSL);
             default:
                 return;

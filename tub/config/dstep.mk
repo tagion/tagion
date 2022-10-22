@@ -4,12 +4,18 @@ DSTEP_ATTRIBUTES+= --global-attribute=@nogc
 
 
 #
+# This macro produce a .di file from .h
+#
 # $1 D Package
-	# $2 Include directory for the .h c-header files
+# $2 Include directory for the .h c-header files
 # $3 Target directory for the .di files
 # $4 .d files which depends on the the .di files
 # $5 Custom dstep flags
 # $6 HFILES
+#
+# Environment for the .di target
+# DSTEPFLAGS sets the args for dstep command
+# DSTEP_POSTCORRECT Sets a list of post-correct scripts
 #
 define DSTEP_DO
 ${eval
@@ -31,6 +37,7 @@ DIFILES_DEPS+=$4
 $$(DESTROOT.$1)/%.di: $$(HPATH.$1)/%.h | $$(DESTROOT.$1)
 	$$(PRECMD)${call log.kvp, dstep, $$(@F)}
 	$$(DSTEP) $$(DSTEP_ATTRIBUTES) $$(DSTEPFLAGS.$1) $$(DSTEPFLAGS) --package $1 $$< -o $$@
+	$${foreach post_correct, $$(DSTEP_POSTCORRECT), $$(post_correct) $$@}
 
 $$(DESTROOT.$1):
 	$$(PRECMD)mkdir -p $$@
@@ -40,6 +47,7 @@ $4: $$(DIFILES.$1)
 dstep-$1: $$(DIFILES.$1)
 
 dstep: dstep-$1
+
 
 env-dstep-$1:
 	$$(PRECMD)
