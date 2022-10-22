@@ -2,7 +2,7 @@
 # Network DSTEP headers
 #
 ifdef WOLFSSL
-WOLFSSL_POSTCORRECT=${call dir.resolve, lib-network/scripts}
+WOLFSSL_POSTCORRECT=${call dir.resolve_1, lib-network/scripts}
 
 WOLFSSL_PACKAGE := tagion.network.wolfssl.c
 WOLFSSL_DIROOT := ${call dir.resolve_1, tagion/network/wolfssl/c}
@@ -47,7 +47,7 @@ $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfssl
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.asn_public
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
 
-#$(WOLFSSL_DIROOT)/wolfcrypt/types.di: POST_DSTEPCORRECT+=$(WOLFPOST_CORRECT_SCRIPT)/correct_types.pl
+$(WOLFSSL_DIROOT)/wolfcrypt/types.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_types.pl
 
 find_test=${shell find $(REPOROOT) -type d -path "*wolfcrypt"}
 
