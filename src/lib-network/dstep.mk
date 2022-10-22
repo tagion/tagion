@@ -10,7 +10,9 @@ WOLFSSL_DIROOT := ${call dir.resolve_1, tagion/network/wolfssl/c}
 WOLFSSL_DFILES := ${shell find ${call dir.resolve, tagion/network} -name "*.d"}
 
 WOLFSSL_DSTEP_FLAGS+=-I$(DSRC_WOLFSSL)
-WOLFSSL_DSTEP_FLAGS++= --global-import=$(WOLFSSL_PACKAGE).wolfssl
+#WOLFSSL_DSTEP_FLAGS+= --global-import=$(WOLFSSL_PACKAGE).wolfssl
+WOLFSSL_DSTEP_FLAGS+= -DUSE_FAST_MATH=1
+
 
 #WOLFSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/sniffer.h
 WOLFSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/crl.h
@@ -40,8 +42,9 @@ WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/asn_public.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/types.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/dsa.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/random.h
+WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/integer.h
 
-${call DSTEP_DO,$(WOLFCRYPT_PACKAGE),$(DSRC_WOLFSSL),$(WOLFCRYPT_DIROOT),$(WOLFCRYPT_DFILES),$(WOLFCRYPT_DSTEP_FLAGS), $(WOLFCRYPT_HFILES)}
+${call DSTEP_DO,$(WOLFCRYPT_PACKAGE),$(DSRC_WOLFSSL),$(WOLFCRYPT_DIROOT),$(WOLFCRYPT_DFILES),$(WOLFSSL_DSTEP_FLAGS), $(WOLFCRYPT_HFILES)}
 
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.settings
 
@@ -56,6 +59,13 @@ $(WOLFSSL_DIROOT)/ssl.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_ssl.
 $(WOLFSSL_DIROOT)/wolfcrypt/asn_public.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
 $(WOLFSSL_DIROOT)/wolfcrypt/asn_public.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.dsa
 $(WOLFSSL_DIROOT)/wolfcrypt/asn_public.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.random
+
+$(WOLFSSL_DIROOT)/wolfcrypt/dsa.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
+$(WOLFSSL_DIROOT)/wolfcrypt/dsa.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.random
+$(WOLFSSL_DIROOT)/wolfcrypt/dsa.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.integer
+$(WOLFSSL_DIROOT)/wolfcrypt/dsa.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_dsa.pl
+
+$(WOLFSSL_DIROOT)/wolfcrypt/random.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
 
 
 find_test=${shell find $(REPOROOT) -type d -path "*wolfcrypt"}
