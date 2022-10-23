@@ -54,6 +54,9 @@ dstep: dstep-$1
 env-dstep-$1:
 	$$(PRECMD)
 	$${call log.header, $$@ :: env}
+	$${call log.kvp, PACKAGE,$1}
+	$${call log.kvp, SRCDIR,$2}
+	$${call log.kvp, DESTDIR,$3}
 	$${call log.env, HFILES.$1, $$(HFILES.$1)}
 	$${call log.env, HPATH.$1, $$(HPATH.$1)}
 	$${call log.env, DESTROOT.$1, $$(DESTROOT.$1)}
