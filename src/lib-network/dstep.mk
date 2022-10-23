@@ -14,7 +14,8 @@ WOLFSSL_DSTEP_FLAGS+= --global-import=tagion.network.wolfssl.wolfssl_config
 WOLFSSL_DSTEP_FLAGS+= -DUSE_FAST_MATH=1
 WOLFSSL_DSTEP_FLAGS+= -DWC_CTC_NAME_SIZE=128
 #WOLFSSL_DSTEP_FLAGS+= -DCTC_NAME_SIZE=128
-WOLFSSL_DSTEP_FLAGS+= -DWC_NO_HARDEN
+WOLFSSL_DSTEP_FLAGS+= -DWC_NO_HARDEN=1
+WOLFSSL_DSTEP_FLAGS+= -DWOLFSSL_PTHREADS=1
 
 #WOLFSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/sniffer.h
 WOLFSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/crl.h
@@ -46,6 +47,7 @@ WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/dsa.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/random.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/integer.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/memory.h
+WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/wc_port.h
 
 ${call DSTEP_DO,$(WOLFCRYPT_PACKAGE),$(DSRC_WOLFSSL),$(WOLFCRYPT_DIROOT),$(WOLFCRYPT_DFILES),$(WOLFSSL_DSTEP_FLAGS), $(WOLFCRYPT_HFILES)}
 
@@ -55,6 +57,7 @@ $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfssl
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.asn_public
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.memory
+$(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.wc_port
 
 $(WOLFSSL_DIROOT)/wolfcrypt/types.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_types.pl
 $(WOLFSSL_DIROOT)/wolfcrypt/random.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_number.pl
@@ -74,6 +77,8 @@ $(WOLFSSL_DIROOT)/wolfcrypt/random.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PAC
 
 $(WOLFSSL_DIROOT)/wolfcrypt/memory.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
 $(WOLFSSL_DIROOT)/wolfcrypt/memory.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_memory.pl
+
+$(WOLFSSL_DIROOT)/wolfcrypt/wc_port.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_wc_port.pl
 
 find_test=${shell find $(REPOROOT) -type d -path "*wolfcrypt"}
 
