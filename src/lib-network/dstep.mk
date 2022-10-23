@@ -49,7 +49,6 @@ ${call DSTEP_DO,$(WOLFSSL_PACKAGE),$(DSRC_WOLFSSL)/wolfssl,$(WOLFSSL_DIROOT),$(W
 
 WOLFCRYPT_PACKAGE := tagion.network.wolfssl.c.wolfcrypt
 WOLFCRYPT_DIROOT := ${call dir.resolve_1, wolfssl/c/wolfcrypt}
-DSRC_WOLFSSL_WOLFCRYPT := $(DSRC_WOLFSSL)/wolfssl/wolfcrypt
 
 WOLFCRYPT_DFILES := ${shell find ${call dir.resolve, tagion/network} -name "*.d"}
 
@@ -67,9 +66,10 @@ WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/des3.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/sha256.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/md5.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/sha.h
+WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/tfm.h
 #WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/hash.h
 
-${call DSTEP_DO,$(WOLFCRYPT_PACKAGE),$(DSRC_WOLFSSL_WOLFSCRYPT),$(WOLFCRYPT_DIROOT),$(WOLFCRYPT_DFILES),$(WOLFSSL_DSTEP_FLAGS), $(WOLFCRYPT_HFILES)}
+${call DSTEP_DO,$(WOLFCRYPT_PACKAGE),$(DSRC_WOLFSSL)/wolfssl/wolfcrypt,$(WOLFCRYPT_DIROOT),$(WOLFCRYPT_DFILES),$(WOLFSSL_DSTEP_FLAGS), $(WOLFCRYPT_HFILES)}
 
 $(WOLFSSL_DIROOT)/wolfcrypt/types.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_types.pl
 $(WOLFSSL_DIROOT)/wolfcrypt/random.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_number.pl
@@ -115,28 +115,32 @@ $(WOLFSSL_DIROOT)/wolfcrypt/sha.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAG
 #
 WOLFSSL_OPENSSL_PACKAGE := tagion.network.wolfssl.c.openssl
 WOLFSSL_OPENSSL_DIROOT := ${call dir.resolve_1, wolfssl/c/openssl}
-DSRC_WOLFSSL_OPENSSL := $(DSRC_WOLFSSL)/woflssl/openssl
 
 WOLFSSL_OPENSSL_DFILES := ${shell find ${call dir.resolve, tagion/network} -name "*.d"}
 
 WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/evp.h
 WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/compat_types.h
 WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/md4.h
-#WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/md5.h
-#WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/sha.h
+WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/md5.h
+WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/sha.h
 WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/sha3.h
+WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/rsa.h
+WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/bn.h
 #WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/sha256.h
 
-${call DSTEP_DO,$(WOLFSSL_OPENSSL_PACKAGE),$(DSRC_WOLFSSL_OPENSSL),$(WOLFSSL_OPENSSL_DIROOT),$(WOLFSSL_OPENSSL_DFILES),$(WOLFSSL_DSTEP_FLAGS), $(WOLFSSL_OPENSSL_HFILES)}
+${call DSTEP_DO,$(WOLFSSL_OPENSSL_PACKAGE),$(DSRC_WOLFSSL)/wolfssl/openssl,$(WOLFSSL_OPENSSL_DIROOT),$(WOLFSSL_OPENSSL_DFILES),$(WOLFSSL_DSTEP_FLAGS), $(WOLFSSL_OPENSSL_HFILES)}
 
 $(WOLFSSL_DIROOT)/openssl/compat_types.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
 $(WOLFSSL_DIROOT)/openssl/compat_types.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.hmac
 
 $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.compat_types
 $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.md4
+$(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.md5
+$(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.sha
+$(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.sha3
+$(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.rsa
 $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.md5
 $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.sha
-$(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.sha3
 $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.hmac
 $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.aes
 $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.des3
@@ -144,9 +148,13 @@ $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE)
 
 $(WOLFSSL_DIROOT)/openssl/md4.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_md4.pl
 
-#$(WOLFSSL_DIROOT)/openssl/md5.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_md5.pl
+$(WOLFSSL_DIROOT)/openssl/md5.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_openssl_md5.pl
 
 $(WOLFSSL_DIROOT)/openssl/sha3.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_sha3.pl
+
+$(WOLFSSL_DIROOT)/openssl/rsa.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
+$(WOLFSSL_DIROOT)/openssl/rsa.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.tfm
+$(WOLFSSL_DIROOT)/openssl/rsa.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.bn
 
 find_test=${shell find $(REPOROOT) -type d -path "*wolfcrypt"}
 
