@@ -65,6 +65,7 @@ WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/aes.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/des3.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/sha256.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/md5.h
+WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/sha.h
 #WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/hash.h
 
 ${call DSTEP_DO,$(WOLFCRYPT_PACKAGE),$(DSRC_WOLFSSL),$(WOLFCRYPT_DIROOT),$(WOLFCRYPT_DFILES),$(WOLFSSL_DSTEP_FLAGS), $(WOLFCRYPT_HFILES)}
@@ -92,6 +93,7 @@ $(WOLFSSL_DIROOT)/wolfcrypt/wc_port.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT
 $(WOLFSSL_DIROOT)/wolfcrypt/hmac.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
 $(WOLFSSL_DIROOT)/wolfcrypt/hmac.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.md5
 $(WOLFSSL_DIROOT)/wolfcrypt/hmac.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.sha256
+$(WOLFSSL_DIROOT)/wolfcrypt/hmac.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.sha
 
 $(WOLFSSL_DIROOT)/wolfcrypt/aes.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
 
@@ -102,6 +104,8 @@ $(WOLFSSL_DIROOT)/wolfcrypt/md5.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAG
 $(WOLFSSL_DIROOT)/wolfcrypt/md5.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_md5.pl
 
 $(WOLFSSL_DIROOT)/wolfcrypt/sha256.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
+
+$(WOLFSSL_DIROOT)/wolfcrypt/sha.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
 
 
 
@@ -117,7 +121,7 @@ WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/evp.h
 WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/compat_types.h
 WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/md4.h
 #WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/md5.h
-WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/sha.h
+#WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/sha.h
 WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/sha3.h
 #WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/sha256.h
 
@@ -128,8 +132,8 @@ $(WOLFSSL_DIROOT)/openssl/compat_types.di: DSTEPFLAGS+=--global-import $(WOLFSSL
 
 $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.compat_types
 $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.md4
-#$(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.md5
-$(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.sha
+$(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.md5
+$(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.sha
 $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.sha3
 $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.hmac
 $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.aes
