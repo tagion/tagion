@@ -38,6 +38,8 @@ logs
 tools/*
 *.log
 *.way
+# Script tmp file
+*.bak
 
 #
 # Temporary wallet files
