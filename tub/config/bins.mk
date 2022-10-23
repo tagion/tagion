@@ -28,9 +28,10 @@ target-$1: target-tagion
 else
 info-$1:
 	@echo _TOOLS undefined
-LIBS_$1+=$2
 
-target-$1: LIBS+=$$(LIBS_$1)
+LIBS_$1:=$2
+
+target-$1: LIBS:=$$(LIBS_$1)
 
 target-$1: $$(DBIN)/$1
 endif
@@ -46,9 +47,6 @@ env-$1:
 .PHONY: env-$1
 
 env-bins: env-$1
-# tar-$1:
-# 	@echo $$(DFILES)
-# 	@echo $$(LIBS)
 
 clean-$1:
 	$$(PRECMD)
