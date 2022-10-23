@@ -112,7 +112,11 @@ $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE)
 $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.md5
 $(WOLFSSL_DIROOT)/openssl/evp.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.sha
 
+$(WOLFSSL_DIROOT)/openssl/md4.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_md4.pl
+$(WOLFSSL_DIROOT)/openssl/md5.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_md5.pl
+
 find_test=${shell find $(REPOROOT) -type d -path "*wolfcrypt"}
+
 
 test44:
 	echo $(WOLFSSL_DFILES)
