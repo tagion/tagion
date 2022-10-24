@@ -79,7 +79,7 @@ class ModifyRequestHandler : ResponseHandler
     {
         if (alive)
         {
-            log("ModifyRequestHandler: Close alive");
+            log.trace("ModifyRequestHandler: Close alive");
         }
         else
         {
@@ -90,7 +90,7 @@ class ModifyRequestHandler : ResponseHandler
             }
             else
             {
-                log("ModifyRequestHandler: couldn't locate task: %s", task_name);
+                log.warning("ModifyRequestHandler: couldn't locate task: %s", task_name);
             }
         }
     }
@@ -101,7 +101,7 @@ class ReadRequestHandler : ResponseHandler
 {
     private
     {
-        pragma(msg, "Fixme: Why is this a Document[Buffer], why not just a Recorder? It seems to solve the same problem");
+        pragma(msg, "fixme(cbr): Why is this a Document[Buffer], why not just a Recorder? It seems to solve the same problem");
         Document[Buffer] fp_result;
         Buffer[] requested_fp;
         HiRPC hirpc;
@@ -142,8 +142,7 @@ class ReadRequestHandler : ResponseHandler
     {
         if (alive)
         {
-            log("ReadRequestHandler: Close alive");
-            // onFailed()?
+            log.trace("ReadRequestHandler: Close alive");
         }
         else
         {
@@ -161,7 +160,7 @@ class ReadRequestHandler : ResponseHandler
             }
             else
             {
-                log("ReadRequestHandler: couldn't locate task: %s", task_name);
+                log.warning("ReadRequestHandler: couldn't locate task: %s", task_name);
             }
         }
     }
@@ -219,14 +218,13 @@ class ReplayPool(T)
         {
             if (!empty)
             {
-                log("%d i: %d", modifications.length, current_index);
                 replayFunc(modifications[current_index]);
                 current_index++;
             }
         }
         catch (Exception e)
         {
-            log("Replay fiber exception: %s", e);
+            log.warning("Replay fiber exception: %s", e);
         }
     }
 
@@ -263,7 +261,6 @@ interface SynchronizationFactory
     alias OnFailure = void delegate(const DART.Rims sector) @safe;
     alias OnComplete = void delegate(string) @safe;
     alias SyncSectorResponse = Tuple!(uint, ResponseHandler);
-    pragma(msg, "SyncSectorResponse :", SyncSectorResponse);
     bool canSynchronize();
     SyncSectorResponse syncSector(
         const DART.Rims sector,
@@ -349,7 +346,6 @@ class P2pSynchronizationFactory : SynchronizationFactory
                 const stream_id = connect;
                 auto filename = format("%s_%s", tempfile, sector);
                 pragma(msg, "fixme(alex): Why 0x80");
-                enum BLOCK_SIZE = 0x80;
                 BlockFile.create(filename, DART.stringof, BLOCK_SIZE);
                 auto sync = new P2pSynchronizer(filename, stream_id, oncomplete, onfailure);
                 auto db_sync = dart.synchronizer(sync, sector);
@@ -358,11 +354,11 @@ class P2pSynchronizationFactory : SynchronizationFactory
             }
             catch (GoException e)
             {
-                log("Error, connection failed with code: %s", e.Code); //TODO: add address to blacklist
+                log.error("Connection failed with code: %s", e.Code); //TODO: add address to blacklist
             }
             catch (Exception e)
             {
-                log("Error: %s", e);
+                log.warning("Exception caught: %s", e);
             }
             return SyncSectorResponse(0, null);
         }
@@ -372,32 +368,19 @@ class P2pSynchronizationFactory : SynchronizationFactory
         while (iteration > 0)
         {
             iteration++;
-            /+
-            import std.range : dropExactly;
-            const random_key_index = uniform(0, node_address.length, rnd);
-            const node_addr = node_address.byKeyValue.dropExactly(random_key_index).front;
-+/
             const node_addr = addressbook.random;
             if (node_addr.value.sector.inRange(sector))
             {
                 const node_port = node_addr.value.port;
                 if (node_addr.key == pkey)
                     continue;
-                if (dart_opts.master_from_port)
-                {
-                    enum isSlave = (ulong port) => port < dart_opts.sync.maxSlavePort;
-                    if (isSlave(own_port) && isSlave(node_port))
-                        continue; //ignore slave nodes
-                    if (!isSlave(own_port) && !isSlave(node_port))
-                        continue; //ignore master nodes
-                }
                 auto response = syncWith(node_addr.value);
                 if (response[1] is null)
                     continue;
                 return response;
             }
         }
-        log("master not found");
+        log.warning("Master not found");
         return SyncSectorResponse(0, null);
     }
 
@@ -456,7 +439,7 @@ class P2pSynchronizationFactory : SynchronizationFactory
             }
             catch (GoException e)
             {
-                log("P2pSynchronizer: Exception on sending request: %s", e);
+                log.error("P2pSynchronizer: Exception on sending request: %s", e);
                 close();
             }
             (() @trusted { fiber.yield; })();
@@ -474,13 +457,13 @@ class P2pSynchronizationFactory : SynchronizationFactory
             }
             if (alive)
             {
-                log("P2pSynchronizer: close alive. Sector: %d", fiber.root_rims.sector);
+                log.trace("P2pSynchronizer: Close alive. Sector: %d", fiber.root_rims.sector);
                 onfailure(fiber.root_rims);
                 fiber.reset();
             }
             else
             {
-                log("P2pSynchronizer: Synchronization Completed! Sector: %d", fiber
+                log.trace("P2pSynchronizer: Synchronization Completed! Sector: %d", fiber
                         .root_rims.sector);
                 oncomplete(filename);
             }
@@ -566,7 +549,6 @@ version (none) unittest
     Options opts;
     setDefaultOption(opts);
     dart_opts.sync.host.timeout = 50;
-    dart_opts.sync.master_angle_from_port = false;
 
     NodeAddress[string] address_table;
     auto addr1 = NodeAddress();
@@ -861,7 +843,7 @@ unittest
 {
     import std.algorithm : count;
 
-    log.push(LoggerType.ALL);
+    log.push(LogLevel.ALL);
 
     @safe
     static class FakeResponseHandler : ResponseHandler
@@ -939,7 +921,6 @@ unittest
     DARTOptions dart_opts;
     //    setDefaultOption(opts);
     dart_opts.sync.host.timeout = 50;
-    dart_opts.sync.master_angle_from_port = false;
     void emptyFunc(string jf)
     {
         return;

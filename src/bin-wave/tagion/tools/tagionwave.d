@@ -1,7 +1,11 @@
+/// \file tagionwave.d
 module tagion.tools.tagionwave;
 
+/**
+ * @brief tool for network launch
+ */
+
 import std.stdio;
-import core.thread;
 import std.getopt;
 import std.format;
 import std.array : join;
@@ -12,17 +16,19 @@ import tagion.logger.Logger;
 import tagion.services.Options;
 import tagion.options.CommonOptions : setCommonOptions;
 
-//import tagion.services.HeartBeatService;
 import tagion.services.TagionService;
 import tagion.services.LoggerService;
 import tagion.services.TagionFactory;
 import tagion.GlobalSignals;
-import tagion.network.SSLOptions;
-import tagion.gossip.EmulatorGossipNet;
+import tagion.network.SSLOptions : OpenSSL, configureOpenSSL;
 import tagion.tasks.TaskWrapper;
 
 mixin TrustedConcurrency;
 
+/**
+ * Create configs for struct OpenSSL
+ * @param openssl - struct to configure
+ */
 void create_ssl(const(OpenSSL) openssl)
 {
     import std.algorithm.iteration : each;
@@ -61,6 +67,7 @@ mixin Main!(_main, "wave");
 
 int _main(string[] args)
 {
+    /** task name for register in logger */
     main_task = "tagionwave";
     scope (exit)
     {
@@ -72,50 +79,21 @@ int _main(string[] args)
     import std.path : setExtension;
 
     immutable program = args[0];
+    /** flag for print current version of the network */
     bool version_switch;
+    /** flag for overwrite config file */
     bool overwrite_switch;
     auto logo = import("logo.txt");
 
+    /** options to run network */
     scope Options local_options;
-    import std.getopt;
-
-    // auto net_opts = getopt(args, std.getopt.config.passThrough, "net-mode", &(local_options.net_mode));
 
     setDefaultOption(local_options);
 
+    /** file for options */
     auto config_file = "tagionwave.json";
 
     local_options.load(config_file);
-
-    bool set_token = false;
-    bool set_tag = false;
-    void setToken(string option, string value)
-    {
-        switch (option)
-        {
-        case "server-token":
-            local_options.serverFileDiscovery.token = value;
-            set_token = true;
-            break;
-        case "server-tag":
-            local_options.serverFileDiscovery.tag = value;
-            set_tag = true;
-            break;
-        default:
-            // Empty
-        }
-    }
-
-    auto token_opts = getopt(args, std.getopt.config.passThrough,
-        "server-token", &setToken,
-        "server-tag", &setToken);
-
-    if (set_token && set_tag)
-    {
-        local_options.save(config_file);
-        writeln("Group token and tag provided.. (remove it from parameters and run the network)");
-        return 0;
-    }
 
     try
     {
@@ -123,12 +101,11 @@ int _main(string[] args)
 
         if (version_switch)
         {
-            // writefln("version %s", REVNO);
-            // writefln("Git handle %s", HASH);
+            writeln("Tagion 0.9.3 release");
             return 0;
         }
 
-        if (main_args.helpWanted || token_opts.helpWanted)
+        if (main_args.helpWanted)
         {
             writeln(logo);
             defaultGetoptPrinter(
@@ -154,7 +131,6 @@ int _main(string[] args)
             return 0;
         }
 
-        local_options.infinity = (local_options.loops == 0);
     }
     catch (Exception e)
     {
@@ -173,6 +149,14 @@ int _main(string[] args)
     setOptions(local_options);
 
     writeln("----- Start tagion service task -----");
+
+    if (local_options.port >= ushort.max)
+    {
+        writefln("Invalid port value %d. Port should be < %d", local_options.port, ushort.max);
+        return 1;
+    }
+
+    /** Options for SSL service */
     immutable service_options = getOptions();
     // Set the shared common options for all services
     setCommonOptions(service_options.common);
@@ -185,7 +169,7 @@ int _main(string[] args)
         service_options.pid_file.fwrite("export PID=%s\n".format(thisProcessID));
     }
 
-    create_ssl(service_options.transaction.service.openssl);
+    configureOpenSSL(service_options.transaction.service.openssl);
 
     auto logger_service_tid = Task!LoggerTask(service_options.logger.task_name, service_options);
     import std.stdio : stderr;
@@ -211,17 +195,14 @@ int _main(string[] args)
     assert(receiveOnly!Control == Control.LIVE);
     scope (exit)
     {
-        //        if (tagion_service_tid !is tagion_service_tid.init) {
         tagion_service_tid.send(Control.STOP);
         log("Wait for %s to stop", tagion_service_tid.stringof);
         receiveOnly!Control;
-        //        }
     }
     writeln("Wait for join");
 
     int result;
-    // bool stop;
-    // while (!stop) {
+
     receive(
         (Control response) {
         with (Control)
@@ -229,13 +210,10 @@ int _main(string[] args)
             switch (response)
             {
             case STOP:
-                // stop = true;
                 break;
             case END:
-                // stop = true;
                 break;
             default:
-                // stop = true;
                 result = 1;
                 stderr.writefln("Unexpected signal %s", response);
             }
@@ -244,6 +222,5 @@ int _main(string[] args)
         (immutable(Exception) e) { stderr.writeln(e.msg); result = 2; },
         (immutable(Throwable) t) { stderr.writeln(t.msg); result = 3; }
     );
-    // }
     return result;
 }

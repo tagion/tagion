@@ -129,16 +129,14 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
                 foreach (payload_el; payload_doc[])
                 {
                     immutable doc = payload_el.get!Document;
-                    log("PAYLOAD: %s", doc.toJSON);
                     if (!SignedContract.isRecord(doc))
                     {
                         continue;
                     }
-                    import std.datetime : Clock;
 
-                    log("Signed contract %s", Clock.currTime().toUTC());
                     scope signed_contract = SignedContract(doc);
-                    //smart_script.check(net);
+                    log("Executing contract: %s", doc.toJSON);
+
                     bool invalid;
                     ForachInput: foreach (input; signed_contract.contract.inputs)
                     {
@@ -163,16 +161,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
                             version (OLD_TRANSACTION)
                             {
                                 pragma(msg, "OLD_TRANSACTION ", __FUNCTION__, " ", __FILE__, ":", __LINE__);
-
-                                const payment = PayContract(smart_script.signed_contract.inputs);
-                            }
-                            else
-                            {
-                                PayContract payment;
-                            }
-                            version (OLD_TRANSACTION)
-                            {
-                                foreach (bill; payment.bills)
+                                foreach (bill; signed_contract.inputs)
                                 {
                                     const bill_doc = bill.toDoc;
                                     recorder.remove(bill_doc);
@@ -187,24 +176,24 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
                         }
                         else
                         {
-                            log("not in smart script");
+                            log("Signed contract not in smart script");
                             invalid = true;
                         }
                     }
                     else
                     {
-                        log("invalid!!");
+                        log.warning("Invalid input");
                     }
                 }
                 if (recorder.length > 0)
                 {
-                    log("Sending to dart len: %d", recorder.length);
+                    log("Sending to DART len: %d", recorder.length);
                     recorder.dump;
                     modifyDART(recorder);
                 }
                 else
                 {
-                    log("Empty epoch");
+                    log("Received empty epoch");
                 }
             }
             catch (Exception e)

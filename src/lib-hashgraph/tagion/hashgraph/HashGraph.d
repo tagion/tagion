@@ -331,7 +331,7 @@ class HashGraph
     {
         import std.stdio;
 
-        log("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d",
+        log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d",
             name, decided_round.number,
             Event.count, Event.Witness.count, events.length);
         if (epoch_callback !is null)
@@ -618,10 +618,10 @@ class HashGraph
         {
             Event.callbacks.receive(received_wave);
         }
-        log("received_wave(%s <- %s)", received_wave.state, received_node.state);
+        log.trace("received_wave(%s <- %s)", received_wave.state, received_node.state);
         scope (exit)
         {
-            log("next <- %s", received_node.state);
+            log.trace("next <- %s", received_node.state);
         }
         const(Wavefront) wavefront_response() @safe
         {
@@ -639,7 +639,6 @@ class HashGraph
                     const ripple_wave = rippleWave(received_wave);
                     return ripple_wave;
                 case COHERENT:
-                    log.trace("COHERENT");
                     received_node.state = NONE;
                     if (!areWeInGraph)
                     {
@@ -668,7 +667,6 @@ class HashGraph
                     assert(registered);
                     return buildWavefront(FIRST_WAVE, received_wave.tides);
                 case BREAKING_WAVE:
-                    log.trace("BREAKING_WAVE");
                     received_node.state = NONE;
                     break;
                 case FIRST_WAVE:
@@ -1312,9 +1310,9 @@ class HashGraph
         import std.conv;
         import std.datetime;
         import tagion.hibon.HiBONJSON;
-        import tagion.logger.Logger : log, LoggerType;
+        import tagion.logger.Logger : log, LogLevel;
 
-        log.push(LoggerType.NONE);
+        log.push(LogLevel.NONE);
 
         enum NodeLabel
         {

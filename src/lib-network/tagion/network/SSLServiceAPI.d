@@ -61,12 +61,11 @@ struct SSLServiceAPI
             log.register(ssl_options.task_name);
             auto _listener = new SSLSocket(AddressFamily.INET, EndpointType.Server);
             assert(_listener.isAlive);
-            log("certificate=%s, ssl_options.private_key=%s", ssl_options.openssl.certificate, ssl_options
+            log("Run SSLServiceAPI. Certificate=%s, ssl_options.private_key=%s", ssl_options.openssl.certificate, ssl_options
                     .openssl
                     .private_key);
             _listener.configureContext(ssl_options.openssl.certificate, ssl_options
                     .openssl.private_key);
-            //_listener.configureContext(ssl_options.certificate, ssl_options.private_key);
             _listener.blocking = false;
             _listener.bind(new InternetAddress(ssl_options.address, ssl_options.port));
             _listener.listen(ssl_options.max_queue_length);
@@ -79,7 +78,6 @@ struct SSLServiceAPI
                 {
                     throw new TagionException("SSL service task %s is not alive", ssl_options
                             .response_task_name);
-                    //                ownerTid.send(Control.FAIL);
                 }
             }
             scope (exit)
@@ -89,7 +87,6 @@ struct SSLServiceAPI
                 if (ctrl !is Control.END)
                 {
                     log.warning("Unexpected control %s code", ctrl);
-                    //                    ownerTid.send(Control.FAIL);
                 }
             }
             auto socket_set = new SocketSet(ssl_options.max_connections + 1);
