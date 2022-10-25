@@ -45,7 +45,8 @@ jobs:
     needs: build_and_unittest
     steps:
       - name: Cleanup
-        run: rm -rf . ; ls; pwd;
+        run: rm -rf * ; ls; pwd;
+
       - name: Download Docker context
         uses: actions/checkout@v3
         with:
