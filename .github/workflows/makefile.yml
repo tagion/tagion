@@ -26,17 +26,17 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: core-bins
-          path: build/${TARGET_BUILD}/bin/
+          path: build/${{ env.TARGET_BUILD }}/bin/
 
 
       - name: Upload unittest result
         uses: actions/upload-artifact@v3
         with:
           name: core-unittests-logs
-          path: logs/${TARGET_BUILD}/unittest.log
+          path: logs/${{ env.TARGET_BUILD }}/unittest.log
 
       - name: Check unittests
-        run: tail -n 5 logs/${TARGET_BUILD}/unittest.log | head -n 1 | grep passed
+        run: tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep passed
 
   create_tagion_images:
     runs-on: self-hosted
