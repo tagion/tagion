@@ -28,7 +28,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: core-bins
-          path: build/${{ env.TARGET_BUILD }}/bin/
+          path: build/${{ env.TARGET_BUILD }}/bin/tagion
 
 
       - name: Upload unittest result
@@ -44,6 +44,9 @@ jobs:
     runs-on: self-hosted
     needs: build_and_unittest
     steps:
+      - name: Cleanup
+        run: rm -rf .
+        run: ls; pwd;
       - name: Download Docker context
         uses: actions/checkout@v3
         with:
@@ -64,7 +67,7 @@ jobs:
           path: qa-tools
 
       - name: Debug info
-        run: ls; ls bins; ls qa-tools; pwd;
+        run: ls; echo ===========; ls bins; echo ===========; ls qa-tools; pwd;
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
