@@ -27,7 +27,7 @@ WOLFSSL_DSTEP_FLAGS+= -DWOLFSSL_PUB_PEM_TO_DER=1
 WOLFSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/crl.h
 WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/ocsp.h
 WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/certs_test.h
-#WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/ssl.h
+WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/ssl.h
 WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/quic.h
 WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/version.h
 #WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/test.h
@@ -41,9 +41,11 @@ $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcry
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfssl_version
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.asn_public
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
-$(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.memory
+$(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.random
+$(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).callbacks
+#$(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.memory
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.wc_port
-$(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.evp
+#$(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.evp
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.compat_types
 $(WOLFSSL_DIROOT)/ssl.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_ssl.pl
 #
