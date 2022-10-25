@@ -19,7 +19,7 @@ jobs:
         run: |
           source ~/.bashrc
           git branch
-          make unittest - ${{ env.PARALEL }}
+          make unittest -j ${{ env.PARALEL }}
           make bins -j ${{ env.PARALEL }}
           
           echo Successfully built
