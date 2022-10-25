@@ -19,21 +19,25 @@ WOLFSSL_DSTEP_FLAGS+= -DWC_NO_HARDEN=1
 WOLFSSL_DSTEP_FLAGS+= -DWOLFSSL_PUB_PEM_TO_DER=1
 #WOLFSSL_DSTEP_FLAGS+= -DWOLFSSL_BIGINT_TYPES
 #WOLFSSL_DSTEP_FLAGS+= -DFP_64BIT
-
+#WOLFSSL_DSTEP_FLAGS+= -DOPENSSL_EXTRA
 
 #
 # Modules in wolfssl/c 
 #
-WOLFSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/crl.h
-WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/ocsp.h
-WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/certs_test.h
+#WOLFSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/crl.h
+#WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/ocsp.h
+#WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/certs_test.h
 WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/ssl.h
 #WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/quic.h
 WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/version.h
 #WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/internal.h
 #WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/sniffer_error.h
 WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/callbacks.h
-#WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/error-ssl.h
+WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/error_ssl.h
+
+$(DSRC_WOLFSSL)/wolfssl/error_ssl.h: $(DSRC_WOLFSSL)/wolfssl/error-ssl.h
+	$(LN) $< $@
+
 
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import core.stdc.stdarg 
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.settings
@@ -131,6 +135,7 @@ WOLFSSL_OPENSSL_DIROOT := ${call dir.resolve_1, wolfssl/c/openssl}
 WOLFSSL_OPENSSL_DFILES := ${shell find ${call dir.resolve, tagion/network} -name "*.d"}
 
 #WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/evp.h
+WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/ssl.h
 WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/compat_types.h
 #WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/md4.h
 #WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/md5.h
