@@ -22,7 +22,9 @@ jobs:
         run: |
           source ~/.bashrc
           git branch
+          make unittest
           make bins
+          echo Successfully built
       
       - name: Upload bins
         uses: actions/upload-artifact@v3
@@ -30,8 +32,6 @@ jobs:
           name: core-bins
           path: build/$TARGET_BUILD/bin/
 
-      - name: Run unittests
-        run: make unittest
 
       - name: Upload unittest result
         uses: actions/upload-artifact@v3
