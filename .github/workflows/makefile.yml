@@ -19,7 +19,7 @@ jobs:
           source ~/.bashrc
           git branch
           make unittest
-          make bins
+          
           echo Successfully built
       
       - name: Upload bins
@@ -47,7 +47,7 @@ jobs:
         with:
           repository: tagion/tagion-docker
           token: ${{ secrets.GH_PAT }} # `GH_PAT` is a secret that contains your PAT
-          
+
       - name: Download bins
         uses: actions/download-artifact@v3
         with:
@@ -73,13 +73,13 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: tagion/toolkit:$GITHUB_SHA
+          tags: tagion/toolkit:${{ github.sha }}
           context: tagion
       - name: Build and push tagion-qa
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: tagion/qa-toolkit:$GITHUB_SHA
+          tags: tagion/qa-toolkit:${{ github.sha }}
           context: tagion-qa
         
   
