@@ -42,16 +42,18 @@ jobs:
     runs-on: self-hosted
     needs: build_and_unittest
     steps:
-      - name: Download bins
-        uses: actions/download-artifact@v3
-        with:
-          name: core-bins
-          path: bins
       - name: Download Docker context
         uses: actions/checkout@v3
         with:
           repository: tagion/tagion-docker
           token: ${{ secrets.GH_PAT }} # `GH_PAT` is a secret that contains your PAT
+          
+      - name: Download bins
+        uses: actions/download-artifact@v3
+        with:
+          name: core-bins
+          path: bins
+ 
       - name: Download QA tools
         uses: actions/checkout@v3
         with:
