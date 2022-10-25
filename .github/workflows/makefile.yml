@@ -7,6 +7,7 @@ on:
 env:
   ## Sets environment variable
   TARGET_BUILD: x86_64-linux
+  PARALEL: 2
 jobs:
   build_and_unittest:
     runs-on: self-hosted
@@ -18,7 +19,8 @@ jobs:
         run: |
           source ~/.bashrc
           git branch
-          make unittest
+          make unittest - ${{ env.PARALEL }}
+          make bins -j ${{ env.PARALEL }}
           
           echo Successfully built
       
@@ -74,12 +76,12 @@ jobs:
         with:
           push: true
           tags: tagion/toolkit:${{ github.sha }}
-          context: tagion
+          target: tagion
       - name: Build and push tagion-qa
         uses: docker/build-push-action@v3
         with:
           push: true
           tags: tagion/qa-toolkit:${{ github.sha }}
-          context: tagion-qa
+          target: tagion-qa
         
   
