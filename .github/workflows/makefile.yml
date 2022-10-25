@@ -6,29 +6,82 @@ on:
     branches: [ "develop" ]
 env:
   ## Sets environment variable
+  TARGET_BUILD: x86_64-linux
   BINS_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin
   SCRIPTS_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/core-test-scripts
   SHARED_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/shared
   SHARED_PATH: /tgn/test_scripts/shared
 jobs:
-  unit-test:
+  build_and_unittest:
     runs-on: self-hosted
     steps:
-    - name: cleanup
-      run: | 
-        sudo rm -rf /home/moonbase/actions-runner/_work/tagion/tagion/
-        mkdir /home/moonbase/actions-runner/_work/tagion/tagion/
-    - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
-    - name: unittest  
-      run: |
-        pwd
-        source ~/.bashrc
-        ls
-        git branch
-        make unittest
-  
-    - name: unittest result
-      run: |
-        tail -n 5 /home/moonbase/actions-runner/_work/tagion/tagion/logs/x86_64-linux/unittest.log | head -n 1 | grep passed
+      - name: Build
+        run: |
+          source ~/.bashrc
+          git branch
+          make bins
+      
+      - name: Upload bins
+        uses: actions/upload-artifact@v3
+        with:
+          name: core-bins
+          path: build/$TARGET_BUILD/bin/
+
+      - name: Run unittests
+        run: make unittest
+
+      - name: Upload unittest result
+        uses: actions/upload-artifact@v3
+        with:
+          name: core-unittests-logs
+          path: logs/$TARGET_BUILD/unittest.log
+
+      - name: Check unittests
+        run: tail -n 5 logs/$TARGET_BUILD/unittest.log | head -n 1 | grep passed
+
+  create_tagion_images:
+    runs-on: self-hosted
+    needs: build_and_unittest
+    steps:
+      - name: Download bins
+        uses: actions/download-artifact@v3
+        with:
+          name: core-bins
+          path: bins
+      - name: Download Docker context
+        uses: actions/checkout@v3
+        with:
+          repository: tagion/tagion-docker
+          token: ${{ secrets.GH_PAT }} # `GH_PAT` is a secret that contains your PAT
+      - name: Download QA tools
+        uses: actions/checkout@v3
+        with:
+          repository: tagion/qa-framework
+          token: ${{ secrets.GH_PAT }} # `GH_PAT` is a secret that contains your PAT
+          path: qa-tools
+
+      - name: Debug info
+        run: ls; ls bins; ls qa-tools; pwd;
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push tagion
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: tagion/toolkit:$GITHUB_SHA
+          context: tagion
+      - name: Build and push tagion-qa
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          tags: tagion/qa-toolkit:$GITHUB_SHA
+          context: tagion-qa
         
+  
