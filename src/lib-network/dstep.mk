@@ -28,12 +28,12 @@ WOLFSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/crl.h
 WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/ocsp.h
 WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/certs_test.h
 WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/ssl.h
-WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/quic.h
+#WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/quic.h
 WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/version.h
-WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/internal.h
-WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/sniffer_error.h
+#WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/internal.h
+#WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/sniffer_error.h
 WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/callbacks.h
-WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/error-ssl.h
+#WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/error-ssl.h
 
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import core.stdc.stdarg 
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.settings
