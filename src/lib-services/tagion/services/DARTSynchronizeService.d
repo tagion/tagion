@@ -305,7 +305,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
             },
                 &dartHiPRC,
                 &dartRead, // version(none) {
-                (string taskName, Buffer data) {
+                (string taskName, Buffer data, bool send_bullseye = false  /*pass Tid?*/ ) {
                 log.trace("DSS: Received request from service: %s %d", taskName, data.length);
                 Document loadAll(HiRPC hirpc)
                 {
@@ -365,6 +365,13 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     }
                     auto response = empty_hirpc.result(receiver, params);
                     sendResult(response.toDoc.serialize);
+                }
+
+                if (send_bullseye)
+                {
+                    log("TEST ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DARTSync bullseye: %s", dart
+                        .fingerprint.cutHex);
+                    ownerTid.send(dart.fingerprint);
                 }
             },
                 (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); },

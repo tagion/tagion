@@ -3,47 +3,34 @@ module tagion.services.TagionService;
 import core.thread : Thread;
 import core.time;
 import std.concurrency;
-
 import std.datetime : Clock;
-import tagion.utils.StdTime;
-
-//import std.conv;
-//import std.algorithm.searching : canFind;
+import std.format;
+import std.datetime.systime;
 
 import p2plib = p2p.node;
 
-//import p2p.connection;
 import p2p.callback;
 import p2p.cgo.c_helper;
 
+import tagion.utils.StdTime;
 import tagion.services.Options : Options, setOptions, OptionException, NetworkMode, main_task;
 import tagion.utils.Random;
 import tagion.utils.Queue;
 import tagion.GlobalSignals : abort;
-
 import tagion.basic.Types : Pubkey, Control, Buffer;
 import tagion.basic.Basic : nameOf;
 import tagion.logger.Logger;
 import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : EventPackage;
-
-//import tagion.services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
-
-//import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
-
-//import tagion.options.ServiceNames : get_node_name;
 import tagion.basic.TagionExceptions : taskfailure, fatal;
 import tagion.services.DARTSynchronizeService;
-
-///import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
 import tagion.gossip.P2pGossipNet;
 import tagion.gossip.InterfaceNet;
 import tagion.gossip.EmulatorGossipNet;
-
 import tagion.monitor.Monitor;
 import tagion.services.MonitorService;
 import tagion.services.TransactionService;
@@ -51,31 +38,14 @@ import tagion.services.TranscriptService;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.communication.HiRPC;
-
 import tagion.utils.Miscellaneous : cutHex;
-
-//import tagion.basic.ConsensusExceptions;
-//import tagion.basic.TagionExceptions : TagionException;
-
-//import tagion.services.ScriptCallbacks;
 import tagion.services.FileDiscoveryService;
-
-//import tagion.services.ServerFileDiscoveryService;
 import tagion.services.NetworkRecordDiscoveryService;
-
-//mport tagion.gossip.P2pGossipNet: AddressBook;
 import tagion.services.DARTService;
 import tagion.gossip.AddressBook : addressbook;
 import tagion.script.StandardRecords;
-
-//import tagion.Keywords : NetworkMode;
-
-//import std.stdio;
-//import std.array : replace, split;
-//import std.string : indexOf;
-//import std.file : mkdir, exists;
-import std.format;
-import std.datetime.systime;
+import tagion.tasks.TaskWrapper;
+import tagion.services.RecorderService;
 
 shared(p2plib.Node) initialize_node(immutable Options opts)
 {
@@ -353,21 +323,29 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         log.trace("Before startinf monitor and transaction addressbook.numOfActiveNodes : %d", addressbook
                 .numOfActiveNodes);
 
-        // monitor_socket_tid = spawn(
-        //         &monitorServiceTask,
-        //         opts);
-        // assert(receiveOnly!Control is Control.LIVE);
+        auto recorder_task = Task!RecorderTask(opts.recorder.task_name, opts);
+        assert(receiveOnly!Control == Control.LIVE);
+        scope (exit)
+        {
+            recorder_task.control(Control.STOP);
+            if (receiveOnly!Control == Control.END)
+            {
+                log("Recorder service stopped");
+            }
+        }
 
         transcript_tid = spawn(
+
             &transcriptServiceTask,
             opts.transcript.task_name,
-            opts.dart.sync.task_name);
-        assert(receiveOnly!Control is Control.LIVE);
+            opts.dart.sync.task_name,
+            opts.recorder.task_name);
+        assert(receiveOnly!Control == Control.LIVE);
 
         transaction_socket_tid = spawn(
             &transactionServiceTask,
             opts);
-        assert(receiveOnly!Control is Control.LIVE);
+        assert(receiveOnly!Control == Control.LIVE);
 
         {
             immutable buf = cast(Buffer) hashgraph.channel;

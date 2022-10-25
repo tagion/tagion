@@ -26,7 +26,7 @@ import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONJSON;
 
 // This function performs Smart contract executions
-void transcriptServiceTask(string task_name, string dart_task_name) nothrow
+void transcriptServiceTask(string task_name, string dart_task_name, string recorder_task_name) nothrow
 {
     try
     {
@@ -42,6 +42,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
         auto rec_factory = RecordFactory(net);
         const empty_hirpc = HiRPC(null);
         Tid dart_tid = locate(dart_task_name);
+        Tid recorder_tid = locate(recorder_task_name);
         SmartScript[Buffer] smart_scripts;
 
         bool stop;
@@ -54,17 +55,21 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
             }
         }
 
-        void modifyDART(RecordFactory.Recorder recorder)
+        Buffer modifyDART(RecordFactory.Recorder recorder)
         {
             auto sender = empty_hirpc.dartModify(recorder);
             if (dart_tid !is Tid.init)
             {
-                dart_tid.send("blackhole", sender.toDoc.serialize); //TODO: remove blackhole
+                dart_tid.send("blackhole", sender.toDoc.serialize, true); //TODO: remove blackhole
+                auto bullseye = receiveOnly!Buffer;
+                log("TEST ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Transcript bullseye: %s", bullseye);
+                return bullseye;
             }
             else
             {
                 log.error("Cannot locate DART service");
                 stop = true;
+                return [];
             }
         }
 
@@ -189,7 +194,10 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
                 {
                     log("Sending to DART len: %d", recorder.length);
                     recorder.dump;
-                    modifyDART(recorder);
+                    auto bullseye = modifyDART(recorder);
+                    log("TEST ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Transcript 2 bullseye: %s", bullseye);
+
+                    recorder_tid.send(rec_factory.uniqueRecorder(recorder), bullseye);
                 }
                 else
                 {
@@ -217,9 +225,13 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
         while (!stop)
         {
             receive(
+
                 &receive_epoch,
+
                 &register_input,
+
                 &controller,
+
                 &taskfailure,
             );
         }
