@@ -7,10 +7,6 @@ on:
 env:
   ## Sets environment variable
   TARGET_BUILD: x86_64-linux
-  BINS_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin
-  SCRIPTS_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/core-test-scripts
-  SHARED_DIR: /home/moonbase/actions-runner/_work/tagion/tagion/shared
-  SHARED_PATH: /tgn/test_scripts/shared
 jobs:
   build_and_unittest:
     runs-on: self-hosted
@@ -30,17 +26,17 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: core-bins
-          path: build/$TARGET_BUILD/bin/
+          path: build/${TARGET_BUILD}/bin/
 
 
       - name: Upload unittest result
         uses: actions/upload-artifact@v3
         with:
           name: core-unittests-logs
-          path: logs/$TARGET_BUILD/unittest.log
+          path: logs/${TARGET_BUILD}/unittest.log
 
       - name: Check unittests
-        run: tail -n 5 logs/$TARGET_BUILD/unittest.log | head -n 1 | grep passed
+        run: tail -n 5 logs/${TARGET_BUILD}/unittest.log | head -n 1 | grep passed
 
   create_tagion_images:
     runs-on: self-hosted
