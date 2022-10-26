@@ -9,6 +9,7 @@ env:
   TARGET_BUILD: x86_64-linux
   PARALEL: 1
   RETENTION_DAYS_BINS: 3
+  TAGION_CACHE_DIR: ~/tagion_cache 
 jobs:
   build_and_unittest:
     runs-on: self-hosted
@@ -16,8 +17,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Chache libs
-        run: 
+      - name: Use cache of libs
+        run: [[ -d $TAGION_CACHE_DIR/$TARGET_BUILD ]] && mkdir -p ./build/$TARGET_BUILD && cp $TAGION_CACHE_DIR/$TARGET_BUILD/ ./build/$TARGET_BUILD/
 
       - name: Run unittests
         run: |
@@ -35,6 +36,8 @@ jobs:
           path: build/${{ env.TARGET_BUILD }}/bin/tagion
           retention-days: ${{ env.RETENTION_DAYS_BINS }}
 
+      - name: Make cache of libs
+        run: mkdir -p $TAGION_CACHE_DIR/$TARGET_BUILD && cp ./build/$TARGET_BUILD/tmp $TAGION_CACHE_DIR/$TARGET_BUILD/ && cp ./build/$TARGET_BUILD/lib $TAGION_CACHE_DIR/$TARGET_BUILD/
 
       - name: Upload unittest result
         uses: actions/upload-artifact@v3
