@@ -7,178 +7,15 @@ import core.stdc.string : strerror;
 import std.range.primitives : isBidirectionalRange;
 import std.string : format, toStringz;
 import io = std.stdio;
+import tagion.network.SSLSocketException;
+import tagion.network.SSL;
 
 enum EndpointType {
     Client,
     Server
 }
 
-    enum _SSLErrorCodes {
-        SSL_ERROR_NONE = 0,
-        SSL_ERROR_SSL = 1,
-        SSL_ERROR_WANT_READ = 2,
-        SSL_ERROR_WANT_WRITE = 3,
-        SSL_ERROR_WANT_X509_LOOKUP = 4,
-        SSL_ERROR_SYSCALL = 5, /* look at error stack/return
-                                      * value/errno */
-        SSL_ERROR_ZERO_RETURN = 6,
-        SSL_ERROR_WANT_CONNECT = 7,
-        SSL_ERROR_WANT_ACCEPT = 8,
-        SSL_ERROR_WANT_ASYNC = 9,
-        SSL_ERROR_WANT_ASYNC_JOB = 10
-    }
-
-
-
-@safe
-class SSLSocketException : SocketException {
-    immutable SSLErrorCodes error_code;
-    this(immutable(char)[] msg, const SSLErrorCodes error_code = SSLErrorCodes.SSL_ERROR_NONE,
-            string file = __FILE__, size_t line = __LINE__) pure nothrow {
-        this.error_code = error_code;
-        import std.exception : assumeWontThrow;
-
-        immutable _msg = assumeWontThrow(format("%s (%s)", msg, error_code));
-        super(_msg, file, line);
-    }
-}
-
-void check(const bool flag, string msg, const SSLErrorCodes error_code = SSLErrorCodes.SSL_ERROR_NONE,
-            string file = __FILE__, size_t line = __LINE__) pure {
-    if (!flag) {
-        throw new SSLSocketException(msg, error_code, file, line);
-    }
-}
-
-
-version (WOLFSSL) {
-alias SSLErrorCodes=_SSLErrorCodes;
-import tagion.network.wolfssl.c.error_ssl;
-import tagion.network.wolfssl.c.ssl;
-
-alias SSL=WOLFSSL;
-alias SSL_CTX=WOLFSSL_CTX;
-alias SSL_CTX_use_certificate_file = wolfSSL_CTX_use_certificate_file;
-
-alias SSL_write = wolfSSL_write;
-alias SSL_read= wolfSSL_read;
-alias SSL_CTX_new = wolfSSL_CTX_new;
-alias SSL_CTX_free = wolfSSL_CTX_free;
-alias SSL_set_fd =  wolfSSL_set_fd;
-alias SSL_get_fd = wolfSSL_get_fd;
-alias SSL_set_verify = wolfSSL_set_verify;
-alias SSL_new = wolfSSL_new;
-alias SSL_free = wolfSSL_free;
-alias SSL_get_error = wolfSSL_get_error;
-alias SSL_connect = wolfSSL_connect;
-alias SSL_accept = wolfSSL_accept;
-alias SSL_pending = wolfSSL_pending;
-alias TLS_client_method = wolfTLS_client_method;
-alias TLS_server_method = wolfTLS_server_method;
-alias SSL_CTX_check_private_key = wolfSSL_CTX_check_private_key;
-alias SSL_CTX_use_PrivateKey_file = wolfSSL_CTX_use_PrivateKey_file;
-alias ERR_clear_error = wolfSSL_ERR_clear_error;
-alias ERR_print_errors_fp = wolfSSL_ERR_print_errors_fp;
-//alias SSLErrorCodes = wolfSSL_ErrorCodes;
-
-/// Code generator which collects all WOLF and OPENSSL error into one enum
-protected string generator_all_SSLErrorCodes() {
-
-    string[] enum_list;
-    import std.conv : to;
-    import std.traits : EnumMembers;
-    import std.array : join;
-    static foreach(E; EnumMembers!_SSLErrorCodes) {
-    enum_list ~= format(q{    %1$s = cast(int)_SSLErrorCodes.%1$s,}, E.stringof);
-    }
-
-     static foreach(E; EnumMembers!wolfSSL_ErrorCodes) {
-    enum_list ~= format(q{    %1$s = cast(int)wolfSSL_ErrorCodes.%1$s,}, E.stringof);
-    }
-    return format("enum ALL_SSLErrorCodes {\n%-(%s \n%)\n};", enum_list);
-}
-
-pragma(msg, generator_all_SSLErrorCodes);
-/// enum ALL_SSLErrprCodes
-mixin(generator_all_SSLErrorCodes);
-
-
-/*
-int WOLFSSL_write(
-    WOLFSSL * ssl,
-    const void * data,
-    int sz
-)
-*/
-}
-else {
-    extern (C) {
-        enum SSL_VERIFY_NONE = 0;
-        enum SSL_FILETYPE_PEM = 1;
-
-        struct SSL;
-        struct SSL_CTX;
-        struct SSL_METHOD;
-
-        @trusted
-        protected {
-            SSL* SSL_new(SSL_CTX* ctx);
-            void SSL_free(SSL* ssl);
-            void SSL_set_verify(SSL* ssl, int mode, void* callback);
-            int SSL_set_fd(SSL* ssl, int fd);
-            int SSL_connect(SSL* ssl);
-            int SSL_accept(SSL* ssl);
-            int SSL_write(SSL* ssl, const void* buf, int num);
-            int SSL_read(SSL* ssl, void* buf, int num);
-            int SSL_pending(SSL* ssl);
-            int SSL_shutdown(SSL* ssl);
-
-            SSL_CTX* SSL_CTX_new(const SSL_METHOD* method);
-            void SSL_CTX_free(SSL_CTX* ctx);
-
-            SSL_METHOD* TLS_client_method();
-            SSL_METHOD* TLS_server_method();
-
-            int SSL_CTX_use_certificate_file(SSL_CTX* ctx, const char* file, int type);
-            int SSL_CTX_use_PrivateKey_file(SSL_CTX* ctx, const char* file, int type);
-            int SSL_CTX_check_private_key(SSL_CTX* ctx);
-
-            int SSL_get_error(const SSL* ssl, int ret);
-
-            void ERR_clear_error();
-            void ERR_print_errors_fp(FILE* file);
-            ulong ERR_get_error();
-            void ERR_error_string_n(ulong e, char* buf, size_t len);
-           // char* strerror(int errnum);
-            //        void ERR_error_string(ulong e, char* buf);
-            void SSL_set_info_callback(SSL* ssl, void*);
-            char* SSL_alert_type_string(int);
-            char* SSL_alert_type_string_long(int);
-            char* SSL_alert_desc_string_long(int);
-            char* SSL_state_string_long(const SSL*);
-        }
-    }
-/+
-    enum SSLErrorCodes {
-        SSL_ERROR_NONE = 0,
-        SSL_ERROR_SSL = 1,
-        SSL_ERROR_WANT_READ = 2,
-        SSL_ERROR_WANT_WRITE = 3,
-        SSL_ERROR_WANT_X509_LOOKUP = 4,
-        SSL_ERROR_SYSCALL = 5, /* look at error stack/return
-                                      * value/errno */
-        SSL_ERROR_ZERO_RETURN = 6,
-        SSL_ERROR_WANT_CONNECT = 7,
-        SSL_ERROR_WANT_ACCEPT = 8,
-        SSL_ERROR_WANT_ASYNC = 9,
-        SSL_ERROR_WANT_ASYNC_JOB = 10
-    }
-+/
-alias SSLErrorCodes = _SSLErrorCodes;
-
-}
-version(none)
-enum SSL_CB_POINTS : int {
+version (none) enum SSL_CB_POINTS : int {
     CB_LOOP = 0x1,
     CB_EXIT = 0x2,
     CB_READ = CB_EXIT * 2,
@@ -272,9 +109,10 @@ class SSLSocket : Socket {
     @trusted
     void configureContext(string certificate_filename, string prvkey_filename) {
         import std.file : exists;
+
         check(certificate_filename.exists, format("Certification file '%s' not found", certificate_filename));
         check(prvkey_filename.exists, format("Private key file '%s' not found", prvkey_filename));
-    
+
         if (SSL_CTX_use_certificate_file(_ctx, certificate_filename.toStringz,
                 SSL_FILETYPE_PEM) <= 0) {
             ERR_print_errors_fp(stderr);
@@ -322,7 +160,7 @@ class SSLSocket : Socket {
     @trusted
     override ptrdiff_t send(const(void)[] buf, SocketFlags flags) {
         auto res_val = SSL_write(_ssl, buf.ptr, cast(int) buf.length);
-       // const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, res_val);
+        // const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, res_val);
         check_error(res_val);
         return res_val;
     }
@@ -334,8 +172,7 @@ class SSLSocket : Socket {
         return send(buf, SocketFlags.NONE);
     }
 
-    version(none)
-    version (WOLFSSL) {
+    version (none) version (WOLFSSL) {
         static void check_WOLFSSL_error(ref SSLErrorCodes error) {
             io.writeln("<" ~ str_error(error) ~ '>');
             with (SSL_ErrorCodes) switch (cast(wolfSSL_ErrorCodes) error) {
@@ -469,6 +306,7 @@ class SSLSocket : Socket {
             // Socket client = super.accept();
             if (!client.isAlive) {
                 client.close;
+            io.writeln(" ------------- 1 ------------ ");
                 throw new SSLSocketException("Socket could not connect to client. Socket closed.");
             }
             client.blocking = false;
@@ -499,9 +337,11 @@ class SSLSocket : Socket {
             SSL_ERROR_WANT_X509_LOOKUP,
             SSL_ERROR_SYSCALL,
         SSL_ERROR_ZERO_RETURN:
+            io.writefln(" ------------ 2 ------------  %s", ssl_error);
             throw new SSLSocketException(str_error(ssl_error), ssl_error);
             break;
         default:
+            io.writeln(" ------------- 3 ----------- ");
             throw new SSLSocketException(format("SSL Error. SSL error code: %d.", ssl_error),
                     SSL_ERROR_SSL);
             break;
@@ -572,10 +412,10 @@ class SSLSocket : Socket {
     /++
      Constructs a new socket
      +/
-    this(AddressFamily af, 
-EndpointType et,
-            SocketType type = SocketType.STREAM, 
-bool verifyPeer = true) {
+    this(AddressFamily af,
+            EndpointType et,
+            SocketType type = SocketType.STREAM,
+            bool verifyPeer = true) {
         super(af, type);
         init(verifyPeer, et);
     }
@@ -605,7 +445,9 @@ bool verifyPeer = true) {
         import std.array;
         import std.string;
         import std.file;
+        import std.exception : assertNotThrown, assertThrown, collectException;
         import tagion.basic.Basic : fileId;
+        import std.stdio;
 
         static void optionGenKeyFiles(ref string out_cert_path, ref string out_key_path) {
             import tagion.network.SSLOptions;
@@ -671,22 +513,26 @@ bool verifyPeer = true) {
             SSLSocket item = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
             Socket client = new Socket(AddressFamily.UNIX, SocketType.STREAM);
-            bool result = false;
-            try {
-                result = item.acceptSSL(ssl_client, client);
-            }
-            catch (SSLSocketException exception) {
-                //io.writeln("EXEPTION ACCEPTION CORRECT "~exception.msg~"  "~lastSocketError);
-                assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SSL);
-            }
-            assert(result == false);
-            SSLSocket.reset();
+            bool result; // = false;
+                 scope (exit) {
+                    SSLSocket.reset;
         }
+            const exception = collectException!SSLSocketException(
+                    item.acceptSSL(ssl_client, client), result);
+            assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SSL);
+assert(!result);
+        // }
+    }
 
-        //! [File reading - incorrect certificate]
-        {
-            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
-            bool result = false;
+            //! [File reading - incorrect certificate]
+            {
+                SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server); 
+                scope (exit) {
+                    SSLSocket.reset;
+        }
+                    assertThrown!SSLSocketException(
+                            testItem_server.configureContext("_", "_"));/+
+        bool result = false;
             try {
                 testItem_server.configureContext("_", "_");
             }
@@ -696,7 +542,8 @@ bool verifyPeer = true) {
             }
             SSLSocket.reset();
             assert(result);
-        }
+  +/
+                }
 
         //! [File reading - empty path]
         {

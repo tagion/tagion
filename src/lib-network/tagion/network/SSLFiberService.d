@@ -1,16 +1,18 @@
 module tagion.network.SSLFiberService;
 
-import std.string : format;
 import core.thread : Thread, Fiber;
 import core.time; // : dur, Duration, MonoTime;
 import std.socket : SocketSet, SocketException, Socket, AddressFamily;
 import std.exception;
 import std.socket : SocketShutdown;
 import std.concurrency;
+import std.format;
 
 import tagion.network.SSLSocket;
 import tagion.network.SSLOptions;
 import tagion.network.NetworkExceptions : check;
+import tagion.network.SSLSocketException : SSLSocketException;
+import tagion.network.SSL : SSLErrorCodes;
 import tagion.basic.Message;
 import tagion.basic.Types : Buffer, Control;
 import tagion.logger.Logger;
