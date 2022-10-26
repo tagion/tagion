@@ -46,7 +46,7 @@ jobs:
 
       - name: Make cache of libs
         run: |
-          sudo mkdir -p ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }} && /bin/cp -rf ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/ && /bin/cp -rf ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
+          sudo mkdir -p ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }} && sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/tmp && sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/lib
 
       - name: Upload unittest result
         uses: actions/upload-artifact@v3
