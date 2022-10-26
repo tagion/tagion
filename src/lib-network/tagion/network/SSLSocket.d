@@ -600,6 +600,7 @@ assert(!result);
                 testItem_server.configureContext(cert_path, false_key_path)
     );
             assert(exception.error_code == SSLErrorCodes.SSL_ERROR_NONE);
+            SSLSocket.reset();
 //assert(!result);
        /+  
         bool result = false;
@@ -621,7 +622,14 @@ assert(!result);
             SSLSocket empty_socket = null;
             SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
             Socket socket = new Socket(AddressFamily.UNIX, SocketType.STREAM);
-            bool result = false;
+            bool result;
+            const exception = collectException!SSLSocketException(
+                result = ssl_client.acceptSSL(empty_socket, socket)
+    );
+            assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SYSCALL);
+            assert(!result);
+/+
+        bool result = false;
             try {
                 result = ssl_client.acceptSSL(empty_socket, socket);
             }
@@ -629,7 +637,8 @@ assert(!result);
                 result = exception.msg == "Input/output error (SSL_ERROR_SYSCALL)";
             }
             assert(result);
-            SSLSocket.reset();
++/
+        SSLSocket.reset();
         }
 
         //! [checking -1 error code]
