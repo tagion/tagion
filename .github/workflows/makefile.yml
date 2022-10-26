@@ -10,6 +10,7 @@ env:
   PARALEL: 1
   RETENTION_DAYS_BINS: 3
   TAGION_CACHE_DIR: ~/tagion_cache 
+  ## TODO: add ldc2/dmd switch & version
 jobs:
   build_and_unittest:
     runs-on: self-hosted
@@ -19,10 +20,10 @@ jobs:
 
       - name: Use cache of libs
         run: |
-          if [ -d $TAGION_CACHE_DIR/$TARGET_BUILD ]; then
+          if [ -d ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }} ]; then
             echo "Coping cache"
             mkdir -p ./build/$TARGET_BUILD 
-            cp -fr $TAGION_CACHE_DIR/$TARGET_BUILD/ ./build/$TARGET_BUILD/
+            cp -fr ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD}}/* ./build/${{ env.TARGET_BUILD }}/
           else 
             echo "Cache not found"
           fi
@@ -45,7 +46,7 @@ jobs:
 
       - name: Make cache of libs
         run: |
-          mkdir -p $TAGION_CACHE_DIR/$TARGET_BUILD && /bin/cp -rf ./build/$TARGET_BUILD/tmp $TAGION_CACHE_DIR/$TARGET_BUILD/ && /bin/cp -rf ./build/$TARGET_BUILD/lib $TAGION_CACHE_DIR/$TARGET_BUILD/
+          mkdir -p ${{ env.TAGION_CACHE_DIR }} /${{ env.TARGET_BUILD }} && /bin/cp -rf ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/ && /bin/cp -rf ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
 
       - name: Upload unittest result
         uses: actions/upload-artifact@v3
