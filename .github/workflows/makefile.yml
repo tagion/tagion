@@ -45,7 +45,7 @@ jobs:
 
       - name: Make cache of libs
         run: |
-          mkdir -p $TAGION_CACHE_DIR/$TARGET_BUILD && /bin/cp -rf ./build/$TARGET_BUILD/tmp $TAGION_CACHE_DIR/$TARGET_BUILD/ && cp ./build/$TARGET_BUILD/lib $TAGION_CACHE_DIR/$TARGET_BUILD/
+          mkdir -p $TAGION_CACHE_DIR/$TARGET_BUILD && /bin/cp -rf ./build/$TARGET_BUILD/tmp $TAGION_CACHE_DIR/$TARGET_BUILD/ && /bin/cp -rf ./build/$TARGET_BUILD/lib $TAGION_CACHE_DIR/$TARGET_BUILD/
 
       - name: Upload unittest result
         uses: actions/upload-artifact@v3
