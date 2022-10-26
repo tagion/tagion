@@ -306,7 +306,7 @@ class SSLSocket : Socket {
             // Socket client = super.accept();
             if (!client.isAlive) {
                 client.close;
-            io.writeln(" ------------- 1 ------------ ");
+                io.writeln(" ------------- 1 ------------ ");
                 throw new SSLSocketException("Socket could not connect to client. Socket closed.");
             }
             client.blocking = false;
@@ -514,24 +514,24 @@ class SSLSocket : Socket {
             SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
             Socket client = new Socket(AddressFamily.UNIX, SocketType.STREAM);
             bool result; // = false;
-                 scope (exit) {
-                    SSLSocket.reset;
-        }
+            scope (exit) {
+                SSLSocket.reset;
+            }
             const exception = collectException!SSLSocketException(
                     item.acceptSSL(ssl_client, client), result);
             assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SSL);
-assert(!result);
-        // }
-    }
-
-            //! [File reading - incorrect certificate]
-            {
-                SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server); 
-                scope (exit) {
-                    SSLSocket.reset;
+            assert(!result);
+            // }
         }
-                    assertThrown!SSLSocketException(
-                            testItem_server.configureContext("_", "_"));/+
+
+        //! [File reading - incorrect certificate]
+        {
+            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+            scope (exit) {
+                SSLSocket.reset;
+            }
+            assertThrown!SSLSocketException(
+                    testItem_server.configureContext("_", "_")); /+
         bool result = false;
             try {
                 testItem_server.configureContext("_", "_");
@@ -543,7 +543,7 @@ assert(!result);
             SSLSocket.reset();
             assert(result);
   +/
-                }
+        }
 
         //! [File reading - empty path]
         {
@@ -551,10 +551,10 @@ assert(!result);
 
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             string empty_path = "";
-        assertThrown!SSLSocketException(
-                testItem_server.configureContext(empty_path, empty_path)
-    );
-        /+
+            assertThrown!SSLSocketException(
+                    testItem_server.configureContext(empty_path, empty_path)
+            );
+            /+
             bool result = false;
             try {
                 testItem_server.configureContext(empty_path, empty_path);
@@ -564,7 +564,7 @@ assert(!result);
             }
             assert(result);
     +/
-        SSLSocket.reset();
+            SSLSocket.reset();
         }
 
         //! [file loading correct]
@@ -575,10 +575,10 @@ assert(!result);
             string key_path;
             optionGenKeyFiles(cert_path, key_path);
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
-         assertNotThrown!SSLSocketException(
-                testItem_server.configureContext(cert_path, key_path)
-    );
-        /+
+            assertNotThrown!SSLSocketException(
+                    testItem_server.configureContext(cert_path, key_path)
+            );
+            /+
             try {
                 testItem_server.configureContext(cert_path, key_path);
             }
@@ -596,13 +596,13 @@ assert(!result);
             optionGenKeyFiles(cert_path, stub);
             auto false_key_path = cert_path;
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
-             const exception = collectException!SSLSocketException(
-                testItem_server.configureContext(cert_path, false_key_path)
-    );
+            const exception = collectException!SSLSocketException(
+                    testItem_server.configureContext(cert_path, false_key_path)
+            );
             assert(exception.error_code == SSLErrorCodes.SSL_ERROR_NONE);
             SSLSocket.reset();
-//assert(!result);
-       /+  
+            //assert(!result);
+            /+  
         bool result = false;
             try {
                 testItem_server.configureContext(cert_path, false_key_path);
@@ -624,11 +624,11 @@ assert(!result);
             Socket socket = new Socket(AddressFamily.UNIX, SocketType.STREAM);
             bool result;
             const exception = collectException!SSLSocketException(
-                result = ssl_client.acceptSSL(empty_socket, socket)
-    );
+                    result = ssl_client.acceptSSL(empty_socket, socket)
+            );
             assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SYSCALL);
             assert(!result);
-/+
+            /+
         bool result = false;
             try {
                 result = ssl_client.acceptSSL(empty_socket, socket);
@@ -638,14 +638,18 @@ assert(!result);
             }
             assert(result);
 +/
-        SSLSocket.reset();
+            SSLSocket.reset();
         }
 
         //! [checking -1 error code]
         {
-            bool result = false;
             const invalid_error_code = -1;
             SSLSocket socket = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+            const exception = collectException!SSLSocketException(
+                    socket.check_error(invalid_error_code, true)
+            );
+            assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SYSCALL);
+            /+
             try {
                 socket.check_error(invalid_error_code, true);
             }
@@ -654,11 +658,19 @@ assert(!result);
                 result = except.msg == "Input/output error (SSL_ERROR_SYSCALL)";
             }
             assert(result);
+      +/
         }
 
         //! [checking 0 error code]
         {
-            bool result = false;
+            const invalid_error_code = 0;
+            SSLSocket socket = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+            const exception = collectException!SSLSocketException(
+                    socket.check_error(invalid_error_code, true)
+            );
+            assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SYSCALL);
+            /+     
+        bool result = false;
             const invalid_error_code = 0;
             SSLSocket socket = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             try {
@@ -669,6 +681,7 @@ assert(!result);
                 result = except.msg == "Input/output error (SSL_ERROR_SYSCALL)";
             }
             assert(result);
+        +/
         }
 
         //! [checking valid responce]
@@ -678,14 +691,17 @@ assert(!result);
             const final_responce_code = 3;
             SSLSocket socket = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             foreach (responce; initial_responce_code .. final_responce_code) {
+           assertNotThrown(socket.check_error(responce, true));
+            /+ 
                 try {
                     socket.check_error(responce, true);
                 }
                 catch (SSLSocketException except) {
                     result = false;
                 }
+            +/
             }
-            assert(result);
+           // assert(result);
         }
         /**
         * @brief test working but has problems with environment (problems with socket acception for example)
