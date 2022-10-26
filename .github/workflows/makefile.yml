@@ -7,7 +7,7 @@ on:
 env:
   ## Sets environment variable
   TARGET_BUILD: x86_64-linux
-  PARALEL: 2
+  PARALEL: 6
 jobs:
   build_and_unittest:
     runs-on: self-hosted
@@ -74,17 +74,30 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push tagion
-        uses: docker/build-push-action@v3
-        with:
-          push: true
-          tags: tagion/toolkit:${{ github.sha }}
-          target: tagion
-      - name: Build and push tagion-qa
-        uses: docker/build-push-action@v3
-        with:
-          push: true
-          tags: tagion/qa-toolkit:${{ github.sha }}
-          target: tagion-qa
+      - name: Build tagion img
+        run: docker build -t tagion/toolkit:$GITHUB_SHA . --target tagion
+      - name: Build tagion-qa img
+        run: docker build -t tagion/qa-toolkit:$GITHUB_SHA . --target tagion-qa
+
+      - name: Push tagion img
+        run: docker image push tagion/toolkit:$GITHUB_SHA
+      - name: Push tagion-qa img
+        run: docker image push tagion/qa-toolkit:$GITHUB_SHA
+
+      
+      
+      # - name: Build and push tagion
+      #   uses: docker/build-push-action@v3
+      #   with:
+      #     push: true
+      #     tags: tagion/toolkit:${{ github.sha }}
+      #     target: tagion
+      # - name: Build and push tagion-qa
+      #   uses: docker/build-push-action@v3
+      #   with:
+      #     push: true
+      #     tags: tagion/qa-toolkit:${{ github.sha }}
+      #     target: tagion-qa
+      
         
   
