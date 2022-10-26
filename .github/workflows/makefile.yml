@@ -8,6 +8,7 @@ env:
   ## Sets environment variable
   TARGET_BUILD: x86_64-linux
   PARALEL: 1
+  RETENTION_DAYS_BINS: 3
 jobs:
   build_and_unittest:
     runs-on: self-hosted
@@ -29,7 +30,7 @@ jobs:
         with:
           name: core-bins
           path: build/${{ env.TARGET_BUILD }}/bin/tagion
-          retention-days: 3
+          retention-days: ${{ env.RETENTION_DAYS_BINS }}
 
 
       - name: Upload unittest result
@@ -44,6 +45,8 @@ jobs:
   create_tagion_images:
     runs-on: self-hosted
     needs: build_and_unittest
+    outputs:
+      scenario_list: ${{ steps.scenario_list.outputs }}
     steps:
       - name: Cleanup
         run: rm -rf * ; ls; pwd;
@@ -75,6 +78,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
       - name: Build tagion img
         run: docker build -t tagion/toolkit:$GITHUB_SHA . --target tagion
       - name: Build tagion-qa img
@@ -85,20 +89,23 @@ jobs:
       - name: Push tagion-qa img
         run: docker image push tagion/qa-toolkit:$GITHUB_SHA
 
+      - name: List scenarious
+        id: scenario_list
+        run: |
+          SCENARIOUS=""
+          for f in qa-tools/src/scenarious/*; do
+              echo ${f}
+              SCENARIOUS+="${basename -s .ts f} "
+          done
+          echo $SCENARIOUS >> $GITHUB_OUTPUT
+
+    
       
-      
-      # - name: Build and push tagion
-      #   uses: docker/build-push-action@v3
-      #   with:
-      #     push: true
-      #     tags: tagion/toolkit:${{ github.sha }}
-      #     target: tagion
-      # - name: Build and push tagion-qa
-      #   uses: docker/build-push-action@v3
-      #   with:
-      #     push: true
-      #     tags: tagion/qa-toolkit:${{ github.sha }}
-      #     target: tagion-qa
-      
+  run_qa_scripts:
+    runs-on: self-hosted
+    needs: create_tagion_images
+    steps: 
+      - name: Debug info - input
+        run: echo ${{needs.create_tagion_images.outputs.scenario_list}} 
         
   
