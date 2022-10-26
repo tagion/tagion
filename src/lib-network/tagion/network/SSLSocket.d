@@ -1,14 +1,19 @@
 module tagion.network.SSLSocket;
 
-import std.socket;
 import core.stdc.stdio;
 import core.stdc.string : strerror;
 
+import std.socket;
 import std.range.primitives : isBidirectionalRange;
 import std.string : format, toStringz;
-import io = std.stdio;
+import std.typecons : Tuple;
+import std.array : join;
+import std.algorithm.iteration : map;
+
 import tagion.network.SSLSocketException;
 import tagion.network.SSL;
+
+import io = std.stdio;
 
 enum EndpointType {
     Client,
@@ -41,23 +46,7 @@ class SSLSocket : Socket {
     enum ERR_TEXT_SIZE = 256;
     //alias SSL_error_text_t = char[ERR_TEXT_SIZE];
     protected {
-        debug {
-            pragma(msg, "DEBUG: SSLSocket compiled in debug mode");
-            enum in_debugging_mode = true;
-
-            import std.stdio : writeln;
-
-            static void printDebugInformation(string msg) {
-                int i;
-                writeln(msg);
-            }
-        }
-        else {
-            enum in_debugging_mode = false;
-        }
-
         SSL* _ssl;
-
         SSL_CTX* _ctx;
 
         //Static are used as default as context. A setter/argu. in cons. for the context
@@ -105,13 +94,30 @@ class SSLSocket : Socket {
 
     }
 
-    string errorText(const int error_code) @trusted const nothrow {
+    static string errorText(const long error_code) @trusted nothrow {
         import core.stdc.string : strlen;
         import std.exception : assumeUnique;
 
         auto result = new char[ERR_TEXT_SIZE];
         ERR_error_string_n(error_code, result.ptr, result.length);
         return assumeUnique(result[0 .. strlen(result.ptr)]);
+    }
+
+    alias SSL_Error = Tuple!(long, "error_code", string, "msg");
+
+    static const(SSL_Error[]) getErrors() nothrow {
+        long error_code;
+        SSL_Error[] result;
+        while ((error_code = ERR_get_error) != 0) {
+            result ~= SSL_Error(error_code, errorText(error_code));
+        }
+        return result;
+    }
+
+    static string getAllErrors() {
+        return getErrors
+            .map!(err => format("Err %d: %s", err.error_code, err.msg))
+            .join("\n");
     }
     /++
      Configure the certificate for the SSL
@@ -125,26 +131,14 @@ class SSLSocket : Socket {
 
         if (SSL_CTX_use_certificate_file(_ctx, certificate_filename.toStringz,
                 SSL_FILETYPE_PEM) <= 0) {
-            ERR_print_errors_fp(stderr);
-            static if (in_debugging_mode) {
-                printDebugInformation("Error in setting certificate");
-            }
-            throw new SSLSocketException("ssl ctx certificate");
+            throw new SSLSocketException(format("SSL Certificate: %s", getAllErrors));
         }
 
         if (SSL_CTX_use_PrivateKey_file(_ctx, prvkey_filename.toStringz, SSL_FILETYPE_PEM) <= 0) {
-            ERR_print_errors_fp(stderr);
-            static if (in_debugging_mode) {
-                printDebugInformation("Error in setting prvkey");
-            }
-
-            throw new SSLSocketException("ssl ctx private key");
+            throw new SSLSocketException(format("SSL private key:\n %s", getAllErrors));
         }
         if (!SSL_CTX_check_private_key(_ctx)) {
-            static if (in_debugging_mode) {
-                printDebugInformation("Error private key not set correctly");
-            }
-            throw new SSLSocketException("Private key not set correctly");
+            throw new SSLSocketException(format("Private key not set correctly:\n %s", getAllErrors));
         }
     }
 
@@ -310,10 +304,6 @@ class SSLSocket : Socket {
     +/
     bool acceptSSL(ref SSLSocket ssl_client, Socket client) {
         if (ssl_client is null) {
-            static if (in_debugging_mode) {
-                printDebugInformation("Accepting new client");
-            }
-            // Socket client = super.accept();
             if (!client.isAlive) {
                 client.close;
                 io.writeln(" ------------- 1 ------------ ");
@@ -383,30 +373,30 @@ class SSLSocket : Socket {
     /++
      Disconnect the socket
      +/
-    void disconnect() {
-        static if (in_debugging_mode) {
-            printDebugInformation("Disconnet client. Closing client and clean up SSL.");
+    void disconnect() nothrow {
+        //        try {
+        if (_ssl !is null) {
+            SSL_free(_ssl);
+            _ssl = null;
         }
-        try {
-            if (_ssl !is null) {
-                SSL_free(_ssl);
-            }
 
-            if ((client_ctx !is null || server_ctx !is null) &&
-                    client_ctx != _ctx &&
-                    server_ctx != _ctx &&
-                    _ctx !is null) {
+        if ((client_ctx !is null || server_ctx !is null) &&
+                client_ctx != _ctx &&
+                server_ctx != _ctx &&
+                _ctx !is null) {
 
-                SSL_CTX_free(_ctx);
-            }
+            SSL_CTX_free(_ctx);
+            _ctx = null;
         }
+        /*
+}
         catch (Exception ex) {
             static if (in_debugging_mode) {
                 printDebugInformation(format("Exception from disconnect(), %s : %s \n msg: ",
                         ex.file, ex.line, ex.msg));
             }
         }
-
+*/
         super.close();
     }
 

@@ -107,7 +107,7 @@ else {
             int SSL_get_error(const SSL* ssl, int ret);
 
             void ERR_clear_error();
-            void ERR_print_errors_fp(FILE* file);
+            //            void ERR_print_errors_fp(FILE* file);
             ulong ERR_get_error();
             void ERR_error_string_n(ulong e, char* buf, size_t len);
             // char* strerror(int errnum);
