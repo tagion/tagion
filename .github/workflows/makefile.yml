@@ -7,7 +7,7 @@ on:
 env:
   ## Sets environment variable
   TARGET_BUILD: x86_64-linux
-  PARALEL: 4
+  PARALEL: 1
 jobs:
   build_and_unittest:
     runs-on: self-hosted
@@ -18,7 +18,7 @@ jobs:
       - name: Run unittests
         run: |
           source ~/.bashrc
-          make unittest
+          make unittest -j ${{ env.PARALEL }}
       - name: Build
         run: |
           source ~/.bashrc
