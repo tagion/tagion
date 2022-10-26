@@ -24,6 +24,7 @@ import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONJSON;
+import tagion.utils.Fingerprint : Fingerprint;
 
 // This function performs Smart contract executions
 void transcriptServiceTask(string task_name, string dart_task_name, string recorder_task_name) nothrow
@@ -55,22 +56,27 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             }
         }
 
-        Buffer modifyDART(RecordFactory.Recorder recorder)
+        void modifyDART(RecordFactory.Recorder recorder)
         {
             auto sender = empty_hirpc.dartModify(recorder);
             if (dart_tid !is Tid.init)
             {
-                dart_tid.send("blackhole", sender.toDoc.serialize, true); //TODO: remove blackhole
-                auto bullseye = receiveOnly!Buffer;
-                log("TEST ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Transcript bullseye: %s", bullseye);
-                return bullseye;
+                dart_tid.send("blackhole", sender.toDoc.serialize); //TODO: remove blackhole
             }
             else
             {
                 log.error("Cannot locate DART service");
                 stop = true;
-                return [];
             }
+        }
+
+        void createRecorderBlock(immutable(RecordFactory.Recorder) recorder, immutable(Fingerprint) dart_bullseye)
+        {
+            if (recorder_tid == Tid.init)
+            {
+                recorder_tid = locate(recorder_task_name);
+            }
+            recorder_tid.send(recorder, dart_bullseye);
         }
 
         bool to_smart_script(ref const(SignedContract) signed_contract) nothrow
@@ -194,10 +200,11 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                 {
                     log("Sending to DART len: %d", recorder.length);
                     recorder.dump;
-                    auto bullseye = modifyDART(recorder);
-                    log("TEST ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Transcript 2 bullseye: %s", bullseye);
+                    modifyDART(recorder);
 
-                    recorder_tid.send(rec_factory.uniqueRecorder(recorder), bullseye);
+                    dart_tid.send(task_name);
+                    auto bullseye = receiveOnly!Buffer;
+                    createRecorderBlock(rec_factory.uniqueRecorder(recorder), Fingerprint(bullseye));
                 }
                 else
                 {

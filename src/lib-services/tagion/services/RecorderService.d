@@ -8,7 +8,6 @@ import tagion.crypto.SecureNet : StdHashNet;
 import tagion.dart.RecorderChainBlock : RecorderChainBlockFactory;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.dart.RecorderChain : RecorderChain;
-import tagion.logger.Logger : log;
 import tagion.services.Options : Options;
 import tagion.tasks.TaskWrapper;
 import tagion.utils.Fingerprint : Fingerprint;
@@ -35,8 +34,6 @@ mixin TrustedConcurrency;
     @TaskMethod void receiveRecorder(immutable(RecordFactory.Recorder) recorder, immutable(
             Fingerprint) bullseye)
     {
-        log("TEST ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RecorderService bullseye: %s", bullseye);
-
         auto last_block = recorder_chain.getLastBlock;
         auto block = recorder_block_factory(
             recorder,
@@ -56,8 +53,6 @@ mixin TrustedConcurrency;
      */
     void opCall(immutable(Options) opts)
     {
-        log(
-            "Recorder chain is alive! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         recorder_chain = new RecorderChain(opts.recorder.folder_path, recorder_block_factory
                 .net);
 
