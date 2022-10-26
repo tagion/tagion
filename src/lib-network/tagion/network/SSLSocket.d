@@ -374,29 +374,19 @@ class SSLSocket : Socket {
      Disconnect the socket
      +/
     void disconnect() nothrow {
-        //        try {
         if (_ssl !is null) {
             SSL_free(_ssl);
             _ssl = null;
         }
 
         if ((client_ctx !is null || server_ctx !is null) &&
-                client_ctx != _ctx &&
-                server_ctx != _ctx &&
+                client_ctx !is _ctx &&
+                server_ctx !is _ctx &&
                 _ctx !is null) {
 
             SSL_CTX_free(_ctx);
             _ctx = null;
         }
-        /*
-}
-        catch (Exception ex) {
-            static if (in_debugging_mode) {
-                printDebugInformation(format("Exception from disconnect(), %s : %s \n msg: ",
-                        ex.file, ex.line, ex.msg));
-            }
-        }
-*/
         super.close();
     }
 
@@ -405,7 +395,7 @@ class SSLSocket : Socket {
      the SSL system handler
      +/
     @trusted
-    SSL* getSSL() {
+    package SSL* getSSL() {
         return this._ssl;
     }
 
