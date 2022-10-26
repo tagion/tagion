@@ -16,6 +16,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Chache libs
+        run: 
+
       - name: Run unittests
         run: |
           source ~/.bashrc
@@ -93,9 +96,9 @@ jobs:
         id: scenario_list
         run: |
           SCENARIOUS=""
-          for f in qa-tools/src/scenarious/*; do
-              echo ${f}
-              SCENARIOUS+="${basename -s .ts f} "
+          for f in ./qa-tools/src/scenarious/*.ts; do
+              f=${f##*/}
+              SCENARIOUS+="${f%.ts} "
           done
           echo $SCENARIOUS >> $GITHUB_OUTPUT
 
