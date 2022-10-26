@@ -551,6 +551,10 @@ assert(!result);
 
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             string empty_path = "";
+        assertThrown!SSLSocketException(
+                testItem_server.configureContext(empty_path, empty_path)
+    );
+        /+
             bool result = false;
             try {
                 testItem_server.configureContext(empty_path, empty_path);
@@ -559,7 +563,8 @@ assert(!result);
                 result = true; // _exception.msg == "Empty file paths inputs (SSL_ERROR_NONE)";
             }
             assert(result);
-            SSLSocket.reset();
+    +/
+        SSLSocket.reset();
         }
 
         //! [file loading correct]
@@ -570,12 +575,17 @@ assert(!result);
             string key_path;
             optionGenKeyFiles(cert_path, key_path);
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+         assertNotThrown!SSLSocketException(
+                testItem_server.configureContext(cert_path, key_path)
+    );
+        /+
             try {
                 testItem_server.configureContext(cert_path, key_path);
             }
             catch (SSLSocketException exception) {
                 assert(false);
             }
+        +/
             SSLSocket.reset();
         }
 
@@ -586,7 +596,13 @@ assert(!result);
             optionGenKeyFiles(cert_path, stub);
             auto false_key_path = cert_path;
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
-            bool result = false;
+             const exception = collectException!SSLSocketException(
+                testItem_server.configureContext(cert_path, false_key_path)
+    );
+            assert(exception.error_code == SSLErrorCodes.SSL_ERROR_NONE);
+//assert(!result);
+       /+  
+        bool result = false;
             try {
                 testItem_server.configureContext(cert_path, false_key_path);
             }
@@ -595,6 +611,7 @@ assert(!result);
             }
             assert(result);
             SSLSocket.reset();
+        +/
         }
 
         //! [correct acception]
