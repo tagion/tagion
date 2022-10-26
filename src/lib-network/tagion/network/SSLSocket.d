@@ -38,6 +38,8 @@ version (none) enum SSL_CB_POINTS : int {
 +/
 @safe
 class SSLSocket : Socket {
+    enum ERR_TEXT_SIZE = 256;
+    //alias SSL_error_text_t = char[ERR_TEXT_SIZE];
     protected {
         debug {
             pragma(msg, "DEBUG: SSLSocket compiled in debug mode");
@@ -103,6 +105,14 @@ class SSLSocket : Socket {
 
     }
 
+    string errorText(const int error_code) @trusted const nothrow {
+        import core.stdc.string : strlen;
+        import std.exception : assumeUnique;
+
+        auto result = new char[ERR_TEXT_SIZE];
+        ERR_error_string_n(error_code, result.ptr, result.length);
+        return assumeUnique(result[0 .. strlen(result.ptr)]);
+    }
     /++
      Configure the certificate for the SSL
      +/

@@ -3,93 +3,85 @@ module tagion.network.SSL;
 import core.stdc.stdio;
 import std.format;
 
+enum SSL_VERIFY_NONE = 0;
+enum SSL_FILETYPE_PEM = 1;
 enum _SSLErrorCodes {
-        SSL_ERROR_NONE = 0,
-        SSL_ERROR_SSL = 1,
-        SSL_ERROR_WANT_READ = 2,
-        SSL_ERROR_WANT_WRITE = 3,
-        SSL_ERROR_WANT_X509_LOOKUP = 4,
-        SSL_ERROR_SYSCALL = 5, /* look at error stack/return
+    SSL_ERROR_NONE = 0,
+    SSL_ERROR_SSL = 1,
+    SSL_ERROR_WANT_READ = 2,
+    SSL_ERROR_WANT_WRITE = 3,
+    SSL_ERROR_WANT_X509_LOOKUP = 4,
+    SSL_ERROR_SYSCALL = 5, /* look at error stack/return
                                       * value/errno */
-        SSL_ERROR_ZERO_RETURN = 6,
-        SSL_ERROR_WANT_CONNECT = 7,
-        SSL_ERROR_WANT_ACCEPT = 8,
-        SSL_ERROR_WANT_ASYNC = 9,
-        SSL_ERROR_WANT_ASYNC_JOB = 10
-    }
-
-
-
-version (WOLFSSL) {
-alias SSLErrorCodes=_SSLErrorCodes;
-import tagion.network.wolfssl.c.error_ssl;
-import tagion.network.wolfssl.c.ssl;
-
-alias SSL=WOLFSSL;
-alias SSL_CTX=WOLFSSL_CTX;
-alias SSL_CTX_use_certificate_file = wolfSSL_CTX_use_certificate_file;
-
-alias SSL_write = wolfSSL_write;
-alias SSL_read= wolfSSL_read;
-alias SSL_CTX_new = wolfSSL_CTX_new;
-alias SSL_CTX_free = wolfSSL_CTX_free;
-alias SSL_set_fd =  wolfSSL_set_fd;
-alias SSL_get_fd = wolfSSL_get_fd;
-alias SSL_set_verify = wolfSSL_set_verify;
-alias SSL_new = wolfSSL_new;
-alias SSL_free = wolfSSL_free;
-alias SSL_get_error = wolfSSL_get_error;
-alias SSL_connect = wolfSSL_connect;
-alias SSL_accept = wolfSSL_accept;
-alias SSL_pending = wolfSSL_pending;
-alias TLS_client_method = wolfTLS_client_method;
-alias TLS_server_method = wolfTLS_server_method;
-alias SSL_CTX_check_private_key = wolfSSL_CTX_check_private_key;
-alias SSL_CTX_use_PrivateKey_file = wolfSSL_CTX_use_PrivateKey_file;
-alias ERR_clear_error = wolfSSL_ERR_clear_error;
-alias ERR_print_errors_fp = wolfSSL_ERR_print_errors_fp;
-//alias SSLErrorCodes = wolfSSL_ErrorCodes;
-
-/// Code generator which collects all WOLF and OPENSSL error into one enum
-protected string generator_all_SSLErrorCodes() {
-
-    string[] enum_list;
-    import std.conv : to;
-    import std.traits : EnumMembers;
-    import std.array : join;
-    static foreach(E; EnumMembers!_SSLErrorCodes) {
-    enum_list ~= format(q{    %1$s = cast(int)_SSLErrorCodes.%1$s,}, E.stringof);
-    }
-
-     static foreach(E; EnumMembers!wolfSSL_ErrorCodes) {
-    enum_list ~= format(q{    %1$s = cast(int)wolfSSL_ErrorCodes.%1$s,}, E.stringof);
-    }
-    return format("enum ALL_SSLErrorCodes {\n%-(%s \n%)\n};", enum_list);
+    SSL_ERROR_ZERO_RETURN = 6,
+    SSL_ERROR_WANT_CONNECT = 7,
+    SSL_ERROR_WANT_ACCEPT = 8,
+    SSL_ERROR_WANT_ASYNC = 9,
+    SSL_ERROR_WANT_ASYNC_JOB = 10
 }
 
-pragma(msg, generator_all_SSLErrorCodes);
-/// enum ALL_SSLErrprCodes
-mixin(generator_all_SSLErrorCodes);
+version (WOLFSSL) {
+    alias SSLErrorCodes = _SSLErrorCodes;
+    import tagion.network.wolfssl.c.error_ssl;
+    import tagion.network.wolfssl.c.ssl;
 
+    package {
+        alias SSL = WOLFSSL;
+        alias SSL_CTX = WOLFSSL_CTX;
+        alias SSL_CTX_use_certificate_file = wolfSSL_CTX_use_certificate_file;
 
-/*
-int WOLFSSL_write(
-    WOLFSSL * ssl,
-    const void * data,
-    int sz
-)
-*/
+        alias SSL_write = wolfSSL_write;
+        alias SSL_read = wolfSSL_read;
+        alias SSL_CTX_new = wolfSSL_CTX_new;
+        alias SSL_CTX_free = wolfSSL_CTX_free;
+        alias SSL_set_fd = wolfSSL_set_fd;
+        alias SSL_get_fd = wolfSSL_get_fd;
+        alias SSL_set_verify = wolfSSL_set_verify;
+        alias SSL_new = wolfSSL_new;
+        alias SSL_free = wolfSSL_free;
+        alias SSL_get_error = wolfSSL_get_error;
+        alias SSL_connect = wolfSSL_connect;
+        alias SSL_accept = wolfSSL_accept;
+        alias SSL_pending = wolfSSL_pending;
+        alias TLS_client_method = wolfTLS_client_method;
+        alias TLS_server_method = wolfTLS_server_method;
+        alias SSL_CTX_check_private_key = wolfSSL_CTX_check_private_key;
+        alias SSL_CTX_use_PrivateKey_file = wolfSSL_CTX_use_PrivateKey_file;
+        alias ERR_clear_error = wolfSSL_ERR_clear_error;
+        alias ERR_print_errors_fp = wolfSSL_ERR_print_errors_fp;
+        //alias SSLErrorCodes = wolfSSL_ErrorCodes;
+
+        /// Code generator which collects all WOLF and OPENSSL error into one enum
+        protected string generator_all_SSLErrorCodes() {
+
+            string[] enum_list;
+            import std.conv : to;
+            import std.traits : EnumMembers;
+            import std.array : join;
+
+            static foreach (E; EnumMembers!_SSLErrorCodes) {
+                enum_list ~= format(q{    %1$s = cast(int)_SSLErrorCodes.%1$s,}, E.stringof);
+            }
+
+            static foreach (E; EnumMembers!wolfSSL_ErrorCodes) {
+                enum_list ~= format(q{    %1$s = cast(int)wolfSSL_ErrorCodes.%1$s,}, E.stringof);
+            }
+            return format("enum ALL_SSLErrorCodes {\n%-(%s \n%)\n};", enum_list);
+        }
+    }
+    pragma(msg, generator_all_SSLErrorCodes);
+    /// enum ALL_SSLErrprCodes
+    mixin(generator_all_SSLErrorCodes);
+
 }
 else {
     extern (C) {
-        enum SSL_VERIFY_NONE = 0;
-        enum SSL_FILETYPE_PEM = 1;
 
         struct SSL;
         struct SSL_CTX;
         struct SSL_METHOD;
 
-        @trusted
+        @trusted nothrow
         package {
             SSL* SSL_new(SSL_CTX* ctx);
             void SSL_free(SSL* ssl);
@@ -118,7 +110,7 @@ else {
             void ERR_print_errors_fp(FILE* file);
             ulong ERR_get_error();
             void ERR_error_string_n(ulong e, char* buf, size_t len);
-           // char* strerror(int errnum);
+            // char* strerror(int errnum);
             //        void ERR_error_string(ulong e, char* buf);
             void SSL_set_info_callback(SSL* ssl, void*);
             char* SSL_alert_type_string(int);
@@ -127,7 +119,7 @@ else {
             char* SSL_state_string_long(const SSL*);
         }
     }
-/+
+    /+
     enum SSLErrorCodes {
         SSL_ERROR_NONE = 0,
         SSL_ERROR_SSL = 1,
@@ -143,7 +135,6 @@ else {
         SSL_ERROR_WANT_ASYNC_JOB = 10
     }
 +/
-alias SSLErrorCodes = _SSLErrorCodes;
+    alias SSLErrorCodes = _SSLErrorCodes;
 
 }
-
