@@ -19,7 +19,13 @@ jobs:
 
       - name: Use cache of libs
         run: |
-          [[ -d $TAGION_CACHE_DIR/$TARGET_BUILD ]] && mkdir -p ./build/$TARGET_BUILD && cp $TAGION_CACHE_DIR/$TARGET_BUILD/ ./build/$TARGET_BUILD/
+          if [ -d $TAGION_CACHE_DIR/$TARGET_BUILD ]; then
+            echo "Coping cache"
+            mkdir -p ./build/$TARGET_BUILD 
+            cp $TAGION_CACHE_DIR/$TARGET_BUILD/ ./build/$TARGET_BUILD/
+          else 
+            echo "Cache not found"
+          fi
 
       - name: Run unittests
         run: |
