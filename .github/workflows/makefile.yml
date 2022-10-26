@@ -29,6 +29,7 @@ jobs:
         with:
           name: core-bins
           path: build/${{ env.TARGET_BUILD }}/bin/tagion
+          retention-days: 3
 
 
       - name: Upload unittest result
