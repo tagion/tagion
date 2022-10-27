@@ -53,42 +53,11 @@ struct AESCrypto(int KEY_LENGTH) {
             }
         }
         do {
-            import std.stdio;
-            import core.exception : RangeError;
-            import std.exception : assumeWontThrow;
-
-            /+ 
-    bool _flag_;
-        if ((outdata.length != 32) && (outdata.length != 0)) {
-    debug {
-            _flag_=true;
-        assumeWontThrow( 
-            writefln("outdata.length=%d indata.length=%d", outdata.length, indata.length)
-        );
-    }
-    }
-        +/
             if (outdata.length < indata.length) {
                 outdata = indata.dup;
             }
             else {
-
-                bool _test_() @trusted {
-                    try {
-
-                        debug if (outdata.length != indata.length)
-                            assumeWontThrow(writefln("!! outdata %d indata %d", outdata.length, indata.length));
-                        outdata[0 .. $] = indata[0 .. $];
-                    }
-                    catch (RangeError e) {
-                        debug assumeWontThrow(writefln("!! outdata %d indata %d", outdata.length, indata.length));
-                        return true;
-                    }
-                    return false;
-                }
-
-                if (_test_)
-                    return;
+                outdata[0 .. $] = indata[0 .. $];
             }
             size_t old_length;
             if (outdata.length % BLOCK_SIZE !is 0) {
