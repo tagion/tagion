@@ -38,6 +38,16 @@ WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/error_ssl.h
 $(DSRC_WOLFSSL)/wolfssl/error_ssl.h: $(DSRC_WOLFSSL)/wolfssl/error-ssl.h
 	$(LN) $< $@
 
+$(DSRC_WOLFSSL)/wolfssl/wolfssl_version.h: $(DSRC_WOLFSSL)/wolfssl/version.h
+	$(LN) $< $@
+
+clean-wolfssl-link:
+	$(RM) $(DSRC_WOLFSSL)/wolfssl/error_ssl.h
+	$(RM) $(DSRC_WOLFSSL)/wolfssl/wolfssl_version.h
+
+.PHONY: clean-wolfssl-link
+
+clean-dstep: clean-wolfssl-link
 
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import core.stdc.stdarg 
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.settings
