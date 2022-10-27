@@ -108,13 +108,14 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 const char[] file_content  = cast(char[])fread(opts.path_to_stored_passphrase);
                 passphrase = fromStringz(file_content).idup;
             }
-
+            pragma(msg, "fixme(cbr): This should not be a warning but an exception. Service should stop!");
             if (passphrase.empty)
             {
                 log.warning("Please check file " ~ opts.path_to_stored_passphrase ~ ", perform start with default settings");
             }
         }
 
+        pragma(msg, "fixme(cbr): Default password should only be allowed in test mode, not in production (add a version flag)");
         if (passphrase.empty)
         {
             if (net_mode == NetworkMode.internal)
