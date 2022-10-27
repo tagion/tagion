@@ -6,7 +6,6 @@ import std.format;
 import std.array : join;
 import std.traits : EnumMembers;
 import std.conv : to;
-//import std.file : toFile;
 
 import tagion.tools.Basic;
 import tagion.tools.revision;
@@ -17,91 +16,102 @@ mixin Main!(_main, "blockutil");
 
 enum HAS_BLOCK_FILE_ARG = 2;
 
-enum ExitCode {
+enum ExitCode
+{
     noerror,
     missing_blockfile, /// Blockfile missing argument
-    bad_blockfile,     /// Bad blockfile format
-    open_file_failed,    /// Unable to open file
+    bad_blockfile, /// Bad blockfile format
+    open_file_failed, /// Unable to open file
 }
 
 @safe
-struct BlockFileAnalyzer {
+struct BlockFileAnalyzer
+{
     private BlockFile blockfile;
-    uint inspect_iterations =uint.max;
+    uint inspect_iterations = uint.max;
     uint max_block_iteration = 1000;
-    // void report(string msg) {
-    //     writefln("Error: %s", msg);
-    // }
 
-    ~this() {
-        if (blockfile) {
+    ~this()
+    {
+        if (blockfile)
+        {
             blockfile.close;
         }
     }
 
-
-    static string blockType(const bool recycle_block) {
-        return recycle_block?"Recycle":"Data";
+    static string blockType(const bool recycle_block)
+    {
+        return recycle_block ? "Recycle" : "Data";
     }
 
-    void display_block(const uint index, const(BlockFile.Block) b) {
-        if (b) {
-            writefln("%s  [%d <- %d -> %d size %d [%s]", blockfile.getSymbol(b, index).to!char, b.previous, index, b.next, b.size, blockType(blockfile.isRecyclable(index)));
+    void display_block(const uint index, const(BlockFile.Block) b)
+    {
+        if (b)
+        {
+            writefln("%s  [%d <- %d -> %d size %d [%s]", blockfile.getSymbol(b, index).to!char, b.previous, index, b
+                    .next, b.size, blockType(blockfile.isRecyclable(index)));
             return;
         }
         writefln("Block @ %d is nil", index);
     }
 
-    bool trace(const uint index, const BlockFile.Fail f, scope const BlockFile.Block block, const bool recycle_chain) {
-        void error(string msg, const uint i=index) {
+    bool trace(const uint index, const BlockFile.Fail f, scope const BlockFile.Block block, const bool recycle_chain)
+    {
+        void error(string msg, const uint i = index)
+        {
             const is_recycle_block = blockfile.isRecyclable(index);
-            writefln("Error %s: %s @ %d in %s %s", f, msg, i, blockType(is_recycle_block), (is_recycle_block is recycle_chain)?"":"[Bad Type]");
-        }
-        with(BlockFile.Fail) final switch(f) {
-            case NON:
-                // No error
-                break;
-            case RECURSIVE:
-                error("Circular chain found");
-                auto range = blockfile.range(index);
-                    do {
-                        display_block(range.index, range.front);
-                        range.popFront;
-                    }
-                    while (!range.empty && index !is range.index);
-                    return true;
-            case INCREASING:
-                error("Block sequency order is wrong");
-                break;
-                case SEQUENCY:
-                    error("Chain of the block size is wrong");
-                    break;
-                case LINK:
-                    error("Double linked fail");
-                    break;
-                case ZERO_SIZE:
-                    error("Block has zero-size");
-                    break;
-                case BAD_SIZE:
-                    error(format("Size of end-block is larger then %d", blockfile.DATA_SIZE), block.previous);
-                    break;
-            case RECYCLE_HEADER:
-                error("Recycle block should not contain a header mask");
-                break;
-            case RECYCLE_NON_ZERO:
-                error("The size of an recycle block should be zero");
-                break;
-
-            }
-                //writefln("@ %d %s %s", index, f, data_flag);
-            if (inspect_iterations != inspect_iterations.max) {
-                inspect_iterations --;
-                return inspect_iterations == 0;
-            }
-            return false;
+            writefln("Error %s: %s @ %d in %s %s", f, msg, i, blockType(is_recycle_block), (
+                    is_recycle_block is recycle_chain) ? "" : "[Bad Type]");
         }
 
-    void display_meta() {
+        with (BlockFile.Fail) final switch (f)
+        {
+        case NON:
+            break;
+        case RECURSIVE:
+            error("Circular chain found");
+            auto range = blockfile.range(index);
+            do
+            {
+                display_block(range.index, range.front);
+                range.popFront;
+            }
+            while (!range.empty && index !is range.index);
+            return true;
+        case INCREASING:
+            error("Block sequency order is wrong");
+            break;
+        case SEQUENCY:
+            error("Chain of the block size is wrong");
+            break;
+        case LINK:
+            error("Double linked fail");
+            break;
+        case ZERO_SIZE:
+            error("Block has zero-size");
+            break;
+        case BAD_SIZE:
+            error(format("Size of end-block is larger then %d", blockfile.DATA_SIZE), block
+                    .previous);
+            break;
+        case RECYCLE_HEADER:
+            error("Recycle block should not contain a header mask");
+            break;
+        case RECYCLE_NON_ZERO:
+            error("The size of an recycle block should be zero");
+            break;
+
+        }
+        if (inspect_iterations != inspect_iterations.max)
+        {
+            inspect_iterations--;
+            return inspect_iterations == 0;
+        }
+        return false;
+    }
+
+    void display_meta()
+    {
         blockfile.headerBlock.writeln;
         writeln;
         blockfile.masterBlock.writeln;
@@ -112,9 +122,11 @@ struct BlockFileAnalyzer {
         writeln;
     }
 
-    void dump() {
+    void dump()
+    {
         writeln("Block map");
-        foreach(symbol; EnumMembers!(BlockFile.BlockSymbol)) {
+        foreach (symbol; EnumMembers!(BlockFile.BlockSymbol))
+        {
             writef("'%s' %s, ", symbol.to!char, symbol);
         }
         writeln;
@@ -124,14 +136,18 @@ struct BlockFileAnalyzer {
     /**
        number_of_seq block sequency displays
      */
-    void display_sequency(const uint index, uint number_of_sequency = 1) {
+    void display_sequency(const uint index, uint number_of_sequency = 1)
+    {
         auto range = blockfile.range(index);
-        while(!range.empty) {
+        while (!range.empty)
+        {
             display_block(range.index, range.front);
             range.popFront;
-            if (range.front !is null && range.front.head) {
+            if (range.front !is null && range.front.head)
+            {
                 number_of_sequency--;
-                if (number_of_sequency == 0) {
+                if (number_of_sequency == 0)
+                {
                     return;
                 }
                 writeln;
@@ -141,9 +157,9 @@ struct BlockFileAnalyzer {
 
 }
 
-
 BlockFileAnalyzer analyzer;
-int _main(string[] args) {
+int _main(string[] args)
+{
     immutable program = args[0];
     bool version_switch;
     bool display_meta;
@@ -155,11 +171,10 @@ int _main(string[] args) {
     bool recycle_sequence; // Lists the recycle sequence
     string output_filename;
     enum logo = import("logo.txt");
-//    auto result = ExitCode.noerror;
-    void report(string msg) {
+    void report(string msg)
+    {
         writefln("Error: %s", msg);
     }
-
 
     auto main_args = getopt(args,
         std.getopt.config.caseSensitive,
@@ -175,7 +190,7 @@ int _main(string[] args) {
         "seq", "Display the block sequency starting from the block-number", &sequency,
         "recycle-sequency", "Lists the recycle sequence", &recycle_sequence,
         "o", "Output filename", &output_filename,
-        );
+    );
 
     if (version_switch)
     {
@@ -195,7 +210,7 @@ int _main(string[] args) {
             format("%s <file> [<option>...]", program),
             "",
             "Where:",
-//            "<command>           one of [--read, --rim, --modify, --rpc]",
+            //            "<command>           one of [--read, --rim, --modify, --rpc]",
             "",
 
             "<option>:",
@@ -205,70 +220,75 @@ int _main(string[] args) {
         return ExitCode.noerror;
     }
 
-    if (args.length !is HAS_BLOCK_FILE_ARG) {
+    if (args.length !is HAS_BLOCK_FILE_ARG)
+    {
         stderr.writeln("Missing blockfile");
         return ExitCode.missing_blockfile;
     }
 
     immutable filename = args[1]; /// First argument is the blockfile name
-    //    BlockFile blockfile;
-    // scope (exit)
-    // {
-    //     if (analyzer.blockfile) {
-    //         analyzer.blockfile.close;
-    //     }
-    // }
 
-    if (inspect || ignore) {
-        //analyzer.inspect(filename);
-        //void inspect(string filename) {
-        if (!analyzer.blockfile) {
+    if (inspect || ignore)
+    {
+        if (!analyzer.blockfile)
+        {
             analyzer.blockfile = BlockFile.Inspect(filename, &report, analyzer.max_block_iteration);
         }
-        if (inspect) {
+        if (inspect)
+        {
             analyzer.blockfile.inspect(&analyzer.trace);
         }
     }
-    else {
-    try {
-        analyzer.blockfile = BlockFile(filename);
-    }
-    catch (BlockFileException e) {
-        stderr.writefln("Error: Bad blockfile format for %s", filename);
-        stderr.writeln(e.msg);
-        stderr.writefln("Try to use the --inspect or --ignore switch to analyze the blockfile format");
-        return ExitCode.bad_blockfile;
-        // display_meta = true;
-        // dump = true;
-    }
-    catch (Exception e) {
-        stderr.writefln("Error: Unable to open file %s", filename);
-        stderr.writeln(e.msg);
-        return ExitCode.open_file_failed;
-    }
-    }
-        if (display_meta) {
-            analyzer.display_meta;
+    else
+    {
+        try
+        {
+            analyzer.blockfile = BlockFile(filename);
         }
-
-        if (dump) {
-            analyzer.dump;
+        catch (BlockFileException e)
+        {
+            stderr.writefln("Error: Bad blockfile format for %s", filename);
+            stderr.writeln(e.msg);
+            stderr.writefln(
+                "Try to use the --inspect or --ignore switch to analyze the blockfile format");
+            return ExitCode.bad_blockfile;
         }
+        catch (Exception e)
+        {
+            stderr.writefln("Error: Unable to open file %s", filename);
+            stderr.writeln(e.msg);
+            return ExitCode.open_file_failed;
+        }
+    }
+    if (display_meta)
+    {
+        analyzer.display_meta;
+    }
 
-        if (block_number !is 0) {
-            if (sequency) {
-                analyzer.display_sequency(block_number);
-            }
-            else {
+    if (dump)
+    {
+        analyzer.dump;
+    }
+
+    if (block_number !is 0)
+    {
+        if (sequency)
+        {
+            analyzer.display_sequency(block_number);
+        }
+        else
+        {
             immutable buffer = analyzer.blockfile.load(block_number, !ignore);
-            if (output_filename) {
+            if (output_filename)
+            {
                 buffer.toFile(output_filename);
             }
-            }
         }
+    }
 
-        if (recycle_sequence) {
-            analyzer.blockfile.recycleDump;
-        }
+    if (recycle_sequence)
+    {
+        analyzer.blockfile.recycleDump;
+    }
     return ExitCode.noerror;
 }

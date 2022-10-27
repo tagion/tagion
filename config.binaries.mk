@@ -31,7 +31,7 @@ ${call DO_BIN,dartutil,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETOO
 #
 # FIXME(CBR) should be remove when ddeps works correctly
 target-blockfile: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-blockfile/*" -a -not -path "*/unitdata/*" }
-${call BIN,blockfile,BLOCKFILE,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETOOL)}
+${call DO_BIN,blockfile,BLOCKFILE,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETOOL)}
 
 #
 # WASM utility
