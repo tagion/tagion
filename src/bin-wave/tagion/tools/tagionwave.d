@@ -30,32 +30,27 @@ mixin TrustedConcurrency;
  * Create configs for struct OpenSSL
  * @param openssl - struct to configure
  */
-void create_ssl(const(OpenSSL) openssl)
-{
+void create_ssl(const(OpenSSL) openssl) {
     import std.algorithm.iteration : each;
     import std.file : exists, mkdirRecurse;
     import std.process : pipeProcess, wait, Redirect;
     import std.array : array;
     import std.path : dirName;
 
-    if (!openssl.certificate.exists || !openssl.private_key.exists)
-    {
+    if (!openssl.certificate.exists || !openssl.private_key.exists) {
         openssl.certificate.dirName.mkdirRecurse;
         openssl.private_key.dirName.mkdirRecurse;
         auto pipes = pipeProcess(openssl.command.array);
-        scope (exit)
-        {
+        scope (exit) {
             wait(pipes.pid);
         }
         openssl.config.each!(a => pipes.stdin.writeln(a));
         pipes.stdin.writeln(".");
         pipes.stdin.flush;
-        foreach (s; pipes.stderr.byLine)
-        {
+        foreach (s; pipes.stderr.byLine) {
             stderr.writeln(s);
         }
-        foreach (s; pipes.stdout.byLine)
-        {
+        foreach (s; pipes.stdout.byLine) {
             writeln(s);
         }
         assert(openssl.certificate.exists && openssl.private_key.exists);
@@ -66,12 +61,10 @@ import tagion.tools.Basic;
 
 mixin Main!(_main, "wave");
 
-int _main(string[] args)
-{
+int _main(string[] args) {
     /** task name for register in logger */
     main_task = "tagionwave";
-    scope (exit)
-    {
+    scope (exit) {
         abort = true;
 
         writeln("End!");
@@ -94,23 +87,19 @@ int _main(string[] args)
     /** file for options */
     auto config_file = "tagionwave.json";
 
-
-    try
-    {
-    local_options.load(config_file);
+    try {
+        local_options.load(config_file);
         auto main_args = all_getopt(args, version_switch, overwrite_switch, local_options);
 
-        if (version_switch)
-        {
+        if (version_switch) {
             writeln("Tagion 0.9.3 release");
             return 0;
         }
 
-        if (main_args.helpWanted)
-        {
+        if (main_args.helpWanted) {
             writeln(logo);
             defaultGetoptPrinter(
-                [
+                    [
                 "Documentation: https://tagion.org/",
                 "",
                 "Usage:",
@@ -121,10 +110,8 @@ int _main(string[] args)
             return 0;
         }
 
-        if (overwrite_switch)
-        {
-            if (args.length == 2)
-            {
+        if (overwrite_switch) {
+            if (args.length == 2) {
                 config_file = args[1];
             }
             local_options.save(config_file);
@@ -132,42 +119,37 @@ int _main(string[] args)
             return 0;
         }
 
-    if (args.length == 2)
-    {
-        config_file = args[1];
-        local_options.load(config_file);
-    }
+        if (args.length == 2) {
+            config_file = args[1];
+            local_options.load(config_file);
+        }
 
-    setOptions(local_options);
+        setOptions(local_options);
 
-    writeln("----- Start tagion service task -----");
+        writeln("----- Start tagion service task -----");
 
-    if (local_options.port >= ushort.max)
-    {
-        writefln("Invalid port value %d. Port should be < %d", local_options.port, ushort.max);
-        return 1;
+        if (local_options.port >= ushort.max) {
+            writefln("Invalid port value %d. Port should be < %d", local_options.port, ushort.max);
+            return 1;
+        }
     }
-    }
-        catch (JSONException e) {
+    catch (JSONException e) {
         stderr.writefln("Error: Incompatible %s file", config_file);
-    stderr.writeln(e.msg);
+        stderr.writeln(e.msg);
     }
-    catch (Exception e)
-    {
+    catch (Exception e) {
         import std.stdio;
 
         stderr.writefln(e.msg);
         return 1;
     }
 
-
     /** Options for SSL service */
     immutable service_options = getOptions();
     // Set the shared common options for all services
     setCommonOptions(service_options.common);
 
-    if (service_options.pid_file.length)
-    {
+    if (service_options.pid_file.length) {
         import std.process : thisProcessID;
 
         stderr.writefln("PID = %s written to %s", thisProcessID, options.pid_file);
@@ -182,13 +164,11 @@ int _main(string[] args)
     stderr.writeln("Waiting for logger");
     const response = receiveOnly!Control;
     stderr.writeln("Logger started");
-    if (response !is Control.LIVE)
-    {
+    if (response !is Control.LIVE) {
         stderr.writeln("ERROR:Logger %s", response);
         return -1;
     }
-    scope (exit)
-    {
+    scope (exit) {
         logger_service_tid.control(Control.STOP);
         receiveOnly!Control;
     }
@@ -198,8 +178,7 @@ int _main(string[] args)
     //    Control response;
     Tid tagion_service_tid = spawn(&tagionFactoryService, service_options);
     assert(receiveOnly!Control == Control.LIVE);
-    scope (exit)
-    {
+    scope (exit) {
         tagion_service_tid.send(Control.STOP);
         log("Wait for %s to stop", tagion_service_tid.stringof);
         receiveOnly!Control;
@@ -209,11 +188,9 @@ int _main(string[] args)
     int result;
 
     receive(
-        (Control response) {
-        with (Control)
-        {
-            switch (response)
-            {
+            (Control response) {
+        with (Control) {
+            switch (response) {
             case STOP:
                 break;
             case END:
@@ -224,8 +201,8 @@ int _main(string[] args)
             }
         }
     },
-        (immutable(Exception) e) { stderr.writeln(e.msg); result = 2; },
-        (immutable(Throwable) t) { stderr.writeln(t.msg); result = 3; }
+            (immutable(Exception) e) { stderr.writeln(e.msg); result = 2; },
+            (immutable(Throwable) t) { stderr.writeln(t.msg); result = 3; }
     );
-   return result;
+    return result;
 }
