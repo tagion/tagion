@@ -118,7 +118,7 @@ jobs:
         id: scenario_list
         run: |
           SCENARIOUS=""
-          for f in ./qa-tools/src/scenarious/*.scenario.ts; do
+          for f in ./qa-tools/src/scenarios/*.scenario.ts; do
               f=${f##*/}
               echo $f
               SCENARIOUS+="${f%.scenario.ts} "
