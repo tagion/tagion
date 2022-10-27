@@ -52,7 +52,7 @@ struct AESCrypto(int KEY_LENGTH)
                 ubyte[]) indata, ref ubyte[] outdata) pure nothrow
         in
         {
-            if (outdata !is null)
+            if (outdata.length)
             {
                 assert(enclength(indata.length) == outdata.length, format(
                         "Output data must be an equal number of %d bytes", BLOCK_SIZE));
@@ -63,6 +63,9 @@ struct AESCrypto(int KEY_LENGTH)
         }
         do
         {
+        import std.stdio;
+    import std.exception : assumeWontThrow;
+    debug assumeWontThrow( writefln("outdata.length=%d", outdata.length));
             if (outdata is null)
             {
                 outdata = indata.dup;
