@@ -68,6 +68,7 @@ struct Options
     ushort port_base;
     ushort min_port; /// Minum value of the port number
     string path_to_shared_info;
+    string path_to_stored_passphrase;
     bool p2plogs;
     uint scrap_depth;
     uint epoch_limit; /// The round until it has produced epoch_limit
@@ -370,11 +371,7 @@ static ref auto all_getopt(
         "net-mode", format("Network mode: one of [%s]: default: %s", [EnumMembers!NetworkMode].map!(t=>t.to!string).join(", "), options.net_mode), &(options.net_mode),
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
         "boot", format("Shared boot file: default: %s", options.path_to_shared_info), &(options.path_to_shared_info),
-//        "help!h", "Display the help text",    &help_switch,
-        // dfmt on
-
-    
-
+        "passphrasefile", "file with setted passphrase for keys pair", &(options.path_to_stored_passphrase),
     );
 }
 

@@ -376,7 +376,7 @@ static size_t size(U)(const(U[]) array) pure
         }
 
         @trusted protected void appendList(Type E)(ref ubyte[] buffer, ref size_t index) const pure
-                if (isNativeArray(E))
+        if (isNativeArray(E))
         {
             with (Type)
             {
@@ -544,7 +544,7 @@ static size_t size(U)(const(U[]) array) pure
     }
 
     void opIndexAssign(T)(T x, const string key)
-            if (!isHiBON!T && !isHiBONRecord!T && !isHiBONRecordArray!T)
+    if (!isHiBON!T && !isHiBONRecord!T && !isHiBONRecordArray!T)
     {
 
         
