@@ -181,10 +181,7 @@ jobs:
                   fi
                   $all_containers_stoped=true
               done
-          done
-
-
-          
+          done  
       - name: Run scripts in sequentially 
         if: env.RUN_SCENARIOUS_PARALEL != 'true'
         run: |
@@ -196,49 +193,39 @@ jobs:
             echo "$SCENARIO executed"
           done
           sudo chmod -R 777 scenario-result
-          
-
       - name: log status
         run: |
-          ./log-script.sh
-    
-            
-  log-status:
-    runs-on: self-hosted
-    steps:  
-    - name: log status
-      run: |
-        PATH_TO_LOGS="./scenario-result/**/*.log"
-        REPORT="|Scenario|Passed|Failed|\n|-|-|-|\n"
-        failed_scenarios=false
-        for logfile in $PATH_TO_LOGS
-        do
-            result=$( grep '"passed":true' $logfile)
-            REPORT+="|$(basename $logfile)|"
-            if [ -n "$result" ]
-            then 
-                echo $(basename $logfile) - passed
-                REPORT+=":heavy_check_mark:||\n"
-            else
-                echo $(basename $logfile) - not passed
-                failed_scenarios=true
-                REPORT+="|:heavy_exclamation_mark:|\n"
-            fi
-        done
-        echo -e "$REPORT" >> $GITHUB_STEP_SUMMARY
-        if $failed_scenarios 
-        then
-            exit 1
-        fi
-    - name: upload artifacts
-      if: always()
-      uses: actions/upload-artifact@v2.2.0
-      with:
-         name: core-scenarious-results
-         path: ./scenario-result/
-         if-no-files-found: error
-         retention-days: 5
+          PATH_TO_LOGS="./scenario-result/**/*.log"
+          REPORT="|Scenario|Passed|Failed|\n|-|-|-|\n"
+          failed_scenarios=false
+          for logfile in $PATH_TO_LOGS
+          do
+              result=$( grep '"passed":true' $logfile)
+              REPORT+="|$(basename $logfile)|"
+              if [ -n "$result" ]
+              then 
+                  echo $(basename $logfile) - passed
+                  REPORT+=":heavy_check_mark:||\n"
+              else
+                  echo $(basename $logfile) - not passed
+                  failed_scenarios=true
+                  REPORT+="|:heavy_exclamation_mark:|\n"
+              fi
+          done
+          echo -e "$REPORT" >> $GITHUB_STEP_SUMMARY
+          if $failed_scenarios 
+          then
+              exit 1
+          fi
+      - name: upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v2.2.0
+        with:
+          name: core-scenarious-results
+          path: ./scenario-result/
+          if-no-files-found: error
+          retention-days: 5
 
-    - name: Clean logs
-      run: sudo rm -rf scenario-result
+      - name: Clean logs
+        run: sudo rm -rf scenario-result
 
