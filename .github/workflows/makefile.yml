@@ -73,7 +73,7 @@ jobs:
           RESULT=tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep passed
           echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
       - name: Report unittests
-        if: failed()
+        if: failure()
         run: |
           RESULT=tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep FAILED
           echo -e "### :heavy_exclamation_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
