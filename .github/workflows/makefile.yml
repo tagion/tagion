@@ -24,7 +24,7 @@ jobs:
             echo "Coping cache"
             mkdir -p ./build/${{ env.TARGET_BUILD }}
             ls ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD}}/
-            cp -fr ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD}}/ ./build/${{ env.TARGET_BUILD }}/
+            cp -fr ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD}}/* ./build/${{ env.TARGET_BUILD }}/
             ls ./build/${{ env.TARGET_BUILD }}/
           else 
             echo "Cache not found"
@@ -49,8 +49,14 @@ jobs:
       - name: Make cache of libs
         run: |
           ls
-          ls ./build
-          sudo mkdir -p ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }} && sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/tmp && sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/lib
+          DIFF=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD}}/tmp {{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/tmp)
+          DIFF+=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/lib)
+          if [ "$DIFF" != "" ] ; then
+            sudo rm -rf ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}
+            sudo mkdir -p ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}
+            sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
+            sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
+          fi
 
       - name: Upload unittest result
         uses: actions/upload-artifact@v3
@@ -112,10 +118,10 @@ jobs:
         id: scenario_list
         run: |
           SCENARIOUS=""
-          for f in ./qa-tools/src/scenarious/*.ts; do
+          for f in ./qa-tools/src/scenarious/*.scenario.ts; do
               f=${f##*/}
               echo $f
-              SCENARIOUS+="${f%.ts} "
+              SCENARIOUS+="${f%.scenario.ts} "
           done
           echo "scenarious=$SCENARIOUS" >> $GITHUB_OUTPUT
 
