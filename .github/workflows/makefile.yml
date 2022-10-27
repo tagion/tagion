@@ -23,7 +23,9 @@ jobs:
           if [ -d ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }} ]; then
             echo "Coping cache"
             mkdir -p ./build/${{ env.TARGET_BUILD }}
+            ls ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD}}/
             cp -fr ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD}}/ ./build/${{ env.TARGET_BUILD }}/
+            ls ./build/${{ env.TARGET_BUILD }}/
           else 
             echo "Cache not found"
           fi
@@ -46,6 +48,8 @@ jobs:
 
       - name: Make cache of libs
         run: |
+          ls
+          ls ./build
           sudo mkdir -p ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }} && sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/tmp && sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/lib
 
       - name: Upload unittest result
@@ -61,7 +65,7 @@ jobs:
     runs-on: self-hosted
     needs: build_and_unittest
     outputs:
-      scenario_list: ${{ steps.scenario_list.outputs }}
+      scenario_list: ${{ steps.scenario_list.outputs.scenarious }}
     steps:
       - name: Cleanup
         run: rm -rf * ; ls; pwd;
@@ -110,9 +114,10 @@ jobs:
           SCENARIOUS=""
           for f in ./qa-tools/src/scenarious/*.ts; do
               f=${f##*/}
+              echo $f
               SCENARIOUS+="${f%.ts} "
           done
-          echo $SCENARIOUS >> $GITHUB_OUTPUT
+          echo "scenarious=$SCENARIOUS" >> $GITHUB_OUTPUT
 
     
       
