@@ -10,6 +10,7 @@ env:
   PARALEL: 1
   RETENTION_DAYS_BINS: 3
   TAGION_CACHE_DIR: ~/tagion_cache 
+  RUN_SCENARIOUS_PARALEL: true
   ## TODO: add ldc2/dmd switch & version
 jobs:
   build_and_unittest:
@@ -70,12 +71,12 @@ jobs:
       - name: Report unittests
         if: success()
         run: |
-          RESULT=tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep passed
+          RESULT=$(tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep passed)
           echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
       - name: Report unittests
         if: failure()
         run: |
-          RESULT=tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep FAILED
+          RESULT=$(tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep FAILED)
           echo -e "### :heavy_exclamation_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
 
   create_tagion_images:
@@ -146,7 +147,98 @@ jobs:
     runs-on: self-hosted
     needs: create_tagion_images
     steps: 
+      - name: Cleanup
+        run: rm -rf * ; ls; pwd;
+
       - name: Debug info - input
         run: echo ${{needs.create_tagion_images.outputs.scenario_list}} 
         
-  
+      - name: Pull docker img
+        run: docker pull tagion/qa-toolkit:$GITHUB_SHA
+
+      - name: Run scripts in paralel 
+        if: env.RUN_SCENARIOUS_PARALEL == 'true'
+        run: |
+          mkdir scenario-result
+          for SCENARIO in ${{ needs.create_tagion_images.outputs.scenario_list }}; do
+            echo "RUN SCENARIO: $SCENARIO"
+            mkdir ./scenario-result/$SCENARIO
+            docker run -d --rm --name $SCENARIO -v ${PWD}/scenario-result/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA run-qa.sh $SCENARIO
+            echo "$SCENARIO executed"
+          done
+          sudo chmod -R 777 scenario-result
+          DELAY=5
+          all_containers_stoped=false
+          while [ "$all_containers_stoped" = false ]
+          do
+              sleep $DELAY
+              for CONTAINER in ${{ needs.create_tagion_images.outputs.scenario_list }}; do 
+              result=$( docker inspect -f '{{.State.Running}}' $CONTAINER 2>/dev/null )    
+
+                  if [ "$result" = true ]; then
+                  # echo 'Container image exists'
+                      break
+                  fi
+                  $all_containers_stoped=true
+              done
+          done
+
+
+          
+      - name: Run scripts in sequentially 
+        if: env.RUN_SCENARIOUS_PARALEL != 'true'
+        run: |
+          mkdir scenario-result
+          for SCENARIO in ${{ needs.create_tagion_images.outputs.scenario_list }}; do
+            echo "RUN SCENARIO: $SCENARIO"
+            mkdir ./scenario-result/$SCENARIO
+            docker run --rm --name $SCENARIO -v ${PWD}/scenario-result/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA run-qa.sh $SCENARIO
+            echo "$SCENARIO executed"
+          done
+          sudo chmod -R 777 scenario-result
+          
+
+      - name: log status
+        run: |
+          ./log-script.sh
+    
+            
+  log-status:
+    runs-on: self-hosted
+    steps:  
+    - name: log status
+      run: |
+        PATH_TO_LOGS="./scenario-result/**/*.log"
+        REPORT="|Scenario|Passed|Failed|\n|-|-|-|\n"
+        failed_scenarios=false
+        for logfile in $PATH_TO_LOGS
+        do
+            result=$( grep '"passed":true' $logfile)
+            REPORT+="|$(basename $logfile)|"
+            if [ -n "$result" ]
+            then 
+                echo $(basename $logfile) - passed
+                REPORT+=":heavy_check_mark:||\n"
+            else
+                echo $(basename $logfile) - not passed
+                failed_scenarios=true
+                REPORT+="|:heavy_exclamation_mark:|\n"
+            fi
+        done
+        echo -e "$REPORT" >> $GITHUB_STEP_SUMMARY
+        if $failed_scenarios 
+        then
+            exit 1
+        fi
+    - name: upload artifacts
+      if: always()
+      uses: actions/upload-artifact@v2.2.0
+      with:
+         name: core-scenarious-results
+         path: ./scenario-result/
+         if-no-files-found: error
+         retention-days: 5
+
+    - name: Clean logs
+      run: sudo rm -rf scenario-result
+
