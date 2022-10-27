@@ -194,6 +194,7 @@ class SSLSocket : Socket {
      +/
     void check_error(const int res, const bool check_read_write = false) const {
         const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, res);
+    
         with (SSLErrorCodes) final switch (ssl_error) {
         case SSL_ERROR_NONE:
             // Ignore
@@ -215,7 +216,9 @@ class SSLSocket : Socket {
             throw new SSLSocketException(str_error(ssl_error), ssl_error);
             break;
         }
-
+        error("Fall off %s", res);
+    import std.traits : EnumMembers;
+    error("Fall %-(%s\n%)", [EnumMembers!SSLErrorCodes]);
     }
 
     /++
@@ -573,22 +576,35 @@ class SSLSocket : Socket {
             const exception = collectException!SSLSocketException(
                     result = ssl_client.acceptSSL(empty_socket, socket)
             );
-            io.writefln("SSL_ERROR error_code=%s %d <%d>", exception.error_code, cast(int) exception.error_code, cast(int)SSLErrorCodes.SSL_ERROR_SYSCALL);
-            assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SYSCALL);
+            io.writefln("SSL_ERROR error_code=%s %d <%d>", exception.error_code, 
+            cast(int) exception.error_code, cast(int) SSLErrorCodes.SSL_ERROR_SYSCALL);
+            version (WOLFSSL) {
+                assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SSL);
+            }
+            else {
+                assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SYSCALL);
+            }
             assert(!result);
+            error("--- unittest 0 ---");
         }
-
-        //! [checking -1 error code]
+       //! [checking -1 error code]
+//    version(none)
         {
+            error("--- unittest 1 start ---");
             const invalid_error_code = -1;
             SSLSocket socket = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+            error("--- unittest 1 A ---");
             const exception = collectException!SSLSocketException(
                     socket.check_error(invalid_error_code, true)
             );
+            error("--- unittest 1 B --- %s", exception);
             assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SYSCALL);
-        }
+            error("--- unittest 1 end ---");
+
+    }
 
         //! [checking 0 error code]
+//    version(none)
         {
             const invalid_error_code = 0;
             SSLSocket socket = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
@@ -596,9 +612,11 @@ class SSLSocket : Socket {
                     socket.check_error(invalid_error_code, true)
             );
             assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SYSCALL);
+            error("--- unittest 2 ---");    
         }
 
         //! [checking valid responce]
+//    version(none)
         {
             bool result = true;
             const initial_responce_code = 1;
@@ -607,6 +625,7 @@ class SSLSocket : Socket {
             foreach (responce; initial_responce_code .. final_responce_code) {
                 assertNotThrown(socket.check_error(responce, true));
             }
+            error("--- unittest 3 ---");    
         }
         /**
         * @brief test working but has problems with environment (problems with socket acception for example)
@@ -744,3 +763,9 @@ class SSLSocket : Socket {
         }
     }
 }
+
+void error(Args...)(string fmt, Args args) @trusted nothrow {
+    import std.exception : assumeWontThrow;
+    assumeWontThrow(io.stderr.writefln(fmt, args));
+    }
+ 
