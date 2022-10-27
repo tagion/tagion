@@ -1,5 +1,8 @@
 module tagion.network.wolfssl.wolfssl_config;
 
+extern (C):
+nothrow:
+@nogc:
 version(WOLFSSL) {
 import tagion.network.wolfssl.c.wolfcrypt.asn_public;
 

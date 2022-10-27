@@ -1,4 +1,4 @@
-/* wolfssl_version.h.in
+/* compat_types.h
  *
  * Copyright (C) 2006-2022 wolfSSL Inc.
  *
@@ -19,15 +19,39 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
-module tagion.network.wolfssl.c.wolfssl_version;
+/*
+ * Move types that cause cyclical dependency errors here.
+ */
 
+module tagion.network.wolfssl.c.openssl.compat_types;
+
+import tagion.network.wolfssl.c.wolfcrypt.hmac;
+import tagion.network.wolfssl.c.wolfcrypt.types;
 import tagion.network.wolfssl.wolfssl_config;
 
 extern (C):
 nothrow:
 @nogc:
 
-enum LIBWOLFSSL_VERSION_STRING = "5.4.0";
-enum LIBWOLFSSL_VERSION_HEX = 0x05004000;
+struct WOLFSSL_HMAC_CTX
+{
+    Hmac hmac;
+    int type;
+    word32[16] save_ipad; /* same block size all*/
+    word32[16] save_opad;
+}
 
-/* WOLFSSL_VERSION_H */
+alias WOLFSSL_EVP_MD = char;
+alias WOLFSSL_EVP_CIPHER = char;
+alias WOLFSSL_ENGINE = int;
+
+struct WOLFSSL_EVP_PKEY;
+struct WOLFSSL_EVP_MD_CTX;
+alias WOLFSSL_PKCS8_PRIV_KEY_INFO = WOLFSSL_EVP_PKEY;
+struct WOLFSSL_EVP_PKEY_CTX;
+struct WOLFSSL_EVP_CIPHER_CTX;
+struct WOLFSSL_ASN1_PCTX;
+
+/* OPENSSL_EXTRA || OPENSSL_EXTRA_X509_SMALL */
+
+/* !WOLFSSL_OPENSSL_COMPAT_TYPES_H_ */

@@ -22,9 +22,10 @@ enum _SSLErrorCodes {
 
 version (WOLFSSL) {
     alias SSLErrorCodes = _SSLErrorCodes;
-    import tagion.network.wolfssl.c.error_ssl;
-    import tagion.network.wolfssl.c.ssl;
-
+extern (C) {
+    private import tagion.network.wolfssl.c.error_ssl;
+    private import tagion.network.wolfssl.c.ssl;
+}
     package {
         alias SSL = WOLFSSL;
         alias SSL_CTX = WOLFSSL_CTX;
@@ -48,8 +49,8 @@ version (WOLFSSL) {
         alias SSL_CTX_check_private_key = wolfSSL_CTX_check_private_key;
         alias SSL_CTX_use_PrivateKey_file = wolfSSL_CTX_use_PrivateKey_file;
         alias ERR_clear_error = wolfSSL_ERR_clear_error;
-    alias ERR_get_error = wolfSSL_ERR_get_error;
-//        alias ERR_print_errors_fp = wolfSSL_ERR_print_errors_fp;
+        alias ERR_get_error = wolfSSL_ERR_get_error;
+        //        alias ERR_print_errors_fp = wolfSSL_ERR_print_errors_fp;
         //alias SSLErrorCodes = wolfSSL_ErrorCodes;
 
         alias ERR_error_string_n = wolfSSL_ERR_error_string_n;

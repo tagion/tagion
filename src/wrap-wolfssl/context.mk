@@ -30,7 +30,7 @@ env-wolfssl:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.env, CONFIGUREFLAGS_WOLFSSL, $(CONFIGUREFLAGS_WOLFSSL)}
-	${call log.kvp, LIBSECP256K1, $(LIBSECP256K1)}
+	${call log.kvp, LIBWOLFSSL, $(LIBWOLFSSL)}
 	${call log.kvp, DTMP_WOLFSSL, $(DTMP_WOLFSSL)}
 	${call log.kvp, DSRC_WOLFSSL, $(DSRC_WOLFSSL)}
 	${call log.close}
@@ -42,6 +42,13 @@ env: env-wolfssl
 help-wolfssl:
 	$(PRECMD)
 	${call log.header, $@ :: help}
+	${call log.help, "make help-wolfssl", "Will display this part"}
+	${call log.help, "make wolfssl", "Creates the wolfssl library"}
 	${call log.help, "make proper-wolfssl", "Remove the wolfssl build"}
 	${call log.help, "make env-wolfssl", "Display environment for the wolfbuild"}
 	${call log.close}
+
+.PHONY: help-wolfssl
+
+help: help-wolfssl
+

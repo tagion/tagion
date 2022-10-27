@@ -29,7 +29,7 @@ WOLFSSL_DSTEP_FLAGS+= -DWOLFSSL_PUB_PEM_TO_DER=1
 #WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/certs_test.h
 WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/ssl.h
 #WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/quic.h
-WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/version.h
+WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/wolfssl_version.h
 #WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/internal.h
 #WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/sniffer_error.h
 WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/callbacks.h
