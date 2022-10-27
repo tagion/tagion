@@ -573,6 +573,7 @@ class SSLSocket : Socket {
             const exception = collectException!SSLSocketException(
                     result = ssl_client.acceptSSL(empty_socket, socket)
             );
+            io.writefln("SSL_ERROR error_code=%s %d <%d>", exception.error_code, cast(int) exception.error_code, cast(int)SSLErrorCodes.SSL_ERROR_SYSCALL);
             assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SYSCALL);
             assert(!result);
         }
