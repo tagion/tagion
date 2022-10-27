@@ -9,6 +9,7 @@ import std.stdio;
 import std.getopt;
 import std.format;
 import std.array : join;
+import std.json : JSONException;
 
 import tagion.basic.Types : Control;
 import tagion.basic.Basic : TrustedConcurrency;
@@ -83,7 +84,7 @@ int _main(string[] args)
     bool version_switch;
     /** flag for overwrite config file */
     bool overwrite_switch;
-    auto logo = import("logo.txt");
+    immutable logo = import("logo.txt");
 
     /** options to run network */
     scope Options local_options;
@@ -93,10 +94,10 @@ int _main(string[] args)
     /** file for options */
     auto config_file = "tagionwave.json";
 
-    local_options.load(config_file);
 
     try
     {
+    local_options.load(config_file);
         auto main_args = all_getopt(args, version_switch, overwrite_switch, local_options);
 
         if (version_switch)
@@ -131,15 +132,6 @@ int _main(string[] args)
             return 0;
         }
 
-    }
-    catch (Exception e)
-    {
-        import std.stdio;
-
-        stderr.writefln(e.msg);
-        return 1;
-    }
-
     if (args.length == 2)
     {
         config_file = args[1];
@@ -155,6 +147,19 @@ int _main(string[] args)
         writefln("Invalid port value %d. Port should be < %d", local_options.port, ushort.max);
         return 1;
     }
+    }
+        catch (JSONException e) {
+        stderr.writefln("Error: Incompatible %s file", config_file);
+    stderr.writeln(e.msg);
+    }
+    catch (Exception e)
+    {
+        import std.stdio;
+
+        stderr.writefln(e.msg);
+        return 1;
+    }
+
 
     /** Options for SSL service */
     immutable service_options = getOptions();
@@ -222,5 +227,5 @@ int _main(string[] args)
         (immutable(Exception) e) { stderr.writeln(e.msg); result = 2; },
         (immutable(Throwable) t) { stderr.writeln(t.msg); result = 3; }
     );
-    return result;
+   return result;
 }
