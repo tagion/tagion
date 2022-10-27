@@ -30,10 +30,6 @@ jobs:
             echo "Cache not found"
           fi
 
-      - name: Run unittests
-        run: |
-          source ~/.bashrc
-          make unittest -j ${{ env.PARALEL }}
       - name: Build
         run: |
           source ~/.bashrc
@@ -49,7 +45,7 @@ jobs:
       - name: Make cache of libs
         run: |
           ls
-          DIFF=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD}}/tmp {{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/tmp)
+          DIFF=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/tmp)
           DIFF+=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/lib)
           if [ "$DIFF" != "" ] ; then
             sudo rm -rf ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}
@@ -58,6 +54,10 @@ jobs:
             sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
           fi
 
+      - name: Run unittests
+        run: |
+          source ~/.bashrc
+          make unittest -j ${{ env.PARALEL }}
       - name: Upload unittest result
         uses: actions/upload-artifact@v3
         with:
