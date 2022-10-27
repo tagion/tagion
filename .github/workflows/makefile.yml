@@ -67,6 +67,17 @@ jobs:
       - name: Check unittests
         run: tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep passed
 
+      - name: Report unittests
+        if: success()
+        run: |
+          RESULT=tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep passed
+          echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
+      - name: Report unittests
+        if: failed()
+        run: |
+          RESULT=tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep FAILED
+          echo -e "### :heavy_exclamation_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
+
   create_tagion_images:
     runs-on: self-hosted
     needs: build_and_unittest
@@ -125,6 +136,10 @@ jobs:
           done
           echo "scenarious=$SCENARIOUS" >> $GITHUB_OUTPUT
 
+      - name: Report created docker
+        if: success()
+        run: |
+          echo -e "### :heavy_check_mark: Docker created \n [tagion/toolkit:$GIHUB_SHA](https://hub.docker.com/repository/docker/tagion/toolkit) \n [tagion/qa-toolkit:$GIHUB_SHA](https://hub.docker.com/repository/docker/tagion/qa-toolkit)" >> $GITHUB_STEP_SUMMARY
     
       
   run_qa_scripts:
