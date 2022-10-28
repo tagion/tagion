@@ -16,6 +16,8 @@ jobs:
   build_and_unittest:
     runs-on: self-hosted
     steps:
+      - name: Cleanup
+        run: sudo rm -rf *
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -230,5 +232,6 @@ jobs:
           retention-days: 5
 
       - name: Clean logs
+        if: always()
         run: sudo rm -rf scenario-result
 
