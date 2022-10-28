@@ -47,7 +47,7 @@ class SSLSocket : Socket {
     //alias SSL_error_text_t = char[ERR_TEXT_SIZE];
     protected {
         SSL* _ssl;
-        SSL_CTX* _ctx;
+        static SSL_CTX* _ctx;
 
         //Static are used as default as context. A setter/argu. in cons. for the context
         //could be impl. if diff. contexts for diff SSL are needed.
@@ -55,6 +55,13 @@ class SSLSocket : Socket {
         static SSL_CTX* server_ctx;
     }
 
+    static this() {
+        _ctx = SSL_CTX_new(TLS_client_method());
+    }
+
+    static ~this() {
+        SSL_CTX_free(_ctx);
+    }
     /++
      The client use this configuration by default.
      +/
@@ -82,13 +89,15 @@ class SSLSocket : Socket {
                 if (client_ctx is null) {
                     client_ctx = SSL_CTX_new(TLS_client_method());
                 }
-                _ctx = client_ctx;
+                if (_ctx !is null)
+                    _ctx = client_ctx;
             }
             else if (et is EndpointType.Server) {
                 if (server_ctx is null) {
                     server_ctx = SSL_CTX_new(TLS_server_method());
                 }
-                _ctx = server_ctx;
+                if (_ctx !is null)
+                    _ctx = server_ctx;
             }
         }
 
@@ -389,7 +398,7 @@ class SSLSocket : Socket {
                 server_ctx !is _ctx &&
                 _ctx !is null) {
 
-            SSL_CTX_free(_ctx);
+            //           SSL_CTX_free(_ctx);
             _ctx = null;
         }
         super.close();
@@ -503,10 +512,10 @@ class SSLSocket : Socket {
             SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
             Socket client = new Socket(AddressFamily.UNIX, SocketType.STREAM);
             bool result; // = false;
-    version(none)
-        scope (exit) {
-                SSLSocket.reset;
-            }
+            version (none)
+                scope (exit) {
+                    SSLSocket.reset;
+                }
             const exception = collectException!SSLSocketException(
                     item.acceptSSL(ssl_client, client), result);
             assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SSL);
@@ -516,10 +525,10 @@ class SSLSocket : Socket {
         //! [File reading - incorrect certificate]
         {
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
-    version(none)
-            scope (exit) {
-                SSLSocket.reset;
-            }
+            version (none)
+                scope (exit) {
+                    SSLSocket.reset;
+                }
             assertThrown!SSLSocketException(
                     testItem_server.configureContext("_", "_"));
         }
@@ -528,14 +537,14 @@ class SSLSocket : Socket {
         {
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             string empty_path = "";
-    version(none)
-            scope (exit) {
-                SSLSocket.reset;
-            }
+            version (none)
+                scope (exit) {
+                    SSLSocket.reset;
+                }
             assertThrown!SSLSocketException(
                     testItem_server.configureContext(empty_path, empty_path)
             );
-            SSLSocket.reset();
+            //SSLSocket.reset();
         }
 
         //! [file loading correct]
@@ -544,14 +553,14 @@ class SSLSocket : Socket {
             string key_path;
             optionGenKeyFiles(cert_path, key_path);
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
-    version(none)
-            scope (exit) {
-                SSLSocket.reset;
-            }
+            version (none)
+                scope (exit) {
+                    SSLSocket.reset;
+                }
             assertNotThrown!SSLSocketException(
                     testItem_server.configureContext(cert_path, key_path)
             );
-            SSLSocket.reset();
+            //SSLSocket.reset();
         }
 
         //! [file loading key incorrect]
@@ -560,10 +569,10 @@ class SSLSocket : Socket {
             optionGenKeyFiles(cert_path, stub);
             auto false_key_path = cert_path;
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
-    version(none)
-            scope (exit) {
-                SSLSocket.reset;
-            }
+            version (none)
+                scope (exit) {
+                    SSLSocket.reset;
+                }
             const exception = collectException!SSLSocketException(
                     testItem_server.configureContext(cert_path, false_key_path)
             );
@@ -577,10 +586,10 @@ class SSLSocket : Socket {
             SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
             Socket socket = new Socket(AddressFamily.UNIX, SocketType.STREAM);
             bool result;
-    version(none)
-            scope (exit) {
-                SSLSocket.reset;
-            }
+            version (none)
+                scope (exit) {
+                    SSLSocket.reset;
+                }
             const exception = collectException!SSLSocketException(
                     result = ssl_client.acceptSSL(empty_socket, socket)
             );
@@ -597,8 +606,7 @@ class SSLSocket : Socket {
             error("--- unittest 0 ---");
         }
         //! [checking ssl error code]
-        version(none)
-        { // ssl_return_code <= 0 
+        version (none) { // ssl_return_code <= 0 
             error("--- unittest 1 start ---");
             const ssl_return_code = -1;
             SSLSocket socket = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
@@ -615,8 +623,7 @@ class SSLSocket : Socket {
 
         //! [checking 0 error code]
 
-    
-   //     version(none)
+        //     version(none)
         { // ssl_return_code > 0
             const ssl_return_code = 0;
             SSLSocket socket = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
