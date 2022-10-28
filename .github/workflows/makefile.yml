@@ -201,6 +201,7 @@ jobs:
           sudo chmod -R 777 scenario-result
       - name: log status
         run: |
+          set +e
           PATH_TO_LOGS="./scenario-result/**/*.log"
           REPORT="|Scenario|Passed|Failed|\n|-|-|-|\n"
           failed_scenarios=false
