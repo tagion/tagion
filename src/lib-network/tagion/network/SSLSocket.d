@@ -82,15 +82,15 @@ class SSLSocket : Socket {
                 if (client_ctx is null) {
                     client_ctx = SSL_CTX_new(TLS_client_method());
                 }
-                    if (_ctx is null)
-                        _ctx = client_ctx;
+                if (_ctx is null)
+                    _ctx = client_ctx;
             }
             else if (et is EndpointType.Server) {
                 if (server_ctx is null) {
                     server_ctx = SSL_CTX_new(TLS_server_method());
                 }
-                    if (_ctx is null)
-                        _ctx = server_ctx;
+                if (_ctx is null)
+                    _ctx = server_ctx;
             }
         }
 
@@ -140,7 +140,7 @@ class SSLSocket : Socket {
         if (SSL_CTX_use_PrivateKey_file(_ctx, prvkey_filename.toStringz, SSL_FILETYPE_PEM) <= 0) {
             throw new SSLSocketException(format("SSL private key:\n %s", getAllErrors));
         }
-        if (!SSL_CTX_check_private_key(_ctx)) {
+        if (SSL_CTX_check_private_key(_ctx) <= 0) {
             throw new SSLSocketException(format("Private key not set correctly:\n %s", getAllErrors));
         }
     }
@@ -148,7 +148,7 @@ class SSLSocket : Socket {
     /++
      Cleans the SSL error que
      +/
-    void clearError() {
+    static void clearError() {
         ERR_clear_error();
     }
 
@@ -493,7 +493,7 @@ class SSLSocket : Socket {
             assert(testItem_server._ctx !is null);
             assert(SSLSocket.server_ctx !is null);
             assert(SSLSocket.client_ctx is null);
-//            assert(SSLSocket.server_ctx == testItem_server._ctx);
+            //            assert(SSLSocket.server_ctx == testItem_server._ctx);
             SSLSocket.reset();
         }
 
