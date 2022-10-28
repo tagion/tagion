@@ -171,15 +171,18 @@ jobs:
           all_containers_stoped=false
           while [ "$all_containers_stoped" = false ]
           do
+              echo "START CHECKING"
               sleep $DELAY
               for CONTAINER in ${{ needs.create_tagion_images.outputs.scenario_list }}; do 
-              result=$( docker inspect -f '{{.State.Running}}' $CONTAINER 2>/dev/null )    
-
-                  if [ "$result" = true ]; then
-                  # echo 'Container image exists'
-                      break
-                  fi
-                  $all_containers_stoped=true
+                echo "Check $CONTAINER"
+                result=$( docker inspect -f '{{.State.Running}}' $CONTAINER 2>/dev/null )    
+                echo "Check result: $result"
+                if [ "$result" = true ]; then
+                    echo 'Container $CONTAINER exists'
+                    all_containers_stoped=false
+                    break
+                fi
+                all_containers_stoped=true
               done
           done  
       - name: Run scripts in sequentially 
