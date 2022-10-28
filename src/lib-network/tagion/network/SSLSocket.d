@@ -61,7 +61,7 @@ class SSLSocket : Socket {
     protected final void _init(bool verifyPeer, EndpointType et) {
         checkContext(et);
         _ssl = SSL_new(_ctx);
-
+        error("et=%s", et);
         if (et is EndpointType.Client) {
             SSL_set_fd(_ssl, this.handle);
             if (!verifyPeer) {
@@ -126,6 +126,7 @@ class SSLSocket : Socket {
     void configureContext(string certificate_filename, string prvkey_filename) {
         import std.file : exists;
 
+        ERR_clear_error;
         check(certificate_filename.exists, format("Certification file '%s' not found", certificate_filename));
         check(prvkey_filename.exists, format("Private key file '%s' not found", prvkey_filename));
 
@@ -742,4 +743,10 @@ class SSLSocket : Socket {
             io.writeln("Circle encrypt/decrypt complete");
         }
     }
+}
+
+void error(Args...)(string fmt, Args args) @trusted nothrow {
+    import std.exception : assumeWontThrow;
+
+    assumeWontThrow(io.stderr.writefln(fmt, args));
 }
