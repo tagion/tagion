@@ -22,10 +22,10 @@ enum _SSLErrorCodes {
 
 version (WOLFSSL) {
     alias SSLErrorCodes = _SSLErrorCodes;
-extern (C) {
-    private import tagion.network.wolfssl.c.error_ssl;
-    private import tagion.network.wolfssl.c.ssl;
-}
+    extern (C) {
+        private import tagion.network.wolfssl.c.error_ssl;
+        private import tagion.network.wolfssl.c.ssl;
+    }
     package {
         alias SSL = WOLFSSL;
         alias SSL_CTX = WOLFSSL_CTX;
@@ -72,6 +72,12 @@ extern (C) {
             }
             return format("enum ALL_SSLErrorCodes {\n%-(%s \n%)\n};", enum_list);
         }
+
+        import core.memory;
+
+        alias _wolfSSL_malloc(size_t size) = GC.malloc(size_t size);
+        alias _wolfSSL_free(void* ptr) = GC.free(void * ptr);
+        alias _wolfSSL_realloc(void* ptr, size_t size) = GC.realloc(void * ptr, size_t size);
     }
     pragma(msg, generator_all_SSLErrorCodes);
     /// enum ALL_SSLErrprCodes
