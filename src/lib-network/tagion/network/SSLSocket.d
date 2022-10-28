@@ -376,6 +376,7 @@ class SSLSocket : Socket {
     /++
      Disconnect the socket
      +/
+version(none)
     void disconnect() nothrow {
         if (_ssl !is null) {
          //SSL_free(_ssl);
