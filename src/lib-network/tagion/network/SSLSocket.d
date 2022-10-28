@@ -590,15 +590,15 @@ class SSLSocket : Socket {
             assert(!result);
             error("--- unittest 0 ---");
         }
-        //! [checking -1 error code]
-        //    version(none)
-        { /// Return code -1
+        //! [checking ssl error code]
+        version(none)
+        { // ssl_return_code <= 0 
             error("--- unittest 1 start ---");
-            const invalid_error_code = -1;
+            const ssl_return_code = -1;
             SSLSocket socket = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             error("--- unittest 1 A ---");
             const exception = collectException!SSLSocketException(
-                    socket.check_error(invalid_error_code, true)
+                    socket.check_error(ssl_return_code, true)
             );
             error("--- unittest 1 B --- %s", exception);
             assert(exception !is null);
@@ -608,12 +608,14 @@ class SSLSocket : Socket {
         }
 
         //! [checking 0 error code]
-        //    version(none)
-        {
-            const invalid_error_code = 0;
+
+    
+   //     version(none)
+        { // ssl_return_code > 0
+            const ssl_return_code = 0;
             SSLSocket socket = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             const exception = collectException!SSLSocketException(
-                    socket.check_error(invalid_error_code, true)
+                    socket.check_error(ssl_return_code, true)
             );
             assert(exception !is null);
             assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SYSCALL);
@@ -623,7 +625,6 @@ class SSLSocket : Socket {
         //! [checking valid responce]
         //    version(none)
         {
-            bool result = true;
             const initial_responce_code = 1;
             const final_responce_code = 3;
             SSLSocket socket = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
