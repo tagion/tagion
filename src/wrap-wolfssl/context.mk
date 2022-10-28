@@ -3,6 +3,7 @@
 DSRC_WOLFSSL := ${call dir.resolve, wolfssl}
 DTMP_WOLFSSL := $(DTMP)/wolfssl
 
+#CONFIGUREFLAGS_WOLFSSL := --enable-opensslextra --enable-static --enable-all --enable-memory --enable-debug --enable-bigcache
 CONFIGUREFLAGS_WOLFSSL := --enable-opensslextra --enable-static --enable-all --enable-memory --enable-debug --enable-bigcache
 
 .PHONY: wolfssl
