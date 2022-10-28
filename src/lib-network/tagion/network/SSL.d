@@ -25,7 +25,8 @@ version (WOLFSSL) {
     extern (C) {
         private import tagion.network.wolfssl.c.error_ssl;
         private import tagion.network.wolfssl.c.ssl;
-        private import tagion.network.wolfssl.c.wolfcrypt.memory : wolfSSL_SetAllocators;
+
+        //        private import tagion.network.wolfssl.c.wolfcrypt.memory : wolfSSL_SetAllocators;
 
         package {
             alias SSL = WOLFSSL;
