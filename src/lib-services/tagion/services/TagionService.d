@@ -3,49 +3,44 @@ module tagion.services.TagionService;
 import core.thread : Thread;
 import core.time;
 import std.concurrency;
-import std.datetime : Clock;
+import std.range : empty;
+import std.string : fromStringz;
+import std.file : fread = read, exists;
 import std.format;
-import std.datetime.systime;
+import std.datetime : Clock;
 
 import p2plib = p2p.node;
 
-import p2p.callback;
-import p2p.cgo.c_helper;
-
-import tagion.utils.StdTime;
-import tagion.services.Options : Options, setOptions, OptionException, NetworkMode, main_task;
-import tagion.utils.Random;
-import tagion.utils.Queue;
-import tagion.GlobalSignals : abort;
 import tagion.basic.Types : Pubkey, Control, Buffer;
-import tagion.basic.Basic : nameOf;
-import tagion.logger.Logger;
+import tagion.basic.TagionExceptions : taskfailure, fatal;
+import tagion.communication.HiRPC;
+import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.dart.DART;
+import tagion.GlobalSignals : abort;
+import tagion.gossip.AddressBook : addressbook;
+import tagion.gossip.EmulatorGossipNet;
+import tagion.gossip.InterfaceNet;
+import tagion.gossip.P2pGossipNet;
 import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : EventPackage;
-import tagion.gossip.EmulatorGossipNet;
-import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.basic.TagionExceptions : taskfailure, fatal;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.logger.Logger;
+import tagion.script.StandardRecords;
+import tagion.services.Options : Options, setOptions, OptionException, NetworkMode, main_task;
+import tagion.services.DARTService;
 import tagion.services.DARTSynchronizeService;
-import tagion.dart.DART;
-import tagion.gossip.P2pGossipNet;
-import tagion.gossip.InterfaceNet;
-import tagion.gossip.EmulatorGossipNet;
-import tagion.monitor.Monitor;
-import tagion.services.MonitorService;
 import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.communication.HiRPC;
-import tagion.utils.Miscellaneous : cutHex;
 import tagion.services.FileDiscoveryService;
 import tagion.services.NetworkRecordDiscoveryService;
-import tagion.services.DARTService;
-import tagion.gossip.AddressBook : addressbook;
-import tagion.script.StandardRecords;
-import tagion.tasks.TaskWrapper;
-import tagion.services.RecorderService;
+import tagion.services.RecorderService : RecorderTask;
+import tagion.tasks.TaskWrapper : Task;
+import tagion.utils.Random;
+import tagion.utils.Queue;
+import tagion.utils.StdTime;
+import tagion.utils.Miscellaneous : cutHex;
 
 shared(p2plib.Node) initialize_node(immutable Options opts)
 {
@@ -96,20 +91,33 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             ownerTid.prioritySend(Control.END);
         }
 
-        pragma(msg, "fixme(cbr): The passphrase should generate from outside");
-        string passpharse;
-        if (net_mode == NetworkMode.internal)
+        string passphrase;
+        if (!opts.path_to_stored_passphrase.empty)
         {
-            passpharse = format("Secret_word_%s", opts.node_name).idup;
-        }
-        else
-        {
-            passpharse = format("Secret_word_%d", opts.port).idup;
+            if (exists(opts.path_to_stored_passphrase))
+            {
+                const char[] file_content = cast(char[]) fread(opts.path_to_stored_passphrase);
+                passphrase = fromStringz(file_content).idup;
+            }
+
+            if (passphrase.empty)
+            {
+                log.warning(
+                    "Please check file " ~ opts.path_to_stored_passphrase ~ ", perform start with default settings");
+            }
         }
 
-        bool force_stop = false;
-
-        import std.format;
+        if (passphrase.empty)
+        {
+            if (net_mode == NetworkMode.internal)
+            {
+                passphrase = format("Secret_word_%s", opts.node_name).idup;
+            }
+            else
+            {
+                passphrase = format("Secret_word_%d", opts.port).idup;
+            }
+        }
 
         auto sector_range = DART.SectorRange(0, 0);
         shared(p2plib.Node) p2pnode;
@@ -117,7 +125,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         auto master_net = new StdSecureNet;
         StdSecureNet net = new StdSecureNet;
         GossipNet gossip_net;
-        //ScriptCallbacks scriptcallbacks;
         HashGraph hashgraph;
 
         Tid discovery_tid;
@@ -130,9 +137,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         shared StdSecureNet shared_net;
         synchronized (master_net)
         {
-            import std.format;
-
-            master_net.generateKeyPair(passpharse);
+            master_net.generateKeyPair(passphrase);
             shared_net = cast(shared) master_net;
             net.derive(opts.node_name, shared_net);
             p2pnode = initialize_node(opts);
@@ -410,7 +415,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         }
 
         pragma(msg, "fixme(cbr): Random should be unpredictable");
-        import tagion.utils.Random;
 
         Random!size_t random;
         random.seed(123456789);
