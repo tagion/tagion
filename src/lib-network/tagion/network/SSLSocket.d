@@ -407,12 +407,14 @@ class SSLSocket : Socket {
             EndpointType et,
             SocketType type = SocketType.STREAM,
             bool verifyPeer = true) {
+        ERR_clear_error;
         super(af, type);
         _init(verifyPeer, et);
     }
 
     /// ditto
     this(socket_t sock, EndpointType et, AddressFamily af) {
+        ERR_clear_error;
         super(sock, af);
         _init(true, et);
     }
