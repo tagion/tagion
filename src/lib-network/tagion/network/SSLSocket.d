@@ -61,6 +61,7 @@ class SSLSocket : Socket {
 
     static ~this() {
         SSL_CTX_free(_ctx);
+        reset;
     }
     /++
      The client use this configuration by default.
@@ -441,7 +442,7 @@ class SSLSocket : Socket {
         }
     }
 
-    static ~this() {
+    version (none) static ~this() {
         reset();
     }
 
