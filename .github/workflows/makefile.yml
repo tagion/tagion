@@ -161,6 +161,7 @@ jobs:
       - name: Run scripts in paralel 
         if: env.RUN_SCENARIOUS_PARALEL == 'true'
         run: |
+          set +e
           mkdir scenario-result
           for SCENARIO in ${{ needs.create_tagion_images.outputs.scenario_list }}; do
             echo "RUN SCENARIO: $SCENARIO"
