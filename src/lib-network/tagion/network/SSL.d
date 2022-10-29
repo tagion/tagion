@@ -26,7 +26,7 @@ version (WOLFSSL) {
         private import tagion.network.wolfssl.c.error_ssl;
         private import tagion.network.wolfssl.c.ssl;
 
-//                private import tagion.network.wolfssl.c.wolfcrypt.memory : wolfSSL_SetAllocators;
+        //                private import tagion.network.wolfssl.c.wolfcrypt.memory : wolfSSL_SetAllocators;
 
         package {
             alias SSL = WOLFSSL;
@@ -76,7 +76,8 @@ version (WOLFSSL) {
             }
         }
         import core.memory;
-//version(none)
+
+        //version(none)
         extern (C) {
             alias wolfSSL_Malloc_cb = void* function(size_t size);
             alias wolfSSL_Free_cb = void function(void* ptr);
@@ -113,7 +114,7 @@ version (WOLFSSL) {
     pragma(msg, generator_all_SSLErrorCodes);
     /// enum ALL_SSLErrprCodes
     mixin(generator_all_SSLErrorCodes);
-    static this() {
+    version (none) static this() {
 
         wolfSSL_SetAllocators(&_wolfSSL_malloc, &_wolfSSL_free, &_wolfSSL_realloc);
         //       wolfSSL_SetAllocators(&GC.malloc, &GC.free, &GC.realloc);

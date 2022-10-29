@@ -15,6 +15,8 @@ import tagion.network.SSL;
 
 import io = std.stdio;
 
+import tagion.basic.Debug : __write;
+
 enum EndpointType {
     Client,
     Server
@@ -68,6 +70,12 @@ class SSLSocket : Socket {
                 SSL_set_verify(_ssl, SSL_VERIFY_NONE, null);
             }
         }
+    }
+
+    ~this() {
+        //close;
+        //shutdown(SocketShutdown.BOTH);
+        SSL_free(_ssl);
     }
 
     protected void checkContext(EndpointType et)
@@ -436,7 +444,8 @@ class SSLSocket : Socket {
         reset();
     }
 
-    unittest {
+    //unittest 
+    static _main() {
         import std.array;
         import std.string;
         import std.file;
@@ -763,4 +772,8 @@ void error(Args...)(string fmt, Args args) @trusted nothrow {
     import std.exception : assumeWontThrow;
 
     assumeWontThrow(io.stderr.writefln(fmt, args));
+}
+
+version (unitmain) void main() {
+    SSLSocket._main;
 }
