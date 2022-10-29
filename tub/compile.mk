@@ -79,6 +79,10 @@ $(UNITTEST_BIN): $(COVWAY) $$(DFILES)
 
 unittest: revision
 
+unitmain: DFLAGS+=$(DVERSION)=unitmain
+unitmain: UNITTEST_FLAGS:=$(DDEBUG) $(DDBUG_SYMBOLS)
+unitmain: unittest
+
 clean-unittest:
 	$(PRECMD)
 	${call log.header, $@ :: clean}
@@ -94,6 +98,7 @@ help-unittest:
 	${call log.help, "make clean-unittest", "Clean unittest files"}
 	${call log.help, "make env-uintest", "List all unittest parameters"}
 	${call log.help, "make unittest", "Compiles/Links and runs the unittest"}
+	${call log.help, "make unitmain", "Used to run a single unittest as a main" }
 	${call log.help, "make build-unittest-build", "Compiles/Links the unittest"}
 	${call log.close}
 
