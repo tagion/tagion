@@ -74,7 +74,7 @@ class SSLSocket : Socket {
 
     ~this() {
         //close;
-        //shutdown(SocketShutdown.BOTH);
+        shutdown(SocketShutdown.BOTH);
         SSL_free(_ssl);
     }
 
