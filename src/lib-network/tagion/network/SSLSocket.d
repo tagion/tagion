@@ -397,11 +397,14 @@ class SSLSocket : Socket {
      Returns:
      the SSL system handler
      +/
-    @trusted
-    package SSL* getSSL() {
+    @trusted @nogc
+    package SSL* getSSL() pure nothrow {
         return this._ssl;
     }
 
+    static this() {
+        ssl_allocators;
+    }
     /++
      Constructs a new socket
      +/
@@ -537,7 +540,6 @@ class SSLSocket : Socket {
             );
             //SSLSocket.reset();
         }
-
         //! [file loading correct]
         {
             string cert_path;
