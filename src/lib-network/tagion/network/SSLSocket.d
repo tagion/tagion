@@ -53,15 +53,15 @@ class SSLSocket : Socket {
 
         //Static are used as default as context. A setter/argu. in cons. for the context
         //could be impl. if diff. contexts for diff SSL are needed.
-        static SSL_CTX* client_ctx;
-        static SSL_CTX* server_ctx;
+        //static SSL_CTX* client_ctx;
+        //static SSL_CTX* server_ctx;
     }
 
     /++
      The client use this configuration by default.
      +/
     protected final void _init(bool verifyPeer, EndpointType et) {
-        checkContext(et);
+        //        checkContext(et);
         _ssl = SSL_new(_ctx);
         __write("et=%s", et);
         if (et is EndpointType.Client) {
@@ -84,7 +84,7 @@ class SSLSocket : Socket {
         }
     }
 
-    protected void checkContext(EndpointType et)
+    version (none) protected void checkContext(EndpointType et)
     out {
         assert(_ctx);
     }
@@ -307,7 +307,7 @@ class SSLSocket : Socket {
         return fromStringz(err_text.ptr).idup;
     }
 
-    static bool isKnownError(ref const string error_descr) {
+    version (none) static bool isKnownError(ref const string error_descr) {
         import std.algorithm;
 
         return error_descr.startsWith("Unknown error ") == 0;
@@ -453,8 +453,8 @@ class SSLSocket : Socket {
         reset();
     }
 
-    //unittest 
-    static _main() {
+    unittest {
+        //    static _main() {
         import std.array;
         import std.string;
         import std.file;
