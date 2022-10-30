@@ -78,15 +78,21 @@ class SSLSocket : Socket {
         SSL_free(_ssl);
     }
 
+    static this() {
+        synchronized {
+            _ctx = SSL_CTX_new(TLS_client_method());
+        }
+    }
+
     protected void checkContext(EndpointType et)
     out {
         assert(_ctx);
     }
     do {
         synchronized {
-                if (_ctx is null)
-                   _ctx = SSL_CTX_new(TLS_client_method());
- 
+            if (_ctx is null)
+                _ctx = SSL_CTX_new(TLS_client_method());
+
             //Maybe implement more versions....
             if (et is EndpointType.Client) {
                 if (client_ctx is null) {
@@ -97,7 +103,7 @@ class SSLSocket : Socket {
                 if (server_ctx is null) {
                     server_ctx = SSL_CTX_new(TLS_server_method());
                 }
-           }
+            }
         }
 
     }
