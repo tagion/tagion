@@ -114,8 +114,10 @@ version (WOLFSSL) {
     pragma(msg, generator_all_SSLErrorCodes);
     /// enum ALL_SSLErrprCodes
     mixin(generator_all_SSLErrorCodes);
-    static ssl_allocators() @trusted {
+    version (none) static this() {
+
         wolfSSL_SetAllocators(&_wolfSSL_malloc, &_wolfSSL_free, &_wolfSSL_realloc);
+        //       wolfSSL_SetAllocators(&GC.malloc, &GC.free, &GC.realloc);
     }
 }
 else {
@@ -180,7 +182,5 @@ else {
     }
 +/
     alias SSLErrorCodes = _SSLErrorCodes;
-    static ssl_allocators() @safe {
-        //empty
-    }
+
 }
