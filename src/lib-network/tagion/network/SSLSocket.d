@@ -279,7 +279,7 @@ class SSLSocket : Socket {
         return !SSL_pending(c_ssl) && accepted;
     }
 
-   /++
+    /++
        Reject a client connect and close the socket
      +/
     void rejectClient() {
@@ -327,27 +327,29 @@ class SSLSocket : Socket {
 
         immutable cert_path = testfile(__MODULE__ ~ ".pem");
         immutable key_path = testfile(__MODULE__ ~ ".key.pem");
-        immutable stab = "stab";
+        version (SSL_PEM_FILES) {
+            /// This switch can beable of a new .pem should be created
+            immutable stab = "stab";
 
-        import tagion.network.SSLOptions;
+            import tagion.network.SSLOptions;
 
-        const OpenSSL ssl_options = {
-            certificate: cert_path, /// Certificate file name
-            private_key: key_path, /// Private key
-            key_size: 1024, /// Key size (RSA 1024,2048,4096)
-            days: 1, /// Number of days the certificate is valid
-            country: "UA", /// Country Name two letters
-            state: stab, /// State or Province Name (full name)
-            city: stab, /// Locality Name (eg, city)
-            organisation: stab, /// Organization Name (eg, company)
-            unit: stab, /// Organizational Unit Name (eg, section)
-            name: stab, /// Common Name (e.g. server FQDN or YOUR name)
-            email: stab, /// Email Address
+            const OpenSSL ssl_options = {
+                certificate: cert_path, /// Certificate file name
+                private_key: key_path, /// Private key
+                key_size: 1024, /// Key size (RSA 1024,2048,4096)
+                days: 1, /// Number of days the certificate is valid
+                country: "UA", /// Country Name two letters
+                state: stab, /// State or Province Name (full name)
+                city: stab, /// Locality Name (eg, city)
+                organisation: stab, /// Organization Name (eg, company)
+                unit: stab, /// Organizational Unit Name (eg, section)
+                name: stab, /// Common Name (e.g. server FQDN or YOUR name)
+                email: stab, /// Email Address
 
-        
-        };
-        configureOpenSSL(ssl_options);
-
+            
+            };
+            configureOpenSSL(ssl_options);
+        }
         //! [Waiting for first acception]
         {
             SSLSocket item = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
@@ -399,7 +401,7 @@ class SSLSocket : Socket {
 
         //! [file loading key incorrect]
         {
-           auto false_key_path = cert_path;
+            auto false_key_path = cert_path;
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             const exception = collectException!SSLSocketException(
                     testItem_server.configureContext(cert_path, false_key_path)
