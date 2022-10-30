@@ -57,7 +57,6 @@ $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcry
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.random
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).callbacks
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.wc_port
-#$(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.evp
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).openssl.compat_types
 $(WOLFSSL_DIROOT)/ssl.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_ssl.pl
 #
@@ -76,19 +75,9 @@ WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/asn_public.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/types.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/dsa.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/random.h
-#WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/callbacks.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/integer.h
-#WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/memory.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/wc_port.h
-#WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/hmac.h
-#WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/aes.h
-#WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/des3.h
-#WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/sha256.h
-#WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/md5.h
-#WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/sha.h
-#WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/arc4.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/tfm.h
-#WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/hash.h
 
 ${call DSTEP_DO,$(WOLFCRYPT_PACKAGE),$(DSRC_WOLFSSL)/wolfssl/wolfcrypt,$(WOLFCRYPT_DIROOT),$(WOLFCRYPT_DFILES),$(WOLFSSL_DSTEP_FLAGS), $(WOLFCRYPT_HFILES)}
 
@@ -110,27 +99,10 @@ $(WOLFSSL_DIROOT)/wolfcrypt/dsa.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/co
 
 $(WOLFSSL_DIROOT)/wolfcrypt/random.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
 
-#$(WOLFSSL_DIROOT)/wolfcrypt/memory.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
-#$(WOLFSSL_DIROOT)/wolfcrypt/memory.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_memory.pl
 
 $(WOLFSSL_DIROOT)/wolfcrypt/wc_port.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_wc_port.pl
 
-#$(WOLFSSL_DIROOT)/wolfcrypt/hmac.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
-#$(WOLFSSL_DIROOT)/wolfcrypt/hmac.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.md5
-#$(WOLFSSL_DIROOT)/wolfcrypt/hmac.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.sha256
-#$(WOLFSSL_DIROOT)/wolfcrypt/hmac.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.sha
-
 $(WOLFSSL_DIROOT)/wolfcrypt/aes.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
-
-#$(WOLFSSL_DIROOT)/wolfcrypt/des3.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
-#$(WOLFSSL_DIROOT)/wolfcrypt/des3.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_des3.pl
-
-#$(WOLFSSL_DIROOT)/wolfcrypt/md5.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
-#$(WOLFSSL_DIROOT)/wolfcrypt/md5.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_md5.pl
-
-#$(WOLFSSL_DIROOT)/wolfcrypt/sha256.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
-
-#$(WOLFSSL_DIROOT)/wolfcrypt/sha.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
 
 
 $(WOLFSSL_DIROOT)/wolfcrypt/tfm.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
