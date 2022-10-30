@@ -42,7 +42,6 @@ class SSLSocket : Socket {
      The client use this configuration by default.
      +/
     protected final void _init(bool verifyPeer, EndpointType et) {
-        //        checkContext(et);
         synchronized (lock) {
             _ssl = SSL_new(_ctx);
         }
@@ -56,7 +55,6 @@ class SSLSocket : Socket {
     }
 
     ~this() {
-        //close;
         shutdown(SocketShutdown.BOTH);
         synchronized (lock) {
             SSL_free(_ssl);
@@ -66,6 +64,12 @@ class SSLSocket : Socket {
     static this() {
         synchronized (lock) {
             _ctx = SSL_CTX_new(TLS_client_method());
+        }
+    }
+
+    static ~this() {
+        synchronized (lock) {
+            SSL_CTX_free(_ctx);
         }
     }
 

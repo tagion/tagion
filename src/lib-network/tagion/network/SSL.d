@@ -73,9 +73,8 @@ version (WOLFSSL) {
                 return format("enum ALL_SSLErrorCodes {\n%-(%s \n%)\n};", enum_list);
             }
         }
-   }
-    pragma(msg, generator_all_SSLErrorCodes);
-    /// enum ALL_SSLErrprCodes
+    }
+    /// enum ALL_SSLErrorCodes (OpenSSL and WolfSSL error list joined
     mixin(generator_all_SSLErrorCodes);
 }
 else {
