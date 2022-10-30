@@ -232,7 +232,7 @@ void fp_copy (const(fp_int)* a, fp_int* b);
 void fp_init_copy (fp_int* a, fp_int* b);
 
 /* clamp digits */
-//alias mp_clamp = fp_clamp;
+// DSTEP : alias mp_clamp = fp_clamp;
 
 extern (D) auto mp_grow(T0, T1)(auto ref T0 a, auto ref T1 s)
 {
