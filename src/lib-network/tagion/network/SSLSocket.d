@@ -462,7 +462,33 @@ class SSLSocket : Socket {
         import tagion.basic.Basic : fileId;
         import std.stdio;
 
-        static void optionGenKeyFiles(ref string out_cert_path, ref string out_key_path) {
+        //    import std.stdio;
+        import tagion.basic.Debug;
+
+        pragma(msg, "XXXXXXXXXXXXXXXX ", __MODULE__);
+        immutable cert_path = testfile(__MODULE__ ~ ".pem");
+        immutable key_path = testfile(__MODULE__ ~ ".key.pem");
+        immutable stab = "stab";
+        import tagion.network.SSLOptions;
+
+        const OpenSSL ssl_options = {
+            certificate: cert_path, /// Certificate file name
+            private_key: key_path, /// Private key
+            key_size: 1024, /// Key size (RSA 1024,2048,4096)
+            days: 1, /// Number of days the certificate is valid
+            country: "UA", /// Country Name two letters
+            state: stab, /// State or Province Name (full name)
+            city: stab, /// Locality Name (eg, city)
+            organisation: stab, /// Organization Name (eg, company)
+            unit: stab, /// Organizational Unit Name (eg, section)
+            name: stab, /// Common Name (e.g. server FQDN or YOUR name)
+            email: stab, /// Email Address
+
+        
+        };
+        configureOpenSSL(ssl_options);
+
+        version (none) static void optionGenKeyFiles(ref string out_cert_path, ref string out_key_path) {
             import tagion.network.SSLOptions;
             import std.algorithm.iteration : each;
             import std.process;
@@ -574,10 +600,15 @@ class SSLSocket : Socket {
         //! [file loading correct]
         {
             __write("correct");
+/*
             string cert_path;
             string key_path;
             optionGenKeyFiles(cert_path, key_path);
+*/
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+            scope (exit) {
+                testItem_server.close;
+            }
             version (none)
                 scope (exit) {
                     SSLSocket.reset;
@@ -592,8 +623,10 @@ class SSLSocket : Socket {
 
         //! [file loading key incorrect]
         {
+/*
             string cert_path, stub;
             optionGenKeyFiles(cert_path, stub);
+*/
             auto false_key_path = cert_path;
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             version (none)
@@ -603,6 +636,8 @@ class SSLSocket : Socket {
             const exception = collectException!SSLSocketException(
                     testItem_server.configureContext(cert_path, false_key_path)
             );
+            assert(exception !is null);
+            __write("key incorrect before END");
             assert(exception.error_code == SSLErrorCodes.SSL_ERROR_NONE);
             //          SSLSocket.reset();
             __write("key incorrect END");
@@ -613,6 +648,10 @@ class SSLSocket : Socket {
             SSLSocket empty_socket = null;
             SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
             Socket socket = new Socket(AddressFamily.UNIX, SocketType.STREAM);
+            scope (exit) {
+                ssl_client.close;
+                socket.close;
+            }
             bool result;
             version (none)
                 scope (exit) {
