@@ -25,7 +25,6 @@
 
 module tagion.network.wolfssl.c.openssl.compat_types;
 
-import tagion.network.wolfssl.c.wolfcrypt.hmac;
 import tagion.network.wolfssl.c.wolfcrypt.types;
 import tagion.network.wolfssl.wolfssl_config;
 
@@ -33,7 +32,7 @@ extern (C):
 nothrow:
 @nogc:
 
-struct WOLFSSL_HMAC_CTX
+version(none) struct WOLFSSL_HMAC_CTX
 {
     Hmac hmac;
     int type;
