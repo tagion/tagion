@@ -10,9 +10,9 @@ WOLFSSL_DIROOT := ${call dir.match, tagion/network/wolfssl/c}
 WOLFSSL_DFILES := ${shell find ${call dir.resolve, tagion/network} -name "*.d"}
 
 WOLFSSL_DSTEP_FLAGS+=-I$(DSRC_WOLFSSL)
-WOLFSSL_DSTEP_FLAGS+= --global-import=tagion.network.wolfssl.wolfssl_config
+#WOLFSSL_DSTEP_FLAGS+= --global-import=tagion.network.wolfssl.wolfssl_config
 WOLFSSL_DSTEP_FLAGS+= -DUSE_FAST_MATH=1
-WOLFSSL_DSTEP_FLAGS+= -DWC_CTC_NAME_SIZE=128
+#WOLFSSL_DSTEP_FLAGS+= -DWC_CTC_NAME_SIZE=128
 WOLFSSL_DSTEP_FLAGS+= -DWC_NO_HARDEN=1
 WOLFSSL_DSTEP_FLAGS+= -DWOLFSSL_PUB_PEM_TO_DER=1
 

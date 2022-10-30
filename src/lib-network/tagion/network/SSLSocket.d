@@ -354,10 +354,6 @@ class SSLSocket : Socket {
             SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
             Socket client = new Socket(AddressFamily.UNIX, SocketType.STREAM);
             bool result; // = false;
-            version (none)
-                scope (exit) {
-                    SSLSocket.reset;
-                }
             const exception = collectException!SSLSocketException(
                     item.acceptSSL(ssl_client, client), result);
             assert(exception !is null);
@@ -371,10 +367,6 @@ class SSLSocket : Socket {
             scope (exit) {
                 testItem_server.close;
             }
-            version (none)
-                scope (exit) {
-                    SSLSocket.reset;
-                }
             assert(testItem_server !is null);
             assertThrown!SSLSocketException(
                     testItem_server.configureContext("_", "_"));
@@ -388,10 +380,6 @@ class SSLSocket : Socket {
                 testItem_server.close;
             }
             string empty_path = "";
-            version (none)
-                scope (exit) {
-                    SSLSocket.reset;
-                }
             assertThrown!SSLSocketException(
                     testItem_server.configureContext(empty_path, empty_path)
             );
@@ -404,10 +392,6 @@ class SSLSocket : Socket {
             scope (exit) {
                 testItem_server.close;
             }
-            version (none)
-                scope (exit) {
-                    SSLSocket.reset;
-                }
             assertNotThrown!SSLSocketException(
                     testItem_server.configureContext(cert_path, key_path)
             );
@@ -417,10 +401,6 @@ class SSLSocket : Socket {
         {
            auto false_key_path = cert_path;
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
-            version (none)
-                scope (exit) {
-                    SSLSocket.reset;
-                }
             const exception = collectException!SSLSocketException(
                     testItem_server.configureContext(cert_path, false_key_path)
             );
@@ -438,10 +418,6 @@ class SSLSocket : Socket {
                 socket.close;
             }
             bool result;
-            version (none)
-                scope (exit) {
-                    SSLSocket.reset;
-                }
             const exception = collectException!SSLSocketException(
                     result = ssl_client.acceptSSL(empty_socket, socket)
             );

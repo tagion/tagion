@@ -34,7 +34,6 @@ import tagion.network.wolfssl.c.wolfcrypt.settings;
 import tagion.network.wolfssl.c.wolfcrypt.types;
 import tagion.network.wolfssl.c.wolfcrypt.wc_port;
 import tagion.network.wolfssl.c.wolfssl_version;
-import tagion.network.wolfssl.wolfssl_config;
 
 extern (C):
 nothrow:
@@ -152,7 +151,7 @@ struct WOLFSSL_ASN1_STRING
 {
     import std.bitmanip : bitfields;
 
-    char[CTC_NAME_SIZE] strData;
+    char[Ctc_Misc.CTC_NAME_SIZE] strData;
     int length;
     int type; /* type of string i.e. CTC_UTF8 */
     int nid;
@@ -353,7 +352,7 @@ struct WOLFSSL_X509_INFO
     int num;
 }
 
-enum WOLFSSL_EVP_PKEY_DEFAULT = EVP_PKEY_RSA; /* default key type */
+// enum WOLFSSL_EVP_PKEY_DEFAULT = EVP_PKEY_RSA; /* default key type */
 
 struct WOLFSSL_X509_ALGOR
 {

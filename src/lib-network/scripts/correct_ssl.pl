@@ -43,7 +43,9 @@ while (<>) {
     s/^(\s*(warning_return|fatal_return)\s+=\s+)/$1cast(int)/;
     s/^(\s*struct\s+WOLFSSL_EVP_PKEY)_/$1/;
     s/(int\s+wolfSSL_get_error\s*\()(\w+)/$1const\($2\)/;
-    s/(alias\s+wolfSSL_PemCertToDer\s*=)/\/\/ DSTEP : $1/;
+    s/(alias\s+wolfSSL_PemCertToDer\s*=)/\/\/ DSTEP: $1/;
+    s/(char\[)(CTC_NAME_SIZE\])/$1Ctc_Misc.$2/;
+    s/(enum\s+WOLFSSL_EVP_PKEY_DEFAULT\s*=)/\/\/ DSTEP: $1/;
     print;
 }
 

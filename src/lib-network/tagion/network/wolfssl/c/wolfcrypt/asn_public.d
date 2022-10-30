@@ -27,7 +27,6 @@ import core.sys.posix.sched;
 import tagion.network.wolfssl.c.wolfcrypt.dsa;
 import tagion.network.wolfssl.c.wolfcrypt.random;
 import tagion.network.wolfssl.c.wolfcrypt.types;
-import tagion.network.wolfssl.wolfssl_config;
 
 extern (C):
 nothrow:
@@ -185,6 +184,8 @@ enum Ctc_Encoding
     CTC_UTF8 = 0x0c, /* utf8      */
     CTC_PRINTABLE = 0x13 /* printable */
 }
+
+enum WC_CTC_NAME_SIZE = 64;
 
 enum WC_CTC_MAX_ALT_SIZE = 16384;
 
