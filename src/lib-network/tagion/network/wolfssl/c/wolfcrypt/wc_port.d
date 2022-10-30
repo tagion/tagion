@@ -181,7 +181,7 @@ alias XFILE = FILE*;
 
 alias XFOPEN = fopen;
 
-//alias XFDOPEN = fdopen;
+// DSTEP: alias XFDOPEN = fdopen;
 alias XFSEEK = fseek;
 alias XFTELL = ftell;
 alias XREWIND = rewind;
@@ -316,7 +316,7 @@ extern (D) auto XGMTIME(T0, T1)(auto ref T0 c, auto ref T1 t)
     return gmtime(c);
 }
 
-//alias XVALIDATE_DATE = wc_ValidateDate;
+// DSTEP: alias XVALIDATE_DATE = wc_ValidateDate;
 
 /* wolf struct tm and time_t */
 

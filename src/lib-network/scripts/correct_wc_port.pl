@@ -28,6 +28,7 @@ while (<>) {
     s/^(\s*enum\s+\w+\s*=\s*)NULL(;)/$1null$2/;
     # Hack for linux/posix systems
     s/^(alias\s+wolfSSL_Mutex\s+=\s+)[\w_\d]+(;)/$1pthread_mutex_t$2/;
+    s/(^alias\s+(XFDOPEN|XVALIDATE_DATE)\s*=)/\/\/ DSTEP: $1/;
     print;
 }
 
