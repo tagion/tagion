@@ -24,13 +24,12 @@ module tagion.network.wolfssl.c.ssl;
 import core.stdc.config;
 import core.stdc.stdarg;
 import core.stdc.stdio;
-import core.sys.posix.netinet.in_;
 import core.sys.posix.pthread;
+import core.sys.posix.sys.uio;
 import tagion.network.wolfssl.c.callbacks;
 import tagion.network.wolfssl.c.openssl.compat_types;
 import tagion.network.wolfssl.c.wolfcrypt.asn_public;
 import tagion.network.wolfssl.c.wolfcrypt.random;
-import tagion.network.wolfssl.c.wolfcrypt.memory;
 import tagion.network.wolfssl.c.wolfcrypt.settings;
 import tagion.network.wolfssl.c.wolfcrypt.types;
 import tagion.network.wolfssl.c.wolfcrypt.wc_port;
@@ -2351,7 +2350,7 @@ alias wolfSSL_KeyPemToDer = wc_KeyPemToDer;
 alias wolfSSL_CertPemToDer = wc_CertPemToDer;
 alias wolfSSL_PemPubKeyToDer = wc_PemPubKeyToDer;
 alias wolfSSL_PubKeyPemToDer = wc_PubKeyPemToDer;
-//alias wolfSSL_PemCertToDer = wc_PemCertToDer;
+// DSTEP : alias wolfSSL_PemCertToDer = wc_PemCertToDer;
 
 alias CallbackCACache = void function(ubyte* der, int sz, int type);
 alias CbMissingCRL = void function(const(char)* url);
@@ -2732,7 +2731,7 @@ enum {
     WOLFSSL_FFDHE_3072 = 257,
     WOLFSSL_FFDHE_4096 = 258,
     WOLFSSL_FFDHE_6144 = 259,
-    WOLFSSL_FFDHE_8192 = 260 /* These group numbers were taken from OQS's openssl fork, see:
+    WOLFSSL_FFDHE_8192 = 260/* These group numbers were taken from OQS's openssl fork, see:
      * https://github.com/open-quantum-safe/openssl/blob/OQS-OpenSSL_1_1_1-stable/
      * oqs-template/oqs-kem-info.md.
      *
@@ -2764,7 +2763,7 @@ enum {
 }
 
 enum {
-    WOLFSSL_EC_PF_UNCOMPRESSED = 0 /* Not Supported */
+    WOLFSSL_EC_PF_UNCOMPRESSED = 0/* Not Supported */
 }
 
 /* Secure Renegotiation */

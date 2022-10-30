@@ -43,6 +43,7 @@ while (<>) {
     s/^(\s*(warning_return|fatal_return)\s+=\s+)/$1cast(int)/;
     s/^(\s*struct\s+WOLFSSL_EVP_PKEY)_/$1/;
     s/(int\s+wolfSSL_get_error\s*\()(\w+)/$1const\($2\)/;
+    s/(alias\s+wolfSSL_PemCertToDer\s*=)/\/\/ DSTEP : $1/;
     print;
 }
 
