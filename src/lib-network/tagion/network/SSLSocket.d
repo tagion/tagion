@@ -22,39 +22,15 @@ enum EndpointType {
     Server
 }
 
-version (none) enum SSL_CB_POINTS : int {
-    CB_LOOP = 0x1,
-    CB_EXIT = 0x2,
-    CB_READ = CB_EXIT * 2,
-    CB_WRITE = CB_READ * 2,
-    HANDSHAKE_START = 0x10,
-    HANDSHAKE_DONE = HANDSHAKE_START * 2,
-    ST_CONNECT = 0x1000,
-    ST_CONNECT_LOOP,
-    ST_CONNECT_EXIT,
-    ST_ACCEPT = ST_CONNECT * 2,
-    CB_ACCEPT_LOOP,
-    CB_ACCEPT_EXIT,
-    CB_ALERT = ST_ACCEPT * 2,
-    CB_READ_ALERT = CB_ALERT + CB_READ,
-    CB_WRITE_ALERT = CB_ALERT + CB_WRITE
-}
-
 /++
  Socket for OpenSSL
 +/
 @safe
 class SSLSocket : Socket {
     enum ERR_TEXT_SIZE = 256;
-    //alias SSL_error_text_t = char[ERR_TEXT_SIZE];
     protected {
         SSL* _ssl;
         static SSL_CTX* _ctx;
-
-        //Static are used as default as context. A setter/argu. in cons. for the context
-        //could be impl. if diff. contexts for diff SSL are needed.
-        //static SSL_CTX* client_ctx;
-        //static SSL_CTX* server_ctx;
     }
 
     /++
@@ -82,30 +58,6 @@ class SSLSocket : Socket {
         synchronized {
             _ctx = SSL_CTX_new(TLS_client_method());
         }
-    }
-
-    version (none) protected void checkContext(EndpointType et)
-    out {
-        assert(_ctx);
-    }
-    do {
-        synchronized {
-            if (_ctx is null)
-                _ctx = SSL_CTX_new(TLS_client_method());
-
-            //Maybe implement more versions....
-            if (et is EndpointType.Client) {
-                if (client_ctx is null) {
-                    client_ctx = SSL_CTX_new(TLS_client_method());
-                }
-            }
-            else if (et is EndpointType.Server) {
-                if (server_ctx is null) {
-                    server_ctx = SSL_CTX_new(TLS_server_method());
-                }
-            }
-        }
-
     }
 
     static string errorText(const long error_code) @trusted nothrow {
@@ -191,19 +143,6 @@ class SSLSocket : Socket {
         return send(buf, SocketFlags.NONE);
     }
 
-    version (none) version (WOLFSSL) {
-        static void check_WOLFSSL_error(ref SSLErrorCodes error) {
-            io.writeln("<" ~ str_error(error) ~ '>');
-            with (SSL_ErrorCodes) switch (cast(wolfSSL_ErrorCodes) error) {
-            case SOCKET_ERROR_E:
-                error = SSLErrorCodes.SSL_ERROR_SYSCALL;
-                return;
-            default:
-                return;
-            }
-        }
-    }
-
     /* Helper function to convert a ssl_error to an exception
      * This function should only called after an ssl function call
      * Throws: a SSLSocketException if the _ssl handler contains an error
@@ -264,26 +203,6 @@ class SSLSocket : Socket {
         return receive(buf, SocketFlags.NONE);
     }
 
-    version (none) {
-        @trusted
-        int receiveNonBlocking(void[] buf, ref int pending_in_buffer)
-        in {
-            assert(!this.blocking);
-        }
-        do {
-            int res = SSL_read(_ssl, buf.ptr, cast(int) buf.length);
-
-            check_error(res);
-            pending_in_buffer = SSL_pending(_ssl);
-
-            return res;
-        }
-    }
-
-    version (none) static string errorMessage(const SSLErrorCodes ssl_error) {
-        return format("SSL Error: %s. SSL error code: %d", ssl_error, ssl_error);
-    }
-
     /++
      Returns:
      the SSL system error message
@@ -294,23 +213,6 @@ class SSLSocket : Socket {
         import std.string : fromStringz;
 
         return fromStringz(str).idup;
-    }
-
-    version (none) @trusted
-    static string err_string() {
-        enum ERROR_LENGTH = 0x100;
-        const error_code = ERR_get_error;
-        scope char[ERROR_LENGTH] err_text;
-        ERR_error_string_n(ERR_get_error, err_text.ptr, ERROR_LENGTH);
-        import std.string : fromStringz;
-
-        return fromStringz(err_text.ptr).idup;
-    }
-
-    version (none) static bool isKnownError(ref const string error_descr) {
-        import std.algorithm;
-
-        return error_descr.startsWith("Unknown error ") == 0;
     }
 
     /++
@@ -391,26 +293,6 @@ class SSLSocket : Socket {
     }
 
     /++
-     Disconnect the socket
-     +/
-    version (none) void disconnect() nothrow {
-        if (_ssl !is null) {
-            //SSL_free(_ssl);
-            //  _ssl = null;
-        }
-
-        if ((client_ctx !is null || server_ctx !is null) &&
-                client_ctx !is _ctx &&
-                server_ctx !is _ctx &&
-                _ctx !is null) {
-
-            //   SSL_CTX_free(_ctx);
-            //   _ctx = null;
-        }
-        super.close();
-    }
-
-    /++
      Returns:
      the SSL system handler
      +/
@@ -438,21 +320,6 @@ class SSLSocket : Socket {
         _init(true, et);
     }
 
-    version (none) static private void reset() {
-        if (server_ctx !is null) {
-            //  SSL_CTX_free(server_ctx);
-            //  server_ctx = null;
-        }
-        if (client_ctx !is null) {
-            //  SSL_CTX_free(client_ctx);
-            //  client_ctx = null;
-        }
-    }
-
-    version (none) static ~this() {
-        reset();
-    }
-
     unittest {
         //    static _main() {
         import std.array;
@@ -469,6 +336,7 @@ class SSLSocket : Socket {
         immutable stab = "stab";
 
         import tagion.network.SSLOptions;
+
         const OpenSSL ssl_options = {
             certificate: cert_path, /// Certificate file name
             private_key: key_path, /// Private key
@@ -545,7 +413,7 @@ class SSLSocket : Socket {
         //! [file loading correct]
         {
             __write("correct");
-/*
+            /*
             string cert_path;
             string key_path;
             optionGenKeyFiles(cert_path, key_path);
@@ -568,7 +436,7 @@ class SSLSocket : Socket {
 
         //! [file loading key incorrect]
         {
-/*
+            /*
             string cert_path, stub;
             optionGenKeyFiles(cert_path, stub);
 */
@@ -612,7 +480,7 @@ class SSLSocket : Socket {
             //assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SYSCALL);
             assert(!result);
         }
-   }
+    }
 }
 
 version (unitmain) void main() {
