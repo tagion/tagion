@@ -22,7 +22,6 @@
 module tagion.network.wolfssl.c.callbacks;
 
 import core.stdc.config;
-import tagion.network.wolfssl.wolfssl_config;
 
 extern (C):
 nothrow:

@@ -21,8 +21,6 @@
 
 module tagion.network.wolfssl.c.wolfcrypt.settings;
 
-import tagion.network.wolfssl.wolfssl_config;
-
 extern (C):
 nothrow:
 @nogc:

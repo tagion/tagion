@@ -25,7 +25,6 @@ import core.stdc.config;
 import core.stdc.stdio;
 import core.stdc.stdlib;
 import core.stdc.string;
-import tagion.network.wolfssl.wolfssl_config;
 
 extern (C):
 nothrow:

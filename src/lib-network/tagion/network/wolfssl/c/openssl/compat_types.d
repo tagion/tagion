@@ -26,7 +26,6 @@
 module tagion.network.wolfssl.c.openssl.compat_types;
 
 import tagion.network.wolfssl.c.wolfcrypt.types;
-import tagion.network.wolfssl.wolfssl_config;
 
 extern (C):
 nothrow:

@@ -22,7 +22,6 @@
 module tagion.network.wolfssl.c.wolfcrypt.random;
 
 import tagion.network.wolfssl.c.wolfcrypt.types;
-import tagion.network.wolfssl.wolfssl_config;
 
 extern (C):
 nothrow:

@@ -352,7 +352,7 @@ struct WOLFSSL_X509_INFO
     int num;
 }
 
-// enum WOLFSSL_EVP_PKEY_DEFAULT = EVP_PKEY_RSA; /* default key type */
+// DSTEP: enum WOLFSSL_EVP_PKEY_DEFAULT = EVP_PKEY_RSA; /* default key type */
 
 struct WOLFSSL_X509_ALGOR
 {
@@ -2400,7 +2400,7 @@ alias wolfSSL_KeyPemToDer = wc_KeyPemToDer;
 alias wolfSSL_CertPemToDer = wc_CertPemToDer;
 alias wolfSSL_PemPubKeyToDer = wc_PemPubKeyToDer;
 alias wolfSSL_PubKeyPemToDer = wc_PubKeyPemToDer;
-// DSTEP : alias wolfSSL_PemCertToDer = wc_PemCertToDer;
+// DSTEP: alias wolfSSL_PemCertToDer = wc_PemCertToDer;
 
 alias CallbackCACache = void function (ubyte* der, int sz, int type);
 alias CbMissingCRL = void function (const(char)* url);

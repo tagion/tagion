@@ -21,8 +21,6 @@
 
 module tagion.network.wolfssl.c.error_ssl;
 
-import tagion.network.wolfssl.wolfssl_config;
-
 extern (C):
 nothrow:
 @nogc:

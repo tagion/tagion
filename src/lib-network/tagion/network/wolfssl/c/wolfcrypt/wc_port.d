@@ -27,7 +27,6 @@ import core.sys.posix.pthread;
 import core.sys.posix.sched;
 import core.sys.posix.sys.stat;
 import core.sys.posix.unistd;
-import tagion.network.wolfssl.wolfssl_config;
 
 extern (C):
 nothrow:
