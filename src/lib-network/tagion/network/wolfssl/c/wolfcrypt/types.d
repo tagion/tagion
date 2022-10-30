@@ -499,20 +499,20 @@ alias XMEMMOVE = memmove;
 alias XSTRLEN = strlen;
 alias XSTRNCPY = strncpy;
 alias XSTRSTR = strstr;
-//alias XSTRNSTR = mystrnstr;
+// DSTEP: alias XSTRNSTR = mystrnstr;
 alias XSTRNCMP = strncmp;
 alias XSTRCMP = strcmp;
 alias XSTRNCAT = strncat;
 alias XSTRSEP = wc_strsep;
-//alias XSTRCASECMP = strcasecmp;
-//alias XSTRNCASECMP = strncasecmp;
+// DSTEP: alias XSTRCASECMP = strcasecmp;
+// DSTEP: alias XSTRNCASECMP = strncasecmp;
 alias XSNPRINTF = snprintf;
 alias XATOI = atoi;
 alias XSTRLCPY = wc_strlcpy;
 alias XSTRLCAT = wc_strlcat;
 alias XGETENV = getenv;
-//alias XTOUPPER = toupper;
-//alias XTOLOWER = tolower;
+// DSTEP: alias XTOUPPER = toupper;
+// DSTEP: alias XTOLOWER = tolower;
 enum WOLFSSL_MAX_ERROR_SZ = 80;
 enum _WC_HASH_TYPE_MAX = wc_HashType.WC_HASH_TYPE_SHAKE256;
 // DSTEP: enum _WC_HASH_TYPE_MAX = wc_HashType.WC_HASH_TYPE_SHAKE256;
@@ -562,7 +562,7 @@ enum FALSE = 0;
 /* not GNUC */
 
 void PRAGMA_CLANG_DIAG_PUSH() {pragma(msg, "clang diagnostic push");}
-//alias PRAGMA_CLANG = _Pragma;
+// DSTEP: alias PRAGMA_CLANG = _Pragma;
 void PRAGMA_CLANG_DIAG_POP() {pragma(msg, "clang diagnostic pop");}
 
 /* disable buggy MSC warning around while(0),

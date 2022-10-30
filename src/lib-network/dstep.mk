@@ -93,6 +93,7 @@ WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/tfm.h
 ${call DSTEP_DO,$(WOLFCRYPT_PACKAGE),$(DSRC_WOLFSSL)/wolfssl/wolfcrypt,$(WOLFCRYPT_DIROOT),$(WOLFCRYPT_DFILES),$(WOLFSSL_DSTEP_FLAGS), $(WOLFCRYPT_HFILES)}
 
 $(WOLFSSL_DIROOT)/wolfcrypt/types.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_types.pl
+$(WOLFSSL_DIROOT)/wolfcrypt/types.di: DSTEPFLAGS+=--global-import core.stdc.string 
 $(WOLFSSL_DIROOT)/wolfcrypt/random.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_number.pl
 
 $(WOLFSSL_DIROOT)/wolfcrypt/asn_public.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types

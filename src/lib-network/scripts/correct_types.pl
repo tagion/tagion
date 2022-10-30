@@ -13,7 +13,8 @@ while (<>) {
     s/^(\s*)enum(\s+XSNPRINTF\s+=\s+snprintf;)/$1alias$2/;
     s/^(\s*)enum(\s+XGETENV\s+=\s+getenv;)/$1alias$2/;
     s/^\s*enum\s+([\w\_]+)\s+=\s+_Pragma\((\"[\w\s]+\")\);\s*/void $1() {pragma(msg, $2);}\n/; 
-    print;
+    s/(^alias\s+(XSTRNSTR|XSTRCASECMP|XSTRNCASECMP|XTOUPPER|XTOLOWER|PRAGMA_CLANG))/\/\/ DSTEP: $1/; 
+      print;
 }
 
 
