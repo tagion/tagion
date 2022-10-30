@@ -2,10 +2,10 @@
 # Network DSTEP headers
 #
 ifdef WOLFSSL
-WOLFSSL_POSTCORRECT=${call dir.resolve_1, lib-network/scripts}
+WOLFSSL_POSTCORRECT=${call dir.match, lib-network/scripts}
 
 WOLFSSL_PACKAGE := tagion.network.wolfssl.c
-WOLFSSL_DIROOT := ${call dir.resolve_1, tagion/network/wolfssl/c}
+WOLFSSL_DIROOT := ${call dir.match, tagion/network/wolfssl/c}
 
 WOLFSSL_DFILES := ${shell find ${call dir.resolve, tagion/network} -name "*.d"}
 
@@ -55,7 +55,7 @@ $(WOLFSSL_DIROOT)/ssl.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_ssl.
 ${call DSTEP_DO,$(WOLFSSL_PACKAGE),$(DSRC_WOLFSSL)/wolfssl,$(WOLFSSL_DIROOT),$(WOLFSSL_DFILES),$(WOLFSSL_DSTEP_FLAGS), $(WOLFSSL_HFILES)}
 
 WOLFCRYPT_PACKAGE := tagion.network.wolfssl.c.wolfcrypt
-WOLFCRYPT_DIROOT := ${call dir.resolve_1, wolfssl/c/wolfcrypt}
+WOLFCRYPT_DIROOT := ${call dir.match, wolfssl/c/wolfcrypt}
 
 WOLFCRYPT_DFILES := ${shell find ${call dir.resolve, tagion/network} -name "*.d"}
 
@@ -100,7 +100,7 @@ $(WOLFSSL_DIROOT)/wolfcrypt/tfm.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/co
 # Modules in wolfssl/c/openssl
 #
 WOLFSSL_OPENSSL_PACKAGE := tagion.network.wolfssl.c.openssl
-WOLFSSL_OPENSSL_DIROOT := ${call dir.resolve_1, wolfssl/c/openssl}
+WOLFSSL_OPENSSL_DIROOT := ${call dir.match, wolfssl/c/openssl}
 
 WOLFSSL_OPENSSL_DFILES := ${shell find ${call dir.resolve, tagion/network} -name "*.d"}
 
