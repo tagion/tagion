@@ -18,13 +18,31 @@ import tagion.basic.TagionExceptions;
 import tagion.script.SmartScript;
 import tagion.script.StandardRecords : Contract, SignedContract, PayContract;
 import tagion.basic.ConsensusExceptions : ConsensusException;
-import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
 import tagion.communication.HiRPC;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Fingerprint : Fingerprint;
+import tagion.utils.HiBONWriter;
+
+private static void saveHashedDump(ref const Document bullseye)
+{
+    const auto prev_hash_key = "prevhash";
+    const auto bullsye_key = "bullseye";
+    static string previousHashData = "0";
+    HiBON file = new HiBON();
+    file[prev_hash_key] = previousHashData;
+    file[bullsye_key] = bullseye;
+    const Options options = getOptions();
+    HiBONWriter writer = new HiBONWriter(options.transaction_dumps_dirrectory);
+    writer.setWriteData(file);
+    if(writer.performHashedWrite())
+    {
+        previousHashData = writer.lastWritedHash();
+    }
+}
 
 // This function performs Smart contract executions
 void transcriptServiceTask(string task_name, string dart_task_name, string recorder_task_name) nothrow
@@ -56,12 +74,17 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             }
         }
 
-        Buffer modifyDART(RecordFactory.Recorder recorder)
+        Buffer modifyDART(RecordFactory.Recorder recorder, bool performDumping)
         {
             auto sender = empty_hirpc.dartModify(recorder);
             if (dart_tid !is Tid.init)
             {
                 dart_tid.send(task_name, sender.toDoc.serialize);
+
+                if (performDumping)
+                {
+                   saveHashedDump(sender.message);
+                }
 
                 const result = receiveOnly!Buffer;
                 const received = empty_hirpc.receive(Document(result));
@@ -201,12 +224,13 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                         log.warning("Invalid input");
                     }
                 }
+                log("DART__ Record " ~ ((recorder.length) ? "Launch" : "Empty"));
                 if (recorder.length > 0)
                 {
+                    const Options options = getOptions();
                     log("Sending to DART len: %d", recorder.length);
                     recorder.dump;
-                    auto bullseye = modifyDART(recorder);
-
+                    auto bullseye = modifyDART(recorder, !options.disable_transaction_dumping);
                     dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), Fingerprint(bullseye));
                 }
                 else
@@ -250,4 +274,13 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
     {
         fatal(t);
     }
+}
+
+version(none) unittest
+{
+    auto doc = new HiBON();
+    doc["A"] = "B";
+    auto realDoc = Document(doc);
+    saveHashedDump(realDoc);
+    saveHashedDump(realDoc);
 }
