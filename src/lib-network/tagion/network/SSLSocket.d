@@ -63,7 +63,7 @@ class SSLSocket : Socket {
     protected final void _init(bool verifyPeer, EndpointType et) {
         checkContext(et);
         _ssl = SSL_new(_ctx);
-        error("et=%s", et);
+        __write("et=%s", et);
         if (et is EndpointType.Client) {
             SSL_set_fd(_ssl, this.handle);
             if (!verifyPeer) {
@@ -84,22 +84,20 @@ class SSLSocket : Socket {
     }
     do {
         synchronized {
-
+                if (_ctx is null)
+                   _ctx = SSL_CTX_new(TLS_client_method());
+ 
             //Maybe implement more versions....
             if (et is EndpointType.Client) {
                 if (client_ctx is null) {
                     client_ctx = SSL_CTX_new(TLS_client_method());
                 }
-                if (_ctx is null)
-                    _ctx = client_ctx;
             }
             else if (et is EndpointType.Server) {
                 if (server_ctx is null) {
                     server_ctx = SSL_CTX_new(TLS_server_method());
                 }
-                if (_ctx is null)
-                    _ctx = server_ctx;
-            }
+           }
         }
 
     }
@@ -569,6 +567,7 @@ class SSLSocket : Socket {
 
         //! [file loading correct]
         {
+            __write("correct");
             string cert_path;
             string key_path;
             optionGenKeyFiles(cert_path, key_path);
@@ -600,6 +599,7 @@ class SSLSocket : Socket {
             );
             assert(exception.error_code == SSLErrorCodes.SSL_ERROR_NONE);
             //          SSLSocket.reset();
+            __write("key incorrect END");
         }
 
         //! [correct acception]
@@ -790,12 +790,6 @@ class SSLSocket : Socket {
             io.writeln("Circle encrypt/decrypt complete");
         }
     }
-}
-
-void error(Args...)(string fmt, Args args) @trusted nothrow {
-    import std.exception : assumeWontThrow;
-
-    assumeWontThrow(io.stderr.writefln(fmt, args));
 }
 
 version (unitmain) void main() {
