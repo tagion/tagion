@@ -23,9 +23,11 @@ WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/callbacks.h
 WOLFSSL_HFILES += $(DSRC_WOLFSSL)/wolfssl/error_ssl.h
 
 $(DSRC_WOLFSSL)/wolfssl/error_ssl.h: $(DSRC_WOLFSSL)/wolfssl/error-ssl.h
+	$(PRECMD)
 	$(LN) $< $@
 
 $(DSRC_WOLFSSL)/wolfssl/wolfssl_version.h: $(DSRC_WOLFSSL)/wolfssl/version.h
+	$(PRECMD)
 	$(LN) $< $@
 
 clean-wolfssl-link:
@@ -36,6 +38,7 @@ clean-wolfssl-link:
 
 clean-dstep: clean-wolfssl-link
 
+$(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--collision-action=ignore
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import core.stdc.stdarg 
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.settings
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfssl_version

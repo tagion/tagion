@@ -37,8 +37,6 @@ DIFILES_DEPS+=$4
 $$(DESTROOT.$1)/%.di: $$(HPATH.$1)/%.h | $$(DESTROOT.$1)
 	$$(PRECMD)${call log.kvp, dstep, $$(@F)}
 	$$(DSTEP) $$(DSTEP_ATTRIBUTES) $$(DSTEPFLAGS.$1) $$(DSTEPFLAGS) --package $1 $$< -o $$@
-	[ -z "$$(DSTEP_POSTCORRECT)" ] || echo DSTEP_POSTCORRECT = $$(DSTEP_POSTCORRECT)
-	[ -z "$$(DSTEPFLAGS.$1)" ] || echo DSTEPFLAGS.$1 = $$(DSTEPFLAGS.$1)
 	$${foreach post_correct, $$(DSTEP_POSTCORRECT), $$(post_correct) $$@}
 
 $$(DESTROOT.$1):
