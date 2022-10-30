@@ -69,7 +69,9 @@ struct Options
     ushort min_port; /// Minum value of the port number
     string path_to_shared_info;
     string path_to_stored_passphrase;
+    string transaction_dumps_dirrectory;
     bool p2plogs;
+    bool disable_transaction_dumping;
     uint scrap_depth;
     uint epoch_limit; /// The round until it has produced epoch_limit
     NetworkMode net_mode;
@@ -372,6 +374,8 @@ static ref auto all_getopt(
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
         "boot", format("Shared boot file: default: %s", options.path_to_shared_info), &(options.path_to_shared_info),
         "passphrasefile", "file with setted passphrase for keys pair", &(options.path_to_stored_passphrase),
+        "disabledumping", "Not perform transaction dump", &(options.disable_transaction_dumping),
+        "transactiondumpfolder", "Set separative folder for transaction dump", &(options.transaction_dumps_dirrectory) 
     );
 }
 
