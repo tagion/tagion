@@ -13,17 +13,13 @@ import std.algorithm.iteration : map;
 import tagion.network.SSLSocketException;
 import tagion.network.SSL;
 
-import io = std.stdio;
-
-import tagion.basic.Debug : __write;
-
 enum EndpointType {
     Client,
     Server
 }
 
 /++
- Socket for OpenSSL
+ Socket for OpenSSL & WolfSSL
 +/
 @safe
 class SSLSocket : Socket {
@@ -45,7 +41,6 @@ class SSLSocket : Socket {
         synchronized (lock) {
             _ssl = SSL_new(_ctx);
         }
-        __write("et=%s", et);
         if (et is EndpointType.Client) {
             SSL_set_fd(_ssl, this.handle);
             if (!verifyPeer) {
@@ -169,7 +164,6 @@ class SSLSocket : Socket {
      */
     protected void check_error(const int ssl_ret, const bool check_read_write = false) const {
         const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, ssl_ret);
-        __write("ssl_error = %s ret = %d", ssl_error, ssl_ret);
         with (SSLErrorCodes) final switch (ssl_error) {
         case SSL_ERROR_NONE:
             // Ignore
@@ -245,7 +239,6 @@ class SSLSocket : Socket {
         if (ssl_client is null) {
             if (!client.isAlive) {
                 client.close;
-                io.writeln(" ------------- 1 ------------ ");
                 throw new SSLSocketException("Socket could not connect to client. Socket closed.");
             }
             client.blocking = false;
@@ -276,11 +269,9 @@ class SSLSocket : Socket {
             SSL_ERROR_WANT_X509_LOOKUP,
             SSL_ERROR_SYSCALL,
         SSL_ERROR_ZERO_RETURN:
-            io.writefln(" ------------ 2 ------------  %s", ssl_error);
             throw new SSLSocketException(str_error(ssl_error), ssl_error);
             break;
         default:
-            io.writeln(" ------------- 3 ----------- ");
             throw new SSLSocketException(format("SSL Error. SSL error code: %d.", ssl_error),
                     SSL_ERROR_SSL);
             break;
@@ -288,20 +279,7 @@ class SSLSocket : Socket {
         return !SSL_pending(c_ssl) && accepted;
     }
 
-    /+
-    version (WOLFSSL) {
-        static void processingWolfSSLError(WOLFSSL_ErrorCodes _error) {
-            switch (_error) {
-            case WOLFSSL_ErrorCodes.SOCKET_ERROR_E:
-            case WOLFSSL_ErrorCodes.SIDE_ERROR:
-                throw new SSLSocketException(str_error(_error), SSLErrorCodes.SSL_ERROR_SSL);
-            default:
-                return;
-            }
-        }
-    }
-+/
-    /++
+   /++
        Reject a client connect and close the socket
      +/
     void rejectClient() {
@@ -338,7 +316,6 @@ class SSLSocket : Socket {
     }
 
     unittest {
-        //    static _main() {
         import std.array;
         import std.string;
         import std.file;
@@ -346,7 +323,7 @@ class SSLSocket : Socket {
         import tagion.basic.Basic : fileId;
         import std.stdio;
 
-        import tagion.basic.Debug;
+        import tagion.basic.Debug : testfile;
 
         immutable cert_path = testfile(__MODULE__ ~ ".pem");
         immutable key_path = testfile(__MODULE__ ~ ".key.pem");
@@ -390,7 +367,6 @@ class SSLSocket : Socket {
 
         //! [File reading - incorrect certificate]
         {
-            __write("incorrect certificate");
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             scope (exit) {
                 testItem_server.close;
@@ -400,16 +376,13 @@ class SSLSocket : Socket {
                     SSLSocket.reset;
                 }
             assert(testItem_server !is null);
-            __write("incorrect certificate Before END");
             assertThrown!SSLSocketException(
                     testItem_server.configureContext("_", "_"));
-            __write("incorrect certificate END");
         }
 
         //! [File reading - empty path]
         {
 
-            __write("empty path");
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             scope (exit) {
                 testItem_server.close;
@@ -419,22 +392,14 @@ class SSLSocket : Socket {
                 scope (exit) {
                     SSLSocket.reset;
                 }
-            __write("empty path before END");
             assertThrown!SSLSocketException(
                     testItem_server.configureContext(empty_path, empty_path)
             );
-            __write("empty path END");
             //SSLSocket.reset();
         }
 
         //! [file loading correct]
         {
-            __write("correct");
-            /*
-            string cert_path;
-            string key_path;
-            optionGenKeyFiles(cert_path, key_path);
-*/
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             scope (exit) {
                 testItem_server.close;
@@ -443,21 +408,14 @@ class SSLSocket : Socket {
                 scope (exit) {
                     SSLSocket.reset;
                 }
-            __write("correct before END");
             assertNotThrown!SSLSocketException(
                     testItem_server.configureContext(cert_path, key_path)
             );
-            __write("correct END");
-            //SSLSocket.reset();
         }
 
         //! [file loading key incorrect]
         {
-            /*
-            string cert_path, stub;
-            optionGenKeyFiles(cert_path, stub);
-*/
-            auto false_key_path = cert_path;
+           auto false_key_path = cert_path;
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             version (none)
                 scope (exit) {
@@ -467,10 +425,7 @@ class SSLSocket : Socket {
                     testItem_server.configureContext(cert_path, false_key_path)
             );
             assert(exception !is null);
-            __write("key incorrect before END");
             assert(exception.error_code == SSLErrorCodes.SSL_ERROR_NONE);
-            //          SSLSocket.reset();
-            __write("key incorrect END");
         }
 
         //! [correct acception]
@@ -490,16 +445,9 @@ class SSLSocket : Socket {
             const exception = collectException!SSLSocketException(
                     result = ssl_client.acceptSSL(empty_socket, socket)
             );
-            io.writefln("SSL_ERROR error_code=%s %d <%d>", exception.error_code,
-                    cast(int) exception.error_code, cast(int) SSLErrorCodes.SSL_ERROR_SYSCALL);
             assert(exception !is null);
             assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SSL);
-            //assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SYSCALL);
             assert(!result);
         }
     }
-}
-
-version (unitmain) void main() {
-    SSLSocket._main;
 }

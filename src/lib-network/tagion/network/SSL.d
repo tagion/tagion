@@ -50,9 +50,6 @@ version (WOLFSSL) {
             alias SSL_CTX_use_PrivateKey_file = wolfSSL_CTX_use_PrivateKey_file;
             alias ERR_clear_error = wolfSSL_ERR_clear_error;
             alias ERR_get_error = wolfSSL_ERR_get_error;
-            //        alias ERR_print_errors_fp = wolfSSL_ERR_print_errors_fp;
-            //alias SSLErrorCodes = wolfSSL_ErrorCodes;
-
             alias ERR_error_string_n = wolfSSL_ERR_error_string_n;
 
             /// Code generator which collects all WOLF and OPENSSL error into one enum
