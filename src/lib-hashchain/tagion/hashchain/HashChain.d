@@ -11,6 +11,7 @@ import tagion.basic.Types : Buffer, FileExtension, withDot;
 import tagion.basic.TagionExceptions : TagionException;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.dart.Recorder : RecordFactory;
+import tagion.hashchain.HashChainBlock : IHashChainBlock, IHashChainBlockFactory;
 import tagion.hibon.HiBONRecord : fread, fwrite;
 import tagion.utils.Miscellaneous : toHexString, decode;
 
@@ -21,7 +22,8 @@ import tagion.utils.Miscellaneous : toHexString, decode;
  * \class HashChain
  * Class stores dynamic info and handles local files of hash chain
  */
-@safe class HashChain(Block, BlockFactory) // (Block : IBlock)
+@safe class HashChain(Block : IHashChainBlock, BlockFactory:
+    IHashChainBlockFactory!Block)
 {
     alias BlocksInfo = Tuple!(Block, "first", Block, "last", ulong, "amount");
 
@@ -209,7 +211,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
         try
         {
             auto doc = fread(block_filename);
-            auto factory = BlockFactory(net);
+            auto factory = new BlockFactory(net);
             return factory(doc);
         }
         catch (TagionException e)

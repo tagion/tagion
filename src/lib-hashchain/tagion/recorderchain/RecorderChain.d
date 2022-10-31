@@ -1,21 +1,13 @@
 /// \file RecorderChain.d
 module tagion.recorderchain.RecorderChain;
 
-import std.file : exists, mkdirRecurse, dirEntries, SpanMode;
-import std.array : array;
-import std.typecons : Tuple;
-import std.path : buildPath, baseName, extension, setExtension, stripExtension;
-import std.algorithm : filter, map;
+import std.path : stripExtension;
 
-import tagion.basic.Types : Buffer, FileExtension, withDot;
-import tagion.basic.TagionExceptions : TagionException;
+import tagion.basic.Types : Buffer;
 import tagion.crypto.SecureNet : StdHashNet;
-import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock, RecorderChainBlockFactory;
-import tagion.dart.Recorder : RecordFactory;
-import tagion.hibon.HiBONRecord : fread, fwrite;
-import tagion.utils.Miscellaneous : toHexString, decode; // TODO review imports
-
 import tagion.hashchain.HashChain : HashChain;
+import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock, RecorderChainBlockFactory;
+import tagion.utils.Miscellaneous : decode;
 
 /** @brief File contains class RecorderChain
  */
@@ -64,13 +56,17 @@ unittest
 {
     import std.range;
     import std.file : rmdirRecurse;
+    import std.path : extension;
+
     import tagion.basic.Basic : tempfile;
-    import tagion.dart.DART;
+    import tagion.basic.Types : FileExtension, withDot;
     import tagion.communication.HiRPC;
-    import tagion.crypto.SecureNet;
+    import tagion.crypto.SecureNet : StdSecureNet;
+    import tagion.crypto.SecureInterfaceNet : SecureNet;
+    import tagion.dart.DART;
     import tagion.dart.BlockFile;
     import tagion.dart.DARTFile;
-    import tagion.crypto.SecureInterfaceNet : SecureNet;
+    import tagion.dart.Recorder : RecordFactory;
     import tagion.hibon.HiBON : HiBON;
     import tagion.hibon.Document : Document;
 
@@ -80,7 +76,7 @@ unittest
     immutable empty_recorder = cast(immutable) factory.recorder;
     const Buffer empty_bullseye = [];
 
-    auto block_factory = RecorderChainBlockFactory(net);
+    auto block_factory = new RecorderChainBlockFactory(net);
 
     const temp_folder = tempfile ~ "/";
 

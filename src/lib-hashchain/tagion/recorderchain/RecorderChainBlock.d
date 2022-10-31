@@ -6,19 +6,20 @@ import std.array;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.dart.Recorder;
+import tagion.hashchain.HashChainBlock : IHashChainBlock, IHashChainBlockFactory;
 import tagion.hibon.HiBONRecord : Label, GetLabel, HiBONRecord, RecordType;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.Document;
 
-/** @brief File contains structure RecorderChainBlock and RecorderChainBlockFactory
+/** @brief File contains class RecorderChainBlock and RecorderChainBlockFactory
  */
 
 /**
- * \struct RecorderChainBlock
- * Struct represents block from recorder chain
+ * \class RecorderChainBlock
+ * Class represents block from recorder chain
  */
 @RecordType("RCB")
-@safe class RecorderChainBlock
+@safe class RecorderChainBlock : IHashChainBlock
 {
     /** Fingerprint of this block */
     @Label("") Buffer fingerprint;
@@ -84,10 +85,10 @@ import tagion.hibon.Document;
 }
 
 /**
- * \struct RecorderChainBlockFactory
+ * \class RecorderChainBlockFactory
  * Used for creating instance of RecorderChainBlock
  */
-@safe struct RecorderChainBlockFactory
+@safe class RecorderChainBlockFactory : IHashChainBlockFactory!RecorderChainBlock
 {
     /** Hash net stored for creating RecorderChainBlocks */
     const StdHashNet net;
@@ -142,7 +143,7 @@ unittest
     Buffer bullseye = [1, 2, 3, 4, 5, 6, 7, 8];
     Buffer chain = [1, 2, 4, 8, 16, 32, 64, 128];
 
-    auto block_factory = RecorderChainBlockFactory(net);
+    auto block_factory = new RecorderChainBlockFactory(net);
 
     /// RecorderChainBlock_create_block
     {

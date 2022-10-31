@@ -25,7 +25,7 @@ mixin TrustedConcurrency;
     RecorderChain recorder_chain;
 
     /** Recorder chain block factory. By default init with default net */
-    RecorderChainBlockFactory recorder_block_factory = RecorderChainBlockFactory(new StdHashNet);
+    RecorderChainBlockFactory recorder_block_factory = new RecorderChainBlockFactory(new StdHashNet);
 
     /** Service method that receives recorder and bullseye and adds new block to recorder chain
      *      @param recorder - recorder for new block
