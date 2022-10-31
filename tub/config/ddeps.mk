@@ -9,7 +9,7 @@ $(DBUILD)/gen.dfiles.mk:
 	@echo dfiles $@
 	if [ ! -f "$@" ]; then
 	$(PRECMD)
-	printf "%s += %s\n" ${addprefix DFILES , $(DFILES)} >> $@
+	printf "%s += %s\n" ${addprefix DFILES , ${sort $(DFILES)}} >> $@
 	fi
 	if [ "$(BDDFILES)" != "" ]; then
 	printf "%s += %s\n" ${addprefix DFILES , $(BDDFILES)} >> $@
@@ -19,7 +19,7 @@ $(DBUILD)/gen.ddeps.json: $(DBUILD)/gen.dfiles.mk
 	$(PRECMD)
 	if [ ! -f "$@" ]; then
 	${call log.kvp, $(@F), $(PLATFORM)}
-	$(DC) $(DFLAGS) $(UNITTEST_FLAGS) ${addprefix -I,$(DINC)} --o- $(NO_OBJ)  $(DJSON)=$@ $(DFILES)
+	$(DC) $(DFLAGS) $(UNITTEST_FLAGS) ${addprefix -I,$(DINC)} --o- $(NO_OBJ)  $(DJSON)=$@ ${sort $(DFILES)}
 	fi
 
 ddeps: $(DBUILD)/gen.ddeps.json

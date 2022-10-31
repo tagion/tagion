@@ -89,6 +89,7 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
 - [mode0](#mode0)
 - [mode1](#mode1)
 - [mode2](#mode2)
+      - [Tool link](#tool-link)
 - [Table of contents](#table-of-contents)
 - [version](#version)
 - [overwrite](#overwrite)
@@ -238,6 +239,12 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
       - [Success](#success-24)
     - [Case: invalid filepath](#case-invalid-filepath)
       - [Failure](#failure-22)
+- [Passphrase file setting](#passphrase-file-setting)
+  - [Use cases](#use-cases-25)
+    - [Case: set correct passphrase file](#case-set-correct-passphrase-file)
+      - [Success](#success-25)
+    - [Case: invalid filepath](#case-invalid-filepath-1)
+      - [Failure](#failure-23)
 
 
 # version
@@ -1089,4 +1096,22 @@ Network will not run with output:
 File /invalid_path/file not exist
 ```
 
+# Passphrase file setting
+```
+./tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path wizard_file --port=4001 --transaction-port=10801 -N 4 --passphrasefile=filewithpassphrase.txt
+```
 
+## Use cases
+Set file with passphrase<br>
+
+### Case: set correct passphrase file
+
+#### Success
+**Result**:<br>
+Successful network launch
+
+### Case: invalid filepath 
+
+#### Failure
+**Result**:<br>
+Network start with passphrase default 

@@ -14,6 +14,11 @@ version (unittest)
     shared static this()
     {
         REPOROOT = environment.get(REPOROOT.stringof, null);
+    if (REPOROOT is null) {
+
+        const gitrepo = execute(["git", "rev-parse", "--show-toplevel"]);
+    REPOROOT = gitrepo.output;
+    }
         assert(REPOROOT, format!"%s must be defined"(REPOROOT.stringof));
     }
 
