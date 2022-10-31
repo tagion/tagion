@@ -1,9 +1,9 @@
 /// \file RecorderChainBlock.d
-module tagion.dart.RecorderChainBlock;
+module tagion.recorderchain.RecorderChainBlock;
 
 import std.array;
 
-import tagion.basic.Types : Buffer;
+import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.dart.Recorder;
 import tagion.hibon.HiBONRecord : Label, GetLabel, HiBONRecord, RecordType;
@@ -65,6 +65,21 @@ import tagion.hibon.Document;
     {
         auto factory = RecordFactory(net);
         return factory.recorder(recorder_doc);
+    }
+
+    Buffer getFingerprint() const
+    {
+        return fingerprint;
+    }
+
+    Buffer getPrevious() const
+    {
+        return chain;
+    }
+
+    static FileExtension getExtension()
+    {
+        return FileExtension.recchainblock;
     }
 }
 

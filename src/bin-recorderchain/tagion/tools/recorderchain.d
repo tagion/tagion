@@ -21,8 +21,8 @@ import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.services.RecorderService;
 import tagion.communication.HiRPC;
-import tagion.dart.RecorderChainBlock;
-import tagion.dart.RecorderChain;
+import tagion.recorderchain.RecorderChainBlock;
+import tagion.recorderchain.RecorderChain;
 
 auto logo = import("logo.txt");
 
@@ -105,14 +105,14 @@ int main(string[] args)
         stderr.writefln(e.msg);
         return 1;
     }
-    
-    if(!chain_directory.exists)
+
+    if (!chain_directory.exists)
     {
         writeln("No chain files in directory: ", chain_directory);
         return 1;
     }
 
-    if(!RecorderChain.isValidChain(chain_directory, hash_net))
+    if (!RecorderChain.isValidChain(chain_directory, hash_net))
     {
         writeln("Recorder block chain is not valid");
         return 1;
@@ -120,9 +120,9 @@ int main(string[] args)
 
     /** DART database */
     DART db;
-    /** First, last, amount of blocks in chain */ 
+    /** First, last, amount of blocks in chain */
     auto info = RecorderChain.getBlocksInfo(chain_directory, hash_net);
-    if(!info.amount) 
+    if (!info.amount)
     {
         writeln("No recorder chain block files in current directory");
         return 1;
@@ -173,7 +173,8 @@ int main(string[] args)
         addRecordToDB(db, recorder, hirpc);
         if (current_block.bullseye != db.fingerprint)
         {
-            throw new TagionException("DART fingerprint should be the same with recorder block bullseye");
+            throw new TagionException(
+                "DART fingerprint should be the same with recorder block bullseye");
             return 1;
         }
         current_block = RecorderChain.findNextBlock(current_block.fingerprint, chain_directory, hash_net);

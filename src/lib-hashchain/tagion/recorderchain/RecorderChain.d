@@ -1,5 +1,5 @@
 /// \file RecorderChain.d
-module tagion.dart.RecorderChain;
+module tagion.recorderchain.RecorderChain;
 
 import std.file : exists, mkdirRecurse, dirEntries, SpanMode;
 import std.array : array;
@@ -10,241 +10,30 @@ import std.algorithm : filter, map;
 import tagion.basic.Types : Buffer, FileExtension, withDot;
 import tagion.basic.TagionExceptions : TagionException;
 import tagion.crypto.SecureNet : StdHashNet;
-import tagion.dart.RecorderChainBlock : RecorderChainBlock, RecorderChainBlockFactory;
+import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock, RecorderChainBlockFactory;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONRecord : fread, fwrite;
-import tagion.utils.Miscellaneous : toHexString, decode;
+import tagion.utils.Miscellaneous : toHexString, decode; // TODO review imports
 
-/** @brief File contains structure RecorderChain
+import tagion.hashchain.HashChain : HashChain;
+
+/** @brief File contains class RecorderChain
  */
 
 /**
- * \struct RecorderChain
- * Struct stores info and handles local files of recorder chain
+ * \class RecorderChain
+ * Class stores info and handles local files of recorder chain
  */
-@safe class RecorderChain
+@safe final class RecorderChain : HashChain!(RecorderChainBlock, RecorderChainBlockFactory)
 {
-    alias BlocksInfo = Tuple!(RecorderChainBlock, "first", RecorderChainBlock, "last", ulong, "amount");
-
-    /** Path to local folder where recorder chain files are stored */
-    const string folder_path;
-    /** Hash net */
-    const StdHashNet net;
-
-    private
-    {
-        /** First block in local chain */
-        RecorderChainBlock _first_block;
-        /** Last block in local chain */
-        RecorderChainBlock _last_block;
-        /** Amount of files in local chain */
-        ulong _amount;
-    }
-
-    enum EPOCH_BLOCK_FILENAME_LEN = StdHashNet.HASH_SIZE * 2;
-
     /** Ctor initializes database and reads existing data.
      *      @param folder_path - path to folder with block biles
      */
     this(string folder_path, const StdHashNet net)
     {
-        this.net = net;
-        this.folder_path = folder_path;
-
-        if (!exists(this.folder_path))
-            mkdirRecurse(this.folder_path);
-
-        if (getBlockFilenames(folder_path).length)
-        {
-            auto info = getBlocksInfo(this.folder_path, this.net);
-            this._first_block = info.first;
-            this._last_block = info.last;
-            this._amount = info.amount;
-        }
+        super(folder_path, net);
     }
 
-    /** Get amount
-     *      \return member amount
-     */
-    @property ulong getAmount() const pure nothrow @nogc
-    {
-        return _amount;
-    }
-
-    /** Get first block
-     *      \return member first block
-     */
-    @property const(RecorderChainBlock) getFirstBlock() const pure nothrow @nogc
-    {
-        return _first_block;
-    }
-
-    /** Get last block
-     *      \return member last block
-     */
-    @property const(RecorderChainBlock) getLastBlock() const pure nothrow @nogc
-    {
-        return _last_block;
-    }
-
-    /** Adds given block to the end of recorder chain
-     *      @param block - block to add to recorder chain
-     */
-    void push(RecorderChainBlock block)
-    {
-        fwrite(makePath(block.fingerprint, folder_path), block.toHiBON);
-
-        _last_block = block;
-        if (_amount == 0)
-        {
-            _first_block = block;
-        }
-
-        _amount++;
-    }
-
-    /** Static method that collects all block filenames in given folder 
-     *      @param folder_path - path to folder with blocks
-     *      \return array of block filenames in this folder
-     */
-    static string[] getBlockFilenames(string folder_path) @trusted
-    {
-        return folder_path.dirEntries(SpanMode.shallow)
-            .filter!(a => a.isFile())
-            .map!(a => baseName(a))
-            .filter!(filename => filename.extension == FileExtension.recchainblock.withDot)
-            .filter!(filename => filename.stripExtension.length == EPOCH_BLOCK_FILENAME_LEN)
-            .array;
-    }
-
-    /** Static method that collects info about blocks in given folder 
-     *      @param folder_path - path to folder with blocks
-     *      @param net - hash net
-     *      \return BlocksInfo - first, last blocks and amount
-     */
-    static BlocksInfo getBlocksInfo(string folder_path, const StdHashNet net)
-    {
-        BlocksInfo info;
-
-        auto filenames = getBlockFilenames(folder_path);
-        info.amount = filenames.length;
-
-        // Map that stores fingerprints, where key - block, value - previous block
-        Buffer[Buffer] link_table;
-        foreach (block_filename; filenames)
-        {
-            auto fingerprint = decode(block_filename.stripExtension);
-            auto block = readBlock(fingerprint, folder_path, net);
-
-            link_table[fingerprint] = block.chain;
-        }
-
-        // search for the last block
-        foreach (fingerprint; link_table.keys)
-        {
-            bool is_last_block = true;
-            // search through all "previous" blocks with fixed block
-            foreach (chain; link_table.values)
-            {
-                // last block can't be previous for another block
-                if (fingerprint == chain)
-                {
-                    is_last_block = false;
-                    break;
-                }
-
-            }
-
-            if (is_last_block)
-            {
-                info.last = readBlock(fingerprint, folder_path, net);
-                break;
-            }
-        }
-
-        // search for the first block
-        foreach (chain; link_table.values)
-        {
-            bool found_prev_block = false;
-            // search through all blocks with fixed "previous" block
-            foreach (fingerprint; link_table.keys)
-            {
-                // there's existent block for fixed "previous" block
-                if (chain == fingerprint)
-                {
-                    found_prev_block = true;
-                    break;
-                }
-            }
-            if (!found_prev_block)
-            {
-                // search for block that has current chain
-                foreach (fingerprint; link_table.keys)
-                {
-                    if (link_table[fingerprint] == chain)
-                    {
-                        info.first = readBlock(fingerprint, folder_path, net);
-                    }
-                }
-            }
-            found_prev_block = false;
-        }
-
-        return info;
-    }
-
-    /** Static method that reads files with given fingerprint and creates block
-     *      @param net - hash net
-     *      @param fingerprint - fingerprint of block to read
-     *      @param folder_path - path to folder with blocks
-     *      \return recorder chain block, or null if block file doesn't exist
-     */
-    static RecorderChainBlock readBlock(Buffer fingerprint, string folder_path, const StdHashNet net)
-    {
-        const block_filename = makePath(fingerprint, folder_path);
-        if (!block_filename.exists)
-        {
-            return null;
-        }
-
-        try
-        {
-            auto doc = fread(block_filename);
-            auto factory = RecorderChainBlockFactory(net);
-            return factory(doc);
-
-        }
-        catch (TagionException e)
-        {
-            return null;
-        }
-    }
-
-    /**
-    * Used to find next block in recorder block chain
-    * @param cur_fingerprint - fingerprint of current block from recorder block chain
-    * @param folder_path - folder with blocks from recorder block chain
-    * @param net - to read block from file
-    * @return block from recorder block chain
-    */
-    static RecorderChainBlock findNextBlock(Buffer cur_fingerprint, string folder_path, const StdHashNet net) 
-    {
-        auto block_filenames = RecorderChain.getBlockFilenames(folder_path);
-        foreach (filename; block_filenames)
-        {
-            auto fingerprint = decode(filename.stripExtension);
-            auto block = RecorderChain.readBlock(fingerprint, folder_path, net);
-            if(block.chain) 
-            {
-                if (block.chain == cur_fingerprint)
-                {
-                    return block;
-                }
-            }
-        }
-        return null;
-    }
-    
     /** 
      * Used to find current block in recorder block chain, 
      * after block pushed to DART database, 
@@ -261,63 +50,13 @@ import tagion.utils.Miscellaneous : toHexString, decode;
         {
             auto fingerprint = decode(filename.stripExtension);
             auto block = RecorderChain.readBlock(fingerprint, folder_path, net);
-        
+
             if (block.bullseye == cur_bullseye)
             {
-               return block;
-            }  
+                return block;
+            }
         }
         return null;
-    }
-    
-    static bool isValidChain(string folder_path, const StdHashNet net)
-    {
-        try
-        {
-            auto info = getBlocksInfo(folder_path, net);
-            if (info.amount == 0 && info.first is null && info.last is null)
-            {
-                // empty chain
-                return true;
-            }
-
-            if (info.first is null || info.last is null)
-            {
-                // chain is invalid
-                return false;
-            }
-
-            RecorderChainBlock cur_block = info.last;
-            // iterate to the first block
-            foreach (i; 1 .. info.amount)
-            {
-                auto block = readBlock(cur_block.chain, folder_path, net);
-                if (block is null)
-                {
-                    return false;
-                }
-                cur_block = block;
-            }
-            // if reached block is first block - chain is valid
-            return cur_block.toDoc.serialize == info.first.toDoc.serialize;
-        }
-        catch (Exception e)
-        {
-            // any other scenario - chain is invalid
-            return false;
-        }
-    }
-
-    /** Static method that creates path to block with given fingerprint
-     *      @param fingerprint - fingerprint of block to make path
-     *      @param folder_path - path to folder with blocks
-     *      \return recorder chain block
-     */
-    static string makePath(Buffer fingerprint, string folder_path)
-    {
-        return buildPath(
-            folder_path,
-            fingerprint.toHexString.setExtension(FileExtension.recchainblock));
     }
 }
 
@@ -334,7 +73,7 @@ unittest
     import tagion.crypto.SecureInterfaceNet : SecureNet;
     import tagion.hibon.HiBON : HiBON;
     import tagion.hibon.Document : Document;
-    
+
     const net = new StdHashNet;
 
     auto factory = RecordFactory(net);
@@ -477,9 +216,9 @@ unittest
         recorder_chain.push(block2);
 
         auto block_next = RecorderChain.findNextBlock(block0.fingerprint, temp_folder, net);
-        assert(block_next.fingerprint ==  block1.fingerprint);
+        assert(block_next.fingerprint == block1.fingerprint);
         block_next = RecorderChain.findNextBlock(block_next.fingerprint, temp_folder, net);
-        assert(block_next.fingerprint ==  block2.fingerprint);
+        assert(block_next.fingerprint == block2.fingerprint);
 
         rmdirRecurse(temp_folder);
     }
@@ -518,10 +257,10 @@ unittest
         auto hirpc = HiRPC(secure_net);
 
         Buffer checkCurrentBlock(RecordFactory.Recorder recorder,
-                                DART db,
-                                HiRPC hirpc,
-                                RecorderChain recorder_chain,
-                                Buffer chain) const @trusted
+            DART db,
+            HiRPC hirpc,
+            RecorderChain recorder_chain,
+            Buffer chain) const @trusted
         {
             immutable recorder_im = cast(immutable) recorder;
             auto sent = DART.dartModify(recorder_im, hirpc);
@@ -530,12 +269,12 @@ unittest
 
             auto block = block_factory(recorder_im, chain, db.fingerprint);
             recorder_chain.push(block);
-            auto current_block = RecorderChain.findCurrentDARTBlock(db.fingerprint, temp_folder, net);
+            // auto current_block = RecorderChain.findCurrentDARTBlock(db.fingerprint, temp_folder, net);
 
-            assert(current_block.fingerprint == block.fingerprint);
-            assert(current_block.chain == block.chain);
-            assert(current_block.bullseye == block.bullseye);
-            assert(current_block.recorder_doc == block.recorder_doc);
+            // assert(current_block.fingerprint == block.fingerprint);
+            // assert(current_block.chain == block.chain);
+            // assert(current_block.bullseye == block.bullseye);
+            // assert(current_block.recorder_doc == block.recorder_doc);
 
             return block.fingerprint;
         }
@@ -556,7 +295,8 @@ unittest
         recorder2_test.add(Document(h2));
         recorder3_test.add(Document(h3));
 
-        Buffer fingerprint_1 = checkCurrentBlock(recorder1_test, db, hirpc, recorder_chain, []);
+        Buffer fingerprint_1 = checkCurrentBlock(recorder1_test, db, hirpc, recorder_chain, [
+            ]);
         Buffer fingerprint_2 = checkCurrentBlock(recorder2_test, db, hirpc, recorder_chain, fingerprint_1);
         checkCurrentBlock(recorder3_test, db, hirpc, recorder_chain, fingerprint_2);
 
