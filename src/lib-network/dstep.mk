@@ -132,6 +132,6 @@ find_test=${shell find $(REPOROOT) -type d -path "*wolfcrypt"}
 #
 # Adds the .di files as .d modules. For some reason some of the file here need a __ModuleInfo symbol
 #
-DIHFILES+=${shell find $(WOLFSSL_DIROOT) -name "*.d"}
+DFILES+=${shell find $(WOLFSSL_DIROOT) -name "*.d"}
 
 endif

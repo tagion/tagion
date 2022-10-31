@@ -32,7 +32,7 @@ $(DOBJ)/lib%.$(OBJEXT): $(DOBJ)/.way
 	$(PRECMD)
 	${call log.kvp, compile$(MODE)}
 	echo ${DFILES}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(DIHFILES) $(DCOMPILE_ONLY)  $(OUTPUT)$@
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(DCOMPILE_ONLY)  $(OUTPUT)$@
 
 $(DLIB)/lib%.$(DLLEXT): $(DOBJ)/lib%.$(OBJEXT)
 	$(PRECMD)
@@ -43,7 +43,7 @@ else
 $(DLIB)/%.$(DLLEXT):
 	$(PRECMD)
 	${call log.kvp, link$(MODE), $(DMODULE)}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(DIHFILES) ${LDFLAGS} $(LIBS) $(OBJS) $(DCOMPILE_ONLY)  $(OUTPUT)$@
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) ${LDFLAGS} $(LIBS) $(OBJS) $(DCOMPILE_ONLY)  $(OUTPUT)$@
 endif
 
 #
@@ -53,7 +53,7 @@ endif
 $(DBIN)/%:
 	$(PRECMD)
 	${call log.kvp, bin$(MOD), $*}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(DIHFILES) ${LDFLAGS} $(LIBS) $(OBJS) $(OUTPUT)$@
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) ${LDFLAGS} $(LIBS) $(OBJS) $(OUTPUT)$@
 
 #
 # Proto targets for unittest
@@ -71,11 +71,11 @@ proto-unittest-run: proto-unittest-build
 proto-unittest-build: $(UNITTEST_BIN)
 
 $(UNITTEST_BIN):DFLAGS+=$(DIP25) $(DIP1000)
-$(UNITTEST_BIN): $(COVWAY) $$(DFILES) $(DIHFILES)
+$(UNITTEST_BIN): $(COVWAY) $$(DFILES)
 	$(PRECMD)
 	echo deps $?
 	echo LIBS=$(LIBS)
-	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFALGS) ${addprefix -I,$(DINC)} $(DFILES) $(DIHFILES) $(LIBS) $(OUTPUT)$@
+	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFALGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} $(LIBS) $(OUTPUT)$@
 
 unittest: revision
 
