@@ -250,20 +250,6 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
             resp.reply(result);
         }
 
-        void requestBullseye(string task_name)
-        {
-            auto tid = locate(task_name);
-            if (tid != Tid.init)
-            {
-                log.trace("Sending bullseye back to %s", task_name);
-                send(tid, dart.fingerprint);
-            }
-            else
-            {
-                log.warning("Couldn't locate task: %s", task_name);
-            }
-        }
-
         ownerTid.send(Control.LIVE);
         while (!stop)
         {
@@ -381,7 +367,6 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     sendResult(response.toDoc.serialize);
                 }
             },
-                &requestBullseye,
                 (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); },
             );
             // try {

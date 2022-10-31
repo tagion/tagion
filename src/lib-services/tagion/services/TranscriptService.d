@@ -56,17 +56,19 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             }
         }
 
-        void modifyDART(RecordFactory.Recorder recorder)
+        Buffer modifyDART(RecordFactory.Recorder recorder)
         {
             auto sender = empty_hirpc.dartModify(recorder);
             if (dart_tid !is Tid.init)
             {
-                dart_tid.send("blackhole", sender.toDoc.serialize); //TODO: remove blackhole
+                dart_tid.send(task_name, sender.toDoc.serialize);
+                return receiveOnly!Buffer;
             }
             else
             {
                 log.error("Cannot locate DART service");
                 stop = true;
+                return [];
             }
         }
 
@@ -200,11 +202,26 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                 {
                     log("Sending to DART len: %d", recorder.length);
                     recorder.dump;
-                    modifyDART(recorder);
+                    auto result = modifyDART(recorder);
 
-                    dart_tid.send(task_name);
-                    auto bullseye = receiveOnly!Buffer;
-                    createRecorderBlock(rec_factory.uniqueRecorder(recorder), Fingerprint(bullseye));
+                    import tagion.hibon.HiBONJSON;
+                    import tagion.hibon.Document;
+
+                    log("~~~ Result with bullseye %s", Document(result).toPretty);
+
+                    const hirpc_received = empty_hirpc.receive(Document(result));
+                    const params = hirpc_received.result.params;
+
+                    log("~~~ params %s", params);
+
+                    auto bullseye = params["bullseye"].get!Buffer;
+
+                    import tagion.utils.Miscellaneous;
+
+                    log("~~~ bullseye %s", bullseye.cutHex);
+                    //auto bullseye = receiveOnly!Buffer;
+                    createRecorderBlock(rec_factory.uniqueRecorder(recorder), Fingerprint([
+                        ]));
                 }
                 else
                 {
