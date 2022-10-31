@@ -3,6 +3,10 @@ DSTEP_ATTRIBUTES+= --global-attribute=nothrow
 DSTEP_ATTRIBUTES+= --global-attribute=@nogc
 
 
+define DI2DLINK
+echo $${$1:.di=.d}
+endef
+
 #
 # This macro produce a .di file from .h
 #
@@ -38,6 +42,11 @@ $$(DESTROOT.$1)/%.di: $$(HPATH.$1)/%.h | $$(DESTROOT.$1)
 	$$(PRECMD)${call log.kvp, dstep, $$(@F)}
 	$$(DSTEP) $$(DSTEP_ATTRIBUTES) $$(DSTEPFLAGS.$1) $$(DSTEPFLAGS) --package $1 $$< -o $$@
 	$${foreach post_correct, $$(DSTEP_POSTCORRECT), $$(post_correct) $$@}
+	if [ -n "$$(DSTEP_DLINK)" ]; then
+	cd $$(@D)
+	$$(LN) $$(@F) $$(basename $$(@F)).d 
+	fi
+
 
 $$(DESTROOT.$1):
 	$$(PRECMD)mkdir -p $$@
