@@ -8,17 +8,20 @@ PLATFORMS+=$(LINUX_X86_64)
 ifeq ($(PLATFORM),$(LINUX_X86_64))
 ANDROID_ABI=x86_64
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
-DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
+DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-*" -a -not -path "*/tests/*" -a -not -path "*/c/*" -a -not -path "*/unitdata/*"}
 
-WRAPS+=secp256k1 p2pgowrapper openssl
+WRAPS+=secp256k1 p2pgowrapper $(SSLIMPLEMENTATION)
 
 .PHONY: prebuild-linux
 
 $(UNITTEST_BIN): $(DFILES)
 
-unittest: LIBS+=$(LIBOPENSSL)
-unittest: LIBS+=$(LIBSECP256K1)
-unittest: LIBS+=$(LIBP2PGOWRAPPER)
+proto-unittest-build: LIBS+=$(SSLIMPLEMENTATION)
+proto-unittest-build: LIBS+=$(LIBSECP256K1)
+proto-unittest-build: LIBS+=$(LIBP2PGOWRAPPER)
+
 unittest: proto-unittest-run
+
+build-unittest: proto-unittest-build
 
 endif

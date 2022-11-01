@@ -38,6 +38,8 @@ logs
 tools/*
 *.log
 *.way
+# Script tmp file
+*.bak
 
 #
 # Temporary wallet files
@@ -52,3 +54,9 @@ tagionwallet.json
 
 # C Header files
 src/wrap-secp256k1/secp256k1/include/secp256k1_hash.h
+
+# WolfSSL .d links
+src/lib-network/tagion/network/wolfssl/c/*.d
+src/lib-network/tagion/network/wolfssl/c/wolfcrypt/*.d
+src/lib-network/tagion/network/wolfssl/c/openssl/*.d
+

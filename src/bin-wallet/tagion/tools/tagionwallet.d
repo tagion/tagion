@@ -13,7 +13,7 @@ import std.string : toLower;
 import std.conv : to;
 import std.array : join;
 import std.exception : assumeUnique, assumeWontThrow;
-import std.socket : InternetAddress, AddressFamily, SocketOSException;
+import std.socket : InternetAddress, AddressFamily, SocketOSException, SocketException;
 import core.thread;
 
 import tagion.hibon.HiBON : HiBON;
@@ -1009,6 +1009,11 @@ int _main(string[] args)
         catch(SocketOSException e)
         {
             writeln("Refused connection to address:", wallet_interface.options.addr);
+            return 1;
+        }
+        catch(SocketException e)
+        {
+            writeln("Other socket error"~e.msg);
             return 1;
         }
         client.blocking = true;

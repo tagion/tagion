@@ -19,8 +19,6 @@ openssl: $(LIBOPENSSL)
 LIBOPENSSL+=$(DTMP)/libcrypto.a
 LIBOPENSSL+=$(DTMP)/libssl.a
 
-prebuild1: $(LIBOPENSSL)
-
 proper-openssl:
 	$(PRECMD)
 	${call log.header, $@ :: openssl}
@@ -43,7 +41,3 @@ $(DTMP)/libcrypto.a: $(DTMP_OPENSSL)/.configured
 $(DTMP)/libssl.a: $(DTMP_OPENSSL)/.configured
 	$(PRECMD)cd $(DTMP_OPENSSL); make libssl.a $(SUBMAKE_PARALLEL)
 	$(PRECMD)cp $(DTMP_OPENSSL)/libssl.a $(DTMP)/libssl.a
-
-# NOTE: Might need to export, but not sure. Will try without since we static link:
-# $(PRECMD)export LD_LIBRARY_PATH=$(DPREFIX_OPENSSL)/:$(LD_LIBRARY_PATH)
-# $(PRECMD)export DYLD_LIBRARY_PATH=$(DPREFIX_OPENSSL)/:$(DYLD_LIBRARY_PATH)
