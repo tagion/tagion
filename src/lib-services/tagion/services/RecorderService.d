@@ -9,7 +9,7 @@ import tagion.dart.RecorderChainBlock : RecorderChainBlockFactory;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.dart.RecorderChain : RecorderChain;
 import tagion.services.Options : Options;
-import tagion.tasks.TaskWrapper;
+import tagion.actor.TaskWrapper;
 import tagion.utils.Fingerprint : Fingerprint;
 
 mixin TrustedConcurrency;

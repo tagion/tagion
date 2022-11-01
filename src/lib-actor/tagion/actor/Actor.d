@@ -425,6 +425,7 @@ unittest {
 
 }
 
+    version(none) {
 
 version(unittest) {
     struct MyRequestActor {
@@ -459,7 +460,7 @@ template isRequestCallback(alias F) {
     }
 }
 
-
+}
 
 //enum isRequestCallback(alias F) = isCallable!F
 //enum isRequest(This, string name)
