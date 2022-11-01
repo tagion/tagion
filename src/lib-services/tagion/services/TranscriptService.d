@@ -62,7 +62,10 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             if (dart_tid !is Tid.init)
             {
                 dart_tid.send(task_name, sender.toDoc.serialize);
-                return receiveOnly!Buffer;
+
+                const result = receiveOnly!Buffer;
+                const received = empty_hirpc.receive(Document(result));
+                return received.response.result["bullseye"].get!Buffer;
             }
             else
             {
@@ -72,7 +75,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             }
         }
 
-        void createRecorderBlock(immutable(RecordFactory.Recorder) recorder, immutable(Fingerprint) dart_bullseye)
+        void dumpRecorderBlock(immutable(RecordFactory.Recorder) recorder, immutable(Fingerprint) dart_bullseye)
         {
             if (recorder_tid == Tid.init)
             {
@@ -202,26 +205,9 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                 {
                     log("Sending to DART len: %d", recorder.length);
                     recorder.dump;
-                    auto result = modifyDART(recorder);
+                    auto bullseye = modifyDART(recorder);
 
-                    import tagion.hibon.HiBONJSON;
-                    import tagion.hibon.Document;
-
-                    log("~~~ Result with bullseye %s", Document(result).toPretty);
-
-                    const hirpc_received = empty_hirpc.receive(Document(result));
-                    const params = hirpc_received.result.params;
-
-                    log("~~~ params %s", params);
-
-                    auto bullseye = params["bullseye"].get!Buffer;
-
-                    import tagion.utils.Miscellaneous;
-
-                    log("~~~ bullseye %s", bullseye.cutHex);
-                    //auto bullseye = receiveOnly!Buffer;
-                    createRecorderBlock(rec_factory.uniqueRecorder(recorder), Fingerprint([
-                        ]));
+                    dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), Fingerprint(bullseye));
                 }
                 else
                 {
