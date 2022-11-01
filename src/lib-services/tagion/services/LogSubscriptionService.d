@@ -82,7 +82,7 @@ struct LogSubscribersInfo
       */
     void updateLogServiceFilters(LogFilter[] update_filters, LogFiltersAction action)
     {
-        pragma(msg, "ib: could be redesigned using shared storage");
+        pragma(msg, "fixme(ib): could be redesigned using shared storage");
         if (logger_service_tid != Tid.init)
         {
             logger_service_tid.send(LogFilterArray(update_filters.idup), action);
@@ -203,7 +203,7 @@ void logSubscriptionServiceTask(Options opts) nothrow
 
         log.register(opts.logSubscription.task_name);
 
-        log("SocketThread port=%d addresss=%s", opts.logSubscription.service.port, opts
+        log("Start service port=%d addresss=%s", opts.logSubscription.service.port, opts
                 .logSubscription.service.address);
 
         @safe class LogSubscriptionRelay : SSLFiberService.Relay
@@ -222,7 +222,7 @@ void logSubscriptionServiceTask(Options opts) nothrow
                     }
                     catch (Exception t)
                     {
-                        log.warning("%s", t.msg);
+                        log.warning("Exception caught: %s", t);
                     }
                     return Document();
                 }
@@ -269,7 +269,6 @@ void logSubscriptionServiceTask(Options opts) nothrow
             with (Control) switch (control)
             {
             case STOP:
-                log("Kill socket thread port %d", opts.logSubscription.service.port);
                 logsubscription_api.stop;
                 stop = true;
                 break;

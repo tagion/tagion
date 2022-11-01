@@ -198,7 +198,7 @@ unittest
             }
             scope (failure)
             {
-                log.trace(format("Fail: TaskWrapper<%s>", task_name));
+                log.warning(format("Fail: TaskWrapper<%s>", task_name));
             }
             scope (exit)
             {

@@ -15,6 +15,8 @@ import core.sys.posix.pthread;
 import std.string;
 import std.algorithm : any, filter;
 import std.algorithm.searching : canFind;
+import std.datetime.systime : Clock;
+import std.conv : to;
 
 import tagion.basic.Basic : TrustedConcurrency, assumeTrusted;
 import tagion.basic.Types : Control;
@@ -29,6 +31,16 @@ import tagion.logger.LogRecords;
 import tagion.actor.TaskWrapper;
 
 mixin TrustedConcurrency;
+
+private
+{
+    enum TIMESTAMP_WIDTH = 10;
+    enum LOG_LEVEL_MAX_WIDTH = 5;
+
+    enum LOG_FORMAT = "%-" ~ to!string(
+            TIMESTAMP_WIDTH) ~ "s | %-" ~ to!string(
+            LOG_LEVEL_MAX_WIDTH) ~ "s | %s: %s";
+}
 
 /**
  * \struct LoggerTask
@@ -76,6 +88,11 @@ mixin TrustedConcurrency;
         return commonLogFilters.any!(f => (f.match(info)));
     }
 
+    static string formatLog(LogLevel level, string task_name, string text)
+    {
+        return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, level, task_name, text);
+    }
+
     /** Task method that receives logs from Logger and sends them to console, file and LogSubscriptionService
      *      @param info - log info about passed log
      *      @param doc - log itself, that can be either TextLog or some HiBONRecord variable
@@ -89,18 +106,9 @@ mixin TrustedConcurrency;
 
         if (info.isTextLog && doc.hasMember(TextLog.label))
         {
-            const log_msg = doc[TextLog.label].get!string;
+            string output = formatLog(info.level, info.task_name, doc[TextLog.label].get!string);
 
-            string output;
-            if (info.level is LogLevel.INFO)
-            {
-                output = format("%s: %s", info.task_name, log_msg);
-            }
-            else
-            {
-                output = format("%s:%s: %s", info.task_name, info.level, log_msg);
-            }
-
+            // Output text log to file
             if (logging)
             {
                 file.writeln(output);
@@ -119,7 +127,7 @@ mixin TrustedConcurrency;
             // Output error log
             if (info.level & LogLevel.STDERR)
             {
-                assumeTrusted!stderr.writefln("%s:%s: %s", info.task_name, info.level, log_msg);
+                assumeTrusted!stderr.writefln(output);
             }
         }
     }

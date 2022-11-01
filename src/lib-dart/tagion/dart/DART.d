@@ -252,8 +252,6 @@ class DART : DARTFile
         ushort sector() const pure nothrow
         in
         {
-            //log("%s %s %b",rims, root_rim, rims is root_rim);
-
             pragma(msg, "fixme(vp) have to be check: rims is root_rim");
 
             assert(rims.length >= ushort.sizeof || rims.length == 0,
