@@ -68,17 +68,17 @@ jobs:
           path: logs/${{ env.TARGET_BUILD }}/unittest.log
 
       - name: Check unittests
-        run: tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep passed
+        run: cat logs/${{ env.TARGET_BUILD }}/unittest.log | grep -E "^[0-9]+ modules passed unittests"
 
       - name: Report unittests
         if: success()
         run: |
-          RESULT=$(tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep passed)
+          RESULT=$(cat logs/${{ env.TARGET_BUILD }}/unittest.log | grep -E "^[0-9]+ modules passed unittests")
           echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
       - name: Report unittests
         if: failure()
         run: |
-          RESULT=$(tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep FAILED)
+          RESULT=$(cat logs/${{ env.TARGET_BUILD }}/unittest.log | grep FAILED)
           echo -e "### :heavy_exclamation_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
 
   create_tagion_images:
@@ -249,6 +249,8 @@ jobs:
           then
               exit 1
           fi
+      - name: chmod to upload
+        run: sudo chmod -R 777 scenario-result
       - name: upload artifacts
         if: always()
         uses: actions/upload-artifact@v2.2.0
