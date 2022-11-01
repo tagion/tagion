@@ -181,8 +181,10 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
 //        enum public_members =  allMethodFilter!(Task, templateNot!isProtected);
         enum task_members = allMethodFilter!(Task, isTask);
         // pragma(msg, "task_members ", task_members);
-        static assert(task_members.length !is 0, format("%s is missing @task (use @task UDA to mark the member function)", Task.stringof));
-        static assert(task_members.length is 1, format("Only one member of %s must be mark @task", Task.stringof));
+        static assert(task_members.length !is 0, 
+            format("%s is missing @task (use @task UDA to mark the member function)", Task.stringof));
+        static assert(task_members.length is 1, 
+    format("Only one member of %s must be mark @task", Task.stringof));
         enum task_func_name = task_members[0];
         alias TaskFunc = typeof(__traits(getMember, Task, task_func_name));
         alias Params = Parameters!TaskFunc;
@@ -274,7 +276,8 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
     }
     ActorFactory result;
     static if (Args.length) {
-        assert (ActorFactory.init_args == Args.init, format("Argument for %s has already been set", Task.stringof));
+        assert (ActorFactory.init_args == Args.init, 
+        format("Argument for %s has already been set", Task.stringof));
         ActorFactory.init_args = args;
     }
     return result;
