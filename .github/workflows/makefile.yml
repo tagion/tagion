@@ -68,17 +68,17 @@ jobs:
           path: logs/${{ env.TARGET_BUILD }}/unittest.log
 
       - name: Check unittests
-        run: cat logs/${{ env.TARGET_BUILD }}/unittest.log | grep -E "^[0-9]+ modules passed unittests"
+        run: tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep passed
 
       - name: Report unittests
         if: success()
         run: |
-          RESULT=$(cat logs/${{ env.TARGET_BUILD }}/unittest.log | grep -E "^[0-9]+ modules passed unittests")
+          RESULT=$(tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep passed)
           echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
       - name: Report unittests
         if: failure()
         run: |
-          RESULT=$(cat logs/${{ env.TARGET_BUILD }}/unittest.log | grep FAILED)
+          RESULT=$(tail -n 5 logs/${{ env.TARGET_BUILD }}/unittest.log | head -n 1 | grep FAILED)
           echo -e "### :heavy_exclamation_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
 
   create_tagion_images:
