@@ -77,7 +77,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
 
         void dumpRecorderBlock(immutable(RecordFactory.Recorder) recorder, immutable(Fingerprint) dart_bullseye)
         {
-            if (recorder_tid == Tid.init)
+            if (recorder_tid is Tid.init)
             {
                 recorder_tid = locate(recorder_task_name);
             }
