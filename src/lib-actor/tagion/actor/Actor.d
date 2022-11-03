@@ -15,7 +15,7 @@ import tagion.logger.Logger;
 import tagion.hibon.ActorException;
 
 
-
+/// method define receiver memmber function for a task actor
 @safe
 struct method {
 }
@@ -24,34 +24,86 @@ struct method {
 struct local {
 }
 
+/// task is a UDA used to define the run function of a task actor
 @safe
 struct task {
 }
 
+/* 
+ * Defines a unique actor ID
+ */
 struct ActorID {
-    string taskname;
-    string mangle_name;
-//    this(string
+    string taskname; /// Taskname
+    string mangle_name; /// The magle name of the actor
 }
 
 alias ActorFlag = Flag!"action";
 
+/* 
+ * 
+ * Params:
+ *   Task = is the actor object
+ *   taskname = The name of the of the actor type task
+ * Returns: The unique actor ID of the actor 
+ */
 immutable(ActorID) actorID(Task)(string taskname) nothrow pure {
     return immutable(ActorID)(taskname, mangle!Task(""));
 }
 
-enum isTrue(alias eval) = __traits(compiles, eval) && eval;
+// Helper function for isUDA 
+protected enum isTrue(alias eval) = __traits(compiles, eval) && eval;
 
-enum isUDA(This, string name, UDA) = isTrue!(hasUDA!(__traits(getMember, This, name), UDA));
+/*
+* Params:
+* This  = is the actor
+* member_name = the a member of the actor
+* Returns: true of member the UDA
+*/
+enum isUDA(This, string member_name, UDA) = isTrue!(hasUDA!(__traits(getMember, This, member_name), UDA));
 
-enum isTask(This, string name) = isUDA!(This, name, task); //isTrue!(hasUDA!(__traits(getMember, This, name), task));
+/*
+* Returns: true if member_name is the task member of the actor 
+ */
+enum isTask(This, string member_name) = isUDA!(This, member_name, task);
 
-enum isMethod(This, string name) = isUDA!(This, name, method);
+/*
+* Returns: true if the member name is a metode of the task This 
+*/
+enum isMethod(This, string method_name) = isUDA!(This, method_name, method);
 
-enum isCtorDtor(This, string name) =  ["__ctor", "__dtor"].any!(a => a == name);
+/// Test if the UDA check functions
+static unittest {
+    static struct S {
+        void no_uda();
+        @method void with_uda();
+        @task void run();        
+    }
+    static assert(!isUDA!(S, "no_uda", method));
+    static assert(isUDA!(S, "with_uda", method));
+    
+    static assert(!isMethod!(S, "no_uda"));
+    static assert(isMethod!(S, "with_uda"));
 
+    static assert(!isTask!(S, "with_uda"));
+    static assert(isTask!(S, "run"));
+}
 
-template allMethodFilter(This, alias pred) {
+/* 
+ * 
+ * Params:
+ *   This = is the actor
+ * Returns: true if the member is a constructor or a destructor
+ */
+enum isCtorDtor(This, string name) = ["__ctor", "__dtor"].any!(a => a == name);
+
+/* 
+ * 
+ * Params:
+ *   This = is a actor task
+ *   pred = condition template to select a method
+ * Returns: a alias-sequnecy of all the method of the actor
+ */
+protected template allMethodFilter(This, alias pred) {
     template Filter(string[] members) {
         static if (members.length is 0) {
             enum Filter = [];
@@ -65,13 +117,47 @@ template allMethodFilter(This, alias pred) {
             }
         }
         else {
-            enum Filter = Filter!(members[0..$/2]) ~ Filter!(members[$/2..$]);
+            enum Filter = Filter!(members[0 .. $ / 2]) ~ Filter!(members[$ / 2 .. $]);
         };
     }
+
     enum allMembers = [__traits(allMembers, This)];
     enum allMethodFilter = Filter!(allMembers);
 }
 
+//enum respone_callback_prefix = "__";
+
+string response_callback(string method_name) {
+    return "__"~method_name;
+}
+
+package immutable(string[]) orderMethods(This, string[] actor_methods)() {
+    string[] result;
+    static foreach(method_name; actor_methods) {
+        alias MethodType = typeof(__traits(getMember, This, method));
+        static if (is(ReturnType!MethodType == void)) {
+            result ~= method_name;
+        }
+        else {
+            result ~= method_name.respone_callback; 
+        }
+    }
+    return result;
+}
+
+package string responseCallbackGenerator(This, string[] actor_mothods)() {
+    string[] result;
+    static foreach(method_name; actor_methods) {
+        alias MethodType = typeof(__traits(getMember, This, mothod));
+        static if (!is(ReturnType!MethodType == void)) {
+            result ~= format(q{
+                void %1$s(immutable(ActionId) id, 
+            },
+
+        );
+        }
+    }
+}
 
 mixin template TaskActor() {
     import concurrency = std.concurrency;
@@ -80,11 +166,21 @@ mixin template TaskActor() {
     import tagion.basic.Types : Control;
 
     bool stop;
+    /* 
+     * Default control and it just reacts to a STOP
+     * Params:
+     *   ctrl = received control signal
+     */
     @method void control(Control ctrl) {
         stop = (ctrl is Control.STOP);
         .check(stop, format("Uexpected control signal %s", ctrl));
     }
 
+    /* 
+     * This function is call when an exceptions occures in the actor task
+     * Params:
+     *   e = Exception caught in the actor
+     */
     @method @local void fail(immutable(Exception) e) @trusted {
         stop = true;
         concurrency.prioritySend(concurrency.ownerTid, e);
@@ -92,26 +188,36 @@ mixin template TaskActor() {
 
     @method @local void actorId(immutable(ActorID) id) @trusted {
         auto tid = concurrency.locate(id.taskname);
-        if ( tid != Tid.init) {
+        if (tid !is Tid.init) {
             enum mangle_name = mangle!This("");
             immutable response = cast(ActorFlag)(id.mangle_name == mangle_name);
             concurrency.prioritySend(tid, response);
         }
     }
 
+    /* 
+     * This function will stop all the actors which are owende my this actor
+     */
     void stopAll() @trusted {
-        foreach(ref tid; tids.byValue) {
+        foreach (ref tid; tids.byValue) {
             tid.send(Control.STOP);
             assert(concurrency.receiveOnly!Control is Control.END,
-                format("Failed when stopping all child actors for Actor %s", This.stringof));
+                    format("Failed when stopping all child actors for Actor %s", This.stringof));
         }
     }
 
+    /* 
+     * This should be call when the @task function is ready
+     * and it send a Control live back to the owner task
+     */
     void alive() @trusted {
         concurrency.send(concurrency.ownerTid, Control.LIVE);
     }
 
 
+    /* 
+     * This function is call when the task ends normally
+     */
     void end() @trusted {
         concurrency.send(concurrency.ownerTid, Control.END);
     }
@@ -144,18 +250,15 @@ bool isRunning(string taskname) @trusted {
     return false;
 }
 
-protected static string generateAllMethods(alias This)()
-{
+protected static string generateAllMethods(alias This)() {
     import std.array : join;
 
     string[] result;
-    static foreach (m; __traits(allMembers, This))
-    {
+    static foreach (m; __traits(allMembers, This)) {
         {
             enum code = format!(q{alias Func=This.%s;})(m);
             mixin(code);
-            static if (isCallable!Func && hasUDA!(Func, method))
-            {
+            static if (isCallable!Func && hasUDA!(Func, method)) {
                 static if (!hasUDA!(Func, local)) {
                     enum method_code = format!q{
                         alias FuncParams_%1$s=AliasSeq!%2$s;
@@ -164,7 +267,6 @@ protected static string generateAllMethods(alias This)()
                         }}(m, Parameters!(Func).stringof);
                     result ~= method_code;
                 }
-                    //}
             }
         }
     }
@@ -174,41 +276,41 @@ protected static string generateAllMethods(alias This)()
 @safe
 auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct)) && !hasUnsharedAliasing!Args) {
     import concurrency = std.concurrency;
+
     static struct ActorFactory {
         static if (Args.length) {
             private static shared Args init_args;
         }
-//        enum public_members =  allMethodFilter!(Task, templateNot!isProtected);
+        //        enum public_members =  allMethodFilter!(Task, templateNot!isProtected);
         enum task_members = allMethodFilter!(Task, isTask);
         // pragma(msg, "task_members ", task_members);
-        static assert(task_members.length !is 0, 
-            format("%s is missing @task (use @task UDA to mark the member function)", Task.stringof));
-        static assert(task_members.length is 1, 
-    format("Only one member of %s must be mark @task", Task.stringof));
+        static assert(task_members.length !is 0,
+                format("%s is missing @task (use @task UDA to mark the member function)", Task.stringof));
+        static assert(task_members.length is 1,
+                format("Only one member of %s must be mark @task", Task.stringof));
         enum task_func_name = task_members[0];
         alias TaskFunc = typeof(__traits(getMember, Task, task_func_name));
         alias Params = Parameters!TaskFunc;
         alias ParamNames = ParameterIdentifierTuple!TaskFunc;
-        // pragma(msg, "Params ", Params);
         protected static void run(string task_name, Params args) nothrow {
             try {
                 static if (Args.length) {
                     static if (is(Task == struct)) {
-                        Task task=Task(ActorFactory.init_args);
+                        Task task = Task(ActorFactory.init_args);
                     }
                     else {
                         Task task = new Task(ActorFactory.init_args);
                     }
                 }
                 else {
-                static if (is(Task == struct)) {
-                    Task task;
+                    static if (is(Task == struct)) {
+                        Task task;
+                    }
+                    else {
+                        Task task = new Task;
+                    }
                 }
-                else {
-                    Task task = new Task;
-                }
-                }
-                scope(success) {
+                scope (success) {
                     writefln("STOP Success");
                     task.stopAll;
                     writeln("Stop all");
@@ -231,13 +333,19 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                 fatal(e);
             }
         }
+
         @safe
         struct Actor {
             Tid tid;
             void stop() @trusted {
                 concurrency.send(tid, Control.STOP);
-                .check(concurrency.receiveOnly!(Control) is Control.END, format("Expecting to received and %s after stop", Control.END));
+
+                
+
+                .check(concurrency.receiveOnly!(Control) is Control.END, format("Expecting to received and %s after stop", Control
+                        .END));
             }
+
             void halt() @trusted {
                 concurrency.send(tid, Control.STOP);
             }
@@ -251,15 +359,25 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
         Actor opCall(Args...)(string taskname, Args args) @trusted {
             import std.meta : AliasSeq;
             import std.typecons;
-            scope(failure) {
+
+            scope (failure) {
                 log.error("Task %s of %s did not go live", taskname, Task.stringof);
             }
             alias FullArgs = Tuple!(AliasSeq!(string, Args));
             auto full_args = FullArgs(taskname, args);
-            .check(concurrency.locate(taskname) == Tid.init, format("Actor %s has already been started", taskname));
+
+            
+
+            .check(concurrency.locate(taskname) == Tid.init,
+                    format("Actor %s has already been started", taskname));
             auto tid = tids[taskname] = concurrency.spawn(&run, full_args.expand);
             const live = concurrency.receiveOnly!Control;
-            .check(live is Control.LIVE, format("%s excepted from %s of %s but got %s", Control.LIVE, taskname, Task.stringof, live));
+
+            
+
+            .check(live is Control.LIVE,
+                    format("%s excepted from %s of %s but got %s",
+                    Control.LIVE, taskname, Task.stringof, live));
             return Actor(tid);
         }
 
@@ -274,28 +392,33 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
             return Actor.init;
         }
     }
+
     ActorFactory result;
     static if (Args.length) {
-        assert (ActorFactory.init_args == Args.init, 
-        format("Argument for %s has already been set", Task.stringof));
+        assert(ActorFactory.init_args == Args.init,
+                format("Argument for %s has already been set", Task.stringof));
         ActorFactory.init_args = args;
     }
     return result;
 }
 
-version(unittest) {
+version (unittest) {
     import std.stdio;
     import core.time;
+
     void send(Args...)(Tid tid, Args args) @trusted {
         concurrency.send(tid, args);
     }
+
     auto receiveOnly(Args...)() @trusted {
         return concurrency.receiveOnly!Args;
     }
+
     private enum Get {
         Some,
         Arg
     }
+
     @safe
     private struct MyActor {
         long count;
@@ -309,10 +432,9 @@ version(unittest) {
             count -= by;
         }
 
-
         @method void get(Get opt) { // reciever
             writefln("Got ---- %s", opt);
-            final switch(opt) {
+            final switch (opt) {
             case Get.Some:
                 sendOwner(some_name);
                 break;
@@ -322,6 +444,9 @@ version(unittest) {
             }
         }
 
+        @method void response_callback(immutable(ActorId) id, string text) {
+            auto 
+        }
         mixin TaskActor;
 
         @task void runningTask(long label) {
@@ -339,7 +464,6 @@ version(unittest) {
 
 }
 
-
 ///
 @safe
 unittest {
@@ -351,25 +475,25 @@ unittest {
         assert(!isRunning(single_actor_taskname));
         // Starts one actor of MyActor
         auto my_actor_1 = my_actor_factory(single_actor_taskname, 10);
-        scope(exit) {
+        scope (exit) {
             my_actor_1.stop;
         }
 
         /// Actor init args
         {
             my_actor_1.get(Get.Arg); /// tid.send(Get.Arg); my_actor_1.send(Get.Arg)
-            assert(receiveOnly!long is 10);
+            assert(receiveOnly!long  is 10);
         }
 
         {
             my_actor_1.decrease(3);
             my_actor_1.get(Get.Arg); /// tid.send(Get.Arg); my_actor_1.send(Get.Arg)
-            assert(receiveOnly!long is 10-3);
+            assert(receiveOnly!long  is 10 - 3);
         }
 
         {
             //
-            enum some_text ="Some text";
+            enum some_text = "Some text";
             my_actor_1.some(some_text);
             my_actor_1.get(Get.Some); /// tid.send(Get.Arg); my_actor_1.send(Get.Arg)
             assert(receiveOnly!string == some_text);
@@ -377,16 +501,16 @@ unittest {
     }
 }
 
-
-version(unittest) {
+version (unittest) {
     struct MyActorWithCtor {
         immutable(string) common_text;
         @disable this();
         this(string text) {
             common_text = text;
         }
+
         @method void get(Get opt) { // reciever
-            final switch(opt) {
+            final switch (opt) {
             case Get.Some:
                 sendOwner(common_text);
                 break;
@@ -400,7 +524,7 @@ version(unittest) {
 
         @task void runningTask() {
             alive;
-            while(!stop) {
+            while (!stop) {
                 receive;
             }
         }
@@ -416,52 +540,62 @@ unittest {
     auto my_actor_factory = actor!MyActorWithCtor(common_text);
     auto actor_1 = my_actor_factory("task1");
     auto actor_2 = my_actor_factory("task2");
-    scope(exit) {
+    scope (exit) {
         actor_1.stop;
         actor_2.stop;
     }
-    actor_1.get(Get.Some);
-    actor_2.get(Get.Some);
-    // Receive the common argument given to the factory constructor
-    assert(receiveOnly!string == common_text);
-    assert(receiveOnly!string == common_text);
-
+    {
+        actor_1.get(Get.Some);
+        assert(receiveOnly!string == common_text);
+        actor_2.get(Get.Some);
+        // Receive the common argument given to the factory constructor
+        assert(receiveOnly!string == common_text);
+    }
 }
 
-    version(none) {
 
-version(unittest) {
-    struct MyRequestActor {
+@safe
+unittest {
+    void got_response(string text) {
+        writefln("text=%s", text);
+    }   
+    actor_1.request_a_response(actorID!(void), &got_response);
 
-        @method void request(string task_name, string some_text) {
-            response(42, format("<%s>", text));
+}
+version (none) {
+    version (unittest) {
+        struct MyRequestActor {
+
+            @method void request(string task_name, string some_text) {
+                response(42, format("<%s>", text));
+            }
+
         }
 
-    }
+        struct MyResponseActor {
 
-    struct MyResponseActor {
+            @method void response(string task_name) {
+                response(42, format("<%s>", text));
+            }
 
-        @method void response(string task_name) {
-            response(42, format("<%s>", text));
         }
 
+        enum x = isRequestCallback!(ActorWithResponce.request);
+        pragma(msg, "xxxx ", x);
     }
-    enum x = isRequestCallback!(ActorWithResponce.request);
-    pragma(msg, "xxxx ", x);
-}
 
-template isRequestCallback(alias F) {
-    static if (isCallable!F) {
-        alias Params = Parameters!F;
-        alias ParamNames = ParameterIdentifierTuple!F;
-        pragma(msg, "Params ", Params);
-        pragma(msg, "ParamNames ", ParamNames);
-        enum isRequestCallback = (Params.length >= 2) && isDelegate!(Params[$-1]);
+    template isRequestCallback(alias F) {
+        static if (isCallable!F) {
+            alias Params = Parameters!F;
+            alias ParamNames = ParameterIdentifierTuple!F;
+            pragma(msg, "Params ", Params);
+            pragma(msg, "ParamNames ", ParamNames);
+            enum isRequestCallback = (Params.length >= 2) && isDelegate!(Params[$ - 1]);
+        }
+        else {
+            enum isRequestCallback = false;
+        }
     }
-    else {
-        enum isRequestCallback = false;
-    }
-}
 
 }
 
