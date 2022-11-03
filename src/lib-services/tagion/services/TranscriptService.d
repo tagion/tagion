@@ -65,7 +65,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
 
                 const result = receiveOnly!Buffer;
                 const received = empty_hirpc.receive(Document(result));
-                return received.response.result["bullseye"].get!Buffer;
+                return received.response.result[DARTFile.Params.bullseye].get!Buffer;
             }
             else
             {
