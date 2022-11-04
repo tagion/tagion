@@ -60,3 +60,6 @@ src/lib-network/tagion/network/wolfssl/c/*.d
 src/lib-network/tagion/network/wolfssl/c/wolfcrypt/*.d
 src/lib-network/tagion/network/wolfssl/c/openssl/*.d
 
+
+# Auto-generated .pem files
+pem_files
