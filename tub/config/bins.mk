@@ -1,8 +1,7 @@
 
 #
 # $1 : Program name
-# $2 : List of libraries used by the program
-# $3 : Set name of the onetool
+# $2 : Set name of the onetool
 #
 define DO_BIN
 ${eval
@@ -15,7 +14,7 @@ BINS+=$$(_$1)
 $1: target-$1
 bins: $1
 
-_TOOLS=$3
+_TOOLS=$2
 
 ifdef _TOOLS
 info-$1:

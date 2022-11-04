@@ -18,7 +18,7 @@ endif
 #tagion-tagionwave: DFLANG+=$(DONETOOL)
 target-tagionwave: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 target-tagionwave: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wave/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,tagionwave,,$(ONETOOL)}
+${call DO_BIN,tagionwave,tagion}
 
 #
 # HiBON utility
@@ -26,7 +26,7 @@ ${call DO_BIN,tagionwave,,$(ONETOOL)}
 # FIXME(CBR) should be remove when ddeps works correctly
 target-hibonutil: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 target-hibonutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-hibonutil/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,hibonutil,,$(ONETOOL)}
+${call DO_BIN,hibonutil,tagion}
 
 
 #
@@ -35,7 +35,7 @@ ${call DO_BIN,hibonutil,,$(ONETOOL)}
 # FIXME(CBR) should be remove when ddeps works correctly
 target-dartutil: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 target-dartutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-dartutil/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,dartutil,,$(ONETOOL)}
+${call DO_BIN,dartutil,tagion}
 
 #
 # WASM utility
@@ -51,7 +51,7 @@ ${call DO_BIN,wasmutil,}
 # FIXME(CBR) should be remove when ddeps works correctly
 target-tagionwallet: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 target-tagionwallet: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wallet/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,tagionwallet,,$(ONETOOL)}
+${call DO_BIN,tagionwallet,tagion}
 
 wallet: target-tagionwallet
 #
@@ -81,10 +81,10 @@ ${call DO_BIN,recorderchain,}
 # Boot utility
 #
 # fixme(cbr): When ddeps.mk work those libs are not needed
-#tagion-tagionboot: ONETOOL=$(ONETOOL)
+#tagion-tagionboot: ONETOOL=tagion
 target-tagionboot: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 target-tagionboot: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-boot/*" -a -not -path "*/unitdata/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
-${call DO_BIN,tagionboot,,$(ONETOOL)}
+${call DO_BIN,tagionboot,tagion}
 
 target-tagion: DFLAGS+=$(DVERSION)=ONETOOL
 target-tagion: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
