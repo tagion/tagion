@@ -81,7 +81,6 @@ ${call DO_BIN,recorderchain,}
 # Boot utility
 #
 # fixme(cbr): When ddeps.mk work those libs are not needed
-#tagion-tagionboot: ONETOOL=tagion
 target-tagionboot: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 target-tagionboot: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-boot/*" -a -not -path "*/unitdata/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
 ${call DO_BIN,tagionboot,tagion}

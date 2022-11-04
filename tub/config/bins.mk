@@ -20,17 +20,13 @@ ifdef _TOOLS
 info-$1:
 	@echo _TOOLS defined $$(TAGION)
 
-target-$1: target-tagion
+target-$1: target-$2
 	@echo Tools enabled $1
 	rm -f $$(_$1)
 	ln -s $$(TAGION) $$(_$1)
 else
 info-$1:
 	@echo _TOOLS undefined
-
-#LIBS_$1:=$2
-
-#target-$1: LIBS:=$$(LIBS_$1)
 
 target-$1: $$(DBIN)/$1
 endif
