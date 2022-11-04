@@ -5,9 +5,10 @@ import std.concurrency;
 import core.thread;
 import std.array : join;
 import std.exception : assumeUnique;
+import std.range : empty;
 
 import tagion.services.Options;
-import tagion.basic.Types : Control, Buffer;
+import tagion.basic.Types : Control, Buffer, FileExtension;
 import tagion.hashgraph.HashGraphBasic : EventBody;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
@@ -25,23 +26,42 @@ import tagion.dart.DARTFile;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Fingerprint : Fingerprint;
-import tagion.utils.HiBONWriter;
+import tagion.utils.Miscellaneous : toHexString;
+import tagion.hibon.HiBONRecord;
+
+struct EpochDumpRecord
+{
+    @Label("") Buffer fingerprint;
+    @Label("previous") string previous;
+    @Label("bullseye") Buffer bullseye;
+
+    mixin HiBONRecord!(
+        q{
+            this(
+                Buffer bullseye,
+                string previous,
+                const(StdHashNet) net)
+            {
+                this.bullseye = bullseye;
+                this.previous = previous;
+
+                this.fingerprint = net.hashOf(toDoc);
+            }
+        });
+}
 
 private static void saveHashedDump(ref const Document bullseye)
 {
-    const auto prev_hash_key = "prevhash";
-    const auto bullsye_key = "bullseye";
     static string previousHashData = "0";
-    HiBON file = new HiBON();
-    file[prev_hash_key] = previousHashData;
-    file[bullsye_key] = bullseye;
+    const static hasher = new StdHashNet;
+    Buffer representation = bullseye.data;
+    auto file = EpochDumpRecord(representation, previousHashData, hasher);
     const Options options = getOptions();
-    HiBONWriter writer = new HiBONWriter(options.transaction_dumps_dirrectory);
-    writer.setWriteData(file);
-    if(writer.performHashedWrite())
-    {
-        previousHashData = writer.lastWritedHash();
-    }
+    auto actualHash = toHexString(hasher.rawCalcHash(file.toDoc.data));
+    auto filename = actualHash ~ "." ~ FileExtension.hibon;
+    string directory = options.transaction_dumps_dirrectory;
+    fwrite(directory.empty ? filename : (directory ~ "/" ~ filename), file.toHiBON);
+    previousHashData = actualHash;
 }
 
 // This function performs Smart contract executions
@@ -275,11 +295,21 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
     }
 }
 
-/*version(none) */unittest
+unittest
 {
-    auto doc = new HiBON();
-    doc["A"] = "B";
-    auto realDoc = Document(doc);
-    saveHashedDump(realDoc);
-    saveHashedDump(realDoc);
+    import std.file : remove, exists, mkdir, rmdirRecurse;
+    auto hibon = new HiBON();
+    hibon["A"] = "B";
+    auto doc = Document(hibon);
+    Options options = getOptions();
+    options.transaction_dumps_dirrectory = "tmp_hashes";
+    setOptions(options);
+    mkdir(options.transaction_dumps_dirrectory);
+    saveHashedDump(doc);
+    saveHashedDump(doc);
+    enum hashOne = "tmp_hashes/10236aa77cf4f3cb68c3871e6e2c7ee053d3e7e4c49e3635a3e8708a81637502.hibon";
+    enum hashTwo = "tmp_hashes/c1b47d4425ba549aad30ec8386e5cba00e60ba76694ce1c82af8cefc53da6fe1.hibon";
+    assert(exists(hashOne));
+    assert(exists(hashTwo));
+    rmdirRecurse(options.transaction_dumps_dirrectory);    
 }
