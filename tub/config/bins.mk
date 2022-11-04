@@ -2,7 +2,7 @@
 #
 # $1 : Program name
 # $2 : List of libraries used by the program
-# $3 : Set if the program is tagion tool
+# $3 : Set name of the onetool
 #
 define DO_BIN
 ${eval
@@ -29,9 +29,9 @@ else
 info-$1:
 	@echo _TOOLS undefined
 
-LIBS_$1:=$2
+#LIBS_$1:=$2
 
-target-$1: LIBS:=$$(LIBS_$1)
+#target-$1: LIBS:=$$(LIBS_$1)
 
 target-$1: $$(DBIN)/$1
 endif
