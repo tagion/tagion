@@ -90,4 +90,10 @@ ${call DO_BIN,tagion,$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
 # Binary of BBD generator tool
 #
 target-behaviour: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-behaviour/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,behaviour,$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
+${call DO_BIN,behaviour,$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}#
+
+#
+# Binary testbench 
+#
+target-testbench: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-testbench/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
+${call DO_BIN,testbench,$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER), $(ONETOOL)}

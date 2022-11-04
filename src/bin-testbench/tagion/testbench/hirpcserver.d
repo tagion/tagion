@@ -12,19 +12,18 @@ import tagion.hibon.HiBON;
 import tagion.Keywords;
 import tagion.gossip.GossipNet;
 import tagion.utils.Miscellaneous : toHexString;
-import tagion.Base : Buffer;
+import tagion.basic.Types : Buffer;
 
-class HRPCNet : StdSecureNet
-{
+import tagion.tools.Basic;
+
+version (none) class HRPCNet : StdSecureNet {
     import tagion.hashgraph.HashGraph;
 
-    override void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint)
-    {
+    override void request(HashGraph hashgraph, immutable(ubyte[]) fingerprint) {
         assert(0, format("Not implemented %s", __PRETTY_FUNCTION__));
     }
 
-    this(string passphrase)
-    {
+    this(string passphrase) {
         import tagion.crypto.secp256k1.NativeSecp256k1;
 
         super(new NativeSecp256k1(NativeSecp256k1.Format.AUTO, NativeSecp256k1.Format.COMPACT));
@@ -39,8 +38,7 @@ import std.stdio;
 import std.path;
 import tagion.utils.Miscellaneous : toHexString;
 
-struct Bank
-{
+version (none) struct Bank {
     protected enum _transactions = [
             "accountCreate",
             "accountGetHistoryExchange",
@@ -64,15 +62,13 @@ struct Bank
     alias HRPCReceiver = HRPC.HRPCReceiver;
     HRPC hrpc;
 
-    static immutable(Buffer) getAccount(ref const(HRPCReceiver) received)
-    {
+    static immutable(Buffer) getAccount(ref const(HRPCReceiver) received) {
         HRPC.check_element!Buffer(received.params, Params.account);
         return received.params[Params.account].get!Buffer;
     }
 
     enum EXT = "bson";
-    string filename(immutable(Buffer) account)
-    {
+    string filename(immutable(Buffer) account) {
         return tempDir.buildPath(setExtension(account.toHexString, EXT));
     }
 
@@ -81,12 +77,10 @@ struct Bank
     //     mixin(code);
     // }
 
-    const(HRPCSender) accountCreate(ref const(HRPCReceiver) received)
-    {
+    const(HRPCSender) accountCreate(ref const(HRPCReceiver) received) {
         immutable account = getAccount(received);
         immutable filename = filename(account);
-        if (filename.exists)
-        {
+        if (filename.exists) {
             auto bson_data = new HBSON;
             bson_data[Params.account] = received.params[Params.account].get!Buffer;
             return hrpc.error(received, format("Account %s already exists", account.toHexString), -17, bson_data);
@@ -100,20 +94,17 @@ struct Bank
         return hrpc.result(received, bson_account);
     }
 
-    const(HRPCSender) accountGetHistoryExchange(ref const(HRPCReceiver) received)
-    {
+    const(HRPCSender) accountGetHistoryExchange(ref const(HRPCReceiver) received) {
         immutable account = getAccount(received);
         return hrpc.error(received, format("Not implemented yet %s", __PRETTY_FUNCTION__), -17);
     }
 
-    const(HRPCSender) accountMakeTransfer(ref const(HRPCReceiver) received)
-    {
+    const(HRPCSender) accountMakeTransfer(ref const(HRPCReceiver) received) {
         immutable account = getAccount(received);
         return hrpc.error(received, format("Not implemented yet %s", __PRETTY_FUNCTION__), -17);
     }
 
-    const(HRPCSender) accountMakeExchange(ref const(HRPCReceiver) received)
-    {
+    const(HRPCSender) accountMakeExchange(ref const(HRPCReceiver) received) {
         immutable account = getAccount(received);
         return hrpc.error(received, format("Not implemented yet %s", __PRETTY_FUNCTION__), -17);
     }
@@ -124,21 +115,16 @@ struct Bank
      Params: received contains valid method and a params object
      Returns: Returns a HRPC either an result or an error
      +/
-    const(HRPCSender) opCall(ref const(HRPCReceiver) received)
-    {
-        if (!received.params.empty)
-        {
-            if (received.params.hasElement("id"))
-            {
+    const(HRPCSender) opCall(ref const(HRPCReceiver) received) {
+        if (!received.params.empty) {
+            if (received.params.hasElement("id")) {
                 immutable message = format("The parameter 'id' should be called 'account' instead", received
                         .message.method);
                 return hrpc.error(received, message, 42);
             }
         }
-        switch (received.message.method)
-        {
-            static foreach (method; EnumMembers!Transactions)
-            {
+        switch (received.message.method) {
+            static foreach (method; EnumMembers!Transactions) {
                 mixin(format("case Transactions.%s: return %s(received);", method, method));
             }
         default:
@@ -149,187 +135,168 @@ struct Bank
     }
 }
 
-void main(string[] args)
-{
-    ushort port;
-    enum BUFFER_SIZE = 1024;
-    if (args.length >= 2)
-    {
-        port = to!ushort(args[1]);
-    }
-    else
-    {
-        port = 4444;
-    }
+mixin Main!(_main, "xxx");
 
-    auto listener = new TcpSocket();
-    assert(listener.isAlive);
-    listener.blocking = false;
-    listener.bind(new InternetAddress(port));
-    listener.listen(10);
-
-    writefln("Listening on port %d.", port);
-    stdout.flush;
-    enum MAX_CONNECTIONS = 60;
-    // Room for listener.
-    auto socketSet = new SocketSet(MAX_CONNECTIONS + 1);
-    Socket[] reads;
-
-    HRPC hrpc;
-    immutable passphrase = "Very secret password for the server";
-    hrpc.net = new HRPCNet(passphrase);
-    Bank bank;
-    bank.hrpc = hrpc;
-    while (true)
-    {
-        socketSet.add(listener);
-
-        foreach (sock; reads)
-        {
-            socketSet.add(sock);
+int _main(string[] args) {
+    version (none) {
+        ushort port;
+        enum BUFFER_SIZE = 1024;
+        if (args.length >= 2) {
+            port = to!ushort(args[1]);
+        }
+        else {
+            port = 4444;
         }
 
-        Socket.select(socketSet, null, null);
+        auto listener = new TcpSocket();
+        assert(listener.isAlive);
+        listener.blocking = false;
+        listener.bind(new InternetAddress(port));
+        listener.listen(10);
 
-        for (size_t i = 0; i < reads.length; i++)
-        {
-            if (socketSet.isSet(reads[i]))
-            {
-                ubyte[BUFFER_SIZE] buf;
-                auto datLength = reads[i].receive(buf[]);
+        writefln("Listening on port %d.", port);
+        stdout.flush;
+        enum MAX_CONNECTIONS = 60;
+        // Room for listener.
+        auto socketSet = new SocketSet(MAX_CONNECTIONS + 1);
+        Socket[] reads;
 
-                if (datLength == Socket.ERROR)
-                {
-                    writeln("Connection error.");
-                }
-                else if (datLength != 0)
-                {
+        HRPC hrpc;
+        immutable passphrase = "Very secret password for the server";
+        hrpc.net = new HRPCNet(passphrase);
+        Bank bank;
+        bank.hrpc = hrpc;
+        while (true) {
+            socketSet.add(listener);
 
-                    writefln("\nReceived %d bytes from %s", datLength, reads[i].remoteAddress()
-                            .toString());
-                    const(HRPC.HRPCReceiver)* ref_received;
-                    auto doc = Document(buf[0 .. datLength].idup);
-                    writeln(doc.toText);
-                    stdout.flush;
-                    try
-                    {
-                        auto received = hrpc.receive(doc);
+            foreach (sock; reads) {
+                socketSet.add(sock);
+            }
 
-                        ref_received = &received;
-                        if (received.verified)
-                        {
-                            writeln("Message is verified and signed");
-                        }
-                        else
-                        {
-                            writeln("Message is not signed");
-                        }
-                        version (none)
-                        {
+            Socket.select(socketSet, null, null);
 
-                            auto bson_result = new HBSON;
-                            bson_result[Keywords.method] = received.message.method;
-                            bson_result[Keywords.params] = received.params;
-                            bson_result["signed"] = received.verified;
-                            auto message_doc = doc[Keywords.message].get!Document;
-                            immutable hash = hrpc.net.calcHash(message_doc.data);
-                            bson_result["hash"] = hash;
-                        }
-                        auto sender = bank(received);
-                        immutable buffer = hrpc.toBSON(sender).serialize;
+            for (size_t i = 0; i < reads.length; i++) {
+                if (socketSet.isSet(reads[i])) {
+                    ubyte[BUFFER_SIZE] buf;
+                    auto datLength = reads[i].receive(buf[]);
 
-                        reads[i].send(buffer);
-                        writeln("\nResonse:");
-                        auto sender_doc = Document(buffer);
-                        writefln(sender_doc.toText);
+                    if (datLength == Socket.ERROR) {
+                        writeln("Connection error.");
+                    }
+                    else if (datLength != 0) {
+
+                        writefln("\nReceived %d bytes from %s", datLength, reads[i].remoteAddress()
+                                .toString());
+                        const(HRPC.HRPCReceiver)* ref_received;
+                        auto doc = Document(buf[0 .. datLength].idup);
+                        writeln(doc.toText);
                         stdout.flush;
+                        try {
+                            auto received = hrpc.receive(doc);
 
-                    }
-                    catch (Exception e)
-                    {
-                        auto bson_data = new HBSON;
-                        bson_data["stack"] = e.msg;
-                        if ((ref_received) && !ref_received.empty)
-                        {
-                            auto error_sender = hrpc.error(*ref_received, e.msg, 666, bson_data);
-                            immutable error_buffer = hrpc.toBSON(error_sender).serialize;
-                            reads[i].send(error_buffer);
-                            writeln("\nError:");
-                            auto error_doc = Document(error_buffer);
-                            writeln(error_doc.toText);
+                            ref_received = &received;
+                            if (received.verified) {
+                                writeln("Message is verified and signed");
+                            }
+                            else {
+                                writeln("Message is not signed");
+                            }
+                            version (none) {
+
+                                auto bson_result = new HBSON;
+                                bson_result[Keywords.method] = received.message.method;
+                                bson_result[Keywords.params] = received.params;
+                                bson_result["signed"] = received.verified;
+                                auto message_doc = doc[Keywords.message].get!Document;
+                                immutable hash = hrpc.net.calcHash(message_doc.data);
+                                bson_result["hash"] = hash;
+                            }
+                            auto sender = bank(received);
+                            immutable buffer = hrpc.toBSON(sender).serialize;
+
+                            reads[i].send(buffer);
+                            writeln("\nResonse:");
+                            auto sender_doc = Document(buffer);
+                            writefln(sender_doc.toText);
                             stdout.flush;
+
                         }
-                        else
-                        {
-                            auto error_sender = hrpc.error(e.msg, 42);
-                            immutable error_buffer = hrpc.toBSON(error_sender).serialize;
-                            reads[i].send(error_buffer);
-                            writeln("\nError:");
-                            auto error_doc = Document(error_buffer);
-                            writeln(error_doc.toText);
-                            stdout.flush;
+                        catch (Exception e) {
+                            auto bson_data = new HBSON;
+                            bson_data["stack"] = e.msg;
+                            if ((ref_received) && !ref_received.empty) {
+                                auto error_sender = hrpc.error(*ref_received, e.msg, 666, bson_data);
+                                immutable error_buffer = hrpc.toBSON(error_sender).serialize;
+                                reads[i].send(error_buffer);
+                                writeln("\nError:");
+                                auto error_doc = Document(error_buffer);
+                                writeln(error_doc.toText);
+                                stdout.flush;
+                            }
+                            else {
+                                auto error_sender = hrpc.error(e.msg, 42);
+                                immutable error_buffer = hrpc.toBSON(error_sender).serialize;
+                                reads[i].send(error_buffer);
+                                writeln("\nError:");
+                                auto error_doc = Document(error_buffer);
+                                writeln(error_doc.toText);
+                                stdout.flush;
+                            }
+                        }
+
+                        continue;
+                    }
+                    else {
+                        try {
+                            // if the connection closed due to an error, remoteAddress() could fail
+                            writefln("Connection from %s closed.", reads[i].remoteAddress().toString());
+                        }
+                        catch (SocketException) {
+                            writeln("Connection closed.");
                         }
                     }
 
-                    continue;
+                    // release socket resources now
+                    reads[i].close();
+
+                    reads = reads.remove(i);
+                    // i will be incremented by the for, we don't want it to be.
+                    i--;
+
+                    writefln("\tTotal connections: %d", reads.length);
+                    stdout.flush;
                 }
-                else
-                {
-                    try
-                    {
-                        // if the connection closed due to an error, remoteAddress() could fail
-                        writefln("Connection from %s closed.", reads[i].remoteAddress().toString());
+            }
+
+            if (socketSet.isSet(listener)) { // connection request
+                Socket sn = null;
+                scope (failure) {
+                    writefln("Error accepting");
+                    if (sn) {
+                        sn.close();
                     }
-                    catch (SocketException)
-                    {
-                        writeln("Connection closed.");
-                    }
                 }
-
-                // release socket resources now
-                reads[i].close();
-
-                reads = reads.remove(i);
-                // i will be incremented by the for, we don't want it to be.
-                i--;
-
-                writefln("\tTotal connections: %d", reads.length);
-                stdout.flush;
-            }
-        }
-
-        if (socketSet.isSet(listener))
-        { // connection request
-            Socket sn = null;
-            scope (failure)
-            {
-                writefln("Error accepting");
-                if (sn)
-                {
-                    sn.close();
-                }
-            }
-            sn = listener.accept();
-            assert(sn.isAlive);
-            assert(listener.isAlive);
-
-            if (reads.length < MAX_CONNECTIONS)
-            {
-                writefln("Connection from %s established.", sn.remoteAddress().toString());
-                reads ~= sn;
-                writefln("\tTotal connections: %d", reads.length);
-            }
-            else
-            {
-                writefln("Rejected connection from %s; too many connections.", sn.remoteAddress()
-                        .toString());
-                sn.close();
-                assert(!sn.isAlive);
+                sn = listener.accept();
+                assert(sn.isAlive);
                 assert(listener.isAlive);
-            }
-        }
 
-        socketSet.reset();
+                if (reads.length < MAX_CONNECTIONS) {
+                    writefln("Connection from %s established.", sn.remoteAddress().toString());
+                    reads ~= sn;
+                    writefln("\tTotal connections: %d", reads.length);
+                }
+                else {
+                    writefln("Rejected connection from %s; too many connections.", sn.remoteAddress()
+                            .toString());
+                    sn.close();
+                    assert(!sn.isAlive);
+                    assert(listener.isAlive);
+                }
+            }
+
+            socketSet.reset();
+        }
+        stdout.flush;
     }
-    stdout.flush;
+    return 0;
 }
