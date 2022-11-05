@@ -70,15 +70,21 @@ mixin template doOneMain(alltools...) {
      * Returns: true if the onetool should continue to execute a tool
      */
     bool onetool_main(string[] args) {
+        import std.file : exists, symlink, remove, thisExePath, 
+    getLinkAttributes, attrIsSymlink, FileException;
+        import std.path;
+
         immutable program = args[0];
         bool version_switch;
         bool link_switch;
+        bool force_switch;
         try {
             auto main_args = getopt(args,
                     std.getopt.config.caseSensitive,
                     "version", "display the version", &version_switch,
                     std.getopt.config.bundling,
-                    "Q|link", "Creates soft links all the link", &link_switch,
+                    "s|link", "Creates symbolic links all the tool", &link_switch,
+                    "f|force", "Force a symbolic link to be created", &force_switch,
             );
 
             if (version_switch) {
@@ -86,7 +92,21 @@ mixin template doOneMain(alltools...) {
                 return false;
             }
 
-            if (link_switch) {
+            if (link_switch || force_switch) {
+                foreach (toolname; toolnames) {
+                    const symlink_filename = thisExePath.dirName.buildPath(toolname);
+                    if (force_switch && symlink_filename.exists) {
+                        if (symlink_filename.getLinkAttributes.attrIsSymlink) {
+                            symlink_filename.remove;
+                        }
+                        else {
+                            stderr.writefln("%s is not a symbolic link", symlink_filename);
+                            return false;
+                        }
+                    }
+                    writefln("%s -> %s", toolname, thisExePath);
+                        symlink(thisExePath, toolname);
+                }
                 return false;
             }
 
@@ -113,6 +133,11 @@ mixin template doOneMain(alltools...) {
             stderr.writeln(e.msg);
             return false;
         }
+        catch (FileException e) {
+
+            stderr.writeln(e.msg);
+        return false;
+    }
         return true;
     }
 
