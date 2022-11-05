@@ -2,18 +2,18 @@
 TOOL=$(DBIN)/tagion
 INSTALLEDTOOL=$(INSTALL)/tagion
 
-TOOLLINKS+=tagionboot
-TOOLLINKS+=tagionwallet
-TOOLLINKS+=tagionwave
-TOOLLINKS+=dartutil
-TOOLLINKS+=hibonutil
+#TOOLLINKS+=tagionboot
+#TOOLLINKS+=tagionwallet
+#TOOLLINKS+=tagionwave
+#TOOLLINKS+=dartutil
+#TOOLLINKS+=hibonutil
 
-TOOLLINKS+=boot
-TOOLLINKS+=wallet
-TOOLLINKS+=wave
+#TOOLLINKS+=boot
+#TOOLLINKS+=wallet
+#TOOLLINKS+=wave
 
 
-ALL_LINKS=${addprefix $(INSTALL)/,$(TOOLLINKS)}
+#ALL_LINKS=${addprefix $(INSTALL)/,$(TOOLLINKS)}
 
 
 
@@ -24,22 +24,21 @@ install: $(INSTALLEDTOOL)
 
 $(INSTALLEDTOOL): ONETOOL=1
 $(INSTALLEDTOOL): $(TOOL)
-$(INSTALLEDTOOL): $(ALL_LINKS)
 	$(PRECMD)
 	$(CP) $(TOOL) $(INSTALLEDTOOL)
+	$(INSTALLEDTOOL) -f
 
-$(INSTALL)/%: $(TOOL)
-	$(RRECMD)
-	$(RM) $@
-	$(LN) $< $@
+#$(INSTALL)/%: $(TOOL)
+#	$(RRECMD)
+#	$(TOOL) -f
 
 env-install:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.kvp, INSTALL, $(INSTALL)}
-	${call log.kvp, INSTALLEDTOOL, $(INSTALLEDTOOL)}
-	${call log.env, TOOLLINKS, $(TOOLLINKS)}
-	${call log.env, ALL_LINKS, $(ALL_LINKS)}
+#	${call log.kvp, INSTALLEDTOOL, $(INSTALLEDTOOL)}
+#	${call log.env, TOOLLINKS, $(TOOLLINKS)}
+#	${call log.env, ALL_LINKS, $(ALL_LINKS)}
 	${call log.close}
 
 .PHONY: env-install

@@ -22,8 +22,8 @@ info-$1:
 
 target-$1: target-$2
 	@echo Tools enabled $1
-	rm -f $$(_$1)
-	ln -s $$(TAGION) $$(_$1)
+	$(RM) $$(_$1)
+	$(LN) $$(TAGION) $$(_$1)
 else
 info-$1:
 	@echo _TOOLS undefined

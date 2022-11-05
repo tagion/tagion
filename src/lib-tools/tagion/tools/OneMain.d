@@ -39,7 +39,7 @@ mixin template doOneMain(alltools...) {
         case toolmod.alternative_name:
                     }
         case toolname:
-                    enum code = format(q{return Result(%s.%s(args), false);},
+                    enum code = format(q{return Result(%s.%s(args), true);},
                                 toolname, tailName!(toolmod.main_name));
                     mixin(code);
                     break SelectTool;
