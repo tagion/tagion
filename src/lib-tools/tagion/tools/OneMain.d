@@ -39,14 +39,14 @@ mixin template doOneMain(alltools...) {
         case toolmod.alternative_name:
                     }
         case toolname:
-                    enum code = format(q{return Result(%s.%s(args), true);},
+                    enum code = format(q{return Result(%s.%s(args), false);},
                                 toolname, tailName!(toolmod.main_name));
                     mixin(code);
                     break SelectTool;
                 }
             }
         default:
-            return Result(0, false);
+            return Result(0, true);
         }
         assert(0);
     }
@@ -69,9 +69,9 @@ mixin template doOneMain(alltools...) {
      *   args = cli arguments
      * Returns: true if the onetool should continue to execute a tool
      */
-    bool onetool_main(string[] args) {
-        import std.file : exists, symlink, remove, thisExePath, 
-    getLinkAttributes, attrIsSymlink, FileException;
+    Result onetool_main(string[] args) {
+        import std.file : exists, symlink, remove, thisExePath,
+            getLinkAttributes, attrIsSymlink, FileException;
         import std.path;
 
         immutable program = args[0];
@@ -89,7 +89,7 @@ mixin template doOneMain(alltools...) {
 
             if (version_switch) {
                 revision_text.writeln;
-                return false;
+                return Result(0, true);
             }
 
             if (link_switch || force_switch) {
@@ -100,14 +100,14 @@ mixin template doOneMain(alltools...) {
                             symlink_filename.remove;
                         }
                         else {
-                            stderr.writefln("%s is not a symbolic link", symlink_filename);
-                            return false;
+                            stderr.writefln("Error: %s is not a symbolic link", symlink_filename);
+                            return Result(1, true);
                         }
                     }
                     writefln("%s -> %s", toolname, thisExePath);
-                        symlink(thisExePath, toolname);
+                    symlink(thisExePath, symlink_filename);
                 }
-                return false;
+                return Result(0, true);
             }
 
             if (main_args.helpWanted) {
@@ -123,22 +123,18 @@ mixin template doOneMain(alltools...) {
 
                 ].join("\n"),
                 main_args.options);
-                return false;
+                return Result(0, true);
             }
         }
         catch (GetOptException e) {
-            if (args.length > 0) {
-                return true;
-            }
-            stderr.writeln(e.msg);
-            return false;
+            stderr.writefln("Error: %s", e.msg);
+            return Result(1, true);
         }
         catch (FileException e) {
-
-            stderr.writeln(e.msg);
-        return false;
-    }
-        return true;
+            stderr.writefln("Error: %s", e.msg);
+            return Result(1, true);
+        }
+        return Result(0, false);
     }
 
     /* 
@@ -161,9 +157,9 @@ mixin template doOneMain(alltools...) {
             }
         }
         if (!result.executed) {
-            if (onetool_main(args)) {
-                stderr.writefln("Invalid tool %s, available tools are %-(%s, %)", tool, toolnames);
-                return 1;
+            result = onetool_main(args);
+            if (!result.executed) {
+                stderr.writefln("Error: Invalid tool %s, available tools are %-(%s, %)", tool, toolnames);
             }
         }
 
