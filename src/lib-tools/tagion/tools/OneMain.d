@@ -56,7 +56,7 @@ mixin template doOneMain(alltools...) {
     /* 
     * Lists all the toolnames inclusive the alternative name as a alias-sequency
     */
-    enum toolnames = [
+    immutable toolnames = [
             AliasSeq!(
                     staticMap!(toolName, alltools),
                     Filter!(notNull, staticMap!(alternative, alltools))
