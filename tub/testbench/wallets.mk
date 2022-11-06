@@ -88,7 +88,7 @@ help-$1:
 
 .PHONY: help-$1
 
-help-testbench: help-$1
+help-testnet: help-$1
 
 clean-$1:
 	$$(PRECMD)
@@ -129,14 +129,14 @@ env-wallets:
 	${call log.env, INVOICES, $(INVOICES)}
 	${call log.close}
 
-.PHONY: env-testbench
+.PHONY: env-testnet
 
 env: env-wallets
 
 help-wallets:
 	$(PRECMD)
 	${call log.header, $@ :: help}
-	${call log.help, "make testbench", "Runs the testbench"}
+	${call log.help, "make testnet", "Runs the testnet"}
 	${call log.help, "make wallets", "Will create all testwallets"}
 	${call log.help, "make clean-wallets", "Cleans all the wallets"}
 	${call log.help, "make remove-wallets", "Removes all the base wallets except for the .stdin files"}

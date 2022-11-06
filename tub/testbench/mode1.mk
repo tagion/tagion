@@ -93,7 +93,7 @@ mode1: $(MODE1_ROOT)/.way
 mode1: tagionwave $(MODE1_DART)
 
 .PHONY: mode1
-testbench: mode1
+testnet: mode1
 
 # $(MODE1_DART): | dart
 # $(MODE1_DART): $(DARTDB)
@@ -127,7 +127,7 @@ env-mode1:
 	${call log.close}
 
 .PHONY: env-mode1
-env-testbench: env-mode1
+env-testnet: env-mode1
 
 #run: mode1
 
@@ -139,7 +139,7 @@ clean-mode1:
 
 .PHONY: clean-mode1
 
-clean-testbench: clean-mode1
+clean-testnet: clean-mode1
 
 ${foreach mode1,$(MODE1_LIST),${call MODE1,$(mode1)}}
 
