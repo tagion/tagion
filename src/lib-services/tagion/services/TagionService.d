@@ -3,53 +3,44 @@ module tagion.services.TagionService;
 import core.thread : Thread;
 import core.time;
 import std.concurrency;
-
 import std.range : empty;
 import std.string : fromStringz;
 import std.file : fread = read, exists;
 import std.format;
-
 import std.datetime : Clock;
-import tagion.utils.StdTime;
 
 import p2plib = p2p.node;
 
-import tagion.services.Options : Options, setOptions, OptionException, NetworkMode, main_task;
-import tagion.utils.Random;
-import tagion.utils.Queue;
-import tagion.GlobalSignals : abort;
-
 import tagion.basic.Types : Pubkey, Control, Buffer;
-import tagion.logger.Logger;
+import tagion.basic.TagionExceptions : taskfailure, fatal;
+import tagion.communication.HiRPC;
+import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.dart.DART;
+import tagion.GlobalSignals : abort;
+import tagion.gossip.AddressBook : addressbook;
+import tagion.gossip.EmulatorGossipNet;
+import tagion.gossip.InterfaceNet;
+import tagion.gossip.P2pGossipNet;
 import tagion.hashgraph.Event : Event;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : EventPackage;
-
-import tagion.crypto.SecureNet : StdSecureNet;
-
-import tagion.basic.TagionExceptions : taskfailure, fatal;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.logger.Logger;
+import tagion.script.StandardRecords;
+import tagion.services.Options : Options, setOptions, OptionException, NetworkMode, main_task;
+import tagion.services.DARTService;
 import tagion.services.DARTSynchronizeService;
-
-import tagion.dart.DART;
-import tagion.gossip.P2pGossipNet;
-import tagion.gossip.InterfaceNet;
-import tagion.gossip.EmulatorGossipNet;
-
 import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.communication.HiRPC;
-
-import tagion.utils.Miscellaneous : cutHex;
-
 import tagion.services.FileDiscoveryService;
-
 import tagion.services.NetworkRecordDiscoveryService;
-
-import tagion.services.DARTService;
-import tagion.gossip.AddressBook : addressbook;
-import tagion.script.StandardRecords;
+import tagion.services.RecorderService : RecorderTask;
+import tagion.tasks.TaskWrapper : Task;
+import tagion.utils.Random;
+import tagion.utils.Queue;
+import tagion.utils.StdTime;
+import tagion.utils.Miscellaneous : cutHex;
 
 shared(p2plib.Node) initialize_node(immutable Options opts)
 {
@@ -101,17 +92,18 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         }
 
         string passphrase;
-        if(!opts.path_to_stored_passphrase.empty)
+        if (!opts.path_to_stored_passphrase.empty)
         {
             if (exists(opts.path_to_stored_passphrase))
             {
-                const char[] file_content  = cast(char[])fread(opts.path_to_stored_passphrase);
+                const char[] file_content = cast(char[]) fread(opts.path_to_stored_passphrase);
                 passphrase = fromStringz(file_content).idup;
             }
 
             if (passphrase.empty)
             {
-                log.warning("Please check file " ~ opts.path_to_stored_passphrase ~ ", perform start with default settings");
+                log.warning(
+                    "Please check file " ~ opts.path_to_stored_passphrase ~ ", perform start with default settings");
             }
         }
 
@@ -336,21 +328,29 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         log.trace("Before startinf monitor and transaction addressbook.numOfActiveNodes : %d", addressbook
                 .numOfActiveNodes);
 
-        // monitor_socket_tid = spawn(
-        //         &monitorServiceTask,
-        //         opts);
-        // assert(receiveOnly!Control is Control.LIVE);
+        auto recorder_task = Task!RecorderTask(opts.recorder.task_name, opts);
+        assert(receiveOnly!Control == Control.LIVE);
+        scope (exit)
+        {
+            recorder_task.control(Control.STOP);
+            if (receiveOnly!Control == Control.END)
+            {
+                log("Recorder service stopped");
+            }
+        }
 
         transcript_tid = spawn(
+
             &transcriptServiceTask,
             opts.transcript.task_name,
-            opts.dart.sync.task_name);
-        assert(receiveOnly!Control is Control.LIVE);
+            opts.dart.sync.task_name,
+            opts.recorder.task_name);
+        assert(receiveOnly!Control == Control.LIVE);
 
         transaction_socket_tid = spawn(
             &transactionServiceTask,
             opts);
-        assert(receiveOnly!Control is Control.LIVE);
+        assert(receiveOnly!Control == Control.LIVE);
 
         {
             immutable buf = cast(Buffer) hashgraph.channel;
