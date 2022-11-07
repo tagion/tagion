@@ -18,4 +18,10 @@ ${call DO_BIN,bdd_services}
 
 BDDTESTS+=bdd_services
 
-
+#
+# Binary testbench 
+#
+target-testbench: DFLAGS+=$(DVERSION)=ONETOOL
+target-testbench: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-testbench: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-testbench/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
+${call DO_BIN,testbench,}
