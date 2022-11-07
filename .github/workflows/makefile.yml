@@ -245,12 +245,11 @@ jobs:
           REPORT=$( echo "${REPORT//null/}" )
           REPORT=$( echo "${REPORT//\"/}" )
           echo -e "$REPORT"  >> $GITHUB_STEP_SUMMARY
+          sudo chmod -R 777 scenario-result
           if $failed_scenarios 
           then
               exit 1
           fi
-      - name: chmod to upload
-        run: sudo chmod -R 777 scenario-result
       - name: upload artifacts
         if: always()
         uses: actions/upload-artifact@v2.2.0
@@ -259,8 +258,7 @@ jobs:
           path: ./scenario-result/
           if-no-files-found: error
           retention-days: 5
-
       - name: Clean logs
         if: always()
         run: sudo rm -rf scenario-result
-
+          
