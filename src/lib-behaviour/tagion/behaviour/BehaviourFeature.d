@@ -42,18 +42,22 @@ struct Scenario {
     mixin Property;
 }
 
+/// Action property for Given
 struct Given {
     mixin Property;
 }
 
+/// Action property for When
 struct When {
     mixin Property;
 }
 
+/// Action property for Then 
 struct Then {
     mixin Property;
 }
 
+/// Action property for But 
 struct But {
     mixin Property;
 }
@@ -61,12 +65,13 @@ struct But {
 enum isDescriptor(T) = hasMember!(T, "description");
 
 /* 
- * Contains the information of for the Protorty including the name id of the property
+ * Contains the information for the Protorty including the name id and the result of the Property
+* The Property is as a general container for the Feature, Sceanrio and Actions
  */
 struct Info(alias Property) {
-    Property property;
+    Property property; /// The property is a Feature, Scenario or an Action
     string name; /// Name of the function member, scenario call or feature module
-    Document result;
+    Document result; /// Th:e result after execution of the property (See BehaviourResult)
     mixin HiBONRecord!();
 }
 
@@ -77,7 +82,7 @@ enum isInfo(alias I) = __traits(isSame, TemplateOf!I, Info);
  * The Action group contains a list of acrion with the property defined which is a part of the 
  * behaviour property
  */
-struct ActionGroup(Property) if (isOneOf!(Property, BehaviourProperties)) {
+struct ActionGroup(Property) if (isOneOf!(Property, ActionProperties)) {
     Info!Property[] infos;
     mixin HiBONRecord!();
 }
@@ -86,7 +91,7 @@ struct ActionGroup(Property) if (isOneOf!(Property, BehaviourProperties)) {
 enum isActionGroup(alias I) = __traits(isSame, TemplateOf!I, ActionGroup);
 
 /** 
- * Contains all infomation of a scenario
+ * Contains all information of a scenario
  * the class name of the scenario and the description
  * it also contains all the action groups of the scenario
  */
@@ -101,22 +106,26 @@ struct ScenarioGroup {
 }
 
 /** 
- * Conatins add the information of a Feature
+ * Conatins all the sceanrio groups and information of the Feature
  */
 @safe
 struct FeatureGroup {
-    Info!Feature info;
-    ScenarioGroup[] scenarios;
+    Info!Feature info; /// Information of the Feature
+    ScenarioGroup[] scenarios; /// This all the information of each Sceanrio
     mixin HiBONRecord!();
 }
 
-/// All behaviour-properties of a Scenario
-alias BehaviourProperties = AliasSeq!(Given, When, Then, But);
-/// The behaviour-properties which only occurrences once in a Scenario
-alias MandatoryBehaviourProperties = Erase!(When, Erase!(But, BehaviourProperties));
+/// All action-properties of a Scenario
+alias ActionProperties = AliasSeq!(Given, When, Then, But);
+/// All mandatory actions of a Scenario (Given, Then)
+alias MandatoryActionProperties = Erase!(When, Erase!(But, ActionProperties));
 
 /**
- * Returns: nethod in a scenario class
+ * Params:
+* T = Scenario class
+* name = the action member function
+ * Returns: method in a scenario class
+ *          void if no member has been found
  */
 template getMethod(alias T, string name) {
     alias method = __traits(getOverloads, T, name);
@@ -128,13 +137,14 @@ template getMethod(alias T, string name) {
     }
 }
 
+// Check of the getMethod 
 static unittest {
     static assert(isCallable!(getMethod!(BehaviourUnittest.Some_awesome_feature, "is_debited")));
     static assert(!isCallable!(getMethod!(BehaviourUnittest.Some_awesome_feature, "count")));
 }
 
 /**
- * Returns: an alias-sequency of all the callable members of an object
+ * Returns: an alias-sequency of all the callable members of an object/Scenario
  */
 template getAllCallables(T) if (is(T == class) || is(T == struct)) {
     alias all_members = aliasSeqOf!([__traits(allMembers, T)]);
@@ -155,7 +165,7 @@ static unittest { // Test of getAllCallable
  */
 template hasActions(alias T) if (isCallable!T) {
     alias hasProperty = ApplyLeft!(hasUDA, T);
-    enum hasActions = anySatisfy!(hasProperty, BehaviourProperties);
+    enum hasActions = anySatisfy!(hasProperty, ActionProperties);
 }
 
 // Check if a function is an action or not
@@ -163,7 +173,6 @@ static unittest {
     static assert(hasActions!(BehaviourUnittest.Some_awesome_feature.is_valid));
     static assert(!hasActions!(BehaviourUnittest.Some_awesome_feature.helper_function));
 }
-
 
 /**
 Returns:
@@ -223,13 +232,13 @@ unittest {
     static assert(!hasProperty!(BehaviourUnittest.Some_awesome_feature_bad_format_missing_given, Given));
 }
 
-	/**
-	  Get the action propery of the alias T
-	 Returns: The behaviour property of T and void if T does not have a behaviour property
-	 */
+/**
+* Get the action propery of the alias T
+* Returns: The behaviour property of T and void if T does not have a behaviour property
+*/
 template getProperty(alias T) {
     alias getUDAsProperty = ApplyLeft!(getUDAs, T);
-    alias all_behaviour_properties = staticMap!(getUDAsProperty, BehaviourProperties);
+    alias all_behaviour_properties = staticMap!(getUDAsProperty, ActionProperties);
     static assert(all_behaviour_properties.length <= 1,
             format!"The behaviour %s has more than one property %s"(T.strinof, all_behaviour_properties.stringof));
     static if (all_behaviour_properties.length is 1) {
@@ -247,7 +256,7 @@ unittest {
     static assert(is(getProperty!(BehaviourUnittest.Some_awesome_feature.helper_function) == void));
 }
 
-// Test of the getActions of a specific behaviour property
+// Test of the getActions and check that the action-property is correct
 @safe
 unittest {
     alias behaviour_of_given = getActions!(BehaviourUnittest.Some_awesome_feature, Given);
@@ -277,7 +286,7 @@ enum isScenario(T) = hasUDA!(T, Scenario);
 ///
 static unittest {
     static assert(isScenario!(BehaviourUnittest.Some_awesome_feature));
-static assert(!isScenario!(BehaviourUnittest.This_is_not_a_scenario));
+    static assert(!isScenario!(BehaviourUnittest.This_is_not_a_scenario));
 }
 
 enum feature_name = "feature"; /// Default enum name of an Feature module
@@ -362,7 +371,7 @@ protected template _Scenarios(alias M, string[] names) if (isFeature!M) {
 }
 
 /**
-	Returns: All scenarios in the feature module M
+* Returns: An alias-sequency of all scenarios in the feature module M
 */
 template Scenarios(alias M) if (isFeature!M) {
     alias Scenarios = _Scenarios!(M, [__traits(allMembers, M)]);
@@ -405,8 +414,8 @@ static unittest {
     enum scenario = getScenario!(Some_awesome_feature);
     static assert(is(typeof(scenario) == Scenario));
     static assert(scenario is Scenario("Some awesome money printer", null));
-	enum not_a_scenario = getScenario!(This_is_not_a_scenario);
-	static assert(!not_a_scenario); 
+    enum not_a_scenario = getScenario!(This_is_not_a_scenario);
+    static assert(!not_a_scenario);
 }
 
 version (unittest) {

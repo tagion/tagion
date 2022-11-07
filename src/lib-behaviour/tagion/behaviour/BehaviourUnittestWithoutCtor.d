@@ -3,28 +3,26 @@ module tagion.behaviour.BehaviourUnittestWithoutCtor;
 import tagion.behaviour.BehaviourFeature;
 
 /// This module is only use to support the unittest
-version (unittest)
-{
+version (unittest) {
     import tagion.hibon.HiBON;
     import tagion.hibon.Document;
     import tagion.behaviour.BehaviourException;
+    import tagion.behaviour.BehaviourResult;
     import std.format;
     import std.process;
 
     immutable(string) REPOROOT;
-    shared static this()
-    {
+    shared static this() {
         REPOROOT = environment.get(REPOROOT.stringof, null);
         assert(REPOROOT, format!"%s must be defined"(REPOROOT.stringof));
     }
 
     bool pass; /// Pass the test
-bool pass_one; /// Pass only one scenario
-bool pass_some; /// Pass some of the scenario
+    bool pass_one; /// Pass only one scenario
+    bool pass_some; /// Pass some of the scenario
 
     @safe
-        Document result(string test)
-    {
+    Document result(string test) {
         if (pass) {
             auto h = new HiBON;
             h["test"] = test;
@@ -36,60 +34,52 @@ bool pass_some; /// Pass some of the scenario
         return Document();
     }
 
-
     enum feature = Feature("Some awesome feature should print some cash out of the blue");
     // Behavioral examples
     @safe
     @Scenario("Some awesome money printer")
-    class Some_awesome_feature
-    {
+    class Some_awesome_feature {
         uint count;
         string text;
 
         @Given("the card is valid")
-        Document is_valid()
-        {
-    if (pass_some) {
-        pass=true;
-    }
+        Document is_valid() {
+            if (pass_some) {
+                pass = true;
+            }
             count++;
             return result(__FUNCTION__);
         }
 
         @Given("the account is in credit")
-        Document in_credit()
-        {
+        Document in_credit() {
             count++;
             return result(__FUNCTION__);
         }
 
         @Given("the dispenser contains cash")
-        Document contains_cash()
-        {
+        Document contains_cash() {
             count++;
             return result(__FUNCTION__);
         }
 
         @When("the Customer request cash")
-        Document request_cash()
-        {
-    if (pass_some) {
-        pass=false;
-    }
+        Document request_cash() {
+            if (pass_some) {
+                pass = false;
+            }
             count++;
             return result(__FUNCTION__);
         }
 
         @Then("the account is debited")
-        Document is_debited()
-        {
+        Document is_debited() {
             count++;
             return result(__FUNCTION__);
         }
 
         @Then("the cash is dispensed")
-        Document is_dispensed()
-        {
+        Document is_dispensed() {
             count++;
             return result(__FUNCTION__);
         }
@@ -100,51 +90,44 @@ bool pass_some; /// Pass some of the scenario
             return result(__FUNCTION__);
         }
 
-        void helper_function()
-        {
+        void helper_function() {
         }
     }
 
     @safe
     @Scenario("Some money printer which is controlled by a bankster")
-    class Some_awesome_feature_bad_format_double_property
-    {
+    class Some_awesome_feature_bad_format_double_property {
         uint count;
 
         @Given("the card is valid")
-        Document is_valid()
-        {
-    if (pass_some || pass_one) {
-    pass=true;
-    }
+        Document is_valid() {
+            if (pass_some || pass_one) {
+                pass = true;
+            }
             count++;
             return result(__FUNCTION__);
         }
 
         @When("the Customer request cash")
-        Document request_cash()
-        {
+        Document request_cash() {
             count++;
             return result(__FUNCTION__);
         }
 
         @Then("the account is debited")
-        Document is_debited()
-        {
+        Document is_debited() {
             count++;
             return result(__FUNCTION__);
         }
 
         @Then("the cash is dispensed")
-        Document is_dispensed()
-        {
-    if (pass_some) {
-        pass=false;
-    }
+        Document is_dispensed() {
+            if (pass_some) {
+                pass = false;
+            }
             count++;
             return result(__FUNCTION__);
         }
     }
-
 
 }

@@ -144,7 +144,8 @@ unittest {
             .unitfile
             .setExtension(FileExtension.markdown);
         markdown.issue(feature_group);
-        //filename.setExtension("mdtest").fwrite(bout.toString);
+        version (none)
+            filename.setExtension("mdtest").fwrite(bout.toString);
 
         immutable expected = filename.freadText;
         assert(bout.toString == expected);
@@ -166,6 +167,7 @@ struct DlangT(Stream) {
             // Auto generated imports
             import tagion.behaviour.BehaviourFeature;
             import tagion.behaviour.BehaviourException;
+            import tagion.behaviour.BehaviourResult;
         };
     }
 
@@ -175,9 +177,9 @@ struct DlangT(Stream) {
                 @%2$s("%3$s")
                 Document %1$s() {
                     check(false, "Check for '%1$s' not implemented");
-                    return Document();
-                }
-            },
+                        return Document();
+                    }
+                },
                 info.name,
                 Property.stringof,
                 info.property.description.escaper
@@ -209,9 +211,9 @@ struct DlangT(Stream) {
         return format(q{
                 @safe @Scenario(%1$s)
                     class %2$s {
-                    %3$s
-                        }
-            },
+                        %3$s
+                    }
+                },
                 scenario_param,
                 scenario_group.info.name,
                 behaviour_groups
@@ -261,8 +263,8 @@ unittest {
             .setExtension(FileExtension.dsrc);
         dlang.issue(feature_group);
         immutable result = bout.toString;
-        //filename.setExtension("dtest").fwrite(result.trim_source.join("\n"));
-        //io.writefln("dtest =%s", filename.setExtension("dtest"));
+        version (none)
+            filename.setExtension("dtest").fwrite(result.trim_source.join("\n"));
         immutable expected = filename.freadText;
         assert(equal(
                 result

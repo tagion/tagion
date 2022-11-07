@@ -1,25 +1,24 @@
 module tagion.behaviour.Behaviour;
 
+public import tagion.behaviour.BehaviourFeature;
 import tagion.hibon.Document;
 
 import std.traits;
 import std.format;
 import std.meta : AliasSeq;
-import std.range : only, tail, front;
-import std.array : join, split;
-import std.path;
+import std.range : only;
+import std.array : join;
 import std.algorithm.searching : any, all;
 import std.exception : assumeWontThrow;
 
 import tagion.behaviour.BehaviourException;
-import tagion.behaviour.BehaviourEnvironment : env;
-import tagion.behaviour.BehaviourFeature;
-import tagion.basic.Types : FileExtension, DOT;
+import tagion.behaviour.BehaviourResult;
+import tagion.basic.Types : FileExtension;
 import tagion.hibon.HiBONRecord;
 import tagion.basic.Basic : isOneOf;
 
 /**
-   Run the scenario in Given, When, Then, But order
+   Runs the scenario in Given, When, Then, But order
    Returns:
    The ScenarioGroup including the result of each action
 */
@@ -27,41 +26,48 @@ import tagion.basic.Basic : isOneOf;
 ScenarioGroup run(T)(T scenario) if (isScenario!T) {
     ScenarioGroup scenario_group = getScenarioGroup!T;
     try {
+        // Mixin code to produce the action Given, When, Then, But
         alias memberCode = format!(q{
             // Scenario group      %1$s
-            // Unique propery info %2$s
-            // Info index          %3$d
+            // Action propery info %2$s
+            // Info index (i)      %3$d
             // Test scenario       %4$s
             // Test member         %5$s
-try {
-            %1$s.%2$s.infos[%3$d].result = %4$s.%5$s;
-}
+            try {
+                // Example.
+                // scenario_group.when.info[i].result = scenario.member_function;
+                %1$s.%2$s.infos[%3$d].result = %4$s.%5$s;
+            }
             catch (Exception e) {
-                                %1$s.%2$s.infos[%3$d].result= BehaviourError(e).toDoc;
-    
-}
+                // In case of an exception error the result is set to a BehaviourError
+                // Example.
+                // scemario_group.when.info[i].result = BehaviourError(e).toDoc;
+                %1$s.%2$s.infos[%3$d].result= BehaviourError(e).toDoc;
+            }
         }, string, string, size_t, string, string);
         import std.uni : toLower;
-
-        
-
         .check(scenario !is null,
                 format("The constructor must be called for %s before it's runned", T.stringof));
-        static foreach (_Property; BehaviourProperties) {
+        static foreach (_Property; ActionProperties) {
             {
-                alias all_behaviours = getActions!(T, _Property);
-                static if (is(all_behaviours == void)) {
-                    static assert(!isOneOf!(_Property, MandatoryBehaviourProperties),
+                alias all_actions = getActions!(T, _Property);
+                static if (is(all_actions == void)) {
+                    static assert(!isOneOf!(_Property, MandatoryActionProperties),
                             format("%s is missing a @%s action", T.stringof, _Property.stringof));
                 }
                 else {
-                    static foreach (i, behaviour; all_behaviours) {
+                    // Traverse all the actions the scenario
+                    static foreach (i, behaviour; all_actions) {
                         {
-                            enum group_name = __traits(identifier,
+                            // This action_name is the action of the scenario
+                            // The action is the lower case of Action type (ex. Given is given)
+                            // See the definition of ScenarioGroup
+                            enum action_name = __traits(identifier,
                                         typeof(getProperty!(behaviour))).toLower;
                             enum code = memberCode(
-                                        scenario_group.stringof, group_name, i,
+                                        scenario_group.stringof, action_name, i,
                                         scenario.stringof, __traits(identifier, behaviour));
+                            // The memberCode is used here
                             mixin(code);
                         }
                     }
@@ -75,18 +81,6 @@ try {
     }
     return scenario_group;
 }
-
-@safe
-struct ResultBool {
-    bool end;
-    mixin HiBONRecord!(q{
-            this(bool flag) {
-                end=flag;
-            }
-        });
-}
-
-static Document result_ok = result(ResultBool(true)).toDoc;
 
 ///Examples: How use the rub fuction on a feature
 @safe
@@ -108,7 +102,6 @@ unittest {
             "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.swollow_the_card",
     )
         .map!(a => result(a));
-    //   io.writefln("awesome.count = %d", awesome.count);
     assert(awesome.count == 7);
     Document[] results;
     results ~= runner_result.given.infos
@@ -131,7 +124,7 @@ ScenarioGroup getScenarioGroup(T)() if (isScenario!T) {
     ScenarioGroup scenario_group;
     scenario_group.info.property = getScenario!T;
     scenario_group.info.name = T.stringof;
-    static foreach (_Property; BehaviourProperties) {
+    static foreach (_Property; ActionProperties) {
         {
             alias behaviours = getActions!(T, _Property);
             static if (!is(behaviours == void)) {
@@ -156,7 +149,6 @@ ScenarioGroup getScenarioGroup(T)() if (isScenario!T) {
 
 @safe
 FeatureGroup getFeature(alias M)() if (isFeature!M) {
-    //    import std.stdio;
     FeatureGroup result;
     result.info.property = obtainFeature!M;
     result.info.name = moduleName!M;
@@ -167,6 +159,7 @@ FeatureGroup getFeature(alias M)() if (isFeature!M) {
     }
     return result;
 }
+
 ///Examples: How to use getFeature on a feature
 @safe
 unittest { //
@@ -181,11 +174,6 @@ unittest { //
             .unitfile
             .setExtension(FileExtension.hibon);
     const feature = getFeature!(Module);
-    /+ test file printout
-     (filename.stripExtension~"_test")
-     .setExtension(FileExtension.hibon)
-     .fwrite(feature);
-     +/
     const expected = filename.fread!FeatureGroup;
     assert(feature.toDoc == expected.toDoc);
 }
@@ -224,19 +212,11 @@ auto automation(alias M)() if (isFeature!M) {
         mixin ScenarioTuple!(M, "ScenariosT");
         ScenariosT scenarios;
         void opDispatch(string scenario_name, Args...)(Args args) {
-            enum code_1 = format(q{alias Scenario=typeof(ScenariosT.%1$s);}, scenario_name);
-            // pragma(msg, "code_1 ", code_1);
-            mixin(code_1);
-            alias PickCtorParams = ParameterTypeTuple!(
-                    __traits(getOverloads, Scenario, "__ctor")[0]);
             enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
-            // pragma(msg, code);
             mixin(code);
         }
 
         FeatureGroup run() nothrow {
-            import tagion.behaviour.BehaviourException : BehaviourError;
-
             uint error_count;
             FeatureGroup result;
             result.info.property = obtainFeature!M;
@@ -245,9 +225,7 @@ auto automation(alias M)() if (isFeature!M) {
             result.scenarios.length = ScenariosSeq.length;
             static foreach (i, _Scenario; ScenariosSeq) {
                 try {
-                    //io.writefln("run %s ", _Scenario.stringof);
                     static if (__traits(compiles, new _Scenario())) {
-                        pragma(msg, "result.scenario ", i, " ", typeof(scenarios[i]), " ", _Scenario);
                         if (scenarios[i] is null) {
                             scenarios[i] = new _Scenario();
                         }
@@ -404,7 +382,8 @@ unittest {
 
     { // None of the scenario passes
         const feature_result = feature_with_ctor.run;
-        "/tmp/bdd_sample_has_failed.hibon".fwrite(feature_result);
+        version (none)
+            "/tmp/bdd_sample_has_failed.hibon".fwrite(feature_result);
         assert(!feature_result.scenarios[0].hasPassed);
         assert(!feature_result.scenarios[1].hasPassed);
         assert(!feature_result.hasPassed);
@@ -413,10 +392,8 @@ unittest {
     { // One of the scenario passed
         WithCtor.pass_one = true;
         const feature_result = feature_with_ctor.run;
-        "/tmp/bdd_sample_one_has_passed.hibon".fwrite(feature_result);
-        io.writefln("feature_result.scenarios[0].hasPassed=%s", feature_result.scenarios[0].hasPassed);
-        io.writefln("feature_result.scenarios[1].hasPassed=%s", feature_result.scenarios[1].hasPassed);
-        io.writefln("feature_result.hasPassed=%s", feature_result.hasPassed);
+        version (none)
+            "/tmp/bdd_sample_one_has_passed.hibon".fwrite(feature_result);
         assert(!feature_result.scenarios[0].hasPassed);
         assert(feature_result.scenarios[1].hasPassed);
         assert(!feature_result.hasPassed);
@@ -426,10 +403,8 @@ unittest {
         WithCtor.pass_some = true;
         WithCtor.pass_one = false;
         const feature_result = feature_with_ctor.run;
-        io.writefln("feature_result.scenarios[0].hasPassed=%s", feature_result.scenarios[0].hasPassed);
-        io.writefln("feature_result.scenarios[1].hasPassed=%s", feature_result.scenarios[1].hasPassed);
-        io.writefln("feature_result.hasPassed=%s", feature_result.hasPassed);
-        "/tmp/bdd_sample_some_actions_has_passed.hibon".fwrite(feature_result);
+        version (none)
+            "/tmp/bdd_sample_some_actions_has_passed.hibon".fwrite(feature_result);
         assert(!feature_result.scenarios[0].hasPassed);
         assert(!feature_result.scenarios[1].hasPassed);
         assert(!feature_result.hasPassed);
@@ -440,102 +415,15 @@ unittest {
         WithCtor.pass_some = false;
 
         const feature_result = feature_with_ctor.run;
-        "/tmp/bdd_sample_has_passed.hibon".fwrite(feature_result);
+        version (none)
+            "/tmp/bdd_sample_has_passed.hibon".fwrite(feature_result);
         assert(feature_result.scenarios[0].hasPassed);
         assert(feature_result.scenarios[1].hasPassed);
-        //io.writefln("feature_result =%s", feature_result.toPretty);
     }
-}
-
-/* 
- * 
- * Params:
- *   feature_group = the feature group
- * Returns: the module identifier of the feature
- */
-@safe
-string identifier(const FeatureGroup feature_group) pure {
-    return feature_group.info.name
-        .split(DOT)
-        .tail(1).front;
-}
-
-///
-@safe
-unittest { /// Check's that the identifier is correct for a given module
-    import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
-
-    const feature_group = getFeature!WithCtor;
-    assert(feature_group.identifier != WithCtor.stringof);
-    assert(feature_group.identifier == q{BehaviourUnittestWithCtor});
-}
-
-/* 
- * 
- * Params:
- *   feature_group = the feature group
- * Returns: 
- */
-@safe
-string logFilename(const FeatureGroup feature_group) {
-    return buildPath(env.bdd_log, feature_group.identifier)
-        .setExtension(FileExtension.hibon);
-
-}
-
-///
-@safe
-unittest { /// Checks that the feature logfile-name is correct
-    import std.stdio;
-    import tagion.hibon.HiBONJSON;
-    import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
-
-    const feature_group = getFeature!WithCtor;
-    writefln("logfilename = %s", feature_group.logFilename);
-    assert(feature_group.logFilename == "BehaviourUnittestWithCtor.hibon");
-
-    _bdd_env.bdd_log = "/some/log/directory";
-    writefln("full path %s", feature_group.logFilename);
-
-    assert(feature_group.logFilename == "/some/log/directory/BehaviourUnittestWithCtor.hibon");
-
-}
-
-/* 
- *  Save the feature data to the logFilename
- * Params:
- *   feature_group = the feature group
- */
-@safe
-void save(const FeatureGroup feature_group) {
-    import tagion.hibon.HiBONRecord : fwrite;
-
-    feature_group.logFilename.fwrite(feature_group);
-}
-
-///
-@safe
-unittest { /// Checks that the save'ed log-files is correct
-    import std.file : remove, tempDir, exists;
-    import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
-
-    const feature_group = getFeature!WithCtor;
-    _bdd_env.bdd_log = tempDir;
-    feature_group.save;
-    scope (exit) {
-        feature_group.logFilename.remove;
-    }
-    const feature_read_doc = feature_group.logFilename.fread;
-    assert(feature_group.toDoc == feature_read_doc);
 }
 
 version (unittest) {
     import tagion.hibon.Document;
     import tagion.hibon.HiBONRecord;
-
-    import io = std.stdio;
     import tagion.hibon.HiBONJSON;
-    import tagion.behaviour.BehaviourEnvironment : _bdd_env;
 }
-
-//import tagion.basic.Types : FileExtension;

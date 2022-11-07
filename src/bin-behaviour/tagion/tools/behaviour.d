@@ -34,24 +34,24 @@ enum DFMT_ENV = "DFMT"; /// Set the path and argument d-format including the fla
  * Option setting for the optarg and behaviour.json config file
  */
 struct BehaviourOptions {
-    /* Include paths for the BDD source files */
+    /** Include paths for the BDD source files */
     string[] paths;
-    /* BDD extension (default markdown .md) */
+    /** BDD extension (default markdown .md) */
     string bdd_ext;
-    /* Extension for d-source files (default .d) */
+    /** Extension for d-source files (default .d) */
     string d_ext;
-    /* Regex filter for the files to be incl */
+    /** Regex filter for the files to be incl */
     string regex_inc;
-    /* Regex for the files to be excluded */
+    /** Regex for the files to be excluded */
     string regex_exc;
-    /* Extension for the generated BDD-files */
+    /** Extension for the generated BDD-files */
     string bdd_gen_ext;
-    /* D source formater (default dfmt) */
+    /** D source formater (default dfmt) */
     string dfmt;
-    /* Command line flags for the dfmt */
+    /** Command line flags for the dfmt */
     string[] dfmt_flags;
 
-    string importfile; /// Import file preappended to the generated skeleton
+    string importfile; /// Import file which are included into the generated skeleton
 
     bool enable_package; /// This produce the package 
     /** 
@@ -182,10 +182,8 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
                 auto markdown = Markdown(fout);
                 markdown.issue(feature);
             }
-
         }
         catch (Exception e) {
-            writeln(e.msg);
             writeln(e);
             result_errors++;
         }
