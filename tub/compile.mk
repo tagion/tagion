@@ -30,7 +30,7 @@ $(DOBJ)/lib%.$(OBJEXT): $(DOBJ)/.way
 	$(PRECMD)
 	${call log.kvp, compile$(MODE)}
 	echo ${DFILES}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(DCOMPILE_ONLY)  $(OUTPUT)$@
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} $(DCOMPILE_ONLY)  $(OUTPUT)$@
 
 $(DLIB)/lib%.$(DLLEXT): $(DOBJ)/lib%.$(OBJEXT)
 	$(PRECMD)
@@ -41,7 +41,7 @@ else
 $(DLIB)/%.$(DLLEXT):
 	$(PRECMD)
 	${call log.kvp, link$(MODE), $(DMODULE)}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) ${LDFLAGS} $(LIBS) $(OBJS) $(DCOMPILE_ONLY)  $(OUTPUT)$@
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} ${LDFLAGS} $(LIBS) $(OBJS) $(DCOMPILE_ONLY)  $(OUTPUT)$@
 endif
 
 #
@@ -51,7 +51,8 @@ endif
 $(DBIN)/%:
 	$(PRECMD)
 	${call log.kvp, bin$(MOD), $*}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) ${LDFLAGS} $(LIBS) $(OBJS) $(OUTPUT)$@
+	echo $(DFILES) > /tmp/dfiles.mk
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} ${LDFLAGS} $(LIBS) $(OBJS) $(OUTPUT)$@
 
 #
 # Proto targets for unittest

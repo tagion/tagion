@@ -19,4 +19,3 @@ target-testbench: DFILES+=$(BDD_DFILES)
 ${call DO_BIN,testbench,}
 
 
-BDDTESTS+=bdd_services
