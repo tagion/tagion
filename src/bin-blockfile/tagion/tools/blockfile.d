@@ -1,3 +1,4 @@
+//\blockfile.d database blockfile tool
 module tagion.tools.blockfile;
 
 import std.getopt;
@@ -18,10 +19,10 @@ enum HAS_BLOCK_FILE_ARG = 2;
 
 enum ExitCode
 {
-    noerror,
-    missing_blockfile, /// Blockfile missing argument
-    bad_blockfile, /// Bad blockfile format
-    open_file_failed, /// Unable to open file
+    NOERROR,
+    MISSING_BLOCKFILE, /// Blockfile missing argument
+    BAD_BLOCKFILE, /// Bad blockfile format
+    OPEN_FILE_FAILED, /// Unable to open file
 }
 
 @safe
@@ -195,7 +196,7 @@ int _main(string[] args)
     if (version_switch)
     {
         revision_text.writeln;
-        return ExitCode.noerror;
+        return ExitCode.NOERROR;
     }
 
     if (main_args.helpWanted)
@@ -217,13 +218,13 @@ int _main(string[] args)
 
         ].join("\n"),
         main_args.options);
-        return ExitCode.noerror;
+        return ExitCode.NOERROR;
     }
 
     if (args.length !is HAS_BLOCK_FILE_ARG)
     {
         stderr.writeln("Missing blockfile");
-        return ExitCode.missing_blockfile;
+        return ExitCode.MISSING_BLOCKFILE;
     }
 
     immutable filename = args[1]; /// First argument is the blockfile name
@@ -251,13 +252,13 @@ int _main(string[] args)
             stderr.writeln(e.msg);
             stderr.writefln(
                 "Try to use the --inspect or --ignore switch to analyze the blockfile format");
-            return ExitCode.bad_blockfile;
+            return ExitCode.BAD_BLOCKFILE;
         }
         catch (Exception e)
         {
             stderr.writefln("Error: Unable to open file %s", filename);
             stderr.writeln(e.msg);
-            return ExitCode.open_file_failed;
+            return ExitCode.OPEN_FILE_FAILED;
         }
     }
     if (display_meta)
@@ -290,5 +291,5 @@ int _main(string[] args)
     {
         analyzer.blockfile.recycleDump;
     }
-    return ExitCode.noerror;
+    return ExitCode.NOERROR;
 }

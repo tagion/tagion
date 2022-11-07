@@ -619,8 +619,6 @@ mixin template HiBONRecord(string CTOR = "")
                             }
                             else
                             {
-                                pragma(msg, "typeof(result )", typeof(result));
-                                pragma(msg, "typeof(e.key )", typeof(e.key));
                                 alias ResultKeyType = KeyType!(typeof(result));
                                 result[e.key.to!ResultKeyType] = value;
                             }
