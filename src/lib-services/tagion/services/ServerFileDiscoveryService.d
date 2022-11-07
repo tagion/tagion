@@ -16,7 +16,8 @@ import std.net.curl;
 import tagion.logger.Logger;
 import tagion.basic.Types : Buffer, Control, Pubkey;
 import tagion.basic.Basic : nameOf;
-import tagion.basic.TagionExceptions : fatal;
+import tagion.basic.TagionExceptions : fatal, TagionException;
+
 import tagion.services.Options;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
@@ -57,7 +58,6 @@ void serverFileDiscoveryService(
     {
         scope (success)
         {
-            log("exit");
             ownerTid.prioritySend(Control.END);
         }
 
@@ -75,37 +75,28 @@ void serverFileDiscoveryService(
 
         void recordOwnInfo(string addrs)
         {
-            if (opts.serverFileDiscovery.token)
+            auto params = new HiBON;
+            params["pkey"] = pubkey;
+            params["address"] = addrs;
+            auto doc = Document(params.serialize);
+            auto json = doc.toJSON().toString();
+            log("Posting info to %s \n %s", opts.serverFileDiscovery.url ~ "/node/record", json);
+            try
             {
-                auto params = new HiBON;
-                params["pkey"] = pubkey;
-                params["address"] = addrs;
-                auto doc = Document(params.serialize);
-                auto json = doc.toJSON().toString();
-                log("posting info to %s \n %s", opts.serverFileDiscovery.url ~ "/node/record", json);
-                try
-                {
-                    post(opts.serverFileDiscovery.url ~ "/node/record",
-                        [
-                            "value": json,
-                            "token": opts.serverFileDiscovery.token
-                        ]);
-                }
-                catch (Exception e)
-                {
-                    log("ERROR on sending: %s", e.msg);
-                    ownerTid.send(cast(immutable) e);
-                }
+                post(opts.serverFileDiscovery.url ~ "/node/record",
+                    [
+                        "value": json,
+                    ]);
             }
-            else
+            catch (TagionException e)
             {
-                log("Token missing.. Cannot record own info");
+                fatal(e);
             }
         }
 
         void eraseOwnInfo()
         {
-            log("posting info to %s", opts.serverFileDiscovery.url ~ "/node/erase");
+            log("Posting info to %s", opts.serverFileDiscovery.url ~ "/node/erase");
             post(opts.serverFileDiscovery.url ~ "/node/erase",
                 [
                     "value": (cast(string) pubkey),
@@ -146,7 +137,6 @@ void serverFileDiscoveryService(
                         node_addresses[pkey] = node_addr;
                     }
                 }
-                log("initialized %d", node_addresses.length);
             }
             catch (Exception e)
             {
@@ -221,12 +211,10 @@ void serverFileDiscoveryService(
             receiveTimeout(500.msecs, (immutable(Pubkey) key, Tid tid) {
                 import tagion.utils.Miscellaneous : toHexString, cutHex;
 
-                log("looking for key: %s", key.cutHex);
                 tid.send(node_addresses[key]);
             }, (Control control) {
                 if (control == Control.STOP)
                 {
-                    log("stop");
                     stop = true;
                 }
             }, (string updated_address) {
@@ -284,7 +272,6 @@ void handleAddrChanedEvent(shared p2plib.Node node) nothrow
         ownerTid.send(Control.LIVE);
         scope (exit)
         {
-            log("stop");
             ownerTid.prioritySend(Control.END);
         }
         auto stop = false;
@@ -301,7 +288,6 @@ void handleAddrChanedEvent(shared p2plib.Node node) nothrow
             }, (Control control) {
                 if (control == Control.STOP)
                 {
-                    log("stop");
                     stop = true;
                 }
             });
@@ -310,7 +296,6 @@ void handleAddrChanedEvent(shared p2plib.Node node) nothrow
     }
     catch (Throwable t)
     {
-        log("ERROR: %s", t.msg);
         fatal(t);
     }
 
@@ -325,7 +310,6 @@ void handleRechabilityChanged(shared p2plib.Node node) nothrow
         ownerTid.send(Control.LIVE);
         scope (exit)
         {
-            log("stop");
             ownerTid.prioritySend(Control.END);
         }
         auto stop = false;
@@ -343,7 +327,6 @@ void handleRechabilityChanged(shared p2plib.Node node) nothrow
             }, (Control control) {
                 if (control == Control.STOP)
                 {
-                    log("stop");
                     stop = true;
                 }
             });
@@ -352,7 +335,6 @@ void handleRechabilityChanged(shared p2plib.Node node) nothrow
     }
     catch (Throwable t)
     {
-        log("ERROR: %s", t.msg);
         fatal(t);
     }
 }

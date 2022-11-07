@@ -33,6 +33,7 @@ tagionwave --dart-init=false --nodes 4 --dart-synchronize=true --net-mode=intern
 [dart-init](#dart-init) **required** (Init empty DART)<br>
 [nodes](#nodes) **required** (Number of active nodes)<br>
 [net-mode](#net-mode) **required** (Set mode for network)
+
 # mode1
 > mode1 is local mode, you can make transactions on the local machine, separate terminal - separate node. Essentially, mode0 is part of mode1. To run network in mode1, you need to follow the instructions below:<br>
 > Add binaries to PATH
@@ -88,6 +89,7 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
 - [mode0](#mode0)
 - [mode1](#mode1)
 - [mode2](#mode2)
+      - [Tool link](#tool-link)
 - [Table of contents](#table-of-contents)
 - [version](#version)
 - [overwrite](#overwrite)
@@ -128,17 +130,12 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
       - [Success](#success-6)
     - [Case: invalid nodes number](#case-invalid-nodes-number)
       - [Failure](#failure-5)
-- [seed](#seed)
 - [timeout](#timeout)
   - [Use Cases](#use-cases-6)
     - [Case: set timeout](#case-set-timeout)
       - [Success](#success-7)
     - [Case: invalid value for timeout](#case-invalid-value-for-timeout)
       - [Failure](#failure-6)
-- [delay](#delay)
-- [trace-gossip](#trace-gossip)
-- [loops](#loops)
-- [url](#url)
 - [sockets](#sockets)
   - [Use Cases](#use-cases-7)
     - [Case: set max number of open monitors](#case-set-max-number-of-open-monitors)
@@ -157,7 +154,6 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
       - [Success](#success-10)
     - [Case: invalid value](#case-invalid-value-1)
       - [Failure](#failure-9)
-- [stdout](#stdout)
 - [transaction-ip](#transaction-ip)
   - [Use cases](#use-cases-10)
     - [Case: input transaction ip](#case-input-transaction-ip)
@@ -194,15 +190,12 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
       - [Success](#success-16)
     - [Case: invalid value for epochs](#case-invalid-value-for-epochs)
       - [Failure](#failure-15)
-- [transcript-from](#transcript-from)
-- [transcript-to](#transcript-to)
 - [transcript-log](#transcript-log)
   - [Use Cases](#use-cases-16)
     - [Case: set filename for transcript log](#case-set-filename-for-transcript-log)
       - [Success](#success-17)
     - [Case: empty input](#case-empty-input)
       - [Failure](#failure-16)
-- [transcript-debug](#transcript-debug)
 - [dart-filename](#dart-filename)
   - [Use Cases](#use-cases-17)
     - [Case: set new DART file name](#case-set-new-dart-file-name)
@@ -213,18 +206,12 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
       - [Success](#success-18)
     - [Case: Invalid input for dart-synchronize](#case-invalid-input-for-dart-synchronize)
     - [Failure](#failure-18)
-- [dart-angle-from-port](#dart-angle-from-port)
-- [dart-master-angle-from-port](#dart-master-angle-from-port)
 - [dart-init](#dart-init)
   - [Use cases](#use-cases-19)
     - [Case: init DART](#case-init-dart)
       - [Success](#success-19)
     - [Case: invalid value for dart init](#case-invalid-value-for-dart-init)
       - [Failure](#failure-19)
-- [dart-generate](#dart-generate)
-- [dart-from](#dart-from)
-- [dart-to](#dart-to)
-- [dart-request](#dart-request)
 - [dart-path](#dart-path)
   - [Use Cases](#use-cases-20)
     - [Case: set DART file path](#case-set-dart-file-path)
@@ -235,7 +222,6 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
   - [Use Cases](#use-cases-21)
     - [Case: input loger file name](#case-input-loger-file-name)
       - [Success](#success-21)
-- [logger-mask](#logger-mask)
 - [logsub](#logsub)
 - [net-mode](#net-mode)
   - [Use Cases](#use-cases-22)
@@ -247,9 +233,18 @@ gnome-terminal --tab -- tagionwave --net-mode=local --boot=./shared/boot.hibon -
   - [Use Cases](#use-cases-23)
     - [Case: p2p logs](#case-p2p-logs)
       - [Success](#success-23)
-- [server-token](#server-token)
-- [server-tag](#server-tag)
 - [boot](#boot)
+  - [Use cases](#use-cases-24)
+    - [Case: set correct boot file](#case-set-correct-boot-file)
+      - [Success](#success-24)
+    - [Case: invalid filepath](#case-invalid-filepath)
+      - [Failure](#failure-22)
+- [Passphrase file setting](#passphrase-file-setting)
+  - [Use cases](#use-cases-25)
+    - [Case: set correct passphrase file](#case-set-correct-passphrase-file)
+      - [Success](#success-25)
+    - [Case: invalid filepath](#case-invalid-filepath-1)
+      - [Failure](#failure-23)
 
 
 # version
@@ -262,7 +257,6 @@ Displays the version of tool
 ```
 --overwrite -O
 ```
-**Refactor**, rename export
 Overwrite the config file, to *tagionwave.json* by default
 ## Use cases
 Overwrite file for config to another json file <br>
@@ -386,7 +380,6 @@ Missing value for argument --ip.
 --port
 ```
 Set Host gossip port for node communication, 4001 by default
-**Refactor**, exeption
 
 ## Use cases
 Correct input for host gossip port <br>
@@ -500,9 +493,6 @@ discovery-internal:TRACE: update 1 02a129493216004b
 discovery-internal:TRACE: FILE NETWORK READY 5 < 3 (false) done = false
 ```
 
-# seed
-**flag should be deleted**
-
 # timeout
 ```
 --timeout -t
@@ -540,23 +530,10 @@ ERROR FROM GO: failed to dial QmUV9hHQSWKXYXqmh8iU1h7oiAfJWPK4mb1H7VD5Pxosku:
   * [/ip4/0.0.0.0/tcp/40201] dial tcp4 0.0.0.0:40201: connect: connection refused
 ```
 
-# delay
-**flag should be deleted**
-
-# trace-gossip
-**flag should be deleted**
-
-# loops
-**flag should be deleted**
-
-# url
-**flag should be deleted**
-
 # sockets
 ```
 --sockets -M
 ```
-**Refactor**,  should be rename --monitors
 Set the number  max of monitor opened in mode0, is not used in other modes
 
 ## Use Cases
@@ -637,17 +614,14 @@ Successful network launch
 
 ### Case: invalid value
 ```
---net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log -N 4 -P 500
+--net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log -N 4 -P 500000000
 ```
 
 #### Failure
 **Result**:<br>
-TODO Refacor, work correct
-
-# stdout 
-**Refactor**, has no affect
+Output that the input value is too large
 ```
---stdout
+Overflow in integral conversion
 ```
 
 # transaction-ip
@@ -685,7 +659,6 @@ Missing value for argument --transaction-ip.
 --transaction-port -p
 ```
 Set port for listen transcation, 10800 by default
-**Refactor**, error case
 
 ## Use cases
 Set correct port<br>
@@ -713,7 +686,10 @@ collector0: SockectThread port=10801
 
 #### Failure
 **Result**:<br>
-Node will not run
+Output that the input value is too large
+```
+Overflow in integral conversion
+```
 
 # transaction-queue
 ```
@@ -839,11 +815,6 @@ Output that the input value is too large
 ```
 Overflow in integral conversion
 ```
-# transcript-from
-**flag should be deleted**
-
-# transcript-to
-**flag should be deleted**
 
 # transcript-log
 ```
@@ -883,9 +854,6 @@ Output about the absence of a parameter
 Missing value for argument --transcript-log.
 ```
 
-# transcript-debug
-**flag should be deleted**
-
 # dart-filename
 ```
 --dart-filename
@@ -916,7 +884,6 @@ Segmentation fault (core dumped)
 --dart-synchronize
 ```
 Use if we need synchronization for dart
-**Refactor**
 
 ## Use Cases
 Synchronize nodes with master node<br>
@@ -944,19 +911,15 @@ tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-s
 
 ### Failure
 **Result**:<br>
-Network will not run
-
-# dart-angle-from-port
-**flag should be deleted**
-
-# dart-master-angle-from-port
-**flag should be deleted**
-
+Node will not run
+```
+Can't parse string: bool should be case-insensitive 'true' or 'false'
+```
 # dart-init
 ```
 --dart-init
 ```
-Initialize empty DART **refactor**
+Initialize empty DART
 
 ## Use cases
 Initialize DART<br>
@@ -978,33 +941,15 @@ dart.sync2: DART bullseye:
 
 ### Case: invalid value for dart init
 ```
---net-mode=local --boot=./shared/boot.hibon --dart-init=0 --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=111111 --logger-filename=./shared/node-1.log -N 4
+--net-mode=local --boot=./shared/boot.hibon --dart-init=0 --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log -N 4
 ```
 
 #### Failure
 **Result**:<br>
 Node will not run
-
-# dart-generate
 ```
---dart-generate 
+Can't parse string: bool should be case-insensitive 'true' or 'false'
 ```
-**flag should be deleted**<br>
-
-# dart-from 
-```
---dart-from
-```
-**flag should be deleted**<br>
-
-# dart-to
-```
---dart-to
-```
-**flag should be deleted**<br>
-
-# dart-request 
-**flag should be deleted**
 
 # dart-path
 ```
@@ -1054,9 +999,6 @@ tagionwave --logger-filename /new_tmp/tagion.log
 #### Success
 **Result**:<br>
 Successful network launch and logs are in new_tmp/tagion.log file
-
-# logger-mask 
-**flag should be deleted**
 
 # logsub
 ```
@@ -1124,11 +1066,52 @@ Node_1: opts.node_name = Node_1
 ...
 ```
 
-# server-token
-**flag should be deleted**
-
-# server-tag
-**flag should be deleted**
-
 # boot
-**flag should be deleted**
+```
+tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path wizard_file --port=4001 --transaction-port=10801 -N 4
+```
+Set path to shared file that mode1 require for node addresses
+
+## Use cases
+Set boot file<br>
+
+### Case: set correct boot file
+```
+--net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log -N 4
+```
+
+#### Success
+**Result**:<br>
+Successful network launch
+
+### Case: invalid filepath 
+```
+--net-mode=local --boot=./invalid_path/file --dart-init=true --dart-synchronize=true --dart-path=./data/dart1.drt --port=4001 --transaction-port=10801 --logger-filename=./shared/node-1.log -N 4
+```
+
+#### Failure
+**Result**:<br>
+Network will not run with output:
+```
+File /invalid_path/file not exist
+```
+
+# Passphrase file setting
+```
+./tagionwave --net-mode=local --boot=./shared/boot.hibon --dart-init=true --dart-synchronize=true --dart-path wizard_file --port=4001 --transaction-port=10801 -N 4 --passphrasefile=filewithpassphrase.txt
+```
+
+## Use cases
+Set file with passphrase<br>
+
+### Case: set correct passphrase file
+
+#### Success
+**Result**:<br>
+Successful network launch
+
+### Case: invalid filepath 
+
+#### Failure
+**Result**:<br>
+Network start with passphrase default 

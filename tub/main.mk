@@ -1,4 +1,3 @@
-
 .SUFFIXES:
 .SECONDARY:
 .ONESHELL:
@@ -14,6 +13,7 @@ main: help
 #
 export DSRC := $(abspath $(REPOROOT)/src)
 export DTUB := $(abspath $(REPOROOT)/tub)
+export BDD := $(abspath $(REPOROOT)/bdd)
 ifndef REPOROOT
 ${error REPOROOT must be defined}
 endif
@@ -29,6 +29,7 @@ endif
 -include $(REPOROOT)/local.*.mk
 -include $(REPOROOT)/local.mk
 include $(DTUB)/testbench/default.mk
+include $(DTUB)/utilities/utils.mk
 include $(DTUB)/utilities/dir.mk
 include $(DTUB)/utilities/log.mk
 
@@ -95,6 +96,7 @@ include $(DTUB)/config/compiler.mk
 include $(DTUB)/config/dstep.mk
 include $(DTUB)/config/ddeps.mk
 include $(DTUB)/config/bins.mk
+include $(DTUB)/config/format.mk
 
 include $(DTUB)/compile.mk
 

@@ -122,7 +122,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                     }
                     catch (Exception t)
                     {
-                        log.warning("%s", t.msg);
+                        log.warning("Exception caught: %s", t);
                     }
                     return Document();
                 }
@@ -192,7 +192,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                             do
                             {
                                 yield;
-                                log("available - %s", ssl_relay.available());
+                                log.trace("SSLRelay available: %s", ssl_relay.available());
                             }
                             while (!ssl_relay.available());
                             const response = ssl_relay.response;
@@ -215,46 +215,46 @@ void transactionServiceTask(immutable(Options) opts) nothrow
 
                                     auto inputs = signed_contract.contract.inputs;
                                     requestInputs(inputs, ssl_relay.id);
-                                    yield;
+                                    do
+                                    {
+                                        yield;
+                                        log.trace("SSLRelay available: %s", ssl_relay.available());
+                                    }
+                                    while (!ssl_relay.available());
                                     //() @trusted => Fiber.yield; // Expect an Recorder resonse for the DART service
                                     const response = ssl_relay.response;
                                     const received = internal_hirpc.receive(Document(response));
-                                    //log("%s", Document(response).toJSON);
                                     const foreign_recorder = rec_factory.recorder(
                                         received.response.result);
-                                    //return recorder;
-                                    log("constructed");
 
                                     import tagion.script.StandardRecords : StandardBill;
 
-                                    // writefln("input loaded %d", foreign_recoder.archive);
                                     PayContract payment;
 
-                                    //signed_contract.input.bills = [];
                                     foreach (archive; foreign_recorder[])
                                     {
                                         auto std_bill = StandardBill(archive.filed);
                                         payment.bills ~= std_bill;
                                     }
-                                    signed_contract.inputs = payment.toDoc;
+                                    foreach (input; signed_contract.contract.inputs)
+                                    {
+                                        foreach (bill; payment.bills)
+                                        {
+                                            if (hirpc.net.hashOf(bill.toDoc) == input)
+                                            {
+                                                signed_contract.inputs ~= bill;
+                                            }
+                                        }
+                                    }
                                     // Send the contract as payload to the HashGraph
                                     // The data inside HashGraph is pure payload not an HiRPC
                                     SmartScript.check(hirpc.net, signed_contract);
-                                    //log("checked");
                                     const payload = Document(signed_contract.toHiBON.serialize);
-                                    {
-                                        immutable data = signed_contract.toHiBON.serialize;
-                                        const json_doc = Document(data);
-                                        auto json = json_doc.toJSON;
-
-                                        //log("Contract:\n%s", json.toPrettyString);
-                                    }
                                     sendPayload(payload);
                                     auto empty_params = new HiBON;
                                     auto empty_response = internal_hirpc.result(hirpc_received,
                                         empty_params);
                                     ssl_relay.send(empty_response.toDoc.serialize);
-                                    //  }
                                 }
                                 catch (TagionException e)
                                 {
@@ -285,13 +285,11 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                                 const received = internal_hirpc.receive(Document(response));
                                 immutable foreign_recorder = rec_factory.uniqueRecorder(
                                     received.response.result);
-                                log("constructed");
                                 auto fail_code = SmartScript.check(hirpc.net, signed_contract, foreign_recorder);
                                 if (!fail_code)
                                 {
                                     sendPayload(signed_contract.toDoc);
                                     const empty_response = internal_hirpc.result(hirpc_received, Document());
-                                    //                            empty_params);
                                     ssl_relay.send(empty_response.toDoc.serialize);
                                 }
                                 if (fail_code)
@@ -332,58 +330,21 @@ void transactionServiceTask(immutable(Options) opts) nothrow
             with (Control) switch (ts)
             {
             case STOP:
-                writefln("Transaction STOP %d", opts.transaction.service.port);
-                log("Kill socket thread port %d", opts.transaction.service.port);
+                log("Stop transaction service: port %d", opts.transaction.service.port);
                 script_api.stop;
-                //                script_thread.join;
                 stop = true;
                 break;
-                // case LIVE:
-                //     stop = false;
-                //     break;
             default:
-                log.error("Bad Control command %s", ts);
-                //    stop=true;
+                log.warning("Bad Control command %s", ts);
             }
         }
 
-        // void reportTagionExceptionFromChild(immutable(TagionException) e) nothrow {
-        //     log.error(e.msg);
-        //     assumeWontThrow(ownerTid.send(e));
-        // }
-
-        // void reportExceptionFromChild(immutable(Exception) e) {
-        //     log.fatal(e.msg);
-        //     assumeWontThrow(ownerTid.send(e));
-        // }
-
-        // void (immutable(Exception) e) { log.fatal(e.msg); ownerTid.send(e); },
-        //             (immutable(Throwable) t) {
-        //         log.fatal(t.msg);
-        //         ownerTid.send(t);
-        //     }
         ownerTid.send(Control.LIVE);
         while (!stop)
         {
             receiveTimeout(500.msecs, //Control the thread
                 &handleState,
-                &taskfailure, // &reportTagionExceptionFromChild,
-                // &reportExceptionFromChild
-                // //                &reportException,
-                //                 &reportExceptionFromChild
-                //                 );
-                //     (immutable(TagionException) e) {
-                //     log.fatal(e.msg);
-                //     ownerTid.send(e);
-                // },
-                //     (immutable(Exception) e) { log.fatal(e.msg); ownerTid.send(e); },
-                //         (immutable(Throwable) t) {
-                //     log.fatal(t.msg);
-                //     ownerTid.send(t);
-                // }
-
-                
-
+                &taskfailure,
             );
         }
     }

@@ -65,4 +65,20 @@ enum FileExtension
     dart = "drt", // DART data-base
     markdown = "md", // DART data-base
     dsrc = "d", // DART data-base
+    recchainblock = "rcb", // Recorder chain block file format
+}
+
+enum DOT = '.'; /// File extension separator
+
+@safe
+string withDot(FileExtension ext) pure nothrow
+{
+
+    return DOT ~ ext;
+}
+
+@safe
+unittest
+{
+    assert(FileExtension.markdown.withDot == ".md");
 }

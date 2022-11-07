@@ -66,32 +66,29 @@ version (OLD_TRANSACTION)
 
             
 
-            .check(signed_contract.signs.length != signed_contract.inputs.length,
+            .check(signed_contract.signs.length == signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS);
 
             
 
-            .check(signed_contract.contract.inputs.length != signed_contract.inputs.length,
+            .check(signed_contract.contract.inputs.length == signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
-            const payment = PayContract(signed_contract.inputs);
-            foreach (i, print, input, signature; lockstep(signed_contract.contract.inputs, payment.bills, signed_contract
+            foreach (i, print, input, signature; lockstep(signed_contract.contract.inputs, signed_contract.inputs, signed_contract
                     .signs))
             {
-                import tagion.utils.Miscellaneous : toHexString;
 
                 immutable fingerprint = net.hashOf(input.toDoc);
 
                 
 
-                .check(print == fingerprint, ConsensusFailCode
-                        .SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
+                .check(print == fingerprint,
+                    ConsensusFailCode.SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
                 Pubkey pkey = input.owner;
 
                 
 
                 .check(net.verify(message, signature, pkey),
                     ConsensusFailCode.SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY);
-
             }
         }
 
@@ -117,8 +114,7 @@ version (OLD_TRANSACTION)
             // auto sc = new ScriptContext(10, 10, 10, 100);
             // script.execute(transactions_name, sc);
 
-            const payment = PayContract(signed_contract.inputs);
-            const total_input = calcTotal(payment.bills);
+            const total_input = calcTotal(signed_contract.inputs);
             TagionCurrency total_output;
             foreach (pkey, doc; signed_contract.contract.output)
             {
@@ -185,7 +181,6 @@ else
                 {
                     return ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS;
                 }
-                //        pragma(msg, typeof(inputs[].front.filed[OwnerKey].get!Pubkey));
                 if (!inputs[].all!(a => a.filed.hasMember(OwnerKey) && a
                         .filed[OwnerKey].isType!Pubkey))
                 {
@@ -205,8 +200,6 @@ else
                         inputs[],
                         signed_contract.signs))
                 {
-                    import tagion.utils.Miscellaneous : toHexString;
-
                     immutable fingerprint = net.hashOf(input);
 
                     if (print != fingerprint)
@@ -223,12 +216,12 @@ else
             }
             catch (TagionException e)
             {
-                log.trace(e.msg);
+                log.warning(e.msg);
                 return ConsensusFailCode.SMARTSCRIPT_CAUGHT_TAGIONEXCEPTION;
             }
             catch (Exception e)
             {
-                log.trace(e.msg);
+                log.warning(e.msg);
                 return ConsensusFailCode.SMARTSCRIPT_CAUGHT_EXCEPTION;
             }
             return ConsensusFailCode.NONE;

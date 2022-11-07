@@ -261,4 +261,3 @@ jobs:
       - name: Clean logs
         if: always()
         run: sudo rm -rf scenario-result
-          
