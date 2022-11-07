@@ -8,20 +8,15 @@ BDD_DFLAGS+=${addprefix -I,$(BDD)}
 
 BDD_LOG=$(DLOG)/bdd
 
-BDD_DFILES+=${shell find $(BDD) -type f -name "*.d" -path "*/tagion/*" -a -not -name "*.gen.d"}
-
-target-bdd_services: LIBS+=$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-bdd_services: DFLAGS+=$(BDD_DFLAGS)
-target-bdd_services: DFILES+=$(BDD_DFILES)
-
-${call DO_BIN,bdd_services}
-
-BDDTESTS+=bdd_services
+BDD_DFILES+=${shell find $(BDD) -name "*.d" -a -path "*/testbench/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
 
 #
 # Binary testbench 
 #
 target-testbench: DFLAGS+=$(DVERSION)=ONETOOL
 target-testbench: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-testbench: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-testbench/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
+target-testbench: DFILES+=$(BDD_DFILES)
 ${call DO_BIN,testbench,}
+
+
+BDDTESTS+=bdd_services

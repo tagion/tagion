@@ -135,7 +135,7 @@ version (none) struct Bank {
     }
 }
 
-mixin Main!(_main, "xxx");
+mixin Main!_main;
 
 int _main(string[] args) {
     version (none) {
