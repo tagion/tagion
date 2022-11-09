@@ -1,5 +1,7 @@
 
 
+TESTENV=$(DBIN)/bddenv.sh
+
 bddtest: bddfiles bddexec 
 
 .PHONY: bddtest bddfiles
@@ -18,12 +20,22 @@ bddexec: $(BDDTESTS)
 
 .PHONY: bddexec
 
+bddenv: $(TESTENV)
+
+$(TESTENV):
+	$(PRECMD)
+	$(SCRIPTS)/genenv.sh $@
+	chmod 750 $@
+
+.PHONY: $(TESTENV)
+
 env-bdd:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.env, BDD_FLAGS, $(BDD_FLAGS)}
 	${call log.env, BDD_DFLAGS, $(BDD_DFLAGS)}
 	${call log.env, BDD_DFILES, $(BDD_DFILES)}
+	${call log.env, TESTENV, $(TESTENV)}
 	${call log.close}
 
 .PHONY: env-bdd

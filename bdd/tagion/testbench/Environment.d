@@ -11,7 +11,7 @@ struct Environment {
     string bdd;
     string testbench;
     string bdd_log;
-    string report;
+    string reporoot;
 }
 
 immutable Environment env;
