@@ -72,6 +72,7 @@ struct SSLOption {
     uint client_timeout; /// Client timeout
     OpenSSL openssl; ///
     mixin JSONCommon;
+    mixin JSONConfig;
 }
 
 void configureOpenSSL(const(OpenSSL) openssl) @trusted {
@@ -92,5 +93,4 @@ void configureOpenSSL(const(OpenSSL) openssl) @trusted {
             writeln(s);
         }
     }
-    writeln("----- OpenSSL end ---");
 }

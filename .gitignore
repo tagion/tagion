@@ -17,7 +17,7 @@
 # Local setup file
 local.*
 # Auto generated files
-gen.*
+*.gen.*
 # Auto generated D interface files
 *.di
 # Auto generated C interface files
