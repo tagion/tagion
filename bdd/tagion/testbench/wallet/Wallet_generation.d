@@ -26,7 +26,6 @@ class SevenWalletsWillBeGenerated {
     enum number_of_wallets = 7;
     immutable tagionwallet = "/home/imrying/bin/tagionwallet";
 
-
     string[number_of_wallets] wallet_names = ["zero", "first", "second", "third", "fourth", "fifth", "sixth"];
 
     @Given("i have 7 pincodes and questions")
@@ -40,8 +39,6 @@ class SevenWalletsWillBeGenerated {
         }
         
         writeln("%s", stdin_wallets);
-
-
         return result_ok;
     }
 
