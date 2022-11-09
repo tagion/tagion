@@ -10,6 +10,8 @@ import std.string : splitLines;
 import std.stdio;
 import std.format : format;
 import std.process;
+import tagion.behaviour.BehaviourResult;
+
 
 
 // import std.process.execute;
@@ -37,8 +39,8 @@ class SevenWalletsWillBeGenerated {
         
         writeln("%s", stdin_wallets);
 
-        check(true, "Check for 'questions' not implemented");
-        return Document();
+
+        return result_ok;
     }
 
     @Given("i create wallets.")
