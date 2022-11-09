@@ -55,8 +55,11 @@ help-bdd:
 	${call log.help, "make help-bdd", "Will display this part"}
 	${call log.help, "make bddtest", "Builds and executes all BDD's"}
 	${call log.help, "make bddexec", "Compiles and links all the BDD executables"}
+	${call log.help, "make run-<bddname>", "Runs the <bddname>"}
 	${call log.help, "make bddreport", "Produce visualization of the BDD-reports"}
-	${call log.help, "make bddfiles", "Generated the bdd files"}
+	${call log.help, "make bddfiles", "Generates the bdd files"}
+	${call log.help, "make bddenv", "Generates a environment test script"}
+	${call log.help, "make bddinit", "Initialize the testbench tool"}
 	${call log.help, "make behaviour", "Builds the BDD tool"}
 	${call log.help, "make clean-bddtest", "Will remove the bdd log files"}
 	${call log.close}
@@ -68,8 +71,6 @@ help: help-bdd
 # del hibon filse
 clean-bddtest:
 	$(PRECMD)
-#	rm bdd/tagion/testbench/*.d
-#	rm bdd/tagion/testbench/*.gen.md
 
 .PHONY: help-bdd
 
