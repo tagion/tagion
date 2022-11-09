@@ -15,18 +15,18 @@ int _main(string[] args) {
 
     "/tmp/wallet_result.hibon".fwrite(wallet_result);
 
-    auto wallet_invoice = automation!(Create_wallet_dart)();
+//    auto wallet_invoice = automation!(Create_wallet_dart)();
 
     // wallet_invoice.GenerateGENESISInvoice(wallet_result);
     
     // auto genesis_invoice_result = wallet_invoice.run();
     // GenerateGENESISInvoice x;
     // x = new GenerateGENESISInvoice(wallet_result);
-    pragma(msg, typeof(wallet_invoice));
+//    pragma(msg, typeof(wallet_invoice));
 
 
 
-    "/tmp/genesis_invoice_result.hibon".fwrite(genesis_invoice_result);
+//    "/tmp/genesis_invoice_result.hibon".fwrite(genesis_invoice_result);
 
 
     return 0;
