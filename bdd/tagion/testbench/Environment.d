@@ -21,23 +21,18 @@ import std.stdio;
 shared static this() {
     Environment temp;
     uint errors;
-    static foreach(name;[__traits(allMembers, Environment)]) {{
-        pragma(msg, "name =", name);
-        enum NAME = name.map!(a => cast(char)a.toUpper).array;
-        try {
-    pragma(msg, "NAME =", NAME);
-               __traits(getMember, temp, name) = environment[NAME];
-        }
+    static foreach (name; [__traits(allMembers, Environment)]) {
+        {
+            enum NAME = name.map!(a => cast(char) a.toUpper).array;
+            try {
+                __traits(getMember, temp, name) = environment[NAME];
+            }
             catch (Exception e) {
-            stderr.writeln(e.msg);
-            errors++;
+                stderr.writeln(e.msg);
+                errors++;
+            }
         }
-    }}
+    }
     env = temp;
     assert(errors is 0, "Environment is not setup correctly");
 }
-
-
-
-
-
