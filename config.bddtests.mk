@@ -1,8 +1,9 @@
 
 TESTMAIN?=testbench
 
-#BDDS+=wallet
+BDDS+=wallet
 BDDS+=sslserver
+
 
 
 

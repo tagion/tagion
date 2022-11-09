@@ -1,24 +1,26 @@
 
-
+TESTPROGRAM=$(DBIN)/$(TESTMAIN)
 TESTENV=$(DBIN)/bddenv.sh
+#BDDTESTS=${addprefix $(DBIN)/,$(BDDS)}
 
-bddtest: bddfiles bddexec 
+bddtest: bddfiles bddinit bddenv bddexec 
 
 .PHONY: bddtest bddfiles
 
 bddfiles: behaviour
 	$(PRECMD)
-	echo $(BEHAVIOUR) $(BDD_FLAGS)
 	$(BEHAVIOUR) $(BDD_FLAGS)
 
-# move
-#collect all D files in BDD, compile, 
 bddexec: $(BDDTESTS) 
-	$(PRECMD)
-	echo $(BDDTESTS)
-	echo "WARRING!!! Not impemented yet"
+	echo $<
+	echo RUN
 
 .PHONY: bddexec
+
+run-%: bddinit
+	$(PRECMD)
+	${call log.header. $@ :: run}
+	$(DBIN)/$* $(RUNFLAGS)
 
 bddenv: $(TESTENV)
 
@@ -29,6 +31,10 @@ $(TESTENV):
 
 .PHONY: $(TESTENV)
 
+bddinit: $(TESTMAIN)
+	$(PRECMD)
+	$(TESTPROGRAM) -f
+
 env-bdd:
 	$(PRECMD)
 	${call log.header, $@ :: env}
@@ -36,6 +42,7 @@ env-bdd:
 	${call log.env, BDD_DFLAGS, $(BDD_DFLAGS)}
 	${call log.env, BDD_DFILES, $(BDD_DFILES)}
 	${call log.env, TESTENV, $(TESTENV)}
+	${call log.env, BDDS, $(BDDS)}
 	${call log.close}
 
 .PHONY: env-bdd
