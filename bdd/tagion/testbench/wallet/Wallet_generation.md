@@ -9,7 +9,7 @@ Given i have 7 pincodes and questions
 
 Given i create wallets.
 
-When each wallet is created.
+When the wallets are created save the pin.
 
 Then check if the wallet can be activated with the pincode.
 
