@@ -4,13 +4,14 @@ import tagion.behaviour.Behaviour;
 import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.BehaviourException;
 import tagion.hibon.Document;
-import std.file : readText, exists;
+import std.file : readText, exists, mkdirRecurse, rmdir;
 import std.array : array;
 import std.string : splitLines;
 import std.stdio;
 import std.format : format;
 import std.process;
 import tagion.behaviour.BehaviourResult;
+import std.path;
 
 
 
@@ -20,21 +21,19 @@ enum feature = Feature("Generate wallets.", ["", "", "", ""]);
 
 @safe @Scenario("Seven wallets will be generated.", [])
 class SevenWalletsWillBeGenerated {
-    string[][] stdin_wallets;
+    string[] stdin_wallets;
     enum number_of_wallets = 7;
-    string[number_of_wallets] file_array;
+
     string[number_of_wallets] wallet_names = ["zero", "first", "second", "third", "fourth", "fifth", "sixth"];
 
     @Given("i have 7 pincodes and questions")
     Document questions() {
-        foreach (i, ref file; file_array) {
-            file = format("/home/imrying/work/tagion/fundamental/%s/wallet.stdin", wallet_names[i]);
-        }
-        
-        stdin_wallets = new string[][number_of_wallets];
-        foreach (i, ref wallet; stdin_wallets) {
-            wallet = file_array[i].readText.splitLines;
 
+        
+        stdin_wallets = new string[number_of_wallets];
+        foreach (i, ref wallet; stdin_wallets) {
+            const file = format("/home/imrying/work/tagion/fundamental/%s/wallet.stdin", wallet_names[i]);
+            wallet = file.readText;
         }
         
         writeln("%s", stdin_wallets);
@@ -46,25 +45,54 @@ class SevenWalletsWillBeGenerated {
     @Given("i create wallets.")
     Document wallets() {
         immutable tagionwallet = "/home/imrying/bin/tagionwallet";
-        check(tagionwallet.exists, format("Tagionwallet does not exist: %s", tagionwallet));
-        foreach (i, stdin_wallet; stdin_wallets) {
-            immutable wallet_path = format("/tmp/wallet_%s", wallet_names[i]);
-            auto pipes = pipeProcess([tagionwallet, "--path", wallet_path], Redirect.stdout | Redirect.stdin | Redirect.stderr);
-            scope(exit) wait(pipes.pid);
-           
-            foreach (line; stdin_wallet)
-            {
-                pipes.stdin.writeln(line);                
+        //check(tagionwallet.exists, format("Tagionwallet does not exist: %s", tagionwallet));
+
+        foreach (i, stdin_wallet; stdin_wallets[0..1]) {
+            stdin_wallet = "/home/imrying/work/tagion/fundamental/zero/wallet.stdin".readText;
+            immutable wallet_path_array = [tagionwallet, "-O", "--path", "/tmp/wallet0", "tagionwallet0.json"];
+            immutable test_array = [tagionwallet, "tagionwallet0.json"];
+            // rmdir(wallet_path);
+            // mkdirRecurse(wallet_path);
+
+            writeln("TEST 1");
+
+            execute(wallet_path_array);
+
+            auto pipes = pipeProcess(test_array);
+            writeln("TEST 2");
+
+            scope (exit) {
+                writeln("TEST in wait");
+
+                wait(pipes.pid); 
             }
 
-
-            // pipes.stderr.writeln;
-            // pipes.stdout.writeln;
-            writefln("Wallet%s finished", i);
-            //pipes.stdin.close();
+            writeln("after waitt");
 
 
-            // empty
+            (() @trusted {
+                writeln("TEST 23");
+
+                pipes.stdin.writeln(stdin_wallet);     
+                pipes.stdin.flush();
+                foreach (s; pipes.stdout.byLine) {
+                    writeln(s);
+                    writeln("TEST in trusted");
+
+                }
+                
+            })();
+            
+
+
+            // // foreach (s; pipes.stdout.byLine) {
+            // //     writeln(s);
+
+            // writefln("Wallet%s finished", i);
+            // //pipes.stdin.close();
+
+
+            // // empty
         }
         
 
