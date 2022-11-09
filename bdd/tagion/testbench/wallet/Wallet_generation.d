@@ -47,52 +47,29 @@ class SevenWalletsWillBeGenerated {
         immutable tagionwallet = "/home/imrying/bin/tagionwallet";
         //check(tagionwallet.exists, format("Tagionwallet does not exist: %s", tagionwallet));
 
-        foreach (i, stdin_wallet; stdin_wallets[0..1]) {
-            stdin_wallet = "/home/imrying/work/tagion/fundamental/zero/wallet.stdin".readText;
-            immutable wallet_path_array = [tagionwallet, "-O", "--path", "/tmp/wallet0", "tagionwallet0.json"];
-            immutable test_array = [tagionwallet, "tagionwallet0.json"];
-            // rmdir(wallet_path);
-            // mkdirRecurse(wallet_path);
-
-            writeln("TEST 1");
+        foreach (i, stdin_wallet; stdin_wallets) {
+            immutable wallet_path_array = [tagionwallet, "-O", "--path", format("/tmp/wallet_%s", i), format("tagionwallet_%s.json", i)];
+            immutable test_array = [tagionwallet, format("tagionwallet_%s.json", i)];
 
             execute(wallet_path_array);
 
             auto pipes = pipeProcess(test_array);
-            writeln("TEST 2");
 
             scope (exit) {
-                writeln("TEST in wait");
-
                 wait(pipes.pid); 
             }
 
-            writeln("after waitt");
-
-
             (() @trusted {
-                writeln("TEST 23");
 
                 pipes.stdin.writeln(stdin_wallet);     
                 pipes.stdin.flush();
                 foreach (s; pipes.stdout.byLine) {
                     writeln(s);
-                    writeln("TEST in trusted");
 
                 }
                 
             })();
-            
 
-
-            // // foreach (s; pipes.stdout.byLine) {
-            // //     writeln(s);
-
-            // writefln("Wallet%s finished", i);
-            // //pipes.stdin.close();
-
-
-            // // empty
         }
         
 
