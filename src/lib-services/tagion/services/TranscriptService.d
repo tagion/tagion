@@ -6,6 +6,8 @@ import core.thread;
 import std.array : join;
 import std.exception : assumeUnique;
 import std.range : empty;
+import std.file : dirEntries, SpanMode, isFile, DirIterator, exists;
+import std.path : baseName;
 
 import tagion.services.Options;
 import tagion.basic.Types : Control, Buffer, FileExtension;
@@ -27,41 +29,136 @@ import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Fingerprint : Fingerprint;
 import tagion.utils.Miscellaneous : toHexString;
+import tagion.basic.Basic : fileExtension;
 import tagion.hibon.HiBONRecord;
 
 struct EpochDumpRecord
 {
+    static string previousHashData;
+
     @Label("") Buffer fingerprint;
     @Label("previous") string previous;
     @Label("bullseye") Buffer bullseye;
+
+    static private bool isValidFile(string name)
+    {
+        enum HASHNAME_LEN = 64 + FileExtension.hibon.length + 1;
+        auto cutname = baseName(name);
+        return name.isFile() && (name.fileExtension == FileExtension.hibon) && (cutname.length == HASHNAME_LEN);
+    }
+
+    static private EpochDumpRecord* findPrevious(EpochDumpRecord[] records, string hash)
+    {
+        foreach(ref item; records)
+        {
+            if (item.previous == hash)
+            {
+                return &item;
+            }
+        }
+        return null;
+    }
+
+    static bool isValidChain(string hash, string work_folder)
+    {
+        auto actual_hash = hash;
+        enum TERMINATE = "0";
+        do
+        {
+            auto file_name = actual_hash ~ "." ~ FileExtension.hibon;
+            if (!work_folder.empty)
+            {
+                file_name = work_folder ~ "/" ~ file_name;
+            }
+
+            if (!file_name.exists)
+            {
+                return false;
+            }
+            auto item = fread!EpochDumpRecord(file_name);
+            actual_hash = item.previous;
+        }
+        while(actual_hash != TERMINATE);
+        return true;
+    }
+
+    static private string findAbsentWritedHash(EpochDumpRecord[] records)
+    {
+        foreach(item; records)
+        {
+            auto hash = toHexString(item.fingerprint);
+            if (!findPrevious(records, hash))
+            {
+                return hash;
+            }
+        }
+        assert(0, "check hashes collisions");
+    }
+
+    static string RestoreLastHash()
+    {
+        auto hasher = new StdHashNet;
+        const options = getOptions();
+        string folder_path = options.transaction_dumps_dirrectory;
+        auto files = folder_path.dirEntries(SpanMode.shallow);
+        EpochDumpRecord[] array;
+        foreach(file; files)
+        {
+            if (isValidFile(file))
+            {
+                auto record = fread!EpochDumpRecord(file);
+                record.fingerprint = hasher.rawCalcHash(record.toDoc.data);
+                array = array ~ record;
+            }
+        }
+
+        if (array.length == 0)
+        {
+            return "0";
+        }
+        auto absent_hash = findAbsentWritedHash(array);
+        if (isValidChain(absent_hash, folder_path))
+        {
+            return absent_hash;
+        }
+        assert(0, "IVNALIDE CHAIN");
+    }
+
+    public string hashName()
+    {
+        return toHexString(this.fingerprint);
+    }
 
     mixin HiBONRecord!(
         q{
             this(
                 Buffer bullseye,
-                string previous,
                 const(StdHashNet) net)
             {
                 this.bullseye = bullseye;
-                this.previous = previous;
+                this.previous = this.previousHashData;
 
-                this.fingerprint = net.hashOf(toDoc);
+                this.fingerprint = net.rawCalcHash(toDoc.serialize);
+                this.previousHashData = toHexString(this.fingerprint);
             }
         });
 }
 
 private static void saveHashedDump(ref const Document bullseye)
 {
-    static string previousHashData = "0";
+
+    if (EpochDumpRecord.previousHashData.empty)
+    {
+        EpochDumpRecord.previousHashData = EpochDumpRecord.RestoreLastHash();
+    }
     const static hasher = new StdHashNet;
     Buffer representation = bullseye.data;
-    auto file = EpochDumpRecord(representation, previousHashData, hasher);
+    auto file = EpochDumpRecord(representation, hasher);
     const Options options = getOptions();
-    auto actualHash = toHexString(hasher.rawCalcHash(file.toDoc.data));
+    auto actualHash = file.hashName();
     auto filename = actualHash ~ "." ~ FileExtension.hibon;
     string directory = options.transaction_dumps_dirrectory;
     fwrite(directory.empty ? filename : (directory ~ "/" ~ filename), file.toHiBON);
-    previousHashData = actualHash;
 }
 
 // This function performs Smart contract executions
@@ -298,17 +395,22 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
 unittest
 {
     import std.file : remove, exists, mkdir, rmdirRecurse;
+
     auto hibon = new HiBON();
     hibon["A"] = "B";
     auto doc = Document(hibon);
     Options options = getOptions();
     options.transaction_dumps_dirrectory = "tmp_hashes";
     setOptions(options);
+
     mkdir(options.transaction_dumps_dirrectory);
+
     saveHashedDump(doc);
     saveHashedDump(doc);
+
     enum hashOne = "tmp_hashes/10236aa77cf4f3cb68c3871e6e2c7ee053d3e7e4c49e3635a3e8708a81637502.hibon";
     enum hashTwo = "tmp_hashes/c1b47d4425ba549aad30ec8386e5cba00e60ba76694ce1c82af8cefc53da6fe1.hibon";
+
     assert(exists(hashOne));
     assert(exists(hashTwo));
     rmdirRecurse(options.transaction_dumps_dirrectory);    
