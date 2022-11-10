@@ -208,12 +208,18 @@ auto automation(alias M)() if (isFeature!M) {
             context.result.info.property = obtainFeature!M;
             context.result.info.name = moduleName!M;
             context.result.scenarios.length = FeatureContext.Types.length; //ScenariosSeq.length;
-            static foreach (i, _Scenario; FeatureContext.Types[0..$-1]) {
+            static foreach (i, _Scenario; FeatureContext.Types[0 .. $ - 1]) {
                 try {
                     static if (__traits(compiles, new _Scenario())) {
                         if (context[i] is null) {
                             context[i] = new _Scenario();
                         }
+                    }
+                    else {
+                        check(context[i]!is null,
+                                format("Scenario '%s' must be constructed before can be executed in '%s' feature",
+                                FeatureContext.fieldNames[i],
+                                moduleName!M));
                     }
                     context.result.scenarios[i] = .run(context[i]);
                 }
