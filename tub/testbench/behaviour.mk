@@ -3,7 +3,7 @@ TESTPROGRAM=$(DBIN)/$(TESTMAIN)
 TESTENV=$(DBIN)/bddenv.sh
 #BDDTESTS=${addprefix $(DBIN)/,$(BDDS)}
 
-bddtest: bddfiles bddinit bddenv bddexec 
+bddtest: bddfiles bddinit bddenv bddrun 
 
 .PHONY: bddtest bddfiles
 
@@ -11,11 +11,11 @@ bddfiles: behaviour
 	$(PRECMD)
 	$(BEHAVIOUR) $(BDD_FLAGS)
 
-bddexec: $(BDDTESTS) 
+bddrun: $(BDDTESTS) 
 	echo $<
 	echo RUN
 
-.PHONY: bddexec
+.PHONY: bddrun
 
 run-%: bddfiles bddinit bddenv
 	$(PRECMD)
@@ -31,7 +31,7 @@ $(TESTENV):
 
 .PHONY: $(TESTENV)
 
-bddinit: $(TESTMAIN)
+bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way
 	$(PRECMD)
 	$(TESTPROGRAM) -f
 
@@ -54,7 +54,7 @@ help-bdd:
 	${call log.header, $@ :: help}
 	${call log.help, "make help-bdd", "Will display this part"}
 	${call log.help, "make bddtest", "Builds and executes all BDD's"}
-	${call log.help, "make bddexec", "Compiles and links all the BDD executables"}
+	${call log.help, "make bddrub", "Compiles and links all the BDD executables"}
 	${call log.help, "make run-<bddname>", "Runs the <bddname>"}
 	${call log.help, "make bddreport", "Produce visualization of the BDD-reports"}
 	${call log.help, "make bddfiles", "Generates the bdd files"}

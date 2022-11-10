@@ -97,12 +97,10 @@ unittest {
 
     string[] errors;
     auto feature = parser(feature_byline, errors);
-    //"/tmp/feature_no_emendation".setExtension("hibon").fwrite(feature);
     feature.emendation("test.emendation");
+    version (behaviour_unitdata)
+        "/tmp/feature_with_emendation".setExtension("hibon").fwrite(feature);
 
-    "/tmp/feature_with_emendation".setExtension("hibon").fwrite(feature);
-
-    //bdd_filename.setExtension(FileExtension.hibon).fwrite(feature);
     const expected_feature = bdd_filename.setExtension(FileExtension.hibon).fread!FeatureGroup;
     assert(feature.toDoc == expected_feature.toDoc);
 }
