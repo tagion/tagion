@@ -240,7 +240,7 @@ struct DlangT(Stream) {
                     "%2$s",
                     %3$s);
                 
-                alias FeatureContex = Tuple!(
+                alias FeatureContext = Tuple!(
                     %4$s
                 );
             },
@@ -274,7 +274,7 @@ unittest {
             .setExtension(FileExtension.dsrc);
         dlang.issue(feature_group);
         immutable result = bout.toString;
-        //        version (none)
+        version (none)
         filename.setExtension("dtest").fwrite(result.trim_source.join("\n"));
         immutable expected = filename.freadText;
         assert(equal(

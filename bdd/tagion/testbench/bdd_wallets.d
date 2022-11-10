@@ -11,9 +11,9 @@ mixin Main!(_main, "wallet");
 
 int _main(string[] args) {
     auto wallet_feature = automation!(Wallet_generation)();
-    auto wallet_result = wallet_feature.run;
+    auto wallet_context = wallet_feature.run;
 
-    "/tmp/wallet_result.hibon".fwrite(wallet_result);
+    "/tmp/wallet_result.hibon".fwrite(*wallet_context.result);
 
 //    auto wallet_invoice = automation!(Create_wallet_dart)();
 

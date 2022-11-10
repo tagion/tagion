@@ -4,6 +4,8 @@ import tagion.behaviour.Behaviour;
 import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.BehaviourException;
 import tagion.hibon.Document;
+import std.typecons : Tuple;
+
 import std.file : readText, exists, mkdirRecurse, rmdir;
 import std.array : array;
 import std.string : splitLines;
@@ -14,10 +16,18 @@ import tagion.behaviour.BehaviourResult;
 import std.path;
 import std.range;
 
+enum feature = Feature(
+            "Generate wallets.",
+            ["",
+            "",
+            "",
+            ""]);
 
-// import std.process.execute;
+alias FeatureContext = Tuple!(
+        SevenWalletsWillBeGenerated, "SevenWalletsWillBeGenerated",
+        FeatureGroup*, "result"
+);
 
-enum feature = Feature("Generate wallets.", ["", "", "", ""]);
 
 @safe @Scenario("Seven wallets will be generated.", [])
 class SevenWalletsWillBeGenerated {

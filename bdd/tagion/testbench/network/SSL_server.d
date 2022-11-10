@@ -4,6 +4,7 @@ import tagion.behaviour.Behaviour;
 import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.BehaviourException;
 import tagion.hibon.Document;
+import std.typecons;
 
 import tagion.network.SSLOptions;
 
@@ -15,6 +16,11 @@ enum feature = Feature(
             "This test setup an multi-client SSL server",
             "",
             ""]);
+
+alias FeatureContex = Tuple!(
+        CreatesASSLCertificate, "CreatesASSLCertificate",
+        FeatureGroup*, "result"
+);
 
 @safe @Scenario("creates a SSL certificate",
         [])
