@@ -226,17 +226,28 @@ struct DlangT(Stream) {
                 feature_group.info.property.comments
                 .map!(comment => comment.escaper.array)
         );
+        auto feature_tuple = chain(
+        feature_group.scenarios
+        .map!(scenario => [scenario.info.name, scenario.info.name]),
+        [["FeatureGroup*", "result"]])
+        .map!(ctx_type => format(`%s, "%s"`, ctx_type[0], ctx_type[1]))
+        .join(",\n");
+        
         bout.writefln(q{
                 module %1$s;
-                %4$s
+                %5$s
                 enum feature = Feature(
                     "%2$s",
                     %3$s);
-
+                
+                alias FeatureContex = Tuple!(
+                    %4$s
+                );
             },
                 feature_group.info.name,
                 feature_group.info.property.description,
                 comments,
+                feature_tuple,
                 preparations.join("\n")
         );
         if (feature_group.scenarios.length) {
