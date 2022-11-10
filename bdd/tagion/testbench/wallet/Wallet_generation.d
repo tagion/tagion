@@ -57,10 +57,15 @@ class SevenWalletsWillBeGenerated {
                 "-O", 
                 "--path", 
                 env.bdd_log.buildPath(format("wallet_%s", i)), 
-                env.bdd_log.buildPath(format("tagionwallet_%s.json", i))];
+                env.bdd_log.buildPath(format("tagionwallet_%s.json", i))
+                ];
 
             writefln("wallet_path_array: %s", wallet_path_array);
-            immutable test_array = [tools.tagionwallet, env.bdd_log.buildPath(format("tagionwallet_%s.json", i))];
+            immutable test_array = [
+                tools.tagionwallet, 
+                env.bdd_log.buildPath(format("tagionwallet_%s.json", i))
+                ];
+            
             writefln("test_array: %s", test_array);
 
             execute(wallet_path_array);

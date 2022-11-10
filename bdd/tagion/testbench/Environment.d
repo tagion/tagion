@@ -13,6 +13,7 @@ struct Environment {
     string bdd;
     string testbench;
     string bdd_log;
+    string bdd_results;
     string reporoot;
     string fund;
 }

@@ -7,6 +7,7 @@ BDD_FLAGS+=${addprefix -I,$(BDD)}
 BDD_DFLAGS+=${addprefix -I,$(BDD)}
 
 export BDD_LOG=$(DLOG)/bdd
+export BDD_RESULTS=$(BDD_LOG)/results
 
 BDD_DFILES+=${shell find $(BDD) -name "*.d" -a -not -name "*.gen.d" -a -path "*/testbench/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
 
