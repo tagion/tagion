@@ -328,7 +328,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         log.trace("Before startinf monitor and transaction addressbook.numOfActiveNodes : %d", addressbook
                 .numOfActiveNodes);
 
-        auto recorder_task = Task!RecorderTask(opts.recorder.task_name, opts);
+        auto recorder_task = Task!RecorderTask(opts.recorder_chain.task_name, opts);
         assert(receiveOnly!Control == Control.LIVE);
         scope (exit)
         {
@@ -344,7 +344,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             &transcriptServiceTask,
             opts.transcript.task_name,
             opts.dart.sync.task_name,
-            opts.recorder.task_name);
+            opts.recorder_chain.task_name);
         assert(receiveOnly!Control == Control.LIVE);
 
         transaction_socket_tid = spawn(

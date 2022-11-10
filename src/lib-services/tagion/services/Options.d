@@ -225,14 +225,14 @@ struct Options
 
     Logger logger;
 
-    struct Recorder
+    struct RecorderChain
     {
         string task_name; /// Name of the recorder task
         string folder_path; /// Folder used for the recorder service files
         mixin JSONCommon;
     }
 
-    Recorder recorder;
+    RecorderChain recorder_chain;
 
     struct Message
     {
@@ -541,10 +541,10 @@ static setDefaultOption(ref Options options)
         mask = LogLevel.ALL;
     }
     // Recorder
-    with (options.recorder)
+    with (options.recorder_chain)
     {
-        task_name = "recorder";
-        folder_path = "tmp/epoch_blocks/";
+        task_name = "recorder-service";
+        folder_path = "tmp/recovery/recorder_chain/";
     }
     // Discovery
     with (options.discovery)
