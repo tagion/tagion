@@ -181,30 +181,6 @@ unittest { //
     assert(feature.toDoc == expected.toDoc);
 }
 
-    version(none)
-protected string _scenarioTupleCode(alias M, string tuple_name)() if (isFeature!M) {
-    string[] result;
-    {
-        result ~= format("alias %s = Tuple!(", tuple_name);
-        scope (exit) {
-            result ~= ");";
-        }
-        static foreach (_Scenario; Scenarios!M) {
-            result ~= format(q{%1$s, "%1$s",}, _Scenario.stringof);
-        }
-    }
-    return result.join("\n");
-}
-
-    version(none)
-mixin template ScenarioTuple(alias M, string tuple_name) {
-    import std.array : join;
-    import std.format;
-
-    enum code = _scenarioTupleCode!(M, tuple_name);
-    mixin(code);
-}
-
 @safe
 auto automation(alias M)() if (isFeature!M) {
     import std.typecons;
@@ -212,10 +188,6 @@ auto automation(alias M)() if (isFeature!M) {
     mixin(format(q{import %s;}, moduleName!M));
 
     static struct FeatureFactory {
-        Feature feature;
-        // Defines the tuple of the Feature scenarios
-        //mixin ScenarioTuple!(M, "ScenariosT");
-        //ScenariosT scenarios;
         FeatureContext context;
         void opDispatch(string scenario_name, Args...)(Args args) {
             import std.algorithm.searching : countUntil;
@@ -228,21 +200,13 @@ auto automation(alias M)() if (isFeature!M) {
                     scenario_name, [FeatureContext.fieldNames[0 .. $ - 1]].join(",\n")));
             alias _Scenario = FeatureContext.Types[tuple_index];
             context[tuple_index] = new _Scenario(args);
-            // enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
-            //enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
-            //mixin(code);
         }
 
         FeatureContext run() nothrow {
             uint error_count;
-
-            //auto result = new FeatureGroup;
-            //FeatureContext context;
-            //    auto result=new FeatureGroup;
             context.result = new FeatureGroup;
             context.result.info.property = obtainFeature!M;
             context.result.info.name = moduleName!M;
-            //alias ScenariosSeq = Scenarios!M;
             context.result.scenarios.length = FeatureContext.Types.length; //ScenariosSeq.length;
             static foreach (i, _Scenario; FeatureContext.Types[0..$-1]) {
                 try {
