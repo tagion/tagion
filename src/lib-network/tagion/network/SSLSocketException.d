@@ -17,11 +17,10 @@ class SSLSocketException : SocketException {
     }
 }
 
+@safe
 void check(const bool flag, string msg, const SSLErrorCodes error_code = SSLErrorCodes.SSL_ERROR_NONE,
-            string file = __FILE__, size_t line = __LINE__) pure {
+        string file = __FILE__, size_t line = __LINE__) pure {
     if (!flag) {
         throw new SSLSocketException(msg, error_code, file, line);
     }
 }
-
-

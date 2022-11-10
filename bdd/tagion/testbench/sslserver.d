@@ -11,15 +11,14 @@ import tagion.services.Options;
 import tagion.testbench.tools.TestMain;
 import tagion.testbench.Environment;
 
-//pragma(msg, "setDefault ", MainSetup!(SSLOption
-void setDefault(ref SSLOption options, const Options opt) {
+void setDefault(ref SSLOptions options, const Options opt) {
     options = opt.transaction.service;
 }
 
 mixin Main!_main;
 
 int _main(string[] args) {
-    auto setup = mainSetup!SSLOption("sslserver", &setDefault);
+    auto setup = mainSetup!SSLOptions("sslserver", &setDefault);
     int result = testMain(setup, args);
     env.writeln;
     return result;

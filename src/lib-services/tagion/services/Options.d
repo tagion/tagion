@@ -18,10 +18,8 @@ import tagion.utils.JSONCommon;
 /++
 +/
 @safe
-class OptionException : TagionException
-{
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
-    {
+class OptionException : TagionException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, file, line);
     }
 }
@@ -29,8 +27,7 @@ class OptionException : TagionException
 alias check = Check!OptionException;
 // @safe
 
-enum NetworkMode
-{
+enum NetworkMode {
     internal,
     local,
     pub
@@ -39,8 +36,7 @@ enum NetworkMode
 /++
  Options for the network
 +/
-struct Options
-{
+struct Options {
     import tagion.options.HostOptions;
 
     HostOptions host;
@@ -79,8 +75,7 @@ struct Options
 
     mixin JSONCommon;
 
-    struct HostBootstrap
-    {
+    struct HostBootstrap {
         bool enabled;
         ulong check_timeout;
         string bootstrapNodes;
@@ -90,8 +85,7 @@ struct Options
 
     HostBootstrap hostbootrap;
 
-    struct ServerFileDiscovery
-    {
+    struct ServerFileDiscovery {
         string url;
         ulong delay_before_start;
         ulong update;
@@ -104,8 +98,7 @@ struct Options
 
     ServerFileDiscovery serverFileDiscovery;
 
-    struct Discovery
-    {
+    struct Discovery {
         string protocol_id;
         string task_name;
         HostOptions host;
@@ -117,8 +110,7 @@ struct Options
 
     Discovery discovery;
 
-    struct Heatbeat
-    {
+    struct Heatbeat {
         string task_name; /// Name of the Heart task
         mixin JSONCommon;
     }
@@ -130,8 +122,7 @@ struct Options
     /** \struct TranscriptOptions
      * Options for Transcript service
      */
-    struct TranscriptOptions
-    {
+    struct TranscriptOptions {
         /** Name of the transcript service */
         string task_name;
 
@@ -140,8 +131,7 @@ struct Options
 
     TranscriptOptions transcript;
 
-    struct Monitor
-    {
+    struct Monitor {
         string task_name; /// Use for the montor task name
         string prefix;
         uint max; /++ Maximum number of monitor sockets open
@@ -166,8 +156,7 @@ struct Options
 
     Monitor monitor;
 
-    struct Transaction
-    {
+    struct Transaction {
         string protocol_id;
         string task_name; /// Transaction task name
         string net_task_name;
@@ -175,7 +164,7 @@ struct Options
         uint timeout; /// Socket listerne timeout in msecs
         import tagion.network.SSLOptions;
 
-        SSLOption service; /// SSL Service used by the transaction service
+        SSLOptions service; /// SSL Service used by the transaction service
         HostOptions host;
         ushort max; // max == 0 means all
         mixin JSONCommon;
@@ -183,16 +172,14 @@ struct Options
 
     Transaction transaction;
 
-    struct ContractCollector
-    {
+    struct ContractCollector {
         string task_name; /// Transaction task name
         mixin JSONCommon;
     }
 
     ContractCollector collector;
 
-    struct LogSubscription
-    {
+    struct LogSubscription {
         string protocol_id;
         string task_name; /// Transaction task name
         string net_task_name;
@@ -200,7 +187,7 @@ struct Options
         uint timeout; /// Socket listerne timeout in msecs
         import tagion.network.SSLOptions;
 
-        SSLOption service; /// SSL Service used by the transaction service
+        SSLOptions service; /// SSL Service used by the transaction service
         HostOptions host;
         ushort max; // max == 0 means all
         bool enable; // Enable logger subscribtion  service
@@ -213,8 +200,7 @@ struct Options
 
     DARTOptions dart;
 
-    struct Logger
-    {
+    struct Logger {
         string task_name; /// Name of the logger task
         string file_name; /// File used for the logger
         bool flush; /// Will automatic flush the logger file when a message has been received
@@ -225,8 +211,7 @@ struct Options
 
     Logger logger;
 
-    struct Recorder
-    {
+    struct Recorder {
         string task_name; /// Name of the recorder task
         string folder_path; /// Folder used for the recorder service files
         mixin JSONCommon;
@@ -234,8 +219,7 @@ struct Options
 
     Recorder recorder;
 
-    struct Message
-    {
+    struct Message {
         string language; /// Language used to print message
         bool update; /// Update the translation tabel
         enum default_lang = "en";
@@ -250,8 +234,7 @@ struct Options
 protected static Options options_memory;
 static immutable(Options*) options;
 
-shared static this()
-{
+shared static this() {
     options = cast(immutable)(&options_memory);
 }
 
@@ -260,8 +243,7 @@ shared static this()
 +  Sets the thread global options opt
 +/
 @safe
-static void setOptions(ref const(Options) opt)
-{
+static void setOptions(ref const(Options) opt) {
     options_memory = opt;
 }
 
@@ -269,14 +251,12 @@ static void setOptions(ref const(Options) opt)
 + Returns:
 +     a copy of the options
 +/
-static Options getOptions()
-{
+static Options getOptions() {
     Options result = options_memory;
     return result;
 }
 
-struct TransactionMiddlewareOptions
-{
+struct TransactionMiddlewareOptions {
     // port for the socket
     ushort port;
     // address for the socket
@@ -292,27 +272,22 @@ struct TransactionMiddlewareOptions
 
     mixin JSONCommon;
 
-    void parseJSON(string json_text)
-    {
+    void parseJSON(string json_text) {
         auto json = JSON.parseJSON(json_text);
         parse(json);
     }
 
-    void load(string config_file)
-    {
-        if (config_file.exists)
-        {
+    void load(string config_file) {
+        if (config_file.exists) {
             auto json_text = readText(config_file);
             parseJSON(json_text);
         }
-        else
-        {
+        else {
             save(config_file);
         }
     }
 
-    void save(string config_file)
-    {
+    void save(string config_file) {
         config_file.write(stringify);
     }
 
@@ -321,11 +296,10 @@ struct TransactionMiddlewareOptions
 //__gshared static TransactionMiddlewareOptions transaction_middleware_options;
 
 static ref auto all_getopt(
-    ref string[] args,
-    ref bool version_switch,
-    ref bool overwrite_switch,
-    ref scope Options options)
-{
+        ref string[] args,
+        ref bool version_switch,
+        ref bool overwrite_switch,
+        ref scope Options options) {
     import std.getopt;
     import std.algorithm;
     import std.conv;

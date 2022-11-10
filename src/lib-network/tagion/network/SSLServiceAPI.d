@@ -5,21 +5,21 @@ import core.thread;
 import std.stdio : writeln, writefln, stdout;
 import std.socket : InternetAddress, Socket, SocketSet, SocketShutdown, shutdown, AddressFamily;
 import std.concurrency;
+import std.format;
 
 import tagion.network.SSLSocket;
 import tagion.network.SSLFiberService;
 import tagion.network.SSLOptions;
+import tagion.network.SSLSocketException;
 
 import tagion.logger.Logger;
 import tagion.basic.Types : Control;
-import tagion.basic.TagionExceptions : TagionException, fatal;
+import tagion.basic.TagionExceptions : fatal;
 
 @safe
-struct SSLServiceAPI
-{
-    immutable(SSLOption) ssl_options;
-    protected
-    {
+struct SSLServiceAPI {
+    immutable(SSLOptions) ssl_options;
+    protected {
         Thread service_task;
         SSLFiberService service;
         SSLFiberService.Relay relay;
@@ -28,8 +28,7 @@ struct SSLServiceAPI
 
     @disable this();
 
-    this(immutable(SSLOption) opts, SSLFiberService.Relay relay) nothrow pure @trusted
-    {
+    this(immutable(SSLOptions) opts, SSLFiberService.Relay relay) nothrow pure @trusted {
         this.ssl_options = opts;
         this.relay = relay;
     }
@@ -37,27 +36,21 @@ struct SSLServiceAPI
     protected shared(bool) stop_service;
 
     @trusted
-    static final void sleep(Duration time)
-    {
+    static void sleep(Duration time) {
         Thread.sleep(time);
     }
 
-    final void stop() nothrow
-    {
+    void stop() nothrow {
         stop_service = true;
     }
 
-    void send(uint id, immutable(ubyte[]) buffer)
-    {
-        writeln("Send data to listener_id");
+    void send(uint id, immutable(ubyte[]) buffer) {
         service.send(id, buffer);
     }
 
     @system
-    void run() nothrow
-    {
-        try
-        {
+    void run() nothrow {
+        try {
             log.register(ssl_options.task_name);
             auto _listener = new SSLSocket(AddressFamily.INET, EndpointType.Server);
             assert(_listener.isAlive);
@@ -72,36 +65,29 @@ struct SSLServiceAPI
 
             service = new SSLFiberService(ssl_options, _listener, relay);
             auto response_tid = service.start(ssl_options.response_task_name);
-            if (response_tid != Tid.init)
-            {
-                if (receiveOnly!Control !is Control.LIVE)
-                {
-                    throw new TagionException("SSL service task %s is not alive", ssl_options
-                            .response_task_name);
-                }
+            if (response_tid !is Tid.init) {
+
+                check(receiveOnly!Control is Control.LIVE,
+                        format("SSL service task %s is not alive",
+                        ssl_options.response_task_name));
             }
-            scope (exit)
-            {
+            scope (exit) {
                 response_tid.send(Control.STOP);
                 const ctrl = receiveOnly!Control;
-                if (ctrl !is Control.END)
-                {
+                if (ctrl !is Control.END) {
                     log.warning("Unexpected control %s code", ctrl);
                 }
             }
             auto socket_set = new SocketSet(ssl_options.max_connections + 1);
-            scope (exit)
-            {
+            scope (exit) {
                 socket_set.reset;
                 service.closeAll;
                 _listener.shutdown(SocketShutdown.BOTH);
                 _listener = null;
             }
 
-            while (!stop_service)
-            {
-                if (!_listener.isAlive)
-                {
+            while (!stop_service) {
+                if (!_listener.isAlive) {
                     stop_service = true;
                     break;
                 }
@@ -112,10 +98,8 @@ struct SSLServiceAPI
 
                 const sel_res = Socket.select(socket_set, null, null, ssl_options
                         .select_timeout.msecs);
-                if (sel_res > 0)
-                {
-                    if (socket_set.isSet(_listener))
-                    {
+                if (sel_res > 0) {
+                    if (socket_set.isSet(_listener)) {
                         service.allocateFiber;
                     }
                 }
@@ -123,19 +107,13 @@ struct SSLServiceAPI
                 socket_set.reset;
             }
         }
-        catch (Throwable e)
-        {
+        catch (Throwable e) {
             fatal(e);
-            // import tagion.basic.TagionExceptions;
-            // ownerTid.send(e.taskException);
-            // stop_service=true;
         }
-
     }
 
     @system
-    final Thread start()
-    {
+    Thread start() {
         service_task = new Thread(&run).start;
         return service_task;
     }

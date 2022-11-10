@@ -70,14 +70,14 @@ interface SSLFiber {
 +/
 @safe
 class SSLFiberService {
-    immutable(SSLOption) ssl_options;
+    immutable(SSLOptions) ssl_options;
     @safe interface Relay {
         bool agent(SSLFiber sslfiber);
     }
     //alias Relay = bool delegate(SSLRelay) @safe;
 
     @safe
-    this(immutable(SSLOption) opts, SSLSocket listener, Relay relay) {
+    this(immutable(SSLOptions) opts, SSLSocket listener, Relay relay) {
         this.ssl_options = opts;
         this.listener = listener;
         this.relay = relay;

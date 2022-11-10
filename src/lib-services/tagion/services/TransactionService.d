@@ -27,21 +27,16 @@ import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
 import tagion.dart.DART;
 import tagion.dart.Recorder : RecordFactory;
 
-@safe class HiRPCNet : StdSecureNet
-{
-    this(string passphrase)
-    {
+@safe class HiRPCNet : StdSecureNet {
+    this(string passphrase) {
         super();
         generateKeyPair(passphrase);
     }
 }
 
-void transactionServiceTask(immutable(Options) opts) nothrow
-{
-    try
-    {
-        scope (success)
-        {
+void transactionServiceTask(immutable(Options) opts) nothrow {
+    try {
+        scope (success) {
             ownerTid.prioritySend(Control.END);
         }
 
@@ -62,22 +57,19 @@ void transactionServiceTask(immutable(Options) opts) nothrow
         auto rec_factory = RecordFactory(hirpc.net);
         Tid node_tid = locate(opts.node_name);
 
-        @trusted void sendPayload(Document payload)
-        {
+        @trusted void sendPayload(Document payload) {
             node_tid.send(payload, true);
         }
 
         auto dart_sync_tid = locate(opts.dart.sync.task_name);
 
-        @trusted void requestInputs(const(Buffer[]) inputs, uint id)
-        {
+        @trusted void requestInputs(const(Buffer[]) inputs, uint id) {
             auto sender = DART.dartRead(inputs, internal_hirpc, id);
             auto tosend = sender.toDoc.serialize; //internal_hirpc.toHiBON(sender).serialize;
             dart_sync_tid.send(opts.transaction.service.response_task_name, tosend);
         }
 
-        @trusted void search(Document doc, uint id)
-        {
+        @trusted void search(Document doc, uint id) {
             import tagion.hibon.HiBONJSON;
 
             auto n_params = new HiBON;
@@ -87,23 +79,19 @@ void transactionServiceTask(immutable(Options) opts) nothrow
             dart_sync_tid.send(opts.transaction.service.response_task_name, tosend);
         }
 
-        @trusted void areWeInGraph(uint id)
-        {
+        @trusted void areWeInGraph(uint id) {
             auto sender = internal_hirpc.healthcheck(new HiBON(), id);
             auto tosend = sender.toDoc.serialize;
             send(node_tid, opts.transaction.service.response_task_name, tosend);
         }
 
-        @safe class TransactionRelay : SSLFiberService.Relay
-        {
-            bool agent(SSLFiber ssl_relay)
-            {
+        @safe
+        class TransactionRelay : SSLFiberService.Relay {
+            bool agent(SSLFiber ssl_relay) {
                 import tagion.hibon.HiBONJSON;
 
-                @trusted const(Document) receivessl() nothrow
-                {
-                    try
-                    {
+                @trusted const(Document) receivessl() nothrow {
+                    try {
                         import tagion.hibon.Document;
                         import tagion.hibon.HiBONRecord;
 
@@ -111,17 +99,15 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                         log("buffer receiver %d", buffer.length);
                         const result = Document(buffer);
                         bool check_doc(const Document main_doc,
-                            const Document.Element.ErrorCode error_code, const(Document.Element) current, const(
-                                Document.Element) previous) nothrow @safe
-                        {
+                                const Document.Element.ErrorCode error_code, const(Document.Element) current, const(
+                                Document.Element) previous) nothrow @safe {
                             return false;
                         }
 
                         result.valid(&check_doc);
                         return result;
                     }
-                    catch (Exception t)
-                    {
+                    catch (Exception t) {
                         log.warning("Exception caught: %s", t);
                     }
                     return Document();
@@ -129,13 +115,11 @@ void transactionServiceTask(immutable(Options) opts) nothrow
 
                 Document doc;
                 uint respone_id;
-                try
-                {
+                try {
                     doc = receivessl();
 
                     pragma(msg, "fixme(cbr): If doc is empty then return ");
-                    version (OLD_TRANSACTION)
-                    {
+                    version (OLD_TRANSACTION) {
                         pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
 
                         pragma(msg, "fixme(cbr): smartscipt should be services not a local");
@@ -148,8 +132,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                         const method_name = hirpc_received.method.name;
                         const params = hirpc_received.method.params;
                     }
-                    else
-                    {
+                    else {
                         pragma(msg, "fixme(cbr): smartscipt should be services not a local");
                         const signed_contract = SignedContract(doc);
                         auto smartscript = new SmartScript(hirpc.net, signed_contract);
@@ -157,28 +140,23 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                         respone_id = hirpc_received.method.id;
                     }
                     {
-                        void yield() @trusted
-                        {
+                        void yield() @trusted {
                             Fiber.yield;
                         }
 
-                        version (OLD_TRANSACTION)
-                        {
+                        version (OLD_TRANSACTION) {
                             pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
 
                         }
-                        else
-                        {
+                        else {
                             const method_name = hirpc_received.method.name;
                             const params = hirpc_received.method.params;
                         }
                         log("Method name: %s", method_name);
-                        switch (method_name)
-                        {
+                        switch (method_name) {
                         case "search":
                             search(params, ssl_relay.id); //epoch number?
-                            do
-                            {
+                            do {
                                 yield; /// Expects a response from the DART service
                             }
                             while (!ssl_relay.available());
@@ -189,8 +167,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow
 
                             log("sending healthcheck request");
                             areWeInGraph(ssl_relay.id);
-                            do
-                            {
+                            do {
                                 yield;
                                 log.trace("SSLRelay available: %s", ssl_relay.available());
                             }
@@ -199,14 +176,12 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                             log("sending healthcheck response %s", Document(response).toJSON);
                             ssl_relay.send(response);
                             break;
-                            version (OLD_TRANSACTION)
-                            {
+                            version (OLD_TRANSACTION) {
                                 pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
 
                         case "transaction":
                                 // Should be EXTERNAL
-                                try
-                                {
+                                try {
                                     auto signed_contract = SignedContract(params);
                                     //                            if (signed_contract.valid) {
                                     //
@@ -215,8 +190,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow
 
                                     auto inputs = signed_contract.contract.inputs;
                                     requestInputs(inputs, ssl_relay.id);
-                                    do
-                                    {
+                                    do {
                                         yield;
                                         log.trace("SSLRelay available: %s", ssl_relay.available());
                                     }
@@ -225,23 +199,19 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                                     const response = ssl_relay.response;
                                     const received = internal_hirpc.receive(Document(response));
                                     const foreign_recorder = rec_factory.recorder(
-                                        received.response.result);
+                                            received.response.result);
 
                                     import tagion.script.StandardRecords : StandardBill;
 
                                     PayContract payment;
 
-                                    foreach (archive; foreign_recorder[])
-                                    {
+                                    foreach (archive; foreign_recorder[]) {
                                         auto std_bill = StandardBill(archive.filed);
                                         payment.bills ~= std_bill;
                                     }
-                                    foreach (input; signed_contract.contract.inputs)
-                                    {
-                                        foreach (bill; payment.bills)
-                                        {
-                                            if (hirpc.net.hashOf(bill.toDoc) == input)
-                                            {
+                                    foreach (input; signed_contract.contract.inputs) {
+                                        foreach (bill; payment.bills) {
+                                            if (hirpc.net.hashOf(bill.toDoc) == input) {
                                                 signed_contract.inputs ~= bill;
                                             }
                                         }
@@ -253,11 +223,10 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                                     sendPayload(payload);
                                     auto empty_params = new HiBON;
                                     auto empty_response = internal_hirpc.result(hirpc_received,
-                                        empty_params);
+                                            empty_params);
                                     ssl_relay.send(empty_response.toDoc.serialize);
                                 }
-                                catch (TagionException e)
-                                {
+                                catch (TagionException e) {
                                     log.error("Bad contract: %s", e.msg);
                                     auto bad_response = internal_hirpc.error(hirpc_received, e.msg, 1);
                                     ssl_relay.send(bad_response.toDoc.serialize);
@@ -274,8 +243,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                                 break;
                         default:
                             }
-                            else
-                            {
+                            else {
                         default:
                                 const inputs = signed_contract.contract.inputs;
                                 requestInputs(inputs, ssl_relay.id);
@@ -284,16 +252,14 @@ void transactionServiceTask(immutable(Options) opts) nothrow
                                 const response = ssl_relay.response;
                                 const received = internal_hirpc.receive(Document(response));
                                 immutable foreign_recorder = rec_factory.uniqueRecorder(
-                                    received.response.result);
+                                        received.response.result);
                                 auto fail_code = SmartScript.check(hirpc.net, signed_contract, foreign_recorder);
-                                if (!fail_code)
-                                {
+                                if (!fail_code) {
                                     sendPayload(signed_contract.toDoc);
                                     const empty_response = internal_hirpc.result(hirpc_received, Document());
                                     ssl_relay.send(empty_response.toDoc.serialize);
                                 }
-                                if (fail_code)
-                                {
+                                if (fail_code) {
                                     import tagion.basic.ConsensusExceptions : consensus_error_messages;
 
                                     const error_response = internal_hirpc.error(hirpc_received, consensus_error_messages[fail_code]);
@@ -303,14 +269,12 @@ void transactionServiceTask(immutable(Options) opts) nothrow
 
                     }
                 }
-                catch (TagionException e)
-                {
+                catch (TagionException e) {
                     log.error("Bad contract: %s", e.msg);
                     const bad_response = hirpc.error(respone_id, e.msg, 1);
                     ssl_relay.send(bad_response.toDoc.serialize);
                 }
-                catch (Exception e)
-                {
+                catch (Exception e) {
                     log.error("Bad connection: %s", e.msg);
                     const bad_response = hirpc.error(respone_id, e.msg, 1);
                     ssl_relay.send(bad_response.toDoc.serialize);
@@ -325,10 +289,8 @@ void transactionServiceTask(immutable(Options) opts) nothrow
         auto script_thread = script_api.start;
 
         bool stop;
-        void handleState(Control ts)
-        {
-            with (Control) switch (ts)
-            {
+        void handleState(Control ts) {
+            with (Control) switch (ts) {
             case STOP:
                 log("Stop transaction service: port %d", opts.transaction.service.port);
                 script_api.stop;
@@ -340,16 +302,14 @@ void transactionServiceTask(immutable(Options) opts) nothrow
         }
 
         ownerTid.send(Control.LIVE);
-        while (!stop)
-        {
+        while (!stop) {
             receiveTimeout(500.msecs, //Control the thread
-                &handleState,
-                &taskfailure,
+                    &handleState,
+                    &taskfailure,
             );
         }
     }
-    catch (Throwable t)
-    {
+    catch (Throwable t) {
         fatal(t);
     }
 }

@@ -55,7 +55,7 @@ struct OpenSSL {
     mixin JSONCommon;
 }
 
-struct SSLOption {
+struct SSLOptions {
     string task_name; /// Task name of the SSLService used
     string response_task_name; /// Name of the respose task name (If this is not set the respose service is not started)
     string prefix;
