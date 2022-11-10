@@ -296,6 +296,7 @@ unittest {
         assert(feature_result.scenarios[0].hasErrors);
         assert(feature_result.scenarios[1].hasErrors);
         assert(feature_result.hasErrors);
+        version(behaviour_unitdata)
         "/tmp/bdd_which_has_feature_errors.hibon".fwrite(feature_result);
     }
 
@@ -306,6 +307,7 @@ unittest {
         assert(!feature_result.scenarios[0].hasErrors);
         assert(feature_result.scenarios[1].hasErrors);
         assert(feature_result.hasErrors);
+        version(behaviour_unitdata)
         "/tmp/bdd_which_has_scenario_errors.hibon".fwrite(feature_result);
     }
 
@@ -317,6 +319,7 @@ unittest {
         assert(!feature_result.scenarios[0].hasErrors);
         assert(!feature_result.scenarios[1].hasErrors);
         assert(!feature_result.hasErrors);
+        version(behaviour_unitdata)
         "/tmp/bdd_which_has_no_errors.hibon".fwrite(feature_result);
     }
 }
@@ -382,7 +385,7 @@ unittest {
 
     { // None of the scenario passes
         const feature_result = feature_with_ctor.run;
-        version (none)
+        version(behaviour_unitdata)
             "/tmp/bdd_sample_has_failed.hibon".fwrite(feature_result);
         assert(!feature_result.scenarios[0].hasPassed);
         assert(!feature_result.scenarios[1].hasPassed);
@@ -392,7 +395,7 @@ unittest {
     { // One of the scenario passed
         WithCtor.pass_one = true;
         const feature_result = feature_with_ctor.run;
-        version (none)
+        version(behaviour_unitdata)
             "/tmp/bdd_sample_one_has_passed.hibon".fwrite(feature_result);
         assert(!feature_result.scenarios[0].hasPassed);
         assert(feature_result.scenarios[1].hasPassed);
@@ -403,7 +406,7 @@ unittest {
         WithCtor.pass_some = true;
         WithCtor.pass_one = false;
         const feature_result = feature_with_ctor.run;
-        version (none)
+        version(behaviour_unitdata)
             "/tmp/bdd_sample_some_actions_has_passed.hibon".fwrite(feature_result);
         assert(!feature_result.scenarios[0].hasPassed);
         assert(!feature_result.scenarios[1].hasPassed);
@@ -415,7 +418,7 @@ unittest {
         WithCtor.pass_some = false;
 
         const feature_result = feature_with_ctor.run;
-        version (none)
+        version(behaviour_unitdata)
             "/tmp/bdd_sample_has_passed.hibon".fwrite(feature_result);
         assert(feature_result.scenarios[0].hasPassed);
         assert(feature_result.scenarios[1].hasPassed);
