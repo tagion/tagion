@@ -17,7 +17,7 @@ bddexec: $(BDDTESTS)
 
 .PHONY: bddexec
 
-run-%: bddinit
+run-%: bddfiles bddinit bddenv
 	$(PRECMD)
 	${call log.header. $@ :: run}
 	$(DBIN)/$* $(RUNFLAGS)

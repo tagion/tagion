@@ -13,6 +13,7 @@ import std.process;
 import tagion.behaviour.BehaviourResult;
 import std.path;
 import std.range;
+import tagion.testbench.Environment;
 
 
 // import std.process.execute;
@@ -24,17 +25,21 @@ class SevenWalletsWillBeGenerated {
     string[] stdin_wallets;
     string[] pin_array;
     enum number_of_wallets = 7;
-    immutable tagionwallet = "/home/imrying/bin/tagionwallet";
+
+    // immutable tagionwallet = "/home/imrying/bin/tagionwallet";
 
     string[number_of_wallets] wallet_names = ["zero", "first", "second", "third", "fourth", "fifth", "sixth"];
+
 
     @Given("i have 7 pincodes and questions")
     Document questions() {
 
-        
+        env.writeln;
+
         stdin_wallets = new string[number_of_wallets];
         foreach (i, ref wallet; stdin_wallets) {
-            const file = format("/home/imrying/work/tagion/fundamental/%s/wallet.stdin", wallet_names[i]);
+            const file = env.fund.buildPath(wallet_names[i], "wallet.stdin");
+            // const file = format("/home/imrying/work/tagion/fundamental/%s/wallet.stdin", wallet_names[i]);
             wallet = file.readText;
         }
         
@@ -47,8 +52,8 @@ class SevenWalletsWillBeGenerated {
         //check(tagionwallet.exists, format("Tagionwallet does not exist: %s", tagionwallet));
 
         foreach (i, stdin_wallet; stdin_wallets) {
-            immutable wallet_path_array = [tagionwallet, "-O", "--path", format("/tmp/wallet_%s", i), format("tagionwallet_%s.json", i)];
-            immutable test_array = [tagionwallet, format("tagionwallet_%s.json", i)];
+            immutable wallet_path_array = [tools.tagionwallet, "-O", "--path", format("/tmp/wallet_%s", i), format("tagionwallet_%s.json", i)];
+            immutable test_array = [tools.tagionwallet, format("tagionwallet_%s.json", i)];
 
             execute(wallet_path_array);
 
@@ -80,7 +85,7 @@ class SevenWalletsWillBeGenerated {
     Document pincode() {
         foreach (i, pin; pin_array)
         {
-            immutable wallet_command = [tagionwallet, "-x", pin, "--amount", format("tagionwallet_%s.json", i)];
+            immutable wallet_command = [tools.tagionwallet, "-x", pin, "--amount", format("tagionwallet_%s.json", i)];
             auto pipes = pipeProcess(wallet_command, Redirect.all, null, Config.detached);
           
             (() @trusted {
