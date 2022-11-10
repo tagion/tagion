@@ -216,14 +216,17 @@ auto automation(alias M)() if (isFeature!M) {
         ScenariosT scenarios;
         FeatureContext context;
         void opDispatch(string scenario_name, Args...)(Args args) {
-            /*
-        enum tuple_index = FeatureContext.fieldNames.countUntil(scenario_name);
-            static assert(tuple_index < 0, 
-            format("Scenarion '%s' does not exists. Possible scenarions is \n%(%s,\n%)", 
-        scenario_name, FeatureContext.fieldNames[0..$-1]));
-            context[tuple_index] = new FeatureContext.Types[tuple_index](args);  
-        // enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
-*/
+            import std.algorithm.searching : countUntil;
+
+            enum tuple_index = [FeatureContext.fieldNames]
+                    .countUntil(scenario_name);
+            pragma(msg, "tuple_index ", tuple_index);
+            static assert(tuple_index >= 0,
+                    format("Scenarion '%s' does not exists. Possible scenarions is\n%s",
+                    scenario_name, [FeatureContext.fieldNames[0 .. $ - 1]].join(",\n")));
+            alias _Scenario = FeatureContext.Types[tuple_index];
+            context[tuple_index] = new _Scenario(args);
+            // enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
             enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
             mixin(code);
         }
@@ -231,14 +234,14 @@ auto automation(alias M)() if (isFeature!M) {
         FeatureGroup run() nothrow {
             uint error_count;
 
-            FeatureGroup result;
-            //FeatureContext context;
+            //auto result = new FeatureGroup;
+            FeatureContext context;
             //    auto result=new FeatureGroup;
-            //           context.result = result;
-            result.info.property = obtainFeature!M;
-            result.info.name = moduleName!M;
+            context.result = new FeatureGroup;
+            context.result.info.property = obtainFeature!M;
+            context.result.info.name = moduleName!M;
             alias ScenariosSeq = Scenarios!M;
-            result.scenarios.length = ScenariosSeq.length;
+            context.result.scenarios.length = ScenariosSeq.length;
             static foreach (i, _Scenario; ScenariosSeq) {
                 try {
                     static if (__traits(compiles, new _Scenario())) {
@@ -246,20 +249,20 @@ auto automation(alias M)() if (isFeature!M) {
                             scenarios[i] = new _Scenario();
                         }
                     }
-                    result.scenarios[i] = .run(scenarios[i]);
+                    context.result.scenarios[i] = .run(scenarios[i]);
                 }
                 catch (Exception e) {
                     error_count++;
                     import std.exception : assumeWontThrow;
 
-                    result.scenarios[i].info.result = assumeWontThrow(BehaviourError(e).toDoc);
+                    context.result.scenarios[i].info.result = assumeWontThrow(BehaviourError(e).toDoc);
                 }
             }
             if (error_count == 0) {
-                result.info.result = result_ok;
+                context.result.info.result = result_ok;
 
             }
-            return result;
+            return *context.result;
         }
     }
 
@@ -318,7 +321,7 @@ unittest {
 
     { // Fails in second scenario because the constructor has not been called
         // Calls the construction for the Some_awesome_feature scenario
-        feature_with_ctor.Some_awesome_feature(42, "with_ctor");
+        feature_with_ctor.opDispatch!"Some_awesome_feature"(42, "with_ctor");
         const feature_result = feature_with_ctor.run;
         assert(!feature_result.scenarios[0].hasErrors);
         assert(feature_result.scenarios[1].hasErrors);
@@ -329,7 +332,7 @@ unittest {
 
     { // The constructor of both scenarios has been called, this means that no errors is reported
         // Calls the construction for the Some_awesome_feature scenario
-        feature_with_ctor.Some_awesome_feature(42, "with_ctor");
+        feature_with_ctor.opDispatch!"Some_awesome_feature"(42, "with_ctor");
         feature_with_ctor.Some_awesome_feature_bad_format_double_property(17);
         const feature_result = feature_with_ctor.run;
         assert(!feature_result.scenarios[0].hasErrors);
@@ -350,6 +353,8 @@ bool hasPassed(ref const FeatureGroup feature_group) nothrow {
     return feature_group.info.result.isRecordType!Result &&
         feature_group.scenarios.all!(scenario => scenario.hasPassed);
 }
+
+
 
 /**
 Used to checks if a scenario has passed all tests
