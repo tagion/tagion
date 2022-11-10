@@ -34,16 +34,15 @@ class SevenWalletsWillBeGenerated {
     @Given("i have 7 pincodes and questions")
     Document questions() {
 
-        env.writeln;
-
         stdin_wallets = new string[number_of_wallets];
         foreach (i, ref wallet; stdin_wallets) {
             const file = env.fund.buildPath(wallet_names[i], "wallet.stdin");
+            writefln("file_path = %s", file);
             // const file = format("/home/imrying/work/tagion/fundamental/%s/wallet.stdin", wallet_names[i]);
             wallet = file.readText;
         }
         
-        writeln("%s", stdin_wallets);
+        //writeln("%s", stdin_wallets);
         return result_ok;
     }
 
@@ -52,8 +51,17 @@ class SevenWalletsWillBeGenerated {
         //check(tagionwallet.exists, format("Tagionwallet does not exist: %s", tagionwallet));
 
         foreach (i, stdin_wallet; stdin_wallets) {
-            immutable wallet_path_array = [tools.tagionwallet, "-O", "--path", format("/tmp/wallet_%s", i), format("tagionwallet_%s.json", i)];
-            immutable test_array = [tools.tagionwallet, format("tagionwallet_%s.json", i)];
+            // format("/tmp/wallet_%s", i)
+            immutable wallet_path_array = [
+                tools.tagionwallet, 
+                "-O", 
+                "--path", 
+                env.bdd_log.buildPath(format("wallet_%s", i)), 
+                env.bdd_log.buildPath(format("tagionwallet_%s.json", i))];
+
+            writefln("wallet_path_array: %s", wallet_path_array);
+            immutable test_array = [tools.tagionwallet, env.bdd_log.buildPath(format("tagionwallet_%s.json", i))];
+            writefln("test_array: %s", test_array);
 
             execute(wallet_path_array);
 
@@ -85,7 +93,7 @@ class SevenWalletsWillBeGenerated {
     Document pincode() {
         foreach (i, pin; pin_array)
         {
-            immutable wallet_command = [tools.tagionwallet, "-x", pin, "--amount", format("tagionwallet_%s.json", i)];
+            immutable wallet_command = [tools.tagionwallet, "-x", pin, "--amount", env.bdd_log.buildPath(format("tagionwallet_%s.json", i))];
             auto pipes = pipeProcess(wallet_command, Redirect.all, null, Config.detached);
           
             (() @trusted {
