@@ -9,6 +9,7 @@ version (unittest) {
     import tagion.behaviour.BehaviourException;
     import tagion.behaviour.BehaviourResult;
     import std.format;
+    import std.typecons : Tuple;
     import std.process;
 
     immutable(string) REPOROOT;
@@ -35,6 +36,11 @@ version (unittest) {
     }
 
     enum feature = Feature("Some awesome feature should print some cash out of the blue");
+    alias FeatureContex = Tuple!(
+            Some_awesome_feature, "Some_awesome_feature",
+            Some_awesome_feature_bad_format_double_property, "Some_awesome_feature_bad_format_double_property",
+            FeatureGroup*, "result"
+    );
     // Behavioral examples
     @safe
     @Scenario("Some awesome money printer")

@@ -46,6 +46,9 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
             }
         }, string, string, size_t, string, string);
         import std.uni : toLower;
+
+        
+
         .check(scenario !is null,
                 format("The constructor must be called for %s before it's runned", T.stringof));
         static foreach (_Property; ActionProperties) {
@@ -211,14 +214,27 @@ auto automation(alias M)() if (isFeature!M) {
         // Defines the tuple of the Feature scenarios
         mixin ScenarioTuple!(M, "ScenariosT");
         ScenariosT scenarios;
+        // FeatureContext context;
         void opDispatch(string scenario_name, Args...)(Args args) {
+            /*
+        enum tuple_index = FeatureContext.fieldNames.countUntil(scenario_name);
+            static assert(tuple_index < 0, 
+            format("Scenarion '%s' does not exists. Possible scenarions is \n%(%s,\n%)", 
+        scenario_name, FeatureContext.fieldNames[0..$-1]));
+            context[tuple_index] = new FeatureContext.Types[tuple_index](args);  
+        // enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
+*/
             enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
             mixin(code);
         }
 
         FeatureGroup run() nothrow {
             uint error_count;
+
             FeatureGroup result;
+            //  FeatureContext context;
+            //    auto result=new FeatureGroup;
+            //           context.result = result;
             result.info.property = obtainFeature!M;
             result.info.name = moduleName!M;
             alias ScenariosSeq = Scenarios!M;
@@ -296,8 +312,8 @@ unittest {
         assert(feature_result.scenarios[0].hasErrors);
         assert(feature_result.scenarios[1].hasErrors);
         assert(feature_result.hasErrors);
-        version(behaviour_unitdata)
-        "/tmp/bdd_which_has_feature_errors.hibon".fwrite(feature_result);
+        version (behaviour_unitdata)
+            "/tmp/bdd_which_has_feature_errors.hibon".fwrite(feature_result);
     }
 
     { // Fails in second scenario because the constructor has not been called
@@ -307,8 +323,8 @@ unittest {
         assert(!feature_result.scenarios[0].hasErrors);
         assert(feature_result.scenarios[1].hasErrors);
         assert(feature_result.hasErrors);
-        version(behaviour_unitdata)
-        "/tmp/bdd_which_has_scenario_errors.hibon".fwrite(feature_result);
+        version (behaviour_unitdata)
+            "/tmp/bdd_which_has_scenario_errors.hibon".fwrite(feature_result);
     }
 
     { // The constructor of both scenarios has been called, this means that no errors is reported
@@ -319,8 +335,8 @@ unittest {
         assert(!feature_result.scenarios[0].hasErrors);
         assert(!feature_result.scenarios[1].hasErrors);
         assert(!feature_result.hasErrors);
-        version(behaviour_unitdata)
-        "/tmp/bdd_which_has_no_errors.hibon".fwrite(feature_result);
+        version (behaviour_unitdata)
+            "/tmp/bdd_which_has_no_errors.hibon".fwrite(feature_result);
     }
 }
 
@@ -385,7 +401,7 @@ unittest {
 
     { // None of the scenario passes
         const feature_result = feature_with_ctor.run;
-        version(behaviour_unitdata)
+        version (behaviour_unitdata)
             "/tmp/bdd_sample_has_failed.hibon".fwrite(feature_result);
         assert(!feature_result.scenarios[0].hasPassed);
         assert(!feature_result.scenarios[1].hasPassed);
@@ -395,7 +411,7 @@ unittest {
     { // One of the scenario passed
         WithCtor.pass_one = true;
         const feature_result = feature_with_ctor.run;
-        version(behaviour_unitdata)
+        version (behaviour_unitdata)
             "/tmp/bdd_sample_one_has_passed.hibon".fwrite(feature_result);
         assert(!feature_result.scenarios[0].hasPassed);
         assert(feature_result.scenarios[1].hasPassed);
@@ -406,7 +422,7 @@ unittest {
         WithCtor.pass_some = true;
         WithCtor.pass_one = false;
         const feature_result = feature_with_ctor.run;
-        version(behaviour_unitdata)
+        version (behaviour_unitdata)
             "/tmp/bdd_sample_some_actions_has_passed.hibon".fwrite(feature_result);
         assert(!feature_result.scenarios[0].hasPassed);
         assert(!feature_result.scenarios[1].hasPassed);
@@ -418,7 +434,7 @@ unittest {
         WithCtor.pass_some = false;
 
         const feature_result = feature_with_ctor.run;
-        version(behaviour_unitdata)
+        version (behaviour_unitdata)
             "/tmp/bdd_sample_has_passed.hibon".fwrite(feature_result);
         assert(feature_result.scenarios[0].hasPassed);
         assert(feature_result.scenarios[1].hasPassed);

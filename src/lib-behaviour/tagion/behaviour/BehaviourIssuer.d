@@ -227,12 +227,12 @@ struct DlangT(Stream) {
                 .map!(comment => comment.escaper.array)
         );
         auto feature_tuple = chain(
-        feature_group.scenarios
-        .map!(scenario => [scenario.info.name, scenario.info.name]),
-        [["FeatureGroup*", "result"]])
-        .map!(ctx_type => format(`%s, "%s"`, ctx_type[0], ctx_type[1]))
-        .join(",\n");
-        
+                feature_group.scenarios
+                .map!(scenario => [scenario.info.name, scenario.info.name]),
+                [["FeatureGroup*", "result"]])
+            .map!(ctx_type => format(`%s, "%s"`, ctx_type[0], ctx_type[1]))
+            .join(",\n");
+
         bout.writefln(q{
                 module %1$s;
                 %5$s
@@ -274,8 +274,8 @@ unittest {
             .setExtension(FileExtension.dsrc);
         dlang.issue(feature_group);
         immutable result = bout.toString;
-        version (none)
-            filename.setExtension("dtest").fwrite(result.trim_source.join("\n"));
+        //        version (none)
+        filename.setExtension("dtest").fwrite(result.trim_source.join("\n"));
         immutable expected = filename.freadText;
         assert(equal(
                 result
