@@ -7,6 +7,13 @@ import tagion.behaviour.BehaviourResult;
 enum feature = Feature(
             "Some awesome feature should print some cash out of the blue",
             []);
+alias FeatureContex = Tuple!(
+        Some_awesome_feature, "Some_awesome_feature",
+        Some_awesome_feature_bad_format_double_property, "Some_awesome_feature_bad_format_double_property",
+        Some_awesome_feature_bad_format_missing_given, "Some_awesome_feature_bad_format_missing_given",
+        Some_awesome_feature_bad_format_missing_then, "Some_awesome_feature_bad_format_missing_then",
+        FeatureGroup*, "result"
+);
 @safe @Scenario("Some awesome money printer",
         [])
 class Some_awesome_feature {
