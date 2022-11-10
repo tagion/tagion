@@ -214,7 +214,7 @@ auto automation(alias M)() if (isFeature!M) {
         // Defines the tuple of the Feature scenarios
         mixin ScenarioTuple!(M, "ScenariosT");
         ScenariosT scenarios;
-        // FeatureContext context;
+        FeatureContext context;
         void opDispatch(string scenario_name, Args...)(Args args) {
             /*
         enum tuple_index = FeatureContext.fieldNames.countUntil(scenario_name);
@@ -232,7 +232,7 @@ auto automation(alias M)() if (isFeature!M) {
             uint error_count;
 
             FeatureGroup result;
-            //  FeatureContext context;
+            //FeatureContext context;
             //    auto result=new FeatureGroup;
             //           context.result = result;
             result.info.property = obtainFeature!M;
