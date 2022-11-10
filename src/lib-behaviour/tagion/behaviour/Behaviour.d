@@ -231,7 +231,7 @@ auto automation(alias M)() if (isFeature!M) {
             mixin(code);
         }
 
-        FeatureGroup run() nothrow {
+        FeatureContext run() nothrow {
             uint error_count;
 
             //auto result = new FeatureGroup;
@@ -262,7 +262,7 @@ auto automation(alias M)() if (isFeature!M) {
                 context.result.info.result = result_ok;
 
             }
-            return *context.result;
+            return context;
         }
     }
 
@@ -280,6 +280,11 @@ bool hasErrors(ref const FeatureGroup feature_group) nothrow {
         return true;
     }
     return feature_group.scenarios.any!(scenario => scenario.hasErrors);
+}
+
+@safe
+bool hasErrors(const(FeatureGroup*) feature_group) nothrow {
+    return hasErrors(*feature_group);
 }
 
 /**
@@ -311,35 +316,35 @@ unittest {
     auto feature_with_ctor = automation!(WithCtor)();
 
     { // No constructor has been called for the scenarios, this means that scenarios and the feature will have errors
-        const feature_result = feature_with_ctor.run;
-        assert(feature_result.scenarios[0].hasErrors);
-        assert(feature_result.scenarios[1].hasErrors);
-        assert(feature_result.hasErrors);
+        const feature_context = feature_with_ctor.run;
+        assert(feature_context.result.scenarios[0].hasErrors);
+        assert(feature_context.result.scenarios[1].hasErrors);
+        assert(feature_context.result.hasErrors);
         version (behaviour_unitdata)
-            "/tmp/bdd_which_has_feature_errors.hibon".fwrite(feature_result);
+            "/tmp/bdd_which_has_feature_errors.hibon".fwrite(feature_context.result);
     }
 
     { // Fails in second scenario because the constructor has not been called
         // Calls the construction for the Some_awesome_feature scenario
         feature_with_ctor.opDispatch!"Some_awesome_feature"(42, "with_ctor");
-        const feature_result = feature_with_ctor.run;
-        assert(!feature_result.scenarios[0].hasErrors);
-        assert(feature_result.scenarios[1].hasErrors);
-        assert(feature_result.hasErrors);
+        const feature_context = feature_with_ctor.run;
+        assert(!feature_context.result.scenarios[0].hasErrors);
+        assert(feature_context.result.scenarios[1].hasErrors);
+        assert(feature_context.result.hasErrors);
         version (behaviour_unitdata)
-            "/tmp/bdd_which_has_scenario_errors.hibon".fwrite(feature_result);
+            "/tmp/bdd_which_has_scenario_errors.hibon".fwrite(feature_context.result);
     }
 
     { // The constructor of both scenarios has been called, this means that no errors is reported
         // Calls the construction for the Some_awesome_feature scenario
         feature_with_ctor.opDispatch!"Some_awesome_feature"(42, "with_ctor");
         feature_with_ctor.Some_awesome_feature_bad_format_double_property(17);
-        const feature_result = feature_with_ctor.run;
-        assert(!feature_result.scenarios[0].hasErrors);
-        assert(!feature_result.scenarios[1].hasErrors);
-        assert(!feature_result.hasErrors);
+        const feature_context = feature_with_ctor.run;
+        assert(!feature_context.result.scenarios[0].hasErrors);
+        assert(!feature_context.result.scenarios[1].hasErrors);
+        assert(!feature_context.result.hasErrors);
         version (behaviour_unitdata)
-            "/tmp/bdd_which_has_no_errors.hibon".fwrite(feature_result);
+            "/tmp/bdd_which_has_no_errors.hibon".fwrite(feature_context.result);
     }
 }
 
@@ -354,7 +359,10 @@ bool hasPassed(ref const FeatureGroup feature_group) nothrow {
         feature_group.scenarios.all!(scenario => scenario.hasPassed);
 }
 
-
+@safe
+bool hasPassed(const(FeatureGroup*) feature_group) nothrow {
+    return hasPassed(*feature_group);
+}
 
 /**
 Used to checks if a scenario has passed all tests
@@ -387,10 +395,10 @@ unittest {
     auto feature_without_ctor = automation!(WithoutCtor)();
 
     { // None of the scenario passes
-        const feature_result = feature_without_ctor.run;
-        assert(!feature_result.scenarios[0].hasPassed);
-        assert(!feature_result.scenarios[1].hasPassed);
-        assert(!feature_result.hasPassed);
+        const feature_context = feature_without_ctor.run;
+        assert(!feature_context.result.scenarios[0].hasPassed);
+        assert(!feature_context.result.scenarios[1].hasPassed);
+        assert(!feature_context.result.hasPassed);
     }
 }
 
@@ -405,44 +413,44 @@ unittest {
     feature_with_ctor.Some_awesome_feature_bad_format_double_property(17);
 
     { // None of the scenario passes
-        const feature_result = feature_with_ctor.run;
+        const feature_context = feature_with_ctor.run;
         version (behaviour_unitdata)
-            "/tmp/bdd_sample_has_failed.hibon".fwrite(feature_result);
-        assert(!feature_result.scenarios[0].hasPassed);
-        assert(!feature_result.scenarios[1].hasPassed);
-        assert(!feature_result.hasPassed);
+            "/tmp/bdd_sample_has_failed.hibon".fwrite(feature_context.result);
+        assert(!feature_context.result.scenarios[0].hasPassed);
+        assert(!feature_context.result.scenarios[1].hasPassed);
+        assert(!feature_context.result.hasPassed);
     }
 
     { // One of the scenario passed
         WithCtor.pass_one = true;
-        const feature_result = feature_with_ctor.run;
+        const feature_context = feature_with_ctor.run;
         version (behaviour_unitdata)
-            "/tmp/bdd_sample_one_has_passed.hibon".fwrite(feature_result);
-        assert(!feature_result.scenarios[0].hasPassed);
-        assert(feature_result.scenarios[1].hasPassed);
-        assert(!feature_result.hasPassed);
+            "/tmp/bdd_sample_one_has_passed.hibon".fwrite(feature_context.result);
+        assert(!feature_context.result.scenarios[0].hasPassed);
+        assert(feature_context.result.scenarios[1].hasPassed);
+        assert(!feature_context.result.hasPassed);
     }
 
     { // Some actions passed passes
         WithCtor.pass_some = true;
         WithCtor.pass_one = false;
-        const feature_result = feature_with_ctor.run;
+        const feature_context = feature_with_ctor.run;
         version (behaviour_unitdata)
-            "/tmp/bdd_sample_some_actions_has_passed.hibon".fwrite(feature_result);
-        assert(!feature_result.scenarios[0].hasPassed);
-        assert(!feature_result.scenarios[1].hasPassed);
-        assert(!feature_result.hasPassed);
+            "/tmp/bdd_sample_some_actions_has_passed.hibon".fwrite(feature_context.result);
+        assert(!feature_context.result.scenarios[0].hasPassed);
+        assert(!feature_context.result.scenarios[1].hasPassed);
+        assert(!feature_context.result.hasPassed);
     }
 
     { // All of the scenario passes
         WithCtor.pass = true; /// Pass all tests!
         WithCtor.pass_some = false;
 
-        const feature_result = feature_with_ctor.run;
+        const feature_context = feature_with_ctor.run;
         version (behaviour_unitdata)
-            "/tmp/bdd_sample_has_passed.hibon".fwrite(feature_result);
-        assert(feature_result.scenarios[0].hasPassed);
-        assert(feature_result.scenarios[1].hasPassed);
+            "/tmp/bdd_sample_has_passed.hibon".fwrite(feature_context.result);
+        assert(feature_context.result.scenarios[0].hasPassed);
+        assert(feature_context.result.scenarios[1].hasPassed);
     }
 }
 
