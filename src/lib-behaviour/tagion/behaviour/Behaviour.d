@@ -181,6 +181,7 @@ unittest { //
     assert(feature.toDoc == expected.toDoc);
 }
 
+    version(none)
 protected string _scenarioTupleCode(alias M, string tuple_name)() if (isFeature!M) {
     string[] result;
     {
@@ -195,6 +196,7 @@ protected string _scenarioTupleCode(alias M, string tuple_name)() if (isFeature!
     return result.join("\n");
 }
 
+    version(none)
 mixin template ScenarioTuple(alias M, string tuple_name) {
     import std.array : join;
     import std.format;
@@ -212,8 +214,8 @@ auto automation(alias M)() if (isFeature!M) {
     static struct FeatureFactory {
         Feature feature;
         // Defines the tuple of the Feature scenarios
-        mixin ScenarioTuple!(M, "ScenariosT");
-        ScenariosT scenarios;
+        //mixin ScenarioTuple!(M, "ScenariosT");
+        //ScenariosT scenarios;
         FeatureContext context;
         void opDispatch(string scenario_name, Args...)(Args args) {
             import std.algorithm.searching : countUntil;
@@ -227,29 +229,29 @@ auto automation(alias M)() if (isFeature!M) {
             alias _Scenario = FeatureContext.Types[tuple_index];
             context[tuple_index] = new _Scenario(args);
             // enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
-            enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
-            mixin(code);
+            //enum code = format(q{scenarios.%1$s = new typeof(ScenariosT.%1$s)(args);}, scenario_name);
+            //mixin(code);
         }
 
         FeatureContext run() nothrow {
             uint error_count;
 
             //auto result = new FeatureGroup;
-            FeatureContext context;
+            //FeatureContext context;
             //    auto result=new FeatureGroup;
             context.result = new FeatureGroup;
             context.result.info.property = obtainFeature!M;
             context.result.info.name = moduleName!M;
-            alias ScenariosSeq = Scenarios!M;
-            context.result.scenarios.length = ScenariosSeq.length;
-            static foreach (i, _Scenario; ScenariosSeq) {
+            //alias ScenariosSeq = Scenarios!M;
+            context.result.scenarios.length = FeatureContext.Types.length; //ScenariosSeq.length;
+            static foreach (i, _Scenario; FeatureContext.Types[0..$-1]) {
                 try {
                     static if (__traits(compiles, new _Scenario())) {
-                        if (scenarios[i] is null) {
-                            scenarios[i] = new _Scenario();
+                        if (context[i] is null) {
+                            context[i] = new _Scenario();
                         }
                     }
-                    context.result.scenarios[i] = .run(scenarios[i]);
+                    context.result.scenarios[i] = .run(context[i]);
                 }
                 catch (Exception e) {
                     error_count++;
