@@ -1134,44 +1134,47 @@ int _main(string[] args)
                 writeln("payment failed");
             }
         }
-        version (none)
-            if (send_flag)
+        else if (send_flag)
+        {
+            if (options.contractfile.exists)
             {
-                if (options.contractfile.exists)
+                immutable data = options.contractfile.fread();
+                // writeln(data.data[0 .. $]);
+                auto doc1 = Document(data.data);
+                writeln(doc1.toJSON);
+
+                import LEB128 = tagion.utils.LEB128;
+
+                writeln(LEB128.calc_size(doc1.serialize));
+                auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
+                scope (exit)
                 {
-                    immutable data = options.contractfile.fread();
-                    // writeln(data.data[0 .. $]);
-                    auto doc1 = Document(data.data);
-                    writeln(doc1.toJSON);
-
-                    import LEB128 = tagion.utils.LEB128;
-
-                    writeln(LEB128.calc_size(doc1.serialize));
-                    auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-                    scope (exit)
-                    {
-                        client.close;
-                    }
-                    client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface
-                            .options.port));
-                    client.blocking = true;
-                    client.send(data.data);
-
-                    auto rec_buf = new void[4000];
-                    ptrdiff_t rec_size;
-
-                    do
-                    {
-                        rec_size = client.receive(rec_buf);
-                        Thread.sleep(400.msecs);
-                    }
-                    while (rec_size < 0);
-
-                    auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
-                    auto received = hirpc.receive(resp_doc);
-                    Thread.sleep(200.msecs);
+                    client.close;
                 }
+                client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface
+                    .options.port));
+                client.blocking = true;
+                client.send(data.data);
+
+                auto rec_buf = new void[4000];
+                ptrdiff_t rec_size;
+
+                do
+                {
+                    rec_size = client.receive(rec_buf);
+                    Thread.sleep(400.msecs);
+                }
+                while (rec_size < 0);
+
+                auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
+                auto received = hirpc.receive(resp_doc);
+                Thread.sleep(200.msecs);
             }
+            else
+            {
+                writeln("Absent send data");
+            }
+        }
     }
     return 0;
 }
