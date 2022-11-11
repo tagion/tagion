@@ -323,10 +323,48 @@ class DART : DARTFile
         {
             return hirpc.dartModify(recorder, id);
         }
+
+        @HiRPCMethod() const(HiRPCSender) dartBullseye(
+            HiRPC hirpc = HiRPC(null),
+            uint id = 0)
+        {
+            return hirpc.dartBullseye(null, id);
+        }
     }
 
-    pragma(msg, "fixme(alex): Remove dartFullRead");
-    private const(HiRPCSender) dartFullRead(
+    /++
+     + The dartBullseye method is called from opCall function
+     + This function return current database bullseye.
+
+     + Note:
+     + Because this function is a read only the read_only parameter has no effect
+
+     + params: received is the HiRPC package
+     + Example:
+     ---
+         // HiRPC format
+     +   {
+     +       ....
+     +       message : {
+     +           method : "dartBullseye"
+     +           params : {
+     +               
+     +           }
+     +       }
+     +   }
+     +
+     +  // HiRPC Result
+     +  {
+     +       ....
+     +       message : {
+     +           result   : {
+     +           bullseye : <GENERIC> // Returns the current bullseye of the DART
+     +           }
+     +       }
+     +  }
+     ---
+     +/
+    @HiRPCMethod private const(HiRPCSender) dartBullseye(
         ref const(HiRPCReceiver) received,
         const bool read_only)
     in
@@ -336,9 +374,9 @@ class DART : DARTFile
     }
     do
     {
-        // HiRPC.check_element!Document(received.params, Params.fingerprints);
-        const result = loadAll(Archive.Type.ADD);
-        return hirpc.result(received, result);
+        auto hibon_params = new HiBON;
+        hibon_params[Params.bullseye] = bullseye;
+        return hirpc.result(received, hibon_params);
     }
     /++
      + The dartRead method is called from opCall function

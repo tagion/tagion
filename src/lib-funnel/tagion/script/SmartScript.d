@@ -99,7 +99,7 @@ version (OLD_TRANSACTION)
             return _output_bills;
         }
 
-        void run(const uint epoch)
+        void run(const uint epoch, const uint index_in_epoch, const Fingerprint bullseye, const IHashNet net)
         {
             // immutable source=signed_contract.contract.script;
             enum transactions_name = "#trans";
@@ -126,6 +126,7 @@ version (OLD_TRANSACTION)
                 total_output += amount;
                 bill.value = amount;
                 bill.owner = pkey;
+                bill.gene = net.rawCalcHash(bulleye | net.rawCalcHash(index_in_epoch));
                 //            bill.bill_type = "TGN";
                 _output_bills ~= bill;
             }
