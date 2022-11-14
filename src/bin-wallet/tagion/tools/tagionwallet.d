@@ -662,6 +662,33 @@ enum fileextensions
     JSON = ".json"
 };
 
+void sendPaymentData(const ubyte[] data, const string adress, ushort port, ref HiRPC hirpc)
+{
+    auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
+    scope (exit)
+    {
+        client.close;
+    }
+    client.connect(new InternetAddress(adress, port));
+    client.blocking = true;
+    client.send(data);
+
+    auto rec_buf = new void[4000];
+    ptrdiff_t rec_size;
+
+    do
+    {
+        rec_size = client.receive(rec_buf);
+        Thread.sleep(400.msecs);
+    }
+    while (rec_size < 0);
+
+    auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
+    pragma(msg, "fixme(vk) add check format (is responce form hirpc)");
+    auto received = hirpc.receive(resp_doc);
+    Thread.sleep(200.msecs);
+}
+
 import tagion.tools.Basic;
 
 mixin Main!(_main, "wallet");
@@ -1104,29 +1131,7 @@ int _main(string[] args)
                 options.contractfile.fwrite(sender.toDoc);
                 if (send_flag)
                 {
-                    auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-                    scope (exit)
-                    {
-                        client.close;
-                    }
-                    client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface
-                            .options.port));
-                    client.blocking = true;
-                    client.send(data);
-
-                    auto rec_buf = new void[4000];
-                    ptrdiff_t rec_size;
-
-                    do
-                    {
-                        rec_size = client.receive(rec_buf);
-                        Thread.sleep(400.msecs);
-                    }
-                    while (rec_size < 0);
-
-                    auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
-                    pragma(msg, "fixme(vk) add check format (is responce form hirpc)");
-                    auto received = hirpc.receive(resp_doc);
+                    sendPaymentData(data, wallet_interface.options.addr, wallet_interface.options.port, hirpc);
                 }
             }
             else
@@ -1146,29 +1151,7 @@ int _main(string[] args)
                 import LEB128 = tagion.utils.LEB128;
 
                 writeln(LEB128.calc_size(doc1.serialize));
-                auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-                scope (exit)
-                {
-                    client.close;
-                }
-                client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface
-                    .options.port));
-                client.blocking = true;
-                client.send(data.data);
-
-                auto rec_buf = new void[4000];
-                ptrdiff_t rec_size;
-
-                do
-                {
-                    rec_size = client.receive(rec_buf);
-                    Thread.sleep(400.msecs);
-                }
-                while (rec_size < 0);
-
-                auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
-                auto received = hirpc.receive(resp_doc);
-                Thread.sleep(200.msecs);
+                sendPaymentData(data.data, wallet_interface.options.addr, wallet_interface.options.port, hirpc);
             }
             else
             {
