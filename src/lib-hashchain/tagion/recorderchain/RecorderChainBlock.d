@@ -22,7 +22,7 @@ import tagion.hibon.Document;
 @safe class RecorderChainBlock : HashChainBlock
 {
     /** Fingerprint of this block */
-    @Label("fingerprint") Buffer fingerprint;
+    @Label("") Buffer fingerprint;
     /** Bullseye of DART database */
     @Label("eye") Buffer bullseye;
     /** Fingerprint of the previous block */
@@ -73,9 +73,10 @@ import tagion.hibon.Document;
     }
 }
 
-version (none) unittest
+unittest
 {
     import tagion.basic.TagionExceptions : TagionException;
+    import tagion.crypto.SecureNet : StdHashNet;
     import tagion.hibon.HiBON : HiBON;
 
     HiBON test_hibon = new HiBON;
@@ -87,20 +88,18 @@ version (none) unittest
     auto dummy_recorder = factory.recorder;
     dummy_recorder.add(Document(test_hibon));
 
-    immutable imm_recorder = factory.uniqueRecorder(dummy_recorder);
+    auto doc_recorder = dummy_recorder.toDoc;
 
     Buffer bullseye = [1, 2, 3, 4, 5, 6, 7, 8];
     Buffer previous = [1, 2, 4, 8, 16, 32, 64, 128];
 
-    auto block_factory = new RecorderChainBlockFactory(net);
-
     /// RecorderChainBlock_create_block
     {
-        auto block = block_factory(imm_recorder, previous, bullseye);
+        auto block = new RecorderChainBlock(doc_recorder, previous, bullseye, net);
 
         assert(block.previous == previous);
         assert(block.bullseye == bullseye);
-        assert(block.recorder_doc == imm_recorder.toDoc);
+        assert(block.recorder_doc == doc_recorder);
 
         assert(block.fingerprint == net.hashOf(block.toDoc));
     }
@@ -111,34 +110,32 @@ version (none) unittest
         enum recorderLabel = GetLabel!(RecorderChainBlock.recorder_doc).name;
         enum bullseyeLabel = GetLabel!(RecorderChainBlock.bullseye).name;
 
-        auto block = block_factory(imm_recorder, previous, bullseye);
+        auto block = new RecorderChainBlock(doc_recorder, previous, bullseye, net);
 
         assert(block.toHiBON[previousLabel].get!Buffer == previous);
         assert(block.toHiBON[bullseyeLabel].get!Buffer == bullseye);
-        assert(block.toHiBON[recorderLabel].get!Document.serialize == imm_recorder.toDoc.serialize);
+        assert(block.toHiBON[recorderLabel].get!Document.serialize == doc_recorder.serialize);
 
         assert(net.hashOf(Document(block.toHiBON)) == block.fingerprint);
     }
 
     /// RecorderChainBlock_restore_from_doc
     {
-        auto block = block_factory(imm_recorder, previous, bullseye);
-        auto block_doc = block.toDoc;
-
-        auto restored_block = block_factory(block_doc);
+        auto block = new RecorderChainBlock(doc_recorder, previous, bullseye, net);
+        auto restored_block = new RecorderChainBlock(block.toDoc);
 
         assert(block.toDoc.serialize == restored_block.toDoc.serialize);
     }
 
     /// RecorderChainBlock_from_doc_no_member
     {
-        auto block = block_factory(imm_recorder, previous, bullseye);
+        auto block = new RecorderChainBlock(doc_recorder, previous, bullseye, net);
         auto block_hibon = block.toHiBON;
         block_hibon.remove(GetLabel!(RecorderChainBlock.bullseye).name);
 
         try
         {
-            block_factory(Document(block_hibon));
+            new RecorderChainBlock(Document(block_hibon));
             assert(false);
         }
         catch (TagionException e)

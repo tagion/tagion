@@ -16,41 +16,10 @@ import tagion.utils.Miscellaneous : decode;
  * \class RecorderChain
  * Class stores info and handles local files of recorder chain
  */
-@safe final class RecorderChain : HashChain!(RecorderChainBlock)
-{
-    /** Ctor initializes database and reads existing data.
-     *      @param folder_path - path to folder with block biles
-     */
-    this(string folder_path, const HashNet net)
-    {
-        super(folder_path, net);
-    }
 
-    /** 
-     * Used to find current block in recorder block chain, 
-     * after block pushed to DART database, 
-     * fingerprint of that DART becomes the bullseye of the block
-     * @param cur_bullseye - bullseye of DART database
-     * @param folder_path - folder with blocks from recorder block chain
-     * @param net - to read block from file
-     * @return block from recorder block chain
-     */
-    static RecorderChainBlock findCurrentDARTBlock(Buffer cur_bullseye, string folder_path, const HashNet net)
-    {
-        auto block_filenames = RecorderChain.getBlockFilenames(folder_path);
-        foreach (filename; block_filenames)
-        {
-            auto fingerprint = decode(filename.stripExtension);
-            auto block = RecorderChain.readBlock(fingerprint, folder_path, net);
-
-            if (block.bullseye == cur_bullseye)
-            {
-                return block;
-            }
-        }
-        return null;
-    }
-}
+// maybe this file should be removed, but it contains unittest
+// think about creating unittests separately for HashChain, and specific for HashChain!(RecorderChainBlock)
+alias RecorderChain = HashChain!(RecorderChainBlock);
 
 version (none) unittest
 {

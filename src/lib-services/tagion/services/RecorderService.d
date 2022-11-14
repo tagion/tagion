@@ -42,7 +42,7 @@ mixin TrustedConcurrency;
             bullseye.buffer,
             net);
 
-        recorder_chain.push(block);
+        recorder_chain.append(block);
 
         version (unittest)
         {
@@ -103,8 +103,6 @@ unittest
         assert(receiveOnly!Control == Control.LIVE);
     }
 
-    auto blocks_info = RecorderChain.getBlocksInfo(temp_folder, new StdHashNet);
-    assert(blocks_info.amount == blocks_count);
-    assert(blocks_info.first);
-    assert(blocks_info.last);
+    auto temp_recorder_chain = new RecorderChain(temp_folder, new StdHashNet);
+    assert(temp_recorder_chain.isValidChain);
 }

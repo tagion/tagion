@@ -2,6 +2,7 @@
 module tagion.hashchain.HashChainBlock;
 
 import tagion.basic.Types : Buffer;
+import tagion.hibon.HiBON : HiBON;
 
 /** @brief File contains interface for HashChainBlock
  */
@@ -10,7 +11,7 @@ import tagion.basic.Types : Buffer;
  * \interface HashChainBlock
  * Interface represents block from hash chain
  */
-interface HashChainBlock
+@safe interface HashChainBlock
 {
     /** Returns hash of block
      *      \return hash
@@ -21,4 +22,9 @@ interface HashChainBlock
      *      \return fingerprint of previous block
      */
     Buffer getPrevious() const;
+
+    /** Converts structure to HiBON
+     *      \return HiBON copy of this structure
+     */
+    @trusted inout(HiBON) toHiBON() inout;
 }

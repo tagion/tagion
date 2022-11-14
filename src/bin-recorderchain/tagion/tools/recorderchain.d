@@ -21,8 +21,8 @@ import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.services.RecorderService;
 import tagion.communication.HiRPC;
-import tagion.recorderchain.RecorderChainBlock;
-import tagion.recorderchain.RecorderChain;
+import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
+import tagion.recorderchain.RecorderChain : RecorderChain;
 
 auto logo = import("logo.txt");
 
@@ -112,7 +112,8 @@ int main(string[] args)
         return 1;
     }
 
-    if (!RecorderChain.isValidChain(chain_directory, hash_net))
+    const recorder_chain = new RecorderChain(chain_directory, hash_net);
+    if (!recorder_chain.isValidChain())
     {
         writeln("Recorder block chain is not valid");
         return 1;
@@ -158,11 +159,14 @@ int main(string[] args)
         }
 
         /** Used to find block that should be pushed to DART database next */
+
+        // storage.find((block) => block.bullseye == db.fingerprint)
         auto block = RecorderChain.findCurrentDARTBlock(db.fingerprint, chain_directory, hash_net);
         if (block.fingerprint == info.last.fingerprint)
         {
             return 1;
         }
+        // storage.find((block) => (block.getPrevious == current_fingerprint));
         current_block = RecorderChain.findNextBlock(block.fingerprint, chain_directory, hash_net);
     }
 
@@ -177,6 +181,7 @@ int main(string[] args)
                 "DART fingerprint should be the same with recorder block bullseye");
             return 1;
         }
+        // storage.find((block) => (block.getPrevious == current_fingerprint));
         current_block = RecorderChain.findNextBlock(current_block.fingerprint, chain_directory, hash_net);
     }
     while (current_block !is null);
