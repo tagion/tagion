@@ -75,7 +75,7 @@ unittest
 
     Options options;
     setDefaultOption(options);
-    options.recorder.folder_path = temp_folder;
+    options.recorder_chain.folder_path = temp_folder;
     scope (exit)
     {
         import std.file : rmdirRecurse;
@@ -83,7 +83,7 @@ unittest
         rmdirRecurse(temp_folder);
     }
 
-    auto recorderService = Task!RecorderTask(options.recorder.task_name ~ "unittest", options);
+    auto recorderService = Task!RecorderTask(options.recorder_chain.task_name ~ "unittest", options);
     assert(receiveOnly!Control == Control.LIVE);
     scope (exit)
     {

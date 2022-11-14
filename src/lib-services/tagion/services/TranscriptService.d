@@ -24,9 +24,10 @@ import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONJSON;
+import tagion.utils.Fingerprint : Fingerprint;
 
 // This function performs Smart contract executions
-void transcriptServiceTask(string task_name, string dart_task_name) nothrow
+void transcriptServiceTask(string task_name, string dart_task_name, string recorder_task_name) nothrow
 {
     try
     {
@@ -42,6 +43,7 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
         auto rec_factory = RecordFactory(net);
         const empty_hirpc = HiRPC(null);
         Tid dart_tid = locate(dart_task_name);
+        Tid recorder_tid = locate(recorder_task_name);
         SmartScript[Buffer] smart_scripts;
 
         bool stop;
@@ -54,18 +56,32 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
             }
         }
 
-        void modifyDART(RecordFactory.Recorder recorder)
+        Buffer modifyDART(RecordFactory.Recorder recorder)
         {
             auto sender = empty_hirpc.dartModify(recorder);
             if (dart_tid !is Tid.init)
             {
-                dart_tid.send("blackhole", sender.toDoc.serialize); //TODO: remove blackhole
+                dart_tid.send(task_name, sender.toDoc.serialize);
+
+                const result = receiveOnly!Buffer;
+                const received = empty_hirpc.receive(Document(result));
+                return received.response.result[DARTFile.Params.bullseye].get!Buffer;
             }
             else
             {
                 log.error("Cannot locate DART service");
                 stop = true;
+                return [];
             }
+        }
+
+        void dumpRecorderBlock(immutable(RecordFactory.Recorder) recorder, immutable(Fingerprint) dart_bullseye)
+        {
+            if (recorder_tid is Tid.init)
+            {
+                recorder_tid = locate(recorder_task_name);
+            }
+            recorder_tid.send(recorder, dart_bullseye);
         }
 
         bool to_smart_script(ref const(SignedContract) signed_contract) nothrow
@@ -189,7 +205,9 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
                 {
                     log("Sending to DART len: %d", recorder.length);
                     recorder.dump;
-                    modifyDART(recorder);
+                    auto bullseye = modifyDART(recorder);
+
+                    dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), Fingerprint(bullseye));
                 }
                 else
                 {
@@ -217,9 +235,13 @@ void transcriptServiceTask(string task_name, string dart_task_name) nothrow
         while (!stop)
         {
             receive(
+
                 &receive_epoch,
+
                 &register_input,
+
                 &controller,
+
                 &taskfailure,
             );
         }
