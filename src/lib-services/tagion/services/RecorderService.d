@@ -55,7 +55,7 @@ mixin TrustedConcurrency;
      */
     void opCall(immutable(Options) opts)
     {
-        recorder_chain = new RecorderChain(opts.recorder.folder_path, net);
+        recorder_chain = new RecorderChain(opts.recorder_chain.folder_path, net);
 
         ownerTid.send(Control.LIVE);
         while (!stop)
