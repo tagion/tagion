@@ -133,6 +133,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         Tid monitor_socket_tid;
         Tid transaction_socket_tid;
         Tid transcript_tid;
+        Tid recorder_service_tid;
 
         shared StdSecureNet shared_net;
         synchronized (master_net)
@@ -279,6 +280,15 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 receiveOnly!Control;
             }
 
+            if (recorder_service_tid !is Tid.init)
+            {
+                recorder_service_tid.prioritySend(Control.STOP);
+                if (receiveOnly!Control == Control.END)
+                {
+                    log("Recorder service stopped");
+                }
+            }
+
             if (discovery_tid !is Tid.init)
             {
                 discovery_tid.prioritySend(Control.STOP);
@@ -328,15 +338,11 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         log.trace("Before startinf monitor and transaction addressbook.numOfActiveNodes : %d", addressbook
                 .numOfActiveNodes);
 
-        auto recorder_task = Task!RecorderTask(opts.recorder_chain.task_name, opts);
-        assert(receiveOnly!Control == Control.LIVE);
-        scope (exit)
+        if (!opts.recorder_chain.folder_path.empty)
         {
-            recorder_task.control(Control.STOP);
-            if (receiveOnly!Control == Control.END)
-            {
-                log("Recorder service stopped");
-            }
+            Task!RecorderTask(opts.recorder_chain.task_name, opts);
+            assert(receiveOnly!Control == Control.LIVE);
+            recorder_service_tid = locate(opts.recorder_chain.task_name);
         }
 
         transcript_tid = spawn(
