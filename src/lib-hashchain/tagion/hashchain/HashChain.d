@@ -10,27 +10,33 @@ import std.typecons : Tuple;
 import tagion.basic.Types : Buffer, FileExtension, withDot;
 import tagion.basic.TagionExceptions : TagionException;
 import tagion.crypto.SecureNet : StdHashNet;
+import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.dart.Recorder : RecordFactory;
-import tagion.hashchain.HashChainBlock : IHashChainBlock, IHashChainBlockFactory;
-import tagion.hibon.HiBONRecord : fread, fwrite;
+import tagion.hashchain.HashChainBlock : HashChainBlock;
+import tagion.hibon.HiBONRecord : fread, fwrite, isHiBONRecord;
 import tagion.utils.Miscellaneous : toHexString, decode;
 
 /** @brief File contains class HashChain
  */
 
+// TODO: temp soultion
+@safe FileExtension getExtension()
+{
+    return FileExtension.recchainblock;
+}
+
 /**
  * \class HashChain
  * Class stores dynamic info and handles local files of hash chain
  */
-@safe class HashChain(Block : IHashChainBlock, BlockFactory:
-    IHashChainBlockFactory!Block)
+@safe class HashChain(Block : HashChainBlock) if (isHiBONRecord!Block)
 {
     alias BlocksInfo = Tuple!(Block, "first", Block, "last", ulong, "amount");
 
     /** Path to local folder where chain files are stored */
     const string folder_path;
     /** Hash net */
-    const StdHashNet net;
+    const HashNet net;
 
     protected
     {
@@ -47,7 +53,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
     /** Ctor initializes database and reads existing data.
      *      @param folder_path - path to folder with chain files
      */
-    this(string folder_path, const StdHashNet net)
+    this(string folder_path, const HashNet net)
     {
         this.net = net;
         this.folder_path = folder_path;
@@ -93,7 +99,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
      */
     void push(Block block)
     {
-        fwrite(makePath(block.getFingerprint, folder_path), block.toHiBON);
+        fwrite(makePath(block.getHash, folder_path), block.toHiBON);
 
         _last_block = block;
         if (_amount == 0)
@@ -113,7 +119,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
         return folder_path.dirEntries(SpanMode.shallow)
             .filter!(a => a.isFile())
             .map!(a => baseName(a))
-            .filter!(filename => filename.extension == Block.getExtension.withDot)
+            .filter!(filename => filename.extension == getExtension.withDot)
             .filter!(filename => filename.stripExtension.length == EPOCH_BLOCK_FILENAME_LEN)
             .array;
     }
@@ -123,7 +129,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
      *      @param net - hash net
      *      \return BlocksInfo - first, last blocks and amount
      */
-    static BlocksInfo getBlocksInfo(string folder_path, const StdHashNet net)
+    static BlocksInfo getBlocksInfo(string folder_path, const HashNet net)
     {
         BlocksInfo info;
 
@@ -200,7 +206,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
      *      @param folder_path - path to folder with blocks
      *      \return chain block, or null if block file doesn't exist
      */
-    static Block readBlock(Buffer fingerprint, string folder_path, const StdHashNet net)
+    static Block readBlock(Buffer fingerprint, string folder_path, const HashNet net)
     {
         const block_filename = makePath(fingerprint, folder_path);
         if (!block_filename.exists)
@@ -211,8 +217,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
         try
         {
             auto doc = fread(block_filename);
-            auto factory = new BlockFactory(net);
-            return factory(doc);
+            return new Block(doc);
         }
         catch (TagionException e)
         {
@@ -227,7 +232,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
     * @param net - hash net to read block from file
     * @return block from chain
     */
-    static Block findNextBlock(Buffer cur_fingerprint, string folder_path, const StdHashNet net)
+    static Block findNextBlock(Buffer cur_fingerprint, string folder_path, const HashNet net)
     {
         auto block_filenames = HashChain.getBlockFilenames(folder_path);
         foreach (filename; block_filenames)
@@ -251,7 +256,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
     * @param net - hash net to read blocks
     * @return true is chain is valid, false - otherwise
     */
-    static bool isValidChain(string folder_path, const StdHashNet net)
+    static bool isValidChain(string folder_path, const HashNet net)
     {
         try
         {
@@ -298,6 +303,6 @@ import tagion.utils.Miscellaneous : toHexString, decode;
     {
         return buildPath(
             folder_path,
-            fingerprint.toHexString.setExtension(Block.getExtension));
+            fingerprint.toHexString.setExtension(getExtension));
     }
 }

@@ -4,9 +4,10 @@ module tagion.services.RecorderService;
 
 import tagion.basic.Basic : TrustedConcurrency;
 import tagion.basic.Types : Control;
+import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.dart.Recorder : RecordFactory;
-import tagion.recorderchain.RecorderChainBlock : RecorderChainBlockFactory;
+import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.recorderchain.RecorderChain : RecorderChain;
 import tagion.services.Options : Options;
 import tagion.tasks.TaskWrapper;
@@ -24,8 +25,8 @@ mixin TrustedConcurrency;
     /** Recorder chain stored for working with blocks */
     RecorderChain recorder_chain;
 
-    /** Recorder chain block factory. By default init with default net */
-    RecorderChainBlockFactory recorder_block_factory = new RecorderChainBlockFactory(new StdHashNet);
+    /** Default hash net */
+    const HashNet net = new StdHashNet;
 
     /** Service method that receives recorder and bullseye and adds new block to recorder chain
      *      @param recorder - recorder for new block
@@ -35,10 +36,11 @@ mixin TrustedConcurrency;
             Fingerprint) bullseye)
     {
         auto last_block = recorder_chain.getLastBlock;
-        auto block = recorder_block_factory(
-            recorder,
+        auto block = new RecorderChainBlock(
+            recorder.toDoc,
             last_block ? last_block.fingerprint : [],
-            bullseye.buffer);
+            bullseye.buffer,
+            net);
 
         recorder_chain.push(block);
 
@@ -53,8 +55,7 @@ mixin TrustedConcurrency;
      */
     void opCall(immutable(Options) opts)
     {
-        recorder_chain = new RecorderChain(opts.recorder.folder_path, recorder_block_factory
-                .net);
+        recorder_chain = new RecorderChain(opts.recorder.folder_path, net);
 
         ownerTid.send(Control.LIVE);
         while (!stop)

@@ -1,0 +1,91 @@
+@startuml
+
+interface IHashChainBlock {
+    + Buffer getHash() const = 0
+    + Buffer getPrevious() const = 0
+
+    + this(Document) // from HiBONRecord
+    + HiBON toHiBON() // from HiBONRecord
+}
+
+class RecorderChainBlock {
+    + Buffer fingerprint
+    + Buffer bullseye
+    + Buffer previous
+    + Document recorder_doc
+
+    mixin HiBONRecord
+
+    + this(Document recorder_doc, Buffer bullseye, Buffer previous, HashNet)
+    + this(Document)
+
+    + override Buffer getHash() const
+    + override Buffer getPrevious() const
+    + override static FileExtension getExtension()
+}
+
+IHashChainBlock <|.. RecorderChainBlock
+
+class EpochChainBlock {
+    ...
+
+    + override Buffer getHash() const
+    + override Buffer getPrevious() const
+    + override static FileExtension getExtension()
+}
+
+IHashChainBlock <|.. EpochChainBlock
+
+class "HashChain(Block : IHashChainBlock)" as HashChain {
+    - HashChainDB
+
+    + const Options;
+    + const HashNet net;
+    # Block _last_block;
+
+    + this(Options, const HashNet net) // uses getLastBlock
+
+    + const(Block) getLastBlock()
+    + void push(Block block) // uses write
+
+    + replay((ChainBlock) => void)
+    + replayFrom((ChainBlock) => bool, (ChainBlock) => void)
+
+    # static bool isValidChain(Options, const HashNet net)
+    # static uint count(...) // O(1)
+    # static Block getFirstBlock(...) // O(n) using find()
+    # static Block getLastBlock(...) // O(n2)
+}
+
+IHashChainBlock *- HashChain : handles & stores
+HashChain -* HashChainDB
+
+interface HashChainDB {
+    + void write(Block block)
+    + Block read(Buffer fingerprint)
+
+    + Block find(Predicate)
+
+    + string[] getHashes()
+}
+
+@enduml
+
+HashChain {
+    - HashChainReader; 
+    + push(ChainBlock);
+    + replay((ChainBlock) => void)
+    + replayFrom((ChainBlock) => bool, (ChainBlock) => void)
+}
+HashChainDB {
+    + getByHash(hash): ChainBlock
+    + getHashes(): string[]
+    + write(ChainBlock)
+}
+
+class RecorderChainDB {
+    + static Block findNextBlock(cur_fingerprint, Options, HashNet) // using find()
+    + static Block findCurrentDARTBlock(cur_bullseye, Options, const HashNet net)
+}
+
+HashChainDB <|-- RecorderChainDB

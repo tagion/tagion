@@ -4,9 +4,9 @@ module tagion.recorderchain.RecorderChain;
 import std.path : stripExtension;
 
 import tagion.basic.Types : Buffer;
-import tagion.crypto.SecureNet : StdHashNet;
+import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hashchain.HashChain : HashChain;
-import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock, RecorderChainBlockFactory;
+import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.utils.Miscellaneous : decode;
 
 /** @brief File contains class RecorderChain
@@ -16,12 +16,12 @@ import tagion.utils.Miscellaneous : decode;
  * \class RecorderChain
  * Class stores info and handles local files of recorder chain
  */
-@safe final class RecorderChain : HashChain!(RecorderChainBlock, RecorderChainBlockFactory)
+@safe final class RecorderChain : HashChain!(RecorderChainBlock)
 {
     /** Ctor initializes database and reads existing data.
      *      @param folder_path - path to folder with block biles
      */
-    this(string folder_path, const StdHashNet net)
+    this(string folder_path, const HashNet net)
     {
         super(folder_path, net);
     }
@@ -35,7 +35,7 @@ import tagion.utils.Miscellaneous : decode;
      * @param net - to read block from file
      * @return block from recorder block chain
      */
-    static RecorderChainBlock findCurrentDARTBlock(Buffer cur_bullseye, string folder_path, const StdHashNet net)
+    static RecorderChainBlock findCurrentDARTBlock(Buffer cur_bullseye, string folder_path, const HashNet net)
     {
         auto block_filenames = RecorderChain.getBlockFilenames(folder_path);
         foreach (filename; block_filenames)
@@ -52,7 +52,7 @@ import tagion.utils.Miscellaneous : decode;
     }
 }
 
-unittest
+version (none) unittest
 {
     import std.range;
     import std.file : rmdirRecurse;
@@ -61,7 +61,7 @@ unittest
     import tagion.basic.Basic : tempfile;
     import tagion.basic.Types : FileExtension, withDot;
     import tagion.communication.HiRPC;
-    import tagion.crypto.SecureNet : StdSecureNet;
+    import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
     import tagion.crypto.SecureInterfaceNet : SecureNet;
     import tagion.dart.DART;
     import tagion.dart.BlockFile;
