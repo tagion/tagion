@@ -1129,17 +1129,16 @@ int _main(string[] args)
                 const sender = hirpc.transaction(signed_contract.toHiBON);
                 immutable data = sender.toDoc.serialize;
                 options.contractfile.fwrite(sender.toDoc);
-                if (send_flag)
-                {
-                    sendPaymentData(data, wallet_interface.options.addr, wallet_interface.options.port, hirpc);
-                }
+                Thread.sleep(50.msecs);
             }
             else
             {
                 writeln("payment failed");
+                return 0;
             }
         }
-        else if (send_flag)
+        
+        if (send_flag)
         {
             if (options.contractfile.exists)
             {
