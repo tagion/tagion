@@ -38,7 +38,6 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
         log.register(task_name);
 
         uint current_epoch;
-        Fingerprint last_bullseye = requestBullseye();
 
         const net = new StdSecureNet;
         auto rec_factory = RecordFactory(net);
@@ -71,7 +70,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             {
                 log.error("Cannot locate DART service");
                 stop = true;
-                return [];
+                return Fingerprint([]);
             }
         }
         Fingerprint modifyDART(RecordFactory.Recorder recorder)
@@ -89,7 +88,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             {
                 log.error("Cannot locate DART service");
                 stop = true;
-                return [];
+                return Fingerprint([]);
             }
         }
 
@@ -102,7 +101,9 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             recorder_tid.send(recorder, dart_bullseye);
         }
 
-        bool to_smart_script(ref const(SignedContract) signed_contract, uint index) nothrow
+        Fingerprint last_bullseye = requestBullseye();
+        log("Start with bullseye: %X", last_bullseye);
+        bool to_smart_script(ref const(SignedContract) signed_contract, ref uint index) nothrow
         {
             try
             {
@@ -113,8 +114,9 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     smart_script.check(net);
                     const signed_contract_doc = signed_contract.toDoc;
                     const fingerprint = net.HashNet.hashOf(signed_contract_doc);
+                    uint prev_index = index;
                     smart_script.run(current_epoch + 1, index, last_bullseye, net);
-
+                    assert(index == prev_index + smart_script.output_bills.length);
                     smart_scripts[fingerprint] = smart_script;
                 }
                 return true;
@@ -160,7 +162,8 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     current_epoch++;
                 }
                 auto recorder = rec_factory.recorder;
-                foreach (index, payload_el; payload_doc[])
+                uint index = 0;
+                foreach (payload_el; payload_doc[])
                 {
                     immutable doc = payload_el.get!Document;
                     if (!SignedContract.isRecord(doc))

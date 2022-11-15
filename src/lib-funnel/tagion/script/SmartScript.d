@@ -6,10 +6,10 @@ import std.format;
 import std.algorithm.iteration : sum, map, filter;
 import std.algorithm.searching : all;
 
-import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCode, Check;
 import tagion.basic.TagionExceptions : TagionException;
-import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey, Contract;
+import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey, Contract, Script;
 import tagion.basic.Types : Pubkey, Buffer, Signature;
 import tagion.script.TagionCurrency;
 import tagion.dart.Recorder : RecordFactory;
@@ -22,6 +22,8 @@ import tagion.hibon.HiBONRecord : GetLabel;
 import tagion.logger.Logger;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
+import tagion.utils.Fingerprint : Fingerprint;
+import std.bitmanip: nativeToBigEndian;
 
 //import tagion.script.ScriptCrypto;
 
@@ -99,7 +101,7 @@ version (OLD_TRANSACTION)
             return _output_bills;
         }
 
-        void run(const uint epoch, const uint index_in_epoch, const Fingerprint bullseye, const IHashNet net)
+        void run(const uint epoch, ref uint index_in_epoch, const Fingerprint bullseye, const HashNet net)
         {
             // immutable source=signed_contract.contract.script;
             enum transactions_name = "#trans";
@@ -116,6 +118,7 @@ version (OLD_TRANSACTION)
 
             const total_input = calcTotal(signed_contract.inputs);
             TagionCurrency total_output;
+            import std.stdio;
             foreach (pkey, doc; signed_contract.contract.output)
             {
                 StandardBill bill;
@@ -126,9 +129,11 @@ version (OLD_TRANSACTION)
                 total_output += amount;
                 bill.value = amount;
                 bill.owner = pkey;
-                bill.gene = net.rawCalcHash(bulleye | net.rawCalcHash(index_in_epoch));
+                auto index_hash = net.rawCalcHash(nativeToBigEndian(index_in_epoch));
+                bill.gene = net.rawCalcHash(bullseye.buffer ~ index_hash);
                 //            bill.bill_type = "TGN";
                 _output_bills ~= bill;
+                index_in_epoch++;
             }
 
 
@@ -305,20 +310,35 @@ else
         // }
     }
 }
+unittest
+{
+    import std.stdio : writefln, writeln;
+    import tagion.dart.Recorder : Add, Remove;
+    import tagion.crypto.SecureNet;
+    import tagion.basic.Types : FileExtension;
+    import tagion.hibon.HiBON;
+    import std.array;
 
-version (OLD_TRANSACTION)
-{
-}
-else
-{
-    unittest
+     version (OLD_TRANSACTION)
     {
-        import std.stdio : writefln, writeln;
-        import tagion.dart.Recorder : Add, Remove;
-        import tagion.crypto.SecureNet;
-        import tagion.basic.Types : FileExtension;
-        import tagion.hibon.HiBON;
-
+        // function for signing all bills
+        void sign_all_bills(const StandardBill[] input_bills, const StandardBill[] output_bills, const SecureNet net, ref SignedContract signed_contract)
+        {
+            Contract contract;
+            contract.inputs = input_bills.map!(b => net.hashOf(b.toDoc)).array;
+            foreach (bill; output_bills){
+                contract.output[bill.owner] = bill.value.toDoc;
+            }
+            contract.script = Script("pay");
+            foreach (bill; input_bills)
+            {
+                auto signed_doc = net.sign(contract.toDoc);
+                signed_contract.signs ~= signed_doc.signature;
+                assert(net.verify(contract.toDoc, signed_doc.signature, net.pubkey));
+            }
+            signed_contract.contract = contract;
+        }
+    }else{
         // function for signing all bills
         void sign_all_bills(const StandardBill[] bills, const SecureNet net, ref SignedContract signed_contract)
         {
@@ -340,38 +360,68 @@ else
             }
             signed_contract.contract = contract;
         }
+    }
+    const net = new StdSecureNet;
+    SecureNet alice = new StdSecureNet;
+    {
+        alice.generateKeyPair("Alice's secret password");
+    }
+    auto bob = new StdSecureNet;
+    {
+        bob.generateKeyPair("Bob's secret password");
+    }
+    uint epoch = 42;
+    StandardBill[] bills;
 
-        const net = new StdSecureNet;
-        SecureNet alice = new StdSecureNet;
+    bills ~= StandardBill(1000.TGN, epoch, alice.pubkey, null);
+    bills ~= StandardBill(1200.TGN, epoch, alice.derivePubkey("alice0"), null);
+    bills ~= StandardBill(3000.TGN, epoch, alice.derivePubkey("alice1"), null);
+    bills ~= StandardBill(4300.TGN, epoch, alice.derivePubkey("alice2"), null);
+
+    auto factory = RecordFactory(net);
+    const alices_bills = factory.recorder(bills);
+    auto output_bills = factory.recorder();
+
+    import tagion.dart.DART : DART;
+    import tagion.basic.Basic : fileId;
+
+    immutable filename = fileId!SmartScript(FileExtension.dart).fullpath;
+
+    DART.create(filename);
+    auto dart_db = new DART(net, filename);
+    dart_db.modify(alices_bills, Add);
+    writefln("dart-file %s", filename);
+    dart_db.dump(true);
+    version (OLD_TRANSACTION)
+    {
+        StandardBill[] outputbills;
+        /// Output bills with same owner get diffrent gene
         {
-            alice.generateKeyPair("Alice's secret password");
+            SignedContract signed_contract_1;
+            SignedContract signed_contract_2;
+            outputbills ~= StandardBill(100.TGN, epoch, bob.pubkey, null);
+            sign_all_bills([bills[0]], outputbills, alice, signed_contract_1);
+            signed_contract_1.inputs ~= bills[0];
+            sign_all_bills([bills[1]], outputbills, alice, signed_contract_2);
+            signed_contract_2.inputs ~= bills[1];
+            
+            SmartScript ssc_1 = new SmartScript(signed_contract_1);
+            SmartScript ssc_2 = new SmartScript(signed_contract_2);
+            uint index = 1;
+            ssc_1.run(55, index, Fingerprint(dart_db.fingerprint), new StdHashNet());
+            ssc_2.run(55, index, Fingerprint(dart_db.fingerprint), new StdHashNet());
+            assert(index == 3);
+            assert(ssc_1.output_bills.length == 1, "Smart contract generate more than one output");
+            auto output_bill1 = ssc_1.output_bills[0];
+            auto output_bill2 = ssc_2.output_bills[0];
+            assert(output_bill1.gene.length != 0, "Output bill gene is empty");
+            assert(output_bill1.gene != output_bill2.gene, "Output bill gene are same");
+            assert(net.hashOf(output_bill1.toDoc) != net.hashOf(output_bill2.toDoc), "Bills with same owner key has same hash");
         }
-        auto bob = new StdSecureNet;
-        {
-            bob.generateKeyPair("Bob's secret password");
-        }
-        uint epoch = 42;
-        StandardBill[] bills;
-
-        bills ~= StandardBill(1000.TGN, epoch, alice.pubkey, null);
-        bills ~= StandardBill(1200.TGN, epoch, alice.derivePubkey("alice0"), null);
-        bills ~= StandardBill(3000.TGN, epoch, alice.derivePubkey("alice1"), null);
-        bills ~= StandardBill(4300.TGN, epoch, alice.derivePubkey("alice2"), null);
-
-        auto factory = RecordFactory(net);
-        const alices_bills = factory.recorder(bills);
-        auto output_bills = factory.recorder();
-
-        import tagion.dart.DART : DART;
-        import tagion.basic.Basic : fileId;
-
-        immutable filename = fileId!SmartScript(FileExtension.dart).fullpath;
-
-        DART.create(filename);
-        auto dart_db = new DART(net, filename);
-        dart_db.modify(alices_bills, Add);
-        writefln("dart-file %s", filename);
-        dart_db.dump(true);
+    }
+    else
+    {
+    
 
         // SmartScript.check tests
         {
