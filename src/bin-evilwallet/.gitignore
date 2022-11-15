@@ -1,8 +1,9 @@
 # Emacs
 *~
 .#*
-
-# Backup
+*#
+.#*
+*~
 *.parked
-*.bak
+local.mk
 gen.*

@@ -18,11 +18,11 @@ int main(string[] args)
     import dartutil = tagion.tools.dartutil;
     import hibonutil = tagion.tools.hibonutil;
     import tagionwallet = tagion.tools.tagionwallet;
-    import evilwallet = tagion.tools.evilwallet;
+    import tagionevilwallet = tagion.tools.tagionevilwallet;
     import tagionboot = tagion.tools.tagionboot;
     import blockfile = tagion.tools.blockfile;
 
-    alias alltools = AliasSeq!(tagionwave, dartutil, hibonutil, tagionwallet, evilwallet, tagionboot, blockfile);
+    alias alltools = AliasSeq!(tagionwave, dartutil, hibonutil, tagionwallet, tagionevilwallet, tagionboot, blockfile);
     enum toolName(alias tool) = moduleName!tool.split(".").tail(1)[0];
 
     auto tool = args[0].baseName;
