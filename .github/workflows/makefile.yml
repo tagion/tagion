@@ -11,6 +11,7 @@ env:
   RETENTION_DAYS_BINS: 3
   TAGION_CACHE_DIR: ~/tagion_cache 
   RUN_SCENARIOUS_PARALEL: true
+  BUILD_FLAGS: DFLAGS="\$(DVERSION)=OLD_TRANSACTION"
   ## TODO: add ldc2/dmd switch & version
 jobs:
   build_and_unittest:
@@ -36,7 +37,7 @@ jobs:
       - name: Build
         run: |
           source ~/.bashrc
-          make bins -j ${{ env.PARALEL }}
+          make ${{ env.BUILD_FLAGS }} bins -j ${{ env.PARALEL }}
           
       - name: Upload bins
         uses: actions/upload-artifact@v3
@@ -60,7 +61,7 @@ jobs:
       - name: Run unittests
         run: |
           source ~/.bashrc
-          make unittest -j ${{ env.PARALEL }}
+          make ${{ env.BUILD_FLAGS }} unittest -j ${{ env.PARALEL }}
       - name: Upload unittest result
         uses: actions/upload-artifact@v3
         with:
