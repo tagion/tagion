@@ -118,7 +118,6 @@ version (OLD_TRANSACTION)
 
             const total_input = calcTotal(signed_contract.inputs);
             TagionCurrency total_output;
-            import std.stdio;
             foreach (pkey, doc; signed_contract.contract.output)
             {
                 StandardBill bill;
