@@ -269,8 +269,8 @@ import tagion.wallet.WalletException : check;
         // removed topay check.
         const size_in_bytes = 500;
         // todo set fee manually here.
-        const fees = globals.fees(topay, size_in_bytes);
-        const amount = topay + fees;
+        const fees = globals.fees(topay, size_in_bytes); // 52.5
+        const amount = topay + fees; 
         StandardBill[] contract_bills;
         const enough = collect_bills(amount, contract_bills);
         if (enough)
@@ -355,30 +355,22 @@ import tagion.wallet.WalletException : check;
         auto none_active = account.bills.filter!(b => !(b.owner in account.activated));
 
         // Check if we have enough money
-        const enough = !none_active.map!(b => b.value)
-            .cumulativeFold!((a, b) => a + b)
-            .filter!(a => a >= amount)
-            .takeOne
-            .empty;
-        if (enough)
+        
+        TagionCurrency rest = amount;
+        active_bills = none_active.filter!(b => b.value <= rest)
+            .until!(b => rest <= 0)
+            .tee!((b) { rest -= b.value; account.activated[b.owner] = true; })
+            .array;
+        if (rest > 0)
         {
-            TagionCurrency rest = amount;
-            active_bills = none_active.filter!(b => b.value <= rest)
-                .until!(b => rest <= 0)
-                .tee!((b) { rest -= b.value; account.activated[b.owner] = true; })
-                .array;
-            if (rest > 0)
-            {
-                // Take an extra larger bill if not enough
-                StandardBill extra_bill;
-                none_active.each!(b => extra_bill = b);
-                account.activated[extra_bill.owner] = true;
-                active_bills ~= extra_bill;
-            }
-            assert(rest > 0);
-            return true;
+            // Take an extra larger bill if not enough
+            StandardBill extra_bill;
+            none_active.each!(b => extra_bill = b);
+            account.activated[extra_bill.owner] = true;
+            active_bills ~= extra_bill;
         }
-        return false;
+        return true;
+
     }
 
     @trusted
