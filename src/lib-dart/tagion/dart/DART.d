@@ -335,38 +335,9 @@ class DART : DARTFile
     /++
      + The dartBullseye method is called from opCall function
      + This function return current database bullseye.
-
-     + Note:
-     + Because this function is a read only the read_only parameter has no effect
-
-     + params: received is the HiRPC package
-     + Example:
-     ---
-         // HiRPC format
-     +   {
-     +       ....
-     +       message : {
-     +           method : "dartBullseye"
-     +           params : {
-     +               
-     +           }
-     +       }
-     +   }
-     +
-     +  // HiRPC Result
-     +  {
-     +       ....
-     +       message : {
-     +           result   : {
-     +           bullseye : <GENERIC> // Returns the current bullseye of the DART
-     +           }
-     +       }
-     +  }
-     ---
+     + @param received - the HiRPC received package
      +/
-    @HiRPCMethod private const(HiRPCSender) dartBullseye(
-        ref const(HiRPCReceiver) received,
-        const bool read_only)
+    @HiRPCMethod private const(HiRPCSender) dartBullseye(ref const(HiRPCReceiver) received)
     in
     {
         mixin FUNCTION_NAME;

@@ -162,7 +162,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     current_epoch++;
                 }
                 auto recorder = rec_factory.recorder;
-                uint index = 0;
+                uint output_index = 0;  // order index of generated output 
                 foreach (payload_el; payload_doc[])
                 {
                     immutable doc = payload_el.get!Document;
@@ -191,7 +191,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     {
                         const signed_contract_doc = signed_contract.toDoc;
                         const fingerprint = net.hashOf(signed_contract_doc);
-                        const added = to_smart_script(signed_contract, index);
+                        const added = to_smart_script(signed_contract, output_index);
                         if (added && fingerprint in smart_scripts)
                         {
                             scope smart_script = smart_scripts[fingerprint];
