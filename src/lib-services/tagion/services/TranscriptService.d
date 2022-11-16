@@ -25,23 +25,35 @@ import tagion.dart.DARTFile;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Fingerprint : Fingerprint;
-import tagion.utils.HiBONWriter;
+import tagion.hashchain.HashChainFileStorage;
+import tagion.hashchain.EpochChainBlock;
+import tagion.recorder.EpochChain;
+import tagion.utils.Miscellaneous : toHexString;
 
-private static void saveHashedDump(ref const Document bullseye)
+/** Save hashed dump with transactions
+    *    @param list - transactions list from dumping
+    *    @param  bullseye - hash of dart database
+    */
+private static void saveHashedDump(ref const Document list, Buffer bullseye)
 {
-    const auto prev_hash_key = "prevhash";
-    const auto bullsye_key = "bullseye";
-    static string previousHashData = "0";
-    HiBON file = new HiBON();
-    file[prev_hash_key] = previousHashData;
-    file[bullsye_key] = bullseye;
-    const Options options = getOptions();
-    HiBONWriter writer = new HiBONWriter(options.transaction_dumps_dirrectory);
-    writer.setWriteData(file);
-    if(writer.performHashedWrite())
+    static EpochChain storage = null;
+    static StdHashNet hasher = null;
+    if (storage is null)
     {
-        previousHashData = writer.lastWritedHash();
+        const Options _options = getOptions();
+        hasher = new StdHashNet;
+        storage = new EpochChain(_options.transaction_dumps_dirrectory, hasher);
     }
+
+    ubyte[] prevhash = [];
+    auto last_block = storage.getLastBlock();
+    if (last_block !is null)
+    {
+        prevhash = last_block.fingerprint.dup;
+    }
+
+    auto record = new EpochChainBlock(list, prevhash.idup, bullseye, hasher);
+    storage.append(record);
 }
 
 // This function performs Smart contract executions
@@ -74,21 +86,18 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             }
         }
 
-        Buffer modifyDART(RecordFactory.Recorder recorder, bool performDumping)
+        Buffer modifyDART(RecordFactory.Recorder recorder)
         {
             auto sender = empty_hirpc.dartModify(recorder);
             if (dart_tid !is Tid.init)
             {
                 dart_tid.send(task_name, sender.toDoc.serialize);
 
-                if (performDumping)
-                {
-                   saveHashedDump(sender.message);
-                }
-
                 const result = receiveOnly!Buffer;
                 const received = empty_hirpc.receive(Document(result));
-                return received.response.result[DARTFile.Params.bullseye].get!Buffer;
+
+                auto dump = received.response.result[DARTFile.Params.bullseye].get!Buffer;
+                return dump;
             }
             else
             {
@@ -165,6 +174,10 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     current_epoch++;
                 }
                 auto recorder = rec_factory.recorder;
+
+                HiBON contracts_dump = new HiBON;
+                long dump_count = 0;
+
                 foreach (payload_el; payload_doc[])
                 {
                     immutable doc = payload_el.get!Document;
@@ -175,7 +188,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
 
                     scope signed_contract = SignedContract(doc);
                     log("Executing contract: %s", doc.toJSON);
-
+                    contracts_dump[dump_count++] = doc;
                     bool invalid;
                     ForachInput: foreach (input; signed_contract.contract.inputs)
                     {
@@ -230,7 +243,13 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     const Options options = getOptions();
                     log("Sending to DART len: %d", recorder.length);
                     recorder.dump;
-                    auto bullseye = modifyDART(recorder, !options.disable_transaction_dumping);
+                    auto bullseye = modifyDART(recorder);
+
+                    if (!options.disable_transaction_dumping)
+                    {
+                        auto dump = Document(contracts_dump);
+                        saveHashedDump(dump, bullseye);
+                    }
                     dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), Fingerprint(bullseye));
                 }
                 else
@@ -276,11 +295,27 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
     }
 }
 
-version(none) unittest
+/// test hashes dump creating
+unittest
 {
+    import std.file;
+
     auto doc = new HiBON();
     doc["A"] = "B";
+    immutable ubyte[] eye = [6, 5, 4];
     auto realDoc = Document(doc);
-    saveHashedDump(realDoc);
-    saveHashedDump(realDoc);
+
+    Options _options = getOptions();
+    _options.transaction_dumps_dirrectory = "tmp_hashes";
+    setOptions(_options);
+
+    saveHashedDump(realDoc, eye);
+    saveHashedDump(realDoc, eye);
+
+    enum hashOne = "tmp_hashes/7953c5390625a3734fd2098703cb65c02ffff1912bc4818887c37773552511fb.hibon";
+    enum hashTwo = "tmp_hashes/881c8e8e6482923eba697167e5370137608a4d149d0c849b99f94be68041d0f7.hibon";
+
+    assert(exists(hashOne));
+    assert(exists(hashTwo));
+    rmdirRecurse(options.transaction_dumps_dirrectory);
 }

@@ -108,10 +108,15 @@ import tagion.utils.Miscellaneous : decode, toHexString;
         static FileExtension getExtension()
         {
             import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
+            import tagion.hashchain.EpochChainBlock : EpochChainBlock;
 
             static if (is(Block == RecorderChainBlock))
             {
                 return FileExtension.recchainblock;
+            }
+            static if(is(Block == EpochChainBlock))
+            {
+                return FileExtension.hibon;
             }
 
             version (unittest)
