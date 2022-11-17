@@ -1,5 +1,6 @@
 /// \file tagionwallet.d
 module tagion.tools.tagionevilwallet;
+import tagion.tools.tagionwallet;
 
 import std.getopt;
 import std.stdio;
@@ -36,78 +37,6 @@ import tagion.communication.HiRPC;
 import tagion.network.SSLSocket;
 import tagion.Keywords;
 
-enum LINE = "------------------------------------------------------";
-
-/**
- * @brief Write in console warning message
- */
-void warning()
-{
-    writefln("%sWARNING%s: This wallet should only be used for the Tagion Dev-net%s", RED, BLUE, RESET);
-}
-
-/**
- * \struct Invoices
- * Struct invoices array
- */
-struct Invoices
-{
-    /** internal array */
-    Invoice[] list;
-    mixin HiBONRecord;
-}
-
-/**
- * \struct WalletOptions
- * Struct wallet options files and network status storage models
- */
-struct WalletOptions
-{
-    /** account file name/path */
-    string accountfile;
-    /** wallet file name/path */
-    string walletfile;
-    /** questions file name/path */
-    string quizfile;
-    /** device file name/path */
-    string devicefile;
-    /** contract file name/path */
-    string contractfile;
-    /** bills file name/path */
-    string billsfile;
-    /** payments request file name/path */
-    string paymentrequestsfile;
-    /** address part of network socket */
-    string addr;
-    /** port part of network socket */
-    ushort port;
-
-    /**
-    * @brief set default values for wallet
-    */
-    void setDefault() pure nothrow
-    {
-        accountfile = "account.hibon";
-        walletfile = "tagionwallet.hibon";
-        quizfile = "quiz.hibon";
-        contractfile = "contract.hibon";
-        billsfile = "bills.hibon";
-        paymentrequestsfile = "paymentrequests.hibon";
-        devicefile = "device.hibon";
-        addr = "localhost";
-        port = 10800;
-    }
-
-    mixin JSONCommon;
-    mixin JSONConfig;
-}
-
-enum MAX_PINCODE_SIZE = 128;
-
-/**
- * \struct WalletInterface
- * Interface struct for wallet
- */
 struct WalletInterface
 {
     const(WalletOptions) options;
@@ -578,116 +507,8 @@ struct WalletInterface
     }
 }
 
-enum REVNO = 0;
-enum HASH = "xxx";
-
-/**
- * @brief strip white spaces in begin/end of text
- * @param word - input parameter with out
- * \return dublicate out parameter
- */
-const(char[]) trim(return scope const(char)[] word) pure nothrow @safe @nogc
-{
-    import std.ascii : isWhite;
-
-    while (word.length && word[0].isWhite)
-    {
-        word = word[1 .. $];
-    }
-    while (word.length && word[$ - 1].isWhite)
-    {
-        word = word[0 .. $ - 1];
-    }
-    return word;
-}
-
-/**
- * @brief strip all whitespaces in text
- * @param word_strip - input/output parameter for white spaces striping
- *
- */
-void word_strip(scope ref char[] word_strip) pure nothrow @safe @nogc
-{
-    import std.ascii : isWhite;
-
-    scope not_change = word_strip;
-    scope (exit)
-    {
-        assert((word_strip.length is 0) || (&not_change[0] is &word_strip[0]), "The pincode should not be reallocated");
-    }
-    size_t current_i;
-    foreach (c; word_strip)
-    {
-        if (!c.isWhite)
-        {
-            word_strip[current_i++] = c;
-        }
-    }
-    word_strip = word_strip[0 .. current_i];
-}
-
-/*
- * @brief build file path if needed file with folder long path
- * @param file - input/output parameter with filename
- * @param path - forlders destination to file
- */
-@safe
-static void set_path(ref string file, string path)
-{
-    file = buildPath(path, file.baseName);
-}
-
-//! [check function word_strip]
-// @safe
-// unittest
-// {
-//     import std.ascii : isWhite;
-
-//     scope char[] word;
-//     word.length = MAX_PINCODE_SIZE;
-//     const test_text = "  Some text with space ";
-//     const no_change = &word[0];
-//     word[0 .. test_text.length] = test_text;
-//     assert(no_change is &word[0]);
-//     word_strip(word);
-//     assert(no_change is &word[0]);
-//     assert(equal(word, test_text.filter!(c => !c.isWhite)));
-// }
-
 import tagion.utils.JSONCommon;
 
-enum fileextensions
-{
-    HIBON = ".hibon",
-    JSON = ".json"
-};
-
-void sendPaymentData(const ubyte[] data, const string adress, ushort port, ref HiRPC hirpc)
-{
-    auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-    scope (exit)
-    {
-        client.close;
-    }
-    client.connect(new InternetAddress(adress, port));
-    client.blocking = true;
-    client.send(data);
-
-    auto rec_buf = new void[4000];
-    ptrdiff_t rec_size;
-
-    do
-    {
-        rec_size = client.receive(rec_buf);
-        Thread.sleep(400.msecs);
-    }
-    while (rec_size < 0);
-
-    auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
-    pragma(msg, "fixme(vk) add check format (is responce form hirpc)");
-    auto received = hirpc.receive(resp_doc);
-    Thread.sleep(200.msecs);
-}
 
 import tagion.tools.Basic;
 
@@ -704,8 +525,6 @@ int _main(string[] args)
     string answers_str;
     bool wallet_ui;
     bool update_wallet;
-    uint number_of_bills;
-    string passphrase = "verysecret";
     ulong value = 1000_000_000;
     bool generate_wallet;
     string item;
@@ -739,27 +558,27 @@ int _main(string[] args)
         main_args = getopt(args, std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
             "version", "display the version", &version_switch,
-            "overwrite|O", "Overwrite the config file and exits", &overwrite_switch,
-            "path", format("Set the path for the wallet files : default %s", path), &path,
-            "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
-            "device", format("Device file : default %s", options.devicefile), &options.devicefile,
-            "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
+            // "overwrite|O", "Overwrite the config file and exits", &overwrite_switch,
+            // "path", format("Set the path for the wallet files : default %s", path), &path,
+            // "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
+            // "device", format("Device file : default %s", options.devicefile), &options.devicefile,
+            // "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
             "invoice|i", format("Invoice file : default %s", invoicefile), &invoicefile,
             "create-invoice|c", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &create_invoice_command,
             "contract|t", format("Contractfile : default %s", options.contractfile), &options.contractfile,
             "send|s", "Send contract to the network", &send_flag,
-            "amount", "Display the wallet amount", &print_amount,
+            // "amount", "Display the wallet amount", &print_amount,
             "pay|I", format("Invoice to be payed : default %s", payfile), &payfile,
             "update|U", "Update your wallet", &update_wallet,
-            "item|m", "Invoice item select from the invoice file", &item,
+            // "item|m", "Invoice item select from the invoice file", &item,
             "pin|x", "Pincode", &pincode,
             "port|p", format("Tagion network port : default %d", options.port), &options.port,
             "url|u", format("Tagion url : default %s", options.addr), &options.addr,
-            "visual|g", "Visual user interface", &wallet_ui,
-            "questions", "Questions for wallet creation", &questions_str,
-            "answers", "Answers for wallet creation", &answers_str,
-            "generate-wallet", "Create a new wallet", &generate_wallet,
-            "health", "Healthcheck the node", &check_health,
+            // "visual|g", "Visual user interface", &wallet_ui,
+            // "questions", "Questions for wallet creation", &questions_str,
+            // "answers", "Answers for wallet creation", &answers_str,
+            // "generate-wallet", "Create a new wallet", &generate_wallet,
+            // "health", "Healthcheck the node", &check_health,
             "unlock", "Remove lock from all local bills", &unlock_bills,
             "setfee", "Specify the fee with fee", &setfee,
             "fee", "Set the fee to a specific amount", &fee,
