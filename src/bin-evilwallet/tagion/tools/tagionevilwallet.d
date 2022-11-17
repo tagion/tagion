@@ -782,7 +782,7 @@ int _main(string[] args)
     {
         writeln("payment");
         SignedContract signed_contract;
-        const flag = wallet_interface.evil_wallet.payment([invoice_to_pay], signed_contract, setfee, fee);
+        const flag = wallet_interface.evil_wallet.evil_payment([invoice_to_pay], signed_contract, setfee, fee);
         options.accountfile.fwrite(wallet_interface.evil_wallet.account);
 
         if (flag)
