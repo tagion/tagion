@@ -716,6 +716,8 @@ int _main(string[] args)
     bool unlock_bills;
     string path;
     string invoicefile = "invoice_file.hibon";
+    bool setfee;
+    double fee;
 
     auto logo = import("logo.txt");
 
@@ -758,7 +760,10 @@ int _main(string[] args)
             "answers", "Answers for wallet creation", &answers_str,
             "generate-wallet", "Create a new wallet", &generate_wallet,
             "health", "Healthcheck the node", &check_health,
-            "unlock", "Remove lock from all local bills", &unlock_bills
+            "unlock", "Remove lock from all local bills", &unlock_bills,
+            "setfee", "Specify the fee with fee", &setfee,
+            "fee", "Set the fee to a specific amount", &fee,
+
         );
     }
     catch (GetOptException e)
@@ -1093,7 +1098,9 @@ int _main(string[] args)
             //            writefln("invoice_args=%s create_invoice_command=%s", invoice_args, create_invoice_command);
             auto new_invoice = WalletInterface.StdEvilWallet.createInvoice(
                 invoice_args.eatOne,
-                invoice_args.eatOne.to!double.TGN);
+                invoice_args.eatOne.to!double.TGN,
+                );
+                
             // if (new_invoice.name.length is 0 || new_invoice.amount <= 0 || !invoice_args.empty)
             // {
             //     writefln("Invalid invoice %s", create_invoice_command);
@@ -1121,7 +1128,7 @@ int _main(string[] args)
         {
             writeln("payment");
             SignedContract signed_contract;
-            const flag = wallet_interface.evil_wallet.payment([invoice_to_pay], signed_contract);
+            const flag = wallet_interface.evil_wallet.payment([invoice_to_pay], signed_contract, setfee, fee);
             options.accountfile.fwrite(wallet_interface.evil_wallet.account);
 
             if (flag)

@@ -7,6 +7,8 @@ import std.range : tee;
 import std.array;
 import std.exception : assumeUnique;
 import core.time : MonoTime;
+import std.conv : to;
+
 
 //import std.stdio;
 import tagion.hibon.HiBON : HiBON;
@@ -261,7 +263,7 @@ import tagion.wallet.WalletException : check;
         return new_invoice;
     }
 
-    bool payment(const(Invoice[]) orders, ref SignedContract result)
+    bool payment(const(Invoice[]) orders, ref SignedContract result, bool setfee, double fee)
     {
         checkLogin;
         const topay = orders.map!(b => b.amount).sum;
@@ -269,10 +271,16 @@ import tagion.wallet.WalletException : check;
         // removed topay check.
         const size_in_bytes = 500;
         // todo set fee manually here.
-        const fees = globals.fees(topay, size_in_bytes); // 52.5
+        TagionCurrency fees;
+        if (setfee) {
+            fees = fee.to!double.TGN;
+        } else {
+            fees = globals.fees(topay, size_in_bytes); // 52.5
+        }
+
         const amount = topay + fees; 
         StandardBill[] contract_bills;
-        const enough = collect_bills(amount, contract_bills);
+        const enough = collect_bills(amount, contract_bills); // change to always be true.
         if (enough)
         {
             const total = contract_bills.map!(b => b.value).sum;
