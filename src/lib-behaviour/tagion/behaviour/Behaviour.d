@@ -199,6 +199,7 @@ auto automation(alias M)() if (isFeature!M) {
                     format("Scenarion '%s' does not exists. Possible scenarions is\n%s",
                     scenario_name, [FeatureContext.fieldNames[0 .. $ - 1]].join(",\n")));
             alias _Scenario = FeatureContext.Types[tuple_index];
+            pragma(msg, "Args.length ", Args.length);
             context[tuple_index] = new _Scenario(args);
         }
 

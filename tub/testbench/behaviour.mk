@@ -61,7 +61,7 @@ help-bdd:
 	${call log.help, "make bddenv", "Generates a environment test script"}
 	${call log.help, "make bddinit", "Initialize the testbench tool"}
 	${call log.help, "make behaviour", "Builds the BDD tool"}
-	${call log.help, "make clean-bddtest", "Will remove the bdd log files"}
+	${call log.help, "make clean-bdd", "Will remove the bdd log files and the testbecch"}
 	${call log.close}
 
 .PHONY: help-bdd
@@ -69,11 +69,13 @@ help-bdd:
 help: help-bdd
 
 # del hibon filse
-clean-bddtest:
+clean-bdd:
 	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RMDIR) $(BDD_LOG)
 
 .PHONY: help-bdd
 
-clean: clean-bddtest
+clean: clean-bdd
 
 

@@ -17,7 +17,7 @@ enum feature = Feature(
             "",
             ""]);
 
-alias FeatureContex = Tuple!(
+alias FeatureContext = Tuple!(
         CreatesASSLCertificate, "CreatesASSLCertificate",
         FeatureGroup*, "result"
 );
@@ -50,4 +50,3 @@ class CreatesASSLCertificate {
         return Document();
     }
 }
-
