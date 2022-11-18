@@ -40,7 +40,7 @@ struct MainSetup(TestOpt) {
 
 int testMain(TestOpt)(ref MainSetup!TestOpt setup, string[] args) {
 
-            Options opt;
+    Options opt;
     /** file for configurations */
     enum tagionconfig = "tagionwave".setExtension(FileExtension.json);
     enum ONE_ARGS_ONLY = 2;
@@ -61,7 +61,7 @@ int testMain(TestOpt)(ref MainSetup!TestOpt setup, string[] args) {
     if (setup.config_file.exists) {
         if (setup.config_file.baseName == tagionconfig) {
             opt.load(setup.config_file);
-    setup.setDefault(setup.options, opt);
+            setup.setDefault(setup.options, opt);
         }
         else {
             setup.load;
@@ -69,9 +69,9 @@ int testMain(TestOpt)(ref MainSetup!TestOpt setup, string[] args) {
     }
     else {
         opt.setDefaultOption;
-    setup.setDefault(setup.options, opt);
+        setup.setDefault(setup.options, opt);
     }
-writefln("TestMain %s", opt.transaction.service.openssl);
+
     if (version_switch) {
         revision_text.writeln;
         return 0;
@@ -85,7 +85,6 @@ writefln("TestMain %s", opt.transaction.service.openssl);
             setup.config_file = setup.default_file;
         }
         setup.save;
-        writefln("Configure file written to %s", setup.config_file);
         return 0;
     }
 
