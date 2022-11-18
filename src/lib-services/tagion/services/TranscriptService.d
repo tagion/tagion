@@ -18,13 +18,49 @@ import tagion.basic.TagionExceptions;
 import tagion.script.SmartScript;
 import tagion.script.StandardRecords : Contract, SignedContract, PayContract;
 import tagion.basic.ConsensusExceptions : ConsensusException;
-import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.SecureNet : StdSecureNet, StdHashNet;
 import tagion.communication.HiRPC;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Fingerprint : Fingerprint;
+import tagion.hashchain.HashChainFileStorage;
+import tagion.hashchain.HashChainStorage;
+import tagion.hashchain.EpochChainBlock;
+import tagion.hashchain.EpochChain;
+import tagion.utils.Miscellaneous : toHexString;
+
+protected alias EpochDumpsStorage = HashChainFileStorage!EpochChainBlock;
+protected alias AbstractEPDStorage = HashChainStorage!EpochChainBlock;
+
+/** Save hashed dump with transactions
+    *    @param list - transactions list from dumping
+    *    @param  bullseye - hash of dart database
+    */
+private static void saveHashedDump(ref const Document list, Buffer bullseye)
+{
+    static EpochChain chain = null;
+    static AbstractEPDStorage storage = null;
+    static StdHashNet hasher = null;
+    if (storage is null)
+    {
+        const Options _options = getOptions();
+        hasher = new StdHashNet;
+        storage = new EpochDumpsStorage(_options.transaction_dumps_dirrectory, hasher);
+        chain = new EpochChain(storage);
+    }
+
+    ubyte[] prevhash = [];
+    auto last_block = chain.getLastBlock();
+    if (last_block !is null)
+    {
+        prevhash = last_block.fingerprint.dup;
+    }
+
+    auto record = new EpochChainBlock(list, prevhash.idup, bullseye, hasher);
+    chain.append(record);
+}
 
 // This function performs Smart contract executions
 void transcriptServiceTask(string task_name, string dart_task_name, string recorder_task_name) nothrow
@@ -142,6 +178,10 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     current_epoch++;
                 }
                 auto recorder = rec_factory.recorder;
+
+                auto contracts_dump = new HiBON;
+                long dump_count = 0;
+
                 foreach (payload_el; payload_doc[])
                 {
                     immutable doc = payload_el.get!Document;
@@ -250,4 +290,29 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
     {
         fatal(t);
     }
+}
+
+/// test hashes dump creating
+unittest
+{
+    import std.file;
+
+    auto doc = new HiBON();
+    doc["A"] = "B";
+    immutable ubyte[] eye = [6, 5, 4];
+    auto realDoc = Document(doc);
+
+    Options _options = getOptions();
+    _options.transaction_dumps_dirrectory = "tmp_hashes";
+    setOptions(_options);
+
+    saveHashedDump(realDoc, eye);
+    saveHashedDump(realDoc, eye);
+
+    enum hashOne = "tmp_hashes/3746c7e6718203846e8d2676baeea127a1c144752721a7c7671c3373b89dca35.epdmp";
+    enum hashTwo = "tmp_hashes/9f860b17e59c0b509127ce27dbb19433768ff857cc1c11c5ffad399a340654fa.epdmp";
+
+    assert(exists(hashOne));
+    assert(exists(hashTwo));
+    rmdirRecurse(options.transaction_dumps_dirrectory);
 }
