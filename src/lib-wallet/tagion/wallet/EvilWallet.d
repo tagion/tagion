@@ -9,7 +9,7 @@ import std.array;
 import std.exception : assumeUnique;
 import core.time : MonoTime;
 import std.conv : to;
-
+import std.stdio;
 
 //import std.stdio;
 import tagion.hibon.HiBON : HiBON;
@@ -263,7 +263,7 @@ import tagion.wallet.WalletException : check;
         return new_invoice;
     }
 
-    bool payment(const(Invoice[]) orders, ref SignedContract result, bool setfee, double fee)
+    bool payment(const(Invoice[]) orders, ref SignedContract result, bool setfee, double fee, bool invalid_signature)
     {
         checkLogin;
         const topay = orders.map!(b => b.amount).sum;
@@ -299,18 +299,24 @@ import tagion.wallet.WalletException : check;
             });
             result.contract.script = Script("pay");
 
-            immutable message = net.hashOf(result.contract.toDoc);
+            immutable message = net.hashOf(result.contract.toDoc); //take the hash of the document.
             auto shared_net = (() @trusted { return cast(shared) net; })();
             auto bill_net = new Net;
             // Sign all inputs
             result.signs = contract_bills
                 .filter!(b => b.owner in account.derives)
                 .map!((b) {
+                    if (invalid_signature) {
+                        immutable tweak_code = "invalid_signature_message";
+                        bill_net.derive(tweak_code, shared_net);
+                        return bill_net.sign(message);
+                    } 
                     immutable tweak_code = account.derives[b.owner];
                     bill_net.derive(tweak_code, shared_net);
                     return bill_net.sign(message);
                 })
                 .array;
+            writeln(result.signs);
             return true;
         }
         result = result.init;

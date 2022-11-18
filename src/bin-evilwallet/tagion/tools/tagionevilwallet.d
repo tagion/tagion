@@ -527,6 +527,7 @@ int _main(string[] args)
     string invoicefile = "invoice_file.hibon";
     bool setfee;
     double fee;
+    bool invalid_signature;
 
     auto logo = import("logo.txt");
 
@@ -557,7 +558,7 @@ int _main(string[] args)
             "url|u", format("Tagion url : default %s", options.addr), &options.addr,
             "setfee", "Specify the fee with fee", &setfee,
             "fee", "Set the fee to a specific amount", &fee,
-
+            "invalid-signature", "Makes the signature invalid", &invalid_signature,
         );
     }
     catch (GetOptException e)
@@ -764,7 +765,7 @@ int _main(string[] args)
     {
         writeln("payment");
         SignedContract signed_contract;
-        const flag = wallet_interface.evil_wallet.payment([invoice_to_pay], signed_contract, setfee, fee);
+        const flag = wallet_interface.evil_wallet.payment([invoice_to_pay], signed_contract, setfee, fee, invalid_signature);
         options.accountfile.fwrite(wallet_interface.evil_wallet.account);
 
         if (flag)
