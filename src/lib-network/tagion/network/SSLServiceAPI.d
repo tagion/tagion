@@ -48,7 +48,7 @@ struct SSLServiceAPI {
         service.send(id, buffer);
     }
 
-    @system
+    @trusted
     void run() nothrow {
         try {
             log.register(ssl_options.task_name);
@@ -112,7 +112,7 @@ struct SSLServiceAPI {
         }
     }
 
-    @system
+    @trusted
     Thread start() {
         service_task = new Thread(&run).start;
         return service_task;

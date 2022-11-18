@@ -1,13 +1,16 @@
 module tagion.testbench.network.TestSSLServer;
 
 import core.thread.fiber;
+import core.time;
 import std.concurrency;
+import std.stdio;
 
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 import tagion.basic.Types : Control;
 import tagion.logger.Logger;
 import tagion.basic.TagionExceptions : fatal;
+import tagion.GlobalSignals : abort;
 
 import tagion.network.SSLFiberService;
 import tagion.network.SSLServiceAPI;
@@ -75,10 +78,12 @@ void taskTestServer(
             ssl_test_service.stop;
         }
         ownerTid.send(Control.LIVE);
-        while (!stop) {
-            receive(
+        while (!stop && !abort) {
+            receiveTimeout(
+                    500.msecs,
                     &handleState
             );
+            writeln("..... running ....");
         }
     }
     catch (Throwable e) {
