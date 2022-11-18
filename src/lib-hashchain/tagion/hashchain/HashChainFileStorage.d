@@ -116,7 +116,7 @@ import tagion.utils.Miscellaneous : decode, toHexString;
             }
             static if(is(Block == EpochChainBlock))
             {
-                return FileExtension.hibon;
+                return FileExtension.epochdumpblock;
             }
 
             version (unittest)

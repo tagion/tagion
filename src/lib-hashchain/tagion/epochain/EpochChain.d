@@ -1,6 +1,6 @@
 /// \file EpochChain.d
 
-module tagion.recorder.EpochChain;
+module tagion.hashchain.EpochChain;
 
 import tagion.hashchain.HashChain;
 import tagion.hashchain.EpochChainBlock;
