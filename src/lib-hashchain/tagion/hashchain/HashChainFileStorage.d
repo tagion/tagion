@@ -60,7 +60,8 @@ import tagion.utils.Miscellaneous : decode, toHexString;
         try
         {
             auto doc = fread(makePath(fingerprint));
-            return new Block(doc);
+            // TODO: bad decision, redesign to have automatic set hash from only doc
+            return new Block(doc, net);
         }
         catch (Exception e)
         {

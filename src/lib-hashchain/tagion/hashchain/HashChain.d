@@ -36,7 +36,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
 @safe class HashChain(Block : HashChainBlock) if (isHiBONRecord!Block)
 {
     /** Handler of chain blocks storage */
-    protected HashChainStorage!Block storage;
+    protected HashChainStorage!Block _storage;
 
     /** Last block in chain */
     protected Block _last_block;
@@ -44,13 +44,13 @@ import tagion.utils.Miscellaneous : toHexString, decode;
     /** Ctor initializes database and reads existing data.
      *      @param folder_path - path to folder with chain files
      */
-    this(string folder_path, const HashNet net)
+    this(ref HashChainStorage!Block storage, const HashNet net)
     {
-        this.storage = new HashChainFileStorage!Block(folder_path, net);
+        this._storage = storage;
 
         @safe Block findLastBlock()
         {
-            auto hashes = storage.getHashes;
+            auto hashes = _storage.getHashes;
 
             // Table for searching where
             //      key: fingerprints of blocks
@@ -59,7 +59,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
             foreach (hash; hashes)
             {
                 Buffer fingerprint = decode(hash);
-                auto block = storage.read(fingerprint);
+                auto block = _storage.read(fingerprint);
 
                 link_table[fingerprint] = block.getPrevious;
             }
@@ -81,7 +81,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
 
                 if (is_last_block)
                 {
-                    return storage.read(fingerprint);
+                    return _storage.read(fingerprint);
                 }
             }
 
@@ -104,7 +104,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
      */
     void append(Block block)
     {
-        storage.write(block);
+        _storage.write(block);
         _last_block = block;
     }
 
@@ -115,8 +115,8 @@ import tagion.utils.Miscellaneous : toHexString, decode;
     {
         try
         {
-            auto blocks_count = storage.getHashes.length;
-            auto first_block = storage.find((block) => block.getPrevious == []);
+            auto blocks_count = _storage.getHashes.length;
+            auto first_block = _storage.find((block) => block.getPrevious == []);
             if (blocks_count == 0 && first_block is null && _last_block is null)
             {
                 // Empty chain
@@ -133,7 +133,7 @@ import tagion.utils.Miscellaneous : toHexString, decode;
             auto current_block = _last_block;
             foreach (i; 1 .. blocks_count)
             {
-                auto block = storage.read(current_block.getPrevious);
+                auto block = _storage.read(current_block.getPrevious);
                 if (block is null)
                 {
                     return false;
@@ -159,5 +159,10 @@ import tagion.utils.Miscellaneous : toHexString, decode;
     void replayFrom(void delegate(Block) @safe action, bool delegate(Block) @safe condition)
     {
         // TODO: search from last to first until condition(block) and then foreach block action(block)
+    }
+
+    HashChainStorage!Block storage()
+    {
+        return _storage;
     }
 }

@@ -8,7 +8,7 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
-import tagion.recorderchain.RecorderChain : RecorderChain;
+import tagion.recorderchain.RecorderChain;
 import tagion.services.Options : Options;
 import tagion.tasks.TaskWrapper;
 import tagion.utils.Fingerprint : Fingerprint;
@@ -55,7 +55,10 @@ mixin TrustedConcurrency;
      */
     void opCall(immutable(Options) opts)
     {
-        recorder_chain = new RecorderChain(opts.recorder_chain.folder_path, net);
+        RecorderChainStorage storage = new RecorderChainFileStorage(
+            opts.recorder_chain.folder_path, net);
+
+        recorder_chain = new RecorderChain(storage, net);
 
         ownerTid.send(Control.LIVE);
         while (!stop)
@@ -103,6 +106,8 @@ unittest
         assert(receiveOnly!Control == Control.LIVE);
     }
 
-    auto temp_recorder_chain = new RecorderChain(temp_folder, new StdHashNet);
+    HashNet net = new StdHashNet;
+    RecorderChainStorage storage = new RecorderChainFileStorage(temp_folder, net);
+    auto temp_recorder_chain = new RecorderChain(storage, net);
     assert(temp_recorder_chain.isValidChain);
 }
