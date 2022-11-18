@@ -518,29 +518,18 @@ int _main(string[] args)
 {
     immutable program = args[0];
     auto config_file = "tagionwallet.json";
-    bool overwrite_switch; /// Overwrite the config file
     bool version_switch;
     string payfile;
-    string questions_str;
-    string answers_str;
     bool wallet_ui;
-    bool update_wallet;
-    ulong value = 1000_000_000;
-    bool generate_wallet;
-    string item;
     string pincode;
     bool send_flag;
     string create_invoice_command;
-    bool print_amount;
-    bool unlock_bills;
-    string path;
     string invoicefile = "invoice_file.hibon";
     bool setfee;
     double fee;
 
     auto logo = import("logo.txt");
 
-    bool check_health;
 
     WalletOptions options;
     if (config_file.exists)
@@ -563,11 +552,9 @@ int _main(string[] args)
             "contract|t", format("Contractfile : default %s", options.contractfile), &options.contractfile,
             "send|s", "Send contract to the network", &send_flag,
             "pay|I", format("Invoice to be payed : default %s", payfile), &payfile,
-            "update|U", "Update your wallet", &update_wallet,
             "pin|x", "Pincode", &pincode,
             "port|p", format("Tagion network port : default %d", options.port), &options.port,
             "url|u", format("Tagion url : default %s", options.addr), &options.addr,
-            "unlock", "Remove lock from all local bills", &unlock_bills,
             "setfee", "Specify the fee with fee", &setfee,
             "fee", "Set the fee to a specific amount", &fee,
 
@@ -737,11 +724,6 @@ int _main(string[] args)
     {
         writeln("Invoice file "~payfile~" not found");
     }
-    if (unlock_bills)
-    {
-        wallet_interface.evil_wallet.deactivate_bills;
-        options.accountfile.fwrite(wallet_interface.evil_wallet.account);
-    }
     
 
     if (create_invoice_command.length)
@@ -782,7 +764,7 @@ int _main(string[] args)
     {
         writeln("payment");
         SignedContract signed_contract;
-        const flag = wallet_interface.evil_wallet.evil_payment([invoice_to_pay], signed_contract, setfee, fee);
+        const flag = wallet_interface.evil_wallet.payment([invoice_to_pay], signed_contract, setfee, fee);
         options.accountfile.fwrite(wallet_interface.evil_wallet.account);
 
         if (flag)
