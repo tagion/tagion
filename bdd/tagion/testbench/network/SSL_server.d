@@ -4,7 +4,11 @@ import tagion.behaviour.Behaviour;
 import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.BehaviourException;
 import tagion.hibon.Document;
+import tagion.hibon.HiBONJSON;
 import std.typecons;
+import std.outbuffer;
+import std.format;
+import std.stdio;
 
 import tagion.network.SSLOptions;
 
@@ -33,8 +37,11 @@ class CreatesASSLCertificate {
 
     @Given("the domain information of a SSL certificate")
     Document certificate() {
-        configureOpenSSL(opt);
-        check(false, "Check for 'certificate' not implemented");
+        auto bout = new OutBuffer;
+     writefln("%s", opt);
+        const exit_code = configureOpenSSL(opt, bout);
+       writefln("<%s>", bout.toString); 
+        check(exit_code == 0, format("Certificate failed with exit code %d and stdout %s", exit_code, bout));
         return Document();
     }
 

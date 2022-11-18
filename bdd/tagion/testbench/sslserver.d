@@ -15,25 +15,23 @@ import tagion.testbench.Environment;
 import tagion.testbench.network;
 
 void setDefault(ref SSLOptions options, const Options opt) {
+    
+writefln("setDefault %s", opt.transaction.service.openssl);
     options = opt.transaction.service;
 }
 
 mixin Main!_main;
 
 int _main(string[] args) {
+    writefln("args=%s", args);
     auto setup = mainSetup!SSLOptions("sslserver", &setDefault);
     int result = testMain(setup, args);
     if (result == 0) {
+        writefln("sslserver=%s", setup.options.openssl);
         auto sslserver_handle = automation!SSL_server;
-        pragma(msg, typeof(sslserver_handle));
-        pragma(msg, "CreateASSLCertificate", typeof(sslserver_handle.opDispatch!"CreatesASSLCertificate"));
-//        alias Create = sslserver_handle.opDispatch!"CreatesASSLCertificate";
-        //sslserver_handle.opDispatch!"CreatesASSLCertificate"(setup.options.openssl);
         sslserver_handle.CreatesASSLCertificate(setup.options.openssl);
         auto sslserver_context=sslserver_handle.run;
     "/tmp/result.hibon".fwrite(*sslserver_context.result);
-       // pragma(msg, sslserver_handle.CreatesASSLCertificate);
-        //    sslserber_handle.CreatesASSLCertificate(setup.options);
     }
     //    env.writeln;
     return result;

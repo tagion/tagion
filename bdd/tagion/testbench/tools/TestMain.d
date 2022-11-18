@@ -9,7 +9,7 @@ import std.format;
 import std.string : join;
 import tagion.tools.revision : revision_text;
 
-import tagion.services.Options : Options;
+import tagion.services.Options;
 
 MainSetup!TestOpt mainSetup(TestOpt)(
         string config_file,
@@ -38,8 +38,9 @@ struct MainSetup(TestOpt) {
     }
 }
 
-int testMain(TestOpt)(MainSetup!TestOpt setup, string[] args) {
+int testMain(TestOpt)(ref MainSetup!TestOpt setup, string[] args) {
 
+            Options opt;
     /** file for configurations */
     enum tagionconfig = "tagionwave".setExtension(FileExtension.json);
     enum ONE_ARGS_ONLY = 2;
@@ -59,23 +60,18 @@ int testMain(TestOpt)(MainSetup!TestOpt setup, string[] args) {
     }
     if (setup.config_file.exists) {
         if (setup.config_file.baseName == tagionconfig) {
-            Options opt;
             opt.load(setup.config_file);
-            setup.setDefault(setup.options, opt);
+    setup.setDefault(setup.options, opt);
         }
         else {
             setup.load;
         }
     }
     else {
-        import tagion.services.Options;
-
-        Options opt;
         opt.setDefaultOption;
-
-        setup.setDefault(setup.options, opt);
+    setup.setDefault(setup.options, opt);
     }
-
+writefln("TestMain %s", opt.transaction.service.openssl);
     if (version_switch) {
         revision_text.writeln;
         return 0;

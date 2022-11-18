@@ -5,9 +5,11 @@ import std.array : array;
 import std.file : exists, mkdirRecurse;
 import std.process : pipeProcess, wait;
 import std.path : dirName;
-import std.stdio : stderr, writeln;
+//import std.stdio : stderr, writeln;
+import std.outbuffer : OutBuffer;
 
 import tagion.utils.JSONCommon;
+import tagion.hibon.HiBONRecord;
 
 struct OpenSSL {
     string certificate; /// Certificate file name
@@ -75,22 +77,25 @@ struct SSLOptions {
     mixin JSONConfig;
 }
 
-void configureOpenSSL(const(OpenSSL) openssl) @trusted {
+int configureOpenSSL(const(OpenSSL) openssl, OutBuffer bout=null) @trusted {
+    int exit_code;
     if (!openssl.certificate.exists || !openssl.private_key.exists) {
         openssl.certificate.dirName.mkdirRecurse;
         openssl.private_key.dirName.mkdirRecurse;
         auto pipes = pipeProcess(openssl.command.array);
         scope (exit) {
-            wait(pipes.pid);
+            exit_code = wait(pipes.pid);
         }
         openssl.config.each!(a => pipes.stdin.writeln(a));
         pipes.stdin.writeln(".");
         pipes.stdin.flush;
-        foreach (s; pipes.stderr.byLine) {
-            stderr.writeln(s);
-        }
-        foreach (s; pipes.stdout.byLine) {
-            writeln(s);
+        if (bout) {
+            bout.writefln("stderr:");
+            pipes.stderr.byLine.each!(s => bout.writefln(s));
+            bout.writefln("stdout:");
+            pipes.stdout.byLine.each!(s => bout.writefln(s));
+
         }
     }
+    return exit_code;
 }
