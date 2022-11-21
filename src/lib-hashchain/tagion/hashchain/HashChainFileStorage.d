@@ -11,6 +11,7 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
 import tagion.hibon.HiBONRecord : fread, fwrite;
+import tagion.logger.Logger : log;
 import tagion.utils.Miscellaneous : decode, toHexString;
 
 /** @brief File contains class HashChainFileStorage
@@ -24,7 +25,6 @@ import tagion.utils.Miscellaneous : decode, toHexString;
 {
     protected
     {
-
         /** Path to local folder where chain files are stored */
         string folder_path;
 
@@ -48,7 +48,9 @@ import tagion.utils.Miscellaneous : decode, toHexString;
      */
     void write(const(Block) block)
     {
-        fwrite(makePath(block.getHash), block.toHiBON);
+        auto filename = makePath(block.getHash);
+        log.trace("Added recorder chain file '%s'", filename);
+        fwrite(filename, block.toHiBON);
     }
 
     /** Reads file with given fingerprint and creates block from read data

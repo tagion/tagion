@@ -1,33 +1,15 @@
 // /// \file HashChain.d
 module tagion.hashchain.HashChain;
 
-import std.algorithm : filter, map;
-import std.array : array;
-import std.file : exists, mkdirRecurse, dirEntries, SpanMode;
-import std.path : buildPath, baseName, extension, setExtension, stripExtension;
-import std.typecons : Tuple;
-
-import tagion.basic.Types : Buffer, FileExtension, withDot;
-import tagion.basic.TagionExceptions : TagionException;
-import tagion.crypto.SecureNet : StdHashNet;
+import tagion.basic.Types : Buffer;
 import tagion.crypto.SecureInterfaceNet : HashNet;
-import tagion.dart.Recorder : RecordFactory;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
-import tagion.hashchain.HashChainFileStorage : HashChainFileStorage;
-import tagion.hibon.HiBONRecord : fread, fwrite, isHiBONRecord;
-import tagion.utils.Miscellaneous : toHexString, decode;
-
-// TODO: review imports
+import tagion.hibon.HiBONRecord : isHiBONRecord;
+import tagion.utils.Miscellaneous : decode;
 
 /** @brief File contains class HashChain
  */
-
-// TODO: temp soultion
-@safe FileExtension getExtension()
-{
-    return FileExtension.recchainblock;
-}
 
 /**
  * \class HashChain
