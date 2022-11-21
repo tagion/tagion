@@ -125,39 +125,6 @@ protected template allMethodFilter(This, alias pred) {
     enum allMethodFilter = Filter!(allMembers);
 }
 
-//enum respone_callback_prefix = "__";
-
-string response_callback(string method_name) {
-    return "__"~method_name;
-}
-
-package immutable(string[]) orderMethods(This, string[] actor_methods)() {
-    string[] result;
-    static foreach(method_name; actor_methods) {
-        alias MethodType = typeof(__traits(getMember, This, method));
-        static if (is(ReturnType!MethodType == void)) {
-            result ~= method_name;
-        }
-        else {
-            result ~= method_name.respone_callback; 
-        }
-    }
-    return result;
-}
-
-package string responseCallbackGenerator(This, string[] actor_mothods)() {
-    string[] result;
-    static foreach(method_name; actor_methods) {
-        alias MethodType = typeof(__traits(getMember, This, mothod));
-        static if (!is(ReturnType!MethodType == void)) {
-            result ~= format(q{
-                void %1$s(immutable(ActionId) id, 
-            },
-
-        );
-        }
-    }
-}
 
 mixin template TaskActor() {
     import concurrency = std.concurrency;
@@ -345,7 +312,6 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                 .check(concurrency.receiveOnly!(Control) is Control.END, format("Expecting to received and %s after stop", Control
                         .END));
             }
-
             void halt() @trusted {
                 concurrency.send(tid, Control.STOP);
             }
@@ -444,9 +410,6 @@ version (unittest) {
             }
         }
 
-        @method void response_callback(immutable(ActorId) id, string text) {
-            auto 
-        }
         mixin TaskActor;
 
         @task void runningTask(long label) {
@@ -501,7 +464,8 @@ unittest {
     }
 }
 
-version (unittest) {
+
+version(unittest) {
     struct MyActorWithCtor {
         immutable(string) common_text;
         @disable this();
@@ -553,51 +517,3 @@ unittest {
     }
 }
 
-
-@safe
-unittest {
-    void got_response(string text) {
-        writefln("text=%s", text);
-    }   
-    actor_1.request_a_response(actorID!(void), &got_response);
-
-}
-version (none) {
-    version (unittest) {
-        struct MyRequestActor {
-
-            @method void request(string task_name, string some_text) {
-                response(42, format("<%s>", text));
-            }
-
-        }
-
-        struct MyResponseActor {
-
-            @method void response(string task_name) {
-                response(42, format("<%s>", text));
-            }
-
-        }
-
-        enum x = isRequestCallback!(ActorWithResponce.request);
-        pragma(msg, "xxxx ", x);
-    }
-
-    template isRequestCallback(alias F) {
-        static if (isCallable!F) {
-            alias Params = Parameters!F;
-            alias ParamNames = ParameterIdentifierTuple!F;
-            pragma(msg, "Params ", Params);
-            pragma(msg, "ParamNames ", ParamNames);
-            enum isRequestCallback = (Params.length >= 2) && isDelegate!(Params[$ - 1]);
-        }
-        else {
-            enum isRequestCallback = false;
-        }
-    }
-
-}
-
-//enum isRequestCallback(alias F) = isCallable!F
-//enum isRequest(This, string name)
