@@ -22,7 +22,7 @@ import tagion.services.LoggerService;
 import tagion.services.TagionFactory;
 import tagion.GlobalSignals;
 import tagion.network.SSLOptions : OpenSSL, configureOpenSSL;
-import tagion.tasks.TaskWrapper;
+import tagion.actor.TaskWrapper;
 
 mixin TrustedConcurrency;
 
