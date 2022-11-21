@@ -11,7 +11,7 @@ import core.time : MonoTime;
 import std.conv : to;
 import std.stdio;
 
-//import std.stdio;
+import std.stdio;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
@@ -263,14 +263,13 @@ import tagion.wallet.WalletException : check;
         return new_invoice;
     }
 
-    bool payment(const(Invoice[]) orders, ref SignedContract result, bool setfee, double fee, bool invalid_signature)
+    bool payment(const(Invoice[]) orders, ref SignedContract result, bool setfee, double fee, bool invalid_signature, bool zero_pubkey)
     {
         checkLogin;
         const topay = orders.map!(b => b.amount).sum;
 
         // removed topay check.
         const size_in_bytes = 500;
-        // todo set fee manually here.
         TagionCurrency fees;
         if (setfee) {
             fees = fee.to!double.TGN;
@@ -280,7 +279,7 @@ import tagion.wallet.WalletException : check;
 
         const amount = topay + fees; 
         StandardBill[] contract_bills;
-        const enough = collect_bills(amount, contract_bills); // change to always be true.
+        const enough = collect_bills(amount, contract_bills); // changed to always be true.
         if (enough)
         {
             const total = contract_bills.map!(b => b.value).sum;
@@ -292,11 +291,26 @@ import tagion.wallet.WalletException : check;
                 Invoice money_back;
                 money_back.amount = rest;
                 registerInvoice(money_back);
-                result.contract.output[money_back.pkey] = rest.toDoc;
+
+                // 
+                if (zero_pubkey) {
+                    result.contract.output[money_back.pkey] = [0,0,0,0];
+                } else {
+                    result.contract.output[money_back.pkey] = rest.toDoc;
+                }
             }
-            orders.each!((o) {
+
+            // set the pubkey of the contracts to 0x000
+            if (zero_pubkey) {
+                orders.each!((o) {
+                    result.contract.output[o.pkey] = [0,0,0,0];
+                });
+            } else {
+                orders.each!((o) {
                 result.contract.output[o.pkey] = o.amount.toDoc;
             });
+            }
+
             result.contract.script = Script("pay");
 
             immutable message = net.hashOf(result.contract.toDoc); //take the hash of the document.
@@ -316,7 +330,6 @@ import tagion.wallet.WalletException : check;
                     return bill_net.sign(message);
                 })
                 .array;
-            writeln(result.signs);
             return true;
         }
         result = result.init;

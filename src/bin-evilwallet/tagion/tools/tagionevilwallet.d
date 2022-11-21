@@ -509,7 +509,6 @@ struct WalletInterface
 
 import tagion.utils.JSONCommon;
 
-
 import tagion.tools.Basic;
 
 mixin Main!(_main, "evilwallet");
@@ -528,9 +527,9 @@ int _main(string[] args)
     bool setfee;
     double fee;
     bool invalid_signature;
+    bool zero_pubkey;
 
     auto logo = import("logo.txt");
-
 
     WalletOptions options;
     if (config_file.exists)
@@ -559,6 +558,7 @@ int _main(string[] args)
             "setfee", "Specify the fee with fee", &setfee,
             "fee", "Set the fee to a specific amount", &fee,
             "invalid-signature", "Makes the signature invalid", &invalid_signature,
+            "zero-pubkey", "Sets the invoice output pkeys to 0x00...", &zero_pubkey,
         );
     }
     catch (GetOptException e)
@@ -607,12 +607,9 @@ int _main(string[] args)
         return 0;
     }
 
-
-
     auto wallet_interface = WalletInterface(options);
 
     HiRPC hirpc;
-    
 
     if (options.walletfile.exists)
     {
@@ -621,7 +618,7 @@ int _main(string[] args)
         {
             wallet_doc = options.walletfile.fread;
         }
-        catch(TagionException e)
+        catch (TagionException e)
         {
             writeln(e.msg);
             return 1;
@@ -629,7 +626,7 @@ int _main(string[] args)
         const pin_doc = options.devicefile.exists ? options.devicefile.fread : Document.init;
         if (wallet_doc.isInorder && pin_doc.isInorder)
         {
-            try 
+            try
             {
                 wallet_interface.evil_wallet = WalletInterface.StdEvilWallet(wallet_doc, pin_doc);
             }
@@ -723,9 +720,8 @@ int _main(string[] args)
     }
     else if (payfile.length)
     {
-        writeln("Invoice file "~payfile~" not found");
+        writeln("Invoice file " ~ payfile ~ " not found");
     }
-    
 
     if (create_invoice_command.length)
     {
@@ -736,8 +732,8 @@ int _main(string[] args)
         auto new_invoice = WalletInterface.StdEvilWallet.createInvoice(
             invoice_args.eatOne,
             invoice_args.eatOne.to!double.TGN,
-            );
-            
+        );
+
         // if (new_invoice.name.length is 0 || new_invoice.amount <= 0 || !invoice_args.empty)
         // {
         //     writefln("Invalid invoice %s", create_invoice_command);
@@ -755,7 +751,7 @@ int _main(string[] args)
         {
             invoicefile.fwrite(new_invoice);
         }
-        catch(FileException e)
+        catch (FileException e)
         {
             writeln(e.msg);
             return 1;
@@ -765,7 +761,7 @@ int _main(string[] args)
     {
         writeln("payment");
         SignedContract signed_contract;
-        const flag = wallet_interface.evil_wallet.payment([invoice_to_pay], signed_contract, setfee, fee, invalid_signature);
+        const flag = wallet_interface.evil_wallet.payment([invoice_to_pay], signed_contract, setfee, fee, invalid_signature, zero_pubkey);
         options.accountfile.fwrite(wallet_interface.evil_wallet.account);
 
         if (flag)
@@ -781,7 +777,7 @@ int _main(string[] args)
             return 0;
         }
     }
-    
+
     if (send_flag)
     {
         if (options.contractfile.exists)
