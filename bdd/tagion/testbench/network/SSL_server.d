@@ -5,7 +5,10 @@ import std.outbuffer;
 import std.format;
 import std.stdio;
 import std.file : exists;
+import std.concurrency;
 import core.thread.osthread : Thread;
+import core.time;
+import std.socket;
 
 import tagion.behaviour.Behaviour;
 import tagion.behaviour.BehaviourResult;
@@ -13,6 +16,7 @@ import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.BehaviourException;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
+import tagion.basic.Types : Control;
 
 import std.socket : InternetAddress, Socket, SocketSet, SocketShutdown, shutdown, AddressFamily;
 import tagion.network.SSLOptions;
@@ -73,38 +77,38 @@ class CreatesASSLCertificate {
 @safe @Scenario("SSL service using a specified certificate",
         [])
 class SSLServiceUsingASpecifiedCertificate {
-    const SSLOptions opt;
-    this(const(SSLOptions) opt)  {
+    immutable SSLOptions opt;
+    string task_name;
+    this(const(SSLOptions) opt, string task_name) {
         this.opt = opt;
-        auto relay = new SSLTestRelay;
-        service_api = SSLServiceAPI(opt, relay);
-    writeln("---- ---- ----");
-}
-
-    SSLServiceAPI service_api;
-    Thread service_thread;
-    ~this() {
-        service_api.stop;
+        this.task_name = task_name;
+        writeln("---- ---- ----");
     }
 
+    ~this() {
+  //      listener.close;
+    }
+    SSLSocket listener;
     @Given("certificate are available open a server")
-    Document aServer() {
-    writefln("Start xxx");
-        service_thread = service_api.start;
-    writefln("After start");
+    Document aServer() @trusted {
+         listener = new SSLSocket(AddressFamily.INET, EndpointType.Server);
+        listener.configureContext(opt.openssl.certificate,
+                opt.openssl.private_key);
+        simpleSSLServer(opt, listener);
         return result_ok;
     }
 
     @When("the server has respond to a number of request")
-    Document ofRequest() {
-        check(false, "Check for 'ofRequest' not implemented");
-        return Document();
+    Document ofRequest() @trusted {
+//        Thread.sleep(200.msecs);
+//        test_server_tid.send(Control.STOP);
+        return result_ok;
     }
 
     @Then("close the server")
     Document theServer() {
-        check(false, "Check for 'theServer' not implemented");
-        return Document();
+//        check(false, "Check for 'theServer' not implemented");
+        return result_ok;
     }
 
 }

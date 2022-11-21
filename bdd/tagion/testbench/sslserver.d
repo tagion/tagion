@@ -34,7 +34,7 @@ int _main(string[] args) {
         writefln("sslserver=%s", setup.options.openssl);
         auto sslserver_handle = automation!SSL_server;
         sslserver_handle.CreatesASSLCertificate(setup.options.openssl);
-        sslserver_handle.SSLServiceUsingASpecifiedCertificate(setup.options);
+        sslserver_handle.SSLServiceUsingASpecifiedCertificate(setup.options, "ssl_test_task");
         auto sslserver_context = sslserver_handle.run;
         "/tmp/result.hibon".fwrite(*sslserver_context.result);
     }
