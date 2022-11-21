@@ -1,5 +1,7 @@
+
 module tagion.wallet.EvilWallet;
 import tagion.wallet.SecureWallet;
+
 
 import std.format;
 import std.string : representation;
@@ -279,63 +281,62 @@ import tagion.wallet.WalletException : check;
 
         const amount = topay + fees; 
         StandardBill[] contract_bills;
-        const enough = collect_bills(amount, contract_bills); // changed to always be true.
-        if (enough)
+        collect_bills(amount, contract_bills); // changed to always be true.
+
+        const total = contract_bills.map!(b => b.value).sum;
+
+        result.contract.inputs = contract_bills.map!(b => net.hashOf(b.toDoc)).array;
+        const rest = total - amount;
+        if (rest > 0)
         {
-            const total = contract_bills.map!(b => b.value).sum;
+            Invoice money_back;
+            money_back.amount = rest;
+            registerInvoice(money_back);
 
-            result.contract.inputs = contract_bills.map!(b => net.hashOf(b.toDoc)).array;
-            const rest = total - amount;
-            if (rest > 0)
-            {
-                Invoice money_back;
-                money_back.amount = rest;
-                registerInvoice(money_back);
-
-                // 
-                if (zero_pubkey) {
-                    result.contract.output[money_back.pkey] = [0,0,0,0];
-                } else {
-                    result.contract.output[money_back.pkey] = rest.toDoc;
-                }
-            }
-
-            // set the pubkey of the contracts to 0x000
+            // 
             if (zero_pubkey) {
-                orders.each!((o) {
-                    result.contract.output[o.pkey] = [0,0,0,0];
-                });
+                auto zero_pkey = new HiBON();
+                result.contract.output[money_back.pkey] = Document(zero_pkey.serialize);
+                // result.contract.output[money_back.pkey] = Document(cast(ubyte[]) [0,0,0,0]);
             } else {
-                orders.each!((o) {
-                result.contract.output[o.pkey] = o.amount.toDoc;
-            });
+                result.contract.output[money_back.pkey] = rest.toDoc;
             }
+        }
 
-            result.contract.script = Script("pay");
+        // set the pubkey of the contracts to 0x000
+        if (zero_pubkey) {
+            auto zero_pkey = new HiBON();
+            orders.each!((o) {
+                result.contract.output[o.pkey] = Document(zero_pkey.serialize);
+            });
+        } else {
+            orders.each!((o) {
+            result.contract.output[o.pkey] = o.amount.toDoc;
+        });
+        }
 
-            immutable message = net.hashOf(result.contract.toDoc); //take the hash of the document.
-            auto shared_net = (() @trusted { return cast(shared) net; })();
-            auto bill_net = new Net;
-            // Sign all inputs
-            result.signs = contract_bills
-                .filter!(b => b.owner in account.derives)
-                .map!((b) {
-                    if (invalid_signature) {
-                        immutable tweak_code = "invalid_signature_message";
-                        bill_net.derive(tweak_code, shared_net);
-                        return bill_net.sign(message);
-                    } 
-                    immutable tweak_code = account.derives[b.owner];
+        result.contract.script = Script("pay");
+
+        immutable message = net.hashOf(result.contract.toDoc); //take the hash of the document.
+        auto shared_net = (() @trusted { return cast(shared) net; })();
+        auto bill_net = new Net;
+        // Sign all inputs
+        result.signs = contract_bills
+            .filter!(b => b.owner in account.derives)
+            .map!((b) {
+                if (invalid_signature) {
+                    immutable tweak_code = "invalid_signature_message";
                     bill_net.derive(tweak_code, shared_net);
                     return bill_net.sign(message);
-                })
-                .array;
-            return true;
-        }
-        result = result.init;
-        return false;
+                } 
+                immutable tweak_code = account.derives[b.owner];
+                bill_net.derive(tweak_code, shared_net);
+                return bill_net.sign(message);
+            })
+            .array;
+        return true;
 
-        return false;
+
     }
 
     TagionCurrency available_balance() const pure
@@ -367,7 +368,7 @@ import tagion.wallet.WalletException : check;
         return hirpc.search(h);
     }
 
-    bool collect_bills(const TagionCurrency amount, out StandardBill[] active_bills)
+    void collect_bills(const TagionCurrency amount, out StandardBill[] active_bills)
     {
         import std.algorithm.sorting : isSorted, sort;
         import std.algorithm.iteration : cumulativeFold;
@@ -396,7 +397,6 @@ import tagion.wallet.WalletException : check;
             account.activated[extra_bill.owner] = true;
             active_bills ~= extra_bill;
         }
-        return true;
 
     }
 

@@ -1,4 +1,4 @@
-/// \file tagionwallet.d
+/// \file tagionevilwallet.d
 module tagion.tools.tagionevilwallet;
 import tagion.tools.tagionwallet;
 
