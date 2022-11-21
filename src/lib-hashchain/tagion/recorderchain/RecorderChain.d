@@ -20,7 +20,6 @@ alias RecorderChainFileStorage = HashChainFileStorage!RecorderChainBlock;
 
 unittest
 {
-    // import std.range;
     import std.file : rmdirRecurse;
     import std.path : extension, stripExtension;
 
@@ -30,12 +29,6 @@ unittest
     import tagion.crypto.SecureNet : StdHashNet;
     import tagion.crypto.SecureInterfaceNet : HashNet;
     import tagion.dart.Recorder : RecordFactory;
-
-    // import tagion.dart.DART;
-    // import tagion.dart.BlockFile;
-    // import tagion.dart.DARTFile;
-    // import tagion.hibon.HiBON : HiBON;
-    // import tagion.hibon.Document : Document;
 
     HashNet net = new StdHashNet;
 
@@ -49,7 +42,7 @@ unittest
     /// RecorderChain_empty_folder
     {
         RecorderChainStorage storage = new RecorderChainFileStorage(temp_folder, net);
-        auto recorder_chain = new RecorderChain(storage, net);
+        auto recorder_chain = new RecorderChain(storage);
 
         assert(recorder_chain.getLastBlock is null);
         assert(recorder_chain.isValidChain);
@@ -60,7 +53,7 @@ unittest
     /// RecorderChain_single_block
     {
         RecorderChainStorage storage = new RecorderChainFileStorage(temp_folder, net);
-        auto recorder_chain = new RecorderChain(storage, net);
+        auto recorder_chain = new RecorderChain(storage);
 
         auto block0 = new RecorderChainBlock(empty_recorder, empty_hash, empty_bullseye, net);
         recorder_chain.append(block0);
@@ -81,7 +74,7 @@ unittest
     /// RecorderChain_many_blocks
     {
         RecorderChainStorage storage = new RecorderChainFileStorage(temp_folder, net);
-        auto recorder_chain = new RecorderChain(storage, net);
+        auto recorder_chain = new RecorderChain(storage);
 
         auto block0 = new RecorderChainBlock(empty_recorder, [], empty_bullseye, net);
         recorder_chain.append(block0);
@@ -108,7 +101,7 @@ unittest
     /// RecorderChain_isValidChain_branch_chain
     {
         RecorderChainStorage storage = new RecorderChainFileStorage(temp_folder, net);
-        auto recorder_chain = new RecorderChain(storage, net);
+        auto recorder_chain = new RecorderChain(storage);
 
         auto block0 = new RecorderChainBlock(empty_recorder, [], empty_bullseye, net);
         recorder_chain.append(block0);
@@ -137,7 +130,7 @@ unittest
     /// RecorderChain_loop_blocks
     {
         RecorderChainStorage storage = new RecorderChainFileStorage(temp_folder, net);
-        auto recorder_chain = new RecorderChain(storage, net);
+        auto recorder_chain = new RecorderChain(storage);
 
         auto block0 = new RecorderChainBlock(empty_recorder, [], empty_bullseye, net);
         auto block1 = new RecorderChainBlock(empty_recorder, block0.getHash, empty_bullseye, net);
@@ -152,6 +145,62 @@ unittest
 
         // chain should be invalid
         assert(!recorder_chain.isValidChain);
+
+        rmdirRecurse(temp_folder);
+    }
+
+    /// RecorderChain_replay
+    {
+        RecorderChainStorage storage = new RecorderChainFileStorage(temp_folder, net);
+        auto recorder_chain = new RecorderChain(storage);
+
+        auto block0 = new RecorderChainBlock(empty_recorder, [], empty_bullseye, net);
+        recorder_chain.append(block0);
+        auto block1 = new RecorderChainBlock(empty_recorder, recorder_chain.getLastBlock.getHash, empty_bullseye, net);
+        recorder_chain.append(block1);
+        auto block2 = new RecorderChainBlock(empty_recorder, recorder_chain.getLastBlock.getHash, empty_bullseye, net);
+        recorder_chain.append(block2);
+
+        assert(recorder_chain.isValidChain);
+
+        Buffer[] hashes;
+
+        recorder_chain.replay((RecorderChainBlock b) @safe { hashes ~= b.getHash; });
+
+        assert(hashes[0] == block0.getHash);
+        assert(hashes[1] == block1.getHash);
+        assert(hashes[2] == block2.getHash);
+
+        rmdirRecurse(temp_folder);
+    }
+
+    /// RecorderChain_replayFrom
+    {
+        RecorderChainStorage storage = new RecorderChainFileStorage(temp_folder, net);
+        auto recorder_chain = new RecorderChain(storage);
+
+        RecorderChainBlock[] blocks;
+
+        foreach (i; 0 .. 10)
+        {
+            auto last_block = recorder_chain.getLastBlock;
+            blocks ~= new RecorderChainBlock(empty_recorder,
+                last_block is null ? [] : last_block.getHash,
+                empty_bullseye, net);
+        }
+        assert(recorder_chain.isValidChain);
+
+        enum some_block_index = 2;
+        Buffer[] hashes;
+
+        recorder_chain.replayFrom((RecorderChainBlock b) @safe {
+            hashes ~= b.getHash;
+        }, (b) => b.getHash == blocks[some_block_index].getHash);
+
+        foreach (i, hash; hashes)
+        {
+            assert(hashes[i] == blocks[i + some_block_index].getHash);
+        }
 
         rmdirRecurse(temp_folder);
     }

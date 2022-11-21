@@ -58,7 +58,7 @@ mixin TrustedConcurrency;
         RecorderChainStorage storage = new RecorderChainFileStorage(
             opts.recorder_chain.folder_path, net);
 
-        recorder_chain = new RecorderChain(storage, net);
+        recorder_chain = new RecorderChain(storage);
 
         ownerTid.send(Control.LIVE);
         while (!stop)
@@ -108,6 +108,6 @@ unittest
 
     HashNet net = new StdHashNet;
     RecorderChainStorage storage = new RecorderChainFileStorage(temp_folder, net);
-    auto temp_recorder_chain = new RecorderChain(storage, net);
+    auto temp_recorder_chain = new RecorderChain(storage);
     assert(temp_recorder_chain.isValidChain);
 }

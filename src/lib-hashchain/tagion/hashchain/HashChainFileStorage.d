@@ -49,7 +49,8 @@ import tagion.utils.Miscellaneous : decode, toHexString;
     void write(const(Block) block)
     {
         auto filename = makePath(block.getHash);
-        log.trace("Added recorder chain file '%s'", filename);
+        // We can't use log without registering in service
+        //log.trace("Added recorder chain file '%s'", filename);
         fwrite(filename, block.toHiBON);
     }
 

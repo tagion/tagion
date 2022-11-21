@@ -1,8 +1,10 @@
 // /// \file HashChain.d
 module tagion.hashchain.HashChain;
 
+import std.range : empty;
+import std.range.primitives : back, popBack;
+
 import tagion.basic.Types : Buffer;
-import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
@@ -26,7 +28,7 @@ import tagion.utils.Miscellaneous : decode;
     /** Ctor initializes database and reads existing data.
      *      @param folder_path - path to folder with chain files
      */
-    this(ref HashChainStorage!Block storage, const HashNet net)
+    this(ref HashChainStorage!Block storage)
     {
         this._storage = storage;
 
@@ -135,12 +137,39 @@ import tagion.utils.Miscellaneous : decode;
 
     void replay(void delegate(Block) @safe action)
     {
-        // TODO: foreach block action
+        replayFrom(action, (block) => (block.getPrevious.empty));
     }
 
     void replayFrom(void delegate(Block) @safe action, bool delegate(Block) @safe condition)
     {
-        // TODO: search from last to first until condition(block) and then foreach block action(block)
+        // If we start from found block (not next after it) we possible can duplicate records
+
+        Buffer[] hash_stack;
+
+        // Go through hash chain until condition is triggered
+        auto current_block = _last_block;
+        while (current_block !is null)
+        {
+            hash_stack ~= current_block.getHash;
+
+            if (condition(current_block))
+            {
+                break;
+            }
+
+            current_block = storage.read(current_block.getPrevious);
+        }
+
+        // Apply action in LIFO order
+        while (!hash_stack.empty)
+        {
+            auto block = storage.read(hash_stack.back);
+            assert(block !is null);
+
+            action(block);
+
+            hash_stack.popBack;
+        }
     }
 
     HashChainStorage!Block storage()
