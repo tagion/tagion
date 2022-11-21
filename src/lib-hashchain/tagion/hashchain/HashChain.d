@@ -31,48 +31,50 @@ import tagion.utils.Miscellaneous : decode;
     this(ref HashChainStorage!Block storage)
     {
         this._storage = storage;
+        this._last_block = findLastBlock();
+    }
 
-        @safe Block findLastBlock()
+    /** Method that finds the last block in chain
+    *       \return last block or null if it haven't found
+    */
+    final protected Block findLastBlock()
+    {
+        auto hashes = _storage.getHashes;
+
+        // Table for searching where
+        //      key: fingerprints of blocks
+        //      value: previous hashes of this blocks
+        Buffer[Buffer] link_table;
+        foreach (hash; hashes)
         {
-            auto hashes = _storage.getHashes;
+            Buffer fingerprint = decode(hash);
+            auto block = _storage.read(fingerprint);
 
-            // Table for searching where
-            //      key: fingerprints of blocks
-            //      value: previous hashes of this blocks
-            Buffer[Buffer] link_table;
-            foreach (hash; hashes)
-            {
-                Buffer fingerprint = decode(hash);
-                auto block = _storage.read(fingerprint);
-
-                link_table[fingerprint] = block.getPrevious;
-            }
-
-            foreach (fingerprint; link_table.keys)
-            {
-                bool is_last_block = true;
-
-                // Search through all previous hashes for fixed fingerprint
-                foreach (previous; link_table.values)
-                {
-                    // Last block can't be previous for another block
-                    if (fingerprint == previous)
-                    {
-                        is_last_block = false;
-                        break;
-                    }
-                }
-
-                if (is_last_block)
-                {
-                    return _storage.read(fingerprint);
-                }
-            }
-
-            return null;
+            link_table[fingerprint] = block.getPrevious;
         }
 
-        this._last_block = findLastBlock();
+        foreach (fingerprint; link_table.keys)
+        {
+            bool is_last_block = true;
+
+            // Search through all previous hashes for fixed fingerprint
+            foreach (previous; link_table.values)
+            {
+                // Last block can't be previous for another block
+                if (fingerprint == previous)
+                {
+                    is_last_block = false;
+                    break;
+                }
+            }
+
+            if (is_last_block)
+            {
+                return _storage.read(fingerprint);
+            }
+        }
+
+        return null;
     }
 
     /** Get last block
@@ -93,7 +95,7 @@ import tagion.utils.Miscellaneous : decode;
     }
 
     /** Method that checks validity of chain
-    *       @return true is chain is valid, false - otherwise
+    *       \return true is chain is valid, false - otherwise
     */
     bool isValidChain()
     {
