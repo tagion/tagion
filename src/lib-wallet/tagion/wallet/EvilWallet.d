@@ -276,7 +276,7 @@ import tagion.wallet.WalletException : check;
         if (setfee) {
             fees = fee.to!double.TGN;
         } else {
-            fees = globals.fees(topay, size_in_bytes); // 52.5
+            fees = globals.fees(); // 52.5
         }
 
         const amount = topay + fees; 
