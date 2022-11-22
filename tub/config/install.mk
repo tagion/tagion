@@ -4,6 +4,7 @@ INSTALLEDTOOL=$(INSTALL)/tagion
 
 TOOLLINKS+=tagionboot
 TOOLLINKS+=tagionwallet
+TOOLLINKS+=tagionevilwallet
 TOOLLINKS+=tagionwave
 TOOLLINKS+=dartutil
 TOOLLINKS+=hibonutil
