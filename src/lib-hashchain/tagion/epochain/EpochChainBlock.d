@@ -1,5 +1,5 @@
 /// \EpochChainBlock.d
-module tagion.hashchain.EpochChainBlock;
+module tagion.epochain.EpochChainBlock;
 
 import tagion.hashchain.HashChainBlock : HashChainBlock;
 import tagion.hibon.HiBONJSON : JSONString;

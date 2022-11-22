@@ -81,6 +81,9 @@ struct Options
 
     mixin JSONCommon;
 
+    // TODO: convert to ENUM
+    string epoch_dump_task_id;
+
     struct HostBootstrap
     {
         bool enabled;
