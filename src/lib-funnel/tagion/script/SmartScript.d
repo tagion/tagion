@@ -9,7 +9,7 @@ import std.algorithm.searching : all;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCode, Check;
 import tagion.basic.TagionExceptions : TagionException;
-import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey, Contract;
+import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey, Contract, Globals;
 import tagion.basic.Types : Pubkey, Buffer, Signature;
 import tagion.script.TagionCurrency;
 import tagion.dart.Recorder : RecordFactory;
@@ -246,7 +246,7 @@ else
                 {
                     total_output += TagionCurrency(key["$V"].get!Document);
                 }
-                if (total_output > total_input)
+                if (total_output > total_input - Globals.fees())
                 {
                     return ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT;
                 }
