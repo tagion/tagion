@@ -52,7 +52,7 @@ wallet: target-tagionwallet
 #
 # Evil wallet utility
 #
-target-evilwallet: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-evilwallet/*" -a -not -path "*/unitdata/*" }
+target-tagionevilwallet: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-evilwallet/*" -a -not -path "*/unitdata/*" }
 ${call DO_BIN,tagionevilwallet,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETOOL)}
 
 #
