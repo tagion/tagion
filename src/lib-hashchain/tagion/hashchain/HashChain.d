@@ -167,7 +167,7 @@ import tagion.utils.Miscellaneous : decode;
         }
     }
 
-    HashChainStorage!Block storage()
+    final HashChainStorage!Block storage()
     {
         return _storage;
     }

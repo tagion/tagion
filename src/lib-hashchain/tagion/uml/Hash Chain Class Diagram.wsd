@@ -5,6 +5,8 @@ interface HashChainBlock {
     + Buffer getPrevious() const = 0
 
     + HiBON toHiBON() // from HiBONRecord
+
+    + final bool isRoot()
 }
 
 class RecorderChainBlock {
@@ -15,7 +17,8 @@ class RecorderChainBlock {
 
     mixin HiBONRecord
 
-    + this(Document recorder_doc, Buffer bullseye, Buffer previous, HashNet)
+    + this(Document recorder_doc, Buffer previous, Buffer bullseye, HashNet)
+    + this(Document doc, HashNet)
 
     + override Buffer getHash() const
     + override Buffer getPrevious() const
@@ -35,42 +38,44 @@ class EpochChainBlock {
 HashChainBlock <|.. EpochChainBlock
 
 class "HashChain(Block : HashChainBlock)" as HashChain {
-    # HashChainStorage
+    # HashChainStorage!Block _storage
     # Block _last_block;
 
-    + this(string folder_path, const HashNet net)
+    + this(HashChainStorage storage)
+
+    # final protected Block findLastBlock()
 
     + const(Block) getLastBlock()
     + void append(Block block)
 
     + bool isValidChain()
 
-    + replay((ChainBlock) => void)
-    + replayFrom((ChainBlock) => bool, (ChainBlock) => void)
+    + replay(void delegate(Block) action)
+    + replayFrom(void delegate(Block) action, bool delegate(Block) condition)
+
+    + final HashChainStorage!Block storage()
 }
 
 HashChainBlock *- HashChain : handles & stores
-HashChain -* HashChainStorage
+HashChain -* HashChainStorage : owns
 
-interface HashChainStorage {
-    + void write(Block block)
+interface "HashChainStorage(Block : HashChainBlock)" as HashChainStorage {
+    + void write(const(Block) block)
     + Block read(Buffer fingerprint)
-
-    + Block find(Predicate)
-
-    + string[] getHashes()
+    + Block find(bool delegate(Block) predicate)
+    + Buffer[] getHashes()
 }
 
-class HashChainFileStorage {
-    # folder_path
-    # HashNet
+class "HashChainFileStorage(Block : HashChainBlock)" as HashChainFileStorage {
+    # string folder_path
+    # HashNet net
 
-    + void write(Block block)
-    + Block read(Buffer fingerprint)
+    + this(string folder_path, const HashNet net)
 
-    + Block find(Predicate)
-
-    + string[] getHashes()
+    + override void write(const(Block) block)
+    + override Block read(Buffer fingerprint) 
+    + override Block find(bool delegate(Block) predicate)
+    + override Buffer[] getHashes()
 }
 
 HashChainStorage <|.. HashChainFileStorage
