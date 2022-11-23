@@ -47,10 +47,7 @@ import tagion.utils.Miscellaneous : decode;
         Buffer[Buffer] link_table;
         foreach (hash; hashes)
         {
-            Buffer fingerprint = decode(hash);
-            auto block = _storage.read(fingerprint);
-
-            link_table[fingerprint] = block.getPrevious;
+            link_table[hash] = _storage.read(hash).getPrevious;
         }
 
         foreach (fingerprint; link_table.keys)
@@ -102,16 +99,16 @@ import tagion.utils.Miscellaneous : decode;
         try
         {
             auto blocks_count = _storage.getHashes.length;
-            auto first_block = _storage.find((block) => block.getPrevious == []);
-            if (blocks_count == 0 && first_block is null && _last_block is null)
+            if (blocks_count == 0)
             {
                 // Empty chain
                 return true;
             }
 
+            auto first_block = _storage.find((block) => block.isRoot);
             if (first_block is null || _last_block is null)
             {
-                // Chain is invalid
+                // Non-empty chain is invalid
                 return false;
             }
 
@@ -139,7 +136,8 @@ import tagion.utils.Miscellaneous : decode;
 
     void replay(void delegate(Block) @safe action)
     {
-        replayFrom(action, (block) => (block.getPrevious.empty));
+        // Replay from beginning with no condition
+        replayFrom(action, (block) => (false));
     }
 
     void replayFrom(void delegate(Block) @safe action, bool delegate(Block) @safe condition)
@@ -150,15 +148,10 @@ import tagion.utils.Miscellaneous : decode;
 
         // Go through hash chain until condition is triggered
         auto current_block = _last_block;
-        while (current_block !is null)
+
+        while (current_block !is null && !condition(current_block))
         {
             hash_stack ~= current_block.getHash;
-
-            if (condition(current_block))
-            {
-                break;
-            }
-
             current_block = storage.read(current_block.getPrevious);
         }
 
@@ -177,5 +170,243 @@ import tagion.utils.Miscellaneous : decode;
     HashChainStorage!Block storage()
     {
         return _storage;
+    }
+}
+
+version (unittest)
+{
+    import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, Label;
+    import tagion.crypto.SecureInterfaceNet : HashNet;
+
+    @safe class DummyBlock : HashChainBlock
+    {
+        @Label("") Buffer hash;
+        @Label("prev") Buffer previous;
+        @Label("dummy") int dummy;
+
+        mixin HiBONRecord!(
+            q{
+            private this(
+                Buffer previous,
+                const(HashNet) net,
+                int dummy = 0)
+            {
+                this.previous = previous;
+                this.dummy = dummy;
+
+                this.hash = net.hashOf(toDoc);
+            }
+
+            private this(
+                const(Document) doc,
+                const(HashNet) net)
+            {
+                this(doc);
+                this.hash = net.hashOf(toDoc);
+            }
+        });
+
+        Buffer getHash() const
+        {
+            return hash;
+        }
+
+        Buffer getPrevious() const
+        {
+            return previous;
+        }
+    }
+}
+
+unittest
+{
+    import std.file : rmdirRecurse;
+    import std.path : extension, stripExtension;
+    import std.range.primitives : back;
+
+    import tagion.basic.Basic : tempfile;
+    import tagion.basic.Types : Buffer, FileExtension, withDot;
+    import tagion.communication.HiRPC : HiRPC;
+    import tagion.crypto.SecureNet : StdHashNet;
+    import tagion.dart.Recorder : RecordFactory;
+    import tagion.hashchain.HashChainFileStorage;
+
+    HashNet net = new StdHashNet;
+
+    const Buffer empty_hash = [];
+    const temp_folder = tempfile ~ "/";
+
+    alias Storage = HashChainStorage!DummyBlock;
+    alias StorageImpl = HashChainFileStorage!DummyBlock;
+    alias ChainImpl = HashChain!DummyBlock;
+
+    /// HashChain_empty_folder
+    {
+        Storage storage = new StorageImpl(temp_folder, net);
+        auto chain = new ChainImpl(storage);
+
+        assert(chain.getLastBlock is null);
+        assert(chain.isValidChain);
+
+        rmdirRecurse(temp_folder);
+    }
+
+    /// HashChain_single_block
+    {
+        Storage storage = new StorageImpl(temp_folder, net);
+        auto chain = new ChainImpl(storage);
+
+        auto block0 = new DummyBlock(empty_hash, net);
+        chain.append(block0);
+
+        assert(chain.getLastBlock.toDoc.serialize == block0.toDoc.serialize);
+        assert(chain.isValidChain);
+
+        // Amount of blocks
+        assert(chain.storage.getHashes.length == 1);
+
+        // Find block with given hash
+        auto found_block = chain.storage.find((b) => (b.getHash == block0.getHash));
+        assert(found_block !is null && found_block.toDoc.serialize == block0.toDoc.serialize);
+
+        rmdirRecurse(temp_folder);
+    }
+
+    /// HashChain_many_blocks
+    {
+        Storage storage = new StorageImpl(temp_folder, net);
+        auto chain = new ChainImpl(storage);
+
+        auto block0 = new DummyBlock([], net);
+        chain.append(block0);
+        auto block1 = new DummyBlock(chain.getLastBlock.getHash, net);
+        chain.append(block1);
+        auto block2 = new DummyBlock(chain.getLastBlock.getHash, net);
+        chain.append(block2);
+
+        assert(chain.getLastBlock.toDoc.serialize == block2.toDoc.serialize);
+        assert(chain.isValidChain);
+
+        // Amount of blocks
+        assert(chain.storage.getHashes.length == 3);
+
+        // Find root block
+        auto found_block = chain.storage.find((b) => b.isRoot);
+        assert(found_block !is null && found_block.toDoc.serialize == block0.toDoc.serialize);
+
+        rmdirRecurse(temp_folder);
+    }
+
+    /// HashChain_isValidChain_branch_chain
+    {
+        Storage storage = new StorageImpl(temp_folder, net);
+        auto chain = new ChainImpl(storage);
+
+        auto block0 = new DummyBlock([], net);
+        chain.append(block0);
+
+        auto block1 = new DummyBlock(block0.getHash, net);
+        chain.append(block1);
+
+        auto block2 = new DummyBlock(block1.getHash, net);
+        chain.append(block2);
+
+        // create another block that points to some block in the middle of chain
+        // thus we have Y-style linked list which is invalid chain
+        auto block1_branch = new DummyBlock(block0.getHash, net, 1);
+        chain.append(block1_branch);
+
+        auto block2_branch = new DummyBlock(block1_branch.getHash, net, 1);
+        chain.append(block2_branch);
+
+        // chain should be invalid
+        assert(!chain.isValidChain);
+
+        rmdirRecurse(temp_folder);
+    }
+
+    /// HashChain_loop_blocks
+    {
+        Storage storage = new StorageImpl(temp_folder, net);
+        auto chain = new ChainImpl(storage);
+
+        auto block0 = new DummyBlock([], net);
+        auto block1 = new DummyBlock(block0.getHash, net);
+        auto block2 = new DummyBlock(block1.getHash, net);
+
+        // create looped linked list where the first block points on the last one
+        block0.previous = block2.getHash;
+        block0.hash = net.hashOf(block0.toDoc);
+
+        chain.append(block0);
+        chain.append(block1);
+        chain.append(block2);
+
+        // chain should be invalid
+        assert(!chain.isValidChain);
+
+        rmdirRecurse(temp_folder);
+    }
+
+    /// HashChain_replay
+    {
+        Storage storage = new StorageImpl(temp_folder, net);
+        auto chain = new ChainImpl(storage);
+
+        auto block0 = new DummyBlock([], net);
+        chain.append(block0);
+        auto block1 = new DummyBlock(chain.getLastBlock.getHash, net);
+        chain.append(block1);
+        auto block2 = new DummyBlock(chain.getLastBlock.getHash, net);
+        chain.append(block2);
+
+        assert(chain.isValidChain);
+
+        Buffer[] hashes;
+
+        chain.replay((DummyBlock b) @safe { hashes ~= b.getHash; });
+
+        assert(hashes.length == 3);
+        assert(hashes[0] == block0.getHash);
+        assert(hashes[1] == block1.getHash);
+        assert(hashes[2] == block2.getHash);
+
+        rmdirRecurse(temp_folder);
+    }
+
+    /// HashChain_replayFrom
+    {
+        Storage storage = new StorageImpl(temp_folder, net);
+        auto chain = new ChainImpl(storage);
+
+        enum blocks_count = 10;
+        DummyBlock[] blocks;
+
+        // Add blocks
+        foreach (i; 0 .. blocks_count)
+        {
+            auto last_block = chain.getLastBlock;
+
+            blocks ~= new DummyBlock(last_block is null ? [] : last_block.getHash, net);
+
+            chain.append(blocks.back);
+        }
+        assert(chain.isValidChain);
+
+        enum some_block_index = 2;
+        Buffer[] hashes;
+
+        // Replay from block with specified index
+        chain.replayFrom((DummyBlock b) @safe { hashes ~= b.getHash; }, (b) => b.getHash == blocks[some_block_index]
+                .getHash);
+
+        // Check array with hashes
+        assert(hashes.length == blocks_count - some_block_index - 1);
+        foreach (i, hash; hashes)
+        {
+            assert(hashes[i] == blocks[i + some_block_index + 1].getHash);
+        }
+
+        rmdirRecurse(temp_folder);
     }
 }

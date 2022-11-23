@@ -7,11 +7,13 @@ import tagion.basic.Types : Control;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.dart.Recorder : RecordFactory;
+import tagion.logger.Logger : log;
 import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.recorderchain.RecorderChain;
 import tagion.services.Options : Options;
 import tagion.tasks.TaskWrapper;
 import tagion.utils.Fingerprint : Fingerprint;
+import tagion.utils.Miscellaneous : cutHex;
 
 mixin TrustedConcurrency;
 
@@ -43,6 +45,7 @@ mixin TrustedConcurrency;
             net);
 
         recorder_chain.append(block);
+        log.trace("Added recorder chain block with hash '%s'", block.getHash.cutHex);
 
         version (unittest)
         {
@@ -94,6 +97,8 @@ unittest
         assert(receiveOnly!Control == Control.END);
     }
 
+    log.silent = true;
+
     enum blocks_count = 10;
 
     auto factory = RecordFactory(new StdHashNet);
@@ -110,4 +115,6 @@ unittest
     RecorderChainStorage storage = new RecorderChainFileStorage(temp_folder, net);
     auto temp_recorder_chain = new RecorderChain(storage);
     assert(temp_recorder_chain.isValidChain);
+
+    log.silent = false;
 }

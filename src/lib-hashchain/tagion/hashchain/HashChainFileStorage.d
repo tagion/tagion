@@ -11,7 +11,6 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
 import tagion.hibon.HiBONRecord : fread, fwrite;
-import tagion.logger.Logger : log;
 import tagion.utils.Miscellaneous : decode, toHexString;
 
 /** @brief File contains class HashChainFileStorage
@@ -48,10 +47,7 @@ import tagion.utils.Miscellaneous : decode, toHexString;
      */
     void write(const(Block) block)
     {
-        auto filename = makePath(block.getHash);
-        // We can't use log without registering in service
-        //log.trace("Added recorder chain file '%s'", filename);
-        fwrite(filename, block.toHiBON);
+        fwrite(makePath(block.getHash), block.toHiBON);
     }
 
     /** Reads file with given fingerprint and creates block from read data
@@ -81,8 +77,7 @@ import tagion.utils.Miscellaneous : decode, toHexString;
         auto hashes = getHashes;
         foreach (hash; hashes)
         {
-            auto fingerprint = decode(hash);
-            auto block = read(fingerprint);
+            auto block = read(hash);
             if (predicate(block))
             {
                 return block;
@@ -94,7 +89,7 @@ import tagion.utils.Miscellaneous : decode, toHexString;
     /** Collects all block filenames in chain folder 
      *      \return array of block filenames in this folder
      */
-    string[] getHashes() @trusted
+    Buffer[] getHashes() @trusted
     {
         enum BLOCK_FILENAME_LEN = StdHashNet.HASH_SIZE * 2;
 
@@ -104,6 +99,7 @@ import tagion.utils.Miscellaneous : decode, toHexString;
             .filter!(f => f.extension == getExtension.withDot)
             .filter!(f => f.stripExtension.length == BLOCK_FILENAME_LEN)
             .map!(f => f.stripExtension)
+            .map!(f => f.decode)
             .array;
     }
 
@@ -116,6 +112,12 @@ import tagion.utils.Miscellaneous : decode, toHexString;
             static if (is(Block == RecorderChainBlock))
             {
                 return FileExtension.recchainblock;
+            }
+
+            version (unittest)
+            {
+                // Default extension for using in unittest
+                return FileExtension.hibon;
             }
             assert(false, "Unknown block type instantiated for HashChainFileStorage");
         }

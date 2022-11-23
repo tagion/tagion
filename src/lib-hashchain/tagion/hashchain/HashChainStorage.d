@@ -34,5 +34,5 @@ import tagion.hibon.HiBONRecord : isHiBONRecord;
     /** Return list of all hashes in storage
      *      \return list of hashes
      */
-    string[] getHashes();
+    Buffer[] getHashes();
 }

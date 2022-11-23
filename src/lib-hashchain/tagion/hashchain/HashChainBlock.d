@@ -1,6 +1,7 @@
 /// \file HashChainBlock.d
 module tagion.hashchain.HashChainBlock;
 
+import std.range : empty;
 import tagion.basic.Types : Buffer;
 import tagion.hibon.HiBON : HiBON;
 
@@ -27,4 +28,12 @@ import tagion.hibon.HiBON : HiBON;
      *      \return HiBON copy of this structure
      */
     @trusted inout(HiBON) toHiBON() inout;
+
+    /** Function that says whether this block has no predecessors
+     *      \return true if this block is root block
+     */
+    final bool isRoot() const
+    {
+        return getPrevious.empty;
+    }
 }

@@ -24,6 +24,7 @@ import tagion.services.RecorderService;
 import tagion.communication.HiRPC;
 import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.recorderchain.RecorderChain;
+import tagion.utils.Miscellaneous : cutHex;
 
 auto logo = import("logo.txt");
 
@@ -146,11 +147,14 @@ int main(string[] args)
     try
     {
         recorder_chain.replay((RecorderChainBlock block) {
-            auto recorder = factory.recorder(block.recorder_doc);
+            // these outputs will be removed after proper testing the tool
+            writefln("block's  bullseye %s", block.bullseye.cutHex);
+            writefln("DART bef bullseye %s", dart.fingerprint.cutHex);
 
-            auto sent = DART.dartModify(recorder, hirpc);
-            auto received = hirpc.receive(sent);
-            dart(received, false);
+            auto recorder = factory.recorder(block.recorder_doc);
+            dart.modify(recorder);
+
+            writefln("DART aft bullseye %s", dart.fingerprint.cutHex);
 
             if (block.bullseye != dart.fingerprint)
             {
