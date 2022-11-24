@@ -25,6 +25,7 @@ help-reporter:
 	${call log.help, "make reporter-stop", "Will stop the reporter"}
 	${call log.help, "make clean-reporter", "Will clean the test reports"}
 	${call log.help, "make env-reporter", "Display the reporter env"}
+	${call log.help, "make list-bdd", "List all bdd targets"}
 	${call log.close}
 
 
