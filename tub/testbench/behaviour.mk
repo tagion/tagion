@@ -3,7 +3,7 @@ TESTPROGRAM=$(DBIN)/$(TESTMAIN)
 TESTENV=$(DBIN)/bddenv.sh
 BDDTESTS=${addprefix run-,$(BDDS)}
 
-bddtest: install-reporter bddfiles bddinit bddenv bddrun 
+bddtest: bddfiles bddinit bddenv bddrun 
 
 .PHONY: bddtest bddfiles
 

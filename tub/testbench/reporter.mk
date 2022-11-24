@@ -1,5 +1,5 @@
 
-VIEWER_STARTED:=/tmp/$(HONE).report-viewer.pid.touch
+VIEWER_STARTED:=$(BDD_LOG)/.report-viewer.pid.touch
 
 REPORT_ROOT:=$(REPOROOT)/regression
 
@@ -40,7 +40,7 @@ clean-reporter:
 
 clean: clean-reporter
 
-reporter-start: $(VIEWER_STARTED)
+reporter-start: reporter-install $(VIEWER_STARTED)
 
 .PHONY: reporter-start
 
@@ -57,7 +57,7 @@ reporter-stop:
 	screen -X -S $(SCREEN_NAME) quit
 	$(RM) $(VIEWER_STARTED)
 
-install-reporter: $(REPORT_ROOT)/.touch
+reporter-install: $(REPORT_ROOT)/.touch
 
 .PHONY: install-reporter
 
