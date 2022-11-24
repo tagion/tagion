@@ -13,10 +13,10 @@ import tagion.hibon.HiBONRecord : fwrite;
 @safe
 synchronized
 class Reporter : BehaviourReporter {
-    const(Exception) before(scope const(FeatureGroup*) feature_group) nothrow {
+	const(Exception) before(scope const(FeatureGroup*) feature_group) nothrow {
         Exception result;
         try {
-            "/tmp/test1.hibon".fwrite(*feature_group);
+            buildPath(env.bdd_results, feature_group.info.name).setExtension("hibon").fwrite(*feature_group);
         }
         catch (Exception e) {
             result = e;
@@ -27,7 +27,7 @@ class Reporter : BehaviourReporter {
     const(Exception) after(scope const(FeatureGroup*) feature_group) nothrow {
         Exception result;
         try {
-            "/tmp/test2.hibon".fwrite(*feature_group);
+            buildPath(env.bdd_results, feature_group.info.name).setExtension("hibon").fwrite(*feature_group);
         }
         catch (Exception e) {
             result = e;

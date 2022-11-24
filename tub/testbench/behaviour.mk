@@ -3,7 +3,10 @@ TESTPROGRAM=$(DBIN)/$(TESTMAIN)
 TESTENV=$(DBIN)/bddenv.sh
 BDDTESTS=${addprefix run-,$(BDDS)}
 
+ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
+
 bddtest: | bddfiles bddinit bddenv bddrun reporter-start
+	$(PRECMD)
 
 .PHONY: bddtest bddfiles
 
@@ -32,6 +35,11 @@ $(TESTENV):
 bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way
 	$(PRECMD)
 	$(TESTPROGRAM) -f
+
+bddreport: target-hibonutil
+	$(PRECMD)
+	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
+
 
 env-bdd:
 	$(PRECMD)
