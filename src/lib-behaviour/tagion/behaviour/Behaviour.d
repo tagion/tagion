@@ -13,6 +13,7 @@ import std.exception : assumeWontThrow;
 
 import tagion.behaviour.BehaviourException;
 import tagion.behaviour.BehaviourResult;
+import tagion.behaviour.BehaviourReporter;
 import tagion.basic.Types : FileExtension;
 import tagion.hibon.HiBONRecord;
 import tagion.basic.Basic : isOneOf;
@@ -187,6 +188,7 @@ auto automation(alias M)() if (isFeature!M) {
 
     mixin(format(q{import %s;}, moduleName!M));
 
+    @safe
     static struct FeatureFactory {
         FeatureContext context;
         void opDispatch(string scenario_name, Args...)(Args args) {
@@ -202,7 +204,18 @@ auto automation(alias M)() if (isFeature!M) {
             context[tuple_index] = new _Scenario(args);
         }
 
+        @safe
         FeatureContext run() nothrow {
+            if (reporter !is null) {
+                const raw_feature_group = getFeature!M;
+                reporter.before(&raw_feature_group);
+            }
+            scope (exit) {
+                if (reporter !is null) {
+                    reporter.after(context.result);
+                }
+
+            }
             uint error_count;
             context.result = new FeatureGroup;
             context.result.info.property = obtainFeature!M;
@@ -217,7 +230,7 @@ auto automation(alias M)() if (isFeature!M) {
                     }
                     else {
                         check(context[i]!is null,
-                                format("Scenario '%s' must be constructed before can be executed in '%s' feature",
+                        format("Scenario '%s' must be constructed before can be executed in '%s' feature",
                                 FeatureContext.fieldNames[i],
                                 moduleName!M));
                     }
