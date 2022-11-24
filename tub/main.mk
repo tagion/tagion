@@ -44,8 +44,6 @@ prebuild:
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) revision
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) ddeps
-	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) install-reporter
-
 
 
 
