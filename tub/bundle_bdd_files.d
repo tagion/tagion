@@ -11,8 +11,7 @@ import std.string;
 auto get_md_paths(string pathname)
 {    
     return dirEntries(pathname, SpanMode.depth)
-        .filter!(f => f.name.endsWith(".md"))
-        .filter!(f => f.name.canFind("gen.md"))
+        .filter!(f => f.name.endsWith("gen.md"))
         .array;
 }
 
@@ -31,6 +30,7 @@ int main(string[] args) {
     }
 
     auto fout = File(FILE, "w");
+
 
     foreach(i, path; relative_paths) {
         fout.writefln("[%s](%s)", path.baseName, path);
