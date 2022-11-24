@@ -6,6 +6,21 @@ import std.algorithm.iteration : map;
 import std.array;
 import std.path;
 
+import tagion.behaviour.BehaviourFeature;
+import tagion.behaviour.BehaviourReporter;
+import tagion.hibon.HiBONRecord : fwrite;
+
+@safe
+synchronized
+class Reporter : BehaviourReporter {
+    void before(scope const(FeatureGroup*) feature_group) nothrow {
+"/tmp/test1.hibon".fwrite(feature_group);		
+	}
+    void after(scope const(FeatureGroup*) feature_group) nothrow {
+
+"/tmp/test2.hibon".fwrite(feature_group);		
+	}
+}
 
 struct Environment {
     string dbin;
