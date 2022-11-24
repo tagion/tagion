@@ -5,7 +5,7 @@ BDDTESTS=${addprefix run-,$(BDDS)}
 
 ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
 
-bddtest: | bddfiles bddinit bddenv bddrun reporter-start
+bddtest: | bddfiles bddinit bddenv bddrun bddreport reporter-start
 	$(PRECMD)
 
 .PHONY: bddtest bddfiles
@@ -84,6 +84,8 @@ help: help-bdd
 # del hibon filse
 clean-bddtest:
 	$(PRECMD)
+	$(RMDIR) $(BDD_LOG)
+
 
 .PHONY: help-bdd
 
