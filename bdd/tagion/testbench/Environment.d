@@ -13,13 +13,28 @@ import tagion.hibon.HiBONRecord : fwrite;
 @safe
 synchronized
 class Reporter : BehaviourReporter {
-    void before(scope const(FeatureGroup*) feature_group) nothrow {
-"/tmp/test1.hibon".fwrite(feature_group);		
-	}
-    void after(scope const(FeatureGroup*) feature_group) nothrow {
+    const(Exception) before(scope const(FeatureGroup*) feature_group) nothrow {
+        Exception result;
+        try {
+            "/tmp/test1.hibon".fwrite(*feature_group);
+        }
+        catch (Exception e) {
+            result = e;
+        }
+        return result;
+    }
 
-"/tmp/test2.hibon".fwrite(feature_group);		
-	}
+    const(Exception) after(scope const(FeatureGroup*) feature_group) nothrow {
+        Exception result;
+        try {
+            "/tmp/test2.hibon".fwrite(*feature_group);
+        }
+        catch (Exception e) {
+            result = e;
+        }
+
+        return result;
+    }
 }
 
 struct Environment {
@@ -42,8 +57,8 @@ struct Tools {
     string dartutil;
     string tagionboot;
 }
-immutable Tools tools;
 
+immutable Tools tools;
 
 import std.stdio;
 
