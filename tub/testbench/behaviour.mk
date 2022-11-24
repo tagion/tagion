@@ -47,6 +47,12 @@ env-bdd:
 
 env: env-bdd
 
+list-bdd: 
+	$(PRECMD)
+	${call log.header, $@ :: list}
+	${call log.env, BDDS, $(BDDS)}
+	${call log.close}
+
 help-bdd:
 	$(PRECMD)
 	${call log.header, $@ :: help}
@@ -60,6 +66,7 @@ help-bdd:
 	${call log.help, "make bddinit", "Initialize the testbench tool"}
 	${call log.help, "make behaviour", "Builds the BDD tool"}
 	${call log.help, "make clean-bddtest", "Will remove the bdd log files"}
+	${call log.help, "make list-bdd", "List all bdd targets"}
 	${call log.close}
 
 .PHONY: help-bdd
