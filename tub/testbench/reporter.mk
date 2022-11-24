@@ -17,7 +17,6 @@ env-reporter:
 
 .PHONY: env-reporter
 
-
 help-reporter:
 	$(PRECMD)
 	${call log.header, $@ :: help}
@@ -41,9 +40,12 @@ clean-reporter:
 
 clean: clean-reporter
 
-reporter-start: $(BDD_LOG)/.way reporter-install $(VIEWER_STARTED)
+reporter-start: | reporter-install $(VIEWER_STARTED) 
 
 .PHONY: reporter-start
+
+$(VIEWER_STARTED): $(BDD_LOG)/.way 
+
 
 $(VIEWER_STARTED):
 	$(PRECMD)
