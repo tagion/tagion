@@ -85,4 +85,6 @@ shared static this() {
     }
     tools = temp_tools;
     assert(errors is 0, "Environment is not setup correctly");
+	
+	reporter = new Reporter;
 }
