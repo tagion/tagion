@@ -5,33 +5,40 @@ import std.file;
 import std.path;
 import std.stdio;
 import std.process;
-import core.stdc.string : strlen;
 import std.conv : to;
 import std.string;
 
-auto get_md_files(string pathname)
+auto get_md_paths(string pathname)
 {    
-
     return dirEntries(pathname, SpanMode.depth)
         .filter!(f => f.name.endsWith(".md"))
         .filter!(f => f.name.canFind("gen.md"))
         .array;
-    
 }
 
 int main(string[] args) {
     // const BDD = environment["BDD"];
-    const BDD_PATH = "/home/imrying/work/tagion/bdd";
-    const BDD_LENGTH = BDD_PATH.length;
+    //const BDD_PATH = "/home/imrying/work/tagion/bdd";
+    const BDD = environment["BDD"];
+    const REPOROOT = environment["REPOROOT"];
+    const FILE = "/home/imrying/work/tagion/test.md";
 
-    auto md_files = get_md_files(BDD_PATH);
+    auto md_files = get_md_paths(BDD);
 
-    string[] paths;
+    string[] relative_paths;
     foreach(i, file; md_files) {
-        paths ~= toStringz(file[BDD_LENGTH-3 .. file.length]).to!string;
+        relative_paths ~= relativePath(file, REPOROOT);
     }
 
-    writeln(paths);
+    auto fout = File(FILE, "w");
+
+    foreach(i, path; relative_paths) {
+        fout.writefln("[%s](%s)", path.baseName, path);
+        fout.writeln("");
+    }
+    fout.close();
+
+
     return 0;
 
 }
