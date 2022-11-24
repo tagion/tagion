@@ -41,7 +41,7 @@ clean-reporter:
 
 clean: clean-reporter
 
-reporter-start: reporter-install $(VIEWER_STARTED)
+reporter-start: $(BDD_LOG)/.way reporter-install $(VIEWER_STARTED)
 
 .PHONY: reporter-start
 
