@@ -1,8 +1,8 @@
 
 VIEWER_STARTED:=$(BDD_LOG)/.report-viewer.touch
-VIEWER_INSTALLED:=$(BDD_LOG)/.report-install.touch
 
 REPORT_ROOT:=$(REPOROOT)/regression
+VIEWER_INSTALLED:=$(REPORT_ROOT)/.report-install.touch
 
 REPORT_INSTALL:=npm install 
 REPORT_VIEWER:=npm run dev
@@ -58,9 +58,10 @@ reporter-stop:
 	screen -X -S $(SCREEN_NAME) quit
 	$(RM) $(VIEWER_STARTED)
 
+
 reporter-install: $(VIEWER_INSTALLED)
 
-.PHONY: install-reporter
+.PHONY: reporter-install
 
 $(VIEWER_INSTALLED): 
 	$(PRECMD)
