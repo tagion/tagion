@@ -2,7 +2,7 @@
   - [Structure](#structure)
   - [Commands](#commands)
     - [Help](#help)
-    - [See all bdd\_targets](#see-all-bdd_targets)
+    - [See all bdd-targets](#see-all-bdd-targets)
     - [Running BDD's](#running-bdds)
     - [Building BDD's](#building-bdds)
   - [Creating a new BDD](#creating-a-new-bdd)
@@ -26,22 +26,30 @@ To get help use:
 
 `make help-bdd`
 
-### See all bdd_targets
+### See all bdd-targets
 To get a list of all created BDD's use the following command:
 
 `make list-bdd `
 
 ### Running BDD's
-To build and run all created BDD's use the following command:
+To build AND run all created BDD's use the following command:
 
 `make bddtest`
 
-This will build and run all BDD's including the BDD-tool. If you just want to run a single scenario use the following command:
+This will build and run all BDD's including the BDD-tool. If you just want to build the bdd, use the following command.
+
+`make bddinit`
+
+To run your build BDD's use:
+
+`make bddrun`
+If you just want to run a single test use the following command:
 
 `make run-<target>`
 
 ### Building BDD's
 If you are not interested in running the BDD, but instead just want to compile it use the following command:
+
 `make `
 
 
