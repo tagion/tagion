@@ -1,7 +1,7 @@
 
 TESTPROGRAM=$(DBIN)/$(TESTMAIN)
 TESTENV=$(DBIN)/bddenv.sh
-#BDDTESTS=${addprefix $(DBIN)/,$(BDDS)}
+BDDTESTS=${addprefix run-,$(BDDS)}
 
 bddtest: bddfiles bddinit bddenv bddrun 
 
@@ -12,14 +12,12 @@ bddfiles: behaviour
 	$(BEHAVIOUR) $(BDD_FLAGS)
 
 bddrun: $(BDDTESTS) 
-	echo $<
-	echo RUN
 
 .PHONY: bddrun
 
 run-%: bddfiles bddinit bddenv
 	$(PRECMD)
-	${call log.header. $@ :: run}
+	${call log.header, $* :: run bdd}
 	$(DBIN)/$* $(RUNFLAGS)
 
 bddenv: $(TESTENV)
