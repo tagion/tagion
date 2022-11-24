@@ -4,9 +4,10 @@ import tagion.behaviour.BehaviourFeature : FeatureGroup;
 
 @safe
 synchronized
-interface Reporter {
-    void before(scope const(FeatureGroup*) feature_group) nothrow;
-    void after(scope const(FeatureGroup*) feature_group) nothrow;
+interface BehaviourReporter {
+    const(Exception) before(scope const(FeatureGroup*) feature_group) nothrow;
+    const(Exception) after(scope const(FeatureGroup*) feature_group) nothrow;
 }
 
-static shared(Reporter) reporter;
+
+static shared(BehaviourReporter) reporter;
