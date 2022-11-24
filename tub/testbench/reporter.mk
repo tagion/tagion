@@ -1,5 +1,6 @@
 
-VIEWER_STARTED:=$(BDD_LOG)/.report-viewer.pid.touch
+VIEWER_STARTED:=$(BDD_LOG)/.report-viewer.touch
+VIEWER_INSTALLED:=$(BDD_LOG)/.report-install.touch
 
 REPORT_ROOT:=$(REPOROOT)/regression
 
@@ -57,11 +58,11 @@ reporter-stop:
 	screen -X -S $(SCREEN_NAME) quit
 	$(RM) $(VIEWER_STARTED)
 
-reporter-install: $(REPORT_ROOT)/.touch
+reporter-install: $(VIEWER_INSTALLED)
 
 .PHONY: install-reporter
 
-$(REPORT_ROOT)/.touch: 
+$(VIEWER_INSTALLED): 
 	$(PRECMD)
 	$(CD) $(REPORT_ROOT)
 	$(REPORT_INSTALL)
