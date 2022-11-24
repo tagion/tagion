@@ -35,7 +35,7 @@ bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way
 
 env-bdd:
 	$(PRECMD)
-	${call log.header, $@ :: env}
+	${call log.header, $@    :: env}
 	${call log.env, BDD_FLAGS, $(BDD_FLAGS)}
 	${call log.env, BDD_DFLAGS, $(BDD_DFLAGS)}
 	${call log.env, BDD_DFILES, $(BDD_DFILES)}

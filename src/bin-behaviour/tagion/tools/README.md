@@ -4,7 +4,9 @@
     - [Help](#help)
     - [See all bdd-targets](#see-all-bdd-targets)
     - [Running BDD's](#running-bdds)
-    - [Building BDD's](#building-bdds)
+  - [Reporter tool: tagion-regression](#reporter-tool-tagion-regression)
+    - [Starting](#starting)
+    - [Stopping](#stopping)
   - [Creating a new BDD](#creating-a-new-bdd)
 
 # BDD documentation
@@ -36,7 +38,8 @@ To build AND run all created BDD's use the following command:
 
 `make bddtest`
 
-This will build and run all BDD's including the BDD-tool. If you just want to build the bdd, use the following command.
+This will build and run all BDD's including the BDD-tool and [reporter](#reporter-tool-tagion-regression). It will also start the report tool.
+If you just want to build the bdd, use the following command.
 
 `make bddinit`
 
@@ -47,11 +50,20 @@ If you just want to run a single test use the following command:
 
 `make run-<target>`
 
-### Building BDD's
-If you are not interested in running the BDD, but instead just want to compile it use the following command:
+## Reporter tool: [tagion-regression](https://github.com/tagion/tagion-regression)
+[tagion-regression](https://github.com/tagion/tagion-regression) is a tool for viewing BDD results in the browser. See the hyperlink for a in-depth description of how it works. It will be started as a screen witn name "node" and run on port 3000.
+### Starting
+`make reporter-start`
 
-`make `
+Will start the reporter tool on localhost 3000 with screen.
 
+`make bddtest`
+Also starts the screen at the same time as everything else. See [Running BDD's](#running-bdds)
+
+### Stopping
+`make reporter-stop`
+
+Will stop the reporter and screen.
 
 ## Creating a new BDD
 
