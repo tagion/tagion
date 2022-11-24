@@ -46,6 +46,7 @@ If you just want to build the bdd, use the following command.
 To run your build BDD's use:
 
 `make bddrun`
+
 If you just want to run a single test use the following command:
 
 `make run-<target>`
@@ -58,7 +59,8 @@ If you just want to run a single test use the following command:
 Will start the reporter tool on localhost 3000 with screen.
 
 `make bddtest`
-Also starts the screen at the same time as everything else. See [Running BDD's](#running-bdds)
+
+Also starts the reporter tool but runs and builds the other parts. See [Running BDD's](#running-bdds)
 
 ### Stopping
 `make reporter-stop`
@@ -66,7 +68,7 @@ Also starts the screen at the same time as everything else. See [Running BDD's](
 Will stop the reporter and screen.
 
 ## Creating a new BDD
-
+ALL COMMANDS NECCESARY
 
 
 
