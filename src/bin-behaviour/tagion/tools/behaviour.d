@@ -165,10 +165,8 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
                 dlang.issue(feature);
                 fout.close;
                 if (dfmt.length) {
-                    //                    writefln("%s", dfmt ~ dsource);
-
                     const exit_code = execute(dfmt ~ dsource);
-                    //                    writefln("%-(%s %)", dfmt ~ dsource);
+					writefln("format file  %s", dsource); 
                     if (exit_code.status) {
                         writefln("Format error %s", exit_code.output);
                     }

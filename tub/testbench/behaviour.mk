@@ -5,6 +5,8 @@ BDDTESTS=${addprefix run-,$(BDDS)}
 
 ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
 
+BDD_MD_FILES=${shell find $(BDD) -name "*.md" -a -not -name "*.gen.md"}
+
 bddtest: | bddfiles bddinit bddenv bddrun bddreport reporter-start
 	$(PRECMD)
 
@@ -40,6 +42,13 @@ bddreport: target-hibonutil
 	$(PRECMD)
 	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
 
+%.md.tmp: %.md
+	$(PRECMD)
+	iconv -t US-ASCII -t UTF-8//TRANSLIT//IGNORE $< > $@
+	cp $@ $<
+
+
+bddstrip: $(BDD_MD_FILES:.md=.md.tmp)
 
 env-bdd:
 	$(PRECMD)
@@ -47,6 +56,7 @@ env-bdd:
 	${call log.env, BDD_FLAGS, $(BDD_FLAGS)}
 	${call log.env, BDD_DFLAGS, $(BDD_DFLAGS)}
 	${call log.env, BDD_DFILES, $(BDD_DFILES)}
+	${call log.env, BDD_MD_FILES, $(BDD_MD_FILES)}
 	${call log.env, TESTENV, $(TESTENV)}
 	${call log.env, BDDS, $(BDDS)}
 	${call log.close}
@@ -72,6 +82,7 @@ help-bdd:
 	${call log.help, "make bddfiles", "Generates the bdd files"}
 	${call log.help, "make bddenv", "Generates a environment test script"}
 	${call log.help, "make bddinit", "Initialize the testbench tool"}
+	${call log.help, "make bddstrip", "Strips bad chars from BDD markdown files "}
 	${call log.help, "make behaviour", "Builds the BDD tool"}
 	${call log.help, "make clean-bddtest", "Will remove the bdd log files"}
 	${call log.help, "make list-bdd", "List all bdd targets"}
