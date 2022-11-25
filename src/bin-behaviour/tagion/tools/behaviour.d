@@ -10,7 +10,7 @@ import std.getopt;
 import std.stdio : writefln, writeln, File;
 import std.format;
 import std.path : extension, setExtension, dirName, buildPath;
-import std.file : exists, dirEntries, SpanMode, readText;
+import std.file : exists, dirEntries, SpanMode, readText, fwrite=write;
 import std.string : join, strip, splitLines;
 import std.algorithm.iteration : filter, map, joiner, fold, uniq, splitter, each;
 import std.regex : regex, matchFirst;
@@ -29,6 +29,7 @@ import tagion.behaviour.Emendation : emendation, suggestModuleName;
 
 enum ONE_ARGS_ONLY = 2;
 enum DFMT_ENV = "DFMT"; /// Set the path and argument d-format including the flags
+enum ICONV = "iconv"; /// Character format converter  
 
 /** 
  * Option setting for the optarg and behaviour.json config file
@@ -51,6 +52,11 @@ struct BehaviourOptions {
     /** Command line flags for the dfmt */
     string[] dfmt_flags;
 
+    /** Character converter (default iconv) */
+    string iconv;
+    /** Command line flags for the iconv */
+    string[] iconv_flags;
+
     string importfile; /// Import file which are included into the generated skeleton
 
     bool enable_package; /// This produce the package 
@@ -70,6 +76,9 @@ struct BehaviourOptions {
                 dfmt_flags = ["-i"];
             }
         }
+        const which_iconv = execute(["which", "iconv"]);
+        iconv = which_iconv.output;
+        iconv_flags = ["-t", "utf-8", "-f", "utf-8", "-c"];
     }
 
     mixin JSONCommon;
@@ -129,6 +138,10 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
         dfmt = environment.get(DFMT_ENV, null).split.array.dup;
     }
 
+    string[] iconv; /// Character convert used to remove illegal chars in files
+    if (opts.iconv.length) {
+        iconv = opts.iconv.strip ~ opts.iconv_flags.dup;
+    }
     ModuleInfo[] list_of_modules;
 
     /* Error counter */
@@ -164,9 +177,17 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
                 auto dlang = Dlang(fout);
                 dlang.issue(feature);
                 fout.close;
+                if (iconv.length) {
+                    const exit_code = execute(iconv ~ dsource);
+                    if (exit_code.status) {
+                        writefln("Format error %s", exit_code.output);
+                    }
+                    else {
+                        dsource.fwrite(exit_code.output);
+                    }
+                }
                 if (dfmt.length) {
                     const exit_code = execute(dfmt ~ dsource);
-					writefln("format file  %s", dsource); 
                     if (exit_code.status) {
                         writefln("Format error %s", exit_code.output);
                     }
