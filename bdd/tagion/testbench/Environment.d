@@ -6,6 +6,8 @@ import std.algorithm.iteration : map;
 import std.array;
 import std.path;
 
+import tagion.basic.Types : FileExtension;
+
 import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.BehaviourReporter;
 import tagion.hibon.HiBONRecord : fwrite;
@@ -16,7 +18,7 @@ class Reporter : BehaviourReporter {
 	const(Exception) before(scope const(FeatureGroup*) feature_group) nothrow {
         Exception result;
         try {
-            buildPath(env.bdd_results, feature_group.info.name).setExtension("hibon").fwrite(*feature_group);
+            buildPath(env.bdd_results, feature_group.info.name).setExtension(FileExtension.hibon).fwrite(*feature_group);
         }
         catch (Exception e) {
             result = e;
@@ -27,7 +29,7 @@ class Reporter : BehaviourReporter {
     const(Exception) after(scope const(FeatureGroup*) feature_group) nothrow {
         Exception result;
         try {
-            buildPath(env.bdd_results, feature_group.info.name).setExtension("hibon").fwrite(*feature_group);
+            buildPath(env.bdd_results, feature_group.info.name).setExtension(FileExtension.hibon).fwrite(*feature_group);
         }
         catch (Exception e) {
             result = e;

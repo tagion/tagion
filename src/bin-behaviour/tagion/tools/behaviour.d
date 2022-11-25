@@ -120,7 +120,6 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
     alias DlangFile = DlangT!File;
     if (opts.importfile) {
         DlangFile.preparations = opts.importfile.readText.splitLines;
-        writefln("DlangFile.preparations=%s", DlangFile.preparations);
     }
     auto bdd_files = opts.paths
         .map!(path => dirEntries(path, SpanMode.depth))
@@ -180,7 +179,7 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
                 if (iconv.length) {
                     const exit_code = execute(iconv ~ dsource);
                     if (exit_code.status) {
-                        writefln("Format error %s", exit_code.output);
+                        writefln("Correction error %s", exit_code.output);
                     }
                     else {
                         dsource.fwrite(exit_code.output);
