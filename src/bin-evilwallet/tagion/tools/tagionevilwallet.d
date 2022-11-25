@@ -1,5 +1,6 @@
-/// \file tagionwallet.d
-module tagion.tools.tagionwallet;
+/// \file tagionevilwallet.d
+module tagion.tools.tagionevilwallet;
+//import tagion.tools.tagionwallet;
 
 import std.getopt;
 import std.stdio;
@@ -28,7 +29,7 @@ import tagion.script.TagionCurrency;
 import tagion.crypto.SecureNet : StdSecureNet, StdHashNet, scramble;
 import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, Quiz;
-import tagion.wallet.SecureWallet;
+import tagion.wallet.EvilWallet; // Importing the evil library instead of SecureWallet
 import tagion.utils.Term;
 import tagion.basic.Message;
 
@@ -108,16 +109,17 @@ enum MAX_PINCODE_SIZE = 128;
  * \struct WalletInterface
  * Interface struct for wallet
  */
+
 struct WalletInterface
 {
     const(WalletOptions) options;
-    alias StdSecureWallet = SecureWallet!StdSecureNet;
-    StdSecureWallet secure_wallet;
+    alias StdEvilWallet = EvilWallet!StdSecureNet;
+    StdEvilWallet evil_wallet;
     Invoices payment_requests;
     Quiz quiz;
     this(const WalletOptions options)
     {
-        //this.secure_wallet=secure_wallet;
+        //this.evil_wallet=evil_wallet;
         this.options = options;
     }
 
@@ -144,8 +146,8 @@ struct WalletInterface
             //writefln("pincode.length=%d", pincode.length);
             if (pincode.length)
             {
-                secure_wallet.login(pincode);
-                if (secure_wallet.isLoggedin)
+                evil_wallet.login(pincode);
+                if (evil_wallet.isLoggedin)
                 {
                     return true;
                 }
@@ -156,7 +158,7 @@ struct WalletInterface
 
                 //                writefln("quiz.questions=%s", quiz.questions);
                 generateSeed(quiz.questions, true);
-                return secure_wallet.isLoggedin;
+                return evil_wallet.isLoggedin;
             }
         }
         CLEARSCREEN.write;
@@ -188,22 +190,22 @@ struct WalletInterface
             writefln(" Account overview ");
 
             LINE.writeln;
-            const processed = secure_wallet.account.processed;
+            const processed = evil_wallet.account.processed;
             if (!processed)
             {
-                writefln("                                 available %s", secure_wallet
+                writefln("                                 available %s", evil_wallet
                         .account.available);
-                writefln("                                    active %s", secure_wallet
+                writefln("                                    active %s", evil_wallet
                         .account.active);
             }
             (processed ? GREEN : RED).write;
-            writefln("                                     total %s", secure_wallet.account.total);
+            writefln("                                     total %s", evil_wallet.account.total);
             RESET.write;
             LINE.writeln;
             with (State) final switch (state)
             {
             case CREATE_ACCOUNT:
-                if (secure_wallet.isLoggedin)
+                if (evil_wallet.isLoggedin)
                 {
                     writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sp%2$s:change pin%3$s", FKEY, RESET, CLEARDOWN);
                 }
@@ -225,8 +227,8 @@ struct WalletInterface
                     //pincode = stack_pincode;
                     scramble(pincode);
                 }
-                secure_wallet.login(pincode);
-                if (secure_wallet.isLoggedin)
+                evil_wallet.login(pincode);
+                if (evil_wallet.isLoggedin)
                 {
                     state = LOGGEDIN;
                     continue;
@@ -258,7 +260,7 @@ struct WalletInterface
                 }
                 break;
             case 'c':
-                if (!secure_wallet.isLoggedin)
+                if (!evil_wallet.isLoggedin)
                 {
                     generateSeed(standard_questions.idup, false);
                 }
@@ -288,7 +290,7 @@ struct WalletInterface
     void changePin()
     {
         CLEARSCREEN.write;
-        if (secure_wallet.isLoggedin)
+        if (evil_wallet.isLoggedin)
         {
             foreach (i; 0 .. 3)
             {
@@ -300,7 +302,7 @@ struct WalletInterface
                 }
                 writeln("Change you pin code");
                 LINE.writeln;
-                if (secure_wallet.pin.D)
+                if (evil_wallet.pin.D)
                 {
                     char[] old_pincode;
                     char[] new_pincode1;
@@ -315,8 +317,8 @@ struct WalletInterface
                     writeln("Current pincode:");
                     readln(old_pincode);
                     old_pincode.word_strip;
-                    //            secure_wallet.login(old_pincode);
-                    if (secure_wallet.check_pincode(old_pincode))
+                    //            evil_wallet.login(old_pincode);
+                    if (evil_wallet.check_pincode(old_pincode))
                     {
                         writefln("%1$sCorrect pin%2$s", GREEN, RESET);
                         bool ok;
@@ -331,9 +333,9 @@ struct WalletInterface
                             ok = (new_pincode1.length >= 4);
                             if (ok && (ok = (new_pincode1 == new_pincode2)) is true)
                             {
-                                secure_wallet.change_pincode(old_pincode, new_pincode1);
-                                secure_wallet.login(new_pincode1);
-                                options.devicefile.fwrite(secure_wallet.pin);
+                                evil_wallet.change_pincode(old_pincode, new_pincode1);
+                                evil_wallet.login(new_pincode1);
+                                options.devicefile.fwrite(evil_wallet.pin);
                                 return;
                             }
                             else
@@ -377,7 +379,7 @@ struct WalletInterface
         uint confidence;
         if (recover_flag)
         {
-            confidence = secure_wallet.confidence;
+            confidence = evil_wallet.confidence;
         }
         while (ch != 'q')
         {
@@ -489,7 +491,7 @@ struct WalletInterface
                             {
                                 writefln("RECOVER_FLAG");
                                 stdout.flush;
-                                const ok = secure_wallet.correct(quiz.questions, selected_answers);
+                                const ok = evil_wallet.correct(quiz.questions, selected_answers);
                                 writefln("RECOVER %s", ok);
                                 if (ok)
                                 {
@@ -498,7 +500,7 @@ struct WalletInterface
                                 else
                                 {
                                     writefln("%1$sSome wrong answers. The account has not been recovered%2$s", RED, RESET);
-                                    secure_wallet.logout;
+                                    evil_wallet.logout;
                                     continue;
                                 }
                             }
@@ -537,7 +539,7 @@ struct WalletInterface
                                 {
                                     if (recover_flag)
                                     {
-                                        const ok = secure_wallet.recover(quiz.questions, selected_answers, pincode1);
+                                        const ok = evil_wallet.recover(quiz.questions, selected_answers, pincode1);
                                         if (ok)
                                         {
                                             writefln("%1$sWallet recovered%2$s", GREEN, RESET);
@@ -546,21 +548,21 @@ struct WalletInterface
                                         {
                                             writefln("%1$sWallet NOT recovered%2$s", RED, RESET);
                                         }
-                                        options.walletfile.fwrite(secure_wallet.wallet);
-                                        options.devicefile.fwrite(secure_wallet.pin);
+                                        options.walletfile.fwrite(evil_wallet.wallet);
+                                        options.devicefile.fwrite(evil_wallet.pin);
                                     }
                                     else
                                     {
-                                        secure_wallet = StdSecureWallet.createWallet(quiz.questions, selected_answers, confidence, pincode1);
-                                        secure_wallet.login(pincode1);
-                                        options.walletfile.fwrite(secure_wallet.wallet);
-                                        options.devicefile.fwrite(secure_wallet.pin);
+                                        evil_wallet = StdEvilWallet.createWallet(quiz.questions, selected_answers, confidence, pincode1);
+                                        evil_wallet.login(pincode1);
+                                        options.walletfile.fwrite(evil_wallet.wallet);
+                                        options.devicefile.fwrite(evil_wallet.pin);
                                         options.quizfile.fwrite(quiz);
 
                                     }
                                 }
                             }
-                            while (!secure_wallet.isLoggedin);
+                            while (!evil_wallet.isLoggedin);
                             return;
                         }
                         break;
@@ -637,22 +639,6 @@ static void set_path(ref string file, string path)
     file = buildPath(path, file.baseName);
 }
 
-//! [check function word_strip]
-@safe
-unittest
-{
-    import std.ascii : isWhite;
-
-    scope char[] word;
-    word.length = MAX_PINCODE_SIZE;
-    const test_text = "  Some text with space ";
-    const no_change = &word[0];
-    word[0 .. test_text.length] = test_text;
-    assert(no_change is &word[0]);
-    word_strip(word);
-    assert(no_change is &word[0]);
-    assert(equal(word, test_text.filter!(c => !c.isWhite)));
-}
 
 import tagion.utils.JSONCommon;
 
@@ -691,35 +677,28 @@ void sendPaymentData(const ubyte[] data, const string adress, ushort port, ref H
 
 import tagion.tools.Basic;
 
-mixin Main!(_main, "wallet");
+
+
+mixin Main!(_main, "evilwallet");
 
 int _main(string[] args)
 {
     immutable program = args[0];
     auto config_file = "tagionwallet.json";
-    bool overwrite_switch; /// Overwrite the config file
     bool version_switch;
     string payfile;
-    string questions_str;
-    string answers_str;
     bool wallet_ui;
-    bool update_wallet;
-    uint number_of_bills;
-    string passphrase = "verysecret";
-    ulong value = 1000_000_000;
-    bool generate_wallet;
-    string item;
     string pincode;
     bool send_flag;
     string create_invoice_command;
-    bool print_amount;
-    bool unlock_bills;
-    string path;
     string invoicefile = "invoice_file.hibon";
+    bool setfee;
+    double fee;
+    bool invalid_signature;
+    bool zero_pubkey;
+    bool invalid_data_type;
 
     auto logo = import("logo.txt");
-
-    bool check_health;
 
     WalletOptions options;
     if (config_file.exists)
@@ -737,28 +716,19 @@ int _main(string[] args)
         main_args = getopt(args, std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
             "version", "display the version", &version_switch,
-            "overwrite|O", "Overwrite the config file and exits", &overwrite_switch,
-            "path", format("Set the path for the wallet files : default %s", path), &path,
-            "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
-            "device", format("Device file : default %s", options.devicefile), &options.devicefile,
-            "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
             "invoice|i", format("Invoice file : default %s", invoicefile), &invoicefile,
             "create-invoice|c", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &create_invoice_command,
             "contract|t", format("Contractfile : default %s", options.contractfile), &options.contractfile,
             "send|s", "Send contract to the network", &send_flag,
-            "amount", "Display the wallet amount", &print_amount,
             "pay|I", format("Invoice to be payed : default %s", payfile), &payfile,
-            "update|U", "Update your wallet", &update_wallet,
-            "item|m", "Invoice item select from the invoice file", &item,
             "pin|x", "Pincode", &pincode,
             "port|p", format("Tagion network port : default %d", options.port), &options.port,
             "url|u", format("Tagion url : default %s", options.addr), &options.addr,
-            "visual|g", "Visual user interface", &wallet_ui,
-            "questions", "Questions for wallet creation", &questions_str,
-            "answers", "Answers for wallet creation", &answers_str,
-            "generate-wallet", "Create a new wallet", &generate_wallet,
-            "health", "Healthcheck the node", &check_health,
-            "unlock", "Remove lock from all local bills", &unlock_bills
+            "setfee", "Specify the fee with fee", &setfee,
+            "fee", "Set the fee to a specific amount", &fee,
+            "invalid-signature", "Makes the signature invalid", &invalid_signature,
+            "zero-pubkey", "Sets the invoice output pkeys to 0x00...", &zero_pubkey,
+            "invalid-data-type", "Set output amount type to string", &invalid_data_type,
         );
     }
     catch (GetOptException e)
@@ -807,99 +777,9 @@ int _main(string[] args)
         return 0;
     }
 
-    const new_config = (!config_file.exists || overwrite_switch);
-
-    if (path)
-    {
-        if (!new_config)
-        {
-            writefln("To change the path you need to use the overwrite switch -O");
-            return 10;
-        }
-        options.walletfile.set_path(path);
-        options.quizfile.set_path(path);
-        options.devicefile.set_path(path);
-        options.accountfile.set_path(path);
-        options.billsfile.set_path(path);
-        options.paymentrequestsfile.set_path(path);
-        const dir = options.walletfile.dirName;
-        if (!dir.exists)
-        {
-            dir.mkdir;
-        }
-    }
-    if (new_config)
-    {
-        options.save(config_file);
-        if (overwrite_switch)
-        {
-            return 0;
-        }
-    }
-
     auto wallet_interface = WalletInterface(options);
 
     HiRPC hirpc;
-    if (check_health)
-    {
-        writefln("HEALTHCHECK: %s %d", wallet_interface.options.addr, wallet_interface.options.port);
-        auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-        scope (exit)
-        {
-            client.close;
-        }
-        try 
-        {
-            client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface
-                .options.port));
-        }
-        catch(SocketOSException e)
-        {
-            writeln("Health check failed: ", e.msg);
-            return 1;
-        }
-        client.blocking = true;
-        const sender = hirpc.action("healthcheck", new HiBON());
-
-        immutable data = sender.toDoc.serialize;
-        writeln(sender.toDoc.toJSON);
-        client.send(data);
-
-        auto rec_buf = new void[4000];
-        ptrdiff_t rec_size;
-
-        do
-        {
-            rec_size = client.receive(rec_buf); //, current_max_size);
-            writefln("read rec_size=%d", rec_size);
-            Thread.sleep(400.msecs);
-        }
-        while (rec_size < 0);
-        auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
-        writeln(resp_doc.toJSON);
-        return 0;
-    }
-
-    if (generate_wallet)
-    {
-        const questions = questions_str.split(',');
-        const answers = answers_str.split(',');
-        assert(questions.length >= 3, "Minimal amount of answers is 3");
-        assert(questions.length is answers.length, "Amount of questions should be same as answers");
-        assert(pincode.length = 4, "You must provide pin-code with 4 digits");
-        auto hashnet = new StdHashNet;
-        auto recover = KeyRecover(hashnet);
-        const pincode1 = to!(char[])(pincode);
-
-        const confidence = questions.length - 1;
-        const secure_wallet = wallet_interface.StdSecureWallet.createWallet(questions, answers, to!uint(
-                confidence), pincode1);
-
-        // secure_wallet.login(pincode1);
-        options.walletfile.fwrite(secure_wallet.wallet);
-        options.devicefile.fwrite(secure_wallet.pin);
-        return 0;
-    }
 
     if (options.walletfile.exists)
     {
@@ -908,7 +788,7 @@ int _main(string[] args)
         {
             wallet_doc = options.walletfile.fread;
         }
-        catch(TagionException e)
+        catch (TagionException e)
         {
             writeln(e.msg);
             return 1;
@@ -916,9 +796,9 @@ int _main(string[] args)
         const pin_doc = options.devicefile.exists ? options.devicefile.fread : Document.init;
         if (wallet_doc.isInorder && pin_doc.isInorder)
         {
-            try 
+            try
             {
-                wallet_interface.secure_wallet = WalletInterface.StdSecureWallet(wallet_doc, pin_doc);
+                wallet_interface.evil_wallet = WalletInterface.StdEvilWallet(wallet_doc, pin_doc);
             }
             catch (TagionException e)
             {
@@ -943,11 +823,11 @@ int _main(string[] args)
         wallet_interface.quiz.questions = standard_questions.dup;
     }
 
-    if (wallet_interface.secure_wallet != WalletInterface.StdSecureWallet.init)
+    if (wallet_interface.evil_wallet != WalletInterface.StdEvilWallet.init)
     {
         if (pincode)
         {
-            const flag = wallet_interface.secure_wallet.login(pincode);
+            const flag = wallet_interface.evil_wallet.login(pincode);
             if (!flag)
             {
                 stderr.writefln("%sWrong pincode%s", RED, RESET);
@@ -973,7 +853,7 @@ int _main(string[] args)
             writefln("%1$sAccount file '%3$s' is bad%2$s", RED, RESET, options.accountfile);
             return 7;
         }
-        wallet_interface.secure_wallet.account = AccountDetails(account_doc);
+        wallet_interface.evil_wallet.account = AccountDetails(account_doc);
     }
 
     if (options.billsfile.exists)
@@ -1010,152 +890,81 @@ int _main(string[] args)
     }
     else if (payfile.length)
     {
-        writeln("Invoice file "~payfile~" not found");
+        writeln("Invoice file " ~ payfile ~ " not found");
     }
-    if (unlock_bills)
-    {
-        wallet_interface.secure_wallet.deactivate_bills;
-        options.accountfile.fwrite(wallet_interface.secure_wallet.account);
-    }
-    if (update_wallet)
-    {
 
-        // writefln("looking for %s", (cast(Buffer)pkey).toHexString);
-        auto to_send = wallet_interface.secure_wallet.get_request_update_wallet();
-        // writeln("Sending::", to_send.toDoc.toJSON);
-        auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-        scope (exit)
+    if (create_invoice_command.length)
+    {
+        scope invoice_args = create_invoice_command.splitter(":");
+        import tagion.basic.Basic : eatOne;
+
+        //            writefln("invoice_args=%s create_invoice_command=%s", invoice_args, create_invoice_command);
+        auto new_invoice = WalletInterface.StdEvilWallet.createInvoice(
+            invoice_args.eatOne,
+            invoice_args.eatOne.to!double.TGN,
+        );
+
+        // if (new_invoice.name.length is 0 || new_invoice.amount <= 0 || !invoice_args.empty)
+        // {
+        //     writefln("Invalid invoice %s", create_invoice_command);
+        //     return 11;
+        // }
+        // Create invoices to the wallet (Request to pay)
+        wallet_interface.evil_wallet.registerInvoice(new_invoice);
+        options.accountfile.fwrite(wallet_interface.evil_wallet.account);
+        // Add the invoice to the list
+        wallet_interface.payment_requests.list ~= new_invoice;
+        options.paymentrequestsfile.fwrite(wallet_interface.payment_requests);
+        // Writes the invoice-file to a file named <name>_<invoicefile>
+        // writefln("invoicefile=%s", invoicefile);
+        try
         {
-            client.close;
+            invoicefile.fwrite(new_invoice);
         }
-        try 
+        catch (FileException e)
         {
-            client.connect(new InternetAddress(wallet_interface.options.addr, wallet_interface
-                .options.port));
-        }
-        catch(SocketOSException e)
-        {
-            writeln("Refused connection to address:", wallet_interface.options.addr);
+            writeln(e.msg);
             return 1;
         }
-        client.blocking = true;
+    }
+    else if (invoice_to_pay !is invoice_to_pay.init)
+    {
+        writeln("payment");
+        SignedContract signed_contract;
+        const flag = wallet_interface.evil_wallet.payment([invoice_to_pay], signed_contract, setfee, fee, invalid_signature, zero_pubkey, invalid_data_type);
+        options.accountfile.fwrite(wallet_interface.evil_wallet.account);
 
-        client.send(to_send.toDoc.serialize);
-
-        auto rec_buf = new void[4000];
-        ptrdiff_t rec_size;
-
-        do
+        if (flag)
         {
-            rec_size = client.receive(rec_buf); //, current_max_size);
-            // writefln("read rec_size=%d", rec_size);
-            Thread.sleep(400.msecs);
-        }
-        while (rec_size < 0);
-        auto resp_doc = Document(cast(Buffer) rec_buf[0 .. rec_size]);
-
-        auto received = hirpc.receive(resp_doc);
-        if (!received.isError)
-        {
-            //    writefln("received: %s", resp_doc.toJSON);
-            // //    writefln("data: %s", received.message.toJSON);
-            //    writefln("type: %s",received.type );
-            // //    writefln("data: %s", received.method.params.toJSON);
-            //    writefln("data: %s", received.response.result.toJSON);
-
-            auto updated = wallet_interface.secure_wallet.set_response_update_wallet(received);
-            options.accountfile.fwrite(wallet_interface.secure_wallet.account);
-            Thread.sleep(1000.msecs);
-            writeln("Wallet updated ", updated);
+            const sender = hirpc.transaction(signed_contract.toHiBON);
+            immutable data = sender.toDoc.serialize;
+            options.contractfile.fwrite(sender.toDoc);
+            Thread.sleep(50.msecs);
         }
         else
         {
-            writeln("Wallet update failed");
+            writeln("payment failed");
+            return 0;
         }
     }
 
-    if (wallet_ui)
+    if (send_flag)
     {
-        wallet_interface.accountView;
-    }
-    else
-    {
-        if (print_amount)
+        if (options.contractfile.exists)
         {
-            writefln("Total: %s\n Available: %s\n Locked: %s", wallet_interface.secure_wallet.total_balance, wallet_interface
-                    .secure_wallet.available_balance, wallet_interface.secure_wallet.active_balance);
+            immutable data = options.contractfile.fread();
+            // writeln(data.data[0 .. $]);
+            auto doc1 = Document(data.data);
+            writeln(doc1.toJSON);
+
+            import LEB128 = tagion.utils.LEB128;
+
+            writeln(LEB128.calc_size(doc1.serialize));
+            sendPaymentData(data.data, wallet_interface.options.addr, wallet_interface.options.port, hirpc);
         }
-        if (create_invoice_command.length)
+        else
         {
-            scope invoice_args = create_invoice_command.splitter(":");
-            import tagion.basic.Basic : eatOne;
-
-            //            writefln("invoice_args=%s create_invoice_command=%s", invoice_args, create_invoice_command);
-            auto new_invoice = WalletInterface.StdSecureWallet.createInvoice(
-                invoice_args.eatOne,
-                invoice_args.eatOne.to!double.TGN);
-            if (new_invoice.name.length is 0 || new_invoice.amount <= 0 || !invoice_args.empty)
-            {
-                writefln("Invalid invoice %s", create_invoice_command);
-                return 11;
-            }
-            // Create invoices to the wallet (Request to pay)
-            wallet_interface.secure_wallet.registerInvoice(new_invoice);
-            options.accountfile.fwrite(wallet_interface.secure_wallet.account);
-            // Add the invoice to the list
-            wallet_interface.payment_requests.list ~= new_invoice;
-            options.paymentrequestsfile.fwrite(wallet_interface.payment_requests);
-            // Writes the invoice-file to a file named <name>_<invoicefile>
-            // writefln("invoicefile=%s", invoicefile);
-            try
-            {
-                invoicefile.fwrite(new_invoice);
-            }
-            catch(FileException e)
-            {
-                writeln(e.msg);
-                return 1;
-            }
-        }
-        else if (invoice_to_pay !is invoice_to_pay.init)
-        {
-            writeln("payment");
-            SignedContract signed_contract;
-            const flag = wallet_interface.secure_wallet.payment([invoice_to_pay], signed_contract);
-            options.accountfile.fwrite(wallet_interface.secure_wallet.account);
-
-            if (flag)
-            {
-                const sender = hirpc.transaction(signed_contract.toHiBON);
-                immutable data = sender.toDoc.serialize;
-                options.contractfile.fwrite(sender.toDoc);
-                Thread.sleep(50.msecs);
-            }
-            else
-            {
-                writeln("payment failed");
-                return 0;
-            }
-        }
-        
-        if (send_flag)
-        {
-            if (options.contractfile.exists)
-            {
-                immutable data = options.contractfile.fread();
-                // writeln(data.data[0 .. $]);
-                auto doc1 = Document(data.data);
-                writeln(doc1.toJSON);
-
-                import LEB128 = tagion.utils.LEB128;
-
-                writeln(LEB128.calc_size(doc1.serialize));
-                sendPaymentData(data.data, wallet_interface.options.addr, wallet_interface.options.port, hirpc);
-            }
-            else
-            {
-                writeln("Absent send data");
-            }
+            writeln("Absent send data");
         }
     }
     return 0;

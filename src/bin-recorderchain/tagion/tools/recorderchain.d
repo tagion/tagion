@@ -8,11 +8,12 @@ module tagion.tools.recorderchain;
 import std.stdio;
 import std.getopt;
 import std.path;
-import std.file;
+import std.file : copy, exists;
 import std.array;
 import std.format;
 
 import tagion.basic.TagionExceptions;
+import tagion.basic.Types : FileExtension, withDot;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.dart.Recorder;
@@ -26,19 +27,6 @@ import tagion.dart.RecorderChain;
 
 auto logo = import("logo.txt");
 
-/** 
- * Used to add recorder to DART database
- * @param db - DART database
- * @param recorder - recorder to add
- * @param hirpc - to modify DART database
- */
-void addRecordToDB(DART db, RecordFactory.Recorder recorder, HiRPC hirpc) @safe
-{
-    auto sent = DART.dartModify(recorder, hirpc);
-    auto received = hirpc.receive(sent);
-    db(received, false);
-}
-
 int main(string[] args)
 {
     immutable program = args[0];
@@ -48,6 +36,7 @@ int main(string[] args)
         writeln("Error: No arguments provided for ", baseName(args[0]), "!");
         return 1;
     }
+
     /** Net for DART database creation */
     SecureNet secure_net = new StdSecureNet;
     /** Net for recorder factory creation */
@@ -63,8 +52,8 @@ int main(string[] args)
     string chain_directory;
     /** Directory for DART database */
     string dart_file;
-    /** Initialize new DART database */
-    bool initialize;
+    /** Directory for genesis DART */
+    string gen_dart_file;
 
     GetoptResult main_args;
 
@@ -75,7 +64,7 @@ int main(string[] args)
             std.getopt.config.bundling,
             "chaindirectory|c", "Path to recorder chain directory", &chain_directory,
             "dartfile|d", "Path to dart file", &dart_file,
-            "initialize|i", "Initialize empty DART", &initialize,
+            "genesisdart|g", "Path to genesis dart file", &gen_dart_file,
         );
 
         if (main_args.helpWanted)
@@ -105,75 +94,65 @@ int main(string[] args)
         stderr.writefln(e.msg);
         return 1;
     }
-    
-    if(!chain_directory.exists)
+
+    // Check genesis DART file 
+    if (!gen_dart_file.exists || gen_dart_file.extension != FileExtension.dart.withDot)
     {
-        writeln("No chain files in directory: ", chain_directory);
+        writefln("Incorrect genesis DART file '%s'", gen_dart_file);
         return 1;
     }
 
-    if(!RecorderChain.isValidChain(chain_directory, hash_net))
+    // Copy genesis DART as base for DART that is being recovered
+    gen_dart_file.copy(dart_file);
+
+    // Open new DART file
+    DART dart;
+    try
     {
-        writeln("Recorder block chain is not valid");
+        dart = new DART(secure_net, dart_file);
+    }
+    catch (Exception e)
+    {
+        writefln("Invalid format of genesis DART file '%s'", gen_dart_file);
         return 1;
     }
 
-    /** DART database */
-    DART db;
-    /** First, last, amount of blocks in chain */ 
+    // Check existence of recorder chain directory
+    if (!chain_directory.exists)
+    {
+        writefln("Recorder chain directory '%s' does not exist", chain_directory);
+        return 1;
+    }
+
+    // Check validity of recorder chain
+    if (!RecorderChain.isValidChain(chain_directory, hash_net))
+    {
+        writeln("Recorder block chain is not valid!\nAbort");
+        return 1;
+    }
+
+    // Collect info from chain directory
     auto info = RecorderChain.getBlocksInfo(chain_directory, hash_net);
-    if(!info.amount) 
+    if (info.amount == 0)
     {
-        writeln("No recorder chain block files in current directory");
+        writeln("No recorder chain files");
         return 1;
     }
 
-    /** Block that should be pushed to DART database next*/
-    RecorderChainBlock current_block;
-    if (initialize)
-    {
-        try
-        {
-            BlockFile.create(dart_file, DARTFile.stringof, BLOCK_SIZE);
-            /** Initialize DART database */
-            db = new DART(secure_net, dart_file, 0, 0);
-        }
-        catch (Exception e)
-        {
-            writeln("Can not create DART file: ", dart_file);
-            return 0;
-        }
-        current_block = info.first;
-    }
-    else
-    {
-        try
-        {
-            db = new DART(secure_net, dart_file, 0, 0);
-        }
-        catch (Exception e)
-        {
-            writeln("Can not open DART file: ", dart_file);
-            return 0;
-        }
-
-        /** Used to find block that should be pushed to DART database next */
-        auto block = RecorderChain.findCurrentDARTBlock(db.fingerprint, chain_directory, hash_net);
-        if (block.fingerprint == info.last.fingerprint)
-        {
-            return 1;
-        }
-        current_block = RecorderChain.findNextBlock(block.fingerprint, chain_directory, hash_net);
-    }
-
+    // Recover DART using blocks
+    auto current_block = info.first;
     do
     {
-        /** Recorder to modify DART database */
         auto recorder = factory.recorder(current_block.recorder_doc);
-        addRecordToDB(db, recorder, hirpc);
-        if (current_block.bullseye != db.fingerprint)
+
+        auto sent = DART.dartModify(recorder, hirpc);
+        auto received = hirpc.receive(sent);
+        dart(received, false);
+
+        if (current_block.bullseye != dart.fingerprint)
         {
-            throw new TagionException("DART fingerprint should be the same with recorder block bullseye");
+            throw new TagionException(
+                "DART fingerprint must be the same as recorder block bullseye");
             return 1;
         }
         current_block = RecorderChain.findNextBlock(current_block.fingerprint, chain_directory, hash_net);

@@ -48,6 +48,13 @@ target-tagionwallet: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bi
 ${call DO_BIN,tagionwallet,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETOOL)}
 
 wallet: target-tagionwallet
+
+#
+# Evil wallet utility
+#
+target-tagionevilwallet: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-evilwallet/*" -a -not -path "*/unitdata/*" }
+${call DO_BIN,tagionevilwallet,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETOOL)}
+
 #
 # Logservicetest utility
 #
@@ -78,6 +85,7 @@ ${call DO_BIN,tagionboot,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONET
 target-tagion: DFLAGS+=$(DVERSION)=TAGION_TOOLS
 target-tagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-betterc/*"}
 target-tagion: DFILES+=${shell find $(DSRC)/bin-wave/tagion -name "*.d"  }
+target-tagion: DFILES+=${shell find $(DSRC)/bin-evilwallet/tagion -name "*.d"}
 target-tagion: DFILES+=${shell find $(DSRC)/bin-dartutil/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-hibonutil/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-wallet/tagion -name "*.d"  }
