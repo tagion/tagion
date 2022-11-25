@@ -86,6 +86,19 @@ import tagion.utils.Miscellaneous : decode;
      *      @param block - block to append to chain
      */
     void append(Block block)
+    in
+    {
+        assert(block !is null);
+        if (_last_block is null)
+        {
+            assert(block.isRoot);
+        }
+        else
+        {
+            assert(block.getPrevious == _last_block.getHash);
+        }
+    }
+    do
     {
         _storage.write(block);
         _last_block = block;
@@ -293,57 +306,6 @@ unittest
         // Find root block
         auto found_block = chain.storage.find((b) => b.isRoot);
         assert(found_block !is null && found_block.toDoc.serialize == block0.toDoc.serialize);
-
-        rmdirRecurse(temp_folder);
-    }
-
-    /// HashChain_isValidChain_branch_chain
-    {
-        Storage storage = new StorageImpl(temp_folder, net);
-        auto chain = new ChainImpl(storage);
-
-        auto block0 = new DummyBlock([], net);
-        chain.append(block0);
-
-        auto block1 = new DummyBlock(block0.getHash, net);
-        chain.append(block1);
-
-        auto block2 = new DummyBlock(block1.getHash, net);
-        chain.append(block2);
-
-        // create another block that points to some block in the middle of chain
-        // thus we have Y-style linked list which is invalid chain
-        auto block1_branch = new DummyBlock(block0.getHash, net, 1);
-        chain.append(block1_branch);
-
-        auto block2_branch = new DummyBlock(block1_branch.getHash, net, 1);
-        chain.append(block2_branch);
-
-        // chain should be invalid
-        assert(!chain.isValidChain);
-
-        rmdirRecurse(temp_folder);
-    }
-
-    /// HashChain_loop_blocks
-    {
-        Storage storage = new StorageImpl(temp_folder, net);
-        auto chain = new ChainImpl(storage);
-
-        auto block0 = new DummyBlock([], net);
-        auto block1 = new DummyBlock(block0.getHash, net);
-        auto block2 = new DummyBlock(block1.getHash, net);
-
-        // create looped linked list where the first block points on the last one
-        block0.previous = block2.getHash;
-        block0.hash = net.hashOf(block0.toDoc);
-
-        chain.append(block0);
-        chain.append(block1);
-        chain.append(block2);
-
-        // chain should be invalid
-        assert(!chain.isValidChain);
 
         rmdirRecurse(temp_folder);
     }
