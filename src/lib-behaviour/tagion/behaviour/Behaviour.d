@@ -196,12 +196,49 @@ auto automation(alias M)() if (isFeature!M) {
 
             enum tuple_index = [FeatureContext.fieldNames]
                     .countUntil(scenario_name);
-            pragma(msg, "tuple_index ", tuple_index);
             static assert(tuple_index >= 0,
                     format("Scenarion '%s' does not exists. Possible scenarions is\n%s",
                     scenario_name, [FeatureContext.fieldNames[0 .. $ - 1]].join(",\n")));
             alias _Scenario = FeatureContext.Types[tuple_index];
             context[tuple_index] = new _Scenario(args);
+        }
+
+        bool find(Args...)(string regex_text, Args args) {
+            import std.regex;
+
+            const search_regex = regex(regex_text);
+
+            static foreach (tuple_index; 0 .. FeatureContext.Types.length - 1) {
+                {
+
+                    alias _Scenario = FeatureContext.Types[tuple_index];
+                    enum scenario_property = getScenario!_Scenario;
+                    enum compiles = __traits(compiles, new _Scenario(args));
+                    if (!scenario_property.description.matchFirst(search_regex).empty) {
+                        static if (compiles) {
+                            context[tuple_index] = new _Scenario(args);
+
+                            return true;
+
+                        }
+                        else {
+                            check(false, format("Arguments %s does not match construct of %s",
+                                    Args.stringof, _Scenario.stringof));
+                        }
+                    }
+                    //		else static if (scenario_info.
+                    /*			
+	            enum tuple_index = [FeatureContext.fieldNames]
+                    .countUntil(scenario_name);
+            static assert(tuple_index >= 0,
+                    format("Scenarion '%s' does not exists. Possible scenarions is\n%s",
+                    scenario_name, [FeatureContext.fieldNames[0 .. $ - 1]].join(",\n")));
+            alias _Scenario = FeatureContext.Types[tuple_index];
+            context[tuple_index] = new _Scenario(args);
+*/
+                }
+            }
+            return false;
         }
 
         @safe
@@ -437,6 +474,21 @@ unittest {
         assert(feature_context.result.scenarios[0].hasPassed);
         assert(feature_context.result.scenarios[1].hasPassed);
     }
+
+    { // regex find scenario
+
+    }
+}
+
+@safe
+unittest {
+    import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
+
+    auto feature_with_ctor = automation!(WithCtor)();
+    assert(feature_with_ctor.find("bankster", 17));
+
+    //    feature_with_ctor.Some_awesome_feature_bad_format_double_property(17);
+
 }
 
 version (unittest) {
