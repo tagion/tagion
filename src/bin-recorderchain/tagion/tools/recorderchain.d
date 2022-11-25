@@ -22,8 +22,9 @@ import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.services.RecorderService;
 import tagion.communication.HiRPC;
-import tagion.dart.RecorderChainBlock;
-import tagion.dart.RecorderChain;
+import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
+import tagion.recorderchain.RecorderChain;
+import tagion.utils.Miscellaneous : cutHex;
 
 auto logo = import("logo.txt");
 
@@ -124,40 +125,49 @@ int main(string[] args)
         return 1;
     }
 
+    RecorderChainStorage storage = new RecorderChainFileStorage(chain_directory, hash_net);
+    auto recorder_chain = new RecorderChain(storage);
+
     // Check validity of recorder chain
-    if (!RecorderChain.isValidChain(chain_directory, hash_net))
+    if (!recorder_chain.isValidChain)
     {
         writeln("Recorder block chain is not valid!\nAbort");
         return 1;
     }
 
     // Collect info from chain directory
-    auto info = RecorderChain.getBlocksInfo(chain_directory, hash_net);
-    if (info.amount == 0)
+    auto blocks_count = recorder_chain.storage.getHashes.length;
+    if (blocks_count == 0)
     {
         writeln("No recorder chain files");
         return 1;
     }
 
     // Recover DART using blocks
-    auto current_block = info.first;
-    do
+    try
     {
-        auto recorder = factory.recorder(current_block.recorder_doc);
+        recorder_chain.replay((RecorderChainBlock block) {
+            // these outputs will be removed after proper testing the tool
+            writefln("block's  bullseye %s", block.bullseye.cutHex);
+            writefln("DART bef bullseye %s", dart.fingerprint.cutHex);
 
-        auto sent = DART.dartModify(recorder, hirpc);
-        auto received = hirpc.receive(sent);
-        dart(received, false);
+            auto recorder = factory.recorder(block.recorder_doc);
+            dart.modify(recorder);
 
-        if (current_block.bullseye != dart.fingerprint)
-        {
-            throw new TagionException(
-                "DART fingerprint must be the same as recorder block bullseye");
-            return 1;
-        }
-        current_block = RecorderChain.findNextBlock(current_block.fingerprint, chain_directory, hash_net);
+            writefln("DART aft bullseye %s", dart.fingerprint.cutHex);
+
+            if (block.bullseye != dart.fingerprint)
+            {
+                throw new TagionException(
+                    "DART fingerprint must be the same as recorder block bullseye");
+            }
+        });
     }
-    while (current_block !is null);
+    catch (TagionException e)
+    {
+        writefln("%s. Abort", e.msg);
+        return 1;
+    }
 
     return 0;
 }
