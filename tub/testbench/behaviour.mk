@@ -45,7 +45,7 @@ bddreport: target-hibonutil
 %.md.tmp: %.md
 	$(PRECMD)
 	iconv -t US-ASCII -t UTF-8//TRANSLIT//IGNORE $< > $@
-	cp $@ $<
+	mv $@ $<
 
 
 bddstrip: $(BDD_MD_FILES:.md=.md.tmp)

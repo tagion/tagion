@@ -185,6 +185,7 @@ unittest { //
 @safe
 auto automation(alias M)() if (isFeature!M) {
     import std.typecons;
+    import std.algorithm.searching : any;
 
     mixin(format(q{import %s;}, moduleName!M));
 
@@ -210,32 +211,21 @@ auto automation(alias M)() if (isFeature!M) {
 
             static foreach (tuple_index; 0 .. FeatureContext.Types.length - 1) {
                 {
-
                     alias _Scenario = FeatureContext.Types[tuple_index];
                     enum scenario_property = getScenario!_Scenario;
                     enum compiles = __traits(compiles, new _Scenario(args));
-                    if (!scenario_property.description.matchFirst(search_regex).empty) {
+                    if (!scenario_property.description.matchFirst(search_regex).empty ||
+                            scenario_property.comments.any!(c => !c.matchFirst(search_regex).empty)) {
                         static if (compiles) {
                             context[tuple_index] = new _Scenario(args);
-
                             return true;
-
                         }
                         else {
-                            check(false, format("Arguments %s does not match construct of %s",
+                            check(false,
+                                    format("Arguments %s does not match construct of %s",
                                     Args.stringof, _Scenario.stringof));
                         }
                     }
-                    //		else static if (scenario_info.
-                    /*			
-	            enum tuple_index = [FeatureContext.fieldNames]
-                    .countUntil(scenario_name);
-            static assert(tuple_index >= 0,
-                    format("Scenarion '%s' does not exists. Possible scenarions is\n%s",
-                    scenario_name, [FeatureContext.fieldNames[0 .. $ - 1]].join(",\n")));
-            alias _Scenario = FeatureContext.Types[tuple_index];
-            context[tuple_index] = new _Scenario(args);
-*/
                 }
             }
             return false;
@@ -282,7 +272,6 @@ auto automation(alias M)() if (isFeature!M) {
             }
             if (error_count == 0) {
                 context.result.info.result = result_ok;
-
             }
             return context;
         }
@@ -396,12 +385,19 @@ Returns: true if the scenario has passed all tests
 bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
     static foreach (i, Type; Fields!ScenarioGroup) {
         static if (isActionGroup!Type) {
-            if (scenario_group.tupleof[i].infos.any!(info => !info.result.isRecordType!Result)) {
+            if (scenario_group
+                    .tupleof[i].infos
+                    .any!(info => !info
+                        .result
+                        .isRecordType!Result)) {
                 return false;
             }
         }
         else static if (isInfo!Type) {
-            if (!scenario_group.tupleof[i].result.isRecordType!Result) {
+            if (!scenario_group
+                    .tupleof[i]
+                    .result
+                    .isRecordType!Result) {
                 return false;
             }
         }
@@ -474,19 +470,19 @@ unittest {
         assert(feature_context.result.scenarios[0].hasPassed);
         assert(feature_context.result.scenarios[1].hasPassed);
     }
-
-    { // regex find scenario
-
-    }
 }
 
 @safe
 unittest {
-    import WithCtor = tagion.behaviour.BehaviourUnittestWithCtor;
+    import WithCtor = tagion
+        .behaviour
+        .BehaviourUnittestWithCtor;
 
     auto feature_with_ctor = automation!(WithCtor)();
     assert(feature_with_ctor.find("bankster", 17));
-
+    assertThrown!BehaviourException(feature_with_ctor.find("bankster", "wrong argument"));
+    assert(!feature_with_ctor.find("this-text-does-not-exists", 17));
+    //assertThrown!StringException
     //    feature_with_ctor.Some_awesome_feature_bad_format_double_property(17);
 
 }
@@ -495,4 +491,5 @@ version (unittest) {
     import tagion.hibon.Document;
     import tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONJSON;
+    import std.exception;
 }

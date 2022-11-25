@@ -65,7 +65,7 @@ The tests performed in this feature should be performed on a simple transfer con
 *Then* when the Collector services collected the input the smart contract should be check
 according to the Smart Contract Consensus
 
-`check`
+`checkConsensus`
 
 *Then* the inputs should be added to a list in the collector services.
 
@@ -101,7 +101,7 @@ according to the Smart Contract Consensus
 *Then* when the Collector services collected the input the smart contract should be check
 according to the Smart Contract Consensus
 
-`check`
+`checkConsensus`
 
 *Then* the inputs should be added to a list in the collector services.
 
