@@ -83,6 +83,7 @@ according to the Smart Contract Consensus
 
 ### Scenario: handling contracts received from the HashGraph payload.
 @hashgraph
+
 `HandlingContractsReceivedFromTheHashGraphPayload`
 
 *Given* one of transfer contracts should be sent to the Collector service
@@ -131,6 +132,7 @@ Note. In this case, the smart contract should not be sent back to the HashGraph
 
 ### Scenario: the Transcript services should request inputs from the Collector services
 @transcript
+
 `TheTranscriptServicesShouldRequestInputsFromTheCollectorServices`
 
 *Given* a selected list of smart-contracts the fingerprints of those inputs should be listed
