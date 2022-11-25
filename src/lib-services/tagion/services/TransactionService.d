@@ -18,7 +18,7 @@ import tagion.hibon.Document;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
 import tagion.script.StandardRecords : Contract, SignedContract, PayContract;
-import tagion.script.SmartScript;
+import tagion.script.SmartContractConsensus;
 import tagion.crypto.SecureNet : StdSecureNet;
 
 import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;

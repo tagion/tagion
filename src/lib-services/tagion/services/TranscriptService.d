@@ -15,7 +15,7 @@ import tagion.hibon.Document;
 import tagion.logger.Logger;
 
 import tagion.basic.TagionExceptions;
-import tagion.script.SmartScript;
+import tagion.script.SmartContractConsensus;
 import tagion.script.StandardRecords : Contract, SignedContract, PayContract;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 import tagion.crypto.SecureNet : StdSecureNet;

@@ -1,4 +1,4 @@
-module tagion.script.SmartScript;
+module tagion.script.SmartContractConsensus;
 
 import std.exception : assumeUnique;
 import std.range : lockstep, zip;
@@ -15,10 +15,6 @@ import tagion.script.TagionCurrency;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONRecord : GetLabel;
 
-//import tagion.script.Script : Script, ScriptContext;
-//import tagion.script.ScriptParser : ScriptParser;
-//import tagion.script.ScriptBuilder : ScriptBuilder;
-//import tagion.script.ScriptBase : Number;
 import tagion.logger.Logger;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
@@ -58,35 +54,19 @@ version (OLD_TRANSACTION)
         }
         do
         {
-
-            
-
                 .check(signed_contract.signs.length > 0, ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE);
             const message = net.hashOf(signed_contract.contract.toDoc);
-
-            
-
             .check(signed_contract.signs.length == signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS);
-
-            
-
             .check(signed_contract.contract.inputs.length == signed_contract.inputs.length,
                 ConsensusFailCode.SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
             foreach (i, print, input, signature; lockstep(signed_contract.contract.inputs, signed_contract.inputs, signed_contract
                     .signs))
             {
-
                 immutable fingerprint = net.hashOf(input.toDoc);
-
-                
-
                 .check(print == fingerprint,
                     ConsensusFailCode.SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT);
                 Pubkey pkey = input.owner;
-
-                
-
                 .check(net.verify(message, signature, pkey),
                     ConsensusFailCode.SMARTSCRIPT_INPUT_NOT_SIGNED_CORRECTLY);
             }
