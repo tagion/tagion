@@ -12,20 +12,19 @@ The tests performed in this feature should be performed on a simple transfer con
 ### Scenario: should create a wallet and bills
 `ShouldCreateAWalletAndBills`
 
-    *Given* a number of Wallets
+*Given* a number of Wallets
 
 `ofWallets`
 
-    *Given* a number of bills belonging to the Wallets
+*Given* a number of bills belonging to the Wallets
 
 `theWallets`
 
-    *When* the wallets and the bills have been created
+*When* the wallets and the bills have been created
 
 `beenCreated`
 
-    *Then* check that the bills can be read from the DART
-
+*Then* check that the bills can be read from the DART
 
 `theDART`
 
@@ -33,16 +32,15 @@ The tests performed in this feature should be performed on a simple transfer con
 ### Scenario: should create a transfer smart contract
 `ShouldCreateATransferSmartContract`
 
-    *Given* a list of transfer contracts with the input bills and signatures
+*Given* a list of transfer contracts with the input bills and signatures
 
 `signatures`
 
-    *When* the contract has been created
+*When* the contract has been created
 
 `created`
 
-    *Then* check that the contract has been correctly formatted.
-
+*Then* check that the contract has been correctly formatted.
 
 `formatted`
 
@@ -51,32 +49,32 @@ The tests performed in this feature should be performed on a simple transfer con
 @transaction
 `HandlingContractFromTheTransactionService`
 
-    *Given* one of transfer-contract should be sent to the Collector service
+*Given* one of transfer-contract should be sent to the Collector service
 
 `service`
 
-    *When* Collector services receive the contract
+*When* Collector services receive the contract
 
 `contract`
 
-    *When* the Collector services should collect the inputs from the DART
+*When* the Collector services should collect the inputs from the DART
 
 `dART`
 
-    *Then* when the Collector services collected the input the smart contract should be check
+*Then* when the Collector services collected the input the smart contract should be check
 according to the Smart Contract Consensus
 
 `check`
 
-    *Then* the inputs should be added to a list in the collector services.
+*Then* the inputs should be added to a list in the collector services.
 
 `services`
 
-    *Then* if the contract complies with the consensus rules the contract should be sent to the HashGraph.
+*Then* if the contract complies with the consensus rules the contract should be sent to the HashGraph.
 
 `hashGraph`
 
-    *But* if all the input was not available in the DART the test should fail.
+*But* if all the input was not available in the DART the test should fail.
 
 
 `fail`
@@ -86,33 +84,33 @@ according to the Smart Contract Consensus
 @hashgraph
 `HandlingContractsReceivedFromTheHashGraphPayload`
 
-    *Given* one of transfer contracts should be sent to the Collector service
+*Given* one of transfer contracts should be sent to the Collector service
 
 `service`
 
-    *When* Collector services receive the contract
+*When* Collector services receive the contract
 
 `contract`
 
-    *When* the Collector services should collect the inputs  from the DART
+*When* the Collector services should collect the inputs  from the DART
 
 `dART`
 
-    *Then* when the Collector services collected the input the smart contract should be check
+*Then* when the Collector services collected the input the smart contract should be check
 according to the Smart Contract Consensus
 
 `check`
 
-    *Then* the inputs should be added to a list in the collector services.
+*Then* the inputs should be added to a list in the collector services.
 
 `services`
 
-    *Then* if the contract complies with the consensus rules the contract should be sent to the HashGraph.
+*Then* if the contract complies with the consensus rules the contract should be sent to the HashGraph.
 Note. In this case, the smart contract should not be sent back to the HashGraph.
 
 `hashGraph`
 
-    *But* if all the input was not available in the DART the test should fail.
+*But* if all the input was not available in the DART the test should fail.
 
 
 `fail`
@@ -121,12 +119,11 @@ Note. In this case, the smart contract should not be sent back to the HashGraph
 ### Scenario: the contract handling should be repeated
 `TheContractHandlingShouldBeRepeated`
 
-    *Given* a number of contracts, the contracts should be selected for scenario @transaction or @hashgraph
+*Given* a number of contracts, the contracts should be selected for scenario @transaction or @hashgraph
 
 `hashgraph`
 
-    *Then* this test parses if all the scenario @transaction and @hashgraph has passed
-
+*Then* this test parses if all the scenario @transaction and @hashgraph has passed
 
 `passed`
 
@@ -135,15 +132,15 @@ Note. In this case, the smart contract should not be sent back to the HashGraph
 @transcript
 `TheTranscriptServicesShouldRequestInputsFromTheCollectorServices`
 
-    *Given* a selected list of smart-contracts the fingerprints of those inputs should be listed
+*Given* a selected list of smart-contracts the fingerprints of those inputs should be listed
 
 `beListed`
 
-    *Given* the list of fingerprints is sent to the Collector services.
+*Given* the list of fingerprints is sent to the Collector services.
 
 `collectorServices`
 
-    *Then* the collector services receive the list of fingerprints the collector services should collect all the inputs in the list and send it back to the Transcript services.
+*Then* the collector services receive the list of fingerprints the collector services should collect all the inputs in the list and send it back to the Transcript services.
 If some of the fingerprints in not available those inputs should not be added to the list send back to the Transcript services.
 The Collector services should remove all the inputs sent back from the collector list.
 
@@ -154,16 +151,15 @@ The Collector services should remove all the inputs sent back from the collector
 ### Scenario: The Collector services should remove used inputs
 `TheCollectorServicesShouldRemoveUsedInputs`
 
-    *Given* a list of fingerprints that are stored in the DART perform @transcript on this list
+*Given* a list of fingerprints that are stored in the DART perform @transcript on this list
 
 `list`
 
-    *When* the @transcript has been performed the check that all the inputs have been collected
+*When* the @transcript has been performed the check that all the inputs have been collected
 
 `collected`
 
-    *Then* perform the same @transcript again and check that the input list received by the transcript services is empty.
-
+*Then* perform the same @transcript again and check that the input list received by the transcript services is empty.
 
 `empty`
 
@@ -171,22 +167,20 @@ The Collector services should remove all the inputs sent back from the collector
 ### Scenario: The Collector services should partly collect inputs
 `TheCollectorServicesShouldPartlyCollectInputs`
 
-    *Given* a list L of fingerprints where the inputs are available in the DART.
+*Given* a list L of fingerprints where the inputs are available in the DART.
 
 `dART`
 
-    *Given* a part of the list L call M the scenario @transaction should be performed.
+*Given* a part of the list L call M the scenario @transaction should be performed.
 
 `performed`
 
-    *When* all the input in list M should be received by the Transcript services.
+*When* all the input in list M should be received by the Transcript services.
 
 `services`
 
-    *Then* @transcript should be performed on L and the inputs should on includes the inputs of L which excludes the inputs in list M.
+*Then* @transcript should be performed on L and the inputs should on includes the inputs of L which excludes the inputs in list M.
 
-
-
-`m`
+`listM`
 
 
