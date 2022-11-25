@@ -47,6 +47,7 @@ The tests performed in this feature should be performed on a simple transfer con
 
 ### Scenario: handling contract from the Transaction Service.
 @transaction
+
 `HandlingContractFromTheTransactionService`
 
 *Given* one of transfer-contract should be sent to the Collector service
