@@ -265,7 +265,7 @@ import tagion.wallet.WalletException : check;
         return new_invoice;
     }
 
-    bool payment(const(Invoice[]) orders, ref SignedContract result, bool setfee, double fee, bool invalid_signature, bool zero_pubkey)
+    bool payment(const(Invoice[]) orders, ref SignedContract result, bool setfee, double fee, bool invalid_signature, bool zero_pubkey, bool invalid_data_type)
     {
         checkLogin;
         const topay = orders.map!(b => b.amount).sum;
@@ -298,7 +298,14 @@ import tagion.wallet.WalletException : check;
                 auto zero_pkey = new HiBON();
                 result.contract.output[money_back.pkey] = Document(zero_pkey.serialize);
                 // result.contract.output[money_back.pkey] = Document(cast(ubyte[]) [0,0,0,0]);
-            } else {
+            } 
+            else if (invalid_data_type) {
+                string invalid_rest = "test";
+                auto hibon_rest = new HiBON();
+                hibon_rest[0] = invalid_rest;
+                result.contract.output[money_back.pkey] = Document(hibon_rest);
+            }
+            else {
                 result.contract.output[money_back.pkey] = rest.toDoc;
             }
         }
@@ -309,7 +316,16 @@ import tagion.wallet.WalletException : check;
             orders.each!((o) {
                 result.contract.output[o.pkey] = Document(zero_pkey.serialize);
             });
-        } else {
+        } 
+        else if (invalid_data_type) {
+            string invalid_amount = "testing";
+            auto hibon_output = new HiBON();
+            hibon_output[0] = invalid_amount;
+            orders.each!((o) {
+                result.contract.output[o.pkey] = Document(hibon_output);
+            });
+        }
+        else {
             orders.each!((o) {
             result.contract.output[o.pkey] = o.amount.toDoc;
         });

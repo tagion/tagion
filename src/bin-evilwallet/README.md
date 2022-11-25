@@ -8,6 +8,7 @@
 - [setfee and fee](#setfee-and-fee)
 - [invalid signature](#invalid-signature)
 - [0x00 public key on invoice](#0x00-public-key-on-invoice)
+- [Invalid data type](#invalid-data-type)
 
 
 # General
@@ -37,3 +38,8 @@ Make the signature invalid:
 Set the public key to be `0x00...`.
 
 `tagionevilwallet -x 0000 --pay invoicefile.hibon --port 10801 --send --zero-pubkey`
+
+# Invalid data type
+When paying set the amount to be of type string instead of bigInt. 
+
+`tagionevilwallet -x 0000 --pay invoicefile.hibon --port 10801 --send --invalid-data-type`
