@@ -14,7 +14,6 @@ import tagion.basic.TagionExceptions : fatal, Check, TagionException;
 import tagion.logger.Logger;
 import tagion.hibon.ActorException;
 
-
 /// method define receiver memmber function for a task actor
 @safe
 struct method {
@@ -27,6 +26,11 @@ struct local {
 /// task is a UDA used to define the run function of a task actor
 @safe
 struct task {
+}
+
+/// UDA for the actor to be emulated
+@safe
+struct emulator(BaseActor) {
 }
 
 /* 
@@ -76,11 +80,12 @@ static unittest {
     static struct S {
         void no_uda();
         @method void with_uda();
-        @task void run();        
+        @task void run();
     }
+
     static assert(!isUDA!(S, "no_uda", method));
     static assert(isUDA!(S, "with_uda", method));
-    
+
     static assert(!isMethod!(S, "no_uda"));
     static assert(isMethod!(S, "with_uda"));
 
@@ -112,19 +117,18 @@ protected template allMethodFilter(This, alias pred) {
             static if (pred!(This, members[0])) {
                 enum Filter = [members[0]];
             }
-            else {
+        else {
                 enum Filter = [];
             }
         }
         else {
             enum Filter = Filter!(members[0 .. $ / 2]) ~ Filter!(members[$ / 2 .. $]);
-        };
+        }
     }
 
     enum allMembers = [__traits(allMembers, This)];
     enum allMethodFilter = Filter!(allMembers);
 }
-
 
 mixin template TaskActor() {
     import concurrency = std.concurrency;
@@ -140,6 +144,9 @@ mixin template TaskActor() {
      */
     @method void control(Control ctrl) {
         stop = (ctrl is Control.STOP);
+
+        
+
         .check(stop, format("Uexpected control signal %s", ctrl));
     }
 
@@ -181,13 +188,16 @@ mixin template TaskActor() {
         concurrency.send(concurrency.ownerTid, Control.LIVE);
     }
 
-
     /* 
      * This function is call when the task ends normally
      */
     void end() @trusted {
         concurrency.send(concurrency.ownerTid, Control.END);
     }
+
+    /*
+* This function send the args to the actor owner
+*/
 
     void sendOwner(Args...)(Args args) @trusted {
         concurrency.send(concurrency.ownerTid, args);
@@ -243,6 +253,7 @@ protected static string generateAllMethods(alias This)() {
 @safe
 auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct)) && !hasUnsharedAliasing!Args) {
     import concurrency = std.concurrency;
+
     static struct ActorFactory {
         static if (Args.length) {
             private static shared Args init_args;
@@ -299,6 +310,7 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                 fatal(e);
             }
         }
+
         @safe
         struct Actor {
             Tid tid;
@@ -310,6 +322,7 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                 .check(concurrency.receiveOnly!(Control) is Control.END, format("Expecting to received and %s after stop", Control
                         .END));
             }
+
             void halt() @trusted {
                 concurrency.send(tid, Control.STOP);
             }
@@ -344,10 +357,14 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                     Control.LIVE, taskname, Task.stringof, live));
             return Actor(tid);
         }
-
-        Actor connect(string taskname) @trusted {
+        /*
+	* Tries to discover and actor of this type with the task_name
+* Returns the Actor handler if the actor is active and if type is correct
+or else it return an Actor.init
+*/
+        Actor discover(string taskname) @trusted {
             auto tid = concurrency.locate(taskname);
-            if (tid != Tid.init) {
+            if (tid !is Tid.init) {
                 concurrency.send(tid, actorID!Task(taskname));
                 if (concurrency.receiveOnly!(ActorFlag) == ActorFlag.yes) {
                     return Actor(tid);
@@ -356,6 +373,7 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
             return Actor.init;
         }
     }
+
     ActorFactory result;
     static if (Args.length) {
         assert(ActorFactory.init_args == Args.init,
@@ -368,16 +386,20 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
 version (unittest) {
     import std.stdio;
     import core.time;
+
     void send(Args...)(Tid tid, Args args) @trusted {
         concurrency.send(tid, args);
     }
+
     auto receiveOnly(Args...)() @trusted {
         return concurrency.receiveOnly!Args;
     }
+
     private enum Get {
         Some,
         Arg
     }
+
     @safe
     private struct MyActor {
         long count;
@@ -464,6 +486,7 @@ version (unittest) {
         this(string text) {
             common_text = text;
         }
+
         @method void get(Get opt) { // reciever
             final switch (opt) {
             case Get.Some:
@@ -487,6 +510,24 @@ version (unittest) {
     }
 }
 
+version (unittest) {
+	enum task_to_be_discovered = "burried_task";
+    @safe
+    struct DiscoverActor {
+        @task void runningDiscoverTask() {
+       auto discovered_actor = actor!MyActor.discover(burried_task);
+            alive;
+            while (!stop) {
+                receive;
+            }
+        }
+    }
+}
+
+/// Request an actor handle from an running actor
+@safe
+unittest {
+}
 /// Test of actor with common constructor
 @safe
 unittest {
@@ -508,4 +549,41 @@ unittest {
     }
 }
 
+version (unittest) {
+    @emulator!MyActorWithCtor
+    struct MyActorEmulator {
 
+        void get(Get opt) { // reciever
+            final switch (opt) {
+            case Get.Some:
+                sendOwner("emulator");
+                break;
+            case Get.Arg:
+                assert(0);
+                break;
+            }
+        }
+
+        mixin TaskActor;
+
+        void runningTask() {
+            alive;
+            while (!stop) {
+                receive;
+            }
+        }
+
+    }
+}
+
+/// Test of an actor emulator
+@safe
+unittest {
+    auto my_emulator_factory = actor!MyActorEmulator;
+    auto emulator_1 = my_emulator_factory("task");
+    scope (exit) {
+        emulator_1.stop;
+    }
+    {
+    }
+}

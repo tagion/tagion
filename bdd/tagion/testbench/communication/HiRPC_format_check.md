@@ -1,7 +1,5 @@
-Feature Transaction service
-The transaction service act as the gate-keep for smart contracts before it is send to the network. 
-The transaction service should be able to receive HiRPC which checked before it send to and send to the Collector services.
-A data-package is defined as a string of bytes which a send to the transaction service.
+Feature HiRPC format checker
+The feature should make sure that the HiRPC has the correct format.
 
 
 Scenario a data package which exceed the maximum size.
@@ -17,9 +15,6 @@ When the data package has been received by the network.
 Then the size of the data package should be check and the should be rejected,
 if the size larger than the maximum size.
 
-But the data package should not be send to the Collector Service
-
-
 
 Scenario a malformed data packed should be rejected
 
@@ -29,8 +24,6 @@ When the data package has been receive by the network.
 
 Then network should check if the data package is a valid HiRPC
 and if the package is invalid then the should be rejected.
-
-But the data package should not be send to the Collector Service
 
 
 Scenario a data package which is not a HiRPC
@@ -42,7 +35,7 @@ When the data package has been received by the network.
 Then the package should be check that it is a correct HiRPC and if it is not it should be rejected.
 
 
-Scenario corrected format HiRPC.
+Scenario corrected format HiRPC
 
 Given a correctly format transaction.
 
@@ -50,11 +43,7 @@ When the data package has been received by the network.
 
 When the data package has been verified that it is correct HiRPC.
 
-Then the HiRPC is send to the Collector services.
-
-Then check that the Collector services received the package.
-
-
+Then the HiRPC should be approved.
 
 
 
