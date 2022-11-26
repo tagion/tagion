@@ -20,11 +20,11 @@ import tagion.behaviour.BehaviourException;
 import tagion.behaviour.BehaviourFeature : ActionProperties;
 
 enum feature_regex = regex([
-        `^\W*(feature)\W`, /// Feature
-        `^\W*(scenario)\W`, /// Scenario
-        r"^\W*(given|when|then|but)\W", /// Action
-        r"`((?:\w+\.?)+)`", /// Name
-    ], "i");
+    `^\W*(feature)\W`, /// Feature
+    `^\W*(scenario)\W`, /// Scenario
+    r"^\W*(given|when|then|but)\W", /// Action
+    r"`((?:\w+\.?)+)`", /// Name
+], "i");
 
 unittest {
     /// regex_given
@@ -127,11 +127,15 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                 immutable comment = match.post.strip.idup;
                 final switch (state) {
                 case State.Feature:
-                    info_feature.property.comments ~= comment.stripRight;
+                    const _comment = comment.stripRight;
+                    if (_comment.length) {
+                        info_feature.property.comments ~= _comment;
+                    }
                     break;
                 case State.Scenario:
-                    if (comment.length) {
-                        scenario_group.info.property.comments ~= comment.stripRight;
+                    const _comment = comment.stripRight;
+                    if (_comment.length) {
+                        scenario_group.info.property.comments ~= _comment;
                     }
                     break;
                 case State.Action:
@@ -139,8 +143,11 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                         static if (hasMember!(Field, "infos")) {
                             with (scenario_group.tupleof[index]) {
                                 if (current_action_index is index) {
-                                    infos[$ - 1].property.comments ~= comment.stripRight;
-                                }
+                    const _comment = comment.stripRight;
+                    if (_comment.length) {
+                                     infos[$ - 1].property.comments ~= _comment;
+											}
+										}
                             }
                         }
                     }
@@ -163,7 +170,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                     break TokenSwitch;
                 case State.Scenario:
                     check_error(match[1].validAction,
-                            format("Not a valid action name %s,  '.' is not allowed", match[1]));
+                    format("Not a valid action name %s,  '.' is not allowed", match[1]));
                     scenario_group.info.name = match[1].idup;
                     break TokenSwitch;
                 case State.Action:
@@ -172,8 +179,8 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                             if (current_action_index is index) {
                                 with (scenario_group.tupleof[index]) {
                                     check_error(infos[$ - 1].name.length == 0,
-                                            format("Action name '%s' has already been defined for %s", match[0],
-                                            infos[$ - 1].name));
+                                    format("Action name '%s' has already been defined for %s", match[0],
+                                    infos[$ - 1].name));
                                     infos[$ - 1].name = match[1].strip.idup;
                                 }
                                 break TokenSwitch;
@@ -235,6 +242,9 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
 
 /// Examples: How to parse a markdown file
 unittest { /// Convert ProtoDBBTestComments to Feature
+    import tagion.basic.Basic : fileId;
+    import std.traits : FunctionTypeOf;
+
     enum bddfile_proto = "ProtoBDDTestComments".unitfile;
     immutable bdd_filename = bddfile_proto.setExtension(FileExtension.markdown);
 
@@ -242,19 +252,19 @@ unittest { /// Convert ProtoDBBTestComments to Feature
 
     string[] errors;
     auto feature = parser(feature_byline, errors);
+    assert(errors is null);
 
-    enum bddfile_proto_test = bddfile_proto ~ "_test";
-    immutable markdown_filename = bddfile_proto_test
-        .unitfile.setExtension(FileExtension.markdown);
+    const fileid = fileId!(FunctionTypeOf!parser)(FileExtension.markdown);
+    immutable markdown_filename = fileid.fullpath;
 
     import tagion.behaviour.BehaviourIssue;
 
+    /// Write the markdown file
     auto fout = File(markdown_filename, "w");
-    scope (exit) {
-        fout.close;
-    }
     auto markdown = Markdown(fout);
     markdown.issue(feature);
+    fout.close;
+
     immutable hibon_filename = markdown_filename
         .setExtension(FileExtension.hibon);
 
@@ -262,8 +272,15 @@ unittest { /// Convert ProtoDBBTestComments to Feature
 
     hibon_filename.fwrite(feature);
 
+    // Check that the feature can be reloaded
     const expected_feature = hibon_filename.fread!FeatureGroup;
     assert(feature.toDoc == expected_feature.toDoc);
+    // Reparse the produced markdown and check if it is the same
+    errors = null;
+    auto produced_feature = parser(markdown_filename, errors);
+    "/tmp/produced_feature.hibon".fwrite(produced_feature);
+    assert(errors is null);
+    assert(produced_feature.toDoc == expected_feature.toDoc);
 }
 
 version (unittest) {

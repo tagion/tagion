@@ -510,12 +510,12 @@ version (unittest) {
     }
 }
 
-version (unittest) {
-	enum task_to_be_discovered = "burried_task";
+version (none) version (unittest) {
+    enum task_to_be_discovered = "burried_task";
     @safe
     struct DiscoverActor {
         @task void runningDiscoverTask() {
-       auto discovered_actor = actor!MyActor.discover(burried_task);
+            auto discovered_actor = actor!MyActor.discover(burried_task);
             alive;
             while (!stop) {
                 receive;
@@ -577,7 +577,7 @@ version (unittest) {
 }
 
 /// Test of an actor emulator
-@safe
+version (none) @safe
 unittest {
     auto my_emulator_factory = actor!MyActorEmulator;
     auto emulator_1 = my_emulator_factory("task");

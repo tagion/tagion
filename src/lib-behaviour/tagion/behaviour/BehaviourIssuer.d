@@ -31,7 +31,6 @@ DlangT!(Stream) Dlang(Stream)(Stream bout) {
 
 @safe
 struct MarkdownFMT {
-    string indent;
     string name;
     string scenario;
     string feature;
@@ -44,11 +43,10 @@ struct MarkdownFMT {
  */
 @safe
 static MarkdownFMT masterMarkdown = {
-    indent: "  ",
-    name: "`%2$s`",
-    scenario: "### %2$s: %3$s",
-    feature: "## %2$s: %3$s",
-    property: "%s*%s* %s",
+    name: "`%1$s`",
+    scenario: "### %1$s: %2$s",
+    feature: "## %1$s: %2$s",
+    property: "*%s* %s",
     comments: "%-(%s\n%)",
 };
 
@@ -57,40 +55,41 @@ struct MarkdownT(Stream) {
     Stream bout;
     static MarkdownFMT master;
 
-    void issue(Descriptor)(const(Descriptor) descriptor, string indent, string fmt,
+    void issue(Descriptor)(const(Descriptor) descriptor, string fmt,
             string comment_fmt = null) if (isDescriptor!Descriptor) {
-        bout.writefln(fmt, indent, Descriptor.stringof, descriptor.description);
+        bout.writefln(fmt, Descriptor.stringof, descriptor.description);
         if (descriptor.comments) {
             comment_fmt = (comment_fmt is null) ? master.comments : comment_fmt;
             bout.writefln(comment_fmt, descriptor.comments);
         }
     }
 
-    void issue(I)(const(I) info, string indent, string fmt) if (isInfo!I) {
-        issue(info.property, indent, fmt);
-        bout.writefln(master.name, indent ~ master.indent, info.name);
+    void issue(I)(const(I) info, string fmt) if (isInfo!I) {
+        issue(info.property, fmt);
+        bout.write("\n");
+        bout.writefln(master.name, info.name);
         bout.write("\n");
     }
 
-    void issue(Group)(const(Group) group, string indent, string fmt) if (isActionGroup!Group) {
+    void issue(Group)(const(Group) group, string fmt) if (isActionGroup!Group) {
         if (group !is group.init) {
-            group.infos.each!(info => issue(info, indent, master.property));
+            group.infos.each!(info => issue(info, master.property));
         }
     }
 
-    void issue(const(ScenarioGroup) scenario_group, string indent = null) {
-        issue(scenario_group.info, indent, master.scenario);
-        issue(scenario_group.given, indent ~ master.indent, master.property);
-        issue(scenario_group.when, indent ~ master.indent, master.property);
-        issue(scenario_group.then, indent ~ master.indent, master.property);
-        issue(scenario_group.but, indent ~ master.indent, master.property);
+    void issue(const(ScenarioGroup) scenario_group) {
+        issue(scenario_group.info, master.scenario);
+        issue(scenario_group.given, master.property);
+        issue(scenario_group.when, master.property);
+        issue(scenario_group.then, master.property);
+        issue(scenario_group.but, master.property);
     }
 
-    void issue(const(FeatureGroup) feature_group, string indent = null) {
-        issue(feature_group.info, indent, master.feature);
+    void issue(const(FeatureGroup) feature_group) {
+        issue(feature_group.info, master.feature);
         feature_group.scenarios
             .tee!(a => bout.write("\n"))
-            .each!(a => issue(a, indent ~ master.indent));
+            .each!(a => issue(a));
     }
 }
 
@@ -111,8 +110,8 @@ unittest { // Markdown scenario test
             .setExtension(FileExtension.markdown);
         immutable expected = filename.freadText;
         //io.writefln("scenario_result.given.infos %s", scenario_result.given.infos);
-        markdown.issue(scenario_result.given.infos[0], null, markdown.master.property);
-        //filename.setExtension("mdtest").fwrite(bout.toString);
+        markdown.issue(scenario_result.given.infos[0], markdown.master.property);
+        filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
     }
     {
@@ -123,7 +122,9 @@ unittest { // Markdown scenario test
             .unitfile
             .setExtension(FileExtension.markdown);
         markdown.issue(scenario_result);
-        //filename.setExtension("mdtest").fwrite(bout.toString);
+        version (behaviour_unitdata)
+            filename.setExtension("mdtest").fwrite(bout.toString);
+
         immutable expected = filename.freadText;
         assert(bout.toString == expected);
     }
@@ -144,7 +145,7 @@ unittest {
             .unitfile
             .setExtension(FileExtension.markdown);
         markdown.issue(feature_group);
-        version (none)
+        version (behaviour_unitdata)
             filename.setExtension("mdtest").fwrite(bout.toString);
 
         immutable expected = filename.freadText;
@@ -221,7 +222,7 @@ struct DlangT(Stream) {
         );
     }
 
-    void issue(const(FeatureGroup) feature_group, string indent = null) {
+    void issue(const(FeatureGroup) feature_group) {
         immutable comments = format("[%(%s,\n%)]",
                 feature_group.info.property.comments
                 .map!(comment => comment.escaper.array)
@@ -229,7 +230,7 @@ struct DlangT(Stream) {
         auto feature_tuple = chain(
                 feature_group.scenarios
                 .map!(scenario => [scenario.info.name, scenario.info.name]),
-                [["FeatureGroup*", "result"]])
+        [["FeatureGroup*", "result"]])
             .map!(ctx_type => format(`%s, "%s"`, ctx_type[0], ctx_type[1]))
             .join(",\n");
 
@@ -274,8 +275,8 @@ unittest {
             .setExtension(FileExtension.dsrc);
         dlang.issue(feature_group);
         immutable result = bout.toString;
-        version (none)
-        filename.setExtension("dtest").fwrite(result.trim_source.join("\n"));
+        version (behaviour_unitdata)
+            filename.setExtension("dtest").fwrite(result.trim_source.join("\n"));
         immutable expected = filename.freadText;
         assert(equal(
                 result
