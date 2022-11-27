@@ -253,64 +253,138 @@ int check_reports(string[] paths, const bool verbose) {
         return verbose || test_code == TestCode.error || test_code == TestCode.started;
     }
 
+    void show_report(Args...)(const TestCode test_code, string fmt, Args args) {
+        static if (Args.length is 0) {
+            const text = fmt;
+        }
+        else {
+            const text = format(fmt, args);
+        }
+        writefln("%s%s%s", testColor(test_code), text, RESET);
+    }
+
     void report(Args...)(const TestCode test_code, string fmt, Args args) {
         if (show(test_code)) {
-            static if (Args.length is 0) {
-                const text = fmt;
-            }
-            else {
-                const text = format(fmt, args);
-            }
-
-            writefln("%s%s%s", testColor(test_code), text, RESET);
+            show_report(test_code, fmt, args);
         }
     }
 
+    struct ReportCount {
+        uint passed;
+        uint errors;
+        uint started;
+        uint total;
+        void update(const TestCode test_code) nothrow pure {
+            final switch (test_code) {
+            case TestCode.none:
+                break;
+            case TestCode.passed:
+                passed++;
+                break;
+            case TestCode.error:
+                errors++;
+                break;
+            case TestCode.started:
+                started++;
+
+            }
+            total++;
+        }
+
+        TestCode testCode() nothrow pure const {
+            if (passed == total) {
+                return TestCode.passed;
+            }
+            if (errors > 0) {
+                return TestCode.error;
+            }
+            if (started > 0) {
+                return TestCode.started;
+            }
+            return TestCode.none;
+        }
+
+        int result() nothrow pure const {
+            final switch (testCode) {
+            case TestCode.none:
+                return 1;
+            case TestCode.error:
+                return cast(int) errors;
+            case TestCode.started:
+                return -cast(int)(started);
+            case TestCode.passed:
+                return 0;
+            }
+            assert(0);
+        }
+    void report(string text) {
+        const test_code = testCode;
+        if (test_code == TestCode.passed) {
+            show_report(test_code, "BDD passed %2$s/%1$s %3$s", total, passed, text);
+        }
+        else {
+            show_report(test_code, "BDD passed %2$s/%1$s, faild %3$s/%1$s, started %4$s/%1$s %5$s",
+                    total, passed, errors, started,
+                    text);
+        }
+    }
+
+    }
+
+    ReportCount feature_count;
+    ReportCount scenario_count;
     int result;
     foreach (path; paths) {
         foreach (string report_file; dirEntries(path, "*.hibon", SpanMode.breadth)
-		.filter!(f => f.isFile)) {
+                .filter!(f => f.isFile)) {
             try {
                 const feature_group = report_file.fread!FeatureGroup;
                 const feature_test_code = testCode(feature_group);
+                feature_count
+                    .update(feature_test_code);
                 if (show(feature_test_code)) {
                     writefln("Report file %s", report_file);
                 }
+
                 report(feature_test_code, feature_group.info.property.description);
-                if (feature_test_code == TestCode.error || feature_test_code == TestCode.started) {
-                    foreach (scenario_group; feature_group.scenarios) {
-                        const scenario_test_code = testCode(scenario_group);
-                        report(scenario_test_code, "\t%s", scenario_group.info.property.description);
+                const show_scenario = feature_test_code == TestCode
+                    .error || feature_test_code == TestCode.started;
+                foreach (scenario_group; feature_group
+                        .scenarios) {
+                    const scenario_test_code = testCode(scenario_group);
+                    scenario_count.update(feature_test_code);
+                    if (show_scenario) {
+                        report(scenario_test_code, "\t%s", scenario_group.info.property
+                                .description);
                     }
                 }
             }
-            catch (Exception e) {
-                error("Error: %s in handling report %s", e.msg, report_file);
-            }
-
+        catch (Exception e) {
+            error("Error: %s in handling report %s", e.msg, report_file);
         }
+		}
     }
-    return result;
+
+    feature_count.report("Features");
+    if (feature_count.testCode !is TestCode.passed) {
+        scenario_count.report("Scenarios");
+    }
+    return feature_count.result;
 }
 
 void error(Args...)(string fmt, Args args) {
-	stderr.writefln("%s%s%s", RED, format(fmt, args), RESET);
+    stderr.writefln("%s%s%s", RED, format(fmt, args), RESET);
 }
 
 int main(string[] args) {
     BehaviourOptions options;
-    immutable program = args[0];
-    /** file for configurations */
-    auto config_file = "behaviour.json";
-    /** flag for print current version of behaviour */
-    bool version_switch;
-    /** flag for overwrite config file */
-    bool overwrite_switch;
-    /** falg for to enable report checks */
+    immutable program = args[0]; /** file for configurations */
+    auto config_file = "behaviour.json"; /** flag for print current version of behaviour */
+    bool version_switch; /** flag for overwrite config file */
+    bool overwrite_switch; /** falg for to enable report checks */
     bool Check_reports_switch;
-    bool check_reports_switch;
-	/** verbose switch */
-	bool verbose_switch;
+    bool check_reports_switch; /** verbose switch */
+    bool verbose_switch;
     try {
         if (config_file.exists) {
             options.load(config_file);
@@ -324,13 +398,14 @@ int main(string[] args) {
                 "O", format("Write configure file %s", config_file), &overwrite_switch,
                 "r|regex_inc", format(`Include regex Default:"%s"`, options.regex_inc), &options.regex_inc,
                 "x|regex_exc", format(`Exclude regex Default:"%s"`, options.regex_exc), &options.regex_exc,
-                "i|import", format(`Set include file Default:"%s"`, options.importfile), &options.importfile,
-                "p|package", "Generates D package to the source files", &options.enable_package,
+                "i|import", format(`Set include file Default:"%s"`, options.importfile), &options
+                .importfile,
+                "p|package", "Generates D package to the source files", &options
+                .enable_package,
                 "c|check", "Check the bdd reports in give list of directories", &check_reports_switch,
                 "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch,
-		"v|verbose", "Enable verbose print-out", &verbose_switch,
+                "v|verbose", "Enable verbose print-out", &verbose_switch,
         );
-
         if (version_switch) {
             revision_text.writeln;
             return 0;
@@ -359,10 +434,11 @@ int main(string[] args) {
         }
 
         check_reports_switch = Check_reports_switch || check_reports_switch;
-
-        if (check_reports_switch) {
+        if (
+            check_reports_switch) {
             const ret = check_reports(args[1 .. $], verbose_switch);
-            return (Check_reports_switch) ? ret : 0;
+            return (
+                    Check_reports_switch) ? ret : 0;
         }
         return parse_bdd(options);
     }
