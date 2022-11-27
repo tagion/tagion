@@ -320,12 +320,12 @@ int check_reports(string[] paths, const bool verbose) {
     void report(string text) {
         const test_code = testCode;
         if (test_code == TestCode.passed) {
-            show_report(test_code, "BDD passed %2$s/%1$s %3$s", total, passed, text);
+            show_report(test_code, "%3$s: BDD passed %2$s/%1$s", total, passed, text);
         }
         else {
-            show_report(test_code, "BDD passed %2$s/%1$s, faild %3$s/%1$s, started %4$s/%1$s %5$s",
-                    total, passed, errors, started,
-                    text);
+			writef("%s%s%s: ", BLUE, text, RESET);
+            show_report(test_code, " passed %2$s/%1$s, failed %3$s/%1$s, started %4$s/%1$s",
+                    total, passed, errors, started);
         }
     }
 
@@ -365,7 +365,7 @@ int check_reports(string[] paths, const bool verbose) {
 		}
     }
 
-    feature_count.report("Features");
+    feature_count.report("Features ");
     if (feature_count.testCode !is TestCode.passed) {
         scenario_count.report("Scenarios");
     }
