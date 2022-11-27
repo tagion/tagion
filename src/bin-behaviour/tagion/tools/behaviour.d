@@ -31,6 +31,8 @@ import tagion.behaviour.Behaviour : TestCode, testCode, testColor;
 
 import tagion.hibon.HiBONRecord : fwrite, fread;
 
+import tagion.utils.Term;
+
 enum ONE_ARGS_ONLY = 2;
 enum DFMT_ENV = "DFMT"; /// Set the path and argument d-format including the flags
 enum ICONV = "iconv"; /// Character format converter  
@@ -245,8 +247,7 @@ void generate_packages(const(ModuleInfo[]) list_of_modules) {
     }
 }
 
-int check_reports(string[] paths, const bool verbose = false) {
-    import tagion.utils.Term : RESET;
+int check_reports(string[] paths, const bool verbose) {
 
     bool show(const TestCode test_code) nothrow {
         return verbose || test_code == TestCode.error || test_code == TestCode.started;
@@ -267,7 +268,8 @@ int check_reports(string[] paths, const bool verbose = false) {
 
     int result;
     foreach (path; paths) {
-        foreach (string report_file; dirEntries(path, "*.hibon", SpanMode.breadth).filter!(f => f.isFile)) {
+        foreach (string report_file; dirEntries(path, "*.hibon", SpanMode.breadth)
+		.filter!(f => f.isFile)) {
             try {
                 const feature_group = report_file.fread!FeatureGroup;
                 const feature_test_code = testCode(feature_group);
@@ -283,12 +285,16 @@ int check_reports(string[] paths, const bool verbose = false) {
                 }
             }
             catch (Exception e) {
-                stderr.writefln("Error: %s in handling report %s", e.msg, report_file);
+                error("Error: %s in handling report %s", e.msg, report_file);
             }
 
         }
     }
     return result;
+}
+
+void error(Args...)(string fmt, Args args) {
+	stderr.writefln("%s%s%s", RED, format(fmt, args), RESET);
 }
 
 int main(string[] args) {
@@ -303,6 +309,8 @@ int main(string[] args) {
     /** falg for to enable report checks */
     bool Check_reports_switch;
     bool check_reports_switch;
+	/** verbose switch */
+	bool verbose_switch;
     try {
         if (config_file.exists) {
             options.load(config_file);
@@ -320,6 +328,7 @@ int main(string[] args) {
                 "p|package", "Generates D package to the source files", &options.enable_package,
                 "c|check", "Check the bdd reports in give list of directories", &check_reports_switch,
                 "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch,
+		"v|verbose", "Enable verbose print-out", &verbose_switch,
         );
 
         if (version_switch) {
@@ -352,13 +361,13 @@ int main(string[] args) {
         check_reports_switch = Check_reports_switch || check_reports_switch;
 
         if (check_reports_switch) {
-            const ret = check_reports(args[1 .. $]);
+            const ret = check_reports(args[1 .. $], verbose_switch);
             return (Check_reports_switch) ? ret : 0;
         }
         return parse_bdd(options);
     }
     catch (Exception e) {
-        stderr.writefln("Error: %s", e.msg);
+        error("Error: %s", e.msg);
     }
     return 1;
 }
