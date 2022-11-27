@@ -24,6 +24,9 @@ run-%: bddfiles bddinit bddenv
 	$(PRECMD)
 	${call log.header, $* :: run bdd}
 	$(DBIN)/$* $(RUNFLAGS)
+	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
+	$(BEHAVIOUR) -c $(BDD_RESULTS)
+
 
 bddenv: $(TESTENV)
 
@@ -86,6 +89,7 @@ help-bdd:
 	${call log.help, "make bddstrip", "Strips bad chars from BDD markdown files "}
 	${call log.help, "make behaviour", "Builds the BDD tool"}
 	${call log.help, "make clean-bddtest", "Will remove the bdd log files"}
+	${call log.help, "make clean-reports", "Remove all the bdd reports"}
 	${call log.help, "make list-bdd", "List all bdd targets"}
 	${call log.close}
 
@@ -98,9 +102,9 @@ clean-bddtest:
 	$(PRECMD)
 	$(RMDIR) $(BDD_LOG)
 
-
-.PHONY: help-bdd
-
 clean: clean-bddtest
 
+clean-reports:
+	$(PRECMD)
+	$(RMDIR) $(BDD_RESULTS)
 
