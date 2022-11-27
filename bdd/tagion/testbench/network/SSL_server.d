@@ -1,10 +1,10 @@
 module tagion.testbench.network.SSL_server;
 // Default import list for bdd
-import tagion.behaviour.Behaviour;
-import tagion.behaviour.BehaviourFeature;
-import tagion.behaviour.BehaviourException;
+import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
+import std.file : exists;
+import std.format;
 
 import tagion.network.SSLOptions;
 
@@ -31,12 +31,15 @@ class CreatesASSLCertificate {
     @Given("the domain information of a SSL certificate")
     Document certificate() {
         configureOpenSSL(opt.openssl);
-        return Document();
+        return result_ok;
     }
 
     @When("the certificate has been created")
     Document created() {
-        return Document();
+        check(!opt.openssl.certificate.exists || !opt.openssl.private_key.exists,
+                format("pem files %s and %s has not been created",
+                opt.openssl.certificate.exists, opt.openssl.private_key.exists));
+        return result_ok;
     }
 
     @Then("check that the SSL certificate is valid")
