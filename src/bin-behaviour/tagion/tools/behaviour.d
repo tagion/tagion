@@ -437,8 +437,13 @@ int main(string[] args) {
         if (
             check_reports_switch) {
             const ret = check_reports(args[1 .. $], verbose_switch);
-            return (
-                    Check_reports_switch) ? ret : 0;
+			if (ret) {
+				writeln("Test result failed!");
+			}
+			else {
+				writeln("Test result success!");
+			}
+            return (Check_reports_switch) ? ret : 0;
         }
         return parse_bdd(options);
     }

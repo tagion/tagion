@@ -7,7 +7,7 @@ ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
 
 BDD_MD_FILES=${shell find $(BDD) -name "*.md" -a -not -name "*.gen.md"}
 
-bddtest: | bddfiles bddinit bddenv bddrun bddreport reporter-start
+bddtest: | tagion bddfiles bddinit bddenv bddrun bddreport reporter-start
 	$(PRECMD)
 
 .PHONY: bddtest bddfiles
@@ -41,6 +41,7 @@ bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way
 bddreport: target-hibonutil
 	$(PRECMD)
 	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
+	$(BEHAVIOUR) -c $(BDD_RESULTS)
 
 %.md.tmp: %.md
 	$(PRECMD)
