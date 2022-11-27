@@ -406,12 +406,72 @@ bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
 }
 
 @safe
+bool hasStarted(ref const ScenarioGroup scenario_group) nothrow {
+    static foreach (i, Type; Fields!ScenarioGroup) {
+        static if (isActionGroup!Type) {
+            if (!scenario_group
+                    .tupleof[i].infos
+                    .any!(info => !info
+                        .result
+                        .empty)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+@safe
+bool hasStarted(ref const FeatureGroup feature_group) nothrow {
+    return feature_group.scenarios.any!(scenario => scenario.hasStarted);
+}
+
+enum TestCode {
+    none,
+    passed,
+    error,
+    started,
+}
+
+@safe
+TestCode testCode(Group)(Group group) nothrow if (is(Group : const(ScenarioGroup)) || is(Group : const(FeatureGroup))) {
+    TestCode result;
+    if (hasPassed(group)) {
+        result = TestCode.passed;
+    }
+    else if (hasErrors(group)) {
+        result = TestCode.error;
+    }
+    else if (hasStarted(group)) {
+        result = TestCode.started;
+    }
+    return result;
+}
+
+@safe
+string testColor(const TestCode code) nothrow pure {
+    import tagion.utils.Term;
+
+    with (TestCode) {
+        final switch (code) {
+        case none:
+            return BLUE;
+        case passed:
+            return GREEN;
+        case error:
+            return RED;
+        case started:
+            return YELLOW;
+        }
+    }
+}
+
+@safe
 unittest {
 
     import WithoutCtor = tagion.behaviour.BehaviourUnittestWithoutCtor;
 
     auto feature_without_ctor = automation!(WithoutCtor)();
-
     { // None of the scenario passes
         const feature_context = feature_without_ctor.run;
         assert(!feature_context.result.scenarios[0].hasPassed);

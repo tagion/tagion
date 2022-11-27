@@ -7,10 +7,10 @@ module tagion.tools.behaviour;
 
 import std.algorithm.searching : canFind;
 import std.getopt;
-import std.stdio : writefln, writeln, File;
+import std.stdio;
 import std.format;
 import std.path : extension, setExtension, dirName, buildPath;
-import std.file : exists, dirEntries, SpanMode, readText, fwrite=write;
+import std.file : exists, dirEntries, SpanMode, readText, fwrite = write;
 import std.string : join, strip, splitLines;
 import std.algorithm.iteration : filter, map, joiner, fold, uniq, splitter, each;
 import std.regex : regex, matchFirst;
@@ -26,6 +26,10 @@ import tagion.tools.revision : revision_text;
 import tagion.behaviour.BehaviourParser;
 import tagion.behaviour.BehaviourIssue : Dlang, DlangT, Markdown;
 import tagion.behaviour.Emendation : emendation, suggestModuleName;
+import tagion.behaviour.BehaviourFeature;
+import tagion.behaviour.Behaviour : TestCode, testCode, testColor;
+
+import tagion.hibon.HiBONRecord : fwrite, fread;
 
 enum ONE_ARGS_ONLY = 2;
 enum DFMT_ENV = "DFMT"; /// Set the path and argument d-format including the flags
@@ -241,6 +245,52 @@ void generate_packages(const(ModuleInfo[]) list_of_modules) {
     }
 }
 
+int check_reports(string[] paths, const bool verbose = false) {
+    import tagion.utils.Term : RESET;
+
+    bool show(const TestCode test_code) nothrow {
+        return verbose || test_code == TestCode.error || test_code == TestCode.started;
+    }
+
+    void report(Args...)(const TestCode test_code, string fmt, Args args) {
+        if (show(test_code)) {
+            static if (Args.length is 0) {
+                const text = fmt;
+            }
+            else {
+                const text = format(fmt, args);
+            }
+
+            writefln("%s%s%s", testColor(test_code), text, RESET);
+        }
+    }
+
+    int result;
+    foreach (path; paths) {
+        foreach (string report_file; dirEntries(path, "*.hibon", SpanMode.breadth).filter!(f => f.isFile)) {
+            try {
+                const feature_group = report_file.fread!FeatureGroup;
+                const feature_test_code = testCode(feature_group);
+                if (show(feature_test_code)) {
+                    writefln("Report file %s", report_file);
+                }
+                report(feature_test_code, feature_group.info.property.description);
+                if (feature_test_code == TestCode.error || feature_test_code == TestCode.started) {
+                    foreach (scenario_group; feature_group.scenarios) {
+                        const scenario_test_code = testCode(scenario_group);
+                        report(scenario_test_code, "\t%s", scenario_group.info.property.description);
+                    }
+                }
+            }
+            catch (Exception e) {
+                stderr.writefln("Error: %s in handling report %s", e.msg, report_file);
+            }
+
+        }
+    }
+    return result;
+}
+
 int main(string[] args) {
     BehaviourOptions options;
     immutable program = args[0];
@@ -250,49 +300,65 @@ int main(string[] args) {
     bool version_switch;
     /** flag for overwrite config file */
     bool overwrite_switch;
-
-    if (config_file.exists) {
-        options.load(config_file);
-    }
-    else {
-        options.setDefault;
-    }
-    auto main_args = getopt(args, std.getopt.config.caseSensitive,
-            "version", "display the version", &version_switch,
-            "I", "Include directory", &options.paths, std.getopt.config.bundling,
-            "O", format("Write configure file %s", config_file), &overwrite_switch,
-            "r|regex_inc", format(`Include regex Default:"%s"`, options.regex_inc), &options.regex_inc,
-            "x|regex_exc", format(`Exclude regex Default:"%s"`, options.regex_exc), &options.regex_exc,
-            "i|import", format(`Set include file Default:"%s"`, options.importfile), &options.importfile,
-            "p|package", "Generates D package to the source files", &options.enable_package,
-    );
-
-    if (version_switch) {
-        revision_text.writeln;
-        return 0;
-    }
-
-    if (overwrite_switch) {
-        if (args.length is ONE_ARGS_ONLY) {
-            config_file = args[1];
+    /** falg for to enable report checks */
+    bool Check_reports_switch;
+    bool check_reports_switch;
+    try {
+        if (config_file.exists) {
+            options.load(config_file);
         }
-        options.save(config_file);
-        writefln("Configure file written to %s", config_file);
-        return 0;
-    }
+        else {
+            options.setDefault;
+        }
+        auto main_args = getopt(args, std.getopt.config.caseSensitive,
+                "version", "display the version", &version_switch,
+                "I", "Include directory", &options.paths, std.getopt.config.bundling,
+                "O", format("Write configure file %s", config_file), &overwrite_switch,
+                "r|regex_inc", format(`Include regex Default:"%s"`, options.regex_inc), &options.regex_inc,
+                "x|regex_exc", format(`Exclude regex Default:"%s"`, options.regex_exc), &options.regex_exc,
+                "i|import", format(`Set include file Default:"%s"`, options.importfile), &options.importfile,
+                "p|package", "Generates D package to the source files", &options.enable_package,
+                "c|check", "Check the bdd reports in give list of directories", &check_reports_switch,
+                "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch,
+        );
 
-    if (main_args.helpWanted) {
-        defaultGetoptPrinter([
-            revision_text,
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...]", program),
-            "",
-            "<option>:",
-        ].join("\n"), main_args.options);
-        return 0;
-    }
+        if (version_switch) {
+            revision_text.writeln;
+            return 0;
+        }
 
-    return parse_bdd(options);
+        if (overwrite_switch) {
+            if (args.length is ONE_ARGS_ONLY) {
+                config_file = args[1];
+            }
+            options.save(config_file);
+            writefln("Configure file written to %s", config_file);
+            return 0;
+        }
+
+        if (main_args.helpWanted) {
+            defaultGetoptPrinter([
+                revision_text,
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...]", program),
+                "",
+                "<option>:",
+            ].join("\n"), main_args.options);
+            return 0;
+        }
+
+        check_reports_switch = Check_reports_switch || check_reports_switch;
+
+        if (check_reports_switch) {
+            const ret = check_reports(args[1 .. $]);
+            return (Check_reports_switch) ? ret : 0;
+        }
+        return parse_bdd(options);
+    }
+    catch (Exception e) {
+        stderr.writefln("Error: %s", e.msg);
+    }
+    return 1;
 }
