@@ -178,7 +178,6 @@ struct DlangT(Stream) {
         return format(q{
                 @%2$s("%3$s")
                 Document %1$s() {
-                    check(false, "Check for '%1$s' not implemented");
                         return Document();
                     }
                 },

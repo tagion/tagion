@@ -337,7 +337,7 @@ unittest {
 
     { // Fails in second scenario because the constructor has not been called
         // Calls the construction for the Some_awesome_feature scenario
-        feature_with_ctor.opDispatch!"Some_awesome_feature"(42, "with_ctor");
+        feature_with_ctor.Some_awesome_feature(42, "with_ctor");
         const feature_context = feature_with_ctor.run;
         assert(!feature_context.result.scenarios[0].hasErrors);
         assert(feature_context.result.scenarios[1].hasErrors);
@@ -348,7 +348,7 @@ unittest {
 
     { // The constructor of both scenarios has been called, this means that no errors is reported
         // Calls the construction for the Some_awesome_feature scenario
-        feature_with_ctor.opDispatch!"Some_awesome_feature"(42, "with_ctor");
+        feature_with_ctor.Some_awesome_feature(42, "with_ctor");
         feature_with_ctor.Some_awesome_feature_bad_format_double_property(17);
         const feature_context = feature_with_ctor.run;
         assert(!feature_context.result.scenarios[0].hasErrors);
