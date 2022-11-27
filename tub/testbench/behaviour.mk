@@ -24,6 +24,8 @@ run-%: bddfiles bddinit bddenv
 	$(PRECMD)
 	${call log.header, $* :: run bdd}
 	$(DBIN)/$* $(RUNFLAGS)
+
+test-%: run-%
 	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
 	$(BEHAVIOUR) -c $(BDD_RESULTS)
 
@@ -82,6 +84,7 @@ help-bdd:
 	${call log.help, "make bddtest", "Builds and executes all BDD's"}
 	${call log.help, "make bddrun", "Executes the already compiled BDD's"}
 	${call log.help, "make run-<bddname>", "Runs the <bddname>"}
+	${call log.help, "make test-<bddname>", "Runs the <bddname> and print out the tests"}
 	${call log.help, "make bddreport", "Produce visualization of the BDD-reports"}
 	${call log.help, "make bddfiles", "Generates the bdd files"}
 	${call log.help, "make bddenv", "Generates a environment test script"}
