@@ -247,7 +247,7 @@ auto automation(alias M)() if (isFeature!M) {
             context.result = new FeatureGroup;
             context.result.info.property = obtainFeature!M;
             context.result.info.name = moduleName!M;
-            context.result.scenarios.length = FeatureContext.Types.length; //ScenariosSeq.length;
+            context.result.scenarios.length = FeatureContext.Types.length-1; //ScenariosSeq.length;
             static foreach (i, _Scenario; FeatureContext.Types[0 .. $ - 1]) {
                 try {
                     static if (__traits(compiles, new _Scenario())) {

@@ -143,11 +143,12 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                         static if (hasMember!(Field, "infos")) {
                             with (scenario_group.tupleof[index]) {
                                 if (current_action_index is index) {
-                    const _comment = comment.stripRight;
-                    if (_comment.length) {
-                                     infos[$ - 1].property.comments ~= _comment;
-											}
-										}
+                                    const _comment = comment.stripRight;
+                                    if (_comment.length) {
+                                        infos[$ - 1].property.comments ~= _comment;
+
+                                    }
+                                }
                             }
                         }
                     }
@@ -234,7 +235,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
         }
     }
     result.info = info_feature;
-    if (scenario_group != scenario_group.init) {
+    if (scenario_group !is scenario_group.init) {
         result.scenarios ~= scenario_group;
     }
     return result;
