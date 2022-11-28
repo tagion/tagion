@@ -14,6 +14,8 @@
 
 [Boot_wallet.md](tagion/testbench/wallet/Boot_wallet.md)
 
+[Start_network.md](tagion/testbench/wallet/Start_network.md)
+
 [Wallet_generation.md](tagion/testbench/wallet/Wallet_generation.md)
 
 [Implement_epoch_closure.md](tagion/testbench/backlog/Implement_epoch_closure.md)
