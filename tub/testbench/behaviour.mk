@@ -29,6 +29,9 @@ test-%: run-%
 	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
 	$(BEHAVIOUR) -c $(BDD_RESULTS)
 
+ddd-%: bddfiles 
+	$(PRECMD)
+	$(DEBUGGER) $(DBIN)/$* $(RUNFLAGS)
 
 bddenv: $(TESTENV)
 
@@ -46,7 +49,7 @@ bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way
 bddreport: target-hibonutil
 	$(PRECMD)
 	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
-	$(BEHAVIOUR) -c $(BDD_RESULTS)
+	$(BEHAVIOUR) -cv $(BDD_RESULTS)
 
 %.md.tmp: %.md
 	$(PRECMD)

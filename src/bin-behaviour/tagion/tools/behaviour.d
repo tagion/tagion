@@ -317,17 +317,18 @@ int check_reports(string[] paths, const bool verbose) {
             }
             assert(0);
         }
-    void report(string text) {
-        const test_code = testCode;
-        if (test_code == TestCode.passed) {
-            show_report(test_code, "%d testest passed BDD-tests", total);
+
+        void report(string text) {
+            const test_code = testCode;
+            if (test_code == TestCode.passed) {
+                show_report(test_code, "%d testest passed BDD-tests", total);
+            }
+            else {
+                writef("%s%s%s: ", BLUE, text, RESET);
+                show_report(test_code, " passed %2$s/%1$s, failed %3$s/%1$s, started %4$s/%1$s",
+                        total, passed, errors, started);
+            }
         }
-        else {
-			writef("%s%s%s: ", BLUE, text, RESET);
-            show_report(test_code, " passed %2$s/%1$s, failed %3$s/%1$s, started %4$s/%1$s",
-                    total, passed, errors, started);
-        }
-    }
 
     }
 
@@ -359,10 +360,10 @@ int check_reports(string[] paths, const bool verbose) {
                     }
                 }
             }
-        catch (Exception e) {
-            error("Error: %s in handling report %s", e.msg, report_file);
+            catch (Exception e) {
+                error("Error: %s in handling report %s", e.msg, report_file);
+            }
         }
-		}
     }
 
     feature_count.report("Features ");
@@ -432,17 +433,15 @@ int main(string[] args) {
             ].join("\n"), main_args.options);
             return 0;
         }
-
         check_reports_switch = Check_reports_switch || check_reports_switch;
-        if (
-            check_reports_switch) {
+        if (check_reports_switch) {
             const ret = check_reports(args[1 .. $], verbose_switch);
-			if (ret) {
-				writeln("Test result failed!");
-			}
-			else {
-				writeln("Test result success!");
-			}
+            if (ret) {
+                writeln("Test result failed!");
+            }
+            else {
+                writeln("Test result success!");
+            }
             return (Check_reports_switch) ? ret : 0;
         }
         return parse_bdd(options);
