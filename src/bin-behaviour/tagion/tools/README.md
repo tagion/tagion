@@ -4,7 +4,11 @@
   - [Commands](#commands)
     - [Help](#help)
     - [See all bdd-targets](#see-all-bdd-targets)
-    - [Running BDD's](#running-bdds)
+    - [BDDfiles](#bddfiles)
+    - [Enviroment](#enviroment)
+    - [Removing illegal chars from bdd .md files](#removing-illegal-chars-from-bdd-md-files)
+    - [Building and Running BDD's](#building-and-running-bdds)
+    - [Terminal visualization](#terminal-visualization)
   - [Reporter tool: tagion-regression](#reporter-tool-tagion-regression)
     - [Starting](#starting)
     - [Stopping](#stopping)
@@ -38,26 +42,51 @@ To get a list of all created BDD's use the following command:
 
 `make list-bdd `
 
-### Running BDD's
+### BDDfiles
+`make bddfiles`
+
+Generate all the bddfiles. If you for an example have created a `.md` file this will genrate the `.gen.md & .gen.d & .d` files associated. It also compiles the bddtool
+
+### Enviroment
+`make bddenv`
+
+Generates a environment test script in build called `bddenv.sh`. This script can be used for manually running a single bdd with enviroment using ex. `./bddenv.sh <target>`.
+
+### Removing illegal chars from bdd .md files
+`make bddstrip`
+
+Strips bad chars from BDD markdown files in case that an editor might have added none utf-8 characters. 
+
+
+### Building and Running BDD's
 To build AND run all created BDD's use the following command:
 
 `make bddtest`
 
-This will build and run all BDD's including the BDD-tool and [reporter](#reporter-tool-tagion-regression). It will also start the report tool.
+This will build and execute all BDD's including the BDD-tool. It will show on a single line how many passed failed and were started. If you want more information about your logs use [reporter-tool](#reporter-tool-tagion-regression) 
 If you just want to build the bdd, use the following command.
 
 `make bddinit`
 
-To run your build BDD's use:
+To run your build BDD's again or if you used `bdd-init` use:
 
 `make bddrun`
 
-If you just want to run a single test use the following command:
+If you just want to run a single test use the following command. This command will not print out the bdd-report, but only run the scenario:
 
 `make run-<target>`
 
+If you also want to show the result instead of just running the test use:
+
+`make test-<target>`
+
+### Terminal visualization
+Produce visualization of the BDD-reports inside terminal:
+
+`make bddreport`
+
 ## Reporter tool: [tagion-regression](https://github.com/tagion/tagion-regression)
-[tagion-regression](https://github.com/tagion/tagion-regression) is a tool for viewing BDD results in the browser. See the hyperlink for a in-depth description of how it works. It will be started as a screen witn name "node" and run on port 3000.
+[tagion-regression](https://github.com/tagion/tagion-regression) is a tool for viewing BDD results in the browser. See the hyperlink for a in-depth description of how it works. It will be started as a screen with name "node" and run on port 3000.
 ### Starting
 `make reporter-start`
 
