@@ -1,7 +1,7 @@
 
-VIEWER_STARTED:=$(BDD_LOG)/.report-viewer.touch
 
 REPORT_ROOT:=$(REPOROOT)/regression
+VIEWER_STARTED:=$(REPORT_ROOT)/.report-viewer.touch
 VIEWER_INSTALLED:=$(REPORT_ROOT)/.report-install.touch
 
 REPORT_INSTALL:=npm install 
@@ -41,9 +41,8 @@ clean-reporter:
 
 clean: clean-reporter
 
-reporter-start: | reporter-install $(VIEWER_STARTED) 
+reporter-start:  $(VIEWER_STARTED)  
 
-.PHONY: reporter-start
 
 $(VIEWER_STARTED): $(BDD_LOG)/.way 
 

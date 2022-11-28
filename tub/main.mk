@@ -45,7 +45,12 @@ prebuild:
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) ddeps
 
-
+env-prebuild:
+	$(PRECMD)
+	${call log.header, $@ :: env}
+	${call log.env, PREBUILD_MK, $(PREBUILD_MK)}
+	${call log.env, WRAPS, $(WRAPS)}
+	${call log.close}
 
 #
 # Native platform
