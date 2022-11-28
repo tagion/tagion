@@ -110,7 +110,6 @@ class SevenWalletsWillBeGenerated {
         {
             immutable wallet_command = [tools.tagionwallet, "-x", pin, env.bdd_log.buildPath(format("tagionwallet_%s.json", i))]; // @suppress(dscanner.style.long_line)
             auto pipes = pipeProcess(wallet_command, Redirect.all, null, Config.detached);
-            writefln("teeest %s", pipes.stderr.byLine.empty);
 
             (() @trusted {
                 check(pipes.stderr.byLine.empty, "Pincode not valid on wallet");
