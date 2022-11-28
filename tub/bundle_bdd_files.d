@@ -26,7 +26,9 @@ int main(string[] args) {
 
     string[] relative_paths;
     foreach(i, file; md_files) {
-        relative_paths ~= relativePath(file, REPOROOT);
+        writeln(file);
+        writeln(REPOROOT);
+        relative_paths ~= relativePath(file, BDD);
     }
 
     auto fout = File(FILE, "w");
