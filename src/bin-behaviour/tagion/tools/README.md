@@ -15,6 +15,7 @@
     - [Stopping](#stopping)
   - [Creating a new BDD](#creating-a-new-bdd)
     - [Create a .md file for the feature](#create-a-md-file-for-the-feature)
+    - [Main file for the feature](#main-file-for-the-feature)
 
 # BDD documentation
 The following md file contains documentation on how to develop with bdds. For a general understanding of what BDD's are please see: [Continous_Delivery_What_is_BDD](https://www.youtube.com/watch?v=zYj70EsD7uI).
@@ -117,6 +118,8 @@ Will stop the reporter and screen.
 The following describes how to create a new BDD.
 ### Create a .md file for the feature
 *Start by creating* a `.md` file in `bdd/tagion/testbench/<folder>`. Here you describe your scenarios. For examples check out [BDDs](../../../../bdd/BDDS.md). The text you write can just be "unformatted" text since the tool willl automatically add formatting. 
+
+### Main file for the feature
 
 Next you can "translate" your `.md` file by typing:
 
