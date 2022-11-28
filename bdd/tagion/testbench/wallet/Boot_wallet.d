@@ -38,6 +38,26 @@ class GenerateDartboot
         return result_ok;
     }
 
+    @Given("I initialize a Dart")
+    Document dart() @trusted {
+        dart_path = env.bdd_log.buildPath("dart.drt");
+
+        immutable dart_init_command = [
+            tools.dartutil,
+            "--initialize",
+            "--dartfilename",
+            dart_path
+        ];
+
+        auto init_dart_pipe = pipeProcess(dart_init_command, Redirect.all, null, Config.detached);
+        writefln("%s", init_dart_pipe.stdout.byLine);
+        
+        check(dart_path.exists, "Dart not created");
+
+        return result_ok;
+
+    }
+
     @When("I add genesis invoice to one wallet")
     Document wallet() @trusted
     {
@@ -73,27 +93,29 @@ class GenerateDartboot
 
         check(genesis_path.exists, "Genesis file not created");
 
+        immutable dart_input_command = [
+            tools.dartutil,
+            "--dartfilename",
+            dart_path,
+            "--modify",
+            "--inputfile",
+            genesis_path,
+        ];
+
+        writefln("%s", dart_input_command.join(" "));
+
+        auto dart_input_pipe = pipeProcess(dart_input_command, Redirect.all, null, Config.detached);
+        writefln("%s", dart_input_pipe.stdout.byLine);
+
         return result_ok;
     }
 
     @Then("the dartboot should be generated")
     Document generated() @trusted
     {
-        dart_path = env.bdd_log.buildPath("dart.drt");
-
-        immutable dart_init_command = [
-            tools.dartutil,
-            "--initialize",
-            "--dartfilename",
-            dart_path
-        ];
-
-        auto init_dart_pipe = pipeProcess(dart_init_command, Redirect.all, null, Config.detached);
-        writefln("%s", init_dart_pipe.stdout.byLine);
-        
-        check(dart_path.exists, "Dart not created");
-
+        // do some sort of check that checks if the dartboot has been succesfully created.
         return result_ok;
+
     }
 
 }
