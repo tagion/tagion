@@ -8,12 +8,13 @@
     - [Enviroment](#enviroment)
     - [Removing illegal chars from bdd .md files](#removing-illegal-chars-from-bdd-md-files)
     - [Building and Running BDD's](#building-and-running-bdds)
-  - [Cleaning](#cleaning)
+    - [Cleaning](#cleaning)
     - [Terminal visualization](#terminal-visualization)
   - [Reporter tool: tagion-regression](#reporter-tool-tagion-regression)
     - [Starting](#starting)
     - [Stopping](#stopping)
   - [Creating a new BDD](#creating-a-new-bdd)
+    - [Create a .md file for the feature](#create-a-md-file-for-the-feature)
 
 # BDD documentation
 The following md file contains documentation on how to develop with bdds. For a general understanding of what BDD's are please see: [Continous_Delivery_What_is_BDD](https://www.youtube.com/watch?v=zYj70EsD7uI).
@@ -81,7 +82,7 @@ If you also want to show the result instead of just running the test use:
 
 `make test-<target>`
 
-## Cleaning
+### Cleaning
 
 `make clean-bddtest` 
 
@@ -113,8 +114,19 @@ Also starts the reporter tool but runs and builds the other parts. See [Running 
 Will stop the reporter and screen.
 
 ## Creating a new BDD
-ALL COMMANDS NECCESARY
+The following describes how to create a new BDD.
+### Create a .md file for the feature
+*Start by creating* a `.md` file in `bdd/tagion/testbench/<folder>`. Here you describe your scenarios. For examples check out [BDDs](../../../../bdd/BDDS.md). The text you write can just be "unformatted" text since the tool willl automatically add formatting. 
 
+Next you can "translate" your `.md` file by typing:
+
+`make bddfiles`
+
+This will generate a `.gen.md`, and `.d` file. 
+
+Create a "main" file and import this file in `testbench.d` and give it an alias ex. like the file `bdd_wallets.d`. You can use on of the other files as an example. Inside the main file remember to import your package inside your folder. 
+
+Now you can run make `bddtest` to run your created BDD. 
 
 
 
