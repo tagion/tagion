@@ -14,7 +14,11 @@
 
 [Collector_service.md](tagion/testbench/services/Collector_service.md)
 
+[Boot_wallet.md](tagion/testbench/wallet/Boot_wallet.md)
+
 [Wallet_generation.md](tagion/testbench/wallet/Wallet_generation.md)
+
+[Start_network.md](tagion/testbench/wallet/Start_network.md)
 
 [Implement_the_epoch_block_chain.md](tagion/testbench/backlog/Implement_the_epoch_block_chain.md)
 

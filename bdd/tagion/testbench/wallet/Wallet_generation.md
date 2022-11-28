@@ -1,15 +1,25 @@
-Feature: Generate wallets.
+## Feature: Generate wallets.
 
+`tagion.testbench.wallet.Wallet_generation`
 
+### Scenario: Seven wallets will be generated.
 
+`SevenWalletsWillBeGenerated`
 
-Scenario: Seven wallets will be generated.
+*Given* i have 7 pincodes and questions
 
-Given i have 7 pincodes and questions
+`questions`
 
-Given i create wallets.
+*Given* i create wallets.
 
-When the wallets are created save the pin.
+`createWallets`
 
-Then check if the wallet can be activated with the pincode.
+*When* the wallets are created save the pin.
+
+`pin`
+
+*Then* check if the wallet can be activated with the pincode.
+
+`pincode`
+
 

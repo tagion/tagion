@@ -1,8 +1,6 @@
 module tagion.testbench.wallet.Wallet_generation;
 // Default import list for bdd
-import tagion.behaviour.Behaviour;
-import tagion.behaviour.BehaviourFeature;
-import tagion.behaviour.BehaviourException;
+import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
 
@@ -34,6 +32,9 @@ alias FeatureContext = Tuple!(
 class SevenWalletsWillBeGenerated {
     string[] stdin_wallets;
     string[] pin_array;
+    string[] wallets;
+    string[] wallet_paths;
+
     enum number_of_wallets = 7;
 
     // immutable tagionwallet = "/home/imrying/bin/tagionwallet";
@@ -57,23 +58,26 @@ class SevenWalletsWillBeGenerated {
     }
 
     @Given("i create wallets.")
-    Document wallets() {
+    Document createWallets() {
         //check(tagionwallet.exists, format("Tagionwallet does not exist: %s", tagionwallet));
 
         foreach (i, stdin_wallet; stdin_wallets) {
             // format("/tmp/wallet_%s", i)
+            const wallet = env.bdd_log.buildPath(format("tagionwallet_%s.json", i));
+            const wallet_path = env.bdd_log.buildPath(format("wallet_%s", i));
+
             immutable wallet_path_array = [
                 tools.tagionwallet, 
                 "-O", 
                 "--path", 
-                env.bdd_log.buildPath(format("wallet_%s", i)), 
-                env.bdd_log.buildPath(format("tagionwallet_%s.json", i))
+                wallet_path, 
+                wallet
                 ];
 
             writefln("wallet_path_array: %s", wallet_path_array);
             immutable test_array = [
                 tools.tagionwallet, 
-                env.bdd_log.buildPath(format("tagionwallet_%s.json", i))
+                wallet
                 ];
             
             writefln("test_array: %s", test_array);
@@ -91,7 +95,8 @@ class SevenWalletsWillBeGenerated {
                     writeln(s);
                 } 
             })();
-
+            wallets ~= wallet;
+            wallet_paths ~= wallet_path;
         }
         
         return result_ok;
@@ -108,12 +113,11 @@ class SevenWalletsWillBeGenerated {
     Document pincode() @trusted {
         foreach (i, pin; pin_array)
         {
-            immutable wallet_command = [tools.tagionwallet, "-x", pin, env.bdd_log.buildPath(format("tagionwallet_%s.json", i))]; // @suppress(dscanner.style.long_line)
+            immutable wallet_command = [tools.tagionwallet, "-x", pin, wallets[i]]; // @suppress(dscanner.style.long_line)
             auto pipes = pipeProcess(wallet_command, Redirect.all, null, Config.detached);
 
-            (() @trusted {
-                check(pipes.stderr.byLine.empty, "Pincode not valid on wallet");
-            })();
+            check(pipes.stderr.byLine.empty, "Pincode not valid on wallet");
+
         }
         return result_ok;
     }

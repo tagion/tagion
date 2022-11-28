@@ -8,12 +8,14 @@
     - [Enviroment](#enviroment)
     - [Removing illegal chars from bdd .md files](#removing-illegal-chars-from-bdd-md-files)
     - [Building and Running BDD's](#building-and-running-bdds)
-  - [Cleaning](#cleaning)
+    - [Cleaning](#cleaning)
     - [Terminal visualization](#terminal-visualization)
   - [Reporter tool: tagion-regression](#reporter-tool-tagion-regression)
     - [Starting](#starting)
     - [Stopping](#stopping)
   - [Creating a new BDD](#creating-a-new-bdd)
+    - [Create a .md file for the feature](#create-a-md-file-for-the-feature)
+    - [Main file for the feature](#main-file-for-the-feature)
 
 # BDD documentation
 The following md file contains documentation on how to develop with bdds. For a general understanding of what BDD's are please see: [Continous_Delivery_What_is_BDD](https://www.youtube.com/watch?v=zYj70EsD7uI).
@@ -46,12 +48,12 @@ To get a list of all created BDD's use the following command:
 ### BDDfiles
 `make bddfiles`
 
-Generate all the bddfiles. If you for an example have created a `.md` file this will genrate the `.gen.md & .gen.d & .d` files associated. It also compiles the bddtool
+Generate all the bddfiles. If you for an example have created a `.md` file this will genrate the `.gen.md & .d` files associated. It also compiles the bddtool
 
 ### Enviroment
 `make bddenv`
 
-Generates a environment test script in build called `bddenv.sh`. This script can be used for manually running a single bdd with enviroment using ex. `./bddenv.sh <target>`.
+Generates a environment test script in build called `bddenv.sh`. This script can be used for manually running a single bdd with environment using ex. `./bddenv.sh <target>`.
 
 ### Removing illegal chars from bdd .md files
 `make bddstrip`
@@ -69,11 +71,11 @@ If you just want to build the bdd, use the following command.
 
 `make bddinit`
 
-To run your build BDD's again or if you used `bdd-init` use:
+To run your build BDD's again or if you used `bddinit` use:
 
 `make bddrun`
 
-If you just want to run a single test use the following command. This command will not print out the bdd-report, but only run the scenario:
+If you just want to run a single test use the following command. This command will not print out the bddreport, but only run the scenario:
 
 `make run-<target>`
 
@@ -81,7 +83,7 @@ If you also want to show the result instead of just running the test use:
 
 `make test-<target>`
 
-## Cleaning
+### Cleaning
 
 `make clean-bddtest` 
 
@@ -103,18 +105,27 @@ Produce visualization of the BDD-reports inside terminal:
 
 Will start the reporter tool on localhost 3000 with screen.
 
-`make bddtest`
-
-Also starts the reporter tool but runs and builds the other parts. See [Running BDD's](#running-bdds)
-
 ### Stopping
 `make reporter-stop`
 
 Will stop the reporter and screen.
 
 ## Creating a new BDD
-ALL COMMANDS NECCESARY
+The following describes how to create a new BDD.
+### Create a .md file for the feature
+*Start by creating* a `.md` file in `bdd/tagion/testbench/<folder>`. Here you describe your scenarios. For examples check out [BDDs](../../../../bdd/BDDS.md). The text you write can just be "unformatted" text since the tool willl automatically add formatting. 
 
+### Main file for the feature
+
+Next you can "translate" your `.md` file by typing:
+
+`make bddfiles`
+
+This will generate a `.gen.md`, and `.d` file. 
+
+Create a "main" file and import this file in `testbench.d` and give it an alias ex. like the file `bdd_wallets.d`. You can use on of the other files as an example. Inside the main file remember to import your package inside your folder. 
+
+Now you can run make `bddtest` to run your created BDD. 
 
 
 
