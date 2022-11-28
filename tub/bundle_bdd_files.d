@@ -11,16 +11,16 @@ import std.string;
 auto get_md_paths(string pathname)
 {    
     return dirEntries(pathname, SpanMode.depth)
-        .filter!(f => f.name.endsWith("gen.md"))
+        .filter!(f => f.name.endsWith(".md"))
+        .filter!(f => !f.name.endsWith(".gen.md"))
         .array;
 }
 
 int main(string[] args) {
-    // const BDD = environment["BDD"];
-    //const BDD_PATH = "/home/imrying/work/tagion/bdd";
+
     const BDD = environment["BDD"];
     const REPOROOT = environment["REPOROOT"];
-    const FILE = "/home/imrying/work/tagion/test.md";
+    const FILE = buildPath(BDD, "BDDS.md");
 
     auto md_files = get_md_paths(BDD);
 

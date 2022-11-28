@@ -18,9 +18,15 @@ bddtagion: tagion
 	$(PRECMD)
 	$(DBIN)/tagion -f
 
-bddfiles: behaviour
+bddfiles: behaviour bddcontent
 	$(PRECMD)
 	$(BEHAVIOUR) $(BDD_FLAGS)
+
+.PHONY: bddcontent
+
+bddcontent: 
+	$(PRECMD)
+	$(DTUB)/bundle_bdd_files.d
 
 bddrun: $(BDDTESTS) 
 
