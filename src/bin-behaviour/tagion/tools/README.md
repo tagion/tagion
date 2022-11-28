@@ -8,6 +8,7 @@
     - [Enviroment](#enviroment)
     - [Removing illegal chars from bdd .md files](#removing-illegal-chars-from-bdd-md-files)
     - [Building and Running BDD's](#building-and-running-bdds)
+  - [Cleaning](#cleaning)
     - [Terminal visualization](#terminal-visualization)
   - [Reporter tool: tagion-regression](#reporter-tool-tagion-regression)
     - [Starting](#starting)
@@ -79,6 +80,16 @@ If you just want to run a single test use the following command. This command wi
 If you also want to show the result instead of just running the test use:
 
 `make test-<target>`
+
+## Cleaning
+
+`make clean-bddtest` 
+
+Removes the bdd log files
+
+`make clean-reports` 
+
+Removes all the bdd reports
 
 ### Terminal visualization
 Produce visualization of the BDD-reports inside terminal:
