@@ -11,3 +11,6 @@
 	path = src/wrap-wolfssl/wolfssl
 	url = git@github.com:tagion/fork-wolfssl.git
 
+[submodule "regression"]
+	path = regression
+	url = git@github.com:tagion/tagion-regression.git

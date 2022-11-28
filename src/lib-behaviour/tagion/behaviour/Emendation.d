@@ -214,12 +214,12 @@ bool isUnique(string[] list_of_names) nothrow {
 
     return (list_of_names.length == 0) ||
         list_of_names
-        .all!(name => name.length != 0)
+            .all!(name => name.length != 0)
         &&
         list_of_names
-        .array
-        .sort
-        .isStrictlyMonotonic;
+            .array
+            .sort
+            .isStrictlyMonotonic;
 }
 
 ///Examples:  Test of the isUnique

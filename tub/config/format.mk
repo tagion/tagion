@@ -1,6 +1,6 @@
 
 
-DFORMAT?=dfmt
+export DFORMAT?=dfmt
 
 # The .editorconfig is placed in the REPOROOT
 DFORMAT_FLAGS+= -c $(REPOROOT)/

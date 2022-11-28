@@ -105,14 +105,14 @@ class SevenWalletsWillBeGenerated {
     }
 
     @Then("check if the wallet can be activated with the pincode.")
-    Document pincode() {
+    Document pincode() @trusted {
         foreach (i, pin; pin_array)
         {
-            immutable wallet_command = [tools.tagionwallet, "-x", pin, "--amount", env.bdd_log.buildPath(format("tagionwallet_%s.json", i))];
+            immutable wallet_command = [tools.tagionwallet, "-x", pin, env.bdd_log.buildPath(format("tagionwallet_%s.json", i))]; // @suppress(dscanner.style.long_line)
             auto pipes = pipeProcess(wallet_command, Redirect.all, null, Config.detached);
-          
+
             (() @trusted {
-                check(!pipes.stderr.byLine.empty, "Pincode not valid on wallet");
+                check(pipes.stderr.byLine.empty, "Pincode not valid on wallet");
             })();
         }
         return result_ok;

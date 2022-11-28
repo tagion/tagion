@@ -6,6 +6,34 @@ import std.algorithm.iteration : map;
 import std.array;
 import std.path;
 
+import tagion.basic.Types : FileExtension, DOT;
+
+import tagion.behaviour.BehaviourFeature;
+import tagion.behaviour.BehaviourReporter;
+import tagion.hibon.HiBONRecord : fwrite;
+
+import std.stdio;
+
+@safe
+synchronized
+class Reporter : BehaviourReporter {
+    const(Exception) before(scope const(FeatureGroup*) feature_group) nothrow {
+        Exception result;
+        try {
+            immutable report_file_name = buildPath(env.bdd_results, feature_group.info.name)
+                ~ DOT ~ FileExtension.hibon;
+            report_file_name.fwrite(*feature_group);
+        }
+        catch (Exception e) {
+            result = e;
+        }
+        return result;
+    }
+
+    const(Exception) after(scope const(FeatureGroup*) feature_group) nothrow {
+        return before(feature_group);
+    }
+}
 
 struct Environment {
     string dbin;
@@ -27,8 +55,8 @@ struct Tools {
     string dartutil;
     string tagionboot;
 }
-immutable Tools tools;
 
+immutable Tools tools;
 
 import std.stdio;
 
@@ -55,4 +83,6 @@ shared static this() {
     }
     tools = temp_tools;
     assert(errors is 0, "Environment is not setup correctly");
+
+    reporter = new Reporter;
 }

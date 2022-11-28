@@ -13,6 +13,7 @@ import std.exception : assumeWontThrow;
 
 import tagion.behaviour.BehaviourException;
 import tagion.behaviour.BehaviourResult;
+import tagion.behaviour.BehaviourReporter;
 import tagion.basic.Types : FileExtension;
 import tagion.hibon.HiBONRecord;
 import tagion.basic.Basic : isOneOf;
@@ -184,9 +185,11 @@ unittest { //
 @safe
 auto automation(alias M)() if (isFeature!M) {
     import std.typecons;
+    import std.algorithm.searching : any;
 
     mixin(format(q{import %s;}, moduleName!M));
 
+    @safe
     static struct FeatureFactory {
         FeatureContext context;
         void opDispatch(string scenario_name, Args...)(Args args) {
@@ -194,7 +197,6 @@ auto automation(alias M)() if (isFeature!M) {
 
             enum tuple_index = [FeatureContext.fieldNames]
                     .countUntil(scenario_name);
-            pragma(msg, "tuple_index ", tuple_index);
             static assert(tuple_index >= 0,
                     format("Scenarion '%s' does not exists. Possible scenarions is\n%s",
                     scenario_name, [FeatureContext.fieldNames[0 .. $ - 1]].join(",\n")));
@@ -203,12 +205,50 @@ auto automation(alias M)() if (isFeature!M) {
             context[tuple_index] = new _Scenario(args);
         }
 
+        bool find(Args...)(string regex_text, Args args) {
+            import std.regex;
+
+            const search_regex = regex(regex_text);
+
+            static foreach (tuple_index; 0 .. FeatureContext.Types.length - 1) {
+                {
+                    alias _Scenario = FeatureContext.Types[tuple_index];
+                    enum scenario_property = getScenario!_Scenario;
+                    enum compiles = __traits(compiles, new _Scenario(args));
+                    if (!scenario_property.description.matchFirst(search_regex).empty ||
+                            scenario_property.comments.any!(c => !c.matchFirst(search_regex).empty)) {
+                        static if (compiles) {
+                            context[tuple_index] = new _Scenario(args);
+                            return true;
+                        }
+                        else {
+                            check(false,
+                                    format("Arguments %s does not match construct of %s",
+                                    Args.stringof, _Scenario.stringof));
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        @safe
         FeatureContext run() nothrow {
+            if (reporter !is null) {
+                const raw_feature_group = getFeature!M;
+                reporter.before(&raw_feature_group);
+            }
+            scope (exit) {
+                if (reporter !is null) {
+                    reporter.after(context.result);
+                }
+
+            }
             uint error_count;
             context.result = new FeatureGroup;
             context.result.info.property = obtainFeature!M;
             context.result.info.name = moduleName!M;
-            context.result.scenarios.length = FeatureContext.Types.length; //ScenariosSeq.length;
+            context.result.scenarios.length = FeatureContext.Types.length-1; //ScenariosSeq.length;
             static foreach (i, _Scenario; FeatureContext.Types[0 .. $ - 1]) {
                 try {
                     static if (__traits(compiles, new _Scenario())) {
@@ -218,7 +258,7 @@ auto automation(alias M)() if (isFeature!M) {
                     }
                     else {
                         check(context[i]!is null,
-                                format("Scenario '%s' must be constructed before can be executed in '%s' feature",
+                        format("Scenario '%s' must be constructed before can be executed in '%s' feature",
                                 FeatureContext.fieldNames[i],
                                 moduleName!M));
                     }
@@ -233,7 +273,6 @@ auto automation(alias M)() if (isFeature!M) {
             }
             if (error_count == 0) {
                 context.result.info.result = result_ok;
-
             }
             return context;
         }
@@ -299,7 +338,7 @@ unittest {
 
     { // Fails in second scenario because the constructor has not been called
         // Calls the construction for the Some_awesome_feature scenario
-        feature_with_ctor.opDispatch!"Some_awesome_feature"(42, "with_ctor");
+        feature_with_ctor.Some_awesome_feature(42, "with_ctor");
         const feature_context = feature_with_ctor.run;
         assert(!feature_context.result.scenarios[0].hasErrors);
         assert(feature_context.result.scenarios[1].hasErrors);
@@ -310,7 +349,7 @@ unittest {
 
     { // The constructor of both scenarios has been called, this means that no errors is reported
         // Calls the construction for the Some_awesome_feature scenario
-        feature_with_ctor.opDispatch!"Some_awesome_feature"(42, "with_ctor");
+        feature_with_ctor.Some_awesome_feature(42, "with_ctor");
         feature_with_ctor.Some_awesome_feature_bad_format_double_property(17);
         const feature_context = feature_with_ctor.run;
         assert(!feature_context.result.scenarios[0].hasErrors);
@@ -347,12 +386,19 @@ Returns: true if the scenario has passed all tests
 bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
     static foreach (i, Type; Fields!ScenarioGroup) {
         static if (isActionGroup!Type) {
-            if (scenario_group.tupleof[i].infos.any!(info => !info.result.isRecordType!Result)) {
+            if (scenario_group
+                    .tupleof[i].infos
+                    .any!(info => !info
+                        .result
+                        .isRecordType!Result)) {
                 return false;
             }
         }
         else static if (isInfo!Type) {
-            if (!scenario_group.tupleof[i].result.isRecordType!Result) {
+            if (!scenario_group
+                    .tupleof[i]
+                    .result
+                    .isRecordType!Result) {
                 return false;
             }
         }
@@ -361,12 +407,72 @@ bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
 }
 
 @safe
+bool hasStarted(ref const ScenarioGroup scenario_group) nothrow {
+    static foreach (i, Type; Fields!ScenarioGroup) {
+        static if (isActionGroup!Type) {
+            if (!scenario_group
+                    .tupleof[i].infos
+                    .any!(info => !info
+                        .result
+                        .empty)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+@safe
+bool hasStarted(ref const FeatureGroup feature_group) nothrow {
+    return feature_group.scenarios.any!(scenario => scenario.hasStarted);
+}
+
+enum TestCode {
+    none,
+    passed,
+    error,
+    started,
+}
+
+@safe
+TestCode testCode(Group)(Group group) nothrow if (is(Group : const(ScenarioGroup)) || is(Group : const(FeatureGroup))) {
+    TestCode result;
+    if (hasPassed(group)) {
+        result = TestCode.passed;
+    }
+    else if (hasErrors(group)) {
+        result = TestCode.error;
+    }
+    else if (hasStarted(group)) {
+        result = TestCode.started;
+    }
+    return result;
+}
+
+@safe
+string testColor(const TestCode code) nothrow pure {
+    import tagion.utils.Term;
+
+    with (TestCode) {
+        final switch (code) {
+        case none:
+            return BLUE;
+        case passed:
+            return GREEN;
+        case error:
+            return RED;
+        case started:
+            return YELLOW;
+        }
+    }
+}
+
+@safe
 unittest {
 
     import WithoutCtor = tagion.behaviour.BehaviourUnittestWithoutCtor;
 
     auto feature_without_ctor = automation!(WithoutCtor)();
-
     { // None of the scenario passes
         const feature_context = feature_without_ctor.run;
         assert(!feature_context.result.scenarios[0].hasPassed);
@@ -427,8 +533,24 @@ unittest {
     }
 }
 
+@safe
+unittest {
+    import WithCtor = tagion
+        .behaviour
+        .BehaviourUnittestWithCtor;
+
+    auto feature_with_ctor = automation!(WithCtor)();
+    assert(feature_with_ctor.find("bankster", 17));
+    assertThrown!BehaviourException(feature_with_ctor.find("bankster", "wrong argument"));
+    assert(!feature_with_ctor.find("this-text-does-not-exists", 17));
+    //assertThrown!StringException
+    //    feature_with_ctor.Some_awesome_feature_bad_format_double_property(17);
+
+}
+
 version (unittest) {
     import tagion.hibon.Document;
     import tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONJSON;
+    import std.exception;
 }

@@ -106,7 +106,9 @@ version (unittest) {
     }
 
     @safe
-    @Scenario("Some money printer which is controlled by a bankster")
+    @Scenario("Some money printer which is controlled by a bankster",
+            ["The bankster has a big heart so shares some of the money to politicians"]
+    )
     class Some_awesome_feature_bad_format_double_property {
         uint count;
         @disable this();

@@ -45,8 +45,12 @@ prebuild:
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) ddeps
 
-
-
+env-prebuild:
+	$(PRECMD)
+	${call log.header, $@ :: env}
+	${call log.env, PREBUILD_MK, $(PREBUILD_MK)}
+	${call log.env, WRAPS, $(WRAPS)}
+	${call log.close}
 
 #
 # Native platform
@@ -123,6 +127,7 @@ include $(DTUB)/testbench/mode0.mk
 include $(DTUB)/testbench/mode1.mk
 include $(DTUB)/testbench/behaviour.mk
 include $(DTUB)/testbench/reporter.mk
+include $(DTUB)/testbench/test.mk
 
 #
 # Install main tool

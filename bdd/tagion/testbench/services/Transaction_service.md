@@ -1,51 +1,101 @@
-Feature Transaction service
-The transaction service act as the gate-keep for smart contracts before it is send to the network. 
-The transaction service should be able to receive HiRPC which checked before it send to and send to the coordinator (HashGragh).
-A data-package is defined as a string of bytes which a send to the transaction service.
+## Feature: Transaction service.
+The transaction service should act as a gate-keeper to validate smart-contract before they are send to the network.
+The transaction service should be able to receive HiRPC which is checked before it sends to and send to the Collector services.
+A data-package is defined as a string of bytes that a send to the transaction service.
+
+`tagion.testbench.services.Transaction_service`
+
+### Scenario: a data package that exceeds the maximum size.
+
+`ADataPackageThatExceedsTheMaximumSize`
+
+*Given* a data package with a size larger than the maximum.
+
+`thanTheMaximum`
+
+*Given* that a connection to the logs on the transaction service.
+
+`theTransactionService`
+
+*Given* the data package is sent to the selected active node A in the network.
+
+`inTheNetwork`
+
+*When* the data package has been received by the network.
+
+`byTheNetwork`
+
+*Then* the size of the data package should be checked and they should be rejected,
+if the size is larger than the maximum size.
+
+`shouldBeRejected`
+
+*But* the data package should not be sent to the Collector Service
+
+`theCollectorService`
 
 
-Scenario a data package which exceed the maximum size.
+### Scenario: a malformed data packed should be rejected
 
-Given a data package with size larger than the maximum.
+`AMalformedDataPackedShouldBeRejected`
 
-Given that a connection to the logs on the transaction service.
+*Given* a data package is not a correctly HiRPC format.
 
-Given the data package is send to the selected active node A in the network.
+`format`
 
-When the data package has been received by the network.
+*When* the data package has been received by the network.
 
-Then the size of the data package should be check and the should be rejected,
-if the size larger than the maximum size.
+`network`
 
-
-
-Scenario a malformed data packed should be rejected
-
-Given a data package is not a correctly HiBON format.
-
-When the data package has been receive by the network.
-
-Then network should check if the data package is a valid HiBON
+*Then* network should check if the data package is a valid HiRPC
 and if the package is invalid then the should be rejected.
 
-Scenario a data package which is not a HiRPC
+`hiRPC`
 
-Given a data package which is not a correctly HiRPC.
+*But* the data package should not be sent to the Collector Service
 
-When the data package has been received by the network.
-
-Then the package should be check that it is a correct HiRPC and if it is not it should be rejected.
+`service`
 
 
-Scenario corrected format HiRPC
+### Scenario: a data package that is not a HiRPC
 
-Given a correctly format transaction.
+`ADataPackageThatIsNotAHiRPC`
 
-When the data package has been received by the network.
+*Given* a data package that is not a correct HiRPC.
 
-When the data package has been verified that it is correct HiRPC.
+`hiRPC`
 
-Then the HiRPC is send to the collector services.
+*When* the data package has been received by the network.
 
+`network`
+
+*Then* the package should be checked that it is a correct HiRPC and if it is not it should be rejected.
+
+`rejected`
+
+
+### Scenario: corrected format HiRPC.
+
+`CorrectedFormatHiRPC`
+
+*Given* a correctly formatted transaction.
+
+`transaction`
+
+*When* the data package has been received by the network.
+
+`network`
+
+*When* the data package has been verified that it is correct HiRPC.
+
+`hiRPC`
+
+*Then* the HiRPC is sent to the Collector services.
+
+`services`
+
+*Then* check that the Collector services received the package.
+
+`checkPackage`
 
 

@@ -521,7 +521,6 @@ private import std.range;
 private import tagion.basic.Types : FileExtension;
 
 //private std.range.primitives;
-@safe
 string fileExtension(string path) {
     import std.path : extension;
     import tagion.basic.Types : DOT;
@@ -537,7 +536,6 @@ string fileExtension(string path) {
     assert(0);
 }
 
-@safe
 unittest {
     import tagion.basic.Types : FileExtension;
     import std.path : setExtension;

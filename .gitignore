@@ -32,7 +32,7 @@ revision.d
 .root
 
 # Temporary files and directories
-.tmp
+*.tmp
 build
 logs
 tools/*
