@@ -12,8 +12,10 @@ int _main(string[] args) {
     auto wallet_feature = automation!(Wallet_generation)();
     auto wallet_context = wallet_feature.run;
 
-    "/tmp/wallet_result.hibon".fwrite(*wallet_context.result);
+    auto dart_feature = automation!(Boot_wallet)();
+    dart_feature.GenerateDartboot(wallet_context.SevenWalletsWillBeGenerated);
 
+    auto dart_context = dart_feature.run;
     //    auto wallet_invoice = automation!(Create_wallet_dart)();
 
     // wallet_invoice.GenerateGENESISInvoice(wallet_result);
