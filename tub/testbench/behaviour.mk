@@ -8,8 +8,6 @@ ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
 BDD_MD_FILES=${shell find $(BDD) -name "*.md" -a -not -name "*.gen.md"}
 
 bddtest: | bddtagion bddfiles bddinit bddenv bddrun bddreport
-	$(PRECMD)
-
 
 
 .PHONY: bddtest bddfiles bddtagion

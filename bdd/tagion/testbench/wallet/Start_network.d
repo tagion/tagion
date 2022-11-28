@@ -58,11 +58,11 @@ class StartNetworkInModeone
         {
             immutable node_dart = env.bdd_log.buildPath(format("dart%s.drt", i));
             writeln(node_dart);
-            writeln(format("--boot=%s", boot_file_path));
-            writeln(format("--dart-path=", node_dart));
-            writeln(format("--port=%s", 4000 + i));
-            writeln(format("--transaction-port=%s", 10800 + i));
-            writeln(format("--logger-filename=node-%s.log", i));
+            writefln("--boot=%s", boot_file_path);
+            writefln("--dart-path=%s", node_dart);
+            writefln("--port=%s", 4000 + i);
+            writefln("--transaction-port=%s", 10800 + i);
+            writefln("--logger-filename=node-%s.log", i);
             immutable node_command = [
                 "screen",
                 "-S",
@@ -73,7 +73,7 @@ class StartNetworkInModeone
                 format("--boot=%s", boot_file_path),
                 "--dart-init=true",
                 "--dart-synchronize=true",
-                format("--dart-path=", node_dart),
+                format("--dart-path=%s", node_dart),
                 format("--port=%s", 4000 + i),
                 format("--transaction-port=%s", 10800 + i),
                 format("--logger-filename=node-%s.log", i),
@@ -93,7 +93,7 @@ class StartNetworkInModeone
             format("--boot=%s", boot_file_path),
             "--dart-init=false",
             "--dart-synchronize=false",
-            format("--dart-path=", dart.dart_path),
+            format("--dart-path=%s", dart.dart_path),
             format("--port=%s", 4020),
             format("--transaction-port=%s", 10820),
             "--logger-filename=node-master.log",
@@ -117,5 +117,4 @@ class StartNetworkInModeone
     {
         return Document();
     }
-
 }
