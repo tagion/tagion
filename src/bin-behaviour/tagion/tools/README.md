@@ -1,4 +1,5 @@
 - [BDD documentation](#bdd-documentation)
+- [List of BDDs](#list-of-bdds)
   - [Structure](#structure)
   - [Commands](#commands)
     - [Help](#help)
@@ -11,6 +12,10 @@
 
 # BDD documentation
 The following md file contains documentation on how to develop with bdds. For a general understanding of what BDD's are please see: [Continous_Delivery_What_is_BDD](https://www.youtube.com/watch?v=zYj70EsD7uI).
+
+# List of BDDs
+For a complete list of BDD's that have been created see: [BDDs](../../../../bdd/BDDS.md)
+
 ## Structure
 `bdd/tagion/testbench`
 
