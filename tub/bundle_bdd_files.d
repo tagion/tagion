@@ -10,7 +10,7 @@ import std.string;
 
 auto get_md_paths(string pathname)
 {    
-    return dirEntries(pathname, SpanMode.depth)
+    return dirEntries(buildPath(pathname, "tagion"), SpanMode.depth)
         .filter!(f => f.name.endsWith(".md"))
         .filter!(f => !f.name.endsWith(".gen.md"))
         .array;

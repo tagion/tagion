@@ -38,5 +38,3 @@
 
 [HiRPC_format_check.md](tagion/testbench/communication/HiRPC_format_check.md)
 
-[BDDS.md](BDDS.md)
-
