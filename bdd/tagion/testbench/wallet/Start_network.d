@@ -127,6 +127,7 @@ class StartNetworkInModeone
             ];
             auto health_pipe = pipeProcess(health_command, Redirect.all, null, Config.detached);
             writefln("%s", health_pipe.stdout.byLine);
+            in_graph = true;
         }
         return Document();
     }

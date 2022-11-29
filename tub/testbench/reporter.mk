@@ -43,7 +43,7 @@ clean: clean-reporter
 
 reporter-start:  $(VIEWER_STARTED)  
 
-$(VIEWER_STARTED): $(BDD_LOG)/.way 
+# $(VIEWER_STARTED): $(BDD_LOG)/.way 
 
 
 $(VIEWER_STARTED):
