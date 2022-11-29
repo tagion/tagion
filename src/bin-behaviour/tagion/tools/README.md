@@ -16,6 +16,8 @@
   - [Creating a new BDD](#creating-a-new-bdd)
     - [Create a .md file for the feature](#create-a-md-file-for-the-feature)
     - [Main file for the feature](#main-file-for-the-feature)
+  - [BDD re-usage](#bdd-re-usage)
+    - [Re-using](#re-using)
 
 # BDD documentation
 The following md file contains documentation on how to develop with bdds. For a general understanding of what BDD's are please see: [Continous_Delivery_What_is_BDD](https://www.youtube.com/watch?v=zYj70EsD7uI).
@@ -126,6 +128,27 @@ This will generate a `.gen.md`, and `.d` file.
 Create a "main" file and import this file in `testbench.d` and give it an alias ex. like the file `bdd_wallets.d`. You can use on of the other files as an example. Inside the main file remember to import your package inside your folder. 
 
 Now you can run make `bddtest` to run your created BDD. 
+
+## BDD re-usage
+It is possible to get an object after running a feature. This object can be imported into another feature. Thereby the BDD's can be linked on code that has been "verified" works. 
+### Re-using
+In your main file give the previous feature object as a input to an constructor:
+
+```
+auto wallet_feature = automation!(Wallet_generation)();
+// save the context
+auto wallet_context = wallet_feature.run;
+
+auto dart_feature = automation!(Boot_wallet)();
+// run the constructor
+dart_feature.GenerateDartboot(wallet_context.WalletsWillBeGenerated);
+auto dart_context = dart_feature.run;
+
+auto start_network_feature = automation!(Start_network)();
+start_network_feature.StartNetworkInModeone(
+wallet_context.SevenWalletsWillBeGenerated, dart_context.GenerateDartboot);
+auto start_network_context = start_network_feature.run;
+```
 
 
 
