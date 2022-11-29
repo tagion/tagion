@@ -307,6 +307,65 @@ else
 
 version (OLD_TRANSACTION)
 {
+    unittest {
+        import std.stdio : writefln, writeln;
+        import tagion.crypto.SecureNet;
+        import tagion.hibon.HiBON;
+
+
+        const net = new StdSecureNet;
+        SecureNet alice = new StdSecureNet;
+        {
+            alice.generateKeyPair("Alice's secret password");
+        }
+        auto bob = new StdSecureNet;
+        {
+            bob.generateKeyPair("Bob's secret password");
+        }
+        uint epoch = 42;
+        SmartScript createSSC(TagionCurrency amount){
+            auto input_bill = StandardBill(1000.TGN, epoch, alice.pubkey, null);
+
+            SignedContract ssc;
+            Contract contract;
+
+            contract.inputs = new [ net.hashOf(input_bill) ];
+            contract.outputs[bob.pubkey] = amount.toDoc;
+            contract.script = Script("pay");
+
+            ssc.contract = contract;
+            ssc.signs = new [ net.sign(contract.toDoc) ];
+            ssc.inputs = new [ input_bill ];
+        }
+        /// SmartScript reject contracts without fee included
+        {
+            auto ssc = createSSC(1000.TGN);
+            auto smart_script = new SmartScript(ssc);
+            const code = smart_script.run(epoch + 1);
+
+            assert(code == ConsensusFailCode
+                        .SMARTSCRIPT_INVALID_OUTPUT)
+        }
+        /// SmartScript accept contracts with fee included
+        {
+            auto ssc = createSSC(1000.TGN - Globals.fees());
+            auto smart_script = new SmartScript(ssc);
+            const code = smart_script.run(epoch + 1);
+
+            assert(code == ConsensusFailCode
+                        .NONE)
+        }
+
+        /// SmartScript accept contracts with output less then input
+        {
+            auto ssc = createSSC(900.TGN - Globals.fees());
+            auto smart_script = new SmartScript(ssc);
+            const code = smart_script.run(epoch + 1);
+
+            assert(code == ConsensusFailCode
+                        .NONE)
+        }
+    }
 }
 else
 {
