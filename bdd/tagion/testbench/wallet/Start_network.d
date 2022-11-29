@@ -7,6 +7,7 @@ import std.path;
 import std.string;
 import std.array;
 import std.file;
+import core.thread;
 
 // Default import list for bdd
 import tagion.behaviour;
@@ -108,15 +109,30 @@ class StartNetworkInModeone
             "-N",
             "7",
         ];
-        auto node_master_pipe = pipeProcess(node_master_command, Redirect.all, null, Config.detached);
+        auto node_master_pipe = pipeProcess(node_master_command, Redirect.all, null, Config
+                .detached);
         writefln("%s", node_master_pipe.stdout.byLine);
 
         return result_ok;
     }
 
     @Then("the nodes should be in_graph")
-    Document ingraph()
+    Document ingraph() @trusted
     {
+        bool in_graph = false;
+
+        while (!in_graph)
+        {
+            immutable health_command = [
+                tools.tagionwallet,
+                "--port",
+                "10801",
+                "--health"
+            ];
+            auto health_pipe = pipeProcess(health_command, Redirect.all, null, Config.detached);
+            writefln("%s", health_pipe.stdout.byLine);
+
+        }
 
         return Document();
     }
