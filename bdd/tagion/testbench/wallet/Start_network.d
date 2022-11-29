@@ -27,6 +27,8 @@ class StartNetworkInModeone
     SevenWalletsWillBeGenerated wallets;
     GenerateDartboot dart;
     const number_of_nodes = 7;
+    string[] node_logs;
+    string[] node_darts;
 
     this(SevenWalletsWillBeGenerated wallets, GenerateDartboot dart)
     {
@@ -57,12 +59,15 @@ class StartNetworkInModeone
         for (int i = 1; i < number_of_nodes; i++)
         {
             immutable node_dart = env.bdd_log.buildPath(format("dart%s.drt", i));
-            writeln(node_dart);
-            writefln("--boot=%s", boot_file_path);
-            writefln("--dart-path=%s", node_dart);
-            writefln("--port=%s", 4000 + i);
-            writefln("--transaction-port=%s", 10800 + i);
-            writefln("--logger-filename=node-%s.log", i);
+            immutable node_log = env.bdd_log.buildPath(format("node-%s.log", i));
+            node_darts ~= node_dart;
+            node_logs ~= node_log;
+            // writeln(node_dart);
+            // writefln("--boot=%s", boot_file_path);
+            // writefln("--dart-path=%s", node_dart);
+            // writefln("--port=%s", 4000 + i);
+            // writefln("--transaction-port=%s", 10800 + i);
+            // writefln("--logger-filename=node-%s.log", i);
             immutable node_command = [
                 "screen",
                 "-S",
@@ -76,17 +81,20 @@ class StartNetworkInModeone
                 format("--dart-path=%s", node_dart),
                 format("--port=%s", 4000 + i),
                 format("--transaction-port=%s", 10800 + i),
-                format("--logger-filename=node-%s.log", i),
+                format("--logger-filename=%s", node_log),
                 "-N",
                 "7",
             ];
             auto node_pipe = pipeProcess(node_command, Redirect.all, null, Config.detached);
             writefln("%s", node_pipe.stdout.byLine);
         }
+        immutable node_master_log = env.bdd_log.buildPath("node-master.log");
+        node_logs ~= node_master_log;
+        node_darts ~= dart.dart_path;
         immutable node_master_command = [
             "screen",
             "-S",
-            "testnet",
+            "testnet-master",
             "-dm",
             tools.tagionwave,
             "--net-mode=local",
@@ -96,19 +104,20 @@ class StartNetworkInModeone
             format("--dart-path=%s", dart.dart_path),
             format("--port=%s", 4020),
             format("--transaction-port=%s", 10820),
-            "--logger-filename=node-master.log",
+            format("--logger-filename=%s", node_master_log),
             "-N",
             "7",
         ];
         auto node_master_pipe = pipeProcess(node_master_command, Redirect.all, null, Config.detached);
         writefln("%s", node_master_pipe.stdout.byLine);
 
-        return Document();
+        return result_ok;
     }
 
     @Then("the nodes should be in_graph")
     Document ingraph()
     {
+
         return Document();
     }
 
