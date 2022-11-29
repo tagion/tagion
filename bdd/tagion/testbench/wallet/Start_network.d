@@ -30,6 +30,7 @@ class StartNetworkInModeone
     const number_of_nodes = 7;
     string[] node_logs;
     string[] node_darts;
+    const tagionwave = "/home/imrying/bin/tagionwave";
 
     this(SevenWalletsWillBeGenerated wallets, GenerateDartboot dart)
     {
@@ -63,18 +64,13 @@ class StartNetworkInModeone
             immutable node_log = env.bdd_log.buildPath(format("node-%s.log", i));
             node_darts ~= node_dart;
             node_logs ~= node_log;
-            // writeln(node_dart);
-            // writefln("--boot=%s", boot_file_path);
-            // writefln("--dart-path=%s", node_dart);
-            // writefln("--port=%s", 4000 + i);
-            // writefln("--transaction-port=%s", 10800 + i);
-            // writefln("--logger-filename=node-%s.log", i);
+
             immutable node_command = [
                 "screen",
                 "-S",
                 "testnet",
                 "-dm",
-                tools.tagionwave,
+                tagionwave,
                 "--net-mode=local",
                 format("--boot=%s", boot_file_path),
                 "--dart-init=true",
@@ -97,7 +93,7 @@ class StartNetworkInModeone
             "-S",
             "testnet-master",
             "-dm",
-            tools.tagionwave,
+            tagionwave,
             "--net-mode=local",
             format("--boot=%s", boot_file_path),
             "--dart-init=false",
@@ -131,9 +127,7 @@ class StartNetworkInModeone
             ];
             auto health_pipe = pipeProcess(health_command, Redirect.all, null, Config.detached);
             writefln("%s", health_pipe.stdout.byLine);
-
         }
-
         return Document();
     }
 
