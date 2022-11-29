@@ -117,18 +117,18 @@ class StartNetworkInModeone
     {
         bool in_graph = false;
 
-        while (!in_graph)
-        {
-            immutable health_command = [
-                tools.tagionwallet,
-                "--port",
-                "10801",
-                "--health"
-            ];
-            auto health_pipe = pipeProcess(health_command, Redirect.all, null, Config.detached);
-            writefln("%s", health_pipe.stdout.byLine);
-            in_graph = true;
-        }
+        // while (!in_graph)
+        // {
+        //     immutable health_command = [
+        //         tools.tagionwallet,
+        //         "--port",
+        //         "10801",
+        //         "--health"
+        //     ];
+        //     auto health_pipe = pipeProcess(health_command, Redirect.all, null, Config.detached);
+        //     writefln("%s", health_pipe.stdout.byLine);
+        //     in_graph = true;
+        // }
         return Document();
     }
 

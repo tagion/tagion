@@ -51,7 +51,7 @@ The tests performed in this feature should be performed on a simple transfer con
 `HandlingContractFromTheTransactionService`
 
 *Given* one of transfer-contract should be sent to the Collector service
-
+<!-- given transfer-contract is sent to the collector service -->
 `service`
 
 *When* Collector services receive the contract
@@ -62,6 +62,7 @@ The tests performed in this feature should be performed on a simple transfer con
 
 `dART`
 
+<!-- remove when -->
 *Then* when the Collector services collected the input the smart contract should be check
 according to the Smart Contract Consensus
 
@@ -70,7 +71,7 @@ according to the Smart Contract Consensus
 *Then* the inputs should be added to a list in the collector services.
 
 `services`
-
+<!-- consensus rules? -->
 *Then* if the contract complies with the consensus rules the contract should be sent to the HashGraph.
 
 `hashGraph`
@@ -97,7 +98,7 @@ according to the Smart Contract Consensus
 *When* the Collector services should collect the inputs  from the DART
 
 `dART`
-
+<!-- remove when -->
 *Then* when the Collector services collected the input the smart contract should be check
 according to the Smart Contract Consensus
 
@@ -106,7 +107,7 @@ according to the Smart Contract Consensus
 *Then* the inputs should be added to a list in the collector services.
 
 `services`
-
+<!-- if it is after payload from hashgraph why send the payload back to the hashgraph -->
 *Then* if the contract complies with the consensus rules the contract should be sent to the HashGraph.
 Note. In this case, the smart contract should not be sent back to the HashGraph.
 
@@ -120,7 +121,7 @@ Note. In this case, the smart contract should not be sent back to the HashGraph
 
 ### Scenario: the contract handling should be repeated
 `TheContractHandlingShouldBeRepeated`
-
+<!-- add another scenario called @transaction -->
 *Given* a number of contracts, the contracts should be selected for scenario @transaction or @hashgraph
 
 `hashgraph`
@@ -134,7 +135,7 @@ Note. In this case, the smart contract should not be sent back to the HashGraph
 @transcript
 
 `TheTranscriptServicesShouldRequestInputsFromTheCollectorServices`
-
+<!-- hash instead of fingerprint -->
 *Given* a selected list of smart-contracts the fingerprints of those inputs should be listed
 
 `beListed`
@@ -144,9 +145,10 @@ Note. In this case, the smart contract should not be sent back to the HashGraph
 `collectorServices`
 
 *Then* the collector services receive the list of fingerprints the collector services should collect all the inputs in the list and send it back to the Transcript services.
-If some of the fingerprints in not available those inputs should not be added to the list send back to the Transcript services.
+If some of the fingerprints are not available those inputs should not be added to the list that is sent back to the Transcript services.
 The Collector services should remove all the inputs sent back from the collector list.
-
+<!-- removed from where -->
+<!-- is it not better to mark that you have non valid inputs? -->
 
 `transcriptServices`
 
@@ -158,7 +160,11 @@ The Collector services should remove all the inputs sent back from the collector
 
 `list`
 
-*When* the @transcript has been performed the check that all the inputs have been collected
+*When* the @transcript has been performed 
+
+`performed`
+
+*Then* check that all the inputs have been collected
 
 `collected`
 
@@ -174,15 +180,15 @@ The Collector services should remove all the inputs sent back from the collector
 
 `dART`
 
-*Given* a part of the list L call M the scenario @transaction should be performed.
+*Given* a part of the list L called M the scenario @transaction should be performed.
 
 `performed`
 
-*When* all the input in list M should be received by the Transcript services.
+*When* all the inputs in list M are received by the Transcript services.
 
 `services`
 
-*Then* @transcript should be performed on L and the inputs should on includes the inputs of L which excludes the inputs in list M.
+*Then* @transcript should be performed on L and the inputs should include the inputs of L which excludes the inputs in list M.
 
 `listM`
 
