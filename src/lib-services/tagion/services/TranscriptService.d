@@ -133,7 +133,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
 
                 const payload_doc = Document(payloads_buff);
                 log("Received epoch: len:%d", payload_doc.length);
-
+                log("Received epoch full : %s", payload_doc.toJSON);
                 scope bool[Buffer] used_inputs;
                 scope (exit)
                 {
@@ -154,12 +154,12 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     log("Executing contract: %s", doc.toJSON);
 
                     bool invalid;
-                    ForachInput: foreach (input; signed_contract.contract.inputs)
+                    foreach (input; signed_contract.contract.inputs)
                     {
                         if (input in used_inputs)
                         {
                             invalid = true;
-                            break ForachInput;
+                            // break ForachInput;
                         }
                         else
                         {
@@ -206,6 +206,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     log("Sending to DART len: %d", recorder.length);
                     recorder.dump;
                     auto bullseye = modifyDART(recorder);
+                    log("Current dart bullseye", Document(bullseye).toJSON);
 
                     dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), Fingerprint(bullseye));
                 }
