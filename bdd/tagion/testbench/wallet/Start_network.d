@@ -7,6 +7,7 @@ import std.path;
 import std.string;
 import std.array;
 import std.file;
+import core.thread;
 
 // Default import list for bdd
 import tagion.behaviour;
@@ -27,6 +28,9 @@ class StartNetworkInModeone
     SevenWalletsWillBeGenerated wallets;
     GenerateDartboot dart;
     const number_of_nodes = 7;
+    string[] node_logs;
+    string[] node_darts;
+    const tagionwave = "/home/imrying/bin/tagionwave";
 
     this(SevenWalletsWillBeGenerated wallets, GenerateDartboot dart)
     {
@@ -57,58 +61,74 @@ class StartNetworkInModeone
         for (int i = 1; i < number_of_nodes; i++)
         {
             immutable node_dart = env.bdd_log.buildPath(format("dart%s.drt", i));
-            writeln(node_dart);
-            writeln(format("--boot=%s", boot_file_path));
-            writeln(format("--dart-path=", node_dart));
-            writeln(format("--port=%s", 4000 + i));
-            writeln(format("--transaction-port=%s", 10800 + i));
-            writeln(format("--logger-filename=node-%s.log", i));
+            immutable node_log = env.bdd_log.buildPath(format("node-%s.log", i));
+            node_darts ~= node_dart;
+            node_logs ~= node_log;
+
             immutable node_command = [
                 "screen",
                 "-S",
                 "testnet",
                 "-dm",
-                tools.tagionwave,
+                tagionwave,
                 "--net-mode=local",
                 format("--boot=%s", boot_file_path),
                 "--dart-init=true",
                 "--dart-synchronize=true",
-                format("--dart-path=", node_dart),
+                format("--dart-path=%s", node_dart),
                 format("--port=%s", 4000 + i),
                 format("--transaction-port=%s", 10800 + i),
-                format("--logger-filename=node-%s.log", i),
+                format("--logger-filename=%s", node_log),
                 "-N",
                 "7",
             ];
             auto node_pipe = pipeProcess(node_command, Redirect.all, null, Config.detached);
             writefln("%s", node_pipe.stdout.byLine);
         }
+        immutable node_master_log = env.bdd_log.buildPath("node-master.log");
+        node_logs ~= node_master_log;
+        node_darts ~= dart.dart_path;
         immutable node_master_command = [
             "screen",
             "-S",
-            "testnet",
+            "testnet-master",
             "-dm",
-            tools.tagionwave,
+            tagionwave,
             "--net-mode=local",
             format("--boot=%s", boot_file_path),
             "--dart-init=false",
             "--dart-synchronize=false",
-            format("--dart-path=", dart.dart_path),
+            format("--dart-path=%s", dart.dart_path),
             format("--port=%s", 4020),
             format("--transaction-port=%s", 10820),
-            "--logger-filename=node-master.log",
+            format("--logger-filename=%s", node_master_log),
             "-N",
             "7",
         ];
-        auto node_master_pipe = pipeProcess(node_master_command, Redirect.all, null, Config.detached);
+        auto node_master_pipe = pipeProcess(node_master_command, Redirect.all, null, Config
+                .detached);
         writefln("%s", node_master_pipe.stdout.byLine);
 
-        return Document();
+        return result_ok;
     }
 
     @Then("the nodes should be in_graph")
-    Document ingraph()
+    Document ingraph() @trusted
     {
+        bool in_graph = false;
+
+        // while (!in_graph)
+        // {
+        //     immutable health_command = [
+        //         tools.tagionwallet,
+        //         "--port",
+        //         "10801",
+        //         "--health"
+        //     ];
+        //     auto health_pipe = pipeProcess(health_command, Redirect.all, null, Config.detached);
+        //     writefln("%s", health_pipe.stdout.byLine);
+        //     in_graph = true;
+        // }
         return Document();
     }
 
@@ -117,5 +137,4 @@ class StartNetworkInModeone
     {
         return Document();
     }
-
 }

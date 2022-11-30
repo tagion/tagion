@@ -1,4 +1,5 @@
 ## Feature: Transaction service.
+
 The transaction service should act as a gate-keeper to validate smart-contract before they are send to the network.
 The transaction service should be able to receive HiRPC which is checked before it sends to and send to the Collector services.
 A data-package is defined as a string of bytes that a send to the transaction service.
@@ -16,11 +17,9 @@ A data-package is defined as a string of bytes that a send to the transaction se
 *Given* that a connection to the logs on the transaction service.
 
 `theTransactionService`
-
 *Given* the data package is sent to the selected active node A in the network.
 
 `inTheNetwork`
-
 *When* the data package has been received by the network.
 
 `byTheNetwork`
@@ -36,13 +35,11 @@ if the size is larger than the maximum size.
 
 
 ### Scenario: a malformed data packed should be rejected
-
 `AMalformedDataPackedShouldBeRejected`
 
 *Given* a data package is not a correctly HiRPC format.
 
 `format`
-
 *When* the data package has been received by the network.
 
 `network`
@@ -51,7 +48,6 @@ if the size is larger than the maximum size.
 and if the package is invalid then the should be rejected.
 
 `hiRPC`
-
 *But* the data package should not be sent to the Collector Service
 
 `service`
@@ -60,7 +56,6 @@ and if the package is invalid then the should be rejected.
 ### Scenario: a data package that is not a HiRPC
 
 `ADataPackageThatIsNotAHiRPC`
-
 *Given* a data package that is not a correct HiRPC.
 
 `hiRPC`
@@ -77,11 +72,9 @@ and if the package is invalid then the should be rejected.
 ### Scenario: corrected format HiRPC.
 
 `CorrectedFormatHiRPC`
-
 *Given* a correctly formatted transaction.
 
 `transaction`
-
 *When* the data package has been received by the network.
 
 `network`
@@ -97,5 +90,4 @@ and if the package is invalid then the should be rejected.
 *Then* check that the Collector services received the package.
 
 `checkPackage`
-
 

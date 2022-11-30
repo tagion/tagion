@@ -341,8 +341,7 @@ int check_reports(string[] paths, const bool verbose) {
             try {
                 const feature_group = report_file.fread!FeatureGroup;
                 const feature_test_code = testCode(feature_group);
-                feature_count
-                    .update(feature_test_code);
+                feature_count.update(feature_test_code);
                 if (show(feature_test_code)) {
                     writefln("Report file %s", report_file);
                 }
@@ -350,10 +349,9 @@ int check_reports(string[] paths, const bool verbose) {
                 report(feature_test_code, feature_group.info.property.description);
                 const show_scenario = feature_test_code == TestCode
                     .error || feature_test_code == TestCode.started;
-                foreach (scenario_group; feature_group
-                        .scenarios) {
+                foreach (scenario_group; feature_group.scenarios) {
                     const scenario_test_code = testCode(scenario_group);
-                    scenario_count.update(feature_test_code);
+                    scenario_count.update(scenario_test_code);
                     if (show_scenario) {
                         report(scenario_test_code, "\t%s", scenario_group.info.property
                                 .description);

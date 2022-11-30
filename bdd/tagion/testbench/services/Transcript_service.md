@@ -54,5 +54,3 @@ And all the smart contracts which use the same input should be given processed b
 *Then* the Recorder received by DART-Services should be checked that it contains the correct modifications and check that the penalty has been performed on the inputs which are used in multiple contracts.
 
 `contracts`
-
-

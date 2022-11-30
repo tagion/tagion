@@ -2,26 +2,46 @@
 TESTPROGRAM=$(DBIN)/$(TESTMAIN)
 TESTENV=$(DBIN)/bddenv.sh
 BDDTESTS=${addprefix run-,$(BDDS)}
-#BDDTESTS=${addprefix $(DBIN)/,$(BDDS)}
 
-bddtest: bddfiles bddinit bddenv bddrun 
+ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
 
-.PHONY: bddtest bddfiles
+BDD_MD_FILES=${shell find $(BDD) -name "*.md" -a -not -name "*.gen.md"}
 
-bddfiles: behaviour
+bddtest: | bddtagion bddfiles bddinit bddenv bddrun bddreport
+
+
+.PHONY: bddtest bddfiles bddtagion
+
+bddtagion: tagion
+	$(PRECMD)
+	$(DBIN)/tagion -f
+
+bddfiles: behaviour bddcontent
 	$(PRECMD)
 	$(BEHAVIOUR) $(BDD_FLAGS)
 
+.PHONY: bddcontent
+
+bddcontent: 
+	$(PRECMD)
+	$(DTUB)/bundle_bdd_files.d
+
 bddrun: $(BDDTESTS) 
-	echo $<
-	echo RUN
 
 .PHONY: bddrun
 
 run-%: bddfiles bddinit bddenv
 	$(PRECMD)
-	${call log.header. $@ :: run}
+	${call log.header, $* :: run bdd}
 	$(DBIN)/$* $(RUNFLAGS)
+
+test-%: run-%
+	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
+	$(BEHAVIOUR) -c $(BDD_RESULTS)
+
+ddd-%: bddfiles 
+	$(PRECMD)
+	$(DEBUGGER) $(DBIN)/$* $(RUNFLAGS)
 
 bddenv: $(TESTENV)
 
@@ -32,9 +52,26 @@ $(TESTENV):
 
 .PHONY: $(TESTENV)
 
+startreporter.sh:
+	$(PRECMD)
+	$(SCRIPTS)/genreporter.sh $@
+
 bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way
 	$(PRECMD)
 	$(TESTPROGRAM) -f
+
+bddreport: target-hibonutil
+	$(PRECMD)
+	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
+	$(BEHAVIOUR) -cv $(BDD_RESULTS)
+
+%.md.tmp: %.md
+	$(PRECMD)
+	iconv -t US-ASCII -t UTF-8//TRANSLIT//IGNORE $< > $@
+	mv $@ $<
+
+
+bddstrip: $(BDD_MD_FILES:.md=.md.tmp)
 
 env-bdd:
 	$(PRECMD)
@@ -42,6 +79,7 @@ env-bdd:
 	${call log.env, BDD_FLAGS, $(BDD_FLAGS)}
 	${call log.env, BDD_DFLAGS, $(BDD_DFLAGS)}
 	${call log.env, BDD_DFILES, $(BDD_DFILES)}
+	${call log.env, BDD_MD_FILES, $(BDD_MD_FILES)}
 	${call log.env, TESTENV, $(TESTENV)}
 	${call log.env, BDDS, $(BDDS)}
 	${call log.close}
@@ -50,19 +88,29 @@ env-bdd:
 
 env: env-bdd
 
+list-bdd: 
+	$(PRECMD)
+	${call log.header, $@ :: list}
+	${call log.env, BDDS, $(BDDS)}
+	${call log.close}
+
 help-bdd:
 	$(PRECMD)
 	${call log.header, $@ :: help}
 	${call log.help, "make help-bdd", "Will display this part"}
 	${call log.help, "make bddtest", "Builds and executes all BDD's"}
-	${call log.help, "make bddrub", "Compiles and links all the BDD executables"}
+	${call log.help, "make bddrun", "Executes the already compiled BDD's"}
 	${call log.help, "make run-<bddname>", "Runs the <bddname>"}
+	${call log.help, "make test-<bddname>", "Runs the <bddname> and print out the tests"}
 	${call log.help, "make bddreport", "Produce visualization of the BDD-reports"}
 	${call log.help, "make bddfiles", "Generates the bdd files"}
 	${call log.help, "make bddenv", "Generates a environment test script"}
 	${call log.help, "make bddinit", "Initialize the testbench tool"}
+	${call log.help, "make bddstrip", "Strips bad chars from BDD markdown files "}
 	${call log.help, "make behaviour", "Builds the BDD tool"}
-	${call log.help, "make clean-bdd", "Will remove the bdd log files and the testbecch"}
+	${call log.help, "make clean-bddtest", "Will remove the bdd log files"}
+	${call log.help, "make clean-reports", "Remove all the bdd reports"}
+	${call log.help, "make list-bdd", "List all bdd targets"}
 	${call log.close}
 
 .PHONY: help-bdd
@@ -70,13 +118,14 @@ help-bdd:
 help: help-bdd
 
 # del hibon filse
-clean-bdd:
+clean-bddtest:
 	$(PRECMD)
 	${call log.header, $@ :: clean}
 	$(RMDIR) $(BDD_LOG)
 
-.PHONY: help-bdd
+clean: clean-bddtest
 
-clean: clean-bdd
-
+clean-reports:
+	$(PRECMD)
+	$(RMDIR) $(BDD_RESULTS)
 
