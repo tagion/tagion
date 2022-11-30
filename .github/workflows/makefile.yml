@@ -7,7 +7,7 @@ on:
 env:
   ## Sets environment variable
   TARGET_BUILD: x86_64-linux
-  PARALEL: 1
+  PARALEL: 2
   RETENTION_DAYS_BINS: 3
   TAGION_CACHE_DIR: ~/tagion_cache 
   RUN_SCENARIOUS_PARALEL: true
@@ -163,6 +163,7 @@ jobs:
 
       - name: Run scripts in paralel 
         if: env.RUN_SCENARIOUS_PARALEL == 'true'
+        timeout-minutes: 10
         run: |
           set +e
           mkdir scenario-result
@@ -193,6 +194,7 @@ jobs:
           done  
       - name: Run scripts in sequentially 
         if: env.RUN_SCENARIOUS_PARALEL != 'true'
+        timeout-minutes: 10
         run: |
           mkdir scenario-result
           for SCENARIO in ${{ needs.create_tagion_images.outputs.scenario_list }}; do
@@ -264,3 +266,9 @@ jobs:
       - name: Clean logs
         if: always()
         run: sudo rm -rf scenario-result
+        
+      - name: Clean docker container
+        if: always()
+        run: |
+          docker kill $(docker ps -q)
+          docker rm $(docker ps -a -q)
