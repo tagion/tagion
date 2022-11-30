@@ -1,6 +1,6 @@
 ## Feature: Transcript service
 This service takes care of processing the consensus-ordered list of smart-contracts (here in called an epoch list).
-The service should execute the smart-contracts in-order and send the modification updates to the DART-Service.
+The service should execute the smart-contracts in-order and sends the modifications updates to the DART-Service.
 
 `tagion.testbench.services.Transcript_service`
 
@@ -20,12 +20,7 @@ The service should execute the smart-contracts in-order and send the modificatio
 
 `theTranscriptServices`
 
-*When* the transcript service has been executed the smart-contracts. 
-
-`executedSmartContracts`
-
-*Then*
-Then the produced Recorder should be sent to the DART-Services
+*When* the transcript services have executed the smart-contracts the Recorder produces should be sent to the DART-Services
 
 `toTheDARTServices`
 
@@ -44,7 +39,7 @@ And all the smart contracts which use the same input should be given processed b
 
 `service`
 
-*Given* an epoch-list where some of the inputs are used multiple times.
+*Given* an epoch-list where some of the inputs are used multiple time.
 
 `time`
 
@@ -52,13 +47,10 @@ And all the smart contracts which use the same input should be given processed b
 
 `services`
 
-*When* the transcript service has executed the smart-contract produces a Recorder that should be sent to the DART-Services
+*When* the transcript services have been executed the smart-contracts the Recorder produces should be sent to the DART-Services
 
 `dARTServices`
 
 *Then* the Recorder received by DART-Services should be checked that it contains the correct modifications and check that the penalty has been performed on the inputs which are used in multiple contracts.
 
 `contracts`
-<!-- what if there are no valid money in the transaction -->
-
-<!-- how do we do a penalty. Because if try to do double-spend with same wallet then it is not guaranteed to have any money left -->
