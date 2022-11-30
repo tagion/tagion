@@ -52,6 +52,10 @@ $(TESTENV):
 
 .PHONY: $(TESTENV)
 
+startreporter.sh:
+	$(PRECMD)
+	$(SCRIPTS)/genreporter.sh $@
+
 bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way
 	$(PRECMD)
 	$(TESTPROGRAM) -f
