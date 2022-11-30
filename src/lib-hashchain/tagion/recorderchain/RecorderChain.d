@@ -20,23 +20,25 @@ alias RecorderChainFileStorage = HashChainFileStorage!RecorderChainBlock;
 
 unittest
 {
-    import std.file : rmdirRecurse, copy;
+    import std.file;
+    import std.path;
     import std.range : empty;
 
-    import tagion.basic.Basic : tempfile;
+    import tagion.basic.Basic : tempfile, fileId;
+    import tagion.basic.Types : FileExtension;
     import tagion.crypto.SecureNet : StdSecureNet;
     import tagion.crypto.SecureInterfaceNet : SecureNet;
     import tagion.dart.DART : DART;
     import tagion.dart.Recorder;
     import tagion.script.StandardRecords : StandardBill;
     import tagion.script.TagionCurrency : TGN;
+    import tagion.utils.Miscellaneous : toHexString;
 
     const temp_folder = tempfile ~ "/";
-    const chain_folder = temp_folder ~ "chain/";
 
-    const dart_filename = temp_folder ~ "dart.drt";
-    const dart_recovered_filename = temp_folder ~ "recovered.drt";
-    const dart_genesis_filename = temp_folder ~ "genesis.drt";
+    const dart_filename = fileId!RecorderChain(FileExtension.dart, "dart").fullpath;
+    const dart_recovered_filename = fileId!RecorderChain(FileExtension.dart, "recovered").fullpath;
+    const dart_genesis_filename = fileId!RecorderChain(FileExtension.dart, "genesis").fullpath;
 
     SecureNet net = new StdSecureNet;
     auto factory = RecordFactory(net);
@@ -64,7 +66,7 @@ unittest
     /// RecorderChain_replay_no_genesis
     {
         // Create empty recorder chain
-        RecorderChainStorage storage = new RecorderChainFileStorage(chain_folder, net);
+        RecorderChainStorage storage = new RecorderChainFileStorage(temp_folder, net);
         auto recorder_chain = new RecorderChain(storage);
 
         // Create empty DART
@@ -84,6 +86,8 @@ unittest
             auto previous_hash = last_block is null ? [] : last_block.getHash;
             recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc, previous_hash, dart.fingerprint, net));
         }
+
+        assert(recorder_chain.isValidChain);
 
         // Find last block with actual DART bullseye
         {
@@ -113,12 +117,14 @@ unittest
         assert(dart.fingerprint == dart_recovered.fingerprint);
 
         rmdirRecurse(temp_folder);
+        remove(dart_filename);
+        remove(dart_recovered_filename);
     }
 
     /// RecorderChain_replay_genesis
     {
         // Create empty recorder chain
-        RecorderChainStorage storage = new RecorderChainFileStorage(chain_folder, net);
+        RecorderChainStorage storage = new RecorderChainFileStorage(temp_folder, net);
         auto recorder_chain = new RecorderChain(storage);
 
         // Create empty DART
@@ -143,6 +149,8 @@ unittest
             auto previous_hash = last_block is null ? [] : last_block.getHash;
             recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc, previous_hash, dart.fingerprint, net));
         }
+
+        assert(recorder_chain.isValidChain);
 
         // Find last block with actual DART bullseye
         {
@@ -172,12 +180,15 @@ unittest
         assert(dart.fingerprint == dart_recovered.fingerprint);
 
         rmdirRecurse(temp_folder);
+        remove(dart_filename);
+        remove(dart_recovered_filename);
+        remove(dart_genesis_filename);
     }
 
     /// RecorderChain_replayFrom
     {
         // Create empty recorder chain
-        RecorderChainStorage storage = new RecorderChainFileStorage(chain_folder, net);
+        RecorderChainStorage storage = new RecorderChainFileStorage(temp_folder, net);
         auto recorder_chain = new RecorderChain(storage);
 
         // Create empty DART
@@ -205,13 +216,19 @@ unittest
             }
         }
 
+        auto recorder_chain_new = new RecorderChain(storage);
+
+        assert(recorder_chain.isValidChain);
+        assert(recorder_chain_new.isValidChain);
+
         // Find last block with actual DART bullseye
         {
-            auto block_last_bullseye = recorder_chain.storage.find(
+            auto block_last_bullseye = recorder_chain_new.storage.find(
                 (b) => b.bullseye == dart.fingerprint);
             assert(block_last_bullseye !is null);
             assert(
-                block_last_bullseye.toDoc.serialize == recorder_chain.getLastBlock.toDoc.serialize);
+                block_last_bullseye.toDoc.serialize == recorder_chain_new
+                    .getLastBlock.toDoc.serialize);
         }
 
         // Open outdated DART for recovery
@@ -220,7 +237,7 @@ unittest
 
         // Replay blocks from the middle of chain
         {
-            recorder_chain.replayFrom((RecorderChainBlock block) {
+            recorder_chain_new.replayFrom((RecorderChainBlock block) {
                 auto block_recorder = factory.recorder(block.recorder_doc);
                 dart_recovered.modify(block_recorder);
 
@@ -233,5 +250,65 @@ unittest
         assert(dart.fingerprint == dart_recovered.fingerprint);
 
         rmdirRecurse(temp_folder);
+        remove(dart_filename);
+        remove(dart_recovered_filename);
+    }
+
+    /// RecorderChain_invalid_chain
+    {
+        // Create empty recorder chain
+        RecorderChainStorage storage = new RecorderChainFileStorage(temp_folder, net);
+        auto recorder_chain = new RecorderChain(storage);
+
+        // Create empty DART
+        DART.create(dart_filename);
+        Exception dart_exception;
+        auto dart = new DART(net, dart_filename, dart_exception);
+        assert(dart_exception is null);
+
+        // In loop fill DART and add blocks
+        enum blocks_count = 10;
+        foreach (i; 0 .. blocks_count)
+        {
+            const bills_recorder = factory.recorder(makeBills(i));
+            dart.modify(bills_recorder, Add);
+
+            auto last_block = recorder_chain.getLastBlock;
+            auto previous_hash = last_block is null ? [] : last_block.getHash;
+            recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc, previous_hash, dart.fingerprint, net));
+        }
+
+        assert(recorder_chain.isValidChain);
+
+        // Remove one block from chain
+        {
+            auto some_hash = recorder_chain.storage.getHashes[0];
+            auto filename = buildPath(temp_folder, some_hash.toHexString.setExtension(
+                    FileExtension.recchainblock));
+            remove(filename);
+
+            // Chain shouldn't be valid anymore
+            assert(!recorder_chain.isValidChain);
+        }
+
+        // Create new empty DART for recovery
+        DART.create(dart_recovered_filename);
+        auto dart_recovered = new DART(net, dart_recovered_filename, dart_exception);
+        assert(dart_exception is null);
+
+        // Replay blocks
+        {
+            recorder_chain.replay((RecorderChainBlock block) {
+                auto block_recorder = factory.recorder(block.recorder_doc);
+                dart_recovered.modify(block_recorder);
+            });
+        }
+
+        // Bullseyes should not be the same
+        assert(dart.fingerprint != dart_recovered.fingerprint);
+
+        rmdirRecurse(temp_folder);
+        remove(dart_filename);
+        remove(dart_recovered_filename);
     }
 }
