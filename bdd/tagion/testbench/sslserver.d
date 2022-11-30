@@ -13,7 +13,7 @@ import tagion.network.SSLOptions;
 import tagion.services.Options;
 import tagion.testbench.tools.TestMain;
 import tagion.testbench.Environment;
-import tagion.testbench.tools.TimeOut;
+//import tagion.testbench.tools.TimeOut;
 
 import tagion.testbench.network;
 
@@ -26,7 +26,7 @@ void setDefault(ref SSLOptions options, const Options opt) {
 mixin Main!_main;
 
 int _main(string[] args) {
-    timeout(1.seconds);
+//    timeout(1.seconds);
     writefln("args=%s", args);
     auto setup = mainSetup!SSLOptions("sslserver", &setDefault);
     int result = testMain(setup, args);
