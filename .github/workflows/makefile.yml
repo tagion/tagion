@@ -270,5 +270,6 @@ jobs:
       - name: Clean docker container
         if: always()
         run: |
+          set +e
           docker kill $(docker ps -q) 2>/dev/null && echo $?
           docker rm $(docker ps -a -q) 2>/dev/null && echo $?
