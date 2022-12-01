@@ -79,8 +79,8 @@ void LoadCertificates(SSL_CTX* ctx, char* CertFile, char* KeyFile)
         abort();
     }
 }
-
-void ShowCerts(SSL* ssl) {
+void ShowCerts(SSL* ssl)
+{
     X509 *cert;
     char *line;
     cert = SSL_get_peer_certificate(ssl); /* Get certificates (if available) */
@@ -99,7 +99,8 @@ void ShowCerts(SSL* ssl) {
         printf("No certificates.\n");
 }
 
-int Servlet(SSL* ssl) { /* Serve the connection -- threadable */
+int Servlet(SSL* ssl) /* Serve the connection -- threadable */
+{
     char buf[1024] = {0};
     int sd, bytes;
     const char* ServerResponse="<\Body>\
@@ -122,21 +123,20 @@ int Servlet(SSL* ssl) { /* Serve the connection -- threadable */
         printf("Client msg: \"%s\"\n", buf);
         if ( bytes > 0 )
         {
-				SSL_write(ssl, buf, sizeof(buf));
+            SSL_write(ssl, ServerResponse, strlen(ServerResponse)); /* send reply */
         }
         else
         {
-
-				ERR_print_errors_fp(stderr);
+            ERR_print_errors_fp(stderr);
         }
     }
     sd = SSL_get_fd(ssl);       /* get socket connection */
     SSL_free(ssl);         /* release SSL state */
     close(sd);  /* close connection */
-	return (strcmp(buf, "EOC") != 0);
+    return (strcmp(buf, "EOC") != 0);
 }
-
-int main(int count, char *Argc[]) {
+int main(int count, char *Argc[])
+{
     SSL_CTX *ctx;
     int server;
     char *portnum;
@@ -165,9 +165,8 @@ int main(int count, char *Argc[]) {
 	/* initialize SSL */
     	LoadCertificates(ctx, "mycert.pem", "mycert.pem"); /* load certs */
 	}
-	server = OpenListener(atoi(portnum));    /* create server socket */
-    
-	int ret;
+		server = OpenListener(atoi(portnum));    /* create server socket */
+    while (1)
     {
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
@@ -176,10 +175,8 @@ int main(int count, char *Argc[]) {
         printf("Connection: %s:%d\n",inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
         ssl = SSL_new(ctx);              /* get new SSL state with context */
         SSL_set_fd(ssl, client);      /* set connection socket to SSL state */
-        ret = Servlet(ssl);         /* service connection */
+        Servlet(ssl);         /* service connection */
     }
-	while (ret) 
     close(server);          /* close server socket */
     SSL_CTX_free(ctx);         /* release context */
-	return 0;
 }
