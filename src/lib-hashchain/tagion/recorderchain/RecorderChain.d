@@ -45,20 +45,19 @@ unittest
 
     net.generateKeyPair("very secret password");
 
-    StandardBill[] makeBills(uint seed)
+    StandardBill[] makeBills(uint epoch)
     {
         SecureNet secure_net = new StdSecureNet;
         {
             secure_net.generateKeyPair("secure_net secret password");
         }
 
-        uint epoch = 42;
         StandardBill[] bills;
 
-        bills ~= StandardBill((1000 + seed * 10).TGN, epoch, secure_net.pubkey, null);
-        bills ~= StandardBill((1200 + seed * 10).TGN, epoch, secure_net.derivePubkey("secure_net0"), null);
-        bills ~= StandardBill((3000 + seed * 10).TGN, epoch, secure_net.derivePubkey("secure_net1"), null);
-        bills ~= StandardBill((4300 + seed * 10).TGN, epoch, secure_net.derivePubkey("secure_net2"), null);
+        bills ~= StandardBill((1000).TGN, epoch, secure_net.pubkey, null);
+        bills ~= StandardBill((1200).TGN, epoch, secure_net.derivePubkey("secure_net0"), null);
+        bills ~= StandardBill((3000).TGN, epoch, secure_net.derivePubkey("secure_net1"), null);
+        bills ~= StandardBill((4300).TGN, epoch, secure_net.derivePubkey("secure_net2"), null);
 
         return bills;
     }
