@@ -9,6 +9,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #define FAIL    -1
+
 int OpenConnection(const char *hostname, int port)
 {
     int sd;

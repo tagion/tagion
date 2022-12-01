@@ -172,8 +172,8 @@ int main(int count, char *Argc[])
     	LoadCertificates(ctx, "mycert.pem", "mycert.pem"); /* load certs */
 	}
 		server = OpenListener(atoi(portnum));    /* create server socket */
-	int ret;
-	while (1)
+	int ret=1;
+	while (ret)
     {
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
