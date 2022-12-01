@@ -32,6 +32,7 @@ int OpenConnection(const char *hostname, int port)
     }
     return sd;
 }
+
 SSL_CTX* InitCTX(void)
 {
     SSL_METHOD *method;
@@ -47,6 +48,7 @@ SSL_CTX* InitCTX(void)
     }
     return ctx;
 }
+
 void ShowCerts(SSL* ssl)
 {
     X509 *cert;

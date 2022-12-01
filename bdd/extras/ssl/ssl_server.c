@@ -32,6 +32,7 @@ int OpenListener(int port)
     }
     return sd;
 }
+
 int isRoot()
 {
     if (getuid() != 0)
@@ -43,6 +44,7 @@ int isRoot()
         return 1;
     }
 }
+
 SSL_CTX* InitServerCTX(void)
 {
     SSL_METHOD *method;
@@ -58,6 +60,7 @@ SSL_CTX* InitServerCTX(void)
     }
     return ctx;
 }
+
 void LoadCertificates(SSL_CTX* ctx, char* CertFile, char* KeyFile)
 {
     /* set the local certificate from CertFile */
@@ -79,6 +82,7 @@ void LoadCertificates(SSL_CTX* ctx, char* CertFile, char* KeyFile)
         abort();
     }
 }
+
 void ShowCerts(SSL* ssl)
 {
     X509 *cert;
@@ -98,6 +102,7 @@ void ShowCerts(SSL* ssl)
     else
         printf("No certificates.\n");
 }
+
 void Servlet(SSL* ssl) /* Serve the connection -- threadable */
 {
     char buf[1024] = {0};
@@ -112,10 +117,10 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
                                <UserName>aticle<UserName>\
                  <Password>123<Password>\
                  <\Body>";
-    if ( SSL_accept(ssl) == FAIL )     /* do SSL-protocol accept */
+    if ( SSL_accept(ssl) == FAIL ) {    /* do SSL-protocol accept */
         ERR_print_errors_fp(stderr);
-    else
-    {
+	}
+    else {
         ShowCerts(ssl);        /* get any certificates */
         bytes = SSL_read(ssl, buf, sizeof(buf)); /* get request */
         buf[bytes] = '\0';
@@ -126,7 +131,8 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
             if(strcmp(cpValidMessage,buf) == 0)
             {
 			*/
-                SSL_write(ssl, ServerResponse, strlen(ServerResponse)); /* send reply */
+                SSL_write(ssl, buf, strlen(buf)); /* send reply */
+                //SSL_write(ssl, ServerResponse, strlen(ServerResponse)); /* send reply */
             /*
 			}
             else
