@@ -107,16 +107,6 @@ int Servlet(SSL* ssl) /* Serve the connection -- threadable */
 {
     char buf[1024] = {0};
     int sd, bytes;
-    const char* ServerResponse="<\Body>\
-                               <Name>aticleworld.com</Name>\
-                 <year>1.5</year>\
-                 <BlogType>Embedede and c\c++<\BlogType>\
-                 <Author>amlendra<Author>\
-                 <\Body>";
-    const char *cpValidMessage = "<Body>\
-                               <UserName>aticle<UserName>\
-                 <Password>123<Password>\
-                 <\Body>";
     if ( SSL_accept(ssl) == FAIL ) {    /* do SSL-protocol accept */
         ERR_print_errors_fp(stderr);
 	}
@@ -135,7 +125,6 @@ int Servlet(SSL* ssl) /* Serve the connection -- threadable */
         }
     }
     sd = SSL_get_fd(ssl);       /* get socket connection */
-    SSL_free(ssl);         /* release SSL state */
     close(sd);          /* close connection */
 	printf("buf=%s\n", buf);
 	return strcmp(buf, "EOC");
@@ -171,7 +160,7 @@ int main(int count, char *Argc[])
 	/* initialize SSL */
     	LoadCertificates(ctx, "mycert.pem", "mycert.pem"); /* load certs */
 	}
-		server = OpenListener(atoi(portnum));    /* create server socket */
+	server = OpenListener(atoi(portnum));    /* create server socket */
 	int ret=1;
 	while (ret)
     {
@@ -183,9 +172,13 @@ int main(int count, char *Argc[])
         ssl = SSL_new(ctx);              /* get new SSL state with context */
         SSL_set_fd(ssl, client);      /* set connection socket to SSL state */
         ret = Servlet(ssl);         /* service connection */
+        SSL_free(ssl);         /* release SSL state */
 		printf("ret=%d\n", ret);
+		
     }
-    close(server);          /* close server socket */
+    printf("Shutdown!");
+//    SSL_shutdown(ssl);
+	close(server);          /* close server socket */
     SSL_CTX_free(ctx);         /* release context */
 	return 0;
 }
