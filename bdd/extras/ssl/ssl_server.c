@@ -98,8 +98,7 @@ void ShowCerts(SSL* ssl)
     else
         printf("No certificates.\n");
 }
-
-int Servlet(SSL* ssl) /* Serve the connection -- threadable */
+void Servlet(SSL* ssl) /* Serve the connection -- threadable */
 {
     char buf[1024] = {0};
     int sd, bytes;
@@ -123,7 +122,18 @@ int Servlet(SSL* ssl) /* Serve the connection -- threadable */
         printf("Client msg: \"%s\"\n", buf);
         if ( bytes > 0 )
         {
-            SSL_write(ssl, ServerResponse, strlen(ServerResponse)); /* send reply */
+				/*
+            if(strcmp(cpValidMessage,buf) == 0)
+            {
+			*/
+                SSL_write(ssl, ServerResponse, strlen(ServerResponse)); /* send reply */
+            /*
+			}
+            else
+            {
+                SSL_write(ssl, "Invalid Message", strlen("Invalid Message"));
+            }
+			*/
         }
         else
         {
@@ -132,8 +142,7 @@ int Servlet(SSL* ssl) /* Serve the connection -- threadable */
     }
     sd = SSL_get_fd(ssl);       /* get socket connection */
     SSL_free(ssl);         /* release SSL state */
-    close(sd);  /* close connection */
-    return (strcmp(buf, "EOC") != 0);
+    close(sd);          /* close connection */
 }
 int main(int count, char *Argc[])
 {
