@@ -140,4 +140,7 @@ version(none) {
 
 }
 }
+/// Check ssl
+/// openssl s_client -connect 119.110.205.66:443 -showcerts
+/// https://quuxplusone.github.io/blog/2020/01/28/openssl-part-5
 
