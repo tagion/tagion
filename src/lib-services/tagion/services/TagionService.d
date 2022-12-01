@@ -356,14 +356,12 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             recorder_service_tid = locate(opts.recorder_chain.task_name);
         }
 
-        if (!opts.disable_transaction_dumping)
+        if (!opts.epoch_dump.disable_transaction_dumping)
         {
-            enum EPDTask_Name = "Epoch_dumping_task";
-            Task!EpochDumpTask(EPDTask_Name, opts);
+            auto task_name = opts.epoch_dump.task_name;
+            Task!EpochDumpTask(task_name, opts);
             assert(receiveOnly!Control == Control.LIVE);
-            epoch_dumping_service_tid = locate(EPDTask_Name);
-            // TODO: convert to ENUM
-            opts.epoch_dump_task_id = EPDTask_Name;
+            epoch_dumping_service_tid = locate(task_name);
         }
 
         transcript_tid = spawn(
@@ -372,7 +370,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             opts.transcript.task_name,
             opts.dart.sync.task_name,
             opts.recorder_chain.task_name,
-            opts.epoch_dump_task_id);
+            opts.epoch_dump.task_name);
         assert(receiveOnly!Control == Control.LIVE);
 
         transaction_socket_tid = spawn(

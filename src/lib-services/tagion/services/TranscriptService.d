@@ -2,7 +2,6 @@ module tagion.services.TranscriptService;
 
 import std.format;
 import std.concurrency;
-import core.thread;
 import std.array : join;
 import std.exception : assumeUnique;
 
@@ -25,19 +24,8 @@ import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Fingerprint : Fingerprint;
 
-/** Save hashed dump with transactions
-    *    @param list - transactions list from dumping
-    *    @param bullseye - hash of dart database
-    *    @param task_name - text id of dumper task
-    */
-private static void saveHashedDump(Document list, Buffer bullseye, ref const string task_name)
-{
-    Tid epoch_dump_service = locate(task_name);
-    epoch_dump_service.send(list, bullseye);
-}
-
 // This function performs Smart contract executions
-void transcriptServiceTask(string task_name, string dart_task_name, string recorder_task_name, string epoch_damper_task_name) nothrow
+void transcriptServiceTask(string task_name, string dart_task_name, string recorder_task_name, string epoch_dumper_task_name) nothrow
 {
     try
     {
@@ -54,6 +42,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
         const empty_hirpc = HiRPC(null);
         Tid dart_tid = locate(dart_task_name);
         Tid recorder_tid = locate(recorder_task_name);
+        Tid epoch_dump_tid = locate(epoch_dumper_task_name);
         SmartScript[Buffer] smart_scripts;
 
         bool stop;
@@ -220,10 +209,9 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     log("Sending to DART len: %d", recorder.length);
                     recorder.dump;
                     auto bullseye = modifyDART(recorder);
-                    if (!options.disable_transaction_dumping)
+                    if (!options.epoch_dump.disable_transaction_dumping)
                     {
-                        auto dump = Document(contracts_dump);
-                        saveHashedDump(dump, bullseye, epoch_damper_task_name);
+                        epoch_dump_tid.send(Document(contracts_dump), bullseye);
                     }
                     dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), Fingerprint(bullseye));
                 }
@@ -268,44 +256,4 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
     {
         fatal(t);
     }
-}
-
-/// test hashes dump creating
-unittest
-{
-    import std.file;
-    import tagion.services.EpochDumpService : EpochDumpTask;
-    import tagion.tasks.TaskWrapper : Task;
-
-    auto doc = new HiBON();
-    doc["A"] = "B";
-    immutable ubyte[] eye = [6, 5, 4];
-    auto realDoc = Document(doc);
-
-    Options _options = getOptions();
-    _options.transaction_dumps_dirrectory = "tmp_hashes";
-    setOptions(_options);
-    const string dumper_task = "dumper_task";
-    auto task = Task!EpochDumpTask(dumper_task, _options);
-    assert(receiveOnly!Control == Control.LIVE);
-
-    scope (exit)
-    {
-        task.control(Control.STOP);
-        receiveOnly!Control;
-    }
-
-    saveHashedDump(realDoc, eye, dumper_task);
-    saveHashedDump(realDoc, eye, dumper_task);
-
-    assert(receiveOnly!Control == Control.LIVE);
-
-    enum hashOne = "tmp_hashes/3746c7e6718203846e8d2676baeea127a1c144752721a7c7671c3373b89dca35.epdmp";
-    enum hashTwo = "tmp_hashes/9f860b17e59c0b509127ce27dbb19433768ff857cc1c11c5ffad399a340654fa.epdmp";
-
-    Thread.sleep(40.msecs);
-
-    assert(exists(hashOne));
-    assert(exists(hashTwo));
-    rmdirRecurse(options.transaction_dumps_dirrectory);
 }
