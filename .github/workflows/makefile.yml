@@ -4,11 +4,14 @@ on:
     branches: [ "develop" ]
   push: 
     branches: [ "develop" ]
+concurrency: 
+  group: ${{ github.head_ref }}
+  cancel-in-progress: true
 env:
   ## Sets environment variable
   TARGET_BUILD: x86_64-linux
   PARALEL: 4
-  RETENTION_DAYS_BINS: 3
+  RETENTION_DAYS_BINS: 1
   TAGION_CACHE_DIR: ~/tagion_cache 
   RUN_SCENARIOUS_PARALEL: true
   BUILD_FLAGS: DFLAGS="\$(DVERSION)=OLD_TRANSACTION"
@@ -270,6 +273,9 @@ jobs:
       - name: Clean docker container
         if: always()
         run: |
-          set +e
-          docker kill $(docker ps -q) 2>/dev/null && echo $?
-          docker rm $(docker ps -a -q) 2>/dev/null && echo $?
+          ids=$(docker ps -a -q)
+          for id in $ids
+          do
+           echo "$id"
+           docker stop $id && docker rm $id
+          done
