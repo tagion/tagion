@@ -66,6 +66,8 @@ void ShowCerts(SSL* ssl)
     else
         printf("Info: No client certificates configured.\n");
 }
+
+#define BUFFER_SIZE (1024)
 int main(int count, char *strings[])
 {
     SSL_CTX *ctx;
@@ -91,17 +93,14 @@ int main(int count, char *strings[])
         ERR_print_errors_fp(stderr);
     else
     {
-        char acUsername[16] = {0};
-        char acPassword[16] = {0};
+		char stdin_buffer[BUFFER_SIZE]={0};
         const char *cpRequestMessage = "<Body>\
                                <UserName>%s<UserName>\
                  <Password>%s<Password>\
                  <\Body>";
         printf("Enter the User Name : ");
-        scanf("%s",acUsername);
-        printf("\n\nEnter the Password : ");
-        scanf("%s",acPassword);
-        sprintf(acClientRequest, cpRequestMessage, acUsername,acPassword);   /* construct reply */
+        scanf("%s",stdin_buffer);
+        sprintf(acClientRequest, cpRequestMessage, stdin_buffer, stdin_buffer);   /* construct reply */
         printf("\n\nConnected with %s encryption\n", SSL_get_cipher(ssl));
         ShowCerts(ssl);        /* get any certs */
         SSL_write(ssl,acClientRequest, strlen(acClientRequest));   /* encrypt & send message */
