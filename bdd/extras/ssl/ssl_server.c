@@ -103,7 +103,7 @@ void ShowCerts(SSL* ssl)
         printf("No certificates.\n");
 }
 
-void Servlet(SSL* ssl) /* Serve the connection -- threadable */
+int Servlet(SSL* ssl) /* Serve the connection -- threadable */
 {
     char buf[1024] = {0};
     int sd, bytes;
@@ -127,19 +127,7 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
         printf("Client msg: \"%s\"\n", buf);
         if ( bytes > 0 )
         {
-				/*
-            if(strcmp(cpValidMessage,buf) == 0)
-            {
-			*/
                 SSL_write(ssl, buf, strlen(buf)); /* send reply */
-                //SSL_write(ssl, ServerResponse, strlen(ServerResponse)); /* send reply */
-            /*
-			}
-            else
-            {
-                SSL_write(ssl, "Invalid Message", strlen("Invalid Message"));
-            }
-			*/
         }
         else
         {
@@ -149,7 +137,10 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
     sd = SSL_get_fd(ssl);       /* get socket connection */
     SSL_free(ssl);         /* release SSL state */
     close(sd);          /* close connection */
+	printf("buf=%s\n", buf);
+	return strcmp(buf, "EOC");
 }
+
 int main(int count, char *Argc[])
 {
     SSL_CTX *ctx;
@@ -181,7 +172,8 @@ int main(int count, char *Argc[])
     	LoadCertificates(ctx, "mycert.pem", "mycert.pem"); /* load certs */
 	}
 		server = OpenListener(atoi(portnum));    /* create server socket */
-    while (1)
+	int ret;
+	while (1)
     {
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
@@ -190,8 +182,10 @@ int main(int count, char *Argc[])
         printf("Connection: %s:%d\n",inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
         ssl = SSL_new(ctx);              /* get new SSL state with context */
         SSL_set_fd(ssl, client);      /* set connection socket to SSL state */
-        Servlet(ssl);         /* service connection */
+        ret = Servlet(ssl);         /* service connection */
+		printf("ret=%d\n", ret);
     }
     close(server);          /* close server socket */
     SSL_CTX_free(ctx);         /* release context */
+	return 0;
 }

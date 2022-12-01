@@ -105,7 +105,7 @@ int main(int count, char *strings[])
         sprintf(acClientRequest, cpRequestMessage, stdin_buffer, stdin_buffer);   /* construct reply */
         printf("\n\nConnected with %s encryption\n", SSL_get_cipher(ssl));
         ShowCerts(ssl);        /* get any certs */
-        SSL_write(ssl,acClientRequest, strlen(acClientRequest));   /* encrypt & send message */
+        SSL_write(ssl,stdin_buffer, strlen(stdin_buffer));   /* encrypt & send message */
         bytes = SSL_read(ssl, buf, sizeof(buf)); /* get reply & decrypt */
         buf[bytes] = 0;
         printf("Received: \"%s\"\n", buf);
