@@ -21,7 +21,6 @@ import tagion.dart.BlockFile;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.services.RecorderService;
-import tagion.communication.HiRPC;
 import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.recorderchain.RecorderChain;
 import tagion.utils.Miscellaneous : cutHex;
@@ -44,11 +43,9 @@ int main(string[] args)
     const hash_net = new StdHashNet;
     /** Used for create recorder */
     auto factory = RecordFactory(hash_net);
-    /** Passphrase for generate key pair for hirpc */
+    /** Passphrase for generate key pair for secure net */
     string passphrase = "verysecret";
     secure_net.generateKeyPair(passphrase);
-    /** Hirpc for create and modify DART database */
-    auto hirpc = HiRPC(secure_net);
     /** Directory for recorder block chain */
     string chain_directory;
     /** Directory for DART database */
