@@ -278,3 +278,8 @@ jobs:
            echo "$id"
            docker stop $id && docker rm $id
           done
+      - name: Clean bins
+        if: always()
+        uses: geekyeggo/delete-artifact@v2
+        with:
+            name: core-bins
