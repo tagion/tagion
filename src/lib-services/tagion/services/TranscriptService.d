@@ -16,7 +16,7 @@ import tagion.logger.Logger;
 
 import tagion.basic.TagionExceptions;
 import tagion.script.SmartScript;
-import tagion.script.StandardRecords : Contract, SignedContract, PayContract;
+import tagion.script.StandardRecords : Contract, SignedContract, PayContract, StandardBill;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.communication.HiRPC;
@@ -75,15 +75,15 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             }
         }
 
-        @trusted RecordFactory.Recorder requestInputs(const(Buffer[]) inputs, uint id)
+        @trusted const(RecordFactory.Recorder) requestInputs(const(Buffer[]) inputs)
         {
-            auto sender = DART.dartRead(inputs, internal_hirpc, id);
+            auto sender = DART.dartRead(inputs, empty_hirpc);
             auto tosend = sender.toDoc.serialize;
             if (dart_tid !is Tid.init)
             {
                 dart_tid.send(task_name, tosend);
                 const response = receiveOnly!Buffer;    //TODO: replace with receive - as it is non-locking function
-                const received = internal_hirpc.receive(Document(response));
+                const received = empty_hirpc.receive(Document(response));
                 const recorder = rec_factory.recorder(
                     received.response.result);
                 return recorder;
@@ -181,7 +181,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                         foreach (input_archive; inputs_recorder[])
                         {
                             const bill = StandardBill(input_archive.filed);
-                            if (hirpc.net.hashOf(bill.toDoc) == input)
+                            if (    net.hashOf(bill.toDoc) == input)
                             {
                                 signed_contract.inputs ~= bill;
                             }
