@@ -75,7 +75,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             }
         }
 
-        @trusted Recorder requestInputs(const(Buffer[]) inputs, uint id)
+        @trusted RecordFactory.Recorder requestInputs(const(Buffer[]) inputs, uint id)
         {
             auto sender = DART.dartRead(inputs, internal_hirpc, id);
             auto tosend = sender.toDoc.serialize;
