@@ -315,7 +315,7 @@ int _main(string[] args)
     }
     else if (dartread)
     {
-        immutable(ubyte[])[] fingerprints;
+        Buffer[] fingerprints;
         try
         {
             fingerprints = dartread_args

@@ -52,7 +52,7 @@ unittest
 
 enum HEX_SEPARATOR = '_';
 
-@safe immutable(ubyte[]) decode(const(char[]) hex) pure
+@safe Buffer decode(const(char[]) hex) pure
 in
 {
     if (hex.replace(HEX_SEPARATOR, "").length % 2 != 0)
