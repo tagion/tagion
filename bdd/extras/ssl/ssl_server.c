@@ -13,10 +13,17 @@
 // Create the SSL socket and intialize the socket address structure
 int OpenListener(int port)
 {
+	int opt = 1;
     int sd;
     struct sockaddr_in addr;
     sd = socket(PF_INET, SOCK_STREAM, 0);
-    bzero(&addr, sizeof(addr));
+   	if (setsockopt(sd, SOL_SOCKET,
+				SO_REUSEADDR | SO_REUSEPORT, &opt,
+				sizeof(opt))) {
+		perror("setsockopt");
+		exit(EXIT_FAILURE);
+	}
+	 bzero(&addr, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = INADDR_ANY;
@@ -132,17 +139,11 @@ int Servlet(SSL* ssl) /* Serve the connection -- threadable */
 
 int main(int count, char *Argc[])
 {
-    SSL_CTX *ctx;
+	struct sockaddr_in address;
+	int addrlen = sizeof(address);
+	SSL_CTX *ctx;
     int server;
     char *portnum;
-//Only root user have the permsion to run the server
- /*
-	if(!isRoot())
-    {
-        printf("This program must be run as root/sudo user!!");
-        exit(0);
-    }
-	*/
 	printf("count=%d\n", count);
     if ( count < 2 )
     {
@@ -161,6 +162,12 @@ int main(int count, char *Argc[])
     	LoadCertificates(ctx, "mycert.pem", "mycert.pem"); /* load certs */
 	}
 	server = OpenListener(atoi(portnum));    /* create server socket */
+	int tr;
+
+	if (listen(server, 3) < 0) {
+		perror("listen");
+		return 1;
+	}
 	int ret=1;
 	while (ret)
     {
@@ -178,7 +185,9 @@ int main(int count, char *Argc[])
     }
     printf("Shutdown!");
 //    SSL_shutdown(ssl);
+//	shutdown(server);
 	close(server);          /* close server socket */
-    SSL_CTX_free(ctx);         /* release context */
+    shutdown(server, SHUT_RDWR);
+	SSL_CTX_free(ctx);         /* release context */
 	return 0;
 }
