@@ -246,7 +246,7 @@ else
                 {
                     total_output += TagionCurrency(key["$V"].get!Document);
                 }
-                if (total_output > total_input - Globals.fees())
+                if (total_output > total_input - globals.fees())
                 {
                     return ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT;
                 }
@@ -311,7 +311,7 @@ version (OLD_TRANSACTION)
         import std.stdio : writefln, writeln;
         import tagion.crypto.SecureNet;
         import tagion.hibon.HiBON;
-
+        import tagion.script.StandardRecords: Script;
 
         const net = new StdSecureNet;
         SecureNet alice = new StdSecureNet;
@@ -323,19 +323,20 @@ version (OLD_TRANSACTION)
             bob.generateKeyPair("Bob's secret password");
         }
         uint epoch = 42;
-        SmartScript createSSC(TagionCurrency amount){
+        SignedContract createSSC(TagionCurrency amount){
             auto input_bill = StandardBill(1000.TGN, epoch, alice.pubkey, null);
 
             SignedContract ssc;
             Contract contract;
 
-            contract.inputs = [ net.hashOf(input_bill) ];
-            contract.outputs[bob.pubkey] = amount.toDoc;
+            contract.inputs = [ net.hashOf(input_bill.toDoc) ];
+            contract.output[bob.pubkey] = amount.toDoc;
             contract.script = Script("pay");
 
             ssc.contract = contract;
-            ssc.signs = [ net.sign(contract.toDoc) ];
+            ssc.signs = [ net.sign(net.hashOf(contract.toDoc)) ];
             ssc.inputs = [ input_bill ];
+            return ssc;
         }
         /// SmartScript reject contracts without fee included
         {
@@ -348,7 +349,7 @@ version (OLD_TRANSACTION)
         }
         /// SmartScript accept contracts with fee included
         {
-            auto ssc = createSSC(1000.TGN - Globals.fees());
+            auto ssc = createSSC(1000.TGN - globals.fees());
             auto smart_script = new SmartScript(ssc);
             const code = smart_script.run(epoch + 1);
 
@@ -358,7 +359,7 @@ version (OLD_TRANSACTION)
 
         /// SmartScript accept contracts with output less then input
         {
-            auto ssc = createSSC(900.TGN - Globals.fees());
+            auto ssc = createSSC(900.TGN - globals.fees());
             auto smart_script = new SmartScript(ssc);
             const code = smart_script.run(epoch + 1);
 
