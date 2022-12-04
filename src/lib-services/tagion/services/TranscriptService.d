@@ -75,6 +75,27 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             }
         }
 
+        @trusted Recorder requestInputs(const(Buffer[]) inputs, uint id)
+        {
+            auto sender = DART.dartRead(inputs, internal_hirpc, id);
+            auto tosend = sender.toDoc.serialize;
+            if (dart_tid !is Tid.init)
+            {
+                dart_tid.send(task_name, tosend);
+                const response = receiveOnly!Buffer;    //TODO: replace with receive - as it is non-locking function
+                const received = internal_hirpc.receive(Document(response));
+                const recorder = rec_factory.recorder(
+                    received.response.result);
+                return recorder;
+            }
+            else
+            {
+                log.error("Cannot locate DART service");
+                stop = true;
+                return null;
+            }
+        }
+
         void dumpRecorderBlock(immutable(RecordFactory.Recorder) recorder, immutable(Fingerprint) dart_bullseye)
         {
             if (recorder_tid is Tid.init)
@@ -152,6 +173,20 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
 
                     scope signed_contract = SignedContract(doc);
                     log("Executing contract: %s", doc.toJSON);
+
+                    auto inputs_recorder = requestInputs(signed_contract.contract.inputs);
+                    signed_contract.inputs = [];
+                    foreach (input; signed_contract.contract.inputs)
+                    {
+                        foreach (input_archive; inputs_recorder[])
+                        {
+                            const bill = StandardBill(input_archive.filed);
+                            if (hirpc.net.hashOf(bill.toDoc) == input)
+                            {
+                                signed_contract.inputs ~= bill;
+                            }
+                        }
+                    }
 
                     bool invalid;
                     ForachInput: foreach (input; signed_contract.contract.inputs)
