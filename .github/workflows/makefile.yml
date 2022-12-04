@@ -140,7 +140,8 @@ jobs:
           SCENARIOUS=""
           while read f; do
               SCENARIOUS+="${f} "
-          done < "./qa-tools/scenarious.txt"
+          done < "./qa-tools/scenarios.txt"
+          echo $SCENARIOUS
           echo "scenarious=$SCENARIOUS" >> $GITHUB_OUTPUT
 
       - name: Report created docker
