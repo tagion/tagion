@@ -3,7 +3,7 @@ module tagion.testbench.network.SSL_echo_test;
 import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
-import tagion.testbench.Environment;
+import tagion.testbench.tools.Environment;
 import tagion.testbench.network.SSL_network_environment : sslclient, sslserver, cert;
 
 import std.process;
