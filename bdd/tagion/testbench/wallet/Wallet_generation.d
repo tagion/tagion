@@ -13,7 +13,7 @@ import std.process;
 import tagion.behaviour.BehaviourResult;
 import std.path;
 import std.range;
-import tagion.testbench.Environment;
+import tagion.testbench.tools.Environment;
 
 enum feature = Feature(
             "Generate wallets.",

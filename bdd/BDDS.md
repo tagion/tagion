@@ -1,6 +1,8 @@
 [Collector_service.md](tagion/testbench/services/Collector_service.md)
 
-[Transaction_service.md](tagion/testbench/services/Transaction_service.md)
+[SSL_echo_test.md](tagion/testbench/network/SSL_echo_test.md)
+
+[HiRPC_format_check.md](tagion/testbench/communication/HiRPC_format_check.md)
 
 [Recorder_chain_service.md](tagion/testbench/services/Recorder_chain_service.md)
 
