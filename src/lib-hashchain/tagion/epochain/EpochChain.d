@@ -1,9 +1,9 @@
 /// \file EpochChain.d
 
-module tagion.hashchain.EpochChain;
+module tagion.epochain.EpochChain;
 
 import tagion.hashchain.HashChain;
-import tagion.hashchain.EpochChainBlock;
+import tagion.epochain.EpochChainBlock;
 
 /** @brief File contains alias EpochChain (hash chain of epochs)
  */
