@@ -13,7 +13,7 @@ import core.thread;
 import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
-import tagion.testbench.Environment;
+import tagion.testbench.tools.Environment;
 import tagion.testbench.wallet.Wallet_generation;
 import tagion.testbench.wallet.Boot_wallet;
 
