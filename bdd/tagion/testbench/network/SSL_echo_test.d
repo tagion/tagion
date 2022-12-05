@@ -7,6 +7,11 @@ import tagion.testbench.tools.Environment;
 import tagion.testbench.network.SSL_network_environment : sslclient, sslserver, cert;
 
 import std.process;
+import std.stdio;
+import std.format;
+import std.array;
+import std.conv;
+import std.string : strip;
 
 enum feature = Feature("simple .c sslserver",
         [
@@ -20,7 +25,8 @@ class SendManyRequsts
 {
 
     string port = "8003";
-    string echo_string = "wowowo";
+    int calls = 10000;
+    Pid server_pipe_id;
 
     @Given("I have a simple sslserver")
     Document _sslserver()
@@ -30,35 +36,67 @@ class SendManyRequsts
             port,
             cert,
         ];
+        writefln("%s", sslserver_start_command.join(" "));
 
-        auto ssl_server = pipeProcess(sslserver_start_command, Redirect.all, null, Config.detached);
-
+        auto ssl_server = pipeProcess(sslserver_start_command);
+        server_pipe_id = ssl_server.pid;
         return result_ok;
     }
 
     @Given("I have a simple sslclient")
-    Document _sslclient()
+    Document _sslclient() 
     {
-        immutable sslclient_send_command = [
-            sslclient,
-            echo_string,
-        ];
-        auto ssl_client_send = pipeProcess(sslclient_send_command, Redirect.all, null, Config
-                .detached);
+        const response = client_send("wowo");
+
+        writefln("response = %s", response);
+
+        check(response == "wowo", "Message not received");
 
         return result_ok;
     }
 
     @When("i send many requests repeatedly")
-    Document repeatedly()
+    Document repeatedly() 
     {
-        return Document();
+        for (int i = 0; i < calls; i++)
+        {
+            immutable message = format("test%s", i);
+
+            const response = client_send(message);
+
+            check(response == message, "Message not received");
+            writefln("response = %s", response);
+
+        }
+        return result_ok;
     }
 
     @Then("the sslserver should not chrash.")
     Document chrash()
     {
-        return Document();
+        const response = client_send("EOC");
+        wait(server_pipe_id);
+
+        return result_ok;
+    }
+
+    string client_send(string message) @trusted
+    {
+        immutable sslclient_send_command = [
+            sslclient,
+            "localhost",
+            port.to!string,
+        ];
+        writefln("%s", sslclient_send_command.join(" "));
+
+        auto sslclient_send = pipeProcess(sslclient_send_command);
+        sslclient_send.stdin.writeln(message);
+        sslclient_send.stdin.flush();
+        sslclient_send.stdin.close();
+
+        wait(sslclient_send.pid);
+        const stdout_message = sslclient_send.stdout.readln().strip();
+        return stdout_message;
     }
 
 }
