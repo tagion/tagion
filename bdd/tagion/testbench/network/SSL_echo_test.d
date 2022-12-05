@@ -46,50 +46,27 @@ class SendManyRequsts
     @Given("I have a simple sslclient")
     Document _sslclient() @trusted
     {
-        immutable sslclient_send_command = [
-            sslclient,
-            "localhost",
-            port.to!string,
-        ];
-        writefln("%s", sslclient_send_command.join(" "));
+        const response = client_send("wowo");
 
-        auto sslclient_send = pipeProcess(sslclient_send_command);
-        sslclient_send.stdin.writeln("wowo");
-        sslclient_send.stdin.flush();
-        sslclient_send.stdin.close();
+        writefln("response = %s", response);
 
-        wait(sslclient_send.pid);
-        const stdout_message = sslclient_send.stdout.readln().strip();
-        writefln("stdout_message = %s", stdout_message);
-
-        check(stdout_message == "wowo", "Message not received");
+        check(response == "wowo", "Message not received");
 
         return result_ok;
     }
 
     @When("i send many requests repeatedly")
-    Document repeatedly() @trusted
+    Document repeatedly() 
     {
         for (int i = 0; i < calls; i++)
         {
             immutable message = format("test%s", i);
-            immutable sslclient_send_command = [
-                sslclient,
-                "localhost",
-                port.to!string,
-            ];
-            writefln("%s", sslclient_send_command.join(" "));
 
-            auto sslclient_send = pipeProcess(sslclient_send_command);
-            sslclient_send.stdin.writeln(message);
-            sslclient_send.stdin.flush();
-            sslclient_send.stdin.close();
+            const response = client_send(message);
 
-            wait(sslclient_send.pid);
-            const stdout_message = sslclient_send.stdout.readln().strip();
-            check(stdout_message == message, "Message not received");
-            writefln("stdout_message = %s", stdout_message);            
-           
+            check(response == message, "Message not received");
+            writefln("response = %s", response);
+
         }
         return result_ok;
     }
@@ -97,7 +74,14 @@ class SendManyRequsts
     @Then("the sslserver should not chrash.")
     Document chrash()
     {
+        const response = client_send("EOC");
+        wait(server_pipe_id);
 
+        return result_ok;
+    }
+
+    string client_send(string message) @trusted
+    {
         immutable sslclient_send_command = [
             sslclient,
             "localhost",
@@ -106,14 +90,13 @@ class SendManyRequsts
         writefln("%s", sslclient_send_command.join(" "));
 
         auto sslclient_send = pipeProcess(sslclient_send_command);
-        sslclient_send.stdin.writeln("EOC");
+        sslclient_send.stdin.writeln(message);
         sslclient_send.stdin.flush();
         sslclient_send.stdin.close();
-        writefln("%s", sslclient_send.stdout);
-        wait(sslclient_send.pid);
-        wait(server_pipe_id);
 
-        return result_ok;
+        wait(sslclient_send.pid);
+        const stdout_message = sslclient_send.stdout.readln().strip();
+        return stdout_message;
     }
 
 }
