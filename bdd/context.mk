@@ -1,2 +1,2 @@
-include extras/ssl/context.mk
+include $(BDD)/extras/ssl/context.mk
 

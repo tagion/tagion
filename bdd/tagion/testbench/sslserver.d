@@ -31,12 +31,13 @@ int _main(string[] args) {
     auto setup = mainSetup!SSLOptions("sslserver", &setDefault);
     int result = testMain(setup, args);
     if (result == 0) {
+
         writefln("sslserver=%s", setup.options.openssl);
         auto sslserver_handle = automation!SSL_server;
         sslserver_handle.CreatesASSLCertificate(setup.options.openssl);
         sslserver_handle.SSLServiceUsingASpecifiedCertificate(setup.options, "ssl_test_task");
         auto sslserver_context = sslserver_handle.run;
-        "/tmp/result.hibon".fwrite(*sslserver_context.result);
+//        "/tmp/result.hibon".fwrite(*sslserver_context.result);
     }
     return result;
 }

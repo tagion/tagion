@@ -4,10 +4,14 @@ BIN?=$(DBIN)
 
 EXTRAS_SSL?=$(BDD)/extras/ssl/
 
-sslextras: $(DBIN)/ssl_client $(DBIN)/ssl_server 
+sslextras: ssl_client ssl_server 
 
-$(DBIN)/%: $(BDD)/extras/ssl/%.c
-	gcc -g -o $@ $< -lssl -lcrypto
+#ssl_server: $(DBIN)/ssl_server
+
+%: $(BDD)/extras/ssl/%.c
+	echo $(DBIN)
+	echo $@
+	gcc -g -o $(DBIN)/$@ $< -lssl -lcrypto
 
 cert: $(EXTRAS_CERT)
 
@@ -17,5 +21,6 @@ cert: $(EXTRAS_CERT)
 clean-sslextras:
 	rm -f ssl_client ssl_server
 
+clean: clean-sslextras
 
 

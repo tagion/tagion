@@ -101,7 +101,6 @@ int main(int count, char *strings[])
                                <UserName>%s<UserName>\
                  <Password>%s<Password>\
                  <\Body>";
-        printf("Enter the User Name : ");
         scanf("%s",stdin_buffer);
         sprintf(acClientRequest, cpRequestMessage, stdin_buffer, stdin_buffer);   /* construct reply */
         printf("\n\nConnected with %s encryption\n", SSL_get_cipher(ssl));
