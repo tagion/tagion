@@ -1,12 +1,10 @@
 
 
-REPORT_ROOT:=$(REPOROOT)/regression
-VIEWER_STARTED:=$(REPORT_ROOT)/.report-viewer.touch
-VIEWER_INSTALLED:=$(REPORT_ROOT)/.report-install.touch
+export REPORT_ROOT=$(REPOROOT)/regression
 
 REPORT_INSTALL:=npm install 
-REPORT_VIEWER:=npm run dev
-SCREEN_NAME:=node-reporter
+export REPORT_VIEWER:=npm run dev
+export REPORTER_NAME:=node-reporter
 
 env-reporter:
 	$(PRECMD)
@@ -28,37 +26,25 @@ help-reporter:
 	${call log.help, "make list-bdd", "List all bdd targets"}
 	${call log.close}
 
-
 .PHONY: help-reporter
 
 help: help-reporter
 
 clean-reporter:
 	$(PRECMD)
-	echo "$@ not implemented yet"
+	$(RMDIR) $(BDD_RESULTS)
 
 .PHONY: clean-reporter
 
 clean: clean-reporter
 
-reporter-start:  $(VIEWER_STARTED)  
-
-$(VIEWER_STARTED): $(BDD_LOG)/.way 
-
-
-$(VIEWER_STARTED):
+reporter-start: reporter-install
 	$(PRECMD)
-	$(CD) $(REPORT_ROOT)
-	screen -S $(SCREEN_NAME) -dm $(REPORT_VIEWER) &
-	touch $@
-
--include $(VIEWER_STARTED)
+	$(SCRIPTS)/reporter_start.sh start 
 
 reporter-stop:
 	$(PRECMD)
-	screen -X -S $(SCREEN_NAME) quit
-	$(RM) $(VIEWER_STARTED)
-
+	$(SCRIPTS)/reporter_start.sh stop 
 
 reporter-install: $(VIEWER_INSTALLED)
 
@@ -69,13 +55,6 @@ $(VIEWER_INSTALLED):
 	$(CD) $(REPORT_ROOT)
 	$(REPORT_INSTALL)
 	touch $@
-	
 
-
-
-
-
-
-
-
+.PHONY: reporter-start reporter-stop reporter-install
 
