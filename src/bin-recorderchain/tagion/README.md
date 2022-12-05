@@ -1,93 +1,118 @@
 <a href="https://tagion.org"><img alt="tagion logo" src="https://github.com/tagion/resources/raw/master/branding/logomark.svg?sanitize=true" alt="tagion.org" height="60"></a>
 # recorderchain v.0.x.x
-> This tool is used for replay whole recorder chain in DART database. 3 required parameters must be specified.
->- [recorderchain v.0.x.x](#recorderchain-v0xx)
-      - [Tool link](#tool-link)
+> This tool is used to recover DART database using recorder chain.
+
+This tool can create new DART database and recover it using recorder chain blocks.
+
+To have recorder chain blocks generated you should specify parameter `recorderchain` on startup for tagionwave tool. This parameter specifies folder for recorder chain blocks.
+<br>**Each node should have its own folder!**
+
+To recover DART database using genesis DART file and recorder chain you can use command:
+```
+recorderchain -d dart.drt -c /recorder_chain_folder/ -g genesis.drt
+```
+After this command in case of success you will have newly created DART file with name `-d`, recovered using genesis DART file `-g` and recorder chain `-c`.
+
 #### [Tool link](https://github.com/tagion/tagion/tree/release/src/bin-boot)
 
-# Table of context
 - [recorderchain v.0.x.x](#recorderchain-v0xx)
       - [Tool link](#tool-link)
-- [Table of context](#table-of-context)
-- [chain_directory](#chain_directory)
-  - [Use cases](#use-cases)
-    - [Case - set chain directory](#case---set-chain-directory)
+- [chaindirectory](#chaindirectory)
+  - [Use cases:](#use-cases)
+    - [Case: recover DART with specified chain directory](#case-recover-dart-with-specified-chain-directory)
       - [Success](#success)
       - [Failure](#failure)
-- [dart_file](#dart_file)
+- [dartfile](#dartfile)
   - [Use cases](#use-cases-1)
-    - [Case - set dart file directory with initialize](#case---set-dart-file-directory-with-initialize)
+    - [Case: recover DART with specified name](#case-recover-dart-with-specified-name)
       - [Success](#success-1)
       - [Failure](#failure-1)
-    - [Case - set dart file directory without initialize](#case---set-dart-file-directory-without-initialize)
+- [genesisdart](#genesisdart)
+  - [Use cases](#use-cases-2)
+    - [Case: recover DART with specified genesis DART file](#case-recover-dart-with-specified-genesis-dart-file)
       - [Success](#success-2)
       - [Failure](#failure-2)
-- [initialize](#initialize)
 
-# chain_directory
+# chaindirectory
 ```
---chain_directory -c
+--chaindirectory -c
 ```
-*Require* 
-Directory that contains recorder block chain
+**Required**
 
-## Use cases
-### Case - set chain directory
+Specifies directory that contains recorder chain blocks
+
+## Use cases:
+### Case: recover DART with specified chain directory
 ```
-./recorderchain -c /test_chain/TMPFILE -d /test_chain/DARTNEW
+./recorderchain -c /directory_path/ -d dart.drt -g genesis.drt
 ```
 #### Success
 **Result**
-New DART database initialized and synchronized with recorder blocks
+Chain inside directory is valid and tool recovered DART file using blocks from the directory
 
 #### Failure
-**Result**(When chain_directory path not exist)<br>
-Comand line output
+**Result**(When chaindirectory path not exist)<br>
 ```
-/test_chain/TMPFILE directory does not exist
+Recorder chain directory 'directory_path/' does not exist
 ```
 
-# dart_file
+**Result**(When recorder chain inside directory is invalid)<br>
 ```
---dart_file -d
+Recorder block chain is not valid!
+Abort
 ```
-*Require* 
-Path to dart file
+
+**Result**(When directory has no block files)<br>
+```
+No recorder chain files
+```
+
+# dartfile
+```
+--dartfile -d
+```
+**Required** 
+Name of DART file to recover
 
 ## Use cases
-### Case - set dart file directory with initialize
+### Case: recover DART with specified name
 ```
-./recorderchain -c test_chain/TMPFILE -d test_chain/DARTNEW -i
+./recorderchain -d dart.drt -c /directory_path/ -g genesis.drt
 ```
 #### Success
-**Result**
+**Result**<br>
 DART database created and synchronized with recorder blocks
 
 #### Failure
-**Result**(When test_chain path not exist)<br>
-Comand line output
+**Result**(error during recovering DART from blocks)<br>
 ```
-Can not create DART file: test_chain/DARTNEW
+DART fingerprint must be the same as recorder block bullseye. Abort
 ```
 
-### Case - set dart file directory without initialize
+
+# genesisdart
 ```
-./recorderchain -c test_chain/TMPFILE -d test_chain/DARTNEW
+--genesisdart -g
+```
+**Required** 
+Path to genesis DART file
+
+## Use cases
+### Case: recover DART with specified genesis DART file
+```
+./recorderchain -g genesis.drt -d dart.drt -c /directory_path/
 ```
 #### Success
 **Result**
-DART database synchronized with recorder blocks
+New DART database created and synchronized with recorder blocks and genesis file
 
 #### Failure
-**Result**(When test_chain/DARTNEW not exist)<br>
-Comand line output
+**Result**(genesis file doesn't exist or has incorect extension)
 ```
-Can not open DART file: test_chain/DARTNEW
+Incorrect genesis DART file 'genesis.drt'
 ```
 
-
-# initialize
+**Result**(genesis file has invalid format and can't be opened)
 ```
---initialize -i
+Invalid format of genesis DART file 'genesis.drt'
 ```
-Bool, initialize empty DART

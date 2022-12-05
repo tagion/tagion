@@ -144,14 +144,8 @@ int main(string[] args)
     try
     {
         recorder_chain.replay((RecorderChainBlock block) {
-            // these outputs will be removed after proper testing the tool
-            writefln("block's  bullseye %s", block.bullseye.cutHex);
-            writefln("DART bef bullseye %s", dart.fingerprint.cutHex);
-
             auto recorder = factory.recorder(block.recorder_doc);
             dart.modify(recorder);
-
-            writefln("DART aft bullseye %s", dart.fingerprint.cutHex);
 
             if (block.bullseye != dart.fingerprint)
             {
