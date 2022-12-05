@@ -11,6 +11,7 @@ When the certificate has been created
 
 Then check that the SSL certificate is valid
 
+
 Scenario SSL service using a specified certificate
 
 Given certificate are available open a server
