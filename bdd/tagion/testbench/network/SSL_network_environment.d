@@ -10,7 +10,7 @@ immutable string cert;
 
 
 shared static this() {
-    sslserver = env.dbin.buildPath("sslserver");
-    sslclient = env.dbin.buildPath("sslclient");
-    cert = env.bdd.buildPath("ssl", "mycert.pem");
+    sslserver = env.dbin.buildPath("ssl_server");
+    sslclient = env.dbin.buildPath("ssl_client");
+    cert = env.bdd.buildPath("extras", "ssl", "mycert.pem");
 }

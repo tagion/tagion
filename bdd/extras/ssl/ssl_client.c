@@ -82,7 +82,7 @@ int main(int count, char *strings[])
     char *hostname, *portnum;
     if ( count != 3 )
     {
-        printf("usage: %s <hostname> <portnum>\n", strings[0]);
+        // printf("usage: %s <hostname> <portnum>\n", strings[0]);
         exit(0);
     }
     SSL_library_init();
@@ -103,12 +103,12 @@ int main(int count, char *strings[])
                  <\Body>";
         scanf("%s",stdin_buffer);
         sprintf(acClientRequest, cpRequestMessage, stdin_buffer, stdin_buffer);   /* construct reply */
-        printf("\n\nConnected with %s encryption\n", SSL_get_cipher(ssl));
-        ShowCerts(ssl);        /* get any certs */
+        // printf("\n\nConnected with %s encryption\n", SSL_get_cipher(ssl));
+        // ShowCerts(ssl);        /* get any certs */
         SSL_write(ssl,stdin_buffer, strlen(stdin_buffer));   /* encrypt & send message */
         bytes = SSL_read(ssl, buf, sizeof(buf)); /* get reply & decrypt */
         buf[bytes] = 0;
-        printf("Received: \"%s\"\n", buf);
+        printf("%s\n", buf);
         SSL_free(ssl);        /* release connection state */
     }
     close(server);         /* close socket */
