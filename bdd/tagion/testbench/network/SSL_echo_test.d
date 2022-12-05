@@ -44,7 +44,7 @@ class SendManyRequsts
     }
 
     @Given("I have a simple sslclient")
-    Document _sslclient() @trusted
+    Document _sslclient() 
     {
         const response = client_send("wowo");
 
