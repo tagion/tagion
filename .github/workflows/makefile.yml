@@ -196,7 +196,6 @@ jobs:
           done  
       - name: Run scripts in sequentially 
         if: env.RUN_SCENARIOUS_PARALEL != 'true'
-        timeout-minutes: 20
         run: |
           mkdir scenario-result
           for SCENARIO in ${{ needs.create_tagion_images.outputs.scenario_list }}; do
@@ -207,6 +206,7 @@ jobs:
           done
           sudo chmod -R 777 scenario-result
       - name: log status
+        if: always()
         run: |
           set +e
           PATH_TO_LOGS="./scenario-result/**/*.result.json"
