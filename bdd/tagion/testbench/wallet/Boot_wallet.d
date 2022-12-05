@@ -12,7 +12,7 @@ import std.file;
 import tagion.behaviour;
 import tagion.hibon.Document;
 import tagion.testbench.wallet.Wallet_generation;
-import tagion.testbench.Environment;
+import tagion.testbench.tools.Environment;
 
 enum feature = Feature("Add genesis wallets.", []);
 
