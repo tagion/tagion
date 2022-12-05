@@ -11,6 +11,7 @@ import std.stdio;
 import std.format;
 import std.array;
 import std.conv;
+import std.string : strip;
 
 enum feature = Feature("simple .c sslserver",
         [
@@ -24,7 +25,8 @@ class SendManyRequsts
 {
 
     string port = "8003";
-    int calls = 10;
+    int calls = 10000;
+    Pid server_pipe_id;
 
     @Given("I have a simple sslserver")
     Document _sslserver()
@@ -37,7 +39,7 @@ class SendManyRequsts
         writefln("%s", sslserver_start_command.join(" "));
 
         auto ssl_server = pipeProcess(sslserver_start_command);
-
+        server_pipe_id = ssl_server.pid;
         return result_ok;
     }
 
@@ -52,37 +54,44 @@ class SendManyRequsts
         writefln("%s", sslclient_send_command.join(" "));
 
         auto sslclient_send = pipeProcess(sslclient_send_command);
-        sslclient_send.stdin.writeln("test");
+        sslclient_send.stdin.writeln("wowo");
         sslclient_send.stdin.flush();
         sslclient_send.stdin.close();
 
         wait(sslclient_send.pid);
-        const testing = sslclient_send.stdout.readln();
-        writefln("testwowowo = %s", testing);
-        
+        const stdout_message = sslclient_send.stdout.readln().strip();
+        writefln("stdout_message = %s", stdout_message);
+
+        check(stdout_message == "wowo", "Message not received");
+
         return result_ok;
     }
 
     @When("i send many requests repeatedly")
-    Document repeatedly()
+    Document repeatedly() @trusted
     {
-        // for (int i = 0; i < calls; i++)
-        // {
-        //     writefln("sending %s", i);
-        //     immutable sslclient_send_command = [
-        //         sslclient,
-        //         "localhost",
-        //         port.to!string,
-        //     ];
+        for (int i = 0; i < calls; i++)
+        {
+            immutable message = format("test%s", i);
+            immutable sslclient_send_command = [
+                sslclient,
+                "localhost",
+                port.to!string,
+            ];
+            writefln("%s", sslclient_send_command.join(" "));
 
-        //     writefln("%s", sslclient_send_command.join(" "));
+            auto sslclient_send = pipeProcess(sslclient_send_command);
+            sslclient_send.stdin.writeln(message);
+            sslclient_send.stdin.flush();
+            sslclient_send.stdin.close();
 
-        //     auto sslclient_send = pipeProcess(sslclient_send_command);
-        //     writefln("%s", sslclient_send.stdout);
-
-        // }
-
-        return Document();
+            wait(sslclient_send.pid);
+            const stdout_message = sslclient_send.stdout.readln().strip();
+            check(stdout_message == message, "Message not received");
+            writefln("stdout_message = %s", stdout_message);            
+           
+        }
+        return result_ok;
     }
 
     @Then("the sslserver should not chrash.")
@@ -102,9 +111,9 @@ class SendManyRequsts
         sslclient_send.stdin.close();
         writefln("%s", sslclient_send.stdout);
         wait(sslclient_send.pid);
+        wait(server_pipe_id);
 
         return result_ok;
-        return Document();
     }
 
 }
