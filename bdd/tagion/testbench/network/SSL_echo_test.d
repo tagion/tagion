@@ -12,6 +12,7 @@ import std.format;
 import std.array;
 import std.conv;
 import std.string : strip;
+import core.thread;
 
 enum feature = Feature("simple .c sslserver",
         [
@@ -25,7 +26,7 @@ class SendManyRequsts
 {
 
     string port = "8003";
-    int calls = 10000;
+    int calls = 1000;
     Pid server_pipe_id;
 
     @Given("I have a simple sslserver")
@@ -38,8 +39,8 @@ class SendManyRequsts
         ];
         writefln("%s", sslserver_start_command.join(" "));
 
-        auto ssl_server = pipeProcess(sslserver_start_command);
-        server_pipe_id = ssl_server.pid;
+        auto ssl_server = spawnProcess(sslserver_start_command);
+        // server_pipe_id = ssl_server.pid;
         return result_ok;
     }
 
@@ -92,10 +93,14 @@ class SendManyRequsts
         auto sslclient_send = pipeProcess(sslclient_send_command);
         sslclient_send.stdin.writeln(message);
         sslclient_send.stdin.flush();
-        sslclient_send.stdin.close();
+        //sslclient_send.stdin.close();
 
         wait(sslclient_send.pid);
+        // Thread.sleep( 50.msecs );
         const stdout_message = sslclient_send.stdout.readln().strip();
+
+        //sslclient_send.stdout.close();
+        //sslclient_send.stderr.close();
         return stdout_message;
     }
 
