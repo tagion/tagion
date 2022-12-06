@@ -97,12 +97,8 @@ int main(int count, char *strings[])
     else
     {
 		char stdin_buffer[BUFFER_SIZE]={0};
-        const char *cpRequestMessage = "<Body>\
-                               <UserName>%s<UserName>\
-                 <Password>%s<Password>\
-                 <\Body>";
+
         scanf("%s",stdin_buffer);
-        sprintf(acClientRequest, cpRequestMessage, stdin_buffer, stdin_buffer);   /* construct reply */
         // printf("\n\nConnected with %s encryption\n", SSL_get_cipher(ssl));
         // ShowCerts(ssl);        /* get any certs */
         SSL_write(ssl,stdin_buffer, strlen(stdin_buffer));   /* encrypt & send message */

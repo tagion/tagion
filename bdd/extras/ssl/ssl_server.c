@@ -118,7 +118,7 @@ int Servlet(SSL* ssl) /* Serve the connection -- threadable */
         ERR_print_errors_fp(stderr);
 	}
     else {
-        ShowCerts(ssl);        /* get any certificates */
+        ShowCerts(ssl);     /* get any certificates */
         bytes = SSL_read(ssl, buf, sizeof(buf)); /* get request */
         buf[bytes] = '\0';
         printf("Client msg: \"%s\"\n", buf);
