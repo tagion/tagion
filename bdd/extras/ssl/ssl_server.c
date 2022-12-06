@@ -17,13 +17,13 @@ int OpenListener(int port)
     int sd;
     struct sockaddr_in addr;
     sd = socket(PF_INET, SOCK_STREAM, 0);
-    if (setsockopt(sd, SOL_SOCKET,
-                   SO_REUSEADDR | SO_REUSEPORT, &opt,
-                   sizeof(opt)))
-    {
-        perror("setsockopt");
-        exit(EXIT_FAILURE);
-    }
+    // if (setsockopt(sd, SOL_SOCKET,
+    //                0, &opt,
+    //                sizeof(opt)))
+    // {
+    //     perror("setsockopt");
+    //     exit(EXIT_FAILURE);
+    // }
     bzero(&addr, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
@@ -137,7 +137,7 @@ int Servlet(SSL *ssl) /* Serve the connection -- threadable */
     SSL_shutdown(ssl);
 
     sd = SSL_get_fd(ssl); /* get socket connection */
-    close(sd);            /* close connection */
+    // close(sd);            /* close connection */
     SSL_free(ssl);        /* release SSL state */
     printf("buf=%s\n", buf);
     return strcmp(buf, "EOC");
@@ -191,10 +191,10 @@ int main(int count, char *Argc[])
         printf("ret=%d\n", ret);
     }
     printf("Shutdown!");
-    //    SSL_shutdown(ssl);
+    //SSL_shutdown(ssl);
     //	shutdown(server);
     SSL_CTX_free(ctx); /* release context */
-    close(server);     /* close server socket */
+    // close(server);     /* close server socket */
     shutdown(server, SHUT_RDWR);
     return 0;
 }
