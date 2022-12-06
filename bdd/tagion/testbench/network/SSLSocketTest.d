@@ -43,7 +43,7 @@ import std.conv : to;
 //	import std.socket;
 
 	size_t size;
-    auto socket = new Socket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
+    auto socket = new Socket(AddressFamily.INET, SocketType.STREAM, 0); //, ProtocolType.TCP);
 	//auto socket = new Socket();
 	socket.connect(addresses[0]);
 	auto ssl = SSL_new(ctx);
@@ -54,7 +54,8 @@ import std.conv : to;
     ssl = SSL_new(ctx);           /* create new SSL connection state */
     SSL_set_fd(ssl, socket.handle);      /* attach the socket descriptor */
     if (SSL_connect(ssl) == -1) { /* perform the connection */
-        ERR_print_errors_fp(cast(stdc_io.FILE*)stdc_io.stderr);
+	writefln("Error SSL_connect");
+		ERR_print_errors_fp(cast(stdc_io.FILE*)stdc_io.stderr);
 	}
     else
     {
@@ -66,7 +67,8 @@ import std.conv : to;
         SSL_write(ssl, msg.ptr, cast(int)msg.length); /* encrypt & send message */
         size = SSL_read(ssl, buffer.ptr, cast(int)buffer.length);            /* get reply & decrypt */
         buffer[size] = 0;
-        writefln("%s\n", buffer);
+		writefln("size=%d", size);
+        writefln("%s", buffer);
     }
     SSL_shutdown(ssl);
     //close(server); /* close socket */
