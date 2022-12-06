@@ -14,6 +14,8 @@
 
 [SSL_server.md](tagion/testbench/network/SSL_server.md)
 
+[SSL_D_Client_test.md](tagion/testbench/network/SSL_D_Client_test.md)
+
 [Boot_wallet.md](tagion/testbench/wallet/Boot_wallet.md)
 
 [Start_network.md](tagion/testbench/wallet/Start_network.md)
