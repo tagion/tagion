@@ -145,7 +145,7 @@ class SSLSocket : Socket {
     }
 
     bool shutdown() nothrow {
-        return SSL_shutdown(_ssl) !is 0;
+        return SSL_shutdown(_ssl) != 0;
     }
     /++
      Send a buffer to the socket using the socket result

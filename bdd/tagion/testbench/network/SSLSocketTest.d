@@ -40,8 +40,6 @@ string echoSSLSocket(string address, const ushort port, string msg) {
     size = socket.receive(buffer);
     buffer[size] = 0;
 	socket.shutdown;
-	//    SSL_shutdown(socket.ssl);
-//    socket.close;
     return buffer[0 .. size].idup;
 }
 
