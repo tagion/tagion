@@ -132,7 +132,10 @@ class SSLSocket : Socket {
      Connect to an address
      +/
     override void connect(Address to) {
+	import std.stdio;
+		writefln("to:%s", to);
         super.connect(to);
+		writefln("After");
         const res = SSL_connect(_ssl);
         check_error(res, true);
     }
