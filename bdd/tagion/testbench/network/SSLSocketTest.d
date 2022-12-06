@@ -52,13 +52,15 @@ import std.conv : to;
 	writefln("%s:%d", buffer.to!string, size);
 //	socket.close;
 //    ssl = SSL_new(socket.ctx);           /* create new SSL connection state */
-    SSL_set_fd(socket.ssl, socket.handle);      /* attach the socket descriptor */
+/+
+	SSL_set_fd(socket.ssl, socket.handle);      /* attach the socket descriptor */
     if (SSL_connect(socket.ssl) == -1) { /* perform the connection */
 	    writefln("Error SSL_connect");
 		ERR_print_errors_fp(cast(stdc_io.FILE*)stdc_io.stderr);
 	}
     else
     {
+		+/
        // char stdin_buffer[BUFFER_SIZE] = {0};
 
        // scanf("%s", stdin_buffer);
@@ -69,7 +71,7 @@ import std.conv : to;
         buffer[size] = 0;
 		writefln("size=%d", size);
         writefln("%s", buffer);
-    }
+   // }
     SSL_shutdown(socket.ssl);
     //close(server); /* close socket */
 //    SSL_free(ssl);
