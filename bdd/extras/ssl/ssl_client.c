@@ -105,9 +105,11 @@ int main(int count, char *strings[])
         bytes = SSL_read(ssl, buf, sizeof(buf)); /* get reply & decrypt */
         buf[bytes] = 0;
         printf("%s\n", buf);
-        SSL_free(ssl);        /* release connection state */
+            
     }
+    SSL_shutdown(ssl);
     close(server);         /* close socket */
+    SSL_free(ssl);   
     SSL_CTX_free(ctx);        /* release context */
     return 0;
 }

@@ -131,8 +131,11 @@ int Servlet(SSL* ssl) /* Serve the connection -- threadable */
             ERR_print_errors_fp(stderr);
         }
     }
+    SSL_shutdown(ssl);
+
     sd = SSL_get_fd(ssl);       /* get socket connection */
     close(sd);          /* close connection */
+    SSL_free(ssl);         /* release SSL state */
 	printf("buf=%s\n", buf);
 	return strcmp(buf, "EOC");
 }
@@ -179,15 +182,14 @@ int main(int count, char *Argc[])
         ssl = SSL_new(ctx);              /* get new SSL state with context */
         SSL_set_fd(ssl, client);      /* set connection socket to SSL state */
         ret = Servlet(ssl);         /* service connection */
-        SSL_free(ssl);         /* release SSL state */
 		printf("ret=%d\n", ret);
 		
     }
     printf("Shutdown!");
 //    SSL_shutdown(ssl);
 //	shutdown(server);
+	SSL_CTX_free(ctx);         /* release context */
 	close(server);          /* close server socket */
     shutdown(server, SHUT_RDWR);
-	SSL_CTX_free(ctx);         /* release context */
 	return 0;
 }
