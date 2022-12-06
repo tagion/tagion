@@ -36,10 +36,12 @@ run-%: bddfiles bddinit bddenv
 	$(DBIN)/$* $(RUNFLAGS)
 
 test-%: run-%
+	$(PRECMD)
+	${call log.header, $* :: test bdd}
 	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
 	$(BEHAVIOUR) -c $(BDD_RESULTS)
 
-ddd-%: bddfiles 
+ddd-%:  
 	$(PRECMD)
 	$(DEBUGGER) $(DBIN)/$* $(RUNFLAGS)
 
@@ -56,7 +58,7 @@ startreporter.sh:
 	$(PRECMD)
 	$(SCRIPTS)/genreporter.sh $@
 
-bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way
+bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way $(BDD_DFILES)
 	$(PRECMD)
 	$(TESTPROGRAM) -f
 
