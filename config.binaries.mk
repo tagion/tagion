@@ -73,7 +73,7 @@ ${call DO_BIN,tagionsubscription,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER
 # Recorderchain utility
 #
 target-recorderchain: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-recorderchain/*" -a -not -path "*/unitdata/*" }
-${call DO_BIN,recorderchain,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
+${call DO_BIN,recorderchain,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER),$(ONETOOL)}
 
 #
 # Boot utility
@@ -92,6 +92,7 @@ target-tagion: DFILES+=${shell find $(DSRC)/bin-wallet/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-tools/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-boot/tagion -name "*.d"  }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-blockfile/tagion -name "*.d"  }
+target-tagion: DFILES+=${shell find $(DSRC)/bin-recorderchain/tagion -name "*.d"  }
 
 target-tagion:
 ${call DO_BIN,tagion,$(LIBOPENSSL) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)}
