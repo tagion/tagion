@@ -111,7 +111,7 @@ shared static this()
     import std.path;
     import std.file : thisExePath;
 
-    call_stack_file = setExtension(thisExePath, backtrace_ext);
+    call_stack_file = setExtension(thisExePath, backtrace_ext)~'\0';
 
     signal(SIGPIPE, &ignore);
     version (linux)

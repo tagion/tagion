@@ -25,14 +25,12 @@ void call_stack_dump(string exefile, string stacktrace) {
             this.mangle = mangle;
             this.filename = filename;
         }
-        //        const uint call_level;
     }
 
     struct Code {
         const(Symbol) symbol;
         ulong offset;
         ulong mem_addr;
-        //        string text_addr;
     }
 
     alias Symbols = Symbol[const(char[])];
@@ -77,21 +75,6 @@ void call_stack_dump(string exefile, string stacktrace) {
                 if (symbol) {
                     symbol.addr = line_split[0].to!ulong(hex);
                 }
-                // symbols.update(mangle,
-                //     // Ignore the symbols it not in the backtrace
-                //     null,
-                //     // Update .text address to the symbol
-                //     (sym) {
-                //         sym.addr=line_split[0].idup;
-                //         return sym;
-                //     });
-                // const symbol=symbols.get(mangle, null);
-                // writefln("mangle=%s", mangle);
-                // if (symbol) {
-                //     writefln("symbol.call_level=%d code_sym/length=%d", symbol.call_level, code_sym.length);
-
-                //     code_sym[symbol.call_level]=Code(symbol, line_split[0]);
-                // }
             }
         }
     }
@@ -106,12 +89,6 @@ void call_stack_dump(string exefile, string stacktrace) {
         .lineSplitter
         .each!obj_linedump;
 
-    // foreach(symbol; symbols) {
-    //     if (code_sym[symbol.call_level] == Code.init) {
-    //         code_sym[symbol.call_level].symbol = symbol;
-    //     }
-    // }
-
     writeln("Call stack");
     enum notfound = "??:?";
 
@@ -124,7 +101,6 @@ void call_stack_dump(string exefile, string stacktrace) {
             code_write(code);
         }
         else {
-            //            writefln("code.addr.dup=%s", code.addr.dup);
             static ulong actual_addr(const(Code) code) {
                 return code.symbol.addr + code.offset;
             }
