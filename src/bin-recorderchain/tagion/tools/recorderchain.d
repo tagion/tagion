@@ -23,11 +23,14 @@ import tagion.dart.DARTFile;
 import tagion.services.RecorderService;
 import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.recorderchain.RecorderChain;
+import tagion.tools.Basic;
 import tagion.utils.Miscellaneous : cutHex;
 
 auto logo = import("logo.txt");
 
-int main(string[] args)
+mixin Main!(_main, "tagionrecorderchain");
+
+int _main(string[] args)
 {
     immutable program = args[0];
 
