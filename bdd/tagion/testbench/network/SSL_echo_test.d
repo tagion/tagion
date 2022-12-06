@@ -60,12 +60,8 @@ class SendManyRequsts
         for (int i = 0; i < calls; i++)
         {
             immutable message = format("test%s", i);
-
             const response = client_send(message);
-
             check(response == message, "Message not received");
-            // writefln("response = %s", response);
-
         }
         return result_ok;
     }
