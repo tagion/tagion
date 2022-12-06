@@ -76,7 +76,6 @@ class SendManyRequsts
     Document chrash()
     {
         const response = client_send("EOC");
-        wait(server_pipe_id);
 
         return result_ok;
     }
