@@ -50,7 +50,7 @@ class SSLSocket : Socket {
     }
 
     ~this() {
-        shutdown(SocketShutdown.BOTH);
+        //        shutdown(SocketShutdown.BOTH);
         synchronized (lock) {
             SSL_free(_ssl);
         }
@@ -138,12 +138,22 @@ class SSLSocket : Socket {
     }
 
     /++
+	Params: how has no effect for the SSLSocket
+	+/
+    override void shutdown(SocketShutdown how) {
+        const ret = SSL_shutdown(_ssl);
+    }
+
+    void shutdown() {
+        const ret = SSL_shutdown(_ssl);
+        check_error(ret, true);
+    }
+    /++
      Send a buffer to the socket using the socket result
      +/
     @trusted
     override ptrdiff_t send(const(void)[] buf, SocketFlags flags) {
         auto res_val = SSL_write(_ssl, buf.ptr, cast(int) buf.length);
-        // const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, res_val);
         check_error(res_val);
         return res_val;
     }
@@ -296,10 +306,10 @@ class SSLSocket : Socket {
         return this._ssl;
     }
 
-	@nogc
-	static SSL_CTX* ctx() nothrow {
-		return _ctx;
-	}
+    @nogc
+    static SSL_CTX* ctx() nothrow {
+        return _ctx;
+    }
 
     /++
      Constructs a new socket
