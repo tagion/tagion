@@ -141,12 +141,11 @@ class SSLSocket : Socket {
 	Params: how has no effect for the SSLSocket
 	+/
     override void shutdown(SocketShutdown how) {
-        const ret = SSL_shutdown(_ssl);
+        SSL_shutdown(_ssl);
     }
 
-    void shutdown() {
-        const ret = SSL_shutdown(_ssl);
-        check_error(ret, true);
+    bool shutdown() nothrow {
+        return SSL_shutdown(_ssl) !is 0;
     }
     /++
      Send a buffer to the socket using the socket result

@@ -9,6 +9,9 @@ import stdc_io = core.stdc.stdio;
 import tagion.network.SSL;
 
 //import tagion.network.
+version(WOLFSSL) {
+}
+else {
 SSL_CTX* InitCTX() {
     SSL_METHOD* method;
     SSL_CTX* ctx;
@@ -21,6 +24,7 @@ SSL_CTX* InitCTX() {
         return null; //abort();
     }
     return ctx;
+}
 }
 
 //@safe
@@ -35,7 +39,8 @@ string echoSSLSocket(string address, const ushort port, string msg) {
     socket.send(msg);
     size = socket.receive(buffer);
     buffer[size] = 0;
-    SSL_shutdown(socket.ssl);
+	socket.shutdown;
+	//    SSL_shutdown(socket.ssl);
 //    socket.close;
     return buffer[0 .. size].idup;
 }
