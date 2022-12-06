@@ -39,7 +39,10 @@ class DClientWithCServer {
         const response = echoSSLSocket("localhost", port, "wowo").strip();
         writefln("response:<%s>", response);
         check(response == "wowo", "Error response not found");
-        return result_ok;
+        const response_1 = echoSSLSocket("localhost", port, "wowo1").strip();
+        writefln("response:<%s>", response_1);
+        check(response_1 == "wowo1", "Error response not found1");
+         return result_ok;
     }
 
     @When("I send many requests repeadtly.")

@@ -43,7 +43,7 @@ import std.conv : to;
 //	import std.socket;
 
 	size_t size;
-    auto socket = new Socket(AddressFamily.INET, SocketType.STREAM, 0); //, ProtocolType.TCP);
+    auto socket = new Socket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
 	//auto socket = new Socket();
 	socket.connect(addresses[0]);
 	auto ssl = SSL_new(ctx);
@@ -74,6 +74,7 @@ import std.conv : to;
     //close(server); /* close socket */
     SSL_free(ssl);
     SSL_CTX_free(ctx);
+	socket.close;
 //	size_t size;
     return buffer[0 .. size].idup;
 }
