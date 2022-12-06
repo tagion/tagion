@@ -4,7 +4,7 @@ import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
-import tagion.testbench.network.SSL_network_environment : sslclient, sslserver, cert;
+import tagion.testbench.network.SSL_network_environment : sslclient, sslserver, cert, client_send;
 
 import std.process;
 import std.stdio;
@@ -24,8 +24,7 @@ alias FeatureContext = Tuple!(SendManyRequsts, "SendManyRequsts", FeatureGroup*,
 @safe @Scenario("Send many requsts", [])
 class SendManyRequsts
 {
-
-    string port = "8003";
+    ushort port = 8003;
     int calls = 1000;
 
     @Given("I have a simple sslserver")
@@ -33,7 +32,7 @@ class SendManyRequsts
     {
         immutable sslserver_start_command = [
             sslserver,
-            port,
+            port.to!string,
             cert,
         ];
         // writefln("%s", sslserver_start_command.join(" "));
@@ -45,7 +44,7 @@ class SendManyRequsts
     @Given("I have a simple sslclient")
     Document _sslclient() 
     {
-        const response = client_send("wowo");
+        const response = client_send("wowo", port);
 
         // writefln("response = %s", response);
 
@@ -61,7 +60,7 @@ class SendManyRequsts
         {
             immutable message = format("test%s", i);
 
-            const response = client_send(message);
+            const response = client_send(message, port);
 
             check(response == message, "Message not received");
             // writefln("response = %s", response);
@@ -73,32 +72,10 @@ class SendManyRequsts
     @Then("the sslserver should not chrash.")
     Document chrash()
     {
-        const response = client_send("EOC");
+        const response = client_send("EOC", port);
 
         return result_ok;
     }
 
-    string client_send(string message) @trusted
-    {
-        immutable sslclient_send_command = [
-            sslclient,
-            "localhost",
-            port.to!string,
-        ];
-        // writefln("%s", sslclient_send_command.join(" "));
-
-        auto sslclient_send = pipeProcess(sslclient_send_command);
-        sslclient_send.stdin.writeln(message);
-        sslclient_send.stdin.flush();
-        //sslclient_send.stdin.close();
-
-        wait(sslclient_send.pid);
-        // Thread.sleep( 50.msecs );
-        const stdout_message = sslclient_send.stdout.readln().strip();
-
-        //sslclient_send.stdout.close();
-        //sslclient_send.stderr.close();
-        return stdout_message;
-    }
 
 }

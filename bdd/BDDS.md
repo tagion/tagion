@@ -10,6 +10,8 @@
 
 [Logger_subscription_service.md](tagion/testbench/services/Logger_subscription_service.md)
 
+[SSL_D_Server_test.md](tagion/testbench/network/SSL_D_Server_test.md)
+
 [SSL_echo_test.md](tagion/testbench/network/SSL_echo_test.md)
 
 [SSL_server.md](tagion/testbench/network/SSL_server.md)

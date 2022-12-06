@@ -1,12 +1,14 @@
 module tagion.testbench.network.SSLSocketTest;
 
 import std.stdio;
-
-import std.socket : InternetAddress, Socket, SocketException, TcpSocket, getAddress, SocketType, AddressFamily, ProtocolType;
+import std.string;
+import std.socket : InternetAddress, Socket, SocketException, TcpSocket, getAddress, SocketType, AddressFamily, ProtocolType, SocketShutdown;
 
 import tagion.network.SSLSocket;
 import stdc_io=core.stdc.stdio;
 import tagion.network.SSL;
+
+
 //import tagion.network.
 SSL_CTX *InitCTX()
 {
@@ -23,7 +25,6 @@ SSL_CTX *InitCTX()
     }
     return ctx;
 }
-
 
 //@safe
 @trusted
@@ -131,3 +132,112 @@ void SSLSocketServer(immutable(SSLOptions) ssl_options) {
     }
 
 }
+
+// SSL_CTX* InitServerCTX()
+// {
+//     SSL_METHOD *method;
+//     SSL_CTX *ctx;
+//     OpenSSL_add_all_algorithms();     /* load & register all cryptos, etc. */
+//     SSL_load_error_strings();         /* load all error messages */
+//     method = TLSv1_2_server_method(); /* create new server-method instance */
+//     ctx = SSL_CTX_new(method);        /* create new context from method */
+//     if (ctx == null)
+//     {
+//         ERR_print_errors_fp(cast(stdc_io.FILE*)stdc_io.stderr);
+//         return null;
+//     }
+//     return ctx;
+// }
+
+void LoadCertificates(SSL_CTX* ctx, string CertFile, string KeyFile)
+{
+    /* set the local certificate from CertFile */
+    if (SSL_CTX_use_certificate_file(ctx, CertFile.toStringz, SSL_FILETYPE_PEM) <= 0)
+    {
+        ERR_print_errors_fp(cast(stdc_io.FILE*)stdc_io.stderr);
+        return;
+    }
+    /* set the private key from KeyFile (may be the same as CertFile) */
+    if (SSL_CTX_use_PrivateKey_file(ctx, KeyFile.toStringz, SSL_FILETYPE_PEM) <= 0)
+    {
+        ERR_print_errors_fp(cast(stdc_io.FILE*)stdc_io.stderr);
+        return;
+    }
+    /* verify private key */
+    if (!SSL_CTX_check_private_key(ctx))
+    {
+        writeln("Private key does not match the public certificate");
+        return;
+    }
+}
+
+Socket OpenListener(ushort port)
+{
+    
+    auto socket = new Socket(AddressFamily.INET, SocketType.STREAM);
+
+    auto address = getAddress("localhost", port);
+    socket.bind(address[0]);
+    socket.listen(10);
+    
+    
+    return socket;
+}
+
+int Servlet(SSL* ssl) /* Serve the connection -- threadable */
+{
+    auto buffer = new char[1024];
+    int bytes;
+    if (SSL_accept(ssl) == -1)
+    { /* do SSL-protocol accept */
+        ERR_print_errors_fp(cast(stdc_io.FILE*)stdc_io.stderr);
+    }
+    else
+    {
+        bytes = SSL_read(ssl, buffer.ptr, cast(int) buffer.length); /* get request */
+        buffer[bytes] = '\0';
+        writefln("Client msg: \"%s\"\n", buffer);
+        if (bytes > 0)
+        {
+            SSL_write(ssl, buffer.ptr, bytes); /* send reply */
+        }
+        else
+        {
+            ERR_print_errors_fp(cast(stdc_io.FILE*)stdc_io.stderr);
+        }
+    }
+    SSL_shutdown(ssl);
+    // close(sd);            /* close connection */
+    SSL_free(ssl);        /* release SSL state */
+    writefln("buf=%s", buffer);
+    return buffer == "EOC";
+}
+
+
+void _SSLSocketServer(string address, const ushort port, string cert) {
+
+    auto ctx = InitCTX();
+
+        /* initialize SSL */
+    LoadCertificates(ctx, cert, cert); /* load certs */
+    auto server = OpenListener(port); /* create server socket */
+
+    int ret = 1;
+    while(ret) {
+        
+        SSL *ssl;
+        auto client = server.accept(); /* accept connection as usual */
+        ssl = SSL_new(ctx);      /* get new SSL state with context */
+        SSL_set_fd(ssl, client.handle); /* set connection socket to SSL state */
+        ret = Servlet(ssl);      /* service connection */
+        printf("ret=%d\n", ret);
+    }
+    writeln("shutdown!");
+    SSL_CTX_free(ctx);
+    server.shutdown(SocketShutdown.BOTH);
+    server.close();
+}
+
+
+
+
