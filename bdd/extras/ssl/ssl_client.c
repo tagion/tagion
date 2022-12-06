@@ -107,7 +107,7 @@ int main(int count, char *strings[])
         printf("%s\n", buf);
     }
     SSL_shutdown(ssl);
-    // close(server); /* close socket */
+    //close(server); /* close socket */
     SSL_free(ssl);
     SSL_CTX_free(ctx); /* release context */
     return 0;

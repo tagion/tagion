@@ -194,7 +194,7 @@ int main(int count, char *Argc[])
     //SSL_shutdown(ssl);
     //	shutdown(server);
     SSL_CTX_free(ctx); /* release context */
-    // close(server);     /* close server socket */
     shutdown(server, SHUT_RDWR);
+    close(server);     /* close server socket */
     return 0;
 }
