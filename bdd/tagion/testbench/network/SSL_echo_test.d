@@ -36,7 +36,7 @@ class SendManyRequsts
             port,
             cert,
         ];
-        writefln("%s", sslserver_start_command.join(" "));
+        // writefln("%s", sslserver_start_command.join(" "));
 
         auto ssl_server = spawnProcess(sslserver_start_command);
         return result_ok;
@@ -47,7 +47,7 @@ class SendManyRequsts
     {
         const response = client_send("wowo");
 
-        writefln("response = %s", response);
+        // writefln("response = %s", response);
 
         check(response == "wowo", "Message not received");
 
@@ -64,7 +64,7 @@ class SendManyRequsts
             const response = client_send(message);
 
             check(response == message, "Message not received");
-            writefln("response = %s", response);
+            // writefln("response = %s", response);
 
         }
         return result_ok;
@@ -85,7 +85,7 @@ class SendManyRequsts
             "localhost",
             port.to!string,
         ];
-        writefln("%s", sslclient_send_command.join(" "));
+        // writefln("%s", sslclient_send_command.join(" "));
 
         auto sslclient_send = pipeProcess(sslclient_send_command);
         sslclient_send.stdin.writeln(message);

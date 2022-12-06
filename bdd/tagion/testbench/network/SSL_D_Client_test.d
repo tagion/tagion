@@ -34,7 +34,7 @@ class DClientWithCServer
             port.to!string,
             cert,
         ];
-        writefln("%s", sslserver_start_command.join(" "));
+        // writefln("%s", sslserver_start_command.join(" "));
 
         auto ssl_server = spawnProcess(sslserver_start_command);
         Thread.sleep(100.msecs);
@@ -46,7 +46,7 @@ class DClientWithCServer
     Document _sslclient()
     {
         const response = echoSSLSocket("localhost", port, "wowo").strip();
-        writefln("response:<%s>", response);
+        // writefln("response:<%s>", response);
         check(response == "wowo", format("Error response not found got: %s", response));
 
         return result_ok;
@@ -59,7 +59,7 @@ class DClientWithCServer
         {
             string message = format("test%s", i);
             const response = echoSSLSocket("localhost", port, message).strip();
-            writefln("response:<%s>", response);
+            // writefln("response:<%s>", response);
             check(message == response, format("Error response not found got: %s", response));
         }
         return result_ok;
