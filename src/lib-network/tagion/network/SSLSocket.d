@@ -136,8 +136,8 @@ class SSLSocket : Socket {
 		writefln("to:%s", to);
         super.connect(to);
 		writefln("After");
-        const res = SSL_connect(_ssl);
-        check_error(res, true);
+     //   const res = SSL_connect(_ssl);
+     //   check_error(res, true);
     }
 
     /++
@@ -295,9 +295,14 @@ class SSLSocket : Socket {
      the SSL system handler
      +/
     @trusted @nogc
-    package SSL* getSSL() pure nothrow {
+    SSL* getSSL() pure nothrow {
         return this._ssl;
     }
+
+	@nogc
+	static SSL_CTX* ctx() nothrow {
+		return _ctx;
+	}
 
     /++
      Constructs a new socket
@@ -307,7 +312,7 @@ class SSLSocket : Socket {
             bool verifyPeer = true) {
         ERR_clear_error;
         super(af, type);
-        //_init(verifyPeer, EndpointType.Client);
+        _init(verifyPeer, EndpointType.Client);
     }
 
     this(AddressFamily af,

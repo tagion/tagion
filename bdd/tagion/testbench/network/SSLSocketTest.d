@@ -7,7 +7,7 @@ import std.socket : InternetAddress, Socket, SocketException, TcpSocket, getAddr
 import tagion.network.SSLSocket;
 import stdc_io=core.stdc.stdio;
 import tagion.network.SSL;
-import
+
 //import tagion.network.
 SSL_CTX *InitCTX()
 {
@@ -31,7 +31,7 @@ SSL_CTX *InitCTX()
 string echoSSLSocket(string address, const ushort port, string msg) {
 //    auto socket = new SSLSocket(AddressFamily.INET, EndpointType.Client, SocketType.STREAM); //, ProtocolType.TCP);
 import std.conv : to;
-    auto ctx = InitCTX();
+//    auto ctx = InitCTX();
 	auto addresses = getAddress(address, port);
 	writefln("Address=%s", addresses);
 //	socket.connect(addresses[0]);
@@ -47,12 +47,12 @@ import std.conv : to;
     auto socket = new SSLSocket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
 	//auto socket = new Socket();
 	socket.connect(addresses[0]);
-	auto ssl = SSL_new(ctx);
+	auto ssl = SSL_new(socket.ctx);
 //	socket.send(msg);
 //    const size = socket.receive(buffer);
 	writefln("%s:%d", buffer.to!string, size);
 //	socket.close;
-    ssl = SSL_new(ctx);           /* create new SSL connection state */
+    ssl = SSL_new(socket.ctx);           /* create new SSL connection state */
     SSL_set_fd(ssl, socket.handle);      /* attach the socket descriptor */
     if (SSL_connect(ssl) == -1) { /* perform the connection */
 	writefln("Error SSL_connect");
@@ -74,7 +74,7 @@ import std.conv : to;
     SSL_shutdown(ssl);
     //close(server); /* close socket */
     SSL_free(ssl);
-    SSL_CTX_free(ctx);
+    SSL_CTX_free(socket.ctx);
 	socket.close;
 //	size_t size;
     return buffer[0 .. size].idup;
