@@ -27,7 +27,6 @@ class SendManyRequsts
 
     string port = "8003";
     int calls = 1000;
-    Pid server_pipe_id;
 
     @Given("I have a simple sslserver")
     Document _sslserver()
@@ -40,7 +39,6 @@ class SendManyRequsts
         writefln("%s", sslserver_start_command.join(" "));
 
         auto ssl_server = spawnProcess(sslserver_start_command);
-        // server_pipe_id = ssl_server.pid;
         return result_ok;
     }
 
