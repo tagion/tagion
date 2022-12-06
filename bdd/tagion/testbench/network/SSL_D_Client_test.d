@@ -11,6 +11,8 @@ import std.stdio;
 import std.string;
 import std.process;
 import std.conv;
+import core.thread;
+import core.time;
 
 enum feature = Feature("simple D client", ["This is a test with the C server and a simple D client."]);
 
@@ -30,15 +32,25 @@ class DClientWithCServer {
         writefln("%s", sslserver_start_command.join(" "));
 
         auto ssl_server = spawnProcess(sslserver_start_command);
+        Thread.sleep(100.msecs);
         // server_pipe_id = ssl_server.pid;
         return result_ok;
     }
 
     @Given("I have a simple D sslclient.")
     Document _sslclient() {
+        
+        const test = client_send("wowo");
+
+        writefln("response = %s", test);
+
+        check(test == "wowo", "Message not received");
+
+
         const response = echoSSLSocket("localhost", port, "wowo").strip();
         writefln("response:<%s>", response);
         check(response == "wowo", "Error response not found");
+
         const response_1 = echoSSLSocket("localhost", port, "wowo1").strip();
         writefln("response:<%s>", response_1);
         check(response_1 == "wowo1", "Error response not found1");
@@ -52,7 +64,31 @@ class DClientWithCServer {
 
     @Then("the sslserver should not chrash.")
     Document chrash() {
-        return Document();
+        const response = client_send("EOC");
+        return result_ok;
+    }
+
+    string client_send(string message) @trusted
+    {
+        immutable sslclient_send_command = [
+            sslclient,
+            "localhost",
+            port.to!string,
+        ];
+        writefln("%s", sslclient_send_command.join(" "));
+
+        auto sslclient_send = pipeProcess(sslclient_send_command);
+        sslclient_send.stdin.writeln(message);
+        sslclient_send.stdin.flush();
+        //sslclient_send.stdin.close();
+
+        wait(sslclient_send.pid);
+        // Thread.sleep( 50.msecs );
+        const stdout_message = sslclient_send.stdout.readln().strip();
+
+        //sslclient_send.stdout.close();
+        //sslclient_send.stderr.close();
+        return stdout_message;
     }
 
 }
