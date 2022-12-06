@@ -7,6 +7,7 @@ import std.socket : InternetAddress, Socket, SocketException, TcpSocket, getAddr
 import tagion.network.SSLSocket;
 import stdc_io=core.stdc.stdio;
 import tagion.network.SSL;
+import
 //import tagion.network.
 SSL_CTX *InitCTX()
 {
@@ -43,7 +44,7 @@ import std.conv : to;
 //	import std.socket;
 
 	size_t size;
-    auto socket = new Socket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
+    auto socket = new SSLSocket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
 	//auto socket = new Socket();
 	socket.connect(addresses[0]);
 	auto ssl = SSL_new(ctx);

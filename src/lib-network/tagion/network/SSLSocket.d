@@ -41,8 +41,8 @@ class SSLSocket : Socket {
         synchronized (lock) {
             _ssl = SSL_new(_ctx);
         }
+        SSL_set_fd(_ssl, this.handle);
         if (et is EndpointType.Client) {
-            SSL_set_fd(_ssl, this.handle);
             if (!verifyPeer) {
                 SSL_set_verify(_ssl, SSL_VERIFY_NONE, null);
             }
@@ -302,6 +302,14 @@ class SSLSocket : Socket {
     /++
      Constructs a new socket
      +/
+    this(AddressFamily af,
+            SocketType type = SocketType.STREAM,
+            bool verifyPeer = true) {
+        ERR_clear_error;
+        super(af, type);
+        //_init(verifyPeer, EndpointType.Client);
+    }
+
     this(AddressFamily af,
             EndpointType et,
             SocketType type = SocketType.STREAM,
