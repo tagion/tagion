@@ -246,13 +246,13 @@ class SSLSocket : Socket {
             }
             client.blocking = false;
             ssl_client = new SSLSocket(client.handle, EndpointType.Server, client.addressFamily);
-            const fd_res = SSL_set_fd(ssl_client.getSSL, client.handle);
+            const fd_res = SSL_set_fd(ssl_client.ssl, client.handle);
             if (!fd_res) {
                 return false;
             }
         }
 
-        auto c_ssl = ssl_client.getSSL;
+        auto c_ssl = ssl_client.ssl;
 
         const res = SSL_accept(c_ssl);
         bool accepted;
@@ -295,7 +295,7 @@ class SSLSocket : Socket {
      the SSL system handler
      +/
     @trusted @nogc
-    SSL* getSSL() pure nothrow {
+    SSL* ssl() pure nothrow {
         return this._ssl;
     }
 
