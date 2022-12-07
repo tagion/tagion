@@ -36,6 +36,7 @@ import tagion.services.TranscriptService;
 import tagion.services.FileDiscoveryService;
 import tagion.services.NetworkRecordDiscoveryService;
 import tagion.services.RecorderService : RecorderTask;
+import tagion.services.EpochDumpService : EpochDumpTask;
 import tagion.tasks.TaskWrapper : Task;
 import tagion.utils.Random;
 import tagion.utils.Queue;
@@ -134,6 +135,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         Tid transaction_socket_tid;
         Tid transcript_tid;
         Tid recorder_service_tid;
+        Tid epoch_dumping_service_tid;
 
         shared StdSecureNet shared_net;
         synchronized (master_net)
@@ -289,6 +291,15 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 }
             }
 
+            if (epoch_dumping_service_tid !is Tid.init)
+            {
+                epoch_dumping_service_tid.send(Control.STOP);
+                if (receiveOnly!Control == Control.END)
+                {
+                    log("Epoch dumping service stopped");
+                }
+            }
+
             if (discovery_tid !is Tid.init)
             {
                 discovery_tid.prioritySend(Control.STOP);
@@ -345,12 +356,21 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             recorder_service_tid = locate(opts.recorder_chain.task_name);
         }
 
+        if (!opts.epoch_dump.disable_transaction_dumping)
+        {
+            auto task_name = opts.epoch_dump.task_name;
+            Task!EpochDumpTask(task_name, opts);
+            assert(receiveOnly!Control == Control.LIVE);
+            epoch_dumping_service_tid = locate(task_name);
+        }
+
         transcript_tid = spawn(
 
             &transcriptServiceTask,
             opts.transcript.task_name,
             opts.dart.sync.task_name,
-            opts.recorder_chain.task_name);
+            opts.recorder_chain.task_name,
+            opts.epoch_dump.task_name);
         assert(receiveOnly!Control == Control.LIVE);
 
         transaction_socket_tid = spawn(
