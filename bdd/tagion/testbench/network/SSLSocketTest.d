@@ -43,52 +43,16 @@ SSL_CTX *InitServerCTX()
 //@safe
 @trusted
 string echoSSLSocket(string address, const ushort port, string msg) {
-//    auto socket = new SSLSocket(AddressFamily.INET, EndpointType.Client, SocketType.STREAM); //, ProtocolType.TCP);
-import std.conv : to;
-    auto ctx = InitCTX();
-	auto addresses = getAddress(address, port);
-//	socket.connect(addresses[0]);
-
+    import std.conv : to;
+    auto addresses = getAddress(address, port);
     auto buffer = new char[1024];
-/*
-	socket.send(msg);
-    const size = socket.receive(buffer);
-*/
-//	import std.socket;
-
-	size_t size;
-    auto socket = new Socket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
-	//auto socket = new Socket();
-	socket.connect(addresses[0]);
-	auto ssl = SSL_new(ctx);
-//	socket.send(msg);
-//    const size = socket.receive(buffer);
-	writefln("%s:%d", buffer.to!string, size);
-//	socket.close;
-    ssl = SSL_new(ctx);           /* create new SSL connection state */
-    SSL_set_fd(ssl, socket.handle);      /* attach the socket descriptor */
-    if (SSL_connect(ssl) == -1) { /* perform the connection */
-	writefln("Error SSL_connect");
-		ERR_print_errors_fp(cast(stdc_io.FILE*)stdc_io.stderr);
-	}
-    else
-    {
-       // char stdin_buffer[BUFFER_SIZE] = {0};
-
-       // scanf("%s", stdin_buffer);
-        // printf("\n\nConnected with %s encryption\n", SSL_get_cipher(ssl));
-        // ShowCerts(ssl);        /* get any certs */
-        SSL_write(ssl, msg.ptr, cast(int)msg.length); /* encrypt & send message */
-        size = SSL_read(ssl, buffer.ptr, cast(int)buffer.length);            /* get reply & decrypt */
-        buffer[size] = 0;
-		writefln("size=%d", size);
-    }
-    SSL_shutdown(ssl);
-    //close(server); /* close socket */
-    SSL_free(ssl);
-    SSL_CTX_free(ctx);
-	socket.close;
-//	size_t size;
+    size_t size;
+    auto socket = new SSLSocket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
+    socket.connect(addresses[0]);
+    socket.send(msg);
+    size = socket.receive(buffer);
+    buffer[size] = 0;
+	socket.shutdown;
     return buffer[0 .. size].idup;
 }
 

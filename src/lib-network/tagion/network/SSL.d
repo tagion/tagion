@@ -44,6 +44,7 @@ version (WOLFSSL) {
             alias SSL_connect = wolfSSL_connect;
             alias SSL_accept = wolfSSL_accept;
             alias SSL_pending = wolfSSL_pending;
+            alias SSL_shutdown= wolfSSL_shutdown;
             alias TLS_client_method = wolfTLS_client_method;
             alias TLS_server_method = wolfTLS_server_method;
             alias SSL_CTX_check_private_key = wolfSSL_CTX_check_private_key;
@@ -81,8 +82,8 @@ else {
         struct SSL_CTX;
         struct SSL_METHOD;
 
-        @trusted nothrow {
-//        package {
+        @trusted nothrow @nogc {
+            //        package {
             SSL* SSL_new(SSL_CTX* ctx);
             void SSL_free(SSL* ssl);
             void SSL_set_verify(SSL* ssl, int mode, void* callback);
@@ -107,7 +108,7 @@ else {
             int SSL_get_error(const SSL* ssl, int ret);
 
             void ERR_clear_error();
-                        void ERR_print_errors_fp(FILE* file);
+            void ERR_print_errors_fp(FILE* file);
             ulong ERR_get_error();
             void ERR_error_string_n(ulong e, char* buf, size_t len);
             // char* strerror(int errnum);

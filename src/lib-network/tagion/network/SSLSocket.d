@@ -41,8 +41,8 @@ class SSLSocket : Socket {
         synchronized (lock) {
             _ssl = SSL_new(_ctx);
         }
+        SSL_set_fd(_ssl, this.handle);
         if (et is EndpointType.Client) {
-            SSL_set_fd(_ssl, this.handle);
             if (!verifyPeer) {
                 SSL_set_verify(_ssl, SSL_VERIFY_NONE, null);
             }
@@ -50,7 +50,6 @@ class SSLSocket : Socket {
     }
 
     ~this() {
-        shutdown(SocketShutdown.BOTH);
         synchronized (lock) {
             SSL_free(_ssl);
         }
@@ -132,21 +131,27 @@ class SSLSocket : Socket {
      Connect to an address
      +/
     override void connect(Address to) {
-	import std.stdio;
-		writefln("to:%s", to);
         super.connect(to);
-		writefln("After");
         const res = SSL_connect(_ssl);
         check_error(res, true);
     }
 
+    /++
+	Params: how has no effect for the SSLSocket
+	+/
+    override void shutdown(SocketShutdown how) {
+        SSL_shutdown(_ssl);
+    }
+
+    bool shutdown() nothrow {
+        return SSL_shutdown(_ssl) != 0;
+    }
     /++
      Send a buffer to the socket using the socket result
      +/
     @trusted
     override ptrdiff_t send(const(void)[] buf, SocketFlags flags) {
         auto res_val = SSL_write(_ssl, buf.ptr, cast(int) buf.length);
-        // const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, res_val);
         check_error(res_val);
         return res_val;
     }
@@ -246,13 +251,13 @@ class SSLSocket : Socket {
             }
             client.blocking = false;
             ssl_client = new SSLSocket(client.handle, EndpointType.Server, client.addressFamily);
-            const fd_res = SSL_set_fd(ssl_client.getSSL, client.handle);
+            const fd_res = SSL_set_fd(ssl_client.ssl, client.handle);
             if (!fd_res) {
                 return false;
             }
         }
 
-        auto c_ssl = ssl_client.getSSL;
+        auto c_ssl = ssl_client.ssl;
 
         const res = SSL_accept(c_ssl);
         bool accepted;
@@ -295,13 +300,26 @@ class SSLSocket : Socket {
      the SSL system handler
      +/
     @trusted @nogc
-    package SSL* getSSL() pure nothrow {
+    SSL* ssl() pure nothrow {
         return this._ssl;
+    }
+
+    @nogc
+    static SSL_CTX* ctx() nothrow {
+        return _ctx;
     }
 
     /++
      Constructs a new socket
      +/
+    this(AddressFamily af,
+            SocketType type = SocketType.STREAM,
+            bool verifyPeer = true) {
+        ERR_clear_error;
+        super(af, type);
+        _init(verifyPeer, EndpointType.Client);
+    }
+
     this(AddressFamily af,
             EndpointType et,
             SocketType type = SocketType.STREAM,
