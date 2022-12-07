@@ -9,6 +9,8 @@ import std.algorithm.iteration : map;
 import std.range;
 import std.array : array;
 import std.bitmanip: nativeToBigEndian;
+import tagion.utils.Random;
+import stdrnd = std.random;
 
 import tagion.gossip.AddressBook;
 import tagion.hibon.HiBON : HiBON;
@@ -73,8 +75,9 @@ int _main(string[] args)
     immutable program = args[0];
     writefln("BOOT ", program);
     const net = new StdHashNet;
-    Buffer gene(ulong index) {
-        return net.rawCalcHash(nativeToBigEndian(index));
+    Buffer init_gene() {
+        auto rnd = Random!uint(stdrnd.unpredictableSeed);
+        return net.rawCalcHash(nativeToBigEndian(rnd.value()));
     }
     bool version_switch;
 
@@ -173,10 +176,10 @@ int _main(string[] args)
         auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN).array;
 
         const label = "some_name";
-        foreach (index, amount; bill_amounts)
+        foreach (amount; bill_amounts)
         {
             const invoice = StdSecureWallet.createInvoice(label, amount);
-            const bill = StandardBill(invoice.amount, 0, invoice.pkey, gene(index));
+            const bill = StandardBill(invoice.amount, 0, invoice.pkey, init_gene);
 
             // Add the bill to the DART recorder
             recorder.add(bill);
@@ -184,7 +187,7 @@ int _main(string[] args)
     }
     else
     {
-        foreach (index, file; args[1 .. $])
+        foreach (file; args[1 .. $])
         {
             if (!file.exists)
             {
@@ -200,7 +203,7 @@ int _main(string[] args)
 
             const invoice = Invoice(invoice_doc);
 
-            const bill = StandardBill(invoice.amount, 0, invoice.pkey, gene(index));
+            const bill = StandardBill(invoice.amount, 0, invoice.pkey, init_gene);
 
             // Add the bill to the DART recorder
             recorder.add(bill);
