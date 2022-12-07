@@ -103,26 +103,17 @@ version (OLD_TRANSACTION)
 
         void run(const uint epoch, ref uint index_in_epoch, const Fingerprint bullseye, const HashNet net)
         {
-            // immutable source=signed_contract.contract.script;
             enum transactions_name = "#trans";
             immutable source = (() @trusted =>
                     format(": %s %s ;", transactions_name, signed_contract.contract.script)
             )();
-            // auto src = ScriptParser(source);
-            // Script script;
-            // auto builder = ScriptBuilder(src[]);
-            // builder.build(script);
-
-            // auto sc = new ScriptContext(10, 10, 10, 100);
-            // script.execute(transactions_name, sc);
-
+            
             const total_input = calcTotal(signed_contract.inputs);
             TagionCurrency total_output;
             foreach (pkey, doc; signed_contract.contract.output)
             {
                 StandardBill bill;
                 bill.epoch = epoch;
-                //const num = sc.pop.get!Number;
                 pragma(msg, "fixme(cbr): Check for overflow");
                 const amount = TagionCurrency(doc);
                 total_output += amount;
@@ -130,7 +121,6 @@ version (OLD_TRANSACTION)
                 bill.owner = pkey;
                 auto index_hash = net.rawCalcHash(nativeToBigEndian(index_in_epoch));
                 bill.gene = net.rawCalcHash(bullseye.buffer ~ index_hash);
-                //            bill.bill_type = "TGN";
                 _output_bills ~= bill;
                 index_in_epoch++;
             }

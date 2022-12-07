@@ -337,6 +337,7 @@ class DART : DARTFile
      + This function return current database bullseye.
      + @param received - the HiRPC received package
      + @param read_only - !Because this function is a read only the read_only parameter has no effect 
+     + @return HiRPC result that contains current database bullseye
      +/
     @HiRPCMethod private const(HiRPCSender) dartBullseye(ref const(HiRPCReceiver) received, const bool read_only)
     in
