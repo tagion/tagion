@@ -10,6 +10,8 @@
 #include "openssl/ssl.h"
 #include "openssl/err.h"
 #define FAIL -1
+
+int listener_size = 10;
 // Create the SSL socket and intialize the socket address structure
 int OpenListener(int port)
 {
@@ -33,7 +35,7 @@ int OpenListener(int port)
         perror("can't bind port");
         abort();
     }
-    if (listen(sd, 10) != 0)
+    if (listen(sd, listener_size) != 0)
     {
         perror("Can't configure listening port");
         abort();
@@ -138,7 +140,7 @@ int Servlet(SSL *ssl) /* Serve the connection -- threadable */
 
     sd = SSL_get_fd(ssl); /* get socket connection */
     // close(sd);            /* close connection */
-    SSL_free(ssl);        /* release SSL state */
+    SSL_free(ssl); /* release SSL state */
     printf("buf=%s\n", buf);
     return strcmp(buf, "EOC");
 }
@@ -172,18 +174,43 @@ int main(int count, char *Argc[])
     server = OpenListener(atoi(portnum)); /* create server socket */
     int tr;
 
-    if (listen(server, 3) < 0)
+    if (listen(server, listener_size) < 0)
     {
         perror("listen");
         return 1;
     }
     int ret = 1;
+    int rv;
+    int client;
+    fd_set set;
     while (ret)
     {
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
         SSL *ssl;
-        int client = accept(server, (struct sockaddr *)&addr, &len); /* accept connection as usual */
+        rv = select(server + 1, &set, NULL, NULL, NULL);
+        if (rv == -1)
+        {
+            perror("select"); /* an error occurred */
+            return 1;
+        }
+        else if (rv == 0)
+        {
+            printf("timeout occurred (20 second) \n"); /* a timeout occurred */
+            return 1;
+        }
+        else
+        {
+            client = accept(server, (struct sockaddr *)&addr, &len); /* accept connection as usual */
+        }
+
+        // int client = accept(server, (struct sockaddr *)&addr, &len); /* accept connection as usual */
+        printf("client %d \n", client);
+        if (client < 0)
+        {
+            printf("Breaking %d \n", client);
+            continue;
+        }
         printf("Connection: %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
         ssl = SSL_new(ctx);      /* get new SSL state with context */
         SSL_set_fd(ssl, client); /* set connection socket to SSL state */
@@ -191,10 +218,10 @@ int main(int count, char *Argc[])
         printf("ret=%d\n", ret);
     }
     printf("Shutdown!");
-    //SSL_shutdown(ssl);
+    // SSL_shutdown(ssl);
     //	shutdown(server);
     SSL_CTX_free(ctx); /* release context */
     shutdown(server, SHUT_RDWR);
-    close(server);     /* close server socket */
+    close(server); /* close server socket */
     return 0;
 }

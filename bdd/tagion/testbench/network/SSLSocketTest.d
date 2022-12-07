@@ -7,7 +7,9 @@ import std.socket : InternetAddress, Socket, SocketException, TcpSocket, getAddr
 import tagion.network.SSLSocket;
 import stdc_io=core.stdc.stdio;
 import tagion.network.SSL;
-
+import std.concurrency;
+import tagion.behaviour;
+import core.thread;
 
 //import tagion.network.
 SSL_CTX *InitCTX()
@@ -54,6 +56,18 @@ string echoSSLSocket(string address, const ushort port, string msg) {
     buffer[size] = 0;
 	socket.shutdown;
     return buffer[0 .. size].idup;
+}
+
+@trusted
+void echoSSLSocketTask(string address, immutable ushort port, string prefix, immutable uint calls) {
+    foreach(i; 0..calls) {
+        const message = format("%s%s", prefix, i);
+        const response = echoSSLSocket(address, port, message);
+        writefln("response: <%s>", response);
+        check(response == message, format("Error: message and response not the same got: <%s>", response));
+    }
+    writefln("DONE %s", prefix);
+    ownerTid.send(true);
 }
 
 import tagion.network.SSLOptions;
@@ -109,21 +123,6 @@ void SSLSocketServer(immutable(SSLOptions) ssl_options) {
 
 }
 
-// SSL_CTX* InitServerCTX()
-// {
-//     SSL_METHOD *method;
-//     SSL_CTX *ctx;
-//     OpenSSL_add_all_algorithms();     /* load & register all cryptos, etc. */
-//     SSL_load_error_strings();         /* load all error messages */
-//     method = TLSv1_2_server_method(); /* create new server-method instance */
-//     ctx = SSL_CTX_new(method);        /* create new context from method */
-//     if (ctx == null)
-//     {
-//         ERR_print_errors_fp(cast(stdc_io.FILE*)stdc_io.stderr);
-//         return null;
-//     }
-//     return ctx;
-// }
 
 void LoadCertificates(SSL_CTX* ctx, string CertFile, string KeyFile)
 {
