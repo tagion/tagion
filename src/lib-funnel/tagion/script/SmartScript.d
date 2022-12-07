@@ -347,7 +347,7 @@ version (OLD_TRANSACTION)
                 assert(false, "Input and Output amount not checked");
             }catch(SmartScriptException e){
                 assert(e.code == ConsensusFailCode
-                            .SMARTSCRIPT_INVALID_OUTPUT);
+                            .SMARTSCRIPT_NOT_ENOUGH_MONEY);
             } 
         }
         /// SmartScript accept contracts with fee included
