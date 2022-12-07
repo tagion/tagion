@@ -193,7 +193,7 @@ class SSLSocket : Socket {
      Send a buffer to the socket using the socket result
      +/
     @trusted
-    override ptrdiff_t send(const(void)[] buf, SocketFlags flags) {
+    override ptrdiff_t send(scope const(void)[] buf, SocketFlags flags) {
         auto res_val = SSL_write(_ssl, buf.ptr, cast(int) buf.length);
         check_error(res_val);
         return res_val;
@@ -202,7 +202,7 @@ class SSLSocket : Socket {
     /++
      Send a buffer to the socket with no result
      +/
-    override ptrdiff_t send(const(void)[] buf) {
+    override ptrdiff_t send(scope const(void)[] buf) {
         return send(buf, SocketFlags.NONE);
     }
 
@@ -252,7 +252,7 @@ class SSLSocket : Socket {
      Receive a buffer from the socket using the flags
      +/
     @trusted
-    override ptrdiff_t receive(void[] buf, SocketFlags flags) {
+    override ptrdiff_t receive(scope void[] buf, SocketFlags flags) {
         const res_val = SSL_read(_ssl, buf.ptr, cast(uint) buf.length);
         check_error(res_val);
         return res_val;
@@ -261,7 +261,7 @@ class SSLSocket : Socket {
     /++
      Receive a buffer from the socket with not flags
      +/
-    override ptrdiff_t receive(void[] buf) {
+    override ptrdiff_t receive(scope void[] buf) {
         return receive(buf, SocketFlags.NONE);
     }
 
