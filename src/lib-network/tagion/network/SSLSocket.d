@@ -132,8 +132,10 @@ class SSLSocket : Socket {
      +/
     override void connect(Address to) {
         super.connect(to);
-        const res = SSL_connect(_ssl);
-        check_error(res, true);
+        synchronized (lock) {
+            const res = SSL_connect(_ssl);
+            check_error(res, true);
+        }
     }
 
     /++
