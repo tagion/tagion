@@ -36,7 +36,6 @@ string client_send(string message, ushort port) @trusted
     wait(sslclient_send.pid);
     // Thread.sleep( 50.msecs );
     const stdout_message = sslclient_send.stdout.readln().strip();
-
     //sslclient_send.stdout.close();
     //sslclient_send.stderr.close();
     return stdout_message;

@@ -37,7 +37,7 @@ class CClientWithDServer
     @Given("I have a simple c sslclient.")
     Document _sslclient()
     {
-        const response = client_send("wowo", port);
+        const response = client_send("wowo", port).strip();
         check(response == "wowo", "Message not received");
         return result_ok;
     }
@@ -45,13 +45,21 @@ class CClientWithDServer
     @When("I send many requests repeadtly.")
     Document repeadtly()
     {
-        return Document();
+        for (int i = 0; i < calls; i++)
+        {
+            string message = format("test%s", i);
+            const response = client_send(message, port).strip();
+            writefln(response);
+            check(message == response, format("Error response not found got: <%s>", response));
+        }
+        return result_ok;
     }
 
     @Then("the sslserver should not chrash.")
     Document chrash()
     {
-        return Document();
+        const response = client_send("EOC", port);
+        return result_ok;
     }
 
 }

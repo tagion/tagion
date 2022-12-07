@@ -26,6 +26,20 @@ SSL_CTX *InitCTX()
     return ctx;
 }
 
+SSL_CTX *InitServerCTX()
+{
+    SSL_METHOD* method;
+    SSL_CTX* ctx;
+    method = TLS_server_method(); /* create new server-method instance */
+    ctx = SSL_CTX_new(method);        /* create new context from method */
+    if (ctx == null)
+    {
+        ERR_print_errors_fp(cast(stdc_io.FILE*)stdc_io.stderr);
+        return null;
+    }
+    return ctx;
+}
+
 //@safe
 @trusted
 string echoSSLSocket(string address, const ushort port, string msg) {
@@ -33,7 +47,6 @@ string echoSSLSocket(string address, const ushort port, string msg) {
 import std.conv : to;
     auto ctx = InitCTX();
 	auto addresses = getAddress(address, port);
-	writefln("Address=%s", addresses);
 //	socket.connect(addresses[0]);
 
     auto buffer = new char[1024];
@@ -69,7 +82,6 @@ import std.conv : to;
         size = SSL_read(ssl, buffer.ptr, cast(int)buffer.length);            /* get reply & decrypt */
         buffer[size] = 0;
 		writefln("size=%d", size);
-        writefln("%s", buffer);
     }
     SSL_shutdown(ssl);
     //close(server); /* close socket */
@@ -171,32 +183,28 @@ void LoadCertificates(SSL_CTX* ctx, string CertFile, string KeyFile)
     }
 }
 
-Socket OpenListener(ushort port)
+Socket OpenListener(string address, ushort port)
 {
     
     auto socket = new Socket(AddressFamily.INET, SocketType.STREAM);
 
-    auto address = getAddress("localhost", port);
-    socket.bind(address[0]);
+    auto addr = getAddress(address, port);
+    socket.bind(addr[0]);
     socket.listen(10);
     
     
     return socket;
 }
 
-int Servlet(SSL* ssl) /* Serve the connection -- threadable */
+bool Servlet(SSL* ssl) /* Serve the connection -- threadable */
 {
     auto buffer = new char[1024];
     int bytes;
-    if (SSL_accept(ssl) == -1)
+    const ret = SSL_accept(ssl);
+    if (ret == 1)
     { /* do SSL-protocol accept */
-        ERR_print_errors_fp(cast(stdc_io.FILE*)stdc_io.stderr);
-    }
-    else
-    {
         bytes = SSL_read(ssl, buffer.ptr, cast(int) buffer.length); /* get request */
-        buffer[bytes] = '\0';
-        writefln("Client msg: \"%s\"\n", buffer);
+        buffer.length=bytes;
         if (bytes > 0)
         {
             SSL_write(ssl, buffer.ptr, bytes); /* send reply */
@@ -205,6 +213,14 @@ int Servlet(SSL* ssl) /* Serve the connection -- threadable */
         {
             ERR_print_errors_fp(cast(stdc_io.FILE*)stdc_io.stderr);
         }
+        writefln("Client msg: %s", buffer[0..bytes]);
+        
+    }
+    else
+    {
+        ERR_print_errors_fp(cast(stdc_io.FILE*)stdc_io.stderr);
+        
+
     }
     SSL_shutdown(ssl);
     // close(sd);            /* close connection */
@@ -216,21 +232,19 @@ int Servlet(SSL* ssl) /* Serve the connection -- threadable */
 
 void _SSLSocketServer(string address, const ushort port, string cert) {
 
-    auto ctx = InitCTX();
-
+    auto ctx = InitServerCTX();
         /* initialize SSL */
     LoadCertificates(ctx, cert, cert); /* load certs */
-    auto server = OpenListener(port); /* create server socket */
+    auto server = OpenListener(address, port); /* create server socket */
 
-    int ret = 1;
-    while(ret) {
-        
+    bool stop;
+    server.listen(3);
+    while(!stop) {
         SSL *ssl;
         auto client = server.accept(); /* accept connection as usual */
         ssl = SSL_new(ctx);      /* get new SSL state with context */
         SSL_set_fd(ssl, client.handle); /* set connection socket to SSL state */
-        ret = Servlet(ssl);      /* service connection */
-        printf("ret=%d\n", ret);
+        stop = Servlet(ssl);      /* service connection */
     }
     writeln("shutdown!");
     SSL_CTX_free(ctx);
