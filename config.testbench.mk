@@ -18,6 +18,10 @@ testbench: bddfiles
 target-testbench: DFLAGS+=$(DVERSION)=ONETOOL
 target-testbench: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 target-testbench: DFILES+=$(BDD_DFILES)
+#target-testbench: $(BDD_DFILES)
+
 ${call DO_BIN,testbench,}
+
+#$(DBIN)/testbench: $(BDD_DFILES) $(DFILES)
 
 

@@ -44,7 +44,7 @@ version (WOLFSSL) {
             alias SSL_connect = wolfSSL_connect;
             alias SSL_accept = wolfSSL_accept;
             alias SSL_pending = wolfSSL_pending;
-            alias SSL_shutdown= wolfSSL_shutdown;
+            alias SSL_shutdown = wolfSSL_shutdown;
             alias TLS_client_method = wolfTLS_client_method;
             alias TLS_server_method = wolfTLS_server_method;
             alias SSL_CTX_check_private_key = wolfSSL_CTX_check_private_key;
