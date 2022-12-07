@@ -230,9 +230,9 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     auto bullseye = modifyDART(recorder);
                     if (!options.epoch_dump.disable_transaction_dumping)
                     {
-                    }
                         epoch_dump_tid.send(Document(contracts_dump), bullseye);
-                    dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), Fingerprint(bullseye));
+                    }
+                    dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), bullseye);
                 }
                 else
                 {
