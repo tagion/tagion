@@ -9,7 +9,7 @@ import std.algorithm.searching : all;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCode, Check;
 import tagion.basic.TagionExceptions : TagionException;
-import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey, Contract, Globals;
+import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey, Contract, Globals, globals;
 import tagion.basic.Types : Pubkey, Buffer, Signature;
 import tagion.script.TagionCurrency;
 import tagion.dart.Recorder : RecordFactory;
