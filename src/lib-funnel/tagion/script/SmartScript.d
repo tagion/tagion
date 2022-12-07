@@ -334,7 +334,7 @@ version (OLD_TRANSACTION)
             contract.script = Script("pay");
 
             ssc.contract = contract;
-            ssc.signs = [ net.sign(net.hashOf(contract.toDoc)) ];
+            ssc.signs = [ alice.sign(net.hashOf(contract.toDoc)) ];
             ssc.inputs = [ input_bill ];
             return ssc;
         }
