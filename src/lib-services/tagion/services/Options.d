@@ -69,9 +69,7 @@ struct Options
     ushort min_port; /// Minum value of the port number
     string path_to_shared_info;
     string path_to_stored_passphrase;
-    string transaction_dumps_dirrectory;
     bool p2plogs;
-    bool disable_transaction_dumping;
     uint scrap_depth;
     uint epoch_limit; /// The round until it has produced epoch_limit
     NetworkMode net_mode;
@@ -80,6 +78,16 @@ struct Options
     CommonOptions common;
 
     mixin JSONCommon;
+
+    struct EpochDumpSettings
+    {
+        string task_name;
+        string transaction_dumps_directory;
+        bool disable_transaction_dumping;
+        mixin JSONCommon;
+    }
+
+    EpochDumpSettings epoch_dump;
 
     struct HostBootstrap
     {
@@ -375,8 +383,8 @@ static ref auto all_getopt(
         "boot", format("Shared boot file: default: %s", options.path_to_shared_info), &(options.path_to_shared_info),
         "passphrasefile", "File with setted passphrase for keys pair", &(options.path_to_stored_passphrase),
         "recorderchain", "Path to folder with recorder chain blocks stored for DART recovery", &(options.recorder_chain.folder_path),
-        "disabledumping", "Not perform transaction dump", &(options.disable_transaction_dumping),
-        "transactiondumpfolder", "Set separative folder for transaction dump", &(options.transaction_dumps_dirrectory) 
+        "disabledumping", "Not perform transaction dump", &(options.epoch_dump.disable_transaction_dumping),
+        "transactiondumpfolder", "Set separative folder for transaction dump", &(options.epoch_dump.transaction_dumps_directory) 
     );
 }
 
@@ -549,6 +557,11 @@ static setDefaultOption(ref Options options)
     with (options.recorder_chain)
     {
         task_name = "recorder-service";
+    }
+    // Epoch dumping
+    with(options.epoch_dump)
+    {
+        task_name = "epoch-dump-task";
     }
     // Discovery
     with (options.discovery)

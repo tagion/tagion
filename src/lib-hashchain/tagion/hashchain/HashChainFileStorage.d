@@ -108,7 +108,7 @@ import tagion.utils.Miscellaneous : decode, toHexString;
         static FileExtension getExtension()
         {
             import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
-            import tagion.hashchain.EpochChainBlock : EpochChainBlock;
+            import tagion.epochain.EpochChainBlock : EpochChainBlock;
 
             static if (is(Block == RecorderChainBlock))
             {

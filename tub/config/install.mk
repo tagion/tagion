@@ -8,6 +8,7 @@ TOOLLINKS+=tagionevilwallet
 TOOLLINKS+=tagionwave
 TOOLLINKS+=dartutil
 TOOLLINKS+=hibonutil
+TOOLLINKS+=recorderchain
 
 TOOLLINKS+=boot
 TOOLLINKS+=wallet
