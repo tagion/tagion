@@ -132,7 +132,7 @@ version (OLD_TRANSACTION)
 
 
 
-            .check(total_output <= total_input, ConsensusFailCode.SMARTSCRIPT_NOT_ENOUGH_MONEY);
+            .check(total_output <= total_input - globals.fees(), ConsensusFailCode.SMARTSCRIPT_NOT_ENOUGH_MONEY);
         }
     }
 }
@@ -342,29 +342,34 @@ version (OLD_TRANSACTION)
         {
             auto ssc = createSSC(1000.TGN);
             auto smart_script = new SmartScript(ssc);
-            const code = smart_script.run(epoch + 1);
-
-            assert(code == ConsensusFailCode
-                        .SMARTSCRIPT_INVALID_OUTPUT);
+            try {
+                smart_script.run(epoch + 1);
+                assert(false, "Input and Output amount not checked");
+            }catch(SmartScriptException e){
+                assert(e.code == ConsensusFailCode
+                            .SMARTSCRIPT_INVALID_OUTPUT);
+            } 
         }
         /// SmartScript accept contracts with fee included
         {
             auto ssc = createSSC(1000.TGN - globals.fees());
             auto smart_script = new SmartScript(ssc);
-            const code = smart_script.run(epoch + 1);
-
-            assert(code == ConsensusFailCode
-                        .NONE);
+            try {
+                smart_script.run(epoch + 1);
+            }catch(SmartScriptException e){
+                assert(false, format("Exception code: %s", e.code));
+            }
         }
 
         /// SmartScript accept contracts with output less then input
         {
             auto ssc = createSSC(900.TGN - globals.fees());
             auto smart_script = new SmartScript(ssc);
-            const code = smart_script.run(epoch + 1);
-
-            assert(code == ConsensusFailCode
-                        .NONE);
+            try {
+                smart_script.run(epoch + 1);
+            }catch(SmartScriptException e){
+                assert(false, format("Exception code: %s", e.code));
+            }
         }
     }
 }
