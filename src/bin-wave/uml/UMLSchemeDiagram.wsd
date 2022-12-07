@@ -1,0 +1,33 @@
+@startuml Main startup node diagram
+skinparam componentStyle rectangle
+title Startup node diagram
+    [LoggerService]
+    [TagionFactoryService] -> [TagionService] : spawn (options)
+    card "Discovery services" {
+    [TagionService] -> [NetworkRecordDiscoveryService] : \n\n\nspown (options)
+    [NetworkRecordDiscoveryService] -> [FileDiscoveryService] : \n\n\nspawn (options)
+    }
+    FileDiscoveryService -> FileDiscoveryService : fullfil adressbook
+    FileDiscoveryService -[#green]--> NetworkRecordDiscoveryService : DiscoveryControl.READ
+    NetworkRecordDiscoveryService -[#green]--> TagionService : DiscoveryControl.READY\n
+    TagionService -> NetworkRecordDiscoveryService : Request Table\n\n\n
+    NetworkRecordDiscoveryService -> FileDiscoveryService : Request Table
+    FileDiscoveryService -[#green]--> NetworkRecordDiscoveryService : DiscoveryControl.READY
+    TagionService -> [DARTSynchronizeService] :  spawn (options)
+    TagionService -> [DARTService] : \n\nspawn (options)
+    DARTSynchronizeService -[#green]--> TagionService : DiscoveryControl.READY
+    TagionService -> NetworkRecordDiscoveryService : \nRequest Command <<Become Online>>
+    NetworkRecordDiscoveryService -> FileDiscoveryService : Request Command <<Become Online>>
+    card "if setted folder path" {
+    TagionService -> [RecorderService] : task with options
+    }
+    card "if enable epoch dumping" {
+    TagionService -> [EpochDumpService] : task with options
+    }
+    TagionService -> [TranscriptService] : spawn only with tasknames
+    TranscriptService -[#green]--> DARTSynchronizeService : recorder dump
+    TranscriptService -[#green]--> EpochDumpService : transactions dump + bullseye
+    TranscriptService -[#green]--> RecorderService : dart bullseye + recorderStartup node diagram
+
+    TagionService -> [TransactionService] : \n\n spawn (options)
+@enduml
