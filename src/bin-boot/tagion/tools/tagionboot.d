@@ -71,7 +71,10 @@ int _main(string[] args)
 {
     immutable program = args[0];
     writefln("BOOT ", program);
-    immutable initial_gene = iota(256 / 8).map!(i => immutable(ubyte)(0b10101010)).array;
+    const net = new StdHashNet;
+    Buffer gene(uint index) {
+        return net.rawCalcHash(nativeToBigEndian(index));
+    }
     bool version_switch;
 
     string invoicefile;
@@ -130,7 +133,6 @@ int _main(string[] args)
     //     outputfilename=args[1];
     // }
     writefln("args=%s", args);
-    const net = new StdHashNet;
     auto factory = RecordFactory(net);
     auto recorder = factory.recorder;
 
@@ -170,10 +172,10 @@ int _main(string[] args)
         auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN);
 
         const label = "some_name";
-        foreach (amount; bill_amounts)
+        foreach (index, amount; bill_amounts)
         {
             const invoice = StdSecureWallet.createInvoice(label, amount);
-            const bill = StandardBill(invoice.amount, 0, invoice.pkey, initial_gene);
+            const bill = StandardBill(invoice.amount, 0, invoice.pkey, gene(index));
 
             // Add the bill to the DART recorder
             recorder.add(bill);
@@ -181,7 +183,7 @@ int _main(string[] args)
     }
     else
     {
-        foreach (file; args[1 .. $])
+        foreach (index, file; args[1 .. $])
         {
             if (!file.exists)
             {
@@ -197,7 +199,7 @@ int _main(string[] args)
 
             const invoice = Invoice(invoice_doc);
 
-            const bill = StandardBill(invoice.amount, 0, invoice.pkey, initial_gene);
+            const bill = StandardBill(invoice.amount, 0, invoice.pkey, gene(index));
 
             // Add the bill to the DART recorder
             recorder.add(bill);
