@@ -8,6 +8,7 @@ import std.exception : assumeUnique;
 import std.algorithm.iteration : map;
 import std.range;
 import std.array : array;
+import std.bitmanip: nativeToBigEndian;
 
 import tagion.gossip.AddressBook;
 import tagion.hibon.HiBON : HiBON;
@@ -72,7 +73,7 @@ int _main(string[] args)
     immutable program = args[0];
     writefln("BOOT ", program);
     const net = new StdHashNet;
-    Buffer gene(uint index) {
+    Buffer gene(ulong index) {
         return net.rawCalcHash(nativeToBigEndian(index));
     }
     bool version_switch;
@@ -169,7 +170,7 @@ int _main(string[] args)
         writeln("TEST MODE: Initialize dummy bills");
         alias StdSecureWallet = SecureWallet!StdSecureNet;
 
-        auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN);
+        auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN).array;
 
         const label = "some_name";
         foreach (index, amount; bill_amounts)
