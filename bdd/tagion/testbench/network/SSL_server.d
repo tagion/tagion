@@ -63,12 +63,15 @@ class CreatesASSLCertificate {
 
     @Then("check that the SSL certificate is valid")
     Document valid() {
-        auto _listener = new SSLSocket(AddressFamily.INET, EndpointType.Server);
+        auto _listener = new SSLSocket(
+                AddressFamily.INET,
+                SocketType.STREAM,
+                opt.certificate,
+
+                opt.private_key);
         scope (exit) {
             _listener.close;
         }
-        _listener.configureContext(opt.certificate,
-                opt.private_key);
         return result_ok;
     }
 
@@ -86,13 +89,16 @@ class SSLServiceUsingASpecifiedCertificate {
     }
 
     ~this() {
-  //      listener.close;
+        //      listener.close;
     }
+
     SSLSocket listener;
     @Given("certificate are available open a server")
     Document aServer() @trusted {
-         listener = new SSLSocket(AddressFamily.INET, EndpointType.Server);
-        listener.configureContext(opt.openssl.certificate,
+        listener = new SSLSocket(
+                AddressFamily.INET,
+                SocketType.STREAM,
+                opt.openssl.certificate,
                 opt.openssl.private_key);
         simpleSSLServer(opt, listener);
         return result_ok;
@@ -100,14 +106,14 @@ class SSLServiceUsingASpecifiedCertificate {
 
     @When("the server has respond to a number of request")
     Document ofRequest() @trusted {
-//        Thread.sleep(200.msecs);
-//        test_server_tid.send(Control.STOP);
+        //        Thread.sleep(200.msecs);
+        //        test_server_tid.send(Control.STOP);
         return result_ok;
     }
 
     @Then("close the server")
     Document theServer() {
-//        check(false, "Check for 'theServer' not implemented");
+        //        check(false, "Check for 'theServer' not implemented");
         return result_ok;
     }
 

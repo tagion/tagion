@@ -13,6 +13,7 @@ import std.algorithm.iteration : map;
 import tagion.network.SSLSocketException;
 import tagion.network.SSL;
 
+import io=std.stdio;
 enum EndpointType {
     Client,
     Server
@@ -28,25 +29,65 @@ class SSLSocket : Socket {
         // empty
     }
 
+    static final class SSL_Context {
+        protected {
+            SSL_CTX* _ctx;
+        }
+        this(SSL_METHOD* method) {
+            synchronized (lock) {
+                _ctx = SSL_CTX_new(method);
+            }
+        }
+
+        inout(SSL_CTX*) get() pure nothrow inout @nogc {
+            return _ctx;
+        }
+
+        ~this() {
+            synchronized (lock) {
+                SSL_CTX_free(_ctx);
+            }
+        }
+    }
+
     protected {
         static shared(MemoryLock) lock;
         SSL* _ssl;
-        static SSL_CTX* _ctx;
+        SSL_Context ssl_ctx;
+        static SSL_Context client_ctx;
     }
 
+    static bool verifyPeer = true;
     /++
      The client use this configuration by default.
      +/
-    protected final void _init(bool verifyPeer, EndpointType et) {
+    protected final void _init(
+            string certificate_filename = null,
+            string prvkey_filename = null) {
+
+		io.writefln("cert='%s' prvkey='%s'", certificate_filename, prvkey_filename);    
+	if (certificate_filename.length) {
+            configureContext(certificate_filename, prvkey_filename);
+        }
         synchronized (lock) {
-            _ssl = SSL_new(_ctx);
+            if (ssl_ctx is null) {
+                if (client_ctx is null) {
+                    client_ctx = new SSL_Context(TLS_client_method);
+                }
+                ssl_ctx = client_ctx;
+            }
+            _ssl = SSL_new(ssl_ctx.get);
         }
         SSL_set_fd(_ssl, this.handle);
-        if (et is EndpointType.Client) {
+        if (isClient) {
             if (!verifyPeer) {
                 SSL_set_verify(_ssl, SSL_VERIFY_NONE, null);
             }
         }
+    }
+
+    bool isClient() nothrow const @nogc {
+        return (client_ctx !is null) && (ssl_ctx.get is client_ctx.get);
     }
 
     ~this() {
@@ -54,18 +95,13 @@ class SSLSocket : Socket {
             SSL_free(_ssl);
         }
     }
-
+    /*
     static this() {
         synchronized (lock) {
             _ctx = SSL_CTX_new(TLS_client_method());
         }
     }
-
-    static ~this() {
-        synchronized (lock) {
-            SSL_CTX_free(_ctx);
-        }
-    }
+*/
 
     shared static this() {
         lock = new shared(MemoryLock);
@@ -100,22 +136,32 @@ class SSLSocket : Socket {
      Configure the certificate for the SSL
      +/
     @trusted
-    void configureContext(string certificate_filename, string prvkey_filename) {
+    private void configureContext(
+            string certificate_filename,
+            string prvkey_filename)
+    in (ssl_ctx is null)
+    do {
+        if (prvkey_filename.length is 0) {
+            prvkey_filename = certificate_filename;
+        }
         import std.file : exists;
 
+        ssl_ctx = new SSL_Context(TLS_server_method);
         ERR_clear_error;
-        check(certificate_filename.exists, format("Certification file '%s' not found", certificate_filename));
-        check(prvkey_filename.exists, format("Private key file '%s' not found", prvkey_filename));
+        check(certificate_filename.exists,
+                format("Certification file '%s' not found", certificate_filename));
+        check(prvkey_filename.exists,
+                format("Private key file '%s' not found", prvkey_filename));
 
-        if (SSL_CTX_use_certificate_file(_ctx, certificate_filename.toStringz,
+        if (SSL_CTX_use_certificate_file(ctx, certificate_filename.toStringz,
                 SSL_FILETYPE_PEM) <= 0) {
             throw new SSLSocketException(format("SSL Certificate: %s", getAllErrors));
         }
 
-        if (SSL_CTX_use_PrivateKey_file(_ctx, prvkey_filename.toStringz, SSL_FILETYPE_PEM) <= 0) {
+        if (SSL_CTX_use_PrivateKey_file(ctx, prvkey_filename.toStringz, SSL_FILETYPE_PEM) <= 0) {
             throw new SSLSocketException(format("SSL private key:\n %s", getAllErrors));
         }
-        if (SSL_CTX_check_private_key(_ctx) <= 0) {
+        if (SSL_CTX_check_private_key(ctx) <= 0) {
             throw new SSLSocketException(format("Private key not set correctly:\n %s", getAllErrors));
         }
     }
@@ -152,7 +198,7 @@ class SSLSocket : Socket {
      Send a buffer to the socket using the socket result
      +/
     @trusted
-    override ptrdiff_t send(const(void)[] buf, SocketFlags flags) {
+    override ptrdiff_t send(scope const(void)[] buf, SocketFlags flags) {
         auto res_val = SSL_write(_ssl, buf.ptr, cast(int) buf.length);
         check_error(res_val);
         return res_val;
@@ -161,7 +207,7 @@ class SSLSocket : Socket {
     /++
      Send a buffer to the socket with no result
      +/
-    override ptrdiff_t send(const(void)[] buf) {
+    override ptrdiff_t send(scope const(void)[] buf) {
         return send(buf, SocketFlags.NONE);
     }
 
@@ -211,7 +257,7 @@ class SSLSocket : Socket {
      Receive a buffer from the socket using the flags
      +/
     @trusted
-    override ptrdiff_t receive(void[] buf, SocketFlags flags) {
+    override ptrdiff_t receive(scope void[] buf, SocketFlags flags) {
         const res_val = SSL_read(_ssl, buf.ptr, cast(uint) buf.length);
         check_error(res_val);
         return res_val;
@@ -220,7 +266,7 @@ class SSLSocket : Socket {
     /++
      Receive a buffer from the socket with not flags
      +/
-    override ptrdiff_t receive(void[] buf) {
+    override ptrdiff_t receive(scope void[] buf) {
         return receive(buf, SocketFlags.NONE);
     }
 
@@ -252,7 +298,7 @@ class SSLSocket : Socket {
                 throw new SSLSocketException("Socket could not connect to client. Socket closed.");
             }
             client.blocking = false;
-            ssl_client = new SSLSocket(client.handle, EndpointType.Server, client.addressFamily);
+            ssl_client = new SSLSocket(client.handle, client.addressFamily, this);
             const fd_res = SSL_set_fd(ssl_client.ssl, client.handle);
             if (!fd_res) {
                 return false;
@@ -307,8 +353,8 @@ class SSLSocket : Socket {
     }
 
     @nogc
-    static SSL_CTX* ctx() nothrow {
-        return _ctx;
+    SSL_CTX* ctx() pure nothrow {
+        return ssl_ctx.get;
     }
 
     /++
@@ -316,10 +362,12 @@ class SSLSocket : Socket {
      +/
     this(AddressFamily af,
             SocketType type = SocketType.STREAM,
-            bool verifyPeer = true) {
+            string certificate_filename = null,
+            string prvkey_filename = null) {
         ERR_clear_error;
         super(af, type);
-        _init(verifyPeer, EndpointType.Client);
+		io.writefln("[%s, %s]", certificate_filename, prvkey_filename);
+        _init(certificate_filename, prvkey_filename);
     }
 
     this(AddressFamily af,
@@ -328,14 +376,22 @@ class SSLSocket : Socket {
             bool verifyPeer = true) {
         ERR_clear_error;
         super(af, type);
-        _init(verifyPeer, et);
+        //    _init(certificate_filename, prvkey_filename);
     }
 
     /// ditto
-    this(socket_t sock, EndpointType et, AddressFamily af) {
+    this(socket_t sock,
+            AddressFamily af,
+            SSLSocket seed_socket = null) {
         ERR_clear_error;
         super(sock, af);
-        _init(true, et);
+        if (seed_socket) {
+            ssl_ctx = seed_socket.ssl_ctx;
+        }
+        else {
+            _init(null, null);
+        }
+        //        _init(certificate_filename, prvkey_filename);
     }
 
     unittest {
@@ -374,11 +430,11 @@ class SSLSocket : Socket {
             configureOpenSSL(ssl_options);
         }
         //! [Waiting for first acception]
-        {
+        version (none) {
             SSLSocket item = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
             Socket client = new Socket(AddressFamily.UNIX, SocketType.STREAM);
-            bool result; // = false;
+            bool result; 
             const exception = collectException!SSLSocketException(
                     item.acceptSSL(ssl_client, client), result);
             assert(exception !is null);
@@ -388,17 +444,18 @@ class SSLSocket : Socket {
 
         //! [File reading - incorrect certificate]
         {
-            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+            SSLSocket testItem_server;
+		const exception = collectException!SSLSocketException(
+            new SSLSocket(AddressFamily.UNIX, SocketType.STREAM, "_", "_"),
+            testItem_server);
             scope (exit) {
                 testItem_server.close;
             }
-            assert(testItem_server !is null);
-            assertThrown!SSLSocketException(
-                    testItem_server.configureContext("_", "_"));
+            assert(testItem_server is null);
         }
 
         //! [File reading - empty path]
-        {
+        version (none) {
 
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             scope (exit) {
@@ -413,19 +470,21 @@ class SSLSocket : Socket {
 
         //! [file loading correct]
         {
-            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+            SSLSocket testItem_server;
+            assertNotThrown!SSLSocketException({ 
+			testItem_server = new SSLSocket(AddressFamily.UNIX, SocketType.STREAM,
+cert_path, key_path); 
+			});
             scope (exit) {
                 testItem_server.close;
             }
-            assertNotThrown!SSLSocketException(
-                    testItem_server.configureContext(cert_path, key_path)
-            );
+            assert(testItem_server !is null);
         }
 
         //! [file loading key incorrect]
         {
             auto false_key_path = cert_path;
-            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX);
             const exception = collectException!SSLSocketException(
                     testItem_server.configureContext(cert_path, false_key_path)
             );
@@ -436,7 +495,7 @@ class SSLSocket : Socket {
         //! [correct acception]
         {
             SSLSocket empty_socket = null;
-            SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
+            SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX);
             Socket socket = new Socket(AddressFamily.UNIX, SocketType.STREAM);
             scope (exit) {
                 ssl_client.close;

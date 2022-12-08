@@ -58,7 +58,7 @@ startreporter.sh:
 	$(PRECMD)
 	$(SCRIPTS)/genreporter.sh $@
 
-bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way $(BDD_DFILES)
+bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way
 	$(PRECMD)
 	$(TESTPROGRAM) -f
 
@@ -72,7 +72,6 @@ bddreport: target-hibonutil
 	iconv -t US-ASCII -t UTF-8//TRANSLIT//IGNORE $< > $@
 	mv $@ $<
 
-
 bddstrip: $(BDD_MD_FILES:.md=.md.tmp)
 
 env-bdd:
@@ -83,6 +82,8 @@ env-bdd:
 	${call log.env, BDD_DFILES, $(BDD_DFILES)}
 	${call log.env, BDD_MD_FILES, $(BDD_MD_FILES)}
 	${call log.env, TESTENV, $(TESTENV)}
+	${call log.kvp, TESTMAIN, $(TESTMAIN)}
+	${call log.kvp, TESTPROGRAM, $(TESTPROGRAM)}
 	${call log.env, BDDS, $(BDDS)}
 	${call log.close}
 

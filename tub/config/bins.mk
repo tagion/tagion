@@ -2,6 +2,7 @@
 #
 # $1 : Program name
 # $2 : Set name of the onetool
+# $3 : Depends list
 #
 define DO_BIN
 ${eval
@@ -29,6 +30,8 @@ info-$1:
 	@echo _TOOLS undefined
 
 target-$1: $$(DBIN)/$1
+
+
 endif
 
 env-$1:
