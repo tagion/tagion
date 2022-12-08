@@ -13,6 +13,7 @@ import std.algorithm.iteration : map;
 import tagion.network.SSLSocketException;
 import tagion.network.SSL;
 
+import io=std.stdio;
 enum EndpointType {
     Client,
     Server
@@ -63,7 +64,9 @@ class SSLSocket : Socket {
     protected final void _init(
             string certificate_filename = null,
             string prvkey_filename = null) {
-        if (certificate_filename.length) {
+
+		io.writefln("cert='%s' prvkey='%s'", certificate_filename, prvkey_filename);    
+	if (certificate_filename.length) {
             configureContext(certificate_filename, prvkey_filename);
         }
         synchronized (lock) {
@@ -361,6 +364,7 @@ class SSLSocket : Socket {
             string prvkey_filename = null) {
         ERR_clear_error;
         super(af, type);
+		io.writefln("[%s, %s]", certificate_filename, prvkey_filename);
         _init(certificate_filename, prvkey_filename);
     }
 
@@ -381,6 +385,9 @@ class SSLSocket : Socket {
         super(sock, af);
         if (seed_socket) {
             ssl_ctx = seed_socket.ssl_ctx;
+        }
+        else {
+            _init(null, null);
         }
         //        _init(certificate_filename, prvkey_filename);
     }
@@ -421,11 +428,11 @@ class SSLSocket : Socket {
             configureOpenSSL(ssl_options);
         }
         //! [Waiting for first acception]
-        {
+        version (none) {
             SSLSocket item = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
             Socket client = new Socket(AddressFamily.UNIX, SocketType.STREAM);
-            bool result; // = false;
+            bool result; 
             const exception = collectException!SSLSocketException(
                     item.acceptSSL(ssl_client, client), result);
             assert(exception !is null);
@@ -435,17 +442,18 @@ class SSLSocket : Socket {
 
         //! [File reading - incorrect certificate]
         {
-            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+            SSLSocket testItem_server;
+		const exception = collectException!SSLSocketException(
+            new SSLSocket(AddressFamily.UNIX, SocketType.STREAM, "_", "_"),
+            testItem_server);
             scope (exit) {
                 testItem_server.close;
             }
-            assert(testItem_server !is null);
-            assertThrown!SSLSocketException(
-                    testItem_server.configureContext("_", "_"));
+            assert(testItem_server is null);
         }
 
         //! [File reading - empty path]
-        {
+        version (none) {
 
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             scope (exit) {
@@ -460,19 +468,21 @@ class SSLSocket : Socket {
 
         //! [file loading correct]
         {
-            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+            SSLSocket testItem_server;
+            assertNotThrown!SSLSocketException({ 
+			testItem_server = new SSLSocket(AddressFamily.UNIX, SocketType.STREAM,
+cert_path, key_path); 
+			});
             scope (exit) {
                 testItem_server.close;
             }
-            assertNotThrown!SSLSocketException(
-                    testItem_server.configureContext(cert_path, key_path)
-            );
+            assert(testItem_server !is null);
         }
 
         //! [file loading key incorrect]
         {
             auto false_key_path = cert_path;
-            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX);
             const exception = collectException!SSLSocketException(
                     testItem_server.configureContext(cert_path, false_key_path)
             );
@@ -483,7 +493,7 @@ class SSLSocket : Socket {
         //! [correct acception]
         {
             SSLSocket empty_socket = null;
-            SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
+            SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX);
             Socket socket = new Socket(AddressFamily.UNIX, SocketType.STREAM);
             scope (exit) {
                 ssl_client.close;

@@ -177,7 +177,7 @@ bool Servlet(SSL* ssl) /* Serve the connection -- threadable */ {
     return buffer == "EOC";
 }
 
-void _SSLSocketServer(string address, const ushort port, string cert) {
+void __SSLSocketServer(string address, const ushort port, string cert) {
 
     auto ctx = InitServerCTX();
     /* initialize SSL */
@@ -199,7 +199,7 @@ void _SSLSocketServer(string address, const ushort port, string cert) {
     server.close();
 }
 
-void __SSLSocketServer(string address, const ushort port, string cert) {
+void _SSLSocketServer(string address, const ushort port, string cert) {
 
 //    auto ctx = InitServerCTX();
     /* initialize SSL */
