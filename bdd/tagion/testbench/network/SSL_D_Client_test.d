@@ -86,14 +86,15 @@ class DClientMultithreadingWithCServer
     @Given("I have a a simple C sslserver.")
     Document _sslserver() @trusted
     {
-        immutable sslserver_start_command = [
-            sslserver,
-            port.to!string,
-            cert,
-        ];
-        auto ssl_server = spawnProcess(sslserver_start_command);
-        Thread.sleep(100.msecs);
-        // server_pipe_id = ssl_server.pid;
+        spawn(&__SSLSocketServer, address, port, cert);
+        // immutable sslserver_start_command = [
+        //     sslserver,
+        //     port.to!string,
+        //     cert,
+        // ];
+        // auto ssl_server = spawnProcess(sslserver_start_command);
+        // Thread.sleep(100.msecs);
+        // // server_pipe_id = ssl_server.pid;
         return result_ok;
     }
 
@@ -112,10 +113,11 @@ class DClientMultithreadingWithCServer
     {
         foreach (i; 0 .. number_of_clients)
         {
-            spawn(&echoSSLSocketTask, address, port, format("task%s", i), 10);
+            spawn(&echoSSLSocketTask, address, port, format("task%s", i), 5);
         }
         foreach (i; 0 .. number_of_clients)
         {
+            writefln("###waiting for receive %s", i);
             writefln("receive%s, %s", i, receiveOnly!bool);
             // check(receiveOnly!bool, "Received false");
         }

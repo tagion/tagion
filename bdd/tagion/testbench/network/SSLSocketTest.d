@@ -2,7 +2,7 @@ module tagion.testbench.network.SSLSocketTest;
 
 import std.stdio;
 import std.string;
-import std.socket : InternetAddress, Socket, SocketException, TcpSocket, getAddress, SocketType, AddressFamily, ProtocolType, SocketShutdown;
+import std.socket : InternetAddress, Socket, SocketException, TcpSocket, getAddress, SocketType, AddressFamily, ProtocolType, SocketShutdown, SocketSet;
 
 import tagion.network.SSLSocket;
 import stdc_io = core.stdc.stdio;
@@ -177,7 +177,7 @@ bool Servlet(SSL* ssl) /* Serve the connection -- threadable */ {
     return buffer == "EOC";
 }
 
-version(none)
+// version(none)
 void __SSLSocketServer(string address, const ushort port, string cert) {
 
     auto ctx = InitServerCTX();
