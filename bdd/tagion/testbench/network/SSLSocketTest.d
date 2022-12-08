@@ -201,22 +201,26 @@ void _SSLSocketServer(string address, const ushort port, string cert) {
 
 void __SSLSocketServer(string address, const ushort port, string cert) {
 
-    auto ctx = InitServerCTX();
+//    auto ctx = InitServerCTX();
     /* initialize SSL */
-    LoadCertificates(ctx, cert, cert); /* load certs */
-    auto server = OpenListener(address, port); /* create server socket */
+//    LoadCertificates(ctx, cert, cert); /* load certs */
+//    auto server = OpenListener(address, port); /* create server socket */
+	auto server = new SSLSocket(AddressFamily.INET, SocketType.STREAM, cert);
+	auto addr = getAddress(address, port);
+	server.bind(addr[0]);
+	server.listen(10);
 
     bool stop;
-    server.listen(3);
+//    server.listen(3);
     while (!stop) {
         SSL* ssl;
         auto client = server.accept(); /* accept connection as usual */
-        ssl = SSL_new(ctx); /* get new SSL state with context */
+        ssl = SSL_new(server.ctx); /* get new SSL state with context */
         SSL_set_fd(ssl, client.handle); /* set connection socket to SSL state */
         stop = Servlet(ssl); /* service connection */
     }
     writeln("shutdown!");
-    SSL_CTX_free(ctx);
+//    SSL_CTX_free(ctx);
     server.shutdown(SocketShutdown.BOTH);
     server.close();
 }
