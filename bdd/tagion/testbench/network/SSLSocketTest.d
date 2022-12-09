@@ -184,10 +184,27 @@ void __SSLSocketServer(string address, const ushort port, string cert) {
     /* initialize SSL */
     LoadCertificates(ctx, cert, cert); /* load certs */
     auto server = OpenListener(address, port); /* create server socket */
+    // server.blocking(false);
+    // auto readSet = new SocketSet;
+    // auto writeSet = new SocketSet;
+    
+    // Socket[] sockets;
 
-    bool stop;
     server.listen(3);
+    bool stop;
     while (!stop) {
+        // readSet.reset();
+        // writeSet.reset();
+
+        // // add sockets if they are alive.
+        // foreach(ref socket; sockets) {
+        //     if(socket.isAlive) {
+        //         readSet.add(socket);
+        //     }
+        // }
+
+        // auto eventCount = Socket.select(readSet, writeSet, null); //, 5.seconds);
+
         SSL* ssl;
         auto client = server.accept(); /* accept connection as usual */
         ssl = SSL_new(ctx); /* get new SSL state with context */

@@ -69,8 +69,9 @@ class DClientWithCServer
     Document chrash() @trusted
     {
         const response = echoSSLSocket("localhost", port, "EOC").strip();
+        Thread.sleep(5000.msecs);
         writefln("#####");
-        Thread.sleep(500.msecs);
+
         return result_ok;
     }
 
@@ -79,7 +80,7 @@ class DClientWithCServer
 @safe @Scenario("D Client multithreading with C server", [])
 class DClientMultithreadingWithCServer
 {
-    uint number_of_clients = 3;
+    uint number_of_clients = 2;
     const address = "localhost";
     ushort port = 8004;
 
@@ -117,7 +118,7 @@ class DClientMultithreadingWithCServer
         }
         foreach (i; 0 .. number_of_clients)
         {
-            writefln("###waiting for receive %s", i);
+            writefln("WAITING for receive %s", i);
             writefln("receive%s, %s", i, receiveOnly!bool);
             // check(receiveOnly!bool, "Received false");
         }
