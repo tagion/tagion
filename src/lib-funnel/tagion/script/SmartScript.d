@@ -410,103 +410,17 @@ version (OLD_TRANSACTION)
 }
 else
 {
-    import std.stdio : writefln, writeln;
-    import tagion.dart.Recorder : Add, Remove;
-    import tagion.crypto.SecureNet;
-    import tagion.basic.Types : FileExtension;
-    import tagion.hibon.HiBON;
-    import std.array;
-    
-    // function for signing all bills
-    void sign_all_bills(const StandardBill[] bills, const SecureNet net, ref SignedContract signed_contract)
-    {
-        Contract contract;
-        foreach (bill; bills)
+    unittest {
+        import std.stdio : writefln, writeln;
+        import tagion.dart.Recorder : Add, Remove;
+        import tagion.crypto.SecureNet;
+        import tagion.basic.Types : FileExtension;
+        import tagion.hibon.HiBON;
+        import std.array;
+        
+        // function for signing all bills
+        void sign_all_bills(const StandardBill[] bills, const SecureNet net, ref SignedContract signed_contract)
         {
-            Document doc;
-            {
-                auto h = new HiBON;
-                enum bill_name = GetLabel!(StandardBill).name;
-                h[bill_name] = bill;
-                doc = Document(h);
-            }
-
-            auto signed_doc = net.sign(doc);
-            contract.inputs ~= net.hashOf(bill);
-            signed_contract.signs ~= signed_doc.signature;
-            assert(net.verify(doc, signed_doc.signature, net.pubkey));
-        }
-        signed_contract.contract = contract;
-    }
-    const net = new StdSecureNet;
-    SecureNet alice = new StdSecureNet;
-    {
-        alice.generateKeyPair("Alice's secret password");
-    }
-    auto bob = new StdSecureNet;
-    {
-        bob.generateKeyPair("Bob's secret password");
-    }
-    uint epoch = 42;
-    StandardBill[] bills;
-
-    bills ~= StandardBill(1000.TGN, epoch, alice.pubkey, null);
-    bills ~= StandardBill(1200.TGN, epoch, alice.derivePubkey("alice0"), null);
-    bills ~= StandardBill(3000.TGN, epoch, alice.derivePubkey("alice1"), null);
-    bills ~= StandardBill(4300.TGN, epoch, alice.derivePubkey("alice2"), null);
-
-    auto factory = RecordFactory(net);
-    const alices_bills = factory.recorder(bills);
-    auto output_bills = factory.recorder();
-
-    import tagion.dart.DART : DART;
-    import tagion.basic.Basic : fileId;
-
-    immutable filename = fileId!SmartScript(FileExtension.dart).fullpath;
-
-    DART.create(filename);
-    auto dart_db = new DART(net, filename);
-    dart_db.modify(alices_bills, Add);
-    writefln("dart-file %s", filename);
-    dart_db.dump(true);
-    
-    // SmartScript.check tests
-    {
-        // simple valid scenario
-        // {
-        //     SignedContract signed_contract;
-        //     sign_all_bills(bills, alice, signed_contract);
-
-        //     auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
-        //     signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
-
-        //     assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.NONE);
-        // }
-
-        // simple invalid scenario (no output docs)
-        {
-            SignedContract signed_contract;
-            sign_all_bills(bills, alice, signed_contract);
-
-            assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode
-                    .SMARTSCRIPT_NO_OUTPUT);
-        }
-
-        // invalid scenario (unsigned bill)
-        {
-            SignedContract signed_contract;
-            sign_all_bills(bills[0 .. $ - 1], alice, signed_contract);
-
-            auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
-            signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
-
-            assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode
-                    .SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS);
-        }
-
-        //contract.imput.length more than inputs.length
-        {
-            SignedContract signed_contract;
             Contract contract;
             foreach (bill; bills)
             {
@@ -518,68 +432,156 @@ else
                     doc = Document(h);
                 }
 
-                auto signed_doc = alice.sign(doc);
-                contract.inputs ~= alice.hashOf(bill);
+                auto signed_doc = net.sign(doc);
+                contract.inputs ~= net.hashOf(bill);
                 signed_contract.signs ~= signed_doc.signature;
-                assert(alice.verify(doc, signed_doc.signature, alice.pubkey));
+                assert(net.verify(doc, signed_doc.signature, net.pubkey));
             }
-            auto other_bill = StandardBill(4300.TGN, epoch, alice.derivePubkey("alice3"), null);
-            contract.inputs ~= alice.hashOf(other_bill);
             signed_contract.contract = contract;
-
-            auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
-            signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
-
-            assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode
-                    .SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
         }
-    }
+        const net = new StdSecureNet;
+        SecureNet alice = new StdSecureNet;
+        {
+            alice.generateKeyPair("Alice's secret password");
+        }
+        auto bob = new StdSecureNet;
+        {
+            bob.generateKeyPair("Bob's secret password");
+        }
+        uint epoch = 42;
+        StandardBill[] bills;
 
-    //SmartScript run tests
-    {
-        // simple valid scenario
-        // {
-        //     SignedContract signed_contract;
-        //     sign_all_bills(bills, alice, signed_contract);
+        bills ~= StandardBill(1000.TGN, epoch, alice.pubkey, null);
+        bills ~= StandardBill(1200.TGN, epoch, alice.derivePubkey("alice0"), null);
+        bills ~= StandardBill(3000.TGN, epoch, alice.derivePubkey("alice1"), null);
+        bills ~= StandardBill(4300.TGN, epoch, alice.derivePubkey("alice2"), null);
 
-        //     auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
-        //     signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
+        auto factory = RecordFactory(net);
+        const alices_bills = factory.recorder(bills);
+        auto output_bills = factory.recorder();
 
-        //     assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.NONE);
+        import tagion.dart.DART : DART;
+        import tagion.basic.Basic : fileId;
 
-        //     assert(SmartScript.run(alice, signed_contract, alices_bills, output_bills) == ConsensusFailCode.NONE);
-        // }
+        immutable filename = fileId!SmartScript(FileExtension.dart).fullpath;
 
-        // output value > input value
-        // {
-        //     SignedContract signed_contract;
-        //     sign_all_bills(bills, alice, signed_contract);
+        DART.create(filename);
+        auto dart_db = new DART(net, filename);
+        dart_db.modify(alices_bills, Add);
+        writefln("dart-file %s", filename);
+        dart_db.dump(true);
+        
+        // SmartScript.check tests
+        {
+            // simple valid scenario
+            // {
+            //     SignedContract signed_contract;
+            //     sign_all_bills(bills, alice, signed_contract);
 
-        //     StandardBill[] bob_bills;
-        //     bob_bills ~= StandardBill(1000.TGN, epoch, bob.pubkey, null);
-        //     bob_bills ~= StandardBill(1000.TGN, epoch, bob.derivePubkey("bob0"), null);
-        //     bob_bills ~= StandardBill(1000.TGN, epoch, bob.derivePubkey("bob1"), null);
-        //     bob_bills ~= StandardBill(10000000.TGN, epoch, bob.derivePubkey("bob2"), null);
+            //     auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
+            //     signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
 
-        //     foreach(bill; bob_bills) {
-        //         signed_contract.contract.output[bill.owner] = bill.toDoc;
-        //     }
-        //     assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.NONE);
+            //     assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.NONE);
+            // }
 
-        //     assert(SmartScript.run(alice, signed_contract, alices_bills, output_bills) == ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT);
-        // }
+            // simple invalid scenario (no output docs)
+            {
+                SignedContract signed_contract;
+                sign_all_bills(bills, alice, signed_contract);
 
-        //output value > input value (1 bill)
-        // {
-        //     SignedContract signed_contract;
-        //     sign_all_bills(bills, alice, signed_contract);
+                assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode
+                        .SMARTSCRIPT_NO_OUTPUT);
+            }
 
-        //     auto bob_bill = StandardBill(1000000.TGN, epoch, bob.pubkey, null);
-        //     signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
+            // invalid scenario (unsigned bill)
+            {
+                SignedContract signed_contract;
+                sign_all_bills(bills[0 .. $ - 1], alice, signed_contract);
 
-        //     assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.NONE);
+                auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
+                signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
 
-        //     assert(SmartScript.run(alice, signed_contract, alices_bills, output_bills) == ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT);
-        // }
+                assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode
+                        .SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS);
+            }
+
+            //contract.imput.length more than inputs.length
+            {
+                SignedContract signed_contract;
+                Contract contract;
+                foreach (bill; bills)
+                {
+                    Document doc;
+                    {
+                        auto h = new HiBON;
+                        enum bill_name = GetLabel!(StandardBill).name;
+                        h[bill_name] = bill;
+                        doc = Document(h);
+                    }
+
+                    auto signed_doc = alice.sign(doc);
+                    contract.inputs ~= alice.hashOf(bill);
+                    signed_contract.signs ~= signed_doc.signature;
+                    assert(alice.verify(doc, signed_doc.signature, alice.pubkey));
+                }
+                auto other_bill = StandardBill(4300.TGN, epoch, alice.derivePubkey("alice3"), null);
+                contract.inputs ~= alice.hashOf(other_bill);
+                signed_contract.contract = contract;
+
+                auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
+                signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
+
+                assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode
+                        .SMARTSCRIPT_FINGERS_OR_INPUTS_MISSING);
+            }
+        }
+
+        //SmartScript run tests
+        {
+            // simple valid scenario
+            // {
+            //     SignedContract signed_contract;
+            //     sign_all_bills(bills, alice, signed_contract);
+
+            //     auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);
+            //     signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
+
+            //     assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.NONE);
+
+            //     assert(SmartScript.run(alice, signed_contract, alices_bills, output_bills) == ConsensusFailCode.NONE);
+            // }
+
+            // output value > input value
+            // {
+            //     SignedContract signed_contract;
+            //     sign_all_bills(bills, alice, signed_contract);
+
+            //     StandardBill[] bob_bills;
+            //     bob_bills ~= StandardBill(1000.TGN, epoch, bob.pubkey, null);
+            //     bob_bills ~= StandardBill(1000.TGN, epoch, bob.derivePubkey("bob0"), null);
+            //     bob_bills ~= StandardBill(1000.TGN, epoch, bob.derivePubkey("bob1"), null);
+            //     bob_bills ~= StandardBill(10000000.TGN, epoch, bob.derivePubkey("bob2"), null);
+
+            //     foreach(bill; bob_bills) {
+            //         signed_contract.contract.output[bill.owner] = bill.toDoc;
+            //     }
+            //     assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.NONE);
+
+            //     assert(SmartScript.run(alice, signed_contract, alices_bills, output_bills) == ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT);
+            // }
+
+            //output value > input value (1 bill)
+            // {
+            //     SignedContract signed_contract;
+            //     sign_all_bills(bills, alice, signed_contract);
+
+            //     auto bob_bill = StandardBill(1000000.TGN, epoch, bob.pubkey, null);
+            //     signed_contract.contract.output[bob.pubkey] = bob_bill.toDoc;
+
+            //     assert(SmartScript.check(alice, signed_contract, alices_bills) == ConsensusFailCode.NONE);
+
+            //     assert(SmartScript.run(alice, signed_contract, alices_bills, output_bills) == ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT);
+            // }
+        }
     }
 }
