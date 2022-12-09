@@ -161,7 +161,7 @@ int main(int count, char *Argc[])
     // Initialize the SSL library
     SSL_library_init();
     portnum = Argc[1];
-    ctx = InitServerCTX();
+    ctx = InitServerCTX(); 
     if (count == 3)
     {
         LoadCertificates(ctx, Argc[2], Argc[2]); /* load certs */
@@ -173,7 +173,7 @@ int main(int count, char *Argc[])
     }
     server = OpenListener(atoi(portnum)); /* create server socket */
     int tr;
-
+//////////////////////////////////
     if (listen(server, listener_size) < 0)
     {
         perror("listen");

@@ -4,7 +4,7 @@ BIN?=$(DBIN)
 
 EXTRAS_SSL?=$(BDD)/extras/ssl/
 
-sslextras: ssl_client ssl_server 
+sslextras: ssl_client ssl_server ssl_test_server
 
 #ssl_server: $(DBIN)/ssl_server
 
@@ -19,7 +19,7 @@ cert: $(EXTRAS_CERT)
 	openssl req -x509 -nodes -days 365 -newkey rsa:4096 -keyout $(EXTRAS_CERT) -out $(EXTRAS_CERT)
 
 clean-sslextras:
-	rm -f ssl_client ssl_server
+	rm -f ssl_client ssl_server ssl_test_server
 
 clean: clean-sslextras
 
