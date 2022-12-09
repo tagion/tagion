@@ -34,9 +34,7 @@ int main() {
         perror("error when accepting connection");
         exit(1);
       }
-    } else {
-      char msg[] = "hello\n";
-      
+    } else {      
       size = recv(client_socket_fd, &buf, sizeof(buf), 0);
       buf[size] = '\0';    
       printf("Got a connection; writing '%s' then closing.\n", &buf);
