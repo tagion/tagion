@@ -362,7 +362,7 @@ version (OLD_TRANSACTION)
             auto smart_script = new SmartScript(ssc);
             uint index = 1;
             try {
-                smart_script.run(epoch + 1, index, Fingerprint(dart_db.fingerprint), new StdHashNet());
+                smart_script.run(epoch + 1, index, Fingerprint([0, 0, 0, 0]), new StdHashNet());
                 assert(false, "Input and Output amount not checked");
             }catch(SmartScriptException e){
                 assert(e.code == ConsensusFailCode
@@ -375,7 +375,7 @@ version (OLD_TRANSACTION)
             auto smart_script = new SmartScript(ssc);
             uint index = 1;
             try {
-                smart_script.run(epoch + 1, index, Fingerprint(dart_db.fingerprint), new StdHashNet());
+                smart_script.run(epoch + 1, index, Fingerprint([0, 0, 0, 0]), new StdHashNet());
             }catch(SmartScriptException e){
                 assert(false, format("Exception code: %s", e.code));
             }
@@ -387,7 +387,7 @@ version (OLD_TRANSACTION)
             auto smart_script = new SmartScript(ssc);
             uint index = 1;
             try {
-                smart_script.run(epoch + 1, index, Fingerprint(dart_db.fingerprint), new StdHashNet());
+                smart_script.run(epoch + 1, index, Fingerprint([0, 0, 0, 0]), new StdHashNet());
             }catch(SmartScriptException e){
                 assert(false, format("Exception code: %s", e.code));
             }
@@ -406,8 +406,8 @@ version (OLD_TRANSACTION)
             SmartScript ssc_1 = new SmartScript(signed_contract_1);
             SmartScript ssc_2 = new SmartScript(signed_contract_2);
             uint index = 1;
-            ssc_1.run(55, index, Fingerprint(dart_db.fingerprint), new StdHashNet());
-            ssc_2.run(55, index, Fingerprint(dart_db.fingerprint), new StdHashNet());
+            ssc_1.run(55, index, Fingerprint([0, 0, 0, 0]), new StdHashNet());
+            ssc_2.run(55, index, Fingerprint([0, 0, 0, 0]), new StdHashNet());
             assert(index == 3);
             assert(ssc_1.output_bills.length == 1, "Smart contract generate more than one output");
             auto output_bill1 = ssc_1.output_bills[0];
