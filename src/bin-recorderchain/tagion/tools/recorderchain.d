@@ -23,11 +23,14 @@ import tagion.dart.DARTFile;
 import tagion.services.RecorderService;
 import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.recorderchain.RecorderChain;
+import tagion.tools.Basic;
 import tagion.utils.Miscellaneous : cutHex;
 
 auto logo = import("logo.txt");
 
-int main(string[] args)
+mixin Main!(_main, "tagionrecorderchain");
+
+int _main(string[] args)
 {
     immutable program = args[0];
 
@@ -144,14 +147,8 @@ int main(string[] args)
     try
     {
         recorder_chain.replay((RecorderChainBlock block) {
-            // these outputs will be removed after proper testing the tool
-            writefln("block's  bullseye %s", block.bullseye.cutHex);
-            writefln("DART bef bullseye %s", dart.fingerprint.cutHex);
-
             auto recorder = factory.recorder(block.recorder_doc);
             dart.modify(recorder);
-
-            writefln("DART aft bullseye %s", dart.fingerprint.cutHex);
 
             if (block.bullseye != dart.fingerprint)
             {
