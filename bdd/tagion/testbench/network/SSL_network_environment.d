@@ -9,12 +9,14 @@ import std.string;
 import std.stdio;
 
 immutable string sslserver;
+immutable string ssltestserver;
 immutable string sslclient;
 immutable string cert;
 
 shared static this()
 {
     sslserver = env.dbin.buildPath("ssl_server");
+    ssltestserver = env.dbin.buildPath("ssl_test_server");
     sslclient = env.dbin.buildPath("ssl_client");
     cert = env.bdd.buildPath("extras", "ssl", "mycert.pem");
 }

@@ -5,7 +5,7 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.network.SSLSocketTest;
 import tagion.testbench.tools.Environment;
-import tagion.testbench.network.SSL_network_environment : sslclient, sslserver, cert;
+import tagion.testbench.network.SSL_network_environment : sslclient, sslserver, ssltestserver, cert;
 
 import std.stdio;
 import std.string;
@@ -87,15 +87,15 @@ class DClientMultithreadingWithCServer
     @Given("I have a a simple C sslserver.")
     Document _sslserver() @trusted
     {
-        spawn(&__SSLSocketServer, address, port, cert);
-        // immutable sslserver_start_command = [
-        //     sslserver,
-        //     port.to!string,
-        //     cert,
-        // ];
-        // auto ssl_server = spawnProcess(sslserver_start_command);
-        // Thread.sleep(100.msecs);
-        // // server_pipe_id = ssl_server.pid;
+        // spawn(&__SSLSocketServer, address, port, cert);
+        immutable sslserver_start_command = [
+            ssltestserver,
+            port.to!string,
+            cert,
+        ];
+        auto ssl_server = spawnProcess(sslserver_start_command);
+        Thread.sleep(100.msecs);
+        // server_pipe_id = ssl_server.pid;
         return result_ok;
     }
 
