@@ -2,11 +2,14 @@ module tagion.testbench.network.SSL_network_environment;
 import std.process;
 import tagion.testbench.tools.Environment;
 import std.path;
+import tagion.behaviour;
+
 
 import std.process;
 import std.conv;
 import std.string;
 import std.stdio;
+import std.concurrency;
 
 immutable string sslserver;
 immutable string ssltestserver;
@@ -41,4 +44,18 @@ string client_send(string message, ushort port) @trusted
     //sslclient_send.stdout.close();
     //sslclient_send.stderr.close();
     return stdout_message;
+}
+
+@trusted
+void client_send_task(ushort port, string prefix, uint calls)
+{
+    foreach (i; 0 .. calls)
+    {
+        const message = format("%s%s", prefix, i);
+        const response = client_send(message, port);
+        writefln("response: <%s>", response);
+        check(response == message, format("Error: message and response not the same got: <%s>", response));
+
+    }
+    ownerTid.send(true);
 }

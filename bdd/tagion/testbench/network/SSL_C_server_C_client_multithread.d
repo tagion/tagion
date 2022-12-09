@@ -5,7 +5,7 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.network.SSLSocketTest;
 import tagion.testbench.tools.Environment;
-import tagion.testbench.network.SSL_network_environment : client_send, sslclient, sslserver, ssltestserver, cert;
+import tagion.testbench.network.SSL_network_environment : client_send_task, client_send, sslclient, sslserver, ssltestserver, cert;
 
 import std.stdio;
 import std.string;
@@ -25,8 +25,9 @@ alias FeatureContext = Tuple!(CClientWithCMultithreadserver, "CClientWithCMultit
 class CClientWithCMultithreadserver
 {
     ushort port = 8003;
+    uint number_of_clients = 100;
     string host = "localhost";
-    int calls = 1000;
+    int calls = 100;
 
     @Given("I have a sslserver in C.")
     Document c() @trusted
@@ -44,7 +45,7 @@ class CClientWithCMultithreadserver
     }
 
     @Given("I have a simple c _sslclient.")
-    Document sslclient()
+    Document sslclient() @trusted
     {
         const response = client_send("wowo", port).strip();
         check(response == "wowo", "Message not received");
@@ -52,20 +53,22 @@ class CClientWithCMultithreadserver
     }
 
     @When("I send many requests with multithread.")
-    Document multithread()
+    Document multithread() @trusted
     {
-        for (int i = 0; i < calls; i++)
-        {
-            string message = format("test%s", i);
-            const response = client_send(message, port).strip();
-            writefln(response);
-            check(message == response, format("Error response not found got: <%s>", response));
+        foreach(i; 0 .. number_of_clients) {
+            spawn(&client_send_task, port, format("%stest", i), calls);
         }
+
+        foreach(i; 0.. number_of_clients) {
+            writefln("WAITING for receive %s", i);
+            writefln("receive%s, %s", i, receiveOnly!bool);
+        }
+
         return result_ok;
     }
 
     @Then("the sslserver should not chrash.")
-    Document chrash()
+    Document chrash() @trusted
     {
         const response = client_send("EOC", port);
         return result_ok;
