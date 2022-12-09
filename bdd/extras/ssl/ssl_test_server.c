@@ -96,8 +96,8 @@ int main(int count, char *Argc[])
 		{
 			if (errno == EWOULDBLOCK)
 			{
-				printf("No pending connections; sleeping for one second.\n");
-				sleep(1);
+				// printf("No pending connections; sleeping for one second.\n");
+				sleep(0.1);
 			}
 			else
 			{
