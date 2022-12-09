@@ -154,7 +154,7 @@ int main(int count, char *Argc[])
 			SSL_free(ssl); /* release SSL state */
 
 			// if the message from client was EOC we break loop and
-			if (strcmp(buf, "EOC")) {
+			if (strcmp(buf, "EOC") == 0) {
 				break;
 			}
 			// send(client_socket_fd, &buf, size, 0);
