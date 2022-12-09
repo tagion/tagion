@@ -307,6 +307,7 @@ version (OLD_TRANSACTION)
         import tagion.hibon.HiBON;
         import tagion.script.StandardRecords: Script;
         const net = new StdSecureNet;
+        import std.array;
         SecureNet alice = new StdSecureNet;
         {
             alice.generateKeyPair("Alice's secret password");
@@ -316,6 +317,12 @@ version (OLD_TRANSACTION)
             bob.generateKeyPair("Bob's secret password");
         }
         uint epoch = 42;
+        StandardBill[] bills;
+
+        bills ~= StandardBill(1000.TGN, epoch, alice.pubkey, null);
+        bills ~= StandardBill(1200.TGN, epoch, alice.derivePubkey("alice0"), null);
+        bills ~= StandardBill(3000.TGN, epoch, alice.derivePubkey("alice1"), null);
+        bills ~= StandardBill(4300.TGN, epoch, alice.derivePubkey("alice2"), null);
         SignedContract createSSC(TagionCurrency amount){
             auto input_bill = StandardBill(1000.TGN, epoch, alice.pubkey, null);
 
@@ -353,8 +360,9 @@ version (OLD_TRANSACTION)
         {
             auto ssc = createSSC(1000.TGN);
             auto smart_script = new SmartScript(ssc);
+            uint index = 1;
             try {
-                smart_script.run(epoch + 1);
+                smart_script.run(epoch + 1, index, Fingerprint(dart_db.fingerprint), new StdHashNet());
                 assert(false, "Input and Output amount not checked");
             }catch(SmartScriptException e){
                 assert(e.code == ConsensusFailCode
@@ -365,8 +373,9 @@ version (OLD_TRANSACTION)
         {
             auto ssc = createSSC(1000.TGN - globals.fees());
             auto smart_script = new SmartScript(ssc);
+            uint index = 1;
             try {
-                smart_script.run(epoch + 1);
+                smart_script.run(epoch + 1, index, Fingerprint(dart_db.fingerprint), new StdHashNet());
             }catch(SmartScriptException e){
                 assert(false, format("Exception code: %s", e.code));
             }
@@ -376,8 +385,9 @@ version (OLD_TRANSACTION)
         {
             auto ssc = createSSC(900.TGN - globals.fees());
             auto smart_script = new SmartScript(ssc);
+            uint index = 1;
             try {
-                smart_script.run(epoch + 1);
+                smart_script.run(epoch + 1, index, Fingerprint(dart_db.fingerprint), new StdHashNet());
             }catch(SmartScriptException e){
                 assert(false, format("Exception code: %s", e.code));
             }
