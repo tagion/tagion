@@ -268,9 +268,8 @@ import tagion.wallet.WalletException : check;
 
         if (topay > 0)
         {
-            const size_in_bytes = 500;
             pragma(msg, "fixme(cbr): Storage fee needs to be estimated");
-            const fees = globals.fees(topay, size_in_bytes);
+            const fees = globals.fees();
             const amount = topay + fees;
             StandardBill[] contract_bills;
             const enough = collect_bills(amount, contract_bills);
