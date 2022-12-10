@@ -77,7 +77,7 @@ class CClientWithCMultithreadserver {
 @safe @Scenario("D Client with C multithread_server", [])
 class DClientWithCMultithreadserver {
     ushort port = 8004;
-    uint number_of_clients = 2;
+    uint number_of_clients = 3;
     string host = "localhost";
     int calls = 10;
 
@@ -89,8 +89,8 @@ class DClientWithCMultithreadserver {
             port.to!string,
             cert,
         ];
-        auto ssl_server = spawnProcess(sslserver_start_command);
-        Thread.sleep(100.msecs);
+//        auto ssl_server = spawnProcess(sslserver_start_command);
+//        Thread.sleep(100.msecs);
 
         return result_ok;
     }
@@ -111,14 +111,14 @@ class DClientWithCMultithreadserver {
     @When("I send many requests with multithread.")
     Document multithread() @trusted {
         foreach (i; 0 .. number_of_clients) {
-            spawn(&echoSSLSocketTask, host, port, format("task%s-", i), calls, true);
+            spawn(&echoSSLSocketTask, host, port, format("task_%s-", i), calls, true);
         }
         foreach (i; 0 .. number_of_clients) {
             writefln("WAITING for receive %s", i);
-            writefln("receive%s, %s", i, receiveOnly!bool);
+           // writefln("receive%s, %s", i, receiveOnly!bool);
             // check(receiveOnly!bool, "Received false");
         }
-//	Thread.sleep(2.seconds);
+Thread.sleep(2.seconds);
         return result_ok;
     }
 
