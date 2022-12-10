@@ -114,7 +114,7 @@ class DClientMultithreadingWithCServer
     {
         foreach (i; 0 .. number_of_clients)
         {
-            spawn(&echoSSLSocketTask, address, port, format("task%s", i), 5);
+            spawn(&echoSSLSocketTask, address, port, format("task%s", i), 5, true);
         }
         foreach (i; 0 .. number_of_clients)
         {

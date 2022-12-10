@@ -11,8 +11,7 @@ protected enum _SSLErrorCodes {
     SSL_ERROR_WANT_READ = 2,
     SSL_ERROR_WANT_WRITE = 3,
     SSL_ERROR_WANT_X509_LOOKUP = 4,
-    SSL_ERROR_SYSCALL = 5, /* look at error stack/return
-                                      * value/errno */
+    SSL_ERROR_SYSCALL = 5, /* look at error stack/return * value/errno */
     SSL_ERROR_ZERO_RETURN = 6,
     SSL_ERROR_WANT_CONNECT = 7,
     SSL_ERROR_WANT_ACCEPT = 8,

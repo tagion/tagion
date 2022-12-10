@@ -16,23 +16,23 @@ import core.time;
 import std.concurrency;
 
 enum feature = Feature("Multithreading", [
-            "This is a test for multithread servers."
-        ]);
+    "This is a test for multithread servers."
+]);
 
-alias FeatureContext = Tuple!(CClientWithCMultithreadserver, "CClientWithCMultithreadserver",
-    DClientWithCMultithreadserver, "DClientWithCMultithreadserver", FeatureGroup*, "result");
+alias FeatureContext = Tuple!(
+        //CClientWithCMultithreadserver, "CClientWithCMultithreadserver",
+        DClientWithCMultithreadserver, "DClientWithCMultithreadserver",
+        FeatureGroup*, "result");
 
 @safe @Scenario("C Client with C multithread_server", [])
-class CClientWithCMultithreadserver
-{
+class CClientWithCMultithreadserver {
     ushort port = 8003;
     uint number_of_clients = 10;
     string host = "localhost";
     int calls = 10;
 
     @Given("I have a sslserver in C.")
-    Document c() @trusted
-    {
+    Document c() @trusted {
         immutable sslserver_start_command = [
             ssltestserver,
             host,
@@ -46,23 +46,19 @@ class CClientWithCMultithreadserver
     }
 
     @Given("I have a simple c _sslclient.")
-    Document sslclient() @trusted
-    {
+    Document sslclient() @trusted {
         const response = client_send("wowo", port).strip();
         check(response == "wowo", "Message not received");
         return result_ok;
     }
 
     @When("I send many requests with multithread.")
-    Document multithread() @trusted
-    {
-        foreach (i; 0 .. number_of_clients)
-        {
+    Document multithread() @trusted {
+        foreach (i; 0 .. number_of_clients) {
             spawn(&client_send_task, port, format("%stest", i), calls);
         }
 
-        foreach (i; 0 .. number_of_clients)
-        {
+        foreach (i; 0 .. number_of_clients) {
             writefln("WAITING for receive %s", i);
             writefln("receive%s, %s", i, receiveOnly!bool);
         }
@@ -71,8 +67,7 @@ class CClientWithCMultithreadserver
     }
 
     @Then("the sslserver should not chrash.")
-    Document chrash() @trusted
-    {
+    Document chrash() @trusted {
         const response = client_send("EOC", port);
         return result_ok;
     }
@@ -80,16 +75,14 @@ class CClientWithCMultithreadserver
 }
 
 @safe @Scenario("D Client with C multithread_server", [])
-class DClientWithCMultithreadserver
-{
-    ushort port = 8003;
-    uint number_of_clients = 10;
+class DClientWithCMultithreadserver {
+    ushort port = 8004;
+    uint number_of_clients = 2;
     string host = "localhost";
     int calls = 10;
 
     @Given("I have a sslserver in C.")
-    Document c() @trusted
-    {
+    Document c() @trusted {
         immutable sslserver_start_command = [
             ssltestserver,
             host,
@@ -103,36 +96,35 @@ class DClientWithCMultithreadserver
     }
 
     @Given("I have a simple d _sslclient.")
-    Document sslclient() @trusted
-    {
+    Document sslclient() @trusted {
+
         const message = "wowo";
-        const response = echoSSLSocket("localhost", port, message).strip();
+        const response = echoSSLSocket(host, port, message).strip();
+        writefln("response %s", response);
+
         check(response == message, format("Error response not found got: %s", response));
+        echoSSLSocketTask(host, port, "single_task-", calls, false);
 
         return result_ok;
     }
 
     @When("I send many requests with multithread.")
-    Document multithread() @trusted
-    {
-        foreach (i; 0 .. number_of_clients)
-        {
-            spawn(&echoSSLSocketTask, host, port, format("task%s", i), calls);
+    Document multithread() @trusted {
+        foreach (i; 0 .. number_of_clients) {
+            spawn(&echoSSLSocketTask, host, port, format("task%s-", i), calls, true);
         }
-        foreach (i; 0 .. number_of_clients)
-        {
+        foreach (i; 0 .. number_of_clients) {
             writefln("WAITING for receive %s", i);
             writefln("receive%s, %s", i, receiveOnly!bool);
             // check(receiveOnly!bool, "Received false");
         }
-
+//	Thread.sleep(2.seconds);
         return result_ok;
     }
 
     @Then("the sslserver should not chrash.")
-    Document chrash() @trusted
-    {
-        const response = echoSSLSocket("localhost", port, "EOC");
+    Document chrash() @trusted {
+        const response = echoSSLSocket(host, port, "EOC");
         return result_ok;
     }
 

@@ -56,15 +56,23 @@ string echoSSLSocket(string address, const ushort port, string msg) {
 }
 
 @trusted
-void echoSSLSocketTask(string address, immutable ushort port, string prefix, immutable uint calls) {
-    foreach(i; 0..calls) {
+void echoSSLSocketTask(
+string address, 
+immutable ushort port, 
+string prefix, 
+immutable uint calls,
+ 
+immutable bool send_to_owner) {
+    foreach (i; 0 .. calls) {
         const message = format("%s%s", prefix, i);
         const response = echoSSLSocket(address, port, message);
         writefln("response: <%s>", response);
         check(response == message, format("Error: message and response not the same got: <%s>", response));
     }
-    writefln("DONE %s", prefix);
-    ownerTid.send(true);
+    writefln("##### DONE %s\n", prefix);
+	if (send_to_owner) {
+		ownerTid.send(true);
+	}
 }
 
 import tagion.network.SSLOptions;
@@ -119,7 +127,6 @@ version (none) void SSLSocketServer(immutable(SSLOptions) ssl_options) {
         }
 
 }
-
 
 void LoadCertificates(SSL_CTX* ctx, string CertFile, string KeyFile) {
     /* set the local certificate from CertFile */
@@ -187,7 +194,7 @@ void __SSLSocketServer(string address, const ushort port, string cert) {
     // server.blocking(false);
     // auto readSet = new SocketSet;
     // auto writeSet = new SocketSet;
-    
+
     // Socket[] sockets;
 
     server.listen(3);
@@ -219,17 +226,17 @@ void __SSLSocketServer(string address, const ushort port, string cert) {
 
 void _SSLSocketServer(string address, const ushort port, string cert) {
 
-//    auto ctx = InitServerCTX();
+    //    auto ctx = InitServerCTX();
     /* initialize SSL */
-//    LoadCertificates(ctx, cert, cert); /* load certs */
-//    auto server = OpenListener(address, port); /* create server socket */
-	auto server = new SSLSocket(AddressFamily.INET, SocketType.STREAM, cert);
-	auto addr = getAddress(address, port);
-	server.bind(addr[0]);
-	server.listen(10);
+    //    LoadCertificates(ctx, cert, cert); /* load certs */
+    //    auto server = OpenListener(address, port); /* create server socket */
+    auto server = new SSLSocket(AddressFamily.INET, SocketType.STREAM, cert);
+    auto addr = getAddress(address, port);
+    server.bind(addr[0]);
+    server.listen(10);
 
     bool stop;
-//    server.listen(3);
+    //    server.listen(3);
     while (!stop) {
         SSL* ssl;
         auto client = server.accept(); /* accept connection as usual */
@@ -238,7 +245,7 @@ void _SSLSocketServer(string address, const ushort port, string cert) {
         stop = Servlet(ssl); /* service connection */
     }
     writeln("shutdown!");
-//    SSL_CTX_free(ctx);
+    //    SSL_CTX_free(ctx);
     server.shutdown(SocketShutdown.BOTH);
     server.close();
 }
