@@ -114,9 +114,8 @@ class DClientWithCMultithreadserver {
             spawn(&echoSSLSocketTask, host, port, format("task_%s-", i), calls, true);
         }
         foreach (i; 0 .. number_of_clients) {
-            writefln("WAITING for receive %s", i);
-            writefln("receive%s, %s", i, receiveOnly!bool);
-            // check(receiveOnly!bool, "Received false");
+            writefln("WAITING echoSSLSocketTask %d", i);
+            check(receiveOnly!bool, "SSL Client test did not ended correctly");
         }
         return result_ok;
     }
