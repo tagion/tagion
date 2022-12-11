@@ -11,14 +11,19 @@ import std.concurrency;
 import tagion.behaviour;
 import core.thread;
 
+version (WOLFSSL) {
+    void ERR_print_errors_fp(stdc_io.FILE* fp) {
+        writefln("WolfSSL error");
+    }
+}
 //import tagion.network.
 SSL_CTX* InitCTX() {
-    SSL_METHOD* method;
+    //SSL_METHOD* method;
     SSL_CTX* ctx;
     //    OpenSSL_add_all_algorithms();     /* Load cryptos, et.al. */
     //    SSL_load_error_strings();         /* Bring in and register error messages */
-    method = TLS_client_method(); /* Create new client-method instance */
-    ctx = SSL_CTX_new(method); /* Create new context */
+    //method = TLS_client_method(); /* Create new client-method instance */
+    ctx = SSL_CTX_new(TLS_client_method); /* Create new context */
     if (ctx == null) {
         ERR_print_errors_fp(cast(stdc_io.FILE*) stdc_io.stderr);
         return null; //abort();
@@ -27,10 +32,10 @@ SSL_CTX* InitCTX() {
 }
 
 SSL_CTX* InitServerCTX() {
-    SSL_METHOD* method;
+    //    SSL_METHOD* method;
     SSL_CTX* ctx;
-    method = TLS_server_method(); /* create new server-method instance */
-    ctx = SSL_CTX_new(method); /* create new context from method */
+    //    method = TLS_server_method(); /* create new server-method instance */
+    ctx = SSL_CTX_new(TLS_server_method()); /* create new context from method */
     if (ctx == null) {
         ERR_print_errors_fp(cast(stdc_io.FILE*) stdc_io.stderr);
         return null;
@@ -40,7 +45,7 @@ SSL_CTX* InitServerCTX() {
 
 //@safe
 @trusted
-string echoSSLSocket(string address, const ushort port, string msg) {
+string _echoSSLSocket(string address, const ushort port, string msg) {
     import std.conv : to;
 
     auto addresses = getAddress(address, port);
@@ -49,30 +54,149 @@ string echoSSLSocket(string address, const ushort port, string msg) {
     auto socket = new SSLSocket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
     socket.connect(addresses[0]);
     socket.send(msg);
+    Thread.sleep(10.msecs);
     size = socket.receive(buffer);
+    writefln("size=%d", size);
     buffer[size] = 0;
     socket.shutdown;
+    socket.close;
     return buffer[0 .. size].idup;
 }
 
 @trusted
+string __echoSSLSocket(string address, const ushort port, string msg) {
+    import std.conv : to;
+
+    auto addresses = getAddress(address, port);
+    auto buffer = new char[1024];
+    size_t size;
+    auto socket = new Socket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
+    socket.connect(addresses[0]);
+    socket.send(msg);
+    Thread.sleep(10.msecs);
+    size = socket.receive(buffer);
+    writefln("size=%d", size);
+    buffer[size] = 0;
+    socket.shutdown(SocketShutdown.BOTH);
+    socket.close;
+    return buffer[0 .. size].idup;
+}
+
+	alias echoSSLSocket = echoWolfSSLSocket;
+
+@trusted 
+string echoWolfSSLSocket(string address, const ushort port, string msg) {
+        import tagion.network.wolfssl.c.ssl;
+    auto buffer = new char[1024];
+    size_t size;
+ 	int sockfd;
+
+    WOLFSSL_CTX* ctx;
+
+    WOLFSSL* ssl;
+
+    WOLFSSL_METHOD* method;
+
+writefln("wolfSSLSocket %s", msg);
+   // const char message[] = "Hello, World!";
+
+
+
+    /* create and set up socket */
+	
+    auto socket = new Socket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
+	//auto socket = new Socket()
+    sockfd = socket.handle; 
+
+    auto addresses = getAddress(address, port);
+    socket.connect(addresses[0]);
+
+
+    /* initialize wolfssl library */
+
+//    wolfSSL_Init();
+
+
+
+    method = wolfTLS_client_method(); /* use TLS v1.2 */
+
+
+
+    /* make new ssl context */
+
+    if ( (ctx = wolfSSL_CTX_new(method)) is null) {
+		writefln("wolfSSL CTX error");
+        //err_sys("wolfSSL_CTX_new error");
+		return null;
+    }
+
+
+
+    /* make new wolfSSL struct */
+
+    if ( (ssl = wolfSSL_new(ctx)) is null) {
+
+        writeln("wolfSSL_new error");
+		return null;
+    }
+
+
+
+    /* Add cert to ctx */
+version(none)
+    if (wolfSSL_CTX_load_verify_locations(ctx, "certs/ca-cert.pem", 0) !=
+
+                SSL_SUCCESS) {
+
+        err_sys("Error loading certs/ca-cert.pem");
+
+    }
+
+
+
+    /* Connect wolfssl to the socket, server, then send message */
+
+    wolfSSL_set_fd(ssl, sockfd);
+
+    wolfSSL_connect(ssl);
+
+    wolfSSL_write(ssl, msg.ptr, cast(int)msg.length); //strlen(message));
+
+	size = wolfSSL_read(ssl, buffer.ptr, cast(int)buffer.length);
+//    size = socket.receive(buffer);
+    writefln("size=%d", size);
+
+
+    /* frees all data before client termination */
+
+    wolfSSL_free(ssl);
+
+    wolfSSL_CTX_free(ctx);
+    return buffer[0 .. size].idup;
+
+  //  wolfSSL_Cleanup();
+}
+
+@trusted
 void echoSSLSocketTask(
-string address, 
-immutable ushort port, 
-string prefix, 
-immutable uint calls,
- 
-immutable bool send_to_owner) {
+        string address,
+        immutable ushort port,
+        string prefix,
+        immutable uint calls,
+
+        immutable bool send_to_owner) {
     foreach (i; 0 .. calls) {
         const message = format("%s%s", prefix, i);
-        const response = echoSSLSocket(address, port, message);
+        //const response = echoSSLSocket(address, port, message);
+        const response = echoWolfSSLSocket(address, port, message);
         writefln("response: <%s>", response);
-        check(response == message, format("Error: message and response not the same got: <%s>", response));
+        check(response == message, 
+		format("Error: message and response not the same got: <%s>", response));
     }
     writefln("##### DONE %s\n", prefix);
-	if (send_to_owner) {
-		ownerTid.send(true);
-	}
+    if (send_to_owner) {
+        ownerTid.send(true);
+    }
 }
 
 import tagion.network.SSLOptions;

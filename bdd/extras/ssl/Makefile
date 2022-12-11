@@ -3,13 +3,16 @@ CERT?=mycert.pem
 PORT?= 8081
 URL?=172.0.0.1
 
-all: ssl_client ssl_server $(CERT)
+all: ssl_client ssl_server test_server $(CERT)
 
 ssl_server:
 	gcc -g -o ssl_server ssl_server.c -lssl -lcrypto
 
 ssl_client:
 	gcc -g -o ssl_client ssl_client.c -lssl -lcrypto
+
+test_server:
+	gcc -g -o test_server test_server.c 
 
 %.pem:
 	openssl req -x509 -nodes -days 365 -newkey rsa:4096 -keyout mycert.pem -out mycert.pem

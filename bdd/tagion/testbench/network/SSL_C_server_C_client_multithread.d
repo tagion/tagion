@@ -76,8 +76,8 @@ class CClientWithCMultithreadserver {
 
 @safe @Scenario("D Client with C multithread_server", [])
 class DClientWithCMultithreadserver {
-    ushort port = 8004;
-    uint number_of_clients = 3;
+    ushort port = 8005;
+    uint number_of_clients = 5;
     string host = "localhost";
     int calls = 10;
 
@@ -89,8 +89,8 @@ class DClientWithCMultithreadserver {
             port.to!string,
             cert,
         ];
-//        auto ssl_server = spawnProcess(sslserver_start_command);
-//        Thread.sleep(100.msecs);
+        auto ssl_server = spawnProcess(sslserver_start_command);
+        Thread.sleep(100.msecs);
 
         return result_ok;
     }
@@ -99,7 +99,7 @@ class DClientWithCMultithreadserver {
     Document sslclient() @trusted {
 
         const message = "wowo";
-        const response = echoSSLSocket(host, port, message).strip();
+        const response = echoWolfSSLSocket(host, port, message).strip();
         writefln("response %s", response);
 
         check(response == message, format("Error response not found got: %s", response));
@@ -115,10 +115,9 @@ class DClientWithCMultithreadserver {
         }
         foreach (i; 0 .. number_of_clients) {
             writefln("WAITING for receive %s", i);
-           // writefln("receive%s, %s", i, receiveOnly!bool);
+            writefln("receive%s, %s", i, receiveOnly!bool);
             // check(receiveOnly!bool, "Received false");
         }
-Thread.sleep(2.seconds);
         return result_ok;
     }
 

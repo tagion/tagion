@@ -125,7 +125,7 @@ int main(int count, char *Argc[]) {
     printf("Before select %d\n", fdset_max);
     int nready = select(fdset_max + 1, &readfds, NULL, NULL, &timeout);
 
-    printf("After select %d\n", nready);
+    printf("nready %d\n", nready);
     if (rv == -1) {
       perror_die("Error and die"); /* an error occurred */
     } else if (rv == 0) {
@@ -153,7 +153,7 @@ int main(int count, char *Argc[]) {
               perror_die("Error accept");
             }
           } else {
-            //     make_socket_non_blocking(new_fd);
+            //make_socket_non_blocking(new_fd);
             if (new_fd > fdset_max) {
               if (new_fd >= FD_SETSIZE) {
                 printf("socket fd (%d) >= FD_SETSIZE (%d)", new_fd, FD_SETSIZE);
@@ -169,6 +169,7 @@ int main(int count, char *Argc[]) {
             printf("SSL_accept rv=%d\n", rv);
             if (rv < 0) {
               ERR_print_errors_fp(stderr);
+				continue;
             } else {
               // X509 *cert;
               // char *line;
@@ -198,8 +199,9 @@ int main(int count, char *Argc[]) {
             }
             SSL_shutdown(ssl);
             SSL_free(ssl); /* release SSL state */
-            close(new_fd);
+			FD_CLR(fd, &readfds);
 
+            close(new_fd);
             // if the message from client was EOC we break loop and
             if (strcmp(buf, "EOC") == 0) {
               goto END;

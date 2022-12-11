@@ -25,53 +25,60 @@ version (WOLFSSL) {
         private import tagion.network.wolfssl.c.error_ssl;
         private import tagion.network.wolfssl.c.ssl;
 
-        package {
-            alias SSL = WOLFSSL;
-            alias SSL_CTX = WOLFSSL_CTX;
-            alias SSL_CTX_use_certificate_file = wolfSSL_CTX_use_certificate_file;
+        //        package {
+        alias SSL = WOLFSSL;
+        alias SSL_CTX = WOLFSSL_CTX;
+        alias SSL_CTX_use_certificate_file = wolfSSL_CTX_use_certificate_file;
 
-            alias SSL_write = wolfSSL_write;
-            alias SSL_read = wolfSSL_read;
-            alias SSL_CTX_new = wolfSSL_CTX_new;
-            alias SSL_CTX_free = wolfSSL_CTX_free;
-            alias SSL_set_fd = wolfSSL_set_fd;
-            alias SSL_get_fd = wolfSSL_get_fd;
-            alias SSL_set_verify = wolfSSL_set_verify;
-            alias SSL_new = wolfSSL_new;
-            alias SSL_free = wolfSSL_free;
-            alias SSL_get_error = wolfSSL_get_error;
-            alias SSL_connect = wolfSSL_connect;
-            alias SSL_accept = wolfSSL_accept;
-            alias SSL_pending = wolfSSL_pending;
-            alias SSL_shutdown = wolfSSL_shutdown;
-            alias TLS_client_method = wolfTLS_client_method;
-            alias TLS_server_method = wolfTLS_server_method;
-            alias SSL_CTX_check_private_key = wolfSSL_CTX_check_private_key;
-            alias SSL_CTX_use_PrivateKey_file = wolfSSL_CTX_use_PrivateKey_file;
-            alias ERR_clear_error = wolfSSL_ERR_clear_error;
-            alias ERR_get_error = wolfSSL_ERR_get_error;
-            alias ERR_error_string_n = wolfSSL_ERR_error_string_n;
+        alias SSL_write = wolfSSL_write;
+        alias SSL_read = wolfSSL_read;
+        alias SSL_CTX_new = wolfSSL_CTX_new;
+        alias SSL_CTX_free = wolfSSL_CTX_free;
+        alias SSL_set_fd = wolfSSL_set_fd;
+        alias SSL_get_fd = wolfSSL_get_fd;
+        alias SSL_set_verify = wolfSSL_set_verify;
+        alias SSL_new = wolfSSL_new;
+        alias SSL_free = wolfSSL_free;
+        alias SSL_get_error = wolfSSL_get_error;
+        alias SSL_connect = wolfSSL_connect;
+        alias SSL_accept = wolfSSL_accept;
+        alias SSL_pending = wolfSSL_pending;
+        alias SSL_shutdown = wolfSSL_shutdown;
+        alias TLS_client_method = wolfTLS_client_method;
+        alias TLS_server_method = wolfTLS_server_method;
+        alias SSL_CTX_check_private_key = wolfSSL_CTX_check_private_key;
+        alias SSL_CTX_use_PrivateKey_file = wolfSSL_CTX_use_PrivateKey_file;
+        alias ERR_clear_error = wolfSSL_ERR_clear_error;
+        alias ERR_get_error = wolfSSL_ERR_get_error;
+        alias ERR_error_string_n = wolfSSL_ERR_error_string_n;
+        /// Code generator which collects all WOLF and OPENSSL error into one enum
+        protected string generator_all_SSLErrorCodes() {
 
-            /// Code generator which collects all WOLF and OPENSSL error into one enum
-            protected string generator_all_SSLErrorCodes() {
+            string[] enum_list;
+            import std.conv : to;
+            import std.traits : EnumMembers;
+            import std.array : join;
 
-                string[] enum_list;
-                import std.conv : to;
-                import std.traits : EnumMembers;
-                import std.array : join;
-
-                static foreach (E; EnumMembers!_SSLErrorCodes) {
-                    enum_list ~= format(q{    %1$s = cast(int)_SSLErrorCodes.%1$s,}, E.stringof);
-                }
-
-                static foreach (E; EnumMembers!wolfSSL_ErrorCodes) {
-                    enum_list ~= format(q{    %1$s = cast(int)wolfSSL_ErrorCodes.%1$s,}, E.stringof);
-                }
-                return format("enum ALL_SSLErrorCodes {\n%-(%s \n%)\n};", enum_list);
+            static foreach (E; EnumMembers!_SSLErrorCodes) {
+                enum_list ~= format(q{    %1$s = cast(int)_SSLErrorCodes.%1$s,}, E.stringof);
             }
+
+            static foreach (E; EnumMembers!wolfSSL_ErrorCodes) {
+                enum_list ~= format(q{    %1$s = cast(int)wolfSSL_ErrorCodes.%1$s,}, E.stringof);
+            }
+            return format("enum ALL_SSLErrorCodes {\n%-(%s \n%)\n};", enum_list);
         }
     }
+    //    }
     /// enum ALL_SSLErrorCodes (OpenSSL and WolfSSL error list joined
+    shared static this() {
+        wolfSSL_Init();
+    }
+
+    shared static ~this() {
+        wolfSSL_Cleanup;
+    }
+
     mixin(generator_all_SSLErrorCodes);
 }
 else {

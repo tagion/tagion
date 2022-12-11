@@ -27,6 +27,7 @@ enum EndpointType {
 @safe
 class SSLSocket : Socket {
     enum ERR_TEXT_SIZE = 256;
+    nothrow
     static class MemoryLock {
         // empty
     }
@@ -36,7 +37,7 @@ class SSLSocket : Socket {
         SSL* _ssl;
         SSL_CTX* _ctx;
         static SSL_CTX* client_ctx;
-		Flag!"EndPoint" endpoint;
+        Flag!"EndPoint" endpoint;
     }
 
     /++
@@ -76,7 +77,7 @@ class SSLSocket : Socket {
     }
 
     shared static int client_count;
-    static bool verifyPeer = false;
+    static bool verifyPeer = true;
     /++
      The client use this configuration by default.
      +/
@@ -98,8 +99,8 @@ class SSLSocket : Socket {
                 io.writefln("--- client = %s", _ctx);
             }
             _ssl = SSL_new(_ctx);
+            SSL_set_fd(_ssl, this.handle);
         }
-        SSL_set_fd(_ssl, this.handle);
         if (isClient && verifyPeer) {
             SSL_set_verify(_ssl, SSL_VERIFY_NONE, null);
         }
@@ -184,7 +185,7 @@ class SSLSocket : Socket {
 
         ERR_clear_error;
         _ctx = SSL_CTX_new(TLS_server_method);
-	endpoint=Yes.EndPoint;
+        endpoint = Yes.EndPoint;
         atomicOp!"+="(server_count, 1);
         io.writefln("new[%d]  server _ctx=%s", server_count, _ctx);
         check(certificate_filename.exists,
@@ -227,19 +228,25 @@ class SSLSocket : Socket {
 	Params: how has no effect for the SSLSocket
 	+/
     override void shutdown(SocketShutdown how) {
+        assert(0);
         SSL_shutdown(_ssl);
     }
 
-    bool shutdown() nothrow {
-        return SSL_shutdown(_ssl) != 0;
+    bool shutdown() {
+        synchronized (lock) {
+            return SSL_shutdown(_ssl) != 0;
+        }
     }
     /++
      Send a buffer to the socket using the socket result
      +/
     @trusted
     override ptrdiff_t send(scope const(void)[] buf, SocketFlags flags) {
-        auto res_val = SSL_write(_ssl, buf.ptr, cast(int) buf.length);
-        check_error(res_val);
+        int res_val;
+        synchronized (lock) {
+            res_val = SSL_write(_ssl, buf.ptr, cast(int) buf.length);
+            check_error(res_val);
+        }
         return res_val;
     }
 
@@ -297,8 +304,11 @@ class SSLSocket : Socket {
      +/
     @trusted
     override ptrdiff_t receive(scope void[] buf, SocketFlags flags) {
-        const res_val = SSL_read(_ssl, buf.ptr, cast(uint) buf.length);
-        check_error(res_val);
+        int res_val;
+        synchronized (lock) {
+            res_val = SSL_read(_ssl, buf.ptr, cast(uint) buf.length);
+            check_error(res_val);
+        }
         return res_val;
     }
 

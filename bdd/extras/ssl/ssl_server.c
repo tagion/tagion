@@ -152,6 +152,7 @@ int main(int count, char *Argc[])
     SSL_CTX *ctx;
     int server;
     char *portnum;
+	char *cert;
     printf("count=%d\n", count);
     if (count < 2)
     {
@@ -164,53 +165,30 @@ int main(int count, char *Argc[])
     ctx = InitServerCTX(); 
     if (count == 3)
     {
-        LoadCertificates(ctx, Argc[2], Argc[2]); /* load certs */
+		cert =Argc[2];
     }
     else
     {
         /* initialize SSL */
-        LoadCertificates(ctx, "mycert.pem", "mycert.pem"); /* load certs */
+		cert="mycert.pem";
     }
-    server = OpenListener(atoi(portnum)); /* create server socket */
+    
+    LoadCertificates(ctx, cert, cert); /* load certs */
+	server = OpenListener(atoi(portnum)); /* create server socket */
     int tr;
-//////////////////////////////////
     if (listen(server, listener_size) < 0)
     {
         perror("listen");
         return 1;
     }
+    printf("port %s cert %s\n", portnum, cert); 
     int ret = 1;
-    int rv;
-    int client;
-    fd_set set;
     while (ret)
     {
         struct sockaddr_in addr;
         socklen_t len = sizeof(addr);
         SSL *ssl;
-        rv = select(server + 1, &set, NULL, NULL, NULL);
-        if (rv == -1)
-        {
-            perror("select"); /* an error occurred */
-            return 1;
-        }
-        else if (rv == 0)
-        {
-            printf("timeout occurred (20 second) \n"); /* a timeout occurred */
-            return 1;
-        }
-        else
-        {
-            client = accept(server, (struct sockaddr *)&addr, &len); /* accept connection as usual */
-        }
-
-        // int client = accept(server, (struct sockaddr *)&addr, &len); /* accept connection as usual */
-        printf("client %d \n", client);
-        if (client < 0)
-        {
-            printf("Breaking %d \n", client);
-            continue;
-        }
+        int client = accept(server, (struct sockaddr *)&addr, &len); /* accept connection as usual */
         printf("Connection: %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
         ssl = SSL_new(ctx);      /* get new SSL state with context */
         SSL_set_fd(ssl, client); /* set connection socket to SSL state */
