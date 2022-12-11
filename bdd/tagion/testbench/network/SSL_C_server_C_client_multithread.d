@@ -99,7 +99,12 @@ class DClientWithCMultithreadserver {
     Document sslclient() @trusted {
 
         const message = "wowo";
-        const response = echoWolfSSLSocket(host, port, message).strip();
+        version (WOLFSSL) {
+            const response = echoWolfSSLSocket(host, port, message).strip();
+        }
+        else {
+            const response = echoSSLSocket(host, port, message).strip();
+        }
         writefln("response %s", response);
 
         check(response == message, format("Error response not found got: %s", response));

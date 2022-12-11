@@ -84,49 +84,51 @@ string __echoSSLSocket(string address, const ushort port, string msg) {
 
 //alias echoSSLSocket = echoWolfSSLSocket;
 
-import tagion.network.wolfssl.c.ssl : WOLFSSL_CTX;
+version (WOLFSSL) {
+    import tagion.network.wolfssl.c.ssl : WOLFSSL_CTX;
 
-__gshared WOLFSSL_CTX* client_ctx;
+    __gshared WOLFSSL_CTX* client_ctx;
 
-shared static this() {
-    import tagion.network.wolfssl.c.ssl;
+    shared static this() {
+        import tagion.network.wolfssl.c.ssl;
 
-    WOLFSSL_METHOD* method;
-    method = wolfTLS_client_method(); /* use TLS v1.2 */
+        WOLFSSL_METHOD* method;
+        method = wolfTLS_client_method(); /* use TLS v1.2 */
 
-    /* make new ssl context */
+        /* make new ssl context */
 
-    if ((client_ctx = wolfSSL_CTX_new(method)) is null) {
-        writefln("wolfSSL CTX error");
-        //err_sys("wolfSSL_CTX_new error");
+        if ((client_ctx = wolfSSL_CTX_new(method)) is null) {
+            writefln("wolfSSL CTX error");
+            //err_sys("wolfSSL_CTX_new error");
+        }
+    }
+
+    shared static ~this() {
+        import tagion.network.wolfssl.c.ssl;
+
+        wolfSSL_CTX_free(client_ctx);
     }
 }
-
-shared static ~this() {
-    import tagion.network.wolfssl.c.ssl;
-
-    wolfSSL_CTX_free(client_ctx);
-}
-
 @trusted
 string echoSSLSocket(string address, const ushort port, string msg) {
-    import tagion.network.wolfssl.c.ssl;
+    version (WOLFSSL) import tagion.network.wolfssl.c.ssl;
+
     auto buffer = new char[1024];
     auto socket = new SSLSocket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
     auto addresses = getAddress(address, port);
     socket.connect(addresses[0]);
     writefln("SSLSocket %s", msg);
-	socket.send(msg);
+    socket.send(msg);
     //wolfSSL_write(socket.ssl, msg.ptr, cast(int) msg.length); //strlen(message));
 
     //const size = wolfSSL_read(socket.ssl, buffer.ptr, cast(int) buffer.length);
-	const size = socket.receive(buffer);
-	writefln("Received %d", size);
-	socket.shutdown;
-	return buffer[0..size].idup;
+    const size = socket.receive(buffer);
+    writefln("Received %d", size);
+    socket.shutdown;
+    return buffer[0 .. size].idup;
 }
 
-@trusted
+version (WOLFSSL) @trusted
 string echoWolfSSLSocket(string address, const ushort port, string msg) {
     import tagion.network.wolfssl.c.ssl;
 
@@ -184,12 +186,12 @@ string echoWolfSSLSocket(string address, const ushort port, string msg) {
     //    size = socket.receive(buffer);
     // writefln("size=%d", size);
 
-	const ret = wolfSSL_shutdown(ssl);
-	if (ret != 0) {
-	writefln("Shutdown failed");
-	return null;
-	}
-	//assert(ret == 0);
+    const ret = wolfSSL_shutdown(ssl);
+    if (ret != 0) {
+        writefln("Shutdown failed");
+        return null;
+    }
+    //assert(ret == 0);
     /* frees all data before client termination */
 
     wolfSSL_free(ssl);
@@ -370,7 +372,7 @@ void __SSLSocketServer(string address, const ushort port, string cert) {
     server.close();
 }
 
-void _SSLSocketServer(string address, const ushort port, string cert) {
+void x_SSLSocketServer(string address, const ushort port, string cert) {
 
     //    auto ctx = InitServerCTX();
     /* initialize SSL */
@@ -392,6 +394,34 @@ void _SSLSocketServer(string address, const ushort port, string cert) {
     }
     writeln("shutdown!");
     //    SSL_CTX_free(ctx);
+    server.shutdown(SocketShutdown.BOTH);
+    server.close();
+}
+
+@trusted
+void _SSLSocketServer(string address, const ushort port, string cert) {
+    auto server = new SSLSocket(AddressFamily.INET, SocketType.STREAM, cert);
+    auto addr = getAddress(address, port);
+    auto buffer = new char[1024];
+    server.bind(addr[0]);
+    server.listen(10);
+
+    bool stop;
+    while (!stop) {
+        auto client = cast(SSLSocket) server._accept(); /* accept connection as usual */
+        //const size = server.receive(buffer);
+        writefln("Before send %s", client.ssl is null);
+        const size = SSL_read(client.ssl, buffer.ptr, cast(int) buffer.length); /* get request */
+        const received_buffer = buffer[0 .. size];
+        writefln("size=%d", size);
+        SSL_write(client.ssl, buffer.ptr, size); /* send reply */
+        writefln("Client msg: %s", received_buffer);
+        SSL_shutdown(client.ssl);
+        //  server.send(received_buffer);
+        // client.shutdown;
+        stop = received_buffer == "EOC"; /* service connection */
+    }
+    writeln("shutdown!");
     server.shutdown(SocketShutdown.BOTH);
     server.close();
 }

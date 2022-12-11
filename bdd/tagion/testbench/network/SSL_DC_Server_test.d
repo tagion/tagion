@@ -15,38 +15,35 @@ import core.time;
 import std.concurrency;
 
 enum feature = Feature("simple DC server", [
-            "This is a test with the DC server and a simple c client."
-        ]);
+    "This is a test with the DC server and a simple c client."
+]);
 
-alias FeatureContext = Tuple!(CClientWithDCServer, "CClientWithDCServer", FeatureGroup*, "result");
+alias FeatureContext = Tuple!(
+        CClientWithDCServer, "CClientWithDCServer",
+        FeatureGroup*, "result");
 
 @safe @Scenario("C Client with D server", [])
-class CClientWithDCServer
-{
+class CClientWithDCServer {
     ushort port = 8003;
     int calls = 10;
 
-    @Given("I have a simple sslserver in D.") 
-    Document d() @trusted
-    {
+    @Given("I have a simple sslserver in D.")
+    Document d() @trusted {
         auto server = spawn(&_SSLSocketServer, "localhost", port, cert);
         Thread.sleep(100.msecs);
         return result_ok;
     }
 
     @Given("I have a simple c sslclient.")
-    Document _sslclient()
-    {
+    Document _sslclient() {
         const response = client_send("wowo", port).strip();
         check(response == "wowo", "Message not received");
         return result_ok;
     }
 
     @When("I send many requests repeadtly.")
-    Document repeadtly()
-    {
-        for (int i = 0; i < calls; i++)
-        {
+    Document repeadtly() {
+        for (int i = 0; i < calls; i++) {
             string message = format("test%s", i);
             const response = client_send(message, port).strip();
             writefln(response);
@@ -56,8 +53,7 @@ class CClientWithDCServer
     }
 
     @Then("the sslserver should not chrash.")
-    Document chrash()
-    {
+    Document chrash() {
         const response = client_send("EOC", port);
         return result_ok;
     }

@@ -120,8 +120,17 @@ else {
             char* SSL_alert_type_string_long(int);
             char* SSL_alert_desc_string_long(int);
             char* SSL_state_string_long(const SSL*);
+            int OPENSSL_init_ssl(ulong opt, const void* settings);
+
+        }
+
+        void SSL_Init() {
+            OPENSSL_init_ssl(0, null);
+        }
+
+        void SSL_Cleanup() {
+            // Dummy function for compatibility with WolfSSL
         }
     }
-
     alias SSLErrorCodes = _SSLErrorCodes;
 }

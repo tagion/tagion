@@ -21,6 +21,12 @@ enum EndpointType {
     Server
 }
 
+enum Ownership {
+    COMMON, /// Uses common clinet context
+    OWNS, /// Ex. used by the server context
+    BORROWS, /// Used by a server response socket
+}
+
 /++
  Socket for OpenSSL & WolfSSL
 +/
@@ -37,7 +43,7 @@ class SSLSocket : Socket {
         SSL* _ssl;
         SSL_CTX* _ctx;
         __gshared SSL_CTX* _client_ctx;
-        Flag!"EndPoint" endpoint;
+        Ownership _ownership;
     }
 
     @trusted
@@ -85,7 +91,7 @@ class SSLSocket : Socket {
     /// ditto
     this(socket_t sock,
             AddressFamily af,
-            SSLSocket seed_socket = null) {
+            SSLSocket seed_socket) {
         ERR_clear_error;
         super(sock, af);
         if (seed_socket) {
@@ -97,8 +103,23 @@ class SSLSocket : Socket {
         //        _init(certificate_filename, prvkey_filename);
     }
 
-    shared static int client_count;
-    static bool verifyPeer = true;
+    this(socket_t sock,
+            AddressFamily af,
+            SSL_CTX* ctx = null) {
+        if (ctx !is null) {
+            _ownership = Ownership.BORROWS;
+            _ctx = ctx;
+        }
+        else {
+            _ownership = Ownership.COMMON;
+            _ctx = client_ctx;
+        }
+        _ssl = SSL_new(_ctx);
+        SSL_set_fd(_ssl, sock);
+        super(sock, af);
+    }
+
+    bool verifyPeer; // = true;
     /++
      The client use this configuration by default.
      +/
@@ -111,21 +132,27 @@ class SSLSocket : Socket {
         if (_ctx is null) {
             // If _ctx is null then it is uses a client SSL
             _ctx = client_ctx;
+            _ownership = Ownership.COMMON;
         }
         _ssl = SSL_new(_ctx);
         SSL_set_fd(_ssl, this.handle);
-        if (isClient && verifyPeer) {
+        if (verifyPeer) {
             SSL_set_verify(_ssl, SSL_VERIFY_NONE, null);
         }
     }
 
-    bool isClient() nothrow const @nogc {
+    version (none) bool isClient() nothrow const @nogc {
         return !endpoint;
+    }
+
+    Ownership ownership() pure nothrow const @nogc {
+        return _ownership;
     }
 
     ~this() {
         SSL_free(_ssl);
-        if (_ctx !is client_ctx) {
+        if (_ownership is Ownership.OWNS) {
+            //        if (_ctx !is client_ctx) {
             SSL_CTX_free(_ctx);
         }
     }
@@ -174,7 +201,7 @@ class SSLSocket : Socket {
 
         ERR_clear_error;
         _ctx = SSL_CTX_new(TLS_server_method);
-        endpoint = Yes.EndPoint;
+        _ownership = Ownership.OWNS;
         check(certificate_filename.exists,
                 format("Certification file '%s' not found", certificate_filename));
         check(prvkey_filename.exists,
@@ -214,7 +241,7 @@ class SSLSocket : Socket {
 	Params: how has no effect for the SSLSocket
 	+/
     override void shutdown(SocketShutdown how) {
-		assert(how is SocketShutdown.BOTH, "Only shutdown both is supported for SSL");
+        assert(how is SocketShutdown.BOTH, "Only shutdown both is supported for SSL");
         SSL_shutdown(_ssl);
     }
 
@@ -227,7 +254,7 @@ class SSLSocket : Socket {
     @trusted
     override ptrdiff_t send(scope const(void)[] buf, SocketFlags flags) {
         const ret = SSL_write(_ssl, &buf[0], cast(int) buf.length);
-      //  check_error(res);
+        //  check_error(res);
         return ret;
     }
 
@@ -286,8 +313,8 @@ class SSLSocket : Socket {
     @trusted
     override ptrdiff_t receive(scope void[] buf, SocketFlags flags) {
         const size = SSL_read(_ssl, buf.ptr, cast(uint) buf.length);
-       // check_error(size);
-        buf = buf[0 .. size];
+        // check_error(size);
+        //buf = buf[0 .. size];
         return size;
     }
 
@@ -308,6 +335,27 @@ class SSLSocket : Socket {
         import std.string : fromStringz;
 
         return fromStringz(str).idup;
+    }
+
+    @trusted
+    Socket _accept() {
+        auto newsock = cast(socket_t).accept(handle, null, null);
+        if (socket_t.init is newsock) {
+            throw new SocketAcceptException("Unable to accept socket connection");
+        }
+
+        auto socket = new SSLSocket(newsock, addressFamily, _ctx);
+        io.writefln("server._ctx is null %s", _ctx is null);
+        io.writefln("_ctx is null %s _ssl is null %s", socket._ctx is null, _ssl is null);
+
+        //const client = super.accept;
+
+        const ret = SSL_accept(socket.ssl);
+        if (ret != 0) {
+            check_error(ret);
+        }
+
+        return socket;
     }
 
     /++
