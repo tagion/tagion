@@ -24,7 +24,7 @@ alias FeatureContext = Tuple!(CClientWithDCServer, "CClientWithDCServer", Featur
 class CClientWithDCServer
 {
     ushort port = 8003;
-    int calls = 1000;
+    int calls = 10;
 
     @Given("I have a simple sslserver in D.") 
     Document d() @trusted

@@ -18,7 +18,9 @@ enum feature = Feature("simple D server", [
             "This is a test with the D server and a simple c client."
         ]);
 
-alias FeatureContext = Tuple!(CClientWithDServer, "CClientWithDServer", FeatureGroup*, "result");
+alias FeatureContext = Tuple!(
+	CClientWithDServer, "CClientWithDServer", 
+	FeatureGroup*, "result");
 
 @safe @Scenario("C Client with D server", [])
 class CClientWithDServer

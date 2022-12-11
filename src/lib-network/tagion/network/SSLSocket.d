@@ -45,8 +45,6 @@ class SSLSocket : Socket {
         SSL_Init;
         SSL_METHOD* method;
         method = TLS_client_method();
-
-        /* make new ssl context */
         _client_ctx = SSL_CTX_new(method);
         assert(_client_ctx !is null, "Faild to create SSL context");
 
@@ -110,15 +108,12 @@ class SSLSocket : Socket {
         if (certificate_filename.length) {
             configureContext(certificate_filename, prvkey_filename);
         }
-        synchronized (lock) {
-            if (_ctx is null) {
-                // If _ctx is null then it is uses a client SSL
-                _ctx = client_ctx;
-                io.writefln("--- client = %s", _ctx);
-            }
-            _ssl = SSL_new(_ctx);
-            SSL_set_fd(_ssl, this.handle);
+        if (_ctx is null) {
+            // If _ctx is null then it is uses a client SSL
+            _ctx = client_ctx;
         }
+        _ssl = SSL_new(_ctx);
+        SSL_set_fd(_ssl, this.handle);
         if (isClient && verifyPeer) {
             SSL_set_verify(_ssl, SSL_VERIFY_NONE, null);
         }
@@ -128,16 +123,10 @@ class SSLSocket : Socket {
         return !endpoint;
     }
 
-    import core.atomic : atomicOp;
-
-    static shared int free_count;
-    static shared int free_client_count;
     ~this() {
-        synchronized (lock) {
-            SSL_free(_ssl);
-            if (_ctx !is client_ctx) {
-                SSL_CTX_free(_ctx);
-            }
+        SSL_free(_ssl);
+        if (_ctx !is client_ctx) {
+            SSL_CTX_free(_ctx);
         }
     }
 
@@ -171,7 +160,6 @@ class SSLSocket : Socket {
             .join("\n");
     }
 
-    static shared int server_count;
     /++
      Configure the certificate for the SSL
      +/
@@ -187,8 +175,6 @@ class SSLSocket : Socket {
         ERR_clear_error;
         _ctx = SSL_CTX_new(TLS_server_method);
         endpoint = Yes.EndPoint;
-        atomicOp!"+="(server_count, 1);
-        io.writefln("new[%d]  server _ctx=%s", server_count, _ctx);
         check(certificate_filename.exists,
                 format("Certification file '%s' not found", certificate_filename));
         check(prvkey_filename.exists,
@@ -219,36 +205,30 @@ class SSLSocket : Socket {
      +/
     override void connect(Address to) {
         super.connect(to);
-        synchronized (lock) {
-            const res = SSL_connect(_ssl);
-            check_error(res, true);
-        }
+        SSL_set_fd(ssl, handle);
+        const res = SSL_connect(_ssl);
+        check_error(res, true);
     }
 
     /++
 	Params: how has no effect for the SSLSocket
 	+/
     override void shutdown(SocketShutdown how) {
-        assert(0);
+		assert(how is SocketShutdown.BOTH, "Only shutdown both is supported for SSL");
         SSL_shutdown(_ssl);
     }
 
     bool shutdown() {
-        synchronized (lock) {
-            return SSL_shutdown(_ssl) != 0;
-        }
+        return SSL_shutdown(_ssl) != 0;
     }
     /++
      Send a buffer to the socket using the socket result
      +/
     @trusted
     override ptrdiff_t send(scope const(void)[] buf, SocketFlags flags) {
-        int res_val;
-        synchronized (lock) {
-            res_val = SSL_write(_ssl, buf.ptr, cast(int) buf.length);
-            check_error(res_val);
-        }
-        return res_val;
+        const ret = SSL_write(_ssl, &buf[0], cast(int) buf.length);
+      //  check_error(res);
+        return ret;
     }
 
     /++
@@ -305,12 +285,10 @@ class SSLSocket : Socket {
      +/
     @trusted
     override ptrdiff_t receive(scope void[] buf, SocketFlags flags) {
-        int res_val;
-        synchronized (lock) {
-            res_val = SSL_read(_ssl, buf.ptr, cast(uint) buf.length);
-            check_error(res_val);
-        }
-        return res_val;
+        const size = SSL_read(_ssl, buf.ptr, cast(uint) buf.length);
+       // check_error(size);
+        buf = buf[0 .. size];
+        return size;
     }
 
     /++

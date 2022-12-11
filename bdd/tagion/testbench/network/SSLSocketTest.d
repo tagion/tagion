@@ -82,7 +82,7 @@ string __echoSSLSocket(string address, const ushort port, string msg) {
     return buffer[0 .. size].idup;
 }
 
-alias echoSSLSocket = echoWolfSSLSocket;
+//alias echoSSLSocket = echoWolfSSLSocket;
 
 import tagion.network.wolfssl.c.ssl : WOLFSSL_CTX;
 
@@ -109,6 +109,24 @@ shared static ~this() {
 }
 
 @trusted
+string echoSSLSocket(string address, const ushort port, string msg) {
+    import tagion.network.wolfssl.c.ssl;
+    auto buffer = new char[1024];
+    auto socket = new SSLSocket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
+    auto addresses = getAddress(address, port);
+    socket.connect(addresses[0]);
+    writefln("SSLSocket %s", msg);
+	socket.send(msg);
+    //wolfSSL_write(socket.ssl, msg.ptr, cast(int) msg.length); //strlen(message));
+
+    //const size = wolfSSL_read(socket.ssl, buffer.ptr, cast(int) buffer.length);
+	const size = socket.receive(buffer);
+	writefln("Received %d", size);
+	socket.shutdown;
+	return buffer[0..size].idup;
+}
+
+@trusted
 string echoWolfSSLSocket(string address, const ushort port, string msg) {
     import tagion.network.wolfssl.c.ssl;
 
@@ -129,9 +147,6 @@ string echoWolfSSLSocket(string address, const ushort port, string msg) {
     //auto socket = new Socket()
     sockfd = socket.handle;
 
-    auto addresses = getAddress(address, port);
-    socket.connect(addresses[0]);
-
     /* initialize wolfssl library */
 
     //    wolfSSL_Init();
@@ -143,6 +158,9 @@ string echoWolfSSLSocket(string address, const ushort port, string msg) {
         writeln("wolfSSL_new error");
         return null;
     }
+
+    auto addresses = getAddress(address, port);
+    socket.connect(addresses[0]);
 
     /* Add cert to ctx */
     version (none)
@@ -166,6 +184,12 @@ string echoWolfSSLSocket(string address, const ushort port, string msg) {
     //    size = socket.receive(buffer);
     // writefln("size=%d", size);
 
+	const ret = wolfSSL_shutdown(ssl);
+	if (ret != 0) {
+	writefln("Shutdown failed");
+	return null;
+	}
+	//assert(ret == 0);
     /* frees all data before client termination */
 
     wolfSSL_free(ssl);
@@ -185,8 +209,8 @@ void echoSSLSocketTask(
         immutable bool send_to_owner) {
     foreach (i; 0 .. calls) {
         const message = format("%s%s", prefix, i);
-        //const response = echoSSLSocket(address, port, message);
-        const response = echoWolfSSLSocket(address, port, message);
+        const response = echoSSLSocket(address, port, message);
+        //const response = echoWolfSSLSocket(address, port, message);
         //    writefln("response: <%s>", response);
         check(response == message,
                 format("Error: message and response not the same got: <%s>", response));
