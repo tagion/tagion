@@ -12,6 +12,7 @@
 #define FAIL -1
 
 int listener_size = 10;
+int verbose=0;
 // Create the SSL socket and intialize the socket address structure
 int OpenListener(int port)
 {
@@ -19,13 +20,6 @@ int OpenListener(int port)
     int sd;
     struct sockaddr_in addr;
     sd = socket(PF_INET, SOCK_STREAM, 0);
-    // if (setsockopt(sd, SOL_SOCKET,
-    //                0, &opt,
-    //                sizeof(opt)))
-    // {
-    //     perror("setsockopt");
-    //     exit(EXIT_FAILURE);
-    // }
     bzero(&addr, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
@@ -41,18 +35,6 @@ int OpenListener(int port)
         abort();
     }
     return sd;
-}
-
-int isRoot()
-{
-    if (getuid() != 0)
-    {
-        return 0;
-    }
-    else
-    {
-        return 1;
-    }
 }
 
 SSL_CTX *InitServerCTX(void)
@@ -153,20 +135,22 @@ int main(int count, char *Argc[])
     int server;
     char *portnum;
 	char *cert;
-    printf("count=%d\n", count);
     if (count < 2)
     {
-        printf("Usage: %s <portnum> [<cert-file>]\n", Argc[0]);
+        printf("Usage: %s <portnum> [<cert-file>] [verbose]\n", Argc[0]);
         exit(0);
     }
     // Initialize the SSL library
     SSL_library_init();
     portnum = Argc[1];
     ctx = InitServerCTX(); 
-    if (count == 3)
+    if (count >= 3)
     {
 		cert =Argc[2];
     }
+	else if (count >= 4) {
+		verbose = 1;
+	}
     else
     {
         /* initialize SSL */
@@ -189,11 +173,11 @@ int main(int count, char *Argc[])
         socklen_t len = sizeof(addr);
         SSL *ssl;
         int client = accept(server, (struct sockaddr *)&addr, &len); /* accept connection as usual */
-        printf("Connection: %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+        if (verbose) printf("Connection: %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
         ssl = SSL_new(ctx);      /* get new SSL state with context */
         SSL_set_fd(ssl, client); /* set connection socket to SSL state */
         ret = Servlet(ssl);      /* service connection */
-        printf("ret=%d\n", ret);
+        if (verbose) printf("ret=%d\n", ret);
     }
     printf("Shutdown!");
     // SSL_shutdown(ssl);

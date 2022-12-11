@@ -38,6 +38,8 @@ void perror_die(char *msg) {
   exit(EXIT_FAILURE);
 }
 
+int verbose = 0;
+long select_timeout = 5; // seconds
 /// host, port, keyfile containing pub and priv key
 int main(int count, char *Argc[]) {
   printf("host: %s, port: %s, cert: %s", Argc[1], Argc[2], Argc[3]);
@@ -119,17 +121,18 @@ int main(int count, char *Argc[]) {
 
     int rv;
 
-    timeout.tv_sec = 5;
+    timeout.tv_sec = select_timeout;
     timeout.tv_usec = 0;
 
-    printf("Before select %d\n", fdset_max);
     int nready = select(fdset_max + 1, &readfds, NULL, NULL, &timeout);
-
-    printf("nready %d\n", nready);
+    if (nready > 1) {
+      printf("nready=%d\n", nready);
+    }
     if (rv == -1) {
       perror_die("Error and die"); /* an error occurred */
     } else if (rv == 0) {
-      printf("timeout occurred (3 second) \n"); /* a timeout occurred */
+      printf("timeout occurred (%d second) \n",
+             select_timeout); /* a timeout occurred */
       return 1;
     }
 
@@ -142,7 +145,6 @@ int main(int count, char *Argc[]) {
           socklen_t peer_addr_len = sizeof(peer_addr);
           int new_fd = accept(listen_socket_fd, (struct sockadd *)&peer_addr,
                               &peer_addr_len);
-          printf("new_fd = %d\n", new_fd);
           if (new_fd < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
               // This can happen due to the nonblocking socket mode; in this
@@ -153,7 +155,7 @@ int main(int count, char *Argc[]) {
               perror_die("Error accept");
             }
           } else {
-            //make_socket_non_blocking(new_fd);
+            // make_socket_non_blocking(new_fd);
             if (new_fd > fdset_max) {
               if (new_fd >= FD_SETSIZE) {
                 printf("socket fd (%d) >= FD_SETSIZE (%d)", new_fd, FD_SETSIZE);
@@ -166,31 +168,13 @@ int main(int count, char *Argc[]) {
             SSL_set_fd(ssl, new_fd); /* set connection socket to SSL state */
             int bytes;
             rv = SSL_accept(ssl);
-            printf("SSL_accept rv=%d\n", rv);
             if (rv < 0) {
               ERR_print_errors_fp(stderr);
-				continue;
+              continue;
             } else {
-              // X509 *cert;
-              // char *line;
-              // cert = SSL_get_peer_certificate(ssl); /* Get certificates
-              // (if available) */ if (cert != NULL)
-              // {
-              //   printf("Server certificates:\n");
-              //   line = X509_NAME_oneline(X509_get_subject_name(cert), 0,
-              //   0); printf("Subject: %s\n", line); free(line); line =
-              //   X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
-              //   printf("Issuer: %s\n", line);
-              //   free(line);
-              //   X509_free(cert);
-              // }
-              // else {
-              //   printf("No certificates.\n");
-              // }
-
               bytes = SSL_read(ssl, buf, sizeof(buf)); /* get request */
               buf[bytes] = '\0';
-              printf("Client msg: \"%s\"\n", buf);
+              if (verbose) printf("Client msg: \"%s\"\n", buf);
               if (bytes > 0) {
                 SSL_write(ssl, buf, strlen(buf)); /* send reply */
               } else {
@@ -199,7 +183,7 @@ int main(int count, char *Argc[]) {
             }
             SSL_shutdown(ssl);
             SSL_free(ssl); /* release SSL state */
-			FD_CLR(fd, &readfds);
+            FD_CLR(fd, &readfds);
 
             close(new_fd);
             // if the message from client was EOC we break loop and

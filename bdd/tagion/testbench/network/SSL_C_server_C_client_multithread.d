@@ -20,7 +20,7 @@ enum feature = Feature("Multithreading", [
 ]);
 
 alias FeatureContext = Tuple!(
-        //CClientWithCMultithreadserver, "CClientWithCMultithreadserver",
+        CClientWithCMultithreadserver, "CClientWithCMultithreadserver",
         DClientWithCMultithreadserver, "DClientWithCMultithreadserver",
         FeatureGroup*, "result");
 
@@ -77,9 +77,9 @@ class CClientWithCMultithreadserver {
 @safe @Scenario("D Client with C multithread_server", [])
 class DClientWithCMultithreadserver {
     ushort port = 8005;
-    uint number_of_clients = 5;
+    uint number_of_clients = 10;
     string host = "localhost";
-    int calls = 10;
+    int calls = 20;
 
     @Given("I have a sslserver in C.")
     Document c() @trusted {
