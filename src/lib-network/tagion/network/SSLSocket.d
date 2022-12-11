@@ -36,8 +36,31 @@ class SSLSocket : Socket {
         static shared(MemoryLock) lock;
         SSL* _ssl;
         SSL_CTX* _ctx;
-        static SSL_CTX* client_ctx;
+        __gshared SSL_CTX* _client_ctx;
         Flag!"EndPoint" endpoint;
+    }
+
+    @trusted
+    shared static this() {
+        SSL_Init;
+        SSL_METHOD* method;
+        method = TLS_client_method();
+
+        /* make new ssl context */
+        _client_ctx = SSL_CTX_new(method);
+        assert(_client_ctx !is null, "Faild to create SSL context");
+
+    }
+
+    @trusted
+    shared static ~this() {
+        SSL_CTX_free(_client_ctx);
+        SSL_Cleanup;
+    }
+
+    @trusted
+    protected static SSL_CTX* client_ctx() nothrow @nogc {
+        return _client_ctx;
     }
 
     /++
@@ -90,11 +113,6 @@ class SSLSocket : Socket {
         synchronized (lock) {
             if (_ctx is null) {
                 // If _ctx is null then it is uses a client SSL
-                if (client_ctx is null) {
-                    client_ctx = SSL_CTX_new(TLS_client_method);
-                    atomicOp!"+="(client_count, 1);
-                    io.writefln("new[%d]  client_ctx = %s", client_count, client_ctx);
-                }
                 _ctx = client_ctx;
                 io.writefln("--- client = %s", _ctx);
             }
@@ -115,27 +133,10 @@ class SSLSocket : Socket {
     static shared int free_count;
     static shared int free_client_count;
     ~this() {
-        io.writefln("%s", __FUNCTION__);
         synchronized (lock) {
             SSL_free(_ssl);
-            io.writefln("dtor _ctx=%s client_ctx=%s", _ctx, client_ctx);
-            if (!isClient) {
-                atomicOp!"+="(free_count, 1);
-                io.writefln("free[%d] free_ctx = %s", free_count, _ctx);
+            if (_ctx !is client_ctx) {
                 SSL_CTX_free(_ctx);
-                //_ctx = null;
-            }
-        }
-    }
-
-    static ~this() {
-        io.writefln("%s", __FUNCTION__);
-        synchronized (lock) {
-            if (client_ctx) {
-                atomicOp!"+="(free_client_count, 1);
-                io.writefln("free[%d] client_ctx=%s", free_client_count, client_ctx);
-                SSL_CTX_free(client_ctx);
-                //client_ctx = null;
             }
         }
     }

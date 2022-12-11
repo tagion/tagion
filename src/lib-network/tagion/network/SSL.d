@@ -46,6 +46,7 @@ version (WOLFSSL) {
         alias SSL_shutdown = wolfSSL_shutdown;
         alias TLS_client_method = wolfTLS_client_method;
         alias TLS_server_method = wolfTLS_server_method;
+        alias SSL_METHOD = WOLFSSL_METHOD;
         alias SSL_CTX_check_private_key = wolfSSL_CTX_check_private_key;
         alias SSL_CTX_use_PrivateKey_file = wolfSSL_CTX_use_PrivateKey_file;
         alias ERR_clear_error = wolfSSL_ERR_clear_error;
@@ -69,16 +70,11 @@ version (WOLFSSL) {
             return format("enum ALL_SSLErrorCodes {\n%-(%s \n%)\n};", enum_list);
         }
     }
+
+    alias SSL_Init = wolfSSL_Init;
+    alias SSL_Cleanup = wolfSSL_Cleanup;
     //    }
     /// enum ALL_SSLErrorCodes (OpenSSL and WolfSSL error list joined
-    shared static this() {
-        wolfSSL_Init();
-    }
-
-    shared static ~this() {
-        wolfSSL_Cleanup;
-    }
-
     mixin(generator_all_SSLErrorCodes);
 }
 else {

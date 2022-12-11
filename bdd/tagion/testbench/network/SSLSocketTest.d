@@ -82,86 +82,77 @@ string __echoSSLSocket(string address, const ushort port, string msg) {
     return buffer[0 .. size].idup;
 }
 
-	alias echoSSLSocket = echoWolfSSLSocket;
+alias echoSSLSocket = echoWolfSSLSocket;
 
 import tagion.network.wolfssl.c.ssl : WOLFSSL_CTX;
-static WOLFSSL_CTX* client_ctx;
 
-static this() {
-	import tagion.network.wolfssl.c.ssl;
+__gshared WOLFSSL_CTX* client_ctx;
+
+shared static this() {
+    import tagion.network.wolfssl.c.ssl;
+
     WOLFSSL_METHOD* method;
     method = wolfTLS_client_method(); /* use TLS v1.2 */
 
     /* make new ssl context */
 
-    if ( (client_ctx = wolfSSL_CTX_new(method)) is null) {
-		writefln("wolfSSL CTX error");
+    if ((client_ctx = wolfSSL_CTX_new(method)) is null) {
+        writefln("wolfSSL CTX error");
         //err_sys("wolfSSL_CTX_new error");
     }
 }
 
-static ~this() {
-	import tagion.network.wolfssl.c.ssl;
+shared static ~this() {
+    import tagion.network.wolfssl.c.ssl;
+
     wolfSSL_CTX_free(client_ctx);
 }
 
-@trusted 
+@trusted
 string echoWolfSSLSocket(string address, const ushort port, string msg) {
-	import tagion.network.wolfssl.c.ssl;
+    import tagion.network.wolfssl.c.ssl;
+
     auto buffer = new char[1024];
     size_t size;
- 	int sockfd;
+    int sockfd;
 
-//    WOLFSSL_CTX* ctx;
+    //    WOLFSSL_CTX* ctx;
 
     WOLFSSL* ssl;
 
-
-writefln("wolfSSLSocket %s", msg);
-   // const char message[] = "Hello, World!";
-
-
+    writefln("wolfSSLSocket %s", msg);
+    // const char message[] = "Hello, World!";
 
     /* create and set up socket */
-	
+
     auto socket = new Socket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
-	//auto socket = new Socket()
-    sockfd = socket.handle; 
+    //auto socket = new Socket()
+    sockfd = socket.handle;
 
     auto addresses = getAddress(address, port);
     socket.connect(addresses[0]);
 
-
     /* initialize wolfssl library */
 
-//    wolfSSL_Init();
-
-
-
-
-
+    //    wolfSSL_Init();
 
     /* make new wolfSSL struct */
 
-    if ( (ssl = wolfSSL_new(client_ctx)) is null) {
+    if ((ssl = wolfSSL_new(client_ctx)) is null) {
 
         writeln("wolfSSL_new error");
-		return null;
+        return null;
     }
 
-
-
     /* Add cert to ctx */
-version(none)
-    if (wolfSSL_CTX_load_verify_locations(ctx, "certs/ca-cert.pem", 0) !=
+    version (none)
+        if (wolfSSL_CTX_load_verify_locations(ctx, "certs/ca-cert.pem", 0) !=
 
                 SSL_SUCCESS) {
 
-        err_sys("Error loading certs/ca-cert.pem");
+            err_sys("Error loading certs/ca-cert.pem");
 
-    }
-
-
+        }
 
     /* Connect wolfssl to the socket, server, then send message */
 
@@ -169,12 +160,11 @@ version(none)
 
     wolfSSL_connect(ssl);
 
-    wolfSSL_write(ssl, msg.ptr, cast(int)msg.length); //strlen(message));
+    wolfSSL_write(ssl, msg.ptr, cast(int) msg.length); //strlen(message));
 
-	size = wolfSSL_read(ssl, buffer.ptr, cast(int)buffer.length);
-//    size = socket.receive(buffer);
-   // writefln("size=%d", size);
-
+    size = wolfSSL_read(ssl, buffer.ptr, cast(int) buffer.length);
+    //    size = socket.receive(buffer);
+    // writefln("size=%d", size);
 
     /* frees all data before client termination */
 
@@ -182,7 +172,7 @@ version(none)
 
     return buffer[0 .. size].idup;
 
-  //  wolfSSL_Cleanup();
+    //  wolfSSL_Cleanup();
 }
 
 @trusted
@@ -197,9 +187,9 @@ void echoSSLSocketTask(
         const message = format("%s%s", prefix, i);
         //const response = echoSSLSocket(address, port, message);
         const response = echoWolfSSLSocket(address, port, message);
-    //    writefln("response: <%s>", response);
-        check(response == message, 
-		format("Error: message and response not the same got: <%s>", response));
+        //    writefln("response: <%s>", response);
+        check(response == message,
+                format("Error: message and response not the same got: <%s>", response));
     }
     writefln("##### DONE %s\n", prefix);
     if (send_to_owner) {
