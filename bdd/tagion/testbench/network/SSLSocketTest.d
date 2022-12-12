@@ -410,16 +410,10 @@ void _SSLSocketServer(string address, const ushort port, string cert) {
     bool stop;
     while (!stop) {
         auto client = cast(SSLSocket) server._accept(); /* accept connection as usual */
-        writefln("Before send %s", client.ssl is null);
         const size = client.receive(buffer);
-        //const size = SSL_read(client.ssl, buffer.ptr, cast(int) buffer.length); /* get request */
         const received_buffer = buffer[0 .. size];
-        writefln("size=%d", size);
         SSL_write(client.ssl, buffer.ptr, cast(int)size); /* send reply */
-        writefln("Client msg: %s", received_buffer);
         client.send(received_buffer);
-        //SSL_shutdown(client.ssl);
-        //  server.send(received_buffer);
         client.shutdown;
         stop = received_buffer == "EOC"; /* service connection */
     }
