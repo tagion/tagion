@@ -84,34 +84,34 @@ string __echoSSLSocket(string address, const ushort port, string msg) {
 
 //alias echoSSLSocket = echoWolfSSLSocket;
 
-version (WOLFSSL) {
-    import tagion.network.wolfssl.c.ssl : WOLFSSL_CTX;
+version(WOLFSSL) {
+import tagion.network.wolfssl.c.ssl : WOLFSSL_CTX;
 
-    __gshared WOLFSSL_CTX* client_ctx;
+__gshared WOLFSSL_CTX* client_ctx;
 
-    shared static this() {
-        import tagion.network.wolfssl.c.ssl;
+shared static this() {
+    import tagion.network.wolfssl.c.ssl;
 
-        WOLFSSL_METHOD* method;
-        method = wolfTLS_client_method(); /* use TLS v1.2 */
+    WOLFSSL_METHOD* method;
+    method = wolfTLS_client_method(); /* use TLS v1.2 */
 
-        /* make new ssl context */
+    /* make new ssl context */
 
-        if ((client_ctx = wolfSSL_CTX_new(method)) is null) {
-            writefln("wolfSSL CTX error");
-            //err_sys("wolfSSL_CTX_new error");
-        }
+    if ((client_ctx = wolfSSL_CTX_new(method)) is null) {
+        writefln("wolfSSL CTX error");
+        //err_sys("wolfSSL_CTX_new error");
     }
+}
 
-    shared static ~this() {
-        import tagion.network.wolfssl.c.ssl;
+shared static ~this() {
+    import tagion.network.wolfssl.c.ssl;
 
-        wolfSSL_CTX_free(client_ctx);
-    }
+    wolfSSL_CTX_free(client_ctx);
+}
 }
 @trusted
 string echoSSLSocket(string address, const ushort port, string msg) {
-    version (WOLFSSL) import tagion.network.wolfssl.c.ssl;
+	version(WOLFSSL)   import tagion.network.wolfssl.c.ssl;
 
     auto buffer = new char[1024];
     auto socket = new SSLSocket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
@@ -128,7 +128,8 @@ string echoSSLSocket(string address, const ushort port, string msg) {
     return buffer[0 .. size].idup;
 }
 
-version (WOLFSSL) @trusted
+version(WOLFSSL) 
+@trusted
 string echoWolfSSLSocket(string address, const ushort port, string msg) {
     import tagion.network.wolfssl.c.ssl;
 
@@ -409,16 +410,17 @@ void _SSLSocketServer(string address, const ushort port, string cert) {
     bool stop;
     while (!stop) {
         auto client = cast(SSLSocket) server._accept(); /* accept connection as usual */
-        //const size = server.receive(buffer);
         writefln("Before send %s", client.ssl is null);
-        const size = SSL_read(client.ssl, buffer.ptr, cast(int) buffer.length); /* get request */
+        const size = client.receive(buffer);
+        //const size = SSL_read(client.ssl, buffer.ptr, cast(int) buffer.length); /* get request */
         const received_buffer = buffer[0 .. size];
         writefln("size=%d", size);
-        SSL_write(client.ssl, buffer.ptr, size); /* send reply */
+        SSL_write(client.ssl, buffer.ptr, cast(int)size); /* send reply */
         writefln("Client msg: %s", received_buffer);
-        SSL_shutdown(client.ssl);
+        client.send(received_buffer);
+        //SSL_shutdown(client.ssl);
         //  server.send(received_buffer);
-        // client.shutdown;
+        client.shutdown;
         stop = received_buffer == "EOC"; /* service connection */
     }
     writeln("shutdown!");
