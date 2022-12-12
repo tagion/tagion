@@ -2,13 +2,11 @@ module tagion.services.TranscriptService;
 
 import std.format;
 import std.concurrency;
-import core.thread;
 import std.array : join;
 import std.exception : assumeUnique;
 
 import tagion.services.Options;
 import tagion.basic.Types : Control, Buffer;
-import tagion.hashgraph.HashGraphBasic : EventBody;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 
@@ -16,7 +14,7 @@ import tagion.logger.Logger;
 
 import tagion.basic.TagionExceptions;
 import tagion.script.SmartScript;
-import tagion.script.StandardRecords : Contract, SignedContract, PayContract;
+import tagion.script.StandardRecords : Contract, SignedContract, PayContract, StandardBill;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.communication.HiRPC;
@@ -27,7 +25,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.utils.Fingerprint : Fingerprint;
 
 // This function performs Smart contract executions
-void transcriptServiceTask(string task_name, string dart_task_name, string recorder_task_name) nothrow
+void transcriptServiceTask(string task_name, string dart_task_name, string recorder_task_name, string epoch_dumper_task_name) nothrow
 {
     try
     {
@@ -44,6 +42,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
         const empty_hirpc = HiRPC(null);
         Tid dart_tid = locate(dart_task_name);
         Tid recorder_tid = locate(recorder_task_name);
+        Tid epoch_dump_tid = locate(epoch_dumper_task_name);
         SmartScript[Buffer] smart_scripts;
 
         bool stop;
@@ -72,6 +71,27 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                 log.error("Cannot locate DART service");
                 stop = true;
                 return [];
+            }
+        }
+
+        @trusted const(RecordFactory.Recorder) requestInputs(const(Buffer[]) inputs)
+        {
+            auto sender = DART.dartRead(inputs, empty_hirpc);
+            auto tosend = sender.toDoc.serialize;
+            if (dart_tid !is Tid.init)
+            {
+                dart_tid.send(task_name, tosend);
+                const response = receiveOnly!Buffer;    //TODO: replace with receive - as it is non-locking function
+                const received = empty_hirpc.receive(Document(response));
+                const recorder = rec_factory.recorder(
+                    received.response.result);
+                return recorder;
+            }
+            else
+            {
+                log.error("Cannot locate DART service");
+                stop = true;
+                return null;
             }
         }
 
@@ -142,6 +162,10 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     current_epoch++;
                 }
                 auto recorder = rec_factory.recorder;
+
+                auto contracts_dump = new HiBON;
+                long dump_count = 0;
+
                 foreach (payload_el; payload_doc[])
                 {
                     immutable doc = payload_el.get!Document;
@@ -152,7 +176,21 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
 
                     scope signed_contract = SignedContract(doc);
                     log("Executing contract: %s", doc.toJSON);
+                    auto inputs_recorder = requestInputs(signed_contract.contract.inputs);
+                    signed_contract.inputs = [];
+                    foreach (input; signed_contract.contract.inputs)
+                    {
+                        foreach (input_archive; inputs_recorder[])
+                        {
+                            const bill = StandardBill(input_archive.filed);
+                            if (    net.hashOf(bill.toDoc) == input)
+                            {
+                                signed_contract.inputs ~= bill;
+                            }
+                        }
+                    }
 
+                    contracts_dump[dump_count++] = doc;
                     bool invalid;
                     ForachInput: foreach (input; signed_contract.contract.inputs)
                     {
@@ -206,7 +244,10 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     log("Sending to DART len: %d", recorder.length);
                     recorder.dump;
                     auto bullseye = modifyDART(recorder);
-
+                    if (!options.epoch_dump.disable_transaction_dumping)
+                    {
+                        epoch_dump_tid.send(Document(contracts_dump), bullseye);
+                    }
                     dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), Fingerprint(bullseye));
                 }
                 else

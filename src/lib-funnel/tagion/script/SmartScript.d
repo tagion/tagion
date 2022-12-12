@@ -9,7 +9,7 @@ import std.algorithm.searching : all;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCode, Check;
 import tagion.basic.TagionExceptions : TagionException;
-import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey, Contract;
+import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey, Contract, Globals, globals;
 import tagion.basic.Types : Pubkey, Buffer, Signature;
 import tagion.script.TagionCurrency;
 import tagion.dart.Recorder : RecordFactory;
@@ -132,7 +132,7 @@ version (OLD_TRANSACTION)
 
 
 
-            .check(total_output <= total_input, ConsensusFailCode.SMARTSCRIPT_NOT_ENOUGH_MONEY);
+            .check(total_output <= total_input - globals.fees(), ConsensusFailCode.SMARTSCRIPT_NOT_ENOUGH_MONEY);
         }
     }
 }
@@ -246,7 +246,7 @@ else
                 {
                     total_output += TagionCurrency(key["$V"].get!Document);
                 }
-                if (total_output > total_input)
+                if (total_output > total_input - globals.fees())
                 {
                     return ConsensusFailCode.SMARTSCRIPT_INVALID_OUTPUT;
                 }
@@ -307,6 +307,71 @@ else
 
 version (OLD_TRANSACTION)
 {
+    unittest {
+        import std.stdio : writefln, writeln;
+        import tagion.crypto.SecureNet;
+        import tagion.hibon.HiBON;
+        import tagion.script.StandardRecords: Script;
+
+        const net = new StdSecureNet;
+        SecureNet alice = new StdSecureNet;
+        {
+            alice.generateKeyPair("Alice's secret password");
+        }
+        auto bob = new StdSecureNet;
+        {
+            bob.generateKeyPair("Bob's secret password");
+        }
+        uint epoch = 42;
+        SignedContract createSSC(TagionCurrency amount){
+            auto input_bill = StandardBill(1000.TGN, epoch, alice.pubkey, null);
+
+            SignedContract ssc;
+            Contract contract;
+
+            contract.inputs = [ net.hashOf(input_bill.toDoc) ];
+            contract.output[bob.pubkey] = amount.toDoc;
+            contract.script = Script("pay");
+
+            ssc.contract = contract;
+            ssc.signs = [ alice.sign(net.hashOf(contract.toDoc)) ];
+            ssc.inputs = [ input_bill ];
+            return ssc;
+        }
+        /// SmartScript reject contracts without fee included
+        {
+            auto ssc = createSSC(1000.TGN);
+            auto smart_script = new SmartScript(ssc);
+            try {
+                smart_script.run(epoch + 1);
+                assert(false, "Input and Output amount not checked");
+            }catch(SmartScriptException e){
+                assert(e.code == ConsensusFailCode
+                            .SMARTSCRIPT_NOT_ENOUGH_MONEY);
+            } 
+        }
+        /// SmartScript accept contracts with fee included
+        {
+            auto ssc = createSSC(1000.TGN - globals.fees());
+            auto smart_script = new SmartScript(ssc);
+            try {
+                smart_script.run(epoch + 1);
+            }catch(SmartScriptException e){
+                assert(false, format("Exception code: %s", e.code));
+            }
+        }
+
+        /// SmartScript accept contracts with output less then input
+        {
+            auto ssc = createSSC(900.TGN - globals.fees());
+            auto smart_script = new SmartScript(ssc);
+            try {
+                smart_script.run(epoch + 1);
+            }catch(SmartScriptException e){
+                assert(false, format("Exception code: %s", e.code));
+            }
+        }
+    }
 }
 else
 {

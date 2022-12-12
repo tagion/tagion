@@ -21,14 +21,16 @@ import tagion.dart.BlockFile;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.services.RecorderService;
-import tagion.communication.HiRPC;
 import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.recorderchain.RecorderChain;
+import tagion.tools.Basic;
 import tagion.utils.Miscellaneous : cutHex;
 
 auto logo = import("logo.txt");
 
-int main(string[] args)
+mixin Main!(_main, "tagionrecorderchain");
+
+int _main(string[] args)
 {
     immutable program = args[0];
 
@@ -44,11 +46,9 @@ int main(string[] args)
     const hash_net = new StdHashNet;
     /** Used for create recorder */
     auto factory = RecordFactory(hash_net);
-    /** Passphrase for generate key pair for hirpc */
+    /** Passphrase for generate key pair for secure net */
     string passphrase = "verysecret";
     secure_net.generateKeyPair(passphrase);
-    /** Hirpc for create and modify DART database */
-    auto hirpc = HiRPC(secure_net);
     /** Directory for recorder block chain */
     string chain_directory;
     /** Directory for DART database */
@@ -147,14 +147,8 @@ int main(string[] args)
     try
     {
         recorder_chain.replay((RecorderChainBlock block) {
-            // these outputs will be removed after proper testing the tool
-            writefln("block's  bullseye %s", block.bullseye.cutHex);
-            writefln("DART bef bullseye %s", dart.fingerprint.cutHex);
-
             auto recorder = factory.recorder(block.recorder_doc);
             dart.modify(recorder);
-
-            writefln("DART aft bullseye %s", dart.fingerprint.cutHex);
 
             if (block.bullseye != dart.fingerprint)
             {
