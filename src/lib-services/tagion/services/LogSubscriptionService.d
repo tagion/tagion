@@ -30,15 +30,13 @@ mixin TrustedConcurrency;
  * \struct LogSubscribersInfo
  * Struct stores info about connected subscribers
  */
-struct LogSubscribersInfo
-{
+struct LogSubscribersInfo {
     /** Tid for communicating with LoggerService */
     Tid logger_service_tid;
     /** Array of filters for each connected subscriber_id */
     LogFilter[][uint] filters;
 
-    this(Tid logger_service_tid)
-    {
+    this(Tid logger_service_tid) {
         this.logger_service_tid = logger_service_tid;
     }
 
@@ -48,8 +46,7 @@ struct LogSubscribersInfo
       *     @param subscriber_filters - filters received from new subscriber
       *     @see \link LoggerService
       */
-    void addSubscription(uint subscriber_id, LogFilter[] subscriber_filters) @trusted
-    {
+    void addSubscription(uint subscriber_id, LogFilter[] subscriber_filters) @trusted {
         log("Added new subscriber: %s", subscriber_id);
 
         // Firstly get filter updates
@@ -64,8 +61,7 @@ struct LogSubscribersInfo
       *     @param subscriber_id - unique identificator of new subscriber
       *     @see \link LoggerService
       */
-    void removeSubscription(uint subscriber_id) @trusted
-    {
+    void removeSubscription(uint subscriber_id) @trusted {
         auto filters_to_remove = filters[subscriber_id];
 
         // Firstly remove subscriber from filters map
@@ -80,15 +76,12 @@ struct LogSubscribersInfo
       *     @param action - type of update action ADD or REMOVE
       *     @see \link LoggerService
       */
-    void updateLogServiceFilters(LogFilter[] update_filters, LogFiltersAction action)
-    {
+    void updateLogServiceFilters(LogFilter[] update_filters, LogFiltersAction action) {
         pragma(msg, "fixme(ib): could be redesigned using shared storage");
-        if (logger_service_tid != Tid.init)
-        {
+        if (logger_service_tid != Tid.init) {
             logger_service_tid.send(LogFilterArray(update_filters.idup), action);
         }
-        else
-        {
+        else {
             log.error("Unable to notify logger service");
         }
     }
@@ -97,15 +90,11 @@ struct LogSubscribersInfo
       *     @param info - log info of received log
       *     @return list of all subscriber_ids that need this log
       */
-    @safe uint[] getInterestedSubscribers(LogInfo info) const
-    {
+    @safe uint[] getInterestedSubscribers(LogInfo info) const {
         uint[] result;
-        foreach (subscriber_id; filters.keys)
-        {
-            foreach (subscriber_filter; filters[subscriber_id])
-            {
-                if (subscriber_filter.match(info))
-                {
+        foreach (subscriber_id; filters.keys) {
+            foreach (subscriber_filter; filters[subscriber_id]) {
+                if (subscriber_filter.match(info)) {
                     result ~= subscriber_id;
                     break;
                 }
@@ -119,14 +108,12 @@ struct LogSubscribersInfo
       *     @param received_filters - array of LogFilters to filter
       *     @return Array of LogFilters that are not present in current stored filters
       */
-    LogFilter[] getFilterUpdates(LogFilter[] received_filters) const
-    {
+    LogFilter[] getFilterUpdates(LogFilter[] received_filters) const {
         return received_filters.filter!(a => !filters.values.join.canFind(a)).array;
     }
 }
 
-unittest
-{
+unittest {
     enum task1 = "task1";
     enum task2 = "task2";
     enum task3 = "task3";
@@ -189,12 +176,9 @@ unittest
   *     @param opts - service options for this task
   *     @see \link LoggerService
   */
-void logSubscriptionServiceTask(Options opts) nothrow
-{
-    try
-    {
-        scope (exit)
-        {
+void logSubscriptionServiceTask(Options opts) nothrow {
+    try {
+        scope (exit) {
             writeln("Sending END from LogSubService");
             ownerTid.send(Control.END);
         }
@@ -203,25 +187,21 @@ void logSubscriptionServiceTask(Options opts) nothrow
 
         log.register(opts.logSubscription.task_name);
 
-        log("Start service port=%d addresss=%s", opts.logSubscription.service.port, opts
-                .logSubscription.service.address);
+        log("Start service port=%d addresss=%s",
+                opts.logSubscription.service.socket.port,
+                opts.logSubscription.service.socket.address);
 
-        @safe class LogSubscriptionRelay : SSLFiberService.Relay
-        {
-            bool agent(SSLFiber ssl_relay)
-            {
-                @trusted const(Document) receivessl()
-                {
-                    try
-                    {
+        @safe class LogSubscriptionRelay : SSLFiberService.Relay {
+            bool agent(SSLFiber ssl_relay) {
+                @trusted const(Document) receivessl() {
+                    try {
                         immutable buffer = ssl_relay.receive;
                         const result = Document(buffer);
                         // if (result.isInorder) {
                         return result;
                         // }
                     }
-                    catch (Exception t)
-                    {
+                    catch (Exception t) {
                         log.warning("Exception caught: %s", t);
                     }
                     return Document();
@@ -229,8 +209,7 @@ void logSubscriptionServiceTask(Options opts) nothrow
 
                 const doc = receivessl();
 
-                try
-                {
+                try {
                     HiRPC hirpc;
                     const hirpc_received = hirpc.receive(doc);
                     const params = hirpc_received.method.params;
@@ -240,16 +219,14 @@ void logSubscriptionServiceTask(Options opts) nothrow
 
                     subscribers.addSubscription(subscriber_id, filters_received);
                 }
-                catch (Exception e)
-                {
+                catch (Exception e) {
                     log.error("Received document is wrong");
                 }
 
                 return false;
             }
 
-            void terminate(uint id)
-            {
+            void terminate(uint id) {
                 subscribers.removeSubscription(id);
             }
         }
@@ -264,10 +241,8 @@ void logSubscriptionServiceTask(Options opts) nothrow
           * STOP signal stops service, all other signals are invalid here
           *     @param control - received signal
           */
-        void control(Control control)
-        {
-            with (Control) switch (control)
-            {
+        void control(Control control) {
+            with (Control) switch (control) {
             case STOP:
                 logsubscription_api.stop;
                 stop = true;
@@ -281,14 +256,12 @@ void logSubscriptionServiceTask(Options opts) nothrow
           *     @param filter - metadata about received log
           *     @param data - Document that contains either TextLog or any \link HiBONRecord variable
           */
-        @safe void receiveLogs(immutable(LogInfo) info, immutable(Document) doc)
-        {
+        @safe void receiveLogs(immutable(LogInfo) info, immutable(Document) doc) {
             auto log_data = new HiBON;
             log_data[GetLabel!(LogFilter).name] = LogFilter(info);
             log_data[GetLabel!(typeof(doc)).name] = doc;
 
-            foreach (subscriber_id; subscribers.getInterestedSubscribers(info))
-            {
+            foreach (subscriber_id; subscribers.getInterestedSubscribers(info)) {
                 HiRPC hirpc;
                 HiRPC.Response message;
                 message.id = subscriber_id;
@@ -301,17 +274,15 @@ void logSubscriptionServiceTask(Options opts) nothrow
         }
 
         ownerTid.send(Control.LIVE);
-        while (!stop)
-        {
+        while (!stop) {
             receiveTimeout(500.msecs,
-                &control,
-                &taskfailure,
-                &receiveLogs,
+                    &control,
+                    &taskfailure,
+                    &receiveLogs,
             );
         }
     }
-    catch (Throwable t)
-    {
+    catch (Throwable t) {
         fatal(t);
     }
 }

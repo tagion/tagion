@@ -98,8 +98,8 @@ class SSLServiceUsingASpecifiedCertificate {
         listener = new SSLSocket(
                 AddressFamily.INET,
                 SocketType.STREAM,
-                opt.openssl.certificate,
-                opt.openssl.private_key);
+                opt.ssl.certificate,
+                opt.ssl.private_key);
         simpleSSLServer(opt, listener);
         return result_ok;
     }

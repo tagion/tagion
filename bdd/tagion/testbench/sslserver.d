@@ -13,14 +13,13 @@ import tagion.network.SSLOptions;
 import tagion.services.Options;
 import tagion.testbench.tools.TestMain;
 import tagion.testbench.tools.Environment;
-//import tagion.testbench.tools.TimeOut;
 
 import tagion.testbench.network;
 
 void setDefault(ref SSLOptions options, const Options opt) {
     options = opt.transaction.service;
-    options.openssl.certificate = buildPath(env.bdd_log, options.openssl.certificate);
-    options.openssl.private_key = buildPath(env.bdd_log, options.openssl.private_key);
+    options.ssl.certificate = buildPath(env.bdd_log, options.ssl.certificate);
+    options.ssl.private_key = buildPath(env.bdd_log, options.ssl.private_key);
 }
 
 mixin Main!_main;
@@ -32,9 +31,9 @@ int _main(string[] args) {
     int result = testMain(setup, args);
     if (result == 0) {
 
-        writefln("sslserver=%s", setup.options.openssl);
+        writefln("sslserver=%s", setup.options.ssl);
         auto sslserver_handle = automation!SSL_server;
-        sslserver_handle.CreatesASSLCertificate(setup.options.openssl);
+        sslserver_handle.CreatesASSLCertificate(setup.options.ssl);
         sslserver_handle.SSLServiceUsingASpecifiedCertificate(setup.options, "ssl_test_task");
         auto sslserver_context = sslserver_handle.run;
 //        "/tmp/result.hibon".fwrite(*sslserver_context.result);

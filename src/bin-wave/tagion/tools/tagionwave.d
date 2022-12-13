@@ -100,13 +100,13 @@ int _main(string[] args) {
             writeln(logo);
             defaultGetoptPrinter(
                     [
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] ", program),
-                format("%s <config.json>", program),
-            ].join("\n"),
-            main_args.options);
+                    "Documentation: https://tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...] ", program),
+                    format("%s <config.json>", program),
+                    ].join("\n"),
+                    main_args.options);
             return 0;
         }
 
@@ -156,7 +156,7 @@ int _main(string[] args) {
         service_options.pid_file.fwrite("export PID=%s\n".format(thisProcessID));
     }
 
-    configureOpenSSL(service_options.transaction.service.openssl);
+    configureOpenSSL(service_options.transaction.service.ssl);
 
     auto logger_service_tid = Task!LoggerTask(service_options.logger.task_name, service_options);
     import std.stdio : stderr;

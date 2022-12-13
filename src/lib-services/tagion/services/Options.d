@@ -143,12 +143,12 @@ struct Options {
     struct Monitor {
         string task_name; /// Use for the montor task name
         string prefix;
-        uint max; /++ Maximum number of monitor sockets open
+        uint max; /++ Maximum number of monitor.service.socket. open
                               If this value is set to 0
-                              one socket is opened for each node
+                              one.service.socket.is opened for each node
                               +/
         ushort port; /// Monitor port
-        uint timeout; /// Socket listerne timeout in msecs
+        uint timeout; ///.service.socket.listerne timeout in msecs
         FileExtension dataformat;
         /++ This specifies the data-format which is transmitted from the Monitor
          Option is json or hibon
@@ -170,7 +170,7 @@ struct Options {
         string task_name; /// Transaction task name
         string net_task_name;
         string prefix;
-        uint timeout; /// Socket listerne timeout in msecs
+        uint timeout; ///.service.socket.listerne timeout in msecs
         import tagion.network.SSLOptions;
 
         SSLOptions service; /// SSL Service used by the transaction service
@@ -193,7 +193,7 @@ struct Options {
         string task_name; /// Transaction task name
         string net_task_name;
         string prefix;
-        uint timeout; /// Socket listerne timeout in msecs
+        uint timeout; ///.service.socket.listerne timeout in msecs
         import tagion.network.SSLOptions;
 
         SSLOptions service; /// SSL Service used by the transaction service
@@ -270,9 +270,9 @@ struct TransactionMiddlewareOptions {
     ushort port;
     // address for the socket
     string address;
-    //  port for the socket to the tagion network
+    //  port for the.service.socket.to the tagion network
     ushort network_port;
-    //  address for the socket to the tagion network
+    //  address for the.service.socket.to the tagion network
     string network_address;
 
     string logext;
@@ -330,11 +330,11 @@ static ref auto all_getopt(
         "tmp",       format("Sets temporaty work directory: default '%s'", options.tmp), &(options.tmp),
         "monitor|P", format("Sets first monitor port of the port sequency: default %d", options.monitor.port),  &(options.monitor.port),
 
-        "transaction-ip",  format("Sets the listener transaction ip address: default %s", options.transaction.service.address), &(options.transaction.service.address),
-        "transaction-port|p", format("Sets the listener transcation port: default %d", options.transaction.service.port), &(options.transaction.service.port),
-        "transaction-queue", format("Sets the listener transcation max queue lenght: default %d", options.transaction.service.max_queue_length), &(options.transaction.service.max_queue_length),
-        "transaction-maxcon",  format("Sets the maximum number of connections: default: %d", options.transaction.service.max_connections), &(options.transaction.service.max_connections),
-        "transaction-maxqueue",  format("Sets the maximum queue length: default: %d", options.transaction.service.max_queue_length), &(options.transaction.service.max_queue_length),
+        "transaction-ip",  format("Sets the listener transaction ip address: default %s", options.transaction.service.socket.address), &(options.transaction.service.socket.address),
+        "transaction-port|p", format("Sets the listener transcation port: default %d", options.transaction.service.socket.port), &(options.transaction.service.socket.port),
+        "transaction-queue", format("Sets the listener transcation max queue lenght: default %d", options.transaction.service.socket.max_queue_length), &(options.transaction.service.socket.max_queue_length),
+        "transaction-maxcon",  format("Sets the maximum number of connections: default: %d", options.transaction.service.socket.max_connections), &(options.transaction.service.socket.max_connections),
+        "transaction-maxqueue",  format("Sets the maximum queue length: default: %d", options.transaction.service.socket.max_queue_length), &(options.transaction.service.socket.max_queue_length),
         "epochs",  format("Sets the number of epochs (0 for infinite): default: %d", options.epoch_limit), &(options.epoch_limit),
 
 //        "transaction-maxfibres",  format("Sets the maximum number of fibres: default: %d", options.transaction.service.max_number_of_accept_fibers), &(options.transaction.service.max_number_of_accept_fibers),
@@ -378,9 +378,9 @@ static setDefaultOption(ref Options options)
         nodes = 4;
         infinity = false;
         //port=10900;
-        //disable_sockets=false;
+        //disable.service.socket.=false;
         tmp = "/tmp/";
-        //  s.network_socket_port =11900;
+        //  s.network.service.socket.port =11900;
         //        sequential=false;
         min_port = 6000;
         path_to_shared_info = "/tmp/boot.hibon";
@@ -435,6 +435,7 @@ static setDefaultOption(ref Options options)
             prefix = "transervice";
             task_name = prefix;
             response_task_name = "respose";
+			with(socket) {
             address = "0.0.0.0";
             port = 10_800;
             select_timeout = 300;
@@ -442,12 +443,8 @@ static setDefaultOption(ref Options options)
             max_buffer_size = 0x4000;
             max_queue_length = 100;
             max_connections = 1000;
-            // max_number_of_accept_fibers = 100;
-            // min_duration_full_fibers_cycle_ms = 10;
-            //            max_number_of_fiber_reuse = 1000;
-            //            min_number_of_fibers = 10;
-            //            min_duration_for_accept_ms = 3000;
-            with (openssl)
+			}
+            with (ssl)
             {
                 certificate = "pem_files/domain.pem";
                 private_key = "pem_files/domain.key.pem";
@@ -481,19 +478,16 @@ static setDefaultOption(ref Options options)
             prefix = "logsubscriptionservice";
             task_name = prefix;
             response_task_name = "response" ~ prefix;
-            address = "0.0.0.0";
+			with(socket) {
+			address = "1.0.0.0";
             port = 10_700;
             select_timeout = 300;
             client_timeout = 4000; // msecs
             max_buffer_size = 0x4000;
             max_queue_length = 100;
             max_connections = 1000;
-            // max_number_of_accept_fibers = 100;
-            // min_duration_full_fibers_cycle_ms = 10;
-            //            max_number_of_fiber_reuse = 1000;
-            //            min_number_of_fibers = 10;
-            //            min_duration_for_accept_ms = 3000;
-            with (openssl)
+			}
+            with (ssl)
             {
                 certificate = "pem_files/domain.pem";
                 private_key = "pem_files/domain.key.pem";

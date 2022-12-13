@@ -19,6 +19,7 @@ import tagion.basic.TagionExceptions : fatal;
 @safe
 struct SSLServiceAPI {
     immutable(SSLOptions) ssl_options;
+    immutable(SocketOptions) opts;
     protected {
         Thread service_task;
         SSLFiberService service;
@@ -55,17 +56,17 @@ struct SSLServiceAPI {
 
             log.register(ssl_options.task_name);
             log("Run SSLServiceAPI. Certificate=%s, ssl_options.private_key=%s",
-                    ssl_options.openssl.certificate,
-                    ssl_options.openssl.private_key);
+                    ssl_options.ssl.certificate,
+                    ssl_options.ssl.private_key);
             auto _listener = new SSLSocket(
                     AddressFamily.INET,
                     SocketType.STREAM,
-                    ssl_options.openssl.certificate,
-                    ssl_options.openssl.private_key);
+                    ssl_options.ssl.certificate,
+                    ssl_options.ssl.private_key);
             assert(_listener.isAlive);
             _listener.blocking = false;
-            _listener.bind(new InternetAddress(ssl_options.address, ssl_options.port));
-            _listener.listen(ssl_options.max_queue_length);
+            _listener.bind(new InternetAddress(opts.address, opts.port));
+            _listener.listen(opts.max_queue_length);
 
             service = new SSLFiberService(ssl_options, _listener, relay);
             auto response_tid = service.start(ssl_options.response_task_name);
@@ -82,7 +83,7 @@ struct SSLServiceAPI {
                     log.warning("Unexpected control %s code", ctrl);
                 }
             }
-            auto socket_set = new SocketSet(ssl_options.max_connections + 1);
+            auto socket_set = new SocketSet(opts.max_connections + 1);
             scope (exit) {
                 socket_set.reset;
                 service.closeAll;
@@ -100,8 +101,8 @@ struct SSLServiceAPI {
 
                 service.addSocketSet(socket_set);
 
-                const sel_res = Socket.select(socket_set, null, null, ssl_options
-                        .select_timeout.msecs);
+                const sel_res = Socket.select(socket_set, null, null,
+                        opts.select_timeout.msecs);
                 if (sel_res > 0) {
                     if (socket_set.isSet(_listener)) {
                         service.allocateFiber;

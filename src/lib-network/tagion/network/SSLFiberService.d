@@ -71,6 +71,7 @@ interface SSLFiber {
 @safe
 class SSLFiberService {
     immutable(SSLOptions) ssl_options;
+    immutable(SocketOptions) opts;
     @safe interface Relay {
         bool agent(SSLFiber sslfiber);
     }
@@ -79,6 +80,7 @@ class SSLFiberService {
     @safe
     this(immutable(SSLOptions) opts, SSLSocket listener, Relay relay) {
         this.ssl_options = opts;
+        this.opts = opts.socket;
         this.listener = listener;
         this.relay = relay;
         handler = new Response;
@@ -174,7 +176,7 @@ class SSLFiberService {
                     handler.remove(fiber_id);
                 }
             }
-            Thread.sleep(ssl_options.client_timeout.msecs);
+            Thread.sleep(opts.client_timeout.msecs);
         }
     }
 
@@ -183,7 +185,7 @@ class SSLFiberService {
      +/
     SSLSocketFiber allocateFiber() {
         SSLSocketFiber result;
-        if (active_fibers.length < ssl_options.max_connections) {
+        if (active_fibers.length < opts.max_connections) {
             const fiber_key = next_fiber_id;
             if (recycle_fibers.length > 0) {
                 result = active_fibers[fiber_key] = recycle_fibers[$ - 1];
@@ -337,7 +339,7 @@ class SSLFiberService {
          +/
         void checkTimeout() const {
             const time_elapsed = MonoTime.currTime - start_timestamp;
-            if (time_elapsed > ssl_options.client_timeout.msecs) {
+            if (time_elapsed > opts.client_timeout.msecs) {
                 throw new SSLSocketTimeout(time_elapsed);
             }
         }
@@ -399,7 +401,7 @@ class SSLFiberService {
             const leb128_len = LEB128.decode!uint(leb128_len_data);
             const buffer_size = leb128_len.value;
             //const buffer_size=buffer_to_uint(len_data);
-            if (buffer_size > ssl_options.max_buffer_size) {
+            if (buffer_size > opts.max_buffer_size) {
                 return null;
             }
             buffer = new ubyte[leb128_len.size + leb128_len.value];

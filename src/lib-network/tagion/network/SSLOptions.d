@@ -5,6 +5,7 @@ import std.array : array;
 import std.file : exists, mkdirRecurse;
 import std.process : pipeProcess, wait;
 import std.path : dirName;
+
 //import std.stdio : stderr, writeln;
 import std.outbuffer : OutBuffer;
 
@@ -61,23 +62,24 @@ struct SSLOptions {
     string task_name; /// Task name of the SSLService used
     string response_task_name; /// Name of the respose task name (If this is not set the respose service is not started)
     string prefix;
-    string address; /// Ip address
-    ushort port; /// Port
-    uint max_buffer_size; /// Max buffer size
-    uint max_queue_length; /// Listener max. incomming connection req. queue length
-
-    uint max_connections; /// Max simultanious connections for the scripting engine
-
-    uint select_timeout; /// Select timeout in ms
-    // string certificate; /// Certificate file name
-    // string private_key; /// Private key
-    uint client_timeout; /// Client timeout
-    OpenSSL openssl; ///
+    SocketOptions socket;
+    OpenSSL ssl; ///
     mixin JSONCommon;
     mixin JSONConfig;
 }
 
-int configureOpenSSL(const(OpenSSL) openssl, OutBuffer bout=null) @trusted {
+struct SocketOptions {
+    string address; /// Ip address
+    ushort port; /// Port
+    uint max_buffer_size; /// Max buffer size
+    uint max_queue_length; /// Listener max. incomming connection req. queue length
+    uint max_connections; /// Max simultanious connections for the scripting engine
+    uint select_timeout; /// Select timeout in ms
+    uint client_timeout; /// Client timeout
+    mixin JSONCommon;
+}
+
+int configureOpenSSL(const(OpenSSL) openssl, OutBuffer bout = null) @trusted {
     int exit_code;
     if (!openssl.certificate.exists || !openssl.private_key.exists) {
         openssl.certificate.dirName.mkdirRecurse;

@@ -90,12 +90,18 @@
         "prefix": "logsubscription",
         "protocol_id": "",
         "service": {
-            "address": "0.0.0.0",
-            "client_timeout": 4000,
-            "max_buffer_size": 16384,
-            "max_connections": 1000,
-            "max_queue_length": 100,
-            "openssl": {
+            "prefix": "logsubscriptionservice",
+            "response_task_name": "responselogsubscriptionservice",
+            "socket": {
+                "address": "1.0.0.0",
+                "client_timeout": 4000,
+                "max_buffer_size": 16384,
+                "max_connections": 1000,
+                "max_queue_length": 100,
+                "port": 10700,
+                "select_timeout": 300
+            },
+            "ssl": {
                 "certificate": "pem_files\/domain.pem",
                 "city": "",
                 "country": "",
@@ -108,10 +114,6 @@
                 "state": "",
                 "unit": ""
             },
-            "port": 10700,
-            "prefix": "logsubscriptionservice",
-            "response_task_name": "responselogsubscriptionservice",
-            "select_timeout": 300,
             "task_name": "logsubscriptionservice"
         },
         "task_name": "logsubscription",
@@ -175,12 +177,18 @@
         "prefix": "transaction",
         "protocol_id": "",
         "service": {
-            "address": "0.0.0.0",
-            "client_timeout": 4000,
-            "max_buffer_size": 16384,
-            "max_connections": 1000,
-            "max_queue_length": 100,
-            "openssl": {
+            "prefix": "transervice",
+            "response_task_name": "respose",
+            "socket": {
+                "address": "0.0.0.0",
+                "client_timeout": 4000,
+                "max_buffer_size": 16384,
+                "max_connections": 1000,
+                "max_queue_length": 100,
+                "port": 10800,
+                "select_timeout": 300
+            },
+            "ssl": {
                 "certificate": "pem_files\/domain.pem",
                 "city": "",
                 "country": "",
@@ -193,10 +201,6 @@
                 "state": "",
                 "unit": ""
             },
-            "port": 10800,
-            "prefix": "transervice",
-            "response_task_name": "respose",
-            "select_timeout": 300,
             "task_name": "transaction.service"
         },
         "task_name": "collector",
