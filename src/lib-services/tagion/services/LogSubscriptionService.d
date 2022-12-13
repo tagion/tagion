@@ -21,7 +21,7 @@ import tagion.services.Options : Options;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : GetLabel;
-import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
+import tagion.network.FiberServer : FiberServer, SSLFiber;
 import tagion.network.ServerAPI : ServerAPI;
 
 mixin TrustedConcurrency;
@@ -191,7 +191,7 @@ void logSubscriptionServiceTask(Options opts) nothrow {
                 opts.logSubscription.service.socket.port,
                 opts.logSubscription.service.socket.address);
 
-        @safe class LogSubscriptionRelay : SSLFiberService.Relay {
+        @safe class LogSubscriptionRelay : FiberServer.Relay {
             bool agent(SSLFiber ssl_relay) {
                 @trusted const(Document) receivessl() {
                     try {

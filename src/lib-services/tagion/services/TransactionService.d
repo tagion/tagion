@@ -8,7 +8,7 @@ import std.concurrency;
 import std.exception : assumeUnique, assumeWontThrow;
 
 import tagion.network.ServerAPI;
-import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
+import tagion.network.FiberServer : FiberServer, SSLFiber;
 import tagion.logger.Logger;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
@@ -87,7 +87,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             send(node_tid, opts.transaction.service.socket.response_task_name, tosend);
         }
 
-        @safe class TransactionRelay : SSLFiberService.Relay {
+        @safe class TransactionRelay : FiberServer.Relay {
             bool agent(SSLFiber ssl_relay) {
                 import tagion.hibon.HiBONJSON;
 

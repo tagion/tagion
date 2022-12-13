@@ -1,4 +1,4 @@
-module tagion.network.SSLFiberService;
+module tagion.network.FiberServer;
 
 import core.thread : Thread, Fiber;
 import core.time; // : dur, Duration, MonoTime;
@@ -45,7 +45,7 @@ class SSLSocketTimeout : SSLSocketFiberException {
 }
 
 /++
- Interface used for by the SSLFiberService Relay delegate
+ Interface used for by the FiberServer Relay delegate
 +/
 @safe
 interface SSLFiber {
@@ -69,7 +69,7 @@ interface SSLFiber {
  SSL Service
 +/
 @safe
-class SSLFiberService {
+class FiberServer {
     immutable(ServiceOptions) opts;
     @safe interface Relay {
         bool agent(SSLFiber sslfiber);
