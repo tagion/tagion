@@ -68,7 +68,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
         @trusted void requestInputs(const(Buffer[]) inputs, uint id) {
             auto sender = DART.dartRead(inputs, internal_hirpc, id);
             auto tosend = sender.toDoc.serialize; //internal_hirpc.toHiBON(sender).serialize;
-            dart_sync_tid.send(opts.transaction.service.response_task_name, tosend);
+            dart_sync_tid.send(opts.transaction.service.socket.response_task_name, tosend);
         }
 
         @trusted void search(Document doc, uint id) {
@@ -78,13 +78,13 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             n_params["owners"] = doc;
             auto sender = internal_hirpc.search(n_params, id);
             auto tosend = sender.toDoc.serialize;
-            dart_sync_tid.send(opts.transaction.service.response_task_name, tosend);
+            dart_sync_tid.send(opts.transaction.service.socket.response_task_name, tosend);
         }
 
         @trusted void areWeInGraph(uint id) {
             auto sender = internal_hirpc.healthcheck(new HiBON(), id);
             auto tosend = sender.toDoc.serialize;
-            send(node_tid, opts.transaction.service.response_task_name, tosend);
+            send(node_tid, opts.transaction.service.socket.response_task_name, tosend);
         }
 
         @safe class TransactionRelay : SSLFiberService.Relay {
@@ -295,24 +295,24 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
 
             case STOP:
                 log("Stop transaction service: port %d", opts.transaction.service.socket.port);
-            script_api.stop;
-            stop = true;
-            break;
+                script_api.stop;
+                stop = true;
+                break;
             default:
-            log.warning("Bad Control command %s", ts);
+                log.warning("Bad Control command %s", ts);
+            }
+        }
+
+        ownerTid.send(Control.LIVE);
+        while (!stop) {
+            receiveTimeout(500.msecs, //Control the thread
+                    &handleState,
+                    &taskfailure,
+            );
         }
     }
 
-    ownerTid.send(Control.LIVE);
-    while (!stop) {
-        receiveTimeout(500.msecs, //Control the thread
-                &handleState,
-                &taskfailure,
-        );
+    catch (Throwable t) {
+        fatal(t);
     }
-}
-
-catch (Throwable t) {
-    fatal(t);
-}
 }

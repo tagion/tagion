@@ -168,8 +168,7 @@ struct Options {
     struct Transaction {
         string protocol_id;
         string task_name; /// Transaction task name
-        string net_task_name;
-        string prefix;
+        //        string prefix;
         uint timeout; ///.service.socket.listerne timeout in msecs
         import tagion.network.SSLOptions;
 
@@ -191,7 +190,6 @@ struct Options {
     struct LogSubscription {
         string protocol_id;
         string task_name; /// Transaction task name
-        string net_task_name;
         string prefix;
         uint timeout; ///.service.socket.listerne timeout in msecs
         import tagion.network.SSLOptions;
@@ -319,30 +317,32 @@ static ref auto all_getopt(
         std.getopt.config.bundling,
         "version",   "display the version",     &version_switch,
         "overwrite|O", "Overwrite the config file", &overwrite_switch,
-        "transaction-max|D",    format("Transaction max = 0 means all nodes: default %d", options.transaction.max),  &(options.transaction.max),
+        "transaction-max|D",    format("Transaction max = 0 means all nodes: default %d", 
+	options.transaction.max),  &(options.transaction.max),
         "ip", "Host gossip ip", &(options.ip),
         "port", "Host gossip port ", &(options.port),
         "pid", format("Write the pid to %s file", options.pid_file), &(options.pid_file),
-//      "path|I",    "Sets the search path", &(options.path_arg),
         "nodes|N",   format("Sets the number of nodes: default %d", options.nodes), &(options.nodes),
         "timeout|t", format("Sets timeout: default %d (ms)", options.timeout), &(options.timeout),
         "monitors|M", format("Sets maximum number of monitors opened: default %s", options.monitor.max), &(options.monitor.max),
-        "tmp",       format("Sets temporaty work directory: default '%s'", options.tmp), &(options.tmp),
-        "monitor|P", format("Sets first monitor port of the port sequency: default %d", options.monitor.port),  &(options.monitor.port),
+        "tmp", format("Sets temporaty work directory: default '%s'", options.tmp), &(options.tmp),
+        "monitor|P", format("Sets first monitor port of the port sequency: default %d", 
+		options.monitor.port),  &(options.monitor.port),
 
-        "transaction-ip",  format("Sets the listener transaction ip address: default %s", options.transaction.service.socket.address), &(options.transaction.service.socket.address),
-        "transaction-port|p", format("Sets the listener transcation port: default %d", options.transaction.service.socket.port), &(options.transaction.service.socket.port),
+        "transaction-ip",  format("Sets the listener transaction ip address: default %s", 
+	options.transaction.service.socket.address), &(options.transaction.service.socket.address),
+        "transaction-port|p", format("Sets the listener transcation port: default %d", 
+	options.transaction.service.socket.port), &(options.transaction.service.socket.port),
         "transaction-queue", format("Sets the listener transcation max queue lenght: default %d", options.transaction.service.socket.max_queue_length), &(options.transaction.service.socket.max_queue_length),
-        "transaction-maxcon",  format("Sets the maximum number of connections: default: %d", options.transaction.service.socket.max_connections), &(options.transaction.service.socket.max_connections),
-        "transaction-maxqueue",  format("Sets the maximum queue length: default: %d", options.transaction.service.socket.max_queue_length), &(options.transaction.service.socket.max_queue_length),
-        "epochs",  format("Sets the number of epochs (0 for infinite): default: %d", options.epoch_limit), &(options.epoch_limit),
+        "transaction-maxcon",  format("Sets the maximum number of connections: default: %d", 
+	options.transaction.service.socket.max_connections), &(options.transaction.service.socket.max_connections),
+        "transaction-maxqueue",  format("Sets the maximum queue length: default: %d", 
+	options.transaction.service.socket.max_queue_length), &(options.transaction.service.socket.max_queue_length),
+        "epochs",  format("Sets the number of epochs (0 for infinite): default: %d", 
+	options.epoch_limit), &(options.epoch_limit),
 
-//        "transaction-maxfibres",  format("Sets the maximum number of fibres: default: %d", options.transaction.service.max_number_of_accept_fibers), &(options.transaction.service.max_number_of_accept_fibers),
-//        "transaction-maxreuse",  format("Sets the maximum number of fibre reuse: default: %d", options.transaction.service.max_number_of_fiber_reuse), &(options.transaction.service.max_number_of_fiber_reuse),
-        //   "transaction-log",  format("Scripting engine log filename: default: %s", options.transaction.service.name), &(options.transaction.service.name),
-
-
-        "transcript-log",  format("Transcript log filename: default: %s", options.transcript.task_name), &(options.transcript.task_name),
+        "transcript-log",  format("Transcript log filename: default: %s", 
+	options.transcript.task_name), &(options.transcript.task_name),
         "dart-filename", format("DART file name. Default: %s", options.dart.path), &(options.dart.path),
         "dart-synchronize", "Need synchronization", &(options.dart.synchronize),
 
@@ -426,16 +426,13 @@ static setDefaultOption(ref Options options)
     {
         //        port=10800;
         max = 0;
-        prefix = "transaction";
-        task_name = prefix;
-        net_task_name = "transaction_net";
+        task_name = "transaction";
         timeout = 250;
         with (service)
         {
-            prefix = "transervice";
-            task_name = prefix;
-            response_task_name = "respose";
 			with(socket) {
+            task_name = "transaction_net";
+            response_task_name = "respose";
             address = "0.0.0.0";
             port = 10_800;
             select_timeout = 300;
@@ -470,15 +467,14 @@ static setDefaultOption(ref Options options)
         max = 0;
         prefix = "logsubscription";
         task_name = prefix;
-        net_task_name = "logsubscription_net";
         timeout = 10000;
         enable = true;
         with (service)
         {
             prefix = "logsubscriptionservice";
             task_name = prefix;
-            response_task_name = "response" ~ prefix;
 			with(socket) {
+            response_task_name = "response" ~ prefix;
 			address = "1.0.0.0";
             port = 10_700;
             select_timeout = 300;

@@ -59,16 +59,16 @@ struct OpenSSL {
 }
 
 struct SSLOptions {
-    string task_name; /// Task name of the SSLService used
-    string response_task_name; /// Name of the respose task name (If this is not set the respose service is not started)
-    string prefix;
-    SocketOptions socket;
+    ServiceOptions socket;
     OpenSSL ssl; ///
     mixin JSONCommon;
     mixin JSONConfig;
 }
 
-struct SocketOptions {
+struct ServiceOptions {
+    string task_name; /// Task name of the SSLService used
+    string response_task_name; /// Name of the respose task name (If this is not set the respose service is not started)
+    string prefix;
     string address; /// Ip address
     ushort port; /// Port
     uint max_buffer_size; /// Max buffer size

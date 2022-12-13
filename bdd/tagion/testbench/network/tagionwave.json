@@ -86,12 +86,9 @@
             "timeout": 3000
         },
         "max": 0,
-        "net_task_name": "logsubscription_net",
-        "prefix": "logsubscription",
+        "prefix": "logsubscriptionservice",
         "protocol_id": "",
         "service": {
-            "prefix": "logsubscriptionservice",
-            "response_task_name": "responselogsubscriptionservice",
             "socket": {
                 "address": "1.0.0.0",
                 "client_timeout": 4000,
@@ -99,7 +96,10 @@
                 "max_connections": 1000,
                 "max_queue_length": 100,
                 "port": 10700,
-                "select_timeout": 300
+                "prefix": "",
+                "response_task_name": "response",
+                "select_timeout": 300,
+                "task_name": ""
             },
             "ssl": {
                 "certificate": "pem_files\/domain.pem",
@@ -113,10 +113,9 @@
                 "private_key": "pem_files\/domain.key.pem",
                 "state": "",
                 "unit": ""
-            },
-            "task_name": "logsubscriptionservice"
+            }
         },
-        "task_name": "logsubscription",
+        "task_name": "logsubscriptionservice",
         "timeout": 10000
     },
     "logext": "log",
@@ -173,12 +172,9 @@
             "timeout": 3000
         },
         "max": 0,
-        "net_task_name": "transaction_net",
-        "prefix": "transaction",
+        "prefix": "transervice",
         "protocol_id": "",
         "service": {
-            "prefix": "transervice",
-            "response_task_name": "respose",
             "socket": {
                 "address": "0.0.0.0",
                 "client_timeout": 4000,
@@ -186,7 +182,10 @@
                 "max_connections": 1000,
                 "max_queue_length": 100,
                 "port": 10800,
-                "select_timeout": 300
+                "prefix": "",
+                "response_task_name": "respose",
+                "select_timeout": 300,
+                "task_name": ""
             },
             "ssl": {
                 "certificate": "pem_files\/domain.pem",
@@ -200,8 +199,7 @@
                 "private_key": "pem_files\/domain.key.pem",
                 "state": "",
                 "unit": ""
-            },
-            "task_name": "transaction.service"
+            }
         },
         "task_name": "collector",
         "timeout": 250

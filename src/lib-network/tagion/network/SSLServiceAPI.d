@@ -19,7 +19,7 @@ import tagion.basic.TagionExceptions : fatal;
 @safe
 struct SSLServiceAPI {
     immutable(SSLOptions) ssl_options;
-    immutable(SocketOptions) opts;
+    immutable(ServiceOptions) opts;
     protected {
         Thread service_task;
         SSLFiberService service;
@@ -31,6 +31,7 @@ struct SSLServiceAPI {
 
     this(immutable(SSLOptions) opts, SSLFiberService.Relay relay) nothrow pure @trusted {
         this.ssl_options = opts;
+        this.opts = ssl_options.socket;
         this.relay = relay;
     }
 
@@ -54,7 +55,7 @@ struct SSLServiceAPI {
         try {
             import std.socket : SocketType;
 
-            log.register(ssl_options.task_name);
+            log.register(opts.task_name);
             log("Run SSLServiceAPI. Certificate=%s, ssl_options.private_key=%s",
                     ssl_options.ssl.certificate,
                     ssl_options.ssl.private_key);
@@ -68,13 +69,13 @@ struct SSLServiceAPI {
             _listener.bind(new InternetAddress(opts.address, opts.port));
             _listener.listen(opts.max_queue_length);
 
-            service = new SSLFiberService(ssl_options.socket, _listener, relay);
-            auto response_tid = service.start(ssl_options.response_task_name);
+            service = new SSLFiberService(opts, _listener, relay);
+            auto response_tid = service.start(opts.response_task_name);
             if (response_tid !is Tid.init) {
 
                 check(receiveOnly!Control is Control.LIVE,
                         format("SSL service task %s is not alive",
-                        ssl_options.response_task_name));
+                        opts.response_task_name));
             }
             scope (exit) {
                 response_tid.send(Control.STOP);
