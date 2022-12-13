@@ -66,6 +66,7 @@ enum FileExtension
     markdown = "md", // DART data-base
     dsrc = "d", // DART data-base
     recchainblock = "rcb", // Recorder chain block file format
+    epochdumpblock = "epdmp" // Epoch dump chain block file format
 }
 
 enum DOT = '.'; /// File extension separator

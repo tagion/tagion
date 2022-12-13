@@ -75,6 +75,15 @@ struct Options {
 
     mixin JSONCommon;
 
+    struct EpochDumpSettings {
+        string task_name;
+        string transaction_dumps_directory;
+        bool disable_transaction_dumping;
+        mixin JSONCommon;
+    }
+
+    EpochDumpSettings epoch_dump;
+
     struct HostBootstrap {
         bool enabled;
         ulong check_timeout;
@@ -164,7 +173,7 @@ struct Options {
         uint timeout; /// Socket listerne timeout in msecs
         import tagion.network.SSLOptions;
 
-        SSLOptions service; /// SSL Service used by the transaction service
+        SSLOption service; /// SSL Service used by the transaction service
         HostOptions host;
         ushort max; // max == 0 means all
         mixin JSONCommon;
@@ -187,7 +196,7 @@ struct Options {
         uint timeout; /// Socket listerne timeout in msecs
         import tagion.network.SSLOptions;
 
-        SSLOptions service; /// SSL Service used by the transaction service
+        SSLOption service; /// SSL Service used by the transaction service
         HostOptions host;
         ushort max; // max == 0 means all
         bool enable; // Enable logger subscribtion  service
@@ -211,13 +220,13 @@ struct Options {
 
     Logger logger;
 
-    struct Recorder {
+    struct RecorderChain {
         string task_name; /// Name of the recorder task
-        string folder_path; /// Folder used for the recorder service files
+        string folder_path; /// Folder used for the recorder service files, default empty path means this feature is disabled
         mixin JSONCommon;
     }
 
-    Recorder recorder;
+    RecorderChain recorder_chain;
 
     struct Message {
         string language; /// Language used to print message
@@ -345,7 +354,10 @@ static ref auto all_getopt(
         "net-mode", format("Network mode: one of [%s]: default: %s", [EnumMembers!NetworkMode].map!(t=>t.to!string).join(", "), options.net_mode), &(options.net_mode),
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
         "boot", format("Shared boot file: default: %s", options.path_to_shared_info), &(options.path_to_shared_info),
-        "passphrasefile", "file with setted passphrase for keys pair", &(options.path_to_stored_passphrase),
+        "passphrasefile", "File with setted passphrase for keys pair", &(options.path_to_stored_passphrase),
+        "recorderchain", "Path to folder with recorder chain blocks stored for DART recovery", &(options.recorder_chain.folder_path),
+        "disabledumping", "Not perform transaction dump", &(options.epoch_dump.disable_transaction_dumping),
+        "transactiondumpfolder", "Set separative folder for transaction dump", &(options.epoch_dump.transaction_dumps_directory) 
     );
 }
 
@@ -515,10 +527,14 @@ static setDefaultOption(ref Options options)
         mask = LogLevel.ALL;
     }
     // Recorder
-    with (options.recorder)
+    with (options.recorder_chain)
     {
-        task_name = "recorder";
-        folder_path = "tmp/epoch_blocks/";
+        task_name = "recorder-service";
+    }
+    // Epoch dumping
+    with(options.epoch_dump)
+    {
+        task_name = "epoch-dump-task";
     }
     // Discovery
     with (options.discovery)

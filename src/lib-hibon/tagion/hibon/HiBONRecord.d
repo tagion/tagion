@@ -4,9 +4,9 @@ import std.stdio;
 import tagion.hibon.HiBONJSON;
 
 import file = std.file;
-import std.exception : assumeUnique, assumeWontThrow;
+import std.exception : assumeUnique;
 import std.typecons : Tuple;
-import std.traits;
+import std.traits : hasMember, ReturnType, isArray, ForeachType, isUnsigned, isIntegral, KeyType;
 
 import tagion.basic.Basic : basename, EnumContinuousSequency;
 import tagion.hibon.HiBONBase : ValueT;
@@ -1420,5 +1420,32 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
             assert(result.i_b == -42);
         }
 
+    }
+
+    /// Associative Array with integral key
+    {
+        static struct ArrayKey(Key) {
+            string[Key] a;
+            mixin HiBONRecord;
+        }
+
+        {
+            import std.algorithm.sorting : sort;
+            import std.array : array, byPair;
+
+            ArrayKey!int a_int;
+            string[int] days = [1: "Monday", 2: "Tuesday", 3: "Wednesday"];
+            a_int.a = days;
+
+            const a_toDoc = a_int.toDoc;
+            auto result = ArrayKey!int(a_toDoc);
+
+            enum key_sort = q{a.key < b.key};
+
+            assert(equal(
+                    result.a.byPair.array.sort!key_sort,
+                    a_int.a.byPair.array.sort!key_sort)
+            );
+        }
     }
 }

@@ -299,6 +299,8 @@ version (unittest) @safe struct FakeTask
 
     enum main_task = "taskwrapperunittest";
 
+    log.silent = true;
+
     Options options;
     setDefaultOption(options);
 
@@ -338,4 +340,6 @@ version (unittest) @safe struct FakeTask
     pragma(msg, "fixme(ib): check for 'locate(task_name)' after adding application tests");
 
     // TODO: add tests for tasks table
+
+    log.silent = false;
 }
