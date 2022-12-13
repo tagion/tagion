@@ -15,6 +15,7 @@ env:
   TAGION_CACHE_DIR: ~/tagion_cache 
   RUN_SCENARIOUS_PARALEL: true
   BUILD_FLAGS: DFLAGS="\$(DVERSION)=OLD_TRANSACTION"
+  MODE: 0
   ## TODO: add ldc2/dmd switch & version
 jobs:
   build_and_unittest:
@@ -168,6 +169,8 @@ jobs:
         timeout-minutes: 10
         run: |
           set +e
+          ulimit -c unlimited
+          sudo sysctl -w kernel.core_pattern=/tgn/results/core.%u.%p.%t
           mkdir scenario-result
           for SCENARIO in ${{ needs.create_tagion_images.outputs.scenario_list }}; do
             echo "RUN SCENARIO: $SCENARIO"
@@ -198,6 +201,9 @@ jobs:
         if: env.RUN_SCENARIOUS_PARALEL != 'true'
         run: |
           set +e
+          
+          ulimit -c unlimited
+          sudo sysctl -w kernel.core_pattern=/tgn/results/core.%u.%p.%t
           mkdir scenario-result
           for SCENARIO in ${{ needs.create_tagion_images.outputs.scenario_list }}; do
             echo "RUN SCENARIO: $SCENARIO"
