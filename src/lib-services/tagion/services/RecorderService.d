@@ -20,8 +20,7 @@ mixin TrustedConcurrency;
 /** @brief File contains service for handling and saving recorder chain blocks
  */
 
-@safe struct RecorderTask
-{
+@safe struct RecorderTask {
     mixin TaskBasic;
 
     /** Recorder chain stored for working with blocks */
@@ -35,20 +34,18 @@ mixin TrustedConcurrency;
      *      @param bullseye - bullseye of the database
      */
     @TaskMethod void receiveRecorder(immutable(RecordFactory.Recorder) recorder, immutable(
-            Fingerprint) bullseye)
-    {
+            Fingerprint) bullseye) {
         auto last_block = recorder_chain.getLastBlock;
         auto block = new RecorderChainBlock(
-            recorder.toDoc,
-            last_block ? last_block.fingerprint : [],
-            bullseye.buffer,
-            net);
+                recorder.toDoc,
+                last_block ? last_block.fingerprint : [],
+                bullseye.buffer,
+                net);
 
         recorder_chain.append(block);
         log.trace("Added recorder chain block with hash '%s'", block.getHash.cutHex);
 
-        version (unittest)
-        {
+        version (unittest) {
             ownerTid.send(Control.LIVE);
         }
     }
@@ -56,24 +53,21 @@ mixin TrustedConcurrency;
     /** Main service method that runs service
      *      @param opts - options for service
      */
-    void opCall(immutable(Options) opts)
-    {
+    void opCall(immutable(Options) opts) {
         RecorderChainStorage storage = new RecorderChainFileStorage(
-            opts.recorder_chain.folder_path, net);
+                opts.recorder_chain.folder_path, net);
 
         recorder_chain = new RecorderChain(storage);
 
         ownerTid.send(Control.LIVE);
-        while (!stop)
-        {
+        while (!stop) {
             receive(&control, &receiveRecorder);
         }
     }
 }
 
 /// RecorderService_add_many_blocks
-unittest
-{
+unittest {
     import tagion.basic.Basic : tempfile;
     import tagion.services.Options : setDefaultOption;
 
@@ -82,8 +76,7 @@ unittest
     Options options;
     setDefaultOption(options);
     options.recorder_chain.folder_path = temp_folder;
-    scope (exit)
-    {
+    scope (exit) {
         import std.file : rmdirRecurse;
 
         rmdirRecurse(temp_folder);
@@ -91,8 +84,7 @@ unittest
 
     auto recorderService = Task!RecorderTask(options.recorder_chain.task_name ~ "unittest", options);
     assert(receiveOnly!Control == Control.LIVE);
-    scope (exit)
-    {
+    scope (exit) {
         recorderService.control(Control.STOP);
         assert(receiveOnly!Control == Control.END);
     }
@@ -105,8 +97,7 @@ unittest
     immutable empty_recorder = cast(immutable) factory.recorder;
     immutable empty_bullseye = Fingerprint([]);
 
-    foreach (i; 0 .. blocks_count)
-    {
+    foreach (i; 0 .. blocks_count) {
         recorderService.receiveRecorder(empty_recorder, empty_bullseye);
         assert(receiveOnly!Control == Control.LIVE);
     }

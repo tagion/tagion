@@ -4,9 +4,9 @@ import std.stdio;
 import tagion.hibon.HiBONJSON;
 
 import file = std.file;
-import std.exception : assumeUnique;
+import std.exception : assumeUnique, assumeWontThrow;
 import std.typecons : Tuple;
-import std.traits : hasMember, ReturnType, isArray, ForeachType, isUnsigned, isIntegral, KeyType;
+import std.traits;
 
 import tagion.basic.Basic : basename, EnumContinuousSequency;
 import tagion.hibon.HiBONBase : ValueT;
@@ -527,8 +527,10 @@ mixin template HiBONRecord(string CTOR = "") {
                             static if (isSpecialKeyType!R) {
                                 result[key] = value;
                             }
-                            else {
-                                result[e.key] = value;
+                            else
+                            {
+                                alias ResultKeyType = KeyType!(typeof(result));
+                                result[e.key.to!ResultKeyType] = value;
                             }
                         }
                         else {

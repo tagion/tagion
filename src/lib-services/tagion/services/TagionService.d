@@ -36,48 +36,41 @@ import tagion.services.TranscriptService;
 import tagion.services.FileDiscoveryService;
 import tagion.services.NetworkRecordDiscoveryService;
 import tagion.services.RecorderService : RecorderTask;
+import tagion.services.EpochDumpService : EpochDumpTask;
 import tagion.actor.TaskWrapper : Task;
 import tagion.utils.Random;
 import tagion.utils.Queue;
 import tagion.utils.StdTime;
 import tagion.utils.Miscellaneous : cutHex;
 
-shared(p2plib.Node) initialize_node(immutable Options opts)
-{
+shared(p2plib.Node) initialize_node(immutable Options opts) {
     import std.array : split;
 
     auto p2pnode = new shared(p2plib.Node)(
-        format("/ip4/%s/tcp/%s",
+            format("/ip4/%s/tcp/%s",
             opts.ip,
             opts.port), 0);
 
-    if (opts.p2plogs)
-    {
+    if (opts.p2plogs) {
         p2plib.EnableLogger();
     }
-    if (opts.hostbootrap.enabled)
-    {
-        if (opts.hostbootrap.bootstrapNodes.length)
-        {
+    if (opts.hostbootrap.enabled) {
+        if (opts.hostbootrap.bootstrapNodes.length) {
             auto bootsraps = opts.hostbootrap.bootstrapNodes.split("\n");
-            foreach (bootsrap; bootsraps)
-            {
+            foreach (bootsrap; bootsraps) {
                 log("Connection to %s", bootsrap);
                 p2pnode.connect(bootsrap);
             }
         }
-        else
-        {
+        else {
             throw new OptionException("Bootstrap nodes list is empty");
         }
     }
     return p2pnode;
 }
 
-void tagionService(NetworkMode net_mode, Options opts) nothrow
-{
-    try
-    {
+void tagionService(NetworkMode net_mode, Options opts) nothrow {
+    try {
         /** last epoch timestamp */
         long epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
         log.register(opts.node_name);
@@ -85,37 +78,29 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         bool stop;
         uint count_transactions;
         uint epoch_num;
-        scope (success)
-        {
+        scope (success) {
             log.close;
             ownerTid.prioritySend(Control.END);
         }
 
         string passphrase;
-        if (!opts.path_to_stored_passphrase.empty)
-        {
-            if (exists(opts.path_to_stored_passphrase))
-            {
+        if (!opts.path_to_stored_passphrase.empty) {
+            if (exists(opts.path_to_stored_passphrase)) {
                 const char[] file_content = cast(char[]) fread(opts.path_to_stored_passphrase);
                 passphrase = fromStringz(file_content).idup;
             }
-            pragma(msg, "fixme(cbr): This should not be a warning but an exception. Service should stop!");
-            if (passphrase.empty)
-            {
+
+            if (passphrase.empty) {
                 log.warning(
-                    "Please check file " ~ opts.path_to_stored_passphrase ~ ", perform start with default settings");
+                        "Please check file " ~ opts.path_to_stored_passphrase ~ ", perform start with default settings");
             }
         }
 
-        pragma(msg, "fixme(cbr): Default password should only be allowed in test mode, not in production (add a version flag)");
-        if (passphrase.empty)
-        {
-            if (net_mode == NetworkMode.internal)
-            {
+        if (passphrase.empty) {
+            if (net_mode == NetworkMode.internal) {
                 passphrase = format("Secret_word_%s", opts.node_name).idup;
             }
-            else
-            {
+            else {
                 passphrase = format("Secret_word_%d", opts.port).idup;
             }
         }
@@ -138,23 +123,20 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         Tid epoch_dumping_service_tid;
 
         shared StdSecureNet shared_net;
-        synchronized (master_net)
-        {
+        synchronized (master_net) {
             master_net.generateKeyPair(passphrase);
             shared_net = cast(shared) master_net;
             net.derive(opts.node_name, shared_net);
             p2pnode = initialize_node(opts);
         }
 
-        final switch (net_mode)
-        {
+        final switch (net_mode) {
         case NetworkMode.internal:
 
             gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
             ownerTid.send(net.pubkey);
             Pubkey[] pkeys;
-            foreach (i; 0 .. opts.nodes)
-            {
+            foreach (i; 0 .. opts.nodes) {
                 pkeys ~= receiveOnly!(Pubkey);
                 log.trace("Receive %d %s", i, pkeys[i].cutHex);
             }
@@ -168,15 +150,14 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         case NetworkMode.local:
         case NetworkMode.pub:
             gossip_net = new P2pGossipNet(
-                net.pubkey,
-                opts.node_name,
-                opts.discovery.task_name,
-                opts.host,
-                p2pnode);
+                    net.pubkey,
+                    opts.node_name,
+                    opts.discovery.task_name,
+                    opts.host,
+                    p2pnode);
         }
 
-        void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted
-        {
+        void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted {
             import std.algorithm;
             import std.array : array;
             import tagion.hibon.HiBONJSON;
@@ -192,15 +173,13 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             count_transactions = 0;
             epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
 
-            if (epoch_num >= opts.epoch_limit)
-            {
+            if (epoch_num >= opts.epoch_limit) {
                 auto main_tid = locate(main_task);
                 main_tid.send(Control.STOP);
             }
         }
 
-        void register_epack(immutable(EventPackage*) epack) @safe
-        {
+        void register_epack(immutable(EventPackage*) epack) @safe {
             log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
         }
 
@@ -211,11 +190,11 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         hashgraph.scrap_depth = opts.scrap_depth;
 
         discovery_tid = spawn(
-            &networkRecordDiscoveryService,
-            net.pubkey,
-            p2pnode,
-            opts.discovery.task_name,
-            opts);
+                &networkRecordDiscoveryService,
+                net.pubkey,
+                p2pnode,
+                opts.discovery.task_name,
+                opts);
         assert(receiveOnly!Control is Control.LIVE);
 
         assert(receiveOnly!DiscoveryControl is DiscoveryControl.READY);
@@ -224,22 +203,21 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         assert(receiveOnly!DiscoveryControl is DiscoveryControl.READY);
 
         dart_sync_tid = spawn(
-            &dartSynchronizeServiceTask!StdSecureNet,
-            opts,
-            p2pnode,
-            shared_net,
-            sector_range);
+                &dartSynchronizeServiceTask!StdSecureNet,
+                opts,
+                p2pnode,
+                shared_net,
+                sector_range);
         // receiveOnly!Control;
         dart_tid = spawn(
-            &dartServiceTask!StdSecureNet,
-            opts,
-            p2pnode,
-            shared_net,
-            sector_range);
+                &dartServiceTask!StdSecureNet,
+                opts,
+                p2pnode,
+                shared_net,
+                sector_range);
         log.trace("Start sync addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
 
-        scope (exit)
-        {
+        scope (exit) {
             log("Closing net");
             gossip_net.close();
         }
@@ -249,17 +227,14 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         log.trace("Before sync ready addressbook.numOfActiveNodes : %d", addressbook
                 .numOfActiveNodes);
 
-        do
-        {
+        do {
             receive((Control ctrl) {
                 log("Received ctrl: %s", ctrl);
-                if (ctrl is Control.LIVE)
-                {
+                if (ctrl is Control.LIVE) {
                     ready_counter--;
                 }
             }, (DARTSynchronizeState state) {
-                if (state == DARTSynchronizeState.READY)
-                {
+                if (state == DARTSynchronizeState.READY) {
                     ready = true;
                 }
             });
@@ -270,76 +245,59 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 
         discovery_tid.send(DiscoveryRequestCommand.BecomeOnline);
 
-        scope (exit)
-        {
+        scope (exit) {
             p2pnode.closeListener(opts.transaction.protocol_id);
         }
-        scope (exit)
-        {
-            if (transcript_tid !is transcript_tid.init)
-            {
+        scope (exit) {
+            if (transcript_tid !is transcript_tid.init) {
                 transcript_tid.prioritySend(Control.STOP);
                 receiveOnly!Control;
             }
 
-            if (recorder_service_tid !is Tid.init)
-            {
+            if (recorder_service_tid !is Tid.init) {
                 recorder_service_tid.prioritySend(Control.STOP);
-                if (receiveOnly!Control == Control.END)
-                {
+                if (receiveOnly!Control == Control.END) {
                     log("Recorder service stopped");
                 }
             }
 
-            if (epoch_dumping_service_tid !is Tid.init)
-            {
+            if (epoch_dumping_service_tid !is Tid.init) {
                 epoch_dumping_service_tid.send(Control.STOP);
-                if (receiveOnly!Control == Control.END)
-                {
+                if (receiveOnly!Control == Control.END) {
                     log("Epoch dumping service stopped");
                 }
             }
 
-            if (discovery_tid !is Tid.init)
-            {
+            if (discovery_tid !is Tid.init) {
                 discovery_tid.prioritySend(Control.STOP);
-                if (receiveOnly!Control is Control.END)
-                {
+                if (receiveOnly!Control is Control.END) {
                     log("Discovery service stoped");
                 }
             }
 
-            if (dart_sync_tid !is Tid.init)
-            {
+            if (dart_sync_tid !is Tid.init) {
                 dart_sync_tid.prioritySend(Control.STOP);
-                if (receiveOnly!Control is Control.END)
-                {
+                if (receiveOnly!Control is Control.END) {
                     log("DART synchronization service stoped");
                 }
             }
-            if (dart_tid !is Tid.init)
-            {
+            if (dart_tid !is Tid.init) {
                 dart_tid.prioritySend(Control.STOP);
-                if (receiveOnly!Control is Control.END)
-                {
+                if (receiveOnly!Control is Control.END) {
                     log("DART service stoped");
                 }
             }
 
-            if (transaction_socket_tid !is transaction_socket_tid.init)
-            {
+            if (transaction_socket_tid !is transaction_socket_tid.init) {
                 transaction_socket_tid.prioritySend(Control.STOP);
-                if (receiveOnly!Control is Control.END)
-                {
+                if (receiveOnly!Control is Control.END) {
                     log("Closed transaction");
                 }
             }
 
-            if (monitor_socket_tid !is monitor_socket_tid.init)
-            {
+            if (monitor_socket_tid !is monitor_socket_tid.init) {
                 monitor_socket_tid.prioritySend(Control.STOP);
-                if (receiveOnly!Control is Control.END)
-                {
+                if (receiveOnly!Control is Control.END) {
                     log("Closed monitor");
                 }
             }
@@ -349,15 +307,13 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         log.trace("Before startinf monitor and transaction addressbook.numOfActiveNodes : %d", addressbook
                 .numOfActiveNodes);
 
-        if (!opts.recorder_chain.folder_path.empty)
-        {
+        if (!opts.recorder_chain.folder_path.empty) {
             Task!RecorderTask(opts.recorder_chain.task_name, opts);
             assert(receiveOnly!Control == Control.LIVE);
             recorder_service_tid = locate(opts.recorder_chain.task_name);
         }
 
-        if (!opts.epoch_dump.disable_transaction_dumping)
-        {
+        if (!opts.epoch_dump.disable_transaction_dumping) {
             auto task_name = opts.epoch_dump.task_name;
             Task!EpochDumpTask(task_name, opts);
             assert(receiveOnly!Control == Control.LIVE);
@@ -366,16 +322,16 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
 
         transcript_tid = spawn(
 
-            &transcriptServiceTask,
-            opts.transcript.task_name,
-            opts.dart.sync.task_name,
-            opts.recorder_chain.task_name,
-            opts.epoch_dump.task_name);
+                &transcriptServiceTask,
+                opts.transcript.task_name,
+                opts.dart.sync.task_name,
+                opts.recorder_chain.task_name,
+                opts.epoch_dump.task_name);
         assert(receiveOnly!Control == Control.LIVE);
 
         transaction_socket_tid = spawn(
-            &transactionServiceTask,
-            opts);
+                &transactionServiceTask,
+                opts);
         assert(receiveOnly!Control == Control.LIVE);
 
         {
@@ -383,8 +339,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             const nonce = net.calcHash(buf);
             auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
 
-            if (eva_event is null)
-            {
+            if (eva_event is null) {
                 log.error("The channel of this oner is not valid");
                 return;
             }
@@ -393,29 +348,23 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         alias PayloadQueue = Queue!Document;
         PayloadQueue payload_queue = new PayloadQueue();
 
-        void receive_payload(Document pload, bool flag)
-        { //TODO: remove flag. Maybe try switch(doc.type)
+        void receive_payload(Document pload, bool flag) { //TODO: remove flag. Maybe try switch(doc.type)
             count_transactions++;
             log.trace("payload.size=%d", pload.size);
             payload_queue.write(pload);
         }
 
-        const(Document) payload() @safe
-        {
-            if (!hashgraph.active || payload_queue.empty)
-            {
+        const(Document) payload() @safe {
+            if (!hashgraph.active || payload_queue.empty) {
                 return Document();
             }
             log.trace("Payload read");
             return payload_queue.read;
         }
 
-        void controller(Control ctrl)
-        {
-            with (Control)
-            {
-                switch (ctrl)
-                {
+        void controller(Control ctrl) {
+            with (Control) {
+                switch (ctrl) {
                 case STOP:
                     stop = true;
                     log("Stop %s", opts.node_name);
@@ -428,16 +377,13 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             }
         }
 
-        void receive_wavefront(const Document doc)
-        {
+        void receive_wavefront(const Document doc) {
             const receiver = HiRPC.Receiver(doc);
             hashgraph.wavefront(
-                receiver,
-                gossip_net.time,
-                (const(HiRPC.Sender) return_wavefront) @safe {
-                gossip_net.send(receiver.pubkey, return_wavefront);
-            },
-                &payload);
+                    receiver,
+                    gossip_net.time,
+                    (const(HiRPC.Sender) return_wavefront) @safe { gossip_net.send(receiver.pubkey, return_wavefront); },
+                    &payload);
         }
 
         pragma(msg, "fixme(cbr): Random should be unpredictable");
@@ -449,16 +395,13 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
                 .numOfActiveNodes);
 
         bool network_ready = false;
-        do
-        {
+        do {
             discovery_tid.send(DiscoveryRequestCommand.RequestTable);
             log.trace("NETWORK READY %d < %d ", addressbook.numOfNodes, opts.nodes);
-            if (addressbook.isReady)
-            {
+            if (addressbook.isReady) {
                 network_ready = true;
             }
-            else
-            {
+            else {
                 Thread.sleep(500.msecs);
             }
         }
@@ -467,15 +410,14 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
         log.trace("Before Main loop addressbook.numOfActiveNodes : %d", addressbook
                 .numOfActiveNodes);
         HiRPC empty_hirpc;
-        while (!stop && !abort)
-        {
+        while (!stop && !abort) {
             immutable message_received = receiveTimeout(
-                opts.timeout.msecs,
-                &receive_payload,
-                &controller,
-                &receive_wavefront,
-                &taskfailure,
-                (string respond_task_name, Buffer data) {
+                    opts.timeout.msecs,
+                    &receive_payload,
+                    &controller,
+                    &receive_wavefront,
+                    &taskfailure,
+                    (string respond_task_name, Buffer data) {
                 import tagion.hibon.HiBONJSON;
 
                 /** document for receive request */
@@ -490,18 +432,15 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow
             );
             log("ROUNDS: %d AreWeInGraph: %s Active %d", hashgraph.rounds.length, hashgraph.areWeInGraph, addressbook
                     .numOfActiveNodes);
-            if (!message_received || !hashgraph.areWeInGraph)
-            {
+            if (!message_received || !hashgraph.areWeInGraph) {
                 const init_tide = random.value(0, 2) is 1;
-                if (init_tide)
-                {
+                if (init_tide) {
                     hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);
                 }
             }
         }
     }
-    catch (Throwable t)
-    {
+    catch (Throwable t) {
         fatal(t);
     }
 }

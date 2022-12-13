@@ -59,6 +59,11 @@
         "protocol_id": "tagion_dart_mdns_pid",
         "task_name": "discovery"
     },
+    "epoch_dump": {
+        "disable_transaction_dumping": false,
+        "task_name": "epoch-dump-task",
+        "transaction_dumps_directory": ""
+    },
     "epoch_limit": 4294967295,
     "heartbeat": {
         "task_name": "heartbeat"
@@ -143,9 +148,9 @@
     "pid_file": "",
     "port": 4001,
     "port_base": 4000,
-    "recorder": {
-        "folder_path": "tmp\/epoch_blocks\/",
-        "task_name": "recorder"
+    "recorder_chain": {
+        "folder_path": "",
+        "task_name": "recorder-service"
     },
     "scrap_depth": 5,
     "seed": 0,
@@ -188,7 +193,7 @@
                 "state": "",
                 "unit": ""
             },
-            "port": 12800,
+            "port": 10800,
             "prefix": "transervice",
             "response_task_name": "respose",
             "select_timeout": 300,

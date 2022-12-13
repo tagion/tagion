@@ -173,7 +173,7 @@ struct Options {
         uint timeout; /// Socket listerne timeout in msecs
         import tagion.network.SSLOptions;
 
-        SSLOption service; /// SSL Service used by the transaction service
+        SSLOptions service; /// SSL Service used by the transaction service
         HostOptions host;
         ushort max; // max == 0 means all
         mixin JSONCommon;
@@ -196,7 +196,7 @@ struct Options {
         uint timeout; /// Socket listerne timeout in msecs
         import tagion.network.SSLOptions;
 
-        SSLOption service; /// SSL Service used by the transaction service
+        SSLOptions service; /// SSL Service used by the transaction service
         HostOptions host;
         ushort max; // max == 0 means all
         bool enable; // Enable logger subscribtion  service
