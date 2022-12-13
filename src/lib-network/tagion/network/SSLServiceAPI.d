@@ -68,7 +68,7 @@ struct SSLServiceAPI {
             _listener.bind(new InternetAddress(opts.address, opts.port));
             _listener.listen(opts.max_queue_length);
 
-            service = new SSLFiberService(ssl_options, _listener, relay);
+            service = new SSLFiberService(ssl_options.socket, _listener, relay);
             auto response_tid = service.start(ssl_options.response_task_name);
             if (response_tid !is Tid.init) {
 

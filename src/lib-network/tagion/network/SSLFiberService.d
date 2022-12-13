@@ -9,7 +9,7 @@ import std.concurrency;
 import std.format;
 
 import tagion.network.SSLSocket;
-import tagion.network.SSLOptions;
+import tagion.network.SSLOptions : SocketOptions;
 import tagion.network.NetworkExceptions : check;
 import tagion.network.SSLSocketException : SSLSocketException;
 import tagion.network.SSL : SSLErrorCodes;
@@ -70,7 +70,6 @@ interface SSLFiber {
 +/
 @safe
 class SSLFiberService {
-    immutable(SSLOptions) ssl_options;
     immutable(SocketOptions) opts;
     @safe interface Relay {
         bool agent(SSLFiber sslfiber);
@@ -78,9 +77,8 @@ class SSLFiberService {
     //alias Relay = bool delegate(SSLRelay) @safe;
 
     @safe
-    this(immutable(SSLOptions) opts, SSLSocket listener, Relay relay) {
-        this.ssl_options = opts;
-        this.opts = opts.socket;
+    this(immutable(SocketOptions) opts, SSLSocket listener, Relay relay) {
+        this.opts = opts;
         this.listener = listener;
         this.relay = relay;
         handler = new Response;
