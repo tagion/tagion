@@ -336,10 +336,6 @@ class SSLSocket : Socket {
         }
 
         auto socket = new SSLSocket(newsock, addressFamily, _ctx);
-        io.writefln("server._ctx is null %s", _ctx is null);
-        io.writefln("_ctx is null %s _ssl is null %s", socket._ctx is null, _ssl is null);
-
-        //const client = super.accept;
 
         const ret = SSL_accept(socket.ssl);
         if (ret != 0) {
@@ -477,10 +473,8 @@ class SSLSocket : Socket {
             const exception = collectException!SSLSocketException(
                     new SSLSocket(AddressFamily.UNIX, SocketType.STREAM, "_", "_"),
                     testItem_server);
-            scope (exit) {
-                testItem_server.close;
-            }
-            assert(testItem_server is null);
+			assert(exception !is null);
+			assert(testItem_server is null);
         }
 
         //! [File reading - empty path]
@@ -500,13 +494,14 @@ class SSLSocket : Socket {
         //! [file loading correct]
         {
             SSLSocket testItem_server;
-            assertNotThrown!SSLSocketException({
-                testItem_server = new SSLSocket(AddressFamily.UNIX, SocketType.STREAM,
-                    cert_path, key_path);
-            });
+            const exception = collectException!SSLSocketException(
+                new SSLSocket(AddressFamily.UNIX, SocketType.STREAM,
+                    cert_path, key_path),
+				testItem_server);
             scope (exit) {
                 testItem_server.close;
             }
+				assert(exception is null);
             assert(testItem_server !is null);
         }
 
