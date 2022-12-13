@@ -13,7 +13,7 @@ import tagion.basic.TagionExceptions : fatal;
 import tagion.GlobalSignals : abort;
 
 import tagion.network.SSLFiberService;
-import tagion.network.SSLServiceAPI;
+import tagion.network.ServerAPI;
 import tagion.network.SSLOptions;
 import tagion.network.SSLSocketException;
 
@@ -72,7 +72,7 @@ void taskTestServer(
         }
 
         auto relay = new SSLTestRelay;
-        auto ssl_test_service = SSLServiceAPI(
+        auto ssl_test_service = ServerAPI(
                 ssl_options,
                 relay);
         ssl_test_service.start;

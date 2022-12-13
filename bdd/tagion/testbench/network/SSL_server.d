@@ -21,7 +21,7 @@ import tagion.basic.Types : Control;
 import std.socket : InternetAddress, Socket, SocketSet, SocketShutdown, shutdown, AddressFamily;
 import tagion.network.SSLOptions;
 import tagion.network.SSLSocket;
-import tagion.network.SSLServiceAPI;
+import tagion.network.ServerAPI;
 
 import tagion.testbench.network.TestSSLServer;
 

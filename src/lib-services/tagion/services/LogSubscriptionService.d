@@ -22,7 +22,7 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : GetLabel;
 import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
-import tagion.network.SSLServiceAPI : SSLServiceAPI;
+import tagion.network.ServerAPI : ServerAPI;
 
 mixin TrustedConcurrency;
 
@@ -232,7 +232,7 @@ void logSubscriptionServiceTask(Options opts) nothrow {
         }
 
         auto relay = new LogSubscriptionRelay;
-        auto logsubscription_api = SSLServiceAPI(opts.logSubscription.service, relay);
+        auto logsubscription_api = ServerAPI(opts.logSubscription.service, relay);
         logsubscription_api.start;
 
         bool stop;

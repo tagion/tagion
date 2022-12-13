@@ -7,7 +7,7 @@ import core.thread;
 import std.concurrency;
 import std.exception : assumeUnique, assumeWontThrow;
 
-import tagion.network.SSLServiceAPI;
+import tagion.network.ServerAPI;
 import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
 import tagion.logger.Logger;
 import tagion.services.Options : Options, setOptions, options;
@@ -286,7 +286,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
         }
 
         auto relay = new TransactionRelay;
-        SSLServiceAPI script_api = SSLServiceAPI(opts.transaction.service, relay);
+        ServerAPI script_api = ServerAPI(opts.transaction.service, relay);
         auto script_thread = script_api.start;
 
         bool stop;

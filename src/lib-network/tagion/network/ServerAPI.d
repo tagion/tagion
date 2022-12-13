@@ -1,4 +1,4 @@
-module tagion.network.SSLServiceAPI;
+module tagion.network.ServerAPI;
 
 import core.time : dur, Duration;
 import core.thread;
@@ -17,7 +17,7 @@ import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions : fatal;
 
 @safe
-struct SSLServiceAPI {
+struct ServerAPI {
     immutable(SSLOptions) ssl_options;
     immutable(ServiceOptions) opts;
     protected {
@@ -56,7 +56,7 @@ struct SSLServiceAPI {
             import std.socket : SocketType;
 
             log.register(opts.task_name);
-            log("Run SSLServiceAPI. Certificate=%s, ssl_options.private_key=%s",
+            log("Run ServerAPI. Certificate=%s, ssl_options.private_key=%s",
                     ssl_options.ssl.certificate,
                     ssl_options.ssl.private_key);
             auto _listener = new SSLSocket(
