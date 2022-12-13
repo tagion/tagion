@@ -329,7 +329,7 @@ class SSLSocket : Socket {
     }
 
     @trusted
-    Socket _accept() {
+    override SSLSocket accept() {
         auto newsock = cast(socket_t).accept(handle, null, null);
         if (socket_t.init is newsock) {
             throw new SocketAcceptException("Unable to accept socket connection");

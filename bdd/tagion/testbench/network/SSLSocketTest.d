@@ -408,7 +408,7 @@ void echoSSLSocketServer(string address, const ushort port, string cert) {
 
     bool stop;
     while (!stop) {
-        auto client = cast(SSLSocket) server._accept(); /* accept connection as usual */
+        auto client = cast(SSLSocket) server.accept(); /* accept connection as usual */
         const size = client.receive(buffer);
         const received_buffer = buffer[0 .. size];
         SSL_write(client.ssl, buffer.ptr, cast(int)size); /* send reply */
