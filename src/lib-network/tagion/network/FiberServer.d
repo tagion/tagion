@@ -2,13 +2,12 @@ module tagion.network.FiberServer;
 
 import core.thread : Thread, Fiber;
 import core.time; // : dur, Duration, MonoTime;
-import std.socket : SocketSet, SocketException, Socket, AddressFamily;
+import std.socket : SocketSet, SocketException, Socket, AddressFamily, SocketShutdown;
 import std.exception;
-import std.socket : SocketShutdown;
 import std.concurrency;
 import std.format;
 
-import tagion.network.SSLSocket;
+//import tagion.network.SSLSocket;
 import tagion.network.SSLOptions : ServiceOptions;
 import tagion.network.NetworkExceptions : check;
 import tagion.network.SSLSocketException : SSLSocketException;
@@ -77,7 +76,7 @@ class FiberServer {
     //alias Relay = bool delegate(SSLRelay) @safe;
 
     @safe
-    this(immutable(ServiceOptions) opts, SSLSocket listener, Relay relay) {
+    this(immutable(ServiceOptions) opts, Socket listener, Relay relay) {
         this.opts = opts;
         this.listener = listener;
         this.relay = relay;
@@ -90,7 +89,7 @@ class FiberServer {
         uint _fiber_id;
         Relay relay;
         //        const(HiRPC) hirpc;
-        SSLSocket listener;
+        Socket listener;
         uint next_fiber_id() {
             if (_fiber_id == 0) {
                 _fiber_id = 1;
@@ -209,7 +208,10 @@ class FiberServer {
             fiber.call;
         }
         else {
-            listener.rejectClient;
+            import tagion.network.SSLSocket;
+
+            auto _listener = cast(SSLSocket) listener;
+            _listener.rejectClient;
         }
         return fiber;
     }
@@ -284,7 +286,7 @@ class FiberServer {
         }
 
         protected {
-            SSLSocket client;
+            Socket client;
             bool _lock;
             SSLFiber.Time start_timestamp;
             uint fiber_id;
@@ -460,11 +462,15 @@ class FiberServer {
                 unlock;
             }
             assert(accept_client.isAlive);
+            import tagion.network.SSLSocket;
 
-            while (!listener.acceptSSL(client, accept_client)) {
+            auto _listener = cast(SSLSocket) listener;
+            SSLSocket _client;
+            while (!_listener.acceptSSL(_client, accept_client)) {
                 checkTimeout;
                 yield;
             }
+            client = _client;
             assert(client.isAlive);
 
             bool stop;

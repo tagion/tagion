@@ -12,8 +12,9 @@ import tagion.logger.Logger;
 import tagion.basic.TagionExceptions : fatal;
 import tagion.GlobalSignals : abort;
 
-import tagion.network.SSLFiberService;
+import tagion.network.FiberServer;
 import tagion.network.ServerAPI;
+import tagion.network.SSLSocket : SSLSocket;
 import tagion.network.SSLOptions;
 import tagion.network.SSLSocketException;
 
@@ -37,7 +38,7 @@ bool check_doc(const Document main_doc,
 }
 
 @safe
-class SSLTestRelay : SSLFiberService.Relay {
+class SSLTestRelay : FiberServer.Relay {
     bool agent(SSLFiber ssl_relay) {
         immutable buffer = ssl_relay.receive;
         const doc = Document(buffer);
@@ -72,8 +73,14 @@ void taskTestServer(
         }
 
         auto relay = new SSLTestRelay;
+        auto listener = new SSLSocket(
+                AddressFamily.INET,
+                SocketType.STREAM,
+                ssl_options.ssl.certificate,
+                ssl_options.ssl.private_key);
         auto ssl_test_service = ServerAPI(
                 ssl_options,
+                listener,
                 relay);
         ssl_test_service.start;
         scope (exit) {
@@ -93,54 +100,45 @@ void taskTestServer(
     }
 }
 
-    
-void simpleSSLServer(immutable SSLOptions opt, Socket listener)
-{
-    
-version(none) {
-           //     auto listener = new TcpSocket;
-            auto add = new InternetAddress(opt.address, opt.port);
-            listener.bind(add);
-            pragma(msg, "FixMe(cbr): why is this value 10");
-            listener.listen(10);
-            auto socketSet = new SocketSet(1);
+void simpleSSLServer(immutable SSLOptions opt, Socket listener) {
 
-            scope (exit)
-            {
-                if (listener !is null)
-                {
-                    log("Close listener socket %d", port);
-                    socketSet.reset;
-                    close;
-                    listener.close;
-                }
-            }
+    version (none) {
+        //     auto listener = new TcpSocket;
+        auto add = new InternetAddress(opt.address, opt.port);
+        listener.bind(add);
+        pragma(msg, "FixMe(cbr): why is this value 10");
+        listener.listen(10);
+        auto socketSet = new SocketSet(1);
 
-            while (!stop_listener)
-            {
-                socketSet.add(listener);
-                pragma(msg, "FixMe(cbr): 500.msecs should be a options parameter");
-                Socket.select(socketSet, null, null, timeout.msecs);
-                if (socketSet.isSet(listener))
-                {
-                    try
-                    {
-                        auto client = listener.accept;
-                        assert(client.isAlive);
-                        assert(listener.isAlive);
-                        this.add(client);
-                    }
-                    catch (SocketAcceptException ex)
-                    {
-                        log.error("%s", ex);
-                    }
-                }
+        scope (exit) {
+            if (listener !is null) {
+                log("Close listener socket %d", port);
                 socketSet.reset;
+                close;
+                listener.close;
             }
+        }
 
-}
+        while (!stop_listener) {
+            socketSet.add(listener);
+            pragma(msg, "FixMe(cbr): 500.msecs should be a options parameter");
+            Socket.select(socketSet, null, null, timeout.msecs);
+            if (socketSet.isSet(listener)) {
+                try {
+                    auto client = listener.accept;
+                    assert(client.isAlive);
+                    assert(listener.isAlive);
+                    this.add(client);
+                }
+                catch (SocketAcceptException ex) {
+                    log.error("%s", ex);
+                }
+            }
+            socketSet.reset;
+        }
+
+    }
 }
 /// Check ssl
 /// openssl s_client -connect 119.110.205.66:443 -showcerts
 /// https://quuxplusone.github.io/blog/2020/01/28/openssl-part-5
-

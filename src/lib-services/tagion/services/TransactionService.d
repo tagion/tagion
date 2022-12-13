@@ -6,8 +6,11 @@ import std.socket;
 import core.thread;
 import std.concurrency;
 import std.exception : assumeUnique, assumeWontThrow;
+import std.socket : SocketType, AddressFamily;
 
 import tagion.network.ServerAPI;
+import tagion.network.SSLSocket : SSLSocket;
+
 import tagion.network.FiberServer : FiberServer, SSLFiber;
 import tagion.logger.Logger;
 import tagion.services.Options : Options, setOptions, options;
@@ -286,7 +289,12 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
         }
 
         auto relay = new TransactionRelay;
-        ServerAPI script_api = ServerAPI(opts.transaction.service, relay);
+        auto listener = new SSLSocket(
+                AddressFamily.INET,
+                SocketType.STREAM,
+                opts.transaction.service.ssl.certificate,
+                opts.transaction.service.ssl.private_key);
+        ServerAPI script_api = ServerAPI(opts.transaction.service, listener, relay);
         auto script_thread = script_api.start;
 
         bool stop;

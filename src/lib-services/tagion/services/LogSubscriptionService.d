@@ -10,6 +10,7 @@ import std.algorithm.searching : canFind;
 import std.array : array, join;
 import std.stdio : writeln;
 import core.thread : msecs;
+import std.socket : SocketType, AddressFamily;
 
 import tagion.basic.Basic : TrustedConcurrency;
 import tagion.basic.Types : Control;
@@ -23,6 +24,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : GetLabel;
 import tagion.network.FiberServer : FiberServer, SSLFiber;
 import tagion.network.ServerAPI : ServerAPI;
+import tagion.network.SSLSocket : SSLSocket;
 
 mixin TrustedConcurrency;
 
@@ -232,7 +234,12 @@ void logSubscriptionServiceTask(Options opts) nothrow {
         }
 
         auto relay = new LogSubscriptionRelay;
-        auto logsubscription_api = ServerAPI(opts.logSubscription.service, relay);
+        auto listener = new SSLSocket(
+                AddressFamily.INET,
+                SocketType.STREAM,
+                opts.logSubscription.service.ssl.certificate,
+                opts.logSubscription.service.ssl.private_key);
+        auto logsubscription_api = ServerAPI(opts.logSubscription.service, listener, relay);
         logsubscription_api.start;
 
         bool stop;

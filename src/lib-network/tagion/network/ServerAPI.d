@@ -24,14 +24,16 @@ struct ServerAPI {
         Thread service_task;
         FiberServer service;
         FiberServer.Relay relay;
+        Socket listener;
     }
     //    const(HiRPC) hirpc;
 
     @disable this();
 
-    this(immutable(SSLOptions) opts, FiberServer.Relay relay) nothrow pure @trusted {
+    this(immutable(SSLOptions) opts, Socket listener, FiberServer.Relay relay) nothrow pure @trusted {
         this.ssl_options = opts;
         this.opts = ssl_options.socket;
+        this.listener = listener;
         this.relay = relay;
     }
 
@@ -56,20 +58,21 @@ struct ServerAPI {
             import std.socket : SocketType;
 
             log.register(opts.task_name);
-            log("Run ServerAPI. Certificate=%s, ssl_options.private_key=%s",
-                    ssl_options.ssl.certificate,
-                    ssl_options.ssl.private_key);
-            auto _listener = new SSLSocket(
+            version (none)
+                log("Run ServerAPI. Certificate=%s, ssl_options.private_key=%s",
+                        ssl_options.ssl.certificate,
+                        ssl_options.ssl.private_key);
+            version (none) auto listener = new SSLSocket(
                     AddressFamily.INET,
                     SocketType.STREAM,
                     ssl_options.ssl.certificate,
                     ssl_options.ssl.private_key);
-            assert(_listener.isAlive);
-            _listener.blocking = false;
-            _listener.bind(new InternetAddress(opts.address, opts.port));
-            _listener.listen(opts.max_queue_length);
+            assert(listener.isAlive);
+            listener.blocking = false;
+            listener.bind(new InternetAddress(opts.address, opts.port));
+            listener.listen(opts.max_queue_length);
 
-            service = new FiberServer(opts, _listener, relay);
+            service = new FiberServer(opts, listener, relay);
             auto response_tid = service.start(opts.response_task_name);
             if (response_tid !is Tid.init) {
 
@@ -88,24 +91,24 @@ struct ServerAPI {
             scope (exit) {
                 socket_set.reset;
                 service.closeAll;
-                _listener.shutdown(SocketShutdown.BOTH);
-                _listener = null;
+                listener.shutdown(SocketShutdown.BOTH);
+                listener = null;
             }
 
             while (!stop_service) {
-                if (!_listener.isAlive) {
+                if (!listener.isAlive) {
                     stop_service = true;
                     break;
                 }
 
-                socket_set.add(_listener);
+                socket_set.add(listener);
 
                 service.addSocketSet(socket_set);
 
                 const sel_res = Socket.select(socket_set, null, null,
                         opts.select_timeout.msecs);
                 if (sel_res > 0) {
-                    if (socket_set.isSet(_listener)) {
+                    if (socket_set.isSet(listener)) {
                         service.allocateFiber;
                     }
                 }
