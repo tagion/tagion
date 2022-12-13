@@ -33,13 +33,8 @@ enum Ownership {
 @safe
 class SSLSocket : Socket {
     enum ERR_TEXT_SIZE = 256;
-    nothrow
-    static class MemoryLock {
-        // empty
-    }
 
-    protected {
-        static shared(MemoryLock) lock;
+	protected {
         SSL* _ssl;
         SSL_CTX* _ctx;
         __gshared SSL_CTX* _client_ctx;
@@ -155,10 +150,6 @@ class SSLSocket : Socket {
             //        if (_ctx !is client_ctx) {
             SSL_CTX_free(_ctx);
         }
-    }
-
-    shared static this() {
-        lock = new shared(MemoryLock);
     }
 
     static string errorText(const long error_code) @trusted nothrow {

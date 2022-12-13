@@ -44,6 +44,7 @@ SSL_CTX* InitServerCTX() {
 }
 
 //@safe
+version(none)
 @trusted
 string _echoSSLSocket(string address, const ushort port, string msg) {
     import std.conv : to;
@@ -63,6 +64,7 @@ string _echoSSLSocket(string address, const ushort port, string msg) {
     return buffer[0 .. size].idup;
 }
 
+version(none)
 @trusted
 string __echoSSLSocket(string address, const ushort port, string msg) {
     import std.conv : to;
@@ -117,18 +119,14 @@ string echoSSLSocket(string address, const ushort port, string msg) {
     auto socket = new SSLSocket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
     auto addresses = getAddress(address, port);
     socket.connect(addresses[0]);
-    writefln("SSLSocket %s", msg);
+	writef("*");
     socket.send(msg);
-    //wolfSSL_write(socket.ssl, msg.ptr, cast(int) msg.length); //strlen(message));
-
-    //const size = wolfSSL_read(socket.ssl, buffer.ptr, cast(int) buffer.length);
     const size = socket.receive(buffer);
-    writefln("Received %d", size);
     socket.shutdown;
     return buffer[0 .. size].idup;
 }
 
-version(WOLFSSL) 
+version(none) 
 @trusted
 string echoWolfSSLSocket(string address, const ushort port, string msg) {
     import tagion.network.wolfssl.c.ssl;
@@ -333,7 +331,7 @@ bool Servlet(SSL* ssl) /* Serve the connection -- threadable */ {
     return buffer == "EOC";
 }
 
-// version(none)
+version(none)
 void __SSLSocketServer(string address, const ushort port, string cert) {
 
     auto ctx = InitServerCTX();
@@ -373,6 +371,7 @@ void __SSLSocketServer(string address, const ushort port, string cert) {
     server.close();
 }
 
+version(none)
 void x_SSLSocketServer(string address, const ushort port, string cert) {
 
     //    auto ctx = InitServerCTX();
@@ -400,7 +399,7 @@ void x_SSLSocketServer(string address, const ushort port, string cert) {
 }
 
 @trusted
-void _SSLSocketServer(string address, const ushort port, string cert) {
+void echoSSLSocketServer(string address, const ushort port, string cert) {
     auto server = new SSLSocket(AddressFamily.INET, SocketType.STREAM, cert);
     auto addr = getAddress(address, port);
     auto buffer = new char[1024];

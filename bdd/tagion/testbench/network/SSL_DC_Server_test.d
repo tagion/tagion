@@ -29,7 +29,7 @@ class CClientWithDCServer {
 
     @Given("I have a simple sslserver in D.")
     Document d() @trusted {
-        auto server = spawn(&_SSLSocketServer, "localhost", port, cert);
+        auto server = spawn(&echoSSLSocketServer, "localhost", port, cert);
         Thread.sleep(100.msecs);
         return result_ok;
     }
@@ -43,7 +43,7 @@ class CClientWithDCServer {
 
     @When("I send many requests repeadtly.")
     Document repeadtly() {
-        for (int i = 0; i < calls; i++) {
+		foreach(i; 0..calls) {
             string message = format("test%s", i);
             const response = client_send(message, port).strip();
             writefln(response);

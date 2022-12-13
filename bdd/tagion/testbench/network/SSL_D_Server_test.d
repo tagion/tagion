@@ -30,7 +30,7 @@ class CClientWithDServer
     @Given("I have a simple sslserver in D.")
     Document d() @trusted
     {
-        auto server = spawn(&_SSLSocketServer, "localhost", port, cert);
+        auto server = spawn(&echoSSLSocketServer, "localhost", port, cert);
         Thread.sleep(100.msecs);
         return result_ok;
     }
