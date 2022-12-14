@@ -175,7 +175,7 @@ jobs:
           for SCENARIO in ${{ needs.create_tagion_images.outputs.scenario_list }}; do
             echo "RUN SCENARIO: $SCENARIO"
             mkdir ./scenario-result/$SCENARIO
-            docker run -d --rm --name $SCENARIO -v ${PWD}/scenario-result/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO
+            docker run -d --rm --name $SCENARIO -v ${PWD}/scenario-result/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
             echo "$SCENARIO executed"
           done
           sudo chmod -R 777 scenario-result
@@ -208,7 +208,7 @@ jobs:
           for SCENARIO in ${{ needs.create_tagion_images.outputs.scenario_list }}; do
             echo "RUN SCENARIO: $SCENARIO"
             mkdir ./scenario-result/$SCENARIO
-            docker run --rm --name $SCENARIO -v ${PWD}/scenario-result/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO
+            docker run --rm --name $SCENARIO -v ${PWD}/scenario-result/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
             echo "$SCENARIO executed"
           done
           sudo chmod -R 777 scenario-result
