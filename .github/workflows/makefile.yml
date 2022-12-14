@@ -93,6 +93,7 @@ jobs:
     needs: build_and_unittest
     outputs:
       scenario_list: ${{ steps.scenario_list.outputs.scenarious }}
+      scenario_matrix: ${{ steps.scenario_list.outputs.scenariousmatrix }}
     steps:
       - name: Cleanup
         run: rm -rf * ; ls; pwd;
@@ -144,6 +145,9 @@ jobs:
           done < "./qa-tools/scenarios.txt"
           echo $SCENARIOUS
           echo "scenarious=$SCENARIOUS" >> $GITHUB_OUTPUT
+          SCENARIOUS_MATRIX=$(cat ./qa-tools/scenarios.txt | jq -R -s -c 'split("\n")[:-1]')
+          echo $SCENARIOUS_MATRIX
+          echo "scenariousmatrix=$SCENARIOUS_MATRIX" >> $GITHUB_OUTPUT
 
       - name: Report created docker
         if: success()
@@ -151,7 +155,7 @@ jobs:
           echo -e "### :heavy_check_mark: Docker created \n [tagion/toolkit:$GITHUB_SHA](https://hub.docker.com/repository/docker/tagion/toolkit) \n [tagion/qa-toolkit:$GITHUB_SHA](https://hub.docker.com/repository/docker/tagion/qa-toolkit)" >> $GITHUB_STEP_SUMMARY
     
       
-  run_qa_scripts:
+  before_run:
     runs-on: self-hosted
     needs: create_tagion_images
     steps: 
@@ -161,109 +165,107 @@ jobs:
       - name: Debug info - input
         run: echo ${{needs.create_tagion_images.outputs.scenario_list}} 
         
+      - name: Debug info - input matrix
+        run: echo ${{needs.create_tagion_images.outputs.scenario_matrix}} 
+        
       - name: Pull docker img
         run: docker pull tagion/qa-toolkit:$GITHUB_SHA
 
-      - name: Run scripts in paralel 
-        if: env.RUN_SCENARIOUS_PARALEL == 'true'
-        timeout-minutes: 10
+      - name: Prepare directory
         run: |
           set +e
           ulimit -c unlimited
           sudo sysctl -w kernel.core_pattern=/tgn/results/core.%u.%p.%t
           mkdir scenario-result
-          for SCENARIO in ${{ needs.create_tagion_images.outputs.scenario_list }}; do
+          sudo chmod -R 777 scenario-result
+            
+  run_scenario:
+    runs-on: self-hosted
+    needs: before_run
+    strategy:
+      matrix:
+        scenario: ${{ fromJson(needs.create_tagion_images.outputs.scenario_matrix) }}
+    steps:
+      - name: Run docker
+        run: |
+            SCENARIO=${{ matrix.scenario }}
             echo "RUN SCENARIO: $SCENARIO"
             mkdir ./scenario-result/$SCENARIO
             docker run -d --rm --name $SCENARIO -v ${PWD}/scenario-result/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
             echo "$SCENARIO executed"
-          done
-          sudo chmod -R 777 scenario-result
-          DELAY=5
-          all_containers_stoped=false
-          while [ "$all_containers_stoped" = false ]
-          do
-              echo "START CHECKING"
-              sleep $DELAY
-              for CONTAINER in ${{ needs.create_tagion_images.outputs.scenario_list }}; do 
-                echo "Check $CONTAINER"
-                result=$( docker inspect -f '{{.State.Running}}' $CONTAINER 2>/dev/null )    
-                echo "Check result: $result"
-                if [ "$result" = true ]; then
-                    echo 'Container $CONTAINER exists'
-                    all_containers_stoped=false
-                    break
-                fi
-                all_containers_stoped=true
-              done
-          done  
-      - name: Run scripts in sequentially 
-        if: env.RUN_SCENARIOUS_PARALEL != 'true'
+      - name: Wait untill docker finished
+        timeout-minutes: 5
         run: |
-          set +e
+          SCENARIO=${{ matrix.scenario }}
           
-          ulimit -c unlimited
-          sudo sysctl -w kernel.core_pattern=/tgn/results/core.%u.%p.%t
-          mkdir scenario-result
-          for SCENARIO in ${{ needs.create_tagion_images.outputs.scenario_list }}; do
-            echo "RUN SCENARIO: $SCENARIO"
-            mkdir ./scenario-result/$SCENARIO
-            docker run --rm --name $SCENARIO -v ${PWD}/scenario-result/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
-            echo "$SCENARIO executed"
+          DELAY=5
+          while true
+          do
+            sleep $DELAY
+            result=$( docker inspect -f '{{.State.Running}}' $SCENARIO 2>/dev/null )    
+            echo "Check result: $result"
+            if [ "$result" = true ]; then
+                echo 'Container $SCENARIO  exists'
+                countinue
+            fi
+            return 0
           done
-          sudo chmod -R 777 scenario-result
+
+  after_run:
+    runs-on: self-hosted
+    needs: run_scenario
+    steps:
       - name: log status
-        if: always()
         run: |
-          set +e
-          PATH_TO_LOGS="./scenario-result/**/*.result.json"
-          REPORT="|Scenario|Test case|Passed|Message|Error|\n|-|-|-|-|-|\n"
-          failed_scenarios=false
-            for logfile in $PATH_TO_LOGS
-            do
-              echo $logfile
-              scenario_name=$( cat $logfile | jq '.scenario')
-              result=$( cat $logfile | jq '.payload[]|(.name,.passed,.message?,.error?)')
-              echo $scenario_name
-              echo $result
-              i=0
-              while read line; do
-                  echo "processning $line"
-                  let "i+=1"
-                  let "linenum=i%4"
-                  echo "linenum=$linenum i=$i"
-                  if [ "$linenum" -eq "1" ]; then
-                      REPORT+="|$scenario_name|"
-                  fi
+            set +e
+            PATH_TO_LOGS="./scenario-result/**/*.result.json"
+            REPORT="|Scenario|Test case|Passed|Message|Error|\n|-|-|-|-|-|\n"
+            failed_scenarios=false
+              for logfile in $PATH_TO_LOGS
+              do
+                echo $logfile
+                scenario_name=$( cat $logfile | jq '.scenario')
+                result=$( cat $logfile | jq '.payload[]|(.name,.passed,.message?,.error?)')
+                echo $scenario_name
+                echo $result
+                i=0
+                while read line; do
+                    echo "processning $line"
+                    let "i+=1"
+                    let "linenum=i%4"
+                    echo "linenum=$linenum i=$i"
+                    if [ "$linenum" -eq "1" ]; then
+                        REPORT+="|$scenario_name|"
+                    fi
 
-                  if [ "$linenum" -eq "2" ]; then
-                      if [ $line == "true" ]; then
-                          REPORT+=":heavy_check_mark:|"
-                      else
-                          failed_scenarios=true
-                          REPORT+=":heavy_exclamation_mark:|"
-                      fi
-                      continue;
-                  fi
+                    if [ "$linenum" -eq "2" ]; then
+                        if [ $line == "true" ]; then
+                            REPORT+=":heavy_check_mark:|"
+                        else
+                            failed_scenarios=true
+                            REPORT+=":heavy_exclamation_mark:|"
+                        fi
+                        continue;
+                    fi
 
-                  if [ "$linenum" -eq "0" ]; then
-                      REPORT+="$line|\n"
-                  else
-                      REPORT+="$line|"
-                  fi
-                  
-              echo $line; 
-              done <<<"$result"
-      
-          done
-          REPORT=$( echo "${REPORT//null/}" )
-          REPORT=$( echo "${REPORT//\"/}" )
-          echo -e "$REPORT"  >> $GITHUB_STEP_SUMMARY
-          sudo chmod -R 777 scenario-result
-          if $failed_scenarios 
-          then
-              echo "Scenarious failed"
-          fi
+                    if [ "$linenum" -eq "0" ]; then
+                        REPORT+="$line|\n"
+                    else
+                        REPORT+="$line|"
+                    fi
+
+                echo $line; 
+                done <<<"$result"
+
+            done
+            REPORT=$( echo "${REPORT//null/}" )
+            REPORT=$( echo "${REPORT//\"/}" )
+            echo -e "$REPORT"  >> $GITHUB_STEP_SUMMARY
+            sudo chmod -R 777 scenario-result
+            if $failed_scenarios 
+            then
+                echo "Scenarious failed"
+            fi
       - name: Set folder permision
         if: always()
         run: sudo chmod -R 777 scenario-result
@@ -278,7 +280,7 @@ jobs:
       - name: Clean logs
         if: always()
         run: sudo rm -rf scenario-result
-        
+
       - name: Clean docker container
         if: always()
         run: |
