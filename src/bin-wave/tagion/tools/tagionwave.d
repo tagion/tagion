@@ -21,7 +21,7 @@ import tagion.services.TagionService;
 import tagion.services.LoggerService;
 import tagion.services.TagionFactory;
 import tagion.GlobalSignals;
-import tagion.network.SSLOptions : SSLCert, configureSSLCert;
+import tagion.network.SSLServiceOptions : SSLCert, configureSSLCert;
 import tagion.actor.TaskWrapper;
 
 mixin TrustedConcurrency;
