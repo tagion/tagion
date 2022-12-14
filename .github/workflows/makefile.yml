@@ -147,7 +147,7 @@ jobs:
           echo "scenarious=$SCENARIOUS" >> $GITHUB_OUTPUT
           SCENARIOUS_MATRIX=$(cat ./qa-tools/scenarios.txt | jq -R -s -c 'split("\n")[:-1]')
           echo $SCENARIOUS_MATRIX
-          echo 'scenariousmatrix={"matrix": $SCENARIOUS_MATRIX}' >> $GITHUB_OUTPUT
+          echo "scenariousmatrix={\"matrix\": $SCENARIOUS_MATRIX}" >> $GITHUB_OUTPUT
 
       - name: Report created docker
         if: success()
