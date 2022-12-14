@@ -55,7 +55,24 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             }
         }
 
-        Buffer modifyDART(RecordFactory.Recorder recorder)
+        Fingerprint requestBullseye() {
+            auto sender = DART.dartBullseye();
+            if (dart_tid !is Tid.init)
+            {
+                dart_tid.send(task_name, sender.toDoc.serialize);
+
+                const result = receiveOnly!Buffer;
+                const received = empty_hirpc.receive(Document(result));
+                return Fingerprint(received.response.result[DARTFile.Params.bullseye].get!Buffer);
+            }
+            else
+            {
+                log.error("Cannot locate DART service");
+                stop = true;
+                return Fingerprint([]);
+            }
+        }
+        Fingerprint modifyDART(RecordFactory.Recorder recorder)
         {
             auto sender = empty_hirpc.dartModify(recorder);
             if (dart_tid !is Tid.init)
@@ -64,13 +81,13 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
 
                 const result = receiveOnly!Buffer;
                 const received = empty_hirpc.receive(Document(result));
-                return received.response.result[DARTFile.Params.bullseye].get!Buffer;
+                return Fingerprint(received.response.result[DARTFile.Params.bullseye].get!Buffer);
             }
             else
             {
                 log.error("Cannot locate DART service");
                 stop = true;
-                return [];
+                return Fingerprint([]);
             }
         }
 
@@ -104,7 +121,9 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             recorder_tid.send(recorder, dart_bullseye);
         }
 
-        bool to_smart_script(ref const(SignedContract) signed_contract) nothrow
+        Fingerprint last_bullseye = requestBullseye();
+        log("Start with bullseye: %X", last_bullseye);
+        bool to_smart_script(ref const(SignedContract) signed_contract, ref uint index) nothrow
         {
             try
             {
@@ -115,8 +134,9 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     smart_script.check(net);
                     const signed_contract_doc = signed_contract.toDoc;
                     const fingerprint = net.HashNet.hashOf(signed_contract_doc);
-                    smart_script.run(current_epoch + 1);
-
+                    uint prev_index = index;
+                    smart_script.run(current_epoch + 1, index, last_bullseye, net);
+                    assert(index == prev_index + smart_script.output_bills.length);
                     smart_scripts[fingerprint] = smart_script;
                 }
                 return true;
@@ -162,10 +182,9 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     current_epoch++;
                 }
                 auto recorder = rec_factory.recorder;
-
+                uint output_index = 0;  // order index of generated output 
                 auto contracts_dump = new HiBON;
                 long dump_count = 0;
-
                 foreach (payload_el; payload_doc[])
                 {
                     immutable doc = payload_el.get!Document;
@@ -208,7 +227,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     {
                         const signed_contract_doc = signed_contract.toDoc;
                         const fingerprint = net.hashOf(signed_contract_doc);
-                        const added = to_smart_script(signed_contract);
+                        const added = to_smart_script(signed_contract, output_index);
                         if (added && fingerprint in smart_scripts)
                         {
                             scope smart_script = smart_scripts[fingerprint];
@@ -248,7 +267,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     {
                         epoch_dump_tid.send(Document(contracts_dump), bullseye);
                     }
-                    dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), Fingerprint(bullseye));
+                    dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), bullseye);
                 }
                 else
                 {
