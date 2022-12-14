@@ -19,7 +19,7 @@ import tagion.basic.TagionExceptions : fatal;
 @safe
 struct ServerAPI {
     immutable(SSLOptions) ssl_options;
-    immutable(ServiceOptions) opts;
+    immutable(ServerOptions) opts;
     protected {
         Thread service_task;
         ServerFiber service;

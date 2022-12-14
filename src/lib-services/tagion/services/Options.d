@@ -188,12 +188,11 @@ struct Options {
     struct LogSubscription {
         string protocol_id;
         string task_name; /// Transaction task name
-        string prefix;
-        uint timeout; ///.service.socket.listerne timeout in msecs
+        //        string prefix;
+        //    uint timeout; ///.service.socket.listerne timeout in msecs
         import tagion.network.SSLOptions;
 
         SSLOptions service; /// SSL Service used by the transaction service
-        HostOptions host;
         ushort max; // max == 0 means all
         bool enable; // Enable logger subscribtion  service
         mixin JSONCommon;
@@ -456,18 +455,13 @@ static setDefaultOption(ref Options options)
     // LogSubscription
     with (options.logSubscription)
     {
-        //        port=10700;
         max = 0;
-        prefix = "logsubscription";
-        task_name = prefix;
-        timeout = 10000;
+        task_name = "logsubscription";
         enable = true;
         with (service)
         {
-            prefix = "logsubscriptionservice";
-            task_name = prefix;
 			with(socket) {
-            response_task_name = "response" ~ prefix;
+            response_task_name = "log_response";
 			address = "1.0.0.0";
             port = 10_700;
             select_timeout = 300;
@@ -483,11 +477,6 @@ static setDefaultOption(ref Options options)
                 days = 365;
                 key_size = 4096;
             }
-        }
-        with (host)
-        {
-            timeout = 3000;
-            max_size = 1024 * 100;
         }
     }
     // Monitor
@@ -586,9 +575,6 @@ static setDefaultOption(ref Options options)
             read_timeout = 10_000;
         }
     }
-    // if (options.net_mode.length == 0) {
-    //     options.net_mode = NetworkMode.internal;
-    // }
     with (NetworkMode)
     {
         final switch (options.net_mode)
@@ -609,7 +595,6 @@ static setDefaultOption(ref Options options)
             break;
         }
     }
-    //    setThreadLocalOptions();
 }
 
 __gshared string main_task;
