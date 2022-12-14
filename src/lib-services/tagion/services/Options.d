@@ -168,13 +168,11 @@ struct Options {
     struct Transaction {
         string protocol_id;
         string task_name; /// Transaction task name
-        //        string prefix;
-        uint timeout; ///.service.socket.listerne timeout in msecs
+        ushort max;
         import tagion.network.SSLOptions;
 
         SSLOptions service; /// SSL Service used by the transaction service
-        HostOptions host;
-        ushort max; // max == 0 means all
+        //        HostOptions host;
         mixin JSONCommon;
     }
 
@@ -427,7 +425,7 @@ static setDefaultOption(ref Options options)
         //        port=10800;
         max = 0;
         task_name = "transaction";
-        timeout = 250;
+//        timeout = 250;
         with (service)
         {
 			with(socket) {
@@ -448,12 +446,7 @@ static setDefaultOption(ref Options options)
                 days = 365;
                 key_size = 4096;
             }
-            task_name = "transaction.service";
-        }
-        with (host)
-        {
-            timeout = 3000;
-            max_size = 1024 * 100;
+   //         task_name = "transaction.service";
         }
     }
     with (options.transaction)
