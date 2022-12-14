@@ -237,8 +237,8 @@ void logSubscriptionServiceTask(Options opts) nothrow {
         auto listener = new SSLSocket(
                 AddressFamily.INET,
                 SocketType.STREAM,
-                opts.logSubscription.service.ssl.certificate,
-                opts.logSubscription.service.ssl.private_key);
+                opts.logSubscription.service.cert.certificate,
+                opts.logSubscription.service.cert.private_key);
         auto logsubscription_api = ServerAPI(opts.logSubscription.service.server, listener, relay);
         logsubscription_api.start;
 

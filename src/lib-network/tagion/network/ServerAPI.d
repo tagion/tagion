@@ -9,7 +9,7 @@ import std.format;
 
 import tagion.network.SSLSocket;
 import tagion.network.ServerFiber;
-import tagion.network.SSLOptions;
+import tagion.network.SSLServiceOptions;
 import tagion.network.SSLSocketException;
 
 import tagion.logger.Logger;

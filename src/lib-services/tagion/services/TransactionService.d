@@ -292,8 +292,8 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
         auto listener = new SSLSocket(
                 AddressFamily.INET,
                 SocketType.STREAM,
-                opts.transaction.service.ssl.certificate,
-                opts.transaction.service.ssl.private_key);
+                opts.transaction.service.cert.certificate,
+                opts.transaction.service.cert.private_key);
         ServerAPI script_api = ServerAPI(opts.transaction.service.server, listener, relay);
         auto script_thread = script_api.start;
 

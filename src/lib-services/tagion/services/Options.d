@@ -169,10 +169,9 @@ struct Options {
         string protocol_id;
         string task_name; /// Transaction task name
         ushort max;
-        import tagion.network.SSLOptions;
+        import tagion.network.SSLServiceOptions;
 
-        SSLOptions service; /// SSL Service used by the transaction service
-        //        HostOptions host;
+        SSLServiceOptions service; /// SSL Service used by the transaction service
         mixin JSONCommon;
     }
 
@@ -190,9 +189,9 @@ struct Options {
         string task_name; /// Transaction task name
         //        string prefix;
         //    uint timeout; ///.service.server.listerne timeout in msecs
-        import tagion.network.SSLOptions;
+        import tagion.network.SSLServiceOptions;
 
-        SSLOptions service; /// SSL Service used by the transaction service
+        SSLServiceOptions service; /// SSL Service used by the transaction service
         ushort max; // max == 0 means all
         bool enable; // Enable logger subscribtion  service
         mixin JSONCommon;
@@ -438,7 +437,7 @@ static setDefaultOption(ref Options options)
             max_queue_length = 100;
             max_connections = 1000;
 			}
-            with (ssl)
+            with (cert)
             {
                 certificate = "pem_files/domain.pem";
                 private_key = "pem_files/domain.key.pem";
@@ -470,7 +469,7 @@ static setDefaultOption(ref Options options)
             max_queue_length = 100;
             max_connections = 1000;
 			}
-            with (ssl)
+            with (cert)
             {
                 certificate = "pem_files/domain.pem";
                 private_key = "pem_files/domain.key.pem";

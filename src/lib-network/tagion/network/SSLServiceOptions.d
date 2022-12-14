@@ -1,4 +1,4 @@
-module tagion.network.SSLOptions;
+module tagion.network.SSLServiceOptions;
 
 import std.algorithm.iteration : each;
 import std.array : array;
@@ -12,7 +12,7 @@ import std.outbuffer : OutBuffer;
 import tagion.utils.JSONCommon;
 import tagion.hibon.HiBONRecord;
 
-struct OpenSSL {
+struct SSLCert {
     string certificate; /// Certificate file name
     string private_key; /// Private key
     uint key_size; /// Key size (RSA 1024,2048,4096)
@@ -58,9 +58,9 @@ struct OpenSSL {
     mixin JSONCommon;
 }
 
-struct SSLOptions {
+struct SSLServiceOptions {
     ServerOptions server;
-    OpenSSL ssl; ///
+    SSLCert cert; ///
     mixin JSONCommon;
     mixin JSONConfig;
 }
@@ -79,7 +79,7 @@ struct ServerOptions {
     mixin JSONCommon;
 }
 
-int configureOpenSSL(const(OpenSSL) openssl, OutBuffer bout = null) @trusted {
+int configureSSLCert(const(SSLCert) openssl, OutBuffer bout = null) @trusted {
     int exit_code;
     if (!openssl.certificate.exists || !openssl.private_key.exists) {
         openssl.certificate.dirName.mkdirRecurse;

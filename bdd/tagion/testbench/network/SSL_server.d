@@ -19,7 +19,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.basic.Types : Control;
 
 import std.socket : InternetAddress, Socket, SocketSet, SocketShutdown, shutdown, AddressFamily;
-import tagion.network.SSLOptions;
+import tagion.network.SSLServiceOptions;
 import tagion.network.SSLSocket;
 import tagion.network.ServerAPI;
 
@@ -41,16 +41,16 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("creates a SSL certificate",
         [])
 class CreatesASSLCertificate {
-    const OpenSSL opt;
+    const SSLCert opt;
 
-    this(const(OpenSSL) opt) pure nothrow {
+    this(const(SSLCert) opt) pure nothrow {
         this.opt = opt;
     }
 
     @Given("the domain information of a SSL certificate")
     Document certificate() {
         auto bout = new OutBuffer;
-        const exit_code = configureOpenSSL(opt, bout);
+        const exit_code = configureSSLCert(opt, bout);
         check(exit_code == 0, format("Certificate failed with exit code %d and stdout %s", exit_code, bout));
         return result_ok;
     }
@@ -80,9 +80,9 @@ class CreatesASSLCertificate {
 @safe @Scenario("SSL service using a specified certificate",
         [])
 class SSLServiceUsingASpecifiedCertificate {
-    immutable SSLOptions opt;
+    immutable SSLServiceOptions opt;
     string task_name;
-    this(const(SSLOptions) opt, string task_name) {
+    this(const(SSLServiceOptions) opt, string task_name) {
         this.opt = opt;
         this.task_name = task_name;
         writeln("---- ---- ----");
@@ -98,8 +98,8 @@ class SSLServiceUsingASpecifiedCertificate {
         listener = new SSLSocket(
                 AddressFamily.INET,
                 SocketType.STREAM,
-                opt.ssl.certificate,
-                opt.ssl.private_key);
+                opt.cert.certificate,
+                opt.cert.private_key);
         simpleSSLServer(opt, listener);
         return result_ok;
     }

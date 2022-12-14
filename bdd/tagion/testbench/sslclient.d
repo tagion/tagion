@@ -4,7 +4,7 @@ import tagion.testbench.network;
 import tagion.tools.Basic;
 
 import tagion.network.SSLSocket;
-import tagion.network.SSLOptions;
+import tagion.network.SSLServiceOptions;
 
 mixin Main!(_main);
 

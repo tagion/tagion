@@ -8,7 +8,7 @@ import std.concurrency;
 import std.format;
 
 //import tagion.network.SSLSocket;
-import tagion.network.SSLOptions : ServerOptions;
+import tagion.network.SSLServiceOptions : ServerOptions;
 import tagion.network.NetworkExceptions : check;
 import tagion.network.SSLSocketException : SSLSocketException;
 import tagion.network.SSL : SSLErrorCodes;

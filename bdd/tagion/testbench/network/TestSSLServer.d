@@ -15,7 +15,7 @@ import tagion.GlobalSignals : abort;
 import tagion.network.ServerFiber;
 import tagion.network.ServerAPI;
 import tagion.network.SSLSocket : SSLSocket;
-import tagion.network.SSLOptions;
+import tagion.network.SSLServiceOptions;
 import tagion.network.SSLSocketException;
 
 import std.socket;
@@ -57,7 +57,7 @@ class SSLTestRelay : ServerFiber.Relay {
 }
 
 void taskTestServer(
-        immutable SSLOptions ssl_options,
+        immutable SSLServiceOptions ssl_options,
         string task_name) nothrow {
     try {
         log.register(task_name);
@@ -76,10 +76,10 @@ void taskTestServer(
         auto listener = new SSLSocket(
                 AddressFamily.INET,
                 SocketType.STREAM,
-                ssl_options.ssl.certificate,
-                ssl_options.ssl.private_key);
+                ssl_options.cert.certificate,
+                ssl_options.cert.private_key);
         auto ssl_test_service = ServerAPI(
-                ssl_options,
+                ssl_options.server,
                 listener,
                 relay);
         ssl_test_service.start;
@@ -100,7 +100,7 @@ void taskTestServer(
     }
 }
 
-void simpleSSLServer(immutable SSLOptions opt, Socket listener) {
+void simpleSSLServer(immutable SSLServiceOptions opt, Socket listener) {
 
     version (none) {
         //     auto listener = new TcpSocket;

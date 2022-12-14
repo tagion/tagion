@@ -222,9 +222,9 @@ void echoSSLSocketTask(
     }
 }
 
-import tagion.network.SSLOptions;
+import tagion.network.SSLServiceOptions;
 
-version (none) void SSLSocketServer(immutable(SSLOptions) ssl_options) {
+version (none) void SSLSocketServer(immutable(SSLServiceOptions) ssl_options) {
     auto listener = new SSLSocket(AddressFamily.INET, EndpointType.Server);
     assert(listener.isAlive);
     writefln("Run SSLServiceAPI. Certificate=%s, ssl_options.private_key=%s",
