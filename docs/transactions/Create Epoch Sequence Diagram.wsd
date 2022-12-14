@@ -37,17 +37,25 @@ tagion -> tagion : read transactions\nfrom payload_queue
 
 tagion -> transcript : receive_epoch(transactions)
 
-transcript -> transcript : check inputs of signed contracts
-transcript -> transcript : to_smart_script(signed_contract)
+loop foreach received transaction
 
-activate smartscript
+    transcript -> dartsync : requestInputs(signed_contract.contract.inputs)
+    dartsync -> dart : dartRead(inputs)
+    dartsync --> transcript : send Recorder with dartRead(inputs) result
+    transcript -> transcript : add bills from result \nRecorder to signed_contract
+    transcript -> transcript : check inputs of signed contract
+    transcript -> transcript : to_smart_script(signed_contract)
 
-transcript -> smartscript : smart_script.check(net)
-transcript -> smartscript : smart_script.run(current_epoch+1, index, last_bullseye, net)
+    activate smartscript
 
-deactivate smartscript
+    transcript -> smartscript : smart_script.check(net)
+    transcript -> smartscript : smart_script.run(current_epoch+1, index, last_bullseye, net)
 
-transcript -> transcript : add smart_script.output_bills\ninto recorder
+    deactivate smartscript
+
+    transcript -> transcript : add smart_script.output_bills\ninto recorder
+
+end
 
 transcript -> dartsync : send(dartModify(recorder))
 dartsync -> dart : dartModify(recorder)
