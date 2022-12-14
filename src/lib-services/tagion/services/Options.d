@@ -461,7 +461,7 @@ static setDefaultOption(ref Options options)
         {
 			with(server) {
             response_task_name = "log_response";
-			address = "1.0.0.0";
+			address = "0.0.0.0";
             port = 10_700;
             select_timeout = 300;
             client_timeout = 4000; // msecs
