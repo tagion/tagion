@@ -20,9 +20,10 @@ protected enum _SSLErrorCodes {
 }
 
 version (WOLFSSL) {
-    alias SSLErrorCodes = _SSLErrorCodes;
+   // alias SSLErrorCodes = _SSLErrorCodes;
     extern (C) {
         private import tagion.network.wolfssl.c.error_ssl;
+        private import tagion.network.wolfssl.c.wolfcrypt.error_crypt;
         private import tagion.network.wolfssl.c.ssl;
 
         //        package {
@@ -60,22 +61,39 @@ version (WOLFSSL) {
             import std.traits : EnumMembers;
             import std.array : join;
 
+            static foreach (E; EnumMembers!wolfSSL_ErrorCodes) {
+                enum_list ~= format(q{    %1$s = cast(int)wolfSSL_ErrorCodes.%1$s,}, E.stringof);
+            }
+  //          enum_list ~= format(q{    WOLFSSL_MAX = cast(int)wolfSSL_ErrorCodes.%1$s+1,}, wolfSSL_ErrorCodes.max);
+
+            static foreach (E; EnumMembers!wolfCrypt_ErrorCodes) {
+                enum_list ~= format(q{    %1$s = cast(int)wolfCrypt_ErrorCodes.%1$s,}, E.stringof);
+            }
+//            enum_list ~= format(q{    WOLFCRYPT_MAX = cast(int)wolfCrypt_ErrorCodes.%1$s+1,}, wolfCrypt_ErrorCodes.max);
+
             static foreach (E; EnumMembers!_SSLErrorCodes) {
                 enum_list ~= format(q{    %1$s = cast(int)_SSLErrorCodes.%1$s,}, E.stringof);
             }
 
-            static foreach (E; EnumMembers!wolfSSL_ErrorCodes) {
-                enum_list ~= format(q{    %1$s = cast(int)wolfSSL_ErrorCodes.%1$s,}, E.stringof);
-            }
-            return format("enum ALL_SSLErrorCodes {\n%-(%s \n%)\n};", enum_list);
+            return format("enum SSLErrorCodes {\n%-(%s \n%)\n};", enum_list);
         }
     }
 
     alias SSL_Init = wolfSSL_Init;
     alias SSL_Cleanup = wolfSSL_Cleanup;
-    //    }
-    /// enum ALL_SSLErrorCodes (OpenSSL and WolfSSL error list joined
-    mixin(generator_all_SSLErrorCodes);
+    enum SSLErrorCodes_code = generator_all_SSLErrorCodes;
+//    pragma(msg, SSLErrorCodes_code);
+    mixin(SSLErrorCodes_code);
+
+    void ERR_error_string_n(int err, char* buf, size_t size) {
+        if (err < wolfSSL_ErrorCodes.min || err > wolfCrypt_ErrorCodes.max) {
+            wolfSSL_ERR_error_string_n(err, buf, size);
+        }
+        else {
+            SetErrorString(err, buf);
+        }
+    }
+
 }
 else {
     extern (C) {

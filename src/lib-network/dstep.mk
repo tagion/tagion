@@ -30,6 +30,10 @@ $(DSRC_WOLFSSL)/wolfssl/wolfssl_version.h: $(DSRC_WOLFSSL)/wolfssl/version.h
 	$(PRECMD)
 	$(LN) $< $@
 
+$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/error_crypt.h: $(DSRC_WOLFSSL)/wolfssl/wolfcrypt/error-crypt.h
+	$(PRECMD)
+	$(LN) $< $@
+
 $(WOLFSSL_DIROOT)/%.d: $(WOLFSSL_DIROOT)/%.di
 	$(PRECMD)
 	$(LN) $< $@
@@ -37,6 +41,7 @@ $(WOLFSSL_DIROOT)/%.d: $(WOLFSSL_DIROOT)/%.di
 clean-wolfssl-link:
 	$(RM) $(DSRC_WOLFSSL)/wolfssl/error_ssl.h
 	$(RM) $(DSRC_WOLFSSL)/wolfssl/wolfssl_version.h
+	$(RM) $(DSRC_WOLFSSL)/wolfssl/wolfcrypt/error_crypt.h
 
 .PHONY: clean-wolfssl-link
 
@@ -73,6 +78,7 @@ WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/random.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/integer.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/wc_port.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/tfm.h
+WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/error_crypt.h
 
 ${call DSTEP_DO,$(WOLFCRYPT_PACKAGE),$(DSRC_WOLFSSL)/wolfssl/wolfcrypt,$(WOLFCRYPT_DIROOT),$(WOLFCRYPT_DFILES),$(WOLFSSL_DSTEP_FLAGS), $(WOLFCRYPT_HFILES)}
 
@@ -110,6 +116,8 @@ $(WOLFSSL_DIROOT)/wolfcrypt/tfm.di: DSTEP_DLINK=1
 $(WOLFSSL_DIROOT)/wolfcrypt/tfm.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.types
 $(WOLFSSL_DIROOT)/wolfcrypt/tfm.di: DSTEPFLAGS+=--global-import $(WOLFSSL_PACKAGE).wolfcrypt.random
 $(WOLFSSL_DIROOT)/wolfcrypt/tfm.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_tfm.pl
+
+$(WOLFSSL_DIROOT)/wolfcrypt/error_crypt.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCORRECT)/correct_error_crypt.pl
 
 #
 # Modules in wolfssl/c/openssl

@@ -1,7 +1,8 @@
 module tagion.network.SSLSocket;
 
 import core.stdc.stdio;
-import core.stdc.string : strerror;
+
+//import core.stdc.string : strerror;
 
 import std.socket;
 import std.range.primitives : isBidirectionalRange;
@@ -10,6 +11,7 @@ import std.typecons : Tuple;
 import std.array : join;
 import std.algorithm.iteration : map;
 import std.typecons : Flag, Yes, No;
+import std.traits : EnumMembers;
 
 import tagion.network.SSLSocketException;
 import tagion.network.SSL;
@@ -265,30 +267,28 @@ class SSLSocket : Socket {
      */
     protected void check_error(const int ssl_ret, const bool check_read_write = false) const {
         const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, ssl_ret);
-        with (SSLErrorCodes) final switch (ssl_error) {
-        case SSL_ERROR_NONE:
-            // Ignore
-            break;
-        case SSL_ERROR_WANT_WRITE,
-        SSL_ERROR_WANT_READ:
-            if (check_read_write) {
-                throw new SSLSocketException(str_error(ssl_error), ssl_error);
+        with (SSLErrorCodes) { 
+	SSLErrorCase:
+	final switch (ssl_error) {
+            static foreach (ErrorCode; EnumMembers!SSLErrorCodes) {
+			case ErrorCode: 
+			static if (ErrorCode is SSLErrorCodes.SSL_ERROR_NONE) {
+                    // None
+                }
+                else static if (ErrorCode is SSLErrorCodes.SSL_ERROR_WANT_WRITE &&
+                        ErrorCode is SSLErrorCodes.SSL_ERROR_WANT_READ) {
+                    if (check_read_write) {
+                        throw new SSLSocketException(errorText(ssl_error), ssl_error);
+                    }
+                }
+                else {
+                    throw new SSLSocketException(errorText(ssl_error), ssl_error);
+                }
+		break SSLErrorCase;
             }
-            break;
-        case SSL_ERROR_WANT_X509_LOOKUP,
-            SSL_ERROR_SYSCALL,
-            SSL_ERROR_ZERO_RETURN,
-            SSL_ERROR_WANT_CONNECT,
-            SSL_ERROR_WANT_ACCEPT,
-            SSL_ERROR_WANT_ASYNC,
-            SSL_ERROR_WANT_ASYNC_JOB,
-        SSL_ERROR_SSL:
-            throw new SSLSocketException(str_error(ssl_error), ssl_error);
-            break;
         }
-
+	}
     }
-
     /++
      Returns:
      pending bytes in the socket que
@@ -316,16 +316,18 @@ class SSLSocket : Socket {
         return receive(buf, SocketFlags.NONE);
     }
 
-    /++
+    version (none) {
+        /++
      Returns:
      the SSL system error message
      +/
-    @trusted
-    static string str_error(const int errornum) {
-        const str = strerror(errornum);
-        import std.string : fromStringz;
+        @trusted
+        static string str_error(const int errornum) {
+            const str = strerror(errornum);
+            import std.string : fromStringz;
 
-        return fromStringz(str).idup;
+            return fromStringz(str).idup;
+        }
     }
 
     @trusted
@@ -387,7 +389,7 @@ class SSLSocket : Socket {
             SSL_ERROR_WANT_X509_LOOKUP,
             SSL_ERROR_SYSCALL,
         SSL_ERROR_ZERO_RETURN:
-            throw new SSLSocketException(str_error(ssl_error), ssl_error);
+            throw new SSLSocketException(errorText(ssl_error), ssl_error);
             break;
         default:
             throw new SSLSocketException(format("SSL Error. SSL error code: %d.", ssl_error),
