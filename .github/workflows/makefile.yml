@@ -147,7 +147,7 @@ jobs:
           echo "scenarious=$SCENARIOUS" >> $GITHUB_OUTPUT
           SCENARIOUS_MATRIX=$(cat ./qa-tools/scenarios.txt | jq -R -s -c 'split("\n")[:-1]')
           echo $SCENARIOUS_MATRIX
-          echo "scenariousmatrix=$SCENARIOUS_MATRIX" >> $GITHUB_OUTPUT
+          echo 'scenariousmatrix={"matrix": $SCENARIOUS_MATRIX}' >> $GITHUB_OUTPUT
 
       - name: Report created docker
         if: success()
@@ -184,7 +184,7 @@ jobs:
     needs: before_run
     strategy:
       matrix:
-        scenario: ${{ fromJson(needs.create_tagion_images.outputs.scenario_matrix) }}
+        scenario: ${{ fromJson(needs.create_tagion_images.outputs.scenario_matrix).matrix }}
     steps:
       - name: Run docker
         run: |
