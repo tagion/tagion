@@ -97,11 +97,11 @@ void tagionFactoryService(Options opts) nothrow {
                     service_options.transcript.task_name = new_task_name(opts.transcript.task_name);
                     service_options.transaction.task_name = new_task_name(
                             opts.transaction.task_name);
-                    service_options.transaction.service.socket.task_name = new_task_name(
-                            opts.transaction.service.socket.task_name);
-                    service_options.transaction.service.socket.response_task_name
+                    service_options.transaction.service.server.task_name = new_task_name(
+                            opts.transaction.service.server.task_name);
+                    service_options.transaction.service.server.response_task_name
                         = new_task_name(
-                                opts.transaction.service.socket.response_task_name);
+                                opts.transaction.service.server.response_task_name);
                     service_options.collector.task_name = new_task_name(opts.collector.task_name);
                     service_options.dart.task_name = new_task_name(opts.dart.task_name);
                     service_options.dart.sync.task_name = new_task_name(opts.dart.sync.task_name);
@@ -110,10 +110,10 @@ void tagionFactoryService(Options opts) nothrow {
                             || (i < opts.monitor.max))) {
                         service_options.monitor.port = get_port(opts.monitor.port);
                     }
-                    if ((opts.transaction.service.socket.port >= opts.min_port)
+                    if ((opts.transaction.service.server.port >= opts.min_port)
                             && ((opts.transaction.max == 0) || (i < opts.transaction.max))) {
-                        service_options.transaction.service.socket.port =
-                            get_port(opts.transaction.service.socket.port);
+                        service_options.transaction.service.server.port =
+                            get_port(opts.transaction.service.server.port);
                     }
                     service_options.node_name = i.get_node_name;
                     node_opts ~= service_options;

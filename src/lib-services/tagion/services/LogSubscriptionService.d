@@ -190,8 +190,8 @@ void logSubscriptionServiceTask(Options opts) nothrow {
         log.register(opts.logSubscription.task_name);
 
         log("Start service port=%d addresss=%s",
-                opts.logSubscription.service.socket.port,
-                opts.logSubscription.service.socket.address);
+                opts.logSubscription.service.server.port,
+                opts.logSubscription.service.server.address);
 
         @safe class LogSubscriptionRelay : ServerFiber.Relay {
             bool agent(SSLFiber ssl_relay) {

@@ -59,9 +59,8 @@ struct OpenSSL {
 }
 
 struct SSLOptions {
-    ServerOptions socket;
+    ServerOptions server;
     OpenSSL ssl; ///
-    //	HostOptions host;
     mixin JSONCommon;
     mixin JSONConfig;
 }

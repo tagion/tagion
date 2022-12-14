@@ -81,15 +81,10 @@
     "ip": "0.0.0.0",
     "logSubscription": {
         "enable": true,
-        "host": {
-            "max_size": 102400,
-            "timeout": 3000
-        },
         "max": 0,
-        "prefix": "logsubscriptionservice",
         "protocol_id": "",
         "service": {
-            "socket": {
+            "server": {
                 "address": "1.0.0.0",
                 "client_timeout": 4000,
                 "max_buffer_size": 16384,
@@ -97,7 +92,7 @@
                 "max_queue_length": 100,
                 "port": 10700,
                 "prefix": "",
-                "response_task_name": "response",
+                "response_task_name": "log_response",
                 "select_timeout": 300,
                 "task_name": ""
             },
@@ -115,8 +110,7 @@
                 "unit": ""
             }
         },
-        "task_name": "logsubscriptionservice",
-        "timeout": 10000
+        "task_name": "logsubscription"
     },
     "logext": "log",
     "logger": {
@@ -167,15 +161,10 @@
     "tmp": "\/tmp\/",
     "trace_gossip": false,
     "transaction": {
-        "host": {
-            "max_size": 102400,
-            "timeout": 3000
-        },
         "max": 0,
-        "prefix": "transervice",
         "protocol_id": "",
         "service": {
-            "socket": {
+            "server": {
                 "address": "0.0.0.0",
                 "client_timeout": 4000,
                 "max_buffer_size": 16384,
@@ -185,7 +174,7 @@
                 "prefix": "",
                 "response_task_name": "respose",
                 "select_timeout": 300,
-                "task_name": ""
+                "task_name": "transaction_net"
             },
             "ssl": {
                 "certificate": "pem_files\/domain.pem",
@@ -201,8 +190,7 @@
                 "unit": ""
             }
         },
-        "task_name": "collector",
-        "timeout": 250
+        "task_name": "collector"
     },
     "transcript": {
         "task_name": "transcript"

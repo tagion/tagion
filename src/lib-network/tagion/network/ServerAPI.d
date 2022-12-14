@@ -32,7 +32,7 @@ struct ServerAPI {
 
     this(immutable(SSLOptions) opts, Socket listener, ServerFiber.Relay relay) nothrow pure @trusted {
         this.ssl_options = opts;
-        this.opts = ssl_options.socket;
+        this.opts = ssl_options.server;
         this.listener = listener;
         this.relay = relay;
     }

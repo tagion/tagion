@@ -143,12 +143,12 @@ struct Options {
     struct Monitor {
         string task_name; /// Use for the montor task name
         string prefix;
-        uint max; /++ Maximum number of monitor.service.socket. open
+        uint max; /++ Maximum number of monitor.service.server. open
                               If this value is set to 0
-                              one.service.socket.is opened for each node
+                              one.service.server.is opened for each node
                               +/
         ushort port; /// Monitor port
-        uint timeout; ///.service.socket.listerne timeout in msecs
+        uint timeout; ///.service.server.listerne timeout in msecs
         FileExtension dataformat;
         /++ This specifies the data-format which is transmitted from the Monitor
          Option is json or hibon
@@ -189,7 +189,7 @@ struct Options {
         string protocol_id;
         string task_name; /// Transaction task name
         //        string prefix;
-        //    uint timeout; ///.service.socket.listerne timeout in msecs
+        //    uint timeout; ///.service.server.listerne timeout in msecs
         import tagion.network.SSLOptions;
 
         SSLOptions service; /// SSL Service used by the transaction service
@@ -265,9 +265,9 @@ struct TransactionMiddlewareOptions {
     ushort port;
     // address for the socket
     string address;
-    //  port for the.service.socket.to the tagion network
+    //  port for the.service.server.to the tagion network
     ushort network_port;
-    //  address for the.service.socket.to the tagion network
+    //  address for the.service.server.to the tagion network
     string network_address;
 
     string logext;
@@ -327,14 +327,14 @@ static ref auto all_getopt(
 		options.monitor.port),  &(options.monitor.port),
 
         "transaction-ip",  format("Sets the listener transaction ip address: default %s", 
-	options.transaction.service.socket.address), &(options.transaction.service.socket.address),
+	options.transaction.service.server.address), &(options.transaction.service.server.address),
         "transaction-port|p", format("Sets the listener transcation port: default %d", 
-	options.transaction.service.socket.port), &(options.transaction.service.socket.port),
-        "transaction-queue", format("Sets the listener transcation max queue lenght: default %d", options.transaction.service.socket.max_queue_length), &(options.transaction.service.socket.max_queue_length),
+	options.transaction.service.server.port), &(options.transaction.service.server.port),
+        "transaction-queue", format("Sets the listener transcation max queue lenght: default %d", options.transaction.service.server.max_queue_length), &(options.transaction.service.server.max_queue_length),
         "transaction-maxcon",  format("Sets the maximum number of connections: default: %d", 
-	options.transaction.service.socket.max_connections), &(options.transaction.service.socket.max_connections),
+	options.transaction.service.server.max_connections), &(options.transaction.service.server.max_connections),
         "transaction-maxqueue",  format("Sets the maximum queue length: default: %d", 
-	options.transaction.service.socket.max_queue_length), &(options.transaction.service.socket.max_queue_length),
+	options.transaction.service.server.max_queue_length), &(options.transaction.service.server.max_queue_length),
         "epochs",  format("Sets the number of epochs (0 for infinite): default: %d", 
 	options.epoch_limit), &(options.epoch_limit),
 
@@ -375,9 +375,9 @@ static setDefaultOption(ref Options options)
         nodes = 4;
         infinity = false;
         //port=10900;
-        //disable.service.socket.=false;
+        //disable.service.server.=false;
         tmp = "/tmp/";
-        //  s.network.service.socket.port =11900;
+        //  s.network.service.server.port =11900;
         //        sequential=false;
         min_port = 6000;
         path_to_shared_info = "/tmp/boot.hibon";
@@ -427,7 +427,7 @@ static setDefaultOption(ref Options options)
 //        timeout = 250;
         with (service)
         {
-			with(socket) {
+			with(server) {
             task_name = "transaction_net";
             response_task_name = "respose";
             address = "0.0.0.0";
@@ -460,7 +460,7 @@ static setDefaultOption(ref Options options)
         enable = true;
         with (service)
         {
-			with(socket) {
+			with(server) {
             response_task_name = "log_response";
 			address = "1.0.0.0";
             port = 10_700;
