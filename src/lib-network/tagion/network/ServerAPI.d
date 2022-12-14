@@ -8,7 +8,7 @@ import std.concurrency;
 import std.format;
 
 import tagion.network.SSLSocket;
-import tagion.network.FiberServer;
+import tagion.network.ServerFiber;
 import tagion.network.SSLOptions;
 import tagion.network.SSLSocketException;
 
@@ -22,15 +22,15 @@ struct ServerAPI {
     immutable(ServiceOptions) opts;
     protected {
         Thread service_task;
-        FiberServer service;
-        FiberServer.Relay relay;
+        ServerFiber service;
+        ServerFiber.Relay relay;
         Socket listener;
     }
     //    const(HiRPC) hirpc;
 
     @disable this();
 
-    this(immutable(SSLOptions) opts, Socket listener, FiberServer.Relay relay) nothrow pure @trusted {
+    this(immutable(SSLOptions) opts, Socket listener, ServerFiber.Relay relay) nothrow pure @trusted {
         this.ssl_options = opts;
         this.opts = ssl_options.socket;
         this.listener = listener;
@@ -72,7 +72,7 @@ struct ServerAPI {
             listener.bind(new InternetAddress(opts.address, opts.port));
             listener.listen(opts.max_queue_length);
 
-            service = new FiberServer(opts, listener, relay);
+            service = new ServerFiber(opts, listener, relay);
             auto response_tid = service.start(opts.response_task_name);
             if (response_tid !is Tid.init) {
 

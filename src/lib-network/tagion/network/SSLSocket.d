@@ -34,7 +34,7 @@ enum Ownership {
 class SSLSocket : Socket {
     enum ERR_TEXT_SIZE = 256;
 
-	protected {
+    protected {
         SSL* _ssl;
         SSL_CTX* _ctx;
         __gshared SSL_CTX* _client_ctx;
@@ -405,6 +405,14 @@ class SSLSocket : Socket {
         client.close();
     }
 
+    /**
+	Returns: true if data is pending the socket
+	*/
+    @trusted
+    ptrdiff_t pending() nothrow @nogc {
+        return SSL_pending(_ssl);
+    }
+
     /++
      Returns:
      the SSL system handler
@@ -473,8 +481,8 @@ class SSLSocket : Socket {
             const exception = collectException!SSLSocketException(
                     new SSLSocket(AddressFamily.UNIX, SocketType.STREAM, "_", "_"),
                     testItem_server);
-			assert(exception !is null);
-			assert(testItem_server is null);
+            assert(exception !is null);
+            assert(testItem_server is null);
         }
 
         //! [File reading - empty path]
@@ -495,13 +503,13 @@ class SSLSocket : Socket {
         {
             SSLSocket testItem_server;
             const exception = collectException!SSLSocketException(
-                new SSLSocket(AddressFamily.UNIX, SocketType.STREAM,
+                    new SSLSocket(AddressFamily.UNIX, SocketType.STREAM,
                     cert_path, key_path),
-				testItem_server);
+                    testItem_server);
             scope (exit) {
                 testItem_server.close;
             }
-				assert(exception is null);
+            assert(exception is null);
             assert(testItem_server !is null);
         }
 

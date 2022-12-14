@@ -12,7 +12,7 @@ import tagion.logger.Logger;
 import tagion.basic.TagionExceptions : fatal;
 import tagion.GlobalSignals : abort;
 
-import tagion.network.FiberServer;
+import tagion.network.ServerFiber;
 import tagion.network.ServerAPI;
 import tagion.network.SSLSocket : SSLSocket;
 import tagion.network.SSLOptions;
@@ -38,7 +38,7 @@ bool check_doc(const Document main_doc,
 }
 
 @safe
-class SSLTestRelay : FiberServer.Relay {
+class SSLTestRelay : ServerFiber.Relay {
     bool agent(SSLFiber ssl_relay) {
         immutable buffer = ssl_relay.receive;
         const doc = Document(buffer);

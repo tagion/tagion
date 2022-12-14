@@ -22,7 +22,7 @@ import tagion.services.Options : Options;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : GetLabel;
-import tagion.network.FiberServer : FiberServer, SSLFiber;
+import tagion.network.ServerFiber : ServerFiber, SSLFiber;
 import tagion.network.ServerAPI : ServerAPI;
 import tagion.network.SSLSocket : SSLSocket;
 
@@ -193,7 +193,7 @@ void logSubscriptionServiceTask(Options opts) nothrow {
                 opts.logSubscription.service.socket.port,
                 opts.logSubscription.service.socket.address);
 
-        @safe class LogSubscriptionRelay : FiberServer.Relay {
+        @safe class LogSubscriptionRelay : ServerFiber.Relay {
             bool agent(SSLFiber ssl_relay) {
                 @trusted const(Document) receivessl() {
                     try {
