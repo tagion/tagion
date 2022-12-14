@@ -37,7 +37,7 @@ int main(int argn, char *args[]) {
     } else {      
       size = recv(client_socket_fd, &buf, sizeof(buf), 0);
       buf[size] = '\0';    
-      printf("Got a connection; writing '%s' then closing.\n", &buf);
+      printf("Got a connection; writing '%s' then closing.\n", (char*)&buf);
       send(client_socket_fd, &buf, size, 0);
       close(client_socket_fd);
     }

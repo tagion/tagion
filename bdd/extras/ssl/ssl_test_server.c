@@ -22,6 +22,11 @@ int guard(int n, char *err) {
   return n;
 }
 
+void perror_die(char *msg) {
+  perror(msg);
+  exit(EXIT_FAILURE);
+}
+
 void make_socket_non_blocking(int sockfd) {
   int flags = fcntl(sockfd, F_GETFL, 0);
   if (flags == -1) {
@@ -33,10 +38,6 @@ void make_socket_non_blocking(int sockfd) {
   }
 }
 
-void perror_die(char *msg) {
-  perror(msg);
-  exit(EXIT_FAILURE);
-}
 
 int verbose = 0;
 long select_timeout = 5; // seconds
@@ -59,10 +60,10 @@ int main(int count, char *Argc[]) {
   portnum = Argc[2];
 
   // initserver ctx
-  SSL_METHOD *method;
+//  SSL_METHOD *method;
   OpenSSL_add_all_algorithms();     /* load & register all cryptos, etc. */
   SSL_load_error_strings();         /* load all error messages */
-  method = TLSv1_2_server_method(); /* create new server-method instance */
+  const SSL_METHOD* method = TLS_server_method(); /* create new server-method instance */
   ctx = SSL_CTX_new(method);        /* create new context from method */
   if (ctx == NULL) {
     ERR_print_errors_fp(stderr);
@@ -131,7 +132,7 @@ int main(int count, char *Argc[]) {
     if (rv == -1) {
       perror_die("Error and die"); /* an error occurred */
     } else if (rv == 0) {
-      printf("timeout occurred (%d second) \n",
+      printf("timeout occurred (%ld second) \n",
              select_timeout); /* a timeout occurred */
       return 1;
     }
@@ -143,7 +144,7 @@ int main(int count, char *Argc[]) {
         if (fd == listen_socket_fd) {
           struct sockaddr_in peer_addr;
           socklen_t peer_addr_len = sizeof(peer_addr);
-          int new_fd = accept(listen_socket_fd, (struct sockadd *)&peer_addr,
+          int new_fd = accept(listen_socket_fd, (struct sockaddr *)&peer_addr,
                               &peer_addr_len);
           if (new_fd < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
