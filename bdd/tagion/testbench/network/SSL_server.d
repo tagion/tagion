@@ -23,7 +23,7 @@ import tagion.network.SSLServiceOptions;
 import tagion.network.SSLSocket;
 import tagion.network.ServerAPI;
 
-import tagion.testbench.network.TestSSLServer;
+import tagion.testbench.network.SSLSocketTest;
 
 enum feature = Feature(
             "SSL server",
