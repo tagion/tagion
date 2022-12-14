@@ -18,7 +18,6 @@ import tagion.basic.TagionExceptions : fatal;
 
 @safe
 struct ServerAPI {
-    immutable(SSLOptions) ssl_options;
     immutable(ServerOptions) opts;
     protected {
         Thread service_task;
@@ -30,9 +29,8 @@ struct ServerAPI {
 
     @disable this();
 
-    this(immutable(SSLOptions) opts, Socket listener, ServerFiber.Relay relay) nothrow pure @trusted {
-        this.ssl_options = opts;
-        this.opts = ssl_options.server;
+    this(immutable(ServerOptions) opts, Socket listener, ServerFiber.Relay relay) nothrow pure @trusted {
+        this.opts = opts;
         this.listener = listener;
         this.relay = relay;
     }
@@ -58,15 +56,6 @@ struct ServerAPI {
             import std.socket : SocketType;
 
             log.register(opts.task_name);
-            version (none)
-                log("Run ServerAPI. Certificate=%s, ssl_options.private_key=%s",
-                        ssl_options.ssl.certificate,
-                        ssl_options.ssl.private_key);
-            version (none) auto listener = new SSLSocket(
-                    AddressFamily.INET,
-                    SocketType.STREAM,
-                    ssl_options.ssl.certificate,
-                    ssl_options.ssl.private_key);
             assert(listener.isAlive);
             listener.blocking = false;
             listener.bind(new InternetAddress(opts.address, opts.port));

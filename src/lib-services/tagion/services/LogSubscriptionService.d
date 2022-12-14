@@ -239,7 +239,7 @@ void logSubscriptionServiceTask(Options opts) nothrow {
                 SocketType.STREAM,
                 opts.logSubscription.service.ssl.certificate,
                 opts.logSubscription.service.ssl.private_key);
-        auto logsubscription_api = ServerAPI(opts.logSubscription.service, listener, relay);
+        auto logsubscription_api = ServerAPI(opts.logSubscription.service.server, listener, relay);
         logsubscription_api.start;
 
         bool stop;

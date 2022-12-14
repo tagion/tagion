@@ -294,7 +294,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 SocketType.STREAM,
                 opts.transaction.service.ssl.certificate,
                 opts.transaction.service.ssl.private_key);
-        ServerAPI script_api = ServerAPI(opts.transaction.service, listener, relay);
+        ServerAPI script_api = ServerAPI(opts.transaction.service.server, listener, relay);
         auto script_thread = script_api.start;
 
         bool stop;
