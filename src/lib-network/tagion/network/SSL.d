@@ -54,7 +54,7 @@ version (WOLFSSL) {
         alias ERR_get_error = wolfSSL_ERR_get_error;
         alias ERR_error_string_n = wolfSSL_ERR_error_string_n;
         /// Code generator which collects all WOLF and OPENSSL error into one enum
-        protected string generator_all_SSLErrorCodes() {
+        protected string generator_SSLErrorCodes() {
 
             string[] enum_list;
             import std.conv : to;
@@ -64,13 +64,9 @@ version (WOLFSSL) {
             static foreach (E; EnumMembers!wolfSSL_ErrorCodes) {
                 enum_list ~= format(q{    %1$s = cast(int)wolfSSL_ErrorCodes.%1$s,}, E.stringof);
             }
-  //          enum_list ~= format(q{    WOLFSSL_MAX = cast(int)wolfSSL_ErrorCodes.%1$s+1,}, wolfSSL_ErrorCodes.max);
-
             static foreach (E; EnumMembers!wolfCrypt_ErrorCodes) {
                 enum_list ~= format(q{    %1$s = cast(int)wolfCrypt_ErrorCodes.%1$s,}, E.stringof);
             }
-//            enum_list ~= format(q{    WOLFCRYPT_MAX = cast(int)wolfCrypt_ErrorCodes.%1$s+1,}, wolfCrypt_ErrorCodes.max);
-
             static foreach (E; EnumMembers!_SSLErrorCodes) {
                 enum_list ~= format(q{    %1$s = cast(int)_SSLErrorCodes.%1$s,}, E.stringof);
             }
@@ -81,7 +77,7 @@ version (WOLFSSL) {
 
     alias SSL_Init = wolfSSL_Init;
     alias SSL_Cleanup = wolfSSL_Cleanup;
-    enum SSLErrorCodes_code = generator_all_SSLErrorCodes;
+    enum SSLErrorCodes_code = generator_SSLErrorCodes;
 //    pragma(msg, SSLErrorCodes_code);
     mixin(SSLErrorCodes_code);
 

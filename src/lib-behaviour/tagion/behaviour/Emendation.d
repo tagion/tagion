@@ -65,7 +65,6 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
                             if (!info.name.length) {
                                 info.name = names[name_index].camelName;
                             }
-                            io.writefln("collect[%d] %s", name_index, info.name);
                             name_index++;
                         }
                     }
