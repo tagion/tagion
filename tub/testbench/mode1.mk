@@ -3,9 +3,10 @@ export MODE1_ROOT:=$(TESTLOG)/mode1
 #export MODE1_CONFIG:=$(MODE1_ROOT)/tagionwave.json
 #export MODE1_SRC_CONFIG:=$(FUND)/mode1/tagionwave.json
 #export MODE1_LOG:=$(MODE1_ROOT)/mode1_script.log
+MODE1_BOOT=$(MODE1_ROOT)/boot.hibon
 MODE1_FLAGS:=-N 7 -t 300
 MODE1_FLAGS+=--net-mode=local
-MODE1_FLAGS+=--boot=$(MODE1_ROOT)/boot.hibon
+MODE1_FLAGS+=--boot=$(MODE1_BOOT)
 #MODE1_FLAGS+=--epochs=$(EPOCHS)
 
 ifdef INSCREEN
@@ -92,21 +93,14 @@ env-mode1: env-mode1-$1
 endef
 
 mode1: $(MODE1_ROOT)/.way
-mode1: tagionwave $(MODE1_DART)
+mode1: tagionwave $(MODE1_DART) mode1-unboot
 
 .PHONY: mode1
 testnet: mode1
 
-# $(MODE1_DART): | dart
-# $(MODE1_DART): $(DARTDB)
-# 	$(PRECMD)
-# 	$(MKDIR) $(@D)
-# 	$(CP) $< $@
-
-# $(MODE1_CONFIG): $$(MODE1_ROOT)/.way
-# $(MODE1_CONFIG): $(MODE1_SRC_CONFIG)
-# 	$(PRECMD)
-# 	cp $< $@
+mode1-unboot:
+	$(RRECMD)
+	$(RM) $(MODE1_BOOT)
 
 help-mode1:
 	$(PRECMD)
@@ -125,13 +119,12 @@ env-mode1:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.kvp, MODE1_FLAGS,"$(MODE1_FLAGS)"}
+	${call log.kvp, MODE1_BOOT,"$(MODE1_BOOT)"}
 	${call log.env, MODE1_LIST,$(MODE1_LIST)}
 	${call log.close}
 
 .PHONY: env-mode1
 env-testnet: env-mode1
-
-#run: mode1
 
 clean-mode1:
 	$(PRECMD)
