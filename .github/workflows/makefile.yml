@@ -187,6 +187,7 @@ jobs:
         scenario: ${{ fromJson(needs.create_tagion_images.outputs.scenario_matrix) }}
     steps:
       - name: Run docker
+        continue-on-error: true
         run: |
             SCENARIO=${{ matrix.scenario }}
             echo "RUN SCENARIO: $SCENARIO"
@@ -195,6 +196,7 @@ jobs:
             echo "$SCENARIO executed"
       - name: Wait untill docker finished
         timeout-minutes: 5
+        continue-on-error: true
         run: |
           SCENARIO=${{ matrix.scenario }}
           
@@ -206,7 +208,7 @@ jobs:
             echo "Check result: $result"
             if [ "$result" = true ]; then
                 echo 'Container $SCENARIO  exists'
-                countinue
+                continue
             fi
             return 0
           done
@@ -214,6 +216,7 @@ jobs:
   after_run:
     runs-on: self-hosted
     needs: run_scenario
+    continue-on-error: true
     steps:
       - name: log status
         run: |
