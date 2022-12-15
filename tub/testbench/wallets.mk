@@ -1,7 +1,7 @@
 
 
-DARTBOOTRECORD = $(TESTBENCH)/bootrecord.hibon
-DARTDB = $(TESTBENCH)/dart.drt
+DARTBOOTRECORD = $(TESTLOG)/bootrecord.hibon
+DARTDB = $(TESTLOG)/dart.drt
 
 WALLETFILES+=tagionwallet.hibon
 WALLETFILES+=quiz.hibon
@@ -9,13 +9,13 @@ WALLETFILES+=device.hibon
 
 define CREATE_WALLET
 ${eval
-TESTBENCH_$1=$${abspath $2/$1}
+TESTLOG_$1=$${abspath $2/$1}
 BASEWALLET_$1=$$(FUND)/$1
 
 BASEWALLETFILES_$1=$${addprefix $$(BASEWALLET_$1)/,$$(WALLETFILES)}
-TESTWALLETFILES_$1=$${addprefix $$(TESTBENCH_$1)/,$$(WALLETFILES)}
-WALLET_CONFIG_$1=$$(TESTBENCH_$1)/tagionwallet.json
-INVOICE_$1=$$(TESTBENCH_$1)/invoice.hibon
+TESTWALLETFILES_$1=$${addprefix $$(TESTLOG_$1)/,$$(WALLETFILES)}
+WALLET_CONFIG_$1=$$(TESTLOG_$1)/tagionwallet.json
+INVOICE_$1=$$(TESTLOG_$1)/invoice.hibon
 
 STDINWALLET_$1=$$(BASEWALLET_$1)/wallet.stdin
 
@@ -26,7 +26,7 @@ INVOICES+=$$(INVOICE_$1)
 .SECONDARY: $$(TESTWALLETFILES_$1)
 .SECONDARY: $$(WALLET_CONFIG_$1)
 
-$1-wallet: | $$(TESTBENCH_$1)/.way
+$1-wallet: | $$(TESTLOG_$1)/.way
 $1-wallet: $$(INVOICE_$1)
 
 .PHONY: $1-wallet
@@ -44,12 +44,12 @@ $$(INVOICE_$1): $$(WALLET_CONFIG_$1)
 $1-config: $$(TESTWALLETFILES_$1)
 .PHONY: $1-config
 
-$$(WALLET_CONFIG_$1): $$(TESTBENCH_$1)/tagionwallet.hibon
+$$(WALLET_CONFIG_$1): $$(TESTLOG_$1)/tagionwallet.hibon
 	$$(PRECMD)
 	$${call log.kvp, $$(@F) $1}
-	$$(TAGIONWALLET) $$@ --path $$(TESTBENCH_$1) -O
+	$$(TAGIONWALLET) $$@ --path $$(TESTLOG_$1) -O
 
-$$(TESTBENCH_$1)/tagionwallet.hibon: $$(BASEWALLET_$1)/tagionwallet.hibon
+$$(TESTLOG_$1)/tagionwallet.hibon: $$(BASEWALLET_$1)/tagionwallet.hibon
 	$$(PRECMD)
 	$${call log.kvp, $$(@F) $1}
 	cp $$(BASEWALLETFILES_$1) $$(@D)
@@ -64,7 +64,7 @@ $$(BASEWALLET_$1)/tagionwallet.hibon: $$(STDINWALLET_$1)
 env-$1:
 	$$(PRECMD)
 	$${call log.header, $$@ :: env}
-	$${call log.kvp, TESTBENCH_$1 $$(TESTBENCH_$1)}
+	$${call log.kvp, TESTLOG_$1 $$(TESTLOG_$1)}
 	$${call log.kvp, BASEWALLET_$1 $$(BASEWALLET_$1)}
 	$${call log.kvp, STDINWALLET_$1 $$(STDINWALLET_$1)}
 	$${call log.kvp, WALLET_CONFIG_$1, $$(WALLET_CONFIG_$1)}
@@ -93,7 +93,7 @@ help-testnet: help-$1
 clean-$1:
 	$$(PRECMD)
 	$${call log.header, $$@ :: clean}
-	$$(RMDIR) $$(TESTBENCH_$1)
+	$$(RMDIR) $$(TESTLOG_$1)
 	$${call log.close}
 
 .PHONY: clean-$1
@@ -232,4 +232,4 @@ clean-dart:
 
 clean: clean-dart
 
-${foreach wallet,$(WALLETS),${call CREATE_WALLET,$(wallet),$(TESTBENCH)}}
+${foreach wallet,$(WALLETS),${call CREATE_WALLET,$(wallet),$(TESTLOG)}}

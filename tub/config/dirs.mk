@@ -12,8 +12,7 @@ export DTMP := $(DBUILD)/tmp
 export DOBJ := $(DBUILD)/obj
 export DLIB := $(DBUILD)/lib
 export DLOGCOV := $(DLOG)/cov
-# export BDD_LOG := $(DLOG)/bdd
-export TESTBENCH := $(DLOG)/testbench
+export TESTLOG := $(DLOG)/testlog
 export FUND := $(REPOROOT)/fundamental
 export SCRIPTS := $(DTUB)/scripts
 export TOOLS := $(REPOROOT)/tools
@@ -34,7 +33,7 @@ env-dirs:
 	$(call log.kvp, BDD_LOG, $(BDD_LOG))
 	$(call log.kvp, BDD_RESULTS, $(BDD_RESULTS))
 	$(call log.kvp, DLOGCOV, $(DLOGCOV))
-	$(call log.kvp, TESTBENCH, $(TESTBENCH))
+	$(call log.kvp, TESTLOG, $(TESTLOG))
 	$(call log.kvp, FUND, $(FUND))
 	$(call log.kvp, SCRIPTS, $(SCRIPTS))
 	$(call log.kvp, TOOLS, $(TOOLS))

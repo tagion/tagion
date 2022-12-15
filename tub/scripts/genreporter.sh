@@ -4,7 +4,7 @@ cat << EOF > $1
 export DBIN=$DBIN
 export DLOG=$DLOG
 export BDD=$BDD
-export TESTBENCH=$TESTBENCH
+export TESTLOG=$TESTLOG
 export BDD_LOG=$BDD_LOG
 export BDD_RESULTS=$BDD_RESULTS
 export REPOROOT=$REPOROOT
