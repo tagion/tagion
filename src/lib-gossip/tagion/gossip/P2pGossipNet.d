@@ -312,6 +312,7 @@ class StdP2pNet : P2pNet
     static uint counter;
     protected string owner_task_name;
     protected string internal_task_name;
+    protected bool listening;
 
     this(
         string owner_task_name,
@@ -323,6 +324,11 @@ class StdP2pNet : P2pNet
         this.internal_task_name = convert_to_net_task_name(owner_task_name);
         log.trace("owner_task_name %s internal_task_name %s", owner_task_name, internal_task_name);
         this.node = node;
+    }
+
+    @safe
+    void start_listening()
+    {
         @trusted
         void spawn_sender()
         {
@@ -333,8 +339,9 @@ class StdP2pNet : P2pNet
                 host,
                 node);
         }
-
-        spawn_sender();
+        assert(!listening);
+        spawn_sender();        
+        listening = true;
     }
 
     @safe
