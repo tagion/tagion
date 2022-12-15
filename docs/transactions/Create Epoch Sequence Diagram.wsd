@@ -1,0 +1,77 @@
+@startuml Epoch Creation Sequence
+
+skinparam Style strictuml
+skinparam SequenceMessageAlign center
+hide empty description
+title Epoch Creation
+
+participant HashGraph as hashgraph
+participant TagionService as tagion
+participant TranscriptService as transcript
+participant SmartScript as smartscript
+
+participant DARTSyncService as dartsync
+database DART as dart
+participant EpochDumpService as epochdump
+participant EpochChain as epochchain
+database EpochChainStorage as epochstorage
+participant RecorderService as recservice
+participant RecorderChain as recchain
+database RecorderChainStorage as recstorage
+
+activate dartsync
+activate dart
+activate tagion
+activate transcript
+activate epochdump
+activate epochchain
+activate epochstorage
+activate recservice
+activate recchain
+activate recstorage
+activate hashgraph
+
+hashgraph -> tagion : receive_epoch(events)
+
+tagion -> tagion : read transactions\nfrom payload_queue
+
+tagion -> transcript : receive_epoch(transactions)
+
+loop foreach received transaction
+
+    transcript -> dartsync : requestInputs(signed_contract.contract.inputs)
+    dartsync -> dart : dartRead(inputs)
+    dartsync --> transcript : send Recorder with dartRead(inputs) result
+    transcript -> transcript : add bills from result \nRecorder to signed_contract
+    transcript -> transcript : check inputs of signed contract
+    transcript -> transcript : to_smart_script(signed_contract)
+
+    activate smartscript
+
+    transcript -> smartscript : smart_script.check(net)
+    transcript -> smartscript : smart_script.run(current_epoch+1, index, last_bullseye, net)
+
+    deactivate smartscript
+
+    transcript -> transcript : add smart_script.output_bills\ninto recorder
+
+end
+
+transcript -> dartsync : send(dartModify(recorder))
+dartsync -> dart : dartModify(recorder)
+dart --> dartsync : send(bullseye)
+dartsync --> transcript : send(bullseye)
+
+transcript -> epochdump : send(signed_contracts, bullseye)
+epochdump -> epochdump : create epoch\nchain block
+epochdump -> epochchain : append(block)
+epochchain -> epochstorage : write(block)
+
+transcript -> recservice : send(recorder, bullseye)
+recservice -> recservice : create recorder\nchain block
+recservice -> recchain : append(block)
+recchain -> recstorage : write(block)
+
+transcript -> transcript : current_epoch++
+
+@enduml
