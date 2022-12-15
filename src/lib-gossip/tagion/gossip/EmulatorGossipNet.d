@@ -181,6 +181,6 @@ class EmulatorGossipNet : GossipNet
     }
     
     void start_listening(){
-        // NOT NEEDED
+        // NO IMPLEMENTATION NEEDED
     }
 }
