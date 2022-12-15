@@ -267,27 +267,27 @@ class SSLSocket : Socket {
      */
     protected void check_error(const int ssl_ret, const bool check_read_write = false) const {
         const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, ssl_ret);
-        with (SSLErrorCodes) { 
-	SSLErrorCase:
-	final switch (ssl_error) {
-            static foreach (ErrorCode; EnumMembers!SSLErrorCodes) {
-			case ErrorCode: 
-			static if (ErrorCode is SSLErrorCodes.SSL_ERROR_NONE) {
-                    // None
-                }
-                else static if (ErrorCode is SSLErrorCodes.SSL_ERROR_WANT_WRITE &&
-                        ErrorCode is SSLErrorCodes.SSL_ERROR_WANT_READ) {
-                    if (check_read_write) {
+        with (SSLErrorCodes) {
+        SSLErrorCase:
+            final switch (ssl_error) {
+                static foreach (ErrorCode; EnumMembers!SSLErrorCodes) {
+            case ErrorCode:
+                    static if (ErrorCode is SSLErrorCodes.SSL_ERROR_NONE) {
+                        // None
+                    }
+                    else static if (ErrorCode is SSLErrorCodes.SSL_ERROR_WANT_WRITE &&
+                            ErrorCode is SSLErrorCodes.SSL_ERROR_WANT_READ) {
+                        if (check_read_write) {
+                            throw new SSLSocketException(errorText(ssl_error), ssl_error);
+                        }
+                    }
+                    else {
                         throw new SSLSocketException(errorText(ssl_error), ssl_error);
                     }
+                    break SSLErrorCase;
                 }
-                else {
-                    throw new SSLSocketException(errorText(ssl_error), ssl_error);
-                }
-		break SSLErrorCase;
             }
         }
-	}
     }
     /++
      Returns:

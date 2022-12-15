@@ -65,6 +65,7 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
                             if (!info.name.length) {
                                 info.name = names[name_index].camelName;
                             }
+                            io.writefln("collect[%d] %s", name_index, info.name);
                             name_index++;
                         }
                     }
@@ -125,6 +126,7 @@ void takeName(ref string action_name, string description) {
         .split!isWhite
         .retro
         .take(action_subwords + 1)
+        .map!(name => name.filterName)
         .retro
         .join(" ");
 }
@@ -166,19 +168,19 @@ unittest {
     string name;
     auto some_description = "This is some description.";
     takeName(name, some_description);
-    assert(name == "description.");
+    assert(name == "description");
     assert(name.camelName == "description");
     assert(name.camelName(Yes.BigCamel) == "Description");
     takeName(name, some_description);
-    assert(name == "some description.");
+    assert(name == "some description");
     assert(name.camelName == "someDescription");
     assert(name.camelName(Yes.BigCamel) == "SomeDescription");
     takeName(name, some_description);
-    assert(name == "is some description.");
+    assert(name == "is some description");
     assert(name.camelName == "isSomeDescription");
     assert(name.camelName(Yes.BigCamel) == "IsSomeDescription");
     takeName(name, some_description);
-    assert(name == "This is some description.");
+    assert(name == "This is some description");
     assert(name.camelName == "thisIsSomeDescription");
     assert(name.camelName(Yes.BigCamel) == "ThisIsSomeDescription");
 }
@@ -233,6 +235,8 @@ unittest {
     assert(!names.isUnique);
     names = ["test", "test1"];
     assert(names.isUnique);
+    names = ["test", "test1", "test"];
+    assert(!names.isUnique);
 }
 
 /** 
@@ -269,6 +273,19 @@ unittest {
     const filename = buildPath(["another", "path", "to", "some", "module", "path", "ModuleName"])
         .setExtension(FileExtension.dsrc);
     assert(filename.suggestModuleName(paths) == "some.module.path.ModuleName");
+}
+
+@safe
+string filterName(const(char[]) name) pure {
+    return name
+        .filter!(a => a.isWhite || a.isAlphaNum)
+        .map!(a => cast(immutable char) a)
+        .array;
+}
+
+@safe
+unittest {
+    assert("#label.".filterName == "label");
 }
 
 version (unittest) {
