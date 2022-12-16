@@ -2,11 +2,13 @@
 TESTMAIN?=testbench
 
 BDDS+=bdd_wallets
-BDDS+=sslserver
 BDDS+=ssl_echo_server
+BDDS+=ssl_server
 
-run-sslserver: sslextras
-run-sslserver: RUNFLAGS+=$(BDD)/tagion/testbench/network/tagionwave.json
+run-ssl_echo_server: sslextras
+
+run-ssl_server: sslextras
+run-ssl_server: RUNFLAGS+=$(BDD)/tagion/testbench/network/tagionwave.json
 
 
 include $(BDD)/context.mk

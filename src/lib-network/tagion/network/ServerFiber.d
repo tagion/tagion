@@ -47,7 +47,7 @@ class SSLSocketTimeout : SSLSocketFiberException {
  Interface used for by the ServerFiber Relay delegate
 +/
 @safe
-interface SSLFiber {
+interface FiberRelay {
     alias Time = typeof(MonoTime.currTime);
     void startTime(); /// Start the timeout timer
     void checkTimeout() const; /// Check the timeout
@@ -71,7 +71,7 @@ interface SSLFiber {
 class ServerFiber {
     immutable(ServerOptions) opts;
     @safe interface Relay {
-        bool agent(SSLFiber sslfiber);
+        bool agent(FiberRelay sslfiber);
     }
     //alias Relay = bool delegate(SSLRelay) @safe;
 
@@ -281,7 +281,7 @@ class ServerFiber {
     /++
      SSL Socket service fiber
      +/
-    class SSLSocketFiber : Fiber, SSLFiber {
+    class SSLSocketFiber : Fiber, FiberRelay {
         @trusted
         static uint buffer_to_uint(const ubyte[] buffer) pure {
             return *cast(uint*)(buffer.ptr)[0 .. uint.sizeof];
@@ -290,7 +290,7 @@ class ServerFiber {
         protected {
             Socket client;
             bool _lock;
-            SSLFiber.Time start_timestamp;
+            FiberRelay.Time start_timestamp;
             uint fiber_id;
         }
 

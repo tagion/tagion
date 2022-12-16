@@ -4,9 +4,8 @@ BIN?=$(DBIN)
 
 EXTRAS_SSL?=$(BDD)/extras/ssl/
 
-sslextras: ssl_client ssl_server ssl_test_server
+sslextras: ssl_c_client ssl_c_server ssl_c_test_server
 
-#ssl_server: $(DBIN)/ssl_server
 
 %: $(BDD)/extras/ssl/%.c
 	echo $(DBIN)

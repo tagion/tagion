@@ -39,7 +39,6 @@ struct Environment {
     string dbin;
     string dlog;
     string bdd;
-    string testbench;
     string bdd_log;
     string bdd_results;
     string reporoot;

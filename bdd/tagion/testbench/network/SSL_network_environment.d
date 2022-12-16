@@ -4,7 +4,6 @@ import tagion.testbench.tools.Environment;
 import std.path;
 import tagion.behaviour;
 
-
 import std.process;
 import std.conv;
 import std.string;
@@ -16,16 +15,14 @@ immutable string ssltestserver;
 immutable string sslclient;
 immutable string cert;
 
-shared static this()
-{
-    sslserver = env.dbin.buildPath("ssl_server");
-    ssltestserver = env.dbin.buildPath("ssl_test_server");
-    sslclient = env.dbin.buildPath("ssl_client");
+shared static this() {
+    sslserver = env.dbin.buildPath("ssl_c_server");
+    ssltestserver = env.dbin.buildPath("ssl_c_test_server");
+    sslclient = env.dbin.buildPath("ssl_c_client");
     cert = env.bdd.buildPath("extras", "ssl", "mycert.pem");
 }
 
-string client_send(string message, ushort port) @trusted
-{
+string client_send(string message, ushort port) @trusted {
     immutable sslclient_send_command = [
         sslclient,
         "localhost",
@@ -47,10 +44,8 @@ string client_send(string message, ushort port) @trusted
 }
 
 @trusted
-void client_send_task(ushort port, string prefix, uint calls)
-{
-    foreach (i; 0 .. calls)
-    {
+void client_send_task(ushort port, string prefix, uint calls) {
+    foreach (i; 0 .. calls) {
         const message = format("%s%s", prefix, i);
         const response = client_send(message, port);
         writefln("response: <%s>", response);

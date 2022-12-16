@@ -11,16 +11,15 @@ import std.concurrency;
 import tagion.behaviour;
 import core.thread;
 
-
 @trusted
 string echoSSLSocket(string address, const ushort port, string msg) {
-	version(WOLFSSL)   import tagion.network.wolfssl.c.ssl;
+    version (WOLFSSL) import tagion.network.wolfssl.c.ssl;
 
     auto buffer = new char[1024];
     auto socket = new SSLSocket(AddressFamily.INET, SocketType.STREAM); //, ProtocolType.TCP);
     auto addresses = getAddress(address, port);
     socket.connect(addresses[0]);
-	writef("*");
+    writef("*");
     socket.send(msg);
     const size = socket.receive(buffer);
     socket.shutdown;
@@ -60,7 +59,7 @@ void echoSSLSocketServer(string address, const ushort port, string cert) {
         auto client = cast(SSLSocket) server.accept(); /* accept connection as usual */
         const size = client.receive(buffer);
         const received_buffer = buffer[0 .. size];
-        SSL_write(client.ssl, buffer.ptr, cast(int)size); /* send reply */
+        SSL_write(client.ssl, buffer.ptr, cast(int) size); /* send reply */
         client.send(received_buffer);
         client.shutdown;
         stop = received_buffer == "EOC"; /* service connection */
@@ -99,19 +98,19 @@ bool check_doc(const Document main_doc,
 }
 
 @safe
-class SSLTestRelay : ServerFiber.Relay {
-    bool agent(SSLFiber ssl_relay) {
-        immutable buffer = ssl_relay.receive;
+class TestRelay : ServerFiber.Relay {
+    bool agent(FiberRelay relay) {
+        immutable buffer = relay.receive;
         const doc = Document(buffer);
         check(doc.isInorder, "Invalid document");
         do {
             yield;
         }
-        while (!ssl_relay.available);
+        while (!relay.available);
         auto test_package = TestPackage(doc);
         test_package.count++;
         //            yield;
-        ssl_relay.send(test_package.toDoc.serialize);
+        relay.send(test_package.toDoc.serialize);
         return true;
     }
 
@@ -133,7 +132,7 @@ void taskTestServer(
             }
         }
 
-        auto relay = new SSLTestRelay;
+        auto relay = new TestRelay;
         auto listener = new SSLSocket(
                 AddressFamily.INET,
                 SocketType.STREAM,

@@ -98,7 +98,7 @@
                 "unit": ""
             },
             "server": {
-                "address": "1.0.0.0",
+                "address": "0.0.0.0",
                 "client_timeout": 4000,
                 "max_buffer_size": 16384,
                 "max_connections": 1000,

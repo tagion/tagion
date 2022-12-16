@@ -5,7 +5,7 @@ This test setup an multi-client server
 
 Scenario: A server module with capable to service multi client should be test
 
-Given  the server has been stated
+Given the server has been stated
 
 Given multiple clients has been stated and connected to the server
 

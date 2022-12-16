@@ -11,7 +11,7 @@ import std.socket : SocketType, AddressFamily;
 import tagion.network.ServerAPI;
 import tagion.network.SSLSocket : SSLSocket;
 
-import tagion.network.ServerFiber : ServerFiber, SSLFiber;
+import tagion.network.ServerFiber : ServerFiber, FiberRelay;
 import tagion.logger.Logger;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
@@ -91,7 +91,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
         }
 
         @safe class TransactionRelay : ServerFiber.Relay {
-            bool agent(SSLFiber ssl_relay) {
+            bool agent(FiberRelay ssl_relay) {
                 import tagion.hibon.HiBONJSON;
 
                 @trusted const(Document) receivessl() nothrow {
@@ -103,8 +103,8 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         log("buffer receiver %d", buffer.length);
                         const result = Document(buffer);
                         bool check_doc(const Document main_doc,
-                                const Document.Element.ErrorCode error_code, const(Document.Element) current, const(
-                                Document.Element) previous) nothrow @safe {
+                                const Document.Element.ErrorCode error_code,
+                                const(Document.Element) current, const(Document.Element) previous) nothrow @safe {
                             return false;
                         }
 
