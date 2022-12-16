@@ -5,7 +5,6 @@ import std.socket : InternetAddress, AddressFamily, SocketOSException;
 import std.stdio : writeln, writefln, stderr;
 import core.thread : Thread, seconds;
 
-import tagion.basic.Basic : TrustedConcurrency;
 import tagion.basic.Types : Control, Buffer;
 import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.Document : Document;
@@ -21,8 +20,6 @@ import tagion.services.LoggerService : LoggerTask;
 import tagion.services.Options : Options, setDefaultOption, setOptions, getOptions;
 import tagion.tasks.TaskWrapper : Task;
 import tagion.tools.Basic : Main;
-
-mixin TrustedConcurrency;
 
 private void sendingLoop()
 {

@@ -18,7 +18,7 @@ import std.algorithm.searching : canFind;
 import std.datetime.systime : Clock;
 import std.conv : to;
 
-import tagion.basic.Basic : TrustedConcurrency, assumeTrusted;
+import tagion.basic.Basic : assumeTrusted;
 import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions;
 import tagion.GlobalSignals : abort;
@@ -29,8 +29,7 @@ import tagion.services.Options : Options, setOptions, options;
 import tagion.logger.Logger;
 import tagion.logger.LogRecords;
 import tagion.tasks.TaskWrapper;
-
-mixin TrustedConcurrency;
+import tagion.utils.TrustedConcurrency;
 
 private
 {
@@ -70,12 +69,12 @@ private
     {
         if (logSubscriptionTid is Tid.init)
         {
-            logSubscriptionTid = locate(options.logSubscription.task_name);
+            logSubscriptionTid = locateTrusted(options.logSubscription.task_name);
         }
 
         if (logSubscriptionTid !is Tid.init)
         {
-            logSubscriptionTid.send(args);
+            logSubscriptionTid.sendTrusted(args);
         }
     }
 
@@ -189,7 +188,7 @@ private
 
         if (options.logSubscription.enable)
         {
-            logSubscriptionTid = spawn(&logSubscriptionServiceTask, options);
+            logSubscriptionTid = spawnTrusted(&logSubscriptionServiceTask, options);
         }
         scope (exit)
         {
@@ -197,8 +196,8 @@ private
 
             if (logSubscriptionTid !is Tid.init)
             {
-                logSubscriptionTid.send(Control.STOP);
-                if (receiveOnly!Control == Control.END) // TODO: can't receive END when stopping after logservicetest, fix it
+                logSubscriptionTid.sendTrusted(Control.STOP);
+                if (receiveOnlyTrusted!Control == Control.END) // TODO: can't receive END when stopping after logservicetest, fix it
                 {
                     writeln("Canceled task LogSubscriptionService");
                     writeln("Received END from LogSubscriptionService");
@@ -214,10 +213,10 @@ private
             file.flush;
         }
 
-        ownerTid.send(Control.LIVE);
+        ownerTidTrusted.sendTrusted(Control.LIVE);
         while (!stop && !abort)
         {
-            receive(&control, &receiveLogs, &receiveFilters);
+            receiveTrusted(&control, &receiveLogs, &receiveFilters);
             if (options.logger.flush && logging)
             {
                 file.flush();

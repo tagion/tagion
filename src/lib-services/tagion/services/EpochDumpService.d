@@ -8,13 +8,10 @@ import tagion.hashchain.HashChainFileStorage : HashChainFileStorage;
 import tagion.epochain.EpochChainBlock;
 import tagion.epochain.EpochChain;
 import tagion.basic.Types : Control, Buffer;
-import tagion.basic.Basic : TrustedConcurrency;
 import tagion.hibon.Document;
 import tagion.tasks.TaskWrapper;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.services.Options : Options, setDefaultOption;
-
-mixin TrustedConcurrency;
 
 /** @brief File contains service for handling and saving epochs chain blocks
  */
@@ -50,7 +47,8 @@ struct EpochDumpTask
      */
     void opCall(immutable(Options) opts) @trusted
     {
-        DumpEpochChainStorage storage = new DumpEpochChainFileStorage(opts.epoch_dump.transaction_dumps_directory, this.hash_net);
+        DumpEpochChainStorage storage = new DumpEpochChainFileStorage(
+            opts.epoch_dump.transaction_dumps_directory, this.hash_net);
         epoch_chain = new EpochChain(storage);
 
         ownerTid.send(Control.LIVE);

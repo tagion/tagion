@@ -538,68 +538,6 @@ template mangleFunc(alias T) if (isCallable!T)
     alias mangleFunc = mangle!(FunctionTypeOf!(T));
 }
 
-pragma(msg, "fixme(ib): replace template with functions like sendTrusted");
-@safe mixin template TrustedConcurrency()
-{
-    private
-    {
-        import concurrency = std.concurrency;
-        import core.time : Duration;
-
-        alias Tid = concurrency.Tid;
-
-        static void send(Args...)(Tid tid, Args args) @trusted
-        {
-            concurrency.send(tid, args);
-        }
-
-        static void prioritySend(Args...)(Tid tid, Args args) @trusted
-        {
-            concurrency.prioritySend(tid, args);
-        }
-
-        static void receive(Args...)(Args args) @trusted
-        {
-            concurrency.receive(args);
-        }
-
-        static auto receiveOnly(T...)() @trusted
-        {
-            return concurrency.receiveOnly!T;
-        }
-
-        static bool receiveTimeout(T...)(Duration duration, T ops) @trusted
-        {
-            return concurrency.receiveTimeout!T(duration, ops);
-        }
-
-        static Tid ownerTid() @trusted
-        {
-            return concurrency.ownerTid;
-        }
-
-        static Tid thisTid() @safe
-        {
-            return concurrency.thisTid;
-        }
-
-        static Tid spawn(F, Args...)(F fn, Args args) @trusted
-        {
-            return concurrency.spawn(fn, args);
-        }
-
-        static Tid locate(string name) @trusted
-        {
-            return concurrency.locate(name);
-        }
-
-        static bool register(string name, Tid tid) @trusted
-        {
-            return concurrency.register(name, tid);
-        }
-    }
-}
-
 private import std.range;
 private import tagion.basic.Types : FileExtension;
 

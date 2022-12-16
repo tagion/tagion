@@ -11,7 +11,6 @@ import std.array : array, join;
 import std.stdio : writeln;
 import core.thread : msecs;
 
-import tagion.basic.Basic : TrustedConcurrency;
 import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions : fatal, taskfailure;
 import tagion.communication.HiRPC : HiRPC;
@@ -23,8 +22,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : GetLabel;
 import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
 import tagion.network.SSLServiceAPI : SSLServiceAPI;
-
-mixin TrustedConcurrency;
+import tagion.utils.TrustedConcurrency;
 
 /**
  * \struct LogSubscribersInfo
@@ -85,7 +83,7 @@ struct LogSubscribersInfo
         pragma(msg, "fixme(ib): could be redesigned using shared storage");
         if (logger_service_tid != Tid.init)
         {
-            logger_service_tid.send(LogFilterArray(update_filters.idup), action);
+            logger_service_tid.sendTrusted(LogFilterArray(update_filters.idup), action);
         }
         else
         {
@@ -196,10 +194,10 @@ void logSubscriptionServiceTask(Options opts) nothrow
         scope (exit)
         {
             writeln("Sending END from LogSubService");
-            ownerTid.send(Control.END);
+            ownerTidTrusted.sendTrusted(Control.END);
         }
 
-        auto subscribers = LogSubscribersInfo(locate(opts.logger.task_name));
+        auto subscribers = LogSubscribersInfo(locateTrusted(opts.logger.task_name));
 
         log.register(opts.logSubscription.task_name);
 
@@ -300,10 +298,10 @@ void logSubscriptionServiceTask(Options opts) nothrow
             }
         }
 
-        ownerTid.send(Control.LIVE);
+        ownerTidTrusted.sendTrusted(Control.LIVE);
         while (!stop)
         {
-            receiveTimeout(500.msecs,
+            receiveTimeoutTrusted(500.msecs,
                 &control,
                 &taskfailure,
                 &receiveLogs,

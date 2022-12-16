@@ -2,7 +2,6 @@
 
 module tagion.services.RecorderService;
 
-import tagion.basic.Basic : TrustedConcurrency;
 import tagion.basic.Types : Control;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.SecureNet : StdHashNet;
@@ -14,8 +13,7 @@ import tagion.services.Options : Options;
 import tagion.tasks.TaskWrapper;
 import tagion.utils.Fingerprint : Fingerprint;
 import tagion.utils.Miscellaneous : cutHex;
-
-mixin TrustedConcurrency;
+import tagion.utils.TrustedConcurrency;
 
 /** @brief File contains service for handling and saving recorder chain blocks
  */
@@ -49,7 +47,7 @@ mixin TrustedConcurrency;
 
         version (unittest)
         {
-            ownerTid.send(Control.LIVE);
+            ownerTidTrusted.sendTrusted(Control.LIVE);
         }
     }
 
@@ -63,10 +61,10 @@ mixin TrustedConcurrency;
 
         recorder_chain = new RecorderChain(storage);
 
-        ownerTid.send(Control.LIVE);
+        ownerTidTrusted.sendTrusted(Control.LIVE);
         while (!stop)
         {
-            receive(&control, &receiveRecorder);
+            receiveTrusted(&control, &receiveRecorder);
         }
     }
 }
@@ -90,11 +88,11 @@ unittest
     }
 
     auto recorderService = Task!RecorderTask(options.recorder_chain.task_name ~ "unittest", options);
-    assert(receiveOnly!Control == Control.LIVE);
+    assert(receiveOnlyTrusted!Control == Control.LIVE);
     scope (exit)
     {
         recorderService.control(Control.STOP);
-        assert(receiveOnly!Control == Control.END);
+        assert(receiveOnlyTrusted!Control == Control.END);
     }
 
     log.silent = true;
@@ -108,7 +106,7 @@ unittest
     foreach (i; 0 .. blocks_count)
     {
         recorderService.receiveRecorder(empty_recorder, empty_bullseye);
-        assert(receiveOnly!Control == Control.LIVE);
+        assert(receiveOnlyTrusted!Control == Control.LIVE);
     }
 
     HashNet net = new StdHashNet;

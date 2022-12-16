@@ -781,10 +781,6 @@ class SSLSocket : Socket
         {
             import core.thread;
 
-            import tagion.basic.Basic : TrustedConcurrency;
-
-            mixin TrustedConcurrency;
-
             static const ubyte[] send_test_data = [8, 7, 6, 5, 4];
             static const string ut_adress = "127.0.0.1";
             static const int port = 4433;

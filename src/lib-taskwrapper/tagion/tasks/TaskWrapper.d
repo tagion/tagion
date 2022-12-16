@@ -8,18 +8,16 @@ import std.range;
 import std.algorithm.mutation : remove;
 
 import tagion.basic.Types : Control;
-import tagion.basic.Basic : TrustedConcurrency;
 import tagion.logger.Logger;
 import tagion.logger.LogRecords : LogFilter, LogFilterArray, LogFiltersAction, LogInfo;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
 import tagion.utils.Fingerprint : Fingerprint;
+import tagion.utils.TrustedConcurrency;
 import tagion.services.LoggerService;
 import tagion.dart.Recorder;
 import tagion.hibon.Document : Document;
 
 alias Recorder = RecordFactory.Recorder;
-
-mixin TrustedConcurrency;
 
 @safe struct TaskMethod
 {
@@ -122,7 +120,7 @@ unittest
     this(string task_name, Params args)
     {
         this.task_name = task_name;
-        _tid = spawn(&run, task_name, args);
+        _tid = spawnTrusted(&run, task_name, args);
 
         // Add to static table of tasks
         _tid_table.push_back(TaskInfo(_tid, task_name));
@@ -145,7 +143,7 @@ unittest
                         enum method_code = format!q{
                             alias FuncParams_%1$s=AliasSeq!%2$s;
                             void %1$s(FuncParams_%1$s args) {
-                                send(_tid, args);
+                                sendTrusted(_tid, args);
                                     }}(m, Parameters!(Type).stringof);
                         result ~= method_code;
                     }
@@ -167,8 +165,8 @@ unittest
         {
             auto task_info = _tid_table.pop_back;
             writeln("stopTasks step ", task_info);
-            send(task_info.tid, Control.STOP);
-            writeln(format("Stopping '%s'... %s", task_info.task_name, receiveOnly!Control));
+            sendTrusted(task_info.tid, Control.STOP);
+            writeln(format("Stopping '%s'... %s", task_info.task_name, receiveOnlyTrusted!Control));
         }
     }
 
@@ -178,7 +176,7 @@ unittest
 
         static if (is(Func == LoggerTask))
         {
-            register(task_name, thisTid);
+            registerTrusted(task_name, thisTid);
             log.set_logger_task(task_name);
             writeln("Register: ", task_name);
         }
@@ -203,7 +201,7 @@ unittest
             scope (exit)
             {
                 _tid_table.removeTask(task_name);
-                prioritySend(ownerTid, Control.END);
+                prioritySendTrusted(ownerTidTrusted, Control.END);
             }
 
             registerLogger(task_name);
@@ -270,7 +268,7 @@ version (unittest) @safe struct FakeTask
 
     @TaskMethod void echo_string(string test_string)
     {
-        send(ownerTid, test_string);
+        sendTrusted(ownerTidTrusted, test_string);
     }
 
     @TaskMethod void throwing_method(int n)
@@ -280,10 +278,10 @@ version (unittest) @safe struct FakeTask
 
     void opCall(int x, uint y)
     {
-        send(ownerTid, Control.LIVE);
+        sendTrusted(ownerTidTrusted, Control.LIVE);
         while (!stop)
         {
-            receive(
+            receiveTrusted(
                 &control,
                 &echo_string,
                 &throwing_method);
@@ -308,10 +306,10 @@ version (unittest) @safe struct FakeTask
     scope (exit)
     {
         loggerService.control(Control.STOP);
-        assert(receiveOnly!Control is Control.END);
+        assert(receiveOnlyTrusted!Control is Control.END);
     }
 
-    assert(receiveOnly!Control is Control.LIVE);
+    assert(receiveOnlyTrusted!Control is Control.LIVE);
 
     log.register(main_task);
 
@@ -319,24 +317,24 @@ version (unittest) @safe struct FakeTask
     enum fake_task_name = "fake_task_name";
     alias fake_task = Task!FakeTask;
     auto task = fake_task(fake_task_name, 10, 20);
-    assert(receiveOnly!Control == Control.LIVE);
+    assert(receiveOnlyTrusted!Control == Control.LIVE);
 
     // Check sending some string back and forth
     enum test_string = "send some text";
     task.echo_string(test_string);
-    assert(receiveOnly!string == test_string);
+    assert(receiveOnlyTrusted!string == test_string);
 
     // Check handling exceptions
     task.throwing_method(10);
-    assert(receiveOnly!Control == Control.END);
+    assert(receiveOnlyTrusted!Control == Control.END);
     pragma(msg, "fixme(ib): check for 'locate(task_name)' after adding application tests");
 
     // Check stopping task using Control.STOP
     enum another_fake_task_name = "another_fake_task_name";
     auto task2 = fake_task(another_fake_task_name, 10, 20);
-    assert(receiveOnly!Control == Control.LIVE);
+    assert(receiveOnlyTrusted!Control == Control.LIVE);
     task2.control(Control.STOP);
-    assert(receiveOnly!Control == Control.END);
+    assert(receiveOnlyTrusted!Control == Control.END);
     pragma(msg, "fixme(ib): check for 'locate(task_name)' after adding application tests");
 
     // TODO: add tests for tasks table
