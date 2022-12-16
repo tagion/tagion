@@ -1,9 +1,11 @@
 module tagion.testbench.network.SSLSocketTest;
 
+import std.exception;
 import std.stdio;
 import std.string;
 import std.socket; // : InternetAddress, Socket, SocketException, TcpSocket, getAddress, SocketType, AddressFamily, ProtocolType, SocketShutdown, SocketSet;
 
+import tagion.hibon.HiBONJSON;
 import tagion.network.SSLSocket;
 import stdc_io = core.stdc.stdio;
 import tagion.network.SSL;
@@ -109,8 +111,8 @@ class TestRelay : FiberServer.Relay {
         }
         while (!relay.available);
         auto test_package = TestPackage(doc);
+		writefln("Received %s", test_package.toPretty);
         test_package.count++;
-        //            yield;
         relay.send(test_package.toDoc.serialize);
         return true;
     }
@@ -124,6 +126,7 @@ void testFiberServerTask(
             writefln("#### testServerTask : Success '%s'", task_name);
             ownerTid.send(Control.END);
         }
+			writefln("testFiberServerTask task_name %s", task_name);
         log.register(task_name);
         bool stop;
         void handleState(Control ts) {
@@ -140,8 +143,12 @@ void testFiberServerTask(
         auto listener = new Socket(
                 AddressFamily.INET,
                 SocketType.STREAM);
-        listener.setOption(SocketOptionLevel.SOCKET,
+        listener.setOption(
+				SocketOptionLevel.SOCKET,
                 SocketOption.REUSEADDR, 0);
+        listener.setOption(
+				SocketOptionLevel.SOCKET,
+		SocketOption.RCVTIMEO, 10.seconds);
         auto ssl_test_service = ServerAPI(
                 opts,
                 listener,
@@ -207,6 +214,7 @@ void testFiberSSLServerTask(
         }
     }
     catch (Throwable e) {
+		assumeWontThrow(writefln("ERROR %s", e));
         fatal(e);
     }
 }

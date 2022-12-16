@@ -478,7 +478,7 @@ class FiberServer {
                 client = _client;
             }
             else {
-                client = listener.accept();
+                client = accept_client;
 
             }
             assert(client.isAlive);
