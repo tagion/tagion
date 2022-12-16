@@ -20,10 +20,12 @@ import tagion.services.LoggerService : LoggerTask;
 import tagion.services.Options : Options, setDefaultOption, setOptions, getOptions;
 import tagion.tasks.TaskWrapper : Task;
 import tagion.tools.Basic : Main;
+import tagion.utils.TrustedConcurrency;
 
 private void sendingLoop()
 {
     writeln("I'm alive!");
+
     log.register("sendingLoop");
     writeln("Wait...");
     Thread.sleep(3.seconds);
@@ -68,7 +70,7 @@ int _main(string[] args)
     auto logger_service = Task!LoggerTask(service_options.logger.task_name, service_options);
 
     stderr.writeln("Waiting for logger");
-    const response = receiveOnly!Control;
+    const response = receiveOnlyTrusted!Control;
     stderr.writeln("Logger started");
     if (response !is Control.LIVE)
     {
@@ -78,7 +80,7 @@ int _main(string[] args)
     scope (exit)
     {
         logger_service.control(Control.STOP);
-        receiveOnly!Control;
+        receiveOnlyTrusted!Control;
     }
     log.register(main_task);
 
@@ -120,7 +122,7 @@ int _main(string[] args)
     auto rec_buf = new void[4000];
     ptrdiff_t rec_size;
 
-    spawn(&sendingLoop);
+    spawnTrusted(&sendingLoop);
 
     do
     {

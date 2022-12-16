@@ -22,6 +22,7 @@ import tagion.services.TagionFactory;
 import tagion.GlobalSignals;
 import tagion.network.SSLOptions : OpenSSL, configureOpenSSL;
 import tagion.tasks.TaskWrapper;
+import tagion.utils.TrustedConcurrency;
 
 /**
  * Create configs for struct OpenSSL
@@ -176,7 +177,7 @@ int _main(string[] args)
     import std.stdio : stderr;
 
     stderr.writeln("Waiting for logger");
-    const response = receiveOnly!Control;
+    const response = receiveOnlyTrusted!Control;
     stderr.writeln("Logger started");
     if (response !is Control.LIVE)
     {
@@ -186,25 +187,25 @@ int _main(string[] args)
     scope (exit)
     {
         logger_service_tid.control(Control.STOP);
-        receiveOnly!Control;
+        receiveOnlyTrusted!Control;
     }
 
     log.register(main_task);
 
     //    Control response;
-    Tid tagion_service_tid = spawn(&tagionFactoryService, service_options);
-    assert(receiveOnly!Control == Control.LIVE);
+    Tid tagion_service_tid = spawnTrusted(&tagionFactoryService, service_options);
+    assert(receiveOnlyTrusted!Control == Control.LIVE);
     scope (exit)
     {
-        tagion_service_tid.send(Control.STOP);
+        tagion_service_tid.sendTrusted(Control.STOP);
         log("Wait for %s to stop", tagion_service_tid.stringof);
-        receiveOnly!Control;
+        receiveOnlyTrusted!Control;
     }
     writeln("Wait for join");
 
     int result;
 
-    receive(
+    receiveTrusted(
         (Control response) {
         with (Control)
         {
