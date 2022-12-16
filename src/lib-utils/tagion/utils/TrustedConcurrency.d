@@ -1,8 +1,13 @@
+/// \file TrustedConcurrency.d
 module tagion.utils.TrustedConcurrency;
 
 private import concurrency = std.concurrency;
 
 import core.time : Duration;
+
+/** @brief File contains functions of std.concurrency wrapped in @trusted
+ *         to use them in @safe code
+ */
 
 alias Tid = concurrency.Tid;
 alias thisTid = concurrency.thisTid;
