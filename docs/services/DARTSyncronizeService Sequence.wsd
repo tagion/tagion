@@ -1,0 +1,81 @@
+@startuml DARTSyncService Sequence
+
+skinparam Style strictuml
+hide empty description
+title DARTSyncronizeService Sequence Diagram
+
+participant TagionService as tagion
+participant DARTSyncService as dartsync
+participant Logger as logger
+database DART as dart
+participant BlockFile as blockfile
+
+tagion -> dartsync : spawn(Options options, \n p2plib.NodeI node, \n SecureNet master_net, \n DART.SectorRange sector_range)
+dartsync -> logger : log.register(options.dart.sync.task_name)
+dartsync -> dartsync : state = DARTSynchronizeState.WAITING
+
+alt if options.dart.initialize
+    dartsync -> dart : create(options.dart.path, BLOCK_SIZE)
+    dart -> blockfile : create(options.dart.path, \n DARTFile.stringof, \n BLOCK_SIZE)
+    blockfile -> blockfile : create file for DART
+end
+
+dartsync -> dart : new DART(net, \n filename, \n sector_range.from_sector, \n sector_range.to_sector)
+dart -> blockfile : new BlockFile(filename)
+dartsync -> dart : dump()
+
+dartsync -> dartsync : **journalReplayFiber**
+dartsync -> dartsync : **connectionPool**
+dartsync -> dartsync : **sync_factory**
+dartsync -> dartsync : **syncPool**
+dartsync -> dartsync : **syncPool**
+
+alt if options.dart.synchronize
+    dartsync -> dartsync : state = DARTSynchronizeState.WAITING
+else else
+    dartsync -> dartsync : state = DARTSynchronizeState.READY
+end
+
+dartsync -> dartsync : **subscription**
+dartsync -> tagion : send(Control.LIVE)
+
+dartsync -> dartsync : **while (!stop) listen**
+
+@enduml
+
+{
+    try
+    {
+
+        auto journalReplayFiber = new ReplayPool!string((string journal) => dart.replay(journal));
+
+        auto connectionPool = new shared(ConnectionPoolT)(
+            options.dart.sync.host.timeout.msecs);
+        auto sync_factory = new P2pSynchronizationFactory(
+            dart, options.port, node,
+            connectionPool, options.dart, net.pubkey);
+        auto syncPool = new DARTSynchronizationPool!(StdHandlerPool!(ResponseHandler, uint))(dart.sectors,
+            journalReplayFiber, options.dart);
+        bool request_handling = false;
+
+
+
+
+        auto subscription = ActiveNodeSubscribtion!Net(options);
+
+        ownerTid.send(Control.LIVE);
+        while (!stop)
+        {
+        }
+
+        scope (exit)
+        {
+            ownerTid.prioritySend(Control.END);
+
+            node.closeListener(pid);
+
+            log("exit scope: call stop");
+            syncPool.stop;
+        }
+    }
+}
