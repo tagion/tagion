@@ -456,7 +456,7 @@ static setDefaultOption(ref Options options)
     {
         max = 0;
         task_name = "logsubscription";
-        enable = true;
+        enable = false;
         with (service)
         {
 			with(server) {

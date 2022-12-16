@@ -43,7 +43,7 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
     @trusted
     @Given("the server should been stated")
     Document serverShouldBeenStated() {
-        server_tid = spawn(&testServerTask, opts, task_name);
+        server_tid = spawn(&testFiberServerTask, opts, task_name);
         check(receiveOnly!Control is Control.LIVE, "Server task did not start correctly");
         return result_ok;
     }
@@ -99,6 +99,7 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
         Thread.sleep(10.seconds);
         server_tid.send(Control.STOP);
         check(receiveOnly!Control == Control.END, "Server tash did not finish correctly");
+        Thread.sleep(1.seconds);
         return result_ok;
     }
 

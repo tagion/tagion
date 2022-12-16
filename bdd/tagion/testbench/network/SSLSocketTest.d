@@ -1,9 +1,11 @@
 module tagion.testbench.network.SSLSocketTest;
 
+import std.exception;
 import std.stdio;
 import std.string;
-import std.socket : InternetAddress, Socket, SocketException, TcpSocket, getAddress, SocketType, AddressFamily, ProtocolType, SocketShutdown, SocketSet;
+import std.socket; // : InternetAddress, Socket, SocketException, TcpSocket, getAddress, SocketType, AddressFamily, ProtocolType, SocketShutdown, SocketSet;
 
+import tagion.hibon.HiBONJSON;
 import tagion.network.SSLSocket;
 import stdc_io = core.stdc.stdio;
 import tagion.network.SSL;
@@ -71,7 +73,7 @@ void echoSSLSocketServer(string address, const ushort port, string cert) {
 
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
-import tagion.network.ServerFiber;
+import tagion.network.FiberServer;
 import tagion.network.SSLServiceOptions;
 import tagion.network.ServerAPI;
 
@@ -98,7 +100,7 @@ bool check_doc(const Document main_doc,
 }
 
 @safe
-class TestRelay : ServerFiber.Relay {
+class TestRelay : FiberServer.Relay {
     bool agent(FiberRelay relay) {
         writefln("Relay");
         immutable buffer = relay.receive;
@@ -109,22 +111,22 @@ class TestRelay : ServerFiber.Relay {
         }
         while (!relay.available);
         auto test_package = TestPackage(doc);
+		writefln("Received %s", test_package.toPretty);
         test_package.count++;
-        //            yield;
         relay.send(test_package.toDoc.serialize);
         return true;
     }
 }
 
-void testServerTask(
+void testFiberServerTask(
         immutable ServerOptions opts,
         string task_name) nothrow {
     try {
-        version (none)
-            scope (success) {
-
-                ownerTid.send(Control.END);
-            }
+        scope (success) {
+            writefln("#### testServerTask : Success '%s'", task_name);
+            ownerTid.send(Control.END);
+        }
+			writefln("testFiberServerTask task_name %s", task_name);
         log.register(task_name);
         bool stop;
         void handleState(Control ts) {
@@ -141,6 +143,12 @@ void testServerTask(
         auto listener = new Socket(
                 AddressFamily.INET,
                 SocketType.STREAM);
+        listener.setOption(
+				SocketOptionLevel.SOCKET,
+                SocketOption.REUSEADDR, 0);
+        listener.setOption(
+				SocketOptionLevel.SOCKET,
+		SocketOption.RCVTIMEO, 10.seconds);
         auto ssl_test_service = ServerAPI(
                 opts,
                 listener,
@@ -163,10 +171,13 @@ void testServerTask(
     }
 }
 
-void testSSLServerTask(
+void testFiberSSLServerTask(
         immutable SSLServiceOptions ssl_options,
         string task_name) nothrow {
     try {
+        scope (success) {
+            ownerTid.send(Control.END);
+        }
         log.register(task_name);
         bool stop;
         void handleState(Control ts) {
@@ -203,6 +214,7 @@ void testSSLServerTask(
         }
     }
     catch (Throwable e) {
+		assumeWontThrow(writefln("ERROR %s", e));
         fatal(e);
     }
 }
