@@ -29,7 +29,10 @@ int _main(string[] args) {
     auto setup = mainSetup!SSLServiceOptions("ssl_server", &setDefault);
     int result = testMain(setup, args);
 
-    //	auto 
+    /// Server test without SSL
+    auto server_handle = automation!Multipleclients_server_connections;
+    server_handle.AServerModuleWithCapableToServiceMultiClientShouldBeTest(setup.options.server);
+    auto server_context = server_handle.run;
     if (result == 0) {
 
         writefln("sslserver=%s", setup.options.cert);

@@ -11,21 +11,21 @@ import std.format;
 import tagion.network.SSLServiceOptions : ServerOptions;
 import tagion.network.NetworkExceptions : check;
 import tagion.network.SSLSocketException : SSLSocketException;
-import tagion.network.SSL : SSLErrorCodes;
 import tagion.basic.Message;
 import tagion.basic.Types : Buffer, Control;
 import tagion.logger.Logger;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.TagionExceptions : taskfailure, fatal;
 
-//import tagion.services.LoggerService;
 import LEB128 = tagion.utils.LEB128;
 
 /++
  The exception used by the fiber service
 +/
 @safe
-class SSLSocketFiberException : SSLSocketException {
+class SocketFiberException : SSLSocketException {
+    import tagion.network.SSL : SSLErrorCodes;
+
     this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) {
         super(msg, SSLErrorCodes.SSL_ERROR_NONE, file, line);
     }
@@ -35,7 +35,7 @@ class SSLSocketFiberException : SSLSocketException {
  Fiber timeout exception
 +/
 @safe
-class SSLSocketTimeout : SSLSocketFiberException {
+class SocketTimeout : SocketFiberException {
     const Duration timeout;
     this(const Duration timeout, string file = __FILE__, size_t line = __LINE__) {
         this.timeout = timeout;
@@ -65,7 +65,7 @@ interface FiberRelay {
 }
 
 /++
- SSL Service
+Server using one fibers per connection 
 +/
 @safe
 class ServerFiber {
@@ -84,11 +84,10 @@ class ServerFiber {
     }
 
     protected {
-        SSLSocketFiber[uint] active_fibers;
-        SSLSocketFiber[] recycle_fibers;
+        SocketFiber[uint] active_fibers;
+        SocketFiber[] recycle_fibers;
         uint _fiber_id;
         Relay relay;
-        //        const(HiRPC) hirpc;
         Socket listener;
         uint next_fiber_id() {
             if (_fiber_id == 0) {
@@ -180,8 +179,8 @@ class ServerFiber {
     /++
      Allocated a new fiber service
      +/
-    SSLSocketFiber allocateFiber() {
-        SSLSocketFiber result;
+    SocketFiber allocateFiber() {
+        SocketFiber result;
         if (active_fibers.length < opts.max_connections) {
             const fiber_key = next_fiber_id;
             if (recycle_fibers.length > 0) {
@@ -190,7 +189,7 @@ class ServerFiber {
                 result.setId(fiber_key);
             }
             else {
-                result = active_fibers[fiber_key] = new SSLSocketFiber(fiber_key);
+                result = active_fibers[fiber_key] = new SocketFiber(fiber_key);
             }
         }
         return result;
@@ -202,7 +201,7 @@ class ServerFiber {
        null if the socket is not accept or if no more fiber are avaible
     +/
     @trusted
-    SSLSocketFiber acceptFiber() {
+    SocketFiber acceptFiber() {
         auto fiber = allocateFiber;
         if (fiber) {
             fiber.call;
@@ -279,9 +278,9 @@ class ServerFiber {
     }
 
     /++
-     SSL Socket service fiber
+     Socket service fiber
      +/
-    class SSLSocketFiber : Fiber, FiberRelay {
+    class SocketFiber : Fiber, FiberRelay {
         @trusted
         static uint buffer_to_uint(const ubyte[] buffer) pure {
             return *cast(uint*)(buffer.ptr)[0 .. uint.sizeof];
@@ -337,12 +336,12 @@ class ServerFiber {
         /++
          Check the time-out
          Throws:
-         an SSLSocketTimeout exception is thrown on timeout
+         an SocketTimeout exception is thrown on timeout
          +/
         void checkTimeout() const {
             const time_elapsed = MonoTime.currTime - start_timestamp;
             if (time_elapsed > opts.client_timeout.msecs) {
-                throw new SSLSocketTimeout(time_elapsed);
+                throw new SocketTimeout(time_elapsed);
             }
         }
 
@@ -390,9 +389,7 @@ class ServerFiber {
                     return null;
                 }
                 else {
-
                     
-
                         .check(leb128_index < LEN_MAX, message("Invalid size of len128 length field %d", leb128_index));
                     break leb128_loop;
                 }

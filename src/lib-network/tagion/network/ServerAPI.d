@@ -66,7 +66,7 @@ struct ServerAPI {
             if (response_tid !is Tid.init) {
 
                 check(receiveOnly!Control is Control.LIVE,
-                        format("SSL service task %s is not alive",
+                        format("Service task %s is not alive",
                         opts.response_task_name));
             }
             scope (exit) {

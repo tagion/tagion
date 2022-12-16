@@ -527,8 +527,7 @@ mixin template HiBONRecord(string CTOR = "") {
                             static if (isSpecialKeyType!R) {
                                 result[key] = value;
                             }
-                            else
-                            {
+                            else {
                                 alias ResultKeyType = KeyType!(typeof(result));
                                 result[e.key.to!ResultKeyType] = value;
                             }
@@ -663,6 +662,18 @@ mixin template HiBONRecord(string CTOR = "") {
                     enum code = "";
                 }
             }
+        }
+
+        import tagion.basic.Types : isBuffer, isBufferType;
+
+        @safe
+        this(Buf)(Buf data) if (isBuffer!Buf) {
+            this(Document(data));
+        }
+
+        @safe
+        this(Buf)(Buf data) if (!isBuffer!Buf && isBufferType!Buf) {
+            this(Document(data.idup));
         }
     }
 
