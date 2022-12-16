@@ -427,8 +427,8 @@ static setDefaultOption(ref Options options)
         with (service)
         {
 			with(server) {
-            task_name = "transaction_net";
-            response_task_name = "respose";
+//            task_name = "transaction_net";
+            response_task_name = "trans_response";
             address = "0.0.0.0";
             port = 10_800;
             select_timeout = 300;

@@ -105,15 +105,27 @@ class TestRelay : FiberServer.Relay {
         writefln("Relay");
         immutable buffer = relay.receive;
         const doc = Document(buffer);
+        writefln("receive %s", doc.toPretty);
+
         check(doc.isInorder, "Invalid document");
+	/*
+        writefln("Available before %s", relay.available);
         do {
             yield;
+
+            writefln("Available before %s", relay.available);
         }
         while (!relay.available);
-        auto test_package = TestPackage(doc);
-		writefln("Received %s", test_package.toPretty);
-        test_package.count++;
-        relay.send(test_package.toDoc.serialize);
+	*/
+        try {
+            auto test_package = TestPackage(doc);
+            writefln("Received %s", test_package.toPretty);
+            test_package.count++;
+            relay.send(test_package.toDoc.serialize);
+        }
+        catch (Exception e) {
+            relay.send(doc.serialize);
+        }
         return true;
     }
 }
@@ -126,7 +138,7 @@ void testFiberServerTask(
             writefln("#### testServerTask : Success '%s'", task_name);
             ownerTid.send(Control.END);
         }
-			writefln("testFiberServerTask task_name %s", task_name);
+        writefln("testFiberServerTask task_name %s", task_name);
         log.register(task_name);
         bool stop;
         void handleState(Control ts) {
@@ -144,11 +156,11 @@ void testFiberServerTask(
                 AddressFamily.INET,
                 SocketType.STREAM);
         listener.setOption(
-				SocketOptionLevel.SOCKET,
+                SocketOptionLevel.SOCKET,
                 SocketOption.REUSEADDR, 0);
         listener.setOption(
-				SocketOptionLevel.SOCKET,
-		SocketOption.RCVTIMEO, 10.seconds);
+                SocketOptionLevel.SOCKET,
+                SocketOption.RCVTIMEO, 10.seconds);
         auto ssl_test_service = ServerAPI(
                 opts,
                 listener,
@@ -214,7 +226,7 @@ void testFiberSSLServerTask(
         }
     }
     catch (Throwable e) {
-		assumeWontThrow(writefln("ERROR %s", e));
+        assumeWontThrow(writefln("ERROR %s", e));
         fatal(e);
     }
 }

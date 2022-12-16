@@ -63,8 +63,9 @@ struct ServerAPI {
             import std.socket : SocketType;
 
             io.writefln("Started %d", opts.max_queue_length);
-            log.register(opts.task_name);
-            assert(listener.isAlive);
+            log.register(opts.response_task_name);
+            check(listener.isAlive,
+                    format("Listener is dead for response task %s", opts.response_task_name));
             listener.blocking = false;
             listener.bind(new InternetAddress(opts.address, opts.port));
             listener.listen(opts.max_queue_length);
@@ -103,7 +104,8 @@ struct ServerAPI {
 
                 service.addSocketSet(socket_set);
 
-                const sel_res = Socket.select(socket_set, null, null,
+                const sel_res = Socket.select(
+                        socket_set, null, null,
                         opts.select_timeout.msecs);
                 if (sel_res > 0) {
 
@@ -113,7 +115,6 @@ struct ServerAPI {
                 }
                 service.execute(socket_set);
                 socket_set.reset;
-
             }
         }
         catch (Throwable e) {

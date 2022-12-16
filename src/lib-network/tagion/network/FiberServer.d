@@ -113,7 +113,10 @@ class FiberServer {
          fiber_id = Id of the fiber which should handle this response
          response = Reponse buffer
          +/
-        void set(immutable uint fiber_id, shared Buffer response) {
+        void set(immutable uint fiber_id, ref Buffer response) {
+            scope (exit) {
+                response = null;
+            }
             responses[fiber_id] = response;
         }
 
@@ -263,9 +266,12 @@ class FiberServer {
                 }
             }
             catch (SocketOSException e) {
+                io.writefln("%s %s", __FUNCTION__, e);
                 removeFiber;
             }
             catch (SSLSocketException e) {
+                io.writefln("%s %s", __FUNCTION__, e);
+
                 removeFiber;
             }
         }
@@ -395,7 +401,8 @@ class FiberServer {
 
                     
 
-                        .check(leb128_index < LEN_MAX, message("Invalid size of len128 length field %d", leb128_index));
+                        .check(leb128_index < LEN_MAX,
+                                message("Invalid size of len128 length field %d", leb128_index));
                     break leb128_loop;
                 }
                 checkTimeout;
@@ -433,11 +440,15 @@ class FiberServer {
         void send(immutable(ubyte[]) buffer) {
             bool done;
             do {
+                import tagion.hibon.Document;
+                import tagion.hibon.HiBONJSON;
+
+                io.writefln("send %s", Document(buffer).toPretty);
                 const ret = client.send(buffer);
                 if (ret > 0) {
                     done = true;
                 }
-                else if (ret <= 0) {
+                else {
                     yield;
                 }
                 checkTimeout;
@@ -459,13 +470,14 @@ class FiberServer {
         @trusted
         void run() {
             startTime;
-            scope accept_client = listener.accept;
+            client = listener.accept;
             scope (exit) {
-                accept_client.shutdown(SocketShutdown.BOTH);
+                //_client.shutdown(SocketShutdown.BOTH);
                 shutdown;
                 unlock;
             }
-            assert(accept_client.isAlive);
+            check(client.isAlive, "Client is dear inside server fiber");
+            /*
             import tagion.network.SSLSocket;
 
             auto _listener = cast(SSLSocket) listener;
@@ -482,7 +494,7 @@ class FiberServer {
 
             }
             assert(client.isAlive);
-
+*/
             bool stop;
             while (!stop) {
                 lock;
@@ -556,8 +568,7 @@ class FiberServer {
             void serviceResponse(Buffer data) {
                 const doc = Document(data);
                 const hirpc_received = hirpc.receive(doc);
-                shared shared_data = cast(shared) data;
-                handler.set(hirpc_received.response.id, shared_data);
+                handler.set(hirpc_received.response.id, data);
             }
 
             while (!stop) {

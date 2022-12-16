@@ -80,7 +80,7 @@
     "infinity": false,
     "ip": "0.0.0.0",
     "logSubscription": {
-        "enable": true,
+        "enable": false,
         "max": 0,
         "protocol_id": "",
         "service": {
@@ -106,8 +106,7 @@
                 "port": 10700,
                 "prefix": "",
                 "response_task_name": "log_response",
-                "select_timeout": 300,
-                "task_name": ""
+                "select_timeout": 300
             }
         },
         "task_name": "logsubscription"
@@ -183,11 +182,10 @@
                 "max_buffer_size": 16384,
                 "max_connections": 1000,
                 "max_queue_length": 10,
-                "port": 11800,
+                "port": 11810,
                 "prefix": "",
                 "response_task_name": "respose",
-                "select_timeout": 300,
-                "task_name": "transaction_net"
+                "select_timeout": 300
             }
         },
         "task_name": "collector"
