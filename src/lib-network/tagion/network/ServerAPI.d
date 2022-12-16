@@ -16,6 +16,8 @@ import tagion.logger.Logger;
 import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions : fatal;
 
+import io = std.stdio;
+
 @safe
 struct ServerAPI {
     immutable(ServerOptions) opts;
@@ -25,7 +27,6 @@ struct ServerAPI {
         ServerFiber.Relay relay;
         Socket listener;
     }
-    //    const(HiRPC) hirpc;
 
     @disable this();
 
@@ -42,8 +43,11 @@ struct ServerAPI {
         Thread.sleep(time);
     }
 
-    void stop() nothrow {
-        stop_service = true;
+    void stop() @trusted {
+        if (service_task !is Thread.init) {
+            stop_service = true;
+            check(receiveOnly!Control is Control.END, "Task did not end correctly");
+        }
     }
 
     void send(uint id, immutable(ubyte[]) buffer) {
@@ -53,8 +57,12 @@ struct ServerAPI {
     @trusted
     void run() nothrow {
         try {
+            scope (success) {
+                ownerTid.send(Control.END);
+            }
             import std.socket : SocketType;
 
+            io.writefln("Started %d", opts.max_queue_length);
             log.register(opts.task_name);
             assert(listener.isAlive);
             listener.blocking = false;
@@ -85,6 +93,7 @@ struct ServerAPI {
             }
 
             while (!stop_service) {
+                io.writefln("Wait loop");
                 if (!listener.isAlive) {
                     stop_service = true;
                     break;
@@ -97,12 +106,14 @@ struct ServerAPI {
                 const sel_res = Socket.select(socket_set, null, null,
                         opts.select_timeout.msecs);
                 if (sel_res > 0) {
+
                     if (socket_set.isSet(listener)) {
                         service.allocateFiber;
                     }
                 }
                 service.execute(socket_set);
                 socket_set.reset;
+
             }
         }
         catch (Throwable e) {

@@ -33,13 +33,14 @@ int _main(string[] args) {
     auto server_handle = automation!Multipleclients_server_connections;
     server_handle.AServerModuleWithCapableToServiceMultiClientShouldBeTest(setup.options.server);
     auto server_context = server_handle.run;
-    if (result == 0) {
+    version (none)
+        if (result == 0) {
 
-        writefln("sslserver=%s", setup.options.cert);
-        auto sslserver_handle = automation!SSL_server;
-        sslserver_handle.CreatesASSLCertificate(setup.options.cert);
-        sslserver_handle.SSLServiceUsingASpecifiedCertificate(setup.options, "ssl_test_task");
-        auto sslserver_context = sslserver_handle.run;
-    }
+            writefln("sslserver=%s", setup.options.cert);
+            auto sslserver_handle = automation!SSL_server;
+            sslserver_handle.CreatesASSLCertificate(setup.options.cert);
+            sslserver_handle.SSLServiceUsingASpecifiedCertificate(setup.options, "ssl_test_task");
+            auto sslserver_context = sslserver_handle.run;
+        }
     return result;
 }

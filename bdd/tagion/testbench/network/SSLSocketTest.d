@@ -100,6 +100,7 @@ bool check_doc(const Document main_doc,
 @safe
 class TestRelay : ServerFiber.Relay {
     bool agent(FiberRelay relay) {
+        writefln("Relay");
         immutable buffer = relay.receive;
         const doc = Document(buffer);
         check(doc.isInorder, "Invalid document");
@@ -113,10 +114,56 @@ class TestRelay : ServerFiber.Relay {
         relay.send(test_package.toDoc.serialize);
         return true;
     }
-
 }
 
-void taskTestServer(
+void testServerTask(
+        immutable ServerOptions opts,
+        string task_name) nothrow {
+    try {
+        version (none)
+            scope (success) {
+
+                ownerTid.send(Control.END);
+            }
+        log.register(task_name);
+        bool stop;
+        void handleState(Control ts) {
+            with (Control) switch (ts) {
+            case STOP:
+                stop = true;
+                break;
+            default:
+                log.warning("Bad Control command %s", ts);
+            }
+        }
+
+        auto relay = new TestRelay;
+        auto listener = new Socket(
+                AddressFamily.INET,
+                SocketType.STREAM);
+        auto ssl_test_service = ServerAPI(
+                opts,
+                listener,
+                relay);
+        ssl_test_service.start;
+        scope (exit) {
+            ssl_test_service.stop;
+        }
+        ownerTid.send(Control.LIVE);
+        while (!stop && !abort) {
+            receiveTimeout(
+                    500.msecs,
+                    &handleState
+            );
+            writeln("..... running ....");
+        }
+    }
+    catch (Throwable e) {
+        fatal(e);
+    }
+}
+
+void testSSLServerTask(
         immutable SSLServiceOptions ssl_options,
         string task_name) nothrow {
     try {

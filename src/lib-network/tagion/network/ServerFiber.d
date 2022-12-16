@@ -16,7 +16,7 @@ import tagion.basic.Types : Buffer, Control;
 import tagion.logger.Logger;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.TagionExceptions : taskfailure, fatal;
-
+import io = std.stdio;
 import LEB128 = tagion.utils.LEB128;
 
 /++
@@ -145,6 +145,7 @@ class ServerFiber {
          Removes the response from the fiber_id
          +/
         void remove(immutable uint fiber_id) {
+            io.writefln("avaliable %s", available(fiber_id));
             responses.remove(fiber_id);
         }
     }
@@ -209,6 +210,7 @@ class ServerFiber {
         else {
             import tagion.network.SSLSocket;
 
+            io.writefln("Reject!!!");
             auto _listener = cast(SSLSocket) listener;
             if (_listener) {
                 _listener.rejectClient;
@@ -232,6 +234,7 @@ class ServerFiber {
     void execute(ref SocketSet socket_set) {
         import std.socket : SocketOSException;
 
+        io.writefln("Execute ");
         foreach (key, ref fiber; active_fibers) {
             void removeFiber() {
                 fiber.shutdown;
@@ -389,7 +392,9 @@ class ServerFiber {
                     return null;
                 }
                 else {
+
                     
+
                         .check(leb128_index < LEN_MAX, message("Invalid size of len128 length field %d", leb128_index));
                     break leb128_loop;
                 }
@@ -465,11 +470,17 @@ class ServerFiber {
 
             auto _listener = cast(SSLSocket) listener;
             SSLSocket _client;
-            while (!_listener.acceptSSL(_client, accept_client)) {
-                checkTimeout;
-                yield;
+            if (_listener) {
+                while (!_listener.acceptSSL(_client, accept_client)) {
+                    checkTimeout;
+                    yield;
+                }
+                client = _client;
             }
-            client = _client;
+            else {
+                client = listener.accept();
+
+            }
             assert(client.isAlive);
 
             bool stop;

@@ -104,7 +104,8 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         const result = Document(buffer);
                         bool check_doc(const Document main_doc,
                                 const Document.Element.ErrorCode error_code,
-                                const(Document.Element) current, const(Document.Element) previous) nothrow @safe {
+                                const(Document.Element) current,
+                                const(Document.Element) previous) nothrow @safe {
                             return false;
                         }
 
