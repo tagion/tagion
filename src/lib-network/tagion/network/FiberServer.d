@@ -1,4 +1,4 @@
-module tagion.network.ServerFiber;
+module tagion.network.FiberServer;
 
 import core.thread : Thread, Fiber;
 import core.time; // : dur, Duration, MonoTime;
@@ -44,7 +44,7 @@ class SocketTimeout : SocketFiberException {
 }
 
 /++
- Interface used for by the ServerFiber Relay delegate
+ Interface used for by the FiberServer Relay delegate
 +/
 @safe
 interface FiberRelay {
@@ -68,7 +68,7 @@ interface FiberRelay {
 Server using one fibers per connection 
 +/
 @safe
-class ServerFiber {
+class FiberServer {
     immutable(ServerOptions) opts;
     @safe interface Relay {
         bool agent(FiberRelay sslfiber);

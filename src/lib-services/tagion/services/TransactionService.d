@@ -11,7 +11,7 @@ import std.socket : SocketType, AddressFamily;
 import tagion.network.ServerAPI;
 import tagion.network.SSLSocket : SSLSocket;
 
-import tagion.network.ServerFiber : ServerFiber, FiberRelay;
+import tagion.network.FiberServer : FiberServer, FiberRelay;
 import tagion.logger.Logger;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
@@ -90,7 +90,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             send(node_tid, opts.transaction.service.server.response_task_name, tosend);
         }
 
-        @safe class TransactionRelay : ServerFiber.Relay {
+        @safe class TransactionRelay : FiberServer.Relay {
             bool agent(FiberRelay ssl_relay) {
                 import tagion.hibon.HiBONJSON;
 

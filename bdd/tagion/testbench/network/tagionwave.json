@@ -182,7 +182,7 @@
                 "client_timeout": 4000,
                 "max_buffer_size": 16384,
                 "max_connections": 1000,
-                "max_queue_length": 100,
+                "max_queue_length": 10,
                 "port": 10800,
                 "prefix": "",
                 "response_task_name": "respose",
