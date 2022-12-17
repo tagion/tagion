@@ -108,7 +108,8 @@ class TestRelay : FiberServer.Relay {
         writefln("receive %s", doc.toPretty);
 
         check(doc.isInorder, "Invalid document");
-	/*
+        //        yield;
+        /*
         writefln("Available before %s", relay.available);
         do {
             yield;
@@ -179,6 +180,7 @@ void testFiberServerTask(
         }
     }
     catch (Throwable e) {
+        assumeWontThrow(writefln("%s %s", __FUNCTION__, e));
         fatal(e);
     }
 }

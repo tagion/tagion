@@ -8,7 +8,8 @@ import std.concurrency;
 import std.socket;
 import std.format;
 import std.stdio;
-import core.thread;
+import core.thread : Thread;
+import core.time;
 
 import tagion.basic.Types : Control;
 import tagion.network.ServerAPI;
@@ -45,6 +46,7 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
     Document serverShouldBeenStated() {
         server_tid = spawn(&testFiberServerTask, opts, task_name);
         check(receiveOnly!Control is Control.LIVE, "Server task did not start correctly");
+        writefln("Server started");
         return result_ok;
     }
 
@@ -64,7 +66,7 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
         }
         foreach (i, ref socket; sockets) {
             packages[i].label = format("message %d", i);
-            writefln("%J", packages[i]);
+            writefln("Client send %J", packages[i]);
             socket.send(packages[i].toDoc.serialize);
         }
         foreach (i, ref socket; sockets) {
@@ -72,7 +74,7 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
             check(size > 0, "Nothing hase been received");
             const doc = Document(buf[0 .. size].idup);
             const received = TestPackage(doc);
-            //	const received=buf[0..size];
+            writefln("Client receiver %J", packages[i]);
             check(packages[i].label == received.label,
             format("Expected '%s' but received '%s'", packages[i].label, received.label));
         }
@@ -96,7 +98,7 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
 
     @Then("the server should stop")
     Document theServerShouldStop() @trusted {
-        Thread.sleep(10.seconds);
+        Thread.sleep(1.seconds);
         server_tid.send(Control.STOP);
         check(receiveOnly!Control == Control.END, "Server tash did not finish correctly");
         Thread.sleep(1.seconds);

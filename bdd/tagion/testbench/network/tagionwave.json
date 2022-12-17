@@ -79,13 +79,21 @@
     },
     "infinity": false,
     "ip": "0.0.0.0",
-    "logSubscription": {
+    "logext": "log",
+    "logger": {
+        "file_name": "\/tmp\/tagion.log",
+        "flush": true,
+        "mask": 31,
+        "task_name": "logger",
+        "to_console": true
+    },
+    "logsubscription": {
         "enable": false,
         "max": 0,
         "protocol_id": "",
         "service": {
             "cert": {
-                "certificate": "pem_files\/domain.pem",
+                "certificate": "pem_files\/domain_log.pem",
                 "city": "",
                 "country": "",
                 "days": 365,
@@ -93,7 +101,7 @@
                 "key_size": 4096,
                 "name": "",
                 "organisation": "",
-                "private_key": "pem_files\/domain.key.pem",
+                "private_key": "pem_files\/domain_log.key.pem",
                 "state": "",
                 "unit": ""
             },
@@ -105,19 +113,12 @@
                 "max_queue_length": 100,
                 "port": 10700,
                 "prefix": "",
-                "response_task_name": "log_response",
-                "select_timeout": 300
+                "response_task_name": "log_server",
+                "select_timeout": 300,
+                "server_task_name": "log_server"
             }
         },
         "task_name": "logsubscription"
-    },
-    "logext": "log",
-    "logger": {
-        "file_name": "\/tmp\/tagion.log",
-        "flush": true,
-        "mask": 31,
-        "task_name": "logger",
-        "to_console": true
     },
     "message": {
         "language": "",
@@ -164,7 +165,7 @@
         "protocol_id": "",
         "service": {
             "cert": {
-                "certificate": "pem_files\/domain.pem",
+                "certificate": "pem_files\/domain_trans.pem",
                 "city": "",
                 "country": "",
                 "days": 365,
@@ -172,7 +173,7 @@
                 "key_size": 4096,
                 "name": "",
                 "organisation": "",
-                "private_key": "pem_files\/domain.key.pem",
+                "private_key": "pem_files\/domain_trans.key.pem",
                 "state": "",
                 "unit": ""
             },
@@ -181,11 +182,12 @@
                 "client_timeout": 4000,
                 "max_buffer_size": 16384,
                 "max_connections": 1000,
-                "max_queue_length": 10,
-                "port": 11810,
+                "max_queue_length": 100,
+                "port": 10800,
                 "prefix": "",
-                "response_task_name": "respose",
-                "select_timeout": 300
+                "response_task_name": "trans_response",
+                "select_timeout": 300,
+                "server_task_name": "trans_server"
             }
         },
         "task_name": "collector"

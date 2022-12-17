@@ -197,7 +197,7 @@ struct Options {
         mixin JSONCommon;
     }
 
-    LogSubscription logSubscription;
+    LogSubscription logsubscription;
 
     import tagion.dart.DARTOptions;
 
@@ -296,8 +296,6 @@ struct TransactionMiddlewareOptions {
 
 }
 
-//__gshared static TransactionMiddlewareOptions transaction_middleware_options;
-
 static ref auto all_getopt(
         ref string[] args,
         ref bool version_switch,
@@ -346,7 +344,7 @@ static ref auto all_getopt(
         "dart-path", "Path to dart file", &(options.dart.path),
         "logger-filename" , format("Logger file name: default: %s", options.logger.file_name), &(options.logger.file_name),
         "logger-mask|l" , format("Logger mask: default: %d", options.logger.mask), &(options.logger.mask),
-        "logsub|L" , format("Logger subscription service enabled: default: %d", options.logSubscription.enable), &(options.logSubscription.enable),
+        "logsub|L" , format("Logger subscription service enabled: default: %d", options.logsubscription.enable), &(options.logsubscription.enable),
         "net-mode", format("Network mode: one of [%s]: default: %s", [EnumMembers!NetworkMode].map!(t=>t.to!string).join(", "), options.net_mode), &(options.net_mode),
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
         "boot", format("Shared boot file: default: %s", options.path_to_shared_info), &(options.path_to_shared_info),
@@ -420,15 +418,13 @@ static setDefaultOption(ref Options options)
     // Transaction
     with (options.transaction)
     {
-        //        port=10800;
         max = 0;
         task_name = "transaction";
-//        timeout = 250;
         with (service)
         {
 			with(server) {
-//            task_name = "transaction_net";
             response_task_name = "trans_response";
+            server_task_name = "trans_server";
             address = "0.0.0.0";
             port = 10_800;
             select_timeout = 300;
@@ -439,12 +435,11 @@ static setDefaultOption(ref Options options)
 			}
             with (cert)
             {
-                certificate = "pem_files/domain.pem";
-                private_key = "pem_files/domain.key.pem";
+                certificate = "pem_files/domain_trans.pem";
+                private_key = "pem_files/domain_trans.key.pem";
                 days = 365;
                 key_size = 4096;
             }
-   //         task_name = "transaction.service";
         }
     }
     with (options.transaction)
@@ -452,7 +447,7 @@ static setDefaultOption(ref Options options)
         task_name = "collector";
     }
     // LogSubscription
-    with (options.logSubscription)
+    with (options.logsubscription)
     {
         max = 0;
         task_name = "logsubscription";
@@ -460,7 +455,8 @@ static setDefaultOption(ref Options options)
         with (service)
         {
 			with(server) {
-            response_task_name = "log_response";
+            response_task_name = "log_server";
+            server_task_name = "log_server";
 			address = "0.0.0.0";
             port = 10_700;
             select_timeout = 300;
@@ -471,8 +467,8 @@ static setDefaultOption(ref Options options)
 			}
             with (cert)
             {
-                certificate = "pem_files/domain.pem";
-                private_key = "pem_files/domain.key.pem";
+                certificate = "pem_files/domain_log.pem";
+                private_key = "pem_files/domain_log.key.pem";
                 days = 365;
                 key_size = 4096;
             }

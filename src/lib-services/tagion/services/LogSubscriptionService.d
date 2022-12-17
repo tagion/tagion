@@ -187,11 +187,11 @@ void logSubscriptionServiceTask(Options opts) nothrow {
 
         auto subscribers = LogSubscribersInfo(locate(opts.logger.task_name));
 
-        log.register(opts.logSubscription.task_name);
+        log.register(opts.logsubscription.task_name);
 
         log("Start service port=%d addresss=%s",
-                opts.logSubscription.service.server.port,
-                opts.logSubscription.service.server.address);
+                opts.logsubscription.service.server.port,
+                opts.logsubscription.service.server.address);
 
         @safe class LogSubscriptionRelay : FiberServer.Relay {
             bool agent(FiberRelay ssl_relay) {
@@ -237,9 +237,9 @@ void logSubscriptionServiceTask(Options opts) nothrow {
         auto listener = new SSLSocket(
                 AddressFamily.INET,
                 SocketType.STREAM,
-                opts.logSubscription.service.cert.certificate,
-                opts.logSubscription.service.cert.private_key);
-        auto logsubscription_api = ServerAPI(opts.logSubscription.service.server, listener, relay);
+                opts.logsubscription.service.cert.certificate,
+                opts.logsubscription.service.cert.private_key);
+        auto logsubscription_api = ServerAPI(opts.logsubscription.service.server, listener, relay);
         logsubscription_api.start;
 
         bool stop;

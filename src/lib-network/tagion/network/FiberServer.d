@@ -527,9 +527,11 @@ class FiberServer {
      task_name = the name used for the respose service (If the task_name is not defined the response service is not started)
      +/
     @trusted
-    Tid start(immutable(string) task_name) {
-        if (task_name) {
-            return spawn(&responseService, task_name, handler);
+    Tid start(immutable(string) response_task_name) {
+        if (response_task_name) {
+            return spawn(&responseService, response_task_name, handler);
+            check(receiveOnly!Control is Control.LIVE,
+                    format("%s was not started correctly", response_task_name));
         }
         return Tid.init;
     }
@@ -538,14 +540,13 @@ class FiberServer {
      Standard concurrency routine to handle service response
      +/
     @trusted
-    static void responseService(immutable(string) task_name, shared Response handler) nothrow {
+    static void responseService(immutable(string) response_task_name, shared Response handler) nothrow {
         try {
             import tagion.basic.Types : Control;
             import tagion.communication.HiRPC;
             import tagion.hibon.Document;
 
-            log.register(task_name);
-            ownerTid.send(Control.LIVE);
+            log.register(response_task_name);
             bool stop;
             scope (exit) {
                 ownerTid.send(Control.END);
@@ -571,6 +572,7 @@ class FiberServer {
                 handler.set(hirpc_received.response.id, data);
             }
 
+            ownerTid.send(Control.LIVE);
             while (!stop) {
                 receive(
                         &handleState,

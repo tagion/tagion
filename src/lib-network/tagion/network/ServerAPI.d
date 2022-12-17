@@ -30,7 +30,9 @@ struct ServerAPI {
 
     @disable this();
 
-    this(immutable(ServerOptions) opts, Socket listener, FiberServer.Relay relay) nothrow pure @trusted {
+    this(immutable(ServerOptions) opts,
+            Socket listener,
+            FiberServer.Relay relay) nothrow pure @trusted {
         this.opts = opts;
         this.listener = listener;
         this.relay = relay;
@@ -57,15 +59,10 @@ struct ServerAPI {
     @trusted
     void run() nothrow {
         try {
-            scope (success) {
-                ownerTid.send(Control.END);
-            }
-            import std.socket : SocketType;
-
             io.writefln("Started %d", opts.max_queue_length);
-            log.register(opts.response_task_name);
+            log.register(opts.server_task_name);
             check(listener.isAlive,
-                    format("Listener is dead for response task %s", opts.response_task_name));
+                    format("Listener is dead for response task %s", opts.server_task_name));
             listener.blocking = false;
             listener.bind(new InternetAddress(opts.address, opts.port));
             listener.listen(opts.max_queue_length);
@@ -73,10 +70,9 @@ struct ServerAPI {
             service = new FiberServer(opts, listener, relay);
             auto response_tid = service.start(opts.response_task_name);
             if (response_tid !is Tid.init) {
-
                 check(receiveOnly!Control is Control.LIVE,
                         format("Service task %s is not alive",
-                        opts.response_task_name));
+                        opts.server_task_name));
             }
             scope (exit) {
                 response_tid.send(Control.STOP);
@@ -90,7 +86,6 @@ struct ServerAPI {
                 socket_set.reset;
                 service.closeAll;
                 listener.shutdown(SocketShutdown.BOTH);
-                listener = null;
             }
 
             while (!stop_service) {

@@ -157,6 +157,7 @@ int _main(string[] args) {
     }
 
     configureSSLCert(service_options.transaction.service.cert);
+    configureSSLCert(service_options.logsubscription.service.cert);
 
     auto logger_service_tid = Task!LoggerTask(service_options.logger.task_name, service_options);
     import std.stdio : stderr;
