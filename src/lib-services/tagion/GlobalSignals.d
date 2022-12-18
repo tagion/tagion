@@ -67,15 +67,8 @@ static if (ver.linux && not_unittest)
         void*[BACKTRACE_SIZE] callstack;
         int size;
 
-        if (sig == SIGSEGV)
-        {
             fprintf(stderr, "Got signal %d, faulty address is %p, from pid %d\n",
                 sig, ctx.si_addr, ctx.si_pid);
-        }
-        else
-        {
-            fprintf(stderr, "Got signal %d\n", sig);
-        }
 
         size = backtrace(callstack.ptr, BACKTRACE_SIZE);
         backtrace_symbols_fd(callstack.ptr, size, STDERR_FILENO);
@@ -133,9 +126,7 @@ shared static this()
         sa.sa_sigaction = &segment_fault;
         sigemptyset(&sa.sa_mask);
         sa.sa_flags = SA_RESTART;
-        // sa.sa_flags = SA_SIGINFO | SA_RESETHAND;
         sigaction(SIGSEGV, &sa, null);
-        //signal(SIGSEGV, &segment_fault);   // Segment fault handler
     }
 
     signal(SIGINT, &shutdown);

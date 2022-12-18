@@ -11,6 +11,7 @@ import tagion.network.SSLSocket;
 import tagion.network.FiberServer;
 import tagion.network.SSLServiceOptions;
 import tagion.network.SSLSocketException;
+import tagion.GlobalSignals : abort;
 
 import tagion.logger.Logger;
 import tagion.basic.Types : Control;
@@ -68,7 +69,7 @@ struct ServerAPI {
             listener.listen(opts.max_queue_length);
 
             service = new FiberServer(opts, listener, relay);
-            auto response_tid = service.start(opts.response_task_name);
+            service.start;
             scope (exit) {
                 service.stop;
             }
@@ -79,7 +80,7 @@ struct ServerAPI {
                 listener.shutdown(SocketShutdown.BOTH);
             }
 
-            while (!stop_service) {
+            while (!stop_service && !abort) {
                 io.writefln("Wait loop");
                 if (!listener.isAlive) {
                     stop_service = true;
@@ -100,6 +101,7 @@ struct ServerAPI {
                     }
                 }
                 assert(service !is null, "This should not be possible");
+			io.writefln("Before execute %s abort %s ", stop_service, abort);	
                 service.execute(socket_set);
                 socket_set.reset;
             }

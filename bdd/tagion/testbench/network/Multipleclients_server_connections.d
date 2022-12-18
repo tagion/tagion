@@ -47,7 +47,8 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
         server_tid = spawn(&testFiberServerTask, opts, task_name);
         check(receiveOnly!Control is Control.LIVE, "Server task did not start correctly");
         writefln("Server started");
-        return result_ok;
+		Thread.sleep(200.msecs);
+		return result_ok;
     }
 
     @trusted
@@ -78,9 +79,28 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
             check(packages[i].label == received.label,
             format("Expected '%s' but received '%s'", packages[i].label, received.label));
         }
-        foreach (ref socket; sockets) {
+		version(none) {
+        foreach (i, ref socket; sockets) {
+            packages[i].label = format("new message %d", i);
+            writefln("new Client send %J", packages[i]);
+            socket.send(packages[i].toDoc.serialize);
+        }
+        foreach (i, ref socket; sockets) {
+            const size = socket.receive(buf);
+            check(size > 0, "Nothing hase been received");
+            const doc = Document(buf[0 .. size].idup);
+            const received = TestPackage(doc);
+            writefln("new Client receiver %J", packages[i]);
+            check(packages[i].label == received.label,
+            format("Expected '%s' but received '%s'", packages[i].label, received.label));
+        }
+	}
+		writefln("SHUTDOWN all clients sockets!!!");
+        foreach (i, ref socket; sockets) {
+			writefln("Shutdown %d", i);
             socket.shutdown(SocketShutdown.BOTH);
         }
+	
         return result_ok;
     }
 

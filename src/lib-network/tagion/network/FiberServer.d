@@ -148,8 +148,8 @@ class FiberServer {
         /++
          Removes the response from the fiber_id
          +/
-        void remove(immutable uint fiber_id) {
-            io.writefln("avaliable %s", available(fiber_id));
+        void remove(immutable uint fiber_id) nothrow {
+            assumeWontThrow(io.writefln("avaliable %s", available(fiber_id)));
             responses.remove(fiber_id);
         }
     }
@@ -240,15 +240,16 @@ class FiberServer {
 
         io.writefln("Execute ");
         foreach (key, ref fiber; active_fibers) {
-            void removeFiber() {
+            void removeFiber() nothrow {
                 fiber.shutdown;
                 fiber.reset;
                 recycle_fibers ~= fiber;
                 active_fibers.remove(key);
                 handler.remove(key);
             }
-
             try {
+
+				io.writefln("id=%d", key);
                 if (fiber.client is null) {
                     fiber.call;
                 }
@@ -508,14 +509,14 @@ class FiberServer {
         /++
          shutdown the service socket
          +/
-        void shutdown() {
+        package void shutdown() nothrow {
             import std.socket : SocketShutdown;
 
             if (client) {
                 client.shutdown(SocketShutdown.BOTH);
                 client = null;
             }
-            handler.remove(fiber_id);
+            //handler.remove(fiber_id);
         }
 
         ~this() {
@@ -529,16 +530,15 @@ class FiberServer {
      task_name = the name used for the respose service (If the task_name is not defined the response service is not started)
      +/
     @trusted
-    Tid start(immutable(string) response_task_name) {
-        check(response_task_name.length !is 0,
+    void start() {
+        check(opts.response_task_name.length !is 0,
                 "If a response task is needed the the response_task_name must be defined");
         check(response_service_tid is Tid.init,
-                format("Response task %s has already been started", response_task_name));
-        response_service_tid = spawn(&responseService, response_task_name, handler);
+                format("Response task %s has already been started", opts.response_task_name));
+        response_service_tid = spawn(&responseService, opts.response_task_name, handler);
 
         check(receiveOnly!Control is Control.LIVE,
-                format("%s was not started correctly", response_task_name));
-        return response_service_tid;
+                format("%s was not started correctly", opts.response_task_name));
     }
 
     @trusted stop() {
