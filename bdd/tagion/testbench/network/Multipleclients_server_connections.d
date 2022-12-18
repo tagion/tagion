@@ -61,7 +61,7 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
         auto buf = new ubyte[1024];
         auto address = getAddress(opts.server.address, opts.server.port)[0];
         foreach (ref socket; sockets) {
-            socket = new Socket(AddressFamily.INET, SocketType.STREAM);
+            socket = createClient(AddressFamily.INET, SocketType.STREAM, ssl_enable);
             io.writefln("Before connect");
             socket.connect(address);
             io.writefln("After connect");

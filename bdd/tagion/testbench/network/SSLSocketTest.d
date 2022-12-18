@@ -99,6 +99,13 @@ bool check_doc(const Document main_doc,
     return false;
 }
 
+Socket createClient(AddressFamily ap, SocketType type, const bool ssl_enable) {
+    if (ssl_enable) {
+        return new SSLSocket(ap, type);
+    }
+    return new Socket(ap, type);
+}
+
 @safe
 class TestRelay : FiberServer.Relay {
     bool agent(FiberRelay relay) {
@@ -109,15 +116,6 @@ class TestRelay : FiberServer.Relay {
 
         check(doc.isInorder, "Invalid document");
         //        yield;
-        /*
-        writefln("Available before %s", relay.available);
-        do {
-            yield;
-
-            writefln("Available before %s", relay.available);
-        }
-        while (!relay.available);
-	*/
         try {
             auto test_package = TestPackage(doc);
             writefln("Received %s", test_package.toPretty);
