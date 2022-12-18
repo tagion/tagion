@@ -112,6 +112,11 @@ Socket createServer(
         const bool ssl_enable,
         const SSLCert cert) {
     if (ssl_enable) {
+        import std.file : exists;
+
+        if (!cert.certificate.exists || !cert.private_key.exists) {
+            configureSSLCert(cert);
+        }
         return new SSLSocket(ap, type, cert.certificate, cert.private_key);
     }
     return new Socket(ap, type);
@@ -179,11 +184,6 @@ void testFiberServerTask(
         scope (exit) {
             listener.shutdown(SocketShutdown.BOTH);
         }
-        /*
-		listener.setOption(
-                SocketOptionLevel.SOCKET,
-                SocketOption.RCVTIMEO, 10.seconds);
-*/
         auto ssl_test_service = ServerAPI(
                 opts.server,
                 listener,
