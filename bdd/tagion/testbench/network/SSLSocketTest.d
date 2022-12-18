@@ -106,6 +106,17 @@ Socket createClient(AddressFamily ap, SocketType type, const bool ssl_enable) {
     return new Socket(ap, type);
 }
 
+Socket createServer(
+        AddressFamily ap,
+        SocketType type,
+        const bool ssl_enable,
+        const SSLCert cert) {
+    if (ssl_enable) {
+        return new SSLSocket(ap, type, cert.certificate, cert.private_key);
+    }
+    return new Socket(ap, type);
+}
+
 @safe
 class TestRelay : FiberServer.Relay {
     bool agent(FiberRelay relay) {
@@ -153,7 +164,13 @@ void testFiberServerTask(
         }
 
         auto relay = new TestRelay;
-        auto listener = new Socket(
+        auto listener = createServer(
+                AddressFamily.INET,
+                SocketType.STREAM,
+                ssl_enable,
+                opts.cert
+        );
+        version (none) auto listener = new Socket(
                 AddressFamily.INET,
                 SocketType.STREAM);
         listener.setOption(
