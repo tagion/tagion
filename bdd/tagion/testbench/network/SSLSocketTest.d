@@ -159,9 +159,14 @@ void testFiberServerTask(
         listener.setOption(
                 SocketOptionLevel.SOCKET,
                 SocketOption.REUSEADDR, 0);
-        listener.setOption(
+        scope (exit) {
+            listener.shutdown(SocketShutdown.BOTH);
+        }
+        /*
+		listener.setOption(
                 SocketOptionLevel.SOCKET,
                 SocketOption.RCVTIMEO, 10.seconds);
+*/
         auto ssl_test_service = ServerAPI(
                 opts,
                 listener,

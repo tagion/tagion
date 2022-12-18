@@ -78,6 +78,9 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
             check(packages[i].label == received.label,
             format("Expected '%s' but received '%s'", packages[i].label, received.label));
         }
+        foreach (ref socket; sockets) {
+            socket.shutdown(SocketShutdown.BOTH);
+        }
         return result_ok;
     }
 
@@ -98,9 +101,11 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
 
     @Then("the server should stop")
     Document theServerShouldStop() @trusted {
-        Thread.sleep(1.seconds);
+        Thread.sleep(10.seconds);
         server_tid.send(Control.STOP);
-        check(receiveOnly!Control == Control.END, "Server tash did not finish correctly");
+        writefln("Stop send to the server task");
+        check(receiveOnly!Control == Control.END, "Server task did not finish correctly");
+        writefln("End received from the server task");
         Thread.sleep(1.seconds);
         return result_ok;
     }

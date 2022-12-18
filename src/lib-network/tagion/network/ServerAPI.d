@@ -46,9 +46,9 @@ struct ServerAPI {
     }
 
     void stop() @trusted {
-        if (service_task !is Thread.init) {
+        if (service_task !is null) {
             stop_service = true;
-            check(receiveOnly!Control is Control.END, "Task did not end correctly");
+            service_task = null;
         }
     }
 
@@ -69,19 +69,10 @@ struct ServerAPI {
 
             service = new FiberServer(opts, listener, relay);
             auto response_tid = service.start(opts.response_task_name);
-            if (response_tid !is Tid.init) {
-                check(receiveOnly!Control is Control.LIVE,
-                        format("Service task %s is not alive",
-                        opts.server_task_name));
-            }
             scope (exit) {
-                response_tid.send(Control.STOP);
-                const ctrl = receiveOnly!Control;
-                if (ctrl !is Control.END) {
-                    log.warning("Unexpected control %s code", ctrl);
-                }
+                service.stop;
             }
-            auto socket_set = new SocketSet(opts.max_connections + 1);
+            auto socket_set = new SocketSet(opts.max_queue_length + 1);
             scope (exit) {
                 socket_set.reset;
                 service.closeAll;
@@ -108,6 +99,7 @@ struct ServerAPI {
                         service.allocateFiber;
                     }
                 }
+                assert(service !is null, "This should not be possible");
                 service.execute(socket_set);
                 socket_set.reset;
             }
@@ -119,6 +111,8 @@ struct ServerAPI {
 
     @trusted
     Thread start() {
+        check(service_task is null, "Server task has already been started");
+        stop_service = false;
         service_task = new Thread(&run).start;
         return service_task;
     }

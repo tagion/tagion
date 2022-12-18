@@ -89,6 +89,7 @@ class FiberServer {
         uint _fiber_id;
         Relay relay;
         Socket listener;
+        Tid response_service_tid;
         uint next_fiber_id() {
             if (_fiber_id == 0) {
                 _fiber_id = 1;
@@ -498,6 +499,7 @@ class FiberServer {
             bool stop;
             while (!stop) {
                 lock;
+
                 stop = relay.agent(this);
                 unlock;
             }
@@ -528,19 +530,31 @@ class FiberServer {
      +/
     @trusted
     Tid start(immutable(string) response_task_name) {
-        if (response_task_name) {
-            return spawn(&responseService, response_task_name, handler);
-            check(receiveOnly!Control is Control.LIVE,
-                    format("%s was not started correctly", response_task_name));
-        }
-        return Tid.init;
+        check(response_task_name.length !is 0,
+                "If a response task is needed the the response_task_name must be defined");
+        check(response_service_tid is Tid.init,
+                format("Response task %s has already been started", response_task_name));
+        response_service_tid = spawn(&responseService, response_task_name, handler);
+
+        check(receiveOnly!Control is Control.LIVE,
+                format("%s was not started correctly", response_task_name));
+        return response_service_tid;
     }
 
+    @trusted stop() {
+        if (response_service_tid !is Tid.init) {
+            response_service_tid.send(Control.STOP);
+            check(receiveOnly!Control is Control.END,
+                    format("Task %s did not end correctly", opts.response_task_name));
+        }
+    }
     /++
      Standard concurrency routine to handle service response
      +/
     @trusted
-    static void responseService(immutable(string) response_task_name, shared Response handler) nothrow {
+    static void responseService(
+            immutable(string) response_task_name,
+            shared Response handler) nothrow {
         try {
             import tagion.basic.Types : Control;
             import tagion.communication.HiRPC;
