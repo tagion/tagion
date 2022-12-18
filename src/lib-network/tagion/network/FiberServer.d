@@ -570,6 +570,7 @@ class FiberServer {
                 with (Control) {
                     switch (ts) {
                     case STOP:
+						io.writefln("Stop the resonse service");
                         stop = true;
                         break;
                     default:

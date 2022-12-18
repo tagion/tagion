@@ -145,6 +145,7 @@ void testFiberServerTask(
         void handleState(Control ts) {
             with (Control) switch (ts) {
             case STOP:
+				writefln("Stop was received from in the fiber server task");
                 stop = true;
                 break;
             default:
@@ -173,6 +174,7 @@ void testFiberServerTask(
                 relay);
         ssl_test_service.start;
         scope (exit) {
+			writefln("Stop the ssl_test_service");
             ssl_test_service.stop;
         }
         ownerTid.send(Control.LIVE);

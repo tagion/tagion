@@ -49,6 +49,7 @@ struct ServerAPI {
     void stop() @trusted {
         if (service_task !is null) {
             stop_service = true;
+			service_task.join;
             service_task = null;
         }
     }
