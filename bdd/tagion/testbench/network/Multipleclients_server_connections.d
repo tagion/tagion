@@ -35,16 +35,18 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
     Tid server_tid;
     uint num_of_clients;
     string task_name = "test_server";
-    immutable(ServerOptions) opts;
-    this(ServerOptions opts) {
+    const bool ssl_enable;
+    immutable(SSLServiceOptions) opts;
+    this(SSLServiceOptions opts, bool ssl_enable) {
         this.opts = opts;
-        num_of_clients = opts.max_queue_length;
+        this.ssl_enable = ssl_enable;
+        num_of_clients = opts.server.max_queue_length;
     }
 
     @trusted
     @Given("the server should been stated")
     Document serverShouldBeenStated() {
-        server_tid = spawn(&testFiberServerTask, opts, task_name);
+        server_tid = spawn(&testFiberServerTask, opts, task_name, ssl_enable);
         check(receiveOnly!Control is Control.LIVE, "Server task did not start correctly");
         writefln("Server started");
         Thread.sleep(200.msecs);
@@ -57,7 +59,7 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
         auto sockets = new Socket[num_of_clients];
         auto packages = new TestPackage[num_of_clients];
         auto buf = new ubyte[1024];
-        auto address = getAddress(opts.address, opts.port)[0];
+        auto address = getAddress(opts.server.address, opts.server.port)[0];
         foreach (ref socket; sockets) {
             socket = new Socket(AddressFamily.INET, SocketType.STREAM);
             io.writefln("Before connect");

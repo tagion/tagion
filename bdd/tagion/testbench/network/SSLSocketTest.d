@@ -132,8 +132,9 @@ class TestRelay : FiberServer.Relay {
 }
 
 void testFiberServerTask(
-        immutable ServerOptions opts,
-        string task_name) nothrow {
+        immutable SSLServiceOptions opts,
+        string task_name,
+        const bool ssl_enable) nothrow {
     try {
         scope (success) {
             writefln("#### testServerTask : Success '%s'", task_name);
@@ -145,7 +146,7 @@ void testFiberServerTask(
         void handleState(Control ts) {
             with (Control) switch (ts) {
             case STOP:
-				writefln("Stop was received from in the fiber server task");
+                writefln("Stop was received from in the fiber server task");
                 stop = true;
                 break;
             default:
@@ -169,12 +170,12 @@ void testFiberServerTask(
                 SocketOption.RCVTIMEO, 10.seconds);
 */
         auto ssl_test_service = ServerAPI(
-                opts,
+                opts.server,
                 listener,
                 relay);
         ssl_test_service.start;
         scope (exit) {
-			writefln("Stop the ssl_test_service");
+            writefln("Stop the ssl_test_service");
             ssl_test_service.stop;
         }
         ownerTid.send(Control.LIVE);
@@ -192,9 +193,10 @@ void testFiberServerTask(
     }
 }
 
-void testFiberSSLServerTask(
+version (none) void testFiberSSLServerTask(
         immutable SSLServiceOptions ssl_options,
-        string task_name) nothrow {
+        string task_name,
+        bool enable_ssl) nothrow {
     try {
         scope (success) {
             ownerTid.send(Control.END);
