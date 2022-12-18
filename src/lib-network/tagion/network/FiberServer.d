@@ -76,9 +76,9 @@ class FiberServer {
     //alias Relay = bool delegate(SSLRelay) @safe;
 
     @safe
-    this(immutable(ServerOptions) opts, Socket listener, Relay relay) {
+    this(immutable(ServerOptions) opts, Relay relay) {
         this.opts = opts;
-        this.listener = listener;
+        // this.listener = listener;
         this.relay = relay;
         handler = new Response;
     }
@@ -88,7 +88,7 @@ class FiberServer {
         SocketFiber[] recycle_fibers;
         uint _fiber_id;
         Relay relay;
-        Socket listener;
+        // Socket listener;
         Tid response_service_tid;
         uint next_fiber_id() {
             if (_fiber_id == 0) {
@@ -205,7 +205,7 @@ class FiberServer {
        Returns:
        null if the socket is not accept or if no more fiber are avaible
     +/
-    @trusted
+    version (none) @trusted
     SocketFiber acceptFiber() {
         auto fiber = allocateFiber;
         if (fiber) {
@@ -235,7 +235,7 @@ class FiberServer {
      Executes the fiber services for all the socket_set
      +/
     @trusted
-    void execute(ref SocketSet socket_set) {
+    void execute(ref Buffer[] receive_buffers) {
         import std.socket : SocketOSException;
 
         io.writefln("Execute ");
@@ -247,9 +247,10 @@ class FiberServer {
                 active_fibers.remove(key);
                 handler.remove(key);
             }
+
             try {
 
-				io.writefln("id=%d", key);
+                io.writefln("id=%d", key);
                 if (fiber.client is null) {
                     fiber.call;
                 }
@@ -292,13 +293,9 @@ class FiberServer {
      Socket service fiber
      +/
     class SocketFiber : Fiber, FiberRelay {
-        @trusted
-        static uint buffer_to_uint(const ubyte[] buffer) pure {
-            return *cast(uint*)(buffer.ptr)[0 .. uint.sizeof];
-        }
-
         protected {
-            Socket client;
+            //   Socket client;
+            Buffer receive_buffer;
             bool _lock;
             FiberRelay.Time start_timestamp;
             uint fiber_id;
@@ -413,7 +410,6 @@ class FiberServer {
             // receive data
             const leb128_len = LEB128.decode!uint(leb128_len_data);
             const buffer_size = leb128_len.value;
-            //const buffer_size=buffer_to_uint(len_data);
             if (buffer_size > opts.max_buffer_size) {
                 return null;
             }
@@ -570,7 +566,7 @@ class FiberServer {
                 with (Control) {
                     switch (ts) {
                     case STOP:
-						io.writefln("Stop the resonse service");
+                        io.writefln("Stop the resonse service");
                         stop = true;
                         break;
                     default:

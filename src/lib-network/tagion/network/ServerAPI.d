@@ -49,7 +49,7 @@ struct ServerAPI {
     void stop() @trusted {
         if (service_task !is null) {
             stop_service = true;
-			service_task.join;
+            service_task.join;
             service_task = null;
         }
     }
@@ -74,13 +74,42 @@ struct ServerAPI {
             scope (exit) {
                 service.stop;
             }
-            auto socket_set = new SocketSet(opts.max_queue_length + 1);
+            auto socket_set = new SocketSet; //(opts.max_queue_length + 1);
+            auto clients = new Sockets[opt.max_queue_length];
             scope (exit) {
                 socket_set.reset;
-                service.closeAll;
+                clients
+                    .filter!(client => client !is null)
+                    .each!(client => client.shutdown(SocketShutdown.BOTH));
+                //service.closeAll;
                 listener.shutdown(SocketShutdown.BOTH);
             }
+            while (!stop_service && !about) {
+                socket_set.reset();
+                socket_set.add(listener);
+                clients
+                    .filter!(client => client !is null)
+                    .each!(client => socket_set.add(client));
 
+                // foreach(client; connectedClients) readSet.add(client);
+                const sel_res = Socket.select(
+                        socket_set, null, null,
+                        opts.select_timeout.msecs);
+                if (sel_res > 0) {
+                    foreach (id, ref client; clients) {
+                        if (readSet.isSet(client)) {
+                            // read from it and echo it back
+                            auto got = client.receive(buffer);
+                            client.send(buffer[0 .. got]);
+                        }
+                        if (readSet.isSet(listener)) {
+                            // the listener is ready to read, that means
+                            // a new client wants to connect. We accept it here.
+                            client = listener.accept();
+                        }
+                    }
+                }
+            }
             while (!stop_service && !abort) {
                 io.writefln("Wait loop");
                 if (!listener.isAlive) {
@@ -102,7 +131,7 @@ struct ServerAPI {
                     }
                 }
                 assert(service !is null, "This should not be possible");
-			io.writefln("Before execute %s abort %s ", stop_service, abort);	
+                io.writefln("Before execute %s abort %s ", stop_service, abort);
                 service.execute(socket_set);
                 socket_set.reset;
             }
