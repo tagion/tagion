@@ -546,9 +546,6 @@ unittest {
     assert(feature_with_ctor.find("bankster", 17));
     assertThrown!BehaviourException(feature_with_ctor.find("bankster", "wrong argument"));
     assert(!feature_with_ctor.find("this-text-does-not-exists", 17));
-    //assertThrown!StringException
-    //    feature_with_ctor.Some_awesome_feature_bad_format_double_property(17);
-
 }
 
 version (unittest) {

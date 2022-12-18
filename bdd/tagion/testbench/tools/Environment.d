@@ -41,8 +41,8 @@ class Reporter : BehaviourReporter {
     const(Exception) before(scope const(FeatureGroup*) feature_group) nothrow {
         Exception result;
         try {
-            immutable report_file_name = buildPath(env.bdd_results, feature_group.info.name,
-                    alternative(feature_group))
+            immutable report_file_name = buildPath(env.bdd_results, 
+		feature_group.info.name ~ alternative(feature_group))
                 ~ DOT ~ FileExtension.hibon;
             report_file_name.fwrite(*feature_group);
         }

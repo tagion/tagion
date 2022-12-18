@@ -31,6 +31,7 @@ int _main(string[] args) {
 
     /// Server test without SSL
     auto server_handle = automation!Multipleclients_server_connections;
+	server_handle.alternative ="Standard Socket";
     server_handle.AServerModuleWithCapableToServiceMultiClientShouldBeTest(setup.options.server);
     auto server_context = server_handle.run;
     version (none)
