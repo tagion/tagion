@@ -110,6 +110,7 @@ struct ScenarioGroup {
  */
 @safe
 struct FeatureGroup {
+    @Label(VOID, true) string alternative;
     Info!Feature info; /// Information of the Feature
     ScenarioGroup[] scenarios; /// This all the information of each Sceanrio
     mixin HiBONRecord!();
@@ -277,7 +278,7 @@ unittest {
     alias behaviour_of_but = getActions!(BehaviourUnittest.Some_awesome_feature, But);
     static assert(behaviour_of_but.length is 1);
     static assert(getProperty!(behaviour_of_but[0]) ==
-            But("if the Customer does not take his card, then the card must be swollowed"));
+        But("if the Customer does not take his card, then the card must be swollowed"));
 }
 
 ///Returns: true of T is a Scenario
@@ -362,7 +363,7 @@ protected template _Scenarios(alias M, string[] names) if (isFeature!M) {
                 AliasSeq!(
                         member,
                         _Scenarios!(M, names[1 .. $])
-                );
+            );
         }
         else {
             alias _Scenarios = _Scenarios!(M, names[1 .. $]);

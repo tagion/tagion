@@ -191,6 +191,7 @@ auto automation(alias M)() if (isFeature!M) {
 
     @safe
     static struct FeatureFactory {
+        string alternative;
         FeatureContext context;
         void opDispatch(string scenario_name, Args...)(Args args) {
             import std.algorithm.searching : countUntil;
@@ -235,11 +236,13 @@ auto automation(alias M)() if (isFeature!M) {
         @safe
         FeatureContext run() nothrow {
             if (reporter !is null) {
-                const raw_feature_group = getFeature!M;
+                auto raw_feature_group = getFeature!M;
+                raw_feature_group.alternative = alternative;
                 reporter.before(&raw_feature_group);
             }
             scope (exit) {
                 if (reporter !is null) {
+                    context.result.alternative = alternative;
                     reporter.after(context.result);
                 }
 
@@ -248,7 +251,7 @@ auto automation(alias M)() if (isFeature!M) {
             context.result = new FeatureGroup;
             context.result.info.property = obtainFeature!M;
             context.result.info.name = moduleName!M;
-            context.result.scenarios.length = FeatureContext.Types.length-1; //ScenariosSeq.length;
+            context.result.scenarios.length = FeatureContext.Types.length - 1; //ScenariosSeq.length;
             static foreach (i, _Scenario; FeatureContext.Types[0 .. $ - 1]) {
                 try {
                     static if (__traits(compiles, new _Scenario())) {

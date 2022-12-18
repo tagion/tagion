@@ -5,6 +5,7 @@ import std.ascii : toUpper;
 import std.algorithm.iteration : map;
 import std.array;
 import std.path;
+import std.exception;
 
 import tagion.basic.Types : FileExtension, DOT;
 
@@ -14,13 +15,34 @@ import tagion.hibon.HiBONRecord : fwrite;
 
 import std.stdio;
 
+void error(Args...)(string fmt, Args args) nothrow @trusted {
+    assumeWontThrow(stderr.writefln(fmt, args));
+}
+
 @safe
 synchronized
 class Reporter : BehaviourReporter {
+    static string alternative(scope const(FeatureGroup*) feature_group) nothrow {
+
+        if (feature_group.alternative.length) {
+            try {
+                return "_" ~ feature_group.alternative
+                    .split
+                    .join("_");
+            }
+            catch (Exception e) {
+                // Ignore
+                error("%s", e);
+            }
+        }
+        return null;
+    }
+
     const(Exception) before(scope const(FeatureGroup*) feature_group) nothrow {
         Exception result;
         try {
-            immutable report_file_name = buildPath(env.bdd_results, feature_group.info.name)
+            immutable report_file_name = buildPath(env.bdd_results, feature_group.info.name,
+                    alternative(feature_group))
                 ~ DOT ~ FileExtension.hibon;
             report_file_name.fwrite(*feature_group);
         }
