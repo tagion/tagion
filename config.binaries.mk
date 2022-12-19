@@ -1,13 +1,3 @@
-export GODEBUG=cgocheck=0
-WOLFSSL?=1
-
-ifdef WOLFSSL
-SSLIMPLEMENTATION=$(LIBWOLFSSL)
-else
-SSLIMPLEMENTATION=$(LIBOPENSSL)
-NO_WOLFSSL=-a -not -path "*/wolfssl/*"
-endif
-
 
 #
 # Targets for all binaries
