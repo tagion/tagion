@@ -176,8 +176,8 @@ jobs:
           set +e
           ulimit -c unlimited
           sudo sysctl -w kernel.core_pattern=/tgn/results/core.%u.%p.%t
-          mkdir scenario-result
-          sudo chmod -R 777 scenario-result
+          mkdir -p scenario-result/${{ github.head_ref }}
+          sudo chmod -R 777 scenario-result/${{ github.head_ref }}
             
   run_scenario:
     runs-on: self-hosted
@@ -191,8 +191,8 @@ jobs:
         run: |
             SCENARIO=${{ matrix.scenario }}
             echo "RUN SCENARIO: $SCENARIO"
-            mkdir ./scenario-result/$SCENARIO
-            docker run -d --rm --name $SCENARIO -v ${PWD}/scenario-result/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
+            mkdir -p ./scenario-result/${{ github.head_ref }}/$SCENARIO
+            docker run -d --rm --name ${{ github.head_ref }}/$SCENARIO -v ${PWD}/scenario-result/${{ github.head_ref }}/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
             echo "$SCENARIO executed"
       - name: Wait untill docker finished
         timeout-minutes: 5
@@ -204,14 +204,22 @@ jobs:
           while true
           do
             sleep $DELAY
-            result=$( docker inspect -f '{{.State.Running}}' $SCENARIO 2>/dev/null )    
+            result=$( docker inspect -f '{{.State.Running}}' ${{ github.head_ref }}/$SCENARIO 2>/dev/null )    
             echo "Check result: $result"
             if [ "$result" = true ]; then
                 echo 'Container $SCENARIO  exists'
                 continue
             fi
-            return 0
+            break
           done
+      - name: Clean docker container
+        if: always()
+        run: |
+          SCENARIO=${{ matrix.scenario }}
+          app="${{ github.head_ref }}/$SCENARIO"
+          if docker ps | awk -v app="$app" 'NR > 1 && $NF == app{ret=1; exit} END{exit !ret}'; then
+            docker stop "$app" && docker rm -f "$app"
+          fi
 
   after_run:
     runs-on: self-hosted
@@ -221,7 +229,7 @@ jobs:
       - name: log status
         run: |
             set +e
-            PATH_TO_LOGS="./scenario-result/**/*.result.json"
+            PATH_TO_LOGS="./scenario-result/${{ github.head_ref }}/**/*.result.json"
             REPORT="|Scenario|Test case|Passed|Message|Error|\n|-|-|-|-|-|\n"
             failed_scenarios=false
               for logfile in $PATH_TO_LOGS
@@ -264,35 +272,26 @@ jobs:
             REPORT=$( echo "${REPORT//null/}" )
             REPORT=$( echo "${REPORT//\"/}" )
             echo -e "$REPORT"  >> $GITHUB_STEP_SUMMARY
-            sudo chmod -R 777 scenario-result
+            sudo chmod -R 777 scenario-result/${{ github.head_ref }}
             if $failed_scenarios 
             then
                 echo "Scenarious failed"
             fi
       - name: Set folder permision
         if: always()
-        run: sudo chmod -R 777 scenario-result
+        run: sudo chmod -R 777 scenario-result/${{ github.head_ref }}
       - name: upload artifacts
         if: always()
         uses: actions/upload-artifact@v2.2.0
         with:
           name: core-scenarious-results
-          path: ./scenario-result/
+          path: ./scenario-result/${{ github.head_ref }}/
           if-no-files-found: error
           retention-days: 5
       - name: Clean logs
         if: always()
-        run: sudo rm -rf scenario-result
+        run: sudo rm -rf scenario-result/${{ github.head_ref }}
 
-      - name: Clean docker container
-        if: always()
-        run: |
-          ids=$(docker ps -a -q)
-          for id in $ids
-          do
-           echo "$id"
-           docker stop $id && docker rm $id
-          done
       - name: Clean bins
         if: always()
         uses: geekyeggo/delete-artifact@v2
