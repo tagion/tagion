@@ -7,3 +7,5 @@
 * [wallet](../../../bin-wallet/README.md)
 * [wasmutil](../../../bin-wasmutil/README.md)
 * [tagionwave](../../../bin-wave/README.md)
+* [tagionevilwallet](../../../bin-evilwallet/README.md)
+* [recorderchain](../../../bin-recorderchain/README.md)

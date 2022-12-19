@@ -21,6 +21,7 @@ MODE1_CONFIG_$1=$$(MODE1_ROOT)/tagionwave-$1.json
 MODE1_DARTFILE_$1=$$(MODE1_ROOT)/dart-$1.drt
 MODE1_PID_$1=$$(MODE1_ROOT)/tagionwave-$1.pid
 MODE1_LOG_$1=$$(MODE1_ROOT)/tagionwave-$1.log
+MODE1_RECCHAIN_$1=$$(MODE1_ROOT)/recorderchain-$1/
 
 mode1-run-$1: export TAGIONCONFIG=$$(MODE1_CONFIG_$1)
 mode1-run-$1: export TAGIONLOG=$$(MODE1_LOG_$1)
@@ -71,7 +72,7 @@ $$(MODE1_CONFIG_$1): $$(MODE1_ROOT)/.way
 $$(MODE1_CONFIG_$1): target-tagionwave
 $$(MODE1_CONFIG_$1):
 	$$(PRECMD)
-	$$(TAGIONWAVE) $$@ $$(MODE1_FLAGS) --port $$(HOSTPORT) -p $$(TRANSACTIONPORT) -P $$(MONITORPORT) --dart-filename=$$(MODE1_DARTFILE_$1) --dart-synchronize=$$(DARTSYNC) --dart-init=$$(DARTINIT) --pid=$$(MODE1_PID_$1) -O
+	$$(TAGIONWAVE) $$@ $$(MODE1_FLAGS) --port $$(HOSTPORT) -p $$(TRANSACTIONPORT) -P $$(MONITORPORT) --dart-filename=$$(MODE1_DARTFILE_$1) --dart-synchronize=$$(DARTSYNC) --dart-init=$$(DARTINIT) --pid=$$(MODE1_PID_$1) -O --recorderchain=$$(MODE1_RECCHAIN_$1)
 
 mode1-config: $$(MODE1_CONFIG_$1)
 
@@ -93,7 +94,7 @@ mode1: $(MODE1_ROOT)/.way
 mode1: tagionwave $(MODE1_DART)
 
 .PHONY: mode1
-testnet: mode1
+testbench: mode1
 
 # $(MODE1_DART): | dart
 # $(MODE1_DART): $(DARTDB)
@@ -127,7 +128,7 @@ env-mode1:
 	${call log.close}
 
 .PHONY: env-mode1
-env-testnet: env-mode1
+env-testbench: env-mode1
 
 #run: mode1
 
@@ -139,7 +140,7 @@ clean-mode1:
 
 .PHONY: clean-mode1
 
-clean-testnet: clean-mode1
+clean-testbench: clean-mode1
 
 ${foreach mode1,$(MODE1_LIST),${call MODE1,$(mode1)}}
 

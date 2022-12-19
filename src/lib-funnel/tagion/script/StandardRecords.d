@@ -205,9 +205,9 @@ enum OwnerKey = "$Y";
     {
         @Label("$fee") TagionCurrency fixed_fees; /// Fixed fees per Transcation
         @Label("$mem") TagionCurrency storage_fee; /// Fees per byte
-        TagionCurrency fees(const TagionCurrency topay, const size_t size) pure const
+        TagionCurrency fees() pure const
         {
-            return fixed_fees + size * storage_fee;
+            return fixed_fees;
         }
 
         mixin HiBONRecord;
@@ -405,6 +405,6 @@ static Globals globals;
 
 static this()
 {
-    globals.fixed_fees = 50.TGN; // Fixed fee
+    globals.fixed_fees = 1.TGN / 10; // Fixed fee
     globals.storage_fee = 1.TGN / 200; // Fee per stored byte
 }
