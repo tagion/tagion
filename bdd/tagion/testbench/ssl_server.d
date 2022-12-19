@@ -29,15 +29,17 @@ int _main(string[] args) {
     auto setup = mainSetup!SSLServiceOptions("ssl_server", &setDefault);
     int result = testMain(setup, args);
 
+	
     /// Server test without SSL
     auto server_handle = automation!Multipleclients_server_connections;
-/+
 	server_handle.alternative = "None SSL server";
     server_handle.AServerModuleWithCapableToServiceMultiClientShouldBeTest(setup.options, false);
     auto server_context = server_handle.run;
-+/
-    server_handle.alternative = "SSL server";
-    server_handle.AServerModuleWithCapableToServiceMultiClientShouldBeTest(setup.options, true);
+
+	SSLServiceOptions ssl_service_options = setup.options;
+	ssl_service_options.server.port++;
+	server_handle.alternative = "SSL server";
+    server_handle.AServerModuleWithCapableToServiceMultiClientShouldBeTest(ssl_service_options, true);
     auto ssl_server_context = server_handle.run;
 
 	version (none)
