@@ -19,7 +19,7 @@ import tagion.basic.Types : Buffer, Control;
 import tagion.logger.Logger;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.TagionExceptions : taskfailure, fatal;
-import io = std.stdio;
+import tagion.communication.HiRPC : HiRPC;
 import LEB128 = tagion.utils.LEB128;
 
 /++
@@ -175,7 +175,6 @@ class FiberServer {
     void execute(SocketSet socket_set) {
         import std.socket : SocketOSException;
 
-        io.writefln("Execute ");
         foreach (fiber; socket_fibers) {
             void removeFiber() nothrow {
                 fiber.shutdown;
@@ -183,8 +182,6 @@ class FiberServer {
             }
 
             try {
-
-                io.writefln("id=%d", fiber.fiber_id);
                 if (fiber.client is null) {
                     if (fiber.state !is Fiber.State.TERM) {
                         fiber.reset;
@@ -205,11 +202,9 @@ class FiberServer {
                 }
             }
             catch (SocketOSException e) {
-                io.writefln("%s %s", __FUNCTION__, e);
                 removeFiber;
             }
             catch (SSLSocketException e) {
-                io.writefln("%s %s", __FUNCTION__, e);
                 removeFiber;
             }
         }
@@ -239,10 +234,15 @@ class FiberServer {
             Socket client;
             bool _lock;
             FiberRelay.Time start_timestamp; //   uint fiber_id;
+            uint _id;
         }
         immutable size_t fiber_id;
         @property final uint id() const pure nothrow {
-            return cast(uint) fiber_id;
+            return _id;
+        }
+
+        @property final void id(const uint _id) pure nothrow {
+            this._id = _id;
         }
 
         final bool locked() const pure nothrow {
@@ -309,7 +309,7 @@ class FiberServer {
          received buffer
          +/
         @trusted
-        immutable(ubyte[]) receive() {
+        Buffer receive() {
             import std.stdio;
             import tagion.hibon.Document : Document;
 
@@ -353,7 +353,6 @@ class FiberServer {
                 rec_data_size = client.receive(current);
                 if (rec_data_size < 0) {
                     // Not ready yet
-                    writeln("Timeout");
                     checkTimeout;
                 }
                 else {
@@ -361,7 +360,11 @@ class FiberServer {
                 }
                 yield;
             }
-            return buffer.idup;
+            immutable result = buffer.idup;
+            const doc = Document(result);
+			check(doc.isInorder, "Bad document format");
+			id = HiRPC.getId(doc);
+            return result;
         }
 
         /++
@@ -371,10 +374,6 @@ class FiberServer {
         void send(immutable(ubyte[]) buffer) {
             bool done;
             do {
-                import tagion.hibon.Document;
-                import tagion.hibon.HiBONJSON;
-
-                io.writefln("send %s", Document(buffer).toPretty);
                 const ret = client.send(buffer);
                 if (ret > 0) {
                     done = true;
@@ -480,7 +479,6 @@ class FiberServer {
                 with (Control) {
                     switch (ts) {
                     case STOP:
-                        io.writefln("Stop the resonse service");
                         stop = true;
                         break;
                     default:

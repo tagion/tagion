@@ -20,8 +20,6 @@ import tagion.logger.Logger;
 import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions : fatal;
 
-import io = std.stdio;
-
 @safe
 struct ServerAPI {
     immutable(ServerOptions) opts;
@@ -64,7 +62,6 @@ struct ServerAPI {
     @trusted
     void run() nothrow {
         try {
-            io.writefln("Started %d", opts.max_queue_length);
             log.register(opts.server_task_name);
             check(listener.isAlive,
                     format("Listener is dead for response task %s", opts.server_task_name));
@@ -88,7 +85,6 @@ struct ServerAPI {
                 socket_set.add(listener);
                 service.addSocketSet(socket_set);
 
-                // foreach(client; connectedClients) readSet.add(client);
                 const sel_res = Socket.select(
                         socket_set, null, null,
                         opts.select_timeout.msecs);
@@ -96,7 +92,6 @@ struct ServerAPI {
                     if (socket_set.isSet(listener) && service.slotAvailable) {
                         // the listener is ready to read, that means
                         // a new client wants to connect. We accept it here.
-                        io.writefln("listener.accept");
                         service.applyClient(listener.accept());
                     }
                 }

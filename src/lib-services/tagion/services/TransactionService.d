@@ -71,7 +71,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
         @trusted void requestInputs(const(Buffer[]) inputs, uint id) {
             auto sender = DART.dartRead(inputs, internal_hirpc, id);
             auto tosend = sender.toDoc.serialize; //internal_hirpc.toHiBON(sender).serialize;
-            dart_sync_tid.send(opts.transaction.service.server.server_task_name, tosend);
+            dart_sync_tid.send(opts.transaction.service.server.response_task_name, tosend);
         }
 
         @trusted void search(Document doc, uint id) {
@@ -81,13 +81,13 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             n_params["owners"] = doc;
             auto sender = internal_hirpc.search(n_params, id);
             auto tosend = sender.toDoc.serialize;
-            dart_sync_tid.send(opts.transaction.service.server.server_task_name, tosend);
+            dart_sync_tid.send(opts.transaction.service.server.response_task_name, tosend);
         }
 
         @trusted void areWeInGraph(uint id) {
             auto sender = internal_hirpc.healthcheck(new HiBON(), id);
             auto tosend = sender.toDoc.serialize;
-            send(node_tid, opts.transaction.service.server.server_task_name, tosend);
+            send(node_tid, opts.transaction.service.server.response_task_name, tosend);
         }
 
         @safe class TransactionRelay : FiberServer.Relay {

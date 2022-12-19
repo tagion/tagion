@@ -3,6 +3,7 @@ module tagion.communication.HiRPC;
 //import std.stdio;
 import std.format;
 import std.traits : EnumMembers;
+import std.exception : assumeWontThrow;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONException;
@@ -136,6 +137,13 @@ struct HiRPC
         mixin HiBONRecord;
     }
 
+	static uint getId(const Document doc) nothrow {
+		enum idLabel = GetLabel!(Error.id).name;
+		if (doc.hasMember(idLabel)) {
+			return assumeWontThrow(doc[idLabel].get!uint);
+		}
+		return uint.init;
+	}
     enum isMessage(T) = is(T : const(Method)) || is(T : const(Response)) || is(T : const(Error));
 
     enum SignedState
