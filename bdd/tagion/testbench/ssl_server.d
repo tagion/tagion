@@ -31,10 +31,16 @@ int _main(string[] args) {
 
     /// Server test without SSL
     auto server_handle = automation!Multipleclients_server_connections;
-    server_handle.alternative = "Standard Socket";
+/+
+	server_handle.alternative = "None SSL server";
     server_handle.AServerModuleWithCapableToServiceMultiClientShouldBeTest(setup.options, false);
     auto server_context = server_handle.run;
-    version (none)
++/
+    server_handle.alternative = "SSL server";
+    server_handle.AServerModuleWithCapableToServiceMultiClientShouldBeTest(setup.options, true);
+    auto ssl_server_context = server_handle.run;
+
+	version (none)
         if (result == 0) {
 
             writefln("sslserver=%s", setup.options.cert);

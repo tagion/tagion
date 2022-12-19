@@ -123,7 +123,7 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
 
     @Then("the server should stop")
     Document theServerShouldStop() @trusted {
-        Thread.sleep(1.seconds);
+        Thread.sleep(10.seconds);
         writefln("Before stop send to the server task");
         server_tid.send(Control.STOP);
         writefln("Stop send to the server task");
