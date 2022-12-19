@@ -149,7 +149,6 @@ class SSLSocket : Socket {
     ~this() {
         SSL_free(_ssl);
         if (_ownership is Ownership.OWNS) {
-            //        if (_ctx !is client_ctx) {
             SSL_CTX_free(_ctx);
         }
     }
@@ -214,7 +213,7 @@ class SSLSocket : Socket {
     }
 
     /++
-     Cleans the SSL error que
+     Cleans the SSL error queue
      +/
     static void clearError() {
         ERR_clear_error();
@@ -230,17 +229,25 @@ class SSLSocket : Socket {
         check_error(res, true);
     }
 
-    /++
-	Params: how has no effect for the SSLSocket
-	+/
+    /**
+       Throws: and exception if the SocketShutdown is not set to BOTH
+       Params: how has no effect for the SSLSocket
+    */
     override void shutdown(SocketShutdown how) {
         assert(how is SocketShutdown.BOTH, "Only shutdown both is supported for SSL");
         SSL_shutdown(_ssl);
     }
 
+    /**
+      A SSL socket can only be shutdown for both read/write.
+      This function just do the default SSL shutdown
+      Returns: true if the socket did shutdown correctly
+    */
+
     bool shutdown() {
         return SSL_shutdown(_ssl) != 0;
     }
+
     /++
      Send a buffer to the socket using the socket result
      +/
@@ -289,6 +296,7 @@ class SSLSocket : Socket {
             }
         }
     }
+
     /++
      Returns:
      pending bytes in the socket que
@@ -316,20 +324,9 @@ class SSLSocket : Socket {
         return receive(buf, SocketFlags.NONE);
     }
 
-    version (none) {
-        /++
-     Returns:
-     the SSL system error message
-     +/
-        @trusted
-        static string str_error(const int errornum) {
-            const str = strerror(errornum);
-            import std.string : fromStringz;
-
-            return fromStringz(str).idup;
-        }
-    }
-
+    /**
+	Returns: SSLSocket from the socket listener
+	*/
     @trusted
     override SSLSocket accept() {
         auto newsock = cast(socket_t).accept(handle, null, null);
@@ -345,66 +342,6 @@ class SSLSocket : Socket {
         }
 
         return socket;
-    }
-
-    /++
-       Create a SSL socket from a socket
-       Returns:
-       true of the ssl_socket is succesfully created
-       a ssl_client for the client
-       Params:
-       client = Standard socket (non ssl socket)
-       ssl_socket = The SSL
-    +/
-    bool acceptSSL(ref SSLSocket ssl_client, Socket client) {
-        if (ssl_client is null) {
-            if (!client.isAlive) {
-                client.close;
-                throw new SSLSocketException("Socket could not connect to client. Socket closed.");
-            }
-            client.blocking = false;
-            ssl_client = new SSLSocket(client.handle, client.addressFamily, this);
-            const fd_res = SSL_set_fd(ssl_client.ssl, client.handle);
-            if (!fd_res) {
-                return false;
-            }
-        }
-
-        auto c_ssl = ssl_client.ssl;
-
-        const res = SSL_accept(c_ssl);
-        bool accepted;
-
-        const ssl_error = cast(SSLErrorCodes) SSL_get_error(c_ssl, res);
-
-        with (SSLErrorCodes) switch (ssl_error) {
-        case SSL_ERROR_NONE:
-            accepted = true;
-            break;
-        case SSL_ERROR_WANT_READ,
-        SSL_ERROR_WANT_WRITE:
-            // Ignore
-            break;
-        case SSL_ERROR_SSL,
-            SSL_ERROR_WANT_X509_LOOKUP,
-            SSL_ERROR_SYSCALL,
-        SSL_ERROR_ZERO_RETURN:
-            throw new SSLSocketException(errorText(ssl_error), ssl_error);
-            break;
-        default:
-            throw new SSLSocketException(format("SSL Error. SSL error code: %d.", ssl_error),
-                    SSL_ERROR_SSL);
-            break;
-        }
-        return !SSL_pending(c_ssl) && accepted;
-    }
-
-    /++
-       Reject a client connect and close the socket
-     +/
-    void rejectClient() {
-        auto client = super.accept();
-        client.close();
     }
 
     /**
@@ -430,6 +367,7 @@ class SSLSocket : Socket {
     }
 
     unittest {
+        // The SSLSocket test is done in the BDD
         import std.array;
         import std.string;
         import std.file;
@@ -464,19 +402,6 @@ class SSLSocket : Socket {
             };
             configureOpenSSL(ssl_options);
         }
-        //! [Waiting for first acception]
-        version (none) {
-            SSLSocket item = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
-            SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
-            Socket client = new Socket(AddressFamily.UNIX, SocketType.STREAM);
-            bool result;
-            const exception = collectException!SSLSocketException(
-                    item.acceptSSL(ssl_client, client), result);
-            assert(exception !is null);
-            assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SSL);
-            assert(!result);
-        }
-
         //! [File reading - incorrect certificate]
         {
             SSLSocket testItem_server;
@@ -485,20 +410,6 @@ class SSLSocket : Socket {
                     testItem_server);
             assert(exception !is null);
             assert(testItem_server is null);
-        }
-
-        //! [File reading - empty path]
-        version (none) {
-
-            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
-            scope (exit) {
-                testItem_server.close;
-            }
-            string empty_path = "";
-            assertThrown!SSLSocketException(
-                    testItem_server.configureContext(empty_path, empty_path)
-            );
-            //SSLSocket.reset();
         }
 
         //! [file loading correct]
@@ -524,24 +435,6 @@ class SSLSocket : Socket {
             );
             assert(exception !is null);
             assert(exception.error_code == SSLErrorCodes.SSL_ERROR_NONE);
-        }
-
-        //! [correct acception]
-        {
-            SSLSocket empty_socket = null;
-            SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX);
-            Socket socket = new Socket(AddressFamily.UNIX, SocketType.STREAM);
-            scope (exit) {
-                ssl_client.close;
-                socket.close;
-            }
-            bool result;
-            const exception = collectException!SSLSocketException(
-                    result = ssl_client.acceptSSL(empty_socket, socket)
-            );
-            assert(exception !is null);
-            assert(exception.error_code == SSLErrorCodes.SSL_ERROR_SSL);
-            assert(!result);
         }
     }
 }
