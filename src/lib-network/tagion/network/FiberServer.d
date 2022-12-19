@@ -89,13 +89,13 @@ class FiberServer {
 
     protected {
         SocketFiber[] socket_fibers;
-        SocketFiber[uint] active_fibers;
+        //SocketFiber[uint] active_fibers;
         SocketFiber[] recycle_fibers;
         uint _fiber_id;
         Relay relay;
-        Socket listener;
+        //  Socket listener;
         Tid response_service_tid;
-        uint next_fiber_id() {
+        version (none) uint next_fiber_id() {
             if (_fiber_id == 0) {
                 _fiber_id = 1;
             }
@@ -161,7 +161,7 @@ class FiberServer {
         }
     }
 
-    void addSocketSet(ref SocketSet socket_set) {
+    version (none) void addSocketSet(ref SocketSet socket_set) {
         foreach (fiber; active_fibers) {
             if (!fiber.locked) {
                 socket_set.add(fiber.client);
@@ -174,24 +174,19 @@ class FiberServer {
      +/
     @trusted
     void closeAll() {
-        recycle_fibers = null;
-        while (active_fibers.length) {
-            foreach (fiber_id, fiber; active_fibers) {
-                fiber.call;
-                if (fiber.state is Fiber.State.TERM) {
-                    fiber.shutdown;
-                    active_fibers.remove(fiber_id);
-                    handler.remove(fiber_id);
-                }
+        foreach (fiber_id, fiber; socket_fibers) {
+            if (fiber.client !is null) {
+                fiber.shutdown;
+                handler.remove(fiber_id);
+                fiber.reset;
             }
-            Thread.sleep(opts.client_timeout.msecs);
         }
     }
 
     /++
      Allocated a new fiber service
      +/
-    SocketFiber allocateFiber() {
+    version (none) SocketFiber allocateFiber() {
         SocketFiber result;
         if (active_fibers.length < opts.max_connections) {
             const fiber_key = next_fiber_id;
@@ -234,7 +229,7 @@ class FiberServer {
      Returns:
      true if some fibers are active
      +/
-    bool fibersActive() const pure nothrow {
+    version (none) bool fibersActive() const pure nothrow {
         return active_fibers.length > 0;
     }
 
@@ -289,12 +284,7 @@ class FiberServer {
         }
     }
 
-    @trusted
-    void send(uint id, immutable(ubyte[]) buffer)
-    in {
-        assert(id in active_fibers);
-    }
-    do {
+    void send(uint id, immutable(ubyte[]) buffer) {
         socket_fibers[id].raw_send(buffer);
     }
 
