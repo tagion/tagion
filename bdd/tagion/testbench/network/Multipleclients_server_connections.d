@@ -93,9 +93,7 @@ class AServerModuleWhichShouldBeCapableOfServicingMultipleClients {
                 format("Expected '%s' but received '%s'", packages[i].label, received.label));
             }
         }
-        writefln("SHUTDOWN all clients sockets!!!");
         foreach (i, ref socket; sockets) {
-            writefln("Shutdown %d", i);
             socket.shutdown(SocketShutdown.BOTH);
         }
 
@@ -123,14 +121,14 @@ class AServerModuleWhichShouldBeCapableOfServicingMultipleClients {
     }
 
     @Then("the server should stop")
-    Document stop() {
-        Thread.sleep(10.seconds);
-        writefln("Before stop send to the server task");
+    Document stop() @trusted {
+//        Thread.sleep(10.seconds);
+  //      writefln("Before stop send to the server task");
         server_tid.send(Control.STOP);
-        writefln("Stop send to the server task");
+  //      writefln("Stop send to the server task");
         check(receiveOnly!Control == Control.END, "Server task did not finish correctly");
-        writefln("End received from the server task");
-        Thread.sleep(1.seconds);
+   //     writefln("End received from the server task");
+  //      Thread.sleep(1.seconds);
         return result_ok;
     }
 
