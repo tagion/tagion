@@ -4,13 +4,16 @@ import core.time : dur, Duration;
 import core.thread;
 import std.stdio : writeln, writefln, stdout;
 import std.socket : InternetAddress, Socket, SocketSet, SocketShutdown, shutdown, AddressFamily;
-import std.concurrency;
+
+//import std.concurrency;
 import std.format;
+import std.algorithm.iteration : filter, each;
 
 import tagion.network.SSLSocket;
 import tagion.network.FiberServer;
 import tagion.network.SSLServiceOptions;
 import tagion.network.SSLSocketException;
+import tagion.network.ReceiveBuffer : ReceiveBuffer;
 import tagion.GlobalSignals : abort;
 
 import tagion.logger.Logger;
@@ -69,13 +72,14 @@ struct ServerAPI {
             listener.bind(new InternetAddress(opts.address, opts.port));
             listener.listen(opts.max_queue_length);
 
-            service = new FiberServer(opts, listener, relay);
+            service = new FiberServer(opts, relay);
             service.start;
             scope (exit) {
                 service.stop;
             }
             auto socket_set = new SocketSet; //(opts.max_queue_length + 1);
-            auto clients = new Sockets[opt.max_queue_length];
+            auto clients = new Socket[opts.max_queue_length];
+            auto receive_buffers = new ReceiveBuffer[opts.max_queue_length];
             scope (exit) {
                 socket_set.reset;
                 clients
@@ -84,7 +88,7 @@ struct ServerAPI {
                 //service.closeAll;
                 listener.shutdown(SocketShutdown.BOTH);
             }
-            while (!stop_service && !about) {
+            while (!stop_service && !abort) {
                 socket_set.reset();
                 socket_set.add(listener);
                 clients
@@ -96,13 +100,13 @@ struct ServerAPI {
                         socket_set, null, null,
                         opts.select_timeout.msecs);
                 if (sel_res > 0) {
-                    foreach (id, ref client; clients) {
-                        if (readSet.isSet(client)) {
-                            // read from it and echo it back
-                            auto got = client.receive(buffer);
-                            client.send(buffer[0 .. got]);
+                    foreach (id, client; clients) {
+                        if (socket_set.isSet(client)) {
+                            const result = receive_buffers[id].append((buf) => client.receive(buf));
+                            //     auto got = client.receive(buffer);
+                            //     client.send(buffer[0 .. got]);
                         }
-                        if (readSet.isSet(listener)) {
+                        if (socket_set.isSet(listener)) {
                             // the listener is ready to read, that means
                             // a new client wants to connect. We accept it here.
                             client = listener.accept();
@@ -110,31 +114,32 @@ struct ServerAPI {
                     }
                 }
             }
-            while (!stop_service && !abort) {
-                io.writefln("Wait loop");
-                if (!listener.isAlive) {
-                    stop_service = true;
-                    break;
-                }
-
-                socket_set.add(listener);
-
-                service.addSocketSet(socket_set);
-
-                const sel_res = Socket.select(
-                        socket_set, null, null,
-                        opts.select_timeout.msecs);
-                if (sel_res > 0) {
-
-                    if (socket_set.isSet(listener)) {
-                        service.allocateFiber;
+            version (none)
+                while (!stop_service && !abort) {
+                    io.writefln("Wait loop");
+                    if (!listener.isAlive) {
+                        stop_service = true;
+                        break;
                     }
+
+                    socket_set.add(listener);
+
+                    service.addSocketSet(socket_set);
+
+                    const sel_res = Socket.select(
+                            socket_set, null, null,
+                            opts.select_timeout.msecs);
+                    if (sel_res > 0) {
+
+                        if (socket_set.isSet(listener)) {
+                            service.allocateFiber;
+                        }
+                    }
+                    assert(service !is null, "This should not be possible");
+                    io.writefln("Before execute %s abort %s ", stop_service, abort);
+                    service.execute(socket_set);
+                    socket_set.reset;
                 }
-                assert(service !is null, "This should not be possible");
-                io.writefln("Before execute %s abort %s ", stop_service, abort);
-                service.execute(socket_set);
-                socket_set.reset;
-            }
         }
         catch (Throwable e) {
             fatal(e);

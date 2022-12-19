@@ -6,6 +6,7 @@ import std.socket : SocketSet, SocketException, Socket, AddressFamily, SocketShu
 import std.exception;
 import std.concurrency;
 import std.format;
+import std.algorithm.iteration : each;
 
 //import tagion.network.SSLSocket;
 import tagion.network.SSLServiceOptions : ServerOptions;
@@ -78,17 +79,21 @@ class FiberServer {
     @safe
     this(immutable(ServerOptions) opts, Relay relay) {
         this.opts = opts;
+        socket_fibers.length = opts.max_queue_length;
+        socket_fibers
+            .each!((ref fiber) => fiber = new SocketFiber);
         // this.listener = listener;
         this.relay = relay;
-        handler = new Response;
+        handler = new shared(Response)(opts.max_queue_length);
     }
 
     protected {
+        SocketFiber[] socket_fibers;
         SocketFiber[uint] active_fibers;
         SocketFiber[] recycle_fibers;
         uint _fiber_id;
         Relay relay;
-        // Socket listener;
+        Socket listener;
         Tid response_service_tid;
         uint next_fiber_id() {
             if (_fiber_id == 0) {
@@ -107,14 +112,18 @@ class FiberServer {
      Response buffer from a services
      +/
     synchronized static class Response {
-        protected shared(Buffer[uint]) responses;
+        protected shared(Buffer[]) responses;
+        @disable this();
+        this(const size_t size) {
+            responses.length = size;
+        }
         /++
          set response buffer
          Params:
          fiber_id = Id of the fiber which should handle this response
          response = Reponse buffer
          +/
-        void set(immutable uint fiber_id, ref Buffer response) {
+        void set(immutable size_t fiber_id, ref Buffer response) {
             scope (exit) {
                 response = null;
             }
@@ -126,13 +135,12 @@ class FiberServer {
          Params:
          fiber_id = Id of the fiber which should handle this response
          +/
-        Buffer get(immutable uint fiber_id) {
-            if (fiber_id in responses) {
-                auto result = responses[fiber_id];
+        Buffer get(immutable size_t fiber_id) {
+            if (responses[fiber_id]!is null) {
                 scope (exit) {
-                    responses.remove(fiber_id);
+                    responses[fiber_id] = null;
                 }
-                return assumeUnique(result);
+                return responses[fiber_id];
             }
             return null;
         }
@@ -141,16 +149,15 @@ class FiberServer {
          Returns:
          true if the a response is available on the fiber_id
          +/
-        bool available(immutable uint fiber_id) const pure nothrow {
-            return (fiber_id in responses) !is null;
+        bool available(immutable size_t fiber_id) const pure nothrow {
+            return responses[fiber_id]!is null;
         }
 
         /++
          Removes the response from the fiber_id
          +/
-        void remove(immutable uint fiber_id) nothrow {
-            assumeWontThrow(io.writefln("avaliable %s", available(fiber_id)));
-            responses.remove(fiber_id);
+        void remove(immutable size_t fiber_id) nothrow {
+            responses[fiber_id] = null;
         }
     }
 
@@ -235,16 +242,16 @@ class FiberServer {
      Executes the fiber services for all the socket_set
      +/
     @trusted
-    void execute(ref Buffer[] receive_buffers) {
+    void execute() {
         import std.socket : SocketOSException;
 
         io.writefln("Execute ");
-        foreach (key, ref fiber; active_fibers) {
+
+        foreach (key, ref fiber; socket_fibers) {
             void removeFiber() nothrow {
                 fiber.shutdown;
                 fiber.reset;
-                recycle_fibers ~= fiber;
-                active_fibers.remove(key);
+                fiber.client = null;
                 handler.remove(key);
             }
 
@@ -252,7 +259,9 @@ class FiberServer {
 
                 io.writefln("id=%d", key);
                 if (fiber.client is null) {
-                    fiber.call;
+                    if (fiber.state !is Fiber.State.TERM) {
+                        fiber.reset;
+                    }
                 }
                 else if (fiber.available) {
                     // Response receiver from the service
@@ -261,7 +270,7 @@ class FiberServer {
                 else if (fiber.locked) {
                     fiber.call;
                 }
-                else if (socket_set.isSet(fiber.client)) {
+                else {
                     fiber.call;
                 }
                 if (fiber.state is Fiber.State.TERM) {
@@ -286,7 +295,7 @@ class FiberServer {
         assert(id in active_fibers);
     }
     do {
-        active_fibers[id].raw_send(buffer);
+        socket_fibers[id].raw_send(buffer);
     }
 
     /++
@@ -294,8 +303,7 @@ class FiberServer {
      +/
     class SocketFiber : Fiber, FiberRelay {
         protected {
-            //   Socket client;
-            Buffer receive_buffer;
+            Socket client;
             bool _lock;
             FiberRelay.Time start_timestamp;
             uint fiber_id;
@@ -323,6 +331,11 @@ class FiberServer {
         @trusted
         this(const uint fiber_id) {
             setId(fiber_id);
+            super(&run);
+        }
+
+        @trusted
+        this() {
             super(&run);
         }
 
@@ -468,35 +481,18 @@ class FiberServer {
         @trusted
         void run() {
             startTime;
-            client = listener.accept;
+
+            //client = listener.accept;
             scope (exit) {
                 //_client.shutdown(SocketShutdown.BOTH);
                 shutdown;
                 unlock;
             }
+
             check(client.isAlive, "Client is dear inside server fiber");
-            /*
-            import tagion.network.SSLSocket;
-
-            auto _listener = cast(SSLSocket) listener;
-            SSLSocket _client;
-            if (_listener) {
-                while (!_listener.acceptSSL(_client, accept_client)) {
-                    checkTimeout;
-                    yield;
-                }
-                client = _client;
-            }
-            else {
-                client = accept_client;
-
-            }
-            assert(client.isAlive);
-*/
             bool stop;
             while (!stop) {
                 lock;
-
                 stop = relay.agent(this);
                 unlock;
             }
