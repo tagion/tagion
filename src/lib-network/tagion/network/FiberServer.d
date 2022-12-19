@@ -9,6 +9,7 @@ import std.format;
 import std.algorithm.iteration : each, map, filter;
 import std.algorithm.searching : any, find;
 import std.range;
+import std.typecons : Typedef;
 
 //import tagion.network.SSLSocket;
 import tagion.network.SSLServiceOptions : ServerOptions;
@@ -87,7 +88,7 @@ class FiberServer {
             fiber = new SocketFiber(fiber_id);
         }
         this.relay = relay;
-        handler = new shared(Response)(opts.max_queue_length);
+        handler = new shared(Response);
     }
 
     protected {
@@ -101,22 +102,15 @@ class FiberServer {
      Response buffer from a services
      +/
     synchronized static class Response {
-        protected shared(Buffer[]) responses;
-        @disable this();
-        this(const size_t size) {
-            responses.length = size;
-        }
+        protected shared(Buffer[uint]) responses;
         /++
          set response buffer
          Params:
          fiber_id = Id of the fiber which should handle this response
          response = Reponse buffer
          +/
-        void set(immutable size_t fiber_id, ref Buffer response) nothrow {
-            scope (exit) {
-                response = null;
-            }
-            responses[fiber_id] = response;
+        void set(immutable uint id, shared Buffer response) {
+            responses[id] = response;
         }
 
         /++
@@ -124,12 +118,13 @@ class FiberServer {
          Params:
          fiber_id = Id of the fiber which should handle this response
          +/
-        Buffer get(immutable size_t fiber_id) nothrow {
-            if (responses[fiber_id]!is null) {
+        Buffer get(immutable uint id) {
+            if (id in responses) {
+                auto result = responses[id];
                 scope (exit) {
-                    responses[fiber_id] = null;
+                    responses.remove(id);
                 }
-                return responses[fiber_id];
+                return result;
             }
             return null;
         }
@@ -138,16 +133,17 @@ class FiberServer {
          Returns:
          true if the a response is available on the fiber_id
          +/
-        bool available(immutable size_t fiber_id) const pure nothrow {
-            return responses[fiber_id]!is null;
+        bool available(immutable uint id) const pure nothrow {
+            return (id in responses) !is null;
         }
 
         /++
          Removes the response from the fiber_id
          +/
-        void remove(immutable size_t fiber_id) nothrow {
-            responses[fiber_id] = null;
+        void remove(immutable uint id) {
+            responses.remove(id);
         }
+
     }
 
     /++
@@ -168,6 +164,12 @@ class FiberServer {
             .each!(client => socket_set.add(client));
     }
 
+    FiberId responseId(const uint id) pure const {
+        auto response_fibers = socket_fibers
+            .find!(fiber => fiber.id == id);
+        check(!response_fibers.empty, format("Response id %d not found", id));
+        return response_fibers.front.fiber_id;
+    }
     /++
      Executes the fiber services for all the socket_set
      +/
@@ -226,6 +228,8 @@ class FiberServer {
         socket_fibers[id].raw_send(buffer);
     }
 
+    alias FiberId = Typedef!(size_t, size_t.init, "FiberId");
+
     /++
      Socket service fiber
      +/
@@ -236,7 +240,7 @@ class FiberServer {
             FiberRelay.Time start_timestamp; //   uint fiber_id;
             uint _id;
         }
-        immutable size_t fiber_id;
+        immutable FiberId fiber_id;
         @property final uint id() const pure nothrow {
             return _id;
         }
@@ -286,14 +290,14 @@ class FiberServer {
         }
 
         void remove() {
-            handler.remove(fiber_id);
+            handler.remove(id);
         }
         /++
          Returns:
          the service response
          +/
         Buffer response() {
-            return handler.get(fiber_id);
+            return handler.get(id);
         }
 
         /++
@@ -301,7 +305,7 @@ class FiberServer {
          true if the service has responded
          +/
         bool available() const {
-            return handler.available(fiber_id);
+            return handler.available(id);
         }
         /++
          Receives the buffer from the service socket
@@ -362,8 +366,8 @@ class FiberServer {
             }
             immutable result = buffer.idup;
             const doc = Document(result);
-			check(doc.isInorder, "Bad document format");
-			id = HiRPC.getId(doc);
+            check(doc.isInorder, "Bad document format");
+            id = HiRPC.getId(doc);
             return result;
         }
 
