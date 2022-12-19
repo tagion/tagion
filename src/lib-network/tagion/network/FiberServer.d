@@ -64,6 +64,7 @@ interface FiberRelay {
     bool available(); /// True if send buffer is available
     void remove(); /// Remove send buffer
     @property uint id();
+    @property void id(const uint _id);
     immutable(ubyte[]) receive(); /// Recives from the service socket
     void send(immutable(ubyte[]) buffer); /// Send to the service socket
     void raw_send(immutable(ubyte[]) buffer); // Send directly to socket

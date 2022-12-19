@@ -133,7 +133,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         // import tagion.script.Script;
 
                         const hirpc_received = hirpc.receive(doc);
-
+                        ssl_relay.id = hirpc_received.method.id;
                         const method_name = hirpc_received.method.name;
                         const params = hirpc_received.method.params;
                     }
