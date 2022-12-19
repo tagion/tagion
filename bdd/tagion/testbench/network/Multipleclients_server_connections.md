@@ -3,11 +3,13 @@ Feature: Test server module with multiple client connection
 This test setup an multiple-clients to server module and test the communication between the clients and server.
 
 
-Scenario: A server module with capable to service multi client should be test
+Scenario: A server module which should be capable of servicing multiple clients
 
 Given the server should been stated
 
-Given multiple clients should been stated and connected to the server
+Given multiple clients should been stated and connected to the server in sequence
+
+Given multiple clients should been started at the same time (in parallel).
 
 When the clients should send and receive verified data
 

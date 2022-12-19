@@ -25,13 +25,13 @@ enum feature = Feature(
             ]);
 
 alias FeatureContext = Tuple!(
-        AServerModuleWithCapableToServiceMultiClientShouldBeTest, "AServerModuleWithCapableToServiceMultiClientShouldBeTest",
+        AServerModuleWhichShouldBeCapableOfServicingMultipleClients, "AServerModuleWhichShouldBeCapableOfServicingMultipleClients",
         FeatureGroup*, "result"
 );
 
-@safe @Scenario("A server module with capable to service multi client should be test",
+@safe @Scenario("A server module which should be capable of servicing multiple clients",
         [])
-class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
+class AServerModuleWhichShouldBeCapableOfServicingMultipleClients {
     Tid server_tid;
     uint num_of_clients;
     string task_name = "test_server";
@@ -45,7 +45,7 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
 
     @trusted
     @Given("the server should been stated")
-    Document serverShouldBeenStated() {
+    Document stated() {
         server_tid = spawn(&testFiberServerTask, opts, task_name, ssl_enable);
         check(receiveOnly!Control is Control.LIVE, "Server task did not start correctly");
         writefln("Server started");
@@ -54,8 +54,8 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
     }
 
     @trusted
-    @Given("multiple clients should been stated and connected to the server")
-    Document connectedToTheServer() {
+    @Given("multiple clients should been stated and connected to the server in sequence")
+    Document sequence() {
         auto sockets = new Socket[num_of_clients];
         auto packages = new TestPackage[num_of_clients];
         auto buf = new ubyte[1024];
@@ -69,7 +69,6 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
         }
         foreach (i, ref socket; sockets) {
             packages[i].label = format("message %d", i);
-            writefln("Client send %J", packages[i]);
             socket.send(packages[i].toDoc.serialize);
         }
         foreach (i, ref socket; sockets) {
@@ -77,14 +76,12 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
             check(size > 0, "Nothing hase been received");
             const doc = Document(buf[0 .. size].idup);
             const received = TestPackage(doc);
-            writefln("Client receiver %J", packages[i]);
             check(packages[i].label == received.label,
             format("Expected '%s' but received '%s'", packages[i].label, received.label));
         }
         version (none) {
             foreach (i, ref socket; sockets) {
                 packages[i].label = format("new message %d", i);
-                writefln("new Client send %J", packages[i]);
                 socket.send(packages[i].toDoc.serialize);
             }
             foreach (i, ref socket; sockets) {
@@ -92,7 +89,6 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
                 check(size > 0, "Nothing hase been received");
                 const doc = Document(buf[0 .. size].idup);
                 const received = TestPackage(doc);
-                writefln("new Client receiver %J", packages[i]);
                 check(packages[i].label == received.label,
                 format("Expected '%s' but received '%s'", packages[i].label, received.label));
             }
@@ -106,23 +102,28 @@ class AServerModuleWithCapableToServiceMultiClientShouldBeTest {
         return result_ok;
     }
 
+    @Given("multiple clients should been started at the same time (in parallel).")
+    Document parallel() {
+        return Document();
+    }
+
     @When("the clients should send and receive verified data")
-    Document andReceiveVerifiedData() {
+    Document data() {
         return Document();
     }
 
     @Then("the clients should disconnects to the server.")
-    Document disconnectsToTheServer() {
+    Document server() {
         return Document();
     }
 
     @Then("the server should verify that all clients has been disconnect")
-    Document clientsHasBeenDisconnect() {
+    Document disconnect() {
         return Document();
     }
 
     @Then("the server should stop")
-    Document theServerShouldStop() @trusted {
+    Document stop() {
         Thread.sleep(10.seconds);
         writefln("Before stop send to the server task");
         server_tid.send(Control.STOP);

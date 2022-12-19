@@ -33,13 +33,13 @@ int _main(string[] args) {
     /// Server test without SSL
     auto server_handle = automation!Multipleclients_server_connections;
 	server_handle.alternative = "None SSL server";
-    server_handle.AServerModuleWithCapableToServiceMultiClientShouldBeTest(setup.options, false);
+    server_handle.AServerModuleWhichShouldBeCapableOfServicingMultipleClients(setup.options, false);
     auto server_context = server_handle.run;
 
 	SSLServiceOptions ssl_service_options = setup.options;
 	ssl_service_options.server.port++;
 	server_handle.alternative = "SSL server";
-    server_handle.AServerModuleWithCapableToServiceMultiClientShouldBeTest(ssl_service_options, true);
+    server_handle.AServerModuleWhichShouldBeCapableOfServicingMultipleClients(ssl_service_options, true);
     auto ssl_server_context = server_handle.run;
 
 	version (none)
