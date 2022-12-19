@@ -192,7 +192,7 @@ jobs:
             SCENARIO=${{ matrix.scenario }}
             echo "RUN SCENARIO: $SCENARIO"
             mkdir -p ./scenario-result/${{ github.head_ref }}/$SCENARIO
-            docker run -d --rm --name ${{ github.head_ref }}/$SCENARIO -v ${PWD}/scenario-result/${{ github.head_ref }}/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
+            docker run -d --rm --name ${{ github.head_ref }}_$SCENARIO -v ${PWD}/scenario-result/${{ github.head_ref }}/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
             echo "$SCENARIO executed"
       - name: Wait untill docker finished
         timeout-minutes: 5
@@ -204,7 +204,7 @@ jobs:
           while true
           do
             sleep $DELAY
-            result=$( docker inspect -f '{{.State.Running}}' ${{ github.head_ref }}/$SCENARIO 2>/dev/null )    
+            result=$( docker inspect -f '{{.State.Running}}' ${{ github.head_ref }}_$SCENARIO 2>/dev/null )    
             echo "Check result: $result"
             if [ "$result" = true ]; then
                 echo 'Container $SCENARIO  exists'
@@ -212,11 +212,12 @@ jobs:
             fi
             break
           done
+          echo "Container finished scenario"
       - name: Clean docker container
         if: always()
         run: |
           SCENARIO=${{ matrix.scenario }}
-          app="${{ github.head_ref }}/$SCENARIO"
+          app="${{ github.head_ref }}_$SCENARIO"
           if docker ps | awk -v app="$app" 'NR > 1 && $NF == app{ret=1; exit} END{exit !ret}'; then
             docker stop "$app" && docker rm -f "$app"
           fi
