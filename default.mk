@@ -1,5 +1,6 @@
 
 export GODEBUG=cgocheck=-1
+INSCREEN?=1
 WOLFSSL?=1
 OLD?=1
 ONETOOL?=1

@@ -48,9 +48,9 @@ wallet: target-tagionwallet
 # Logservicetest utility
 #
 # FIXME(IB) should be removed when ddeps works correctly
-target-tagionlogservicetest: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-tagionlogservicetest: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-logservicetest/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,tagionlogservicetest,}
+#target-tagionlogservicetest: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+#target-tagionlogservicetest: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-logservicetest/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
+#${call DO_BIN,tagionlogservicetest,}
 
 #
 # Subscription utility
@@ -59,6 +59,14 @@ ${call DO_BIN,tagionlogservicetest,}
 target-tagionsubscription: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 target-tagionsubscription: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-subscription/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
 ${call DO_BIN,tagionsubscription,}
+
+#
+# tagionlogservicetest utility
+#
+# FIXME(IB) should be removed when ddeps works correctly
+target-tagionlogservicetest: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-tagionlogservicetest: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-subscription/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
+${call DO_BIN,tagionlogservicetest,}
 
 #
 # Recorderchain utility

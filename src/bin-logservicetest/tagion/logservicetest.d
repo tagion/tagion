@@ -14,12 +14,12 @@ import tagion.hibon.HiBONJSON : toJSON, toPretty;
 import tagion.hibon.HiBONRecord : HiBONRecord, RecordType;
 import tagion.logger.Logger : log, LogLevel, Log;
 import tagion.logger.LogRecords : LogFilter;
-import tagion.network.SSLOptions : configureOpenSSL;
+import tagion.network.SSLServiceOptions : configureSSLCert;
 import tagion.network.SSLSocket : SSLSocket, EndpointType;
 import tagion.options.CommonOptions : setCommonOptions;
 import tagion.services.LoggerService : LoggerTask;
 import tagion.services.Options : Options, setDefaultOption, setOptions, getOptions;
-import tagion.actor.TaskWrapper : Task;
+import tagion.tasks.TaskWrapper : Task;
 import tagion.tools.Basic : Main;
 
 mixin TrustedConcurrency;
@@ -59,10 +59,10 @@ int _main(string[] args) {
     immutable service_options = getOptions();
     // Set the shared common options for all services
     setCommonOptions(service_options.common);
-    writeln("LogSubService: certificate", service_options.logSubscription
-            .service.openssl.certificate);
-    writeln("LogSubService: private_key", service_options.logSubscription
-            .service.openssl.private_key);
+    writeln("LogSubService: certificate", service_options.logsubscription
+            .service.cert.certificate);
+    writeln("LogSubService: private_key", service_options.logsubscription
+            .service.cert.private_key);
 
     /// starting Logger task
     auto logger_service = Task!LoggerTask(service_options.logger.task_name, service_options);
@@ -80,7 +80,7 @@ int _main(string[] args) {
     }
     log.register(main_task);
 
-    configureOpenSSL(service_options.logSubscription.service.openssl);
+    configureSSLCert(service_options.logsubscription.service.cert);
 
     writeln("Creating SSLSocket");
     Thread.sleep(1.seconds);
@@ -90,11 +90,11 @@ int _main(string[] args) {
     }
     try {
         writeln("Trying to connect socket");
-        writeln("Addres ", service_options.logSubscription.service.address);
-        writeln("Port ", service_options.logSubscription.service.port);
-        client.connect(new InternetAddress(service_options.logSubscription
-                .service.address, service_options.logSubscription
-                .service.port));
+        writeln("Addres ", service_options.logsubscription.service.server.address);
+        writeln("Port ", service_options.logsubscription.service.server.port);
+        client.connect(new InternetAddress(service_options.logsubscription
+                .service.server.address, service_options.logsubscription
+                .service.server.port));
     }
     catch (SocketOSException e) {
         writeln("Log subscription failed: ", e.msg);
