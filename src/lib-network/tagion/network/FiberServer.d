@@ -6,7 +6,9 @@ import std.socket : SocketSet, SocketException, Socket, AddressFamily, SocketShu
 import std.exception;
 import std.concurrency;
 import std.format;
-import std.algorithm.iteration : each;
+import std.algorithm.iteration : each, map, filter;
+import std.algorithm.searching : any, find;
+import std.range;
 
 //import tagion.network.SSLSocket;
 import tagion.network.SSLServiceOptions : ServerOptions;
@@ -58,7 +60,8 @@ interface FiberRelay {
     void unlock() nothrow;
 
     Buffer response(); /// Response from the service
-    bool available();
+    bool available(); /// True if send buffer is available
+    void remove(); /// Remove send buffer
     @property uint id();
     immutable(ubyte[]) receive(); /// Recives from the service socket
     void send(immutable(ubyte[]) buffer); /// Send to the service socket
@@ -80,31 +83,17 @@ class FiberServer {
     this(immutable(ServerOptions) opts, Relay relay) {
         this.opts = opts;
         socket_fibers.length = opts.max_queue_length;
-        socket_fibers
-            .each!((ref fiber) => fiber = new SocketFiber);
-        // this.listener = listener;
+        foreach (fiber_id, ref fiber; socket_fibers) {
+            fiber = new SocketFiber(fiber_id);
+        }
         this.relay = relay;
         handler = new shared(Response)(opts.max_queue_length);
     }
 
     protected {
         SocketFiber[] socket_fibers;
-        //SocketFiber[uint] active_fibers;
-        SocketFiber[] recycle_fibers;
-        uint _fiber_id;
         Relay relay;
-        //  Socket listener;
         Tid response_service_tid;
-        version (none) uint next_fiber_id() {
-            if (_fiber_id == 0) {
-                _fiber_id = 1;
-            }
-            else {
-                _fiber_id++;
-            }
-            return _fiber_id;
-        }
-
         shared Response handler;
     }
 
@@ -123,7 +112,7 @@ class FiberServer {
          fiber_id = Id of the fiber which should handle this response
          response = Reponse buffer
          +/
-        void set(immutable size_t fiber_id, ref Buffer response) {
+        void set(immutable size_t fiber_id, ref Buffer response) nothrow {
             scope (exit) {
                 response = null;
             }
@@ -135,7 +124,7 @@ class FiberServer {
          Params:
          fiber_id = Id of the fiber which should handle this response
          +/
-        Buffer get(immutable size_t fiber_id) {
+        Buffer get(immutable size_t fiber_id) nothrow {
             if (responses[fiber_id]!is null) {
                 scope (exit) {
                     responses[fiber_id] = null;
@@ -161,98 +150,41 @@ class FiberServer {
         }
     }
 
-    version (none) void addSocketSet(ref SocketSet socket_set) {
-        foreach (fiber; active_fibers) {
-            if (!fiber.locked) {
-                socket_set.add(fiber.client);
-            }
-        }
-    }
-
     /++
      Close all the fiber services
      +/
     @trusted
     void closeAll() {
-        foreach (fiber_id, fiber; socket_fibers) {
-            if (fiber.client !is null) {
-                fiber.shutdown;
-                handler.remove(fiber_id);
-                fiber.reset;
-            }
+        foreach (fiber; socket_fibers) {
+            fiber.shutdown;
+            fiber.reset;
         }
     }
 
-    /++
-     Allocated a new fiber service
-     +/
-    version (none) SocketFiber allocateFiber() {
-        SocketFiber result;
-        if (active_fibers.length < opts.max_connections) {
-            const fiber_key = next_fiber_id;
-            if (recycle_fibers.length > 0) {
-                result = active_fibers[fiber_key] = recycle_fibers[$ - 1];
-                recycle_fibers = recycle_fibers[0 .. $ - 1];
-                result.setId(fiber_key);
-            }
-            else {
-                result = active_fibers[fiber_key] = new SocketFiber(fiber_key);
-            }
-        }
-        return result;
-    }
-
-    /++
-       This function must be called the first time a client is accepted.
-       Returns:
-       null if the socket is not accept or if no more fiber are avaible
-    +/
-    version (none) @trusted
-    SocketFiber acceptFiber() {
-        auto fiber = allocateFiber;
-        if (fiber) {
-            fiber.call;
-        }
-        else {
-            import tagion.network.SSLSocket;
-
-            io.writefln("Reject!!!");
-            auto _listener = cast(SSLSocket) listener;
-            if (_listener) {
-                _listener.rejectClient;
-            }
-        }
-        return fiber;
-    }
-
-    /++
-     Returns:
-     true if some fibers are active
-     +/
-    version (none) bool fibersActive() const pure nothrow {
-        return active_fibers.length > 0;
+    void addSocketSet(ref SocketSet socket_set) {
+        socket_fibers
+            .map!(fiber => fiber.client)
+            .filter!(client => client !is null)
+            .each!(client => socket_set.add(client));
     }
 
     /++
      Executes the fiber services for all the socket_set
      +/
     @trusted
-    void execute() {
+    void execute(SocketSet socket_set) {
         import std.socket : SocketOSException;
 
         io.writefln("Execute ");
-
-        foreach (key, ref fiber; socket_fibers) {
+        foreach (fiber; socket_fibers) {
             void removeFiber() nothrow {
                 fiber.shutdown;
                 fiber.reset;
-                fiber.client = null;
-                handler.remove(key);
             }
 
             try {
 
-                io.writefln("id=%d", key);
+                io.writefln("id=%d", fiber.fiber_id);
                 if (fiber.client is null) {
                     if (fiber.state !is Fiber.State.TERM) {
                         fiber.reset;
@@ -265,7 +197,7 @@ class FiberServer {
                 else if (fiber.locked) {
                     fiber.call;
                 }
-                else {
+                else if (socket_set.isSet(fiber.client)) {
                     fiber.call;
                 }
                 if (fiber.state is Fiber.State.TERM) {
@@ -278,10 +210,21 @@ class FiberServer {
             }
             catch (SSLSocketException e) {
                 io.writefln("%s %s", __FUNCTION__, e);
-
                 removeFiber;
             }
         }
+    }
+
+    bool slotAvailable() const pure nothrow @nogc {
+        return socket_fibers
+            .any!(fiber => fiber.client is null);
+    }
+
+    void applyClient(Socket client) {
+        auto available_fibers = socket_fibers
+            .find!(fiber => fiber.client !is null);
+        check(!available_fibers.empty, "No client is availanble in the service");
+        available_fibers.front.client = client;
     }
 
     void send(uint id, immutable(ubyte[]) buffer) {
@@ -295,12 +238,11 @@ class FiberServer {
         protected {
             Socket client;
             bool _lock;
-            FiberRelay.Time start_timestamp;
-            uint fiber_id;
+            FiberRelay.Time start_timestamp; //   uint fiber_id;
         }
-
-        @property uint id() const pure nothrow {
-            return fiber_id;
+        immutable size_t fiber_id;
+        @property final uint id() const pure nothrow {
+            return cast(uint) fiber_id;
         }
 
         final bool locked() const pure nothrow {
@@ -319,22 +261,9 @@ class FiberServer {
          Construct a service with the ID of fiber_id
          +/
         @trusted
-        this(const uint fiber_id) {
-            setId(fiber_id);
-            super(&run);
-        }
-
-        @trusted
-        this() {
-            super(&run);
-        }
-
-        /++
-         Change the fiber_id for the service
-         +/
-        void setId(const uint fiber_id) {
-            handler.remove(fiber_id);
+        this(const size_t fiber_id) {
             this.fiber_id = fiber_id;
+            super(&run);
         }
 
         /++
@@ -351,11 +280,15 @@ class FiberServer {
          +/
         void checkTimeout() const {
             const time_elapsed = MonoTime.currTime - start_timestamp;
-            if (time_elapsed > opts.client_timeout.msecs) {
+            if (time_elapsed > opts
+                    .client_timeout.msecs) {
                 throw new SocketTimeout(time_elapsed);
             }
         }
 
+        void remove() {
+            handler.remove(fiber_id);
+        }
         /++
          Returns:
          the service response
@@ -385,12 +318,15 @@ class FiberServer {
             ubyte[] current;
             ptrdiff_t rec_data_size;
             // The length of the buffer is in leb128 format
-            enum LEN_MAX = LEB128.calc_size(uint.max);
+            enum LEN_MAX = LEB128
+                    .calc_size(uint.max);
             auto leb128_len_data = new ubyte[LEN_MAX];
             current = leb128_len_data;
             uint leb128_index;
-            leb128_loop: for (;;) {
-                rec_data_size = client.receive(current);
+            leb128_loop: for (
+                ;;) {
+                rec_data_size = client
+                    .receive(current);
                 if (rec_data_size < 0) {
                     // Not ready yet
                     yield;
@@ -400,30 +336,40 @@ class FiberServer {
                     return null;
                 }
                 else {
-
-                    
-
-                        .check(leb128_index < LEN_MAX,
-                                message("Invalid size of len128 length field %d", leb128_index));
+                    check(
+                            leb128_index < LEN_MAX,
+                            message(
+                            "Invalid size of len128 length field %d", leb128_index));
                     break leb128_loop;
                 }
                 checkTimeout;
                 yield;
             }
             // receive data
-            const leb128_len = LEB128.decode!uint(leb128_len_data);
-            const buffer_size = leb128_len.value;
-            if (buffer_size > opts.max_buffer_size) {
+            const leb128_len = LEB128
+                .decode!uint(
+                        leb128_len_data);
+            const buffer_size = leb128_len
+                .value;
+            if (
+                buffer_size > opts
+                    .max_buffer_size) {
                 return null;
             }
-            buffer = new ubyte[leb128_len.size + leb128_len.value];
+            buffer = new ubyte[leb128_len
+                    .size + leb128_len
+                    .value];
             buffer[0 .. rec_data_size] = leb128_len_data[0 .. rec_data_size];
             current = buffer[rec_data_size .. $];
-            while (current.length) {
-                rec_data_size = client.receive(current);
+            while (current
+                    .length) {
+                rec_data_size = client
+                    .receive(
+                            current);
                 if (rec_data_size < 0) {
                     // Not ready yet
-                    writeln("Timeout");
+                    writeln(
+                            "Timeout");
                     checkTimeout;
                 }
                 else {
@@ -431,21 +377,33 @@ class FiberServer {
                 }
                 yield;
             }
-            return buffer.idup;
+            return buffer
+                .idup;
         }
 
         /++
          send the buffer to the service socket
          +/
         @trusted
-        void send(immutable(ubyte[]) buffer) {
+        void send(immutable(
+                ubyte[]) buffer) {
             bool done;
             do {
-                import tagion.hibon.Document;
-                import tagion.hibon.HiBONJSON;
+                import tagion
+                    .hibon
+                    .Document;
+                import tagion
+                    .hibon
+                    .HiBONJSON;
 
-                io.writefln("send %s", Document(buffer).toPretty);
-                const ret = client.send(buffer);
+                io
+                    .writefln(
+                            "send %s", Document(
+                            buffer)
+                            .toPretty);
+                const ret = client
+                    .send(
+                            buffer);
                 if (ret > 0) {
                     done = true;
                 }
@@ -461,7 +419,9 @@ class FiberServer {
          Send directly to socket
          +/
         @trusted
-        void raw_send(immutable(ubyte[]) buffer) {
+        void raw_send(
+                immutable(
+                ubyte[]) buffer) {
             client.send(buffer);
         }
 
@@ -470,20 +430,21 @@ class FiberServer {
          +/
         @trusted
         void run() {
-            startTime;
-
-            //client = listener.accept;
+            startTime; //client = listener.accept;
             scope (exit) {
                 //_client.shutdown(SocketShutdown.BOTH);
                 shutdown;
                 unlock;
             }
 
-            check(client.isAlive, "Client is dear inside server fiber");
+            check(client
+                    .isAlive, "Client is dear inside server fiber");
             bool stop;
             while (!stop) {
                 lock;
-                stop = relay.agent(this);
+                stop = relay
+                    .agent(
+                            this);
                 unlock;
             }
         }
@@ -492,13 +453,18 @@ class FiberServer {
          shutdown the service socket
          +/
         package void shutdown() nothrow {
-            import std.socket : SocketShutdown;
+            import std
+                .socket : SocketShutdown;
 
             if (client) {
-                client.shutdown(SocketShutdown.BOTH);
+                client
+                    .shutdown(
+                            SocketShutdown
+                            .BOTH);
                 client = null;
             }
-            //handler.remove(fiber_id);
+            handler
+                .remove(fiber_id);
         }
 
         ~this() {
@@ -513,21 +479,39 @@ class FiberServer {
      +/
     @trusted
     void start() {
-        check(opts.response_task_name.length !is 0,
+        check(opts
+                .response_task_name
+                .length !is 0,
                 "If a response task is needed the the response_task_name must be defined");
-        check(response_service_tid is Tid.init,
-                format("Response task %s has already been started", opts.response_task_name));
-        response_service_tid = spawn(&responseService, opts.response_task_name, handler);
+        check(response_service_tid is Tid
+                .init,
+                format(
+                    "Response task %s has already been started", opts
+                    .response_task_name));
+        response_service_tid = spawn(
+                &responseService, opts
+                .response_task_name, handler);
 
-        check(receiveOnly!Control is Control.LIVE,
-                format("%s was not started correctly", opts.response_task_name));
+        check(receiveOnly!Control is Control
+                .LIVE,
+                format(
+                    "%s was not started correctly", opts
+                    .response_task_name));
     }
 
     @trusted stop() {
-        if (response_service_tid !is Tid.init) {
-            response_service_tid.send(Control.STOP);
-            check(receiveOnly!Control is Control.END,
-                    format("Task %s did not end correctly", opts.response_task_name));
+        if (response_service_tid !is Tid
+                .init) {
+            response_service_tid
+                .send(
+                        Control
+                        .STOP);
+            check(
+                    receiveOnly!Control is Control
+                    .END,
+                    format(
+                        "Task %s did not end correctly", opts
+                        .response_task_name));
         }
     }
     /++
@@ -535,42 +519,75 @@ class FiberServer {
      +/
     @trusted
     static void responseService(
-            immutable(string) response_task_name,
+            immutable(
+            string) response_task_name,
             shared Response handler) nothrow {
         try {
-            import tagion.basic.Types : Control;
-            import tagion.communication.HiRPC;
-            import tagion.hibon.Document;
+            import tagion
+                .basic
+                .Types : Control;
+            import tagion
+                .communication
+                .HiRPC;
+            import tagion
+                .hibon
+                .Document;
 
-            log.register(response_task_name);
+            log
+                .register(
+                        response_task_name);
             bool stop;
-            scope (exit) {
-                ownerTid.send(Control.END);
+            scope (
+                exit) {
+                ownerTid
+                    .send(
+                            Control
+                            .END);
             }
 
-            void handleState(Control ts) {
-                with (Control) {
-                    switch (ts) {
+            void handleState(
+                    Control ts) {
+                with (
+                    Control) {
+                    switch (
+                                ts) {
                     case STOP:
-                        io.writefln("Stop the resonse service");
+                        io
+                            .writefln(
+                                    "Stop the resonse service");
                         stop = true;
                         break;
                     default:
-                        log.error("Bad Control command %s", ts);
+                        log
+                            .error(
+                                    "Bad Control command %s", ts);
                     }
                 }
             }
 
-            HiRPC hirpc = HiRPC(null);
+            HiRPC hirpc = HiRPC(
+                    null);
 
-            void serviceResponse(Buffer data) {
-                const doc = Document(data);
-                const hirpc_received = hirpc.receive(doc);
-                handler.set(hirpc_received.response.id, data);
+            void serviceResponse(
+                    Buffer data) {
+                const doc = Document(
+                        data);
+                const hirpc_received = hirpc
+                    .receive(
+                            doc);
+                handler
+                    .set(
+                            hirpc_received
+                            .response
+                            .id, data);
             }
 
-            ownerTid.send(Control.LIVE);
-            while (!stop) {
+            ownerTid
+                .send(
+                        Control
+                        .LIVE);
+            while (
+                !stop) {
                 receive(
                         &handleState,
                         &serviceResponse,

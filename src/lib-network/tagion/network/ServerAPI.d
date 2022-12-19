@@ -78,72 +78,34 @@ struct ServerAPI {
                 service.stop;
             }
             auto socket_set = new SocketSet; //(opts.max_queue_length + 1);
-            auto clients = new Socket[opts.max_queue_length];
-            auto receive_buffers = new ReceiveBuffer[opts.max_queue_length];
             scope (exit) {
                 socket_set.reset;
-                clients
-                    .filter!(client => client !is null)
-                    .each!(client => client.shutdown(SocketShutdown.BOTH));
-                //service.closeAll;
+                service.closeAll;
                 listener.shutdown(SocketShutdown.BOTH);
             }
             while (!stop_service && !abort) {
                 socket_set.reset();
                 socket_set.add(listener);
-                clients
-                    .filter!(client => client !is null)
-                    .each!(client => socket_set.add(client));
+                service.addSocketSet(socket_set);
 
                 // foreach(client; connectedClients) readSet.add(client);
                 const sel_res = Socket.select(
                         socket_set, null, null,
                         opts.select_timeout.msecs);
                 if (sel_res > 0) {
-                    foreach (id, client; clients) {
-                        if (socket_set.isSet(client)) {
-                            const result = receive_buffers[id].append((buf) => client.receive(buf));
-                            //     auto got = client.receive(buffer);
-                            //     client.send(buffer[0 .. got]);
-                        }
-                        if (socket_set.isSet(listener)) {
-                            // the listener is ready to read, that means
-                            // a new client wants to connect. We accept it here.
-                            client = listener.accept();
-                        }
+                    if (socket_set.isSet(listener) && service.slotAvailable) {
+                        // the listener is ready to read, that means
+                        // a new client wants to connect. We accept it here.
+                        service.applyClient(listener.accept());
                     }
                 }
             }
-            version (none)
-                while (!stop_service && !abort) {
-                    io.writefln("Wait loop");
-                    if (!listener.isAlive) {
-                        stop_service = true;
-                        break;
-                    }
-
-                    socket_set.add(listener);
-
-                    service.addSocketSet(socket_set);
-
-                    const sel_res = Socket.select(
-                            socket_set, null, null,
-                            opts.select_timeout.msecs);
-                    if (sel_res > 0) {
-
-                        if (socket_set.isSet(listener)) {
-                            service.allocateFiber;
-                        }
-                    }
-                    assert(service !is null, "This should not be possible");
-                    io.writefln("Before execute %s abort %s ", stop_service, abort);
-                    service.execute(socket_set);
-                    socket_set.reset;
-                }
+            service.execute(socket_set);
         }
         catch (Throwable e) {
             fatal(e);
         }
+
     }
 
     @trusted
