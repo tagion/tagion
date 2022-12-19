@@ -2,7 +2,7 @@
 export GODEBUG=cgocheck=-1
 WOLFSSL?=1
 OLD?=1
-:ONETOOL?=1:q
+ONETOOL?=1
 DEBUGGER?=ddd
 
 ifdef WOLFSSL
