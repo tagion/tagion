@@ -96,11 +96,12 @@ struct ServerAPI {
                     if (socket_set.isSet(listener) && service.slotAvailable) {
                         // the listener is ready to read, that means
                         // a new client wants to connect. We accept it here.
+                        io.writefln("listener.accept");
                         service.applyClient(listener.accept());
                     }
                 }
+                service.execute(socket_set);
             }
-            service.execute(socket_set);
         }
         catch (Throwable e) {
             fatal(e);
