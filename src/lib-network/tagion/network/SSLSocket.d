@@ -1,7 +1,8 @@
 module tagion.network.SSLSocket;
 
 import core.stdc.stdio;
-import core.stdc.string : strerror;
+
+//import core.stdc.string : strerror;
 
 import std.socket;
 import std.range.primitives : isBidirectionalRange;
@@ -9,13 +10,23 @@ import std.string : format, toStringz;
 import std.typecons : Tuple;
 import std.array : join;
 import std.algorithm.iteration : map;
+import std.typecons : Flag, Yes, No;
+import std.traits : EnumMembers;
 
 import tagion.network.SSLSocketException;
 import tagion.network.SSL;
 
+import io = std.stdio;
+
 enum EndpointType {
     Client,
     Server
+}
+
+enum Ownership {
+    COMMON, /// Uses common clinet context
+    OWNS, /// Ex. used by the server context
+    BORROWS, /// Used by a server response socket
 }
 
 /++
@@ -24,52 +35,123 @@ enum EndpointType {
 @safe
 class SSLSocket : Socket {
     enum ERR_TEXT_SIZE = 256;
-    static class MemoryLock {
-        // empty
-    }
 
     protected {
-        static shared(MemoryLock) lock;
         SSL* _ssl;
-        static SSL_CTX* _ctx;
+        SSL_CTX* _ctx;
+        __gshared SSL_CTX* _client_ctx;
+        Ownership _ownership;
+    }
+
+    @trusted
+    shared static this() {
+        SSL_Init;
+        SSL_METHOD* method;
+        method = TLS_client_method();
+        _client_ctx = SSL_CTX_new(method);
+        assert(_client_ctx !is null, "Faild to create SSL context");
+
+    }
+
+    @trusted
+    shared static ~this() {
+        SSL_CTX_free(_client_ctx);
+        SSL_Cleanup;
+    }
+
+    @trusted
+    protected static SSL_CTX* client_ctx() nothrow @nogc {
+        return _client_ctx;
     }
 
     /++
+     Constructs a new socket
+     +/
+    this(AddressFamily af,
+            SocketType type = SocketType.STREAM,
+            string certificate_filename = null,
+            string prvkey_filename = null) {
+        ERR_clear_error;
+        super(af, type);
+        _init(certificate_filename, prvkey_filename);
+    }
+
+    this(AddressFamily af,
+            EndpointType et,
+            SocketType type = SocketType.STREAM,
+            bool verifyPeer = true) {
+        ERR_clear_error;
+        super(af, type);
+        //    _init(certificate_filename, prvkey_filename);
+    }
+
+    /// ditto
+    this(socket_t sock,
+            AddressFamily af,
+            SSLSocket seed_socket) {
+        ERR_clear_error;
+        super(sock, af);
+        if (seed_socket) {
+            _ctx = seed_socket._ctx;
+        }
+        else {
+            _init(null, null);
+        }
+        //        _init(certificate_filename, prvkey_filename);
+    }
+
+    this(socket_t sock,
+            AddressFamily af,
+            SSL_CTX* ctx = null) {
+        if (ctx !is null) {
+            _ownership = Ownership.BORROWS;
+            _ctx = ctx;
+        }
+        else {
+            _ownership = Ownership.COMMON;
+            _ctx = client_ctx;
+        }
+        _ssl = SSL_new(_ctx);
+        SSL_set_fd(_ssl, sock);
+        super(sock, af);
+    }
+
+    bool verifyPeer; // = true;
+    /++
      The client use this configuration by default.
      +/
-    protected final void _init(bool verifyPeer, EndpointType et) {
-        synchronized (lock) {
-            _ssl = SSL_new(_ctx);
+    protected final void _init(
+            string certificate_filename = null,
+            string prvkey_filename = null) {
+        if (certificate_filename.length) {
+            configureContext(certificate_filename, prvkey_filename);
         }
-        if (et is EndpointType.Client) {
-            SSL_set_fd(_ssl, this.handle);
-            if (!verifyPeer) {
-                SSL_set_verify(_ssl, SSL_VERIFY_NONE, null);
-            }
+        if (_ctx is null) {
+            // If _ctx is null then it is uses a client SSL
+            _ctx = client_ctx;
+            _ownership = Ownership.COMMON;
         }
+        _ssl = SSL_new(_ctx);
+        SSL_set_fd(_ssl, this.handle);
+        if (verifyPeer) {
+            SSL_set_verify(_ssl, SSL_VERIFY_NONE, null);
+        }
+    }
+
+    version (none) bool isClient() nothrow const @nogc {
+        return !endpoint;
+    }
+
+    Ownership ownership() pure nothrow const @nogc {
+        return _ownership;
     }
 
     ~this() {
-        shutdown(SocketShutdown.BOTH);
-        synchronized (lock) {
-            SSL_free(_ssl);
-        }
-    }
-
-    static this() {
-        synchronized (lock) {
-            _ctx = SSL_CTX_new(TLS_client_method());
-        }
-    }
-
-    static ~this() {
-        synchronized (lock) {
+        SSL_free(_ssl);
+        if (_ownership is Ownership.OWNS) {
+            //        if (_ctx !is client_ctx) {
             SSL_CTX_free(_ctx);
         }
-    }
-
-    shared static this() {
-        lock = new shared(MemoryLock);
     }
 
     static string errorText(const long error_code) @trusted nothrow {
@@ -77,12 +159,12 @@ class SSLSocket : Socket {
         import std.exception : assumeUnique;
 
         auto result = new char[ERR_TEXT_SIZE];
-        ERR_error_string_n(error_code, result.ptr, result.length);
+        ERR_error_string_n(error_code, result.ptr, result
+                .length);
         return assumeUnique(result[0 .. strlen(result.ptr)]);
     }
 
     alias SSL_Error = Tuple!(long, "error_code", string, "msg");
-
     static const(SSL_Error[]) getErrors() nothrow {
         long error_code;
         SSL_Error[] result;
@@ -97,26 +179,36 @@ class SSLSocket : Socket {
             .map!(err => format("Err %d: %s", err.error_code, err.msg))
             .join("\n");
     }
+
     /++
      Configure the certificate for the SSL
      +/
     @trusted
-    void configureContext(string certificate_filename, string prvkey_filename) {
+    void configureContext(
+            string certificate_filename,
+            string prvkey_filename) {
+        if (prvkey_filename.length is 0) {
+            prvkey_filename = certificate_filename;
+        }
         import std.file : exists;
 
         ERR_clear_error;
-        check(certificate_filename.exists, format("Certification file '%s' not found", certificate_filename));
-        check(prvkey_filename.exists, format("Private key file '%s' not found", prvkey_filename));
+        _ctx = SSL_CTX_new(TLS_server_method);
+        _ownership = Ownership.OWNS;
+        check(certificate_filename.exists,
+                format("Certification file '%s' not found", certificate_filename));
+        check(prvkey_filename.exists,
+                format("Private key file '%s' not found", prvkey_filename));
 
-        if (SSL_CTX_use_certificate_file(_ctx, certificate_filename.toStringz,
+        if (SSL_CTX_use_certificate_file(ctx, certificate_filename.toStringz,
                 SSL_FILETYPE_PEM) <= 0) {
             throw new SSLSocketException(format("SSL Certificate: %s", getAllErrors));
         }
 
-        if (SSL_CTX_use_PrivateKey_file(_ctx, prvkey_filename.toStringz, SSL_FILETYPE_PEM) <= 0) {
+        if (SSL_CTX_use_PrivateKey_file(ctx, prvkey_filename.toStringz, SSL_FILETYPE_PEM) <= 0) {
             throw new SSLSocketException(format("SSL private key:\n %s", getAllErrors));
         }
-        if (SSL_CTX_check_private_key(_ctx) <= 0) {
+        if (SSL_CTX_check_private_key(ctx) <= 0) {
             throw new SSLSocketException(format("Private key not set correctly:\n %s", getAllErrors));
         }
     }
@@ -133,25 +225,36 @@ class SSLSocket : Socket {
      +/
     override void connect(Address to) {
         super.connect(to);
+        SSL_set_fd(ssl, handle);
         const res = SSL_connect(_ssl);
         check_error(res, true);
     }
 
     /++
+	Params: how has no effect for the SSLSocket
+	+/
+    override void shutdown(SocketShutdown how) {
+        assert(how is SocketShutdown.BOTH, "Only shutdown both is supported for SSL");
+        SSL_shutdown(_ssl);
+    }
+
+    bool shutdown() {
+        return SSL_shutdown(_ssl) != 0;
+    }
+    /++
      Send a buffer to the socket using the socket result
      +/
     @trusted
-    override ptrdiff_t send(const(void)[] buf, SocketFlags flags) {
-        auto res_val = SSL_write(_ssl, buf.ptr, cast(int) buf.length);
-        // const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, res_val);
-        check_error(res_val);
-        return res_val;
+    override ptrdiff_t send(scope const(void)[] buf, SocketFlags flags) {
+        const ret = SSL_write(_ssl, &buf[0], cast(int) buf.length);
+        //  check_error(res);
+        return ret;
     }
 
     /++
      Send a buffer to the socket with no result
      +/
-    override ptrdiff_t send(const(void)[] buf) {
+    override ptrdiff_t send(scope const(void)[] buf) {
         return send(buf, SocketFlags.NONE);
     }
 
@@ -164,30 +267,28 @@ class SSLSocket : Socket {
      */
     protected void check_error(const int ssl_ret, const bool check_read_write = false) const {
         const ssl_error = cast(SSLErrorCodes) SSL_get_error(_ssl, ssl_ret);
-        with (SSLErrorCodes) final switch (ssl_error) {
-        case SSL_ERROR_NONE:
-            // Ignore
-            break;
-        case SSL_ERROR_WANT_WRITE,
-        SSL_ERROR_WANT_READ:
-            if (check_read_write) {
-                throw new SSLSocketException(str_error(ssl_error), ssl_error);
+        with (SSLErrorCodes) {
+        SSLErrorCase:
+            final switch (ssl_error) {
+                static foreach (ErrorCode; EnumMembers!SSLErrorCodes) {
+            case ErrorCode:
+                    static if (ErrorCode is SSLErrorCodes.SSL_ERROR_NONE) {
+                        // None
+                    }
+                    else static if (ErrorCode is SSLErrorCodes.SSL_ERROR_WANT_WRITE &&
+                            ErrorCode is SSLErrorCodes.SSL_ERROR_WANT_READ) {
+                        if (check_read_write) {
+                            throw new SSLSocketException(errorText(ssl_error), ssl_error);
+                        }
+                    }
+                    else {
+                        throw new SSLSocketException(errorText(ssl_error), ssl_error);
+                    }
+                    break SSLErrorCase;
+                }
             }
-            break;
-        case SSL_ERROR_WANT_X509_LOOKUP,
-            SSL_ERROR_SYSCALL,
-            SSL_ERROR_ZERO_RETURN,
-            SSL_ERROR_WANT_CONNECT,
-            SSL_ERROR_WANT_ACCEPT,
-            SSL_ERROR_WANT_ASYNC,
-            SSL_ERROR_WANT_ASYNC_JOB,
-        SSL_ERROR_SSL:
-            throw new SSLSocketException(str_error(ssl_error), ssl_error);
-            break;
         }
-
     }
-
     /++
      Returns:
      pending bytes in the socket que
@@ -201,29 +302,49 @@ class SSLSocket : Socket {
      Receive a buffer from the socket using the flags
      +/
     @trusted
-    override ptrdiff_t receive(void[] buf, SocketFlags flags) {
-        const res_val = SSL_read(_ssl, buf.ptr, cast(uint) buf.length);
-        check_error(res_val);
-        return res_val;
+    override ptrdiff_t receive(scope void[] buf, SocketFlags flags) {
+        const size = SSL_read(_ssl, buf.ptr, cast(uint) buf.length);
+        // check_error(size);
+        //buf = buf[0 .. size];
+        return size;
     }
 
     /++
      Receive a buffer from the socket with not flags
      +/
-    override ptrdiff_t receive(void[] buf) {
+    override ptrdiff_t receive(scope void[] buf) {
         return receive(buf, SocketFlags.NONE);
     }
 
-    /++
+    version (none) {
+        /++
      Returns:
      the SSL system error message
      +/
-    @trusted
-    static string str_error(const int errornum) {
-        const str = strerror(errornum);
-        import std.string : fromStringz;
+        @trusted
+        static string str_error(const int errornum) {
+            const str = strerror(errornum);
+            import std.string : fromStringz;
 
-        return fromStringz(str).idup;
+            return fromStringz(str).idup;
+        }
+    }
+
+    @trusted
+    override SSLSocket accept() {
+        auto newsock = cast(socket_t).accept(handle, null, null);
+        if (socket_t.init is newsock) {
+            throw new SocketAcceptException("Unable to accept socket connection");
+        }
+
+        auto socket = new SSLSocket(newsock, addressFamily, _ctx);
+
+        const ret = SSL_accept(socket.ssl);
+        if (ret != 0) {
+            check_error(ret);
+        }
+
+        return socket;
     }
 
     /++
@@ -242,14 +363,14 @@ class SSLSocket : Socket {
                 throw new SSLSocketException("Socket could not connect to client. Socket closed.");
             }
             client.blocking = false;
-            ssl_client = new SSLSocket(client.handle, EndpointType.Server, client.addressFamily);
-            const fd_res = SSL_set_fd(ssl_client.getSSL, client.handle);
+            ssl_client = new SSLSocket(client.handle, client.addressFamily, this);
+            const fd_res = SSL_set_fd(ssl_client.ssl, client.handle);
             if (!fd_res) {
                 return false;
             }
         }
 
-        auto c_ssl = ssl_client.getSSL;
+        auto c_ssl = ssl_client.ssl;
 
         const res = SSL_accept(c_ssl);
         bool accepted;
@@ -260,7 +381,6 @@ class SSLSocket : Socket {
         case SSL_ERROR_NONE:
             accepted = true;
             break;
-
         case SSL_ERROR_WANT_READ,
         SSL_ERROR_WANT_WRITE:
             // Ignore
@@ -269,7 +389,7 @@ class SSLSocket : Socket {
             SSL_ERROR_WANT_X509_LOOKUP,
             SSL_ERROR_SYSCALL,
         SSL_ERROR_ZERO_RETURN:
-            throw new SSLSocketException(str_error(ssl_error), ssl_error);
+            throw new SSLSocketException(errorText(ssl_error), ssl_error);
             break;
         default:
             throw new SSLSocketException(format("SSL Error. SSL error code: %d.", ssl_error),
@@ -287,32 +407,26 @@ class SSLSocket : Socket {
         client.close();
     }
 
+    /**
+	Returns: true if data is pending the socket
+	*/
+    @trusted
+    ptrdiff_t pending() nothrow @nogc {
+        return SSL_pending(_ssl);
+    }
+
     /++
      Returns:
      the SSL system handler
      +/
-    @trusted @nogc
-    package SSL* getSSL() pure nothrow {
-        return this._ssl;
+    @nogc
+    SSL* ssl() pure nothrow {
+        return _ssl;
     }
 
-    /++
-     Constructs a new socket
-     +/
-    this(AddressFamily af,
-            EndpointType et,
-            SocketType type = SocketType.STREAM,
-            bool verifyPeer = true) {
-        ERR_clear_error;
-        super(af, type);
-        _init(verifyPeer, et);
-    }
-
-    /// ditto
-    this(socket_t sock, EndpointType et, AddressFamily af) {
-        ERR_clear_error;
-        super(sock, af);
-        _init(true, et);
+    @nogc
+    SSL_CTX* ctx() pure nothrow {
+        return _ctx;
     }
 
     unittest {
@@ -351,11 +465,11 @@ class SSLSocket : Socket {
             configureOpenSSL(ssl_options);
         }
         //! [Waiting for first acception]
-        {
+        version (none) {
             SSLSocket item = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
             Socket client = new Socket(AddressFamily.UNIX, SocketType.STREAM);
-            bool result; // = false;
+            bool result;
             const exception = collectException!SSLSocketException(
                     item.acceptSSL(ssl_client, client), result);
             assert(exception !is null);
@@ -365,17 +479,16 @@ class SSLSocket : Socket {
 
         //! [File reading - incorrect certificate]
         {
-            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
-            scope (exit) {
-                testItem_server.close;
-            }
-            assert(testItem_server !is null);
-            assertThrown!SSLSocketException(
-                    testItem_server.configureContext("_", "_"));
+            SSLSocket testItem_server;
+            const exception = collectException!SSLSocketException(
+                    new SSLSocket(AddressFamily.UNIX, SocketType.STREAM, "_", "_"),
+                    testItem_server);
+            assert(exception !is null);
+            assert(testItem_server is null);
         }
 
         //! [File reading - empty path]
-        {
+        version (none) {
 
             SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
             scope (exit) {
@@ -390,19 +503,22 @@ class SSLSocket : Socket {
 
         //! [file loading correct]
         {
-            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+            SSLSocket testItem_server;
+            const exception = collectException!SSLSocketException(
+                    new SSLSocket(AddressFamily.UNIX, SocketType.STREAM,
+                    cert_path, key_path),
+                    testItem_server);
             scope (exit) {
                 testItem_server.close;
             }
-            assertNotThrown!SSLSocketException(
-                    testItem_server.configureContext(cert_path, key_path)
-            );
+            assert(exception is null);
+            assert(testItem_server !is null);
         }
 
         //! [file loading key incorrect]
         {
             auto false_key_path = cert_path;
-            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX, EndpointType.Server);
+            SSLSocket testItem_server = new SSLSocket(AddressFamily.UNIX);
             const exception = collectException!SSLSocketException(
                     testItem_server.configureContext(cert_path, false_key_path)
             );
@@ -413,7 +529,7 @@ class SSLSocket : Socket {
         //! [correct acception]
         {
             SSLSocket empty_socket = null;
-            SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX, EndpointType.Client);
+            SSLSocket ssl_client = new SSLSocket(AddressFamily.UNIX);
             Socket socket = new Socket(AddressFamily.UNIX, SocketType.STREAM);
             scope (exit) {
                 ssl_client.close;

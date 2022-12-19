@@ -19,13 +19,12 @@ import tagion.network.SSLSocket : SSLSocket, EndpointType;
 import tagion.options.CommonOptions : setCommonOptions;
 import tagion.services.LoggerService : LoggerTask;
 import tagion.services.Options : Options, setDefaultOption, setOptions, getOptions;
-import tagion.tasks.TaskWrapper : Task;
+import tagion.actor.TaskWrapper : Task;
 import tagion.tools.Basic : Main;
 
 mixin TrustedConcurrency;
 
-private void sendingLoop()
-{
+private void sendingLoop() {
     writeln("I'm alive!");
     log.register("sendingLoop");
     writeln("Wait...");
@@ -33,11 +32,10 @@ private void sendingLoop()
 
     log("Test logs from sendingLoop");
 
-    static struct S
-    {
+    static struct S {
         int x;
         mixin HiBONRecord!(
-            q{this(int x) {this.x = x;}}
+                q{this(int x) {this.x = x;}}
         );
     }
 
@@ -47,8 +45,7 @@ private void sendingLoop()
 
 mixin Main!(_main, "logsub");
 
-int _main(string[] args)
-{
+int _main(string[] args) {
     scope Options local_options;
 
     setDefaultOption(local_options);
@@ -73,13 +70,11 @@ int _main(string[] args)
     stderr.writeln("Waiting for logger");
     const response = receiveOnly!Control;
     stderr.writeln("Logger started");
-    if (response !is Control.LIVE)
-    {
+    if (response !is Control.LIVE) {
         stderr.writeln("ERROR:Logger %s", response);
         return -1;
     }
-    scope (exit)
-    {
+    scope (exit) {
         logger_service.control(Control.STOP);
         receiveOnly!Control;
     }
@@ -90,12 +85,10 @@ int _main(string[] args)
     writeln("Creating SSLSocket");
     Thread.sleep(1.seconds);
     auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-    scope (exit)
-    {
+    scope (exit) {
         client.close;
     }
-    try
-    {
+    try {
         writeln("Trying to connect socket");
         writeln("Addres ", service_options.logSubscription.service.address);
         writeln("Port ", service_options.logSubscription.service.port);
@@ -103,8 +96,7 @@ int _main(string[] args)
                 .service.address, service_options.logSubscription
                 .service.port));
     }
-    catch (SocketOSException e)
-    {
+    catch (SocketOSException e) {
         writeln("Log subscription failed: ", e.msg);
         return 1;
     }
@@ -125,8 +117,7 @@ int _main(string[] args)
 
     spawn(&sendingLoop);
 
-    do
-    {
+    do {
         rec_size = client.receive(rec_buf); //, current_max_size);
         writefln("read rec_size=%d", rec_size);
         Thread.sleep(1.seconds);

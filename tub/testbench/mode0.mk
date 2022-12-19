@@ -1,4 +1,4 @@
-MODE0_ROOT:=$(TESTBENCH)/mode0
+MODE0_ROOT:=$(TESTLOG)/mode0
 MODE0_DATA:=$(MODE0_ROOT)/data
 MODE0_DART:=$(MODE0_DATA)/node0/dart.drt
 MODE0_LOG:=$(MODE0_ROOT)/mode0_script.log

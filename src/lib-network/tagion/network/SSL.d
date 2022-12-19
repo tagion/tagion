@@ -11,8 +11,7 @@ protected enum _SSLErrorCodes {
     SSL_ERROR_WANT_READ = 2,
     SSL_ERROR_WANT_WRITE = 3,
     SSL_ERROR_WANT_X509_LOOKUP = 4,
-    SSL_ERROR_SYSCALL = 5, /* look at error stack/return
-                                      * value/errno */
+    SSL_ERROR_SYSCALL = 5, /* look at error stack/return * value/errno */
     SSL_ERROR_ZERO_RETURN = 6,
     SSL_ERROR_WANT_CONNECT = 7,
     SSL_ERROR_WANT_ACCEPT = 8,
@@ -21,58 +20,76 @@ protected enum _SSLErrorCodes {
 }
 
 version (WOLFSSL) {
-    alias SSLErrorCodes = _SSLErrorCodes;
+   // alias SSLErrorCodes = _SSLErrorCodes;
     extern (C) {
         private import tagion.network.wolfssl.c.error_ssl;
+        private import tagion.network.wolfssl.c.wolfcrypt.error_crypt;
         private import tagion.network.wolfssl.c.ssl;
 
-        package {
-            alias SSL = WOLFSSL;
-            alias SSL_CTX = WOLFSSL_CTX;
-            alias SSL_CTX_use_certificate_file = wolfSSL_CTX_use_certificate_file;
+        //        package {
+        alias SSL = WOLFSSL;
+        alias SSL_CTX = WOLFSSL_CTX;
+        alias SSL_CTX_use_certificate_file = wolfSSL_CTX_use_certificate_file;
 
-            alias SSL_write = wolfSSL_write;
-            alias SSL_read = wolfSSL_read;
-            alias SSL_CTX_new = wolfSSL_CTX_new;
-            alias SSL_CTX_free = wolfSSL_CTX_free;
-            alias SSL_set_fd = wolfSSL_set_fd;
-            alias SSL_get_fd = wolfSSL_get_fd;
-            alias SSL_set_verify = wolfSSL_set_verify;
-            alias SSL_new = wolfSSL_new;
-            alias SSL_free = wolfSSL_free;
-            alias SSL_get_error = wolfSSL_get_error;
-            alias SSL_connect = wolfSSL_connect;
-            alias SSL_accept = wolfSSL_accept;
-            alias SSL_pending = wolfSSL_pending;
-            alias TLS_client_method = wolfTLS_client_method;
-            alias TLS_server_method = wolfTLS_server_method;
-            alias SSL_CTX_check_private_key = wolfSSL_CTX_check_private_key;
-            alias SSL_CTX_use_PrivateKey_file = wolfSSL_CTX_use_PrivateKey_file;
-            alias ERR_clear_error = wolfSSL_ERR_clear_error;
-            alias ERR_get_error = wolfSSL_ERR_get_error;
-            alias ERR_error_string_n = wolfSSL_ERR_error_string_n;
+        alias SSL_write = wolfSSL_write;
+        alias SSL_read = wolfSSL_read;
+        alias SSL_CTX_new = wolfSSL_CTX_new;
+        alias SSL_CTX_free = wolfSSL_CTX_free;
+        alias SSL_set_fd = wolfSSL_set_fd;
+        alias SSL_get_fd = wolfSSL_get_fd;
+        alias SSL_set_verify = wolfSSL_set_verify;
+        alias SSL_new = wolfSSL_new;
+        alias SSL_free = wolfSSL_free;
+        alias SSL_get_error = wolfSSL_get_error;
+        alias SSL_connect = wolfSSL_connect;
+        alias SSL_accept = wolfSSL_accept;
+        alias SSL_pending = wolfSSL_pending;
+        alias SSL_shutdown = wolfSSL_shutdown;
+        alias TLS_client_method = wolfTLS_client_method;
+        alias TLS_server_method = wolfTLS_server_method;
+        alias SSL_METHOD = WOLFSSL_METHOD;
+        alias SSL_CTX_check_private_key = wolfSSL_CTX_check_private_key;
+        alias SSL_CTX_use_PrivateKey_file = wolfSSL_CTX_use_PrivateKey_file;
+        alias ERR_clear_error = wolfSSL_ERR_clear_error;
+        alias ERR_get_error = wolfSSL_ERR_get_error;
+        alias ERR_error_string_n = wolfSSL_ERR_error_string_n;
+        /// Code generator which collects all WOLF and OPENSSL error into one enum
+        protected string generator_SSLErrorCodes() {
 
-            /// Code generator which collects all WOLF and OPENSSL error into one enum
-            protected string generator_all_SSLErrorCodes() {
+            string[] enum_list;
+            import std.conv : to;
+            import std.traits : EnumMembers;
+            import std.array : join;
 
-                string[] enum_list;
-                import std.conv : to;
-                import std.traits : EnumMembers;
-                import std.array : join;
-
-                static foreach (E; EnumMembers!_SSLErrorCodes) {
-                    enum_list ~= format(q{    %1$s = cast(int)_SSLErrorCodes.%1$s,}, E.stringof);
-                }
-
-                static foreach (E; EnumMembers!wolfSSL_ErrorCodes) {
-                    enum_list ~= format(q{    %1$s = cast(int)wolfSSL_ErrorCodes.%1$s,}, E.stringof);
-                }
-                return format("enum ALL_SSLErrorCodes {\n%-(%s \n%)\n};", enum_list);
+            static foreach (E; EnumMembers!wolfSSL_ErrorCodes) {
+                enum_list ~= format(q{    %1$s = cast(int)wolfSSL_ErrorCodes.%1$s,}, E.stringof);
             }
+            static foreach (E; EnumMembers!wolfCrypt_ErrorCodes) {
+                enum_list ~= format(q{    %1$s = cast(int)wolfCrypt_ErrorCodes.%1$s,}, E.stringof);
+            }
+            static foreach (E; EnumMembers!_SSLErrorCodes) {
+                enum_list ~= format(q{    %1$s = cast(int)_SSLErrorCodes.%1$s,}, E.stringof);
+            }
+
+            return format("enum SSLErrorCodes {\n%-(%s \n%)\n};", enum_list);
         }
     }
-    /// enum ALL_SSLErrorCodes (OpenSSL and WolfSSL error list joined
-    mixin(generator_all_SSLErrorCodes);
+
+    alias SSL_Init = wolfSSL_Init;
+    alias SSL_Cleanup = wolfSSL_Cleanup;
+    enum SSLErrorCodes_code = generator_SSLErrorCodes;
+//    pragma(msg, SSLErrorCodes_code);
+    mixin(SSLErrorCodes_code);
+
+    void ERR_error_string_n(int err, char* buf, size_t size) {
+        if (err < wolfSSL_ErrorCodes.min || err > wolfCrypt_ErrorCodes.max) {
+            wolfSSL_ERR_error_string_n(err, buf, size);
+        }
+        else {
+            SetErrorString(err, buf);
+        }
+    }
+
 }
 else {
     extern (C) {
@@ -81,8 +98,8 @@ else {
         struct SSL_CTX;
         struct SSL_METHOD;
 
-        @trusted nothrow
-        package {
+        @trusted nothrow @nogc {
+            //        package {
             SSL* SSL_new(SSL_CTX* ctx);
             void SSL_free(SSL* ssl);
             void SSL_set_verify(SSL* ssl, int mode, void* callback);
@@ -107,7 +124,7 @@ else {
             int SSL_get_error(const SSL* ssl, int ret);
 
             void ERR_clear_error();
-            //            void ERR_print_errors_fp(FILE* file);
+            void ERR_print_errors_fp(FILE* file);
             ulong ERR_get_error();
             void ERR_error_string_n(ulong e, char* buf, size_t len);
             // char* strerror(int errnum);
@@ -117,8 +134,17 @@ else {
             char* SSL_alert_type_string_long(int);
             char* SSL_alert_desc_string_long(int);
             char* SSL_state_string_long(const SSL*);
+            int OPENSSL_init_ssl(ulong opt, const void* settings);
+
+        }
+
+        void SSL_Init() {
+            OPENSSL_init_ssl(0, null);
+        }
+
+        void SSL_Cleanup() {
+            // Dummy function for compatibility with WolfSSL
         }
     }
-
     alias SSLErrorCodes = _SSLErrorCodes;
 }

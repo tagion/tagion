@@ -5,6 +5,9 @@ DTMP_WOLFSSL := $(DTMP)/wolfssl
 
 #CONFIGUREFLAGS_WOLFSSL := --enable-opensslextra --enable-static --enable-all --enable-memory --enable-debug --enable-bigcache
 CONFIGUREFLAGS_WOLFSSL := --enable-opensslextra --enable-static --enable-all --enable-memory --enable-debug --enable-bigcache
+ifdef DEBUG 
+CONFIGUREFLAGS_WOLFSSL += --enable-debug
+endif
 
 .PHONY: wolfssl
 

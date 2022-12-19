@@ -188,6 +188,13 @@ static assert(uint.sizeof == 4);
         return cast(uint)(this[].walkLength);
     }
 
+	/* 
+	 * 
+	 * Returns: true If both documents are the same
+	 */
+	bool opEquals(const Document rhs) const pure nothrow @nogc {
+	return _data == rhs._data;
+	}
     /++
      The deligate used by the valid function to report errors
      +/
@@ -402,7 +409,7 @@ static assert(uint.sizeof == 4);
      Returns:
      true if the key exist in the Document
      +/
-    bool hasMember(scope string key) const
+    bool hasMember(scope string key) const nothrow
     {
         return !opBinaryRight!("in")(key).isEod();
     }
@@ -464,9 +471,6 @@ static assert(uint.sizeof == 4);
     const(Element) opIndex(in string key) const
     {
         auto result = key in this;
-
-        
-
         .check(!result.isEod, message("Member named '%s' not found", key));
         return result;
     }
@@ -482,7 +486,7 @@ static assert(uint.sizeof == 4);
     {
         auto result = index in this;
 
-        
+
 
         .check(!result.isEod, message("Member index %d not found", index));
         return result;
@@ -1096,7 +1100,7 @@ static assert(uint.sizeof == 4);
                 //empty
             }
 
-            
+
 
             .check(0, message("Invalid type %s", type));
             assert(0);
@@ -1112,13 +1116,7 @@ static assert(uint.sizeof == 4);
              +/
             auto by(Type E)()
             {
-
-                
-
-                    .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
-
-                
-
+                .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
                 .check(E !is Type.NONE,
                     message("Type is not supported %s the actual type is %s", E, type));
                 return value.by!E;
@@ -1152,7 +1150,7 @@ static assert(uint.sizeof == 4);
                 else
                 {
 
-                    
+
 
                         .check(doc.isArray, "Document must be an array");
                     result.length = doc.length;
@@ -1242,7 +1240,7 @@ static assert(uint.sizeof == 4);
             uint index() pure
             {
 
-                
+
 
                     .check(isIndex, [
                             "Key '", key.to!string, "' is not an index", key
@@ -1303,6 +1301,28 @@ static assert(uint.sizeof == 4);
             {
                 return data[Type.sizeof] is 0;
             }
+
+
+        }
+
+        /++
+         Returns:
+         true if the type and the value of the element is equal to rhs
+         +/
+        bool opEquals(T)(auto ref const T rhs) const nothrow if (!is(T : const(Element))) {
+            enum rhs_type = Value.asType!T;
+            return (rhs_type is type) && (assumeWontThrow(by!rhs_type) == rhs);
+        }
+
+        unittest { // Test if opEquals can handle types
+            auto h= new HiBON;
+            h["number"] = 42;
+            h["text"] = "42";
+            const doc = Document(h);
+            assert(doc["number"] == 42);
+            assert(doc["number"] != "42");
+            assert(doc["text"] != 42);
+            assert(doc["text"] == "42");
         }
 
         @property @nogc const pure nothrow
@@ -1570,6 +1590,7 @@ static assert(uint.sizeof == 4);
     }
 }
 
+@safe
 unittest
 { // Bugfix (Fails in isInorder);
     //    import std.stdio;

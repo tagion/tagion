@@ -45,8 +45,12 @@ prebuild:
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) ddeps
 
-
-
+env-prebuild:
+	$(PRECMD)
+	${call log.header, $@ :: env}
+	${call log.env, PREBUILD_MK, $(PREBUILD_MK)}
+	${call log.env, WRAPS, $(WRAPS)}
+	${call log.close}
 
 #
 # Native platform
@@ -67,7 +71,7 @@ include $(DTUB)/config/dirs.mk
 #
 # Prebuild
 #
-include $(DTUB)/config/prebuild.mk
+#include $(DTUB)/config/prebuild.mk
 ifndef PREBUILD
 -include $(DBUILD)/gen.dfiles.mk
 -include $(DBUILD)/gen.ddeps.mk
@@ -96,6 +100,7 @@ include $(DTUB)/config/compiler.mk
 include $(DTUB)/config/dstep.mk
 include $(DTUB)/config/ddeps.mk
 include $(DTUB)/config/bins.mk
+include $(DTUB)/config/format.mk
 
 include $(DTUB)/compile.mk
 
@@ -121,6 +126,8 @@ include $(DTUB)/testbench/wallets.mk
 include $(DTUB)/testbench/mode0.mk
 include $(DTUB)/testbench/mode1.mk
 include $(DTUB)/testbench/behaviour.mk
+include $(DTUB)/testbench/reporter.mk
+include $(DTUB)/testbench/test.mk
 
 #
 # Install main tool

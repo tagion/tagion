@@ -17,7 +17,7 @@
 # Local setup file
 local.*
 # Auto generated files
-gen.*
+*.gen.*
 # Auto generated D interface files
 *.di
 # Auto generated C interface files
@@ -32,7 +32,7 @@ revision.d
 .root
 
 # Temporary files and directories
-.tmp
+*.tmp
 build
 logs
 tools/*
@@ -60,3 +60,6 @@ src/lib-network/tagion/network/wolfssl/c/*.d
 src/lib-network/tagion/network/wolfssl/c/wolfcrypt/*.d
 src/lib-network/tagion/network/wolfssl/c/openssl/*.d
 
+
+# Auto-generated .pem files
+pem_files

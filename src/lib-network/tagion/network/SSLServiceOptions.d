@@ -1,15 +1,18 @@
-module tagion.network.SSLOptions;
+module tagion.network.SSLServiceOptions;
 
 import std.algorithm.iteration : each;
 import std.array : array;
 import std.file : exists, mkdirRecurse;
 import std.process : pipeProcess, wait;
 import std.path : dirName;
-import std.stdio : stderr, writeln;
+
+//import std.stdio : stderr, writeln;
+import std.outbuffer : OutBuffer;
 
 import tagion.utils.JSONCommon;
+import tagion.hibon.HiBONRecord;
 
-struct OpenSSL {
+struct SSLCert {
     string certificate; /// Certificate file name
     string private_key; /// Private key
     uint key_size; /// Key size (RSA 1024,2048,4096)
@@ -55,42 +58,46 @@ struct OpenSSL {
     mixin JSONCommon;
 }
 
-struct SSLOption {
-    string task_name; /// Task name of the SSLService used
+struct SSLServiceOptions {
+    ServerOptions server;
+    SSLCert cert; ///
+    mixin JSONCommon;
+    mixin JSONConfig;
+}
+
+struct ServerOptions {
+    string server_task_name; /// This is the name of the server which handles all the client connections
     string response_task_name; /// Name of the respose task name (If this is not set the respose service is not started)
     string prefix;
     string address; /// Ip address
     ushort port; /// Port
     uint max_buffer_size; /// Max buffer size
     uint max_queue_length; /// Listener max. incomming connection req. queue length
-
     uint max_connections; /// Max simultanious connections for the scripting engine
-
     uint select_timeout; /// Select timeout in ms
-    // string certificate; /// Certificate file name
-    // string private_key; /// Private key
     uint client_timeout; /// Client timeout
-    OpenSSL openssl; ///
     mixin JSONCommon;
 }
 
-void configureOpenSSL(const(OpenSSL) openssl) @trusted {
+int configureSSLCert(const(SSLCert) openssl, OutBuffer bout = null) @trusted {
+    int exit_code;
     if (!openssl.certificate.exists || !openssl.private_key.exists) {
         openssl.certificate.dirName.mkdirRecurse;
         openssl.private_key.dirName.mkdirRecurse;
         auto pipes = pipeProcess(openssl.command.array);
         scope (exit) {
-            wait(pipes.pid);
+            exit_code = wait(pipes.pid);
         }
         openssl.config.each!(a => pipes.stdin.writeln(a));
         pipes.stdin.writeln(".");
         pipes.stdin.flush;
-        foreach (s; pipes.stderr.byLine) {
-            stderr.writeln(s);
-        }
-        foreach (s; pipes.stdout.byLine) {
-            writeln(s);
+        if (bout) {
+            bout.writefln("stderr:");
+            pipes.stderr.byLine.each!(s => bout.writefln(s));
+            bout.writefln("stdout:");
+            pipes.stdout.byLine.each!(s => bout.writefln(s));
+
         }
     }
-    writeln("----- OpenSSL end ---");
+    return exit_code;
 }
