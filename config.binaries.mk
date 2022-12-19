@@ -1,4 +1,3 @@
-
 #
 # Targets for all binaries
 #
