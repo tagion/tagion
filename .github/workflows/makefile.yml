@@ -11,7 +11,7 @@ env:
   RETENTION_DAYS_BINS: 3
   TAGION_CACHE_DIR: ~/tagion_cache 
   RUN_SCENARIOUS_PARALEL: true
-  ##BUILD_FLAGS: DFLAGS="\$(DVERSION)=OLD_TRANSACTION"
+  ## BUILD_FLAGS: DFLAGS="\$(DVERSION)=OLD_TRANSACTION"
   ## TODO: add ldc2/dmd switch & version
 jobs:
   build_and_unittest:
