@@ -27,11 +27,22 @@ enum isHiBONRecord(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
 
 enum isHiBONRecordArray(T) = isArray!T && isHiBONRecord!(ForeachType!T);
 
+/**
+	Used for HiBONRecords which have a recorder type
+	Param: T is the type of the recorder to be checked
+Param: doc 
+	Returns: true if the doc has the correct Recorder type 
+*/
 @safe
-bool isRecordType(T)(const Document doc) nothrow if (hasUDA!(T, RecordType)) {
-    enum record_type = getUDAs!(T, RecordType)[0].name;
-    return doc.hasMember(TYPENAME) && assumeWontThrow(doc[TYPENAME] == record_type);
+bool isRecordType(T)(const Document doc) nothrow pure {
+    static if (hasUDA!(T, RecordType)) {
+        enum record_type = getUDAs!(T, RecordType)[0].name;
+        return doc.hasMember(TYPENAME) && assumeWontThrow(doc[TYPENAME] == record_type);
+    }
+    return false;
 }
+
+alias isRecord = isRecordType;
 
 enum STUB = HiBONPrefix.HASH ~ "";
 @safe bool isStub(const Document doc) {
@@ -154,16 +165,17 @@ enum VOID = "*";
 
 mixin template HiBONRecordType() {
     import tagion.hibon.Document : Document;
-    import tagion.hibon.HiBONRecord : TYPENAME;
-    import std.traits : getUDAs, hasUDA, isIntegral, isUnsigned;
+	import tagion.hibon.HiBONRecord : TYPENAME;    
+import std.traits : getUDAs, hasUDA, isIntegral, isUnsigned;
+	
+alias ThisType = typeof(this);
 
-    alias ThisType = typeof(this);
     static if (hasUDA!(ThisType, RecordType)) {
         alias record_types = getUDAs!(ThisType, RecordType);
         static assert(record_types.length is 1, "Only one RecordType UDA allowed");
         static if (record_types[0].name.length) {
             enum type_name = record_types[0].name;
-            static bool isRecord(const Document doc) {
+            version (none) static bool isRecord(const Document doc) nothrow {
                 if (doc.hasMember(TYPENAME)) {
                     return doc[TYPENAME].get!string == type_name;
                 }
@@ -226,6 +238,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.hibon.HiBONException : HiBONRecordException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,
         Label, GetLabel, Filter, Default, Inspect, VOID;
+    import HiBONRecord = tagion.hibon.HiBONRecord; // : TYPENAME;
 
     protected alias check = Check!(HiBONRecordException);
 
@@ -234,9 +247,9 @@ mixin template HiBONRecord(string CTOR = "") {
 
     mixin JSONString;
 
-    alias ThisType = typeof(this);
 
     mixin HiBONRecordType;
+    alias isRecord = HiBONRecord.isRecordType!ThisType;
 
     enum HAS_TYPE = hasMember!(ThisType, "type_name");
     static bool less_than(Key)(Key a, Key b) if (!is(Key : string)) {
@@ -527,8 +540,7 @@ mixin template HiBONRecord(string CTOR = "") {
                             static if (isSpecialKeyType!R) {
                                 result[key] = value;
                             }
-                            else
-                            {
+                            else {
                                 alias ResultKeyType = KeyType!(typeof(result));
                                 result[e.key.to!ResultKeyType] = value;
                             }
@@ -794,7 +806,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
             assert(docS["s"].get!int == -42);
             assert(docS["text"].get!string == "some text");
             assert(docS[TYPENAME].get!string == Simpel.type_name);
-            assert(Simpel.isRecord(docS));
+            assert(isRecord!Simpel(docS));
             const s_check = Simpel(docS);
             // const s_check=Simpel(s);
             assert(s == s_check);
@@ -810,7 +822,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
             assert(docS["$S"].get!int == 42);
             assert(docS["TEXT"].get!string == "other text");
             assert(docS[TYPENAME].get!string == SimpelLabel.type_name);
-            assert(SimpelLabel.isRecord(docS));
+            assert(isRecord!SimpelLabel(docS));
             const s_check = SimpelLabel(docS);
 
             assert(s == s_check);

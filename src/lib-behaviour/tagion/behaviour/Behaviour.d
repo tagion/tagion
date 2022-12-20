@@ -291,7 +291,7 @@ auto automation(alias M)() if (isFeature!M) {
  */
 @safe
 bool hasErrors(ref const FeatureGroup feature_group) nothrow {
-    if (feature_group.info.result.isRecordType!BehaviourError) {
+    if (BehaviourError.isRecord(feature_group.info.result)) {
         return true;
     }
     return feature_group.scenarios.any!(scenario => scenario.hasErrors);

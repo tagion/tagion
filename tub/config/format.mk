@@ -17,6 +17,8 @@ format: $(CHANGED_DFILES_TMP)
 
 format-all: $(ALL_DFILES_TMP)
 
+format-%: %.tmp
+
 
 .PHONY: format format-all
 
@@ -26,6 +28,7 @@ help-format:
 	${call log.header, $@ :: help}
 	${call log.help, "make format", "Formats changed d-source files"}
 	${call log.help, "make format-all", "Formats all d-source files"}
+	${call log.help, "make format-<file>", "Formats only <file>"}
 	${call log.help, "make env-format", "List all dstep parameters"}
 	${call log.close}
 
