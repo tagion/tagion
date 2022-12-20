@@ -1,8 +1,12 @@
+ADRDOX:=doc2
 
-ADRDOX:= doc2
+env-doc:
+	$(PRECMD)
+	$(call log.header, $@ :: env)
+	$(call log.kvp, ADRDOX, $(ADRDOX))
 
 clean-doc:
-	@echo Not implemented
+	$(PRECMD) rm -rv $(BUILDDOC)
 	@echo cleaning docs
 
 help-doc:
@@ -12,4 +16,4 @@ help-doc:
 
 doc:
 	@echo making docs
-	doc2 -i --skeleton ${DTUB}/docs_template/skeleton.html -o $(REPOROOT)/build/doc $(abspath $(REPOROOT)/src)
+	$(PRECMD) doc2 -i --skeleton ${DTUB}/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC)
