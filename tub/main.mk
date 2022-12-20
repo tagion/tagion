@@ -136,6 +136,11 @@ include $(DTUB)/config/revision.mk
 include $(DTUB)/config/install.mk
 
 #
+# Install doc tool
+#
+include $(DTUB)/docs.mk
+
+#
 # Enable cleaning
 #
 include $(DTUB)/clean.mk
