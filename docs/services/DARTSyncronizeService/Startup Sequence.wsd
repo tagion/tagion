@@ -9,6 +9,11 @@ participant DARTSyncService as dartsync
 participant Logger as logger
 database DART as dart
 participant BlockFile as blockfile
+participant DARTSynchronizationPool as syncpool
+participant "ReplayPool!dart.replay(journal)" as journalpool
+participant "ReplayPool!dart.modify(recorder)" as recorderpool
+participant P2pSynchronizationFactory as syncfactory
+participant ActiveNodeSubscribtion as nodesubscription
 
 tagion -> dartsync : spawn(Options options, \n p2plib.NodeI node, \n SecureNet master_net, \n DART.SectorRange sector_range)
 dartsync -> logger : log.register(options.dart.sync.task_name)
@@ -24,11 +29,12 @@ dartsync -> dart : new DART(net, \n filename, \n sector_range.from_sector, \n se
 dart -> blockfile : new BlockFile(filename)
 dartsync -> dart : dump()
 
-dartsync -> dartsync : **journalReplayFiber**
-dartsync -> dartsync : **connectionPool**
-dartsync -> dartsync : **sync_factory**
-dartsync -> dartsync : **syncPool**
-dartsync -> dartsync : **syncPool**
+dartsync -> journalpool : journalReplayFiber = new ReplayPool!string(dart.replay(journal))
+dartsync -> recorderpool : recorderReplayFiber = new ReplayPool!Recorde(dart.modify(recorder))
+
+dartsync -> dartsync : connectionPool = new shared(ConnectionPoolT)(options.dart.sync.host.timeout.msecs)
+dartsync -> syncfactory : sync_factory = new P2pSynchronizationFactory(dart, options.port, node, connectionPool, options.dart, net.pubkey);
+dartsync -> syncpool : syncPool = new DARTSynchronizationPool(dart.sectors, journalReplayFiber, options.dart);
 
 alt if options.dart.synchronize
     dartsync -> dartsync : state = DARTSynchronizeState.WAITING
@@ -36,10 +42,20 @@ else else
     dartsync -> dartsync : state = DARTSynchronizeState.READY
 end
 
-dartsync -> dartsync : **subscription**
+dartsync -> nodesubscription : subscription = ActiveNodeSubscribtion(options)
 dartsync -> tagion : send(Control.LIVE)
 
-dartsync -> dartsync : **while (!stop) listen**
+loop while(!stop)
+    dartsync -> dartsync : listening...
+    note right : See diagram "DARTSyncronizeService listening"
+end
+
+...
+...stopping service......
+
+dartsync -> syncpool : stop()
+dartsync -> dartsync : node.closeListener(options.dart.sync.protocol_id)
+dartsync -> tagion : prioritySend(Control.END)
 
 @enduml
 
@@ -70,12 +86,9 @@ dartsync -> dartsync : **while (!stop) listen**
 
         scope (exit)
         {
-            ownerTid.prioritySend(Control.END);
-
-            node.closeListener(pid);
-
-            log("exit scope: call stop");
             syncPool.stop;
+            node.closeListener(pid);
+            ownerTid.prioritySend(Control.END);
         }
     }
 }
