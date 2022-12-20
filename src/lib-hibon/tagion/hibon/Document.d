@@ -339,7 +339,7 @@ static assert(uint.sizeof == 4);
      Returns:
      A range of indices of the type of uint in the Document
      +/
-    auto indices() const {
+    auto indices() const pure {
         return map!"a.index"(this[]);
     }
 
@@ -407,7 +407,9 @@ static assert(uint.sizeof == 4);
      +/
     const(Element) opIndex(in string key) const pure {
         auto result = key in this;
+
         
+
         .check(!result.isEod, message("Member named '%s' not found", key));
         return result;
     }
@@ -982,9 +984,13 @@ static assert(uint.sizeof == 4);
              if the element does not contain the type E and HiBONException is thrown
              +/
             auto by(Type E)() pure {
+
                 
+
                     .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
+
                 
+
                 .check(E !is Type.NONE,
                         message("Type is not supported %s the actual type is %s", E, type));
                 return value.by!E;
