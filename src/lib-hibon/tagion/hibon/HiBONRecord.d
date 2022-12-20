@@ -215,6 +215,7 @@ alias ThisType = typeof(this);
  --------------------
 
  +/
+
 pragma(msg, "fixme(cbr): The less_than function in this mixin is used for none string key (Should be added to the HiBON spec)");
 
 mixin template HiBONRecord(string CTOR = "") {

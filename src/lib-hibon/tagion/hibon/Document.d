@@ -409,7 +409,7 @@ static assert(uint.sizeof == 4);
      Returns:
      true if the key exist in the Document
      +/
-    bool hasMember(scope string key) const nothrow
+    bool hasMember(scope string key) const pure nothrow
     {
         return !opBinaryRight!("in")(key).isEod();
     }
@@ -468,7 +468,7 @@ static assert(uint.sizeof == 4);
      Throws:
      If the element with the key is not found then and HiBONException is thrown
      +/
-    const(Element) opIndex(in string key) const
+    const(Element) opIndex(in string key) const pure
     {
         auto result = key in this;
         .check(!result.isEod, message("Member named '%s' not found", key));
@@ -485,10 +485,7 @@ static assert(uint.sizeof == 4);
     const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index)
     {
         auto result = index in this;
-
-
-
-        .check(!result.isEod, message("Member index %d not found", index));
+        check(!result.isEod, message("Member index %d not found", index));
         return result;
     }
 
@@ -1029,7 +1026,7 @@ static assert(uint.sizeof == 4);
          throws:
          if  the type is invalid and HiBONException is thrown
          +/
-        @property @trusted const(Value*) value() const
+        @property @trusted const(Value*) value() const pure
         {
             immutable value_pos = valuePos;
             with (Type)
@@ -1114,7 +1111,7 @@ static assert(uint.sizeof == 4);
              throws:
              if the element does not contain the type E and HiBONException is thrown
              +/
-            auto by(Type E)()
+            auto by(Type E)() pure
             {
                 .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
                 .check(E !is Type.NONE,
@@ -1309,7 +1306,7 @@ static assert(uint.sizeof == 4);
          Returns:
          true if the type and the value of the element is equal to rhs
          +/
-        bool opEquals(T)(auto ref const T rhs) const nothrow if (!is(T : const(Element))) {
+        bool opEquals(T)(auto ref const T rhs) const pure nothrow if (!is(T : const(Element))) {
             enum rhs_type = Value.asType!T;
             return (rhs_type is type) && (assumeWontThrow(by!rhs_type) == rhs);
         }
