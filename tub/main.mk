@@ -28,6 +28,7 @@ endif
 #
 -include $(REPOROOT)/local.*.mk
 -include $(REPOROOT)/local.mk
+include $(REPOROOT)/default.mk
 include $(DTUB)/testbench/default.mk
 include $(DTUB)/utilities/utils.mk
 include $(DTUB)/utilities/dir.mk
