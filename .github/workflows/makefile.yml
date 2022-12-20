@@ -7,10 +7,10 @@ on:
 env:
   ## Sets environment variable
   TARGET_BUILD: x86_64-linux
-  PARALEL: 0
+  PARALEL: 1
   RETENTION_DAYS_BINS: 3
   TAGION_CACHE_DIR: ~/tagion_cache 
-  RUN_SCENARIOUS_PARALEL: true
+  RUN_SCENARIOUS_PARALEL: false
   ## BUILD_FLAGS: DFLAGS="\$(DVERSION)=OLD_TRANSACTION"
   ## TODO: add ldc2/dmd switch & version
 jobs:
