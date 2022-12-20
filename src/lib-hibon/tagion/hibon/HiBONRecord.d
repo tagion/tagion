@@ -165,16 +165,19 @@ enum VOID = "*";
 
 mixin template HiBONRecordType() {
     import tagion.hibon.Document : Document;
-	import tagion.hibon.HiBONRecord : TYPENAME;    
-import std.traits : getUDAs, hasUDA, isIntegral, isUnsigned;
-	
-alias ThisType = typeof(this);
+    import tagion.hibon.HiBONRecord : TYPENAME;
+    import std.traits : getUDAs, hasUDA, isIntegral, isUnsigned;
+
+    alias ThisType = typeof(this);
 
     static if (hasUDA!(ThisType, RecordType)) {
         alias record_types = getUDAs!(ThisType, RecordType);
         static assert(record_types.length is 1, "Only one RecordType UDA allowed");
         static if (record_types[0].name.length) {
             enum type_name = record_types[0].name;
+            import tagion.hibon.HiBONRecord : isRecordT = isRecordType;
+
+            alias isRecord = isRecordT!ThisType;
             version (none) static bool isRecord(const Document doc) nothrow {
                 if (doc.hasMember(TYPENAME)) {
                     return doc[TYPENAME].get!string == type_name;
@@ -247,7 +250,6 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.hibon.HiBON : HiBON;
 
     mixin JSONString;
-
 
     mixin HiBONRecordType;
     alias isRecord = HiBONRecord.isRecordType!ThisType;
