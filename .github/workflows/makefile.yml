@@ -49,7 +49,8 @@ jobs:
 
       - name: Make cache of libs
         run: |
-          ls
+          set +e
+           ls
           DIFF=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/tmp)
           DIFF+=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/lib)
           if [ "$DIFF" != "" ] ; then
@@ -58,6 +59,7 @@ jobs:
             sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
             sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
           fi
+          echo "Cache copied succesfully"
 
       - name: Run unittests
         run: |
