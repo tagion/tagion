@@ -1,12 +1,13 @@
+/// \file Debug.d
 module tagion.basic.Debug;
 
 import std.exception : assumeWontThrow;
 import std.stdio;
 
 /* 
- * Function used information under debugging
- * Should not be used to production code
-* If the debug flag is enable the function can also be use in pure functions
+ * This function can be used instead of stderr.writeln 
+ * and it is only enabled in debug mode
+ * The function can be used in pure/nothrow/@safe function
  * Params:
  *   fmt = string format 
  *   args = argument list
@@ -18,10 +19,8 @@ debug {
 }
 else {
     void __write(Args...)(string fmt, Args args) @trusted nothrow {
-
-        assumeWontThrow(stderr.writefln(fmt, args));
+        // empty
     }
-
 }
 
 /* 

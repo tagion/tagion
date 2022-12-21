@@ -1,3 +1,7 @@
+/** \file OneMain.d
+This module is used by the one tool make a common help and version number for the tools
+and it handles the selections, listing and can creat a symbolic link to the different tools
+*/
 module tagion.tools.OneMain;
 
 import std.typecons : Tuple;
@@ -57,11 +61,11 @@ mixin template doOneMain(alltools...) {
     * Lists all the toolnames inclusive the alternative name as a alias-sequency
     */
     immutable toolnames = [
-            AliasSeq!(
-                    staticMap!(toolName, alltools),
-                    Filter!(notNull, staticMap!(alternative, alltools))
-            )
-        ];
+        AliasSeq!(
+                staticMap!(toolName, alltools),
+                Filter!(notNull, staticMap!(alternative, alltools))
+        )
+    ];
 
     /* 
      * Handles the arguments for the onetool main
@@ -113,16 +117,16 @@ mixin template doOneMain(alltools...) {
             if (main_args.helpWanted) {
                 defaultGetoptPrinter(
                         [
-                    revision_text,
-                    "Documentation: https://tagion.org/",
-                    "Usage:",
-                    format("%s <program> [<option>...]", program),
-                    format("Tool programs %-(%s, %)", toolnames),
-                    "",
-                    "<option>:",
+                        revision_text,
+                        "Documentation: https://tagion.org/",
+                        "Usage:",
+                        format("%s <program> [<option>...]", program),
+                        format("Tool programs %-(%s, %)", toolnames),
+                        "",
+                        "<option>:",
 
-                ].join("\n"),
-                main_args.options);
+                        ].join("\n"),
+                        main_args.options);
                 return Result(0, true);
             }
         }

@@ -79,9 +79,7 @@ class FiberServer {
     @safe interface Relay {
         bool agent(FiberRelay sslfiber);
     }
-    //alias Relay = bool delegate(SSLRelay) @safe;
 
-    @safe
     this(immutable(ServerOptions) opts, Relay relay) {
         this.opts = opts;
         socket_fibers.length = opts.max_queue_length;

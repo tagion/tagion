@@ -27,12 +27,6 @@ enum isHiBONRecord(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
 
 enum isHiBONRecordArray(T) = isArray!T && isHiBONRecord!(ForeachType!T);
 
-@safe
-bool isRecordType(T)(const Document doc) nothrow if (hasUDA!(T, RecordType)) {
-    enum record_type = getUDAs!(T, RecordType)[0].name;
-    return doc.hasMember(TYPENAME) && assumeWontThrow(doc[TYPENAME] == record_type);
-}
-
 enum STUB = HiBONPrefix.HASH ~ "";
 @safe bool isStub(const Document doc) {
     return !doc.empty && doc.keys.front == STUB;
@@ -527,8 +521,7 @@ mixin template HiBONRecord(string CTOR = "") {
                             static if (isSpecialKeyType!R) {
                                 result[key] = value;
                             }
-                            else
-                            {
+                            else {
                                 alias ResultKeyType = KeyType!(typeof(result));
                                 result[e.key.to!ResultKeyType] = value;
                             }
@@ -799,9 +792,6 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
             // const s_check=Simpel(s);
             assert(s == s_check);
             assert(s_check.toJSON.toString == format("%j", s_check));
-
-            assert(isRecordType!Simpel(docS));
-            assert(!isRecordType!SimpelLabel(docS));
         }
 
         {

@@ -1,3 +1,7 @@
+/** \file SSL.d
+ This file lists all the C-interface files for WolfSSL and OpenSSL
+ version=WolfSSL will enable the WolfSSL or else it's the OpenSSL
+*/
 module tagion.network.SSL;
 
 import core.stdc.stdio;
@@ -20,13 +24,12 @@ protected enum _SSLErrorCodes {
 }
 
 version (WOLFSSL) {
-   // alias SSLErrorCodes = _SSLErrorCodes;
-    extern (C) {
+    // alias SSLErrorCodes = _SSLErrorCodes;
+    extern (C) nothrow @nogc {
         private import tagion.network.wolfssl.c.error_ssl;
         private import tagion.network.wolfssl.c.wolfcrypt.error_crypt;
         private import tagion.network.wolfssl.c.ssl;
 
-        //        package {
         alias SSL = WOLFSSL;
         alias SSL_CTX = WOLFSSL_CTX;
         alias SSL_CTX_use_certificate_file = wolfSSL_CTX_use_certificate_file;
@@ -53,32 +56,31 @@ version (WOLFSSL) {
         alias ERR_clear_error = wolfSSL_ERR_clear_error;
         alias ERR_get_error = wolfSSL_ERR_get_error;
         alias ERR_error_string_n = wolfSSL_ERR_error_string_n;
-        /// Code generator which collects all WOLF and OPENSSL error into one enum
-        protected string generator_SSLErrorCodes() {
+    }
+    /// Code generator which collects all WOLF and OPENSSL error into one enum
+    protected string generator_SSLErrorCodes() {
 
-            string[] enum_list;
-            import std.conv : to;
-            import std.traits : EnumMembers;
-            import std.array : join;
+        string[] enum_list;
+        import std.conv : to;
+        import std.traits : EnumMembers;
+        import std.array : join;
 
-            static foreach (E; EnumMembers!wolfSSL_ErrorCodes) {
-                enum_list ~= format(q{    %1$s = cast(int)wolfSSL_ErrorCodes.%1$s,}, E.stringof);
-            }
-            static foreach (E; EnumMembers!wolfCrypt_ErrorCodes) {
-                enum_list ~= format(q{    %1$s = cast(int)wolfCrypt_ErrorCodes.%1$s,}, E.stringof);
-            }
-            static foreach (E; EnumMembers!_SSLErrorCodes) {
-                enum_list ~= format(q{    %1$s = cast(int)_SSLErrorCodes.%1$s,}, E.stringof);
-            }
-
-            return format("enum SSLErrorCodes {\n%-(%s \n%)\n};", enum_list);
+        static foreach (E; EnumMembers!wolfSSL_ErrorCodes) {
+            enum_list ~= format(q{    %1$s = cast(int)wolfSSL_ErrorCodes.%1$s,}, E.stringof);
         }
+        static foreach (E; EnumMembers!wolfCrypt_ErrorCodes) {
+            enum_list ~= format(q{    %1$s = cast(int)wolfCrypt_ErrorCodes.%1$s,}, E.stringof);
+        }
+        static foreach (E; EnumMembers!_SSLErrorCodes) {
+            enum_list ~= format(q{    %1$s = cast(int)_SSLErrorCodes.%1$s,}, E.stringof);
+        }
+
+        return format("enum SSLErrorCodes {\n%-(%s \n%)\n};", enum_list);
     }
 
     alias SSL_Init = wolfSSL_Init;
     alias SSL_Cleanup = wolfSSL_Cleanup;
     enum SSLErrorCodes_code = generator_SSLErrorCodes;
-//    pragma(msg, SSLErrorCodes_code);
     mixin(SSLErrorCodes_code);
 
     void ERR_error_string_n(int err, char* buf, size_t size) {
