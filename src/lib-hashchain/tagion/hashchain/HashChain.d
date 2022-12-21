@@ -8,7 +8,8 @@ import tagion.basic.Types : Buffer;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
-import tagion.utils.Miscellaneous : decode;
+import tagion.utils.Miscellaneous : decode, hex;
+import io=std.stdio;
 
 /** @brief File contains class HashChain
  */
@@ -171,8 +172,9 @@ import tagion.utils.Miscellaneous : decode;
         // Apply action in LIFO order
         while (!hash_stack.empty)
         {
-            auto block = storage.read(hash_stack.back);
+			auto block = storage.read(hash_stack.back);
             assert(block !is null);
+            io.writefln("hash_stack=%s", block.getHash.hex);
 
             action(block);
 
@@ -236,7 +238,7 @@ unittest
     import std.file : rmdirRecurse;
     import std.path : extension, stripExtension;
     import std.range.primitives : back;
-
+	import io = std.stdio;
     import tagion.basic.Basic : tempfile;
     import tagion.basic.Types : Buffer, FileExtension, withDot;
     import tagion.communication.HiRPC : HiRPC;
@@ -247,8 +249,9 @@ unittest
     HashNet net = new StdHashNet;
 
     const Buffer empty_hash = [];
-    const temp_folder = tempfile ~ "/";
-
+    const temp_folder = tempfile;
+	
+	io.writefln("tempfile=%s", tempfile);
     alias Storage = HashChainStorage!DummyBlock;
     alias StorageImpl = HashChainFileStorage!DummyBlock;
     alias ChainImpl = HashChain!DummyBlock;
