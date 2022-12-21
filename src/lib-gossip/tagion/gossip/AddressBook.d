@@ -77,8 +77,9 @@ synchronized class AddressBook
     import core.time;
 
     alias NodeAddresses = NodeAddress[Pubkey];
-    alias NodePair = typeof((cast(NodeAddresses) addresses).byKeyValue.front);
+    alias NodePair = typeof((() @trusted => (cast(NodeAddresses)addresses).byKeyValue.front)());
 
+pragma(msg, "NodePair ", NodePair);
     /** \struct AddressDirectory
      * Storage for node addresses
      */
