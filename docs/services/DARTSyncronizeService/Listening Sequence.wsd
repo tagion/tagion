@@ -1,0 +1,77 @@
+@startuml DARTSyncService Sequence
+
+skinparam Style strictuml
+hide empty description
+title DARTSyncronizeService Listening Sequence Diagram
+
+participant DARTSyncService as dartsync
+database DART as dart
+participant DARTSynchronizationPool as syncpool
+participant "ReplayPool!Journal" as journalpool
+participant "ReplayPool!Recorder" as recorderpool
+participant ActiveNodeSubscribtion as nodesubscription
+
+loop while(!stop)
+    dartsync -> dartsync : receiveTimeout(...)
+    note right : Receiving data from other services\ndescribed in separate diagrams
+    dartsync -> dartsync : connectionPool.tick()
+
+    hnote across: Syncronize with DARTSynchronizationPool
+    alt if (options.dart.synchronize)
+        dartsync -> syncpool : tick()
+
+        alt if (addressbook.numOfNodes > 0 && syncPool.isReady)
+            dartsync -> syncpool : start(sync_factory)
+            dartsync -> dartsync : setState(DARTSynchronizeState.SYNCHRONIZING)
+        end
+
+        alt if (syncPool.isOver)
+            dartsync -> syncpool : stop()
+            dartsync -> dartsync : setState(DARTSynchronizeState.REPLAYING_JOURNALS)
+        end
+
+        alt if (syncPool.isError)
+            dartsync -> syncpool : start(sync_factory)
+            dartsync -> dartsync : setState(DARTSynchronizeState.SYNCHRONIZING)
+        end
+    end
+
+    hnote across: Syncronize journals
+    alt checkState(DARTSynchronizeState.REPLAYING_JOURNALS)
+        
+        dartsync -> journalpool : isOver()
+        dartsync <-- journalpool : result
+
+        alt there are more journals in pool
+            dartsync -> journalpool : execute()
+        else if no more journals in pool
+            dartsync -> journalpool : clear()
+            dartsync -> dartsync : connectionPool.closeAll()
+            dartsync -> dartsync : setState(DARTSynchronizeState.REPLAYING_RECORDERS);
+        end
+    end
+
+    hnote across: Syncronize recorders
+    alt checkState(DARTSynchronizeState.REPLAYING_RECORDERS)
+        
+        dartsync -> recorderpool : isOver()
+        dartsync <-- recorderpool : result
+
+        alt there are more recorders in pool
+            dartsync -> recorderpool : execute()
+        else if no more recorders in pool
+            dartsync -> nodesubscription : stop()
+            dartsync -> recorderpool : clear()
+            dartsync -> dart : dump(true)
+            dartsync -> dartsync : setState(DARTSynchronizeState.READY);
+        end
+    end
+
+    hnote across: Listen when ready
+    alt checkState(DARTSynchronizeState.READY) && !request_handling
+        dartsync -> dartsync : node.listen(pid, \n &StdHandlerCallback, \n task_name, \n options.dart.sync.host.timeout.msecs, \n options.dart.sync.host.max_size)
+        dartsync -> dartsync : request_handling = true
+    end
+end
+
+@enduml

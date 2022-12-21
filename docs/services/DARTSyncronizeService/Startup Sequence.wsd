@@ -2,7 +2,7 @@
 
 skinparam Style strictuml
 hide empty description
-title DARTSyncronizeService Sequence Diagram
+title DARTSyncronizeService Startup Sequence Diagram
 
 participant TagionService as tagion
 participant DARTSyncService as dartsync
@@ -10,8 +10,8 @@ participant Logger as logger
 database DART as dart
 participant BlockFile as blockfile
 participant DARTSynchronizationPool as syncpool
-participant "ReplayPool!dart.replay(journal)" as journalpool
-participant "ReplayPool!dart.modify(recorder)" as recorderpool
+participant "ReplayPool!Journal" as journalpool
+participant "ReplayPool!Recorder" as recorderpool
 participant P2pSynchronizationFactory as syncfactory
 participant ActiveNodeSubscribtion as nodesubscription
 
@@ -36,6 +36,8 @@ dartsync -> dartsync : connectionPool = new shared(ConnectionPoolT)(options.dart
 dartsync -> syncfactory : sync_factory = new P2pSynchronizationFactory(dart, options.port, node, connectionPool, options.dart, net.pubkey);
 dartsync -> syncpool : syncPool = new DARTSynchronizationPool(dart.sectors, journalReplayFiber, options.dart);
 
+dartsync -> dartsync : request_handling = false
+
 alt if options.dart.synchronize
     dartsync -> dartsync : state = DARTSynchronizeState.WAITING
 else else
@@ -58,37 +60,3 @@ dartsync -> dartsync : node.closeListener(options.dart.sync.protocol_id)
 dartsync -> tagion : prioritySend(Control.END)
 
 @enduml
-
-{
-    try
-    {
-
-        auto journalReplayFiber = new ReplayPool!string((string journal) => dart.replay(journal));
-
-        auto connectionPool = new shared(ConnectionPoolT)(
-            options.dart.sync.host.timeout.msecs);
-        auto sync_factory = new P2pSynchronizationFactory(
-            dart, options.port, node,
-            connectionPool, options.dart, net.pubkey);
-        auto syncPool = new DARTSynchronizationPool!(StdHandlerPool!(ResponseHandler, uint))(dart.sectors,
-            journalReplayFiber, options.dart);
-        bool request_handling = false;
-
-
-
-
-        auto subscription = ActiveNodeSubscribtion!Net(options);
-
-        ownerTid.send(Control.LIVE);
-        while (!stop)
-        {
-        }
-
-        scope (exit)
-        {
-            syncPool.stop;
-            node.closeListener(pid);
-            ownerTid.prioritySend(Control.END);
-        }
-    }
-}
