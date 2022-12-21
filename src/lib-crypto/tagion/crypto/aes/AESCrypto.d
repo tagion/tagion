@@ -1,11 +1,10 @@
 module tagion.crypto.aes.AESCrypto;
 
-private import std.format;
+import tagion.basic.Debug : __format;
 
 alias AES128 = AESCrypto!128;
-//alias AES196=AESCrypto!196; // AES196 results in a segment fault for unknown reason
+alias AES196 = AESCrypto!192;
 alias AES256 = AESCrypto!256;
-//import std.stdio;
 
 struct AESCrypto(int KEY_LENGTH) {
     static assert((KEY_LENGTH is 128) || (KEY_LENGTH is 192) || (KEY_LENGTH is 256),
@@ -13,7 +12,7 @@ struct AESCrypto(int KEY_LENGTH) {
 
     @disable this();
 
-    static size_t enclength(const size_t inputlength) {
+    static size_t enclength(const size_t inputlength) pure nothrow {
         return ((inputlength / BLOCK_SIZE) + ((inputlength % BLOCK_SIZE == 0) ? 0 : 1)) * BLOCK_SIZE;
     }
 
@@ -23,12 +22,15 @@ struct AESCrypto(int KEY_LENGTH) {
         alias AES = Tiny_AES!(KEY_LENGTH, Mode.CBC);
         enum BLOCK_SIZE = AES.BLOCK_SIZE;
         enum KEY_SIZE = AES.KEY_SIZE;
-        static void crypt_parse(bool ENCRYPT = true)(const(ubyte[]) key, ubyte[BLOCK_SIZE] iv, ref ubyte[] data)
+        static void crypt_parse(bool ENCRYPT = true)(
+                const(ubyte[]) key,
+        ubyte[BLOCK_SIZE] iv,
+        ref ubyte[] data) nothrow
         in {
             assert(data);
-            assert(data.length % BLOCK_SIZE == 0, format("Data must be an equal number of %d bytes but is %d", BLOCK_SIZE, data
+            assert(data.length % BLOCK_SIZE == 0, __format("Data must be an equal number of %d bytes but is %d", BLOCK_SIZE, data
                     .length));
-            assert(key.length is KEY_SIZE, format("The key size must be %d bytes not %d", KEY_SIZE, key
+            assert(key.length is KEY_SIZE, __format("The key size must be %d bytes not %d", KEY_SIZE, key
                     .length));
         }
         do {
@@ -45,10 +47,10 @@ struct AESCrypto(int KEY_LENGTH) {
                 ubyte[]) indata, ref ubyte[] outdata) pure nothrow @safe
         in {
             if (outdata.length) {
-                assert(enclength(indata.length) == outdata.length, format(
-                        "Output data must be an equal number of %d bytes", BLOCK_SIZE));
-                assert(iv.length is BLOCK_SIZE, format("The iv size must be %d bytes not %d", BLOCK_SIZE, iv
-                        .length));
+                assert(enclength(indata.length) == outdata.length,
+                        __format("Output data must be an equal number of %d bytes", BLOCK_SIZE));
+                assert(iv.length is BLOCK_SIZE,
+                        __format("The iv size must be %d bytes not %d", BLOCK_SIZE, iv.length));
 
             }
         }
@@ -87,12 +89,12 @@ struct AESCrypto(int KEY_LENGTH) {
             assert(indata);
             if (outdata !is null) {
                 assert(enclength(indata.length) == outdata.length,
-                        format("Output data must be an equal number of %d bytes", BLOCK_SIZE));
+                        __format("Output data must be an equal number of %d bytes", BLOCK_SIZE));
             }
-            assert(key.length is KEY_SIZE, format("The key size must be %d bytes not %d", KEY_SIZE, key
-                    .length));
-            assert(iv.length is BLOCK_SIZE, format("The iv size must be %d bytes not %d", BLOCK_SIZE, iv
-                    .length));
+            assert(key.length is KEY_SIZE,
+                    __format("The key size must be %d bytes not %d", KEY_SIZE, key.length));
+            assert(iv.length is BLOCK_SIZE,
+                    __format("The iv size must be %d bytes not %d", BLOCK_SIZE, iv.length));
         }
         do {
             auto aes_key = key.ptr;

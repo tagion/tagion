@@ -2,6 +2,7 @@ module tagion.basic.Debug;
 
 import std.exception : assumeWontThrow;
 import std.stdio;
+import std.format;
 
 /* 
  * Function used information under debugging
@@ -18,10 +19,30 @@ debug {
 }
 else {
     void __write(Args...)(string fmt, Args args) @trusted nothrow {
-
         assumeWontThrow(stderr.writefln(fmt, args));
     }
+}
 
+/**
+* This function is same as std.format made nonthow
+* It's meant to be used in assert/pre-post
+* Parans:
+* fmt = string format
+* args = argument list
+*/
+debug {
+    string __format(Args...)(string fmt, Args args) @trusted nothrow pure {
+        string result;
+        debug {
+            result = assumeWontThrow(format(fmt, args));
+        }
+        return result;
+    }
+}
+else {
+    string __format(Args...)(string fmt, Args args) @trusted nothrow {
+        return assumeWontThrow(format(fmt, args));
+    }
 }
 
 /* 

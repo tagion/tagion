@@ -430,7 +430,6 @@ class FiberServer {
                 client.shutdown(SocketShutdown.BOTH);
                 client = null;
             }
-            //handler.remove(fiber_id);
         }
 
         ~this() {

@@ -35,23 +35,18 @@ import LEB128 = tagion.utils.LEB128;
 
 //import std.stdio;
 
-static size_t size(U)(const(U[]) array) pure
-{
-    if (array.length is 0)
-    {
+static size_t size(U)(const(U[]) array) pure {
+    if (array.length is 0) {
         return ubyte.sizeof;
     }
     size_t _size;
-    foreach (i, h; array)
-    {
+    foreach (i, h; array) {
         immutable index_key = i.to!string;
         _size += Document.sizeKey(index_key);
-        static if (__traits(compiles, h.size))
-        {
+        static if (__traits(compiles, h.size)) {
             const h_size = h.size;
         }
-        else
-        {
+        else {
             const h_size = h.length;
         }
         _size += LEB128.calc_size(h_size) + h_size;
@@ -62,8 +57,7 @@ static size_t size(U)(const(U[]) array) pure
 /++
  HiBON is a generate object of the HiBON format
 +/
-@safe class HiBON
-{
+@safe class HiBON {
     /++
      Gets the internal buffer
      Returns:
@@ -72,8 +66,7 @@ static size_t size(U)(const(U[]) array) pure
 
     alias Value = ValueT!(true, HiBON, Document);
 
-    this() nothrow pure
-    {
+    this() nothrow pure {
         _members = new Members;
     }
 
@@ -85,21 +78,17 @@ static size_t size(U)(const(U[]) array) pure
      Returns:
      the size in bytes
      +/
-    size_t size() const pure
-    {
+    size_t size() const pure {
         size_t result;
         //= uint.sizeof+Type.sizeof;
-        if (!_members[].empty)
-        {
+        if (!_members[].empty) {
             result += _members[].map!(a => a.size)
                 .fold!((a, b) => a + b);
         }
-        if (result > 0)
-        {
+        if (result > 0) {
             return result;
         }
-        else
-        {
+        else {
             return ubyte.sizeof;
         }
     }
@@ -109,11 +98,9 @@ static size_t size(U)(const(U[]) array) pure
      Returns:
      the size in bytes
      +/
-    size_t serialize_size() const pure
-    {
+    size_t serialize_size() const pure {
         auto _size = size;
-        if (_size !is ubyte.sizeof)
-        {
+        if (_size !is ubyte.sizeof) {
             _size += LEB128.calc_size(_size);
         }
         return _size;
@@ -123,8 +110,7 @@ static size_t size(U)(const(U[]) array) pure
      Returns:
      The byte stream
      +/
-    @trusted immutable(ubyte[]) serialize() const
-    {
+    @trusted immutable(ubyte[]) serialize() const {
         auto buffer = new ubyte[serialize_size];
         size_t index;
         append(buffer, index);
@@ -134,14 +120,11 @@ static size_t size(U)(const(U[]) array) pure
     // /++
     //  Helper function to append
     //  +/
-    @trusted private void append(ref ubyte[] buffer, ref size_t index) const pure
-    {
-        if (_members[].empty)
-        {
+    @trusted private void append(ref ubyte[] buffer, ref size_t index) const pure {
+        if (_members[].empty) {
             buffer.binwrite(ubyte(0), &index);
         }
-        else
-        {
+        else {
             uint size = cast(uint) _members[].map!(a => a.size).sum;
             buffer.array_write(LEB128.encode(size), index);
             _members[].each!(a => a.append(buffer, index));
@@ -151,14 +134,12 @@ static size_t size(U)(const(U[]) array) pure
     /++
      Internal Member in the HiBON class
      +/
-    @safe static class Member
-    {
+    @safe static class Member {
         const string key;
         immutable Type type;
         Value value;
 
-        @nogc protected this(const string key) pure
-        {
+        @nogc protected this(const string key) pure {
             this.key = key;
             type = Type.NONE;
         }
@@ -170,32 +151,25 @@ static size_t size(U)(const(U[]) array) pure
          x = the parameter value
          key = the name of the member
          +/
-        @trusted this(T)(T x, string key) pure
-        {
-            static if (is(T == enum))
-            {
+        @trusted this(T)(T x, string key) pure {
+            static if (is(T == enum)) {
                 alias UnqualT = Unqual!(OriginalType!T);
             }
-            else
-            {
+            else {
                 alias UnqualT = Unqual!T;
             }
             enum E = Value.asType!UnqualT;
             this.key = key;
-            with (Type)
-            {
-                static if (E is NONE)
-                {
+            with (Type) {
+                static if (E is NONE) {
                     alias BaseT = TypedefType!UnqualT;
-                    static if (is(BaseT == Buffer))
-                    {
+                    static if (is(BaseT == Buffer)) {
                         alias CastT = Buffer;
                     }
-                    else
-                    {
+                    else {
                         alias CastT = CastTo!(BaseT, CastTypes);
                         static assert(!is(CastT == void),
-                            format("Type %s is not valid", T.stringof));
+                                format("Type %s is not valid", T.stringof));
 
                     }
                     alias CastE = Value.asType!CastT;
@@ -203,15 +177,12 @@ static size_t size(U)(const(U[]) array) pure
                     this.value = cast(CastT) x;
 
                 }
-                else
-                {
+                else {
                     this.type = E;
-                    static if (E is BIGINT || E is BINARY || E is HASHDOC)
-                    {
+                    static if (E is BIGINT || E is BINARY || E is HASHDOC) {
                         this.value = x;
                     }
-                    else
-                    {
+                    else {
                         this.value = cast(UnqualT) x;
                     }
                 }
@@ -224,12 +195,10 @@ static size_t size(U)(const(U[]) array) pure
          the value as a Document
          +/
         @trusted inout(HiBON) document() inout pure nothrow
-        in
-        {
+        in {
             assert(type is Type.DOCUMENT);
         }
-        do
-        {
+        do {
             return value.document;
         }
 
@@ -243,8 +212,7 @@ static size_t size(U)(const(U[]) array) pure
         //      return result;
         // }
 
-        T new_get(T)() const if (isHiBONRecord!T || isHiBON!T)
-        {
+        T new_get(T)() const if (isHiBONRecord!T || isHiBON!T) {
             return T.init;
         }
         /++
@@ -253,12 +221,9 @@ static size_t size(U)(const(U[]) array) pure
          Throws:
          If the member does not match the type T and HiBONException is thrown
          +/
-        T get(T)() const if (isHiBONRecord!T || isHiBON!T)
-        {
-            with (Type)
-            {
-                switch (type)
-                {
+        T get(T)() const if (isHiBONRecord!T || isHiBON!T) {
+            with (Type) {
+                switch (type) {
                 case DOCUMENT:
                     const h = value.by!DOCUMENT;
                     const doc = Document(h.serialize);
@@ -279,8 +244,7 @@ static size_t size(U)(const(U[]) array) pure
             assert(0);
         }
 
-        const(T) get(T)() const if (!isHiBONRecord!T && !isHiBON!T)
-        {
+        const(T) get(T)() const if (!isHiBONRecord!T && !isHiBON!T) {
             enum E = Value.asType!T;
 
             
@@ -296,13 +260,11 @@ static size_t size(U)(const(U[]) array) pure
          Throws:
          If the member does not match the type T and HiBONException is thrown
          +/
-        auto by(Type type)() inout
-        {
+        auto by(Type type)() inout {
             return value.by!type;
         }
 
-        static const(Member) opCast(string key) pure
-        {
+        static const(Member) opCast(string key) pure {
             return new Member(key);
         }
 
@@ -311,57 +273,43 @@ static size_t size(U)(const(U[]) array) pure
          Returns:
          the size in bytes
          +/
-        @trusted size_t size() const pure
-        {
-            with (Type)
-            {
+        @trusted size_t size() const pure {
+            with (Type) {
             TypeCase:
-                switch (type)
-                {
-                    foreach (E; EnumMembers!Type)
-                    {
-                        static if (isHiBONType(E) || isNative(E))
-                        {
+                switch (type) {
+                    foreach (E; EnumMembers!Type) {
+                        static if (isHiBONType(E) || isNative(E)) {
                 case E:
-                            static if (E is Type.DOCUMENT)
-                            {
+                            static if (E is Type.DOCUMENT) {
                                 const _size = value.by!(E).size;
-                                if (_size is 1)
-                                {
+                                if (_size is 1) {
                                     return Document.sizeKey(key) + ubyte.sizeof;
                                 }
                                 return Document.sizeKey(key) + LEB128.calc_size(_size) + _size;
                             }
-                            else static if (E is NATIVE_DOCUMENT)
-                            {
+                            else static if (E is NATIVE_DOCUMENT) {
                                 const _size = value.by!(E).size;
                                 return Document.sizeKey(key) + LEB128.calc_size(_size) + _size;
                             }
-                            else static if (isNativeArray(E))
-                            {
+                            else static if (isNativeArray(E)) {
                                 size_t _size;
-                                foreach (i, e; value.by!(E)[])
-                                {
+                                foreach (i, e; value.by!(E)[]) {
                                     immutable index_key = i.to!string;
                                     _size += Document.sizeKey(index_key);
-                                    static if (E is NATIVE_HIBON_ARRAY || E is NATIVE_DOCUMENT_ARRAY)
-                                    {
+                                    static if (E is NATIVE_HIBON_ARRAY || E is NATIVE_DOCUMENT_ARRAY) {
                                         const _doc_size = e.size;
                                         _size += LEB128.calc_size(_doc_size) + _doc_size;
                                     }
-                                    else static if (E is NATIVE_STRING_ARRAY)
-                                    {
+                                    else static if (E is NATIVE_STRING_ARRAY) {
                                         _size += LEB128.calc_size(e.length) + e.length;
                                     }
                                 }
                                 return Document.sizeKey(key) + LEB128.calc_size(_size) + _size;
                             }
-                            else static if (E is VER)
-                            {
+                            else static if (E is VER) {
                                 return LEB128.calc_size(HIBON_VERSION);
                             }
-                            else
-                            {
+                            else {
                                 const v = value.by!(E);
                                 return Document.sizeT(E, key, v);
                             }
@@ -376,32 +324,24 @@ static size_t size(U)(const(U[]) array) pure
         }
 
         @trusted protected void appendList(Type E)(ref ubyte[] buffer, ref size_t index) const pure
-        if (isNativeArray(E))
-        {
-            with (Type)
-            {
+        if (isNativeArray(E)) {
+            with (Type) {
                 immutable list_size = value.by!(E).size;
                 buffer.array_write(LEB128.encode(list_size), index);
-                foreach (i, h; value.by!E)
-                {
+                foreach (i, h; value.by!E) {
                     immutable key = i.to!string;
-                    static if (E is NATIVE_STRING_ARRAY)
-                    {
+                    static if (E is NATIVE_STRING_ARRAY) {
                         Document.build(buffer, STRING, key, h, index);
                     }
-                    else
-                    {
+                    else {
                         Document.buildKey(buffer, DOCUMENT, key, index);
-                        static if (E is NATIVE_HIBON_ARRAY)
-                        {
+                        static if (E is NATIVE_HIBON_ARRAY) {
                             h.append(buffer, index);
                         }
-                        else static if (E is NATIVE_DOCUMENT_ARRAY)
-                        {
+                        else static if (E is NATIVE_DOCUMENT_ARRAY) {
                             buffer.array_write(h.data, index);
                         }
-                        else
-                        {
+                        else {
                             assert(0, format("%s is not implemented yet", E));
                         }
                     }
@@ -409,44 +349,33 @@ static size_t size(U)(const(U[]) array) pure
             }
         }
 
-        void append(ref ubyte[] buffer, ref size_t index) const pure
-        {
-            with (Type)
-            {
+        void append(ref ubyte[] buffer, ref size_t index) const pure {
+            with (Type) {
             TypeCase:
-                switch (type)
-                {
-                    static foreach (E; EnumMembers!Type)
-                    {
-                        static if (isHiBONType(E) || isNative(E))
-                        {
+                switch (type) {
+                    static foreach (E; EnumMembers!Type) {
+                        static if (isHiBONType(E) || isNative(E)) {
                 case E:
                             alias T = Value.TypeT!E;
-                            static if (E is DOCUMENT)
-                            {
+                            static if (E is DOCUMENT) {
                                 Document.buildKey(buffer, E, key, index);
                                 value.by!(E).append(buffer, index);
                             }
-                            else static if (isNative(E))
-                            {
-                                static if (E is NATIVE_DOCUMENT)
-                                {
+                            else static if (isNative(E)) {
+                                static if (E is NATIVE_DOCUMENT) {
                                     Document.buildKey(buffer, DOCUMENT, key, index);
                                     const doc = value.by!(E);
                                     buffer.array_write(value.by!(E).data, index);
                                 }
-                                else static if (isNativeArray(E))
-                                {
+                                else static if (isNativeArray(E)) {
                                     Document.buildKey(buffer, DOCUMENT, key, index);
                                     appendList!E(buffer, index);
                                 }
-                                else
-                                {
+                                else {
                                     goto default;
                                 }
                             }
-                            else
-                            {
+                            else {
                                 Document.build(buffer, E, key, value.by!E, index);
                             }
                             break TypeCase;
@@ -459,7 +388,7 @@ static size_t size(U)(const(U[]) array) pure
         }
     }
 
-    alias Members = RedBlackTree!(Member, (a, b) => (less_than(a.key, b.key)));
+    alias Members = RedBlackTree!(Member, (a, b) @safe => (less_than(a.key, b.key)));
 
     protected Members _members;
 
@@ -467,43 +396,35 @@ static size_t size(U)(const(U[]) array) pure
      Returns:
      A range of members with sorted keys
      +/
-    auto opSlice() const
-    {
+    auto opSlice() const {
         return _members[];
     }
 
-    void opAssign(T)(T r) @trusted if ((isInputRange!T) && !isAssociativeArray!T)
-    {
-        foreach (i, a; r.enumerate)
-        {
+    void opAssign(T)(T r) @trusted if ((isInputRange!T) && !isAssociativeArray!T) {
+        foreach (i, a; r.enumerate) {
             opIndexAssign(a, i);
         }
     }
 
     @trusted
-    unittest
-    { // Check Array Range init
+    unittest { // Check Array Range init
         import std.stdio;
 
         // import std.range : retro;
         import std.algorithm.comparison : equal;
 
         // import tagion.hibon.HiBONJSON;
-        struct ArrayRange
-        {
+        struct ArrayRange {
             int count;
-            bool empty()
-            {
+            bool empty() {
                 return count <= 0;
             }
 
-            string front()
-            {
+            string front() {
                 return format("text-%d", count);
             }
 
-            void popFront()
-            {
+            void popFront() {
                 count--;
             }
         }
@@ -528,24 +449,19 @@ static size_t size(U)(const(U[]) array) pure
      x = parameter value
      key = member key
      +/
-    void opIndexAssign(T)(T x, const string key) if (isHiBON!T)
-    {
+    void opIndexAssign(T)(T x, const string key) if (isHiBON!T) {
         opIndexAssign(x.toHiBON, key);
     }
 
-    void opIndexAssign(T)(T x, const string key) if (isHiBONRecordArray!T)
-    {
+    void opIndexAssign(T)(T x, const string key) if (isHiBONRecordArray!T) {
         auto h = new HiBON;
-        foreach (v_key, v; x)
-        {
+        foreach (v_key, v; x) {
             h[v_key] = x;
         }
         h[key] = h;
     }
 
-    void opIndexAssign(T)(T x, const string key)
-    if (!isHiBON!T && !isHiBONRecord!T && !isHiBONRecordArray!T)
-    {
+    void opIndexAssign(T)(T x, const string key) @trusted if (!isHiBON!T && !isHiBONRecord!T && !isHiBONRecordArray!T) {
 
         
 
@@ -563,17 +479,14 @@ static size_t size(U)(const(U[]) array) pure
      x = parameter value
      index = member index
      +/
-    void opIndexAssign(T, INDEX)(T x, const INDEX index) if (isIntegral!INDEX)
-    {
-        static if (INDEX.max > uint.max)
-        {
+    void opIndexAssign(T, INDEX)(T x, const INDEX index) if (isIntegral!INDEX) {
+        static if (INDEX.max > uint.max) {
 
             
 
                 .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
-        static if (INDEX.min < uint.min)
-        {
+        static if (INDEX.min < uint.min) {
 
             
 
@@ -592,8 +505,7 @@ static size_t size(U)(const(U[]) array) pure
      Throws:
      if the an member with the key does not exist an HiBONException is thrown
      +/
-    const(Member) opIndex(const string key) const
-    {
+    const(Member) opIndex(const string key) const {
         scope search = new Member(key);
         auto range = _members.equalRange(search);
 
@@ -613,17 +525,14 @@ static size_t size(U)(const(U[]) array) pure
      if the an member with the index does not exist an HiBONException is thrown
      Or an std.conv.ConvException is thrown if the key is not an index
      +/
-    const(Member) opIndex(INDEX)(const INDEX index) const if (isIntegral!INDEX)
-    {
-        static if (INDEX.max > uint.max)
-        {
+    const(Member) opIndex(INDEX)(const INDEX index) const if (isIntegral!INDEX) {
+        static if (INDEX.max > uint.max) {
 
             
 
                 .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
-        static if (INDEX.min < uint.min)
-        {
+        static if (INDEX.min < uint.min) {
 
             
 
@@ -639,8 +548,7 @@ static size_t size(U)(const(U[]) array) pure
      Returns:
      true if the member with the key exists
      +/
-    bool hasMember(const string key) const
-    {
+    bool hasMember(const string key) const {
         auto range = _members.equalRange(new Member(key));
         return !range.empty;
     }
@@ -651,8 +559,7 @@ static size_t size(U)(const(U[]) array) pure
      true if the member with the key exists
      +/
 
-    bool hasMember(INDEX)(const INDEX index) const if (isIntegral!INDEX)
-    {
+    bool hasMember(INDEX)(const INDEX index) const if (isIntegral!INDEX) {
         const key = index.to!string;
         scope search = new Member(key);
         auto range = _members.equalRange(search);
@@ -664,15 +571,13 @@ static size_t size(U)(const(U[]) array) pure
      Params:
      key = name of the member to be removed
      +/
-    @trusted void remove(const string key)
-    {
+    @trusted void remove(const string key) {
         scope search = new Member(key);
         _members.removeKey(search);
     }
 
     ///
-    unittest
-    { // remove
+    unittest { // remove
         auto hibon = new HiBON;
         hibon["a"] = 1;
         hibon["b"] = 2;
@@ -689,17 +594,14 @@ static size_t size(U)(const(U[]) array) pure
      Params:
      key = name of the member to be removed
      +/
-    @trusted void remove(INDEX)(const INDEX index) if (isIntegral!INDEX)
-    {
-        static if (INDEX.max > uint.max)
-        {
+    @trusted void remove(INDEX)(const INDEX index) if (isIntegral!INDEX) {
+        static if (INDEX.max > uint.max) {
 
             
 
                 .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
-        static if (INDEX.min < uint.min)
-        {
+        static if (INDEX.min < uint.min) {
 
             
 
@@ -710,8 +612,7 @@ static size_t size(U)(const(U[]) array) pure
         _members.removeKey(search);
     }
 
-    unittest
-    {
+    unittest {
         auto hibon = new HiBON;
         hibon[0] = 0;
         hibon[1] = 1;
@@ -729,8 +630,7 @@ static size_t size(U)(const(U[]) array) pure
      Returns:
      the number of members in the HiBON
      +/
-    size_t length() const
-    {
+    size_t length() const {
         return _members.length;
     }
 
@@ -738,8 +638,7 @@ static size_t size(U)(const(U[]) array) pure
      Returns:
      A range of the member keys
      +/
-    auto keys() const
-    {
+    auto keys() const {
         return map!"a.key"(this[]);
     }
 
@@ -749,8 +648,7 @@ static size_t size(U)(const(U[]) array) pure
      Throws:
      The range will throw an std.conv.ConvException if the key is not an index
     +/
-    auto indices() const
-    {
+    auto indices() const {
         return map!"a.key.to!uint"(this[]);
     }
 
@@ -759,14 +657,12 @@ static size_t size(U)(const(U[]) array) pure
      Returns:
      true if all keys is indices and are consecutive
      +/
-    bool isArray() const
-    {
+    bool isArray() const {
         return .isArray(keys);
     }
 
     ///
-    unittest
-    {
+    unittest {
         {
             auto hibon = new HiBON;
             assert(hibon.isArray);
@@ -797,8 +693,7 @@ static size_t size(U)(const(U[]) array) pure
         }
     }
 
-    unittest
-    {
+    unittest {
         // import std.stdio;
         import std.conv : to;
         import std.typecons : Tuple, isTuple;
@@ -806,11 +701,11 @@ static size_t size(U)(const(U[]) array) pure
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
         alias Tabel = Tuple!(BigNumber, Type.BIGINT.stringof, bool, Type.BOOLEAN.stringof,
-            float, Type.FLOAT32.stringof, double, Type.FLOAT64.stringof,
-            int, Type.INT32.stringof, long, Type.INT64.stringof, uint,
-            Type.UINT32.stringof, ulong, Type.UINT64.stringof, //                utc_t,  Type.UTC.stringof
+                float, Type.FLOAT32.stringof, double, Type.FLOAT64.stringof,
+                int, Type.INT32.stringof, long, Type.INT64.stringof, uint,
+                Type.UINT32.stringof, ulong, Type.UINT64.stringof, //                utc_t,  Type.UTC.stringof
 
-            
+                
 
         );
 
@@ -868,7 +763,7 @@ static size_t size(U)(const(U[]) array) pure
 
             // This size of a HiBON with as single element of the type FLOAT32
             enum hibon_size = LEB128.calc_size(
-                    14) // Size of the object in ubytes (uint(14))
+                        14) // Size of the object in ubytes (uint(14))
                 + Type.sizeof // The HiBON Type  (Type.FLOAT32)  1
                 + ubyte.sizeof // Length of the key (ubyte(7))    2
                 + Type.FLOAT32.stringof.length // The key text string ("FLOAT32") 9
@@ -897,21 +792,18 @@ static size_t size(U)(const(U[]) array) pure
         { // HiBON Test for basic types
             auto hibon = new HiBON;
             string[] keys;
-            foreach (i, t; test_tabel)
-            {
+            foreach (i, t; test_tabel) {
                 hibon[test_tabel.fieldNames[i]] = t;
                 keys ~= test_tabel.fieldNames[i];
             }
 
             size_t index;
-            foreach (m; hibon[])
-            {
+            foreach (m; hibon[]) {
                 assert(m.key == keys[index]);
                 index++;
             }
 
-            foreach (i, t; test_tabel)
-            {
+            foreach (i, t; test_tabel) {
 
                 enum key = test_tabel.fieldNames[i];
 
@@ -925,8 +817,7 @@ static size_t size(U)(const(U[]) array) pure
             const doc = Document(data);
             assert(doc.length is test_tabel.length);
 
-            foreach (i, t; test_tabel)
-            {
+            foreach (i, t; test_tabel) {
                 enum key = test_tabel.fieldNames[i];
 
                 const e = doc[key];
@@ -940,21 +831,18 @@ static size_t size(U)(const(U[]) array) pure
             auto hibon = new HiBON;
 
             string[] keys;
-            foreach (i, t; test_tabel_array)
-            {
+            foreach (i, t; test_tabel_array) {
                 hibon[test_tabel_array.fieldNames[i]] = t;
                 keys ~= test_tabel_array.fieldNames[i];
             }
 
             size_t index;
-            foreach (m; hibon[])
-            {
+            foreach (m; hibon[]) {
                 assert(m.key == keys[index]);
                 index++;
             }
 
-            foreach (i, t; test_tabel_array)
-            {
+            foreach (i, t; test_tabel_array) {
                 enum key = test_tabel_array.fieldNames[i];
                 const m = hibon[key];
                 assert(m.key == key);
@@ -966,8 +854,7 @@ static size_t size(U)(const(U[]) array) pure
             const doc = Document(data);
             assert(doc.length is test_tabel_array.length);
 
-            foreach (i, t; test_tabel_array)
-            {
+            foreach (i, t; test_tabel_array) {
                 enum key = test_tabel_array.fieldNames[i];
                 const e = doc[key];
                 assert(e.key == key);
@@ -1040,8 +927,7 @@ static size_t size(U)(const(U[]) array) pure
             tabel_doc_array.b = "text";
             tabel_doc_array.c = 42.42;
 
-            foreach (i, t; tabel_doc_array)
-            {
+            foreach (i, t; tabel_doc_array) {
                 enum name = tabel_doc_array.fieldNames[i];
                 auto local_hibon = new HiBON;
                 local_hibon[name] = t;
@@ -1078,8 +964,7 @@ static size_t size(U)(const(U[]) array) pure
                 const doc_e = doc["array"];
                 assert(doc_e.type is Type.DOCUMENT);
                 const doc_array = doc_e.by!(Type.DOCUMENT);
-                foreach (i, t; tabel_doc_array)
-                {
+                foreach (i, t; tabel_doc_array) {
                     enum name = tabel_doc_array.fieldNames[i];
                     alias U = tabel_doc_array.Types[i];
                     const doc_local = doc_array[i].by!(Type.DOCUMENT);
@@ -1091,8 +976,7 @@ static size_t size(U)(const(U[]) array) pure
 
             { // Test of Document[]
                 Document[] docs;
-                foreach (h; hibon_array)
-                {
+                foreach (h; hibon_array) {
                     docs ~= Document(h.serialize);
                 }
 
@@ -1107,8 +991,7 @@ static size_t size(U)(const(U[]) array) pure
                 const doc_all = Document(data_array);
                 const doc_array = doc_all["doc_array"].by!(Type.DOCUMENT);
 
-                foreach (i, t; tabel_doc_array)
-                {
+                foreach (i, t; tabel_doc_array) {
                     enum name = tabel_doc_array.fieldNames[i];
                     alias U = tabel_doc_array.Types[i];
                     alias E = Value.asType!U;
@@ -1132,8 +1015,7 @@ static size_t size(U)(const(U[]) array) pure
             const doc = Document(data);
             const doc_texts = doc["texts"].by!(Type.DOCUMENT);
             assert(doc_texts.length is texts.length);
-            foreach (i, s; texts)
-            {
+            foreach (i, s; texts) {
                 const e = doc_texts[i];
                 assert(e.type is Type.STRING);
                 assert(e.get!string == s);
@@ -1141,8 +1023,7 @@ static size_t size(U)(const(U[]) array) pure
         }
     }
 
-    unittest
-    { // Check empty/null object
+    unittest { // Check empty/null object
     {
             HiBON hibon = new HiBON;
             auto sub = new HiBON;
@@ -1162,8 +1043,7 @@ static size_t size(U)(const(U[]) array) pure
         }
     }
 
-    unittest
-    { // Override of a key is not allowed
+    unittest { // Override of a key is not allowed
         import std.exception : assertThrown, assertNotThrown;
 
         enum override_key = "okey";
@@ -1179,8 +1059,7 @@ static size_t size(U)(const(U[]) array) pure
 
     }
 
-    unittest
-    { // Test sdt_t
+    unittest { // Test sdt_t
         import tagion.utils.StdTime;
         import std.typecons : TypedefType;
 
@@ -1193,8 +1072,7 @@ static size_t size(U)(const(U[]) array) pure
         assert(doc[time].get!sdt_t == 1_100_100_101);
     }
 
-    unittest
-    { // Test of empty Document
+    unittest { // Test of empty Document
         import std.stdio;
 
         enum doc_name = "$doc";
