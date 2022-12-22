@@ -95,7 +95,7 @@ class RecordFactory {
     @RecordType("Recorder")
     class Recorder {
         /// This will order REMOVE before add
-        alias Archives = RedBlackTree!(Archive, (a, b) @trusted => (a.fingerprint < b.fingerprint) || (
+        alias Archives = RedBlackTree!(Archive, (a, b) => (a.fingerprint < b.fingerprint) || (
                 a.fingerprint == b.fingerprint) && (a._type < a._type));
         package Archives archives;
 

@@ -118,7 +118,7 @@ protected template allMethodFilter(This, alias pred) {
         }
         else {
             enum Filter = Filter!(members[0 .. $ / 2]) ~ Filter!(members[$ / 2 .. $]);
-        };
+        }
     }
 
     enum allMembers = [__traits(allMembers, This)];

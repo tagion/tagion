@@ -586,7 +586,7 @@ import tagion.utils.JSONCommon;
 enum fileextensions {
     HIBON = ".hibon",
     JSON = ".json"
-};
+}
 
 void sendPaymentData(const ubyte[] data, const string adress, ushort port, ref HiRPC hirpc) {
     auto client = socket(AddressFamily.INET);
