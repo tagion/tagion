@@ -410,6 +410,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         log.trace("Before Main loop addressbook.numOfActiveNodes : %d", addressbook
                 .numOfActiveNodes);
         HiRPC empty_hirpc;
+        gossip_net.start_listening();
         while (!stop && !abort) {
             immutable message_received = receiveTimeout(
                     opts.timeout.msecs,
