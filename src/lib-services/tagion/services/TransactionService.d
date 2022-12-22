@@ -6,7 +6,7 @@ import std.socket;
 import core.thread;
 import std.concurrency;
 import std.exception : assumeUnique, assumeWontThrow;
-import std.socket : SocketType, AddressFamily;
+import std.socket : SocketType, AddressFamily, SocketOptionLevel, SocketOption;
 
 import tagion.network.ServerAPI;
 import tagion.network.SSLSocket : SSLSocket;
@@ -295,6 +295,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 SocketType.STREAM,
                 opts.transaction.service.cert.certificate,
                 opts.transaction.service.cert.private_key);
+		listener.setOption(SocketOptionLevel.SOCKET, SocketOption.REUSEADDR, 0);
         ServerAPI script_api = ServerAPI(opts.transaction.service.server, listener, relay);
         auto script_thread = script_api.start;
 
