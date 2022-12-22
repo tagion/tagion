@@ -2,8 +2,7 @@ module tagion.basic.Types;
 
 import std.typecons : Typedef, TypedefType;
 
-enum BufferType
-{
+enum BufferType {
     PUBKEY, /// Public key buffer type
     PRIVKEY, /// Private key buffer type
     SIGNATURE, /// Signature buffer type
@@ -12,8 +11,7 @@ enum BufferType
     PAYLOAD /// Payload buffer type
 }
 
-enum BillType
-{
+enum BillType {
     NON_USABLE,
     TAGIONS,
     CONTRACTS
@@ -25,39 +23,52 @@ alias Signature = Typedef!(Buffer, null, BufferType.SIGNATURE.stringof);
 alias Privkey = Typedef!(Buffer, null, BufferType.PRIVKEY.stringof);
 
 alias Payload = Typedef!(Buffer, null, BufferType.PAYLOAD.stringof); // Buffer used fo the event payload
-version (none)
-{
+version (none) {
     alias Message = Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
     alias HashPointer = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 }
 
 /+
  Returns:
- true if T is a buffer
+ true if T is a const(ubyte)[]
 +/
 enum isBufferType(T) = is(T : const(ubyte[])) || is(TypedefType!T : const(ubyte[]));
 enum isBufferTypeDef(T) = is(TypedefType!T : const(ubyte[])) && !is(T : const(ubyte[]));
 
-static unittest
-{
+/*
+Returns:
+true if T is a Buffer (immutable(ubyte))
+*/
+enum isBuffer(T) = is(T : immutable(ubyte[])) || is(TypedefType!T : immutable(ubyte[]));
+
+static unittest {
     static assert(isBufferType!(immutable(ubyte[])));
     static assert(isBufferType!(immutable(ubyte)[]));
+    static assert(isBufferType!(const(ubyte)[]));
+    static assert(isBufferType!(ubyte[]));
+    static assert(!isBufferType!(char[]));
     static assert(isBufferType!(Pubkey));
+
+    static assert(isBufferTypeDef!Pubkey);
+    static assert(!isBufferTypeDef!(const(ubyte)[]));
+
+    static assert(isBuffer!Pubkey);
+    static assert(isBuffer!(immutable(ubyte)[]));
+    static assert(!isBuffer!(const(ubyte[])));
+
 }
 
 /++
  Genera signal
 +/
-enum Control
-{
+enum Control {
     LIVE = 1, /// Send to the ownerTid when the task has been started
     STOP, /// Send when the child task to stop task
     //    FAIL,   /// This if a something failed other than an exception
     END /// Send for the child to the ownerTid when the task ends
 }
 
-enum FileExtension
-{
+enum FileExtension {
     json = "json", // JSON File format
     hibon = "hibon", // HiBON file format
     wasm = "wasm", // WebAssembler binary format
@@ -72,14 +83,12 @@ enum FileExtension
 enum DOT = '.'; /// File extension separator
 
 @safe
-string withDot(FileExtension ext) pure nothrow
-{
+string withDot(FileExtension ext) pure nothrow {
 
     return DOT ~ ext;
 }
 
 @safe
-unittest
-{
+unittest {
     assert(FileExtension.markdown.withDot == ".md");
 }

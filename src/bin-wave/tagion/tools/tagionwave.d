@@ -21,16 +21,16 @@ import tagion.services.TagionService;
 import tagion.services.LoggerService;
 import tagion.services.TagionFactory;
 import tagion.GlobalSignals;
-import tagion.network.SSLOptions : OpenSSL, configureOpenSSL;
+import tagion.network.SSLServiceOptions : SSLCert, configureSSLCert;
 import tagion.tasks.TaskWrapper;
 
 mixin TrustedConcurrency;
 
 /**
- * Create configs for struct OpenSSL
+ * Create configs for struct SSLCert
  * @param openssl - struct to configure
  */
-void create_ssl(const(OpenSSL) openssl) {
+void create_ssl(const(SSLCert) openssl) {
     import std.algorithm.iteration : each;
     import std.file : exists, mkdirRecurse;
     import std.process : pipeProcess, wait, Redirect;
@@ -100,13 +100,13 @@ int _main(string[] args) {
             writeln(logo);
             defaultGetoptPrinter(
                     [
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] ", program),
-                format("%s <config.json>", program),
-            ].join("\n"),
-            main_args.options);
+                    "Documentation: https://tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...] ", program),
+                    format("%s <config.json>", program),
+                    ].join("\n"),
+                    main_args.options);
             return 0;
         }
 
@@ -156,7 +156,8 @@ int _main(string[] args) {
         service_options.pid_file.fwrite("export PID=%s\n".format(thisProcessID));
     }
 
-    configureOpenSSL(service_options.transaction.service.openssl);
+    configureSSLCert(service_options.transaction.service.cert);
+    configureSSLCert(service_options.logsubscription.service.cert);
 
     auto logger_service_tid = Task!LoggerTask(service_options.logger.task_name, service_options);
     import std.stdio : stderr;

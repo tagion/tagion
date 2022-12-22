@@ -1,11 +1,12 @@
-export MODE1_ROOT:=$(TESTBENCH)/mode1
+export MODE1_ROOT:=$(TESTLOG)/mode1
 #export MODE1_DART:=$(MODE1_ROOT)/dart.drt
 #export MODE1_CONFIG:=$(MODE1_ROOT)/tagionwave.json
 #export MODE1_SRC_CONFIG:=$(FUND)/mode1/tagionwave.json
 #export MODE1_LOG:=$(MODE1_ROOT)/mode1_script.log
+MODE1_BOOT=$(MODE1_ROOT)/boot.hibon
 MODE1_FLAGS:=-N 7 -t 300
 MODE1_FLAGS+=--net-mode=local
-MODE1_FLAGS+=--boot=$(MODE1_ROOT)/boot.hibon
+MODE1_FLAGS+=--boot=$(MODE1_BOOT)
 #MODE1_FLAGS+=--epochs=$(EPOCHS)
 
 ifdef INSCREEN
@@ -29,6 +30,7 @@ mode1-run-$1: export TAGIONLOG=$$(MODE1_LOG_$1)
 mode1-$1: DARTFILE=$$(MODE1_DART_$1)
 mode1-$1: target-tagionwave
 mode1-$1: $$(MODE1_ROOT)/.way
+#mode1-$1: $$(MODE1_RECCHAIN)/.way
 #mode1-$1: $$(MODE1_CONFIG)
 #mode1-$1: $$(MODE1_DART)
 
@@ -91,21 +93,14 @@ env-mode1: env-mode1-$1
 endef
 
 mode1: $(MODE1_ROOT)/.way
-mode1: tagionwave $(MODE1_DART)
+mode1: tagionwave $(MODE1_DART) mode1-unboot
 
 .PHONY: mode1
-testbench: mode1
+testnet: mode1
 
-# $(MODE1_DART): | dart
-# $(MODE1_DART): $(DARTDB)
-# 	$(PRECMD)
-# 	$(MKDIR) $(@D)
-# 	$(CP) $< $@
-
-# $(MODE1_CONFIG): $$(MODE1_ROOT)/.way
-# $(MODE1_CONFIG): $(MODE1_SRC_CONFIG)
-# 	$(PRECMD)
-# 	cp $< $@
+mode1-unboot:
+	$(RRECMD)
+	$(RM) $(MODE1_BOOT)
 
 help-mode1:
 	$(PRECMD)
@@ -124,13 +119,12 @@ env-mode1:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.kvp, MODE1_FLAGS,"$(MODE1_FLAGS)"}
+	${call log.kvp, MODE1_BOOT,"$(MODE1_BOOT)"}
 	${call log.env, MODE1_LIST,$(MODE1_LIST)}
 	${call log.close}
 
 .PHONY: env-mode1
-env-testbench: env-mode1
-
-#run: mode1
+env-testnet: env-mode1
 
 clean-mode1:
 	$(PRECMD)
@@ -140,7 +134,7 @@ clean-mode1:
 
 .PHONY: clean-mode1
 
-clean-testbench: clean-mode1
+clean-testnet: clean-mode1
 
 ${foreach mode1,$(MODE1_LIST),${call MODE1,$(mode1)}}
 

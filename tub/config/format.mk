@@ -1,6 +1,6 @@
 
 
-DFORMAT?=dfmt
+export DFORMAT?=dfmt
 
 # The .editorconfig is placed in the REPOROOT
 DFORMAT_FLAGS+= -c $(REPOROOT)/
@@ -13,7 +13,7 @@ ALL_DFILES=${shell find $(DSRC) -name "*.d"}
 ALL_DFILES_TMP=${addsuffix .tmp,$(ALL_DFILES)}
 
 
-format: $(CHANGED_FILES_TMP)
+format: $(CHANGED_DFILES_TMP)
 
 format-all: $(ALL_DFILES_TMP)
 

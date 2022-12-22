@@ -32,22 +32,20 @@ import tagion.tasks.TaskWrapper;
 
 mixin TrustedConcurrency;
 
-private
-{
+private {
     enum TIMESTAMP_WIDTH = 10;
     enum LOG_LEVEL_MAX_WIDTH = 5;
 
     enum LOG_FORMAT = "%-" ~ to!string(
-            TIMESTAMP_WIDTH) ~ "s | %-" ~ to!string(
-            LOG_LEVEL_MAX_WIDTH) ~ "s | %s: %s";
+                TIMESTAMP_WIDTH) ~ "s | %-" ~ to!string(
+                LOG_LEVEL_MAX_WIDTH) ~ "s | %s: %s";
 }
 
 /**
  * \struct LoggerTask
  * Struct represents LoggerService which handles logs and provides passing them to LogSubscriptionService
  */
-@safe struct LoggerTask
-{
+@safe struct LoggerTask {
     mixin TaskBasic;
 
     /** Storage of current log filters, received from LogSubscriptionService */
@@ -66,15 +64,12 @@ private
     /** Method that helps sending arguments to LogSubscriptionService 
      *      @param args - arbitrary list of arguments to send to service
      */
-    void sendToLogSubService(Args...)(Args args)
-    {
-        if (logSubscriptionTid is Tid.init)
-        {
-            logSubscriptionTid = locate(options.logSubscription.task_name);
+    void sendToLogSubService(Args...)(Args args) {
+        if (logSubscriptionTid is Tid.init) {
+            logSubscriptionTid = locate(options.logsubscription.task_name);
         }
 
-        if (logSubscriptionTid !is Tid.init)
-        {
+        if (logSubscriptionTid !is Tid.init) {
             logSubscriptionTid.send(args);
         }
     }
@@ -83,13 +78,11 @@ private
      *      @param info - log info to check
      *      \return boolean result of checking
      */
-    bool matchAnyFilter(LogInfo info)
-    {
+    bool matchAnyFilter(LogInfo info) {
         return commonLogFilters.any!(f => (f.match(info)));
     }
 
-    static string formatLog(LogLevel level, string task_name, string text)
-    {
+    static string formatLog(LogLevel level, string task_name, string text) {
         return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, level, task_name, text);
     }
 
@@ -97,36 +90,29 @@ private
      *      @param info - log info about passed log
      *      @param doc - log itself, that can be either TextLog or some HiBONRecord variable
      */
-    @TaskMethod void receiveLogs(immutable(LogInfo) info, immutable(Document) doc)
-    {
-        if (matchAnyFilter(info))
-        {
+    @TaskMethod void receiveLogs(immutable(LogInfo) info, immutable(Document) doc) {
+        if (matchAnyFilter(info)) {
             sendToLogSubService(info, doc);
         }
 
-        if (info.isTextLog && doc.hasMember(TextLog.label))
-        {
+        if (info.isTextLog && doc.hasMember(TextLog.label)) {
             string output = formatLog(info.level, info.task_name, doc[TextLog.label].get!string);
 
             // Output text log to file
-            if (logging)
-            {
+            if (logging) {
                 file.writeln(output);
             }
 
             // Output text log to console
-            if (options.logger.to_console)
-            {
+            if (options.logger.to_console) {
                 writeln(output);
-                if (options.logger.flush)
-                {
+                if (options.logger.flush) {
                     assumeTrusted!stdout.flush();
                 }
             }
 
             // Output error log
-            if (info.level & LogLevel.STDERR)
-            {
+            if (info.level & LogLevel.STDERR) {
                 assumeTrusted!stderr.writefln(output);
             }
         }
@@ -135,14 +121,11 @@ private
     /** Task method that receives filter updates from LogSubscriptionService
      *      @param filters - array of filter updates
      */
-    @TaskMethod void receiveFilters(LogFilterArray filters, LogFiltersAction action)
-    {
-        if (action == LogFiltersAction.ADD)
-        {
+    @TaskMethod void receiveFilters(LogFilterArray filters, LogFiltersAction action) {
+        if (action == LogFiltersAction.ADD) {
             commonLogFilters ~= filters.array;
         }
-        else
-        {
+        else {
             commonLogFilters = commonLogFilters.filter!(f => filters.array.canFind(f)).array;
         }
     }
@@ -150,13 +133,11 @@ private
     /** Method that triggered when service receives Control.STOP.
      *  Receiving this signal means that LoggerService should be stopped
      */
-    void onSTOP()
-    {
+    void onSTOP() {
         stop = true;
         file.writefln("%s stopped ", options.logger.task_name);
 
-        if (abort)
-        {
+        if (abort) {
             log.silent = true;
         }
     }
@@ -164,39 +145,33 @@ private
     /** Method that triggered when service receives Control.LIVE.
      *  Receiving this signal means that LogSubscriptionService successfully running
      */
-    void onLIVE()
-    {
+    void onLIVE() {
         writeln("LogSubscriptionService is working...");
     }
 
     /** Method that triggered when service receives Control.STOP.
      *  Receiving this signal means that LogSubsacriptionService successfully stopped
      */
-    void onEND()
-    {
+    void onEND() {
         writeln("LogSubscriptionService was stopped");
     }
 
     /** Main method that starts service
      *      @param options - service options
      */
-    void opCall(immutable(Options) options)
-    {
+    void opCall(immutable(Options) options) {
         this.options = options;
         setOptions(options);
 
         pragma(msg, "fixme(ib) Pass mask to Logger to not pass not necessary data");
 
-        if (options.logSubscription.enable)
-        {
+        if (options.logsubscription.enable) {
             logSubscriptionTid = spawn(&logSubscriptionServiceTask, options);
         }
-        scope (exit)
-        {
+        scope (exit) {
             import std.stdio;
 
-            if (logSubscriptionTid !is Tid.init)
-            {
+            if (logSubscriptionTid !is Tid.init) {
                 logSubscriptionTid.send(Control.STOP);
                 if (receiveOnly!Control == Control.END) // TODO: can't receive END when stopping after logservicetest, fix it
                 {
@@ -207,19 +182,16 @@ private
         }
 
         logging = options.logger.file_name.length != 0;
-        if (logging)
-        {
+        if (logging) {
             file.open(options.logger.file_name, "w");
             file.writefln("Logger task: %s", options.logger.task_name);
             file.flush;
         }
 
         ownerTid.send(Control.LIVE);
-        while (!stop && !abort)
-        {
+        while (!stop && !abort) {
             receive(&control, &receiveLogs, &receiveFilters);
-            if (options.logger.flush && logging)
-            {
+            if (options.logger.flush && logging) {
                 file.flush();
             }
         }
