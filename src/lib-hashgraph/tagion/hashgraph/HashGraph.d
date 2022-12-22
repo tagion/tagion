@@ -1098,6 +1098,7 @@ class HashGraph
                     sdt_t _current_time;
                 }
 
+
                 @property
                 void time(const(sdt_t) t)
                 {
@@ -1110,6 +1111,10 @@ class HashGraph
                     return _current_time;
                 }
 
+                void start_listening(){
+                    // NO IMPLEMENTATION NEEDED
+                }
+                
                 bool isValidChannel(const(Pubkey) channel) const pure nothrow
                 {
                     return (channel in channel_queues) !is null;
