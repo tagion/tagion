@@ -34,6 +34,7 @@ interface NetCallbacks : EventMonitorCallbacks
 @safe
 interface P2pNet
 {
+    void start_listening();
     void send(const(Pubkey) channel, const(HiRPC.Sender) doc);
     void close();
 }
