@@ -1,0 +1,62 @@
+@startuml Transaction Creation Sequence
+
+skinparam Style strictuml
+skinparam SequenceMessageAlign center
+hide empty description
+title Transaction Creation
+
+actor user
+participant tagionwallet as wallet
+participant SecureWallet as secwallet
+participant TransactionService as transerv
+participant SmartScript as smartscript
+participant DARTSyncService as dartsync
+database DART as dart
+participant TagionService as tagion
+
+activate transerv
+activate dartsync
+activate dart
+activate tagion
+
+activate user
+activate wallet
+
+user -> wallet : --pay=invoice_file.hibon
+
+deactivate user 
+
+activate secwallet
+
+wallet -> secwallet : payment(invoice, \nref signed_contract)
+
+secwallet -> secwallet : checkLogin()
+secwallet -> secwallet : check is enough amount
+secwallet -> secwallet : sign signed_contract
+
+deactivate secwallet
+
+wallet -> wallet : hirpc.transaction(signed_contract)
+
+wallet -> transerv : send(hirpc_transaction)
+
+transerv -> dartsync : requestInputs(signed_contract.contract.inputs)
+dartsync -> dart : dartRead(inputs)
+dartsync --> transerv : send Recorder with dartRead(inputs) result
+
+transerv -> transerv : add bills from result \nRecorder to signed_contract
+
+activate smartscript
+transerv -> smartscript : check(net, signed_contract);
+deactivate smartscript
+
+transerv -> tagion : send(signed_contract)
+
+transerv --> wallet : send(empty_response)
+
+deactivate wallet
+
+tagion -> tagion : count_transactions++
+tagion -> tagion : payload_queue.write(signed_contract)
+
+@enduml

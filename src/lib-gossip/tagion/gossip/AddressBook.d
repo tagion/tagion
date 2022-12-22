@@ -31,7 +31,7 @@ enum lockext = "lock";
 /**
  * Lock file
  * @param filename - file to lock
- */    
+ */
 void lock(string filename)
 {
     import std.file : fwrite = write;
@@ -92,9 +92,9 @@ synchronized class AddressBook
     }
 
     /** used for lock, unlock file */
-    enum max_count = 3;
+    enum max_count = 30;
     /** used for lock, unlock file */
-    protected int timeout = 300;
+    protected int timeout = 3000;
     /** nodes amount */
     protected size_t nodes;
 
@@ -139,7 +139,7 @@ synchronized class AddressBook
         }
         return cast(immutable) result;
     }
-    
+
     /**
      * Overwrite node addresses associative array
      * @param addrs - array to overwrite
@@ -247,8 +247,6 @@ synchronized class AddressBook
 
         log.trace("AddressBook.opIndexAssign %s:%d", pkey.cutHex, pkey.length);
         addresses[pkey] = addr;
-        log.trace("After AddressBook.opIndexAssign %s:%d", pkey.cutHex, pkey.length);
-
     }
 
     /**
@@ -416,7 +414,6 @@ struct NodeAddress
             }
         }
         catch (Exception e) {
-            // log(e.msg);
             log.fatal(e.msg);
         }
     }
@@ -438,7 +435,6 @@ struct NodeAddress
         const firstpartId = addr.indexOf('{') + 1;
         const secondpartId = addr.indexOf(':');
         result = addr[firstpartAddr .. secondpartAddr] ~ p2p_token ~ addr[firstpartId .. secondpartId];
-        // log("address: %s \n after: %s", addr, result);
         return result;
     }
 

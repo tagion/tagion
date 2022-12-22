@@ -7,6 +7,10 @@ $(REVISION_FILE):
 	echo '$(GIT_HASH)' >> $@
 	echo '$(GIT_REVNO)' >> $@
 	echo '$(GIT_DATE)' >> $@
+	echo '$(GIT_USER)' >> $@
+	echo '$(GIT_EMAIL)' >> $@
+	echo '$(CC_VERSION)' >> $@
+	echo '$(DC_VERSION)' >> $@
 
 revision: $(REVISION_FILE)
 #	echo $(REVISION_FILE)

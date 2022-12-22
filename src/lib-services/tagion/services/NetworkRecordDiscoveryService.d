@@ -47,13 +47,10 @@ void networkRecordDiscoveryService(
 
         scope (exit)
         {
-            log("exit");
             ownerTid.prioritySend(Control.END);
         }
         log.register(task_name);
         immutable inner_task_name = format("%s-%s", task_name, "internal");
-        const net = new StdHashNet();
-        const internal_hirpc = HiRPC(null);
 
         Tid bootstrap_tid;
 
@@ -102,19 +99,11 @@ void networkRecordDiscoveryService(
         while (!stop)
         {
             receive(
-                //&receiveAddrBook,
-                (DiscoveryRequestCommand request) {
-                log("send request: %s", request);
-                bootstrap_tid.send(request);
-            },
-                (DiscoveryControl state) {
-                log.trace("state %s", state);
-                ownerTid.send(state);
-            },
+                (DiscoveryRequestCommand request) { bootstrap_tid.send(request); },
+                (DiscoveryControl state) { ownerTid.send(state); },
                 (Control control) {
                 if (control is Control.STOP)
                 {
-                    log("stop");
                     stop = true;
                 }
             });

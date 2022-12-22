@@ -10,10 +10,12 @@ import std.algorithm.mutation : remove;
 import tagion.basic.Types : Control;
 import tagion.basic.Basic : TrustedConcurrency;
 import tagion.logger.Logger;
+import tagion.logger.LogRecords : LogFilter, LogFilterArray, LogFiltersAction, LogInfo;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
 import tagion.utils.Fingerprint : Fingerprint;
 import tagion.services.LoggerService;
 import tagion.dart.Recorder;
+import tagion.hibon.Document : Document;
 
 alias Recorder = RecordFactory.Recorder;
 
@@ -178,6 +180,7 @@ unittest
         {
             register(task_name, thisTid);
             log.set_logger_task(task_name);
+            writeln("Register: ", task_name);
         }
         else
         {
@@ -195,7 +198,7 @@ unittest
             }
             scope (failure)
             {
-                log.trace(format("Fail: TaskWrapper<%s>", task_name));
+                log.warning(format("Fail: TaskWrapper<%s>", task_name));
             }
             scope (exit)
             {
@@ -296,6 +299,8 @@ version (unittest) @safe struct FakeTask
 
     enum main_task = "taskwrapperunittest";
 
+    log.silent = true;
+
     Options options;
     setDefaultOption(options);
 
@@ -335,4 +340,6 @@ version (unittest) @safe struct FakeTask
     pragma(msg, "fixme(ib): check for 'locate(task_name)' after adding application tests");
 
     // TODO: add tests for tasks table
+
+    log.silent = false;
 }
