@@ -78,7 +78,7 @@ struct Options {
     struct EpochDumpSettings {
         string task_name;
         string transaction_dumps_directory;
-        bool disable_transaction_dumping;
+        bool enabled;
         mixin JSONCommon;
     }
 
@@ -217,6 +217,7 @@ struct Options {
     struct RecorderChain {
         string task_name; /// Name of the recorder task
         string folder_path; /// Folder used for the recorder service files, default empty path means this feature is disabled
+        bool enabled;
         mixin JSONCommon;
     }
 
@@ -350,7 +351,7 @@ static ref auto all_getopt(
         "boot", format("Shared boot file: default: %s", options.path_to_shared_info), &(options.path_to_shared_info),
         "passphrasefile", "File with setted passphrase for keys pair", &(options.path_to_stored_passphrase),
         "recorderchain", "Path to folder with recorder chain blocks stored for DART recovery", &(options.recorder_chain.folder_path),
-        "disabledumping", "Not perform transaction dump", &(options.epoch_dump.disable_transaction_dumping),
+        "epoch-dump-enabled", "Not perform transaction dump", &(options.epoch_dump.enabled),
         "transactiondumpfolder", "Set separative folder for transaction dump", &(options.epoch_dump.transaction_dumps_directory) 
     );
 }
@@ -497,11 +498,13 @@ static setDefaultOption(ref Options options)
     with (options.recorder_chain)
     {
         task_name = "recorder-service";
+        enabled = false;
     }
     // Epoch dumping
     with(options.epoch_dump)
     {
         task_name = "epoch-dump-task";
+        enabled = false;
     }
     // Discovery
     with (options.discovery)

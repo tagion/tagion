@@ -307,13 +307,13 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         log.trace("Before startinf monitor and transaction addressbook.numOfActiveNodes : %d", addressbook
                 .numOfActiveNodes);
 
-        if (!opts.recorder_chain.folder_path.empty) {
+        if (opts.recorder_chain.enabled) {
             Task!RecorderTask(opts.recorder_chain.task_name, opts);
             assert(receiveOnly!Control == Control.LIVE);
             recorder_service_tid = locate(opts.recorder_chain.task_name);
         }
 
-        if (!opts.epoch_dump.disable_transaction_dumping) {
+        if (opts.epoch_dump.enabled) {
             auto task_name = opts.epoch_dump.task_name;
             Task!EpochDumpTask(task_name, opts);
             assert(receiveOnly!Control == Control.LIVE);

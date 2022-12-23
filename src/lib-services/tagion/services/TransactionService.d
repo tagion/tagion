@@ -94,28 +94,22 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             bool agent(FiberRelay ssl_relay) {
                 import tagion.hibon.HiBONJSON;
 
-                @trusted const(Document) receivessl() nothrow {
-                    try {
-                        import tagion.hibon.Document;
-                        import tagion.hibon.HiBONRecord;
+                @trusted const(Document) receivessl() {
+                    import tagion.hibon.Document;
+                    import tagion.hibon.HiBONRecord;
 
-                        immutable buffer = ssl_relay.receive;
-                        log("buffer receiver %d", buffer.length);
-                        const result = Document(buffer);
-                        bool check_doc(const Document main_doc,
-                                const Document.Element.ErrorCode error_code,
-                                const(Document.Element) current,
-                                const(Document.Element) previous) nothrow @safe {
-                            return false;
-                        }
+                    immutable buffer = ssl_relay.receive;
+                    log("buffer receiver %d", buffer.length);
+                    const result = Document(buffer);
+                    bool check_doc(const Document main_doc,
+                            const Document.Element.ErrorCode error_code,
+                            const(Document.Element) current,
+                            const(Document.Element) previous) nothrow @safe {
+                        return false;
+                    }
 
-                        result.valid(&check_doc);
-                        return result;
-                    }
-                    catch (Exception t) {
-                        log.warning("Exception caught: %s", t);
-                    }
-                    return Document();
+                    result.valid(&check_doc);
+                    return result;
                 }
 
                 Document doc;
@@ -273,6 +267,10 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         }
 
                     }
+                }
+                catch (SocketTimeout e) {
+                    log.error("Socket timeout: %s", e.msg);
+                    ssl_relay.shutdown;
                 }
                 catch (TagionException e) {
                     log.error("Bad contract: %s", e.msg);
