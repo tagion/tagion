@@ -1,0 +1,16 @@
+@startuml Epoch dump service listening sequence
+
+skinparam Style strictuml
+participant TranscriptService
+participant EpochDumpService
+participant EpochChain
+queue storage
+
+TranscriptService -> EpochDumpService : send(Document transactions, Buffer bullseye)
+EpochDumpService -> EpochChain : getLastBlock()
+EpochChain --> EpochDumpService : last_block
+EpochDumpService -> EpochDumpService : new EpochChainBlock(transactions, last_block.fingerprint, bullseye, net);
+EpochDumpService -> EpochChain : append(block)
+EpochChain -> storage : write(block)
+
+@enduml

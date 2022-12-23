@@ -1,0 +1,16 @@
+@startuml Epoch dump service sequence
+
+skinparam Style strictuml
+participant TagionService
+participant EpochDumpService
+
+TagionService -> EpochDumpService : spawn(run!EpochDumpTask, options)
+activate EpochDumpService
+EpochDumpService -> EpochDumpService : new StdHashNet
+EpochDumpService -> EpochDumpService :  create storage
+EpochDumpService -> EpochDumpService : new EpochChain(storage)
+EpochDumpService -> TagionService : send Control.LIVE
+alt loop
+EpochDumpService -> EpochDumpService : listening dumpEpoch
+end
+@enduml
