@@ -192,7 +192,7 @@ jobs:
         run: |
             SCENARIO=${{ matrix.scenario }}
             echo "RUN SCENARIO: $SCENARIO"
-            BRANCH=$(echo "${{ github.head_ref }} | tr / _)
+            BRANCH=$(echo "${{ github.head_ref }}" | tr / _)
             CONTAINER_NAME="$BRANCH_$SCENARIO"
             mkdir -p /tmp/scenario-result/${{ github.head_ref }}/$SCENARIO
             docker run -d --rm --name $CONTAINER_NAME -v /tmp/scenario-result/${{ github.head_ref }}/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
