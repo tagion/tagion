@@ -1,0 +1,30 @@
+@startuml
+
+skinparam Style strictuml
+skinparam SequenceMessageAlign center
+hide empty description
+title Recorder recordertask Flow Diagram
+
+participant task
+participant RecorderTask as recordertask
+participant RecordFactory as factory
+participant RecorderChain as chain
+participant RecorderChainBlock as block
+participant RecorderChainFileStorage as storage
+participant StdHashNet as net
+
+recordertask -> recordertask : opCall(opts)
+recordertask -> storage : new RecorderChainFileStorage(folder_path, net)
+recordertask -> recordertask : new RecorderChain(storage)
+recordertask -> task : send(Control.LIVE);
+
+loop while(!stop)
+    recordertask -> recordertask : receive(recorder, bullseye)
+    note right : "Waiting for receive" 
+end
+recordertask -> recordertask : receiveRecorder(recorder, bullseye)
+recordertask -> chain : last_block = getLastBlock()
+recordertask -> block : new RecorderChainBlock(recorder, last_block, bullseye, net)
+recordertask -> chain : append(block)
+
+@enduml
