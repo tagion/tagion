@@ -271,7 +271,6 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 }
                 catch (SocketTimeout e) {
                     log.error("Socket timeout: %s", e.msg);
-                    ssl_relay.shutdown;
                 }
                 catch (TagionException e) {
                     log.error("Bad contract: %s", e.msg);
