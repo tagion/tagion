@@ -1,0 +1,41 @@
+@startuml
+
+skinparam Style strictuml
+skinparam SequenceMessageAlign center
+hide empty description
+title Recorder receiveRecorder sequence Diagram
+
+participant TranscriptService as task
+participant EpochDumpService as epochdump
+participant DumpRecorderBlock as dump
+participant RecorderTask as recordertask
+participant RecordFactory as factory
+participant RecorderChain as chain
+participant RecorderChainBlock as block
+participant RecorderChainFileStorage as storage
+
+
+alt (recorder.length > 0)
+    task -> task : recorder.dump()
+    task -> task : bullseye = modifyDart(recorder)
+    alt transaction dumping is disabled
+        task->epochdump : send(contracts_dump, bullseye)
+    end
+    task -> factory : unique_recorder = uniqueRecorder(recorder)
+    task -> dump : dumpRecorderBlock(unique_recorder, bullseye)
+    alt recorder_tid is Tid.init
+        dump -> dump : recorder_tid = locate(recorder_task_name)
+    end
+    dump -> recordertask : send(recorder, dart_bullseye)
+else log("received empty epoch") 
+    
+    
+    
+end
+
+recordertask -> recordertask : receiveRecorder(recorder, bullseye)
+recordertask -> chain : last_block = getLastBlock()
+recordertask -> block : new RecorderChainBlock(recorder, last_block, bullseye, net)
+recordertask -> chain : append(block)
+
+@enduml
