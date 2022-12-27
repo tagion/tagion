@@ -466,9 +466,7 @@ static void async_send(
                 log.fatal(e.msg);
                 concurrency.send(concurrency.ownerTid, channel);
             }
-            final {
-                log.trace("Sent to channel: %s", channel.cutHex);
-            }
+            log.trace("Sent to channel: %s", channel.cutHex);
         }
 
         auto stop = false;
@@ -513,7 +511,7 @@ static void async_send(
             },
                 (Response!(p2plib.ControlCode.Control_RequestHandled) resp) {
                 import tagion.hibon.Document;
-
+                log.trace("Data received");
                 auto doc = Document(resp.data);
                 const receiver = hirpc.receive(doc);
                 Pubkey received_pubkey = receiver.pubkey;
