@@ -1,6 +1,6 @@
 ADRDOX:=doc2
 
-env-doc:
+env-docs:
 	$(PRECMD)
 	$(call log.header, $@ :: env)
 	$(call log.kvp, ADRDOX, $(ADRDOX))
@@ -9,7 +9,7 @@ env-doc:
 
 env: env-doc
 
-clean-doc:
+clean-docs:
 	$(PRECMD) rm -rv $(BUILDDOC)
 	@echo cleaning docs
 
@@ -17,7 +17,7 @@ clean-doc:
 
 clean: clean-doc
 
-help-doc:
+help-docs:
 	$(PRECMD)
 	${call log.header, $@ :: help}
 	${cal llog.help, "make docs", "Create the docs with addrdox"}
@@ -26,6 +26,6 @@ help-doc:
 
 help: help-doc
 
-doc:
+docs:
 	@echo making docs
 	$(PRECMD) doc2 -i --skeleton ${DTUB}/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC)
