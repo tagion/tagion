@@ -466,6 +466,9 @@ static void async_send(
                 log.fatal(e.msg);
                 concurrency.send(concurrency.ownerTid, channel);
             }
+            final {
+                log.trace("Sent to channel: %s", channel.cutHex);
+            }
         }
 
         auto stop = false;
@@ -504,11 +507,9 @@ static void async_send(
                 connectionPool.add(resp.key, resp.stream, true);
             },
                 (Response!(p2plib.ControlCode.Control_Disconnected) resp) {
-                synchronized (connectionPoolBridge)
-                {
+                    log("Client Disconected key: %d", resp.key);
                     connectionPool.close(cast(void*) resp.key);
                     connectionPoolBridge.removeConnection(resp.key);
-                }
             },
                 (Response!(p2plib.ControlCode.Control_RequestHandled) resp) {
                 import tagion.hibon.Document;
@@ -516,6 +517,7 @@ static void async_send(
                 auto doc = Document(resp.data);
                 const receiver = hirpc.receive(doc);
                 Pubkey received_pubkey = receiver.pubkey;
+                log("*** received from: %s", received_pubkey.cutHex);
                 const streamId = connectionPoolBridge[received_pubkey];
                 if (!streamId)
                 {
