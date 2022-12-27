@@ -1,0 +1,18 @@
+@startuml Transaction service healthcheck diagram
+
+skinparam Style strictuml
+
+participant TagionService
+participant TransactionService
+
+activate TagionService
+activate TransactionService
+collections "Nodes/Wallet/Operator" as Connection
+
+TransactionService -> TransactionService : listen socket
+Connection -> TransactionService : "healthcheck"
+TransactionService --> TagionService : send(taskname, data)
+TransactionService -> TransactionService : wait answer
+Connection --> TransactionService : response
+TransactionService -> Connection  : send(response)
+@enduml

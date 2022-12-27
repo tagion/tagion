@@ -1,0 +1,25 @@
+@startuml Transaction service payment diagram
+
+skinparam Style strictuml
+
+participant TagionService
+participant TransactionService
+participant DartSynchronizeService
+collections "Wallet" as Connection
+
+activate TagionService
+activate TransactionService
+TransactionService -> TransactionService : listen socket
+Connection -> TransactionService : "transaction"
+alt Old transaction
+TransactionService --> DartSynchronizeService : send(task_name, send_data)
+TransactionService -> TransactionService : wait answer
+TransactionService --> TagionService : send(payload)
+TransactionService -> Connection : send (doc)
+end
+alt New transaction
+TransactionService --> DartSynchronizeService : send(task_name, send_data)
+TransactionService --> TagionService : send(payload)
+TransactionService -> Connection : send (doc)
+end
+@enduml

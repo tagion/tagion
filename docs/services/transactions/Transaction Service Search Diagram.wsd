@@ -1,0 +1,17 @@
+@startuml Transaction service search diagram
+
+skinparam Style strictuml
+
+participant TransactionService
+participant DartSynchronizeService
+collections "Nodes/Wallet/Operator" as Connection
+
+activate TransactionService
+TransactionService -> TransactionService : listen socket
+Connection -> TransactionService : "search"
+TransactionService --> DartSynchronizeService : send(task_name, send_data)
+TransactionService -> TransactionService : wait answer
+Connection --> TransactionService : response
+TransactionService -> Connection   : send(response)
+
+@enduml
