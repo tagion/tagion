@@ -1,3 +1,6 @@
+/*
+	Multi-client server API
+*/
 module tagion.network.ServerAPI;
 
 import core.time : dur, Duration;
