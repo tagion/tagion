@@ -21,7 +21,7 @@ help:
 endif
 
 
-match=${shell $(SCRIPT)/check_regex.d $@ -r'^(list-\w+|env-\w+|env|help-\w+|help|clean-\w+|clean|proper-\w+|proper|ddeps|dfiles|dstep|format)$$'}
+match=${shell $(SCRIPT)/check_regex.d $@ -r'^(list-\w+|env-\w+|env|help-\w+|help|clean-\w+|clean|proper-\w+|proper|ddeps|dfiles|dstep|format|doc)$$'}
 
 ifdef RECURSIVE
 ${error This makefile should not be called recursively}
