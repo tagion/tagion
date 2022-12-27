@@ -5,14 +5,26 @@ env-doc:
 	$(call log.header, $@ :: env)
 	$(call log.kvp, ADRDOX, $(ADRDOX))
 
+.PHONY: env-doc
+
+env: env-doc
+
 clean-doc:
 	$(PRECMD) rm -rv $(BUILDDOC)
 	@echo cleaning docs
+
+.PHONY: clean-doc
+
+clean: clean-doc
 
 help-doc:
 	$(PRECMD)
 	${call log.header, $@ :: help}
 	${cal llog.help, "make docs", "Create the docs with addrdox"}
+
+.PHONY: help-doc
+
+help: help-doc
 
 doc:
 	@echo making docs
