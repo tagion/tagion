@@ -139,7 +139,7 @@ include $(DTUB)/config/install.mk
 #
 # Install doc tool
 #
-include $(DTUB)/docs.mk
+include $(DTUB)/config/docs.mk
 
 #
 # Enable cleaning
