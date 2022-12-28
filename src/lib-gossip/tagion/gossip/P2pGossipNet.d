@@ -516,7 +516,7 @@ static void async_send(
                 auto doc = Document(resp.data);
                 const receiver = hirpc.receive(doc);
                 Pubkey received_pubkey = receiver.pubkey;
-                log("*** received from: %s", received_pubkey.cutHex);
+                log("*** received from: %s\n %s\n", received_pubkey.cutHex, doc.toJSON);
                 const streamId = connectionPoolBridge[received_pubkey];
                 if (!streamId)
                 {

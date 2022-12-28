@@ -478,11 +478,12 @@ class Round
         {
             auto round_to_be_decided = last_decided_round._next;
 
+            const votes_mask = BitMask(round_to_be_decided.events
+                                    .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
+                                    .map!((e) => e.node_id));
+            log.trance("\n VOTES MASK: \n %s \n %s\n ", votes_mask, hashgraph.channels.map!(a=>a.toHexString));
             if (hashgraph.can_round_be_decided(round_to_be_decided))
             {
-                const votes_mask = BitMask(round_to_be_decided.events
-                        .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
-                        .map!((e) => e.node_id));
                 if (votes_mask.isMajority(hashgraph))
                 {
                     const round_decided = votes_mask[]
