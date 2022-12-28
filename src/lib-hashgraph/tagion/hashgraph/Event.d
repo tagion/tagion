@@ -481,7 +481,7 @@ class Round
             const votes_mask = BitMask(round_to_be_decided.events
                                     .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
                                     .map!((e) => e.node_id));
-            log.trance("\n VOTES MASK: \n %s \n %s\n ", votes_mask, hashgraph.channels.map!(a=>a.toHexString));
+            log.trace("\n VOTES MASK: \n %s \n %s\n ", votes_mask, hashgraph.channels.map!(a=>a.toHexString));
             if (hashgraph.can_round_be_decided(round_to_be_decided))
             {
                 if (votes_mask.isMajority(hashgraph))
