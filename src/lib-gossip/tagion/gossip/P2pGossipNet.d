@@ -44,6 +44,7 @@ import tagion.utils.StdTime;
 import tagion.dart.DART;
 import tagion.communication.HiRPC;
 import std.random : Random, unpredictableSeed, uniform;
+import tagion.hibon.HiBONJSON;
 
 import std.datetime;
 
