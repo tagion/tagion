@@ -431,7 +431,7 @@ static void async_send(
 
         void send_to_channel(immutable(Pubkey) channel, Document doc)
         {
-            log.trace("Sending to channel: %s", channel.cutHex);
+            log.trace("Sending to channel: %s \n %s \n", channel.cutHex, doc.toJSON);
             auto streamId = connectionPoolBridge[channel];
             if (streamId == 0 || !connectionPool.contains(streamId))
             {
