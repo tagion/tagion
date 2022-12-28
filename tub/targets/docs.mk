@@ -1,4 +1,4 @@
-ADRDOX:=doc2
+ADRDOX:=dub run adrdox --
 
 env-docs:
 	$(PRECMD)
@@ -28,4 +28,4 @@ help: help-doc
 
 docs:
 	@echo making docs
-	$(PRECMD) doc2 -i --skeleton ${DTUB}/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC)
+	$(PRECMD) $(ADRDOX) -i --skeleton $(DTUB)/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC)
