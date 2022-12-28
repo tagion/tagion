@@ -13,6 +13,7 @@ main: help
 #
 export DSRC := $(abspath $(REPOROOT)/src)
 export DTUB := $(abspath $(REPOROOT)/tub)
+export TARGETS := $(DTUB)/targets
 export BDD := $(abspath $(REPOROOT)/bdd)
 ifndef REPOROOT
 ${error REPOROOT must be defined}
@@ -35,8 +36,8 @@ include $(DTUB)/utilities/dir.mk
 include $(DTUB)/utilities/log.mk
 
 include $(DTUB)/tools/*.mk
-include $(DTUB)/config/git.mk
-include $(DTUB)/config/commands.mk
+include $(TARGETS)/git.mk
+include $(TARGETS)/commands.mk
 
 prebuild:
 	$(PRECMD)
@@ -68,11 +69,11 @@ PLATFORM?=$(HOST)
 #
 # Platform
 #
-include $(DTUB)/config/dirs.mk
+include $(DTUB)/targets/dirs.mk
 #
 # Prebuild
 #
-#include $(DTUB)/config/prebuild.mk
+#include $(TARGETS)/prebuild.mk
 ifndef PREBUILD
 -include $(DBUILD)/gen.dfiles.mk
 -include $(DBUILD)/gen.ddeps.mk
@@ -85,23 +86,23 @@ endif
 #
 include $(DTUB)/ways.mk
 include $(DTUB)/gitconfig.mk
-include $(DTUB)/config/submodules.mk
-# include $(DTUB)/config/druntime.mk
-include $(DTUB)/config/submake.mk
-include $(DTUB)/config/host.mk
-include $(DTUB)/config/cross.mk
-include $(DTUB)/config/platform.mk
-include $(DTUB)/config/auxiliary.mk
+include $(TARGETS)/submodules.mk
+# include $(TARGETS)/druntime.mk
+include $(TARGETS)/submake.mk
+include $(TARGETS)/host.mk
+include $(TARGETS)/cross.mk
+include $(TARGETS)/platform.mk
+include $(TARGETS)/auxiliary.mk
 include $(DTUB)/devnet/devnet.mk
 
 #
 # Packages
 #
-include $(DTUB)/config/compiler.mk
-include $(DTUB)/config/dstep.mk
-include $(DTUB)/config/ddeps.mk
-include $(DTUB)/config/bins.mk
-include $(DTUB)/config/format.mk
+include $(TARGETS)/compiler.mk
+include $(TARGETS)/dstep.mk
+include $(TARGETS)/ddeps.mk
+include $(TARGETS)/bins.mk
+include $(TARGETS)/format.mk
 
 include $(DTUB)/compile.mk
 
@@ -118,7 +119,7 @@ include $(DTUB)/compile.mk
 -include $(REPOROOT)/config.*.mk
 -include $(REPOROOT)/config.mk
 
-include $(DTUB)/config/ldc-build-runtime.mk
+include $(TARGETS)/ldc-build-runtime.mk
 
 #
 # Testbench
@@ -133,13 +134,13 @@ include $(DTUB)/testbench/test.mk
 #
 # Install main tool
 #
-include $(DTUB)/config/revision.mk
-include $(DTUB)/config/install.mk
+include $(TARGETS)/revision.mk
+include $(TARGETS)/install.mk
 
 #
 # Install doc tool
 #
-include $(DTUB)/config/docs.mk
+include $(TARGETS)/docs.mk
 
 #
 # Enable cleaning
