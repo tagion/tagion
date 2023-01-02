@@ -4,7 +4,6 @@ import tagion.testbench.wallet;
 import tagion.hibon.HiBONRecord : fwrite;
 
 import tagion.tools.Basic;
-import tagion.testbench.wallet;
 
 mixin Main!(_main, "wallet");
 

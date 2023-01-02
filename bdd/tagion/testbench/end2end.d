@@ -11,8 +11,9 @@ mixin Main!(_main, "end2end_features");
 int _main(string[] args)
 {
 
-    auto create_wallets = automation!(create_wallets)();
-    auto create_wallets_context = create_wallets.run;
+    auto create_wallets_feature = automation!(create_wallets)();
+    create_wallets_feature.GenerateNWallets(7);
+    auto create_wallets_context = create_wallets_feature.run;
     return 0;
 
 }

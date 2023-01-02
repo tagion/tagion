@@ -4,6 +4,7 @@ TESTMAIN?=testbench
 BDDS+=bdd_wallets
 BDDS+=ssl_echo_server
 BDDS+=ssl_server
+BDDS+=end2end
 
 run-ssl_echo_server: sslextras
 
