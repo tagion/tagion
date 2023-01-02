@@ -1,3 +1,5 @@
+[create_wallets.md](tagion/testbench/transaction_features/create_wallets.md)
+
 [Collector_service.md](tagion/testbench/services/Collector_service.md)
 
 [Transaction_service.md](tagion/testbench/services/Transaction_service.md)
@@ -51,8 +53,6 @@
 [Implement_the_epoch_block_chain.md](tagion/testbench/backlog/Implement_the_epoch_block_chain.md)
 
 [Add_global_variables.md](tagion/testbench/backlog/Add_global_variables.md)
-
-[create_wallets.md](tagion/testbench/end2end_features/create_wallets.md)
 
 [HiRPC_format_check.md](tagion/testbench/communication/HiRPC_format_check.md)
 

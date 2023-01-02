@@ -10,7 +10,7 @@ int main(string[] args) {
     import bdd_services = tagion.testbench.bdd_services;
     import bdd_wallets = tagion.testbench.bdd_wallets;
     import ssl_echo_server = tagion.testbench.ssl_echo_server;
-    import end2end = tagion.testbench.end2end;
+    import transaction = tagion.testbench.transaction;
 
     alias alltools = AliasSeq!(
             ssl_server,
@@ -18,7 +18,7 @@ int main(string[] args) {
             bdd_services,
             bdd_wallets,
             ssl_echo_server,
-            end2end,
+            transaction,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
