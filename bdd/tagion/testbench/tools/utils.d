@@ -1,7 +1,6 @@
-module tagion.testbench.extras.utils;
+module tagion.testbench.tools.utils;
 
 struct Genesis {
 	int bills;
 	int amount;
 }
-

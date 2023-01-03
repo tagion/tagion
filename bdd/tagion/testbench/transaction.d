@@ -6,7 +6,7 @@ import tagion.hibon.HiBONRecord : fwrite;
 
 import tagion.tools.Basic;
 import std.traits: moduleName;
-import tagion.testbench.extras.utils: Genesis;
+import tagion.testbench.tools.utils: Genesis;
 
 mixin Main!(_main, "transaction_features");
 
@@ -16,7 +16,7 @@ int _main(string[] args)
 
 	const number_of_wallets = 7;
 
-	Genesis[] genesis = [
+	Genesis[number_of_wallets] genesis = [
 		Genesis(10_000, 10), 
 		Genesis(10_000, 10), 
 		Genesis(10_000, 10), 
