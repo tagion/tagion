@@ -17,13 +17,13 @@ int _main(string[] args)
 	const number_of_wallets = 7;
 
 	const genesis = [
-		Genesis(10_000, 10), 
-		Genesis(10_000, 10), 
-		Genesis(10_000, 10), 
-		Genesis(10_000, 10), 
-		Genesis(10_000, 10), 
-		Genesis(10_000, 10), 
-		Genesis(10_000, 10), 
+		Genesis(10, 10_000), 
+		Genesis(10, 10_000), 
+		Genesis(10, 10_000), 
+		Genesis(10, 10_000), 
+		Genesis(10, 10_000), 
+		Genesis(10, 10_000), 
+		Genesis(10, 10_000), 
 	];
 
     auto create_wallets_feature = automation!(create_wallets)();

@@ -64,7 +64,7 @@ class GenerateNWallets
                 errors ~= line.idup;
 
             check(errors.length == 0, format("Error: %s", errors));
-
+            writefln("%s", wallet_path);
             wallet_paths ~= wallet_path;
         }
 
