@@ -127,7 +127,7 @@ clean-reports:
 
 clean-bdd: clean-bddtest clean-reports
 	$(PRECMD)
-	@rm $(DBIN)/behaviour $(DBIN)/behaviour.o
+	@rm $(BEHAVIOUR) $(BEHAVIOUR).o
 
 # Delete hibon files
 clean-bddtest:
