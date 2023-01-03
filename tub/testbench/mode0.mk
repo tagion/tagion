@@ -1,4 +1,4 @@
-MODE0_ROOT:=$(TESTBENCH)/mode0
+MODE0_ROOT:=$(TESTLOG)/mode0
 MODE0_DATA:=$(MODE0_ROOT)/data
 MODE0_DART:=$(MODE0_DATA)/node0/dart.drt
 MODE0_LOG:=$(MODE0_ROOT)/mode0_script.log
@@ -31,7 +31,7 @@ mode0:
 endif
 
 .PHONY: mode0
-testbench: mode0
+testnet: mode0
 
 mode0-dart: DARTDB=$(MODE0_DART)
 mode0-dart: dart
@@ -55,7 +55,7 @@ env-mode0:
 	${call log.close}
 
 .PHONY: env-mode0
-env-testbench: env-mode0
+env-testnet: env-mode0
 
 help-mode0:
 	$(PRECMD)
@@ -83,7 +83,7 @@ clean-mode0:
 
 .PHONY: clean-mode0
 
-clean-testbench: clean-mode0
+clean-testnet: clean-mode0
 
 check-mode0:
 	$(PRECMD)

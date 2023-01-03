@@ -92,9 +92,9 @@ synchronized class AddressBook
     }
 
     /** used for lock, unlock file */
-    enum max_count = 3;
+    enum max_count = 30;
     /** used for lock, unlock file */
-    protected int timeout = 300;
+    protected int timeout = 3000;
     /** nodes amount */
     protected size_t nodes;
 
