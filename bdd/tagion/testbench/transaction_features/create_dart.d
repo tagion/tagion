@@ -20,27 +20,29 @@ enum feature = Feature(
             []);
 
 alias FeatureContext = Tuple!(
-        GenerateDartboot, "GenerateDartboot",
+        GenerateDart, "GenerateDart",
         FeatureGroup*, "result"
 );
 
-@safe @Scenario("Generate dartboot.",
+@safe @Scenario("Generate dart.",
         [])
-class GenerateDartboot {
+class GenerateDart {
 
     string dart_path;
     string genesis_path;
     string module_path;
     GenerateNWallets wallets;
-    Genesis[] genesis;
-    this(string name, GenerateNWallets wallets, Genesis[] genesis) {
+    const Genesis[] genesis;
+    
+    this(string module_name, GenerateNWallets wallets, const Genesis[] genesis) {
         this.wallets = wallets;
         this.genesis = genesis;
         this.module_path = env.bdd_log.buildPath(module_name);
     }
+
     @Given("I have wallets with pincodes")
     Document pincodes() {
-        check(wallet_paths !is null, "No wallets available");
+        check(wallets.wallet_paths !is null, "No wallets available");
 
         return result_ok;
     }
@@ -66,7 +68,7 @@ class GenerateDartboot {
     }
 
     @When("I add genesis invoice to N wallet")
-    Document wallet() {
+    Document wallet() @trusted {
         foreach(i, genesis_invoice; genesis) {
             const invoice_path = buildPath(wallets.wallet_paths[i], "invoice_file.hibon");
             genesis_path = buildPath(wallets.wallet_paths[i], "genesis.hibon");
@@ -117,9 +119,9 @@ class GenerateDartboot {
     }
 
 
-    @Then("the dartboot should be generated")
+    @Then("the dart should be generated")
     Document generated() {
-        return Document();
+        return result_ok;
     }
 
 }
