@@ -127,12 +127,12 @@ clean-reports:
 
 clean-bdd: clean-bddtest clean-reports
 	$(PRECMD)
-	@rm $(BEHAVIOUR) $(BEHAVIOUR).o
+	${call log.header, $@ :: clean}
+	$(RM) $(BEHAVIOUR) $(BEHAVIOUR).o
 
 # Delete hibon files
 clean-bddtest:
 	$(PRECMD)
-	${call log.header, $@ :: clean}
 	$(RMDIR) $(BDD_LOG)
 
 clean: clean-bddtest clean-bdd
