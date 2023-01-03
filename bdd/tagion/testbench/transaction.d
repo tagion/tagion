@@ -16,7 +16,7 @@ int _main(string[] args)
 
 	const number_of_wallets = 7;
 
-	Genesis[number_of_wallets] genesis = [
+	const genesis = [
 		Genesis(10_000, 10), 
 		Genesis(10_000, 10), 
 		Genesis(10_000, 10), 
@@ -31,7 +31,7 @@ int _main(string[] args)
     auto create_wallets_context = create_wallets_feature.run;
 
 	auto create_dart_feature = automation!(create_dart)();
-    create_dart_feature.GenerateDartboot(scenario_name, create_wallets_context.GenerateNWallets, genesis);
+    create_dart_feature.GenerateDart(scenario_name, create_wallets_context.GenerateNWallets, genesis);
     auto create_dart_context = create_dart_feature.run;
     return 0;
 
