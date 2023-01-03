@@ -20,15 +20,15 @@ import tagion.services.TagionService;
 import tagion.services.LoggerService;
 import tagion.services.TagionFactory;
 import tagion.GlobalSignals;
-import tagion.network.SSLOptions : OpenSSL, configureOpenSSL;
+import tagion.network.SSLServiceOptions : SSLCert, configureSSLCert;
 import tagion.tasks.TaskWrapper;
 import tagion.utils.TrustedConcurrency;
 
 /**
- * Create configs for struct OpenSSL
+ * Create configs for struct SSLCert
  * @param openssl - struct to configure
  */
-void create_ssl(const(OpenSSL) openssl)
+void create_ssl(const(SSLCert) openssl)
 {
     import std.algorithm.iteration : each;
     import std.file : exists, mkdirRecurse;
@@ -171,7 +171,8 @@ int _main(string[] args)
         service_options.pid_file.fwrite("export PID=%s\n".format(thisProcessID));
     }
 
-    configureOpenSSL(service_options.transaction.service.openssl);
+    configureSSLCert(service_options.transaction.service.cert);
+    configureSSLCert(service_options.logsubscription.service.cert);
 
     auto logger_service_tid = Task!LoggerTask(service_options.logger.task_name, service_options);
     import std.stdio : stderr;

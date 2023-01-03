@@ -1,12 +1,12 @@
 
-test-dart: DARTDB=$(TESTBENCH)/test-dart.drt
+test-dart: DARTDB=$(TESTLOG)/test-dart.drt
 test-dart: dart
 
 mode1-alpha: HOSTPORT=4020
 mode1-alpha: TRANSACTIONPORT=10910
 mode1-alpha: MONITORPORT=10920
 mode1-alpha: DARTSYNC=false
-mode1-alpha: DARTDB=$(TESTBENCH)/mode1/dart-alpha.drt
+mode1-alpha: DARTDB=$(TESTLOG)/mode1/dart-alpha.drt
 mode1-alpha: DARTINIT=false
 mode1-alpha: dart
 

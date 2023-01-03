@@ -1,8 +1,8 @@
 
 #
 # $1 : Program name
-# $2 : List of libraries used by the program
-# $3 : Set if the program is tagion tool
+# $2 : Set name of the onetool
+# $3 : Depends list
 #
 define DO_BIN
 ${eval
@@ -15,25 +15,23 @@ BINS+=$$(_$1)
 $1: target-$1
 bins: $1
 
-_TOOLS=$3
+_TOOLS=$2
 
 ifdef _TOOLS
 info-$1:
 	@echo _TOOLS defined $$(TAGION)
 
-target-$1: target-tagion
+target-$1: target-$2
 	@echo Tools enabled $1
-	rm -f $$(_$1)
-	ln -s $$(TAGION) $$(_$1)
+	$(RM) $$(_$1)
+	$(LN) $$(TAGION) $$(_$1)
 else
 info-$1:
 	@echo _TOOLS undefined
 
-LIBS_$1:=$2
-
-target-$1: LIBS:=$$(LIBS_$1)
-
 target-$1: $$(DBIN)/$1
+
+
 endif
 
 env-$1:

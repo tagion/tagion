@@ -10,6 +10,7 @@ import std.algorithm.searching : canFind;
 import std.array : array, join;
 import std.stdio : writeln;
 import core.thread : msecs;
+import std.socket : SocketType, AddressFamily;
 
 import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions : fatal, taskfailure;
@@ -20,8 +21,9 @@ import tagion.services.Options : Options;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : GetLabel;
-import tagion.network.SSLFiberService : SSLFiberService, SSLFiber;
-import tagion.network.SSLServiceAPI : SSLServiceAPI;
+import tagion.network.FiberServer : FiberServer, FiberRelay;
+import tagion.network.ServerAPI : ServerAPI;
+import tagion.network.SSLSocket : SSLSocket;
 import tagion.utils.TrustedConcurrency;
 
 /**
@@ -199,14 +201,15 @@ void logSubscriptionServiceTask(Options opts) nothrow
 
         auto subscribers = LogSubscribersInfo(locateTrusted(opts.logger.task_name));
 
-        log.register(opts.logSubscription.task_name);
+        log.register(opts.logsubscription.task_name);
 
-        log("Start service port=%d addresss=%s", opts.logSubscription.service.port, opts
-                .logSubscription.service.address);
+        log("Start service port=%d addresss=%s",
+            opts.logsubscription.service.server.port,
+            opts.logsubscription.service.server.address);
 
-        @safe class LogSubscriptionRelay : SSLFiberService.Relay
+        @safe class LogSubscriptionRelay : FiberServer.Relay
         {
-            bool agent(SSLFiber ssl_relay)
+            bool agent(FiberRelay ssl_relay)
             {
                 @trusted const(Document) receivessl()
                 {
@@ -253,7 +256,12 @@ void logSubscriptionServiceTask(Options opts) nothrow
         }
 
         auto relay = new LogSubscriptionRelay;
-        auto logsubscription_api = SSLServiceAPI(opts.logSubscription.service, relay);
+        auto listener = new SSLSocket(
+            AddressFamily.INET,
+            SocketType.STREAM,
+            opts.logsubscription.service.cert.certificate,
+            opts.logsubscription.service.cert.private_key);
+        auto logsubscription_api = ServerAPI(opts.logsubscription.service.server, listener, relay);
         logsubscription_api.start;
 
         bool stop;

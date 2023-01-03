@@ -7,53 +7,44 @@ alias AES128 = AESCrypto!128;
 alias AES256 = AESCrypto!256;
 //import std.stdio;
 
-struct AESCrypto(int KEY_LENGTH)
-{
+struct AESCrypto(int KEY_LENGTH) {
     static assert((KEY_LENGTH is 128) || (KEY_LENGTH is 192) || (KEY_LENGTH is 256),
-        format("The KEYLENGTH of the %s must be 128, 196 or 256 not %d", AESCrypto.stringof, KEY_LENGTH));
+            format("The KEYLENGTH of the %s must be 128, 196 or 256 not %d", AESCrypto.stringof, KEY_LENGTH));
 
     @disable this();
 
-    static size_t enclength(const size_t inputlength)
-    {
+    static size_t enclength(const size_t inputlength) {
         return ((inputlength / BLOCK_SIZE) + ((inputlength % BLOCK_SIZE == 0) ? 0 : 1)) * BLOCK_SIZE;
     }
 
-    version (TINY_AES)
-    {
+    version (TINY_AES) {
         import tagion.crypto.aes.tiny_aes.tiny_aes;
 
         alias AES = Tiny_AES!(KEY_LENGTH, Mode.CBC);
         enum BLOCK_SIZE = AES.BLOCK_SIZE;
         enum KEY_SIZE = AES.KEY_SIZE;
         static void crypt_parse(bool ENCRYPT = true)(const(ubyte[]) key, ubyte[BLOCK_SIZE] iv, ref ubyte[] data)
-        in
-        {
+        in {
             assert(data);
             assert(data.length % BLOCK_SIZE == 0, format("Data must be an equal number of %d bytes but is %d", BLOCK_SIZE, data
                     .length));
             assert(key.length is KEY_SIZE, format("The key size must be %d bytes not %d", KEY_SIZE, key
                     .length));
         }
-        do
-        {
+        do {
             scope aes = AES(key[0 .. KEY_SIZE], iv);
-            static if (ENCRYPT)
-            {
+            static if (ENCRYPT) {
                 aes.encrypt(data);
             }
-            else
-            {
+            else {
                 aes.decrypt(data);
             }
         }
 
         static void crypt(bool ENCRYPT = true)(scope const(ubyte[]) key, scope const(ubyte[]) iv, scope const(
-                ubyte[]) indata, ref ubyte[] outdata) pure nothrow
-        in
-        {
-            if (outdata !is null)
-            {
+                ubyte[]) indata, ref ubyte[] outdata) pure nothrow @safe
+        in {
+            if (outdata.length) {
                 assert(enclength(indata.length) == outdata.length, format(
                         "Output data must be an equal number of %d bytes", BLOCK_SIZE));
                 assert(iv.length is BLOCK_SIZE, format("The iv size must be %d bytes not %d", BLOCK_SIZE, iv
@@ -61,26 +52,20 @@ struct AESCrypto(int KEY_LENGTH)
 
             }
         }
-        do
-        {
-            if (outdata is null)
-            {
+        do {
+            if (outdata.length < indata.length) {
                 outdata = indata.dup;
             }
-            else
-            {
+            else {
                 outdata[0 .. $] = indata[0 .. $];
             }
             size_t old_length;
-            if (outdata.length % BLOCK_SIZE !is 0)
-            {
+            if (outdata.length % BLOCK_SIZE !is 0) {
                 old_length = outdata.length;
                 outdata.length = enclength(outdata.length);
             }
-            scope (exit)
-            {
-                if (old_length)
-                {
+            scope (exit) {
+                if (old_length) {
                     outdata.length = old_length;
                 }
             }
@@ -91,47 +76,40 @@ struct AESCrypto(int KEY_LENGTH)
         alias encrypt = crypt!true;
         alias decrypt = crypt!false;
     }
-    else
-    {
+    else {
         import tagion.crypto.aes.openssl_aes.aes;
 
         enum KEY_SIZE = KEY_LENGTH / 8;
         enum BLOCK_SIZE = AES_BLOCK_SIZE;
         static void crypt(bool ENCRYPT = true)(scope const(ubyte[]) key, scope const(ubyte[]) iv, scope const(
                 ubyte[]) indata, ref ubyte[] outdata) @trusted
-        in
-        {
+        in {
             assert(indata);
-            if (outdata !is null)
-            {
+            if (outdata !is null) {
                 assert(enclength(indata.length) == outdata.length,
-                    format("Output data must be an equal number of %d bytes", BLOCK_SIZE));
+                        format("Output data must be an equal number of %d bytes", BLOCK_SIZE));
             }
             assert(key.length is KEY_SIZE, format("The key size must be %d bytes not %d", KEY_SIZE, key
                     .length));
             assert(iv.length is BLOCK_SIZE, format("The iv size must be %d bytes not %d", BLOCK_SIZE, iv
                     .length));
         }
-        do
-        {
+        do {
             auto aes_key = key.ptr;
             ubyte[BLOCK_SIZE] mem_iv = iv[0 .. BLOCK_SIZE];
             AES_KEY crypt_key;
-            if (outdata is null)
-            {
+            if (outdata is null) {
                 outdata = new ubyte[enclength(indata.length)];
             }
 
-            static if (ENCRYPT)
-            {
+            static if (ENCRYPT) {
                 auto aes_input = indata.ptr;
                 auto enc_output = outdata.ptr;
                 AES_set_encrypt_key(aes_key, KEY_LENGTH, &crypt_key);
                 //writefln("crypt_key=%s", crypt_key.hex);
                 AES_cbc_encrypt(aes_input, enc_output, indata.length, &crypt_key, mem_iv.ptr, AES_ENCRYPT);
             }
-            else
-            {
+            else {
                 auto enc_input = indata.ptr;
                 auto dec_output = outdata.ptr;
                 AES_set_decrypt_key(aes_key, KEY_LENGTH, &crypt_key);
@@ -145,8 +123,7 @@ struct AESCrypto(int KEY_LENGTH)
 
     }
 
-    unittest
-    {
+    unittest {
         import tagion.utils.Random;
         import std.range : iota;
         import std.algorithm.iteration : map;
@@ -163,8 +140,7 @@ struct AESCrypto(int KEY_LENGTH)
                 0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41,
                 0x7b, 0xe6, 0x6c, 0x37, 0x10
             ];
-            static if (KEY_LENGTH is 256)
-            {
+            static if (KEY_LENGTH is 256) {
                 immutable(ubyte[KEY_SIZE]) key = [
                     0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73,
                     0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
@@ -182,8 +158,7 @@ struct AESCrypto(int KEY_LENGTH)
                     0x19, 0x07, 0x8c, 0x6a, 0x9d, 0x1b
                 ];
             }
-            else static if (KEY_LENGTH is 192)
-            {
+            else static if (KEY_LENGTH is 192) {
                 immutable(ubyte[KEY_SIZE]) key = [
                     0x8e, 0x73, 0xb0, 0xf7, 0xda, 0x0e, 0x64, 0x52, 0xc8, 0x10,
                     0xf3, 0x2b, 0x80, 0x90, 0x79, 0xe5,
@@ -200,8 +175,7 @@ struct AESCrypto(int KEY_LENGTH)
                     0xa9, 0xe6, 0x4f, 0x56, 0x15, 0xcd
                 ];
             }
-            else static if (KEY_LENGTH is 128)
-            {
+            else static if (KEY_LENGTH is 128) {
                 immutable(ubyte[KEY_SIZE]) key = [
                     0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7,
                     0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
@@ -227,8 +201,7 @@ struct AESCrypto(int KEY_LENGTH)
         }
 
         { // Decrypt
-            static if (KEY_LENGTH is 256)
-            {
+            static if (KEY_LENGTH is 256) {
                 immutable(ubyte[KEY_SIZE]) key = [
                     0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73,
                     0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
@@ -246,8 +219,7 @@ struct AESCrypto(int KEY_LENGTH)
                     0x19, 0x07, 0x8c, 0x6a, 0x9d, 0x1b
                 ];
             }
-            else static if (KEY_LENGTH is 192)
-            {
+            else static if (KEY_LENGTH is 192) {
                 immutable(ubyte[KEY_SIZE]) key = [
                     0x8e, 0x73, 0xb0, 0xf7, 0xda, 0x0e, 0x64, 0x52, 0xc8, 0x10,
                     0xf3, 0x2b, 0x80, 0x90, 0x79, 0xe5,
@@ -264,8 +236,7 @@ struct AESCrypto(int KEY_LENGTH)
                     0xa9, 0xe6, 0x4f, 0x56, 0x15, 0xcd
                 ];
             }
-            else static if (KEY_LENGTH is 128)
-            {
+            else static if (KEY_LENGTH is 128) {
                 immutable(ubyte[KEY_SIZE]) key = [
                     0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7,
                     0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
@@ -305,10 +276,8 @@ struct AESCrypto(int KEY_LENGTH)
     }
 }
 
-unittest
-{
-    static foreach (key_size; [128, 192, 256])
-    {
+unittest {
+    static foreach (key_size; [128, 192, 256]) {
         {
             alias AES = AESCrypto!key_size;
         }

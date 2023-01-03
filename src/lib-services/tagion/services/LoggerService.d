@@ -69,7 +69,7 @@ private
     {
         if (logSubscriptionTid is Tid.init)
         {
-            logSubscriptionTid = locateTrusted(options.logSubscription.task_name);
+            logSubscriptionTid = locateTrusted(options.logsubscription.task_name);
         }
 
         if (logSubscriptionTid !is Tid.init)
@@ -186,7 +186,7 @@ private
 
         pragma(msg, "fixme(ib) Pass mask to Logger to not pass not necessary data");
 
-        if (options.logSubscription.enable)
+        if (options.logsubscription.enable)
         {
             logSubscriptionTid = spawnTrusted(&logSubscriptionServiceTask, options);
         }

@@ -13,7 +13,7 @@ import tagion.hibon.HiBONJSON : toJSON, toPretty;
 import tagion.hibon.HiBONRecord : HiBONRecord, RecordType;
 import tagion.logger.Logger : log, LogLevel, Log;
 import tagion.logger.LogRecords : LogFilter;
-import tagion.network.SSLOptions : configureOpenSSL;
+import tagion.network.SSLServiceOptions : configureSSLCert;
 import tagion.network.SSLSocket : SSLSocket, EndpointType;
 import tagion.options.CommonOptions : setCommonOptions;
 import tagion.services.LoggerService : LoggerTask;
@@ -22,8 +22,7 @@ import tagion.tasks.TaskWrapper : Task;
 import tagion.tools.Basic : Main;
 import tagion.utils.TrustedConcurrency;
 
-private void sendingLoop()
-{
+private void sendingLoop() {
     writeln("I'm alive!");
 
     log.register("sendingLoop");
@@ -32,11 +31,10 @@ private void sendingLoop()
 
     log("Test logs from sendingLoop");
 
-    static struct S
-    {
+    static struct S {
         int x;
         mixin HiBONRecord!(
-            q{this(int x) {this.x = x;}}
+                q{this(int x) {this.x = x;}}
         );
     }
 
@@ -46,8 +44,7 @@ private void sendingLoop()
 
 mixin Main!(_main, "logsub");
 
-int _main(string[] args)
-{
+int _main(string[] args) {
     scope Options local_options;
 
     setDefaultOption(local_options);
@@ -61,10 +58,10 @@ int _main(string[] args)
     immutable service_options = getOptions();
     // Set the shared common options for all services
     setCommonOptions(service_options.common);
-    writeln("LogSubService: certificate", service_options.logSubscription
-            .service.openssl.certificate);
-    writeln("LogSubService: private_key", service_options.logSubscription
-            .service.openssl.private_key);
+    writeln("LogSubService: certificate", service_options.logsubscription
+            .service.cert.certificate);
+    writeln("LogSubService: private_key", service_options.logsubscription
+            .service.cert.private_key);
 
     /// starting Logger task
     auto logger_service = Task!LoggerTask(service_options.logger.task_name, service_options);
@@ -72,38 +69,33 @@ int _main(string[] args)
     stderr.writeln("Waiting for logger");
     const response = receiveOnlyTrusted!Control;
     stderr.writeln("Logger started");
-    if (response !is Control.LIVE)
-    {
+    if (response !is Control.LIVE) {
         stderr.writeln("ERROR:Logger %s", response);
         return -1;
     }
-    scope (exit)
-    {
+    scope (exit) {
         logger_service.control(Control.STOP);
         receiveOnlyTrusted!Control;
     }
     log.register(main_task);
 
-    configureOpenSSL(service_options.logSubscription.service.openssl);
+    configureSSLCert(service_options.logsubscription.service.cert);
 
     writeln("Creating SSLSocket");
     Thread.sleep(1.seconds);
     auto client = new SSLSocket(AddressFamily.INET, EndpointType.Client);
-    scope (exit)
-    {
+    scope (exit) {
         client.close;
     }
-    try
-    {
+    try {
         writeln("Trying to connect socket");
-        writeln("Addres ", service_options.logSubscription.service.address);
-        writeln("Port ", service_options.logSubscription.service.port);
-        client.connect(new InternetAddress(service_options.logSubscription
-                .service.address, service_options.logSubscription
-                .service.port));
+        writeln("Addres ", service_options.logsubscription.service.server.address);
+        writeln("Port ", service_options.logsubscription.service.server.port);
+        client.connect(new InternetAddress(service_options.logsubscription
+                .service.server.address, service_options.logsubscription
+                .service.server.port));
     }
-    catch (SocketOSException e)
-    {
+    catch (SocketOSException e) {
         writeln("Log subscription failed: ", e.msg);
         return 1;
     }
@@ -124,8 +116,7 @@ int _main(string[] args)
 
     spawnTrusted(&sendingLoop);
 
-    do
-    {
+    do {
         rec_size = client.receive(rec_buf); //, current_max_size);
         writefln("read rec_size=%d", rec_size);
         Thread.sleep(1.seconds);
