@@ -111,8 +111,9 @@ help-bdd:
 	${call log.help, "make bddinit", "Initialize the testbench tool"}
 	${call log.help, "make bddstrip", "Strips bad chars from BDD markdown files "}
 	${call log.help, "make behaviour", "Builds the BDD tool"}
-	${call log.help, "make clean-bddtest", "Will remove the bdd log files"}
+	${call log.help, "make clean-bddtest", "Remove the bdd log files"}
 	${call log.help, "make clean-reports", "Remove all the bdd reports"}
+	${call log.help, "make clean-bdd", "Remove all the bdd files"}
 	${call log.help, "make list-bdd", "List all bdd targets"}
 	${call log.close}
 
@@ -120,15 +121,18 @@ help-bdd:
 
 help: help-bdd
 
-# del hibon filse
+clean-reports:
+	$(PRECMD)
+	$(RMDIR) $(BDD_RESULTS)
+
+clean-bdd: clean-bddtest clean-reports
+	$(PRECMD)
+	@rm $(DBIN)/behaviour $(DBIN)/behaviour.o
+
+# Delete hibon files
 clean-bddtest:
 	$(PRECMD)
 	${call log.header, $@ :: clean}
 	$(RMDIR) $(BDD_LOG)
 
-clean: clean-bddtest
-
-clean-reports:
-	$(PRECMD)
-	$(RMDIR) $(BDD_RESULTS)
-
+clean: clean-bddtest clean-bdd
