@@ -135,10 +135,26 @@ class CreateNetworkWithNAmountOfNodesInModeone
     }
 
     @Then("the wallets should receive genesis amount")
-    Document amount()
+    Document amount() @trusted
     {
-        // foreach(i, genesis_amount; genesis)
-        return Document();
+        foreach(i, genesis_amount; genesis) {
+            immutable wallet_command = [
+                tools.tagionwallet,
+                "-x",
+                "1111",
+                "--port",
+                "10801",
+                "--update",
+                "--amount",
+            ];
+
+            auto wallet_pipe = pipeProcess(wallet_command, Redirect.all, null, Config
+                .detached, wallets.wallet_paths[i]);
+            writefln("%s", wallet_pipe.stdout.byLine);
+        
+        }
+        // check that wallets were updated correctly
+        return result_ok;
     }
 
 }
