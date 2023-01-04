@@ -78,12 +78,8 @@ class GenerateDart
     {
         foreach (i, genesis_invoice; genesis)
         {
-
-            //const genesis_invoice = genesis[i];
-
             const amountPerBill = genesis_invoice.amount / genesis_invoice.bills;
             writefln("wallet %s", wallets.wallet_paths[i]);
-
 
             writefln("GENESIS BILLS AMOUNT: %s", genesis_invoice.bills);
             for (int bill = 0; bill < genesis_invoice.bills; bill++)
@@ -106,47 +102,51 @@ class GenerateDart
 
                 auto create_invoice_pipe = pipeProcess(create_invoice_command, Redirect.all, null, Config
                         .detached, wallets.wallet_paths[i],);
-                
+
                 invoices ~= invoice_path;
             }
-            writefln("%s", invoices);
 
-            //     genesis_path = buildPath(wallets.wallet_paths[i], "genesis.hibon");
-
-            //     immutable boot_command = [
-            //         tools.tagionboot,
-            //         invoice_path,
-            //         "-o",
-            //         genesis_path,
-            //     ];
-
-            //     auto boot_pipe = pipeProcess(boot_command, Redirect.all, null, Config.detached);
-
-            //     writefln("%s", boot_pipe.stdout.byLine);
-
-            //     check(genesis_path.exists, "Genesis file not created");
-
-            //     immutable dart_input_command = [
-            //         tools.dartutil,
-            //         "--dartfilename",
-            //         dart_path,
-            //         "--modify",
-            //         "--inputfile",
-            //         genesis_path,
-            //     ];
-
-            //     writefln("%s", dart_input_command.join(" "));
-
-            //     auto dart_input_pipe = pipeProcess(dart_input_command, Redirect.all, null, Config
-            //             .detached);
-            //     writefln("%s", dart_input_pipe.stdout.byLine);
         }
+
         return result_ok;
     }
 
     @Then("the dart should be generated")
-    Document generated()
+    Document generated() @trusted
     {
+        genesis_path = buildPath(module_path, "genesis.hibon");
+
+        foreach (i, invoice; invoices)
+        {
+            immutable boot_command = [
+                tools.tagionboot,
+                invoice,
+                "-o",
+                genesis_path,
+            ];
+            auto boot_pipe = pipeProcess(boot_command, Redirect.all, null, Config.detached);
+            writefln("%s", boot_pipe.stdout.byLine);
+
+            immutable dart_input_command = [
+                tools.dartutil,
+                "--dartfilename",
+                dart_path,
+                "--modify",
+                "--inputfile",
+                genesis_path,
+            ];
+
+            writefln("%s", dart_input_command.join(" "));
+
+            auto dart_input_pipe = pipeProcess(dart_input_command, Redirect.all, null, Config
+                    .detached);
+            writefln("%s", dart_input_pipe.stdout.byLine);
+
+        }
+
+        check(genesis_path.exists, "Genesis file not created");
+
+        // verify that everything looks correct.
         return result_ok;
     }
 

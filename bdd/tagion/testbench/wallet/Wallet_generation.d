@@ -115,6 +115,7 @@ class SevenWalletsWillBeGenerated {
         {
             immutable wallet_command = [tools.tagionwallet, "-x", pin, wallets[i]]; // @suppress(dscanner.style.long_line)
             auto pipes = pipeProcess(wallet_command, Redirect.all, null, Config.detached);
+            
 
             check(pipes.stderr.byLine.empty, "Pincode not valid on wallet");
 
