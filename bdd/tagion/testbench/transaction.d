@@ -41,6 +41,14 @@ int _main(string[] args)
 																	genesis, 
 																	number_of_nodes,);
 	auto create_network_context = create_network_feature.run;
+
+	auto create_transaction_feature = automation!(create_transaction)();
+	create_transaction_feature.CreateTransaction(scenario_name, 
+												create_wallets_context.GenerateNWallets, 
+												create_network_context.CreateNetworkWithNAmountOfNodesInModeone,
+												genesis,
+												);
+	auto create_transaction_context = create_transaction_feature.run;
 	
 	return 0;
 

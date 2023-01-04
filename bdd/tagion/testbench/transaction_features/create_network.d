@@ -12,10 +12,13 @@ import std.string;
 import std.array;
 import std.file;
 import std.conv;
+import core.thread;
 
 import tagion.testbench.transaction_features.create_wallets;
 import tagion.testbench.transaction_features.create_dart;
 import tagion.testbench.tools.utils : Genesis;
+import tagion.testbench.tools.networkcli;
+
 
 enum feature = Feature("Start network", []);
 
@@ -120,15 +123,15 @@ class CreateNetworkWithNAmountOfNodesInModeone
                 .detached);
         writefln("%s", node_master_pipe.stdout.byLine);
 
-
-
         return result_ok;
     }
 
     @Then("the nodes should be in_graph")
     Document ingraph() @trusted
     {
-        return Document();
+        check(waitUntilHealth(60, 1, "10801") == true, "in_graph not found in log");
+
+        return result_ok;
     }
 
     @Then("the wallets should receive genesis amount")
