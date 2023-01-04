@@ -129,7 +129,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
     @Then("the nodes should be in_graph")
     Document ingraph() @trusted
     {
-        check(waitUntilHealth(60, 1, "10801") == true, "in_graph not found in log");
+        check(waitUntilInGraph(60, 1, "10801") == true, "in_graph not found in log");
 
         return result_ok;
     }
@@ -137,6 +137,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
     @Then("the wallets should receive genesis amount")
     Document amount()
     {
+        // foreach(i, genesis_amount; genesis)
         return Document();
     }
 
