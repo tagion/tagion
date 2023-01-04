@@ -1,0 +1,128 @@
+@startuml DARTSyncService Sequence
+
+skinparam Style strictuml
+hide empty description
+title DARTSyncronizeService Concurrency Receiving Data Sequence Diagram
+
+participant Sender as sender
+participant DARTSyncService as dartsync
+database DART as dart
+participant "ReplayPool!Recorder" as recorderpool
+participant DARTSynchronizationPool as syncpool
+
+...
+
+== (immutable(RecordFactory.Recorder) recorder) ==
+
+sender -> dartsync : send(recorder)
+dartsync -> recorderpool : insert(recorder)
+
+...
+
+== (Response!(ControlCode.Control_Connected) response) == 
+
+sender -> dartsync : send(response)
+dartsync -> dartsync : connectionPool.add(\nresponse.key, \nresponse.stream, \ntrue)
+
+...
+
+== (Response!(ControlCode.Control_Disconnected) response) == 
+
+sender -> dartsync : send(response)
+dartsync -> dartsync : connectionPool.close(response.key)
+
+...
+
+== (Response!(ControlCode.Control_RequestHandled) response) ==
+
+sender -> dartsync : send(response)
+dartsync -> dartsync : received = hirpc.receive(Document(response.data))
+
+alt received.isMethod && checkState(DARTSynchronizeState.READY)
+
+    alt received.method.name == DART.Quries.dartModify
+
+        dartsync -> dartsync : connectionPool.close(response.key)
+
+    end
+
+    dartsync -> dart : opCall(received)
+    dart --> dartsync : request
+    dartsync -> dartsync : connectionPool.send(response.key, request.toDoc.serialize)
+
+else !received.isMethod && checkState(DARTSynchronizeState.SYNCHRONIZING)
+
+    dartsync -> syncpool : setResponse(response)
+
+else else
+
+    dartsync -> dartsync : connectionPool.close(response.key)
+
+end
+
+alt response.stream !is null
+
+    dartsync -> dartsync : destroy(response.stream)
+
+end
+
+...
+
+== dartRead(immutable(DARTReadRequest)* response, Buffer[][] fingerprints) ==
+
+sender -> dartsync : send(response, fingerprints)
+dartsync -> dart : loads(fingerprints, Archive.Type.NONE)
+dart --> dartsync : result
+dartsync -> dartsync : response.reply(result)
+
+...
+
+== dartHiPRC(string taskName, immutable(HiRPC.Sender) sender) ==
+
+sender -> dartsync : send(sender)
+dartsync -> dartsync : receiver = empty_hirpc.receive(sender);
+
+alt receiver.supports!DART
+
+    dartsync -> dart : opCall(receiver, false)
+    dart --> dartsync : response
+    dartsync -> sender : send(response)
+
+else else
+
+    dartsync -> dartsync : collect "owners" from receiver
+    dartsync -> dart : loadAll()
+    dart --> dartsync : archives
+    dartsync -> dartsync : collect bills from archives\nonly with specified owners
+    dartsync -> dartsync : response = empty_hirpc.result(receiver, params)
+    dartsync -> sender : send(response)
+
+end
+
+...
+
+== (string taskName, Buffer data) ==
+
+sender -> dartsync : send(taskName, data)
+dartsync -> dartsync : receiver = empty_hirpc.receive(Document(data)) 
+
+hnote across: code below fully duplicates code of previous case
+
+alt receiver.supports!DART
+
+    dartsync -> dart : opCall(receiver, false)
+    dart --> dartsync : response
+    dartsync -> sender : send(response)
+
+else else
+
+    dartsync -> dartsync : collect "owners" from receiver
+    dartsync -> dart : loadAll()
+    dart --> dartsync : archives
+    dartsync -> dartsync : collect bills from archives\nonly with specified owners
+    dartsync -> dartsync : response = empty_hirpc.result(receiver, params)
+    dartsync -> sender : send(response)
+
+end
+
+@enduml
