@@ -26,10 +26,10 @@ immutable struct Node {
     /*     this.stopNode(); */
     /* } */
 
-    imutable startNode() {
+    immutable startNode() {
     }
 
-    imutable stopNode() {
+    immutable stopNode() {
     }
 }
 
