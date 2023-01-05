@@ -2,6 +2,7 @@
 TESTPROGRAM=$(DBIN)/$(TESTMAIN)
 TESTENV=$(DBIN)/bddenv.sh
 BDDTESTS=${addprefix run-,$(BDDS)}
+BDDBINS=${addprefix $(DBIN)/,$(BDDS)}
 
 ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
 
@@ -125,11 +126,12 @@ clean-reports:
 	$(PRECMD)
 	$(RMDIR) $(BDD_RESULTS)
 
+# Delete all files related to bdd
 clean-bdd: clean-bddtest clean-reports
 	$(PRECMD)
 	${call log.header, $@ :: clean}
-	$(RM) $(BEHAVIOUR) $(BEHAVIOUR).o
-
+	$(RM) $(BEHAVIOUR) $(BEHAVIOUR).o $(TESTPROGRAM) $(TESTPROGRAM).o $(BDDBINS)
+ 
 # Delete hibon files
 clean-bddtest:
 	$(PRECMD)
