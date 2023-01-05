@@ -104,18 +104,35 @@ struct Balance
     double locked;
 }
 
-Balance getBalance(string[] balance_array)
+Balance getBalance(string wallet_path) @trusted
 {
 
-    // string[] balance_array;
-    // foreach(line; balance.byLine) {
-    //     balance_array ~= line.to!string;
-    // }
+    string[] result;
 
-    writefln("%s", balance_array);
+    immutable wallet_command = [
+                tools.tagionwallet,
+                "-x",
+                "1111",
+                "--port",
+                "10801",
+                "--update",
+                "--amount",
+            ];
+
+            auto wallet_pipe = pipeProcess(wallet_command, Redirect.all, null, Config
+                .detached, wallet_path);
+            
+
+            // writefln("%s", wallet_pipe.stdout.byLine);
+            auto lines = wallet_pipe.stdout.byLine;
+            foreach(line; lines) {
+                result ~= line.to!string;
+    }
+
+    writefln("%s", result);
     // Parse the "Wallet returnCode" field
     bool returnCode;
-    if (balance_array[0].startsWith("Wallet updated true"))
+    if (result[0].startsWith("Wallet updated true"))
     {
         returnCode = true;
     }
@@ -125,13 +142,13 @@ Balance getBalance(string[] balance_array)
     }
 
     // Parse the "Total" field
-    double total = extractDouble(balance_array[1]);
+    double total = extractDouble(result[1]);
     writefln("total %s", total);
     // Parse the "Available" field
-    double available = extractDouble(balance_array[2]);
+    double available = extractDouble(result[2]);
 
     // Parse the "Locked" field
-    double locked = extractDouble(balance_array[3]);
+    double locked = extractDouble(result[3]);
 
     return Balance(returnCode, total, available, locked);
 }

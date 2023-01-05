@@ -33,6 +33,10 @@ class CreateTransaction
     const Genesis[] genesis;
     string module_path;
     string invoice_path;
+    const double invoice_amount = 1000;
+
+    Balance wallet_0;
+    Balance wallet_1;
 
     this(string module_name, GenerateNWallets wallets, CreateNetworkWithNAmountOfNodesInModeone network, const Genesis[] genesis)
     {
@@ -65,7 +69,7 @@ class CreateTransaction
         immutable create_invoice_command = [
             tools.tagionwallet,
             "--create-invoice",
-            format("INVOICE:%s", 1000),
+            format("INVOICE:%s", invoice_amount),
             "--invoice",
             invoice_path,
             "-x",
@@ -105,26 +109,31 @@ class CreateTransaction
     Document executed()
     {
         check(waitUntilLog(60, 1, "Executing contract", network.node_logs[$-1]) == true, "Executing contract not found in log");
-
         return result_ok;
     }
 
     @Then("the balance should be checked against all nodes.")
-    Document nodes()
+    Document nodes() 
     {
-        return Document();
+        wallet_0 = getBalance(wallets.wallet_paths[0]);
+        wallet_1 = getBalance(wallets.wallet_paths[1]);
+
+        check(wallet_0.returnCode == true && wallet_1.returnCode == true, "Balances not updated");
+        return result_ok;
     }
 
     @Then("wallet B should receive the invoice amount.")
     Document amount()
     {
-        return Document();
+        check(wallet_1.total == genesis[1].amount + invoice_amount, "Balance not correct");
+        return result_ok;
     }
 
     @Then("wallet A should loose invoice amount + fee.")
     Document fee()
     {
-        return Document();
+        check(wallet_0.total == genesis[0].amount - invoice_amount - 0.1, "Balance not correct");
+        return result_ok;
     }
 
     @Then("the bullseye of all the nodes DARTs should be the same.")

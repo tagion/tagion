@@ -139,28 +139,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
     Document amount() @trusted
     {
         foreach(i, genesis_amount; genesis) {
-            immutable wallet_command = [
-                tools.tagionwallet,
-                "-x",
-                "1111",
-                "--port",
-                "10801",
-                "--update",
-                "--amount",
-            ];
-
-            auto wallet_pipe = pipeProcess(wallet_command, Redirect.all, null, Config
-                .detached, wallets.wallet_paths[i]);
-            
-
-            // writefln("%s", wallet_pipe.stdout.byLine);
-            auto lines = wallet_pipe.stdout.byLine;
-            string[] result;
-            foreach(line; lines) {
-                result ~= line.to!string;
-            }
-
-            Balance wallet_balance = getBalance(result);
+            Balance wallet_balance = getBalance(wallets.wallet_paths[i]);
             check(wallet_balance.returnCode == true, "Error in updating balance");
             writefln("%s", wallet_balance);
             check(wallet_balance.total == genesis[i].amount, "Balance not updated");
