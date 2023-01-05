@@ -13,6 +13,7 @@ import std.array;
 import std.file;
 import std.conv;
 import core.thread;
+import std.algorithm;
 
 import tagion.testbench.transaction_features.create_wallets;
 import tagion.testbench.transaction_features.create_dart;
@@ -139,9 +140,13 @@ class CreateNetworkWithNAmountOfNodesInModeone
     Document amount() @trusted
     {
         foreach(i, genesis_amount; genesis) {
-            // Needs merge with  checking the wallet
             immutable cmd = wallets[i].update();
             check(cmd.status == 0, format("Error: %s", cmd.output));
+            
+            Balance wallet_balance = getBalance(wallets[i].path);
+            check(wallet_balance.returnCode == true, "Error in updating balance");
+            writefln("%s", wallet_balance);
+            check(wallet_balance.total == genesis[i].amount, "Balance not updated");
         }
         // check that wallets were updated correctly
         return result_ok;
