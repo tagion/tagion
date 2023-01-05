@@ -10,6 +10,27 @@ import std.datetime;
 import std.stdio;
 import std.conv;
 
+immutable struct Node {
+    immutable string path;
+    Pid pid;
+
+    immutable this(
+        const string path,
+    ) {
+        this.path = path;
+    }
+
+    /* immutable ~this() { */
+    /*     this.stopNode(); */
+    /* } */
+
+    imutable startNode() {
+    }
+
+    imutable stopNode() {
+    }
+}
+
 bool waitUntilInGraph(int lockThreadTime, int sleepThreadTime, string port) @trusted
 {
     HealthData json_result;
