@@ -12,6 +12,7 @@ import std.array;
 import std.file;
 
 import tagion.testbench.tools.Environment;
+import tagion.testbench.tools.cli;
 import tagion.testbench.transaction_features.create_wallets;
 import tagion.testbench.tools.utils : Genesis;
 import tagion.testbench.tools.FileName : generateFileName;
@@ -33,13 +34,13 @@ class GenerateDart
     string dart_path;
     string genesis_path;
     string module_path;
-    GenerateNWallets wallets;
+    TagionWallet[] wallets;
     const Genesis[] genesis;
     string[] invoices;
 
-    this(string module_name, GenerateNWallets wallets, const Genesis[] genesis)
+    this(string module_name, GenerateNWallets genWallets, const Genesis[] genesis)
     {
-        this.wallets = wallets;
+        this.wallets = genWallets.wallets;
         this.genesis = genesis;
         this.module_path = env.bdd_log.buildPath(module_name);
     }
@@ -47,7 +48,7 @@ class GenerateDart
     @Given("I have wallets with pincodes")
     Document pincodes()
     {
-        check(wallets.wallet_paths !is null, "No wallets available");
+        check(wallets !is null, "No wallets available");
 
         return result_ok;
     }
@@ -79,14 +80,14 @@ class GenerateDart
         foreach (i, genesis_invoice; genesis)
         {
             const amountPerBill = genesis_invoice.amount / genesis_invoice.bills;
-            writefln("wallet %s", wallets.wallet_paths[i]);
+            writefln("wallet %s", wallets[i].path);
 
             writefln("GENESIS BILLS AMOUNT: %s", genesis_invoice.bills);
             for (int bill = 0; bill < genesis_invoice.bills; bill++)
             {
                 writefln("bill %s", bill);
                 writefln("TEEEST");
-                const invoice_path = buildPath(wallets.wallet_paths[i], format("%s-%s", generateFileName(
+                const invoice_path = buildPath(wallets[i].path, format("%s-%s", generateFileName(
                         10), "invoice.hibon"));
                 writefln("invoice path: %s", invoice_path);
 
@@ -101,7 +102,7 @@ class GenerateDart
                 ];
 
                 auto create_invoice_pipe = pipeProcess(create_invoice_command, Redirect.all, null, Config
-                        .detached, wallets.wallet_paths[i],);
+                        .detached, wallets[i].path,);
 
                 invoices ~= invoice_path;
             }

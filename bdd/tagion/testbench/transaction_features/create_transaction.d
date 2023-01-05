@@ -20,6 +20,7 @@ import tagion.testbench.transaction_features.create_wallets;
 import tagion.testbench.tools.utils : Genesis;
 import tagion.testbench.transaction_features.create_network;
 import tagion.testbench.tools.networkcli;
+import tagion.testbench.tools.cli;
 
 enum feature = Feature("Generate transaction", []);
 
@@ -30,7 +31,7 @@ class CreateTransaction
 {
 
     CreateNetworkWithNAmountOfNodesInModeone network;
-    GenerateNWallets wallets;
+    TagionWallet[] wallets;
     const Genesis[] genesis;
     string module_path;
     string invoice_path;
@@ -39,9 +40,9 @@ class CreateTransaction
     Balance wallet_0;
     Balance wallet_1;
 
-    this(string module_name, GenerateNWallets wallets, CreateNetworkWithNAmountOfNodesInModeone network, const Genesis[] genesis)
+    this(string module_name, GenerateNWallets genWallets, CreateNetworkWithNAmountOfNodesInModeone network, const Genesis[] genesis)
     {
-        this.wallets = wallets;
+        this.wallets = genWallets.wallets;
         this.genesis = genesis;
         this.module_path = env.bdd_log.buildPath(module_name);
         this.network = network;
@@ -63,7 +64,7 @@ class CreateTransaction
     @Given("the wallets have an invoice in another_wallet.")
     Document anotherwallet() @trusted
     {
-        invoice_path = buildPath(wallets.wallet_paths[1], format("%s-%s", generateFileName(
+        invoice_path = buildPath(wallets[1].path, format("%s-%s", generateFileName(
                 10), "invoice.hibon"));
         writefln("invoice path: %s", invoice_path);
 
@@ -78,7 +79,7 @@ class CreateTransaction
         ];
 
         auto create_invoice_pipe = pipeProcess(create_invoice_command, Redirect.all, null, Config
-                .detached, wallets.wallet_paths[1],);
+                .detached, wallets[1].path,);
 
         return result_ok;
     }
@@ -99,7 +100,7 @@ class CreateTransaction
         ];
 
         auto pay_invoice_pipe = pipeProcess(pay_invoice_command, Redirect.all, null, Config
-                .detached, wallets.wallet_paths[0],);
+                .detached, wallets[0].path);
 
         writefln("%s", pay_invoice_pipe.stdout.byLine);
 
@@ -114,10 +115,10 @@ class CreateTransaction
     }
 
     @Then("the balance should be checked against all nodes.")
-    Document nodes() 
+    Document nodes()
     {
-        wallet_0 = getBalance(wallets.wallet_paths[0]);
-        wallet_1 = getBalance(wallets.wallet_paths[1]);
+        wallet_0 = getBalance(wallets[0].path);
+        wallet_1 = getBalance(wallets[1].path);
 
         check(wallet_0.returnCode == true && wallet_1.returnCode == true, "Balances not updated");
         return result_ok;
