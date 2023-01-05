@@ -17,6 +17,7 @@ import core.thread;
 import tagion.testbench.transaction_features.create_wallets;
 import tagion.testbench.transaction_features.create_dart;
 import tagion.testbench.tools.utils : Genesis;
+import tagion.testbench.tools.cli;
 import tagion.testbench.tools.networkcli;
 
 
@@ -30,7 +31,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
 {
 
     GenerateDart dart;
-    GenerateNWallets wallets;
+    TagionWallet[] wallets;
     const Genesis[] genesis;
     const int number_of_nodes;
     string module_path;
@@ -38,10 +39,10 @@ class CreateNetworkWithNAmountOfNodesInModeone
     string[] node_logs;
     string[] node_darts;
 
-    this(string module_name, GenerateDart dart, GenerateNWallets wallets, const Genesis[] genesis, const int number_of_nodes)
+    this(string module_name, GenerateDart dart, GenerateNWallets genWallets, const Genesis[] genesis, const int number_of_nodes)
     {
         this.dart = dart;
-        this.wallets = wallets;
+        this.wallets = genWallets.wallets;
         this.genesis = genesis;
         this.number_of_nodes = number_of_nodes;
         this.module_path = env.bdd_log.buildPath(module_name);
@@ -50,7 +51,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
     @Given("i have _wallets")
     Document _wallets()
     {
-        check(wallets.wallet_paths !is null, "No wallets available");
+        check(wallets !is null, "No wallets available");
 
         return result_ok;
     }
@@ -138,20 +139,9 @@ class CreateNetworkWithNAmountOfNodesInModeone
     Document amount() @trusted
     {
         foreach(i, genesis_amount; genesis) {
-            immutable wallet_command = [
-                tools.tagionwallet,
-                "-x",
-                "1111",
-                "--port",
-                "10801",
-                "--update",
-                "--amount",
-            ];
-
-            auto wallet_pipe = pipeProcess(wallet_command, Redirect.all, null, Config
-                .detached, wallets.wallet_paths[i]);
-            writefln("%s", wallet_pipe.stdout.byLine);
-        
+            // Needs merge with  checking the wallet
+            immutable cmd = wallets[i].update();
+            check(cmd.status == 0, format("Error: %s", cmd.output));
         }
         // check that wallets were updated correctly
         return result_ok;

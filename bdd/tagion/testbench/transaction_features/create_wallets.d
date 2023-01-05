@@ -3,6 +3,7 @@ module tagion.testbench.transaction_features.create_wallets;
 import tagion.behaviour;
 import tagion.hibon.Document;
 import tagion.testbench.tools.Environment;
+import tagion.testbench.tools.cli;
 
 import std.typecons : Tuple;
 import std.stdio;
@@ -18,10 +19,9 @@ alias FeatureContext = Tuple!(GenerateNWallets, "GenerateNWallets", FeatureGroup
 @safe @Scenario("Generate n wallets.", [])
 class GenerateNWallets
 {
-
+    TagionWallet[] wallets;
     int number_of_wallets;
     string module_path;
-    string[] wallet_paths;
 
     this(string module_name, int n)
     {
@@ -41,50 +41,28 @@ class GenerateNWallets
         mkdirRecurse(module_path);
 
         for (int i = 0; i < number_of_wallets; i++)
-        {
-            const wallet_path = module_path.buildPath(format("wallet_%s", i));
+		{
+            immutable wallet_path = module_path.buildPath(format("wallet_%s", i));
+			mkdirRecurse(wallet_path);
+            writefln("Wallet path: %s", wallet_path);
 
-            mkdirRecurse(wallet_path);
+			TagionWallet wallet = TagionWallet(wallet_path);
+			immutable cmd = wallet.generateWallet();
+			check(cmd.status == 0, format("Command failed, Error: %s", cmd.output));
+			wallets ~= wallet;
+		}
 
-            immutable wallet_command = [
-                tools.tagionwallet,
-                "-x", 
-                "1111",
-                "--generate-wallet",
-                "--questions",
-                "1,2,3,4",
-                "--answers",
-                "1,2,3,4",
-            ];
-
-            auto pipes = pipeProcess(wallet_command, Redirect.all, null, Config.detached, wallet_path);
-
-            string[] errors;
-            foreach (line; pipes.stderr.byLine)
-                errors ~= line.idup;
-
-            check(errors.length == 0, format("Error: %s", errors));
-            writefln("%s", wallet_path);
-            wallet_paths ~= wallet_path;
-        }
-
+		writeln("ALL the wallets: ", wallets);
         return result_ok;
     }
 
     @Then("check if the wallet can be activated with the pincode.")
     Document pincode() @trusted
     {
-        for(int i=0; i<number_of_wallets; i++)
-        {
-            immutable wallet_command = [tools.tagionwallet, "-x", "1111"]; 
-            auto pipes = pipeProcess(wallet_command, Redirect.all, null, Config.detached, wallet_paths[i]);
-            
-            string[] errors;
-            foreach (line; pipes.stderr.byLine)
-                errors ~= line.idup;
-
-            check(errors.length == 0, format("Error: %s", errors));
-        }
+		foreach(wallet; wallets) { 
+			immutable cmd = wallet.unlock();
+			check(cmd.status == 0, format("Command failed, Error: %s", cmd.output));
+		}
         return result_ok;
     }
 
