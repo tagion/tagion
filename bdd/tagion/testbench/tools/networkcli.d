@@ -110,23 +110,23 @@ Balance getBalance(string wallet_path) @trusted
     string[] result;
 
     immutable wallet_command = [
-                tools.tagionwallet,
-                "-x",
-                "1111",
-                "--port",
-                "10801",
-                "--update",
-                "--amount",
-            ];
+        tools.tagionwallet,
+        "-x",
+        "1111",
+        "--port",
+        "10801",
+        "--update",
+        "--amount",
+    ];
 
-            auto wallet_pipe = pipeProcess(wallet_command, Redirect.all, null, Config
-                .detached, wallet_path);
-            
+    auto wallet_pipe = pipeProcess(wallet_command, Redirect.all, null, Config
+            .detached, wallet_path);
 
-            // writefln("%s", wallet_pipe.stdout.byLine);
-            auto lines = wallet_pipe.stdout.byLine;
-            foreach(line; lines) {
-                result ~= line.to!string;
+    // writefln("%s", wallet_pipe.stdout.byLine);
+    auto lines = wallet_pipe.stdout.byLine;
+    foreach (line; lines)
+    {
+        result ~= line.to!string;
     }
 
     writefln("%s", result);
@@ -161,5 +161,29 @@ double extractDouble(string str)
     return to!double(m.hit);
 }
 
+string getBullseye(string dart_path) @trusted
+{
+    immutable bullseye_command = [
+        tools.dartutil,
+        "--dartfilename",
+        dart_path,
+        "--eye",
+    ];
+    auto bullseye_pipe = pipeProcess(bullseye_command, Redirect.all, null, Config
+            .detached);
+    return bullseye_pipe.stdout.byLine.front.to!string;
 
+}
 
+bool checkBullseyes(string[] bullseyes)
+{
+    const bullseye = bullseyes[0];
+    foreach (eye; bullseyes)
+    {
+        if (bullseye != eye)
+        {
+            return false;
+        }
+    }
+    return true;
+}

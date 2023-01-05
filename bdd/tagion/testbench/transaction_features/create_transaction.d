@@ -11,6 +11,7 @@ import std.string;
 import std.array;
 import std.file;
 import std.conv;
+import std.algorithm;
 
 import tagion.testbench.tools.Environment;
 import tagion.testbench.tools.FileName : generateFileName;
@@ -137,15 +138,25 @@ class CreateTransaction
     }
 
     @Then("the bullseye of all the nodes DARTs should be the same.")
-    Document same()
+    Document same() @trusted
     {
-        return Document();
+        string[] bullseyes;
+        foreach(i, dart_path; network.node_darts) {
+            bullseyes ~= getBullseye(dart_path);
+        }
+        foreach(bullseye; bullseyes) {
+            writeln(bullseye);
+        }
+
+
+        check(checkBullseyes(bullseyes) == true, "Bullseyes not the same on all nodes");
+        return result_ok;
     }
 
     @But("the transaction should not take longer than Tmax seconds.")
     Document seconds()
     {
-        return Document();
+        return result_ok;
     }
 
     @But("the transaction should finish in 8 epochs.")
