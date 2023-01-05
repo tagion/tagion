@@ -13,6 +13,7 @@ import std.array;
 import std.file;
 import std.conv;
 import core.thread;
+import std.algorithm;
 
 import tagion.testbench.transaction_features.create_wallets;
 import tagion.testbench.transaction_features.create_dart;
@@ -150,8 +151,19 @@ class CreateNetworkWithNAmountOfNodesInModeone
 
             auto wallet_pipe = pipeProcess(wallet_command, Redirect.all, null, Config
                 .detached, wallets.wallet_paths[i]);
-            writefln("%s", wallet_pipe.stdout.byLine);
-        
+            
+
+            // writefln("%s", wallet_pipe.stdout.byLine);
+            auto lines = wallet_pipe.stdout.byLine;
+            string[] result;
+            foreach(line; lines) {
+                result ~= line.to!string;
+            }
+
+            Balance wallet_balance = getBalance(result);
+            check(wallet_balance.returnCode == true, "Error in updating balance");
+            writefln("%s", wallet_balance);
+            check(wallet_balance.total == genesis[i].amount, "Balance not updated");
         }
         // check that wallets were updated correctly
         return result_ok;
