@@ -18,6 +18,7 @@ import std.algorithm;
 import tagion.testbench.transaction_features.create_wallets;
 import tagion.testbench.transaction_features.create_dart;
 import tagion.testbench.tools.utils : Genesis;
+import tagion.testbench.tools.cli;
 import tagion.testbench.tools.networkcli;
 
 
@@ -31,7 +32,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
 {
 
     GenerateDart dart;
-    GenerateNWallets wallets;
+    TagionWallet[] wallets;
     const Genesis[] genesis;
     const int number_of_nodes;
     string module_path;
@@ -39,10 +40,10 @@ class CreateNetworkWithNAmountOfNodesInModeone
     string[] node_logs;
     string[] node_darts;
 
-    this(string module_name, GenerateDart dart, GenerateNWallets wallets, const Genesis[] genesis, const int number_of_nodes)
+    this(string module_name, GenerateDart dart, GenerateNWallets genWallets, const Genesis[] genesis, const int number_of_nodes)
     {
         this.dart = dart;
-        this.wallets = wallets;
+        this.wallets = genWallets.wallets;
         this.genesis = genesis;
         this.number_of_nodes = number_of_nodes;
         this.module_path = env.bdd_log.buildPath(module_name);
@@ -51,7 +52,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
     @Given("i have _wallets")
     Document _wallets()
     {
-        check(wallets.wallet_paths !is null, "No wallets available");
+        check(wallets !is null, "No wallets available");
 
         return result_ok;
     }
@@ -139,7 +140,10 @@ class CreateNetworkWithNAmountOfNodesInModeone
     Document amount() @trusted
     {
         foreach(i, genesis_amount; genesis) {
-            Balance wallet_balance = getBalance(wallets.wallet_paths[i]);
+            immutable cmd = wallets[i].update();
+            check(cmd.status == 0, format("Error: %s", cmd.output));
+            
+            Balance wallet_balance = getBalance(wallets[i].path);
             check(wallet_balance.returnCode == true, "Error in updating balance");
             writefln("%s", wallet_balance);
             check(wallet_balance.total == genesis[i].amount, "Balance not updated");

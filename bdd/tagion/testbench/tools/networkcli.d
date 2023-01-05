@@ -12,6 +12,27 @@ import std.conv;
 import std.algorithm;
 import std.range;
 
+immutable struct Node {
+    immutable string path;
+    Pid pid;
+
+    immutable this(
+        const string path,
+    ) {
+        this.path = path;
+    }
+
+    /* immutable ~this() { */
+    /*     this.stopNode(); */
+    /* } */
+
+    immutable startNode() {
+    }
+
+    immutable stopNode() {
+    }
+}
+
 bool waitUntilInGraph(int lockThreadTime, int sleepThreadTime, string port) @trusted
 {
     HealthData json_result;
