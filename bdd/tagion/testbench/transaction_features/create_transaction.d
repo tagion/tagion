@@ -36,6 +36,8 @@ class CreateTransaction
     string module_path;
     string invoice_path;
     const double invoice_amount = 1000;
+    int start_epoch;
+    int end_epoch;
 
     Balance wallet_0;
     Balance wallet_1;
@@ -103,6 +105,8 @@ class CreateTransaction
                 .detached, wallets[0].path);
 
         writefln("%s", pay_invoice_pipe.stdout.byLine);
+        start_epoch = getEpoch("10801");
+        writefln("%s", start_epoch);
 
         return result_ok;
     }
@@ -111,6 +115,7 @@ class CreateTransaction
     Document executed()
     {
         check(waitUntilLog(60, 1, "Executing contract", network.node_logs[$-1]) == true, "Executing contract not found in log");
+        end_epoch = getEpoch("10801");
         return result_ok;
     }
 
@@ -157,6 +162,7 @@ class CreateTransaction
     @But("the transaction should not take longer than Tmax seconds.")
     Document seconds()
     {
+        // waituntillog fails if it takes longer
         return result_ok;
     }
 

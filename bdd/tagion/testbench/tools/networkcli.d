@@ -208,3 +208,13 @@ bool checkBullseyes(string[] bullseyes)
     }
     return true;
 }
+
+int getEpoch(string port) @trusted {
+    HealthData json_result = healthCheck(port);
+    if (json_result.returnCode == false) {
+        throw new Exception("Healthcheck failed");
+    }
+    writefln("%s", json_result);
+    return json_result.result["$msg"]["result"]["$epoch_number"][1].get!int;
+
+}
