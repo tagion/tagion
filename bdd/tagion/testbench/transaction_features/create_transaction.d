@@ -106,7 +106,7 @@ class CreateTransaction
 
         writefln("%s", pay_invoice_pipe.stdout.byLine);
         start_epoch = getEpoch("10801");
-        writefln("%s", start_epoch);
+        writefln("startepoch %s", start_epoch);
 
         return result_ok;
     }

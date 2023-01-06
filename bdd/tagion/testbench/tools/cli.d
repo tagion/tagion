@@ -51,6 +51,7 @@ immutable struct TagionWallet {
 
     immutable update(string port = "10801") {
         return this.executeAt([
+            tools.tagionwallet,
             "-x",
             pin,
             "--port",
