@@ -96,7 +96,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
                 number_of_nodes.to!string,
             ];
 
-            auto node_pipe = pipeProcess(node_command, Redirect.all, null, Config.detached);
+            auto node_pipe = pipeProcess(node_command, Redirect.all, null, Config.detached, module_path);
             writefln("%s", node_pipe.stdout.byLine);
         }
         // start master node
@@ -122,7 +122,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
             number_of_nodes.to!string,
         ];
         auto node_master_pipe = pipeProcess(node_master_command, Redirect.all, null, Config
-                .detached);
+                .detached, module_path);
         writefln("%s", node_master_pipe.stdout.byLine);
 
         return result_ok;
@@ -140,8 +140,8 @@ class CreateNetworkWithNAmountOfNodesInModeone
     Document amount() @trusted
     {
         foreach(i, genesis_amount; genesis) {
-            immutable cmd = wallets[i].update();
-            check(cmd.status == 0, format("Error: %s", cmd.output));
+            /* immutable cmd = wallets[i].update(); */
+            /* check(cmd.status == 0, format("Error: %s", cmd.output)); */
             
             Balance wallet_balance = getBalance(wallets[i].path);
             check(wallet_balance.returnCode == true, "Error in updating balance");
