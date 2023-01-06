@@ -18,8 +18,8 @@ import std.algorithm;
 import tagion.testbench.transaction_features.create_wallets;
 import tagion.testbench.transaction_features.create_dart;
 import tagion.testbench.tools.utils : Genesis;
-import tagion.testbench.tools.cli;
-import tagion.testbench.tools.networkcli;
+import tagion.testbench.tools.wallet;
+import tagion.testbench.tools.network;
 
 
 enum feature = Feature("Start network", []);

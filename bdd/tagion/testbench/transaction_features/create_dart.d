@@ -12,7 +12,7 @@ import std.array;
 import std.file;
 
 import tagion.testbench.tools.Environment;
-import tagion.testbench.tools.cli;
+import tagion.testbench.tools.wallet;
 import tagion.testbench.transaction_features.create_wallets;
 import tagion.testbench.tools.utils : Genesis;
 import tagion.testbench.tools.FileName : generateFileName;

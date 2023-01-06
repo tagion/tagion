@@ -1,4 +1,4 @@
-module tagion.testbench.tools.cli;
+module tagion.testbench.tools.wallet;
 
 import tagion.testbench.tools.Environment;
 import tagion.behaviour;

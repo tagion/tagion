@@ -19,8 +19,8 @@ import tagion.testbench.tools.FileName : generateFileName;
 import tagion.testbench.transaction_features.create_wallets;
 import tagion.testbench.tools.utils : Genesis;
 import tagion.testbench.transaction_features.create_network;
-import tagion.testbench.tools.networkcli;
-import tagion.testbench.tools.cli;
+import tagion.testbench.tools.network;
+import tagion.testbench.tools.wallet;
 
 enum feature = Feature("Generate transaction", []);
 

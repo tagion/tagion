@@ -1,4 +1,4 @@
-module tagion.testbench.tools.networkcli;
+module tagion.testbench.tools.network;
 
 import tagion.testbench.tools.Environment;
 
@@ -16,6 +16,7 @@ import std.range;
 immutable struct Node {
     immutable string path;
     Pid pid;
+    uint port;
 
     immutable this(
         const string path,
