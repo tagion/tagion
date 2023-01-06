@@ -6,6 +6,7 @@ root = true
 dfmt_brace_style = stroustrup
 dfmt_split_operator_at_line_end = true
 indent_size = 4
+indent_style = space
 soft_max_line_length = 80
 dfmt_soft_max_line_length = 120
 dfmt_keep_line_breaks = true

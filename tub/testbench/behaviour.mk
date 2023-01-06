@@ -2,6 +2,7 @@
 TESTPROGRAM=$(DBIN)/$(TESTMAIN)
 TESTENV=$(DBIN)/bddenv.sh
 BDDTESTS=${addprefix run-,$(BDDS)}
+BDDBINS=${addprefix $(DBIN)/,$(BDDS)}
 
 ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
 
@@ -111,8 +112,9 @@ help-bdd:
 	${call log.help, "make bddinit", "Initialize the testbench tool"}
 	${call log.help, "make bddstrip", "Strips bad chars from BDD markdown files "}
 	${call log.help, "make behaviour", "Builds the BDD tool"}
-	${call log.help, "make clean-bddtest", "Will remove the bdd log files"}
+	${call log.help, "make clean-bddtest", "Remove the bdd log files"}
 	${call log.help, "make clean-reports", "Remove all the bdd reports"}
+	${call log.help, "make clean-bdd", "Remove all the bdd files"}
 	${call log.help, "make list-bdd", "List all bdd targets"}
 	${call log.close}
 
@@ -120,15 +122,19 @@ help-bdd:
 
 help: help-bdd
 
-# del hibon filse
-clean-bddtest:
-	$(PRECMD)
-	${call log.header, $@ :: clean}
-	$(RMDIR) $(BDD_LOG)
-
-clean: clean-bddtest
-
 clean-reports:
 	$(PRECMD)
 	$(RMDIR) $(BDD_RESULTS)
 
+# Delete all files related to bdd
+clean-bdd: clean-bddtest clean-reports
+	$(PRECMD)
+	${call log.header, $@ :: clean}
+	$(RM) $(BEHAVIOUR) $(BEHAVIOUR).o $(TESTPROGRAM) $(TESTPROGRAM).o $(BDDBINS)
+ 
+# Delete hibon files
+clean-bddtest:
+	$(PRECMD)
+	$(RMDIR) $(BDD_LOG)
+
+clean: clean-bddtest clean-bdd

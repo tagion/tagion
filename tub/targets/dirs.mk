@@ -6,7 +6,6 @@ export DBUILD := ${abspath $(BUILD)/$(PLATFORM)}
 export DLOG := ${abspath $(LOG)/$(PLATFORM)}
 export TOOLS := ${abspath $(REPOROOT)/tools}
 
-# New simplified flow directories
 export DBIN := $(DBUILD)/bin
 export DTMP := $(DBUILD)/tmp
 export DOBJ := $(DBUILD)/obj
@@ -31,6 +30,7 @@ env-dirs:
 	$(call log.kvp, BUILDDOC, $(BUILDDOC))
 	$(call log.kvp, DSRC, $(DSRC))
 	$(call log.kvp, DTUB, $(DTUB))
+	$(call log.kvp, TARGETS, $(TARGETS))
 	$(call log.kvp, BDD, $(BDD))
 	$(call log.kvp, BDD_LOG, $(BDD_LOG))
 	$(call log.kvp, BDD_RESULTS, $(BDD_RESULTS))
