@@ -1,4 +1,5 @@
 module tagion.testbench.tools.networkcli;
+
 import tagion.testbench.tools.Environment;
 
 import std.process;
@@ -117,71 +118,6 @@ bool waitUntilLog(int lockThreadTime, int sleepThreadTime, string pattern, strin
     }
 
     return false;
-}
-
-struct Balance
-{
-    bool returnCode;
-    double total;
-    double available;
-    double locked;
-}
-
-Balance getBalance(string wallet_path) @trusted
-{
-
-    string[] result;
-
-    immutable wallet_command = [
-        tools.tagionwallet,
-        "-x",
-        "1111",
-        "--port",
-        "10801",
-        "--update",
-        "--amount",
-    ];
-
-    auto wallet_pipe = pipeProcess(wallet_command, Redirect.all, null, Config
-            .detached, wallet_path);
-
-    // writefln("%s", wallet_pipe.stdout.byLine);
-    auto lines = wallet_pipe.stdout.byLine;
-    foreach (line; lines)
-    {
-        result ~= line.to!string;
-    }
-
-    writefln("%s", result);
-    // Parse the "Wallet returnCode" field
-    bool returnCode;
-    if (result[0].startsWith("Wallet updated true"))
-    {
-        returnCode = true;
-    }
-    else
-    {
-        return Balance(false, 0, 0, 0);
-    }
-
-    // Parse the "Total" field
-    double total = extractDouble(result[1]);
-    writefln("total %s", total);
-    // Parse the "Available" field
-    double available = extractDouble(result[2]);
-
-    // Parse the "Locked" field
-    double locked = extractDouble(result[3]);
-
-    return Balance(returnCode, total, available, locked);
-}
-
-import std.regex;
-
-double extractDouble(string str)
-{
-    auto m = match(str, r"\d+(\.\d+)?");
-    return to!double(m.hit);
 }
 
 string getBullseye(string dart_path) @trusted

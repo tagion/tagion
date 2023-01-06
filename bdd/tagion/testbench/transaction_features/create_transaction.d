@@ -122,8 +122,8 @@ class CreateTransaction
     @Then("the balance should be checked against all nodes.")
     Document nodes()
     {
-        wallet_0 = getBalance(wallets[0].path);
-        wallet_1 = getBalance(wallets[1].path);
+        wallet_0 = wallets[0].getBalance();
+        wallet_1 = wallets[1].getBalance();
 
         check(wallet_0.returnCode == true && wallet_1.returnCode == true, "Balances not updated");
         return result_ok;

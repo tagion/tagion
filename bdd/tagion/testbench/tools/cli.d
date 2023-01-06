@@ -3,6 +3,11 @@ module tagion.testbench.tools.cli;
 import tagion.testbench.tools.Environment;
 import tagion.behaviour;
 import std.process;
+import std.string: splitLines;
+import std.algorithm.searching: startsWith;
+import std.conv: to;
+import std.stdio;
+import std.regex;
 
 /// Interface to tagionwallet cli
 immutable struct TagionWallet {
@@ -61,7 +66,50 @@ immutable struct TagionWallet {
         ]);
     }
 
-    immutable getBalance() {
-        assert(0, "getBalance not implemented");
+    Balance getBalance() @trusted
+    {
+        immutable result = executeAt([
+            tools.tagionwallet,
+            "-x",
+            "1111",
+            "--port",
+            "10801",
+            "--update",
+            "--amount",
+        ]);
+
+        immutable resultLines = result.output.splitLines;
+
+        writefln("%s", result);
+        // Parse the "Wallet returnCode" field
+        if (resultLines[0].startsWith("Wallet updated true"))
+        {
+            // Parse the "Total" field
+            double total = extractDouble(resultLines[1]);
+            // Parse the "Available" field
+            double available = extractDouble(resultLines[2]);
+            // Parse the "Locked" field
+            double locked = extractDouble(resultLines[3]);
+            return Balance(true, total, available, locked);
+        }
+        else
+        {
+            return Balance(false, 0, 0, 0);
+        }
     }
+}
+
+/// Takes a string and returns the first . delimited number as a double
+private double extractDouble(string str)
+{
+    auto m = match(str, r"\d+(\.\d+)?");
+    return to!double(m.hit);
+}
+
+struct Balance
+{
+    bool returnCode;
+    double total;
+    double available;
+    double locked;
 }

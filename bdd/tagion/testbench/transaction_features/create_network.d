@@ -143,10 +143,10 @@ class CreateNetworkWithNAmountOfNodesInModeone
             /* immutable cmd = wallets[i].update(); */
             /* check(cmd.status == 0, format("Error: %s", cmd.output)); */
             
-            Balance wallet_balance = getBalance(wallets[i].path);
-            check(wallet_balance.returnCode == true, "Error in updating balance");
-            writefln("%s", wallet_balance);
-            check(wallet_balance.total == genesis[i].amount, "Balance not updated");
+            Balance balance = wallets[i].getBalance();
+            check(balance.returnCode == true, "Error in updating balance");
+            writefln("%s", balance);
+            check(balance.total == genesis[i].amount, "Balance not updated");
         }
         // check that wallets were updated correctly
         return result_ok;
