@@ -73,10 +73,8 @@ class CreateNetworkWithNAmountOfNodesInModeone
         // start all normal nodes
         for (int i = 1; i < number_of_nodes; i++)
         {
-            immutable node_path = module_path.buildPath(format("node-%s", i));
-            mkdirRecurse(node_path);
-            immutable node_dart = node_path.buildPath(format("dart-%s.drt", i));
-            immutable node_log = node_path.buildPath(format("node-%s.log", i));
+            immutable node_dart = module_path.buildPath(format("dart-%s.drt", i));
+            immutable node_log = module_path.buildPath(format("node-%s.log", i));
             node_darts ~= node_dart;
             node_logs ~= node_log;
 
@@ -98,13 +96,11 @@ class CreateNetworkWithNAmountOfNodesInModeone
                 number_of_nodes.to!string,
             ];
 
-            auto node_pipe = pipeProcess(node_command, Redirect.all, null, Config.detached, node_path);
+            auto node_pipe = pipeProcess(node_command, Redirect.all, null, Config.detached);
             writefln("%s", node_pipe.stdout.byLine);
         }
         // start master node
-        immutable node_master_path = module_path.buildPath("node-master");
-        mkdirRecurse(node_master_path);
-        immutable node_master_log = node_master_path.buildPath("node-master.log");
+        immutable node_master_log = module_path.buildPath("node-master.log");
         node_logs ~= node_master_log;
         node_darts ~= dart.dart_path;
 
@@ -126,7 +122,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
             number_of_nodes.to!string,
         ];
         auto node_master_pipe = pipeProcess(node_master_command, Redirect.all, null, Config
-                .detached, node_master_path);
+                .detached);
         writefln("%s", node_master_pipe.stdout.byLine);
 
         return result_ok;
