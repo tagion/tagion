@@ -27,9 +27,11 @@ immutable struct Node {
     /* } */
 
     immutable startNode() {
+        assert(0, "not implemented");
     }
 
     immutable stopNode() {
+        assert(0, "not implemented");
     }
 }
 

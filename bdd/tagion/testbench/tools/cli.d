@@ -4,11 +4,6 @@ import tagion.testbench.tools.Environment;
 import tagion.behaviour;
 import std.process;
 
-private auto executeAtPath(string[] args, string path) {
-    //  Using default paramaters from  execute;
-    return execute(args, null, Config.none, 18446744073709551615LU, path);
-}
-
 /// Interface to tagionwallet cli
 immutable struct TagionWallet {
     string path;
@@ -28,8 +23,13 @@ immutable struct TagionWallet {
         this.answers = answers;
     }
 
+    /// Start process at wallet path
+    private immutable executeAt(string[] args) {
+        return execute(args, null, Config.none, 18446744073709551615LU, this.path);
+    }
+
     immutable generateWallet() {
-        return executeAtPath([
+        return this.executeAt([
             tools.tagionwallet,
             "--generate-wallet",
             "-x", 
@@ -38,31 +38,29 @@ immutable struct TagionWallet {
             questions,
             "--answers",
             answers,
-        ], 
-            this.path
-        );
+        ]);
     }
 
     immutable unlock() {
-        return executeAtPath([
+        return this.executeAt([
             tools.tagionwallet,
             "-x", 
             pin,
-        ], 
-            this.path,
-        );
+        ]);
     }
 
     immutable update(string port = "10801") {
-        return executeAtPath([
+        return this.executeAt([
             "-x",
             pin,
             "--port",
             port,
             "--update",
             "--amount",
-        ],
-            this.path
-        );
+        ]);
+    }
+
+    immutable getBalance() {
+        assert(0, "getBalance not implemented");
     }
 }
