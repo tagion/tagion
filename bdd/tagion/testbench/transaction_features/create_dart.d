@@ -86,25 +86,7 @@ class GenerateDart
             for (int bill = 0; bill < genesis_invoice.bills; bill++)
             {
                 writefln("bill %s", bill);
-                writefln("TEEEST");
                 const invoice_path = wallets[i].createInvoice("GENESIS", amountPerBill);
-                // const invoice_path = buildPath(wallets[i].path, format("%s-%s", generateFileName(
-                //         10), "invoice.hibon"));
-                // writefln("invoice path: %s", invoice_path);
-
-                // immutable create_invoice_command = [
-                //     tools.tagionwallet,
-                //     "--create-invoice",
-                //     format("GENESIS:%s", amountPerBill),
-                //     "--invoice",
-                //     invoice_path,
-                //     "-x",
-                //     "1111",
-                // ];
-
-                // auto create_invoice_pipe = pipeProcess(create_invoice_command, Redirect.all, null, Config
-                //         .detached, wallets[i].path,);
-
                 invoices ~= invoice_path;
             }
 

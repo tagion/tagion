@@ -66,22 +66,9 @@ class CreateTransaction
     @Given("the wallets have an invoice in another_wallet.")
     Document anotherwallet() @trusted
     {
-        invoice_path = buildPath(wallets[1].path, format("%s-%s", generateFileName(
-                10), "invoice.hibon"));
+
+        invoice_path = wallets[1].createInvoice("INVOICE", invoice_amount);
         writefln("invoice path: %s", invoice_path);
-
-        immutable create_invoice_command = [
-            tools.tagionwallet,
-            "--create-invoice",
-            format("INVOICE:%s", invoice_amount),
-            "--invoice",
-            invoice_path,
-            "-x",
-            "1111",
-        ];
-
-        auto create_invoice_pipe = pipeProcess(create_invoice_command, Redirect.all, null, Config
-                .detached, wallets[1].path,);
 
         return result_ok;
     }
