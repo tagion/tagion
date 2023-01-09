@@ -225,6 +225,7 @@ class HashGraph {
         }
 
         const(HiRPC.Sender) ripple_sender() @safe {
+        log("Send ripple");
             const ripple_wavefront = rippleWave(Wavefront());
             const sender = hirpc.wavefront(ripple_wavefront);
             return sender;
@@ -554,7 +555,7 @@ class HashGraph {
                             initialize_witness(received_wave.epacks);
                         }
                         catch (ConsensusException e) {
-                            // intilaized witness not correct
+                            // initialized witness not correct
                         }
                     }
                     break;
