@@ -131,6 +131,8 @@ class CreateNetworkWithNAmountOfNodesInModeone
     @Then("the nodes should be in_graph")
     Document ingraph() @trusted
     {
+        int sleep_before = 5;
+        Thread.sleep(sleep_before.seconds);
         check(waitUntilInGraph(60, 1, "10801") == true, "in_graph not found in log");
 
         return result_ok;
