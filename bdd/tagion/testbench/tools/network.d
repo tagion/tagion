@@ -46,6 +46,7 @@ bool waitUntilInGraph(int lockThreadTime, int sleepThreadTime, string port) @tru
     {
 
         json_result = healthCheck(port);
+        writefln("%s", json_result);
 
         if (!json_result.returnCode)
         {

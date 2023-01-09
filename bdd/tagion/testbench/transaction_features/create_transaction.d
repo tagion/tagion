@@ -169,7 +169,9 @@ class CreateTransaction
     @But("the transaction should finish in 8 epochs.")
     Document epochs()
     {
-        return Document();
+        const delta_epoch = end_epoch - start_epoch;
+        check(delta_epoch < 8, format("Transaction took too many epochs. Took %s", delta_epoch));
+        return result_ok;
     }
 
 }
