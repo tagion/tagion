@@ -77,21 +77,8 @@ class CreateTransaction
     Document invoice() @trusted
     {
 
-        immutable pay_invoice_command = [
-            tools.tagionwallet,
-            "-x",
-            "1111",
-            "--pay",
-            invoice_path,
-            "--port",
-            "10801",
-            "--send",
-        ];
+        wallets[0].payInvoice(invoice_path);
 
-        auto pay_invoice_pipe = pipeProcess(pay_invoice_command, Redirect.all, null, Config
-                .detached, wallets[0].path);
-
-        writefln("%s", pay_invoice_pipe.stdout.byLine);
         start_epoch = getEpoch("10801");
         writefln("startepoch %s", start_epoch);
 

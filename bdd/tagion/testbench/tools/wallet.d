@@ -51,9 +51,23 @@ immutable struct TagionWallet
             "--invoice",
             invoice_path,
             "-x",
-            "1111",
+            pin,
         ]);
         return invoice_path;
+    }
+
+    immutable payInvoice(string invoice_path, string port = "10801")
+    {
+        return this.executeAt([
+            tools.tagionwallet,
+            "-x",
+            pin,
+            "--pay",
+            invoice_path,
+            "--port",
+            port,
+            "--send",
+        ]);
     }
 
     immutable generateWallet()
