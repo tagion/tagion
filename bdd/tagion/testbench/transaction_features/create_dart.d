@@ -12,7 +12,7 @@ import std.array;
 import std.file;
 
 import tagion.testbench.tools.Environment;
-import tagion.testbench.tools.cli;
+import tagion.testbench.tools.wallet;
 import tagion.testbench.transaction_features.create_wallets;
 import tagion.testbench.tools.utils : Genesis;
 import tagion.testbench.tools.FileName : generateFileName;
@@ -86,24 +86,7 @@ class GenerateDart
             for (int bill = 0; bill < genesis_invoice.bills; bill++)
             {
                 writefln("bill %s", bill);
-                writefln("TEEEST");
-                const invoice_path = buildPath(wallets[i].path, format("%s-%s", generateFileName(
-                        10), "invoice.hibon"));
-                writefln("invoice path: %s", invoice_path);
-
-                immutable create_invoice_command = [
-                    tools.tagionwallet,
-                    "--create-invoice",
-                    format("GENESIS:%s", amountPerBill),
-                    "--invoice",
-                    invoice_path,
-                    "-x",
-                    "1111",
-                ];
-
-                auto create_invoice_pipe = pipeProcess(create_invoice_command, Redirect.all, null, Config
-                        .detached, wallets[i].path,);
-
+                const invoice_path = wallets[i].createInvoice("GENESIS", amountPerBill);
                 invoices ~= invoice_path;
             }
 

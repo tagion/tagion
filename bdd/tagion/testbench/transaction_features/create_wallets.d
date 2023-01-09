@@ -3,7 +3,7 @@ module tagion.testbench.transaction_features.create_wallets;
 import tagion.behaviour;
 import tagion.hibon.Document;
 import tagion.testbench.tools.Environment;
-import tagion.testbench.tools.cli;
+import tagion.testbench.tools.wallet;
 
 import std.typecons : Tuple;
 import std.stdio;

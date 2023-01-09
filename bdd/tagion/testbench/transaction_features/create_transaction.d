@@ -19,8 +19,8 @@ import tagion.testbench.tools.FileName : generateFileName;
 import tagion.testbench.transaction_features.create_wallets;
 import tagion.testbench.tools.utils : Genesis;
 import tagion.testbench.transaction_features.create_network;
-import tagion.testbench.tools.networkcli;
-import tagion.testbench.tools.cli;
+import tagion.testbench.tools.network;
+import tagion.testbench.tools.wallet;
 
 enum feature = Feature("Generate transaction", []);
 
@@ -66,22 +66,9 @@ class CreateTransaction
     @Given("the wallets have an invoice in another_wallet.")
     Document anotherwallet() @trusted
     {
-        invoice_path = buildPath(wallets[1].path, format("%s-%s", generateFileName(
-                10), "invoice.hibon"));
+
+        invoice_path = wallets[1].createInvoice("INVOICE", invoice_amount);
         writefln("invoice path: %s", invoice_path);
-
-        immutable create_invoice_command = [
-            tools.tagionwallet,
-            "--create-invoice",
-            format("INVOICE:%s", invoice_amount),
-            "--invoice",
-            invoice_path,
-            "-x",
-            "1111",
-        ];
-
-        auto create_invoice_pipe = pipeProcess(create_invoice_command, Redirect.all, null, Config
-                .detached, wallets[1].path,);
 
         return result_ok;
     }
@@ -90,23 +77,10 @@ class CreateTransaction
     Document invoice() @trusted
     {
 
-        immutable pay_invoice_command = [
-            tools.tagionwallet,
-            "-x",
-            "1111",
-            "--pay",
-            invoice_path,
-            "--port",
-            "10801",
-            "--send",
-        ];
+        wallets[0].payInvoice(invoice_path);
 
-        auto pay_invoice_pipe = pipeProcess(pay_invoice_command, Redirect.all, null, Config
-                .detached, wallets[0].path);
-
-        writefln("%s", pay_invoice_pipe.stdout.byLine);
         start_epoch = getEpoch("10801");
-        writefln("%s", start_epoch);
+        writefln("startepoch %s", start_epoch);
 
         return result_ok;
     }
@@ -122,8 +96,8 @@ class CreateTransaction
     @Then("the balance should be checked against all nodes.")
     Document nodes()
     {
-        wallet_0 = getBalance(wallets[0].path);
-        wallet_1 = getBalance(wallets[1].path);
+        wallet_0 = wallets[0].getBalance();
+        wallet_1 = wallets[1].getBalance();
 
         check(wallet_0.returnCode == true && wallet_1.returnCode == true, "Balances not updated");
         return result_ok;
@@ -169,7 +143,9 @@ class CreateTransaction
     @But("the transaction should finish in 8 epochs.")
     Document epochs()
     {
-        return Document();
+        const delta_epoch = end_epoch - start_epoch;
+        check(delta_epoch < 8, format("Transaction took too many epochs. Took %s", delta_epoch));
+        return result_ok;
     }
 
 }

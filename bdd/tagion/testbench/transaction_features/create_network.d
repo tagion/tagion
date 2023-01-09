@@ -18,8 +18,8 @@ import std.algorithm;
 import tagion.testbench.transaction_features.create_wallets;
 import tagion.testbench.transaction_features.create_dart;
 import tagion.testbench.tools.utils : Genesis;
-import tagion.testbench.tools.cli;
-import tagion.testbench.tools.networkcli;
+import tagion.testbench.tools.wallet;
+import tagion.testbench.tools.network;
 
 
 enum feature = Feature("Start network", []);
@@ -96,7 +96,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
                 number_of_nodes.to!string,
             ];
 
-            auto node_pipe = pipeProcess(node_command, Redirect.all, null, Config.detached);
+            auto node_pipe = pipeProcess(node_command, Redirect.all, null, Config.detached, module_path);
             writefln("%s", node_pipe.stdout.byLine);
         }
         // start master node
@@ -122,7 +122,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
             number_of_nodes.to!string,
         ];
         auto node_master_pipe = pipeProcess(node_master_command, Redirect.all, null, Config
-                .detached);
+                .detached, module_path);
         writefln("%s", node_master_pipe.stdout.byLine);
 
         return result_ok;
@@ -131,6 +131,8 @@ class CreateNetworkWithNAmountOfNodesInModeone
     @Then("the nodes should be in_graph")
     Document ingraph() @trusted
     {
+        int sleep_before = 5;
+        Thread.sleep(sleep_before.seconds);
         check(waitUntilInGraph(60, 1, "10801") == true, "in_graph not found in log");
 
         return result_ok;
@@ -140,13 +142,13 @@ class CreateNetworkWithNAmountOfNodesInModeone
     Document amount() @trusted
     {
         foreach(i, genesis_amount; genesis) {
-            immutable cmd = wallets[i].update();
-            check(cmd.status == 0, format("Error: %s", cmd.output));
+            /* immutable cmd = wallets[i].update(); */
+            /* check(cmd.status == 0, format("Error: %s", cmd.output)); */
             
-            Balance wallet_balance = getBalance(wallets[i].path);
-            check(wallet_balance.returnCode == true, "Error in updating balance");
-            writefln("%s", wallet_balance);
-            check(wallet_balance.total == genesis[i].amount, "Balance not updated");
+            Balance balance = wallets[i].getBalance();
+            check(balance.returnCode == true, "Error in updating balance");
+            writefln("%s", balance);
+            check(balance.total == genesis[i].amount, "Balance not updated");
         }
         // check that wallets were updated correctly
         return result_ok;
