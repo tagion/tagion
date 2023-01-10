@@ -1,5 +1,5 @@
 
-export GODEBUG=cgocheck=-1
+export GODEBUG=cgocheck=0
 WOLFSSL?=1
 OLD?=1
 ONETOOL?=1
