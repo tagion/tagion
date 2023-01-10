@@ -4,6 +4,8 @@
 
 [create_dart.md](tagion/testbench/transaction_features/create_dart.md)
 
+[kill_network.md](tagion/testbench/transaction_features/kill_network.md)
+
 [create_wallets.md](tagion/testbench/transaction_features/create_wallets.md)
 
 [Collector_service.md](tagion/testbench/services/Collector_service.md)

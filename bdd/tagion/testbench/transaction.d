@@ -49,6 +49,10 @@ int _main(string[] args)
 												genesis,
 												);
 	auto create_transaction_context = create_transaction_feature.run;
+
+	auto kill_network_feature = automation!(kill_network)();
+	kill_network_feature.KillTheNetworkWithPIDS(create_network_context.CreateNetworkWithNAmountOfNodesInModeone);
+	auto kill_network_context = kill_network_feature.run;
 	
 	return 0;
 

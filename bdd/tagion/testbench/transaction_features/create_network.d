@@ -21,7 +21,6 @@ import tagion.testbench.tools.utils : Genesis;
 import tagion.testbench.tools.wallet;
 import tagion.testbench.tools.network;
 
-
 enum feature = Feature("Start network", []);
 
 alias FeatureContext = Tuple!(CreateNetworkWithNAmountOfNodesInModeone, "CreateNetworkWithNAmountOfNodesInModeone",
@@ -39,6 +38,10 @@ class CreateNetworkWithNAmountOfNodesInModeone
 
     string[] node_logs;
     string[] node_darts;
+    Pid[] pids;
+
+
+
 
     this(string module_name, GenerateDart dart, GenerateNWallets genWallets, const Genesis[] genesis, const int number_of_nodes)
     {
@@ -75,14 +78,8 @@ class CreateNetworkWithNAmountOfNodesInModeone
         {
             immutable node_dart = module_path.buildPath(format("dart-%s.drt", i));
             immutable node_log = module_path.buildPath(format("node-%s.log", i));
-            node_darts ~= node_dart;
-            node_logs ~= node_log;
 
             immutable node_command = [
-                "screen",
-                "-S",
-                "testnet",
-                "-dm",
                 tools.tagionwave,
                 "--net-mode=local",
                 format("--boot=%s", boot_path),
@@ -95,20 +92,18 @@ class CreateNetworkWithNAmountOfNodesInModeone
                 "-N",
                 number_of_nodes.to!string,
             ];
+            auto f = File("/dev/null", "w");
 
-            auto node_pipe = pipeProcess(node_command, Redirect.all, null, Config.detached, module_path);
-            writefln("%s", node_pipe.stdout.byLine);
+            auto node_pid = spawnProcess(node_command, std.stdio.stdin, f, f);
+            node_darts ~= node_dart;
+            node_logs ~= node_log;
+            pids ~= node_pid;
+
         }
         // start master node
         immutable node_master_log = module_path.buildPath("node-master.log");
-        node_logs ~= node_master_log;
-        node_darts ~= dart.dart_path;
 
         immutable node_master_command = [
-            "screen",
-            "-S",
-            "testnet-master",
-            "-dm",
             tools.tagionwave,
             "--net-mode=local",
             format("--boot=%s", boot_path),
@@ -121,9 +116,13 @@ class CreateNetworkWithNAmountOfNodesInModeone
             "-N",
             number_of_nodes.to!string,
         ];
-        auto node_master_pipe = pipeProcess(node_master_command, Redirect.all, null, Config
-                .detached, module_path);
-        writefln("%s", node_master_pipe.stdout.byLine);
+        auto f = File("/dev/null", "w");
+
+        auto node_master_pid = spawnProcess(node_master_command, std.stdio.stdin, f, f);
+
+        node_logs ~= node_master_log;
+        node_darts ~= dart.dart_path;
+        pids ~= node_master_pid;
 
         return result_ok;
     }
@@ -141,10 +140,11 @@ class CreateNetworkWithNAmountOfNodesInModeone
     @Then("the wallets should receive genesis amount")
     Document amount() @trusted
     {
-        foreach(i, genesis_amount; genesis) {
+        foreach (i, genesis_amount; genesis)
+        {
             /* immutable cmd = wallets[i].update(); */
             /* check(cmd.status == 0, format("Error: %s", cmd.output)); */
-            
+
             Balance balance = wallets[i].getBalance();
             check(balance.returnCode == true, "Error in updating balance");
             writefln("%s", balance);
