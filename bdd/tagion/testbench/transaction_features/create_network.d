@@ -92,7 +92,8 @@ class CreateNetworkWithNAmountOfNodesInModeone
         //         "-N",
         //         number_of_nodes.to!string,
         //     ];
-            Node node = Node(module_path, true, true, i, number_of_nodes);
+
+            Node node = Node(module_path, i, number_of_nodes);
             
             auto f = File("/dev/null", "w");
 
@@ -106,22 +107,11 @@ class CreateNetworkWithNAmountOfNodesInModeone
         // start master node
         immutable node_master_log = module_path.buildPath("node-master.log");
 
-        immutable node_master_command = [
-            tools.tagionwave,
-            "--net-mode=local",
-            format("--boot=%s", boot_path),
-            "--dart-init=false",
-            "--dart-synchronize=false",
-            format("--dart-path=%s", dart.dart_path),
-            format("--port=%s", 4020),
-            format("--transaction-port=%s", 10820),
-            format("--logger-filename=%s", node_master_log),
-            "-N",
-            number_of_nodes.to!string,
-        ];
+        Node node = Node(module_path, number_of_nodes, number_of_nodes, true);
+
         auto f = File("/dev/null", "w");
 
-        auto node_master_pid = spawnProcess(node_master_command, std.stdio.stdin, f, f);
+        auto node_master_pid = node.start;
 
         node_logs ~= node_master_log;
         node_darts ~= dart.dart_path;

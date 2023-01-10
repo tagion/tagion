@@ -182,19 +182,27 @@ struct Node
 
     this(
         string module_path,
-        bool dart_init,
-        bool dart_synchronize,
         uint node_number,
         uint nodes,
+        bool master = false,
     )
     {
-        this.boot_path = buildPath(module_path, "boot.hibon");
-        this.dart_path = buildPath(module_path, format("dart-%s.drt", node_number));
-        this.logger_file = buildPath(module_path, format("node-%s.log", node_number));
-        this.dart_init = dart_init;
-        this.dart_synchronize = dart_synchronize;
         this.node_number = node_number;
         this.nodes = nodes;
+        this.boot_path = buildPath(module_path, "boot.hibon");
+
+        if (master) {
+            this.dart_path = buildPath(module_path, "dart.drt");
+            this.logger_file = buildPath(module_path, "node-master.log");
+            this.dart_init = false;
+            this.dart_synchronize = false;
+        }
+        else {
+            this.dart_path = buildPath(module_path, format("dart-%s.drt", node_number));
+            this.logger_file = buildPath(module_path, format("node-%s.log", node_number));
+            this.dart_init = true;
+            this.dart_synchronize = true;
+        }
     }
 
     Pid start()
@@ -218,3 +226,20 @@ struct Node
     }
 
 }
+
+/* Node masterNode( */
+/*     string modulePath, */
+/*     uint nodes, */
+/* ) { */
+/*     Node node = Node(        nodes, // node_number */
+/*         nodes, // nodes */
+/*         buildPath(modulePath, "boot.hibon"), // boot_path */
+/*         false, //dart_init */
+/*         false, //dart_synchronize */
+/*         buildPath(modulePath, "dart.drt"), // dart_path */
+/*         4000 + nodes, // port */
+/*         10800 + nodes, // port */
+/*         buildPath(modulePath, "master_log"), // Logger_file */
+/*     ); */
+/*     return node; */
+/* } */
