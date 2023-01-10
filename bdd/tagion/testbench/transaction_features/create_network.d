@@ -36,6 +36,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
     const int number_of_nodes;
     string module_path;
 
+    Node[] nodes;
     string[] node_logs;
     string[] node_darts;
     Pid[] pids;
@@ -71,36 +72,26 @@ class CreateNetworkWithNAmountOfNodesInModeone
     @When("network is started")
     Document started() @trusted
     {
-        const boot_path = module_path.buildPath("boot.hibon");
 
         // start all normal nodes
         for (int i = 1; i < number_of_nodes; i++)
         {
-            immutable node_dart = module_path.buildPath(format("dart-%s.drt", i));
-            immutable node_log = module_path.buildPath(format("node-%s.log", i));
 
             Node node = Node(module_path, i, number_of_nodes);
+            nodes ~= node;
             
             auto f = File("/dev/null", "w");
-
-            // auto node_pid = spawnProcess(node_command, std.stdio.stdin, f, f);
             auto node_pid = node.start;
-            node_darts ~= node_dart;
-            node_logs ~= node_log;
             pids ~= node_pid;
 
         }
-        // start master node
-        immutable node_master_log = module_path.buildPath("node-master.log");
-
         Node node = Node(module_path, number_of_nodes, number_of_nodes, true);
+        nodes ~= node;
 
         auto f = File("/dev/null", "w");
 
         auto node_master_pid = node.start;
 
-        node_logs ~= node_master_log;
-        node_darts ~= dart.dart_path;
         pids ~= node_master_pid;
 
         return result_ok;

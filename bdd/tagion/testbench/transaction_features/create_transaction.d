@@ -30,7 +30,7 @@ alias FeatureContext = Tuple!(CreateTransaction, "CreateTransaction", FeatureGro
 class CreateTransaction
 {
 
-    CreateNetworkWithNAmountOfNodesInModeone network;
+    Node[] network;
     TagionWallet[] wallets;
     const Genesis[] genesis;
     string module_path;
@@ -47,7 +47,7 @@ class CreateTransaction
         this.wallets = genWallets.wallets;
         this.genesis = genesis;
         this.module_path = env.bdd_log.buildPath(module_name);
-        this.network = network;
+        this.network = network.nodes;
     }
 
     @Given("a network.")
@@ -88,7 +88,7 @@ class CreateTransaction
     @When("the contract is executed.")
     Document executed()
     {
-        check(waitUntilLog(60, 1, "Executing contract", network.node_logs[$-1]) == true, "Executing contract not found in log");
+        check(waitUntilLog(60, 1, "Executing contract", network[$-1].logger_file) == true, "Executing contract not found in log");
         end_epoch = getEpoch("10801");
         return result_ok;
     }
@@ -121,8 +121,8 @@ class CreateTransaction
     Document same() @trusted
     {
         string[] bullseyes;
-        foreach(i, dart_path; network.node_darts) {
-            bullseyes ~= getBullseye(dart_path);
+        foreach(node; network) {
+            bullseyes ~= getBullseye(node.dart_path);
         }
         foreach(bullseye; bullseyes) {
             writeln(bullseye);
