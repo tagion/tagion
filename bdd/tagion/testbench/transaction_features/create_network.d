@@ -79,20 +79,6 @@ class CreateNetworkWithNAmountOfNodesInModeone
             immutable node_dart = module_path.buildPath(format("dart-%s.drt", i));
             immutable node_log = module_path.buildPath(format("node-%s.log", i));
 
-        //     immutable node_command = [
-        //         tools.tagionwave,
-        //         "--net-mode=local",
-        //         format("--boot=%s", boot_path),
-        //         "--dart-init=true",
-        //         "--dart-synchronize=true",
-        //         format("--dart-path=%s", node_dart),
-        //         format("--port=%s", 4000 + i),
-        //         format("--transaction-port=%s", 10800 + i),
-        //         format("--logger-filename=%s", node_log),
-        //         "-N",
-        //         number_of_nodes.to!string,
-        //     ];
-
             Node node = Node(module_path, i, number_of_nodes);
             
             auto f = File("/dev/null", "w");

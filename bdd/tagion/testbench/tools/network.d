@@ -15,35 +15,6 @@ import std.range;
 import std.format;
 import std.path;
 
-
-// immutable struct Node
-// {
-//     immutable string path;
-//     Pid pid;
-//     uint port;
-
-//     immutable this(
-//         const string path,
-//     )
-//     {
-//         this.path = path;
-//     }
-
-//     /* immutable ~this() { */
-//     /*     this.stopNode(); */
-//     /* } */
-
-//     immutable startNode()
-//     {
-//         assert(0, "not implemented");
-//     }
-
-//     immutable stopNode()
-//     {
-//         assert(0, "not implemented");
-//     }
-// }
-
 bool waitUntilInGraph(int lockThreadTime, int sleepThreadTime, string port) @trusted
 {
     HealthData json_result;
@@ -226,20 +197,3 @@ struct Node
     }
 
 }
-
-/* Node masterNode( */
-/*     string modulePath, */
-/*     uint nodes, */
-/* ) { */
-/*     Node node = Node(        nodes, // node_number */
-/*         nodes, // nodes */
-/*         buildPath(modulePath, "boot.hibon"), // boot_path */
-/*         false, //dart_init */
-/*         false, //dart_synchronize */
-/*         buildPath(modulePath, "dart.drt"), // dart_path */
-/*         4000 + nodes, // port */
-/*         10800 + nodes, // port */
-/*         buildPath(modulePath, "master_log"), // Logger_file */
-/*     ); */
-/*     return node; */
-/* } */
