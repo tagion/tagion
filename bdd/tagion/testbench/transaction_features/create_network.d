@@ -39,10 +39,6 @@ class CreateNetworkWithNAmountOfNodesInModeone
     Node[] nodes;
     string[] node_logs;
     string[] node_darts;
-    Pid[] pids;
-
-
-
 
     this(string module_name, GenerateDart dart, GenerateNWallets genWallets, const Genesis[] genesis, const int number_of_nodes)
     {
@@ -76,23 +72,12 @@ class CreateNetworkWithNAmountOfNodesInModeone
         // start all normal nodes
         for (int i = 1; i < number_of_nodes; i++)
         {
-
             Node node = Node(module_path, i, number_of_nodes);
             nodes ~= node;
-            
-            auto f = File("/dev/null", "w");
-            auto node_pid = node.start;
-            pids ~= node_pid;
-
         }
+
         Node node = Node(module_path, number_of_nodes, number_of_nodes, true);
         nodes ~= node;
-
-        auto f = File("/dev/null", "w");
-
-        auto node_master_pid = node.start;
-
-        pids ~= node_master_pid;
 
         return result_ok;
     }

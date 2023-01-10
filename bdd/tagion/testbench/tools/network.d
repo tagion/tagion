@@ -141,15 +141,16 @@ int getEpoch(string port) @trusted
 
 struct Node
 {
+    Pid pid;
+    immutable string boot_path;
+    immutable string dart_path;
+    immutable string logger_file;
     immutable uint node_number;
     immutable uint nodes;
-    immutable string boot_path;
-    immutable bool dart_init;
-    immutable bool dart_synchronize;
-    immutable string dart_path;
     immutable uint port;
     immutable uint transaction_port;
-    immutable string logger_file;
+    immutable bool dart_init;
+    immutable bool dart_synchronize;
 
     this(
         string module_path,
@@ -174,10 +175,7 @@ struct Node
             this.dart_init = true;
             this.dart_synchronize = true;
         }
-    }
 
-    Pid start()
-    {
         immutable node_command = [
             tools.tagionwave,
             "--net-mode=local",
@@ -192,7 +190,6 @@ struct Node
             nodes.to!string,
         ];
         auto f = File("/dev/null", "w");
-
-        return spawnProcess(node_command, std.stdio.stdin, f, f);
+        this.pid = spawnProcess(node_command, std.stdio.stdin, f, f);
     }
 }
