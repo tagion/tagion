@@ -13,6 +13,7 @@ import std.conv;
 import std.algorithm;
 import std.range;
 import std.format;
+import std.path;
 
 
 // immutable struct Node
@@ -180,20 +181,18 @@ struct Node
     immutable string logger_file;
 
     this(
-        string boot_path,
+        string module_path,
         bool dart_init,
         bool dart_synchronize,
-        string dart_path,
-        string logger_file,
         uint node_number,
         uint nodes,
     )
     {
-        this.boot_path = boot_path;
+        this.boot_path = buildPath(module_path, "boot.hibon");
+        this.dart_path = buildPath(module_path, format("dart-%s.drt", node_number));
+        this.logger_file = buildPath(module_path, format("node-%s.log", node_number));
         this.dart_init = dart_init;
         this.dart_synchronize = dart_synchronize;
-        this.dart_path = dart_path;
-        this.logger_file = logger_file;
         this.node_number = node_number;
         this.nodes = nodes;
     }

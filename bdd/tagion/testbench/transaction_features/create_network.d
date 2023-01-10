@@ -92,7 +92,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
         //         "-N",
         //         number_of_nodes.to!string,
         //     ];
-            Node node = Node(boot_path, true, true, node_dart, node_log, i, number_of_nodes);
+            Node node = Node(module_path, true, true, i, number_of_nodes);
             
             auto f = File("/dev/null", "w");
 
