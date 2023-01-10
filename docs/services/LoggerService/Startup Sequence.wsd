@@ -1,0 +1,40 @@
+@startuml LoggerService Sequence
+
+skinparam Style strictuml
+hide empty description
+title Logger Service Startup Sequence Diagram
+
+participant tagionwave as wave
+participant LoggerService as logservice
+participant LogSubscriptionService as logsubservice
+
+wave -> logservice : spawn(options);
+logservice -> logservice : setOptions(options)
+
+alt options.logsubscription.enable
+
+    logservice -> logsubservice : spawn(options)
+    logsubservice ->x logservice : send(Control.LIVE)
+    note right of logservice : we currently don't catch LIVE\nit could lead to problems
+
+end 
+
+alt options.logger.file_name not empty
+
+    logservice -> logservice : open file options.logger.file_name for write
+    logservice -> logservice : file.flush
+
+end
+
+loop
+
+    logservice -> logservice : listening concurrency
+
+end
+
+...
+... stopping service... ...
+logservice -> logsubservice : send(Control.STOP)
+logsubservice --> logservice : send(Control.END)
+
+@enduml

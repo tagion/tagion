@@ -1,0 +1,22 @@
+@startuml LoggerService Sequence
+
+skinparam Style strictuml
+hide empty description
+title Logger Service Receiving Log Filters Sequence Diagram
+
+participant LogSubscribersInfo as logsubinfo
+participant LoggerService as logservice
+
+logsubinfo -> logservice : send(LogFilter[] update_filters, LogFiltersAction action)
+
+alt action is ADD
+
+    logservice -> logservice : append update_filters to commonLogFilters
+
+else action is REMOVE
+
+    logservice -> logservice : remove update_filters from commonLogFilters
+
+end
+
+@enduml

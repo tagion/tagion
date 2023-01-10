@@ -1,0 +1,33 @@
+@startuml LoggerService Sequence
+
+skinparam Style strictuml
+hide empty description
+title Logger Service Receiving Logs Sequence Diagram
+
+participant Logger as logger
+participant LoggerService as logservice
+participant LogSubscriptionService as logsubservice
+
+logger -> logservice : send(LogInfo log_info, Document doc)
+
+alt matchAnyFilter(log_info)
+
+    logservice -> logsubservice : send(log_info, doc)
+
+end
+
+alt log_info.isTextLog
+
+    logservice -> logservice : format text log
+    logservice -> logservice : write text log to file
+    logservice -> logservice : write text log to console
+
+    alt log_info.level & LogLevel.STDERR
+
+        logservice -> logservice : write text log to stderr
+
+    end
+
+end
+
+@enduml
