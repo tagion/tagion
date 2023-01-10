@@ -12,30 +12,36 @@ import std.stdio;
 import std.conv;
 import std.algorithm;
 import std.range;
+import std.format;
 
-immutable struct Node {
-    immutable string path;
-    Pid pid;
-    uint port;
 
-    immutable this(
-        const string path,
-    ) {
-        this.path = path;
-    }
+// immutable struct Node
+// {
+//     immutable string path;
+//     Pid pid;
+//     uint port;
 
-    /* immutable ~this() { */
-    /*     this.stopNode(); */
-    /* } */
+//     immutable this(
+//         const string path,
+//     )
+//     {
+//         this.path = path;
+//     }
 
-    immutable startNode() {
-        assert(0, "not implemented");
-    }
+//     /* immutable ~this() { */
+//     /*     this.stopNode(); */
+//     /* } */
 
-    immutable stopNode() {
-        assert(0, "not implemented");
-    }
-}
+//     immutable startNode()
+//     {
+//         assert(0, "not implemented");
+//     }
+
+//     immutable stopNode()
+//     {
+//         assert(0, "not implemented");
+//     }
+// }
 
 bool waitUntilInGraph(int lockThreadTime, int sleepThreadTime, string port) @trusted
 {
@@ -149,12 +155,67 @@ bool checkBullseyes(string[] bullseyes)
     return true;
 }
 
-int getEpoch(string port) @trusted {
+int getEpoch(string port) @trusted
+{
     HealthData json_result = healthCheck(port);
-    if (json_result.returnCode == false) {
+    if (json_result.returnCode == false)
+    {
         throw new Exception("Healthcheck failed");
     }
     writefln("%s", json_result);
     return json_result.result["$msg"]["result"]["$epoch_number"][1].get!int;
+
+}
+
+struct Node
+{
+    immutable uint node_number;
+    immutable uint nodes;
+    immutable string boot_path;
+    immutable bool dart_init;
+    immutable bool dart_synchronize;
+    immutable string dart_path;
+    immutable uint port;
+    immutable uint transaction_port;
+    immutable string logger_file;
+
+    this(
+        string boot_path,
+        bool dart_init,
+        bool dart_synchronize,
+        string dart_path,
+        string logger_file,
+        uint node_number,
+        uint nodes,
+    )
+    {
+        this.boot_path = boot_path;
+        this.dart_init = dart_init;
+        this.dart_synchronize = dart_synchronize;
+        this.dart_path = dart_path;
+        this.logger_file = logger_file;
+        this.node_number = node_number;
+        this.nodes = nodes;
+    }
+
+    Pid start()
+    {
+        immutable node_command = [
+            tools.tagionwave,
+            "--net-mode=local",
+            format("--boot=%s", boot_path),
+            format("--dart-init=%s", dart_init.to!string),
+            format("--dart-synchronize=%s", dart_synchronize.to!string),
+            format("--dart-path=%s", dart_path),
+            format("--port=%s", 4000 + node_number),
+            format("--transaction-port=%s", 10800 + node_number),
+            format("--logger-filename=%s", logger_file),
+            "-N",
+            nodes.to!string,
+        ];
+        auto f = File("/dev/null", "w");
+
+        return spawnProcess(node_command, std.stdio.stdin, f, f);
+    }
 
 }
