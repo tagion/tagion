@@ -4,7 +4,7 @@ export MODE1_ROOT:=$(TESTLOG)/mode1
 #export MODE1_SRC_CONFIG:=$(FUND)/mode1/tagionwave.json
 #export MODE1_LOG:=$(MODE1_ROOT)/mode1_script.log
 MODE1_BOOT=$(MODE1_ROOT)/boot.hibon
-MODE1_FLAGS:=-N 7 -t 300
+MODE1_FLAGS:=-N $(NODES) -t 300
 MODE1_FLAGS+=--net-mode=local
 MODE1_FLAGS+=--boot=$(MODE1_BOOT)
 #MODE1_FLAGS+=--epochs=$(EPOCHS)
