@@ -116,7 +116,7 @@ alt receiver.supports!DART
 
 else else
 
-    dartsync -> dartsync : collect "owners" from receiver
+    dartsync -> dartsync : collect "owners" from receiver 
     dartsync -> dart : loadAll()
     dart --> dartsync : archives
     dartsync -> dartsync : collect bills from archives\nonly with specified owners
