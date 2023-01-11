@@ -4,6 +4,8 @@ import tagion.behaviour;
 import tagion.hibon.Document;
 import tagion.testbench.tools.Environment;
 import tagion.testbench.tools.wallet;
+import tagion.testbench.tools.BDDOptions;
+
 
 import std.typecons : Tuple;
 import std.stdio;
@@ -23,10 +25,10 @@ class GenerateNWallets
     int number_of_wallets;
     string module_path;
 
-    this(string module_name, int n)
+    this(BDDOptions bdd_options)
     {
-        this.number_of_wallets = n;
-        this.module_path = env.bdd_log.buildPath(module_name);
+        this.number_of_wallets = bdd_options.genesis_wallets.number_of_wallets;
+        this.module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
     }
 
     @Given("i have n pincodes and questions")

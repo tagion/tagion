@@ -6,6 +6,7 @@ import tagion.testbench.tools.BDDConstants;
 
 struct BDDOptions
 {
+    string scenario_name;
 
     BDDConstants constants;
 
@@ -38,6 +39,7 @@ void setDefaultBDDOptions(ref BDDOptions bdd_options)
 {
     with (bdd_options)
     {
+        bdd_options.scenario_name = "NAME";
         with (bdd_options.constants)
         {
             MAX_EPOCHS = 8;
