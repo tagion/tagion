@@ -321,7 +321,7 @@ int check_reports(string[] paths, const bool verbose) {
         void report(string text) {
             const test_code = testCode;
             if (test_code == TestCode.passed) {
-                show_report(test_code, "%d testest passed BDD-tests", total);
+                show_report(test_code, "%d test passed BDD-tests", total);
             }
             else {
                 writef("%s%s%s: ", BLUE, text, RESET);
