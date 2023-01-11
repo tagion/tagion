@@ -15,7 +15,7 @@ import std.range;
 import std.format;
 import std.path;
 
-bool waitUntilInGraph(int lockThreadTime, int sleepThreadTime, string port) @trusted
+bool waitUntilInGraph(int lockThreadTime, int sleepThreadTime, uint port) @trusted
 {
     HealthData json_result;
 
@@ -42,12 +42,12 @@ bool waitUntilInGraph(int lockThreadTime, int sleepThreadTime, string port) @tru
     return false;
 }
 
-HealthData healthCheck(string port) @trusted
+HealthData healthCheck(uint port) @trusted
 {
     immutable node_command = [
         tools.tagionwallet,
         "--port",
-        port,
+        port.to!string,
         "--health",
     ];
     auto node_pipe = pipeProcess(node_command, Redirect.all, null, Config
@@ -127,7 +127,7 @@ bool checkBullseyes(string[] bullseyes)
     return true;
 }
 
-int getEpoch(string port) @trusted
+int getEpoch(uint port) @trusted
 {
     HealthData json_result = healthCheck(port);
     if (json_result.returnCode == false)

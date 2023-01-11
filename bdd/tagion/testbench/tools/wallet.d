@@ -93,27 +93,27 @@ immutable struct TagionWallet
             ]);
     }
 
-    immutable update(string port = "10801")
+    immutable update(uint port = 10801)
     {
         return this.executeAt([
             tools.tagionwallet,
             "-x",
             pin,
             "--port",
-            port,
+            port.to!string,
             "--update",
             "--amount",
         ]);
     }
 
-    Balance getBalance() @trusted
+    Balance getBalance(uint port = 10801) @trusted
     {
         immutable result = executeAt([
             tools.tagionwallet,
             "-x",
             "1111",
             "--port",
-            "10801",
+            port.to!string,
             "--update",
             "--amount",
         ]);

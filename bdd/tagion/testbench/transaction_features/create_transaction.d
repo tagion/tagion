@@ -40,6 +40,9 @@ class CreateTransaction
     int start_epoch;
     int end_epoch;
 
+    uint increase_port;
+    uint tx_increase_port;
+
     Balance wallet_0;
     Balance wallet_1;
 
@@ -49,6 +52,8 @@ class CreateTransaction
         this.genesis = bdd_options.genesis_wallets.wallets;
         this.module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
         this.network = network.nodes;
+        this.increase_port = bdd_options.network.increase_port;
+        this.tx_increase_port = bdd_options.network.tx_increase_port;
     }
 
     @Given("a network.")
@@ -80,7 +85,7 @@ class CreateTransaction
 
         wallets[0].payInvoice(invoice_path);
 
-        start_epoch = getEpoch("10801");
+        start_epoch = getEpoch(tx_increase_port+1);
         writefln("startepoch %s", start_epoch);
 
         return result_ok;
@@ -90,7 +95,7 @@ class CreateTransaction
     Document executed()
     {
         check(waitUntilLog(60, 1, "Executing contract", network[$-1].logger_file) == true, "Executing contract not found in log");
-        end_epoch = getEpoch("10801");
+        end_epoch = getEpoch(tx_increase_port+1);
         return result_ok;
     }
 
