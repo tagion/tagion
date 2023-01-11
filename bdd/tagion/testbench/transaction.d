@@ -17,7 +17,6 @@ int _main(string[] args)
 {
 	string scenario_name = __MODULE__;
 
-
 	BDDOptions bdd_options;
 	setDefaultBDDOptions(bdd_options);
 	bdd_options.scenario_name = __MODULE__;
@@ -42,10 +41,10 @@ int _main(string[] args)
 	auto create_network_context = create_network_feature.run;
 
 	auto create_transaction_feature = automation!(create_transaction)();
-	create_transaction_feature.CreateTransaction(scenario_name,
+	create_transaction_feature.CreateTransaction(
 		create_wallets_context.GenerateNWallets,
 		create_network_context.CreateNetworkWithNAmountOfNodesInModeone,
-		genesis,
+		bdd_options,
 	);
 	auto create_transaction_context = create_transaction_feature.run;
 

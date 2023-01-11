@@ -21,6 +21,7 @@ import tagion.testbench.tools.utils : Genesis;
 import tagion.testbench.transaction_features.create_network;
 import tagion.testbench.tools.network;
 import tagion.testbench.tools.wallet;
+import tagion.testbench.tools.BDDOptions;
 
 enum feature = Feature("Generate transaction", []);
 
@@ -42,11 +43,11 @@ class CreateTransaction
     Balance wallet_0;
     Balance wallet_1;
 
-    this(string module_name, GenerateNWallets genWallets, CreateNetworkWithNAmountOfNodesInModeone network, const Genesis[] genesis)
+    this(GenerateNWallets genWallets, CreateNetworkWithNAmountOfNodesInModeone network, BDDOptions bdd_options)
     {
         this.wallets = genWallets.wallets;
-        this.genesis = genesis;
-        this.module_path = env.bdd_log.buildPath(module_name);
+        this.genesis = bdd_options.genesis_wallets.wallets;
+        this.module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
         this.network = network.nodes;
     }
 
