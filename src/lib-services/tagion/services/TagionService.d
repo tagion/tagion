@@ -411,6 +411,8 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                 .numOfActiveNodes);
         HiRPC empty_hirpc;
         gossip_net.start_listening();
+
+        Thread.sleep(5.seconds);
         while (!stop && !abort) {
             immutable message_received = receiveTimeout(
                     opts.timeout.msecs,
