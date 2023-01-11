@@ -72,11 +72,11 @@ class CreateNetworkWithNAmountOfNodesInModeone
         // start all normal nodes
         for (int i = 1; i < number_of_nodes; i++)
         {
-            Node node = Node(module_path, i, number_of_nodes);
+            Node node = Node(module_path, i, number_of_nodes, 4000, 10800);
             nodes ~= node;
         }
 
-        Node node = Node(module_path, number_of_nodes, number_of_nodes, true);
+        Node node = Node(module_path, number_of_nodes, number_of_nodes, 4000, 10800, true);
         nodes ~= node;
 
         return result_ok;

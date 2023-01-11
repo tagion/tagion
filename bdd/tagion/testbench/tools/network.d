@@ -156,12 +156,16 @@ struct Node
         string module_path,
         uint node_number,
         uint nodes,
+        uint port,
+        uint transaction_port,
         bool master = false,
     )
     {
         this.node_number = node_number;
         this.nodes = nodes;
         this.boot_path = buildPath(module_path, "boot.hibon");
+        this.port = port;
+        this.transaction_port = transaction_port;
 
         if (master) {
             this.dart_path = buildPath(module_path, "dart.drt");
@@ -183,8 +187,8 @@ struct Node
             format("--dart-init=%s", dart_init.to!string),
             format("--dart-synchronize=%s", dart_synchronize.to!string),
             format("--dart-path=%s", dart_path),
-            format("--port=%s", 4000 + node_number),
-            format("--transaction-port=%s", 10800 + node_number),
+            format("--port=%s", port + node_number),
+            format("--transaction-port=%s", transaction_port + node_number),
             format("--logger-filename=%s", logger_file),
             "-N",
             nodes.to!string,

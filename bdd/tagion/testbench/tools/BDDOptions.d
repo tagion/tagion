@@ -20,6 +20,17 @@ struct BDDOptions
 
     GenesisWallets genesis_wallets;
 
+    struct Network
+    {
+        uint increase_port;
+        uint tx_increase_port;
+        uint number_of_nodes;
+
+        mixin JSONCommon;
+    }
+
+    Network network;
+
     mixin JSONConfig;
 }
 
@@ -43,6 +54,12 @@ void setDefaultBDDOptions(ref BDDOptions bdd_options)
                 Genesis(1, 10_000),
                 Genesis(1, 10_000),
             ];
+        }
+        with (bdd_options.network)
+        {
+            increase_port = 4000;
+            tx_increase_port = 10800;
+            number_of_nodes = 11;
         }
 
     }
