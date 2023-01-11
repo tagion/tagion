@@ -33,14 +33,12 @@ int _main(string[] args)
 	auto create_wallets_context = create_wallets_feature.run;
 
 	auto create_dart_feature = automation!(create_dart)();
-	create_dart_feature.GenerateDart(scenario_name, create_wallets_context.GenerateNWallets, genesis);
+	create_dart_feature.GenerateDart(create_wallets_context.GenerateNWallets, bdd_options);
 	auto create_dart_context = create_dart_feature.run;
 
 	auto create_network_feature = automation!(create_network)();
-	create_network_feature.CreateNetworkWithNAmountOfNodesInModeone(scenario_name, create_dart_context.GenerateDart,
-		create_wallets_context.GenerateNWallets,
-		genesis,
-		number_of_nodes,);
+	create_network_feature.CreateNetworkWithNAmountOfNodesInModeone(create_dart_context.GenerateDart,
+		create_wallets_context.GenerateNWallets, bdd_options);
 	auto create_network_context = create_network_feature.run;
 
 	auto create_transaction_feature = automation!(create_transaction)();

@@ -20,6 +20,7 @@ import tagion.testbench.transaction_features.create_dart;
 import tagion.testbench.tools.utils : Genesis;
 import tagion.testbench.tools.wallet;
 import tagion.testbench.tools.network;
+import tagion.testbench.tools.BDDOptions;
 
 enum feature = Feature("Start network", []);
 
@@ -40,13 +41,13 @@ class CreateNetworkWithNAmountOfNodesInModeone
     string[] node_logs;
     string[] node_darts;
 
-    this(string module_name, GenerateDart dart, GenerateNWallets genWallets, const Genesis[] genesis, const int number_of_nodes)
+    this(GenerateDart dart, GenerateNWallets genWallets, BDDOptions bdd_options)
     {
         this.dart = dart;
         this.wallets = genWallets.wallets;
-        this.genesis = genesis;
-        this.number_of_nodes = number_of_nodes;
-        this.module_path = env.bdd_log.buildPath(module_name);
+        this.genesis = bdd_options.genesis_wallets.wallets;
+        this.number_of_nodes = bdd_options.network.number_of_nodes;
+        this.module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
     }
 
     @Given("i have _wallets")

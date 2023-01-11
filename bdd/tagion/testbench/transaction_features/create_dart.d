@@ -16,6 +16,7 @@ import tagion.testbench.tools.wallet;
 import tagion.testbench.transaction_features.create_wallets;
 import tagion.testbench.tools.utils : Genesis;
 import tagion.testbench.tools.FileName : generateFileName;
+import tagion.testbench.tools.BDDOptions;
 
 enum feature = Feature(
         "Add genesis wallets.",
@@ -38,11 +39,11 @@ class GenerateDart
     const Genesis[] genesis;
     string[] invoices;
 
-    this(string module_name, GenerateNWallets genWallets, const Genesis[] genesis)
+    this(GenerateNWallets genWallets, BDDOptions bdd_options)
     {
         this.wallets = genWallets.wallets;
-        this.genesis = genesis;
-        this.module_path = env.bdd_log.buildPath(module_name);
+        this.genesis = bdd_options.genesis_wallets.wallets;
+        this.module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
     }
 
     @Given("I have wallets with pincodes")
