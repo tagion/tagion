@@ -433,6 +433,7 @@ static void async_send(
         void send_to_channel(immutable(Pubkey) channel, Document doc)
         {
             log.trace("Sending to channel: %s \n %s \n", channel.cutHex, doc.toJSON);
+            log.trace("Data buffer: %s", doc.data);
             auto streamId = connectionPoolBridge[channel];
             if (streamId == 0 || !connectionPool.contains(streamId))
             {
@@ -482,7 +483,7 @@ static void async_send(
                 catch (Exception e)
                 {
                     log.warning("Error on sending to channel: %s", e);
-                    concurrency.send(concurrency.ownerTid, channel);
+                    // concurrency.send(concurrency.ownerTid, channel); //???
                 }
             },
                 (Pubkey channel, uint id) {
@@ -501,28 +502,36 @@ static void async_send(
                 }
             },
 
-                (Response!(p2plib.ControlCode.Control_Connected) resp) {
+            (Response!(p2plib.ControlCode.Control_Connected) resp) {
                 log("Client Connected key: %d", resp.key);
                 connectionPool.add(resp.key, resp.stream, true);
             },
-                (Response!(p2plib.ControlCode.Control_Disconnected) resp) {
-                    log("Client Disconected key: %d", resp.key);
-                    connectionPool.close(cast(void*) resp.key);
-                    connectionPoolBridge.removeConnection(resp.key);
+            (Response!(p2plib.ControlCode.Control_Disconnected) resp) {
+                log("Client Disconected key: %d", resp.key);
+                connectionPool.close(cast(void*) resp.key);
+                connectionPoolBridge.removeConnection(resp.key);
             },
-                (Response!(p2plib.ControlCode.Control_RequestHandled) resp) {
-                import tagion.hibon.Document;
-                log.trace("Data received");
-                auto doc = Document(resp.data);
-                const receiver = hirpc.receive(doc);
-                Pubkey received_pubkey = receiver.pubkey;
-                log("*** received from: %s\n %s\n", received_pubkey.cutHex, doc.toJSON);
-                const streamId = connectionPoolBridge[received_pubkey];
-                if (!streamId)
+            (Response!(p2plib.ControlCode.Control_RequestHandled) resp) {
+                try
                 {
-                    connectionPoolBridge[received_pubkey] = resp.stream.identifier;
+                    import tagion.hibon.Document;
+                    log.trace("Data received");
+                    auto doc = Document(resp.data);
+                    const receiver = hirpc.receive(doc);
+                    Pubkey received_pubkey = receiver.pubkey;
+                    log("*** received from: %s\n %s\n", received_pubkey.cutHex, doc.toJSON);
+                    const streamId = connectionPoolBridge[received_pubkey];
+                    if (!streamId)
+                    {
+                        connectionPoolBridge[received_pubkey] = resp.stream.identifier;
+                    }
+                    concurrency.send(concurrency.ownerTid, receiver.toDoc);
                 }
-                concurrency.send(concurrency.ownerTid, receiver.toDoc);
+                catch (Exception e)
+                {
+                    log.warning("Error on receive: %s", e);
+                    log.trace("Data buffer: %s", resp.data);
+                }
             },
                 (Control control) {
                 if (control == Control.STOP)
