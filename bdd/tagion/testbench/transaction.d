@@ -15,40 +15,40 @@ mixin Main!(_main, "transaction_features");
 
 int _main(string[] args)
 {
-	string scenario_name = __MODULE__;
+    string scenario_name = __MODULE__;
 
-	BDDOptions bdd_options;
-	setDefaultBDDOptions(bdd_options);
-	bdd_options.scenario_name = __MODULE__;
+    BDDOptions bdd_options;
+    setDefaultBDDOptions(bdd_options);
+    bdd_options.scenario_name = __MODULE__;
 
-	bdd_options.save(format("/tmp/%s.json", scenario_name));
+    bdd_options.save(format("/tmp/%s.json", scenario_name));
 
-	auto create_wallets_feature = automation!(create_wallets)();
-	create_wallets_feature.GenerateNWallets(bdd_options);
-	auto create_wallets_context = create_wallets_feature.run;
+    auto create_wallets_feature = automation!(create_wallets)();
+    create_wallets_feature.GenerateNWallets(bdd_options);
+    auto create_wallets_context = create_wallets_feature.run;
 
-	auto create_dart_feature = automation!(create_dart)();
-	create_dart_feature.GenerateDart(create_wallets_context.GenerateNWallets, bdd_options);
-	auto create_dart_context = create_dart_feature.run;
+    auto create_dart_feature = automation!(create_dart)();
+    create_dart_feature.GenerateDart(create_wallets_context.GenerateNWallets, bdd_options);
+    auto create_dart_context = create_dart_feature.run;
 
-	auto create_network_feature = automation!(create_network)();
-	create_network_feature.CreateNetworkWithNAmountOfNodesInModeone(create_dart_context.GenerateDart,
-		create_wallets_context.GenerateNWallets, bdd_options);
-	auto create_network_context = create_network_feature.run;
+    auto create_network_feature = automation!(create_network)();
+    create_network_feature.CreateNetworkWithNAmountOfNodesInModeone(create_dart_context.GenerateDart,
+        create_wallets_context.GenerateNWallets, bdd_options);
+    auto create_network_context = create_network_feature.run;
 
-	auto create_transaction_feature = automation!(create_transaction)();
-	create_transaction_feature.CreateTransaction(
-		create_wallets_context.GenerateNWallets,
-		create_network_context.CreateNetworkWithNAmountOfNodesInModeone,
-		bdd_options,
-	);
-	auto create_transaction_context = create_transaction_feature.run;
+    auto create_transaction_feature = automation!(create_transaction)();
+    create_transaction_feature.CreateTransaction(
+        create_wallets_context.GenerateNWallets,
+        create_network_context.CreateNetworkWithNAmountOfNodesInModeone,
+        bdd_options,
+    );
+    auto create_transaction_context = create_transaction_feature.run;
 
-	auto kill_network_feature = automation!(kill_network)();
-	kill_network_feature.KillTheNetworkWithPIDS(
-		create_network_context.CreateNetworkWithNAmountOfNodesInModeone);
-	auto kill_network_context = kill_network_feature.run;
+    auto kill_network_feature = automation!(kill_network)();
+    kill_network_feature.KillTheNetworkWithPIDS(
+        create_network_context.CreateNetworkWithNAmountOfNodesInModeone);
+    auto kill_network_context = kill_network_feature.run;
 
-	return 0;
+    return 0;
 
 }

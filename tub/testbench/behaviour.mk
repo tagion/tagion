@@ -23,11 +23,11 @@ bddfiles: behaviour bddcontent
 
 .PHONY: bddcontent
 
-bddcontent: 
+bddcontent:
 	$(PRECMD)
 	$(DTUB)/bundle_bdd_files.d
 
-bddrun: $(BDDTESTS) 
+bddrun: $(BDDTESTS)
 
 .PHONY: bddrun
 
@@ -42,7 +42,7 @@ test-%: run-%
 	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
 	$(BEHAVIOUR) -c $(BDD_RESULTS)
 
-ddd-%:  
+ddd-%:
 	$(PRECMD)
 	$(DEBUGGER) $(DBIN)/$* $(RUNFLAGS)
 
@@ -63,7 +63,7 @@ bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way
 	$(PRECMD)
 	$(TESTPROGRAM) -f
 
-bddreport: target-hibonutil
+bddreport: target-hibonutil behaviour
 	$(PRECMD)
 	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
 	$(BEHAVIOUR) -cv $(BDD_RESULTS)
@@ -92,7 +92,7 @@ env-bdd:
 
 env: env-bdd
 
-list-bdd: 
+list-bdd:
 	$(PRECMD)
 	${call log.header, $@ :: list}
 	${call log.env, BDDS, $(BDDS)}
@@ -131,7 +131,7 @@ clean-bdd: clean-bddtest clean-reports
 	$(PRECMD)
 	${call log.header, $@ :: clean}
 	$(RM) $(BEHAVIOUR) $(BEHAVIOUR).o $(TESTPROGRAM) $(TESTPROGRAM).o $(BDDBINS)
- 
+
 # Delete hibon files
 clean-bddtest:
 	$(PRECMD)
