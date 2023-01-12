@@ -6,36 +6,22 @@ hide empty description
 title Recorder receiveRecorder sequence Diagram
 
 control TranscriptService as task
-control EpochDumpService as epochdump
 control RecorderTask as recordertask
 collections RecordFactory as factory
 collections RecorderChain as chain
 collections RecorderChainBlock as block
 
-alt (recorder.length > 0)
-    activate task
-    task -> task : recorder.dump()
-    task -> task : bullseye = modifyDart(recorder)
 
-    ' alt transaction dumping is disabled
-    '     task->epochdump : send(contracts_dump, bullseye)
-    ' end
-    ' task -> factory : unique_recorder = uniqueRecorder(recorder)
-    ' task -> task : dumpRecorderBlock(unique_recorder, bullseye)
+activate task
+task -> task : bullseye = modifyDart(recorder)
+task -> recordertask : send(recorder, dart_bullseye)
+deactivate task
 
-    alt recorder_tid is Tid.init
-        task -> task : recorder_tid = locate(recorder_task_name)
-    end
-    task -> recordertask : send(recorder, dart_bullseye)
-    deactivate task
-
-else log("received empty epoch") 
-    
-end
 
 activate recordertask
 recordertask -> recordertask : receiveRecorder(recorder, bullseye)
-recordertask -> chain : last_block = getLastBlock()
+recordertask -> chain : getLastBlock()
+chain --> recordertask : last_block
 recordertask -> block : new RecorderChainBlock(recorder, last_block, bullseye, net)
 recordertask -> chain : append(block)
 deactivate recordertask

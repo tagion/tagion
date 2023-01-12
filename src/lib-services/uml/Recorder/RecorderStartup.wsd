@@ -8,21 +8,21 @@ title Recorder startup opCall Sequence Diagram
 participant Tagionservice as task
 control RecorderTask as recordertask
 collections RecorderChainFileStorage as storage
+collections RecorderChain as chain
 
-alt recorder_chain folder path is empty 
-    task -> recordertask : RecorderTask(task_name, opts)
+alt recorder_chain feature is enabled 
+    task -> recordertask : spawn(opts)
 activate recordertask
 recordertask -> recordertask : opCall(opts)
 recordertask -> storage : new RecorderChainFileStorage(folder_path, net)
-recordertask -> recordertask : new RecorderChain(storage)
+storage --> recordertask : storage
+recordertask -> chain : new RecorderChain(storage)
+chain -> recordertask : recorder_chain
+
 recordertask --> task : send(Control.LIVE);
-activate task
-task -> task : <color green> assert(receiveOnly!Control == Control.LIVE) </color> 
-task -> task : recorder_service_tid = locate(task_name);
-deactivate task
 
 loop while(!stop)
-    recordertask -> recordertask : receive(recorder, bullseye)
+    recordertask -> recordertask : //Listening for concurrency signals.//
     note right : "See receiveRecorder \n diagram" 
 end
 deactivate recordertask
