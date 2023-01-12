@@ -5,6 +5,7 @@ import tagion.hibon.Document;
 import tagion.testbench.tools.Environment;
 import tagion.testbench.tools.wallet;
 import tagion.testbench.tools.BDDOptions;
+import tagion.logger.Logger;
 
 
 import std.typecons : Tuple;
@@ -43,28 +44,28 @@ class GenerateNWallets
         mkdirRecurse(module_path);
 
         for (int i = 0; i < number_of_wallets; i++)
-		{
+        {
             immutable wallet_path = module_path.buildPath(format("wallet_%s", i));
             mkdirRecurse(wallet_path);
-            writefln("Wallet path: %s", wallet_path);
+            log.register("Create wallets");
+            writefln("Wallet %s path : %s", i, wallet_path);
 
-			TagionWallet wallet = TagionWallet(wallet_path);
-			immutable cmd = wallet.generateWallet();
-			check(cmd.status == 0, format("Command failed, Error: %s", cmd.output));
-			wallets ~= wallet;
-		}
+            TagionWallet wallet = TagionWallet(wallet_path);
+            immutable cmd = wallet.generateWallet();
+            check(cmd.status == 0, format("Command failed, Error: %s", cmd.output));
+            wallets ~= wallet;
+        }
 
-		writeln("ALL the wallets: ", wallets);
         return result_ok;
     }
 
     @Then("check if the wallet can be activated with the pincode.")
     Document pincode() @trusted
     {
-		foreach(wallet; wallets) { 
-			immutable cmd = wallet.unlock();
-			check(cmd.status == 0, format("Command failed, Error: %s", cmd.output));
-		}
+        foreach(wallet; wallets) { 
+            immutable cmd = wallet.unlock();
+            check(cmd.status == 0, format("Command failed, Error: %s", cmd.output));
+        }
         return result_ok;
     }
 
