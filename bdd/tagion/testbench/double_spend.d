@@ -1,7 +1,7 @@
 module tagion.testbench.double_spend;
 
 import tagion.behaviour.Behaviour;
-import tagion.testbench.transaction_features;
+import tagion.testbench.functional;
 import tagion.hibon.HiBONRecord : fwrite;
 
 import tagion.tools.Basic;

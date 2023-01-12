@@ -1,11 +1,11 @@
-module tagion.testbench.transaction_features.kill_network;
+module tagion.testbench.functional.kill_network;
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
 import std.file;
 
-import tagion.testbench.transaction_features.create_network;
+import tagion.testbench.functional.create_network;
 import tagion.testbench.tools.network;
 import std.process;
 import std.stdio;

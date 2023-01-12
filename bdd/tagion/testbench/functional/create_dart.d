@@ -1,4 +1,4 @@
-module tagion.testbench.transaction_features.create_dart;
+module tagion.testbench.functional.create_dart;
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
@@ -13,7 +13,7 @@ import std.file;
 
 import tagion.testbench.tools.Environment;
 import tagion.testbench.tools.wallet;
-import tagion.testbench.transaction_features.create_wallets;
+import tagion.testbench.functional.create_wallets;
 import tagion.testbench.tools.utils : Genesis;
 import tagion.testbench.tools.FileName : generateFileName;
 import tagion.testbench.tools.BDDOptions;

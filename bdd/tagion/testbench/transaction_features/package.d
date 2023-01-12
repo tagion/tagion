@@ -1,8 +1,0 @@
-module tagion.testbench.transaction_features;
-
-public import create_transaction=tagion.testbench.transaction_features.create_transaction;
-public import create_network=tagion.testbench.transaction_features.create_network;
-public import create_double_spend=tagion.testbench.transaction_features.create_double_spend;
-public import create_dart=tagion.testbench.transaction_features.create_dart;
-public import kill_network=tagion.testbench.transaction_features.kill_network;
-public import create_wallets=tagion.testbench.transaction_features.create_wallets;

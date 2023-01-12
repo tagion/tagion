@@ -1,14 +1,14 @@
-[create_transaction.md](tagion/testbench/transaction_features/create_transaction.md)
+[create_transaction.md](tagion/testbench/functional/create_transaction.md)
 
-[create_network.md](tagion/testbench/transaction_features/create_network.md)
+[create_network.md](tagion/testbench/functional/create_network.md)
 
-[create_double_spend.md](tagion/testbench/transaction_features/create_double_spend.md)
+[create_double_spend.md](tagion/testbench/functional/create_double_spend.md)
 
-[create_dart.md](tagion/testbench/transaction_features/create_dart.md)
+[create_dart.md](tagion/testbench/functional/create_dart.md)
 
-[kill_network.md](tagion/testbench/transaction_features/kill_network.md)
+[kill_network.md](tagion/testbench/functional/kill_network.md)
 
-[create_wallets.md](tagion/testbench/transaction_features/create_wallets.md)
+[create_wallets.md](tagion/testbench/functional/create_wallets.md)
 
 [Collector_service.md](tagion/testbench/services/Collector_service.md)
 

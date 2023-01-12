@@ -1,4 +1,4 @@
-module tagion.testbench.transaction_features.create_wallets;
+module tagion.testbench.functional.create_wallets;
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;

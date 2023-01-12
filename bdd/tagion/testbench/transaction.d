@@ -1,7 +1,7 @@
 module tagion.testbench.transaction;
 
 import tagion.behaviour.Behaviour;
-import tagion.testbench.transaction_features;
+import tagion.testbench.functional;
 import tagion.hibon.HiBONRecord : fwrite;
 
 import tagion.tools.Basic;
@@ -11,7 +11,7 @@ import tagion.testbench.tools.BDDOptions;
 
 import std.format;
 
-mixin Main!(_main, "transaction_features");
+mixin Main!(_main, "functional");
 
 int _main(string[] args)
 {

@@ -1,4 +1,4 @@
-module tagion.testbench.transaction_features.create_network;
+module tagion.testbench.functional.create_network;
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
@@ -15,8 +15,8 @@ import std.conv;
 import core.thread;
 import std.algorithm;
 
-import tagion.testbench.transaction_features.create_wallets;
-import tagion.testbench.transaction_features.create_dart;
+import tagion.testbench.functional.create_wallets;
+import tagion.testbench.functional.create_dart;
 import tagion.testbench.tools.utils : Genesis;
 import tagion.testbench.tools.wallet;
 import tagion.testbench.tools.network;
