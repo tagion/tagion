@@ -14,7 +14,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 
 /* 
- * Set the common propery for
+ * Set the common property for
  * Feature, Scenario and the Actions (Given,When,Then and But)
  */
 @safe:
@@ -71,7 +71,7 @@ enum isDescriptor(T) = hasMember!(T, "description");
 struct Info(alias Property) {
     Property property; /// The property is a Feature, Scenario or an Action
     string name; /// Name of the function member, scenario call or feature module
-    Document result; /// Th:e result after execution of the property (See BehaviourResult)
+    Document result; /// The result after execution of the property (See BehaviourResult)
     mixin HiBONRecord!();
 }
 
