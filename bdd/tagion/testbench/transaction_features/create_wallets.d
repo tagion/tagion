@@ -47,7 +47,6 @@ class GenerateNWallets
         {
             immutable wallet_path = module_path.buildPath(format("wallet_%s", i));
             mkdirRecurse(wallet_path);
-            log.register("Create wallets");
             writefln("Wallet %s path : %s", i, wallet_path);
 
             TagionWallet wallet = TagionWallet(wallet_path);
