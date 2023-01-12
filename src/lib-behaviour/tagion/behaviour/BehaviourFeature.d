@@ -121,22 +121,6 @@ alias ActionProperties = AliasSeq!(Given, When, Then, But);
 /// All mandatory actions of a Scenario (Given, Then)
 alias MandatoryActionProperties = Erase!(When, Erase!(But, ActionProperties));
 
-import tagion.behaviour.BehaviourResult: BehaviourError, result;
-import std.algorithm.iteration: filter;
-const(BehaviourError)[] getBDDErrors(const(ScenarioGroup) scenarioGroup) {
-    const(BehaviourError)[] errors;
-    import std.stdio;
-    foreach(info; scenarioGroup.then.infos) {
-        if (info.result.isRecordType!BehaviourError) {
-        const result = BehaviourError(info.result);
-        writeln(result.msg);
-        errors ~= result;
-        }
-    }
-    return errors;
-    /* return filter!(isRecordType!BehaviourError)(scenarioGroup.then.infos); */
-}
-
 /**
  * Params:
 * T = Scenario class

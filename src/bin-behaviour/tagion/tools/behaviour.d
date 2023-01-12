@@ -27,7 +27,7 @@ import tagion.behaviour.BehaviourParser;
 import tagion.behaviour.BehaviourIssue : Dlang, DlangT, Markdown;
 import tagion.behaviour.Emendation : emendation, suggestModuleName;
 import tagion.behaviour.BehaviourFeature;
-import tagion.behaviour.Behaviour : TestCode, testCode, testColor;
+import tagion.behaviour.Behaviour : TestCode, testCode, testColor, getBDDErrors;
 
 import tagion.hibon.HiBONRecord : fwrite, fread;
 
@@ -355,7 +355,9 @@ int check_reports(string[] paths, const bool verbose) {
                     if (show_scenario) {
                         report(scenario_test_code, "\t%s", scenario_group.info.property
                         .description);
-                        getBDDErrors(scenario_group);
+                        foreach(err; getBDDErrors(scenario_group)) {
+                            report(scenario_test_code, "\t\t%s", err.msg);
+                        }
                     }
                 }
             }
