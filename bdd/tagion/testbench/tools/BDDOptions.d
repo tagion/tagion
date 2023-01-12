@@ -48,7 +48,7 @@ void setDefaultBDDOptions(ref BDDOptions bdd_options)
         {
             number_of_wallets = 2;
             wallets = [
-                Genesis(1, 10_000),
+                Genesis(2, 10_000),
                 Genesis(0, 0),
             ];
         }

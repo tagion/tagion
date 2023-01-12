@@ -56,7 +56,7 @@ immutable struct TagionWallet
         return invoice_path;
     }
 
-    immutable payInvoice(string invoice_path, string port = "10801")
+    immutable payInvoice(string invoice_path, uint port = 10801)
     {
         return this.executeAt([
             tools.tagionwallet,
@@ -65,10 +65,11 @@ immutable struct TagionWallet
             "--pay",
             invoice_path,
             "--port",
-            port,
+            port.to!string,
             "--send",
         ]);
     }
+
 
     immutable generateWallet()
     {
@@ -84,13 +85,16 @@ immutable struct TagionWallet
         ]);
     }
 
-    immutable unlock()
+    immutable unlock(uint port = 10801)
     {
         return this.executeAt([
                 tools.tagionwallet,
                 "-x",
                 pin,
-            ]);
+                "--port",
+                port.to!string,
+                "--unlock",
+        ]);
     }
 
     immutable update(uint port = 10801)
