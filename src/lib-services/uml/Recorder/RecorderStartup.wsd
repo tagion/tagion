@@ -17,7 +17,7 @@ recordertask -> recordertask : opCall(opts)
 recordertask -> storage : new RecorderChainFileStorage(folder_path, net)
 storage --> recordertask : storage
 recordertask -> chain : new RecorderChain(storage)
-chain -> recordertask : recorder_chain
+chain --> recordertask : recorder_chain
 
 recordertask --> task : send(Control.LIVE);
 
