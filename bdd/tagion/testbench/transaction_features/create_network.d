@@ -20,6 +20,7 @@ import tagion.testbench.transaction_features.create_dart;
 import tagion.testbench.tools.utils : Genesis;
 import tagion.testbench.tools.wallet;
 import tagion.testbench.tools.network;
+import tagion.testbench.tools.BDDOptions;
 
 enum feature = Feature("Start network", []);
 
@@ -40,13 +41,18 @@ class CreateNetworkWithNAmountOfNodesInModeone
     string[] node_logs;
     string[] node_darts;
 
-    this(string module_name, GenerateDart dart, GenerateNWallets genWallets, const Genesis[] genesis, const int number_of_nodes)
+    uint increase_port;
+    uint tx_increase_port;
+
+    this(GenerateDart dart, GenerateNWallets genWallets, BDDOptions bdd_options)
     {
         this.dart = dart;
         this.wallets = genWallets.wallets;
-        this.genesis = genesis;
-        this.number_of_nodes = number_of_nodes;
-        this.module_path = env.bdd_log.buildPath(module_name);
+        this.genesis = bdd_options.genesis_wallets.wallets;
+        this.number_of_nodes = bdd_options.network.number_of_nodes;
+        this.module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
+        this.increase_port = bdd_options.network.increase_port;
+        this.tx_increase_port = bdd_options.network.tx_increase_port;
     }
 
     @Given("i have _wallets")
@@ -72,11 +78,11 @@ class CreateNetworkWithNAmountOfNodesInModeone
         // start all normal nodes
         for (int i = 1; i < number_of_nodes; i++)
         {
-            Node node = Node(module_path, i, number_of_nodes);
+            Node node = Node(module_path, i, number_of_nodes, increase_port, tx_increase_port);
             nodes ~= node;
         }
 
-        Node node = Node(module_path, number_of_nodes, number_of_nodes, true);
+        Node node = Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, true);
         nodes ~= node;
 
         return result_ok;
@@ -87,7 +93,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
     {
         int sleep_before = 5;
         Thread.sleep(sleep_before.seconds);
-        check(waitUntilInGraph(60, 1, "10801") == true, "in_graph not found in log");
+        check(waitUntilInGraph(60, 1, tx_increase_port+1) == true, "in_graph not found in log");
 
         return result_ok;
     }
@@ -100,7 +106,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
             /* immutable cmd = wallets[i].update(); */
             /* check(cmd.status == 0, format("Error: %s", cmd.output)); */
 
-            Balance balance = wallets[i].getBalance();
+            Balance balance = wallets[i].getBalance(tx_increase_port+1);
             check(balance.returnCode == true, "Error in updating balance");
             writefln("%s", balance);
             check(balance.total == genesis[i].amount, "Balance not updated");

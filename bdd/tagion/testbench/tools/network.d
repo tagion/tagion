@@ -15,7 +15,7 @@ import std.range;
 import std.format;
 import std.path;
 
-bool waitUntilInGraph(int lockThreadTime, int sleepThreadTime, string port) @trusted
+bool waitUntilInGraph(int lockThreadTime, int sleepThreadTime, uint port) @trusted
 {
     HealthData json_result;
 
@@ -42,12 +42,12 @@ bool waitUntilInGraph(int lockThreadTime, int sleepThreadTime, string port) @tru
     return false;
 }
 
-HealthData healthCheck(string port) @trusted
+HealthData healthCheck(uint port) @trusted
 {
     immutable node_command = [
         tools.tagionwallet,
         "--port",
-        port,
+        port.to!string,
         "--health",
     ];
     auto node_pipe = pipeProcess(node_command, Redirect.all, null, Config
@@ -127,7 +127,7 @@ bool checkBullseyes(string[] bullseyes)
     return true;
 }
 
-int getEpoch(string port) @trusted
+int getEpoch(uint port) @trusted
 {
     HealthData json_result = healthCheck(port);
     if (json_result.returnCode == false)
@@ -156,12 +156,16 @@ struct Node
         string module_path,
         uint node_number,
         uint nodes,
+        uint port,
+        uint transaction_port,
         bool master = false,
     )
     {
         this.node_number = node_number;
         this.nodes = nodes;
         this.boot_path = buildPath(module_path, "boot.hibon");
+        this.port = port;
+        this.transaction_port = transaction_port;
 
         if (master) {
             this.dart_path = buildPath(module_path, "dart.drt");
@@ -183,8 +187,8 @@ struct Node
             format("--dart-init=%s", dart_init.to!string),
             format("--dart-synchronize=%s", dart_synchronize.to!string),
             format("--dart-path=%s", dart_path),
-            format("--port=%s", 4000 + node_number),
-            format("--transaction-port=%s", 10800 + node_number),
+            format("--port=%s", port + node_number),
+            format("--transaction-port=%s", transaction_port + node_number),
             format("--logger-filename=%s", logger_file),
             "-N",
             nodes.to!string,
