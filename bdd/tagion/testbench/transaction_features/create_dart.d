@@ -80,6 +80,9 @@ class GenerateDart
     {
         foreach (i, genesis_invoice; genesis)
         {
+            if (genesis_invoice.amount == 0) {
+                continue;
+            }
             const amountPerBill = genesis_invoice.amount / genesis_invoice.bills;
             writefln("wallet %s", wallets[i].path);
 

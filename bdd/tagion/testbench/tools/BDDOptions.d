@@ -46,15 +46,10 @@ void setDefaultBDDOptions(ref BDDOptions bdd_options)
         }
         with (bdd_options.genesis_wallets)
         {
-            number_of_wallets = 7;
+            number_of_wallets = 2;
             wallets = [
                 Genesis(1, 10_000),
-                Genesis(1, 10_000),
-                Genesis(1, 10_000),
-                Genesis(1, 10_000),
-                Genesis(1, 10_000),
-                Genesis(1, 10_000),
-                Genesis(1, 10_000),
+                Genesis(0, 0),
             ];
         }
         with (bdd_options.network)
