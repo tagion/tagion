@@ -73,7 +73,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
     try {
         /** last epoch timestamp */
         long epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
-        const startup_timestamp = Clock.currTime().toTimeSpec.tv_sec;
+        const startup_timestamp = Clock.currTime().stdTime;
         log.register(opts.node_name);
         setOptions(opts);
         bool stop;
@@ -413,8 +413,8 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         HiRPC empty_hirpc;
         gossip_net.start_listening();
 
-        const current_timestamp = Clock.currTime().toTimeSpec.tv_sec;
-        Thread.sleep(5.seconds - (current_timestamp - startup_timestamp));
+        const curr_timestamp = Clock.currTime().stdTime;
+        Thread.sleep(60.seconds - dur!"hnsecs"(curr_timestamp-startup_timestamp));
         while (!stop && !abort) {
             immutable message_received = receiveTimeout(
                     opts.timeout.msecs,
