@@ -143,6 +143,7 @@ struct Options {
     struct Monitor {
         string task_name; /// Use for the montor task name
         string prefix;
+        bool enable; /// When enabled the Monitor is started
         uint max; /++ Maximum number of monitor.service.server. open
                               If this value is set to 0
                               one.service.server.is opened for each node
@@ -155,12 +156,6 @@ struct Options {
         +/
         mixin JSONCommon;
     }
-
-    // struct ContactCollector {
-    //     string task_name; /// Name of the transcript service
-    //     mixin JSONCommon;
-    // }
-
     // ContactCollector collector;
 
     Monitor monitor;
@@ -318,11 +313,13 @@ static ref auto all_getopt(
         "pid", format("Write the pid to %s file", options.pid_file), &(options.pid_file),
         "nodes|N",   format("Sets the number of nodes: default %d", options.nodes), &(options.nodes),
         "timeout|t", format("Sets timeout: default %d (ms)", options.timeout), &(options.timeout),
-        "monitors|M", format("Sets maximum number of monitors opened: default %s", options.monitor.max), &(options.monitor.max),
+//        "monitors|M", format("Sets maximum number of monitors opened: default %d", 
+//    options.monitor.max), &(options.monitor.max),
         "tmp", format("Sets temporaty work directory: default '%s'", options.tmp), &(options.tmp),
-        "monitor|P", format("Sets first monitor port of the port sequency: default %d", 
+        "monitor-port|P", format("Sets first monitor port of the port sequency: default %d", 
 		options.monitor.port),  &(options.monitor.port),
-
+       "monitor|M", format("Enable the HashGraph monitor: default %s", options.monitor.enable), 
+   &(options.monitor.enable), 
         "transaction-ip",  format("Sets the listener transaction ip address: default %s", 
 	options.transaction.service.server.address), &(options.transaction.service.server.address),
         "transaction-port|p", format("Sets the listener transcation port: default %d", 

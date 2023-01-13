@@ -27,6 +27,7 @@ import tagion.hashgraph.HashGraphBasic : EventPackage;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.logger.Logger;
+import tagion.monitor.Monitor : MonitorCallBacks;
 import tagion.script.StandardRecords;
 import tagion.services.Options : Options, setOptions, OptionException, NetworkMode, main_task;
 import tagion.services.DARTService;
@@ -35,6 +36,7 @@ import tagion.services.TransactionService;
 import tagion.services.TranscriptService;
 import tagion.services.FileDiscoveryService;
 import tagion.services.NetworkRecordDiscoveryService;
+import tagion.services.MonitorService;
 import tagion.services.RecorderService : RecorderTask;
 import tagion.services.EpochDumpService : EpochDumpTask;
 import tagion.actor.TaskWrapper : Task;
@@ -181,6 +183,14 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
 
         void register_epack(immutable(EventPackage*) epack) @safe {
             log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
+        }
+
+        if (opts.monitor.enable) {
+            monitor_socket_tid = spawn(&monitorServiceTask, opts);
+
+            Event.callbacks = new MonitorCallBacks(
+                    monitor_socket_tid, opts.node_id,
+                    opts.monitor.dataformat);
         }
 
         import tagion.utils.Miscellaneous;
