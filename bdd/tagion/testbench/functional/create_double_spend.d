@@ -14,6 +14,7 @@ import std.conv;
 import std.algorithm;
 import core.thread;
 import core.time;
+import std.math.operations : approxEqual;
 
 
 import tagion.testbench.tools.Environment;
@@ -21,6 +22,7 @@ import tagion.testbench.tools.Environment;
 import tagion.testbench.functional.create_wallets;
 import tagion.testbench.tools.utils : Genesis;
 import tagion.testbench.functional.create_network;
+import tagion.testbench.functional.create_transaction;
 import tagion.testbench.tools.network;
 import tagion.testbench.tools.wallet;
 import tagion.testbench.tools.BDDOptions;
@@ -36,6 +38,7 @@ class DoubleSpendSameWallet
     Node[] network;
     TagionWallet[] wallets;
     const Genesis[] genesis;
+    CreateTransaction transaction;
     string module_path;
     string invoice_path_A;
     string invoice_path_B;
@@ -112,14 +115,15 @@ class DoubleSpendSameWallet
     @Then("wallet B should only receive the invoice amount.")
     Document amount()
     {
-        check(wallet_1.total == genesis[1].amount + invoice_amount, "Balance not correct");
+        check(wallet_1.total.approxEqual(genesis[1].amount + invoice_amount) == true, "Balance not correct");
         return result_ok;
     }
 
     @Then("wallet A should loose invoice amount + fee.")
     Document fee()
     {
-        check(wallet_0.total == genesis[0].amount - invoice_amount - 0.1, "Balance not correct");
+        writefln("total: %s, amount: %s", wallet_0.total, genesis[0].amount-invoice_amount-0.1);
+        check(wallet_0.total.approxEqual(genesis[0].amount-invoice_amount-0.1) == true, "Balance not correct");
         return result_ok;
     }
 

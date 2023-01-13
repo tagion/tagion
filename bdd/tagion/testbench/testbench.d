@@ -9,13 +9,11 @@ int main(string[] args) {
     import bdd_services = tagion.testbench.bdd_services;
     import ssl_echo_server = tagion.testbench.ssl_echo_server;
     import transaction = tagion.testbench.transaction;
-    import double_spend = tagion.testbench.double_spend;
     alias alltools = AliasSeq!(
             ssl_server,
             bdd_services,
             ssl_echo_server,
             transaction,
-            double_spend,
 
     );
     mixin doOneMain!(alltools);
