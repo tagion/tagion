@@ -75,6 +75,8 @@ class HashGraph {
 
     package HiRPC hirpc;
     //    protected bool _in_graph;
+
+    // function not used
     @nogc
     bool active() pure const nothrow {
         return true;
@@ -178,6 +180,7 @@ class HashGraph {
         return _rounds;
     }
 
+    // Function is not used
     bool areWeOnline() const pure nothrow {
         return nodes.length > 0;
     }
@@ -284,6 +287,7 @@ class HashGraph {
         return _event_cache.length;
     }
 
+    // function not used
     @nogc
     bool isRegistered(scope const(ubyte[]) fingerprint) const pure nothrow {
         return (fingerprint in _event_cache) !is null;
@@ -363,6 +367,7 @@ class HashGraph {
             return null;
         }
 
+        // function not used
         final bool isCached(scope const(Buffer) fingerprint) const pure nothrow {
             return (fingerprint in event_package_cache) !is null;
         }
