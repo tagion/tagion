@@ -30,4 +30,4 @@ case $key in
 	;;
 esac
 
-echo $DCD_CLIENT --socketFile=$SOCKET_FILE $IMPORTS;
+$DCD_CLIENT --socketFile=$SOCKET_FILE $IMPORTS;
