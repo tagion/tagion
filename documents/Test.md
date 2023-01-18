@@ -57,7 +57,7 @@ custom_mark20
 
 
 ```mermaid
-graph TD {
+graph TD;
     size="8,5"
    node [style=filled]
 Tagionwave [color=blue]
@@ -79,7 +79,6 @@ node [shape = rect];
 	Consensus -> Collector;
 	Transcript -> EpochDump;
 	Consensus -> Monitor;
-}
 ```
 
 
