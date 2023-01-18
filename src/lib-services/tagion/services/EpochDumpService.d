@@ -1,4 +1,5 @@
-/// \EpochDumpService.d
+/// This module will make dump of the Epoch's
+
 module tagion.services.EpochDumpService;
 
 import std.concurrency;

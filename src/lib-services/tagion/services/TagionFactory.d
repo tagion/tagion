@@ -1,3 +1,4 @@
+/// This handels the configuation of the different Modes
 module tagion.services.TagionFactory;
 
 import core.thread;

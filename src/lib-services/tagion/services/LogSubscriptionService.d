@@ -1,7 +1,5 @@
-/// \file LogSubscriptionService.d
 
-/** @brief Service created for filtering and sending proper logs to subscribers
- */
+/// Service created for filtering and sending proper logs to subscribers
 
 module tagion.services.LogSubscriptionService;
 

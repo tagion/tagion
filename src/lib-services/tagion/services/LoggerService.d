@@ -1,9 +1,5 @@
-/// \file LoggerService.d
+/// Service for handling both text logs and variable logging
 
-/// \page LoggerService
-
-/** @brief Service for handling both text logs and variable logging
- */
 
 module tagion.services.LoggerService;
 

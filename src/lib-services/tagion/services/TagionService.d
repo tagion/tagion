@@ -1,3 +1,5 @@
+
+/// Tagion main services
 module tagion.services.TagionService;
 
 import core.thread : Thread;

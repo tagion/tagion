@@ -103,6 +103,7 @@ include $(TARGETS)/dstep.mk
 include $(TARGETS)/ddeps.mk
 include $(TARGETS)/bins.mk
 include $(TARGETS)/format.mk
+include $(TARGETS)/dscanner.mk
 
 include $(DTUB)/compile.mk
 

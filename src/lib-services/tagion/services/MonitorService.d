@@ -1,3 +1,4 @@
+/// Services to handle remote view of the HashGraph
 module tagion.services.MonitorService;
 
 import std.stdio : writeln, writefln;

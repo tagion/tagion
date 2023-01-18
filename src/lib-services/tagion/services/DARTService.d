@@ -1,3 +1,4 @@
+/// Handels the DART command (readDART, rimDART and modifyDART)
 module tagion.services.DARTService;
 
 import core.thread;

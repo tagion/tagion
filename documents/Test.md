@@ -18,7 +18,6 @@ digraph finite_state_machine {
 }
 ```
 
-
 gravizo
 =======
 
@@ -249,4 +248,114 @@ custom_svg
 custom_svg
 </details>
 ```
+
+
+
+
+My An activity diagram:
+
+![Alt text](https://g.gravizo.com/source/custom_activity?https%3A%2F%2Fraw.githubusercontent.com%2FTLmaK0%2Fgravizo%2Fmaster%2FREADME.md?1)
+
+```
+<details> 
+<summary></summary>
+custom_activity
+@startuml;
+(*) --> if "Some Test" then
+  -->[true] "activity 1"
+  if "" then
+    -> "activity 3" as a3
+  else
+    if "Other test" then
+      -left-> "activity 5"
+    else
+      --> "activity 6"
+    endif
+  endif
+else
+  ->[false] "activity 2"
+endif
+a3 --> if "last test" then
+  --> "activity 7"
+else
+  -> "activity 8"
+endif
+@enduml
+custom_activity
+</details>
+```
+
+xxxx You can use indirect way to refer a source file as graph description. 
+
+Use this syntax: ```![Alt text](https://g.gravizo.com/source/<custom_mark>?<url_source_url_encoded>```). And use html comment or summary tag ```<details><summary></summary></details>``` (you can use html comments but some graphs uses -->) to hide the source followed by your description graph in [DOT syntax](https://en.wikipedia.org/wiki/DOT_(graph_description_language)), [UMLGraph](http://www.umlgraph.org/doc/cd-intro.html), [PlantUML](http://plantuml.sourceforge.net/sequence.html) or [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) :
+
+![Alt text](https://g.gravizo.com/source/custom_mark10?https%3A%2F%2Fraw.githubusercontent.com%2FTLmaK0%2Fgravizo%2Fmaster%2FREADME.md)
+
+
+```
+![Alt text](https://g.gravizo.com/source/custom_mark10?https%3A%2F%2Fraw.githubusercontent.com%2FTLmaK0%2Fgravizo%2Fmaster%2FREADME.md)
+<details> 
+<summary></summary>
+custom_mark10
+  digraph G {
+    size ="4,4"
+    main [shape=box]
+    main -> parse [weight=8]
+    parse -> execute
+    main -> init [style=dotted]
+    main -> cleanup
+    execute -> { make_string; printf}
+    init -> make_string
+    edge [color=red]
+    main -> printf [style=bold,label="100 times"]
+    make_string [label="make a string"]
+    node [shape=box,style=filled,color=".7 .3 1.0"]
+    execute -> compare
+  }
+custom_mark10
+</details>
+```
+
+
+# XXX
+This allows to include your graphs in the README and is still readable in a normal text editor.
+
+
+![Alt text](https://g.gravizo.com/source/svg/custom_mark12?https%3A%2F%2Fraw.githubusercontent.com%2FTLmaK0%2Fgravizo%2Fmaster%2FREADME.md?3)
+
+```
+![Alt text](https://g.gravizo.com/source/svg/custom_mark12?https%3A%2F%2Fraw.githubusercontent.com%2FTLmaK0%2Fgravizo%2Fmaster%2FREADME.md)
+<details> 
+<summary></summary>
+custom_mark12
+/**
+*Structural Things
+*@opt commentname
+*@note Notes can
+*be extended to
+*span multiple lines
+*/
+class Structural{}
+
+/**
+*@opt all
+*@note Class
+*/
+class Counter extends Structural {
+        static public int counter;
+        public int getCounter();
+}
+
+/**
+*@opt shape activeclass
+*@opt all
+*@note Active Class
+*/
+class RunningCounter extends Counter{}
+custom_mark12
+</details>
+```
+
+
+
 

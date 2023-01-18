@@ -1,4 +1,6 @@
+/// This module handles and pre-validates the Smart contract send to the network
 module tagion.services.TransactionService;
+
 
 import std.stdio : writeln, writefln;
 import std.format;

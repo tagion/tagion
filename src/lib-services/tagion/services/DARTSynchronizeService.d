@@ -1,3 +1,4 @@
+/// Handles the synchronization with other DART's
 module tagion.services.DARTSynchronizeService;
 
 import core.thread;

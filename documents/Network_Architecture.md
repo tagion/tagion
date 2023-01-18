@@ -108,13 +108,13 @@ Tagionwave [color=blue]
 DART [shape = cylinder]
 Transaction [shape = signature]
 Transcript [shape = note]
-Collector [color=red]
+Collector [color=red shape=rect]
+Consensus [label="Consensus\nHashGraph"]
 node [shape = rect];
 	Tagionwave -> Logger -> LoggerSubscription;
 	Tagionwave -> TagionFactory;
 	TagionFactory -> Tagion;
 	Tagion -> P2PNetwork ;
-	P2PNetwork;
 	DART -> Recoder;
 	Tagion -> DART -> DARTSync;
     Tagion -> Consensus;
@@ -142,35 +142,24 @@ Extern [share = rarrow color = green pos ="-1,0!" ]
 libp2p [shape = doublecircle];
 Consensus [label = "Consensus\nHashGraph"]
 Recoder [sharp = tab];
-Collector [color = red]
+Collector [color = red shape=rect]
 { rank = min; Extern; Transaction; Collector }
 
 	Extern -> Transaction -> Collector [ color = green];
 	Consensus->libp2p [label = "gossip(HiRPC)" dir = both]
     Consensus -> Transcript [ label = Epoch color = magenta]
 	Transcript -> DART [ label = Recoder color = green];
-	DARTSync -> libp2p [label = HiRPC dir =both];
+	DARTSync -> libp2p [ label = HiRPC dir =both ];
 	DARTSync -> DART  [ label = HiRPC]
 	DART -> DARTSync [ label = HiBON ]
 	DART -> Recoder [ label = Recorder];
     Consensus -> Collector [dir=both];
-	DART -> Collector ;
-	Collector -> Transcript [color = green label=archives];
+	DART -> Collector [label = Archive];
+	Collector -> Transcript [color = green label=Archives];
 	libp2p -> Transcript;
 	libp2p -> P2PNet [dir = both color =blue];
 }
 ```
 
-<img src='https://g.gravizo.com/svg?
- digraph G {
-   main -> parse -> execute;
-   main -> init;
-   main -> cleanup;
-   execute -> make_string;
-   execute -> printf
-   init -> make_string;
-   main -> printf;
-   execute -> compare;
- }
-'/>
+
 

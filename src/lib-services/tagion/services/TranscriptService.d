@@ -1,3 +1,4 @@
+/// Services handles the Smart-contract execution
 module tagion.services.TranscriptService;
 
 import std.format;

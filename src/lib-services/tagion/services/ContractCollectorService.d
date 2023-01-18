@@ -1,3 +1,4 @@
+/// Handles the validation and smart-contract and verifies the Archives in the network
 module tagion.services.ContactCollectorService;
 
 import std.concurrency;
