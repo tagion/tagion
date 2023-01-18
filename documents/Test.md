@@ -57,8 +57,7 @@ custom_mark20
 
 
 ```mermaid
-digraph tagion_hierarchy {
-    rankdir=UD;
+graph TD {
     size="8,5"
    node [style=filled]
 Tagionwave [color=blue]
