@@ -3,6 +3,7 @@ module tagion.testbench.transaction;
 import tagion.behaviour.Behaviour;
 import tagion.testbench.functional;
 import tagion.hibon.HiBONRecord : fwrite;
+import std.stdio;
 
 import tagion.tools.Basic;
 import std.traits : moduleName;
@@ -43,6 +44,19 @@ int _main(string[] args)
         bdd_options,
     );
     auto create_transaction_context = create_transaction_feature.run;
+
+    auto double_spend_feature = automation!(create_double_spend);
+    writefln("%s", bdd_options);
+    bdd_options.genesis_wallets.wallets[0].amount = create_transaction_context.CreateTransaction.wallet_0.total;
+    bdd_options.genesis_wallets.wallets[1].amount = create_transaction_context.CreateTransaction.wallet_1.total;
+
+    writefln("%s", bdd_options);
+    double_spend_feature.DoubleSpendSameWallet(create_wallets_context.GenerateNWallets,
+        create_network_context.CreateNetworkWithNAmountOfNodesInModeone,
+        bdd_options,
+    );
+
+    auto double_spend_context = double_spend_feature.run;
 
     auto kill_network_feature = automation!(kill_network)();
     kill_network_feature.KillTheNetworkWithPIDS(

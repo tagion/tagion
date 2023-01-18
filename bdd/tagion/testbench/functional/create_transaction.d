@@ -12,6 +12,8 @@ import std.array;
 import std.file;
 import std.conv;
 import std.algorithm;
+import std.math.operations : approxEqual;
+
 
 import tagion.testbench.tools.Environment;
 
@@ -39,8 +41,7 @@ class CreateTransaction
     int start_epoch;
     int end_epoch;
 
-    uint increase_port;
-    uint tx_increase_port;
+    uint default_port;
 
     Balance wallet_0;
     Balance wallet_1;
@@ -51,8 +52,7 @@ class CreateTransaction
         this.genesis = bdd_options.genesis_wallets.wallets;
         this.module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
         this.network = network.nodes;
-        this.increase_port = bdd_options.network.increase_port;
-        this.tx_increase_port = bdd_options.network.tx_increase_port;
+        this.default_port = bdd_options.network.default_port;
     }
 
     @Given("a network.")
@@ -84,7 +84,7 @@ class CreateTransaction
 
         wallets[0].payInvoice(invoice_path);
 
-        start_epoch = getEpoch(tx_increase_port+1);
+        start_epoch = getEpoch(default_port);
         writefln("startepoch %s", start_epoch);
 
         return result_ok;
@@ -94,7 +94,7 @@ class CreateTransaction
     Document executed()
     {
         check(waitUntilLog(60, 1, "Executing contract", network[$-1].logger_file) == true, "Executing contract not found in log");
-        end_epoch = getEpoch(tx_increase_port+1);
+        end_epoch = getEpoch(default_port);
         return result_ok;
     }
 
@@ -111,14 +111,14 @@ class CreateTransaction
     @Then("wallet B should receive the invoice amount.")
     Document amount()
     {
-        check(wallet_1.total == genesis[1].amount + invoice_amount, "Balance not correct");
+        check(wallet_1.total.approxEqual(genesis[1].amount + invoice_amount) == true, "Balance not correct");
         return result_ok;
     }
 
     @Then("wallet A should loose invoice amount + fee.")
     Document fee()
     {
-        check(wallet_0.total == genesis[0].amount - invoice_amount - 0.1, "Balance not correct");
+        check(wallet_0.total.approxEqual(genesis[0].amount - invoice_amount - 0.1) == true, "Balance not correct");
         return result_ok;
     }
 

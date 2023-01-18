@@ -25,6 +25,7 @@ struct BDDOptions
     {
         uint increase_port;
         uint tx_increase_port;
+        uint default_port;
         uint number_of_nodes;
 
         mixin JSONCommon;
@@ -48,7 +49,7 @@ void setDefaultBDDOptions(ref BDDOptions bdd_options)
         {
             number_of_wallets = 2;
             wallets = [
-                Genesis(2, 10_000),
+                Genesis(10, 10_000),
                 Genesis(0, 0),
             ];
         }
@@ -56,6 +57,7 @@ void setDefaultBDDOptions(ref BDDOptions bdd_options)
         {
             increase_port = 4000;
             tx_increase_port = 10800;
+            default_port = tx_increase_port+1;
             number_of_nodes = 11;
         }
 
