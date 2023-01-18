@@ -1,3 +1,4 @@
+/// Handle the factory method for an Actor
 module tagion.actor.Actor;
 
 import std.algorithm.searching : any;
@@ -14,12 +15,12 @@ import tagion.basic.TagionExceptions : fatal, Check, TagionException;
 import tagion.logger.Logger;
 import tagion.hibon.ActorException;
 
-
-/// method define receiver memmber function for a task actor
+/// method define receiver method for the task actor
 @safe
 struct method {
 }
 
+/// This make a local method used internaly by the actor
 @safe
 struct local {
 }
@@ -29,7 +30,7 @@ struct local {
 struct task {
 }
 
-/* 
+/** 
  * Defines a unique actor ID
  */
 struct ActorID {
@@ -53,7 +54,7 @@ immutable(ActorID) actorID(Task)(string taskname) nothrow pure {
 // Helper function for isUDA 
 protected enum isTrue(alias eval) = __traits(compiles, eval) && eval;
 
-/*
+/**
 * Params:
 * This  = is the actor
 * member_name = the a member of the actor
@@ -61,12 +62,12 @@ protected enum isTrue(alias eval) = __traits(compiles, eval) && eval;
 */
 enum isUDA(This, string member_name, UDA) = isTrue!(hasUDA!(__traits(getMember, This, member_name), UDA));
 
-/*
-* Returns: true if member_name is the task member of the actor 
+/**
+* Returns: true if member_name is task method of the actor 
  */
 enum isTask(This, string member_name) = isUDA!(This, member_name, task);
 
-/*
+/**
 * Returns: true if the member name is a metode of the task This 
 */
 enum isMethod(This, string method_name) = isUDA!(This, method_name, method);
@@ -76,11 +77,12 @@ static unittest {
     static struct S {
         void no_uda();
         @method void with_uda();
-        @task void run();        
+        @task void run();
     }
+
     static assert(!isUDA!(S, "no_uda", method));
     static assert(isUDA!(S, "with_uda", method));
-    
+
     static assert(!isMethod!(S, "no_uda"));
     static assert(isMethod!(S, "with_uda"));
 
@@ -88,7 +90,7 @@ static unittest {
     static assert(isTask!(S, "run"));
 }
 
-/* 
+/**
  * 
  * Params:
  *   This = is the actor
@@ -96,7 +98,7 @@ static unittest {
  */
 enum isCtorDtor(This, string name) = ["__ctor", "__dtor"].any!(a => a == name);
 
-/* 
+/**
  * 
  * Params:
  *   This = is a actor task
@@ -112,7 +114,7 @@ protected template allMethodFilter(This, alias pred) {
             static if (pred!(This, members[0])) {
                 enum Filter = [members[0]];
             }
-            else {
+        else {
                 enum Filter = [];
             }
         }
@@ -125,7 +127,9 @@ protected template allMethodFilter(This, alias pred) {
     enum allMethodFilter = Filter!(allMembers);
 }
 
-
+/**
+    Mixin to turns a struct or class into an Actor task
+*/
 mixin template TaskActor() {
     import concurrency = std.concurrency;
     import core.time : Duration;
@@ -133,17 +137,18 @@ mixin template TaskActor() {
     import tagion.basic.Types : Control;
 
     bool stop;
-    /* 
+    /** 
      * Default control and it just reacts to a STOP
      * Params:
      *   ctrl = received control signal
      */
     @method void control(Control ctrl) {
         stop = (ctrl is Control.STOP);
+        
         .check(stop, format("Uexpected control signal %s", ctrl));
     }
 
-    /* 
+    /** 
      * This function is call when an exceptions occures in the actor task
      * Params:
      *   e = Exception caught in the actor
@@ -162,7 +167,7 @@ mixin template TaskActor() {
         }
     }
 
-    /* 
+    /** 
      * This function will stop all the actors which are owende my this actor
      */
     void stopAll() @trusted {
@@ -173,7 +178,7 @@ mixin template TaskActor() {
         }
     }
 
-    /* 
+    /**
      * This should be call when the @task function is ready
      * and it send a Control live back to the owner task
      */
@@ -181,13 +186,16 @@ mixin template TaskActor() {
         concurrency.send(concurrency.ownerTid, Control.LIVE);
     }
 
-
-    /* 
+    /**
      * This function is call when the task ends normally
      */
     void end() @trusted {
         concurrency.send(concurrency.ownerTid, Control.END);
     }
+
+    /**
+    Send the args to the owner
+*/
 
     void sendOwner(Args...)(Args args) @trusted {
         concurrency.send(concurrency.ownerTid, args);
@@ -312,6 +320,7 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                 .check(concurrency.receiveOnly!(Control) is Control.END, format("Expecting to received and %s after stop", Control
                         .END));
             }
+
             void halt() @trusted {
                 concurrency.send(tid, Control.STOP);
             }
@@ -368,15 +377,23 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
     return result;
 }
 
+/// Decaration use for the unittest
 version (unittest) {
     import std.stdio;
     import core.time;
 
+    /** Send function used in the unittest
+    Wraps the concurrency send into a @trusted function
+*/
     void send(Args...)(Tid tid, Args args) @trusted {
         concurrency.send(tid, args);
     }
 
-    auto receiveOnly(Args...)() @trusted {
+    /** receiveOnly function used in the unittest
+    Wraps the concurrency receiveOnly into a @trused function
+*/
+
+    private auto receiveOnly(Args...)() @trusted {
         return concurrency.receiveOnly!Args;
     }
 
@@ -385,19 +402,27 @@ version (unittest) {
         Arg
     }
 
+    /// This actor is used in the unittesy
     @safe
     private struct MyActor {
         long count;
         string some_name;
-        @method void some(string str) { // reciever
+        /**
+    Actor method which sets the str
+*/
+        @method void some(string str) {
             writefln("SOME %s ", str);
             some_name = str;
         }
 
+        /// Decrease the count value `by`
         @method void decrease(int by) {
             count -= by;
         }
 
+        /** Actor method send a opt to the actor and 
+        sends back an a response to the owner task
+*/
         @method void get(Get opt) { // reciever
             writefln("Got ---- %s", opt);
             final switch (opt) {
@@ -410,8 +435,9 @@ version (unittest) {
             }
         }
 
-        mixin TaskActor;
+        mixin TaskActor; /// Thes the struct into an Actor
 
+        /// UDA @task mark that this is the task for the Actor
         @task void runningTask(long label) {
             count = label;
             writefln("Alive!!!!");
@@ -464,8 +490,8 @@ unittest {
     }
 }
 
-
-version(unittest) {
+version (unittest) {
+    /// Actor used for the unittest
     struct MyActorWithCtor {
         immutable(string) common_text;
         @disable this();
@@ -516,4 +542,3 @@ unittest {
         assert(receiveOnly!string == common_text);
     }
 }
-

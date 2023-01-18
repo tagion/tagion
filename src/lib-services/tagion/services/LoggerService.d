@@ -1,6 +1,4 @@
 /// Service for handling both text logs and variable logging
-
-
 module tagion.services.LoggerService;
 
 import std.array;
@@ -38,7 +36,7 @@ private {
 }
 
 /**
- * \struct LoggerTask
+ * LoggerTask
  * Struct represents LoggerService which handles logs and provides passing them to LogSubscriptionService
  */
 @safe struct LoggerTask {
