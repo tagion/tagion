@@ -383,7 +383,7 @@ class SSLSocket : Socket {
             /// This switch can beable of a new .pem should be created
             immutable stab = "stab";
 
-            import tagion.network.SSLOptions;
+            import tagion.network.SSLServerOptions;
 
             const OpenSSL ssl_options = {
                 certificate: cert_path, /// Certificate file name
