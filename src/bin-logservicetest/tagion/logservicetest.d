@@ -14,7 +14,7 @@ import tagion.hibon.HiBONJSON : toJSON, toPretty;
 import tagion.hibon.HiBONRecord : HiBONRecord, RecordType;
 import tagion.logger.Logger : log, LogLevel, Log;
 import tagion.logger.LogRecords : LogFilter;
-import tagion.network.SSLOptions : configureOpenSSL;
+import tagion.network.SSLServerOptions : configureOpenSSL;
 import tagion.network.SSLSocket : SSLSocket, EndpointType;
 import tagion.options.CommonOptions : setCommonOptions;
 import tagion.services.LoggerService : LoggerTask;

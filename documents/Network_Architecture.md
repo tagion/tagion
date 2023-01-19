@@ -32,7 +32,8 @@ rankdir=UD;
   node [ shape = "rect"];
   DART [shape = cylinder]
   Network, Extern [ style = rounded];
-  Extern [fillcolor=green]
+  Extern [ style=filled fillcolor=green ];
+  Network [ style=filled fillcolor=red]
   Transaction [shape = signature]
   Transcript [shape = note]
   Consensus [label="Consensus\nHashgraph"]
