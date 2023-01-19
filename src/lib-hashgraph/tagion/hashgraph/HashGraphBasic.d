@@ -28,9 +28,9 @@ import tagion.utils.Miscellaneous : cutHex;
  + Calculates the majority votes
  + Params:
  +     voting    = Number of votes
- +     node_sizw = Total bumber of votes
+ +     node_size = Total bumber of votes
  + Returns:
- +     Returns `true` if the votes are more thna 2/3
+ +     Returns `true` if the votes are more than 2/3
  +/
 @safe @nogc
 bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
