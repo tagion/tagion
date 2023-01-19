@@ -226,7 +226,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                 shared_net,
                 sector_range);
         log.trace("Start sync addressbook.numOfActiveNodes : %d", addressbook.numOfActiveNodes);
-
+        
         scope (exit) {
             log("Closing net");
             gossip_net.close();

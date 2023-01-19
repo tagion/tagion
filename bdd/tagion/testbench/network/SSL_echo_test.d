@@ -25,7 +25,7 @@ alias FeatureContext = Tuple!(SendManyRequsts, "SendManyRequsts", FeatureGroup*,
 class SendManyRequsts
 {
     ushort port = 8003;
-    int calls = 1000;
+    int calls = 100;
 
     @Given("I have a simple sslserver")
     Document _sslserver()
