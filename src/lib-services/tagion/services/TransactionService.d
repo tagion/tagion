@@ -96,6 +96,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             bool agent(FiberRelay ssl_relay) {
                 import tagion.hibon.HiBONJSON;
 
+                /**Returns: Document from ssl with received buffer*/
                 @trusted const(Document) receivessl() nothrow {
                     try {
                         import tagion.hibon.Document;
