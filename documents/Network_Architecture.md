@@ -55,12 +55,12 @@ rankdir=UD;
     peripheries=0;
     style = rounded;
 	Recorder -> DARTSync [label=recorder color=blue dir=both];
-	DARTSync -> P2P [label=dartcmd dir=both];
+	DARTSync -> P2P [label=dartcmd dir=both color=magenta];
 	P2P -> Network [label=HiBON dir=both];
   };
-  DART -> DARTSync [label=dartcmd dir=both];
+  DART -> DARTSync [label=dartcmd dir=both color=magenta];
   DART -> Collector [label=archives color=red];
-  Consensus -> P2P [label=gossip dir=both];
+  Consensus -> P2P [label=gossip dir=both color=cyan4];
   Transcript -> DART [label=recorder color=blue];
 }
 ```
