@@ -4,7 +4,7 @@
 A node consist of the following services.
 
 
-* `tagionwave` is the main task responsible all the services
+* [tagionwave](src/bin-wave/README.md) is the main task responsible all the service
 * `Logger` takes care of handling the logger information for all the services.
 * `LoggerSubscription` The logger subscript take care of handling remote logger and event logging.
 * `TagionFactory` This services takes care of the *mode* in which the network is started.
@@ -24,8 +24,48 @@ A node consist of the following services.
 The arrow indicates ownership is means of service-A points to service-B. Service-A has ownership of service-B.
 
 This means that if Service-B fails service-A is responsible to handle and take-care of the action to restart or other action.
+```graphviz
+digraph G {
+rankdir=UD;
+  compound=true;
+   node [style=filled]
+  node [ shape = "rect"];
+  DART [shape = cylinder]
+  Network, Extern [ style = rounded];
+  Extern [fillcolor=green]
+  Transaction [shape = signature]
+  Transcript [shape = note]
+  Consensus [label="Consensus\nHashgraph"]
+  subgraph cluster_1 {
+    peripheries=0;
+    style = rounded;
+    Extern -> Transaction [label="HiRPC(contract)" color=green];
+ 	Transaction -> Collector [label=contract color=green];
+	Collector -> Consensus [label=contract color=green dir=both];
+	Consensus -> Transcript [label=epoch color=green];
+    Collector -> Transcript [label=archives color=red];
+  };
+  subgraph cluster_2 {
+    peripheries=0;
+	DART;
+    style = rounded;
+  };
+  subgraph cluster_0 {
+    peripheries=0;
+    style = rounded;
+	Recorder -> DARTSync [label=recorder color=blue dir=both];
+	DARTSync -> P2P [label=dartcmd dir=both];
+	P2P -> Network [label=HiBON dir=both];
+  };
+  DART -> DARTSync [label=dartcmd dir=both];
+  DART -> Collector [label=archives color=red];
+  Consensus -> P2P [label=gossip dir=both];
+  Transcript -> DART [label=recorder color=blue];
+}
+```
 
 ### Tagion Service Hierarchy
+
 ```graphviz
 digraph tagion_hierarchy {
     rankdir=UD;
