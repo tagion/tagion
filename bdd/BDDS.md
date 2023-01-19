@@ -1,5 +1,7 @@
 [kill_network.md](tagion/testbench/functional/kill_network.md)
 
+[receive_epoch_test.md](tagion/testbench/functional/receive_epoch_test.md)
+
 [create_transaction.md](tagion/testbench/functional/create_transaction.md)
 
 [create_double_spend.md](tagion/testbench/functional/create_double_spend.md)

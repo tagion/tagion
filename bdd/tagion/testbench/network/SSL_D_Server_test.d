@@ -31,7 +31,7 @@ class CClientWithDServer
     Document d() @trusted
     {
         auto server = spawn(&echoSSLSocketServer, "localhost", port, cert);
-        Thread.sleep(100.msecs);
+        Thread.sleep(1.msecs);
         return result_ok;
     }
 
