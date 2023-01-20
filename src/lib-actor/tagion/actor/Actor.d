@@ -152,10 +152,7 @@ mixin template TaskActor() {
      */
     @method void control(Control ctrl) {
         stop = (ctrl is Control.STOP);
-
-        
-
-        .check(stop, format("Uexpected control signal %s", ctrl));
+        check(stop, format("Uexpected control signal %s", ctrl));
     }
 
     /** 
@@ -168,7 +165,7 @@ mixin template TaskActor() {
         concurrency.prioritySend(concurrency.ownerTid, e);
     }
 
-    @method @local void actorId(immutable(ActorID) id) @trusted {
+    @method @local void actorId(immutable(ActorID) id, immutable bool) @trusted {
         auto tid = concurrency.locate(id.taskname);
         if (tid !is Tid.init) {
             enum mangle_name = mangle!This("");
@@ -178,7 +175,7 @@ mixin template TaskActor() {
     }
 
     /**
-Establish a channel to the actor and send back the channel to the actor id
+* Establish a channel to the actor and send back the channel to the actor id
 */
     @method void connect(immutable(ActorID) id) @trusted {
         auto tid = concurrency.locate(id.taskname);
@@ -187,8 +184,10 @@ Establish a channel to the actor and send back the channel to the actor id
             concurrency.prioritySend(tid, ActorChannel.init);
         }
         immutable channel = ActorChannel(channel_tids.length, id);
+        channel_tids ~= tid;
         concurrency.prioritySend(tid, channel);
     }
+
     /** 
      * This function will stop all the actors which are owende my this actor
      */
@@ -249,316 +248,314 @@ private static Tid[string] tids; /// List of channels by task names.
 bool isRunning(string taskname) @trusted {
     if (taskname in tids) {
         return concurrency.locate(taskname) != Tid.init;
+        return false;
     }
-    return false;
-}
 
-protected static string generateAllMethods(alias This)() {
-    import std.array : join;
+    protected static string generateAllMethods(alias This)() {
+        import std.array : join;
 
-    string[] result;
-    static foreach (m; __traits(allMembers, This)) {
-        {
-            enum code = format!(q{alias Func=This.%s;})(m);
-            mixin(code);
-            static if (isCallable!Func && hasUDA!(Func, method)) {
-                static if (!hasUDA!(Func, local)) {
-                    enum method_code = format!q{
+        string[] result;
+        static foreach (m; __traits(allMembers, This)) {
+            {
+                enum code = format!(q{alias Func=This.%s;})(m);
+                mixin(code);
+                static if (isCallable!Func && hasUDA!(Func, method)) {
+                    static if (!hasUDA!(Func, local)) {
+                        enum method_code = format!q{
                         alias FuncParams_%1$s=AliasSeq!%2$s;
                         void %1$s(FuncParams_%1$s args) @trusted {
                             concurrency.send(tid, args);
                         }}(m, Parameters!(Func).stringof);
-                    result ~= method_code;
+                        result ~= method_code;
+                    }
                 }
             }
         }
+        return result.join("\n");
     }
-    return result.join("\n");
-}
 
-@safe
-auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct)) && !hasUnsharedAliasing!Args) {
-    import concurrency = std.concurrency;
+    @safe
+    auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct)) && !hasUnsharedAliasing!Args) {
+        import concurrency = std.concurrency;
 
-    static struct ActorFactory {
-        static if (Args.length) {
-            private static shared Args init_args;
-        }
-        enum task_members = allMethodFilter!(Task, isTask);
-        static assert(task_members.length !is 0,
-                format("%s is missing @task (use @task UDA to mark the member function)",
-                Task.stringof));
-        static assert(task_members.length is 1,
-                format("Only one member of %s must be mark @task", Task.stringof));
-        enum task_func_name = task_members[0];
-        alias TaskFunc = typeof(__traits(getMember, Task, task_func_name));
-        alias Params = Parameters!TaskFunc;
-        alias ParamNames = ParameterIdentifierTuple!TaskFunc;
-        protected static void run(string task_name, Params args) nothrow {
-            try {
-                static if (Args.length) {
-                    static if (is(Task == struct)) {
-                        Task task = Task(ActorFactory.init_args);
+        static struct ActorFactory {
+            static if (Args.length) {
+                private static shared Args init_args;
+            }
+            enum task_members = allMethodFilter!(Task, isTask);
+            static assert(task_members.length !is 0,
+                    format("%s is missing @task (use @task UDA to mark the member function)",
+                    Task.stringof));
+            static assert(task_members.length is 1,
+                    format("Only one member of %s must be mark @task", Task.stringof));
+            enum task_func_name = task_members[0];
+            alias TaskFunc = typeof(__traits(getMember, Task, task_func_name));
+            alias Params = Parameters!TaskFunc;
+            alias ParamNames = ParameterIdentifierTuple!TaskFunc;
+            protected static void run(string task_name, Params args) nothrow {
+                try {
+                    static if (Args.length) {
+                        static if (is(Task == struct)) {
+                            Task task = Task(ActorFactory.init_args);
+                        }
+                        else {
+                            Task task = new Task(ActorFactory.init_args);
+                        }
                     }
                     else {
-                        Task task = new Task(ActorFactory.init_args);
+                        static if (is(Task == struct)) {
+                            Task task;
+                        }
+                        else {
+                            Task task = new Task;
+                        }
                     }
-                }
-                else {
-                    static if (is(Task == struct)) {
-                        Task task;
+                    scope (success) {
+                        writefln("STOP Success");
+                        task.stopAll;
+                        writeln("Stop all");
+                        tids.remove(task_name);
+                        writefln("Remove %s ", task_name);
+                        task.end;
                     }
-                    else {
-                        Task task = new Task;
-                    }
+                    const task_func = &__traits(getMember, task, task_func_name);
+                    log.register(task_name);
+                    task_func(args);
                 }
-                scope (success) {
-                    writefln("STOP Success");
-                    task.stopAll;
-                    writeln("Stop all");
-                    tids.remove(task_name);
-                    writefln("Remove %s ", task_name);
-                    task.end;
+                catch (Exception e) {
+                    fatal(e);
                 }
-                const task_func = &__traits(getMember, task, task_func_name);
-                log.register(task_name);
-                task_func(args);
-            }
-            catch (Exception e) {
-                fatal(e);
-            }
-        }
-
-        @safe
-        struct Actor {
-            Tid tid;
-            void stop() @trusted {
-                concurrency.send(tid, Control.STOP);
-
-                
-
-                .check(concurrency.receiveOnly!(Control) is Control.END, format("Expecting to received and %s after stop", Control
-                        .END));
             }
 
-            void halt() @trusted {
-                concurrency.send(tid, Control.STOP);
-            }
+            @safe
+            struct Actor {
+                Tid tid;
+                void stop() @trusted {
+                    concurrency.send(tid, Control.STOP);
 
-            enum members_code = generateAllMethods!(Task);
-            mixin(members_code);
-        }
-        /**
+                    
+
+                    .check(concurrency.receiveOnly!(Control) is Control.END, format("Expecting to received and %s after stop", Control
+                            .END));
+                }
+
+                void halt() @trusted {
+                    concurrency.send(tid, Control.STOP);
+                }
+
+                enum members_code = generateAllMethods!(Task);
+                mixin(members_code);
+            }
+            /**
 
          */
-        Actor opCall(Args...)(string taskname, Args args) @trusted {
-            import std.meta : AliasSeq;
-            import std.typecons;
+            Actor opCall(Args...)(string taskname, Args args) @trusted {
+                import std.meta : AliasSeq;
+                import std.typecons;
 
-            scope (failure) {
-                log.error("Task %s of %s did not go live", taskname, Task.stringof);
-            }
-            alias FullArgs = Tuple!(AliasSeq!(string, Args));
-            auto full_args = FullArgs(taskname, args);
-
-            
-
-            .check(concurrency.locate(taskname) == Tid.init,
-                    format("Actor %s has already been started", taskname));
-            auto tid = tids[taskname] = concurrency.spawn(&run, full_args.expand);
-            const live = concurrency.receiveOnly!Control;
-
-            
-
-            .check(live is Control.LIVE,
-                    format("%s excepted from %s of %s but got %s",
-                    Control.LIVE, taskname, Task.stringof, live));
-            return Actor(tid);
-        }
-
-        Actor actorId(string taskname) @trusted {
-            auto tid = concurrency.locate(taskname);
-            if (tid != Tid.init) {
-                concurrency.send(tid, actorID!Task(taskname));
-                if (concurrency.receiveOnly!(ActorFlag) == ActorFlag.yes) {
-                    return Actor(tid);
+                scope (failure) {
+                    log.error("Task %s of %s did not go live", taskname, Task.stringof);
                 }
+                alias FullArgs = Tuple!(AliasSeq!(string, Args));
+                auto full_args = FullArgs(taskname, args);
+                check(concurrency.locate(taskname) == Tid.init,
+                        format("Actor %s has already been started", taskname));
+                auto tid = tids[taskname] = concurrency.spawn(&run, full_args.expand);
+                const live = concurrency.receiveOnly!Control;
+                check(live is Control.LIVE,
+                        format("%s excepted from %s of %s but got %s",
+                        Control.LIVE, taskname, Task.stringof, live));
+                return Actor(tid);
             }
-            return Actor.init;
+
+            Actor actorId(string taskname) @trusted {
+                auto tid = concurrency.locate(taskname);
+                if (tid != Tid.init) {
+                    concurrency.send(tid, actorID!Task(taskname));
+                    if (concurrency.receiveOnly!(ActorFlag) == ActorFlag.yes) {
+                        return Actor(tid);
+                    }
+                }
+                return Actor.init;
+            }
         }
+
+        ActorFactory result;
+        static if (Args.length) {
+            assert(ActorFactory.init_args == Args.init,
+                    format("Argument for %s has already been set", Task.stringof));
+            ActorFactory.init_args = args;
+        }
+        return result;
     }
 
-    ActorFactory result;
-    static if (Args.length) {
-        assert(ActorFactory.init_args == Args.init,
-                format("Argument for %s has already been set", Task.stringof));
-        ActorFactory.init_args = args;
-    }
-    return result;
-}
+    /// Decaration use for the unittest
+    version (unittest) {
+        import std.stdio;
+        import core.time;
 
-/// Decaration use for the unittest
-version (unittest) {
-    import std.stdio;
-    import core.time;
-
-    /** Send function used in the unittest
+        /** Send function used in the unittest
     Wraps the concurrency send into a @trusted function
    */
-    void send(Args...)(Tid tid, Args args) @trusted {
-        concurrency.send(tid, args);
-    }
+        void send(Args...)(Tid tid, Args args) @trusted {
+            concurrency.send(tid, args);
+        }
 
-    /** receiveOnly function used in the unittest
-    Wraps the concurrency receiveOnly into a @trused function
+        /** receiveOnly function used in the unittest
+    Wraps the concurrency receiveOnly into a @trutsed function
 */
 
-    private auto receiveOnly(Args...)() @trusted {
-        return concurrency.receiveOnly!Args;
-    }
+        private auto receiveOnly(Args...)() @trusted {
+            return concurrency.receiveOnly!Args;
+        }
 
-    private enum Get {
-        Some,
-        Arg
-    }
+        private enum Get {
+            Some,
+            Arg
+        }
 
-    /// This actor is used in the unittesy
-    @safe
-    private struct MyActor {
-        long count;
-        string some_name;
-        /**
+        /// This actor is used in the unittest
+        @safe
+        private struct MyActor {
+            long count;
+            string some_name;
+            /**
     Actor method which sets the str
 */
-        @method void some(string str) {
-            writefln("SOME %s ", str);
-            some_name = str;
-        }
+            @method void some(string str) {
+                writefln("SOME %s ", str);
+                some_name = str;
+            }
 
-        /// Decrease the count value `by`
-        @method void decrease(int by) {
-            count -= by;
-        }
+            /// Decrease the count value `by`
+            @method void decrease(int by) {
+                count -= by;
+            }
 
-        /** Actor method send a opt to the actor and 
+            /** Actor method send a opt to the actor and 
         sends back an a response to the owner task
 */
-        @method void get(Get opt) { // reciever
-            writefln("Got ---- %s", opt);
-            final switch (opt) {
-            case Get.Some:
-                sendOwner(some_name);
-                break;
-            case Get.Arg:
-                sendOwner(count);
-                break;
+            @method void get(Get opt) { // reciever
+                writefln("Got ---- %s", opt);
+                final switch (opt) {
+                case Get.Some:
+                    sendOwner(some_name);
+                    break;
+                case Get.Arg:
+                    sendOwner(count);
+                    break;
+                }
+            }
+
+            mixin TaskActor; /// Thes the struct into an Actor
+
+            /// UDA @task mark that this is the task for the Actor
+            @task void runningTask(long label) {
+                count = label;
+                writefln("Alive!!!!");
+                //...
+                alive; // Task is now alive
+                while (!stop) {
+                    receiveTimeout(100.msecs);
+                    writefln("Waiting to stop");
+                }
             }
         }
 
-        mixin TaskActor; /// Thes the struct into an Actor
+    }
 
-        /// UDA @task mark that this is the task for the Actor
-        @task void runningTask(long label) {
-            count = label;
-            writefln("Alive!!!!");
-            //...
-            alive; // Task is now alive
-            while (!stop) {
-                receiveTimeout(100.msecs);
-                writefln("Waiting to stop");
-                // const rets=receiverMethods(100.msec);
+    ///
+    @safe
+    unittest {
+        /// Simple actor test
+        auto my_actor_factory = actor!MyActor;
+        /// Test of a single actor
+        {
+            enum single_actor_taskname = "task_name_for";
+            assert(!isRunning(single_actor_taskname));
+            // Starts one actor of MyActor
+            auto my_actor_1 = my_actor_factory(single_actor_taskname, 10);
+            scope (exit) {
+                my_actor_1.stop;
+            }
+
+            /// Actor init args
+            {
+                my_actor_1.get(Get.Arg); /// tid.send(Get.Arg); my_actor_1.send(Get.Arg)
+                assert(receiveOnly!long  is 10);
+            }
+
+            {
+                my_actor_1.decrease(3);
+                my_actor_1.get(Get.Arg); /// tid.send(Get.Arg); my_actor_1.send(Get.Arg)
+                assert(receiveOnly!long  is 10 - 3);
+            }
+
+            {
+                //
+                enum some_text = "Some text";
+                my_actor_1.some(some_text);
+                my_actor_1.get(Get.Some); /// tid.send(Get.Arg); my_actor_1.send(Get.Arg)
+                assert(receiveOnly!string == some_text);
             }
         }
     }
 
-}
+    version (unittest) {
+        /// Actor used for the unittest
+        struct MyActorWithCtor {
+            immutable(string) common_text;
+            @disable this();
+            this(string text) {
+                common_text = text;
+            }
 
-///
-@safe
-unittest {
-    /// Simple actor test
-    auto my_actor_factory = actor!MyActor;
-    /// Test of a single actor
-    {
-        enum single_actor_taskname = "task_name_for";
-        assert(!isRunning(single_actor_taskname));
-        // Starts one actor of MyActor
-        auto my_actor_1 = my_actor_factory(single_actor_taskname, 10);
+            @method void get(Get opt) { // reciever
+                final switch (opt) {
+                case Get.Some:
+                    sendOwner(common_text);
+                    break;
+                case Get.Arg:
+                    assert(0);
+                    break;
+                }
+            }
+
+            mixin TaskActor;
+
+            @task void runningTask() {
+                alive;
+                while (!stop) {
+                    receive;
+                }
+            }
+
+        }
+    }
+
+    /// Test of actor with common constructor
+    @safe
+    unittest {
+        enum common_text = "common_text";
+        // Creates the actor factory with common argument
+        auto my_actor_factory = actor!MyActorWithCtor(common_text);
+        auto actor_1 = my_actor_factory("task1");
+        auto actor_2 = my_actor_factory("task2");
         scope (exit) {
-            my_actor_1.stop;
+            actor_1.stop;
+            actor_2.stop;
         }
-
-        /// Actor init args
         {
-            my_actor_1.get(Get.Arg); /// tid.send(Get.Arg); my_actor_1.send(Get.Arg)
-            assert(receiveOnly!long  is 10);
-        }
-
-        {
-            my_actor_1.decrease(3);
-            my_actor_1.get(Get.Arg); /// tid.send(Get.Arg); my_actor_1.send(Get.Arg)
-            assert(receiveOnly!long  is 10 - 3);
-        }
-
-        {
-            //
-            enum some_text = "Some text";
-            my_actor_1.some(some_text);
-            my_actor_1.get(Get.Some); /// tid.send(Get.Arg); my_actor_1.send(Get.Arg)
-            assert(receiveOnly!string == some_text);
+            actor_1.get(Get.Some);
+            assert(receiveOnly!string == common_text);
+            actor_2.get(Get.Some);
+            // Receive the common argument given to the factory constructor
+            assert(receiveOnly!string == common_text);
         }
     }
-}
 
-version (unittest) {
-    /// Actor used for the unittest
-    struct MyActorWithCtor {
-        immutable(string) common_text;
-        @disable this();
-        this(string text) {
-            common_text = text;
-        }
-
-        @method void get(Get opt) { // reciever
-            final switch (opt) {
-            case Get.Some:
-                sendOwner(common_text);
-                break;
-            case Get.Arg:
-                assert(0);
-                break;
-            }
-        }
-
-        mixin TaskActor;
-
-        @task void runningTask() {
-            alive;
-            while (!stop) {
-                receive;
-            }
-        }
+    ///
+    @safe
+    unittest {
 
     }
-}
-
-/// Test of actor with common constructor
-@safe
-unittest {
-    enum common_text = "common_text";
-    // Creates the actor factory with common argument
-    auto my_actor_factory = actor!MyActorWithCtor(common_text);
-    auto actor_1 = my_actor_factory("task1");
-    auto actor_2 = my_actor_factory("task2");
-    scope (exit) {
-        actor_1.stop;
-        actor_2.stop;
-    }
-    {
-        actor_1.get(Get.Some);
-        assert(receiveOnly!string == common_text);
-        actor_2.get(Get.Some);
-        // Receive the common argument given to the factory constructor
-        assert(receiveOnly!string == common_text);
-    }
-}

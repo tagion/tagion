@@ -21,7 +21,7 @@ struct TransactionOptions {
 struct TransactionActor {
 
     /**
-Receives and validate a HiRPC containig a smart contract
+Receives and validate a HiRPC containing a smart contract
 */
     @method void received(Document doc);
 
