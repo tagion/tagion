@@ -4,6 +4,7 @@ module tagion.new_services.RecorderActor;
 import tagion.utils.JSONCommon;
 import tagion.actor.Actor;
 import tagion.dart.Recorder : RecordFactory;
+import tagion.new_services.ServiceException;
 
 struct RecorderOptions {
     string task_name; /// Name of the recorder task

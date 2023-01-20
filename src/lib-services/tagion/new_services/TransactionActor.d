@@ -5,6 +5,7 @@ import tagion.actor.Actor;
 import tagion.new_services.ConsensusActor : ConsensusOptions;
 import tagion.utils.JSONCommon;
 import tagion.hibon.Document : Document;
+import tagion.new_services.ServiceException;
 
 @safe
 struct TransactionOptions {

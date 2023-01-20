@@ -1,9 +1,10 @@
-module tagion.new_serices.DARTSyncActor;
+module tagion.new_services.DARTSyncActor;
 
 import tagion.actor.Actor;
 import tagion.dart.DARTOptions;
+import tagion.new_services.ServiceException;
 
 struct DARTSyncActor {
 
-mixin TaskActor;
+    mixin TaskActor;
 }
