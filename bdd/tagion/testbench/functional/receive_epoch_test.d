@@ -15,6 +15,8 @@ import std.stdio;
 import std.range;
 import std.conv;
 import std.file: exists;
+import std.format;
+import std.string;
 
 enum feature = Feature(
         "Check for received epoch",
@@ -31,16 +33,20 @@ class Receivedepoch
     Node[] network;
     BDDOptions bdd_options;
     string node_log_path;
+    int time_between_new_epocs;
+    int duration_seconds;
 
     this(CreateNetworkWithNAmountOfNodesInModeone network, BDDOptions bdd_options)
     {
         this.network = network.nodes;
-        this.bdd_options = bdd_options;
+        this.time_between_new_epocs = bdd_options.epoch_test.time_between_new_epocs;
+        this.duration_seconds = bdd_options.epoch_test.duration_seconds;
     }
 
     @Given("a network.")
-    Document _network()
+    Document _network() @trusted
     {
+        Thread.sleep(5.seconds);
         node_log_path = network[$-1].logger_file;
         check(node_log_path.exists, "node log file not found");
 
@@ -50,41 +56,38 @@ class Receivedepoch
     @When("i continously check if the node log contains received epoch")
     Document epoch() @trusted
     {
-        const end = Clock.currTime() + dur!"seconds"(30);
+        const end = Clock.currTime() + dur!"seconds"(duration_seconds);
+        auto interval = Clock.currTime() + dur!"seconds"(time_between_new_epocs);
+        int received_epochs = 0;
 
-        auto node_log = File(node_log_path, "r");
-        scope(exit){
-            node_log.close();
-        }
+        immutable string grep_command = format("grep 'Received epoch' %s | wc -l", node_log_path);
+        while(Clock.currTime() < end) {
 
-        foreach(line; node_log.byLine) {
-            if (Clock.currTime() > end) {
-                break;
+            auto last_message = executeShell(grep_command);
+
+            last_message.output.writeln;
+            if (last_message.status != 0) {
+                writefln("came to here");
+                continue;
+            } else {
+                const int number_of_received_epochs = last_message.output.strip.to!int;
+                if (received_epochs < number_of_received_epochs) {
+                    received_epochs = number_of_received_epochs;
+                    interval = Clock.currTime() + dur!"seconds"(time_between_new_epocs);
+                }
             }
-            writefln("%s", line);
+
+            check(interval > Clock.currTime(), format("Epoch not received for %s seconds", time_between_new_epocs));                    
+            Thread.sleep(1.seconds);
         }
 
-
-        // immutable grep_command = [
-        //     "grep",
-        //     "Received epoch",
-        //     node_log_path,
-        //     "|",
-        //     "tail",
-        //     "-1",
-        // ];
-        // auto node_pipe = pipeProcess(grep_command, Redirect.all, null, Config
-        //         .detached);
-
-        
-        Thread.sleep(5.seconds);
         return result_ok;
     }
 
     @Then("the pattern should be found")
     Document found()
     {
-        return Document();
+        return result_ok;
     }
 
 }
