@@ -42,11 +42,12 @@ class SendManyRequsts
     }
 
     @Given("I have a simple sslclient")
-    Document _sslclient() 
+    Document _sslclient()  @trusted
     {
+        Thread.sleep(1.seconds);
         const response = client_send("wowo", port);
 
-        // writefln("response = %s", response);
+        writefln("response = %s", response);
 
         check(response == "wowo", "Message not received");
 
