@@ -35,7 +35,7 @@ struct task {
  */
 struct ActorID {
     string taskname; /// Taskname
-    string mangle_name; /// The magle name of the actor
+    string mangle_name; /// The mangle name of the actor
 }
 
 alias ActorFlag = Flag!"action";
@@ -68,7 +68,7 @@ enum isUDA(This, string member_name, UDA) = isTrue!(hasUDA!(__traits(getMember, 
 enum isTask(This, string member_name) = isUDA!(This, member_name, task);
 
 /**
-* Returns: true if the member name is a metode of the task This 
+* Returns: true if the member name is a method of the task This 
 */
 enum isMethod(This, string method_name) = isUDA!(This, method_name, method);
 
@@ -408,8 +408,8 @@ version (unittest) {
         long count;
         string some_name;
         /**
-    Actor method which sets the str
-*/
+        Actor method which sets the str
+        */
         @method void some(string str) {
             writefln("SOME %s ", str);
             some_name = str;
@@ -422,7 +422,7 @@ version (unittest) {
 
         /** Actor method send a opt to the actor and 
         sends back an a response to the owner task
-*/
+        */
         @method void get(Get opt) { // reciever
             writefln("Got ---- %s", opt);
             final switch (opt) {

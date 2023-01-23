@@ -42,6 +42,8 @@ bool waitUntilInGraph(int lockThreadTime, int sleepThreadTime, uint port) @trust
     return false;
 }
 
+
+
 HealthData healthCheck(uint port) @trusted
 {
     immutable node_command = [
@@ -193,6 +195,11 @@ struct Node
             "-N",
             nodes.to!string,
         ];
+
+        // if (master) {
+        //     node_command ~= "--monitor";
+        // }
+
         auto f = File("/dev/null", "w");
         this.pid = spawnProcess(node_command, std.stdio.stdin, f, f);
     }

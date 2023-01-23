@@ -193,6 +193,8 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             Event.callbacks = new MonitorCallBacks(
                     monitor_socket_tid, opts.node_id,
                     opts.monitor.dataformat);
+
+            assert(receiveOnly!Control is Control.LIVE);
         }
 
         import tagion.utils.Miscellaneous;
