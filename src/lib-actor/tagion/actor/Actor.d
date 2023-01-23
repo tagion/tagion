@@ -340,9 +340,7 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
             Tid tid;
             void stop() @trusted {
                 concurrency.send(tid, Control.STOP);
-
                 
-
                 .check(concurrency.receiveOnly!(Control) is Control.END, format("Expecting to received and %s after stop", Control
                         .END));
             }
@@ -366,16 +364,12 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
             }
             alias FullArgs = Tuple!(AliasSeq!(string, Args));
             auto full_args = FullArgs(taskname, args);
-
             
-
             .check(concurrency.locate(taskname) == Tid.init,
                     format("Actor %s has already been started", taskname));
             auto tid = actor_tids[taskname] = concurrency.spawn(&run, full_args.expand);
             const live = concurrency.receiveOnly!Control;
-
             
-
             .check(live is Control.LIVE,
                     format("%s excepted from %s of %s but got %s",
                     Control.LIVE, taskname, Task.stringof, live));
@@ -568,8 +562,26 @@ unittest {
     }
 }
 
-///
-@safe
-unittest {
+version (unittest) {
 
+    static struct MySuperActor {
+
+        @task void run() {
+            alive;
+            while (!stop) {
+            }
+        }
+        mixin TaskActor;
+    }
+    ///
+    @safe
+    unittest {
+        auto my_actor_factory = actor!MyActor;
+        {
+            auto actor_1 = my_actor_factory("task1");
+            scope (exit) {
+                actor_1.stop;
+            }
+        }
+    }
 }
