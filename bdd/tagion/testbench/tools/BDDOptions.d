@@ -31,6 +31,13 @@ struct BDDOptions
         mixin JSONCommon;
     }
 
+    struct EpochTest {
+        int duration_seconds;
+        int time_between_new_epocs;
+        mixin JSONCommon;
+    }
+    EpochTest epoch_test;
+
     Network network;
 
     mixin JSONConfig;
@@ -59,6 +66,12 @@ void setDefaultBDDOptions(ref BDDOptions bdd_options)
             tx_increase_port = 10800;
             default_port = tx_increase_port+1;
             number_of_nodes = 11;
+        }
+
+        with (bdd_options.epoch_test)
+        {
+            duration_seconds = 120;
+            time_between_new_epocs = 10;
         }
 
     }

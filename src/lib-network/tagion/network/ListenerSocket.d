@@ -290,10 +290,12 @@ struct ListenerSocket
             auto listener = new TcpSocket;
             log("Open Net %s:%s", address, port);
             auto add = new InternetAddress(address, port);
+            log("before bind listener");
             listener.bind(add);
             pragma(msg, "FixMe(cbr): why is this value 10");
+            log("before listener");
             listener.listen(10);
-
+            log("before socketset");
             auto socketSet = new SocketSet(1);
 
             scope (exit)
@@ -306,9 +308,10 @@ struct ListenerSocket
                     listener.close;
                 }
             }
-
+            log("before start");
             while (!stop_listener)
             {
+                log("inside while loop");
                 socketSet.add(listener);
                 pragma(msg, "FixMe(cbr): 500.msecs should be a options parameter");
                 Socket.select(socketSet, null, null, timeout.msecs);
@@ -332,6 +335,7 @@ struct ListenerSocket
         }
         catch (TagionException e)
         {
+            log("%s", e);
             stop_listener = true;
             if (masterTid != masterTid.init)
             {
@@ -344,6 +348,8 @@ struct ListenerSocket
         }
         catch (Throwable t)
         {
+            log("%s", t);
+
             stop_listener = true;
             if (masterTid != masterTid.init)
             {
