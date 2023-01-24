@@ -27,6 +27,7 @@ struct BDDOptions
         uint tx_increase_port;
         uint default_port;
         uint number_of_nodes;
+        uint mode;
 
         mixin JSONCommon;
     }
@@ -66,6 +67,7 @@ void setDefaultBDDOptions(ref BDDOptions bdd_options)
             tx_increase_port = 10800;
             default_port = tx_increase_port+1;
             number_of_nodes = 11;
+            mode = 0;
         }
 
         with (bdd_options.epoch_test)
