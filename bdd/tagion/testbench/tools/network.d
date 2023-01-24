@@ -200,4 +200,16 @@ class Node
         this.ps = pipeProcess(node_command, Redirect.all, null, Config.stderrPassThrough, module_path);
         this.pid = ps.pid;
     }
+
+    import core.thread: Fiber;
+    import std.regex;
+
+    void epochEvent() {
+        foreach(line; this.ps.stdout.byLine) {
+            if(line.matchFirst("Received epoch")) {
+                Fiber.yield();
+                writeln(line);
+            }
+        }
+    }
 }

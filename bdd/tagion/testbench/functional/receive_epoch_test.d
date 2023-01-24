@@ -60,13 +60,12 @@ class Receivedepoch
         auto interval = Clock.currTime() + dur!"seconds"(time_between_new_epocs);
         int received_epochs = 0;
 
-
-        /* foreach (line; network[0].ps.stdout.byLine) { */
-        /*         writeln("Node 0 log :: %s", line); */
-        /* } */
+        /* import core.thread: Fiber; */
+        /* auto epochEvent = new Fiber(&network[$-1].epochEvent); */
 
         immutable string grep_command = format("grep 'Received epoch' %s | wc -l", node_log_path);
         while(Clock.currTime() < end) {
+            /* epochEvent.call(); */
 
             auto last_message = executeShell(grep_command);
 
