@@ -49,7 +49,7 @@ class CreateNetworkWithNAmountOfNodesInModezero {
     uint increase_port;
     uint tx_increase_port;
 
-    this(GenerateDart dart, GenerateNWallets genWallets, BDDOptions bdd_options) {
+    this(BDDOptions bdd_options) {
         this.dart = dart;
         this.wallets = genWallets.wallets;
         this.genesis = bdd_options.genesis_wallets.wallets;
@@ -75,18 +75,23 @@ class CreateNetworkWithNAmountOfNodesInModezero {
     }
 
     @When("network is started")
-    Document started() {
-        // start all normal nodes
-        Node node = Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, true);
-        nodes ~= node;
+    Document started() @trusted {
+
+        nodes ~= new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, true, "internal");
 
         return result_ok;
         
     }
 
     @Then("the nodes should be in_graph")
-    Document ingraph() {
-        return Document();
+    Document ingraph() @trusted {
+        /* return Document(); */
+
+        int sleep_before = 30;
+        Thread.sleep(sleep_before.seconds);
+        check(waitUntilInGraph(60, 1, nodes[0].port) == true, "in_graph not found in log");
+
+        return result_ok;
     }
 
     @Then("the wallets should receive genesis amount")

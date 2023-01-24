@@ -141,6 +141,7 @@ int getEpoch(uint port) @trusted
 
 }
 
+
 class Node
 {
     Pid pid;
@@ -162,6 +163,7 @@ class Node
         uint port,
         uint transaction_port,
         bool master = false,
+        string net_mode = "local",
     )
     {
         this.node_number = node_number;
@@ -170,23 +172,29 @@ class Node
         this.port = port;
         this.transaction_port = transaction_port;
 
-        if (master) {
-            this.dart_path = buildPath(module_path, "dart.drt");
-            this.logger_file = buildPath(module_path, "node-master.log");
-            this.dart_init = false;
-            this.dart_synchronize = false;
-        }
-        else {
-            this.dart_path = buildPath(module_path, format("dart-%s.drt", node_number));
-            this.logger_file = buildPath(module_path, format("node-%s.log", node_number));
-            this.dart_init = true;
-            this.dart_synchronize = true;
-        }
+        // Tmp for running mode 0
+        this.dart_path = buildPath(module_path, "dart.drt");
+        this.logger_file = buildPath(module_path, "node-master.log");
+        this.dart_init = false;
+        this.dart_synchronize = true;
+
+        /* if (master) { */
+            /* this.dart_path = buildPath(module_path, "dart.drt"); */
+            /* this.logger_file = buildPath(module_path, "node-master.log"); */
+            /* this.dart_init = false; */
+            /* this.dart_synchronize = false; */
+        /* } */
+        /* else { */
+        /*     this.dart_path = buildPath(module_path, format("dart-%s.drt", node_number)); */
+        /*     this.logger_file = buildPath(module_path, format("node-%s.log", node_number)); */
+        /*     this.dart_init = true; */
+        /*     this.dart_synchronize = true; */
+        /* } */
 
         string[] node_command = [
             tools.tagionwave,
-            "--net-mode=local",
-            format("--boot=%s", boot_path),
+            format("--net-mode=%s", net_mode),
+            /* format("--boot=%s", boot_path), */
             format("--dart-init=%s", dart_init.to!string),
             format("--dart-synchronize=%s", dart_synchronize.to!string),
             format("--dart-path=%s", dart_path),
