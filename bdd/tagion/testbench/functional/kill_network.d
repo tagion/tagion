@@ -27,10 +27,8 @@ class KillTheNetworkWithPIDS {
         this.network = network.nodes;
     }
 
-    @Given("a network with pid_files of the processes.")
+    @Given("i have a network with pids of the processes.")
     Document processes() {
-        //Ignore for now??
-        /* check(network.pids.length == network.number_of_nodes, "PIDs missing"); */
         return result_ok;
     }
 
