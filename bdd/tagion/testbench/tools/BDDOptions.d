@@ -70,8 +70,8 @@ void setDefaultBDDOptions(ref BDDOptions bdd_options)
 
         with (bdd_options.epoch_test)
         {
-            duration_seconds = 120;
-            time_between_new_epocs = 10;
+            duration_seconds = 240;
+            time_between_new_epocs = 20;
         }
 
     }

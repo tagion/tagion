@@ -38,7 +38,7 @@ void monitorServiceTask(immutable(Options) opts) nothrow
 
         log("SockectThread port=%d addresss=%s", opts.monitor.port, commonOptions.url);
 
-        auto listener_socket = ListenerSocket(commonOptions.url,
+        auto listener_socket = ListenerSocket("127.0.0.1",
             opts.monitor.port, opts.monitor.timeout, opts.monitor.task_name);
         auto listener_socket_thread = listener_socket.start;
 
@@ -71,10 +71,13 @@ void monitorServiceTask(immutable(Options) opts) nothrow
         while (!stop)
         {
             receiveTimeout(500.msecs, //Control the thread
-                &handleState, (string json) { listener_socket.broadcast(json); }, (
-                    immutable(ubyte)[] hibon_bytes) {
-                listener_socket.broadcast(hibon_bytes);
-            }, 
+                &handleState, 
+                (string json) { 
+                    listener_socket.broadcast(json); 
+                    }, 
+                (immutable(ubyte)[] hibon_bytes) {
+                    listener_socket.broadcast(hibon_bytes);
+                }, 
             (Document doc) { listener_socket.broadcast(doc); }, 
             &taskfailure
             );
