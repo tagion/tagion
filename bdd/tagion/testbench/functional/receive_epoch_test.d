@@ -5,7 +5,7 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 
 import tagion.testbench.tools.network;
-import tagion.testbench.functional.create_network;
+import tagion.testbench.functional.create_network_in_mode_one;
 import tagion.testbench.tools.BDDOptions;
 
 import std.datetime;

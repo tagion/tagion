@@ -31,19 +31,19 @@ int _main(string[] args)
     create_dart_feature.GenerateDart(create_wallets_context.GenerateNWallets, bdd_options);
     auto create_dart_context = create_dart_feature.run;
 
-    auto create_network_feature = automation!(create_network)();
-    create_network_feature.CreateNetworkWithNAmountOfNodesInModeone(create_dart_context.GenerateDart,
+    auto create_network_in_mode_one_feature = automation!(create_network_in_mode_one)();
+    create_network_in_mode_one_feature.CreateNetworkWithNAmountOfNodesInModeone(create_dart_context.GenerateDart,
         create_wallets_context.GenerateNWallets, bdd_options);
-    auto create_network_context = create_network_feature.run;
+    auto create_network_in_mode_one_context = create_network_in_mode_one_feature.run;
 
 
     auto receive_epoch_feature = automation!(receive_epoch_test)();
-    receive_epoch_feature.Receiveepoch(create_network_context.CreateNetworkWithNAmountOfNodesInModeone, bdd_options);
+    receive_epoch_feature.Receiveepoch(create_network_in_mode_one_context.CreateNetworkWithNAmountOfNodesInModeone, bdd_options);
     auto receive_epoch_context = receive_epoch_feature.run;
 
     auto kill_network_feature = automation!(kill_network)();
     kill_network_feature.KillTheNetworkWithPIDS(
-        create_network_context.CreateNetworkWithNAmountOfNodesInModeone);
+        create_network_in_mode_one_context.CreateNetworkWithNAmountOfNodesInModeone);
     auto kill_network_context = kill_network_feature.run;
 
     return 0;

@@ -1,4 +1,4 @@
-module tagion.testbench.functional.create_network;
+module tagion.testbench.functional.create_network_in_mode_one;
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;

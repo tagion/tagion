@@ -21,7 +21,7 @@ import tagion.testbench.tools.Environment;
 
 import tagion.testbench.functional.create_wallets;
 import tagion.testbench.tools.utils : Genesis;
-import tagion.testbench.functional.create_network;
+import tagion.testbench.functional.create_network_in_mode_one;
 import tagion.testbench.functional.create_transaction;
 import tagion.testbench.tools.network;
 import tagion.testbench.tools.wallet;

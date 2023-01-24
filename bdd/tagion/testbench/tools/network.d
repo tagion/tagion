@@ -183,7 +183,7 @@ class Node
             this.dart_synchronize = true;
         }
 
-        immutable node_command = [
+        string[] node_command = [
             tools.tagionwave,
             "--net-mode=local",
             format("--boot=%s", boot_path),

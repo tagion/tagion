@@ -4,13 +4,15 @@
 
 [create_transaction.md](tagion/testbench/functional/create_transaction.md)
 
-[create_double_spend.md](tagion/testbench/functional/create_double_spend.md)
+[create_network_in_mode_one.md](tagion/testbench/functional/create_network_in_mode_one.md)
 
-[create_network.md](tagion/testbench/functional/create_network.md)
+[create_double_spend.md](tagion/testbench/functional/create_double_spend.md)
 
 [create_wallets.md](tagion/testbench/functional/create_wallets.md)
 
 [create_dart.md](tagion/testbench/functional/create_dart.md)
+
+[create_network_in_mode_zero.md](tagion/testbench/functional/create_network_in_mode_zero.md)
 
 [SSL_D_Client_test.md](tagion/testbench/network/SSL_D_Client_test.md)
 

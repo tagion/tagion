@@ -86,20 +86,23 @@ class MonitorCallBacks : EventMonitorCallbacks {
 
     @trusted
     void socket_send(const(HiBON) hibon) nothrow {
+
         void inner_send() {
             const doc = Document(hibon);
-            with (FileExtension) {
-                switch (ext) {
-                case json:
-                    _socket_thread_id.send(doc.toJSON.toString);
-                    break;
-                case hibon:
-                    _socket_thread_id.send(doc);
-                    break;
-                default:
-                    throw new MonitorException(message("Bad fileformat %s. Only %s and %s allowed", json, hibon));
-                }
-            }
+
+            // with (FileExtension) {
+            //     switch (ext) {
+                // case json:
+            _socket_thread_id.send(doc.toJSON.toString);
+
+            //         break;
+            //     case hibon:
+            //         _socket_thread_id.send(doc);
+            //         break;
+            //     default:
+            //         throw new MonitorException(message("Bad fileformat %s. Only %s and %s allowed", json, hibon));
+            //     }
+            // }
         }
 
         assumeWontThrow(inner_send());

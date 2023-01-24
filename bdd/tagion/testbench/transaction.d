@@ -32,15 +32,15 @@ int _main(string[] args)
     create_dart_feature.GenerateDart(create_wallets_context.GenerateNWallets, bdd_options);
     auto create_dart_context = create_dart_feature.run;
 
-    auto create_network_feature = automation!(create_network)();
-    create_network_feature.CreateNetworkWithNAmountOfNodesInModeone(create_dart_context.GenerateDart,
+    auto create_network_in_mode_one_feature = automation!(create_network_in_mode_one)();
+    create_network_in_mode_one_feature.CreateNetworkWithNAmountOfNodesInModeone(create_dart_context.GenerateDart,
         create_wallets_context.GenerateNWallets, bdd_options);
-    auto create_network_context = create_network_feature.run;
+    auto create_network_in_mode_one_context = create_network_in_mode_one_feature.run;
 
     auto create_transaction_feature = automation!(create_transaction)();
     create_transaction_feature.CreateTransaction(
         create_wallets_context.GenerateNWallets,
-        create_network_context.CreateNetworkWithNAmountOfNodesInModeone,
+        create_network_in_mode_one_context.CreateNetworkWithNAmountOfNodesInModeone,
         bdd_options,
     );
     auto create_transaction_context = create_transaction_feature.run;
@@ -52,7 +52,7 @@ int _main(string[] args)
 
     writefln("%s", bdd_options);
     double_spend_feature.DoubleSpendSameWallet(create_wallets_context.GenerateNWallets,
-        create_network_context.CreateNetworkWithNAmountOfNodesInModeone,
+        create_network_in_mode_one_context.CreateNetworkWithNAmountOfNodesInModeone,
         bdd_options,
     );
 
@@ -60,7 +60,7 @@ int _main(string[] args)
 
     auto kill_network_feature = automation!(kill_network)();
     kill_network_feature.KillTheNetworkWithPIDS(
-        create_network_context.CreateNetworkWithNAmountOfNodesInModeone);
+        create_network_in_mode_one_context.CreateNetworkWithNAmountOfNodesInModeone);
     auto kill_network_context = kill_network_feature.run;
 
     return 0;
