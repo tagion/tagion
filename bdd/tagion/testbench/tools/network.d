@@ -141,9 +141,10 @@ int getEpoch(uint port) @trusted
 
 }
 
-struct Node
+class Node
 {
     Pid pid;
+    ProcessPipes ps;
     immutable string boot_path;
     immutable string dart_path;
     immutable string logger_file;
@@ -192,15 +193,11 @@ struct Node
             format("--port=%s", port + node_number),
             format("--transaction-port=%s", transaction_port + node_number),
             format("--logger-filename=%s", logger_file),
-            "-N",
-            nodes.to!string,
+            "-N", nodes.to!string,
         ];
 
-        // if (master) {
-        //     node_command ~= "--monitor";
-        // }
-
-        auto f = File("/dev/null", "w");
-        this.pid = spawnProcess(node_command, std.stdio.stdin, f, f);
+        // Start the wave process in the module_path
+        this.ps = pipeProcess(node_command, Redirect.all, null, Config.stderrPassThrough, module_path);
+        this.pid = ps.pid;
     }
 }

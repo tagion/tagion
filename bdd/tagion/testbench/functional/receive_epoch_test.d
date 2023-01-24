@@ -60,6 +60,11 @@ class Receivedepoch
         auto interval = Clock.currTime() + dur!"seconds"(time_between_new_epocs);
         int received_epochs = 0;
 
+
+        /* foreach (line; network[0].ps.stdout.byLine) { */
+        /*         writeln("Node 0 log :: %s", line); */
+        /* } */
+
         immutable string grep_command = format("grep 'Received epoch' %s | wc -l", node_log_path);
         while(Clock.currTime() < end) {
 
@@ -77,7 +82,7 @@ class Receivedepoch
                 }
             }
 
-            check(interval > Clock.currTime(), format("Epoch not received for %s seconds", time_between_new_epocs));                    
+            check(interval > Clock.currTime(), format("Epoch not received for %s seconds", time_between_new_epocs));
             Thread.sleep(1.seconds);
         }
 
