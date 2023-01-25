@@ -1,7 +1,6 @@
 - [Home](README.md)
 - Architecture
 	- [Network_Architecture](documents/architecture/Network_Architecture.md)
-	- [Network_Architecture_Presentation](documents/architecture/Network_Architecture_Presentation.md)
 	- [Network_Modes](documents/architecture/Network_Modes.md)
 	- [Network_bootstrap](documents/architecture/Network_bootstrap.md)
 - Testing
