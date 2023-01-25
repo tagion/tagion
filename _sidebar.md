@@ -8,6 +8,5 @@
 		- [BDDEnvironment](documents/behaviour/BDDEnvironment.md)
 		- [BDDLogger](documents/behaviour/BDDLogger.md)
 		- [BDD_Process](documents/behaviour/BDD_Process.md)
-- [Tmp syntax testing](documents/Test.md)
 - [project_goals](documents/project_goals.md)
 - [Relase_notes](documents/Relase_notes.md)
