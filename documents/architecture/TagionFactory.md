@@ -4,5 +4,5 @@ This services handles configuration and start of the network in the different mo
 
 The different modes is described in the.
 
-[Modes](documents/architecture/Newwork_Modes.md)
+[Modes](documents/architecture/Network_Modes.md)
 
