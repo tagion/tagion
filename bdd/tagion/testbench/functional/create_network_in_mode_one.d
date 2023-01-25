@@ -1,4 +1,4 @@
-module tagion.testbench.functional.create_network;
+module tagion.testbench.functional.create_network_in_mode_one;
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
@@ -78,11 +78,11 @@ class CreateNetworkWithNAmountOfNodesInModeone
         // start all normal nodes
         for (int i = 1; i < number_of_nodes; i++)
         {
-            Node node = Node(module_path, i, number_of_nodes, increase_port, tx_increase_port);
+            Node node = new Node(module_path, i, number_of_nodes, increase_port, tx_increase_port);
             nodes ~= node;
         }
 
-        Node node = Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, true);
+        Node node = new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, true);
         nodes ~= node;
 
         return result_ok;

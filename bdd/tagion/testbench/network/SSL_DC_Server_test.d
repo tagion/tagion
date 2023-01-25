@@ -24,13 +24,13 @@ alias FeatureContext = Tuple!(
 
 @safe @Scenario("C Client with D server", [])
 class CClientWithDCServer {
-    ushort port = 8003;
+    ushort port = 8004;
     int calls = 10;
 
     @Given("I have a simple sslserver in D.")
     Document d() @trusted {
         auto server = spawn(&echoSSLSocketServer, "localhost", port, cert);
-        Thread.sleep(100.msecs);
+        Thread.sleep(1.seconds);
         return result_ok;
     }
 

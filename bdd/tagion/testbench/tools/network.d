@@ -42,6 +42,8 @@ bool waitUntilInGraph(int lockThreadTime, int sleepThreadTime, uint port) @trust
     return false;
 }
 
+
+
 HealthData healthCheck(uint port) @trusted
 {
     immutable node_command = [
@@ -139,9 +141,11 @@ int getEpoch(uint port) @trusted
 
 }
 
-struct Node
+
+class Node
 {
     Pid pid;
+    ProcessPipes ps;
     immutable string boot_path;
     immutable string dart_path;
     immutable string logger_file;
@@ -159,6 +163,7 @@ struct Node
         uint port,
         uint transaction_port,
         bool master = false,
+        string net_mode = "local",
     )
     {
         this.node_number = node_number;
@@ -167,33 +172,52 @@ struct Node
         this.port = port;
         this.transaction_port = transaction_port;
 
-        if (master) {
-            this.dart_path = buildPath(module_path, "dart.drt");
-            this.logger_file = buildPath(module_path, "node-master.log");
-            this.dart_init = false;
-            this.dart_synchronize = false;
-        }
-        else {
-            this.dart_path = buildPath(module_path, format("dart-%s.drt", node_number));
-            this.logger_file = buildPath(module_path, format("node-%s.log", node_number));
-            this.dart_init = true;
-            this.dart_synchronize = true;
-        }
+        // Tmp for running mode 0
+        this.dart_path = buildPath(module_path, "dart.drt");
+        this.logger_file = buildPath(module_path, "node-master.log");
+        this.dart_init = false;
+        this.dart_synchronize = true;
 
-        immutable node_command = [
+        /* if (master) { */
+            /* this.dart_path = buildPath(module_path, "dart.drt"); */
+            /* this.logger_file = buildPath(module_path, "node-master.log"); */
+            /* this.dart_init = false; */
+            /* this.dart_synchronize = false; */
+        /* } */
+        /* else { */
+        /*     this.dart_path = buildPath(module_path, format("dart-%s.drt", node_number)); */
+        /*     this.logger_file = buildPath(module_path, format("node-%s.log", node_number)); */
+        /*     this.dart_init = true; */
+        /*     this.dart_synchronize = true; */
+        /* } */
+
+        string[] node_command = [
             tools.tagionwave,
-            "--net-mode=local",
-            format("--boot=%s", boot_path),
+            format("--net-mode=%s", net_mode),
+            /* format("--boot=%s", boot_path), */
             format("--dart-init=%s", dart_init.to!string),
             format("--dart-synchronize=%s", dart_synchronize.to!string),
             format("--dart-path=%s", dart_path),
             format("--port=%s", port + node_number),
             format("--transaction-port=%s", transaction_port + node_number),
             format("--logger-filename=%s", logger_file),
-            "-N",
-            nodes.to!string,
+            "-N", nodes.to!string,
         ];
-        auto f = File("/dev/null", "w");
-        this.pid = spawnProcess(node_command, std.stdio.stdin, f, f);
+
+        // Start the wave process in the module_path
+        this.ps = pipeProcess(node_command, Redirect.all, null, Config.stderrPassThrough, module_path);
+        this.pid = ps.pid;
+    }
+
+    import core.thread: Fiber;
+    import std.regex;
+
+    void epochEvent() {
+        foreach(line; this.ps.stdout.byLine) {
+            if(line.matchFirst("Received epoch")) {
+                Fiber.yield();
+                writeln(line);
+            }
+        }
     }
 }

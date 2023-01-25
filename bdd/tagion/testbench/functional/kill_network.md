@@ -2,7 +2,7 @@ Feature: Kill the network.
 
 Scenario: Kill the network with PIDS.
 
-Given a network with pid_files of the processes.
+Given i have a network with pids of the processes.
 
 When i send two kill commands. 
 

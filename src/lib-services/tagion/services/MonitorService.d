@@ -23,6 +23,10 @@ void monitorServiceTask(immutable(Options) opts) nothrow
 {
     try
     {
+
+        immutable task_name = opts.monitor.task_name;
+        log.register(task_name);
+
         scope (success)
         {
             ownerTid.prioritySend(Control.END);
@@ -30,12 +34,11 @@ void monitorServiceTask(immutable(Options) opts) nothrow
 
         // Set thread global options
         setOptions(opts);
-        immutable task_name = opts.monitor.task_name;
-        log.register(task_name);
+
 
         log("SockectThread port=%d addresss=%s", opts.monitor.port, commonOptions.url);
 
-        auto listener_socket = ListenerSocket(commonOptions.url,
+        auto listener_socket = ListenerSocket("127.0.0.1",
             opts.monitor.port, opts.monitor.timeout, opts.monitor.task_name);
         auto listener_socket_thread = listener_socket.start;
 
@@ -68,15 +71,22 @@ void monitorServiceTask(immutable(Options) opts) nothrow
         while (!stop)
         {
             receiveTimeout(500.msecs, //Control the thread
-                &handleState, (string json) { listener_socket.broadcast(json); }, (
-                    immutable(ubyte)[] hibon_bytes) {
-                listener_socket.broadcast(hibon_bytes);
-            }, (Document doc) { listener_socket.broadcast(doc); }, &taskfailure
+                &handleState, 
+                (string json) { 
+                    listener_socket.broadcast(json); 
+                    }, 
+                (immutable(ubyte)[] hibon_bytes) {
+                    listener_socket.broadcast(hibon_bytes);
+                }, 
+            (Document doc) { listener_socket.broadcast(doc); }, 
+            &taskfailure
             );
         }
     }
     catch (Throwable t)
     {
+        import std.stdio;
+        log("%s", t);
         fatal(t);
     }
 }

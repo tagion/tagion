@@ -5,7 +5,7 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import std.file;
 
-import tagion.testbench.functional.create_network;
+import tagion.testbench.functional.create_network_in_mode_one;
 import tagion.testbench.tools.network;
 import std.process;
 import std.stdio;
@@ -27,10 +27,8 @@ class KillTheNetworkWithPIDS {
         this.network = network.nodes;
     }
 
-    @Given("a network with pid_files of the processes.")
+    @Given("i have a network with pids of the processes.")
     Document processes() {
-        //Ignore for now??
-        /* check(network.pids.length == network.number_of_nodes, "PIDs missing"); */
         return result_ok;
     }
 
