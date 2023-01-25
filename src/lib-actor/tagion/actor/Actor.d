@@ -11,31 +11,38 @@ import core.demangle : mangle;
 alias Tid = concurrency.Tid;
 import concurrency = std.concurrency;
 import tagion.basic.Types : Control;
-import tagion.basic.TagionExceptions : fatal, Check, TagionException;
+import tagion.basic.TagionExceptions : fatal; //, Check, TagionException;
 import tagion.logger.Logger;
 import tagion.hibon.ActorException;
 
 /// method define receiver method for the task actor
 @safe
-struct method {
-}
+struct method;
 
 /// This make a local method used internaly by the actor
 @safe
-struct local {
-}
+struct local;
 
 /// task is a UDA used to define the run function of a task actor
 @safe
-struct task {
-}
+struct task;
 
 /** 
  * Defines a unique actor ID
  */
+@safe
 struct ActorID {
     string taskname; /// Taskname
     string mangle_name; /// The mangle name of the actor
+}
+
+/**
+Handles channel number and debug info between to Actor's
+*/
+@safe
+struct ActorChannel {
+    size_t number; /// Channel number
+    ActorID id;
 }
 
 alias ActorFlag = Flag!"action";
@@ -105,7 +112,7 @@ enum isCtorDtor(This, string name) = ["__ctor", "__dtor"].any!(a => a == name);
  *   pred = condition template to select a method
  * Returns: a alias-sequnecy of all the method of the actor
  */
-protected template allMethodFilter(This, alias pred) {
+template allMethodFilter(This, alias pred) {
     template Filter(string[] members) {
         static if (members.length is 0) {
             enum Filter = [];
@@ -133,9 +140,14 @@ protected template allMethodFilter(This, alias pred) {
 mixin template TaskActor() {
     import concurrency = std.concurrency;
     import core.time : Duration;
+    import std.format;
     import tagion.actor.Actor;
+    import tagion.actor.Actor : isMethod;
     import tagion.basic.Types : Control;
+    import core.demangle : mangle;
+    import std.concurrency : Tid;
 
+    private Tid[] channel_tids; /// Contains all the channel connections for this actor
     bool stop;
     /** 
      * Default control and it just reacts to a STOP
@@ -144,7 +156,9 @@ mixin template TaskActor() {
      */
     @method void control(Control ctrl) {
         stop = (ctrl is Control.STOP);
+
         
+
         .check(stop, format("Uexpected control signal %s", ctrl));
     }
 
@@ -158,7 +172,7 @@ mixin template TaskActor() {
         concurrency.prioritySend(concurrency.ownerTid, e);
     }
 
-    @method @local void actorId(immutable(ActorID) id) @trusted {
+    @method @local void actorId(immutable(ActorID) id, immutable bool) @trusted {
         auto tid = concurrency.locate(id.taskname);
         if (tid !is Tid.init) {
             enum mangle_name = mangle!This("");
@@ -167,11 +181,26 @@ mixin template TaskActor() {
         }
     }
 
+    version(none) {
+    /**
+* Establish a channel to the actor and send back the channel to the actor id
+*/
+    @method void connect(immutable(ActorID) id) @trusted {
+        auto tid = concurrency.locate(id.taskname);
+        if (tid is Tid.init) {
+
+            concurrency.prioritySend(tid, ActorChannel.init);
+        }
+        immutable channel = ActorChannel(channel_tids.length, id);
+        channel_tids ~= tid;
+        concurrency.prioritySend(tid, channel);
+    }
+}
     /** 
      * This function will stop all the actors which are owende my this actor
      */
     void stopAll() @trusted {
-        foreach (ref tid; tids.byValue) {
+        foreach (ref tid; actor_tids.byValue) {
             tid.send(Control.STOP);
             assert(concurrency.receiveOnly!Control is Control.END,
                     format("Failed when stopping all child actors for Actor %s", This.stringof));
@@ -203,12 +232,18 @@ mixin template TaskActor() {
 
     alias This = typeof(this);
 
+    /**
+ Inset all receiver method of an actor
+*/
     void receive() @trusted {
         enum actor_methods = allMethodFilter!(This, isMethod);
         enum code = format(q{concurrency.receive(%-(&%s, %));}, actor_methods);
         mixin(code);
     }
 
+    /**
+Same as receiver but with a timeout
+*/
     bool receiveTimeout(Duration duration) @trusted {
         enum actor_methods = allMethodFilter!(This, isMethod);
         enum code = format(q{return concurrency.receiveTimeout(duration, %-(&%s, %));}, actor_methods);
@@ -216,10 +251,10 @@ mixin template TaskActor() {
     }
 }
 
-private static Tid[string] tids;
+static Tid[string] actor_tids; /// List of channels by task names. 
 
 bool isRunning(string taskname) @trusted {
-    if (taskname in tids) {
+    if (taskname in actor_tids) {
         return concurrency.locate(taskname) != Tid.init;
     }
     return false;
@@ -248,6 +283,8 @@ protected static string generateAllMethods(alias This)() {
     return result.join("\n");
 }
 
+alias Actor(Task, Args...) = ReturnType!(actor!(Task, Args));
+
 @safe
 auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct)) && !hasUnsharedAliasing!Args) {
     import concurrency = std.concurrency;
@@ -256,11 +293,10 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
         static if (Args.length) {
             private static shared Args init_args;
         }
-        //        enum public_members =  allMethodFilter!(Task, templateNot!isProtected);
         enum task_members = allMethodFilter!(Task, isTask);
-        // pragma(msg, "task_members ", task_members);
         static assert(task_members.length !is 0,
-                format("%s is missing @task (use @task UDA to mark the member function)", Task.stringof));
+                format("%s is missing @task (use @task UDA to mark the member function)",
+                Task.stringof));
         static assert(task_members.length is 1,
                 format("Only one member of %s must be mark @task", Task.stringof));
         enum task_func_name = task_members[0];
@@ -289,20 +325,13 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                     writefln("STOP Success");
                     task.stopAll;
                     writeln("Stop all");
-                    tids.remove(task_name);
+                    actor_tids.remove(task_name);
                     writefln("Remove %s ", task_name);
                     task.end;
-                    //prioritySend(concurrency.ownerTid, Control.END);
-
                 }
                 const task_func = &__traits(getMember, task, task_func_name);
-                // version(unittest) {
-                // }
-                // else {
                 log.register(task_name);
-                // }
                 task_func(args);
-
             }
             catch (Exception e) {
                 fatal(e);
@@ -314,11 +343,8 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
             Tid tid;
             void stop() @trusted {
                 concurrency.send(tid, Control.STOP);
-
-                
-
-                .check(concurrency.receiveOnly!(Control) is Control.END, format("Expecting to received and %s after stop", Control
-                        .END));
+                .check(concurrency.receiveOnly!(Control) is Control.END, 
+        format("Expecting to received and %s after stop", Control.END));
             }
 
             void halt() @trusted {
@@ -345,18 +371,15 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
 
             .check(concurrency.locate(taskname) == Tid.init,
                     format("Actor %s has already been started", taskname));
-            auto tid = tids[taskname] = concurrency.spawn(&run, full_args.expand);
+            auto tid = actor_tids[taskname] = concurrency.spawn(&run, full_args.expand);
             const live = concurrency.receiveOnly!Control;
-
-            
-
             .check(live is Control.LIVE,
                     format("%s excepted from %s of %s but got %s",
                     Control.LIVE, taskname, Task.stringof, live));
             return Actor(tid);
         }
 
-        Actor connect(string taskname) @trusted {
+        Actor actorId(string taskname) @trusted {
             auto tid = concurrency.locate(taskname);
             if (tid != Tid.init) {
                 concurrency.send(tid, actorID!Task(taskname));
@@ -377,6 +400,59 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
     return result;
 }
 
+alias ActorCoordinator = Actor!Coordinator;
+static ActorCoordinator actor_coordinator;
+
+/**
+Handles the coordination of actor ides before the actors are alive.
+*/
+@safe
+struct Coordinator {
+    enum task_name = "coordinator_task";
+
+        @method void announce(immutable(ActorID) id) {
+
+}
+    @task void run() {
+        alive;
+        while (!stop) {
+            receive;
+        }
+    }
+
+    mixin TaskActor;
+version(none) {
+    /**
+Returns: actor handler to the coordinator
+*/
+    static void start() @trusted {
+        auto coordinator_factory = actor!Coordinator;
+        check(concurrency.locate(Coordinator.task_name) is Tid.init,
+                format("Coordinator '%s' has already been started",
+                Coordinator.task_name));
+        actor_coordinator = coordinator_factory(Coordinator.task_name);
+//        return actor_coordinator;
+
+    }
+
+    static void stop() {
+        actor_coordinator.stop;
+    }
+}   
+}
+
+version(none)
+static this() {
+    if (concurrency.locate(Coordinator.task_name) is Tid.init) {
+        auto coordinator_factory = actor!Coordinator;
+        check(concurrency.locate(Coordinator.task_name) is Tid.init,
+                format("Coordinator '%s' has already been started",
+                Coordinator.task_name));
+        actor_coordinator = coordinator_factory(Coordinator.task_name);
+    }
+}
+
+
 /// Decaration use for the unittest
 version (unittest) {
     import std.stdio;
@@ -384,13 +460,13 @@ version (unittest) {
 
     /** Send function used in the unittest
     Wraps the concurrency send into a @trusted function
-*/
+   */
     void send(Args...)(Tid tid, Args args) @trusted {
         concurrency.send(tid, args);
     }
 
     /** receiveOnly function used in the unittest
-    Wraps the concurrency receiveOnly into a @trused function
+    Wraps the concurrency receiveOnly into a @trutsed function
 */
 
     private auto receiveOnly(Args...)() @trusted {
@@ -402,7 +478,7 @@ version (unittest) {
         Arg
     }
 
-    /// This actor is used in the unittesy
+    /// This actor is used in the unittest
     @safe
     private struct MyActor {
         long count;
@@ -446,7 +522,6 @@ version (unittest) {
             while (!stop) {
                 receiveTimeout(100.msecs);
                 writefln("Waiting to stop");
-                // const rets=receiverMethods(100.msec);
             }
         }
     }
@@ -540,5 +615,37 @@ unittest {
         actor_2.get(Get.Some);
         // Receive the common argument given to the factory constructor
         assert(receiveOnly!string == common_text);
+    }
+}
+
+version (unittest) {
+
+    @safe
+    static struct MySuperActor {
+
+        @task void run() {
+            alias MyActorFactory = Actor!(MyActor);
+            alive;
+            while (!stop) {
+                receive;
+            }
+        }
+
+        mixin TaskActor;
+    }
+    ///
+    @safe
+    unittest {
+        auto my_actor_factory = actor!MyActor;
+        auto my_super_factory = actor!MySuperActor;
+        {
+            auto actor_1 = my_actor_factory("task1", 12);
+            auto super_actor_1 = my_super_factory("super1");
+            scope (exit) {
+                super_actor_1.stop;
+                actor_1.stop;
+
+            }
+        }
     }
 }
