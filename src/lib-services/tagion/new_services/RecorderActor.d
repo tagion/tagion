@@ -6,25 +6,27 @@ import tagion.actor.Actor;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.new_services.ServiceException;
 
-struct RecorderOptions {
-    string task_name; /// Name of the recorder task
-    string folder_path; /// Folder used for the recorder service files, default empty path means this feature is disabled
-    mixin JSONCommon;
-}
+version (none) {
+    struct RecorderOptions {
+        string task_name; /// Name of the recorder task
+        string folder_path; /// Folder used for the recorder service files, default empty path means this feature is disabled
+        mixin JSONCommon;
+    }
 
-struct RecoderActor {
-    /**
+    struct RecoderActor {
+        /**
 Stores the recoder in the recover list    
 */
-    @method void storeRecorder(immutable(RecordFactory.Recorder) recoder);
+        @method void storeRecorder(immutable(RecordFactory.Recorder) recoder);
 
-    /**
+        /**
 Request a Recorder and sends it back to
 */
-    @method void requestRecover(immutable(ActorChannel) channel);
+        @method void requestRecover(immutable(ActorChannel) channel);
 
-    @task void run(
-            immutable(RecorderOptions) rec_opt);
+        @task void run(
+                immutable(RecorderOptions) rec_opt);
 
-    mixin TaskActor;
+        mixin TaskActor;
+    }
 }
