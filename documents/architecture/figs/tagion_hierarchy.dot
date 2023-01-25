@@ -1,0 +1,28 @@
+digraph tagion_hierarchy {
+    rankdir=UD;
+    size="8,5"
+   node [style=filled]
+Tagionwave [color=blue]
+DART [shape = cylinder]
+Transaction [shape = signature]
+Transcript [shape = note]
+Collector [shape=rect]
+Consensus [label="Consensus\nHashGraph"]
+TLS [color=green]
+node [shape = rect];
+	Tagionwave -> Logger -> LoggerSubscription;
+	Tagionwave -> TagionFactory;
+	Tagionwave -> Registration;
+	TagionFactory -> Tagion;
+	Tagion -> P2P -> Network;
+	DART -> Recoder;
+	Tagion -> DART -> DARTSync;
+    Tagion -> Consensus;
+	Consensus -> Transaction;
+	Consensus -> Transcript;
+	Consensus -> Collector;
+	Transcript -> EpochDump;
+	Consensus -> Monitor;
+	Collector -> TVM;
+	Transaction -> TLS;
+}
