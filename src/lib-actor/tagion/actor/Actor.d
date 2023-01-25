@@ -342,11 +342,8 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
             Tid tid;
             void stop() @trusted {
                 concurrency.send(tid, Control.STOP);
-
-                
-
-                .check(concurrency.receiveOnly!(Control) is Control.END, format("Expecting to received and %s after stop", Control
-                        .END));
+                .check(concurrency.receiveOnly!(Control) is Control.END, 
+        format("Expecting to received and %s after stop", Control.END));
             }
 
             void halt() @trusted {
@@ -375,9 +372,6 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                     format("Actor %s has already been started", taskname));
             auto tid = actor_tids[taskname] = concurrency.spawn(&run, full_args.expand);
             const live = concurrency.receiveOnly!Control;
-
-            
-
             .check(live is Control.LIVE,
                     format("%s excepted from %s of %s but got %s",
                     Control.LIVE, taskname, Task.stringof, live));
@@ -405,6 +399,9 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
     return result;
 }
 
+alias ActorCoordinator = Actor!Coordinator;
+static ActorCoordinator actor_coordinator;
+
 /**
 Handles the coordination of actor ides before the actors are alive.
 */
@@ -412,6 +409,9 @@ Handles the coordination of actor ides before the actors are alive.
 struct Coordinator {
     enum task_name = "coordinator_task";
 
+        @method void announce(immutable(ActionID) id) {
+
+}
     @task void run() {
         alive;
         while (!stop) {
@@ -420,20 +420,26 @@ struct Coordinator {
     }
 
     mixin TaskActor;
-}
 
-/**
+    /**
 Returns: actor handler to the coordinator
 */
-auto startCoordinator() @trusted {
-    auto coordinator_factory = actor!Coordinator;
-    check(concurrency.locate(Coordinator.task_name) is Tid.init,
-            format("Coordinator '%s' has already been started",
-            Coordinator.task_name));
-    auto coordinator_actor = coordinator_factory(Coordinator.task_name);
-    return coordinator_actor;
+    static void start() @trusted {
+        auto coordinator_factory = actor!Coordinator;
+        check(concurrency.locate(Coordinator.task_name) is Tid.init,
+                format("Coordinator '%s' has already been started",
+                Coordinator.task_name));
+        actor_coordinator = coordinator_factory(Coordinator.task_name);
+        return actor_coordinator;
+
+    }
+
+    static void stop() {
+        actor_coordinator.stop;
+    }
 
 }
+
 
 /// Decaration use for the unittest
 version (unittest) {

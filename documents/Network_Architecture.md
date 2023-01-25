@@ -28,6 +28,7 @@ This means that if Service-B fails service-A is responsible to handle and take-c
 digraph G {
 rankdir=UD;
   compound=true;
+  labelangle=35;
    node [style=filled]
   node [ shape = "rect"];
   DART [shape = cylinder]
@@ -42,7 +43,9 @@ rankdir=UD;
     style = rounded;
     Extern -> Transaction [label="HiRPC(contract)" color=green];
  	Transaction -> Collector [label=contract color=green];
-	Collector -> Consensus [label=contract color=green dir=both];
+	Collector -> TVM [label=contract color=green];
+	TVM -> Consensus [labelangle="45" label=contract color=green];
+	Consensus -> Collector [label=contract color=darkgreen];
 	Consensus -> Transcript [label=epoch color=green];
     Collector -> Transcript [label=archives color=red];
   };
@@ -51,7 +54,7 @@ rankdir=UD;
 	DART;
     style = rounded;
   };
-  subgraph cluster_0 {
+  subgraph cluster_3 {
     peripheries=0;
     style = rounded;
 	Recorder -> DARTSync [label=recorder color=blue dir=both];
@@ -62,6 +65,14 @@ rankdir=UD;
   DART -> Collector [label=archives color=red];
   Consensus -> P2P [label=gossip dir=both color=cyan4];
   Transcript -> DART [label=recorder color=blue];
+}
+```
+```graphviz
+digraph G {
+    edge [lblstyle="above, sloped"];
+    a -> b [label="ab"];
+    b -> c [label="bc"];
+    c -> a [label="ca"];
 }
 ```
 
