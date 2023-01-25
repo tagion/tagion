@@ -400,14 +400,14 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
     return result;
 }
 
-alias ActorCoordinator = Actor!Coordinator;
-static ActorCoordinator actor_coordinator;
+alias ActorRegister = Actor!Coordinator;
+static ActorRegister actor_coordinator;
 
 /**
 Handles the coordination of actor ides before the actors are alive.
 */
 @safe
-struct Coordinator {
+struct Register {
     enum task_name = "coordinator_task";
 
         @method void announce(immutable(ActorID) id) {
@@ -426,11 +426,11 @@ version(none) {
 Returns: actor handler to the coordinator
 */
     static void start() @trusted {
-        auto coordinator_factory = actor!Coordinator;
-        check(concurrency.locate(Coordinator.task_name) is Tid.init,
-                format("Coordinator '%s' has already been started",
-                Coordinator.task_name));
-        actor_coordinator = coordinator_factory(Coordinator.task_name);
+        auto coordinator_factory = actor!Register;
+        check(concurrency.locate(Register.task_name) is Tid.init,
+                format("Register '%s' has already been started",
+                Register.task_name));
+        actor_coordinator = coordinator_factory(Register.task_name);
 //        return actor_coordinator;
 
     }
@@ -443,12 +443,12 @@ Returns: actor handler to the coordinator
 
 version(none)
 static this() {
-    if (concurrency.locate(Coordinator.task_name) is Tid.init) {
-        auto coordinator_factory = actor!Coordinator;
-        check(concurrency.locate(Coordinator.task_name) is Tid.init,
-                format("Coordinator '%s' has already been started",
-                Coordinator.task_name));
-        actor_coordinator = coordinator_factory(Coordinator.task_name);
+    if (concurrency.locate(Register.task_name) is Tid.init) {
+        auto coordinator_factory = actor!Register;
+        check(concurrency.locate(Register.task_name) is Tid.init,
+                format("Register '%s' has already been started",
+                Register.task_name));
+        actor_coordinator = coordinator_factory(Register.task_name);
     }
 }
 

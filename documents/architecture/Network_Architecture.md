@@ -4,23 +4,24 @@
 A node consist of the following services.
 
 
-* [tagionwave](src/bin-wave/README.md) is the main task responsible all the service
-* `Logger` takes care of handling the logger information for all the services.
-* `LoggerSubscription` The logger subscript take care of handling remote logger and event logging.
-* `TagionFactory` This services takes care of the *mode* in which the network is started.
-* `Tagion` is the service which handles the all the services related to the rest of the services (And run the HashGraph).
-* `TVM` Virtual machine for executing the smart contract functions.
-* `DART` Takes care of the handling data-base instruction and read/write to the physical file system.
-* `DARTSync` Handles the synchronization of the DART to other remote nodes.
-* `Recorder` Handles the recorder chain (A Recorder is the write/remove sequency to the DART).
-* `Transaction` Handles the validation of a smart contract before it is send to the HashGraph.
-* `Transcript` Executes transactions in the epoch produced by the HashGraph and generates a Recorder.
-* `EpochDump` Write the Epoch to a file as a backup.
-* `Monitor` Monitor interface to display the state of the HashGraph.
-* `NetworkRecover` is used to connect the p2p network.
-* `FileDiscovery` used to boot the network for a address-book file.
-* `MDNSDiscovery` legacy system to connect the libp2p.
-* `ServiceFileDiscory` is used anymore and should be removed.
+* [tagionwave](/src/bin-wave/README.md) is the main task responsible all the service
+* [Logger](/documents/acrhitecture/Logger.md) takes care of handling the logger information for all the services.
+* [LoggerSubscription]() The logger subscript take care of handling remote logger and event logging.
+* [TagionFactory](/documents/architecture/TagionFactory.md) This services takes care of the *mode* in which the network is started.
+* [Tagion](/documents/architecture/Tagion.md) is the service which handles the all the services related to the rest of the services (And run the HashGraph).
+* [TVM](/documents/architecture/TVM.md) Virtual machine for executing the smart contract functions.
+* [DART](/documents/architecture/DART.md) Takes care of the handling data-base instruction and read/write to the physical file system.
+* [DARTSync](/documents/architecture/DARTSync.md) Handles the synchronization of the DART to other remote nodes.
+* [Recorder](/documents/architecture/Recorder.md) Handles the recorder chain (A Recorder is the write/remove sequency to the DART).
+* [Transaction](/documents/architecture/Transaction.md) Handles the validation of a smart contract before it is send to the HashGraph.
+* [Consensus](/documents/architecture/Consensus.md) Executes transactions in the epoch produced by the HashGraph and generates a Recorder.
+* [Transcript](/documents/architecture/Transcript.md) Executes transactions in the epoch produced by the HashGraph and generates a Recorder.
+* [EpochDump](/documents/architecture/EpochDump.md) Write the Epoch to a file as a backup.
+* [Monitor](/documents/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
+* [Consensus](/documents/architecture/Consensus.md) HashGraph consensus services.
+* [P2P](/documents/architecture/P2P.md) is used to connect the p2p network.
+* [Register](/documents/architecture/Register.md) Register for the task and services.
+
 
 The arrow indicates ownership is means of service-A points to service-B. Service-A has ownership of service-B.
 
