@@ -9,6 +9,7 @@ A node consist of the following services.
 * `LoggerSubscription` The logger subscript take care of handling remote logger and event logging.
 * `TagionFactory` This services takes care of the *mode* in which the network is started.
 * `Tagion` is the service which handles the all the services related to the rest of the services (And run the HashGraph).
+* `TVM` Virtual machine for executing the smart contract functions.
 * `DART` Takes care of the handling data-base instruction and read/write to the physical file system.
 * `DARTSync` Handles the synchronization of the DART to other remote nodes.
 * `Recorder` Handles the recorder chain (A Recorder is the write/remove sequency to the DART).

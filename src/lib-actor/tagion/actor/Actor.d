@@ -181,6 +181,7 @@ mixin template TaskActor() {
         }
     }
 
+    version(none) {
     /**
 * Establish a channel to the actor and send back the channel to the actor id
 */
@@ -194,7 +195,7 @@ mixin template TaskActor() {
         channel_tids ~= tid;
         concurrency.prioritySend(tid, channel);
     }
-
+}
     /** 
      * This function will stop all the actors which are owende my this actor
      */
@@ -409,7 +410,7 @@ Handles the coordination of actor ides before the actors are alive.
 struct Coordinator {
     enum task_name = "coordinator_task";
 
-        @method void announce(immutable(ActionID) id) {
+        @method void announce(immutable(ActorID) id) {
 
 }
     @task void run() {
@@ -420,7 +421,7 @@ struct Coordinator {
     }
 
     mixin TaskActor;
-
+version(none) {
     /**
 Returns: actor handler to the coordinator
 */
@@ -430,14 +431,25 @@ Returns: actor handler to the coordinator
                 format("Coordinator '%s' has already been started",
                 Coordinator.task_name));
         actor_coordinator = coordinator_factory(Coordinator.task_name);
-        return actor_coordinator;
+//        return actor_coordinator;
 
     }
 
     static void stop() {
         actor_coordinator.stop;
     }
+}   
+}
 
+version(none)
+static this() {
+    if (concurrency.locate(Coordinator.task_name) is Tid.init) {
+        auto coordinator_factory = actor!Coordinator;
+        check(concurrency.locate(Coordinator.task_name) is Tid.init,
+                format("Coordinator '%s' has already been started",
+                Coordinator.task_name));
+        actor_coordinator = coordinator_factory(Coordinator.task_name);
+    }
 }
 
 
