@@ -5,7 +5,7 @@ A node consist of the following services.
 
 
 * [tagionwave](/src/bin-wave/README.md) is the main task responsible all the service
-* [Logger](/documents/acrhitecture/Logger.md) takes care of handling the logger information for all the services.
+* [Logger](/documents/architecture/Logger.md) takes care of handling the logger information for all the services.
 * [LoggerSubscription]() The logger subscript take care of handling remote logger and event logging.
 * [TagionFactory](/documents/architecture/TagionFactory.md) This services takes care of the *mode* in which the network is started.
 * [Tagion](/documents/architecture/Tagion.md) is the service which handles the all the services related to the rest of the services (And run the HashGraph).
