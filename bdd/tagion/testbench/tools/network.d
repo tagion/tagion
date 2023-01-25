@@ -65,6 +65,7 @@ HealthData healthCheck(uint port) @trusted
     }
     catch (ArrayIndexError e)
     {
+        writefln("%s", stdout.array);
         return HealthData(false, parseJSON(""));
     }
 
@@ -174,7 +175,7 @@ class Node
 
         // Tmp for running mode 0
         this.dart_path = buildPath(module_path, "dart.drt");
-        this.logger_file = buildPath(module_path, "node-master.log");
+        this.logger_file = buildPath(module_path, "tinynet.log");
         this.dart_init = false;
         this.dart_synchronize = true;
 
@@ -193,19 +194,19 @@ class Node
 
         string[] node_command = [
             tools.tagionwave,
-            format("--net-mode=%s", net_mode),
+            // format("--net-mode=%s", net_mode),
             /* format("--boot=%s", boot_path), */
             format("--dart-init=%s", dart_init.to!string),
             format("--dart-synchronize=%s", dart_synchronize.to!string),
-            format("--dart-path=%s", dart_path),
-            format("--port=%s", port + node_number),
-            format("--transaction-port=%s", transaction_port + node_number),
+            // format("--dart-path=%s", dart_path),
+            format("--port=%s", port),
+            format("--transaction-port=%s", transaction_port),
             format("--logger-filename=%s", logger_file),
             "-N", nodes.to!string,
         ];
 
         // Start the wave process in the module_path
-        this.ps = pipeProcess(node_command, Redirect.all, null, Config.stderrPassThrough, module_path);
+        this.ps = pipeProcess(node_command, Redirect.all, null, Config.stderrPassThrough, module_path.buildPath("network"));
         this.pid = ps.pid;
     }
 

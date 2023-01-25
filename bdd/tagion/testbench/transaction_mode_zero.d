@@ -24,18 +24,18 @@ int _main(string[] args)
 
     bdd_options.save(format("/tmp/%s.json", scenario_name));
 
-    /* auto create_wallets_feature = automation!(create_wallets)(); */
-    /* create_wallets_feature.GenerateNWallets(bdd_options); */
-    /* auto create_wallets_context = create_wallets_feature.run; */
-
-    /* auto create_dart_feature = automation!(create_dart)(); */
-    /* create_dart_feature.GenerateDart(create_wallets_context.GenerateNWallets, bdd_options); */
-    /* auto create_dart_context = create_dart_feature.run; */
+    auto create_wallets_feature = automation!(create_wallets)();
+    create_wallets_feature.GenerateNWallets(bdd_options); 
+    auto create_wallets_context = create_wallets_feature.run; 
+    auto create_dart_feature = automation!(create_dart)(); 
+    create_dart_feature.GenerateDart(create_wallets_context.GenerateNWallets, bdd_options);
+    auto create_dart_context = create_dart_feature.run;
 
 
 ///
     auto create_network_in_mode_zero_feature = automation!(create_network_in_mode_zero)();
-    create_network_in_mode_zero_feature.CreateNetworkWithNAmountOfNodesInModezero(bdd_options);
+    create_network_in_mode_zero_feature.CreateNetworkWithNAmountOfNodesInModezero(create_dart_context.GenerateDart,
+        create_wallets_context.GenerateNWallets, bdd_options);
     auto create_network_in_mode_zero_context = create_network_in_mode_zero_feature.run;
 
 

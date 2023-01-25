@@ -49,7 +49,7 @@ class CreateNetworkWithNAmountOfNodesInModezero {
     uint increase_port;
     uint tx_increase_port;
 
-    this(BDDOptions bdd_options) {
+    this(GenerateDart dart, GenerateNWallets genWallets, BDDOptions bdd_options) {
         this.dart = dart;
         this.wallets = genWallets.wallets;
         this.genesis = bdd_options.genesis_wallets.wallets;
@@ -89,7 +89,7 @@ class CreateNetworkWithNAmountOfNodesInModezero {
 
         int sleep_before = 30;
         Thread.sleep(sleep_before.seconds);
-        check(waitUntilInGraph(60, 1, nodes[0].port) == true, "in_graph not found in log");
+        check(waitUntilInGraph(60, 1, nodes[0].transaction_port+1) == true, "in_graph not found in log");
 
         return result_ok;
     }

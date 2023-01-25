@@ -33,17 +33,20 @@ class GenerateDart
 {
 
     string dart_path;
+    string data_path;
     string genesis_path;
     string module_path;
     TagionWallet[] wallets;
     const Genesis[] genesis;
     string[] invoices;
+    BDDOptions bdd_options;
 
     this(GenerateNWallets genWallets, BDDOptions bdd_options)
     {
         this.wallets = genWallets.wallets;
         this.genesis = bdd_options.genesis_wallets.wallets;
         this.module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
+        this.bdd_options = bdd_options;
     }
 
     @Given("I have wallets with pincodes")
@@ -57,7 +60,15 @@ class GenerateDart
     @Given("I initialize a Dart")
     Document dart() @trusted
     {
-        dart_path = env.bdd_log.buildPath(module_path, "dart.drt");
+        if (this.bdd_options.network.mode == 0) {
+            data_path = buildPath(module_path, "network", "data");
+            mkdirRecurse(data_path);
+            dart_path = data_path.buildPath("dart.drt");
+        } else {
+            dart_path = env.bdd_log.buildPath(module_path, "dart.drt");
+
+        }
+
 
         immutable dart_init_command = [
             tools.dartutil,
@@ -70,6 +81,9 @@ class GenerateDart
         writefln("%s", init_dart_pipe.stdout.byLine);
 
         check(dart_path.exists, "Dart not created");
+
+
+
 
         return result_ok;
 
@@ -102,10 +116,12 @@ class GenerateDart
     @Then("the dart should be generated")
     Document generated() @trusted
     {
+
         genesis_path = buildPath(module_path, "genesis.hibon");
 
         foreach (i, invoice; invoices)
         {
+
             immutable boot_command = [
                 tools.tagionboot,
                 invoice,
@@ -130,6 +146,14 @@ class GenerateDart
                     .detached);
             writefln("%s", dart_input_pipe.stdout.byLine);
 
+        }
+
+        // copy dart to node0 if mode0
+        if (bdd_options.network.mode == 0) {
+            string node0_dart_path = buildPath(data_path, "node0");
+            mkdirRecurse(node0_dart_path);
+            node0_dart_path.copy(dart_path);
+            check(node0_dart_path.exists, "dart not found in node0");
         }
 
         check(genesis_path.exists, "Genesis file not created");
