@@ -122,9 +122,9 @@ struct HiRPC
     struct Error
     {
         @Label("*", true) @(Filter.Initialized) uint id;
-        @Label("*", true) @Filter(q{!a.empty}) Document data;
-        @Label("*", true) @(Filter.Initialized) string message;
-        @Label("*", true) @(Filter.Initialized) int code;
+        @Label("$data", true) @Filter(q{!a.empty}) Document data;
+        @Label("$msg", true) @(Filter.Initialized) string message;
+        @Label("$code", true) @(Filter.Initialized) int code;
 
         static bool valid(const Document doc)
         {
