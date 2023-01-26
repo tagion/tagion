@@ -1,4 +1,4 @@
-# Transaction services
+# Transaction Service
 
 This services handles the format and method validation of the [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md) request and [HiBON](/documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md) data format. 
 
@@ -11,7 +11,7 @@ Input:
 
 Output:
 
-  - A HiRPC.Receiver request
+  - A HiRPC.Receiver request.
   - Receiver: [Collector](/documents/architecture/Collector.md) Service.
 
 The responsibilities of the service are:
