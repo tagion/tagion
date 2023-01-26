@@ -1,5 +1,7 @@
 ## Feature: Transcript service
+
 This service takes care of processing the consensus-ordered list of smart-contracts (here in called an epoch list).
+
 The service should execute the smart-contracts in-order and sends the modifications updates to the DART-Service.
 
 `tagion.testbench.services.Transcript_service`
@@ -30,7 +32,9 @@ The service should execute the smart-contracts in-order and sends the modificati
 
 
 ### Scenario: Process an epoch-list where the inputs are reused
+
 This scenario checks for double spending when the same input is available for several smart-contracts in only the first in the process should be executed.
+
 And all the smart contracts which use the same input should be given processed but the penalty process.
 
 `ProcessAnEpochlistWhereTheInputsAreReused`
