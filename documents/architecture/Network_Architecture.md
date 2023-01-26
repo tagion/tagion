@@ -26,8 +26,8 @@ The arrow indicates ownership is means of service-A points to service-B. Service
 
 This means that if Service-B fails service-A is responsible to handle and take-care of the action to restart or other action.
 
-# Data process flow
-This graph show the primary data flow in the network.
+## Data Message flow
+This graph show the primary data message flow in the network.
 ```graphviz
 digraph G {
 rankdir=UD;
