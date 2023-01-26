@@ -4,15 +4,15 @@ This services handles the format and method validation of the [HiPRC](/documents
 
 The HiRPC contains the contract and data payload for a transaction. 
 
-Input Interface: 
+Input: 
 
   - The service expect a binary data stream. 
-  - Sending interface: TLS/TCP Service.
+  - Sender: TLS/TCP Service.
 
-Output Interface:
+Output:
 
   - A HiRPC request as HiBON Document. 
-  - Receiving interface: [Collector](documents/architecture/Collector.md) Service.
+  - Receiver: [Collector](/documents/architecture/Collector.md) Service.
 
 The responsibilities of the service are:
 
