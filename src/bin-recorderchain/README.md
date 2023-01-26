@@ -1,4 +1,3 @@
-<a href="https://tagion.org"><img alt="tagion logo" src="https://github.com/tagion/resources/raw/master/branding/logomark.svg?sanitize=true" alt="tagion.org" height="60"></a>
 # recorderchain v.0.x.x
 > This tool is used to recover DART database using recorder chain.
 
@@ -12,26 +11,6 @@ To recover DART database using genesis DART file and recorder chain you can use 
 recorderchain -d dart.drt -c /recorder_chain_folder/ -g genesis.drt
 ```
 After this command in case of success you will have newly created DART file with name `-d`, recovered using genesis DART file `-g` and recorder chain `-c`.
-
-#### [Tool link](https://github.com/tagion/tagion/tree/release/src/bin-boot)
-
-- [recorderchain v.0.x.x](#recorderchain-v0xx)
-      - [Tool link](#tool-link)
-- [chaindirectory](#chaindirectory)
-  - [Use cases:](#use-cases)
-    - [Case: recover DART with specified chain directory](#case-recover-dart-with-specified-chain-directory)
-      - [Success](#success)
-      - [Failure](#failure)
-- [dartfile](#dartfile)
-  - [Use cases](#use-cases-1)
-    - [Case: recover DART with specified name](#case-recover-dart-with-specified-name)
-      - [Success](#success-1)
-      - [Failure](#failure-1)
-- [genesisdart](#genesisdart)
-  - [Use cases](#use-cases-2)
-    - [Case: recover DART with specified genesis DART file](#case-recover-dart-with-specified-genesis-dart-file)
-      - [Success](#success-2)
-      - [Failure](#failure-2)
 
 # chaindirectory
 ```

@@ -1,32 +1,5 @@
-<a href="https://tagion.org"><img alt="tagion logo" src="https://github.com/tagion/resources/raw/master/branding/logomark.svg?sanitize=true" alt="tagion.org" height="60"></a>
-# tagionboot v.0.x.x
-> This tool is used for creating and customizing recorders.
->- [tagionboot v.0.x.x](#tagionboot-v0xx)
-      - [Tool link](#tool-link)
-#### [Tool link](https://github.com/tagion/tagion/tree/release/src/bin-boot)
+# bin-boot
 
-# Table of context
-- [tagionboot v.0.x.x](#tagionboot-v0xx)
-      - [Tool link](#tool-link)
-- [Table of context](#table-of-context)
-- [version](#version)
-- [output](#output)
-  - [Use cases](#use-cases)
-    - [Case - set new output filename](#case---set-new-output-filename)
-      - [Success](#success)
-      - [Failure](#failure)
-- [initbills](#initbills)
-  - [Parameters](#parameters)
-  - [Use cases:](#use-cases-1)
-    - [Case - creating dummy bills recorder](#case---creating-dummy-bills-recorder)
-      - [Success](#success-1)
-      - [Failure](#failure-1)
-- [nnc](#nnc)
-  - [Parameters](#parameters-1)
-  - [Use cases:](#use-cases-2)
-    - [Case - creating recorder with name "test"](#case---creating-recorder-with-name-test)
-      - [Success](#success-2)
-      - [Failure](#failure-2)
 # version
 ```
 --version

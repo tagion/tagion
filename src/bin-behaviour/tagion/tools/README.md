@@ -1,24 +1,3 @@
-- [BDD documentation](#bdd-documentation)
-- [List of BDDs](#list-of-bdds)
-  - [Structure](#structure)
-  - [Commands](#commands)
-    - [Help](#help)
-    - [See all bdd-targets](#see-all-bdd-targets)
-    - [BDDfiles](#bddfiles)
-    - [Enviroment](#enviroment)
-    - [Removing illegal chars from bdd .md files](#removing-illegal-chars-from-bdd-md-files)
-    - [Building and Running BDD's](#building-and-running-bdds)
-    - [Cleaning](#cleaning)
-    - [Terminal visualization](#terminal-visualization)
-  - [Reporter tool: tagion-regression](#reporter-tool-tagion-regression)
-    - [Starting](#starting)
-    - [Stopping](#stopping)
-  - [Creating a new BDD](#creating-a-new-bdd)
-    - [Create a .md file for the feature](#create-a-md-file-for-the-feature)
-    - [Main file for the feature](#main-file-for-the-feature)
-  - [BDD re-usage](#bdd-re-usage)
-    - [Re-using](#re-using)
-
 # BDD documentation
 The following md file contains documentation on how to develop with bdds. For a general understanding of what BDD's are please see: [Continous_Delivery_What_is_BDD](https://www.youtube.com/watch?v=zYj70EsD7uI).
 
