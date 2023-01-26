@@ -13,7 +13,7 @@ A node consist of the following services.
 * [DART](/documents/architecture/DART.md) Takes care of the handling data-base instruction and read/write to the physical file system.
 * [DARTSync](/documents/architecture/DARTSync.md) Handles the synchronization of the DART to other remote nodes.
 * [Recorder](/documents/architecture/Recorder.md) Handles the recorder chain (A Recorder is the write/remove sequency to the DART).
-* [Transaction](/documents/architecture/Transaction.md) Handles the validation of a smart contract before it is send to the HashGraph.
+* [Transaction](/documents/architecture/Transaction.md) Handles the validation of a HiBON and HiRPC request before it is send to the HashGraph.
 * [Collector](/documents/architecture/Collector.md) Collector all the input used in the smart-contract.
 * [Transcript](/documents/architecture/Transcript.md) Executes transactions in the epoch produced by the HashGraph and generates a Recorder.
 * [Consensus](/documents/architecture/Consensus.md) HashGraph consensus services.
