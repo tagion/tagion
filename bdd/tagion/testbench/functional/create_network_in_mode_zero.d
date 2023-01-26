@@ -87,7 +87,7 @@ class CreateNetworkWithNAmountOfNodesInModezero {
         auto f = File("/dev/null", "w");
         auto pid = spawnProcess(args, std.stdio.stdin, f, f, null, Config.none, module_path.buildPath("network", "data"));
         return result_ok;
-        
+
     }
 
     @Then("the nodes should be in_graph")
