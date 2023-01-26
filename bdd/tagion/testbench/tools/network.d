@@ -154,6 +154,8 @@ class Node
     immutable uint transaction_port;
     immutable bool dart_init;
     immutable bool dart_synchronize;
+    immutable uint mode;
+    immutable string module_path;
 
     this(
         string module_path,
@@ -161,44 +163,85 @@ class Node
         uint nodes,
         uint port,
         uint transaction_port,
+        uint mode,
         bool master = false,
     )
     {
-        this.node_number = node_number;
-        this.nodes = nodes;
-        this.boot_path = buildPath(module_path, "boot.hibon");
-        this.port = port;
-        this.transaction_port = transaction_port;
 
-        if (master) {
-            this.dart_path = buildPath(module_path, "dart.drt");
-            this.logger_file = buildPath(module_path, "node-master.log");
+        this.mode = mode;
+        this.module_path = module_path;
+
+        if (mode == 1) {
+            this.node_number = node_number;
+            this.nodes = nodes;
+            this.boot_path = buildPath(module_path, "boot.hibon");
+            this.port = port;
+            this.transaction_port = transaction_port;
+
+            if (master) {
+                this.dart_path = buildPath(module_path, "dart.drt");
+                this.logger_file = buildPath(module_path, "node-master.log");
+                this.dart_init = false;
+                this.dart_synchronize = false;
+            }
+            else {
+                this.dart_path = buildPath(module_path, format("dart-%s.drt", node_number));
+                this.logger_file = buildPath(module_path, format("node-%s.log", node_number));
+                this.dart_init = true;
+                this.dart_synchronize = true;
+            }
+        } else {
+            this.node_number = node_number;
+            this.nodes = nodes;
+            this.boot_path = buildPath(module_path, "boot.hibon");
+            this.port = port;
+            this.transaction_port = transaction_port;
+            if (master) {
+                this.dart_path = module_path.buildPath("network", "data", "dart.drt");
+            } else {
+                this.dart_path = module_path.buildPath("network", "data", format("dart-%s.drt", node_number));
+            }
+
+            this.logger_file = module_path.buildPath("tinynet.log");
             this.dart_init = false;
             this.dart_synchronize = false;
-        }
-        else {
-            this.dart_path = buildPath(module_path, format("dart-%s.drt", node_number));
-            this.logger_file = buildPath(module_path, format("node-%s.log", node_number));
-            this.dart_init = true;
-            this.dart_synchronize = true;
         }
     }
 
     void start() {
-        immutable node_command = [
-            tools.tagionwave,
-            "--net-mode=local",
-            format("--boot=%s", boot_path),
-            format("--dart-init=%s", dart_init.to!string),
-            format("--dart-synchronize=%s", dart_synchronize.to!string),
-            format("--dart-path=%s", dart_path),
-            format("--port=%s", port + node_number),
-            format("--transaction-port=%s", transaction_port + node_number),
-            format("--logger-filename=%s", logger_file),
-            "-N",
-            nodes.to!string,
-        ];
         auto f = File("/dev/null", "w");
-        this.pid = spawnProcess(node_command, std.stdio.stdin, f, f);
+
+        if (mode == 1) {
+            immutable node_command = 
+            [
+                tools.tagionwave,
+                "--net-mode=local",
+                format("--boot=%s", boot_path),
+                format("--dart-init=%s", dart_init.to!string),
+                format("--dart-synchronize=%s", dart_synchronize.to!string),
+                format("--dart-path=%s", dart_path),
+                format("--port=%s", port + node_number),
+                format("--transaction-port=%s", transaction_port + node_number),
+                format("--logger-filename=%s", logger_file),
+                "-N",
+                nodes.to!string,
+            ];
+            this.pid = spawnProcess(node_command, std.stdio.stdin, f, f);
+        } else {
+            immutable node_command = 
+            [
+                "tagionwave", 
+                "-N", 
+                nodes.to!string, 
+                "--dart-filename",
+                dart_path, 
+                "-t", 
+                "200", 
+                format("--dart-init=%s", dart_init.to!string), 
+                format("--logger-filename=%s", logger_file),
+                format("--transaction-port=%s", transaction_port),
+            ];
+            this.pid = spawnProcess(node_command, std.stdio.stdin, f, f, null, Config.none, module_path.buildPath("network", "data"));
+        }
     }
 }

@@ -76,16 +76,28 @@ class CreateNetworkWithNAmountOfNodesInModezero {
 
     @When("network is started")
     Document started() @trusted {
-        
-        writefln("DART_PATH: %s", dart.dart_path);
-        writefln("FOLDER with DART: %s", module_path.buildPath("network", "data"));
 
-        auto args = ["tagionwave", "-N", "7", "--dart-filename", dart.dart_path, "-t", "200", "--dart-init=false", "--logger-filename=tinynet.log"];
-        // pipeProcess(args, Redirect.all, null, Config.detached, module_path.buildPath("network", "data"));
-        // executeShell(args, null, Config.detached, 18446744073709551615LU, module_path.buildPath("network", "data"));
-        /* nodes ~= new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, true, "internal", dart.dart_path); */
-        auto f = File("/dev/null", "w");
-        auto pid = spawnProcess(args, std.stdio.stdin, f, f, null, Config.none, module_path.buildPath("network", "data"));
+        for (int i = 1; i < number_of_nodes; i++)
+        {
+            Node node = new Node(module_path, i, number_of_nodes, increase_port, tx_increase_port, 0);
+            nodes ~= node;
+        }
+        Node node_master = new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, 0, true);
+        nodes ~= node_master;
+        node_master.start();
+
+
+        
+        // // writefln("DART_PATH: %s", dart.dart_path);
+        // // writefln("FOLDER with DART: %s", module_path.buildPath("network", "data"));
+
+
+        // auto args = ["tagionwave", "-N", "7", "--dart-filename", dart.dart_path, "-t", "200", "--dart-init=false", "--logger-filename=tinynet.log"];
+        // // pipeProcess(args, Redirect.all, null, Config.detached, module_path.buildPath("network", "data"));
+        // // executeShell(args, null, Config.detached, 18446744073709551615LU, module_path.buildPath("network", "data"));
+        // /* nodes ~= new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, true, "internal", dart.dart_path); */
+        // auto f = File("/dev/null", "w");
+        // auto pid = spawnProcess(args, std.stdio.stdin, f, f, null, Config.none, module_path.buildPath("network", "data"));
         return result_ok;
 
     }
