@@ -15,3 +15,16 @@ This services should perform the following.
 The acceptance critiesas can be found in [Transaction_services](/bdd/tagion/testbench/services/Transaction_service.md)
 
 
+```mermaid
+sequenceDiagram
+    participant TLS
+    participant Transaction
+    participant Collector
+    TLS->>Transaction: Document
+    Transaction->>Collector: HiRPC.Receiver
+```
+
+
+
+
+
