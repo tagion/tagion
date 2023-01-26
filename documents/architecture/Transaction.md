@@ -17,9 +17,8 @@ Output:
 The responsibilities of the service are:
 
   - Check the data package comply with size limitation.
-  - Deserialise the data to a HiBON document.
-  - Checks the HiRPC method is supported.
-  - Validates the signature on the HiRPC request.
+  - Validate the HiBON document and HiRPC request are correct formatted.
+  - Validates signature on permissioned HiRPC request. 
 
 The acceptance criteria specification can be found in [Transaction_services](/bdd/tagion/testbench/services/Transaction_service.md).
 
