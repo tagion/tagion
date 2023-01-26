@@ -8,16 +8,17 @@ Input:
     - A HiRPC.Receiver request.
     - Sender: Transaction Service.
 
+    - A Signed Consensus Contract
+    - Sender: Consensus Service.
+
  Output:
 
-    - A Signed Contract with Input Data, meaning all inputs are correct signed in the contract
-    - Receiver: TVM
+    - A Signed Contract with Input Data, DART archives. It means all inputs are correct signed in the contract. 
+    - Receiver: TVM.
 
 
  The service does the following:
 
-    - Reads all the input data, archieves, from the DART as specified as inputs in the HiRPC request
-    - Ensures all input data is valid and signed correctly
-    - Sends a Signed Contract with data to the TVM
-
-
+    - Reads all the input data, archieves, from the DART as specified as inputs in the HiRPC request.
+    - Ensures all input data is valid and signed correctly.
+    - Sends a Signed Contract with data to the TVM.
