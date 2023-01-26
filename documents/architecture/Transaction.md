@@ -30,3 +30,4 @@ sequenceDiagram
     TLS->>Transaction: Document
     Transaction->>Collector: HiRPC.Receiver
 ```
+

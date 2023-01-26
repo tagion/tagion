@@ -22,7 +22,7 @@ sequenceDiagram
     participant Collector
     participant TVM 
     Transaction->>Collector: Contract-T 
-    Consensus->>Collector: Contract-C	
+    Consensus->>Collector: Contract-C
     Collector->>DART: Request Archives
     DART->>Collector: Archives
     Collector->>TVM: Archives+Contract
