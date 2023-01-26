@@ -79,7 +79,7 @@ class CreateNetworkWithNAmountOfNodesInModezero {
 
         for (int i = 1; i < number_of_nodes; i++)
         {
-            Node node = new Node(module_path, i, number_of_nodes, increase_port, tx_increase_port, 0);
+            Node node = new Node(module_path, i, number_of_nodes, increase_port+i, tx_increase_port+i, 0);
             nodes ~= node;
         }
         Node node_master = new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, 0, true);
@@ -96,7 +96,7 @@ class CreateNetworkWithNAmountOfNodesInModezero {
 
         int sleep_before = 30;
         Thread.sleep(sleep_before.seconds);
-        check(waitUntilInGraph(60, 1, tx_increase_port) == true, "in_graph not found in log");
+        check(waitUntilInGraph(60, 1, nodes[$-1].transaction_port) == true, "in_graph not found in log");
 
         return result_ok;
     }
@@ -105,7 +105,7 @@ class CreateNetworkWithNAmountOfNodesInModezero {
     Document amount() {
         foreach (i, genesis_amount; genesis)
         {
-            Balance balance = wallets[i].getBalance(tx_increase_port);
+            Balance balance = wallets[i].getBalance(nodes[$-1].transaction_port);
             check(balance.returnCode == true, "Error in updating balance");
             writefln("%s", balance);
             check(balance.total == genesis[i].amount, "Balance not updated");

@@ -223,20 +223,16 @@ class Node
                 format("--port=%s", port + node_number),
                 format("--transaction-port=%s", transaction_port + node_number),
                 format("--logger-filename=%s", logger_file),
-                "-N",
-                nodes.to!string,
+                "-N", nodes.to!string,
             ];
             this.pid = spawnProcess(node_command, std.stdio.stdin, f, f);
         } else {
             immutable node_command = 
             [
-                "tagionwave", 
-                "-N", 
-                nodes.to!string, 
-                "--dart-filename",
-                dart_path, 
-                "-t", 
-                "200", 
+                tools.tagionwave,
+                "-N", nodes.to!string, 
+                "--dart-filename", dart_path, 
+                "-t", "200", 
                 format("--dart-init=%s", dart_init.to!string), 
                 format("--logger-filename=%s", logger_file),
                 format("--transaction-port=%s", transaction_port),
