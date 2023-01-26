@@ -96,13 +96,21 @@ class CreateNetworkWithNAmountOfNodesInModezero {
 
         int sleep_before = 30;
         Thread.sleep(sleep_before.seconds);
-        check(waitUntilInGraph(60, 1, tx_increase_port+1) == true, "in_graph not found in log");
+        check(waitUntilInGraph(60, 1, tx_increase_port) == true, "in_graph not found in log");
 
         return result_ok;
     }
 
     @Then("the wallets should receive genesis amount")
     Document amount() {
+        foreach (i, genesis_amount; genesis)
+        {
+            Balance balance = wallets[i].getBalance(tx_increase_port);
+            check(balance.returnCode == true, "Error in updating balance");
+            writefln("%s", balance);
+            check(balance.total == genesis[i].amount, "Balance not updated");
+        }
+        // check that wallets were updated correctly
         return result_ok;
     }
 
