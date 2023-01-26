@@ -43,7 +43,7 @@ int _main(string[] args)
 
     auto kill_network_feature = automation!(kill_network)();
     kill_network_feature.KillTheNetworkWithPIDS(
-        create_network_in_mode_one_context.CreateNetworkWithNAmountOfNodesInModeone);
+        create_network_in_mode_one_context.CreateNetworkWithNAmountOfNodesInModeone, bdd_options);
     auto kill_network_context = kill_network_feature.run;
 
     return 0;

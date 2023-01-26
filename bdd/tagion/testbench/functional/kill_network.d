@@ -6,12 +6,15 @@ import std.typecons : Tuple;
 import std.file;
 
 import tagion.testbench.functional.create_network_in_mode_one;
+import tagion.testbench.functional.create_network_in_mode_zero;
 import tagion.testbench.tools.network;
 import std.process;
 import std.stdio;
 import std.regex;
 import std.conv;
 import core.thread;
+import tagion.testbench.tools.BDDOptions;
+
 
 import core.sys.posix.signal;
 
@@ -22,9 +25,14 @@ alias FeatureContext = Tuple!(KillTheNetworkWithPIDS, "KillTheNetworkWithPIDS", 
 @safe @Scenario("Kill the network with PIDS.", [])
 class KillTheNetworkWithPIDS {
     Node[] network;
+    BDDOptions bdd_options;
 
-    this(CreateNetworkWithNAmountOfNodesInModeone network) {
+    this(CreateNetworkWithNAmountOfNodesInModeone network, BDDOptions bdd_options) {
         this.network = network.nodes;
+    }
+    this(CreateNetworkWithNAmountOfNodesInModezero network, BDDOptions bdd_options) {
+        this.network = network.nodes;
+        this.bdd_options = bdd_options;
     }
 
     @Given("i have a network with pids of the processes.")
@@ -34,13 +42,22 @@ class KillTheNetworkWithPIDS {
 
     @When("i send two kill commands.")
     Document commands() @trusted {
-        foreach(node; network) {
-            writefln("%s", node.pid.processID);
+
+        if (bdd_options.network.mode == 1 ) {
+            foreach(node; network) {
+                writefln("%s", node.pid.processID);
+                kill(node.pid, SIGKILL);
+                Thread.sleep(100.msecs);
+                kill(node.pid, SIGKILL);
+                wait(node.pid);
+            }  
+        } else {
+            auto node = network[$-1];
             kill(node.pid, SIGKILL);
             Thread.sleep(100.msecs);
             kill(node.pid, SIGKILL);
             wait(node.pid);
-        }  
+        }
         return result_ok;
     }
 
