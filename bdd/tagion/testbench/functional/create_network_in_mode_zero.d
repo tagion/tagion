@@ -77,7 +77,10 @@ class CreateNetworkWithNAmountOfNodesInModezero {
     @When("network is started")
     Document started() @trusted {
 
-        nodes ~= new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, true, "internal");
+
+        pipeProcess(["tagionwave", "-N", "7", "--dart-filename", dart.dart_path, "-t", "200", "--dart-init=false"], 
+        Redirect.all, null, Config.stderrPassThrough, module_path.buildPath("network"));
+        /* nodes ~= new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, true, "internal", dart.dart_path); */
 
         return result_ok;
         
@@ -85,11 +88,10 @@ class CreateNetworkWithNAmountOfNodesInModezero {
 
     @Then("the nodes should be in_graph")
     Document ingraph() @trusted {
-        /* return Document(); */
 
         int sleep_before = 30;
         Thread.sleep(sleep_before.seconds);
-        check(waitUntilInGraph(60, 1, nodes[0].transaction_port+1) == true, "in_graph not found in log");
+        check(waitUntilInGraph(60, 1, 10800) == true, "in_graph not found in log");
 
         return result_ok;
     }

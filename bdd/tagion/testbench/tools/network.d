@@ -149,6 +149,7 @@ class Node
     ProcessPipes ps;
     immutable string boot_path;
     immutable string dart_path;
+    immutable string dart_filename;
     immutable string logger_file;
     immutable uint node_number;
     immutable uint nodes;
@@ -165,6 +166,7 @@ class Node
         uint transaction_port,
         bool master = false,
         string net_mode = "local",
+        string dart_filename = "dart.drt",
     )
     {
         this.node_number = node_number;
@@ -175,6 +177,7 @@ class Node
 
         // Tmp for running mode 0
         this.dart_path = buildPath(module_path, "dart.drt");
+        this.dart_filename = dart_filename;
         this.logger_file = buildPath(module_path, "tinynet.log");
         this.dart_init = false;
         this.dart_synchronize = true;
@@ -198,7 +201,7 @@ class Node
             /* format("--boot=%s", boot_path), */
             format("--dart-init=%s", dart_init.to!string),
             format("--dart-synchronize=%s", dart_synchronize.to!string),
-            // format("--dart-path=%s", dart_path),
+            format("--dart-filename=%s", dart_filename),
             format("--port=%s", port),
             format("--transaction-port=%s", transaction_port),
             format("--logger-filename=%s", logger_file),
