@@ -1,3 +1,0 @@
----
-title: 'Behaviour Driven development'
----
