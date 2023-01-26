@@ -7,17 +7,27 @@ The HiRPC contains the contract and data payload for a transaction.
 Input interface: 
 
   - The service expect a binary data stream. 
+  - Sending interface: TLS/TCP Service
 
 Output Interface:
 
   - A HiRPC request as HiBON Dcoument. 
-  - Receiving interface: [Collector](documents/architecture/Collector.md)
+  - Receiving interface: [Collector](documents/architecture/Collector.md) Service
 
 The responsibilities of the service are:
 
   - Check the data package comply with size limitation.
   - Deserialise the data to a HiBON document
-  - Checks the method is supported
+  - Checks the HiRPC method is supported
   - Validates the signature on the HiRPC request
 
 The acceptance criteria specification can be found in [Transaction_services](/bdd/tagion/testbench/services/Transaction_service.md)
+
+```mermaid
+sequenceDiagram
+    participant TLS
+    participant Transaction
+    participant Collector
+    TLS->>Transaction: Document
+    Transaction->>Collector: HiRPC.Receiver
+```
