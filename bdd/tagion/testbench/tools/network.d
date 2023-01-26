@@ -182,7 +182,9 @@ class Node
             this.dart_init = true;
             this.dart_synchronize = true;
         }
+    }
 
+    void start() {
         immutable node_command = [
             tools.tagionwave,
             "--net-mode=local",

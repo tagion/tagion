@@ -79,11 +79,13 @@ class CreateNetworkWithNAmountOfNodesInModeone
         for (int i = 1; i < number_of_nodes; i++)
         {
             Node node = new Node(module_path, i, number_of_nodes, increase_port, tx_increase_port);
+            node.start();
             nodes ~= node;
         }
 
-        Node node = new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, true);
-        nodes ~= node;
+        Node node_master = new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, true);
+        node_master.start();
+        nodes ~= node_master;
 
         return result_ok;
     }
