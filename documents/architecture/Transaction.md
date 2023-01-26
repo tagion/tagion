@@ -1,27 +1,27 @@
 # Transaction services
 
-This services handles the format and method validation of the [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md). request and [HiBON](/documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md) data format. 
+This services handles the format and method validation of the [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md) request and [HiBON](/documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md) data format. 
 
 The HiRPC contains the contract and data payload for a transaction. 
 
-Input interface: 
+Input Interface: 
 
   - The service expect a binary data stream. 
-  - Sending interface: TLS/TCP Service
+  - Sending interface: TLS/TCP Service.
 
 Output Interface:
 
-  - A HiRPC request as HiBON Dcoument. 
-  - Receiving interface: [Collector](documents/architecture/Collector.md) Service
+  - A HiRPC request as HiBON Document. 
+  - Receiving interface: [Collector](documents/architecture/Collector.md) Service.
 
 The responsibilities of the service are:
 
   - Check the data package comply with size limitation.
-  - Deserialise the data to a HiBON document
-  - Checks the HiRPC method is supported
-  - Validates the signature on the HiRPC request
+  - Deserialise the data to a HiBON document.
+  - Checks the HiRPC method is supported.
+  - Validates the signature on the HiRPC request.
 
-The acceptance criteria specification can be found in [Transaction_services](/bdd/tagion/testbench/services/Transaction_service.md)
+The acceptance criteria specification can be found in [Transaction_services](/bdd/tagion/testbench/services/Transaction_service.md).
 
 ```mermaid
 sequenceDiagram
