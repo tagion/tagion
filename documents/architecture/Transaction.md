@@ -1,6 +1,6 @@
 # Transaction Service
 
-This service handles the format validation of the [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md) request and [HiBON](/documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md) data format. 
+This service validates the [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md) request and [HiBON](/documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md) data format. 
 
 The HiRPC contains the contract and data payload for a transaction. 
 
