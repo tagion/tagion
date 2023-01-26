@@ -14,8 +14,9 @@ A node consist of the following services.
 * [DARTSync](/documents/architecture/DARTSync.md) Handles the synchronization of the DART to other remote nodes.
 * [Recorder](/documents/architecture/Recorder.md) Handles the recorder chain (A Recorder is the write/remove sequency to the DART).
 * [Transaction](/documents/architecture/Transaction.md) Handles the validation of a smart contract before it is send to the HashGraph.
-* [Consensus](/documents/architecture/Consensus.md) HashGraph consensus services.
+* [Collector](/documents/architecture/Collector.md) Collector all the input used in the smart-contract.
 * [Transcript](/documents/architecture/Transcript.md) Executes transactions in the epoch produced by the HashGraph and generates a Recorder.
+* [Consensus](/documents/architecture/Consensus.md) HashGraph consensus services.
 * [EpochDump](/documents/architecture/EpochDump.md) Write the Epoch to a file as a backup.
 * [Monitor](/documents/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
 * [P2P](/documents/architecture/P2P.md) is used to connect the p2p network.
