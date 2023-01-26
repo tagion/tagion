@@ -9,7 +9,7 @@ This services should perform the following.
 
 2. Check that the package is a HiRPC.
 
-3. Convert the Document in to a HiRPC and send it to the [Collector](documents/architecture/Collector.md)	
+3. Convert the Document in to a HiRPC and send it to the [Collector](/documents/architecture/Collector.md)	
 
 
 The acceptance critiesas can be found in [Transaction_services](/bdd/tagion/testbench/services/Transaction_service.md)
