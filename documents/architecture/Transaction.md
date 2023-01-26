@@ -6,7 +6,7 @@ The HiRPC contains the contract and data payload for a transaction.
 
 Input: 
 
-  - The service expect a binary data stream. 
+  - The service expect a HiBON Document. 
   - Sender: TLS/TCP Service.
 
 Output:
