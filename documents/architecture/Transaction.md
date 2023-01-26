@@ -11,7 +11,7 @@ Input:
 
 Output:
 
-  - A HiRPC request as HiBON Document. 
+  - A HiRPC.Receiver request
   - Receiver: [Collector](/documents/architecture/Collector.md) Service.
 
 The responsibilities of the service are:
