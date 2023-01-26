@@ -1,30 +1,23 @@
 # Transaction services
 
-This services handles the pre-validation of the smart-contract.
-The smart contract is package into a [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md).
+This services handles the format and method validation of the [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md). request and [HiBON](/documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md) data format. 
 
-This services should perform the following.
+The HiRPC contains the contract and data payload for a transaction. 
 
-1. Check that the received package is the correct [HiBON](/documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md) formatQ
+Input interface: 
 
-2. Check that the package is a HiRPC.
+  - The service expect a binary data stream. 
 
-3. Convert the Document in to a HiRPC and send it to the [Collector](/documents/architecture/Collector.md)	
+Output Interface:
 
+  - A HiRPC request as HiBON Dcoument. 
+  - Receiving interface: [Collector](documents/architecture/Collector.md)
 
-The acceptance critiesas can be found in [Transaction_services](/bdd/tagion/testbench/services/Transaction_service.md)
+The responsibilities of the service are:
 
+  - Check the data package comply with size limitation.
+  - Deserialise the data to a HiBON document
+  - Checks the method is supported
+  - Validates the signature on the HiRPC request
 
-```mermaid
-sequenceDiagram
-    participant TLS
-    participant Transaction
-    participant Collector
-    TLS->>Transaction: Document
-    Transaction->>Collector: HiRPC.Receiver
-```
-
-
-
-
-
+The acceptance criteria specification can be found in [Transaction_services](/bdd/tagion/testbench/services/Transaction_service.md)
