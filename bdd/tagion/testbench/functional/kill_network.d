@@ -29,6 +29,7 @@ class KillTheNetworkWithPIDS {
 
     this(CreateNetworkWithNAmountOfNodesInModeone network, BDDOptions bdd_options) {
         this.network = network.nodes;
+        this.bdd_options = bdd_options;
     }
     this(CreateNetworkWithNAmountOfNodesInModezero network, BDDOptions bdd_options) {
         this.network = network.nodes;
