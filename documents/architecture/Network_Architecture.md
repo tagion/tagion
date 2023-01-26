@@ -28,81 +28,11 @@ This means that if Service-B fails service-A is responsible to handle and take-c
 
 ## Data Message flow
 This graph show the primary data message flow in the network.
-```graphviz
-digraph G {
-rankdir=UD;
-  compound=true;
-  labelangle=35;
-   node [style=filled]
-  node [ shape = "rect"];
-  DART [shape = cylinder]
-  TLS [ style=filled fillcolor=green ];
-  Network [ style=filled fillcolor=red]
-  Transaction [shape = signature]
-  Transcript [shape = note]
-  Consensus [label="Consensus\nHashgraph"]
-  subgraph cluster_1 {
-    peripheries=0;
-    style = rounded;
-    TLS -> Transaction [label="HiRPC(contract)" color=green];
- 	Transaction -> Collector [label=contract color=green];
-	Collector -> TVM [label=contract color=green];
-	TVM -> Consensus [labelangle="45" label=contract color=green];
-	Consensus -> Collector [label=contract color=darkgreen];
-	Consensus -> Transcript [label=epoch color=green];
-    TVM -> Transcript [label="archives\nin/out" color=red];
-  };
-  subgraph cluster_2 {
-    peripheries=0;
-	DART;
-    style = rounded;
-  };
-  subgraph cluster_3 {
-    peripheries=0;
-    style = rounded;
-	Recorder -> DARTSync [label=recorder color=blue dir=both];
-	DARTSync -> P2P [label="DART(crud)" dir=both color=magenta];
-	P2P -> Network [label=HiBON dir=both];
-  };
-  DART -> DARTSync [label="DART(crud)" dir=both color=magenta];
-  DART -> Collector [label=archives color=red];
-  Consensus -> P2P [label=gossip dir=both color=cyan4];
-  Transcript -> DART [label=recorder color=blue];
-}
-```
+
+
+![Dataflow](figs/dataflow.svg)
 
 ## Tagion Service Hierarchy
 This graph show the supervisor hierarchy of the services in the network.
 
-```graphviz
-digraph tagion_hierarchy {
-    rankdir=UD;
-    size="8,5"
-   node [style=filled]
-Tagionwave [color=blue]
-DART [shape = cylinder]
-Transaction [shape = signature]
-Transcript [shape = note]
-Collector [shape=rect]
-Consensus [label="Consensus\nHashGraph"]
-TLS [color=green]
-node [shape = rect];
-	Tagionwave -> Logger -> LoggerSubscription;
-	Tagionwave -> TagionFactory;
-	Tagionwave -> Registration;
-	TagionFactory -> Tagion;
-	Tagion -> P2P -> Network;
-	DART -> Recoder;
-	Tagion -> DART -> DARTSync;
-    Tagion -> Consensus;
-	Consensus -> Transaction;
-	Consensus -> Transcript;
-	Consensus -> Collector;
-	Transcript -> EpochDump;
-	Consensus -> Monitor;
-	Collector -> TVM;
-	Transaction -> TLS;
-}
-```
-
-
+![Tagion hierachy](figs/tagion_hierarchy.svg)
