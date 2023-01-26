@@ -1,7 +1,6 @@
 ## Collector Service
 
 The service is responsible for collecting input data for a HiRPC request and ensuring the data is valid and signed before the contract is executed.
-It reads all the inputs which is specified as inputs in the contract from the DART and validates the signatures of the inputs. 
 
 
 Input:
@@ -11,11 +10,14 @@ Input:
 
  Output:
 
-    - A 
+    - A Signed Contract with Input Data, meaning all inputs are correct signed in the contract
+    - Receiver: TVM
 
 
  The service does the following:
 
-    -    
+    - Reads all the input data, archieves, from the DART as specified as inputs in the HiRPC request
+    - Ensures all input data is valid and signed correctly
+    - Sends a Signed Contract with data to the TVM
 
 
