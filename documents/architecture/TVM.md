@@ -1,6 +1,7 @@
 # TVM (Tagion Virtual Machine)
 
-The TVM is a service that is reponsible for ensuring complaint contracts in the network by executing the instructions and ensuring they follow the consensus rules. It produces output archieves for the database. 
+The TVM is a service that is reponsible for ensuring complaint contracts in the network by executing the instructions and ensuring they follow the consensus rules. 
+It produces output archieves for the database. 
 
 Input: 
 
