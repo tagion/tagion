@@ -25,7 +25,7 @@ HiRPC `$msg` comes in 3 types. [Method](#Method), [Response](#Response) and [Err
 | Name | Type | Description | Required |
 | ---- | ----- | ------- | --- |
 | `id ` | UINT32 | Message id number | No |
-| `result` | DOCUMENT | Result for the RPC as a Document | No |
+| `result` | DOCUMENT | Result for the RPC as a Document | Yes |
 
 ### Error
 | Name | Type | Description | Required |
