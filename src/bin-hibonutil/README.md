@@ -1,26 +1,6 @@
-<a href="https://tagion.org"><img alt="tagion logo" src="https://github.com/tagion/resources/raw/master/branding/logomark.svg?sanitize=true" alt="tagion.org" height="60"></a>
-# Tagion 0.9.0 release
+# bin-hibonutil
+
 >Hibonutil console viewer/converter for hibon/json files.
-#### [Tool link](https://github.com/tagion/tagion)
-- [Tagion 0.9.0 release](#tagion-090-release)
-      - [Tool link](#tool-link)
-- [inputfile](#inputfile)
-  - [Parameters](#parameters)
-  - [Use cases](#use-cases)
-    - [Case: open file with key](#case-open-file-with-key)
-      - [Success](#success)
-      - [Failure](#failure)
-    - [Case: open file](#case-open-file)
-      - [Success](#success-1)
-      - [Failure](#failure-1)
-- [pretty](#pretty)
-  - [Use cases](#use-cases-2)
-    - [Case: open file](#case-open-file-1)
-      - [Success case](#success-case)
-      - [Failure](#failure-3)
-- [version](#version)
-    - [Case: show version](#case-show-version)
-      - [Success case](#success-case-1)
 
 # inputfile
 Takes list of  .json and .hibon files.

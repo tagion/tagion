@@ -1,3 +1,9 @@
+<a style="margin: 0 0 0 15px" href="https://tagion.org">
+	<img alt="Tagion org" src="/documents/figs/logomark.svg" alt="tagion.org" height="60">
+</a>
+
+---
+
 - [Home](README.md)
 - Architecture
 	- [Network_Architecture](documents/architecture/Network_Architecture.md)
