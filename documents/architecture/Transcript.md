@@ -15,8 +15,8 @@ The acceptance criteria specification can be found in [Transcript_services](/bdd
 
 ```mermaid
 sequenceDiagram
-    participant Consensus 
     participant TVM 
+    participant Consensus 
     participant Transcript
     participant DART 
     Consensus ->> Transcript: Epoch list  
