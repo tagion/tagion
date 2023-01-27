@@ -34,8 +34,13 @@ Now you should be able to run ```make unittest```
 ### Tools 
 [See tools](src/bin-tools/tagion/tools/README.md)
 
+### Tagion Node Architecture
+The [Tagion Node Architecture](documents/architecture/Network_Architecture.md)
+
 ### BDD-test tools
 [BDD-tool](src/bin-behaviour/tagion/tools/README.md)
+
+
 ### Unit types
 
 #### Library
