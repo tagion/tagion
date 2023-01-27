@@ -2,44 +2,47 @@
 
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta charset="UTF-8" />
-    <link
-      rel="stylesheet"
-      href="//cdn.jsdelivr.net/npm/docsify@4/themes/vue.css"
-    />
-  </head>
-  <body>
-    <div id="app"></div>
-    <script>
 
-      window.$docsify = {
+<head>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+	<meta charset="UTF-8" />
+	<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify-dark-mode@latest/dist/style.min.css" />
+	<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/themes/vue.css" />
+</head>
 
-        // load from _sidebar.md
-        loadSidebar: true,
+<body>
+	<div id="app"></div>
+	<script>
+		// Config
+		window.$docsify = {
+			loadSidebar: true,
+			subMaxLevel: 2,
+			plugins: [
+				function editButton(hook, vm) {
+					// The date template pattern
+					$docsify.formatUpdated = '{YYYY}/{MM}/{DD} {HH}:{mm}';
 
-        logo: '/documents/figs/logomark.svg',
-		subMaxLevel: 2
-      };
+					hook.beforeEach(function (html) {
+						var url =
+							'https://github.com/tagion/tagion/blob/current-doc/' +
+							vm.route.file;
+						var editHtml = '[📝 EDIT DOCUMENT](' + url + ')\n';
 
-      // const workerURL = 'docs/lite.render.js';
-// let viz = new Viz({ workerURL });
+						return (
+							editHtml +
+							html +
+							'\n----\n' +
+							'Last modified ' +
+							editHtml
+						);
+					});
+				},
+			],
+		};
 
-// viz.renderSVGElement('digraph { a -> b }')
-  // .then(function(element) {
-    // document.body.appendChild(element);
-  // })
-  // .catch(error => {
-    // // Create a new Viz instance (@see Caveats page for more info)
-    // viz = new Viz({ workerURL });
+	</script>
+	<script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+</body>
 
-    // // Possibly display the error
-    // console.error(error);
-  // });
-
-    </script>
-    <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
-  </body>
 </html>
