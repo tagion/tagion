@@ -36,7 +36,7 @@ struct emulate(Task);
  */
 @safe
 struct ActorID {
-    string taskname; /// Taskname
+    string task_name; /// task_name
     string mangle_name; /// The mangle name of the actor
 }
 
@@ -46,11 +46,11 @@ alias ActorFlag = Flag!"action";
      * 
      * Params:
      *   Task = is the actor object
-     *   taskname = The name of the of the actor type task
+     *   task_name = The name of the of the actor type task
      * Returns: The unique actor ID of the actor 
      */
-immutable(ActorID) actorID(Task)(string taskname) nothrow pure {
-    return immutable(ActorID)(taskname, mangle!Task(""));
+immutable(ActorID) actorID(Task)(string task_name) nothrow pure {
+    return immutable(ActorID)(task_name, mangle!Task(""));
 }
 
 // Helper function for isUDA 
@@ -128,6 +128,7 @@ template allMethodFilter(This, alias pred) {
     enum allMembers = [__traits(allMembers, This)];
     enum allMethodFilter = Filter!(allMembers);
 }
+static Tid[string] child_actor_tids; /// List of channels by task names. 
 
 /**
         Mixin to turns a struct or class into an Actor task
@@ -142,6 +143,7 @@ mixin template TaskActor() {
     import core.demangle : mangle;
     import std.concurrency : Tid;
 
+
     private Tid[] channel_tids; /// Contains all the channel connections for this actor
     bool stop;
     /** 
@@ -151,10 +153,7 @@ mixin template TaskActor() {
          */
     @method void control(Control ctrl) {
         stop = (ctrl is Control.STOP);
-
-        
-
-        .check(stop, format("Uexpected control signal %s", ctrl));
+        check(stop, format("Uexpected control signal %s", ctrl));
     }
 
     /** 
@@ -166,28 +165,12 @@ mixin template TaskActor() {
         stop = true;
         concurrency.prioritySend(concurrency.ownerTid, e);
     }
-    /++Examples: 
-/* 
- * 
- * Params:
- *   id = ActorID for the sender
-* Returns:
- */
-    @method @local void actorId(immutable(ActorID) id) @trusted {
-        auto tid = concurrency.locate(id.taskname);
-        if (tid !is Tid.init) {
-            enum mangle_name = mangle!This("");
-            immutable response = cast(ActorFlag)(id.mangle_name == mangle_name);
-            concurrency.prioritySend(tid, response);
-        }
-    }
-    +/
 
     /** 
          * This function will stop all the actors which are owende my this actor
          */
     void stopAll() @trusted {
-        foreach (ref tid; actor_tids.byValue) {
+        foreach (ref tid; child_actor_tids.byValue) {
             concurrency.send(tid, Control.STOP);
             assert(concurrency.receiveOnly!Control is Control.END,
                     format("Failed when stopping all child actors for Actor %s", This.stringof));
@@ -254,8 +237,10 @@ Same as receiver but with a timeout
                     pragma(msg, __traits(hasMember, This, emulated_method));
                     enum has_emulated_member = __traits(hasMember, This, emulated_method);
                     static if (has_emulated_member) {
-                        alias EmulatedMember = FunctionTypeOf!(__traits(getMember, EmulatedActor, emulated_method));
-                        alias EmulatorMember = FunctionTypeOf!(__traits(getMember, This, emulated_method));
+                        alias EmulatedMember = FunctionTypeOf!(__traits(getMember, EmulatedActor,
+                                emulated_method));
+                        alias EmulatorMember = FunctionTypeOf!(__traits(getMember, This,
+                                emulated_method));
                         static assert(__traits(isSame, EmulatedMember, EmulatorMember),
                                 format("The emulator %s.%s for type %s does not match the emulated actor %s.%s",
                                 This.stringof, emulated_method, EmulatorMember.stringof,
@@ -271,11 +256,9 @@ Same as receiver but with a timeout
     }
 }
 
-static Tid[string] actor_tids; /// List of channels by task names. 
-
-bool isRunning(string taskname) @trusted {
-    if (taskname in actor_tids) {
-        return concurrency.locate(taskname) != Tid.init;
+bool isRunning(string task_name) @trusted {
+    if (task_name in child_actor_tids) {
+        return concurrency.locate(task_name) != Tid.init;
     }
     return false;
 }
@@ -347,10 +330,11 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                     }
                     scope (success) {
                         task.stopAll;
-                        actor_tids.remove(task_name);
+                        unannounce(task_name);
                         task.end;
                     }
                     const task_func = &__traits(getMember, task, task_func_name);
+                    announce!Task(task_name);
                     log.register(task_name);
                     task_func(args);
                 }
@@ -364,7 +348,7 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                 Tid tid;
                 void stop() @trusted {
                     concurrency.send(tid, Control.STOP);
-                    .check(concurrency.receiveOnly!(Control) is Control.END,
+                    check(concurrency.receiveOnly!(Control) is Control.END,
                             format("Expecting to received and %s after stop", Control.END));
                 }
 
@@ -375,49 +359,48 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                 enum members_code = generateAllMethods!(Task);
                 mixin(members_code);
             }
-            /**
-
-         */
             /* 
      * Start an actor task
      * Params:
-     *   taskname = task name of actor to be started
+     *   task_name = task name of actor to be started
      *   args = arguments for the @task function
      * Returns: 
      *   an actor handler
      */
-            Actor opCall(Args...)(string taskname, Args args) @trusted 
-in(!taskname.empty)
-do{
+            Actor opCall(Args...)(string task_name, Args args) @trusted
+            in (!task_name.empty)
+            do {
                 import std.meta : AliasSeq;
                 import std.typecons;
 
                 scope (failure) {
-                    log.error("Task %s of %s did not go live", taskname, Task.stringof);
+                    log.error("Task %s of %s did not go live", task_name, Task.stringof);
                 }
                 alias FullArgs = Tuple!(AliasSeq!(string, Args));
-                auto full_args = FullArgs(taskname, args);
-                .check(concurrency.locate(taskname) == Tid.init,
-                        format("Actor %s has already been started", taskname));
-                auto tid = actor_tids[taskname] = concurrency.spawn(&run, full_args.expand);
+                auto full_args = FullArgs(task_name, args);
+
+                check(concurrency.locate(task_name) == Tid.init,
+                        format("Actor %s has already been started", task_name));
+                auto tid = child_actor_tids[task_name] = concurrency.spawn(&run, full_args.expand);
                 const live = concurrency.receiveOnly!Control;
-                .check(live is Control.LIVE,
+
+                check(live is Control.LIVE,
                         format("%s excepted from %s of %s but got %s",
-                        Control.LIVE, taskname, Task.stringof, live));
+                        Control.LIVE, task_name, Task.stringof, live));
                 return Actor(tid);
             }
 
             /* 
          * Get the handler form actor named task_name 
          * Params:
-         *   taskname = task name of the actor 
+         *   task_name = task name of the actor 
          * Returns: 
          *   Returns the handle if it runs or else it return Actor.init 
          */
-            static Actor handler(string taskname) @trusted {
-                auto tid = concurrency.locate(taskname);
+            static Actor handler(string task_name) @trusted {
+                auto tid = concurrency.locate(task_name);
                 if (tid !is Tid.init) {
-                    concurrency.send(tid, actorID!Task(taskname));
+                    concurrency.send(tid, actorID!Task(task_name));
                     if (concurrency.receiveOnly!(ActorFlag) == ActorFlag.yes) {
                         return Actor(tid);
                     }
@@ -516,10 +499,10 @@ unittest {
     auto my_actor_factory = actor!MyActor;
     /// Test of a single actor
     {
-        enum single_actor_taskname = "task_name_for";
-        assert(!isRunning(single_actor_taskname));
+        enum single_actor_task_name = "task_name_for_myactor";
+        assert(!isRunning(single_actor_task_name));
         // Starts one actor of MyActor
-        auto my_actor_1 = my_actor_factory(single_actor_taskname, 10);
+        auto my_actor_1 = my_actor_factory(single_actor_task_name, 10);
         scope (exit) {
             my_actor_1.stop;
         }
@@ -649,21 +632,18 @@ unittest {
         actor_emulator.stop;
     }
     {
-        immutable common_text="Some text";
+        immutable common_text = "Some text";
         actor_emulator.get(Get.Some);
         assert(receiveOnly!string == string.init);
         actor_emulator.some(common_text);
         actor_emulator.get(Get.Some);
-        assert(receiveOnly!string == '<'~common_text~'>');
+        assert(receiveOnly!string == '<' ~ common_text ~ '>');
 
         actor_emulator.get(Get.Arg);
         assert(receiveOnly!int == 0);
         actor_emulator.decrease(2);
         actor_emulator.get(Get.Arg);
         assert(receiveOnly!int == -4);
-
-        // Receive the common argument given to the factory constructor
-        //assert(receiveOnly!string == common_text);
     }
 }
 
@@ -671,8 +651,6 @@ version (unittest) {
 
     @safe
     static struct MySuperActor {
-        /// Decrease the count value `by`
-
         @task void run() {
             alias MyActorFactory = Actor!(MyActor);
             alive;
@@ -709,10 +687,23 @@ Handles the coordination of actor ides before the actors are alive.
 @safe
 struct Coordinator {
     enum task_name = "coordinator_task";
+    immutable(ActorID)*[string] actor_ids;
+    @method void announce(immutable(ActorID) id) {
+        import std.demangle;
 
-    //        @method void announce(immutable(ActorID) id) {
+        check((id.task_name in actor_ids) !is null,
+                log.error("Task %s of type %s has already been announced",
+                id.task_name,
+                demangle(id.mangle_name)));
+        actor_ids[id.task_name] = &id;
+    }
 
-    //}
+    @method void unannounce(string task_name)
+    in (!task_name.empty)
+    do {
+        actor_ids.remove(task_name);
+    }
+
     @task void run() {
         alive;
         while (!stop) {
@@ -721,22 +712,67 @@ struct Coordinator {
     }
 
     mixin TaskActor;
-    version (none) {
-        /**
-Returns: actor handler to the coordinator
-*/
-        static void start() @trusted {
-            auto coordinator_factory = actor!Coordinator;
-            check(concurrency.locate(Coordinator.task_name) is Tid.init,
-                    format("Coordinator '%s' has already been started",
-                    Coordinator.task_name));
-            actor_coordinator = coordinator_factory(Coordinator.task_name);
-        }
+}
 
-        static void stop() {
-            actor_coordinator.stop;
-        }
+/* 
+ * Singlerton function which stars the coordinator
+* The coordinator keep track of the active actors and the type as mangle string
+* (like typeid)
+* This function should be call before all other actor has been started
+ */
+void startCoordinator() @trusted {
+    check(concurrency.locate(Coordinator.task_name) !is Tid.init, 
+    format("Task %s has already been started", Coordinator.task_name));
+    actor_coordinator = actor!ActorCoordinator()(Coordinator.task_name);
+}
+
+/* 
+ * stops the Coordinator this function should be call as the last function 
+* before main program exits
+ */
+void stopCoordinator() nothrow pure @safe {
+    actor_coordinator.stop;
+}
+
+/* 
+ * 
+ * Returns: true if the Coordinator is running
+ */
+bool isCoordinatorRunning() @trusted {
+    return concurrency.locate(Coordinator.task_name) !is Tid.init;
+
+}
+
+/* 
+ * Announce Actor of type Task and name task_name to the coordinator 
+ * This function is call automaticall in the actor 
+* Params:
+ *   task_name = task name of actor
+ *   Task = is the actor type
+ */
+@safe
+void announce(Task)(string task_name) if (isActor!Task) {
+/*
+    if (isCoordinatorRunning && actor_coordinator !is actor_coordinator.init) {
+        actor_coordinator = ActorCoordinator.handle(Coordinator.task_name);
     }
+    if (actor_coordinator !is actor_coordinator.init) {
+        actor_coordinator.announce(actorID!Task(task_name));
+    }
+*/
+}
+
+@safe
+void unannounce(string task_name)
+in (isCoordinatorRunning)
+in (actor_coordinator !is actor_coordinator.init)
+do {
+    actor_coordinator.unannounce(task_name);
+
+}
+
+@safe
+unittest {
 }
 
 version (none) static this() {
