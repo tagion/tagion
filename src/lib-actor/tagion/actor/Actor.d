@@ -690,9 +690,8 @@ struct Coordinator {
     immutable(ActorID)*[string] actor_ids;
     @method void announce(immutable(ActorID) id) {
         import std.demangle;
-
         check((id.task_name in actor_ids) !is null,
-                log.error("Task %s of type %s has already been announced",
+                format("Task %s of type %s has already been announced",
                 id.task_name,
                 demangle(id.mangle_name)));
         actor_ids[id.task_name] = &id;
