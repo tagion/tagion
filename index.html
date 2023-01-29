@@ -22,7 +22,6 @@
 				function editButton(hook, vm) {
 					// The date template pattern
 					$docsify.formatUpdated = '{YYYY}/{MM}/{DD} {HH}:{mm}';
-
 					hook.beforeEach(function (html) {
 						var url =
 							'https://github.com/tagion/tagion/blob/current-doc/' +
@@ -38,6 +37,30 @@
 						);
 					});
 				},
+
+				function replace(content, selector, config) {
+					var LANG = 'graphviz';
+					var SELECTOR = 'pre[data-lang="' + LANG + '"]';
+
+					var dom = window.Docsify.dom
+					var $ = dom.create('span', content)
+
+					if (!$.querySelectorAll) {
+						return content
+					}
+
+					(dom.findAll($, selector) || []).forEach(function (element) {
+
+						var parent = element.parentNode
+						var planted = dom.create('p', plant(element.innerText, config))
+						if (parent) {
+							planted.dataset.lang = LANG
+							element.parentNode.replaceChild(planted, element)
+						}
+					})
+					return $.innerHTML
+				}
+
 			],
 		};
 
