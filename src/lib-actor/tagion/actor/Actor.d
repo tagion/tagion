@@ -49,8 +49,8 @@ alias ActorFlag = Flag!"action";
      *   task_name = The name of the of the actor type task
      * Returns: The unique actor ID of the actor 
      */
-immutable(ActorID) actorID(Task)(string task_name) nothrow pure {
-    return immutable(ActorID)(task_name, mangle!Task(""));
+immutable(ActorID*) actorID(Task)(string task_name) nothrow pure {
+    return new immutable(ActorID)(task_name, mangle!Task(""));
 }
 
 // Helper function for isUDA 
@@ -288,13 +288,22 @@ protected static string generateAllMethods(alias This)() {
 
 enum isActor(A) = allMethodFilter!(A, isTask).length is 1;
 
-alias Actor(Task, Args...) = ReturnType!(actor!(Task, Args));
+alias ActorFactory(Task, Args...) = ReturnType!(actor!(Task, Args));
 
+alias Actor(Task, Args...) = ActorFactory!(Task, Args).Actor;
+
+/*
+* Creates a ActorFactor of the Task
+* Params: 
+* args = list common shared arguments for all actors produced by this ActorFactory
+* Returns:
+*    an factory to produce actors of Task
+*/
 @safe
 auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct)) && !hasUnsharedAliasing!Args) {
     import concurrency = std.concurrency;
 
-    static struct ActorFactory {
+    static struct Factory {
         static if (Args.length) {
             private static shared Args init_args;
         }
@@ -314,10 +323,10 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                 try {
                     static if (Args.length) {
                         static if (is(Task == struct)) {
-                            Task task = Task(ActorFactory.init_args);
+                            Task task = Task(Factory.init_args);
                         }
                         else {
-                            Task task = new Task(ActorFactory.init_args);
+                            Task task = new Task(Factory.init_args);
                         }
                     }
                     else {
@@ -330,11 +339,11 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                     }
                     scope (success) {
                         task.stopAll;
-                        unannounce(task_name);
+   //                     unannounce(task_name);
                         task.end;
                     }
                     const task_func = &__traits(getMember, task, task_func_name);
-                    announce!Task(task_name);
+     //               announce!Task(task_name);
                     log.register(task_name);
                     task_func(args);
                 }
@@ -410,11 +419,11 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
         }
     }
 
-    ActorFactory result;
+    Factory result;
     static if (Args.length) {
-        assert(ActorFactory.init_args == Args.init,
+        assert(Factory.init_args == Args.init,
                 format("Argument for %s has already been set", Task.stringof));
-        ActorFactory.init_args = args;
+        Factory.init_args = args;
     }
     return result;
 }
@@ -688,13 +697,13 @@ Handles the coordination of actor ides before the actors are alive.
 struct Coordinator {
     enum task_name = "coordinator_task";
     immutable(ActorID)*[string] actor_ids;
-    @method void announce(immutable(ActorID) id) {
+    @method void announce(immutable(ActorID)* id) {
         import std.demangle;
         check((id.task_name in actor_ids) !is null,
                 format("Task %s of type %s has already been announced",
                 id.task_name,
                 demangle(id.mangle_name)));
-        actor_ids[id.task_name] = &id;
+        actor_ids[id.task_name] = id;
     }
 
     @method void unannounce(string task_name)
@@ -722,7 +731,10 @@ struct Coordinator {
 void startCoordinator() @trusted {
     check(concurrency.locate(Coordinator.task_name) !is Tid.init, 
     format("Task %s has already been started", Coordinator.task_name));
-    actor_coordinator = actor!ActorCoordinator()(Coordinator.task_name);
+    pragma(msg, "ACTOR ", typeof(actor_coordinator));
+pragma(msg, "ACTOR ", 
+    typeof(actor!Coordinator()(Coordinator.task_name)));
+    //  actor_coordinator = actor!ActorCoordinator()(Coordinator.task_name);
 }
 
 /* 
@@ -730,7 +742,7 @@ void startCoordinator() @trusted {
 * before main program exits
  */
 void stopCoordinator() nothrow pure @safe {
-    actor_coordinator.stop;
+  //  actor_coordinator.stop;
 }
 
 /* 
@@ -766,7 +778,7 @@ void unannounce(string task_name)
 in (isCoordinatorRunning)
 in (actor_coordinator !is actor_coordinator.init)
 do {
-    actor_coordinator.unannounce(task_name);
+ //   actor_coordinator.unannounce(task_name);
 
 }
 
