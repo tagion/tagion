@@ -297,7 +297,7 @@ alias ActorHandle(Actor, Args...) = ActorFactory!(Actor, Args).ActorHandle;
 * Params: 
 * args = list common shared arguments for all actors produced by this ActorFactory
 * Returns:
-*    an factory to produce actors of Actor
+*    a factory to produce actors of Actor
 */
 @safe
 auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == struct)) && !hasUnsharedAliasing!Args) {
@@ -339,7 +339,7 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
                     }
                     scope (success) {
                         task.stopAll;
-                        //                     unannounce(task_name);
+                        unannounce(task_name);
                         task.end;
                     }
                     const task_func = &__traits(getMember, task, task_func_name);
@@ -504,6 +504,7 @@ version (unittest) {
 ///
 @safe
 unittest {
+    log.silent = true;
     /// Simple actor test
     auto my_actor_factory = actor!MyActor;
     /// Test of a single actor
@@ -573,6 +574,7 @@ version (unittest) {
 /// Test of actor with common constructor
 @safe
 unittest {
+    log.silent = true;
     enum common_text = "common_text";
     // Creates the actor factory with common argument
     auto my_actor_factory = actor!MyActorWithCtor(common_text);
@@ -636,6 +638,7 @@ version (unittest) {
 /// Examples: Create and emulator of an actor
 @safe
 unittest {
+    log.silent = true;
     auto actor_emulator = actor!MyEmulator()("task1");
     scope (exit) {
         actor_emulator.stop;
@@ -687,8 +690,8 @@ version (unittest) {
     }
 }
 
-alias ActorCoordinator = ActorHandle!Coordinator;
-static ActorCoordinator actor_coordinator;
+alias CoordinatorHandle = ActorHandle!Coordinator;
+private static CoordinatorHandle actor_coordinator;
 
 /**
 Handles the coordination of actor ides before the actors are alive.
@@ -724,7 +727,7 @@ struct Coordinator {
 }
 
 /* 
- * Singlerton function which stars the coordinator
+ * Singleton function which stars the coordinator
 * The coordinator keep track of the active actors and the type as mangle string
 * (like typeid)
 * This function should be call before all other actor has been started
@@ -732,18 +735,15 @@ struct Coordinator {
 void startCoordinator() @trusted {
     check(concurrency.locate(Coordinator.task_name) !is Tid.init,
             format("Actor %s has already been started", Coordinator.task_name));
-    pragma(msg, "ACTOR ", typeof(actor_coordinator));
-    pragma(msg, "ACTOR ",
-            typeof(actor!Coordinator()(Coordinator.task_name)));
-    //  actor_coordinator = actor!ActorCoordinator()(Coordinator.task_name);
+    actor_coordinator = actor!Coordinator()(Coordinator.task_name);
 }
 
 /* 
  * stops the Coordinator this function should be call as the last function 
-* before main program exits
+* before the main program exits
  */
-void stopCoordinator() nothrow pure @safe {
-    //  actor_coordinator.stop;
+void stopCoordinator() @safe {
+    actor_coordinator.stop;
 }
 
 /* 
@@ -752,47 +752,34 @@ void stopCoordinator() nothrow pure @safe {
  */
 bool isCoordinatorRunning() @trusted {
     return concurrency.locate(Coordinator.task_name) !is Tid.init;
-
 }
 
 /* 
  * Announce Actor of type Actor and name task_name to the coordinator 
- * This function is call automaticall in the actor 
+ * This function is call automatically in the actor 
 * Params:
  *   task_name = task name of actor
  *   Actor = is the type of the actor
  */
 @safe
 void announce(Actor)(string task_name) if (isActor!Actor) {
-    /*
-    if (isCoordinatorRunning && actor_coordinator !is actor_coordinator.init) {
-        actor_coordinator = ActorCoordinator.handle(Coordinator.task_name);
+
+    if (isCoordinatorRunning && actor_coordinator is actor_coordinator.init) {
+        actor_coordinator = CoordinatorHandle.handle(Coordinator.task_name);
     }
     if (actor_coordinator !is actor_coordinator.init) {
         actor_coordinator.announce(actorID!Actor(task_name));
     }
-*/
 }
 
 @safe
-void unannounce(string task_name)
-in (isCoordinatorRunning)
-in (actor_coordinator !is actor_coordinator.init)
-do {
-    //   actor_coordinator.unannounce(task_name);
-
+void unannounce(string task_name) {
+    if (actor_coordinator !is actor_coordinator.init) {
+        actor_coordinator.unannounce(task_name);
+    }
 }
 
+///
 @safe
 unittest {
-}
-
-version (none) static this() {
-    if (concurrency.locate(Coordinator.task_name) is Tid.init) {
-        auto coordinator_factory = actor!Coordinator;
-        check(concurrency.locate(Coordinator.task_name) is Tid.init,
-                format("Coordinator '%s' has already been started",
-                Coordinator.task_name));
-        actor_coordinator = coordinator_factory(Coordinator.task_name);
-    }
 }
