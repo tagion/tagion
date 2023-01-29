@@ -29,7 +29,7 @@ struct local;
 struct task;
 
 @safe
-struct emulate(Task);
+struct emulate(Actor);
 
 /** 
  * Defines a unique actor ID
@@ -45,12 +45,12 @@ alias ActorFlag = Flag!"action";
 /* 
      * 
      * Params:
-     *   Task = is the actor object
+     *   Actor = is the actor object
      *   task_name = The name of the of the actor type task
      * Returns: The unique actor ID of the actor 
      */
-immutable(ActorID*) actorID(Task)(string task_name) nothrow pure {
-    return new immutable(ActorID)(task_name, mangle!Task(""));
+immutable(ActorID*) actorID(Actor)(string task_name) nothrow pure {
+    return new immutable(ActorID)(task_name, mangle!Actor(""));
 }
 
 // Helper function for isUDA 
@@ -128,6 +128,7 @@ template allMethodFilter(This, alias pred) {
     enum allMembers = [__traits(allMembers, This)];
     enum allMethodFilter = Filter!(allMembers);
 }
+
 static Tid[string] child_actor_tids; /// List of channels by task names. 
 
 /**
@@ -142,7 +143,6 @@ mixin template TaskActor() {
     import tagion.basic.Types : Control;
     import core.demangle : mangle;
     import std.concurrency : Tid;
-
 
     private Tid[] channel_tids; /// Contains all the channel connections for this actor
     bool stop;
@@ -288,62 +288,62 @@ protected static string generateAllMethods(alias This)() {
 
 enum isActor(A) = allMethodFilter!(A, isTask).length is 1;
 
-alias ActorFactory(Task, Args...) = ReturnType!(actor!(Task, Args));
+alias ActorFactory(Actor, Args...) = ReturnType!(actor!(Actor, Args));
 
-alias Actor(Task, Args...) = ActorFactory!(Task, Args).Actor;
+alias ActorHandle(Actor, Args...) = ActorFactory!(Actor, Args).ActorHandle;
 
 /*
-* Creates a ActorFactor of the Task
+* Creates a ActorFactor of the Actor
 * Params: 
 * args = list common shared arguments for all actors produced by this ActorFactory
 * Returns:
-*    an factory to produce actors of Task
+*    an factory to produce actors of Actor
 */
 @safe
-auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct)) && !hasUnsharedAliasing!Args) {
+auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == struct)) && !hasUnsharedAliasing!Args) {
     import concurrency = std.concurrency;
 
     static struct Factory {
         static if (Args.length) {
             private static shared Args init_args;
         }
-        enum task_members = allMethodFilter!(Task, isTask);
+        enum task_members = allMethodFilter!(Actor, isTask);
         static assert(task_members.length !is 0,
                 format("%s is missing @task (use @task UDA to mark the 'run' member function)",
-                Task.stringof));
+                Actor.stringof));
         enum do_we_have_a_task = task_members.length is 1;
         static assert(do_we_have_a_task,
-                format("Only one member of %s must be mark @task", Task.stringof));
+                format("Only one member of %s must be mark @task", Actor.stringof));
         static if (do_we_have_a_task) {
             enum task_func_name = task_members[0];
-            alias TaskFunc = typeof(__traits(getMember, Task, task_func_name));
+            alias TaskFunc = typeof(__traits(getMember, Actor, task_func_name));
             alias Params = Parameters!TaskFunc;
             alias ParamNames = ParameterIdentifierTuple!TaskFunc;
             protected static void run(string task_name, Params args) nothrow {
                 try {
                     static if (Args.length) {
-                        static if (is(Task == struct)) {
-                            Task task = Task(Factory.init_args);
+                        static if (is(Actor == struct)) {
+                            Actor task = Actor(Factory.init_args);
                         }
                         else {
-                            Task task = new Task(Factory.init_args);
+                            Actor task = new Actor(Factory.init_args);
                         }
                     }
                     else {
-                        static if (is(Task == struct)) {
-                            Task task;
+                        static if (is(Actor == struct)) {
+                            Actor task;
                         }
                         else {
-                            Task task = new Task;
+                            Actor task = new Actor;
                         }
                     }
                     scope (success) {
                         task.stopAll;
-   //                     unannounce(task_name);
+                        //                     unannounce(task_name);
                         task.end;
                     }
                     const task_func = &__traits(getMember, task, task_func_name);
-     //               announce!Task(task_name);
+                    //               announce!Actor(task_name);
                     log.register(task_name);
                     task_func(args);
                 }
@@ -353,7 +353,7 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
             }
 
             @safe
-            struct Actor {
+            struct ActorHandle {
                 Tid tid;
                 void stop() @trusted {
                     concurrency.send(tid, Control.STOP);
@@ -365,7 +365,7 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                     concurrency.send(tid, Control.STOP);
                 }
 
-                enum members_code = generateAllMethods!(Task);
+                enum members_code = generateAllMethods!(Actor);
                 mixin(members_code);
             }
             /* 
@@ -376,14 +376,14 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
      * Returns: 
      *   an actor handler
      */
-            Actor opCall(Args...)(string task_name, Args args) @trusted
+            ActorHandle opCall(Args...)(string task_name, Args args) @trusted
             in (!task_name.empty)
             do {
                 import std.meta : AliasSeq;
                 import std.typecons;
 
                 scope (failure) {
-                    log.error("Task %s of %s did not go live", task_name, Task.stringof);
+                    log.error("Actor %s of %s did not go live", task_name, Actor.stringof);
                 }
                 alias FullArgs = Tuple!(AliasSeq!(string, Args));
                 auto full_args = FullArgs(task_name, args);
@@ -395,8 +395,8 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
 
                 check(live is Control.LIVE,
                         format("%s excepted from %s of %s but got %s",
-                        Control.LIVE, task_name, Task.stringof, live));
-                return Actor(tid);
+                        Control.LIVE, task_name, Actor.stringof, live));
+                return ActorHandle(tid);
             }
 
             /* 
@@ -404,17 +404,17 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
          * Params:
          *   task_name = task name of the actor 
          * Returns: 
-         *   Returns the handle if it runs or else it return Actor.init 
+         *   Returns the handle if it runs or else it return ActorHandle.init 
          */
-            static Actor handler(string task_name) @trusted {
+            static ActorHandle handler(string task_name) @trusted {
                 auto tid = concurrency.locate(task_name);
                 if (tid !is Tid.init) {
-                    concurrency.send(tid, actorID!Task(task_name));
+                    concurrency.send(tid, actorID!Actor(task_name));
                     if (concurrency.receiveOnly!(ActorFlag) == ActorFlag.yes) {
-                        return Actor(tid);
+                        return ActorHandle(tid);
                     }
                 }
-                return Actor.init;
+                return ActorHandle.init;
             }
         }
     }
@@ -422,7 +422,7 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
     Factory result;
     static if (Args.length) {
         assert(Factory.init_args == Args.init,
-                format("Argument for %s has already been set", Task.stringof));
+                format("Argument for %s has already been set", Actor.stringof));
         Factory.init_args = args;
     }
     return result;
@@ -491,7 +491,7 @@ version (unittest) {
         @task void runningTask(long label) {
             count = label;
             //...
-            alive; // Task is now alive
+            alive; // Actor is now alive
             while (!stop) {
                 receiveTimeout(100.msecs);
             }
@@ -661,7 +661,7 @@ version (unittest) {
     @safe
     static struct MySuperActor {
         @task void run() {
-            alias MyActorFactory = Actor!(MyActor);
+            alias MyActorFactory = ActorHandle!(MyActor);
             alive;
             while (!stop) {
                 receive;
@@ -687,7 +687,7 @@ version (unittest) {
     }
 }
 
-alias ActorCoordinator = Actor!Coordinator;
+alias ActorCoordinator = ActorHandle!Coordinator;
 static ActorCoordinator actor_coordinator;
 
 /**
@@ -699,8 +699,9 @@ struct Coordinator {
     immutable(ActorID)*[string] actor_ids;
     @method void announce(immutable(ActorID)* id) {
         import std.demangle;
+
         check((id.task_name in actor_ids) !is null,
-                format("Task %s of type %s has already been announced",
+                format("Actor %s of type %s has already been announced",
                 id.task_name,
                 demangle(id.mangle_name)));
         actor_ids[id.task_name] = id;
@@ -729,11 +730,11 @@ struct Coordinator {
 * This function should be call before all other actor has been started
  */
 void startCoordinator() @trusted {
-    check(concurrency.locate(Coordinator.task_name) !is Tid.init, 
-    format("Task %s has already been started", Coordinator.task_name));
+    check(concurrency.locate(Coordinator.task_name) !is Tid.init,
+            format("Actor %s has already been started", Coordinator.task_name));
     pragma(msg, "ACTOR ", typeof(actor_coordinator));
-pragma(msg, "ACTOR ", 
-    typeof(actor!Coordinator()(Coordinator.task_name)));
+    pragma(msg, "ACTOR ",
+            typeof(actor!Coordinator()(Coordinator.task_name)));
     //  actor_coordinator = actor!ActorCoordinator()(Coordinator.task_name);
 }
 
@@ -742,7 +743,7 @@ pragma(msg, "ACTOR ",
 * before main program exits
  */
 void stopCoordinator() nothrow pure @safe {
-  //  actor_coordinator.stop;
+    //  actor_coordinator.stop;
 }
 
 /* 
@@ -755,20 +756,20 @@ bool isCoordinatorRunning() @trusted {
 }
 
 /* 
- * Announce Actor of type Task and name task_name to the coordinator 
+ * Announce Actor of type Actor and name task_name to the coordinator 
  * This function is call automaticall in the actor 
 * Params:
  *   task_name = task name of actor
- *   Task = is the actor type
+ *   Actor = is the type of the actor
  */
 @safe
-void announce(Task)(string task_name) if (isActor!Task) {
-/*
+void announce(Actor)(string task_name) if (isActor!Actor) {
+    /*
     if (isCoordinatorRunning && actor_coordinator !is actor_coordinator.init) {
         actor_coordinator = ActorCoordinator.handle(Coordinator.task_name);
     }
     if (actor_coordinator !is actor_coordinator.init) {
-        actor_coordinator.announce(actorID!Task(task_name));
+        actor_coordinator.announce(actorID!Actor(task_name));
     }
 */
 }
@@ -778,7 +779,7 @@ void unannounce(string task_name)
 in (isCoordinatorRunning)
 in (actor_coordinator !is actor_coordinator.init)
 do {
- //   actor_coordinator.unannounce(task_name);
+    //   actor_coordinator.unannounce(task_name);
 
 }
 
