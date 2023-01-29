@@ -251,48 +251,20 @@ Same as receiver but with a timeout
                     pragma(msg, "This ", This);
                     //emulated_method, " ", typeof(emulated_method));
                     pragma(msg, __traits(hasMember, This, emulated_method));
-                    static if (__traits(hasMember, This, emulated_method)) {
-                        pragma(msg, "Has member ", emulated_method);
-
+                    enum has_emulated_member = __traits(hasMember, This, emulated_method);
+                    static if (has_emulated_member) {
                         alias EmulatedMember = FunctionTypeOf!(__traits(getMember, EmulatedActor, emulated_method));
-
                         alias EmulatorMember = FunctionTypeOf!(__traits(getMember, This, emulated_method));
-
-                        pragma(msg, "EmulatedMember ", EmulatedMember);
-                        pragma(msg, "EmulatorMember ", EmulatorMember);
-
-                        pragma(msg, "isSame ", __traits(isSame, EmulatedMember, EmulatorMember));
                         static assert(__traits(isSame, EmulatedMember, EmulatorMember),
                                 format("The emulator %s.%s for type %s does not match the emulated actor %s.%s",
                                 This.stringof, emulated_method, EmulatorMember.stringof,
                                 EmulatedActor, emulated_mentod, EmulatedMember.stringof));
-
                     }
-                    //  static assert(__traits(isSame,
-
-                    //enum has_emulated_method = true;
+                    else {
+                        static assert(0, format("Method '%s' is not implemented in %s which is need to emulate %s",
+                                emulated_method, This.stringof, EmulatedActor.stringof));
+                    }
                 }
-                /+
-else {
-                static assert(0, format("Method '%s' is not implemented in %s which is need to emulate %s",
-                        emulated_method, This.stringof, EmulatedActor.stringof));
-                //enum has_emulated_method = false;
-            }
-+/
-                //enum has_emulated_member=__traits(hasMember, This, emulated_method);
-                /+ 
-        //enum actor_methods = allMethodFilter!(This, isMethod);
-       // enum emulated_methods = allMethodFilter!(This, isMethod).sort;
- //           pragma(msg, "m ", emulated_method);
-static assert(has_emulated_member, format("Method %s is not implemented in %s which is need to emulate %s", 
-    emulated_method, This.stringof, EmulatedActor.stingof));
-//alias EmulateMember=__traitsi(getMember, This, i
-//pragma(msg, 
-}}
-+/
-
-                //}
-                //}
             }
         }
     }
@@ -408,6 +380,14 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
             /**
 
          */
+            /* 
+     * Start an actor task
+     * Params:
+     *   taskname = task name of actor to be started
+     *   args = arguments for the @task function
+     * Returns: 
+     *   an actor handler
+     */
             Actor opCall(Args...)(string taskname, Args args) @trusted {
                 import std.meta : AliasSeq;
                 import std.typecons;
@@ -496,7 +476,6 @@ version (unittest) {
         Actor method which sets the str
         */
         @method void some(string str) {
-            writefln("SOME %s ", str);
             some_name = str;
         }
 
@@ -628,7 +607,36 @@ unittest {
 
 version (unittest) {
     @safe
-    @emulate!MyActor struct MyEmulator {
+    private @emulate!MyActor struct MyEmulator {
+        string some_name;
+        int count;
+        @method void some(string str) {
+            some_name = '<' ~ str ~ '>';
+        }
+
+        /// Decrease the count value 2 * `by`
+        @method void decrease(int by) {
+            count -= 2 * by;
+        }
+
+        /** 
+* Actor method send a opt to the actor and 
+* sends back an a response to the owner task
+        */
+        @method void get(Get opt) { // reciever
+            final switch (opt) {
+            case Get.Some:
+                sendOwner(some_name);
+                break;
+            case Get.Arg:
+                sendOwner(count);
+                break;
+            }
+        }
+
+        /* 
+ * Task for the Actor
+ */
         @task void run() {
             alive;
             while (!stop) {
@@ -656,6 +664,7 @@ version (unittest) {
 
     @safe
     static struct MySuperActor {
+        /// Decrease the count value `by`
 
         @task void run() {
             alias MyActorFactory = Actor!(MyActor);
