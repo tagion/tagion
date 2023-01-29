@@ -5,6 +5,7 @@ import std.algorithm.searching : any;
 import std.format;
 import std.traits;
 import std.meta;
+import std.range : empty;
 import std.typecons : Flag;
 import core.demangle : mangle;
 
@@ -363,9 +364,6 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                 Tid tid;
                 void stop() @trusted {
                     concurrency.send(tid, Control.STOP);
-
-                    
-
                     .check(concurrency.receiveOnly!(Control) is Control.END,
                             format("Expecting to received and %s after stop", Control.END));
                 }
@@ -388,7 +386,9 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
      * Returns: 
      *   an actor handler
      */
-            Actor opCall(Args...)(string taskname, Args args) @trusted {
+            Actor opCall(Args...)(string taskname, Args args) @trusted 
+in(!taskname.empty)
+do{
                 import std.meta : AliasSeq;
                 import std.typecons;
 
@@ -397,16 +397,10 @@ auto actor(Task, Args...)(Args args) if ((is(Task == class) || is(Task == struct
                 }
                 alias FullArgs = Tuple!(AliasSeq!(string, Args));
                 auto full_args = FullArgs(taskname, args);
-
-                
-
                 .check(concurrency.locate(taskname) == Tid.init,
                         format("Actor %s has already been started", taskname));
                 auto tid = actor_tids[taskname] = concurrency.spawn(&run, full_args.expand);
                 const live = concurrency.receiveOnly!Control;
-
-                
-
                 .check(live is Control.LIVE,
                         format("%s excepted from %s of %s but got %s",
                         Control.LIVE, taskname, Task.stringof, live));
@@ -650,13 +644,26 @@ version (unittest) {
 /// Examples: Create and emulator of an actor
 @safe
 unittest {
-    auto my_emulator_factory = actor!MyEmulator;
-    auto actor_emulator = my_emulator_factory("task1");
+    auto actor_emulator = actor!MyEmulator()("task1");
     scope (exit) {
         actor_emulator.stop;
     }
     {
-        //actor_emulator.get(Get.some);
+        immutable common_text="Some text";
+        actor_emulator.get(Get.Some);
+        assert(receiveOnly!string == string.init);
+        actor_emulator.some(common_text);
+        actor_emulator.get(Get.Some);
+        assert(receiveOnly!string == '<'~common_text~'>');
+
+        actor_emulator.get(Get.Arg);
+        assert(receiveOnly!int == 0);
+        actor_emulator.decrease(2);
+        actor_emulator.get(Get.Arg);
+        assert(receiveOnly!int == -4);
+
+        // Receive the common argument given to the factory constructor
+        //assert(receiveOnly!string == common_text);
     }
 }
 
