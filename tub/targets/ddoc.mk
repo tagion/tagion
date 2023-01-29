@@ -1,31 +1,34 @@
 ADRDOX:=dub run adrdox --
 
-env-docs:
+env-ddoc:
 	$(PRECMD)
 	$(call log.header, $@ :: env)
 	$(call log.kvp, ADRDOX, $(ADRDOX))
 
-.PHONY: env-doc
+.PHONY: env-ddoc
 
-env: env-doc
+env: env-ddoc
 
-clean-docs:
+clean-ddoc:
 	$(PRECMD) rm -rv $(BUILDDOC)
 	@echo cleaning docs
 
-.PHONY: clean-doc
+.PHONY: clean-ddoc
 
-clean: clean-doc
+clean: clean-ddoc
 
-help-docs:
+help-ddoc:
 	$(PRECMD)
 	${call log.header, $@ :: help}
 	${cal llog.help, "make docs", "Create the docs with addrdox"}
 
-.PHONY: help-doc
+.PHONY: help-ddoc
 
-help: help-doc
+help: help-ddoc
 
-docs:
+ddoc:
 	@echo making docs
 	$(PRECMD) $(ADRDOX) -i --skeleton $(DTUB)/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC)
+
+.PHONY: ddoc
+

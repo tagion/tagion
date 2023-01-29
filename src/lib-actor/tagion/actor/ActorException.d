@@ -1,4 +1,4 @@
-module tagion.hibon.ActorException;
+module tagion.actor.ActorException;
 
 import tagion.basic.TagionExceptions;
 

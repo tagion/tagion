@@ -501,8 +501,8 @@ version (unittest) {
     static assert(isActor!MyActor);
 }
 
-///
 @safe
+///
 unittest {
     log.silent = true;
     /// Simple actor test
