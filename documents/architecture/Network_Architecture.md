@@ -9,7 +9,7 @@ A node consist of the following services.
 	- [Tagion](/documents/architecture/Tagion.md) is the service which handles the all the services related to the rest of the services (And run the HashGraph).
 	- [TagionFactory](/documents/architecture/TagionFactory.md) This services takes care of the *mode* in which the network is started.
 	- [TVM](/documents/architecture/TVM.md) ("Tagion Virtual Machine") Tagion Virtual Machine is responsible for executing the instructions in the contract ensuring the contracts are compliant with Consensus Rules.
-	- [DART](/documents/architecture/DART.md "Distributed Archive of Random Transactions") Takes care of the handling data-base instruction and read/write to the physical file system.
+	- [DART](/documents/architecture/DART.md "Distributed Archive of Random Transactions") service Takes care of the handling data-base instruction and read/write to the physical file system.
 	- [DARTSync](/documents/architecture/DARTSync.md) Handles the synchronization of the DART to other remote nodes.
 	- [Recorder](/documents/architecture/Recorder.md) Handles the recorder chain (A Recorder is the write/remove sequency to the DART).
 	- [Communication](/documents/architecture/Communication.md) service is responsible for ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system. 

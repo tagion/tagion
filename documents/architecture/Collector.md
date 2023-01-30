@@ -3,16 +3,19 @@
 The service is responsible for collecting input data for a HiRPC request and ensuring the data is valid and signed before the contract is executed.
 
 Input:
-  - Contract-T received from the Transcript
-  - Contract-C received from the Consensus
+  - A Contract-NC (No Consensus).
+  - Sender: Communication Service.
+
+  - Contract-C.
+  - Sender: Consensus Service.
 
 Request:
-  - Request the inputs and reads from the DART
+  - Request and retrieve archieves from the [DART](/documents/architecture/DART.md) service.
 
 Output:
   - On request send the contracts+inputs+reads
 
-The acceptance criteria specification can be found in [Collector_services](/bdd/tagion/testbench/services/Collector_service.md).
+The acceptance criteria specification can be found in [Collector_service](/bdd/tagion/testbench/services/Collector_service.md).
 
 ```mermaid
 sequenceDiagram

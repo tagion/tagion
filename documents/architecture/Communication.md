@@ -20,7 +20,7 @@ The service does the following:
   - Ensure the HiRPC request complay with the protocol
   - Sends a HiRPC request to the Collector service.
 
-The acceptance criteria specification can be found in [Communication_services](/bdd/tagion/testbench/services/Communication_service.md).
+The acceptance criteria specification can be found in [Communication_service](/bdd/tagion/testbench/services/Communication_service.md).
 
 ```mermaid
 sequenceDiagram
