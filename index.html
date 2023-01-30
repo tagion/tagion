@@ -2,70 +2,77 @@
 
 <!DOCTYPE html>
 <html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta charset="UTF-8" />
+    <link
+      rel="stylesheet"
+      href="//cdn.jsdelivr.net/npm/docsify@4/themes/vue.css"
+    />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
 
-<head>
-	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<meta charset="UTF-8" />
-	<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify-dark-mode@latest/dist/style.min.css" />
-	<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/themes/vue.css" />
-</head>
+      window.$docsify = {
 
-<body>
-	<div id="app"></div>
-	<script>
-		// Config
-		window.$docsify = {
-			loadSidebar: true,
-			subMaxLevel: 2,
-			plugins: [
-				function editButton(hook, vm) {
-					// The date template pattern
-					$docsify.formatUpdated = '{YYYY}/{MM}/{DD} {HH}:{mm}';
-					hook.beforeEach(function (html) {
-						var url =
-							'https://github.com/tagion/tagion/blob/current-doc/' +
-							vm.route.file;
-						var editHtml = '[📝 EDIT DOCUMENT](' + url + ')\n';
+        // load from _sidebar.md
+        loadSidebar: true,
 
-						return (
-							editHtml +
-							html +
-							'\n----\n' +
-							'Last modified ' +
-							editHtml
-						);
-					});
-				},
+        search: 'auto', // default
 
-				function replace(content, selector, config) {
-					var LANG = 'graphviz';
-					var SELECTOR = 'pre[data-lang="' + LANG + '"]';
+            search: [
+              '/',            // => /README.md
+            ],
 
-					var dom = window.Docsify.dom
-					var $ = dom.create('span', content)
+        plugins: [
+            function vizjs(hook, vm) {
+                var LANG = 'graphviz';
+                var SELECTOR = 'pre[data-lang="' + LANG + '"]'
 
-					if (!$.querySelectorAll) {
-						return content
-					}
+                function replace(content) {
+                    var dom = window.Docsify.dom
+                    var $ = dom.create('span', content)
 
-					(dom.findAll($, selector) || []).forEach(function (element) {
+                    if (!$.querySelectorAll) {
+                      return content
+                    }
 
-						var parent = element.parentNode
-						var planted = dom.create('p', plant(element.innerText, config))
-						if (parent) {
-							planted.dataset.lang = LANG
-							element.parentNode.replaceChild(planted, element)
-						}
-					})
-					return $.innerHTML
-				}
+                    (dom.findAll($, SELECTOR) || []).forEach(function (element) {
+                        var parent = element.parentNode
+                          var planted = dom.create('p', '<h1>This was a graphviz another graph</h1>')
+                        if (parent) {
+                            planted.dataset.lang = LANG
+                            element.parentNode.replaceChild(planted, element)
+                        }
+                    })
+                    return $.innerHTML
+                }
 
-			],
-		};
+                hook.afterEach(function (content) {
+                      return replace(content)
+                })
+            },
+        ]
+      };
 
-	</script>
-	<script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
-</body>
+      // const workerURL = 'docs/lite.render.js';
+// let viz = new Viz({ workerURL });
 
+// viz.renderSVGElement('digraph { a -> b }')
+  // .then(function(element) {
+    // document.body.appendChild(element);
+  // })
+  // .catch(error => {
+    // // Create a new Viz instance (@see Caveats page for more info)
+    // viz = new Viz({ workerURL });
+
+    // // Possibly display the error
+    // console.error(error);
+  // });
+
+    </script>
+    <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+  </body>
 </html>

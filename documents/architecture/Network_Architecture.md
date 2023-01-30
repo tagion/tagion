@@ -1,11 +1,19 @@
 # Tagion Network Architecture
 
+```graphviz
+digraph { a -> b }
+```
+
+```block
+	hej med dig
+```
+
 ## Description of the services in a node
 A node consist of the following services.
 
 
 * [tagionwave](/src/bin-wave/README.md) is the main task responsible all the service
-- Core services
+- Main services
 	- [Tagion](/documents/architecture/Tagion.md) is the service which handles the all the services related to the rest of the services (And run the HashGraph).
 	- [TagionFactory](/documents/architecture/TagionFactory.md) This services takes care of the *mode* in which the network is started.
 	- [TVM](/documents/architecture/TVM.md) ("Tagion Virtual Machine") is responsible for executing the instructions in the contract ensuring the contracts are compliant with Consensus Rules producing outputs. It send new, non consensus, contracts to the Consensus service.
