@@ -10,12 +10,11 @@ Request:
   - Request and retrieve archives from the [DART](/documents/architecture/DART.md) Service.
 
 Output:
-  - A Contract and with valid DART archives, the signed inputs. 
-
+  - A Contract-S (A signed Contract) and archives sent to [TVM](/documents/architecture/TVM.md). 
 
  The service does the following:
 
-  - Does contract valication on the Contract-C.
+  - Does contract format validation on the Contract-C.
   - Collects the contract input data, DART archieves, from the DART as specified.
   - Ensures all input data is valid and signed correctly.
   - Sends a Contract-SD (Signed Data) to the TVM.
@@ -33,6 +32,6 @@ sequenceDiagram
     Consensus->>Collector: Contract-C
     Collector->>DART: Request Archives
     DART->>Collector: Retrieve Archives
-    Collector->>TVM: Contract-SD
+    Collector->>TVM: Contract-S and Archives
 
 ```
