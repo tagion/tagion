@@ -17,8 +17,9 @@ Output:
 The service does the following:
 
   - Check the data package comply with size limitation.
-  - Validate the HiBON document and HiRPC request are correct formatted.
+  - Validate the HiRPC request is correct formatted.
   - Validates signature on permissioned HiRPC request. 
+  - Ensure the HiRPC request complay with the protocol
   - Sends a HiRPC request to the Collector service.
 
 The acceptance criteria specification can be found in [Communication_services](/bdd/tagion/testbench/services/Communication_service.md).
