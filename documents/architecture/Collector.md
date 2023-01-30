@@ -7,7 +7,7 @@ Input:
   - Contract-C received from [Consensus](/documents/architecture/Consensus.md) Service.
 
 Request:
-  - Request and retrieve archieves from the [DART](/documents/architecture/DART.md) Service.
+  - Request and retrieve archives from the [DART](/documents/architecture/DART.md) Service.
 
 Output:
   - A Contract and with valid DART archieves, the signed inputs. 
@@ -32,7 +32,7 @@ sequenceDiagram
     Communication->>Collector: Contract-NC 
     Consensus->>Collector: Contract-C
     Collector->>DART: Request Archives
-    DART->>Collector: Archives
+    DART->>Collector: Retrieve Archives
     Collector->>TVM: Contract-SD
 
 ```
