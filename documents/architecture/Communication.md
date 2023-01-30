@@ -22,7 +22,7 @@ The service does the following:
   - Validates signature on permissioned HiRPC request. 
   - Sends a HiRPC.Reciever request to the Collector service.
 
-The acceptance criteria specification can be found in [Transaction_services](/bdd/tagion/testbench/services/Transaction_service.md).
+The acceptance criteria specification can be found in [Communcation_services](/bdd/tagion/testbench/services/Communcation_service.md).
 
 ```mermaid
 sequenceDiagram
