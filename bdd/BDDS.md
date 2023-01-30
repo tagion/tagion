@@ -14,8 +14,6 @@
 
 [HiRPC_format_check.md](tagion/testbench/communication/HiRPC_format_check.md)
 
-[SSL.md](tagion/testbench/services/SSL.md)
-
 [Recorder_chain_service.md](tagion/testbench/services/Recorder_chain_service.md)
 
 [Transcript_service.md](tagion/testbench/services/Transcript_service.md)
@@ -25,6 +23,8 @@
 [Logger_subscription_service_with_parameter.md](tagion/testbench/services/Logger_subscription_service_with_parameter.md)
 
 [Transaction_service.md](tagion/testbench/services/Transaction_service.md)
+
+[TLS.md](tagion/testbench/services/TLS.md)
 
 [Collector_service.md](tagion/testbench/services/Collector_service.md)
 
