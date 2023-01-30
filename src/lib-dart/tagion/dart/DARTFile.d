@@ -970,9 +970,6 @@ alias check = Check!DARTException;
                         immutable data = blockfile.load(branch_index);
                         const doc = Document(data);
                         branches = Branches(doc);
-
-                        
-
                         .check(branches.hasIndices,
                             "DART failure within the sector rims the DART should contain a branch");
                     }
@@ -1004,9 +1001,6 @@ alias check = Check!DARTException;
                     {
                         immutable data = blockfile.load(branch_index);
                         const doc = Document(data);
-
-                        
-
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
                         if (Branches.isRecord(doc))
                         {

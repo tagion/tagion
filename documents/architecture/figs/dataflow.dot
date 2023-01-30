@@ -1,3 +1,4 @@
+```graphviz
 digraph G {
 rankdir=UD;
   compound=true;
@@ -7,15 +8,15 @@ rankdir=UD;
   DART [shape = cylinder]
   TLS [ style=filled fillcolor=green ];
   Network [ style=filled fillcolor=red]
-  Transaction [shape = signature]
+  Communication [shape = signature]
   Transcript [shape = note]
   Consensus [label="Consensus\nHashgraph"]
   subgraph cluster_1 {
     peripheries=0;
     style = rounded;
-    TLS -> Transaction [label="HiRPC(contract)" color=green];
- 	Transaction -> Collector [label=contract color=green];
-	Collector -> TVM [label=contract color=green];
+    TLS -> Communication [label="HiRPC(contract)" color=green];
+ 	Communication -> Collector [label=contract color=green];
+	Collector -> TVM [label="contract-S" color=green];
 	TVM -> Consensus [labelangle="45" label=contract color=green];
 	Consensus -> Collector [label=contract color=darkgreen];
 	Consensus -> Transcript [label=epoch color=green];
@@ -33,8 +34,9 @@ rankdir=UD;
 	DARTSync -> P2P [label="DART(crud)" dir=both color=magenta];
 	P2P -> Network [label=HiBON dir=both];
   };
-  DART -> DARTSync [label="DART(crud)" dir=both color=magenta];
+  DARTSync -> DART [label="DART(crud)" color=magenta];
   DART -> Collector [label=archives color=red];
   Consensus -> P2P [label=gossip dir=both color=cyan4];
   Transcript -> DART [label=recorder color=blue];
 }
+```

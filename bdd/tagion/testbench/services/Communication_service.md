@@ -54,10 +54,6 @@ The #permission scenario can be executed with and without correct permission.
 
 `transaction`
 
-*When* the doc has been received by the network.
-
-`network`
-
 *When* the doc package has been verified that it is correct Document.
 
 `document`
@@ -70,7 +66,7 @@ The #permission scenario can be executed with and without correct permission.
 
 `submit`
 
-*Then* the parameter for the send to the transaction service.
+*Then* the parameter for the send to the Collector service.
 The parameter for the 'submit' method contains the contract.
 
 `service`
