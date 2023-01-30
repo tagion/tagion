@@ -12,7 +12,7 @@ A node consist of the following services.
 	- [DART](/documents/architecture/DART.md "Distributed Archive of Random Transactions") Takes care of the handling data-base instruction and read/write to the physical file system.
 	- [DARTSync](/documents/architecture/DARTSync.md) Handles the synchronization of the DART to other remote nodes.
 	- [Recorder](/documents/architecture/Recorder.md) Handles the recorder chain (A Recorder is the write/remove sequency to the DART).
-	- [Transaction](/documents/architecture/Transaction.md) service is responsible for ensuring a valid data format of HiRPC requests and HiBON document before it is executed in the system. 
+	- [Communication](/documents/architecture/Communication.md) service is responsible for ensuring a valid data format of HiRPC requests and HiBON document before it is executed in the system. 
 	- [Collector](/documents/architecture/Collector.md) service is responsible for collecting input data, DART archives, for a HiRPC request and ensuring the data is valid and signed before the contract is executed.
 	- [Transcript](/documents/architecture/Transcript.md) Executes transactions in the epoch produced by the HashGraph and generates a Recorder.
 	- [Consensus](/documents/architecture/Consensus.md) service ensures asynchronous byzantine fault-tolerant consensus with Hashgraph producing an ordered output, an Epoch. 
