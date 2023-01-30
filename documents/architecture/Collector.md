@@ -1,16 +1,24 @@
 ## Collector Service
 
-The service is responsible for collecting input data for a HiRPC request and ensuring the data is valid and signed before the contract is executed.
+The service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
 
 Input:
-  - A Contract-NC (No Consensus) received from Communication[Communication](/documents/architecture/Communication.md) Service.
+  - A Contract-NC (No Consensus) received from [Communication](/documents/architecture/Communication.md) Service.
   - Contract-C received from [Consensus](/documents/architecture/Consensus.md) Service.
 
 Request:
-  - Request and retrieve archieves from the [DART](/documents/architecture/DART.md) service.
+  - Request and retrieve archieves from the [DART](/documents/architecture/DART.md) Service.
 
 Output:
-  - On request send the contracts+inputs+reads
+  - A Contract and with valid DART archieves, the signed inputs. 
+
+
+ The service does the following:
+
+    - Does contract valication on the Contract-C.
+    - Collects the contract input data, DART archieves, from the DART as specified.
+    - Ensures all input data is valid and signed correctly.
+    - Sends a Contract-SD (Signed Data) to the TVM.
 
 The acceptance criteria specification can be found in [Collector_service](/bdd/tagion/testbench/services/Collector_service.md).
 
@@ -28,23 +36,3 @@ sequenceDiagram
     Collector->>TVM: Archives+Contract
 
 ```
-
-Input:
-
-    - A HiRPC.Receiver request.
-    - Sender: Transaction Service.
-
-    - A Signed Consensus Contract
-    - Sender: Consensus Service.
-
- Output:
-
-    - A Signed Contract with Input Data, DART archives. It means all inputs are correct signed in the contract. 
-    - Receiver: TVM.
-
-
- The service does the following:
-
-    - Reads all the input data, archieves, from the DART as specified as inputs in the HiRPC request.
-    - Ensures all input data is valid and signed correctly.
-    - Sends a Signed Contract with data to the TVM.
