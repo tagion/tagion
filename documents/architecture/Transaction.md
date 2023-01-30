@@ -1,6 +1,8 @@
 # Transaction Service
 
 
+The Communication service should act as a gate-keeper in the network ensuring compliance to HiRPC format and rules. It should only send compliant contracts to the collector service.
+
 The service is responsible for ensuring a valid data format of HiRPC requests and HiBON document before it is executed in the system. 
 
 The HiRPC contains the contract and data payload for a transaction. 
