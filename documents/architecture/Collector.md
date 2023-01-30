@@ -10,7 +10,7 @@ Request:
   - Request and retrieve archives from the [DART](/documents/architecture/DART.md) Service.
 
 Output:
-  - A Contract and with valid DART archieves, the signed inputs. 
+  - A Contract and with valid DART archives, the signed inputs. 
 
 
  The service does the following:
