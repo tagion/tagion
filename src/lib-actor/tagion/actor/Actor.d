@@ -14,7 +14,7 @@ import concurrency = std.concurrency;
 import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions : fatal; //, Check, TagionException;
 import tagion.logger.Logger;
-import tagion.hibon.ActorException;
+import tagion.actor.ActorException;
 
 /// method define receiver method for the task actor
 @safe
