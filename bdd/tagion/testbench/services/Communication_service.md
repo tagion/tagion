@@ -1,6 +1,6 @@
 ## Feature: Communication service.
-The Communication service should act as a gate-keeper to validate that the transaction-format is correct before they are send to the network.
-The transaction service should be able to receive HiRPC which is checked before it sends to and send to the Collector services.
+
+The transaction service should be able to receive HiRPC, validate data format and protocol rules before it sends to and send to the Collector services.
 The HiRPC is package into a HiBON-Document in the following called doc.
 
 `tagion.testbench.services.Transaction_service`
