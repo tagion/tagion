@@ -132,7 +132,7 @@ template allMethodFilter(This, alias pred) {
 static Tid[string] child_actor_tids; /// List of channels by task names. 
 
 /**
-        Mixin to turns a struct or class into an Actor task
+        Mixin to turn a struct or class into an Actor task
     */
 mixin template TaskActor() {
     import concurrency = std.concurrency;

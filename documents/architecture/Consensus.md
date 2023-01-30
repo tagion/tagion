@@ -11,7 +11,7 @@ Output:
   - Epoch package send to the Transcript services.
 
 The acceptance criteria specification can be found in [Consensus Service](
-bdd/tagion/testbench/services/Consensus_Service.md)
+/bdd/tagion/testbench/services/Consensus_Service.md)
 
 The diagram below shows the possible information send from and to the Consensus services.
 
