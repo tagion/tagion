@@ -4,15 +4,13 @@ The service is responsible for ensuring a valid data format of HiRPC requests an
 
 It acts as a gate-keeper ensuring compliance before contracts are send to the Collector Service.
 
-Input: 
+Input:  
+> - A [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md) .Receiver.
+> - Sender: TLS/TCP Service.
 
-  - A [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md).Receiver.
-  - Sender: TLS/TCP Service.
-
-Output:
-
-  - A [HiBON](/documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md) Document. 
-  - Receiver: [Collector](/documents/architecture/Collector.md) Service.
+Output:  
+> - A [HiBON](/documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md) Document. 
+> - Receiver: [Collector](/documents/architecture/Collector.md) Service.
 
 The service does the following:
 
