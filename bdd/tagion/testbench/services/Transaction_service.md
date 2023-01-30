@@ -1,5 +1,5 @@
-## Feature: Transaction service.
-The transaction service should act as a gate-keeper to validate that the transaction-format is correct before they are send to the network.
+## Feature: Communication service.
+The Communication service should act as a gate-keeper to validate that the transaction-format is correct before they are send to the network.
 The transaction service should be able to receive HiRPC which is checked before it sends to and send to the Collector services.
 The HiRPC is package into a HiBON-Document in the following called doc.
 
@@ -66,12 +66,12 @@ The #permission scenario can be executed with and without correct permission.
 
 `hiRPC`
 
-*Then* the method of HiRPC should be checked that it is 'transfer'.
+*Then* the method of HiRPC should be checked that it is 'submit'.
 
-`transfer`
+`submit`
 
 *Then* the parameter for the send to the transaction service.
-The parameter for the 'transfer' method contains the contract.
+The parameter for the 'submit' method contains the contract.
 
 `service`
 

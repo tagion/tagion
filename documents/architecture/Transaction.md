@@ -7,12 +7,12 @@ The HiRPC contains the contract and data payload for a transaction.
 
 Input: 
 
-  - A [HiBON](/documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md) Document. 
+  - A [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md).Receiver request.
   - Sender: TLS/TCP Service.
 
 Output:
 
-  - A [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md).Receiver request.
+  - A [HiBON](/documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md) Document. 
   - Receiver: [Collector](/documents/architecture/Collector.md) Service.
 
 The service does the following:
