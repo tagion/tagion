@@ -26,9 +26,9 @@ The acceptance criteria specification can be found in [Communcation_services](/b
 ```mermaid
 sequenceDiagram
     participant TLS
-    participant Transaction
+    participant Communication
     participant Collector
     TLS->>Transaction: Document
-    Transaction->>Collector: HiRPC.Receiver
+    Communication->>Collector: Contract
 ```
 
