@@ -29,7 +29,7 @@ sequenceDiagram
     participant DART 
     participant Collector
     participant TVM 
-    Transaction->>Collector: Contract-NC 
+    Communication->>Collector: Contract-NC 
     Consensus->>Collector: Contract-C
     Collector->>DART: Request Archives
     DART->>Collector: Archives
