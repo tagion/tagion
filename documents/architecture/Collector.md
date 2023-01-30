@@ -15,10 +15,10 @@ Output:
 
  The service does the following:
 
-    - Does contract valication on the Contract-C.
-    - Collects the contract input data, DART archieves, from the DART as specified.
-    - Ensures all input data is valid and signed correctly.
-    - Sends a Contract-SD (Signed Data) to the TVM.
+  - Does contract valication on the Contract-C.
+  - Collects the contract input data, DART archieves, from the DART as specified.
+  - Ensures all input data is valid and signed correctly.
+  - Sends a Contract-SD (Signed Data) to the TVM.
 
 The acceptance criteria specification can be found in [Collector_service](/bdd/tagion/testbench/services/Collector_service.md).
 
