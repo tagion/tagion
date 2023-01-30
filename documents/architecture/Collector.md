@@ -24,15 +24,15 @@ The acceptance criteria specification can be found in [Collector_service](/bdd/t
 
 ```mermaid
 sequenceDiagram
-    participant Transaction
+    participant Communication
     participant Consensus
     participant DART 
     participant Collector
     participant TVM 
-    Transaction->>Collector: Contract-T 
+    Transaction->>Collector: Contract-NC 
     Consensus->>Collector: Contract-C
     Collector->>DART: Request Archives
     DART->>Collector: Archives
-    Collector->>TVM: Archives+Contract
+    Collector->>TVM: Contract-SD
 
 ```
