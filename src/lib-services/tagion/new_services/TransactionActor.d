@@ -12,9 +12,11 @@ struct TransactionOptions {
     string protocol_id;
     string task_name; /// Transaction task name
     ushort max;
-    import tagion.network.SSLServiceOptions;
+    version (OLD_TRANSACTION) {
+        import tagion.network.SSLServiceOptions;
 
-    SSLServiceOptions service; /// SSL Service used by the transaction service
+        SSLServiceOptions service; /// SSL Service used by the transaction service
+    }
     mixin JSONCommon;
 }
 

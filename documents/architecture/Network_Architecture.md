@@ -20,9 +20,9 @@ A node consist of the following services.
 	- [P2P](/documents/architecture/P2P.md "Peer to Peer") is used to connect the p2p network.
 	- [Registration](/documents/architecture/Registration.md) Register for the task and services.
 
-* Information services
+* Support services
 	* [Logger](/documents/architecture/Logger.md) takes care of handling the logger information for all the services.
-	* [LoggerSubscription]() The logger subscript take care of handling remote logger and event logging.
+	* [LoggerSubscription](/document/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
 	* [Monitor](/documents/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
 
 The arrow indicates ownership is means of service-A points to service-B. Service-A has ownership of service-B.
