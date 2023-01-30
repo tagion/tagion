@@ -18,16 +18,13 @@ A node consist of the following services.
 	- [Consensus](/documents/architecture/Consensus.md) service ensures asynchronous byzantine fault-tolerant consensus with Hashgraph producing an ordered output, an Epoch. 
 	- [EpochDump](/documents/architecture/EpochDump.md) Write the Epoch to a file as a backup.
 	- [P2P](/documents/architecture/P2P.md "Peer to Peer") is used to connect the p2p network.
-	- [Registration](/documents/architecture/Registration.md) Register for the task and services.
+	- [Coordinator](/documents/architecture/Coordinator.md) Register for the task and services.
 
 * Support services
 	* [Logger](/documents/architecture/Logger.md) takes care of handling the logger information for all the services.
 	* [LoggerSubscription](/document/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
 	* [Monitor](/documents/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
 
-The arrow indicates ownership is means of service-A points to service-B. Service-A has ownership of service-B.
-
-This means that if Service-B fails service-A is responsible to handle and take-care of the action to restart or other action.
 
 ## Data Message flow
 This graph show the primary data message flow in the network.
@@ -37,5 +34,10 @@ This graph show the primary data message flow in the network.
 
 ## Tagion Service Hierarchy
 This graph show the supervisor hierarchy of the services in the network.
+
+The arrow indicates ownership is means of service-A points to service-B. Service-A has ownership of service-B.
+
+This means that if Service-B fails service-A is responsible to handle and take-care of the action to restart or other action.
+
 
 ![Tagion hierachy](figs/tagion_hierarchy.svg)
