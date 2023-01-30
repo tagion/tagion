@@ -2,7 +2,10 @@
 
 Takes care for DART CRUD commands.
 
-The DART database support 4 crud commands.
+Note.
+The DART does not support `update` only `add` and `delete`. 
+
+The DART database support 4 **DART(crud)** commands.
   - `dartBullseye` returns the bullseye (Merkle root) of the DART.
   - `dartRim` reads a list of branch(tree) for a given rim.
   - `dartRead` reads a list of archives from a list of fingerprints.
@@ -10,18 +13,16 @@ The DART database support 4 crud commands.
 
 The `dartModify` can only be executed inside the core node not externally.
 
-Note.
-The DART does not support `update` only `add` and `delete`. 
+The read-only dart command **DART(ro)** is defined as `dartBullseye`, `dartRim` and `dartRead`.
 
 All archives in the database has a unique hash-value called fingerprint.
 
 Input:
-  - Recorder to the DART.modify command with (do/undo).
+  - Recorder from the Transcript Service.
+  - Recorder undo-instruction form the Transcript Service.
 
 Request:
-  - DART curd command (`dartRim`,`dartRead` and `dartModify`)
-  - DART curd to request the bullseye (`dartBullseye`).
-
+  - **DART(crud)** commands from DARTSync services
 
 Output:
   - Archive list as a Recorder format.
@@ -35,9 +36,9 @@ sequenceDiagram
     participant DART 
     participant DARTSync 
     participant Collector
-    Transcript ->> DART: Input/Output Archives
+    Transcript ->> DART: In/Out Archives(Recorder)
     DART ->> Collector: Archives(Recorder)
-    DARTSync ->> DART: DART crud 
+    DARTSync ->> DART: DART(crud) 
 ```
 
 

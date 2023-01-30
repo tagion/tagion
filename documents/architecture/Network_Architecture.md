@@ -11,10 +11,10 @@ A node consist of the following services.
 	- [TVM](/documents/architecture/TVM.md) ("Tagion Virtual Machine") is responsible for executing the instructions in the contract ensuring the contracts are compliant with Consensus Rules producing outputs. It send new, non consensus, contracts to the Consensus service.
 	- [DART](/documents/architecture/DART.md "Distributed Archive of Random Transactions") service Takes care of the handling data-base instruction and read/write to the physical file system.
 	- [DARTSync](/documents/architecture/DARTSync.md) Handles the synchronization of the DART to other remote nodes.
-	- [Recorder](/documents/architecture/Recorder.md) Handles the recorder chain (A Recorder is the write/remove sequency to the DART).
+	- [Replicator](/documents/architecture/Replicator.md) Handles the recorder chain (A Recorder is the write/remove sequency to the DART).
 	- [Communication](/documents/architecture/Communication.md) service is responsible for ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system. 
 	- [Collector](/documents/architecture/Collector.md) service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
-	- [Transcript](/documents/architecture/Transcript.md) Executes transactions in the epoch produced by the HashGraph and generates a Recorder.
+	- [Transcript](/documents/architecture/Transcript.md) Executes transactions in the epoch produced by the HashGraph and generates a Replicator.
 	- [Consensus](/documents/architecture/Consensus.md) service ensures asynchronous byzantine fault-tolerant consensus with Hashgraph producing an ordered output, an Epoch. 
 	- [EpochDump](/documents/architecture/EpochDump.md) Write the Epoch to a file as a backup.
 	- [P2P](/documents/architecture/P2P.md "Peer to Peer") is used to connect the p2p network.

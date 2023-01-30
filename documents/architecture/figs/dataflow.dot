@@ -1,11 +1,11 @@
 ```graphviz
-digraph G {
+digraph Message_flow {
 rankdir=UD;
   compound=true;
   labelangle=35;
    node [style=filled]
   node [ shape = "rect"];
-  DART [shape = cylinder]
+  DART [shape = cylinder];
   TLS [ style=filled fillcolor=green ];
   Network [ style=filled fillcolor=red]
   Communication [shape = signature]
@@ -13,7 +13,6 @@ rankdir=UD;
   Consensus [label="Consensus\nHashgraph"]
   subgraph cluster_1 {
     peripheries=0;
-    style = rounded;
     TLS -> Communication [label="HiRPC(contract)" color=green];
  	Communication -> Collector [label=contract color=green];
 	Collector -> TVM [label="contract-S" color=green];
@@ -25,18 +24,17 @@ rankdir=UD;
   subgraph cluster_2 {
     peripheries=0;
 	DART;
-    style = rounded;
   };
   subgraph cluster_3 {
     peripheries=0;
-    style = rounded;
-	Recorder -> DARTSync [label=recorder color=blue dir=both];
-	DARTSync -> P2P [label="DART(crud)" dir=both color=magenta];
-	P2P -> Network [label=HiBON dir=both];
+	DARTSync -> P2P [label="DART(ro)" dir=both color=magenta];
+	P2P -> Network [label=Document dir=both];
   };
   DARTSync -> DART [label="DART(crud)" color=magenta];
-  DART -> Collector [label=archives color=red];
+  DART -> Collector [label=recorder color=red];
+  DART -> Replicator [label=recorder color=red dir=both];
   Consensus -> P2P [label=gossip dir=both color=cyan4];
   Transcript -> DART [label=recorder color=blue];
+  Replicator -> P2P [label=recorder];
 }
 ```
