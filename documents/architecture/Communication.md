@@ -1,15 +1,12 @@
-# Transaction Service
+# Communication Service
 
+The service is responsible for ensuring a valid data format of HiRPC requests and ensuring the HiRPC protocol is obeyed. 
 
-The Communication service should act as a gate-keeper in the network ensuring compliance to HiRPC format and rules. It should only send compliant contracts to the collector service.
-
-The service is responsible for ensuring a valid data format of HiRPC requests and HiBON document before it is executed in the system. 
-
-The HiRPC contains the contract and data payload for a transaction. 
+It acts as a gate-keeper ensuring compliance before contracts are send to the Collector Service.
 
 Input: 
 
-  - A [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md).Receiver request.
+  - A [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md).
   - Sender: TLS/TCP Service.
 
 Output:
@@ -22,7 +19,7 @@ The service does the following:
   - Check the data package comply with size limitation.
   - Validate the HiBON document and HiRPC request are correct formatted.
   - Validates signature on permissioned HiRPC request. 
-  - Sends a HiRPC.Reciever request to the Collector service.
+  - Sends a HiRPC request to the Collector service.
 
 The acceptance criteria specification can be found in [Transaction_services](/bdd/tagion/testbench/services/Transaction_service.md).
 
