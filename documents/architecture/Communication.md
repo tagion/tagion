@@ -6,13 +6,13 @@ It acts as a gate-keeper ensuring compliance before contracts are send to the Co
 
 Input: 
 
-  - A [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md).Receiver.
-  - Sender: TLS/TCP Service.
+    - A [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md).Receiver.
+    - Sender: TLS/TCP Service.
 
 Output:
 
-  - A [HiBON](/documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md) Document. 
-  - Receiver: [Collector](/documents/architecture/Collector.md) Service.
+    - A [HiBON](/documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md) Document. 
+    - Receiver: [Collector](/documents/architecture/Collector.md) Service.
 
 The service does the following:
 
