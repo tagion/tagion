@@ -28,6 +28,6 @@ sequenceDiagram
     participant TLS
     participant Communication
     participant Collector
-    TLS->>HiRPC.Receiver: Document
+    TLS->>Communication: HiRPC.Receiver
     Communication->>Collector: Contract
 ```
