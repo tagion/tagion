@@ -18,7 +18,7 @@ A node consist of the following services.
 	- [Consensus](/documents/architecture/Consensus.md) service ensures asynchronous byzantine fault-tolerant consensus with Hashgraph producing an ordered output, an Epoch. 
 	- [EpochDump](/documents/architecture/EpochDump.md) Write the Epoch to a file as a backup.
 	- [P2P](/documents/architecture/P2P.md "Peer to Peer") is used to connect the p2p network.
-	- [Coordinator](/documents/architecture/Coordinator.md) Register for the task and services.
+	- [Coordinator](/documents/architecture/Coordinator.md) Registration of the actor in system.
 
 * Support services
 	* [Logger](/documents/architecture/Logger.md) takes care of handling the logger information for all the services.
@@ -29,10 +29,10 @@ A node consist of the following services.
 ## Data Message flow
 This graph show the primary data message flow in the network.
 
-
 ![Dataflow](figs/dataflow.svg)
 
 ## Tagion Service Hierarchy
+
 This graph show the supervisor hierarchy of the services in the network.
 
 The arrow indicates ownership is means of service-A points to service-B. Service-A has ownership of service-B.
