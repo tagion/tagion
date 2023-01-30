@@ -6,7 +6,7 @@ It acts as a gate-keeper ensuring compliance before contracts are send to the Co
 
 Input: 
 
-  - A [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md).
+  - A [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md).Receiver.
   - Sender: TLS/TCP Service.
 
 Output:
@@ -28,7 +28,6 @@ sequenceDiagram
     participant TLS
     participant Communication
     participant Collector
-    TLS->>Transaction: Document
+    TLS->>HiRPC.Receiver: Document
     Communication->>Collector: Contract
 ```
-
