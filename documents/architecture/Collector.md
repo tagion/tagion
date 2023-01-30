@@ -3,11 +3,8 @@
 The service is responsible for collecting input data for a HiRPC request and ensuring the data is valid and signed before the contract is executed.
 
 Input:
-  - A Contract-NC (No Consensus).
-  - Sender: Communication Service.
-
-  - Contract-C.
-  - Sender: Consensus Service.
+  - A Contract-NC (No Consensus) received from Communication[Communication](/documents/architecture/Communication.md) Service.
+  - Contract-C received from [Consensus](/documents/architecture/Consensus.md) Service.
 
 Request:
   - Request and retrieve archieves from the [DART](/documents/architecture/DART.md) service.
