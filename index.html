@@ -13,7 +13,26 @@
   </head>
   <body>
     <div id="app"></div>
+    <script src='documents/_static/viz.js'></script>
+    <script src='documents/_static/full.render.js'></script>;
     <script>
+
+      // const workerURL = 'documents/_static/full.render.js'
+      // let viz = new Viz({ workerURL });
+      let viz = new Viz();
+
+      // Føj for satan
+      function vizScript(code) {
+        return `<script type="text/javascript" async>` +
+        `(function() {` +
+        `let script = document.currentScript; ` +
+        `viz.renderSVGElement('${code}').then(svg => { ` +
+              `console.log(svg)` +
+        // `         script.parentNode.replaceChild(svg, script); ` +
+        // `}); ` +
+		`})();` +
+        `<\/script>`
+      }
 
       window.$docsify = {
 
@@ -26,53 +45,58 @@
               '/',            // => /README.md
             ],
 
-        plugins: [
-            function vizjs(hook, vm) {
-                var LANG = 'graphviz';
-                var SELECTOR = 'pre[data-lang="' + LANG + '"]'
+          markdown: {
+              renderer: {
+                  code : function(code, lang) {
+                      if ( lang === "graphviz") {
+                        return (
+                              `<div class='graphviz'>` +
+                            vizScript(code) +
+                               `</div>`
+                        )
+                      }
+                      return this.origin.code.apply(this, arguments);
+                  }
+              }
+          },
 
-                function replace(content) {
-                    var dom = window.Docsify.dom
-                    var $ = dom.create('span', content)
+          // plugins: [
+          //     function vizjs(hook, vm) {
 
-                    if (!$.querySelectorAll) {
-                      return content
-                    }
+          //         var LANG = 'graphviz';
+          //         var SELECTOR = 'pre[data-lang="' + LANG + '"]'
 
-                    (dom.findAll($, SELECTOR) || []).forEach(function (element) {
-                        var parent = element.parentNode
-                          var planted = dom.create('p', '<h1>This was a graphviz another graph</h1>')
-                        if (parent) {
-                            planted.dataset.lang = LANG
-                            element.parentNode.replaceChild(planted, element)
-                        }
-                    })
-                    return $.innerHTML
-                }
+          //       function replace(content) {
+          //           var dom = window.Docsify.dom
+          //           var $ = dom.create('span', content)
 
-                hook.afterEach(function (content) {
-                      return replace(content)
-                })
-            },
-        ]
+          //           if (!$.querySelectorAll) {
+          //             return content
+          //           }
+
+          //           (dom.findAll($, SELECTOR) || []).forEach(function (element) {
+          //                 // viz.renderSVGElement(element.innerText)
+
+          //             // element.parentNode.replaceChild(planted, element)
+          //             // return $.innerHTML
+          //               var parent = element.parentNode
+          //                 var planted = dom.create('p', '<h1>This was a graphviz another graph</h1>')
+          //               if (parent) {
+          //                   planted.dataset.lang = LANG
+          //                   element.parentNode.replaceChild(planted, element)
+          //               }
+          //         })
+          //       }
+
+          //       hook.afterEach(function (content) {
+          //             return replace(content)
+          //       })
+          //   },
+        // ]
       };
-
-      // const workerURL = 'docs/lite.render.js';
-// let viz = new Viz({ workerURL });
-
-// viz.renderSVGElement('digraph { a -> b }')
-  // .then(function(element) {
-    // document.body.appendChild(element);
-  // })
-  // .catch(error => {
-    // // Create a new Viz instance (@see Caveats page for more info)
-    // viz = new Viz({ workerURL });
-
-    // // Possibly display the error
-    // console.error(error);
-  // });
 
     </script>
     <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+    <script src="documents/_static/docsify-viz.js"></script>
   </body>
 </html>
