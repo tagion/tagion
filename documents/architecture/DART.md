@@ -1,6 +1,6 @@
-# DART Services
+# DART Service
 
-Takes care for DART CRUD commands.
+This service is reponsible for executing data-base instruction and read/write to the physical file system.
 
 Note.
 The DART does not support `update` only `add` and `delete`. 
@@ -11,22 +11,22 @@ The DART database support 4 **DART(crud)** commands.
   - `dartRead` reads a list of archives from a list of fingerprints.
   - `dartModify` adds and deletes a list of archives form a Recorder.
 
-The `dartModify` should only be executed inside Node, either from the transcript or when the nodes starts up in the DART sync process.
+The `dartModify` should only be executed inside a Node, either from the transcript or when the nodes starts up in the DART sync process.
 
 The read-only dart command **DART(ro)** is defined as `dartBullseye`, `dartRim` and `dartRead`.
 
 All archives in the database has a unique hash-value called fingerprint.
 
 Input:
-  - Recorder from the Transcript Service.
-  - Undo-instruction form the Transcript Service.
-  - Recorder rewind from the Replicator
+  - Recorder is received from the [Transcript](/documents/architecture/Transcript.md) Service.
+  - Undo-instruction is received from the [Transcript](/documents/architecture/Transcript.md) Service.
+  - Recorder rewind is received from the [Replicator](/documents/architecture/Replicator.md) Service.
 
 Request:
-  - **DART(ro)** commands from NodeInterface services.
+  - **DART(ro)** commands from the [Node Interface](/documents/architecture/NodeInterface.md)) Service.
 
 Output:
-  - Last Recoder send to the Replicator. 
+  - Last Recoder is sent to the [Replicator](/documents/architecture/Replicator.md) Service. 
 
 
 ### DART Start up
