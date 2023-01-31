@@ -15,8 +15,8 @@ A node consist of the following services.
 	- [Collector](/documents/architecture/Collector.md) service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
 	- [Transcript](/documents/architecture/Transcript.md) service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input and output in the same Epoch and sending it to the DART.
 	- [Epoch Creator](/documents/architecture/EpochCreator.md) service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch. 
-	- [Epoch Dump](/documents/architecture/EpochDump.md) Write the Epoch to a file as a backup.
-	- [Node Interface](/documents/architecture/NodeInterface.md) is responsible for handling and routing requests to and from the p2p node network.
+	- [Epoch Dump](/documents/architecture/EpochDump.md) Service is responsible for writing the Epoch to a file as a backup.
+	- [Node Interface](/documents/architecture/NodeInterface.md) service is responsible for handling and routing requests to and from the p2p node network.
 
 * Support services
 	- [Logger](/documents/architecture/Logger.md) takes care of handling the logger information for all the services.
