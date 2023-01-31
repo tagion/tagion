@@ -6,27 +6,21 @@ A HiBON object must be generated as a JSON object and a HiBON array must be gene
 
 Except for HIBON type STRING and BOOLEAN which uses the JSON type directly and the JSON null type is converted to a empty HiBON object.
 
-An extra array element is added for HiBON type HASHDOC, CRYPTDOC and CREDENTIAL which is the sets the data block type. 
 
 
-
-| Type name | HiBON Type | Value format     | JSON Type      |
-| --------- | ---------- | ---------------- | -------------- |
-| "f32"     | FLOAT32    | hex_float        | string         |
-| "f64"     | FLOAT64    | hex_float        | string         |
-| "i32"     | INT32      | number\|signed   | number\|string |
-| "i64"     | INT64      | signed           | string         |
-| "u32"     | UINT32     | number\|unsigend | number\|string |
-| "u64"     | UINT64     | unsigend         | string         |
-|           | BOOLEAN    | bool             | bool           |
-|           | STRING     | string           | string         |
-| "utc"     | UTC        | unsigend         | string         |
-| "ibig"    | INTBIG     | signed \| base64 | string         |
-| "ubig"    | UINTBIG    | unsigned\|base64 | string         |
-| "*"       | BINARY     | base64 \|  hex   | string         |
-| "#"       | HASHDOC    | base64 \| hex    | string         |
-| "(#)"     | CRYPTDOC   | base64 \|hex     | string         |
-| "&"       | CREDENTIAL | base64\|hex      | string         |
+| Type name | HiBON Type | D-Type        |  Value format     | JSON Type      |
+| --------- | ---------- | ------------- | ---------------- | -------------- |
+| "f32"     | FLOAT32    | float         | hex_float        | string         |
+| "f64"     | FLOAT64    | double        | hex_float        | string         |
+| "i32"     | INT32      | int           | number\|signed   | number\|string |
+| "i64"     | INT64      | long          | signed           | string         |
+| "u32"     | UINT32     | uint          | number\|unsigend | number\|string |
+| "u64"     | UINT64     | ulong         | unsigend         | string         |
+|           | BOOLEAN    | bool          | bool             | bool           |
+|           | STRING     | string        | string           | string         |
+| "utc"     | UTC        | SDT           | unsigend         | string         |
+| "ibig"    | INTBIG     | BigNumber     | signed \| base64 | string         |
+| "*"       | BINARY     | Buffer        | base64 \|  hex   | string         |
 
 
 
