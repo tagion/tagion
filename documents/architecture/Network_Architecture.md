@@ -18,12 +18,12 @@ A node consist of the following services.
 	- [Consensus](/documents/architecture/Consensus.md) service ensures asynchronous byzantine fault-tolerant consensus with Hashgraph producing an ordered output, an Epoch. 
 	- [EpochDump](/documents/architecture/EpochDump.md) Write the Epoch to a file as a backup.
 	- [ConsensusInterface](/documents/architecture/ConsensusInterface.md) is used to connect the p2p network.
-	- [Coordinator](/documents/architecture/Coordinator.md) Registration of the actor in system.
 
 * Support services
-	* [Logger](/documents/architecture/Logger.md) takes care of handling the logger information for all the services.
-	* [LoggerSubscription](/document/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
-	* [Monitor](/documents/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
+	- [Logger](/documents/architecture/Logger.md) takes care of handling the logger information for all the services.
+	- [LoggerSubscription](/document/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
+	- [Monitor](/documents/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
+	- [Coordinator](/documents/architecture/Coordinator.md) Registration of the actor in system.
 
 
 ## Data Message flow
