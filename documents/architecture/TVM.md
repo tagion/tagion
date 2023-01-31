@@ -1,7 +1,7 @@
 # TVM (Tagion Virtual Machine)
 
 The TVM is responsible for executing the instructions in the contract ensuring the contract is compliant with Consensus Rules producing outputs. 
-It send new, non-consensus, contracts to the Consensus service.
+It send new, non-consensus, contracts to the Epoch Creator Service.
 
 
 Input: 
