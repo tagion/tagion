@@ -1,17 +1,17 @@
-# Consensus Service
+# Epoch Creator Service
 
-This services perform the [HashGraph](HashGraph.md) consensus ordering.
+This service is responsbile for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch.
 
 Input:
-  - Payload form as document (Typical form the TVM).
-  - Wavefront packages from the received from the peer to peer.
+  - A Contract-SC (Signed Consensus) is received from the [TVM](/documents/architecture/TVM.md) Service. 
+  - Wavefront packages received from the [P2P]() Service.
 
 Output:
-  - Wavefront packages send to a selected node in peer to peer network.
-  - Epoch package send to the Transcript services.
+  - Wavefront packages is sent to the [P2P]() Service.
+  - Epoch list is sent to the [Transcript services](/documents/architecture/Transcript.md).
 
-The acceptance criteria specification can be found in [Consensus Service](
-/bdd/tagion/testbench/services/Consensus_Service.md)
+The acceptance criteria specification can be found in [Epoch Creator Service](
+/bdd/tagion/testbench/services/EpochCreator_Service.md)
 
 The diagram below shows the possible information send from and to the Consensus services.
 
@@ -19,14 +19,14 @@ The diagram below shows the possible information send from and to the Consensus 
 ```mermaid
 sequenceDiagram
     participant TVM 
-    participant Consensus 
+    participant Epoch Creator 
     participant Collector
     participant Transcript
-    participant ConsensusInterface
-    TVM ->> Consensus: Input/Output Archives
-    Consensus ->> Collector: Event payload(Contract) 
-    Consensus ->> ConsensusInterface: Wavefront package
-    ConsensusInterface ->> Consensus: Wavefront package
-    Consensus ->> Transcript: Epoch list
+    participant Consensus Interface
+    TVM ->> Epoch Creator: Input/Draft Output Archives
+    Epoch Creator ->> Collector: Event payload(Contract) 
+    Epoch Creator ->> Consensus Interface: Wavefront package
+    Consensus Interface ->> Epoch Creator: Wavefront package
+    Epoch Creator ->> Transcript: Epoch list
 ```
 
