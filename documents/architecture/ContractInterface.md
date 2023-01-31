@@ -1,4 +1,4 @@
-# Communication Service
+# ContractInterface Service
 
 The service is responsible for ensuring a valid data format of HiRPC requests and ensuring the HiRPC protocol is obeyed. 
 
@@ -20,13 +20,13 @@ The service does the following:
   - Ensure the HiRPC request complay with the protocol
   - Sends a HiRPC request to the Collector service.
 
-The acceptance criteria specification can be found in [Communication_service](/bdd/tagion/testbench/services/Communication_service.md).
+The acceptance criteria specification can be found in [ContractInterface_service](/bdd/tagion/testbench/services/ContractInterface_service.md).
 
 ```mermaid
 sequenceDiagram
     participant TLS
-    participant Communication
+    participant ContractInterface
     participant Collector
-    TLS->>Communication: HiRPC.Receiver
-    Communication->>Collector: Contract
+    TLS->>ContractInterface: HiRPC.Receiver
+    ContractInterface->>Collector: Contract
 ```

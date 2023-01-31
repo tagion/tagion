@@ -1,4 +1,4 @@
-## Feature: Communication service.
+## Feature: ContractInterface service.
 
 The transaction service should be able to receive HiRPC, validate data format and protocol rules before it sends to and send to the Collector services.
 The HiRPC is package into a HiBON-Document in the following called doc.

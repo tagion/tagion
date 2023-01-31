@@ -11,7 +11,7 @@ Request:
 Output:
   - Produce a DART-recorder from the in/output archives.
 
-The acceptance criteria specification can be found in [Transcript_services](/bdd/tagion/testbench/services/Transaction_service.md).
+The acceptance criteria specification can be found in [Transcript_services](/bdd/tagion/testbench/services/ContractInterface_service.md).
 
 ```mermaid
 sequenceDiagram
