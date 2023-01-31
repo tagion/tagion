@@ -1,11 +1,11 @@
-# ContractInterface Service
+# Contract Interface Service
 
-The service is responsible for ensuring a valid data format of HiRPC requests and ensuring the HiRPC protocol is obeyed. 
+This service is responsible for receiving contracts, ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system.
 
 It acts as a gate-keeper ensuring compliance before contracts are send to the Collector Service.
 
 Input:  
-> - A [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md) .Receiver.
+> - A [HiPRC](/documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md).Receiver.
 > - Sender: TLS/TCP Service.
 
 Output:  
