@@ -45,11 +45,9 @@ The DARTInterface should start to synchronize the DART by subscribing to the pro
 sequenceDiagram
     participant Transcript
     participant DART 
-    participant DARTInterface 
     participant Collector
     Transcript ->> DART: In/Out Archives(Recorder)
     DART ->> Collector: Archives(Recorder)
-    DARTInterface ->> DART: DART(crud) 
 ```
 
 
