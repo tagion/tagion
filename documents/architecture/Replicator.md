@@ -1,5 +1,5 @@
-# Recorder Services
+# Replicator Services
 
-This services takes care of the Recorder which is a list for DART-CRUD command used to update an Epoch, Undo the DART, DART synchronisation and the Recorder chain.
+This service is responsible for keeping record of the database instructions both to undo, replay and publish the instructions sequantially.
 
 

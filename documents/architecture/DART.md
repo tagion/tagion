@@ -11,13 +11,31 @@ The DART database support 4 **DART(crud)** commands.
   - `dartRead` reads a list of archives from a list of fingerprints.
   - `dartModify` adds and deletes a list of archives form a Recorder.
 
-The `dartModify` can only be executed inside the core node not externally.
+The `dartModify` should only be executed inside Node, either from the transcript or when the nodes starts up in the DART sync process.
 
 The read-only dart command **DART(ro)** is defined as `dartBullseye`, `dartRim` and `dartRead`.
 
 All archives in the database has a unique hash-value called fingerprint.
 
-In the flowing state 
+Input:
+  - Recorder from the Transcript Service.
+  - Undo-instruction form the Transcript Service.
+  - Recorder rewind from the Replicator
+
+Request:
+  - **DART(ro)** commands from NodeInterface services.
+
+Output:
+  - Last Recoder send to the Replicator. 
+
+
+### DART Start up
+When a node goes online the DART need to be synchronized with other nodes in the.
+Before the DART should be synchronized the node should run trough the discovery of the trusted network (This process is not described here)
+
+The DART database should be synchronized before the DART can be used as a consensus database.
+
+DART start-up flowchart:
 
 ```graphviz
 digraph G {
@@ -36,63 +54,62 @@ digraph G {
     label = "Sync\nDART";
     shape = rect;
   ];
-   win [
-    label = "You win!";
-    shape = oval;
-  ];
   insync [
     label = "Bullseye\nok?";
     shape = diamond;
   ];
-  point [
+  resync [
     label = "Continue\nDART";
+    shape = rect;
+  ];
+   dart [
+    label = "DART\nin sync!";
     shape = rect;
   ];
 
   start -> connect;
-  connect -> sync;
-  sync -> insync;
-  point:s -> insync:s;
-  win -> insync [ label = "Yes"; dir=back ];
-  insync -> point [ label = "No" ];
+  connect -> sync:n;
+  sync:s -> insync:n;
+  resync:n -> sync:e;
+  insync:s -> dart [ label = "Yes" ];
+  insync -> resync [ label = "No" ];
   {
     rank=same;
-    insync; point; win;
+    insync; resync; 
   }
 }
 ```
-
-
-Input:
-  - Recorder from the Transcript Service.
-  - Recorder undo-instruction form the Transcript Service.
-
-Request:
-  - **DART(crud)** commands from DARTInterface services
-
-Output:
-  - Archive list as a Recorder format.
-
-The acceptance criteria specification can be found in [DART Service](
-/bdd/tagion/testbench/services/DART_Service.md)
-
-## DART startup and synchronization.
-
-
 Note. The synchronization method can be found in DART.SynchronizationFiber which also support HiPRC. 
 For sample code see the unittest in the DART module.
 DART also includes a journal-files which can be used in case of a crash.
 
-The DARTInterface should start to synchronize the DART by subscribing to the produced Recorders from the trusted and after the node should start to synchronize the DART by sectors from a number of trusted nodes.
+The acceptance criteria specification for the synchronization  process can be found in [DART Sync](
+/bdd/tagion/testbench/services/DART_Sync.md)
+
+
+### DART Operation
+
+When the DART success-fully has reach the current bulleyes. The DART is ready to receive epoch records from the Epoch-Creator which will keep the DART in the consensus state as long as the Epoch-Creator.
+
+In the case that the Epoch-Creator does not reach epoch-consensus a DART undo command is send to the DART services. This means that the previous Recorder must be undo and this is done by requesting the Recorder from the Replicator and the Recorder is reversed by the `dartModify` command. 
+
+
+The acceptance criteria specification can be found in [DART Service](
+/bdd/tagion/testbench/services/DART_Service.md)
 
 
 ```mermaid
 sequenceDiagram
+    participant Collector
     participant Transcript
     participant DART 
-    participant Collector
-    Transcript ->> DART: In/Out Archives(Recorder)
-    DART ->> Collector: Archives(Recorder)
+    participant Replicator
+    Transcript ->> DART: Recorder(add/delete)
+    DART ->> Replicator: Recorder(add/delete)
+    Transcript ->> DART: Request undo
+    Replicator -->> DART: Recorder(delete/add) (undo)
+    Collector ->> DART: dartRead
+    DART -->> Collector: Recorder(read)
 ```
 
 

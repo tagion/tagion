@@ -16,7 +16,7 @@ A node consist of the following services.
 	- [Transcript](/documents/architecture/Transcript.md) Executes transactions in the epoch produced by the HashGraph and generates a Replicator.
 	- [Epoch Creator](/documents/architecture/EpochCreator.md) service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch. 
 	- [Epoch Dump](/documents/architecture/EpochDump.md) Write the Epoch to a file as a backup.
-	- [Consensus Interface](/documents/architecture/ConsensusInterface.md) is responsible for handling and routing request from the p2p node network.
+	- [Node Interface](/documents/architecture/NodeInterface.md) is responsible for handling and routing request from the p2p node network.
 
 * Support services
 	- [Logger](/documents/architecture/Logger.md) takes care of handling the logger information for all the services.
@@ -38,7 +38,7 @@ rankdir=UD;
   TLS [ style=filled fillcolor=green ];
   P2P [ style=filled fillcolor=red]
   ContractInterface [ label="Contract\nInterface"]
-  ConsensusInterface [ label="Consensus\nInterface"]
+  NodeInterface [ label="Node\nInterface"]
   Transcript [shape = note]
   EpochCreator [label="Epoch\nCreator"]
   subgraph cluster_1 {
@@ -57,13 +57,13 @@ rankdir=UD;
   };
   subgraph cluster_3 {
     peripheries=0;
-	DART -> ConsensusInterface [label="DART(ro)\nrecorder" dir=both color=magenta];
-    ConsensusInterface -> P2P [label=Document dir=both];
+	DART -> NodeInterface [label="DART(ro)\nrecorder" dir=both color=magenta];
+    NodeInterface -> P2P [label=Document dir=both];
   };
   DART -> Collector [label=recorder color=red];
-  EpochCreator -> ConsensusInterface [label=gossip dir=both color=cyan4];
+  EpochCreator -> NodeInterface [label=gossip dir=both color=cyan4];
   Transcript -> DART [label=recorder color=blue];
-  Replicator -> ConsensusInterface [label=recorder];
+  Replicator -> NodeInterface [label=recorder];
 }
 ```
 
@@ -89,7 +89,7 @@ Transcript [shape = note]
 Collector [shape=rect]
 EpochCreator [label="Epoch\nCreator"]
 EpochDump [label="Epoch\nDump"]
-ConsensusInterface [shape=rect label="Consensus\nInterface"]
+NodeInterface [shape=rect label="Node\nInterface"]
 LoggerSubscription [label="Logger\nSubscription"]
 TLS [color=green]
 P2P [color=red]
@@ -97,7 +97,7 @@ node [shape = rect];
 	Tagionwave -> Logger -> LoggerSubscription;
 	Tagionwave -> TagionFactory;
 	TagionFactory -> Tagion;
-	Tagion -> ConsensusInterface -> P2P;
+	Tagion -> NodeInterface -> P2P;
 	DART -> Replicator;
 	Tagion -> DART;
     Tagion -> EpochCreator;
