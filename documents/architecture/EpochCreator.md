@@ -27,6 +27,6 @@ sequenceDiagram
     Epoch Creator ->> Collector: Event payload(Contract) 
     Epoch Creator ->> Consensus Interface: Wavefront package
     Consensus Interface ->> Epoch Creator: Wavefront package
-    Consensus ->> Transcript: Epoch list
+    Epoch Creator ->> Transcript: Epoch list
 ```
 
