@@ -27,10 +27,10 @@ rankdir=UD;
   };
   subgraph cluster_3 {
     peripheries=0;
-	DARTSync -> ConsensusInterface [label="DART(ro)" dir=both color=magenta];
+	DARTInterface -> ConsensusInterface [label="DART(ro)" dir=both color=magenta];
 	ConsensusInterface -> P2P [label=Document dir=both];
   };
-  DARTSync -> DART [label="DART(crud)" color=magenta];
+  DARTInterface -> DART [label="DART(crud)" color=magenta];
   DART -> Collector [label=recorder color=red];
   DART -> Replicator [label=recorder color=red dir=both];
   Consensus -> ConsensusInterface [label=gossip dir=both color=cyan4];

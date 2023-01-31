@@ -11,12 +11,12 @@ Input:
 ```mermaid
 sequenceDiagram
     participant Replicator 
-    participant DARTSync 
+    participant DARTInterface 
     participant ConsensusInterface 
-    DARTSync ->> DART: DART(crud)
-    ConsensusInterface ->> DARTSync: DART(ro)
-    DARTSync ->> ConsensusInterface: DART(ro)
-    Replicator ->> DARTSync: Recorder
+    DARTInterface ->> DART: DART(crud)
+    ConsensusInterface ->> DARTInterface: DART(ro)
+    DARTInterface ->> ConsensusInterface: DART(ro)
+    Replicator ->> DARTInterface: Recorder
 ```
 
 

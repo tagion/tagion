@@ -17,7 +17,7 @@ node [shape = rect];
 	TagionFactory -> Tagion;
 	Tagion -> ConsensusInterface -> P2P;
 	DART -> Replicator;
-	Tagion -> DART -> DARTSync;
+	Tagion -> DART -> DARTInterface;
     Tagion -> Consensus;
 	Consensus -> ContractInterface;
 	Consensus -> Transcript;

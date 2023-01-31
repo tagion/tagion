@@ -22,7 +22,7 @@ Input:
   - Recorder undo-instruction form the Transcript Service.
 
 Request:
-  - **DART(crud)** commands from DARTSync services
+  - **DART(crud)** commands from DARTInterface services
 
 Output:
   - Archive list as a Recorder format.
@@ -34,11 +34,11 @@ The acceptance criteria specification can be found in [DART Service](
 sequenceDiagram
     participant Transcript
     participant DART 
-    participant DARTSync 
+    participant DARTInterface 
     participant Collector
     Transcript ->> DART: In/Out Archives(Recorder)
     DART ->> Collector: Archives(Recorder)
-    DARTSync ->> DART: DART(crud) 
+    DARTInterface ->> DART: DART(crud) 
 ```
 
 

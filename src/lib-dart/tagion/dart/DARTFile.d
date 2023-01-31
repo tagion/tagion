@@ -1804,7 +1804,7 @@ alias check = Check!DARTException;
             assert(bulleye_A == bulleye_B);
         }
 
-        { // Random write and the bulleye is check
+        { // Random write and then bulleye is check
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 1000;
             auto random_table = new ulong[N];
