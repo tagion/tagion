@@ -7,12 +7,12 @@ The DARTSync should start to synchronize the DART by subscribing to the produced
 
 
 Input:
-  - **DART(ro)** command from P2P.
+  - **DART(ro)** command from ConsensusInterface.
   - Recorder from the Replicator Services.
   - 
 
 Request:
-  - Request **DART(ro)** to the P2P.
+  - Request **DART(ro)** to the ConsensusInterface.
   - Request **DART(crud)** to the DART.
 
 Output:
@@ -26,11 +26,11 @@ sequenceDiagram
     participant DART 
     participant Replicator 
     participant DARTSync
-    participant P2P 
-    DARTSync ->> P2P: DART(crud)
-    P2P ->> DARTSync: DART(ro)
-	DARTSync --> P2P: d
-    DARTSync ->> P2P: DART(ro)
+    participant ConsensusInterface 
+    DARTSync ->> ConsensusInterface: DART(crud)
+    ConsensusInterface ->> DARTSync: DART(ro)
+	DARTSync --> ConsensusInterface: d
+    DARTSync ->> ConsensusInterface: DART(ro)
     Replicator ->> DARTSync: Recorder
 
 ```

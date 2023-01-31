@@ -1,4 +1,4 @@
-# Peer to Peer Services
+# Consensus Interface Services
 
 This services takes care of the P2P network interface used for the general network correction and the
 Gossip protocol.
@@ -12,10 +12,10 @@ Input:
 sequenceDiagram
     participant Replicator 
     participant DARTSync 
-    participant P2P 
+    participant ConsensusInterface 
     DARTSync ->> DART: DART(crud)
-    P2P ->> DARTSync: DART(ro)
-    DARTSync ->> P2P: DART(ro)
+    ConsensusInterface ->> DARTSync: DART(ro)
+    DARTSync ->> ConsensusInterface: DART(ro)
     Replicator ->> DARTSync: Recorder
 ```
 

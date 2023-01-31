@@ -17,7 +17,7 @@ A node consist of the following services.
 	- [Transcript](/documents/architecture/Transcript.md) Executes transactions in the epoch produced by the HashGraph and generates a Replicator.
 	- [Consensus](/documents/architecture/Consensus.md) service ensures asynchronous byzantine fault-tolerant consensus with Hashgraph producing an ordered output, an Epoch. 
 	- [EpochDump](/documents/architecture/EpochDump.md) Write the Epoch to a file as a backup.
-	- [P2P](/documents/architecture/P2P.md "Peer to Peer") is used to connect the p2p network.
+	- [ConsensusInterface](/documents/architecture/ConsensusInterface.md) is used to connect the p2p network.
 	- [Coordinator](/documents/architecture/Coordinator.md) Registration of the actor in system.
 
 * Support services

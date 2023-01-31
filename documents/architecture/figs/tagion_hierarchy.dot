@@ -5,7 +5,7 @@ digraph tagion_hierarchy {
    node [style=filled]
 Tagionwave [color=blue]
 DART [shape = cylinder]
-Communication [shape = signature]
+ContractInterface [shape = signature]
 Transcript [shape = note]
 Collector [shape=rect]
 Consensus [label="Consensus\nHashGraph"]
@@ -15,16 +15,16 @@ node [shape = rect];
 	Tagionwave -> TagionFactory;
 	Tagionwave -> Registration;
 	TagionFactory -> Tagion;
-	Tagion -> P2P -> Network;
+	Tagion -> ConsensusInterface -> Network;
 	DART -> Replicator;
 	Tagion -> DART -> DARTSync;
     Tagion -> Consensus;
-	Consensus -> Communication;
+	Consensus -> ContractInterface;
 	Consensus -> Transcript;
 	Consensus -> Collector;
 	Transcript -> EpochDump;
 	Consensus -> Monitor;
 	Collector -> TVM;
-	Communication -> TLS;
+	ContractInterface -> TLS;
 }
 ```

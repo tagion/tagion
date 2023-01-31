@@ -22,11 +22,11 @@ sequenceDiagram
     participant Consensus 
     participant Collector
     participant Transcript
-    participant P2P
+    participant ConsensusInterface
     TVM ->> Consensus: Input/Output Archives
     Consensus ->> Collector: Event payload(Contract) 
-    Consensus ->> P2P: Wavefront package
-    P2P ->> Consensus: Wavefront package
+    Consensus ->> ConsensusInterface: Wavefront package
+    ConsensusInterface ->> Consensus: Wavefront package
     Consensus ->> Transcript: Epoch list
 ```
 
