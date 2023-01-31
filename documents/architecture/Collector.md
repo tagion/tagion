@@ -4,7 +4,7 @@ The service is responsible for collecting input data for a Contract and ensuring
 
 Input:
   - A Contract-NC (No Consensus) received from [Contract Interface](/documents/architecture/ContractInterface.md) Service.
-  - Contract-C received from [Consensus](/documents/architecture/Consensus.md) Service.
+  - Contract-C received from [Epoch Creator](/documents/architecture/EpochCreator.md) Service.
 
 Request:
   - Request and retrieve archives from the [DART](/documents/architecture/DART.md) Service.
@@ -26,12 +26,12 @@ The acceptance criteria specification can be found in [Collector_service](/bdd/t
 ```mermaid
 sequenceDiagram
     participant Contract Interface
-    participant Consensus
+    participant Epoch Creator
     participant DART 
     participant Collector
     participant TVM 
     Contract Interface->>Collector: Contract-NC 
-    Consensus->>Collector: Contract-C
+    Epoch Creator->>Collector: Contract-C
     Collector->>DART: Request Archives
     DART->>Collector: Retrieve Archives
     Collector->>TVM: Contract-S(Contract-NC) and Archives
