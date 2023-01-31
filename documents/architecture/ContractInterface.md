@@ -25,8 +25,8 @@ The acceptance criteria specification can be found in [ContractInterface_service
 ```mermaid
 sequenceDiagram
     participant TLS
-    participant ContractInterface
+    participant Contract Interface
     participant Collector
     TLS->>Contract Interface: HiRPC.Receiver
-    ContractInterface->>Collector: Contract
+    Contract Interface->>Collector: Contract
 ```
