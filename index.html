@@ -2,70 +2,117 @@
 
 <!DOCTYPE html>
 <html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta charset="UTF-8" />
+    <link
+      rel="stylesheet"
+      href="//cdn.jsdelivr.net/npm/docsify@4/themes/vue.css"
+    />
+	<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.css">
+  </head>
+  <body>
+	<script src="//cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <div id="app"></div>
+    <!-- <script src='documents/_static/viz.js'></script> -->
+    <!-- <script src='documents/_static/full.render.js'></script>; -->
+    <script>
 
-<head>
-	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<meta charset="UTF-8" />
-	<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify-dark-mode@latest/dist/style.min.css" />
-	<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/themes/vue.css" />
-</head>
+      // const workerURL = 'documents/_static/full.render.js'
+      // let viz = new Viz({ workerURL });
+      // let viz = new Viz();
 
-<body>
-	<div id="app"></div>
-	<script>
-		// Config
-		window.$docsify = {
-			loadSidebar: true,
-			subMaxLevel: 2,
-			plugins: [
-				function editButton(hook, vm) {
-					// The date template pattern
-					$docsify.formatUpdated = '{YYYY}/{MM}/{DD} {HH}:{mm}';
-					hook.beforeEach(function (html) {
-						var url =
-							'https://github.com/tagion/tagion/blob/current-doc/' +
-							vm.route.file;
-						var editHtml = '[📝 EDIT DOCUMENT](' + url + ')\n';
+	  var num = 0;
+	  mermaid.initialize({ startOnLoad: false });
 
-						return (
-							editHtml +
-							html +
-							'\n----\n' +
-							'Last modified ' +
-							editHtml
-						);
-					});
-				},
+      window.$docsify = {
+        // load from _sidebar.md
+        loadSidebar: true,
 
-				function replace(content, selector, config) {
-					var LANG = 'graphviz';
-					var SELECTOR = 'pre[data-lang="' + LANG + '"]';
+        search: 'auto', // default
 
-					var dom = window.Docsify.dom
-					var $ = dom.create('span', content)
+            search: [
+              '/',            // => /README.md
+            ],
 
-					if (!$.querySelectorAll) {
-						return content
-					}
+		  markdown: {
+			  renderer: {
+				  code: function(code, lang) {
+					  if (lang === "mermaid") {
+						  return (
+							  '<div class="mermaid">' + mermaid.render('mermaid-svg-' + num++, code) + "</div>"
+						  );
+					  }
+					  return this.origin.code.apply(this, arguments);
+				  }
+			  }
+		  }
 
-					(dom.findAll($, selector) || []).forEach(function (element) {
+          // plugins: [
+          //     function vizjs(hook, vm) {
 
-						var parent = element.parentNode
-						var planted = dom.create('p', plant(element.innerText, config))
-						if (parent) {
-							planted.dataset.lang = LANG
-							element.parentNode.replaceChild(planted, element)
-						}
-					})
-					return $.innerHTML
-				}
+          //       var LANG = 'graphviz';
+          //       var SELECTOR = 'pre[data-lang="' + LANG + '"]'
 
-			],
-		};
+                // const render = async(code) => {
+                //     let svg = await viz.renderSVGElement(code)
+                //       return `
+                //         <div class='graphviz'>
+                //        ${viz}
+                //        </div>
+                //        `
+                // }
 
-	</script>
-	<script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
-</body>
+                // function replace(content) {
+                //     var dom = window.Docsify.dom
+                //     var $ = dom.create('span', content)
 
+                //     if (!$.querySelectorAll) {
+                //       return content
+                //     }
+
+
+                //       (dom.findAll($, SELECTOR) || [])
+                //           .forEach(function (element) {
+                //         var parent = element.parentNode
+						// var planted = dom.create(`p`, "aaa");
+                //             if (parent) {
+                //                 planted.dataset.lang = LANG
+                //                       console.log(planted)
+                //                 parent.replaceChild(planted, element)
+                //             }
+                //           })
+                //       return $.innerHTML
+                //   }
+
+                // hook.afterEach(function (content) {
+                //       return replace(content)
+                // })
+
+                // hook.afterEach((html, next) => {
+                // var htmlElement = document.createElement("div");
+                // htmlElement.innerHTML = html;
+            
+                //       htmlElement
+                //           .querySelectorAll(SELECTOR)
+                //           .forEach((element) => {
+                //               // const link = element.textContent;
+                //               const previewContainer = document.createElement("div");
+                //               // getPreview(link).then((preview) => {
+                //               previewContainer.innerHTML =  "<p> AAA</p>";
+                //               element.parentNode.replaceChild(previewContainer, element);
+                //               next(htmlElement.innerHTML);
+                //         });
+                //   });
+
+              // });
+            // },
+          // ]
+      };
+
+    </script>
+    <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+    <script src="documents/_static/docsify-viz.js"></script>
+  </body>
 </html>
