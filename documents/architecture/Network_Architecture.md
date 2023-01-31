@@ -27,7 +27,46 @@ A node consist of the following services.
 ## Data Message flow
 This graph show the primary data message flow in the network.
 
-![Dataflow](figs/dataflow.svg)
+```graphviz
+digraph Message_flow {
+rankdir=UD;
+  compound=true;
+  labelangle=35;
+  node [style=filled]
+  node [ shape = "rect"];
+  DART [shape = cylinder];
+  TLS [ style=filled fillcolor=green ];
+  P2P [ style=filled fillcolor=red]
+  ContractInterface [ label="Contract\nInterface"]
+  ConsensusInterface [ label="Consensus\nInterface"]
+  Transcript [shape = note]
+  EpochCreator [label="Epoch\nCreator"]
+  subgraph cluster_1 {
+    peripheries=0;
+    TLS -> ContractInterface [label="HiRPC(contract)" color=green];
+ 	ContractInterface -> Collector [label=contract color=green];
+	Collector -> TVM [label="contract-S" color=green];
+	EpochCreator -> Collector [label=contract color=darkgreen];
+	EpochCreator -> Transcript [label=epoch color=green];
+    TVM -> Transcript [label="archives\nin/out" color=red];
+  };
+  subgraph cluster_3 {
+    peripheries=0;
+	DART -> ConsensusInterface [label="DART(ro)" dir=both color=magenta];
+    ConsensusInterface -> DART [label=recorder]
+    ConsensusInterface -> P2P [label=Document dir=both];
+  };
+  subgraph cluster_2 {
+    peripheries=0;
+	TVM -> EpochCreator [label=contract color=green];
+    DART -> Replicator [label=recorder color=red dir=both];
+  };
+  DART -> Collector [label=recorder color=red];
+  EpochCreator -> ConsensusInterface [label=gossip dir=both color=cyan4];
+  Transcript -> DART [label=recorder color=blue];
+  Replicator -> ConsensusInterface [label=recorder];
+}
+```
 
 ## Tagion Service Hierarchy
 
@@ -38,4 +77,37 @@ The arrow indicates ownership is means of service-A points to service-B. Service
 This means that if Service-B fails service-A is responsible to handle and take-care of the action to restart or other action.
 
 
-![Tagion hierachy](figs/tagion_hierarchy.svg)
+```graphviz
+digraph tagion_hierarchy {
+    rankdir=UD;
+    size="8,5"
+   node [style=filled shape=rect]
+Tagionwave [color=blue]
+TagionFactory [label="Tagion\nFactory"]
+DART [shape = cylinder]
+ContractInterface [label="Contract\nInterface"]
+Transcript [shape = note]
+Collector [shape=rect]
+EpochCreator [label="Epoch\Creator"]
+EpochDump [label="Epoch\nDump"]
+ConsensusInterface [shape=rect label="Consensus\nInterface"]
+LoggerSubscription [label="Logger\nSubscription"]
+TLS [color=green]
+P2P [color=red]
+node [shape = rect];
+	Tagionwave -> Logger -> LoggerSubscription;
+	Tagionwave -> TagionFactory;
+	TagionFactory -> Tagion;
+	Tagion -> ConsensusInterface -> P2P;
+	DART -> Replicator;
+	Tagion -> DART;
+    Tagion -> EpochCreator;
+	EpochCreator -> ContractInterface [href="/documents/architecture/ContractInterface.md"];
+	EpochCreator -> Transcript;
+	EpochCreator -> Collector;
+	Transcript -> EpochDump;
+	EpochCreator -> Monitor;
+	Collector -> TVM;
+	ContractInterface -> TLS;
+}
+```
