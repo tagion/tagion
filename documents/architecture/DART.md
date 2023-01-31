@@ -1,6 +1,6 @@
-# DART Services
+# DART Service
 
-Takes care for DART CRUD commands.
+This service is reponsible for executing data-base instruction and read/write to the physical file system.
 
 Note.
 The DART does not support `update` only `add` and `delete`. 
@@ -11,26 +11,26 @@ The DART database support 4 **DART(crud)** commands.
   - `dartRead` reads a list of archives from a list of fingerprints.
   - `dartModify` adds and deletes a list of archives form a Recorder.
 
-The `dartModify` should only be executed inside Node, either from the transcript or when the nodes starts up in the DART sync process.
+The `dartModify` should only be executed inside a Node, either from the transcript or when the nodes starts up in the DART sync process.
 
 The read-only dart command **DART(ro)** is defined as `dartBullseye`, `dartRim` and `dartRead`.
 
 All archives in the database has a unique hash-value called fingerprint.
 
 Input:
-  - Recorder from the Transcript Service.
-  - Undo-instruction form the Transcript Service.
-  - Recorder rewind from the Replicator
+  - Recorder is received from the [Transcript](/documents/architecture/Transcript.md) Service.
+  - Undo-instruction is received from the [Transcript](/documents/architecture/Transcript.md) Service.
+  - Recorder rewind is received from the [Replicator](/documents/architecture/Replicator.md) Service.
 
 Request:
-  - **DART(ro)** commands from NodeInterface services.
+  - **DART(ro)** commands from the [Node Interface](/documents/architecture/NodeInterface.md)) Service.
 
 Output:
-  - Last Recoder send to the Replicator. 
+  - Last Recoder is sent to the [Replicator](/documents/architecture/Replicator.md) Service. 
 
 
 ### DART Start up
-When a node goes online the DART need to be synchronized with other nodes in the.
+When a node goes online the DART needs to be synchronized with other nodes in the network.
 Before the DART should be synchronized the node should run trough the discovery of the trusted network (This process is not described here)
 
 The DART database should be synchronized before the DART can be used as a consensus database.
@@ -89,9 +89,10 @@ The acceptance criteria specification for the synchronization  process can be fo
 
 ### DART Operation
 
-When the DART success-fully has reach the current bulleyes. The DART is ready to receive epoch records from the Epoch-Creator which will keep the DART in the consensus state as long as the Epoch-Creator.
+When the DART success-fully has reached the current bulleye state then the DART is ready to receive Recorders from the transcript service. That will keep the DART in the consensus state as long as the network produces Epochs and Recorders.
 
-In the case that the Epoch-Creator does not reach epoch-consensus a DART undo command is send to the DART services. This means that the previous Recorder must be undo and this is done by requesting the Recorder from the Replicator and the Recorder is reversed by the `dartModify` command. 
+In the case that an Epoch do not have majority voting on the last bullseye, then the Transcript Service sends a DART undo command to the DART services. This means that the previous Recorder must be undo and this is done by requesting the Recorder from the Replicator and the Recorder is reversed by the `dartModify` command. 
+The bullseye after the Recorder has been executed is written into the next Epoch to ensure the consensus state of the database. In other words, a database state is first final in the next consensus round if all the network participants have agreed on the state. That is the last valid consensus database state, consensus bullseye, in the network.
 
 
 The acceptance criteria specification can be found in [DART Service](

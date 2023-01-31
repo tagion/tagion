@@ -1,6 +1,6 @@
 # Transcript Service
 
-This service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input usage in the same Epoch and sending it to the DART.
+This service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input and output in the same Epoch and sending it to the DART.
 
 Input:
   - Receives an Epoch list contaning ordered events from the [Epoch Creator](/documents/architecture/EpochCreator.md).

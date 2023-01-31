@@ -1,6 +1,6 @@
 # Node Interface Services
 
-This is responsible for handling and routing request from the p2p node network.
+This is responsible for handling and routing requests to and from the p2p node network.
 
 All the package information is in **HiPRC** format.
 

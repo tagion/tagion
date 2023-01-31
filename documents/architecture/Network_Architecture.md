@@ -8,15 +8,15 @@ A node consist of the following services.
 - Main services
 	- [Tagion](/documents/architecture/Tagion.md) is the service which handles the all the services related to the rest of the services (And run the HashGraph).
 	- [Tagion Factory](/documents/architecture/TagionFactory.md) This services takes care of the *mode* in which the network is started.
-	- [TVM](/documents/architecture/TVM.md) ("Tagion Virtual Machine") is responsible for executing the instructions in the contract ensuring the contracts are compliant with Consensus Rules producing outputs. It send new, non consensus, contracts to the Consensus service.
+	- [TVM](/documents/architecture/TVM.md) ("Tagion Virtual Machine") is responsible for executing the instructions in the contract ensuring the contracts are compliant with Consensus Rules producing outputs and sending new contracts to the Epoch Creator.
 	- [DART](/documents/architecture/DART.md "Distributed Archive of Random Transactions") service is reponsible for executing data-base instruction and read/write to the physical file system.
 	- [Replicator](/documents/architecture/Replicator.md) service is responsible for keeping record of the database instructions both to undo, replay and publish the instructions sequantially.
 	- [Contract Interface](/documents/architecture/ContractInterface.md) service is responsible for receiving contracts, ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system. 
 	- [Collector](/documents/architecture/Collector.md) service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
-	- [Transcript](/documents/architecture/Transcript.md) Executes transactions in the epoch produced by the HashGraph and generates a Replicator.
+	- [Transcript](/documents/architecture/Transcript.md) service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input and output in the same Epoch and sending it to the DART.
 	- [Epoch Creator](/documents/architecture/EpochCreator.md) service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch. 
-	- [Epoch Dump](/documents/architecture/EpochDump.md) Write the Epoch to a file as a backup.
-	- [Node Interface](/documents/architecture/NodeInterface.md) is responsible for handling and routing request from the p2p node network.
+	- [Epoch Dump](/documents/architecture/EpochDump.md) Service is responsible for writing the Epoch to a file as a backup.
+	- [Node Interface](/documents/architecture/NodeInterface.md) service is responsible for handling and routing requests to and from the p2p node network.
 
 * Support services
 	- [Logger](/documents/architecture/Logger.md) takes care of handling the logger information for all the services.
