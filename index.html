@@ -15,13 +15,9 @@
   <body>
 	<script src="//cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <div id="app"></div>
-    <!-- <script src='documents/_static/viz.js'></script> -->
-    <!-- <script src='documents/_static/full.render.js'></script>; -->
+    <script src='documents/_static/viz.js'></script>
+    <script src='documents/_static/full.render.js'></script>;
     <script>
-
-      // const workerURL = 'documents/_static/full.render.js'
-      // let viz = new Viz({ workerURL });
-      // let viz = new Viz();
 
 	  var num = 0;
 	  mermaid.initialize({ startOnLoad: false });
@@ -48,67 +44,6 @@
 				  }
 			  }
 		  }
-
-          // plugins: [
-          //     function vizjs(hook, vm) {
-
-          //       var LANG = 'graphviz';
-          //       var SELECTOR = 'pre[data-lang="' + LANG + '"]'
-
-                // const render = async(code) => {
-                //     let svg = await viz.renderSVGElement(code)
-                //       return `
-                //         <div class='graphviz'>
-                //        ${viz}
-                //        </div>
-                //        `
-                // }
-
-                // function replace(content) {
-                //     var dom = window.Docsify.dom
-                //     var $ = dom.create('span', content)
-
-                //     if (!$.querySelectorAll) {
-                //       return content
-                //     }
-
-
-                //       (dom.findAll($, SELECTOR) || [])
-                //           .forEach(function (element) {
-                //         var parent = element.parentNode
-						// var planted = dom.create(`p`, "aaa");
-                //             if (parent) {
-                //                 planted.dataset.lang = LANG
-                //                       console.log(planted)
-                //                 parent.replaceChild(planted, element)
-                //             }
-                //           })
-                //       return $.innerHTML
-                //   }
-
-                // hook.afterEach(function (content) {
-                //       return replace(content)
-                // })
-
-                // hook.afterEach((html, next) => {
-                // var htmlElement = document.createElement("div");
-                // htmlElement.innerHTML = html;
-            
-                //       htmlElement
-                //           .querySelectorAll(SELECTOR)
-                //           .forEach((element) => {
-                //               // const link = element.textContent;
-                //               const previewContainer = document.createElement("div");
-                //               // getPreview(link).then((preview) => {
-                //               previewContainer.innerHTML =  "<p> AAA</p>";
-                //               element.parentNode.replaceChild(previewContainer, element);
-                //               next(htmlElement.innerHTML);
-                //         });
-                //   });
-
-              // });
-            // },
-          // ]
       };
 
     </script>
