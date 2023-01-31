@@ -15,12 +15,12 @@ A node consist of the following services.
 	- [Collector](/documents/architecture/Collector.md) service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
 	- [Transcript](/documents/architecture/Transcript.md) Executes transactions in the epoch produced by the HashGraph and generates a Replicator.
 	- [Consensus](/documents/architecture/Consensus.md) service ensures asynchronous byzantine fault-tolerant consensus with Hashgraph producing an ordered output, an Epoch. 
-	- [EpochDump](/documents/architecture/EpochDump.md) Write the Epoch to a file as a backup.
-	- [ConsensusInterface](/documents/architecture/ConsensusInterface.md) is used to connect the p2p network.
+	- [Epoch Dump](/documents/architecture/EpochDump.md) Write the Epoch to a file as a backup.
+	- [Consensus Interface](/documents/architecture/ConsensusInterface.md) is used to connect the p2p network.
 
 * Support services
 	- [Logger](/documents/architecture/Logger.md) takes care of handling the logger information for all the services.
-	- [LoggerSubscription](/document/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
+	- [Logger Subscription](/document/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
 	- [Monitor](/documents/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
 
 
@@ -50,16 +50,15 @@ rankdir=UD;
 	EpochCreator -> Transcript [label=epoch color=green];
     TVM -> Transcript [label="archives\nin/out" color=red];
   };
-  subgraph cluster_3 {
-    peripheries=0;
-	DART -> ConsensusInterface [label="DART(ro)" dir=both color=magenta];
-    ConsensusInterface -> DART [label=recorder]
-    ConsensusInterface -> P2P [label=Document dir=both];
-  };
-  subgraph cluster_2 {
+ subgraph cluster_2 {
     peripheries=0;
 	TVM -> EpochCreator [label=contract color=green];
     DART -> Replicator [label=recorder color=red dir=both];
+  };
+  subgraph cluster_3 {
+    peripheries=0;
+	DART -> ConsensusInterface [label="DART(ro)\nrecorder" dir=both color=magenta];
+    ConsensusInterface -> P2P [label=Document dir=both];
   };
   DART -> Collector [label=recorder color=red];
   EpochCreator -> ConsensusInterface [label=gossip dir=both color=cyan4];
@@ -88,7 +87,7 @@ DART [shape = cylinder]
 ContractInterface [label="Contract\nInterface"]
 Transcript [shape = note]
 Collector [shape=rect]
-EpochCreator [label="Epoch\Creator"]
+EpochCreator [label="Epoch\nCreator"]
 EpochDump [label="Epoch\nDump"]
 ConsensusInterface [shape=rect label="Consensus\nInterface"]
 LoggerSubscription [label="Logger\nSubscription"]

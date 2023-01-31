@@ -17,6 +17,52 @@ The read-only dart command **DART(ro)** is defined as `dartBullseye`, `dartRim` 
 
 All archives in the database has a unique hash-value called fingerprint.
 
+In the flowing state 
+
+```graphviz
+digraph G {
+  node [fontname = "Handlee"];
+  edge [fontname = "Handlee"];
+
+  start [
+    label = "Start";
+    shape = rect;
+  ];
+  connect [
+    label = "Connect\ntrusted\nnetwork";
+    shape = rect;
+  ];
+  sync [
+    label = "Sync\nDART";
+    shape = rect;
+  ];
+   win [
+    label = "You win!";
+    shape = oval;
+  ];
+  insync [
+    label = "Bullseye\nok?";
+    shape = diamond;
+  ];
+  point [
+    label = "Continue\nDART";
+    shape = rect;
+  ];
+
+  start -> connect;
+  connect -> sync;
+  sync -> insync;
+  point:s -> insync:s;
+  win -> insync [ label = "Yes"; dir=back ];
+  insync -> point [ label = "No" ];
+  {
+    rank=same;
+    insync; point; win;
+  }
+}
+```
+
+
 Input:
   - Recorder from the Transcript Service.
   - Recorder undo-instruction form the Transcript Service.
@@ -38,7 +84,6 @@ For sample code see the unittest in the DART module.
 DART also includes a journal-files which can be used in case of a crash.
 
 The DARTInterface should start to synchronize the DART by subscribing to the produced Recorders from the trusted and after the node should start to synchronize the DART by sectors from a number of trusted nodes.
-
 
 
 ```mermaid
