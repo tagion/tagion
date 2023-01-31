@@ -25,7 +25,7 @@ sequenceDiagram
     participant Consensus Interface
     TVM ->> Epoch Creator: Input/Draft Output Archives
     Epoch Creator ->> Collector: Event payload(Contract) 
-    Consensus ->> Consensus Interface: Wavefront package
+    Epoch Creator ->> Consensus Interface: Wavefront package
     Consensus Interface ->> Epoch Creator: Wavefront package
     Consensus ->> Transcript: Epoch list
 ```
