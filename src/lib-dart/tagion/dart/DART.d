@@ -29,14 +29,11 @@ import tagion.basic.Basic : EnumText;
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.Keywords : isValid;
 
-//import tagion.Base : Check;
 import tagion.basic.TagionExceptions : Check;
 import tagion.dart.BlockFile : BlockFile;
 import tagion.dart.Recorder : RecordFactory, Archive;
 
 alias hex = toHexString;
-
-//import tagion.Debug;
 
 enum SECTOR_MAX_SIZE = 1 << (ushort.sizeof * 8);
 @safe
@@ -265,11 +262,6 @@ class DART : DARTFile {
             auto params = new HiBON;
             auto params_fingerprints = new HiBON;
             params_fingerprints = fingerprints.filter!(b => b.length !is 0);
-            // foreach (i, b; fingerprints) {
-            //     if (b.length !is 0) {
-            //         params_fingerprints[i] = b;
-            //     }
-            // }
             params[Params.fingerprints] = params_fingerprints;
             return hirpc.dartRead(params, id);
         }
@@ -362,7 +354,6 @@ class DART : DARTFile {
         assert(received.method.name == __FUNCTION_NAME__);
     }
     do {
-        // HiRPC.check_element!Document(received.params, Params.fingerprints);
         const doc_fingerprints = received.method.params[Params.fingerprints].get!(Document);
         auto fingerprints = doc_fingerprints.range!(Buffer[]);
         const recorder = loads(fingerprints, Archive.Type.ADD);
@@ -437,8 +428,6 @@ class DART : DARTFile {
                     auto super_recorder = recorder;
                     super_recorder.add(doc);
                     return hirpc.result(received, super_recorder);
-
-                    //                    hibon_params[Params.recorder]=super_recorder.toDoc;
                 }
             }
         }
@@ -490,8 +479,6 @@ class DART : DARTFile {
     }
     do {
         HiRPC.check(!read_only, "The DART is read only");
-        //HiRPC.check_element!Document(received.params, Params.recorder);
-        //        scope recorder_doc=received.method.params[Params.recorder].get!Document;
         const recorder = manufactor.recorder(received.method.params);
         immutable bullseye = modify(recorder);
         auto hibon_params = new HiBON;
@@ -571,9 +558,6 @@ class DART : DARTFile {
         enum indexName = GetLabel!(index).name;
         enum recorderName = GetLabel!(recorder).name;
         this(RecordFactory manufactor, const Document doc) {
-
-            
-
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!uint;
             const recorder_doc = doc[recorderName].get!Document;
@@ -588,7 +572,6 @@ class DART : DARTFile {
         mixin HiBONRecord!"{}";
     }
 
-    //            import std.stdio;
     @safe
     static abstract class StdSynchronizer : Synchronizer {
 
@@ -752,7 +735,6 @@ class DART : DARTFile {
                         immutable key = cast(ubyte) k;
                         immutable sub_rims = Rims(params.rims ~ key);
                         immutable local_print = local_branches.fingerprint(key);
-                        // auto foreign_archive = (foreign_print in set_of_archives);
                         auto foreign_archive = foreign_recoder.find(foreign_print);
                         if (foreign_archive) {
                             if (local_print != foreign_print) {
@@ -778,7 +760,6 @@ class DART : DARTFile {
                     }
                 }
             }
-            //            scope local_branches=branches(root_rims);
             iterate(root_rims);
             sync.finish;
         }
@@ -1304,7 +1285,6 @@ class DART : DARTFile {
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
-                    // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
                         (() @trusted { dart_A_synchronizer.call; })();
                     }
@@ -1357,7 +1337,6 @@ class DART : DARTFile {
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
-                    // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
                         (() @trusted { dart_A_synchronizer.call; })();
                     }

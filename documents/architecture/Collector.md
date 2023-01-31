@@ -3,35 +3,38 @@
 The service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
 
 Input:
-  - A Contract-NC (No Consensus) received from [Communication](/documents/architecture/Communication.md) Service.
+  - A Contract-NC (No Consensus) received from [Contract Interface](/documents/architecture/ContractInterface.md) Service.
   - Contract-C received from [Consensus](/documents/architecture/Consensus.md) Service.
 
 Request:
   - Request and retrieve archives from the [DART](/documents/architecture/DART.md) Service.
 
 Output:
-  - A Contract-S (A signed Contract) and archives sent to [TVM](/documents/architecture/TVM.md). 
+  - A Contract-S (A Signed Contract) and archives sent to [TVM](/documents/architecture/TVM.md). 
+  - A Contract-SC (A Signed Consensus Contract) and archives sent to [TVM](/documents/architecture/TVM.md). 
 
  The service does the following:
 
   - Does contract format validation on the Contract-C.
   - Collects the contract input data, DART archieves, from the DART as specified.
   - Ensures all input data is valid and signed correctly.
-  - Sends a Contract-SD (Signed Data) to the TVM.
+  - If input is a Contract-NC it sends a Contract-S and archives to the TVM.
+  - If input is a Contract-C it sends a Contract-SC and archives to the TVM.
 
 The acceptance criteria specification can be found in [Collector_service](/bdd/tagion/testbench/services/Collector_service.md).
 
 ```mermaid
 sequenceDiagram
-    participant Communication
+    participant Contract Interface
     participant Consensus
     participant DART 
     participant Collector
     participant TVM 
-    Communication->>Collector: Contract-NC 
+    Contract Interface->>Collector: Contract-NC 
     Consensus->>Collector: Contract-C
     Collector->>DART: Request Archives
     DART->>Collector: Retrieve Archives
-    Collector->>TVM: Contract-S and Archives
+    Collector->>TVM: Contract-S(Contract-NC) and Archives
+    Collector->>TVM: Contract-SC(Contract-C) and Archives
 
 ```
