@@ -3,7 +3,7 @@
 The service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
 
 Input:
-  - A Contract-NC (No Consensus) received from [Communication](/documents/architecture/Communication.md) Service.
+  - A Contract-NC (No Consensus) received from [Contract Interface](/documents/architecture/ContractInterface.md) Service.
   - Contract-C received from [Consensus](/documents/architecture/Consensus.md) Service.
 
 Request:
@@ -23,12 +23,12 @@ The acceptance criteria specification can be found in [Collector_service](/bdd/t
 
 ```mermaid
 sequenceDiagram
-    participant Communication
+    participant Contract Interface
     participant Consensus
     participant DART 
     participant Collector
     participant TVM 
-    Communication->>Collector: Contract-NC 
+    Contract Interface->>Collector: Contract-NC 
     Consensus->>Collector: Contract-C
     Collector->>DART: Request Archives
     DART->>Collector: Retrieve Archives
