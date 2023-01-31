@@ -8,14 +8,14 @@ DART [shape = cylinder]
 ContractInterface [shape = signature]
 Transcript [shape = note]
 Collector [shape=rect]
-Consensus [label="Consensus\nHashGraph"]
-TLS [color=green]
+Consensus [label="EpochCreator"]
+TLS [shape=rect color=green]
 node [shape = rect];
 	Tagionwave -> Logger -> LoggerSubscription;
 	Tagionwave -> TagionFactory;
 	Tagionwave -> Registration;
 	TagionFactory -> Tagion;
-	Tagion -> ConsensusInterface -> Network;
+	Tagion -> ConsensusInterface -> P2P;
 	DART -> Replicator;
 	Tagion -> DART -> DARTSync;
     Tagion -> Consensus;

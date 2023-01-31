@@ -7,10 +7,10 @@ rankdir=UD;
   node [ shape = "rect"];
   DART [shape = cylinder];
   TLS [ style=filled fillcolor=green ];
-  Network [ style=filled fillcolor=red]
+  P2P [ style=filled fillcolor=red]
   ContractInterface [shape = signature]
   Transcript [shape = note]
-  Consensus [label="Consensus\nHashgraph"]
+  Consensus [label="EpochCreator"]
   subgraph cluster_1 {
     peripheries=0;
     TLS -> ContractInterface [label="HiRPC(contract)" color=green];
@@ -28,7 +28,7 @@ rankdir=UD;
   subgraph cluster_3 {
     peripheries=0;
 	DARTSync -> ConsensusInterface [label="DART(ro)" dir=both color=magenta];
-	ConsensusInterface -> Network [label=Document dir=both];
+	ConsensusInterface -> P2P [label=Document dir=both];
   };
   DARTSync -> DART [label="DART(crud)" color=magenta];
   DART -> Collector [label=recorder color=red];
