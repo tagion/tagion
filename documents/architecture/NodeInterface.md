@@ -1,12 +1,12 @@
 # Node Interface Services
 
-This is responsible for handling and routing requests to and from the p2p node network.
+This service is responsible for handling and routing requests to and from the p2p node network.
 
 All the package information is in **HiPRC** format.
 
 The Node interface services relays the HiRPC between three  services (*EpochCreator, Replicator, DART*) depended on the HiRPC(Method) or the services deriven key.
 
-All HiRPC should be signed and contain pubkey.
+All HiRPC should be signed and contain a pubkey.
 
 The acceptance criteria specification can be found in [Node_Interface Sync](
 /bdd/tagion/testbench/services/NodeInterface.md)
