@@ -27,6 +27,6 @@ sequenceDiagram
     participant TLS
     participant ContractInterface
     participant Collector
-    TLS->>ContractInterface: HiRPC.Receiver
+    TLS->>Contract Interface: HiRPC.Receiver
     ContractInterface->>Collector: Contract
 ```
