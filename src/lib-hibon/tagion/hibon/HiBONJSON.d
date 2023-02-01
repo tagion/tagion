@@ -30,10 +30,8 @@ import tagion.utils.StdTime;
 /**
  * Exception type used by tagion.hibon.HiBON module
  */
-@safe class HiBON2JSONException : HiBONException
-{
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
-    {
+@safe class HiBON2JSONException : HiBONException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, file, line);
     }
 }
@@ -42,13 +40,10 @@ private alias check = Check!HiBON2JSONException;
 
 enum NotSupported = "none";
 
-protected Type[string] generateLabelMap(const(string[Type]) typemap)
-{
+protected Type[string] generateLabelMap(const(string[Type]) typemap) {
     Type[string] result;
-    foreach (e, label; typemap)
-    {
-        if (label != NotSupported)
-        {
+    foreach (e, label; typemap) {
+        if (label != NotSupported) {
             result[label] = e;
         }
     }
@@ -85,77 +80,62 @@ enum typeMap=[
     ];
 // dfmt on
 
-static unittest
-{
-    static foreach (E; EnumMembers!Type)
-    {
+static unittest {
+    static foreach (E; EnumMembers!Type) {
         assert(E in typeMap, format("TypeMap %s is not defined", E));
     }
 }
 //    generateTypeMap;
 enum labelMap = generateLabelMap(typeMap);
 
-enum
-{
+enum {
     TYPE = 0,
     VALUE = 1,
 }
 
-@safe JSONValue toJSON(Document doc)
-{
+@safe JSONValue toJSON(Document doc) {
     return toJSONT!true(doc);
 }
 
-@safe JSONValue toJSON(T)(T value) if (isHiBONRecord!T)
-{
+@safe JSONValue toJSON(T)(T value) if (isHiBONRecord!T) {
     return toJSONT!true(value.toDoc);
 }
 
-@safe string toPretty(T)(T value)
-{
-    static if (is(T : const(HiBON)))
-    {
+@safe string toPretty(T)(T value) {
+    static if (is(T : const(HiBON))) {
         const doc = Document(value);
         return doc.toJSON.toPrettyString;
     }
-    else
-    {
+    else {
         return value.toJSON.toPrettyString;
     }
 }
 
-mixin template JSONString()
-{
+mixin template JSONString() {
     import std.format;
     import std.conv : to;
 
     @trusted void toString(scope void delegate(scope const(char)[]) @system sink,
-        const FormatSpec!char fmt) const
-    {
+    const FormatSpec!char fmt) const {
         alias ThisT = typeof(this);
         import tagion.hibon.Document;
         import tagion.hibon.HiBON;
         import tagion.hibon.HiBONJSON;
         import tagion.hibon.HiBONRecord;
 
-        static if (isHiBONRecord!ThisT)
-        {
+        static if (isHiBONRecord!ThisT) {
             const doc = this.toDoc;
         }
-        else static if (is(ThisT : const(Document)))
-        {
+        else static if (is(ThisT : const(Document))) {
             const doc = this;
         }
-        else static if (is(ThisT : const(HiBON)))
-        {
+        else static if (is(ThisT : const(HiBON))) {
             const doc = Document(this);
         }
-        else
-        {
+        else {
             static assert(0, format("type %s is not supported for JSONString", ThisT.stringof));
         }
-        switch (fmt.spec)
-        {
+        switch (fmt.spec) {
         case 'j':
             // Normal stringefied JSON
             sink(doc.toJSON.toString);
@@ -173,67 +153,49 @@ mixin template JSONString()
     }
 }
 
-@safe struct toJSONT(bool HASHSAFE)
-{
-    @trusted static JSONValue opCall(const Document doc)
-    {
+@safe struct toJSONT(bool HASHSAFE) {
+    @trusted static JSONValue opCall(const Document doc) {
         JSONValue result;
         immutable isarray = doc.isArray && !doc.empty;
-        if (isarray)
-        {
+        if (isarray) {
             result.array = null;
             result.array.length = doc.length;
         }
-        else
-        {
+        else {
             result.object = null;
         }
-        foreach (e; doc[])
-        {
-            with (Type)
-            {
+        foreach (e; doc[]) {
+            with (Type) {
             CaseType:
-                switch (e.type)
-                {
-                    static foreach (E; EnumMembers!Type)
-                    {
-                        static if (isHiBONType(E))
-                        {
+                switch (e.type) {
+                    static foreach (E; EnumMembers!Type) {
+                        static if (isHiBONType(E)) {
                 case E:
-                            static if (E is DOCUMENT)
-                            {
+                            static if (E is DOCUMENT) {
                                 const sub_doc = e.by!E;
                                 auto doc_element = toJSONT(sub_doc);
-                                if (isarray)
-                                {
+                                if (isarray) {
                                     result.array[e.index] = JSONValue(doc_element);
                                 }
-                                else
-                                {
+                                else {
                                     result[e.key] = doc_element;
                                 }
                             }
-                            else static if ((E is BOOLEAN) || (E is STRING))
-                            {
-                                if (isarray)
-                                {
+                            else static if ((E is BOOLEAN) || (E is STRING)) {
+                                if (isarray) {
                                     result.array[e.index] = JSONValue(e.by!E);
                                 }
-                                else
-                                {
+                                else {
                                     result[e.key] = JSONValue(e.by!E);
                                 }
                             }
-                            else
-                            {
+                            else {
                                 auto doc_element = new JSONValue[2];
                                 doc_element[TYPE] = JSONValue(typeMap[E]);
-                                if (isarray)
-                                {
+                                if (isarray) {
                                     result.array[e.index] = toJSONType(e);
                                 }
-                                else
-                                {
+                                else {
                                     result[e.key] = toJSONType(e);
                                 }
                             }
@@ -252,56 +214,42 @@ mixin template JSONString()
         return result;
     }
 
-    static JSONValue[] toJSONType(Document.Element e)
-    {
+    static JSONValue[] toJSONType(Document.Element e) {
         auto doc_element = new JSONValue[2];
         doc_element[TYPE] = JSONValue(typeMap[e.type]);
-        with (Type)
-        {
+        with (Type) {
         TypeCase:
-            switch (e.type)
-            {
-                static foreach (E; EnumMembers!Type)
-                {
+            switch (e.type) {
+                static foreach (E; EnumMembers!Type) {
             case E:
-                    static if (E is BOOLEAN)
-                    {
+                    static if (E is BOOLEAN) {
                         doc_element[VALUE] = e.by!E;
                     }
-                    else static if (E is INT32 || E is UINT32)
-                    {
+                    else static if (E is INT32 || E is UINT32) {
 
                         doc_element[VALUE] = e.by!(E);
                     }
-                    else static if (E is INT64 || E is UINT64)
-                    {
+                    else static if (E is INT64 || E is UINT64) {
                         doc_element[VALUE] = format("0x%x", e.by!(E));
                     }
-                    else static if ((E is HASHDOC) || (E is BIGINT))
-                    {
+                    else static if ((E is HASHDOC) || (E is BIGINT)) {
                         doc_element[VALUE] = encodeBase64(e.by!(E).serialize);
                     }
-                    else static if (E is BINARY)
-                    {
+                    else static if (E is BINARY) {
                         doc_element[VALUE] = encodeBase64(e.by!(E));
                     }
-                    else static if (E is FLOAT32 || E is FLOAT64)
-                    {
-                        static if (HASHSAFE)
-                        {
+                    else static if (E is FLOAT32 || E is FLOAT64) {
+                        static if (HASHSAFE) {
                             doc_element[VALUE] = format("%a", e.by!E);
                         }
-                        else
-                        {
+                        else {
                             doc_element[VALUE] = e.by!E;
                         }
                     }
-                    else static if (E is TIME)
-                    {
+                    else static if (E is TIME) {
                         doc_element[VALUE] = format("0x%x", e.by!(E));
                     }
-                    else
-                    {
+                    else {
                         goto default;
                     }
                     break TypeCase;
@@ -314,17 +262,13 @@ mixin template JSONString()
     }
 }
 
-@safe HiBON toHiBON(scope const JSONValue json)
-{
-    static const(T) get(T)(scope JSONValue jvalue)
-    {
+@safe HiBON toHiBON(scope const JSONValue json) {
+    static const(T) get(T)(scope JSONValue jvalue) {
         alias UnqualT = Unqual!T;
-        static if (is(UnqualT == bool))
-        {
+        static if (is(UnqualT == bool)) {
             return jvalue.boolean;
         }
-        else static if (is(UnqualT == uint))
-        {
+        else static if (is(UnqualT == uint)) {
             long x = jvalue.integer;
 
             
@@ -332,102 +276,79 @@ mixin template JSONString()
             .check((x > 0) && (x <= uint.max), format("%s not a u32", jvalue));
             return cast(uint) x;
         }
-        else static if (is(UnqualT == int))
-        {
+        else static if (is(UnqualT == int)) {
             return jvalue.integer.to!int;
         }
-        else static if (is(UnqualT == long) || is(UnqualT == ulong))
-        {
+        else static if (is(UnqualT == long) || is(UnqualT == ulong)) {
             const text = jvalue.str;
             ulong result;
-            if (isHexPrefix(text))
-            {
+            if (isHexPrefix(text)) {
                 result = text[hex_prefix.length .. $].to!ulong(16);
             }
-            else
-            {
+            else {
                 result = text.to!UnqualT;
             }
-            static if (is(UnqualT == long))
-            {
+            static if (is(UnqualT == long)) {
                 return cast(long) result;
             }
-            else
-            {
+            else {
                 return result;
             }
         }
-        else static if (is(UnqualT == string))
-        {
+        else static if (is(UnqualT == string)) {
             return jvalue.str;
         }
-        else static if (is(T == immutable(ubyte)[]))
-        {
+        else static if (is(T == immutable(ubyte)[])) {
             return decode(jvalue.str);
         }
-        else static if (is(T : const(double)))
-        {
-            if (jvalue.type is JSONType.float_)
-            {
+        else static if (is(T : const(double))) {
+            if (jvalue.type is JSONType.float_) {
                 return jvalue.floating.to!UnqualT;
             }
-            else
-            {
+            else {
                 return jvalue.str.to!UnqualT;
             }
         }
-        else static if (is(T : U[], U))
-        {
+        else static if (is(T : U[], U)) {
             scope array = new U[jvalue.array.length];
-            foreach (i, ref a; jvalue)
-            {
+            foreach (i, ref a; jvalue) {
                 array[i] = a.get!U;
             }
             return array.idup;
         }
-        else static if (is(T : const BigNumber))
-        {
+        else static if (is(T : const BigNumber)) {
             const text = jvalue.str;
-            if (isBase64Prefix(text) || isHexPrefix(text))
-            {
+            if (isBase64Prefix(text) || isHexPrefix(text)) {
                 const data = HiBONdecode(text);
                 return BigNumber(data);
             }
             return BigNumber(jvalue.str);
         }
-        else static if (is(T : const DataBlock))
-        {
+        else static if (is(T : const DataBlock)) {
             const buffer = HiBONdecode(jvalue.str);
             return T(buffer);
         }
-        else static if (is(T : const sdt_t))
-        {
+        else static if (is(T : const sdt_t)) {
             return sdt_t(get!long(jvalue));
         }
-        else
-        {
+        else {
             static assert(0, format("Type %s is not supported", T.stringof));
         }
         assert(0);
     }
 
     //static HiBON Obj(scope JSONValue json);
-    static HiBON JSON(Key)(scope JSONValue json)
-    {
-        static bool set(ref HiBON sub_result, Key key, scope JSONValue jvalue)
-        {
-            if (jvalue.type is JSONType.string)
-            {
+    static HiBON JSON(Key)(scope JSONValue json) {
+        static bool set(ref HiBON sub_result, Key key, scope JSONValue jvalue) {
+            if (jvalue.type is JSONType.string) {
                 sub_result[key] = jvalue.str;
                 return true;
             }
-            else if ((jvalue.type is JSONType.true_) || (jvalue.type is JSONType.false_))
-            {
+            else if ((jvalue.type is JSONType.true_) || (jvalue.type is JSONType.false_)) {
                 sub_result[key] = jvalue.boolean;
                 return true;
             }
-            if (jvalue.array[TYPE].type !is JSONType.STRING)
-            {
+            if (jvalue.array[TYPE].type !is JSONType.STRING) {
                 return false;
             }
             immutable label = jvalue.array[TYPE].str;
@@ -437,39 +358,30 @@ mixin template JSONString()
             .check((label in labelMap) !is null, format("HiBON type name '%s' is not valid", label));
             immutable type = labelMap[label];
 
-            with (Type)
-            {
-                final switch (type)
-                {
-                    static foreach (E; EnumMembers!Type)
-                    {
+            with (Type) {
+                final switch (type) {
+                    static foreach (E; EnumMembers!Type) {
                 case E:
-                        static if (isHiBONType(E))
-                        {
+                        static if (isHiBONType(E)) {
                             alias T = HiBON.Value.TypeT!E;
                             scope value = jvalue.array[VALUE];
 
-                            static if (E is DOCUMENT)
-                            {
+                            static if (E is DOCUMENT) {
                                 return false;
                             }
-                            else
-                            {
-                                static if (E is BINARY)
-                                {
+                            else {
+                                static if (E is BINARY) {
                                     import std.uni : toLower;
 
                                     sub_result[key] = HiBONdecode(value.str).idup; //str[HEX_PREFIX.length..$]);
                                 }
-                                else
-                                {
+                                else {
                                     sub_result[key] = get!T(value);
                                 }
                                 return true;
                             }
                         }
-                        else
-                        {
+                        else {
                             assert(0, format("Unsupported type %s for member %s", E, key));
                         }
                     }
@@ -479,12 +391,9 @@ mixin template JSONString()
         }
 
         HiBON result = new HiBON;
-        foreach (Key key, ref jvalue; json)
-        {
-            with (JSONType)
-            {
-                final switch (jvalue.type)
-                {
+        foreach (Key key, ref jvalue; json) {
+            with (JSONType) {
+                final switch (jvalue.type) {
                 case null_:
 
                     
@@ -504,8 +413,7 @@ mixin template JSONString()
                     result[key] = jvalue.floating;
                     break;
                 case array:
-                    if (!set(result, key, jvalue))
-                    {
+                    if (!set(result, key, jvalue)) {
                         result[key] = Obj(jvalue);
                     }
                     break;
@@ -524,14 +432,11 @@ mixin template JSONString()
         return result;
     }
 
-    @trusted static HiBON Obj(scope JSONValue json)
-    {
-        if (json.type is JSONType.ARRAY)
-        {
+    @trusted static HiBON Obj(scope JSONValue json) {
+        if (json.type is JSONType.ARRAY) {
             return JSON!size_t(json);
         }
-        else if (json.type is JSONType.OBJECT)
-        {
+        else if (json.type is JSONType.OBJECT) {
             return JSON!string(json);
         }
 
@@ -545,17 +450,16 @@ mixin template JSONString()
     return Obj(json);
 }
 
-@safe unittest
-{
+@safe unittest {
     //    import std.stdio;
     import tagion.hibon.HiBON : HiBON;
     import std.typecons : Tuple;
 
     alias Tabel = Tuple!(float, Type.FLOAT32.stringof, double,
-        Type.FLOAT64.stringof, bool, Type.BOOLEAN.stringof, int,
-        Type.INT32.stringof, long, Type.INT64.stringof, uint,
-        Type.UINT32.stringof, ulong, Type.UINT64.stringof, BigNumber,
-        Type.BIGINT.stringof, sdt_t, Type.TIME.stringof);
+            Type.FLOAT64.stringof, bool, Type.BOOLEAN.stringof, int,
+            Type.INT32.stringof, long, Type.INT64.stringof, uint,
+            Type.UINT32.stringof, ulong, Type.UINT64.stringof, BigNumber,
+            Type.BIGINT.stringof, sdt_t, Type.TIME.stringof);
 
     Tabel test_tabel;
     test_tabel.FLOAT32 = 1.23;
@@ -569,7 +473,7 @@ mixin template JSONString()
     test_tabel.TIME = sdt_t(1001);
 
     alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof, string,
-        Type.STRING.stringof, DataBlock, Type.HASHDOC.stringof, // Credential,          Type.CREDENTIAL.stringof,
+    Type.STRING.stringof, DataBlock, Type.HASHDOC.stringof, // Credential,          Type.CREDENTIAL.stringof,
         // CryptDoc,            Type.CRYPTDOC.stringof,
 
         
@@ -590,15 +494,13 @@ mixin template JSONString()
     { // Test sample 1 HiBON Objects
         auto hibon = new HiBON;
         {
-            foreach (i, t; test_tabel)
-            {
+            foreach (i, t; test_tabel) {
                 enum name = test_tabel.fieldNames[i];
                 hibon[name] = t;
             }
             auto sub_hibon = new HiBON;
             hibon[sub_hibon.stringof] = sub_hibon;
-            foreach (i, t; test_tabel_array)
-            {
+            foreach (i, t; test_tabel_array) {
                 enum name = test_tabel_array.fieldNames[i];
                 sub_hibon[name] = t;
             }
@@ -621,7 +523,7 @@ mixin template JSONString()
         const parse_doc = Document(h);
 
         pragma(msg, "fixme(cbr): For some unknown reason toString (mixin JSONString)",
-            " is not @safe for Document and HiBON");
+                " is not @safe for Document and HiBON");
 
         // (() @trusted {
         //         // assert(doc.toJSON.toString == format("%j", doc));
@@ -637,15 +539,13 @@ mixin template JSONString()
     { // Test sample 2 HiBON Array and Object
         auto hibon = new HiBON;
         {
-            foreach (i, t; test_tabel)
-            {
+            foreach (i, t; test_tabel) {
                 enum name = test_tabel.fieldNames[i];
                 hibon[i] = t;
             }
             auto sub_hibon = new HiBON;
             hibon[sub_hibon.stringof] = sub_hibon;
-            foreach (i, t; test_tabel_array)
-            {
+            foreach (i, t; test_tabel_array) {
                 enum name = test_tabel_array.fieldNames[i];
                 sub_hibon[i] = t;
             }
@@ -682,8 +582,7 @@ mixin template JSONString()
     { // Test sample 3 HiBON Array and Object
         auto hibon = new HiBON;
         {
-            foreach (i, t; test_tabel)
-            {
+            foreach (i, t; test_tabel) {
                 enum name = test_tabel.fieldNames[i];
                 hibon[i] = t;
             }
@@ -691,8 +590,7 @@ mixin template JSONString()
             // Sub hibon is added to the last index of the hibon
             // Which result keep hibon as an array
             hibon[hibon.length] = sub_hibon;
-            foreach (i, t; test_tabel_array)
-            {
+            foreach (i, t; test_tabel_array) {
                 enum name = test_tabel_array.fieldNames[i];
                 sub_hibon[i] = t;
             }

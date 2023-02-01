@@ -18,8 +18,7 @@ alias RecorderChain = HashChain!(RecorderChainBlock);
 alias RecorderChainStorage = HashChainStorage!RecorderChainBlock;
 alias RecorderChainFileStorage = HashChainFileStorage!RecorderChainBlock;
 
-unittest
-{
+unittest {
     import std.file;
     import std.path;
     import std.range : empty;
@@ -45,8 +44,7 @@ unittest
 
     net.generateKeyPair("very secret password");
 
-    StandardBill[] makeBills(uint epoch)
-    {
+    StandardBill[] makeBills(uint epoch) {
         SecureNet secure_net = new StdSecureNet;
         {
             secure_net.generateKeyPair("secure_net secret password");
@@ -76,8 +74,7 @@ unittest
 
         // In loop fill DART and add blocks
         enum blocks_count = 10;
-        foreach (i; 0 .. blocks_count)
-        {
+        foreach (i; 0 .. blocks_count) {
             const bills_recorder = factory.recorder(makeBills(i));
             dart.modify(bills_recorder, Add);
 
@@ -91,10 +88,10 @@ unittest
         // Find last block with actual DART bullseye
         {
             auto block_last_bullseye = recorder_chain.storage.find(
-                (b) => b.bullseye == dart.fingerprint);
+                    (b) => b.bullseye == dart.fingerprint);
             assert(block_last_bullseye !is null);
             assert(
-                block_last_bullseye.toDoc.serialize == recorder_chain.getLastBlock.toDoc.serialize);
+                    block_last_bullseye.toDoc.serialize == recorder_chain.getLastBlock.toDoc.serialize);
         }
 
         // Create new empty DART for recovery
@@ -139,8 +136,7 @@ unittest
 
         // In loop fill DART and add blocks
         enum blocks_count = 10;
-        foreach (i; 0 .. blocks_count)
-        {
+        foreach (i; 0 .. blocks_count) {
             const bills_recorder = factory.recorder(makeBills(i));
             dart.modify(bills_recorder, Add);
 
@@ -154,10 +150,10 @@ unittest
         // Find last block with actual DART bullseye
         {
             auto block_last_bullseye = recorder_chain.storage.find(
-                (b) => b.bullseye == dart.fingerprint);
+                    (b) => b.bullseye == dart.fingerprint);
             assert(block_last_bullseye !is null);
             assert(
-                block_last_bullseye.toDoc.serialize == recorder_chain.getLastBlock.toDoc.serialize);
+                    block_last_bullseye.toDoc.serialize == recorder_chain.getLastBlock.toDoc.serialize);
         }
 
         // Create new empty DART for recovery from saved genesis DART
@@ -199,8 +195,7 @@ unittest
         // In loop fill DART and add blocks
         enum blocks_count = 10;
         enum some_block_index = 4;
-        foreach (i; 0 .. blocks_count)
-        {
+        foreach (i; 0 .. blocks_count) {
             const bills_recorder = factory.recorder(makeBills(i));
             dart.modify(bills_recorder, Add);
 
@@ -209,8 +204,7 @@ unittest
             recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc, previous_hash, dart.fingerprint, net));
 
             // In the middle of the chain copy dart that will be "outdated"
-            if (i == some_block_index)
-            {
+            if (i == some_block_index) {
                 dart_filename.copy(dart_recovered_filename);
             }
         }
@@ -223,10 +217,10 @@ unittest
         // Find last block with actual DART bullseye
         {
             auto block_last_bullseye = recorder_chain_new.storage.find(
-                (b) => b.bullseye == dart.fingerprint);
+                    (b) => b.bullseye == dart.fingerprint);
             assert(block_last_bullseye !is null);
             assert(
-                block_last_bullseye.toDoc.serialize == recorder_chain_new
+                    block_last_bullseye.toDoc.serialize == recorder_chain_new
                     .getLastBlock.toDoc.serialize);
         }
 
@@ -242,7 +236,7 @@ unittest
 
                 assert(block.bullseye == dart_recovered.fingerprint);
             },
-                (b) => (b.bullseye == dart_recovered.fingerprint));
+                    (b) => (b.bullseye == dart_recovered.fingerprint));
         }
 
         // Compare bullseyes of result DART and recovered from blocks
@@ -267,8 +261,7 @@ unittest
 
         // In loop fill DART and add blocks
         enum blocks_count = 10;
-        foreach (i; 0 .. blocks_count)
-        {
+        foreach (i; 0 .. blocks_count) {
             const bills_recorder = factory.recorder(makeBills(i));
             dart.modify(bills_recorder, Add);
 

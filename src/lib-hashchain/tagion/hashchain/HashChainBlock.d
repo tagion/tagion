@@ -12,8 +12,7 @@ import tagion.hibon.HiBON : HiBON;
  * \interface HashChainBlock
  * Interface represents block from hash chain
  */
-@safe interface HashChainBlock
-{
+@safe interface HashChainBlock {
     /** Returns hash of block
      *      \return hash
      */
@@ -32,8 +31,7 @@ import tagion.hibon.HiBON : HiBON;
     /** Function that says whether this block has no predecessors
      *      \return true if this block is root block
      */
-    final bool isRoot() const
-    {
+    final bool isRoot() const {
         return getPrevious.empty;
     }
 }

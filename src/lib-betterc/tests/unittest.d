@@ -22,23 +22,18 @@ import tagion.betterC.mobile.WalletWrapperApi;
 
 import core.stdc.stdio;
 
-static void callUnittest(string parent, Members...)()
-{
-    static foreach (i, x; Members)
-    {
+static void callUnittest(string parent, Members...)() {
+    static foreach (i, x; Members) {
         {
             enum parentDot = (parent is null) ? "" : parent ~ ".";
             enum dotMember = parentDot ~ Members[i];
-            static if (is(mixin(dotMember)))
-            {
+            static if (is(mixin(dotMember))) {
                 enum code1 = "alias T1=" ~ parentDot ~ Members[i] ~ ";";
                 mixin(code1);
-                static if (is(T1 == struct))
-                {
+                static if (is(T1 == struct)) {
                     alias SubMembers = __traits(allMembers, T1);
                     printf("\tSub %s\n", T1.stringof.ptr);
-                    static foreach (u; __traits(getUnitTests, T1))
-                    {
+                    static foreach (u; __traits(getUnitTests, T1)) {
                         Bailout.clear;
                         printf("\t\t%s\n", u.stringof.ptr);
                         u();
@@ -53,12 +48,10 @@ static void callUnittest(string parent, Members...)()
     }
 }
 
-static void callUnittest(alias Module)()
-{
+static void callUnittest(alias Module)() {
     alias Members = __traits(allMembers, Module);
     printf("%s\n", Module.stringof.ptr);
-    static foreach (u; __traits(getUnitTests, Module))
-    {
+    static foreach (u; __traits(getUnitTests, Module)) {
         import Bailout = tagion.betterC.utils.Bailout;
 
         Bailout.clear;
@@ -72,10 +65,8 @@ static void callUnittest(alias Module)()
 }
 
 //version (unittest) {
-static if (!__traits(compiles, main()))
-{
-    extern (C) int main()
-    {
+static if (!__traits(compiles, main())) {
+    extern (C) int main() {
         printf("Unittest\n");
         import core.stdc.stdlib;
 

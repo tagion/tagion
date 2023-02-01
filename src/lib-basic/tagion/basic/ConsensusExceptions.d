@@ -5,16 +5,13 @@ import tagion.basic.TagionExceptions : TagionException;
 
 @safe
 void Check(E)(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
-        if (is(E : ConsensusException))
-{
-    if (!flag)
-    {
+if (is(E : ConsensusException)) {
+    if (!flag) {
         throw new E(code, file, line);
     }
 }
 
-enum ConsensusFailCode
-{
+enum ConsensusFailCode {
     NONE,
     NO_MOTHER,
     MOTHER_AND_FATHER_SAME_SIZE,
@@ -103,113 +100,89 @@ enum ConsensusFailCode
 }
 
 @safe
-class ConsensusException : TagionException
-{
+class ConsensusException : TagionException {
     immutable ConsensusFailCode code;
     this(string msg, ConsensusFailCode code = ConsensusFailCode.NONE,
-        string file = __FILE__, size_t line = __LINE__) pure
-    {
+            string file = __FILE__, size_t line = __LINE__) pure {
         this.code = code;
         super(msg, file, line);
     }
 
-    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
-    {
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(consensus_error_messages[code], file, line);
         this.code = code;
     }
 }
 
 @safe
-class EventConsensusException : GossipConsensusException
-{
-    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
-    {
+class EventConsensusException : GossipConsensusException {
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
 @safe
-class SecurityConsensusException : ConsensusException
-{
-    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
-    {
+class SecurityConsensusException : ConsensusException {
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
 @safe
-class GossipConsensusException : ConsensusException
-{
-    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
-    {
+class GossipConsensusException : ConsensusException {
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 
-    this(string msg, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
-    {
+    this(string msg, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, code, file, line);
     }
 }
 
 @safe
-class HashGraphConsensusException : EventConsensusException
-{
-    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
-    {
+class HashGraphConsensusException : EventConsensusException {
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
 @safe
-class DARTConsensusException : ConsensusException
-{
-    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
-    {
+class DARTConsensusException : ConsensusException {
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
 @safe
-class ScriptingEngineConsensusException : ConsensusException
-{
-    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
-    {
+class ScriptingEngineConsensusException : ConsensusException {
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
 @safe
-class SSLSocketFiberConsensusException : ConsensusException
-{
-    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
-    {
+class SSLSocketFiberConsensusException : ConsensusException {
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
 @safe
-class SocketFiberConsensusException : ConsensusException
-{
-    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
-    {
+class SocketFiberConsensusException : ConsensusException {
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
 @safe
-class SmartScriptException : ConsensusException
-{
-    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
-    {
+class SmartScriptException : ConsensusException {
+    this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@trusted shared static this()
-{
-    with (ConsensusFailCode)
-    {
+@trusted shared static this() {
+    with (ConsensusFailCode) {
         // dfmt off
         string[ConsensusFailCode] _consensus_error_messages=[
             NONE                                        : "None",
@@ -299,45 +272,34 @@ class SmartScriptException : ConsensusException
 
         consensus_error_messages = assumeUnique(_consensus_error_messages);
         assert(ConsensusFailCode.max + 1 == consensus_error_messages.length,
-            "Some error messages in " ~ consensus_error_messages.stringof ~ " is missing");
+                "Some error messages in " ~ consensus_error_messages.stringof ~ " is missing");
     }
 }
 
 static public immutable(string[ConsensusFailCode]) consensus_error_messages;
 
-@safe template consensusCheck(Consensus)
-{
-    static if (is(Consensus : ConsensusException))
-    {
+@safe template consensusCheck(Consensus) {
+    static if (is(Consensus : ConsensusException)) {
         void consensusCheck(bool flag, ConsensusFailCode code,
-            string file = __FILE__, size_t line = __LINE__) pure
-        {
-            if (!flag)
-            {
+                string file = __FILE__, size_t line = __LINE__) pure {
+            if (!flag) {
                 throw new Consensus(code, file, line);
             }
         }
     }
-    else
-    {
+    else {
         static assert(0, "Type " ~ Consensus.stringof ~ " not supported");
     }
 }
 
-@safe template consensusCheckArguments(Consensus)
-{
-    static if (is(Consensus : ConsensusException))
-    {
-        ref auto consensusCheckArguments(A...)(A args) pure
-        {
-            struct Arguments
-            {
+@safe template consensusCheckArguments(Consensus) {
+    static if (is(Consensus : ConsensusException)) {
+        ref auto consensusCheckArguments(A...)(A args) pure {
+            struct Arguments {
                 A args;
                 void check(bool flag, ConsensusFailCode code,
-                    string file = __FILE__, size_t line = __LINE__) const
-                {
-                    if (!flag)
-                    {
+                        string file = __FILE__, size_t line = __LINE__) const {
+                    if (!flag) {
                         immutable msg = format(consensus_error_messages[code], args);
                         throw new Consensus(msg, code, file, line);
                     }
@@ -347,18 +309,14 @@ static public immutable(string[ConsensusFailCode]) consensus_error_messages;
             return const(Arguments)(args);
         }
     }
-    else
-    {
+    else {
         static assert(0, "Type " ~ Consensus.stringof ~ " not supported");
     }
 }
 
-@safe template convertEnum(Enum, Consensus)
-{
-    const(Enum) convertEnum(uint enum_number, string file = __FILE__, size_t line = __LINE__) pure
-    {
-        if (enum_number <= Enum.max)
-        {
+@safe template convertEnum(Enum, Consensus) {
+    const(Enum) convertEnum(uint enum_number, string file = __FILE__, size_t line = __LINE__) pure {
+        if (enum_number <= Enum.max) {
             return cast(Enum) enum_number;
         }
         throw new Consensus(ConsensusFailCode.NETWORK_BAD_PACKAGE_TYPE, file, line);

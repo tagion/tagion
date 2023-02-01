@@ -36,8 +36,7 @@ import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN, Accoun
 
 //alias StdSecureWallet = SecureWallet!StdSecureNet;
 
-struct SecureWallet(Net)
-{
+struct SecureWallet(Net) {
     static assert(is(Net : SecureNet));
     protected RecoverGenerator _wallet;
     protected DevicePIN _pin;
@@ -46,52 +45,43 @@ struct SecureWallet(Net)
     protected static SecureNet net;
 
     this(DevicePIN pin, RecoverGenerator wallet = RecoverGenerator.init, AccountDetails account = AccountDetails
-            .init)
-    { //nothrow {
+            .init) { //nothrow {
         _wallet = wallet;
         _pin = pin;
         this.account = account;
     }
 
-    this(const Document wallet_doc, const Document pin_doc = Document.init)
-    {
+    this(const Document wallet_doc, const Document pin_doc = Document.init) {
         auto __wallet = RecoverGenerator(wallet_doc);
         DevicePIN __pin;
-        if (!pin_doc.empty)
-        {
+        if (!pin_doc.empty) {
             __pin = DevicePIN(pin_doc);
         }
         this(__pin, __wallet);
     }
 
-    const(RecoverGenerator) wallet() const
-    {
+    const(RecoverGenerator) wallet() const {
         return _wallet;
     }
 
-    const(DevicePIN) pin() const
-    {
+    const(DevicePIN) pin() const {
         return _pin;
     }
 
-    uint confidence() const
-    {
+    uint confidence() const {
         return _wallet.confidence;
     }
 
     static SecureWallet createWallet(scope const(string[]) questions,
-        scope const(char[][]) answers, uint confidence, const(char[]) pincode)
-    in
-    {
+    scope const(char[][]) answers, uint confidence, const(char[]) pincode)
+    in {
         assert(questions.length > 3, "Minimal amount of answers is 3");
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
     }
-    do
-    {
+    do {
         KeyRecover recover;
 
-        if (confidence == questions.length)
-        {
+        if (confidence == questions.length) {
             pragma(msg, "fixme(cbr): Due to some bug in KeyRecover");
             // Due to some bug in KeyRecover
             confidence--;
@@ -165,12 +155,10 @@ struct SecureWallet(Net)
     //     return true;
     // }
 
-    protected void checkLogin() pure const
-    {
+    protected void checkLogin() pure const {
     }
 
-    bool login(const(char[]) pincode)
-    {
+    bool login(const(char[]) pincode) {
         // if (_pin.Y) {
         //     logout;
         //     // auto hashnet = new Net;
@@ -190,8 +178,7 @@ struct SecureWallet(Net)
         return false;
     }
 
-    void logout() pure nothrow
-    {
+    void logout() pure nothrow {
         // net = null;
     }
 
@@ -225,8 +212,7 @@ struct SecureWallet(Net)
     //     return false;
     // }
 
-    void registerInvoice(ref Invoice invoice)
-    {
+    void registerInvoice(ref Invoice invoice) {
         checkLogin;
         // string current_time = MonoTime.currTime.toString;
         // scope seed = new ubyte[net.hashSize];
@@ -242,13 +228,11 @@ struct SecureWallet(Net)
         // account.derives[pkey] = account.derive_state;
     }
 
-    void registerInvoices(ref Invoice[] invoices)
-    {
+    void registerInvoices(ref Invoice[] invoices) {
         invoices.each!((ref invoice) => registerInvoice(invoice));
     }
 
-    static Invoice createInvoice(string label, TagionCurrency amount, Document info = Document.init)
-    {
+    static Invoice createInvoice(string label, TagionCurrency amount, Document info = Document.init) {
         Invoice new_invoice;
         new_invoice.name = label;
         new_invoice.amount = amount;
@@ -256,8 +240,7 @@ struct SecureWallet(Net)
         return new_invoice;
     }
 
-    bool payment(const(Invoice[]) orders, ref SignedContract result)
-    {
+    bool payment(const(Invoice[]) orders, ref SignedContract result) {
         // checkLogin;
         // const topay = orders.map!(b => b.amount).sum;
 
@@ -303,13 +286,11 @@ struct SecureWallet(Net)
         return false;
     }
 
-    TagionCurrency available_balance() const
-    {
+    TagionCurrency available_balance() const {
         return account.available;
     }
 
-    TagionCurrency active_balance() const
-    {
+    TagionCurrency active_balance() const {
         return account.active;
     }
 

@@ -1,4 +1,3 @@
-
 /// Service created for filtering and sending proper logs to subscribers
 
 module tagion.services.LogSubscriptionService;

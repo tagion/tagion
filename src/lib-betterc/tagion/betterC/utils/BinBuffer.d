@@ -6,75 +6,59 @@ module tagion.betterC.utils.BinBuffer;
 import tagion.betterC.utils.platform;
 
 //import core.stdc.stdlib : calloc, malloc, realloc, free;
-version (WebAssembly)
-{
+version (WebAssembly) {
 }
-else
-{
+else {
     import std.bitmanip : nativeToLittleEndian, nativeToBigEndian;
 }
 import std.traits : isNumeric, isArray, Unqual;
 import tagion.betterC.utils.Memory;
 import tagion.betterC.utils.sdt;
 
-struct BinBuffer
-{
+struct BinBuffer {
 @nogc:
-    protected
-    {
+    protected {
         ubyte[] _data;
         size_t _index;
     }
 
     enum DEFAULT_SIZE = 256;
-    this(const size_t size)
-    {
-        if (size > 0)
-        {
+    this(const size_t size) {
+        if (size > 0) {
             _data.create(size);
         }
     }
 
-    @trusted ~this()
-    {
+    @trusted ~this() {
         dispose;
     }
 
-    void dispose()
-    {
+    void dispose() {
         _data.dispose;
-        scope (exit)
-        {
+        scope (exit) {
             _index = 0;
         }
     }
 
-    void recreate(const size_t size)
-    {
-        if (_data !is null)
-        {
+    void recreate(const size_t size) {
+        if (_data !is null) {
             dispose;
         }
-        if (size > 0)
-        {
+        if (size > 0) {
             _data = create!(ubyte[])(size);
         }
     }
 
-    private void append(scope const(ubyte[]) add, size_t* index)
-    {
-        if (_data is null)
-        {
+    private void append(scope const(ubyte[]) add, size_t* index) {
+        if (_data is null) {
             const new_size = (add.length < DEFAULT_SIZE) ? DEFAULT_SIZE : add.length;
             _data = create!(ubyte[])(new_size);
         }
-        scope (exit)
-        {
+        scope (exit) {
             *index += add.length;
             _index = *index;
         }
-        if (*index + add.length > _data.length)
-        {
+        if (*index + add.length > _data.length) {
             const new_size = _data.length + ((add.length < DEFAULT_SIZE) ? DEFAULT_SIZE : add
                     .length);
             _data.resize(new_size);
@@ -82,28 +66,22 @@ struct BinBuffer
         _data[*index .. *index + add.length] = add[0 .. $];
     }
 
-    private void write(T)(const T x, size_t* index)
-            if (isNumeric!T || is(Unqual!(T) == bool))
-    {
-        version (WebAssembly)
-        {
+    private void write(T)(const T x, size_t* index) if (isNumeric!T || is(Unqual!(T) == bool)) {
+        version (WebAssembly) {
             auto res = (cast(ubyte*)&x)[0 .. T.sizeof];
             append(res, index);
         }
-        else
-        {
+        else {
             auto res = nativeToLittleEndian(x);
             append(res, index);
         }
     }
 
-    private void write(const(ubyte[]) x, size_t* index)
-    {
+    private void write(const(ubyte[]) x, size_t* index) {
         append(x, index);
     }
 
-    private void write(T)(T x, size_t* index) if (isArray!T)
-    {
+    private void write(T)(T x, size_t* index) if (isArray!T) {
         append(cast(ubyte[]) x, index);
     }
 
@@ -111,58 +89,48 @@ struct BinBuffer
     //     write(utc.time, index);
     // }
 
-    void write(T)(T x)
-    {
+    void write(T)(T x) {
         write(x, &_index);
     }
 
     //    version(none)
-    void write(T)(T x, const size_t index)
-    {
+    void write(T)(T x, const size_t index) {
         size_t previous_index = _index;
         size_t temp_index = index;
         write(x, &temp_index);
-        if (temp_index > _index)
-        {
+        if (temp_index > _index) {
             _index = temp_index;
         }
-        else
-        {
+        else {
             _index = previous_index;
         }
     }
 
     BinBuffer opSlice(const size_t from, const size_t to) const
-    in
-    {
+    in {
         assert(from <= to);
         assert(to <= _data.length);
     }
-    do
-    {
+    do {
         auto result = BinBuffer(to - from);
         result.write(_data[from .. to]);
         return result;
     }
 
-    @property size_t opDollar(size_t dim : 0)() const pure
-    {
+    @property size_t opDollar(size_t dim : 0)() const pure {
         return _index;
     }
 
-    @property size_t length() const pure
-    {
+    @property size_t length() const pure {
         return _index;
     }
 
-    immutable(ubyte[]) serialize() const
-    {
+    immutable(ubyte[]) serialize() const {
         return cast(immutable) _data[0 .. _index];
     }
 }
 
-unittest
-{
+unittest {
     string text = "text";
     auto buf = BinBuffer(100);
 
@@ -192,8 +160,7 @@ unittest
     size += text.length;
     check[size] = x;
 
-    foreach (i, a; buf.serialize)
-    {
+    foreach (i, a; buf.serialize) {
         assert(a == check[i]);
     }
     assert(check == buf.serialize);

@@ -12,62 +12,51 @@ import std.array;
 import p2p.connection;
 import p2p.callback;
 
-static void EnableLogger()
-{
+static void EnableLogger() {
     lib.enableLogger();
 }
 
 pragma(msg, "fixme(cbr): Reduces the scope of @trusted in the module");
 
-@trusted class Subscription
-{
+@trusted class Subscription {
     protected const void* ptr;
     protected shared bool disposed = false;
     @disable this();
-    package this(const void* subs)
-    {
+    package this(const void* subs) {
         ptr = subs;
     }
 
-    void close()
-    {
-        if (!disposed)
-        {
+    void close() {
+        if (!disposed) {
             // lib.unsubscribeApi(cast(void*) ptr).cgocheck;
             lib.destroyApi(cast(void*) ptr).cgocheck;
             disposed = true;
         }
     }
 
-    ~this()
-    {
+    ~this() {
         close();
     }
 }
 
-@trusted synchronized class Node : NodeI
-{
+@trusted synchronized class Node : NodeI {
     protected shared const void* node;
     protected shared const void* context;
     // OPTIONS
     protected shared bool disposed = false;
     protected immutable string listenAddr;
     // @disable this();
-    version (unittest)
-    {
-        this()
-        {
+    version (unittest) {
+        this() {
             node = null;
             context = null;
             listenAddr = null;
         }
     }
-    else
-    {
+    else {
         @disable this();
     }
-    this(string addr, int seed)
-    {
+    this(string addr, int seed) {
         this.listenAddr = addr;
         DBuffer addrStr = addr.ToDString();
         this.context = cast(shared) lib.createBackgroundContextApi().cgocheck;
@@ -76,8 +65,7 @@ pragma(msg, "fixme(cbr): Reduces the scope of @trusted in the module");
         void* enableAutonatServicePtr = lib.optEnableAutoNATServiceApi().cgocheck;
         void* optEnableAutoRelayApi = lib.optEnableAutoRelayApi().cgocheck;
         void* optEnableNATPortMapApi = lib.optEnableNATPortMapApi().cgocheck;
-        scope (exit)
-        {
+        scope (exit) {
             lib.destroyApi(addrPtr);
             lib.destroyApi(identityPtr);
             lib.destroyApi(enableAutonatServicePtr);
@@ -94,15 +82,13 @@ pragma(msg, "fixme(cbr): Reduces the scope of @trusted in the module");
         this.node = cast(shared) lib.createNodeApi(cast(void*) context, opts).cgocheck;
     }
 
-    this(string addr)
-    {
+    this(string addr) {
         this.listenAddr = addr;
         DBuffer addrStr = addr.ToDString();
         this.context = cast(shared) lib.createBackgroundContextApi().cgocheck;
         void* enableAutonatServicePtr = lib.optEnableAutoNATServiceApi().cgocheck;
         void* addrPtr = lib.optAddressApi(addrStr).cgocheck;
-        scope (exit)
-        {
+        scope (exit) {
             lib.destroyApi(addrPtr);
             lib.destroyApi(enableAutonatServicePtr);
         }
@@ -114,71 +100,64 @@ pragma(msg, "fixme(cbr): Reduces the scope of @trusted in the module");
     }
 
     void listen(
-        string pid,
-        HandlerCallback handler,
-        string tid,
-        Duration timeout = DefaultOptions.timeout,
-        int maxSize = DefaultOptions.maxSize)
-    { //TODO: check if disposed
+            string pid,
+            HandlerCallback handler,
+            string tid,
+            Duration timeout = DefaultOptions.timeout,
+            int maxSize = DefaultOptions.maxSize) { //TODO: check if disposed
         DBuffer pidStr = pid.ToDString();
         DBuffer tidStr = tid.ToDString();
         lib.listenApi(cast(void*) node, pidStr, handler, tidStr,
-            cast(int)(timeout.total!"msecs"), maxSize).cgocheck;
+                cast(int)(timeout.total!"msecs"), maxSize).cgocheck;
     }
 
     void listenMatch(
-        string pid,
-        HandlerCallback handler,
-        string tid,
-        string[] pids,
-        Duration timeout = DefaultOptions.timeout,
-        int maxSize = DefaultOptions.maxSize)
-    { //TODO: check if disposed
+            string pid,
+            HandlerCallback handler,
+            string tid,
+            string[] pids,
+            Duration timeout = DefaultOptions.timeout,
+            int maxSize = DefaultOptions.maxSize) { //TODO: check if disposed
         DBuffer pidStr = pid.ToDString();
         DBuffer tidStr = tid.ToDString();
         DBuffer[] pidsStr = pids.map!(protocolId => protocolId.ToDString).array;
         lib.listenMatchApi(cast(void*) node, pidStr, handler, tidStr,
-            cast(int)(timeout.total!"msecs"), maxSize, pidsStr.ToGoSlice).cgocheck;
+                cast(int)(timeout.total!"msecs"), maxSize, pidsStr.ToGoSlice).cgocheck;
     }
 
-    void closeListener(string pid)
-    {
+    void closeListener(string pid) {
         DBuffer pidStr = pid.ToDString();
         lib.closeListenerApi(cast(void*) node, pidStr).cgocheck;
     }
 
     shared(RequestStreamI) connect(
-        string addr,
-        bool addrInfo,
-        string[] pids...)
-    {
+            string addr,
+            bool addrInfo,
+            string[] pids...) {
         DBuffer addrStr = addr.ToDString();
         DBuffer[] pidStr = pids.map!(pid => pid.ToDString).array;
         auto listenerResponse = lib.handleApi(cast(void*) node, addrStr,
-            pidStr.ToGoSlice, addrInfo).cgocheck;
+                pidStr.ToGoSlice, addrInfo).cgocheck;
         return new shared RequestStream(listenerResponse.r0, listenerResponse.r1);
     }
 
     void connect(
-        string addr,
-        bool addrInfo = false)
-    {
+            string addr,
+            bool addrInfo = false) {
         DBuffer addrStr = addr.ToDString();
         lib.connectApi(cast(void*) node, cast(void*) context, addrStr, addrInfo);
     }
 
     MdnsService startMdns(
-        string randezvous,
-        Duration interval =
-            DefaultOptions.mdnsInterval)
-    {
+            string randezvous,
+            Duration interval =
+            DefaultOptions.mdnsInterval) {
         DBuffer randezvousStr = randezvous.ToDString();
         return new MdnsService(lib.createMdnsApi(cast(void*) context,
                 cast(void*) node, cast(int)(interval.total!"msecs"), randezvousStr).cgocheck);
     }
 
-    AutoNAT startAutoNAT()
-    {
+    AutoNAT startAutoNAT() {
         lib.GoSlice opts;
         const dialback = lib.createNodeApi(cast(void*) context, opts).cgocheck;
         // DBuffer addrStr = listenAddr.ToDString();
@@ -188,9 +167,8 @@ pragma(msg, "fixme(cbr): Reduces the scope of @trusted in the module");
         auto enableOpt = lib.optEnableServiceApi(cast(void*) dialback).cgocheck;
         // auto noStartupOpt = lib.optWithoutStartupDelayApi().cgocheck;
         auto scheduleOpt = lib.optWithScheduleApi(cast(int)(1.seconds.total!"msecs"),
-            cast(int)(1.seconds.total!"msecs")).cgocheck;
-        scope (exit)
-        {
+                cast(int)(1.seconds.total!"msecs")).cgocheck;
+        scope (exit) {
             lib.destroyApi(enableOpt);
             // lib.destroyApi(noStartupOpt);
             lib.destroyApi(scheduleOpt);
@@ -204,74 +182,62 @@ pragma(msg, "fixme(cbr): Reduces the scope of @trusted in the module");
         return new AutoNAT(natPtr);
     }
 
-    @property string Id()
-    {
+    @property string Id() {
         CopyCallback cb;
         lib.getNodeIdApi(cast(void*) node, &(CopyCallback.callbackFunc), &cb).cgocheck;
         return cast(string)(cb.buffer);
     }
 
-    @property string Addresses()
-    {
+    @property string Addresses() {
         CopyCallback cb;
         lib.getNodeAddressesApi(cast(void*) node, &(CopyCallback.callbackFunc), &cb).cgocheck;
         return cast(string)(cb.buffer);
     }
 
-    @property string PublicAddress()
-    {
+    @property string PublicAddress() {
         CopyCallback cb;
         lib.getNodePublicAddressApi(cast(void*) node, &(CopyCallback.callbackFunc), &cb).cgocheck;
         const addr = cast(string)(cb.buffer);
-        if (addr.length > 0)
-        {
+        if (addr.length > 0) {
             return addIdentity(addr);
         }
-        else
-        {
+        else {
             return "";
         }
     }
 
-    string AddrInfo()
-    {
+    string AddrInfo() {
         CopyCallback cb;
         lib.getNodeAddrInfoMarshalApi(cast(void*) node,
-            &(CopyCallback.callbackFunc), &cb).cgocheck;
+                &(CopyCallback.callbackFunc), &cb).cgocheck;
         const addr = cast(string)(cb.buffer);
         return addr;
     }
 
-    @property string LlistenAddress()
-    {
+    @property string LlistenAddress() {
         return addIdentity(listenAddr);
     }
 
-    protected string addIdentity(string addr)
-    {
+    protected string addIdentity(string addr) {
         return addr ~ "/p2p/" ~ this.Id;
     }
 
-    Subscription SubscribeToRechabilityEvent(string taskName)
-    {
+    Subscription SubscribeToRechabilityEvent(string taskName) {
         auto tid = taskName.ToDString();
         auto ptr = lib.subscribeToRechabiltyEventApi(cast(void*) node,
-            &AsyncCopyCallback, tid).cgocheck;
+                &AsyncCopyCallback, tid).cgocheck;
         return new Subscription(ptr);
     }
 
-    Subscription SubscribeToAddressUpdated(string taskName)
-    {
+    Subscription SubscribeToAddressUpdated(string taskName) {
         auto tid = taskName.ToDString();
         auto ptr = lib.subscribeToAddressUpdatedEventApi(cast(void*) node,
-            &AsyncCopyCallback, tid).cgocheck;
+                &AsyncCopyCallback, tid).cgocheck;
         return new Subscription(ptr);
     }
 
-    void close()
-    {
-        if (!disposed)
-        {
+    void close() {
+        if (!disposed) {
             writeln("!!NODE!! DESTROY NODE");
             lib.destroyApi(cast(void*) context).cgocheck;
             lib.closeNodeApi(cast(void*) node).cgocheck;
@@ -280,50 +246,41 @@ pragma(msg, "fixme(cbr): Reduces the scope of @trusted in the module");
         }
     }
 
-    ~this()
-    {
+    ~this() {
         close();
     }
 }
 
-@trusted synchronized class Stream : StreamI
-{
+@trusted synchronized class Stream : StreamI {
     protected shared const void* stream;
     protected shared const ulong _identifier;
 
     protected shared bool disposed = false;
 
-    @property bool alive() pure const nothrow
-    {
+    @property bool alive() pure const nothrow {
         return !disposed;
     }
 
     @disable this();
-    package this(const void* ptr, const ulong id)
-    {
+    package this(const void* ptr, const ulong id) {
         stream = cast(shared) ptr;
         _identifier = id;
     }
 
-    @property ulong identifier()
-    {
+    @property ulong identifier() {
         return _identifier;
     }
 
-    void writeBytes(Buffer data)
-    {
+    void writeBytes(Buffer data) {
         lib.writeApi(cast(void*) stream, cast(void*) data, cast(int)(data.length)).cgocheck;
     }
 
-    void writeString(string data)
-    {
+    void writeString(string data) {
         lib.writeApi(cast(void*) stream, cast(void*) data.ptr, cast(int)(data.length)).cgocheck;
     }
 
-    void close()
-    {
-        if (!disposed)
-        {
+    void close() {
+        if (!disposed) {
             writeln("!!NODE!! CLOSE STREAM ", _identifier);
             lib.closeStreamApi(cast(void*) stream).cgocheck;
             lib.destroyApi(cast(void*) stream).cgocheck;
@@ -331,47 +288,39 @@ pragma(msg, "fixme(cbr): Reduces the scope of @trusted in the module");
         }
     }
 
-    ~this()
-    {
+    ~this() {
         writeln("!!NODE!! DESTROY STREAM ", _identifier);
         // close();
-        if (!disposed)
-        {
+        if (!disposed) {
             lib.destroyApi(cast(void*) stream).cgocheck;
             disposed = true;
         }
     }
 }
 
-@trusted synchronized class RequestStream : Stream, RequestStreamI
-{
+@trusted synchronized class RequestStream : Stream, RequestStreamI {
     @disable this();
-    private this(const void* ptr, const ulong id)
-    {
+    private this(const void* ptr, const ulong id) {
         super(ptr, id);
     }
 
     void listen(
-        HandlerCallback handler,
-        string tid,
-        Duration timeout = DefaultOptions.timeout,
-        int maxSize = DefaultOptions.maxSize)
-    {
+            HandlerCallback handler,
+            string tid,
+            Duration timeout = DefaultOptions.timeout,
+            int maxSize = DefaultOptions.maxSize) {
         DBuffer tidStr = tid.ToDString();
         lib.listenStreamApi(cast(void*) stream, cast(int) _identifier, handler,
-            tidStr, cast(int)(timeout.total!"msecs"), maxSize).cgocheck;
+                tidStr, cast(int)(timeout.total!"msecs"), maxSize).cgocheck;
     }
 
-    void reset()
-    {
+    void reset() {
         writeln("!!NODE!! RESET RequestStream", _identifier);
         lib.resetStreamApi(cast(void*) stream).cgocheck;
     }
 
-    override void close()
-    {
-        if (!disposed)
-        {
+    override void close() {
+        if (!disposed) {
             writeln("!!NODE!! DESTROY RequestStream", _identifier);
             reset();
             lib.destroyApi(cast(void*) stream).cgocheck;
@@ -379,42 +328,35 @@ pragma(msg, "fixme(cbr): Reduces the scope of @trusted in the module");
         }
     }
 
-    ~this()
-    {
+    ~this() {
         writeln("!!NODE!! destructor DESTROY RequestStream", _identifier);
         close();
     }
 }
 
-@trusted class MdnsService : MdnsServiceI
-{
+@trusted class MdnsService : MdnsServiceI {
     protected shared const void* service;
     protected shared bool disposed = false;
 
     @disable this();
-    this(const void* ptr)
-    {
+    this(const void* ptr) {
         service = cast(shared) ptr;
     }
 
     MdnsNotifee registerNotifee(
-        HandlerCallback callback,
-        string tid)
-    {
+            HandlerCallback callback,
+            string tid) {
         DBuffer tidStr = tid.ToDString();
         auto notifee = lib.registerNotifeeApi(cast(void*) service, callback, tidStr).cgocheck;
         return new MdnsNotifee(notifee, this);
     }
 
-    private void unregisterNotifee(const void* notifeePtr)
-    {
+    private void unregisterNotifee(const void* notifeePtr) {
         lib.unregisterNotifeeApi(cast(void*) service, cast(void*) notifeePtr).cgocheck;
     }
 
-    void close()
-    {
-        if (!disposed)
-        {
+    void close() {
+        if (!disposed) {
             // writeln("!!NODE!! DESTROY MDNS");
             lib.stopMdnsApi(cast(void*) service).cgocheck;
             lib.destroyApi(cast(void*) service).cgocheck;
@@ -422,29 +364,24 @@ pragma(msg, "fixme(cbr): Reduces the scope of @trusted in the module");
         }
     }
 
-    ~this()
-    {
+    ~this() {
         close();
     }
 }
 
-@trusted class MdnsNotifee : MdnsNotifeeI
-{
+@trusted class MdnsNotifee : MdnsNotifeeI {
     protected shared const void* notifee;
     protected const MdnsService mdns;
     protected shared bool disposed = false;
 
     @disable this();
-    this(const void* ptr, const MdnsService mdns)
-    {
+    this(const void* ptr, const MdnsService mdns) {
         notifee = cast(shared) ptr;
         this.mdns = mdns;
     }
 
-    void close()
-    {
-        if (!disposed)
-        {
+    void close() {
+        if (!disposed) {
             // writeln("!!NODE!! DESTROY MDNS HANDLER");
             (cast(MdnsService) mdns).unregisterNotifee(cast(void*) notifee);
             lib.destroyApi(cast(void*) notifee).cgocheck;
@@ -452,44 +389,36 @@ pragma(msg, "fixme(cbr): Reduces the scope of @trusted in the module");
         }
     }
 
-    ~this()
-    {
+    ~this() {
         close();
     }
 }
 
-@trusted class AutoNAT
-{
+@trusted class AutoNAT {
     protected shared const void* natPtr;
     protected shared bool disposed = false;
 
-    this(const void* ptr)
-    {
+    this(const void* ptr) {
         natPtr = cast(shared) ptr;
     }
 
-    string address()
-    {
+    string address() {
         CopyCallback cb;
         lib.getPublicAddress(cast(void*) natPtr, &(CopyCallback.callbackFunc), &cb).cgocheck;
         return cast(string)(cb.buffer);
     }
 
-    NATStatus status()
-    {
+    NATStatus status() {
         return lib.getNATStatus(cast(void*) natPtr).cgocheck;
     }
 
-    void close()
-    {
-        if (!disposed)
-        {
+    void close() {
+        if (!disposed) {
             disposed = true;
         }
     }
 
-    ~this()
-    {
+    ~this() {
         close();
     }
 }

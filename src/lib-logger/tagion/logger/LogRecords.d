@@ -12,8 +12,7 @@ import tagion.logger.Logger : LogLevel;
  * \enum LogFiltersAction
  * Defines type of action for list of log filters
  */
-enum LogFiltersAction
-{
+enum LogFiltersAction {
     ADD,
     REMOVE
 }
@@ -22,8 +21,7 @@ enum LogFiltersAction
  * \struct LogFilter
  * Struct represents filter for receiving logs
  */
-@safe struct LogFilter
-{
+@safe struct LogFilter {
     /** Task name to listen */
     @Label("task") string task_name;
     /** Log level. Applied for text logs */
@@ -72,8 +70,7 @@ enum LogFiltersAction
       *     @param filter - given filter to check for matching
       *     @return result of check
       */
-    @nogc bool match(in LogFilter filter) pure const nothrow
-    {
+    @nogc bool match(in LogFilter filter) pure const nothrow {
         return this.task_name == filter.task_name && this.level & filter.level && this.symbol_name == filter
             .symbol_name;
     }
@@ -82,20 +79,16 @@ enum LogFiltersAction
       *     @param info - given log info to check for matching
       *     @return result of check
       */
-    @nogc bool match(in LogInfo info) pure const nothrow
-    {
-        if (this.isTextLog != info.isTextLog)
-        {
+    @nogc bool match(in LogInfo info) pure const nothrow {
+        if (this.isTextLog != info.isTextLog) {
             return false;
         }
 
         bool result;
-        if (info.isTextLog)
-        {
+        if (info.isTextLog) {
             result = this.task_name == info.task_name && this.level & info.level;
         }
-        else
-        {
+        else {
             result = this.task_name == info.task_name && this.symbol_name == info.symbol_name;
         }
         return result;
@@ -104,8 +97,7 @@ enum LogFiltersAction
     /** Method that check if current filter for text log
       *     @return result of check
       */
-    @nogc bool isTextLog() pure const nothrow
-    {
+    @nogc bool isTextLog() pure const nothrow {
         import std.range;
 
         return symbol_name.empty;
@@ -116,16 +108,14 @@ enum LogFiltersAction
  * \struct LogFilterArray
  * Struct stores array of \link LogFilter
  */
-@safe struct LogFilterArray
-{
+@safe struct LogFilterArray {
     /** Array of filters */
     immutable(LogFilter[]) array;
 
     /** Main ctor
       *     @param filters - array of filters
       */
-    this(immutable(LogFilter[]) filters) nothrow
-    {
+    this(immutable(LogFilter[]) filters) nothrow {
         this.array = filters;
     }
 }
@@ -134,8 +124,7 @@ enum LogFiltersAction
  * \struct TextLog
  * Struct for wrapping text log into \link HiBONRecord
  */
-@safe struct TextLog
-{
+@safe struct TextLog {
     /** Text log message */
     @Label("msg") string message;
     /** Label of message field */
@@ -155,10 +144,8 @@ enum LogFiltersAction
  * \struct LogInfo
  * Struct stores info about passing log
  */
-@safe struct LogInfo
-{
-    private
-    {
+@safe struct LogInfo {
+    private {
         /** Value that stores type of log */
         const bool _is_text_log;
     }
@@ -174,8 +161,7 @@ enum LogFiltersAction
      *     @param task_name - task name
      *     @param level - log level
      */
-    this(string task_name, LogLevel level)
-    {
+    this(string task_name, LogLevel level) {
         this.task_name = task_name;
         this.level = level;
 
@@ -186,8 +172,7 @@ enum LogFiltersAction
      *     @param task_name - task name
      *     @param symbol_name - symbol name
      */
-    this(string task_name, string symbol_name)
-    {
+    this(string task_name, string symbol_name) {
         this.task_name = task_name;
         this.symbol_name = symbol_name;
 
@@ -197,14 +182,12 @@ enum LogFiltersAction
     /** Method that return whether current filter is text log
       *     @return result
       */
-    @nogc bool isTextLog() pure const nothrow
-    {
+    @nogc bool isTextLog() pure const nothrow {
         return _is_text_log;
     }
 }
 
-unittest
-{
+unittest {
     enum task1 = "sometaskname";
     enum task2 = "anothertaskname";
     enum symbol1 = "some_symbol";

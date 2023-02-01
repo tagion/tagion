@@ -710,8 +710,9 @@ unittest {
 unittest {
     static struct MyRequestActor {
         @method string request(string text) {
-            return "<"~text~">";
+            return "<" ~ text ~ ">";
         }
+
         @task void run() {
             alive;
             while (!stop) {
@@ -721,8 +722,9 @@ unittest {
 
         mixin TaskActor;
     }
+
     {
         MyRequestActor a;
-        pragma(msg, "all method filter", allMemberFilter!(MyRequestActor, isMethod)); 
+        pragma(msg, "all method filter", allMemberFilter!(MyRequestActor, isMethod));
     }
 }

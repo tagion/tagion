@@ -2,8 +2,7 @@ module tagion.options.CommonOptions;
 
 import tagion.utils.JSONCommon;
 
-struct CommonOptions
-{
+struct CommonOptions {
     string nodeprefix; /// Node name prefix used in emulator mode to set the node name and generate keypairs
     string separator; /// Name separator
     string url; /// URL to be used for the sockets
@@ -11,8 +10,7 @@ struct CommonOptions
     mixin JSONCommon;
 }
 
-protected static shared
-{
+protected static shared {
     CommonOptions _common_options;
     bool _common_options_set;
 }
@@ -22,23 +20,19 @@ protected static shared
 +/
 @safe @nogc
 static void setCommonOptions(const(CommonOptions) opt)
-in
-{
+in {
     assert(!_common_options_set, "Common options already set");
 }
-do
-{
+do {
     _common_options_set = true;
     _common_options = opt;
 }
 
 @safe @nogc
 immutable(CommonOptions) commonOptions() nothrow
-in
-{
+in {
     assert(_common_options_set, "Common options has not been set");
 }
-do
-{
+do {
     return (() @trusted { return cast(immutable) _common_options; })();
 }

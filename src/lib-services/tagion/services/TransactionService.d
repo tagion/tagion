@@ -1,7 +1,6 @@
 /// This module handles and pre-validates the Smart contract send to the network
 module tagion.services.TransactionService;
 
-
 import std.stdio : writeln, writefln;
 import std.format;
 import std.socket;
@@ -298,7 +297,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 SocketType.STREAM,
                 opts.transaction.service.cert.certificate,
                 opts.transaction.service.cert.private_key);
-		listener.setOption(SocketOptionLevel.SOCKET, SocketOption.REUSEADDR, 0);
+        listener.setOption(SocketOptionLevel.SOCKET, SocketOption.REUSEADDR, 0);
         ServerAPI script_api = ServerAPI(opts.transaction.service.server, listener, relay);
         auto script_thread = script_api.start;
 

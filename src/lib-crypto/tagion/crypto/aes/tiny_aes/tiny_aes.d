@@ -38,8 +38,7 @@ module tagion.crypto.aes.tiny_aes.tiny_aes;
 The different modes is explained in
 https://www.highgo.ca/2019/08/08/the-difference-in-five-modes-in-the-aes-encryption-algorithm/
 +/
-enum Mode
-{
+enum Mode {
     ECB, /// mode: Electronic Code Book mode
     CBC, /// mode: Cipher Block Chaining mode
     CFB, /// mode: Cipher FeedBack mode
@@ -49,40 +48,33 @@ enum Mode
 }
 
 @safe @nogc
-struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
-{
-    pure nothrow
-    {
+struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC) {
+    pure nothrow {
         enum KEY_SIZE = KEY_LENGTH >> 3;
         enum BLOCK_SIZE = 16; // Block length in bytes - AES is 128b block only
 
         enum Nb = 4;
-        static if (KEY_LENGTH is 256)
-        {
+        static if (KEY_LENGTH is 256) {
             enum Nk = 8;
             enum Nr = 14;
             enum keyExpSize = 240;
 
         }
-        else static if (KEY_LENGTH is 192)
-        {
+        else static if (KEY_LENGTH is 192) {
             enum Nk = 6;
             enum Nr = 12;
             enum keyExpSize = 208;
 
         }
-        else static if (KEY_LENGTH is 128)
-        {
+        else static if (KEY_LENGTH is 128) {
             enum Nk = 4; // The number of 32 bit words in a key.
             enum Nr = 10; // The number of rounds in AES Cipher.
             enum keyExpSize = 176;
         }
 
-        struct Context
-        {
+        struct Context {
             ubyte[keyExpSize] round_key;
-            static if (mode !is Mode.ECB)
-            {
+            static if (mode !is Mode.ECB) {
                 ubyte[BLOCK_SIZE] Iv;
             }
         }
@@ -99,26 +91,22 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
         /*****************************************************************************/
         // state - array holding the intermediate results during decryption.
         alias state_t = ubyte[4][4];
-        union State
-        {
+        union State {
             state_t* state_p;
             protected ubyte* buf_p;
             @trusted
             static ref state_t opCall(ref return scope ubyte[] buf)
-            in
-            {
+            in {
                 assert(buf.length >= state_t.sizeof);
             }
-            do
-            {
+            do {
                 State state;
                 state.buf_p = buf.ptr;
                 return *state.state_p;
             }
 
             @trusted
-            static ref state_t opCall(ref return scope ubyte[BLOCK_SIZE] buf)
-            {
+            static ref state_t opCall(ref return scope ubyte[BLOCK_SIZE] buf) {
                 State state;
                 state.buf_p = cast(ubyte*)&buf;
                 return *state.state_p;
@@ -132,8 +120,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
         // This can be useful in (embedded) bootloader applications, where ROM is often limited.
         shared static immutable(ubyte[256]) sbox;
         shared static immutable(ubyte[256]) rsbox;
-        shared static this()
-        {
+        shared static this() {
             // The sbox was changed to from enum to immutable becuase of some odd segment fault
             sbox = [
                 //0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F
@@ -170,11 +157,9 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                 0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d,
                 0x0f, 0xb0, 0x54, 0xbb, 0x16
             ];
-            static immutable(ubyte[256]) _reverse_sbox()
-            {
+            static immutable(ubyte[256]) _reverse_sbox() {
                 ubyte[256] result;
-                static foreach (i; 0 .. 256)
-                {
+                static foreach (i; 0 .. 256) {
                     result[sbox[i]] = i;
                 }
                 return result;
@@ -186,8 +171,8 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
         // The round constant word array, Rcon[i], contains the values given by
         // x to the power (i-1) being powers of x (x is denoted as {02}) in the field GF(2^8)
         enum Rcon = cast(ubyte[11])[
-                0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
-            ];
+            0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
+        ];
 
         /*
  * Jordan Goulder points out in PR #12 (https://github.com/kokke/tiny-AES-C/pull/12),
@@ -200,29 +185,23 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
  */
 
         // This function produces Nb(Nr+1) round keys. The round keys are used in each round to decrypt the states.
-        private void keyExpansion(ref const(ubyte[KEY_SIZE]) Key)
-        {
+        private void keyExpansion(ref const(ubyte[KEY_SIZE]) Key) {
             ubyte[4] tempa; // Used for the column/row operations
-            foreach (i; 0 .. Nk)
-            {
-                static foreach (j; 0 .. 4)
-                {
+            foreach (i; 0 .. Nk) {
+                static foreach (j; 0 .. 4) {
                     ctx.round_key[(i * 4) + j] = Key[(i * 4) + j];
                 }
             }
             // All other round keys are found from the previous round keys.
-            static foreach (i; Nk .. Nb * (Nr + 1))
-            {
-                static foreach (j; 0 .. 4)
-                {
+            static foreach (i; Nk .. Nb * (Nr + 1)) {
+                static foreach (j; 0 .. 4) {
                     {
                         const k = (i - 1) * 4;
                         tempa[j] = ctx.round_key[k + j];
                     }
                 }
 
-                if (i % Nk == 0)
-                {
+                if (i % Nk == 0) {
                     // This function shifts the 4 bytes in a word to the left once.
                     // [a0,a1,a2,a3] becomes [a1,a2,a3,a0]
 
@@ -239,20 +218,16 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                     // applies the S-box to each of the four bytes to produce an output word.
 
                     // Function Subword()
-                    static foreach (j; 0 .. 4)
-                    {
+                    static foreach (j; 0 .. 4) {
                         tempa[j] = sbox[tempa[j]];
                     }
 
                     tempa[0] = tempa[0] ^ Rcon[i / Nk];
                 }
-                static if (KEY_LENGTH == 256)
-                {
-                    if (i % Nk is 4)
-                    {
+                static if (KEY_LENGTH == 256) {
+                    if (i % Nk is 4) {
                         // Function Subword()
-                        static foreach (j; 0 .. 4)
-                        {
+                        static foreach (j; 0 .. 4) {
                             tempa[j] = sbox[tempa[j]];
                         }
                     }
@@ -260,8 +235,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                 {
                     const j = i * 4;
                     const k = (i - Nk) * 4;
-                    static foreach (l; 0 .. 4)
-                    {
+                    static foreach (l; 0 .. 4) {
                         ctx.round_key[j + l] = ctx.round_key[k + l] ^ tempa[l];
                     }
                 }
@@ -269,37 +243,28 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
         }
 
         Context ctx;
-        static if (mode is Mode.ECB)
-        {
-            this(ref const(ubyte[KEY_SIZE]) key)
-            {
+        static if (mode is Mode.ECB) {
+            this(ref const(ubyte[KEY_SIZE]) key) {
                 keyExpansion(key);
             }
         }
-        else
-        {
-            this(ref const(ubyte[KEY_SIZE]) key, ref const(ubyte[BLOCK_SIZE]) iv)
-            {
+        else {
+            this(ref const(ubyte[KEY_SIZE]) key, ref const(ubyte[BLOCK_SIZE]) iv) {
                 keyExpansion(key);
                 ctx.Iv = iv;
             }
 
-            void iv(ref const(ubyte[BLOCK_SIZE]) iv)
-            {
+            void iv(ref const(ubyte[BLOCK_SIZE]) iv) {
                 ctx.Iv = iv;
             }
         }
 
-        private
-        {
+        private {
             // This function adds the round key to state.
             // The round key is added to the state by an XOR function.
-            void addRoundKey(ubyte round, ref scope state_t state) const
-            {
-                static foreach (i; 0 .. 4)
-                {
-                    static foreach (j; 0 .. 4)
-                    {
+            void addRoundKey(ubyte round, ref scope state_t state) const {
+                static foreach (i; 0 .. 4) {
+                    static foreach (j; 0 .. 4) {
                         state[i][j] ^= ctx.round_key[(round * Nb * 4) + (i * Nb) + j];
                     }
                 }
@@ -307,12 +272,9 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
 
             // The SubBytes Function Substitutes the values in the
             // state matrix with values in an S-box.
-            static void SubBytes(ref scope state_t state)
-            {
-                static foreach (i; 0 .. 4)
-                {
-                    static foreach (j; 0 .. 4)
-                    {
+            static void SubBytes(ref scope state_t state) {
+                static foreach (i; 0 .. 4) {
+                    static foreach (j; 0 .. 4) {
                         state[j][i] = sbox[state[j][i]];
                     }
                 }
@@ -321,8 +283,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
             // The ShiftRows() function shifts the rows in the state to the left.
             // Each row is shifted with different offset.
             // Offset = Row number. So the first row is not shifted.
-            static void ShiftRows(ref scope state_t state)
-            {
+            static void ShiftRows(ref scope state_t state) {
                 ubyte temp;
                 // Rotate first row 1 columns to left
                 temp = state[0][1];
@@ -348,17 +309,14 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                 state[1][3] = temp;
             }
 
-            static ubyte xtime(ubyte x)
-            {
+            static ubyte xtime(ubyte x) {
                 return ((x << 1) ^ (((x >> 7) & 1) * 0x1b)) & ubyte.max;
             }
 
             // MixColumns function mixes the columns of the state matrix
-            static void MixColumns(ref scope state_t state)
-            {
+            static void MixColumns(ref scope state_t state) {
                 ubyte Tmp, Tm;
-                static foreach (i; 0 .. 4)
-                {
+                static foreach (i; 0 .. 4) {
                     {
                         const t = state[i][0];
                         Tmp = state[i][0] ^ state[i][1] ^ state[i][2] ^ state[i][3];
@@ -382,8 +340,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
             // Note: The last call to xtime() is unneeded, but often ends up generating a smaller binary
             //       The compiler seems to be able to vectorize the operation better this way.
             //       See https://github.com/kokke/tiny-AES-c/pull/34
-            static ubyte Multiply(ubyte x, ubyte y)
-            {
+            static ubyte Multiply(ubyte x, ubyte y) {
                 return (((y & 1) * x) ^
                         ((y >> 1 & 1) * xtime(x)) ^
                         ((y >> 2 & 1) * xtime(xtime(x))) ^
@@ -397,10 +354,8 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
             // MixColumns function mixes the columns of the state matrix.
             // The method used to multiply may be difficult to understand for the inexperienced.
             // Please use the references to gain more information.
-            static void InvMixColumns(ref scope state_t state)
-            {
-                static foreach (i; 0 .. 4)
-                {
+            static void InvMixColumns(ref scope state_t state) {
+                static foreach (i; 0 .. 4) {
                     {
                         const a = state[i][0];
                         const b = state[i][1];
@@ -417,19 +372,15 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
 
             // The SubBytes Function Substitutes the values in the
             // state matrix with values in an S-box.
-            static void InvSubBytes(ref scope state_t state)
-            {
-                static foreach (i; 0 .. 4)
-                {
-                    static foreach (j; 0 .. 4)
-                    {
+            static void InvSubBytes(ref scope state_t state) {
+                static foreach (i; 0 .. 4) {
+                    static foreach (j; 0 .. 4) {
                         state[j][i] = rsbox[state[j][i]];
                     }
                 }
             }
 
-            static void InvShiftRows(ref scope state_t state)
-            {
+            static void InvShiftRows(ref scope state_t state) {
                 ubyte temp;
 
                 // Rotate first row 1 columns to right
@@ -457,8 +408,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
             }
 
             // Cipher is the main function that encrypts the PlainText.
-            void cipher(ref scope state_t state)
-            {
+            void cipher(ref scope state_t state) {
                 ubyte round = 0;
 
                 // Add the First round key to the state before starting the rounds.
@@ -468,12 +418,10 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                 // The first Nr-1 rounds are identical.
                 // These Nr rounds are executed in the loop below.
                 // Last one without MixColumns()
-                for (round = 1;; ++round)
-                {
+                for (round = 1;; ++round) {
                     SubBytes(state);
                     ShiftRows(state);
-                    if (round == Nr)
-                    {
+                    if (round == Nr) {
                         break;
                     }
                     MixColumns(state);
@@ -483,8 +431,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                 addRoundKey(Nr, state);
             }
 
-            void InvCipher(ref scope state_t state)
-            {
+            void InvCipher(ref scope state_t state) {
                 ubyte round = 0;
 
                 // Add the First round key to the state before starting the rounds.
@@ -494,13 +441,11 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                 // The first Nr-1 rounds are identical.
                 // These Nr rounds are executed in the loop below.
                 // Last one without InvMixColumn()
-                for (round = (Nr - 1);; --round)
-                {
+                for (round = (Nr - 1);; --round) {
                     InvShiftRows(state);
                     InvSubBytes(state);
                     addRoundKey(round, state);
-                    if (round == 0)
-                    {
+                    if (round == 0) {
                         break;
                     }
                     InvMixColumns(state);
@@ -508,10 +453,8 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
 
             }
 
-            static void xorWithIv(ubyte[] buf, ref const(ubyte[BLOCK_SIZE]) Iv)
-            {
-                static foreach (i; 0 .. BLOCK_SIZE)
-                {
+            static void xorWithIv(ubyte[] buf, ref const(ubyte[BLOCK_SIZE]) Iv) {
+                static foreach (i; 0 .. BLOCK_SIZE) {
                     buf[i] ^= Iv[i];
                 }
             }
@@ -522,36 +465,28 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
         /*****************************************************************************/
 
         //        version(unittest) {
-        static if (mode is Mode.ECB)
-        {
-            void encrypt(scope ubyte[] buf)
-            {
+        static if (mode is Mode.ECB) {
+            void encrypt(scope ubyte[] buf) {
                 // The next function call encrypts the PlainText with the Key using AES algorithm.
-                while (buf.length)
-                {
+                while (buf.length) {
                     cipher(State(buf));
                     buf = buf[BLOCK_SIZE .. $];
                 }
             }
 
-            void decrypt(scope ubyte[] buf)
-            {
+            void decrypt(scope ubyte[] buf) {
                 // The next function call decrypts the PlainText with the Key using AES algorithm.
-                while (buf.length)
-                {
+                while (buf.length) {
                     InvCipher(State(buf));
                     buf = buf[BLOCK_SIZE .. $];
                 }
             }
         }
 
-        static if (mode is Mode.CBC)
-        {
-            void encrypt(scope ubyte[] buf)
-            {
+        static if (mode is Mode.CBC) {
+            void encrypt(scope ubyte[] buf) {
                 auto Iv = ctx.Iv;
-                while (buf.length)
-                {
+                while (buf.length) {
                     xorWithIv(buf, Iv);
                     cipher(State(buf));
                     Iv = buf[0 .. BLOCK_SIZE];
@@ -561,11 +496,9 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                 ctx.Iv = Iv;
             }
 
-            void decrypt(scope ubyte[] buf)
-            {
+            void decrypt(scope ubyte[] buf) {
                 ubyte[BLOCK_SIZE] storeNextIv;
-                while (buf.length)
-                {
+                while (buf.length) {
                     storeNextIv = buf[0 .. BLOCK_SIZE];
                     InvCipher(State(buf));
                     xorWithIv(buf, ctx.Iv);
@@ -575,13 +508,10 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
             }
         }
 
-        static if (mode is Mode.CFB)
-        {
-            void encrypt(scope ubyte[] buf)
-            {
+        static if (mode is Mode.CFB) {
+            void encrypt(scope ubyte[] buf) {
                 scope storeNextIv = ctx.Iv;
-                while (buf.length)
-                {
+                while (buf.length) {
                     cipher(State(storeNextIv));
                     xorWithIv(buf, storeNextIv);
                     storeNextIv = buf[0 .. BLOCK_SIZE];
@@ -589,11 +519,9 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                 }
             }
 
-            void decrypt(scope ubyte[] buf)
-            {
+            void decrypt(scope ubyte[] buf) {
                 scope storeNextIv = ctx.Iv;
-                while (buf.length)
-                {
+                while (buf.length) {
                     cipher(State(storeNextIv));
                     const xor = storeNextIv;
                     storeNextIv = buf[0 .. BLOCK_SIZE];
@@ -604,27 +532,21 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
         }
 
         /* Symmetrical operation: same function for encrypting as for decrypting. Note any IV/nonce should never be reused with the same key */
-        static if (mode is Mode.CTR)
-        {
+        static if (mode is Mode.CTR) {
             alias encrypt = xcrypt;
             alias decrypt = xcrypt;
-            void xcrypt(scope ubyte[] buf)
-            {
+            void xcrypt(scope ubyte[] buf) {
                 ubyte[BLOCK_SIZE] buffer;
                 size_t bi; //=BLOCK_SIZE;
-                foreach (i; 0 .. buf.length)
-                {
-                    if (i % BLOCK_SIZE == 0)
-                    { //bi == BLOCK_SIZE) { /* we need to regen xor compliment in buffer */
+                foreach (i; 0 .. buf.length) {
+                    if (i % BLOCK_SIZE == 0) { //bi == BLOCK_SIZE) { /* we need to regen xor compliment in buffer */
                         buffer[0 .. BLOCK_SIZE] = ctx.Iv;
                         cipher(State(buffer));
 
                         /* Increment Iv and handle overflow */
-                        foreach_reverse (j; 0 .. BLOCK_SIZE)
-                        {
+                        foreach_reverse (j; 0 .. BLOCK_SIZE) {
                             /* inc will overflow */
-                            if (ctx.Iv[j] == 255)
-                            {
+                            if (ctx.Iv[j] == 255) {
                                 ctx.Iv[j] = 0;
                                 continue;
                             }
@@ -641,17 +563,14 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
         }
 
     }
-    unittest
-    {
+    unittest {
         version (PRINT) import std.stdio;
 
         version (PRINT)
             writefln("Start unittest %s %s", KEY_LENGTH, mode);
         // prints string as hex
-        static void phex(ubyte[] str)
-        {
-            version (PRINT)
-            {
+        static void phex(ubyte[] str) {
+            version (PRINT) {
                 ubyte len = KEY_SIZE;
                 ubyte i;
                 for (i = 0; i < len; ++i)
@@ -661,8 +580,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
         }
 
         version (PRINT)
-            static if (mode is Mode.ECB && KEY_LENGTH is 128)
-            {
+            static if (mode is Mode.ECB && KEY_LENGTH is 128) {
                 {
                     // Example of more verbose verification
 
@@ -686,8 +604,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                     // print text to encrypt, key and IV
                     writeln("ECB encrypt verbose:\n");
                     writeln("plain text:\n");
-                    foreach (i; 0 .. 4)
-                    {
+                    foreach (i; 0 .. 4) {
                         phex(plain_text[i * 16 .. $]);
                     }
                     writeln();
@@ -701,8 +618,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                     //ctx ctx;
                     auto aes = Tiny_AES(key);
 
-                    foreach (i; 0 .. 4)
-                    {
+                    foreach (i; 0 .. 4) {
                         aes.encrypt(plain_text[i * 16 .. $]);
                         phex(plain_text[i * 16 .. $]);
                     }
@@ -710,11 +626,9 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                 }
             }
 
-        static if (mode is Mode.ECB)
-        {
+        static if (mode is Mode.ECB) {
             { // test_encrypt_ecb
-                static if (KEY_LENGTH is 256)
-                {
+                static if (KEY_LENGTH is 256) {
                     ubyte[KEY_SIZE] key = [
                         0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73,
                         0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
@@ -726,8 +640,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                         0x5a, 0x7e, 0x3d, 0xb1, 0x81, 0xf8
                     ];
                 }
-                else static if (KEY_LENGTH is 192)
-                {
+                else static if (KEY_LENGTH is 192) {
                     ubyte[KEY_SIZE] key = [
                         0x8e, 0x73, 0xb0, 0xf7, 0xda, 0x0e, 0x64, 0x52, 0xc8, 0x10,
                         0xf3, 0x2b, 0x80, 0x90, 0x79, 0xe5,
@@ -738,8 +651,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                         0xa2, 0x14, 0x57, 0x1f, 0xa5, 0xcc
                     ];
                 }
-                else static if (KEY_LENGTH is 128)
-                {
+                else static if (KEY_LENGTH is 128) {
                     ubyte[KEY_SIZE] key = [
                         0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7,
                         0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
@@ -765,11 +677,9 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
             }
         }
 
-        static if (mode is Mode.CBC)
-        {
+        static if (mode is Mode.CBC) {
             { // test_decrypt_cbc
-                static if (KEY_LENGTH is 256)
-                {
+                static if (KEY_LENGTH is 256) {
                     ubyte[KEY_SIZE] key = [
                         0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73,
                         0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
@@ -787,8 +697,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                         0x19, 0x07, 0x8c, 0x6a, 0x9d, 0x1b
                     ];
                 }
-                else static if (KEY_LENGTH is 192)
-                {
+                else static if (KEY_LENGTH is 192) {
                     ubyte[KEY_SIZE] key = [
                         0x8e, 0x73, 0xb0, 0xf7, 0xda, 0x0e, 0x64, 0x52, 0xc8, 0x10,
                         0xf3, 0x2b, 0x80, 0x90, 0x79, 0xe5,
@@ -805,8 +714,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                         0xa9, 0xe6, 0x4f, 0x56, 0x15, 0xcd
                     ];
                 }
-                else static if (KEY_LENGTH is 128)
-                {
+                else static if (KEY_LENGTH is 128) {
                     ubyte[KEY_SIZE] key = [
                         0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7,
                         0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
@@ -849,11 +757,9 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
             }
         }
 
-        static if (mode is Mode.CBC)
-        {
+        static if (mode is Mode.CBC) {
             { // test_encrypt_cbc
-                static if (KEY_LENGTH is 256)
-                {
+                static if (KEY_LENGTH is 256) {
                     ubyte[KEY_SIZE] key = [
                         0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73,
                         0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
@@ -871,8 +777,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                         0x19, 0x07, 0x8c, 0x6a, 0x9d, 0x1b
                     ];
                 }
-                else static if (KEY_LENGTH is 192)
-                {
+                else static if (KEY_LENGTH is 192) {
 
                     ubyte[KEY_SIZE] key = [
                         0x8e, 0x73, 0xb0, 0xf7, 0xda, 0x0e, 0x64, 0x52, 0xc8, 0x10,
@@ -890,8 +795,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                         0xa9, 0xe6, 0x4f, 0x56, 0x15, 0xcd
                     ];
                 }
-                else static if (KEY_LENGTH is 128)
-                {
+                else static if (KEY_LENGTH is 128) {
                     ubyte[KEY_SIZE] key = [
                         0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7,
                         0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
@@ -934,11 +838,9 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
             }
         }
 
-        static if (mode is Mode.CTR)
-        {
+        static if (mode is Mode.CTR) {
             { // test ctr
-                static if (KEY_LENGTH is 256)
-                {
+                static if (KEY_LENGTH is 256) {
                     ubyte[KEY_SIZE] key = [
                         0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73,
                         0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
@@ -956,8 +858,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                         0xdd, 0x08, 0x45, 0x79, 0x41, 0xa6
                     ];
                 }
-                else static if (KEY_LENGTH is 192)
-                {
+                else static if (KEY_LENGTH is 192) {
                     ubyte[KEY_SIZE] key = [
                         0x8e, 0x73, 0xb0, 0xf7, 0xda, 0x0e, 0x64, 0x52, 0xc8, 0x10,
                         0xf3, 0x2b, 0x80, 0x90, 0x79, 0xe5,
@@ -974,8 +875,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                         0xda, 0xec, 0x58, 0xc6, 0xb0, 0x50
                     ];
                 }
-                else static if (KEY_LENGTH is 128)
-                {
+                else static if (KEY_LENGTH is 128) {
                     ubyte[KEY_SIZE] key = [
                         0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7,
                         0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
@@ -1013,11 +913,9 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
             }
         }
 
-        static if (mode is Mode.ECB)
-        {
+        static if (mode is Mode.ECB) {
             { // test_decrypt_ecb
-                static if (KEY_LENGTH is 256)
-                {
+                static if (KEY_LENGTH is 256) {
                     ubyte[KEY_SIZE] key = [
                         0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73,
                         0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
@@ -1029,8 +927,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                         0x5a, 0x7e, 0x3d, 0xb1, 0x81, 0xf8
                     ];
                 }
-                else static if (KEY_LENGTH is 192)
-                {
+                else static if (KEY_LENGTH is 192) {
                     ubyte[KEY_SIZE] key = [
                         0x8e, 0x73, 0xb0, 0xf7, 0xda, 0x0e, 0x64, 0x52, 0xc8, 0x10,
                         0xf3, 0x2b, 0x80, 0x90, 0x79, 0xe5,
@@ -1041,8 +938,7 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
                         0xa2, 0x14, 0x57, 0x1f, 0xa5, 0xcc
                     ];
                 }
-                else static if (KEY_LENGTH is 128)
-                {
+                else static if (KEY_LENGTH is 128) {
                     ubyte[KEY_SIZE] key = [
                         0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7,
                         0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c
@@ -1070,15 +966,12 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC)
     }
 }
 
-unittest
-{
+unittest {
     version (PRINT) import std.stdio;
     import std.traits : EnumMembers;
 
-    static foreach (key_size; [128, 192, 256])
-    {
-        static foreach (mode; EnumMembers!Mode)
-        {
+    static foreach (key_size; [128, 192, 256]) {
+        static foreach (mode; EnumMembers!Mode) {
             {
                 alias AES = Tiny_AES!(key_size, mode);
                 AES aes;

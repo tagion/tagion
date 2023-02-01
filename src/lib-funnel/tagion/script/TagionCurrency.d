@@ -11,25 +11,22 @@ import std.conv : to;
 import tagion.hibon.HiBONRecord : HiBONRecord, Label, RecordType;
 
 @safe
-TagionCurrency TGN(T)(T x) pure if (isNumeric!T)
-{
+TagionCurrency TGN(T)(T x) pure if (isNumeric!T) {
     return TagionCurrency(cast(double) x);
 }
 
 @safe
-struct TagionCurrency
-{
+struct TagionCurrency {
     enum long AXION_UNIT = 1_000_000_000;
     enum long AXION_MAX = 1_000_000_000 * AXION_UNIT;
     enum UNIT = "TGN";
 
-    protected
-    {
+    protected {
         @Label("$v") long _axions;
     }
 
     mixin HiBONRecord!(
-        q{
+            q{
             this(T)(T tagions) pure if (isFloatingPoint!T) {
                 scope(exit) {
                     check_range;
@@ -45,17 +42,15 @@ struct TagionCurrency
             }
         });
 
-    bool verify() const pure nothrow
-    {
+    bool verify() const pure nothrow {
         return _axions > -AXION_MAX && _axions < AXION_MAX;
     }
 
-    void check_range() const pure
-    {
+    void check_range() const pure {
         import tagion.script.ScriptException : scriptCheck = check;
 
         scriptCheck(_axions > -AXION_MAX && _axions < AXION_MAX,
-            format("Value out of range [%s:%s] value is %s",
+                format("Value out of range [%s:%s] value is %s",
                 toTagion(-AXION_MAX),
                 toTagion(AXION_MAX),
                 toTagion(_axions)));
@@ -63,43 +58,35 @@ struct TagionCurrency
 
     TagionCurrency opBinary(string OP)(const TagionCurrency rhs) const pure
     if (
-        ["+", "-", "%"].canFind(OP))
-    {
+        ["+", "-", "%"].canFind(OP)) {
         enum code = format(q{return TagionCurrency(_axions %1$s rhs._axions);}, OP);
         mixin(code);
     }
 
     TagionCurrency opBinary(string OP, T)(T rhs) const pure
-    if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP)))
-    {
+    if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP))) {
         enum code = format(q{return TagionCurrency(_axions %s rhs);}, OP);
         mixin(code);
     }
 
     TagionCurrency opBinaryRight(string OP, T)(T left) const pure
-    if (isIntegral!T && (["+", "-", "*"].canFind(OP)))
-    {
+    if (isIntegral!T && (["+", "-", "*"].canFind(OP))) {
         enum code = format(q{return TagionCurrency(left %s _axions);}, OP);
         mixin(code);
     }
 
-    TagionCurrency opUnary(string OP)() const pure if (OP == "-" || OP == "-")
-    {
-        static if (OP == "-")
-        {
+    TagionCurrency opUnary(string OP)() const pure if (OP == "-" || OP == "-") {
+        static if (OP == "-") {
             return TagionCurrency(-_axions);
         }
-        else
-        {
+        else {
             return TagionCurrency(_axions);
         }
     }
 
     void opOpAssign(string OP)(const TagionCurrency rhs) pure
-    if (["+", "-", "%"].canFind(OP))
-    {
-        scope (exit)
-        {
+    if (["+", "-", "%"].canFind(OP)) {
+        scope (exit) {
             check_range;
         }
         enum code = format(q{_axions %s= rhs._axions;}, OP);
@@ -107,10 +94,8 @@ struct TagionCurrency
     }
 
     void opOpAssign(string OP, T)(const T rhs) pure
-    if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP)))
-    {
-        scope (exit)
-        {
+    if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP))) {
+        scope (exit) {
             check_range;
         }
         enum code = format(q{_axions %s= rhs;}, OP);
@@ -118,118 +103,96 @@ struct TagionCurrency
     }
 
     void opOpAssign(string OP, T)(const T rhs) pure
-    if (isFloatingPoint!T && (["*", "%", "/"].canFind(OP)))
-    {
-        scope (exit)
-        {
+    if (isFloatingPoint!T && (["*", "%", "/"].canFind(OP))) {
+        scope (exit) {
             check_range;
         }
         enum code = format(q{_axions %s= rhs;}, OP);
         mixin(code);
     }
 
-    pure const nothrow @nogc
-    {
+    pure const nothrow @nogc {
 
-        bool opEquals(const TagionCurrency x)
-        {
+        bool opEquals(const TagionCurrency x) {
             return _axions == x._axions;
         }
 
-        bool opEquals(T)(T x) if (isNumeric!T)
-        {
+        bool opEquals(T)(T x) if (isNumeric!T) {
             return _axions == x;
         }
 
-        int opCmp(const TagionCurrency x)
-        {
-            if (_axions < x._axions)
-            {
+        int opCmp(const TagionCurrency x) {
+            if (_axions < x._axions) {
                 return -1;
             }
-            else if (_axions > x._axions)
-            {
+            else if (_axions > x._axions) {
                 return 1;
             }
             return 0;
         }
 
-        int opCmp(T)(T x) if (isNumeric!T)
-        {
-            if (_axions < x)
-            {
+        int opCmp(T)(T x) if (isNumeric!T) {
+            if (_axions < x) {
                 return -1;
             }
-            else if (_axions > x)
-            {
+            else if (_axions > x) {
                 return 1;
             }
             return 0;
         }
 
-        long axios()
-        {
-            if (_axions < 0)
-            {
+        long axios() {
+            if (_axions < 0) {
                 return -(-_axions % AXION_UNIT);
             }
             return _axions % AXION_UNIT;
         }
 
-        long tagions()
-        {
-            if (_axions < 0)
-            {
+        long tagions() {
+            if (_axions < 0) {
                 return -(-_axions / AXION_UNIT);
             }
             return _axions / AXION_UNIT;
         }
 
-        double value()
-        {
+        double value() {
             return double(_axions) * AXION_UNIT;
         }
     }
 
-    static string toTagion(const long axions) pure
-    {
+    static string toTagion(const long axions) pure {
         long value = axions;
-        if (axions < 0)
-        {
+        if (axions < 0) {
             value = -value;
         }
         const sign = (axions < 0) ? "-" : "";
         return only(sign, (value / AXION_UNIT).to!string, ".", (value % AXION_UNIT).to!string).join;
     }
 
-    string toString()
-    {
+    string toString() {
         return toTagion(_axions);
     }
 
     ///
-    unittest
-    {
+    unittest {
         //import std.stdio;
         import std.exception : assertThrown;
 
         // Checks for illegal opBinary operators
-        static foreach (op; ["*", "/"])
-        {
+        static foreach (op; ["*", "/"]) {
             {
                 enum code = format(
-                        q{
+                            q{
                         static assert(!__traits(compiles, 10.TGN %s 12.TGN));
                     }, op);
                 mixin(code);
             }
         }
         // Checks for illegal opBinaryRight operators
-        static foreach (op; ["/", "%"])
-        {
+        static foreach (op; ["/", "%"]) {
             {
                 enum code = format(
-                        q{
+                            q{
                         static assert(!__traits(compiles, 4 %s 12.TGN));
                     }, op);
                 mixin(code);
@@ -237,8 +200,7 @@ struct TagionCurrency
         }
 
         // Check for illegal opOpAssign operators
-        static foreach (op; ["*=", "/="])
-        {
+        static foreach (op; ["*=", "/="]) {
             {
                 enum code = format!q{
                 static assert(!__traits(compiles,

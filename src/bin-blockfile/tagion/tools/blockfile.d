@@ -17,8 +17,7 @@ mixin Main!(_main, "blockutil");
 
 enum HAS_BLOCK_FILE_ARG = 2;
 
-enum ExitCode
-{
+enum ExitCode {
     NOERROR,
     MISSING_BLOCKFILE, /// Blockfile missing argument
     BAD_BLOCKFILE, /// Bad blockfile format
@@ -26,29 +25,23 @@ enum ExitCode
 }
 
 @safe
-struct BlockFileAnalyzer
-{
+struct BlockFileAnalyzer {
     private BlockFile blockfile;
     uint inspect_iterations = uint.max;
     uint max_block_iteration = 1000;
 
-    ~this()
-    {
-        if (blockfile)
-        {
+    ~this() {
+        if (blockfile) {
             blockfile.close;
         }
     }
 
-    static string blockType(const bool recycle_block)
-    {
+    static string blockType(const bool recycle_block) {
         return recycle_block ? "Recycle" : "Data";
     }
 
-    void display_block(const uint index, const(BlockFile.Block) b)
-    {
-        if (b)
-        {
+    void display_block(const uint index, const(BlockFile.Block) b) {
+        if (b) {
             writefln("%s  [%d <- %d -> %d size %d [%s]", blockfile.getSymbol(b, index).to!char, b.previous, index, b
                     .next, b.size, blockType(blockfile.isRecyclable(index)));
             return;
@@ -56,24 +49,20 @@ struct BlockFileAnalyzer
         writefln("Block @ %d is nil", index);
     }
 
-    bool trace(const uint index, const BlockFile.Fail f, scope const BlockFile.Block block, const bool recycle_chain)
-    {
-        void error(string msg, const uint i = index)
-        {
+    bool trace(const uint index, const BlockFile.Fail f, scope const BlockFile.Block block, const bool recycle_chain) {
+        void error(string msg, const uint i = index) {
             const is_recycle_block = blockfile.isRecyclable(index);
             writefln("Error %s: %s @ %d in %s %s", f, msg, i, blockType(is_recycle_block), (
                     is_recycle_block is recycle_chain) ? "" : "[Bad Type]");
         }
 
-        with (BlockFile.Fail) final switch (f)
-        {
+        with (BlockFile.Fail) final switch (f) {
         case NON:
             break;
         case RECURSIVE:
             error("Circular chain found");
             auto range = blockfile.range(index);
-            do
-            {
+            do {
                 display_block(range.index, range.front);
                 range.popFront;
             }
@@ -103,16 +92,14 @@ struct BlockFileAnalyzer
             break;
 
         }
-        if (inspect_iterations != inspect_iterations.max)
-        {
+        if (inspect_iterations != inspect_iterations.max) {
             inspect_iterations--;
             return inspect_iterations == 0;
         }
         return false;
     }
 
-    void display_meta()
-    {
+    void display_meta() {
         blockfile.headerBlock.writeln;
         writeln;
         blockfile.masterBlock.writeln;
@@ -123,11 +110,9 @@ struct BlockFileAnalyzer
         writeln;
     }
 
-    void dump()
-    {
+    void dump() {
         writeln("Block map");
-        foreach (symbol; EnumMembers!(BlockFile.BlockSymbol))
-        {
+        foreach (symbol; EnumMembers!(BlockFile.BlockSymbol)) {
             writef("'%s' %s, ", symbol.to!char, symbol);
         }
         writeln;
@@ -137,18 +122,14 @@ struct BlockFileAnalyzer
     /**
        number_of_seq block sequency displays
      */
-    void display_sequency(const uint index, uint number_of_sequency = 1)
-    {
+    void display_sequency(const uint index, uint number_of_sequency = 1) {
         auto range = blockfile.range(index);
-        while (!range.empty)
-        {
+        while (!range.empty) {
             display_block(range.index, range.front);
             range.popFront;
-            if (range.front !is null && range.front.head)
-            {
+            if (range.front !is null && range.front.head) {
                 number_of_sequency--;
-                if (number_of_sequency == 0)
-                {
+                if (number_of_sequency == 0) {
                     return;
                 }
                 writeln;
@@ -159,8 +140,7 @@ struct BlockFileAnalyzer
 }
 
 BlockFileAnalyzer analyzer;
-int _main(string[] args)
-{
+int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
     bool display_meta;
@@ -172,123 +152,106 @@ int _main(string[] args)
     bool recycle_sequence; // Lists the recycle sequence
     string output_filename;
     enum logo = import("logo.txt");
-    void report(string msg)
-    {
+    void report(string msg) {
         writefln("Error: %s", msg);
     }
 
     auto main_args = getopt(args,
-        std.getopt.config.caseSensitive,
-        std.getopt.config.bundling,
-        "version", "Display the version", &version_switch,
-        "info", "Display blockfile metadata", &display_meta,
-        "dump", "Dumps block fragmentaion pattern in the blockfile", &dump,
-        "inspect|c", "Inspect the blockfile format", &inspect,
-        "ignore|i", "Ignore blockfile format error", &ignore,
-        "iter", "Set the max number of iterations do by the inspect", &analyzer.inspect_iterations,
-        "max", format("Max block iteration Default : %d", analyzer.max_block_iteration), &analyzer.max_block_iteration,
-        "block|b", "Read from block number", &block_number,
-        "seq", "Display the block sequency starting from the block-number", &sequency,
-        "recycle-sequency", "Lists the recycle sequence", &recycle_sequence,
-        "o", "Output filename", &output_filename,
+            std.getopt.config.caseSensitive,
+            std.getopt.config.bundling,
+            "version", "Display the version", &version_switch,
+            "info", "Display blockfile metadata", &display_meta,
+            "dump", "Dumps block fragmentaion pattern in the blockfile", &dump,
+            "inspect|c", "Inspect the blockfile format", &inspect,
+            "ignore|i", "Ignore blockfile format error", &ignore,
+            "iter", "Set the max number of iterations do by the inspect", &analyzer.inspect_iterations,
+            "max", format(
+            "Max block iteration Default : %d", analyzer.max_block_iteration), &analyzer.max_block_iteration,
+            "block|b", "Read from block number", &block_number,
+            "seq", "Display the block sequency starting from the block-number", &sequency,
+            "recycle-sequency", "Lists the recycle sequence", &recycle_sequence,
+            "o", "Output filename", &output_filename,
     );
 
-    if (version_switch)
-    {
+    if (version_switch) {
         revision_text.writeln;
         return ExitCode.NOERROR;
     }
 
-    if (main_args.helpWanted)
-    {
+    if (main_args.helpWanted) {
         writeln(logo);
         defaultGetoptPrinter(
-            [
-            // format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s <file> [<option>...]", program),
-            "",
-            "Where:",
-            //            "<command>           one of [--read, --rim, --modify, --rpc]",
-            "",
+                [
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s <file> [<option>...]", program),
+                "",
+                "Where:",
+                //            "<command>           one of [--read, --rim, --modify, --rpc]",
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
-        main_args.options);
+                ].join("\n"),
+                main_args.options);
         return ExitCode.NOERROR;
     }
 
-    if (args.length !is HAS_BLOCK_FILE_ARG)
-    {
+    if (args.length !is HAS_BLOCK_FILE_ARG) {
         stderr.writeln("Missing blockfile");
         return ExitCode.MISSING_BLOCKFILE;
     }
 
     immutable filename = args[1]; /// First argument is the blockfile name
 
-    if (inspect || ignore)
-    {
-        if (!analyzer.blockfile)
-        {
+    if (inspect || ignore) {
+        if (!analyzer.blockfile) {
             analyzer.blockfile = BlockFile.Inspect(filename, &report, analyzer.max_block_iteration);
         }
-        if (inspect)
-        {
+        if (inspect) {
             analyzer.blockfile.inspect(&analyzer.trace);
         }
     }
-    else
-    {
-        try
-        {
+    else {
+        try {
             analyzer.blockfile = BlockFile(filename);
         }
-        catch (BlockFileException e)
-        {
+        catch (BlockFileException e) {
             stderr.writefln("Error: Bad blockfile format for %s", filename);
             stderr.writeln(e.msg);
             stderr.writefln(
-                "Try to use the --inspect or --ignore switch to analyze the blockfile format");
+                    "Try to use the --inspect or --ignore switch to analyze the blockfile format");
             return ExitCode.BAD_BLOCKFILE;
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             stderr.writefln("Error: Unable to open file %s", filename);
             stderr.writeln(e.msg);
             return ExitCode.OPEN_FILE_FAILED;
         }
     }
-    if (display_meta)
-    {
+    if (display_meta) {
         analyzer.display_meta;
     }
 
-    if (dump)
-    {
+    if (dump) {
         analyzer.dump;
     }
 
-    if (block_number !is 0)
-    {
-        if (sequency)
-        {
+    if (block_number !is 0) {
+        if (sequency) {
             analyzer.display_sequency(block_number);
         }
-        else
-        {
+        else {
             immutable buffer = analyzer.blockfile.load(block_number, !ignore);
-            if (output_filename)
-            {
+            if (output_filename) {
                 buffer.toFile(output_filename);
             }
         }
     }
 
-    if (recycle_sequence)
-    {
+    if (recycle_sequence) {
         analyzer.blockfile.recycleDump;
     }
     return ExitCode.NOERROR;

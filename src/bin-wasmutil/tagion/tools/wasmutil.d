@@ -25,8 +25,7 @@ import std.array : join;
 
 // import tagion.vm.wasm.revision;
 
-enum fileextensions
-{
+enum fileextensions {
     wasm = ".wasm",
     wo = ".wo",
     wast = ".wast",
@@ -34,8 +33,7 @@ enum fileextensions
     json = ".json"
 };
 
-int main(string[] args)
-{
+int main(string[] args) {
     immutable program = args[0];
     bool version_switch;
 
@@ -48,84 +46,75 @@ int main(string[] args)
     string[] modify_to;
 
     auto main_args = getopt(args,
-        std.getopt.config.caseSensitive,
-        std.getopt.config.bundling,
-        "version", "display the version", &version_switch,
-        "inputfile|i", "Sets the HiBON input file name", &inputfilename,
-        "outputfile|o", "Sets the output file name", &outputfilename, // "bin|b", "Use HiBON or else use JSON", &binary,
-        // "value|V", format("Bill value : default: %d", value), &value,
-        "gas|g", format("Inject gas countes: %s", inject_gas), &inject_gas,
-        "verbose|v", format("Verbose %s", verbose_switch), &verbose_switch,
-        "mod|m", "Modify import module name from ", &modify_from,
-        "to|t", "Modify import module name from ", &modify_to,
-        "print|p", format("Print the wasm as wast: %s", print), &print,
+            std.getopt.config.caseSensitive,
+            std.getopt.config.bundling,
+            "version", "display the version", &version_switch,
+            "inputfile|i", "Sets the HiBON input file name", &inputfilename,
+            "outputfile|o", "Sets the output file name", &outputfilename, // "bin|b", "Use HiBON or else use JSON", &binary,
+            // "value|V", format("Bill value : default: %d", value), &value,
+            "gas|g", format("Inject gas countes: %s", inject_gas), &inject_gas,
+            "verbose|v", format("Verbose %s", verbose_switch), &verbose_switch,
+            "mod|m", "Modify import module name from ", &modify_from,
+            "to|t", "Modify import module name from ", &modify_to,
+            "print|p", format("Print the wasm as wast: %s", print), &print,
     );
 
-    void help()
-    {
+    void help() {
         defaultGetoptPrinter(
-            [
-            // format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...] <in-file> <out-file>", program),
-            format("%s [<option>...] <in-file>", program),
-            "",
-            "Where:",
-            "<in-file>           Is an input file in .json or .hibon format",
-            // "<out-file>          Is an output file in .json or .hibon format",
-            "                    stdout is used of the output is not specifed the",
-            "",
+                [
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <in-file> <out-file>", program),
+                format("%s [<option>...] <in-file>", program),
+                "",
+                "Where:",
+                "<in-file>           Is an input file in .json or .hibon format",
+                // "<out-file>          Is an output file in .json or .hibon format",
+                "                    stdout is used of the output is not specifed the",
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
-        main_args.options);
+                ].join("\n"),
+                main_args.options);
     }
 
-    if (version_switch)
-    {
+    if (version_switch) {
         // writefln("version %s", REVNO);
         // writefln("Git handle %s", HASH);
         return 0;
     }
 
-    if (verbose_switch && (!print || outputfilename.length is 0))
-    {
+    if (verbose_switch && (!print || outputfilename.length is 0)) {
         verbose.mode = VerboseMode.STANDARD;
     }
 
-    if (main_args.helpWanted)
-    {
+    if (main_args.helpWanted) {
         help;
         return 0;
     }
     //    writefln("args=%s", args);
-    if (args.length > 3)
-    {
+    if (args.length > 3) {
         stderr.writefln("Only one output file name allowed (given %s)", args[1 .. $]);
         help;
         return 3;
     }
-    if (args.length > 2)
-    {
+    if (args.length > 2) {
         outputfilename = args[2];
         //        writefln("outputfilename%s", outputfilename);
     }
-    if (args.length > 1)
-    {
+    if (args.length > 1) {
         inputfilename = args[1];
     }
-    else
-    {
+    else {
         stderr.writefln("Input file missing");
         help;
         return 1;
     }
 
-    if (modify_from.length !is modify_to.length)
-    {
+    if (modify_from.length !is modify_to.length) {
         stderr.writefln("Modify set must be set in pair");
         stderr.writefln("mod=%s", modify_from);
         stderr.writefln("to=%s", modify_to);
@@ -138,10 +127,8 @@ int main(string[] args)
     const input_extension = inputfilename.extension;
 
     WasmReader wasm_reader;
-    with (fileextensions)
-    {
-        switch (input_extension)
-        {
+    with (fileextensions) {
+        switch (input_extension) {
         case wasm, wo:
             immutable read_data = assumeUnique(cast(ubyte[]) fread(inputfilename));
             wasm_reader = WasmReader(read_data);
@@ -163,7 +150,7 @@ int main(string[] args)
         */
         default:
             stderr.writefln("File extensions %s not valid for input file (only %s)",
-                input_extension, [EnumMembers!fileextensions]);
+                    input_extension, [EnumMembers!fileextensions]);
         }
     }
     // Wast(wasm_reader, stdout).serialize();
@@ -180,27 +167,21 @@ int main(string[] args)
     // }
     // writefln("writer\n%s", wasm_writer.serialize);
     // return 0;
-    if (modify_from)
-    {
+    if (modify_from) {
     }
-    if (inject_gas)
-    {
+    if (inject_gas) {
         auto wasmgas = WasmGas(wasm_writer);
         wasmgas.modify;
         //        auto wasm_writer=WasmWriter(wasm_reader);
     }
     version (none)
-        static foreach (E; EnumMembers!Section)
-        {
-            static if (E !is Section.CUSTOM && E !is Section.START)
-            {
+        static foreach (E; EnumMembers!Section) {
+            static if (E !is Section.CUSTOM && E !is Section.START) {
                 {
                     auto sec = wasm_writer.mod[E];
-                    if (sec !is null)
-                    {
+                    if (sec !is null) {
                         writefln("\n\n%s=%s", E, sec);
-                        foreach (i, s; sec.sectypes[])
-                        {
+                        foreach (i, s; sec.sectypes[]) {
                             writefln("%d s=%s", i, s);
                             import std.outbuffer;
 
@@ -215,13 +196,11 @@ int main(string[] args)
 
     immutable data_out = wasm_writer.serialize;
 
-    if (verbose_switch)
-    {
+    if (verbose_switch) {
         verbose.mode = VerboseMode.STANDARD;
     }
 
-    if (print)
-    {
+    if (print) {
         //        writefln("data_out=%s", data_out);
         // writefln("wasm_writer=%s", wasm_writer.serialize);
         //        Wast(WasmReader(data_out), stdout).serialize();
@@ -229,11 +208,9 @@ int main(string[] args)
         verbose.mode = VerboseMode.NONE;
     }
 
-    if (outputfilename)
-    {
+    if (outputfilename) {
         const output_extension = outputfilename.extension;
-        switch (output_extension)
-        {
+        switch (output_extension) {
         case fileextensions.wasm:
             // auto fout=File(outputfilename, "w");
             // scope(exit) {
@@ -246,8 +223,7 @@ int main(string[] args)
             break;
         case fileextensions.wast:
             auto fout = File(outputfilename, "w");
-            scope (exit)
-            {
+            scope (exit) {
                 fout.close;
             }
             //            Wast(WasmReader(data_out), fout).serialize;
@@ -255,7 +231,7 @@ int main(string[] args)
             break;
         default:
             stderr.writefln("File extensions %s not valid output file (only %s)",
-                output_extension, [EnumMembers!fileextensions]);
+                    output_extension, [EnumMembers!fileextensions]);
         }
     }
     return 0;

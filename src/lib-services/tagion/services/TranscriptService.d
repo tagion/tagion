@@ -26,12 +26,9 @@ import tagion.hibon.HiBONJSON;
 import tagion.utils.Fingerprint : Fingerprint;
 
 // This function performs Smart contract executions
-void transcriptServiceTask(string task_name, string dart_task_name, string recorder_task_name, string epoch_dumper_task_name) nothrow
-{
-    try
-    {
-        scope (success)
-        {
+void transcriptServiceTask(string task_name, string dart_task_name, string recorder_task_name, string epoch_dumper_task_name) nothrow {
+    try {
+        scope (success) {
             ownerTid.prioritySend(Control.END);
         }
         log.register(task_name);
@@ -47,10 +44,8 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
         SmartScript[Buffer] smart_scripts;
 
         bool stop;
-        void controller(Control ctrl)
-        {
-            if (ctrl == Control.STOP)
-            {
+        void controller(Control ctrl) {
+            if (ctrl == Control.STOP) {
                 stop = true;
                 log("Scripting-Api %s stopped", task_name);
             }
@@ -58,65 +53,56 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
 
         Fingerprint requestBullseye() {
             auto sender = DART.dartBullseye();
-            if (dart_tid !is Tid.init)
-            {
+            if (dart_tid !is Tid.init) {
                 dart_tid.send(task_name, sender.toDoc.serialize);
 
                 const result = receiveOnly!Buffer;
                 const received = empty_hirpc.receive(Document(result));
                 return Fingerprint(received.response.result[DARTFile.Params.bullseye].get!Buffer);
             }
-            else
-            {
+            else {
                 log.error("Cannot locate DART service");
                 stop = true;
                 return Fingerprint([]);
             }
         }
-        Fingerprint modifyDART(RecordFactory.Recorder recorder)
-        {
+
+        Fingerprint modifyDART(RecordFactory.Recorder recorder) {
             auto sender = empty_hirpc.dartModify(recorder);
-            if (dart_tid !is Tid.init)
-            {
+            if (dart_tid !is Tid.init) {
                 dart_tid.send(task_name, sender.toDoc.serialize);
 
                 const result = receiveOnly!Buffer;
                 const received = empty_hirpc.receive(Document(result));
                 return Fingerprint(received.response.result[DARTFile.Params.bullseye].get!Buffer);
             }
-            else
-            {
+            else {
                 log.error("Cannot locate DART service");
                 stop = true;
                 return Fingerprint([]);
             }
         }
 
-        @trusted const(RecordFactory.Recorder) requestInputs(const(Buffer[]) inputs)
-        {
+        @trusted const(RecordFactory.Recorder) requestInputs(const(Buffer[]) inputs) {
             auto sender = DART.dartRead(inputs, empty_hirpc);
             auto tosend = sender.toDoc.serialize;
-            if (dart_tid !is Tid.init)
-            {
+            if (dart_tid !is Tid.init) {
                 dart_tid.send(task_name, tosend);
-                const response = receiveOnly!Buffer;    //TODO: replace with receive - as it is non-locking function
+                const response = receiveOnly!Buffer; //TODO: replace with receive - as it is non-locking function
                 const received = empty_hirpc.receive(Document(response));
                 const recorder = rec_factory.recorder(
-                    received.response.result);
+                        received.response.result);
                 return recorder;
             }
-            else
-            {
+            else {
                 log.error("Cannot locate DART service");
                 stop = true;
                 return null;
             }
         }
 
-        void dumpRecorderBlock(immutable(RecordFactory.Recorder) recorder, immutable(Fingerprint) dart_bullseye)
-        {
-            if (recorder_tid is Tid.init)
-            {
+        void dumpRecorderBlock(immutable(RecordFactory.Recorder) recorder, immutable(Fingerprint) dart_bullseye) {
+            if (recorder_tid is Tid.init) {
                 recorder_tid = locate(recorder_task_name);
             }
             recorder_tid.send(recorder, dart_bullseye);
@@ -124,12 +110,9 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
 
         Fingerprint last_bullseye = requestBullseye();
         log("Start with bullseye: %X", last_bullseye);
-        bool to_smart_script(ref const(SignedContract) signed_contract, ref uint index) nothrow
-        {
-            try
-            {
-                version (OLD_TRANSACTION)
-                {
+        bool to_smart_script(ref const(SignedContract) signed_contract, ref uint index) nothrow {
+            try {
+                version (OLD_TRANSACTION) {
                     pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
                     auto smart_script = new SmartScript(signed_contract);
                     smart_script.check(net);
@@ -142,24 +125,20 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                 }
                 return true;
             }
-            catch (ConsensusException e)
-            {
+            catch (ConsensusException e) {
                 log.warning("ConsensusException: %s", e.msg);
                 return false;
                 // Not approved
             }
-            catch (TagionException e)
-            {
+            catch (TagionException e) {
                 log.warning("TagionException: %s", e.msg);
                 return false;
             }
-            catch (Exception e)
-            {
+            catch (Exception e) {
                 log.warning("Exception: %s", e.msg);
                 return false;
             }
-            catch (Error e)
-            {
+            catch (Error e) {
                 fatal(e);
                 return false;
             }
@@ -167,30 +146,25 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
 
         RecordFactory.Recorder input_recorder;
 
-        void receive_epoch(Buffer payloads_buff) nothrow
-        {
-            try
-            {
+        void receive_epoch(Buffer payloads_buff) nothrow {
+            try {
 
                 const payload_doc = Document(payloads_buff);
                 log("Received epoch: len:%d", payload_doc.length);
 
                 scope bool[Buffer] used_inputs;
-                scope (exit)
-                {
+                scope (exit) {
                     used_inputs = null;
                     smart_scripts = null;
                     current_epoch++;
                 }
                 auto recorder = rec_factory.recorder;
-                uint output_index = 0;  // order index of generated output 
+                uint output_index = 0; // order index of generated output 
                 auto contracts_dump = new HiBON;
                 long dump_count = 0;
-                foreach (payload_el; payload_doc[])
-                {
+                foreach (payload_el; payload_doc[]) {
                     immutable doc = payload_el.get!Document;
-                    if (!SignedContract.isRecord(doc))
-                    {
+                    if (!SignedContract.isRecord(doc)) {
                         continue;
                     }
 
@@ -198,13 +172,10 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     log("Executing contract: %s", doc.toJSON);
                     auto inputs_recorder = requestInputs(signed_contract.contract.inputs);
                     signed_contract.inputs = [];
-                    foreach (input; signed_contract.contract.inputs)
-                    {
-                        foreach (input_archive; inputs_recorder[])
-                        {
+                    foreach (input; signed_contract.contract.inputs) {
+                        foreach (input_archive; inputs_recorder[]) {
                             const bill = StandardBill(input_archive.filed);
-                            if (    net.hashOf(bill.toDoc) == input)
-                            {
+                            if (net.hashOf(bill.toDoc) == input) {
                                 signed_contract.inputs ~= bill;
                             }
                         }
@@ -212,103 +183,85 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
 
                     contracts_dump[dump_count++] = doc;
                     bool invalid;
-                    ForachInput: foreach (input; signed_contract.contract.inputs)
-                    {
-                        if (input in used_inputs)
-                        {
+                    ForachInput: foreach (input; signed_contract.contract.inputs) {
+                        if (input in used_inputs) {
                             invalid = true;
                             break ForachInput;
                         }
-                        else
-                        {
+                        else {
                             used_inputs[input] = true;
                         }
                     }
-                    if (!invalid)
-                    {
+                    if (!invalid) {
                         const signed_contract_doc = signed_contract.toDoc;
                         const fingerprint = net.hashOf(signed_contract_doc);
                         const added = to_smart_script(signed_contract, output_index);
-                        if (added && fingerprint in smart_scripts)
-                        {
+                        if (added && fingerprint in smart_scripts) {
                             scope smart_script = smart_scripts[fingerprint];
-                            version (OLD_TRANSACTION)
-                            {
+                            version (OLD_TRANSACTION) {
                                 pragma(msg, "OLD_TRANSACTION ", __FUNCTION__, " ", __FILE__, ":", __LINE__);
-                                foreach (bill; signed_contract.inputs)
-                                {
+                                foreach (bill; signed_contract.inputs) {
                                     const bill_doc = bill.toDoc;
                                     recorder.remove(bill_doc);
                                 }
                                 pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
-                                foreach (bill; smart_script.output_bills)
-                                {
+                                foreach (bill; smart_script.output_bills) {
                                     const bill_doc = bill.toDoc;
                                     recorder.add(bill_doc);
                                 }
                             }
                         }
-                        else
-                        {
+                        else {
                             log("Signed contract not in smart script");
                             invalid = true;
                         }
                     }
-                    else
-                    {
+                    else {
                         log.warning("Invalid input");
                     }
                 }
-                if (recorder.length > 0)
-                {
+                if (recorder.length > 0) {
                     log("Sending to DART len: %d", recorder.length);
                     recorder.dump;
                     auto bullseye = modifyDART(recorder);
-                    if (!options.epoch_dump.disable_transaction_dumping)
-                    {
+                    if (!options.epoch_dump.disable_transaction_dumping) {
                         epoch_dump_tid.send(Document(contracts_dump), bullseye);
                     }
                     dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), bullseye);
                 }
-                else
-                {
+                else {
                     log("Received empty epoch");
                 }
             }
-            catch (Exception e)
-            {
+            catch (Exception e) {
                 log.warning("Epoch exception:%s ", e);
             }
-            catch (Error e)
-            {
+            catch (Error e) {
                 log.warning("Epoch throwable:%s ", e);
             }
 
         }
 
-        void register_input(immutable(RecordFactory.Recorder) recorder)
-        {
+        void register_input(immutable(RecordFactory.Recorder) recorder) {
 
         }
 
         uint counter;
         ownerTid.send(Control.LIVE);
-        while (!stop)
-        {
+        while (!stop) {
             receive(
 
-                &receive_epoch,
+                    &receive_epoch,
 
-                &register_input,
+                    &register_input,
 
-                &controller,
+                    &controller,
 
-                &taskfailure,
+                    &taskfailure,
             );
         }
     }
-    catch (Throwable t)
-    {
+    catch (Throwable t) {
         fatal(t);
     }
 }

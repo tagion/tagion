@@ -228,7 +228,7 @@ class HashGraph {
         }
 
         const(HiRPC.Sender) ripple_sender() @safe {
-        log("Send ripple");
+            log("Send ripple");
             const ripple_wavefront = rippleWave(Wavefront());
             const sender = hirpc.wavefront(ripple_wavefront);
             return sender;

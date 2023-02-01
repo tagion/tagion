@@ -20,10 +20,8 @@ import tagion.utils.Miscellaneous : decode, toHexString;
  * \class HashChainFileStorage
  * Implementation of hash chain storage, based on file system
  */
-@safe class HashChainFileStorage(Block) : HashChainStorage!Block
-{
-    protected
-    {
+@safe class HashChainFileStorage(Block) : HashChainStorage!Block {
+    protected {
         /** Path to local folder where chain files are stored */
         string folder_path;
 
@@ -31,13 +29,11 @@ import tagion.utils.Miscellaneous : decode, toHexString;
         const HashNet net;
     }
 
-    this(string folder_path, const HashNet net)
-    {
+    this(string folder_path, const HashNet net) {
         this.folder_path = folder_path;
         this.net = net;
 
-        if (!exists(this.folder_path))
-        {
+        if (!exists(this.folder_path)) {
             mkdirRecurse(this.folder_path);
         }
     }
@@ -45,8 +41,7 @@ import tagion.utils.Miscellaneous : decode, toHexString;
     /** Writes given block to file
      *      @param block - block to write
      */
-    void write(const(Block) block)
-    {
+    void write(const(Block) block) {
         fwrite(makePath(block.getHash), block.toHiBON);
     }
 
@@ -54,16 +49,13 @@ import tagion.utils.Miscellaneous : decode, toHexString;
      *      @param fingerprint - fingerprint of block to read
      *      \return chain block, or null if such block file doesn't exist
      */
-    Block read(Buffer fingerprint)
-    {
-        try
-        {
+    Block read(Buffer fingerprint) {
+        try {
             auto doc = fread(makePath(fingerprint));
             // TODO: bad decision, redesign to have automatic set hash from only doc
             return new Block(doc, net);
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             return null;
         }
     }
@@ -72,14 +64,11 @@ import tagion.utils.Miscellaneous : decode, toHexString;
      *      @param predicate - predicate for block
      *      \return block if search was successfull, null - if such block doesn't exist
      */
-    Block find(bool delegate(Block) @safe predicate)
-    {
+    Block find(bool delegate(Block) @safe predicate) {
         auto hashes = getHashes;
-        foreach (hash; hashes)
-        {
+        foreach (hash; hashes) {
             auto block = read(hash);
-            if (predicate(block))
-            {
+            if (predicate(block)) {
                 return block;
             }
         }
@@ -89,8 +78,7 @@ import tagion.utils.Miscellaneous : decode, toHexString;
     /** Collects all block filenames in chain folder 
      *      \return array of block filenames in this folder
      */
-    Buffer[] getHashes() @trusted
-    {
+    Buffer[] getHashes() @trusted {
         enum BLOCK_FILENAME_LEN = StdHashNet.HASH_SIZE * 2;
 
         return folder_path.dirEntries(SpanMode.shallow)
@@ -103,24 +91,19 @@ import tagion.utils.Miscellaneous : decode, toHexString;
             .array;
     }
 
-    private
-    {
-        static FileExtension getExtension()
-        {
+    private {
+        static FileExtension getExtension() {
             import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
             import tagion.epochain.EpochChainBlock : EpochChainBlock;
 
-            static if (is(Block == RecorderChainBlock))
-            {
+            static if (is(Block == RecorderChainBlock)) {
                 return FileExtension.recchainblock;
             }
-            static if(is(Block == EpochChainBlock))
-            {
+            static if (is(Block == EpochChainBlock)) {
                 return FileExtension.epochdumpblock;
             }
 
-            version (unittest)
-            {
+            version (unittest) {
                 // Default extension for using in unittest
                 return FileExtension.hibon;
             }
@@ -131,11 +114,10 @@ import tagion.utils.Miscellaneous : decode, toHexString;
          *      @param fingerprint - fingerprint of block to make path
          *      \return path to block with given fingerprint
          */
-        string makePath(Buffer fingerprint)
-        {
+        string makePath(Buffer fingerprint) {
             return buildPath(
-                folder_path,
-                fingerprint.toHexString.setExtension(getExtension));
+                    folder_path,
+                    fingerprint.toHexString.setExtension(getExtension));
         }
     }
 }

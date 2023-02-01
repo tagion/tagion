@@ -9,10 +9,8 @@ import tagion.utils.LEB128;
 
 //import tagion.Message : message;
 
-@safe struct Token
-{
-    enum Type
-    {
+@safe struct Token {
+    enum Type {
         NONE,
         COMMENT,
         WORD,
@@ -24,42 +22,34 @@ import tagion.utils.LEB128;
     uint line;
     uint pos;
     Type type;
-    string toText() pure const
-    {
-        if (line is 0)
-        {
+    string toText() pure const {
+        if (line is 0) {
             return symbol;
         }
-        else
-        {
+        else {
             return format("%s:%s:%s", line, pos, symbol);
         }
     }
 }
 
-@safe struct Tokenizer
-{
+@safe struct Tokenizer {
     immutable(string) source;
     immutable(string) file;
-    this(string source, string file = null)
-    {
+    this(string source, string file = null) {
         this.source = source;
         this.file = file;
     }
 
-    Range opSlice() const
-    {
+    Range opSlice() const {
         return Range(source);
     }
 
     static assert(isInputRange!Range);
     static assert(isForwardRange!Range);
 
-    @nogc @safe struct Range
-    {
+    @nogc @safe struct Range {
         immutable(string) source;
-        protected
-        {
+        protected {
             size_t _begin_pos; /// Begin position of a token
             size_t _end_pos; /// End position of a token
             uint _line; /// Line number
@@ -69,147 +59,117 @@ import tagion.utils.LEB128;
             bool _eos; /// Markes end of stream
             Token.Type type;
         }
-        this(string source) pure nothrow
-        {
+        this(string source) pure nothrow {
             _line = 1;
             this.source = source;
             //            trim;
             popFront;
         }
 
-        @property const pure nothrow
-        {
-            uint line()
-            {
+        @property const pure nothrow {
+            uint line() {
                 return _current_line;
             }
 
-            uint pos()
-            {
+            uint pos() {
                 return cast(uint)(_begin_pos - _current_pos);
             }
 
-            immutable(string) symbol()
-            {
+            immutable(string) symbol() {
                 return source[_begin_pos .. _end_pos];
             }
 
-            immutable(Token) front()
-            {
+            immutable(Token) front() {
                 return Token(symbol, line, pos, type);
             }
 
-            bool empty()
-            {
+            bool empty() {
                 return _eos;
             }
 
-            size_t begin_pos()
-            {
+            size_t begin_pos() {
                 return _begin_pos;
             }
 
-            size_t end_pos()
-            {
+            size_t end_pos() {
                 return _end_pos;
             }
 
             immutable(string) grap(const size_t begin, const size_t end)
-            in
-            {
+            in {
                 assert(begin <= end);
             }
-            do
-            {
+            do {
                 return source[begin .. end];
             }
 
         }
 
-        @property void popFront() pure nothrow
-        {
+        @property void popFront() pure nothrow {
             _eos = (_end_pos == source.length);
             trim;
             _end_pos = _begin_pos;
             _current_line = _line;
             _current_pos = _line_pos;
-            if (_end_pos < source.length)
-            {
-                if ((_end_pos + 1 < source.length) && (source[_end_pos .. _end_pos + 2] == "(;"))
-                {
+            if (_end_pos < source.length) {
+                if ((_end_pos + 1 < source.length) && (source[_end_pos .. _end_pos + 2] == "(;")) {
                     type = Token.Type.COMMENT;
                     _end_pos += 2;
                     uint level = 1;
-                    while (_end_pos + 1 < source.length)
-                    {
+                    while (_end_pos + 1 < source.length) {
                         const eol = is_newline(source[_end_pos .. $]);
-                        if (eol)
-                        {
+                        if (eol) {
                             _end_pos += eol;
                             _line_pos = _end_pos;
                             _line++;
                         }
-                        else if (source[_end_pos .. _end_pos + 2] == ";)")
-                        {
+                        else if (source[_end_pos .. _end_pos + 2] == ";)") {
                             _end_pos += 2;
                             level--;
-                            if (level == 0)
-                            {
+                            if (level == 0) {
                                 break;
                             }
                         }
-                        else if (source[_end_pos .. _end_pos + 2] == "(;")
-                        {
+            else if (source[_end_pos .. _end_pos + 2] == "(;") {
                             _end_pos += 2;
                             level++;
                         }
-                        else
-                        {
+            else {
                             _end_pos++;
                         }
                     }
                 }
-                else if ((_end_pos + 1 < source.length) && (source[_end_pos .. _end_pos + 2] == ";;"))
-                {
+            else if ((_end_pos + 1 < source.length) && (source[_end_pos .. _end_pos + 2] == ";;")) {
                     type = Token.Type.COMMENT;
                     _end_pos += 2;
-                    while ((_end_pos < source.length) && (!is_newline(source[_end_pos .. $])))
-                    {
+                    while ((_end_pos < source.length) && (!is_newline(source[_end_pos .. $]))) {
                         _end_pos++;
                     }
                 }
-                else if ((source[_end_pos] is '(') || (source[_end_pos] is ')'))
-                {
+            else if ((source[_end_pos] is '(') || (source[_end_pos] is ')')) {
                     type = Token.Type.BRACKET;
                     _end_pos++;
                 }
-                else if (source[_end_pos] is '"' || source[_end_pos] is '\'')
-                {
+            else if (source[_end_pos] is '"' || source[_end_pos] is '\'') {
                     type = Token.Type.TEXT;
                     const quote = source[_begin_pos];
                     _end_pos++;
                     bool escape;
-                    while (_end_pos < source.length)
-                    {
+                    while (_end_pos < source.length) {
                         const eol = is_newline(source[_end_pos .. $]);
-                        if (eol)
-                        {
+                        if (eol) {
                             _end_pos += eol;
                             _line_pos = _end_pos;
                             _line++;
                         }
-                        else
-                        {
-                            if (!escape)
-                            {
+                        else {
+                            if (!escape) {
                                 escape = source[_end_pos] is '\\';
                             }
-                            else
-                            {
+                            else {
                                 escape = false;
                             }
-                            if (!escape && (source[_end_pos] is quote))
-                            {
+                            if (!escape && (source[_end_pos] is quote)) {
                                 _end_pos++;
                                 break;
                             }
@@ -217,69 +177,55 @@ import tagion.utils.LEB128;
                         }
                     }
                 }
-                else
-                {
+            else {
                     while ((_end_pos < source.length)
-                        && is_none_white(source[_end_pos]) && (source[_end_pos]!is ')'))
-                    {
+                            && is_none_white(source[_end_pos]) && (source[_end_pos]!is ')')) {
                         _end_pos++;
                     }
                     type = Token.Type.WORD;
                 }
             }
-            if (_end_pos is _begin_pos)
-            {
+            if (_end_pos is _begin_pos) {
                 _eos = true;
             }
         }
 
-        Range save() pure const nothrow @nogc
-        {
+        Range save() pure const nothrow @nogc {
             auto result = this;
             //assert(result is this);
             return result;
         }
 
-        protected void trim() pure nothrow
-        {
+        protected void trim() pure nothrow {
             scope size_t eol;
             _begin_pos = _end_pos;
-            while (_begin_pos < source.length)
-            {
-                if (is_white_space(source[_begin_pos]))
-                {
+            while (_begin_pos < source.length) {
+                if (is_white_space(source[_begin_pos])) {
                     _begin_pos++;
                 }
-                else if ((eol = is_newline(source[_begin_pos .. $])) !is 0)
-                {
+                else if ((eol = is_newline(source[_begin_pos .. $])) !is 0) {
                     _begin_pos += eol;
                     _line_pos = _begin_pos;
                     _line++;
                 }
-                else
-                {
+                else {
                     break;
                 }
             }
         }
     }
 
-    static bool is_white_space(immutable char c) @safe pure nothrow
-    {
+    static bool is_white_space(immutable char c) @safe pure nothrow {
         return ((c is ' ') || (c is '\t'));
     }
 
-    static bool is_none_white(immutable char c) @safe pure nothrow
-    {
+    static bool is_none_white(immutable char c) @safe pure nothrow {
         return (c !is ' ') && (c !is '\t') && (c !is '\n') && (c !is '\r');
     }
 
-    static size_t is_newline(string str) pure nothrow
-    {
-        if ((str.length > 0) && (str[0] == '\n'))
-        {
-            if ((str.length > 1) && ((str[0 .. 2] == "\n\r") || (str[0 .. 2] == "\r\n")))
-            {
+    static size_t is_newline(string str) pure nothrow {
+        if ((str.length > 0) && (str[0] == '\n')) {
+            if ((str.length > 1) && ((str[0 .. 2] == "\n\r") || (str[0 .. 2] == "\r\n"))) {
                 return 2;
             }
             return 1;
@@ -289,8 +235,7 @@ import tagion.utils.LEB128;
 
 }
 
-unittest
-{
+unittest {
     import std.string : join;
 
     immutable src = [
@@ -580,14 +525,10 @@ unittest
         {line: 66, pos: 20, symbol: "$2", type: Token.Type.WORD},
         {line: 66, pos: 22, symbol: ")", type: Token.Type.BRACKET},
         {line: 67, pos: 2, symbol: ")", type: Token.Type.BRACKET},
-        {
-            line: 69, pos: 0, symbol: `;;(custom_section "producers"`, type: Token.Type.COMMENT
-        },
+        {line: 69, pos: 0, symbol: `;;(custom_section "producers"`, type: Token.Type.COMMENT},
         {line: 70, pos: 0, symbol: ";;  (after code)", type: Token.Type.COMMENT},
-        {
-            line: 71, pos: 0, symbol: `;;  "\01\0cprocessed-by\01\03ldc\061.20.1")`, type: Token
-                .Type.COMMENT
-        },
+        {line: 71, pos: 0, symbol: `;;  "\01\0cprocessed-by\01\03ldc\061.20.1")`, type: Token
+            .Type.COMMENT},
         {line: 73, pos: 0, symbol: ")", type: Token.Type.BRACKET},
     ];
 
@@ -597,8 +538,7 @@ unittest
 
     {
         auto range = parser[];
-        foreach (t; tokens)
-        {
+        foreach (t; tokens) {
             assert(range.line is t.line);
             assert(range.pos is t.pos);
             assert(range.front.symbol == t.symbol);
@@ -629,8 +569,7 @@ unittest
     }
 }
 
-struct WasmWord
-{
+struct WasmWord {
 }
 
 enum WASMKeywords = [

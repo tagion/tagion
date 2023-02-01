@@ -35,8 +35,7 @@ static assert(uint.sizeof == 4);
  * Document is used for storage different data and provide
  * possibility to read and analyze data
  */
-struct Document
-{
+struct Document {
     // @nogc:
     /**
      * HiBON Document value type
@@ -52,14 +51,11 @@ struct Document
      * Gets the internal buffer
      * @return the buffer of the HiBON document
      */
-    @nogc immutable(ubyte[]) data() const
-    {
-        if (_data.length)
-        {
+    @nogc immutable(ubyte[]) data() const {
+        if (_data.length) {
             ubyte[] result;
             result.create(full_size);
-            foreach (i, elem; _data)
-            {
+            foreach (i, elem; _data) {
                 result[i] = elem;
             }
             return cast(immutable)(result);
@@ -74,8 +70,7 @@ struct Document
       * Creates a HiBON Document from a buffer
       * @param data - buffer
       */
-    @nogc this(immutable(ubyte[]) data) pure
-    {
+    @nogc this(immutable(ubyte[]) data) pure {
         this._data = data;
     }
 
@@ -84,8 +79,7 @@ struct Document
      * The buffer reused not copied
      * @param doc - Document which is replicated
      */
-    @nogc this(const Document doc) pure
-    {
+    @nogc this(const Document doc) pure {
         this._data = doc._data;
     }
 
@@ -93,14 +87,12 @@ struct Document
      * Creates a document which is based on HiBON
      * @param hibon - reference to the HiBON object
      */
-    this(HiBONT hibon)
-    {
+    this(HiBONT hibon) {
         //check hibon
         this._data = hibon.serialize;
     }
 
-    this(const HiBONT hibon)
-    {
+    this(const HiBONT hibon) {
         //check hibon
         auto mut_hibon = cast(HiBONT) hibon;
         this._data = mut_hibon.serialize;
@@ -110,12 +102,9 @@ struct Document
      * Returns HiBON version
      * @return HiBON version
      */
-    uint ver() const
-    {
-        if (data.length > ubyte.sizeof)
-        {
-            if (data[ubyte.sizeof] == Type.VER)
-            {
+    uint ver() const {
+        if (data.length > ubyte.sizeof) {
+            if (data[ubyte.sizeof] == Type.VER) {
                 const leb128_version = LEB128.decode!uint(data[ubyte.sizeof .. $]);
                 return leb128_version.value;
             }
@@ -123,8 +112,7 @@ struct Document
         return 0;
     }
 
-    void surrender() pure
-    {
+    void surrender() pure {
         _data = null;
     }
 
@@ -132,27 +120,21 @@ struct Document
      * Makes a cope od document
      * @rapam doc - Document that will be copied
      */
-    void copy(ref const Document doc)
-    {
+    void copy(ref const Document doc) {
         emplace(&this, doc);
     }
 
-    @property const
-    {
-        @trusted bool empty()
-        {
+    @property const {
+        @trusted bool empty() {
             return data.length <= ubyte.sizeof;
         }
 
-        @nogc uint size()
-        {
+        @nogc uint size() {
             return LEB128.decode!uint(data).value;
         }
 
-        @nogc size_t full_size()
-        {
-            if (_data.length)
-            {
+        @nogc size_t full_size() {
+            if (_data.length) {
                 const len = LEB128.decode!uint(_data);
                 return len.size + len.value;
             }
@@ -160,8 +142,7 @@ struct Document
         }
     }
 
-    unittest
-    { // Empty doc
+    unittest { // Empty doc
     {
             Document doc;
             assert(doc._data.length is 0);
@@ -204,11 +185,9 @@ struct Document
      * Counts the number of members in a Document
      * @return number of members in in the Document
      */
-    @nogc @property uint length() const
-    {
+    @nogc @property uint length() const {
         uint count;
-        foreach (e; this[])
-        {
+        foreach (e; this[]) {
             count++;
         }
         return count;
@@ -218,44 +197,36 @@ struct Document
      * The deligate used by the valid function to report errors
      */
     alias ErrorCallback = void delegate(scope const(Element) current,
-        scope const(Element) previous);
+            scope const(Element) previous);
 
     /**
      * Function check's if the Document is a valid HiBON format
      * @param error_callback - if the delegate error_callback is the this function is call when a error occures
      * @return error code of the validation
      */
-    Element.ErrorCode valid(ErrorCallback error_callback = null) const
-    {
+    Element.ErrorCode valid(ErrorCallback error_callback = null) const {
         auto previous = this[];
         bool not_first;
-        foreach (ref e; this[])
-        {
+        foreach (ref e; this[]) {
             Element.ErrorCode error_code;
             Text work_key;
             Text previous_work_key;
-            if (not_first && (key_compare(previous.front.key(previous_work_key), e.key(work_key)) >= 0))
-            {
+            if (not_first && (key_compare(previous.front.key(previous_work_key), e.key(work_key)) >= 0)) {
                 error_code = Element.ErrorCode.KEY_ORDER;
             }
-            else if (e.type is Type.DOCUMENT)
-            {
+            else if (e.type is Type.DOCUMENT) {
                 error_code = e.get!(Document).valid(error_callback);
             }
-            else
-            {
+            else {
                 error_code = e.valid;
             }
-            if (error_code !is Element.ErrorCode.NONE)
-            {
-                if (error_callback)
-                {
+            if (error_code !is Element.ErrorCode.NONE) {
+                if (error_callback) {
                     error_callback(e, previous.front);
                 }
                 return error_code;
             }
-            if (not_first)
-            {
+            if (not_first) {
                 previous.popFront;
             }
             not_first = true;
@@ -268,16 +239,14 @@ struct Document
      * Uses the valid function
      * @return true if the Document is inorder
      */
-    bool isInorder() const
-    {
+    bool isInorder() const {
         return valid() is Element.ErrorCode.NONE;
     }
 
     /**
      * Range of the Document
      */
-    struct Range
-    {
+    struct Range {
     @nogc:
         /**
          * Buffer with data
@@ -305,20 +274,16 @@ struct Document
          * Construct Range based on buffer
          * @param data - buffer of data
          */
-        this(immutable(ubyte[]) data)
-        {
+        this(immutable(ubyte[]) data) {
             this.data = data;
-            if (data.length == 0)
-            {
+            if (data.length == 0) {
                 _index = ubyte.sizeof;
             }
-            else
-            {
+            else {
                 _index = LEB128.calc_size(data);
                 popFront();
                 uint _ver;
-                if (!empty && (front.type is Type.VER))
-                {
+                if (!empty && (front.type is Type.VER)) {
                     const leb128_ver = LEB128.decode!uint(data[_index .. $]);
                     _ver = leb128_ver.value;
                     _index += leb128_ver.size;
@@ -331,19 +296,16 @@ struct Document
          * Construct Range based on other Document
          * @param doc - Document
          */
-        this(const Document doc)
-        {
+        this(const Document doc) {
             this(doc.data);
         }
 
-        @property pure const
-        {
+        @property pure const {
             /**
              * Checks is Range empty
              * @return true if data length = 0
              */
-            bool empty()
-            {
+            bool empty() {
                 return data.length is 0;
             }
 
@@ -352,18 +314,15 @@ struct Document
              * @return currently iterated element
              */
         }
-        const(Element) front()
-        {
+        const(Element) front() {
             return Element(data);
         }
 
         /**
          * InputRange primitive operation that advances the range to its next element.
          */
-        void popFront()
-        {
-            if (data.length)
-            {
+        void popFront() {
+            if (data.length) {
                 data = data[Element(data).size .. $];
             }
         }
@@ -372,10 +331,8 @@ struct Document
     /**
      * @return range of Element's
      */
-    @nogc Range opSlice() const
-    {
-        if (full_size < _data.length)
-        {
+    @nogc Range opSlice() const {
+        if (full_size < _data.length) {
             return Range(_data[0 .. full_size]);
         }
         return Range(_data);
@@ -384,38 +341,31 @@ struct Document
     /**
      * @return range of the member keys in the document
      */
-    KeyRange keys() const
-    {
+    KeyRange keys() const {
         return KeyRange(_data);
     }
 
-    protected struct KeyRange
-    {
+    protected struct KeyRange {
     @nogc:
         Text work_key;
         Range range;
-        this(immutable(ubyte[]) data)
-        {
+        this(immutable(ubyte[]) data) {
             range = Range(data);
         }
 
-        @property bool empty() const pure
-        {
+        @property bool empty() const pure {
             return range.empty;
         }
 
-        @property void popFront()
-        {
+        @property void popFront() {
             range.popFront;
         }
 
-        string front()
-        {
+        string front() {
             return range.front.key(work_key);
         }
 
-        ~this()
-        {
+        ~this() {
             work_key.dispose;
         }
     }
@@ -425,48 +375,39 @@ struct Document
      * Throws an std.conv.ConvException if the keys can not be convert to an uint
      * @return range of indices of the type of uint in the Document
     */
-    IndexRange indices() const
-    {
+    IndexRange indices() const {
         return IndexRange(_data);
     }
 
-    protected struct IndexRange
-    {
+    protected struct IndexRange {
     @nogc:
-        private
-        {
+        private {
             Range range;
             bool _error;
         }
-        this(immutable(ubyte[]) data)
-        {
+        this(immutable(ubyte[]) data) {
             range = Range(data);
         }
 
-        @property bool empty() const pure
-        {
+        @property bool empty() const pure {
             return range.empty;
         }
 
-        uint front()
-        {
+        uint front() {
             Text work_key;
             const key = range.front.key(work_key);
             uint index;
-            if (!is_index(key, index))
-            {
+            if (!is_index(key, index)) {
                 _error = true;
             }
             return index;
         }
 
-        @property void popFront()
-        {
+        @property void popFront() {
             range.popFront;
         }
 
-        @property error() const pure
-        {
+        @property error() const pure {
             return _error;
         }
     }
@@ -475,14 +416,11 @@ struct Document
      * Check if the Document can be clasified as an Array
      * @return true if all the keys in ordred numbers
      */
-    bool isArray() const
-    {
+    bool isArray() const {
         auto range = indices;
-        while (!range.empty)
-        {
+        while (!range.empty) {
             range.popFront;
-            if (range.error)
-            {
+            if (range.error) {
                 return false;
             }
         }
@@ -492,16 +430,14 @@ struct Document
     /**
      * @return true if the key exist in the Document
      */
-    @trusted bool hasMember(scope string key) const
-    {
+    @trusted bool hasMember(scope string key) const {
         return !opBinaryRight!("in")(key).isEod();
     }
 
     /**
      * @return true if the index exist in the Document
      */
-    @trusted bool hasMember(Index)(scope Index index) const if (isIntegral!Index)
-    {
+    @trusted bool hasMember(Index)(scope Index index) const if (isIntegral!Index) {
         return hasMember(index.to!string);
     }
 
@@ -509,29 +445,22 @@ struct Document
      * Find the element with key
      * @return the element with the key, if on element with this key has been found an empty element is returned
      */
-    const(Element) opBinaryRight(string op)(in string key) const if (op == "in")
-    {
-        foreach (element; this[])
-        {
+    const(Element) opBinaryRight(string op)(in string key) const if (op == "in") {
+        foreach (element; this[]) {
             Text work_key;
-            if (element.key(work_key).length == key.length)
-            {
+            if (element.key(work_key).length == key.length) {
                 bool isEqual = true;
-                for (int i = 0; i < key.length; i++)
-                {
-                    if (element.key(work_key)[i] != key[i])
-                    {
+                for (int i = 0; i < key.length; i++) {
+                    if (element.key(work_key)[i] != key[i]) {
                         isEqual = false;
                         break;
                     }
                 }
-                if (isEqual)
-                {
+                if (isEqual) {
                     return element;
                 }
             }
-            if (element.key(work_key) > key)
-            {
+            if (element.key(work_key) > key) {
                 break;
             }
         }
@@ -539,16 +468,12 @@ struct Document
     }
 
     const(Element) opBinaryRight(string op, Index)(const Index key) const
-    if ((op == "in") && (isIntegral!Index))
-    {
-        foreach (ref element; this[])
-        {
-            if (element.isIndex && (element.index == key))
-            {
+    if ((op == "in") && (isIntegral!Index)) {
+        foreach (ref element; this[]) {
+            if (element.isIndex && (element.index == key)) {
                 return element;
             }
-            else if (element.key[0] > '9')
-            {
+            else if (element.key[0] > '9') {
                 break;
             }
         }
@@ -559,8 +484,7 @@ struct Document
      * @return the element with the key
      * @throw if the element with the key is not found then and HiBONException is thrown
      */
-    @trusted @nogc const(Element) opIndex(in string key) const
-    {
+    @trusted @nogc const(Element) opIndex(in string key) const {
         auto result = key in this;
         return result;
     }
@@ -571,13 +495,11 @@ struct Document
        Or of the key is not an index a std.conv.ConvException is thrown
      */
     @trusted @nogc const(Element) opIndex(Index)(in Index index) const
-    if (isIntegral!Index)
-    {
+    if (isIntegral!Index) {
         import tagion.betterC.utils.StringHelper;
 
         auto index_string = int_to_str(index);
-        scope (exit)
-        {
+        scope (exit) {
             index_string.dispose;
         }
 
@@ -593,11 +515,9 @@ struct Document
      * @param key, which size needs to be calculated
      * @return the number of bytes taken up by the key in the HiBON serialized stream
      */
-    @nogc static size_t sizeKey(const(char[]) key) pure
-    {
+    @nogc static size_t sizeKey(const(char[]) key) pure {
         uint index;
-        if (is_index(key, index))
-        {
+        if (is_index(key, index)) {
             return sizeKey(index);
         }
         return Type.sizeof + LEB128.calc_size(key.length) + key.length;
@@ -607,13 +527,11 @@ struct Document
      * @param key, which size needs to be calculated
      * @return the number of bytes taken up by the key in the HiBON serialized stream
      */
-    @nogc static size_t sizeKey(uint key) pure
-    {
+    @nogc static size_t sizeKey(uint key) pure {
         return Type.sizeof + ubyte.sizeof + LEB128.calc_size(key);
     }
 
-    unittest
-    {
+    unittest {
         // Key is an index
         assert(sizeKey("0") is 3);
         assert(sizeKey("1000") is 4);
@@ -628,36 +546,28 @@ struct Document
      * @param x = is the value
      * @return the number of bytes taken up by the element
      */
-    @nogc static size_t sizeT(T, K)(Type type, K key, const(T) x)
-    {
+    @nogc static size_t sizeT(T, K)(Type type, K key, const(T) x) {
         size_t size = sizeKey(key);
-        static if (is(T : U[], U))
-        {
+        static if (is(T : U[], U)) {
             const _size = x.length * U.sizeof;
             size += LEB128.calc_size(_size) + _size;
         }
-        else static if (is(T : const Document))
-        {
+        else static if (is(T : const Document)) {
             size += calc_size(x.data.length) + x.data.length;
         }
-        else static if (is(T : const BigNumber))
-        {
+        else static if (is(T : const BigNumber)) {
             size += x.calc_size;
         }
-        else static if (isDataBlock!T)
-        {
+        else static if (isDataBlock!T) {
             const _size = x.size;
             size += LEB128.calc_size(_size) + _size;
         }
-        else
-        {
+        else {
             //alias BaseT=TypedefType!T;
-            static if (isIntegral!T)
-            {
+            static if (isIntegral!T) {
                 size += LEB128.calc_size(x);
             }
-            else
-            {
+            else {
                 size += T.sizeof;
             }
         }
@@ -672,26 +582,20 @@ struct Document
      * @param index = is offset index in side the buffer and index with be progressed
      */
     static void buildKey(K)(
-        ref BinBuffer buffer, Type type, const K key)
-            if (is(K : const(char[])) || is(K == uint))
-    {
-        static if (is(K : const(char[])))
-        {
+            ref BinBuffer buffer, Type type, const K key) if (is(K : const(char[])) || is(K == uint)) {
+        static if (is(K : const(char[]))) {
             uint key_index;
-            if (is_index(key, key_index))
-            {
+            if (is_index(key, key_index)) {
                 buildKey(buffer, type, key_index);
                 return;
             }
         }
         buffer.write(type);
-        static if (is(K : const(char[])))
-        {
+        static if (is(K : const(char[]))) {
             LEB128.encode(buffer, key.length);
             buffer.write(key);
         }
-        else
-        {
+        else {
             buffer.write(ubyte(0));
             LEB128.encode(buffer, key);
         }
@@ -706,38 +610,30 @@ struct Document
      * @param index = is offset index in side the buffer and index with be progressed
      */
     static void build(T, K)(ref BinBuffer buffer, Type type, const K key, const(T) x)
-            if (is(K : const(char[])) || is(K == uint))
-    {
+            if (is(K : const(char[])) || is(K == uint)) {
         const build_size = buffer.length;
         buildKey(buffer, type, key);
-        static if (is(T : U[], U))
-        {
+        static if (is(T : U[], U)) {
             immutable size = cast(uint)(x.length * U.sizeof);
             LEB128.encode(buffer, size);
             buffer.write(x);
         }
-        else static if (is(T : const Document))
-        {
+        else static if (is(T : const Document)) {
             buffer.write(x.data);
         }
-        else static if (is(T : const BigNumber))
-        {
+        else static if (is(T : const BigNumber)) {
             buffer.write(x.serialize);
         }
-        else static if (is(T : const DataBlock))
-        {
+        else static if (is(T : const DataBlock)) {
             x.serialize(buffer);
         }
-        else static if (is(T : const sdt_t))
-        {
+        else static if (is(T : const sdt_t)) {
             LEB128.encode(buffer, x.time);
         }
-        else static if (isIntegral!T)
-        {
+        else static if (isIntegral!T) {
             LEB128.encode(buffer, x);
         }
-        else
-        {
+        else {
             buffer.write(x);
         }
     }
@@ -747,84 +643,66 @@ struct Document
      * If the Document contains and Array of the elements this range can be used
      * @param Range (Array) of the type U
      */
-    RangeT!U range(T : U[], U)() const
-    {
+    RangeT!U range(T : U[], U)() const {
         return RangeT!U(data);
     }
 
-    struct RangeT(T)
-    {
+    struct RangeT(T) {
     @nogc:
         Range range;
         enum EType = Value.asType!T;
         static assert(EType !is Type.NONE, format("Range type %s not supported", T.stringof));
-        this(immutable(ubyte)[] data)
-        {
+        this(immutable(ubyte)[] data) {
             range = Range(data);
         }
 
-        @property
-        {
-            immutable(ubyte[]) data()
-            {
+        @property {
+            immutable(ubyte[]) data() {
                 return range.data;
             }
 
-            void popFront()
-            {
+            void popFront() {
                 range.popFront;
             }
 
-            const(T) front() const
-            {
+            const(T) front() const {
                 return range.front.get!T;
             }
 
-            uint index() const
-            {
+            uint index() const {
                 return range.front.index;
             }
 
-            const
-            {
-                bool empty() pure
-                {
+            const {
+                bool empty() pure {
                     return range.empty;
                 }
 
-                string key(ref Text work_key)
-                {
+                string key(ref Text work_key) {
                     return range.front.key(work_key);
                 }
             }
         }
     }
 
-    version (unittest)
-    {
+    version (unittest) {
         import std.typecons : Tuple, isTuple;
         import tagion.betterC.utils.Basic : basename;
 
-        static private void make(R)(ref ubyte[] buffer, R range, size_t count = size_t.max)
-                if (isTuple!R)
-        {
+        static private void make(R)(ref ubyte[] buffer, R range, size_t count = size_t.max) if (isTuple!R) {
             size_t temp_index;
             auto temp_buffer = buffer.dup;
-            foreach (i, t; range)
-            {
-                if (i is count)
-                {
+            foreach (i, t; range) {
+                if (i is count) {
                     break;
                 }
                 enum name = range.fieldNames[i];
                 alias U = range.Types[i];
                 enum E = Value.asType!U;
-                static if (name.length is 0)
-                {
+                static if (name.length is 0) {
                     build(temp_buffer, E, cast(uint) i, t, temp_index);
                 }
-                else
-                {
+                else {
                     build(temp_buffer, E, name, t, temp_index);
                 }
             }
@@ -835,8 +713,7 @@ struct Document
         }
     }
 
-    unittest
-    {
+    unittest {
         { // Test of null document
             const doc = Document(null);
             assert(doc.length is 0);
@@ -860,8 +737,7 @@ struct Document
     /**
     * HiBON Element representation
     */
-    struct Element
-    {
+    struct Element {
     @nogc:
         /*
          * -----
@@ -882,8 +758,7 @@ struct Document
          * Construct an Element based on buffer
          * @param data - buffer
          */
-        this(immutable(ubyte[]) data)
-        {
+        this(immutable(ubyte[]) data) {
             // In this time, Element does not parse a binary data.
             // This is lazy initialization for some efficient.
             this.data = data;
@@ -895,22 +770,18 @@ struct Document
          * Evaluates key position
          * @return key position
          */
-        @property uint keyPos() const
-        {
-            if (isIndex)
-            {
+        @property uint keyPos() const {
+            if (isIndex) {
                 return Type.sizeof + ubyte.sizeof;
             }
             return cast(uint)(Type.sizeof + LEB128.calc_size(data[Type.sizeof .. $]));
         }
 
-        @property const
-        {
+        @property const {
             /**
              * @return true if the elemnt is of T
              */
-            bool isType(T)()
-            {
+            bool isType(T)() {
                 enum E = Value.asType!T;
                 return (E !is Type.NONE) && (type is E);
             }
@@ -919,62 +790,48 @@ struct Document
              * @return the HiBON Value of the element
              * @throw if  the type is invalid and HiBONException is thrown
              */
-            const(Value) value()
-            {
+            const(Value) value() {
                 immutable value_pos = valuePos;
                 with (Type)
-            TypeCase : switch (type)
-                {
-                    static foreach (E; EnumMembers!Type)
-                    {
-                        static if (isHiBONType(E))
-                        {
+            TypeCase : switch (type) {
+                    static foreach (E; EnumMembers!Type) {
+                        static if (isHiBONType(E)) {
                 case E:
-                            static if (E is DOCUMENT)
-                            {
+                            static if (E is DOCUMENT) {
                                 immutable len = LEB128.decode!uint(data[value_pos .. $]);
                                 return Value(Document(
                                         data[value_pos .. value_pos + len.size + len.value]));
                             }
-                            else static if ((E is STRING) || (E is BINARY))
-                            {
+                            else static if ((E is STRING) || (E is BINARY)) {
                                 alias T = Value.TypeT!E;
                                 alias U = ForeachType!T;
                                 immutable binary_len = LEB128.decode!uint(data[value_pos .. $]);
                                 immutable buffer_pos = value_pos + binary_len.size;
                                 immutable buffer = (cast(immutable(U)*)(data[buffer_pos .. $].ptr))[0 .. binary_len
-                                    .value];
+                                        .value];
                                 return Value(buffer);
                             }
-                            else static if (E is BIGINT)
-                            {
+                            else static if (E is BIGINT) {
                                 return Value(BigNumber(data[value_pos .. $]));
                             }
-                            else static if (isDataBlock(E))
-                            {
+                            else static if (isDataBlock(E)) {
                                 // immutable binary_len=LEB128.decode!uint(data[value_pos..$]);
                                 // immutable buffer_pos=value_pos+binary_len.size;
                                 // immutable buffer=data[buffer_pos..buffer_pos+binary_len.value];
                                 return Value(DataBlock(data[value_pos .. $]));
                             }
-                            else
-                            {
-                                if (isHiBONType(type))
-                                {
-                                    static if (E is TIME)
-                                    {
+                            else {
+                                if (isHiBONType(type)) {
+                                    static if (E is TIME) {
                                         alias T = long;
                                     }
-                                    else
-                                    {
+                                    else {
                                         alias T = Value.TypeT!E;
                                     }
-                                    static if (isIntegral!T)
-                                    {
+                                    static if (isIntegral!T) {
                                         return Value(LEB128.decode!T(data[value_pos .. $]).value);
                                     }
-                                    else
-                                    {
+                                    else {
                                         Value* result = cast(Value*)(&data[value_pos]);
                                         return *result;
                                     }
@@ -994,8 +851,7 @@ struct Document
              * @return the value as the HiBON type Type
              * @throw if the element does not contain the type E and HiBONException is thrown
              */
-            auto by(Type E)() const
-            {
+            auto by(Type E)() const {
                 return value.by!E;
             }
 
@@ -1003,8 +859,7 @@ struct Document
              * @return the value as the type T
              * @throw if the element does not contain the type and HiBONException is thrown
              */
-            @trusted const(T) get(T)() const
-            {
+            @trusted const(T) get(T)() const {
                 enum E = Value.asType!T;
                 static assert(E !is Type.NONE, "Unsupported type " ~ T.stringof);
                 return by!E;
@@ -1014,23 +869,17 @@ struct Document
              * Tryes to convert the value to the type T.
              * @return true if the function succeeds
              */
-            bool as(T)(ref T result)
-            {
-                switch (type)
-                {
-                    static foreach (E; EnumMembers!Type)
-                    {
-                        static if (isHiBONType(E))
-                        {
+            bool as(T)(ref T result) {
+                switch (type) {
+                    static foreach (E; EnumMembers!Type) {
+                        static if (isHiBONType(E)) {
                 case E:
                             alias BaseT = Value.TypeT!E;
-                            static if (isImplicitlyConvertible!(BaseT, T))
-                            {
+                            static if (isImplicitlyConvertible!(BaseT, T)) {
                                 result = value.get!BaseT;
                                 return true;
                             }
-                            else static if (__traits(compiles, value.get!(BaseT).to!T))
-                            {
+                            else static if (__traits(compiles, value.get!(BaseT).to!T)) {
                                 result = value.get!(BaseT)
                                     .to!T;
                             }
@@ -1044,30 +893,25 @@ struct Document
              * @return the index of the key
              * @throw if the key is not an index an HiBONException is thrown
              */
-            uint index()
-            {
+            uint index() {
                 return LEB128.decode!uint(data[keyPos .. $]).value;
             }
 
         }
 
-        @property const pure
-        {
+        @property const pure {
             /**
              * @return true if the buffer block ends
              */
-            bool isEod()
-            {
+            bool isEod() {
                 return data.length == 0;
             }
 
             /**
              * @return the Type of the element
              */
-            Type type()
-            {
-                if (isEod)
-                {
+            Type type() {
+                if (isEod) {
                     return Type.NONE;
                 }
                 return cast(Type)(data[0]);
@@ -1077,20 +921,16 @@ struct Document
              * @return true if element key is an index
              */
         }
-        bool isIndex() const
-        {
+        bool isIndex() const {
             return data[Type.sizeof] is 0;
         }
 
-        @property const
-        {
+        @property const {
             /**
              * @return the key length
              */
-            uint keyLen()
-            {
-                if (isIndex)
-                {
+            uint keyLen() {
+                if (isIndex) {
                     return cast(uint) LEB128.calc_size(data[keyPos .. $]);
                 }
                 return LEB128.decode!uint(data[Type.sizeof .. $]).value;
@@ -1099,10 +939,8 @@ struct Document
             /**
              * @return the key
              */
-            string key(ref Text key_index)
-            {
-                if (isIndex)
-                {
+            string key(ref Text key_index) {
+                if (isIndex) {
                     key_index(LEB128.decode!uint(data[keyPos .. $]).value);
                     return key_index.serialize;
                 }
@@ -1112,80 +950,61 @@ struct Document
             /**
              * @return the position of the value inside the element buffer
              */
-            uint valuePos()
-            {
+            uint valuePos() {
                 return keyPos + keyLen;
             }
 
-            uint dataPos()
-            {
+            uint dataPos() {
                 return valuePos + cast(uint) LEB128.calc_size(data[valuePos .. $]);
             }
 
-            uint dataSize()
-            {
+            uint dataSize() {
                 return LEB128.decode!uint(data[valuePos .. $]).value;
             }
             /**
              * @return the size of the element in bytes
              */
-            size_t size()
-            {
-                with (Type)
-                {
+            size_t size() {
+                with (Type) {
                 TypeCase:
-                    switch (type)
-                    {
-                        static foreach (E; EnumMembers!Type)
-                        {
+                    switch (type) {
+                        static foreach (E; EnumMembers!Type) {
                     case E:
-                            static if (isHiBONType(E))
-                            {
+                            static if (isHiBONType(E)) {
                                 alias T = Value.TypeT!E;
                                 static if (
                                     (E is STRING) || (E is DOCUMENT) ||
-                                    (E is BINARY))
-                                {
+                                        (E is BINARY)) {
                                     return dataPos + dataSize;
                                 }
-                                else static if (isDataBlock(E))
-                                {
+                                else static if (isDataBlock(E)) {
                                     return dataPos + dataSize;
                                 }
-                                else static if (E is BIGINT)
-                                {
+                                else static if (E is BIGINT) {
                                     return valuePos + LEB128.calc_size(data[valuePos .. $]);
                                 }
-                                else
-                                {
-                                    static if (E is TIME)
-                                    {
+                                else {
+                                    static if (E is TIME) {
                                         alias BaseT = long;
                                     }
-                                    else
-                                    {
+                                    else {
                                         alias BaseT = T;
                                     }
-                                    static if (isIntegral!BaseT)
-                                    {
+                                    static if (isIntegral!BaseT) {
                                         return valuePos + LEB128.calc_size(data[valuePos .. $]);
                                     }
-                                    else
-                                    {
+                                    else {
                                         return valuePos + BaseT.sizeof;
                                     }
                                 }
                             }
-                            else static if (isNative(E))
-                            {
-                                static if (E is NATIVE_DOCUMENT)
-                                {
+                            else static if (isNative(E)) {
+                                static if (E is NATIVE_DOCUMENT) {
                                     const doc = Document(data[valuePos .. $]);
                                     return valuePos + dataSize + doc.size;
                                 }
                             }
-                            else static if (E is Type.NONE)
-                            {
+                            else static if (E is Type.NONE) {
                                 goto default;
                             }
                             break TypeCase;
@@ -1202,8 +1021,7 @@ struct Document
                 // assert(0, error.serialize);
             }
 
-            enum ErrorCode
-            {
+            enum ErrorCode {
                 NONE, // No errors
                 INVALID_NULL, // Invalid null object
                 KEY_ORDER, // Error in the key order
@@ -1220,35 +1038,26 @@ struct Document
              * @return the error code the element.
                ErrorCode.NONE means that the element is valid
             */
-            @trusted ErrorCode valid()
-            {
+            @trusted ErrorCode valid() {
                 enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
 
-                with (ErrorCode)
-                {
-                    if (type is Type.DOCUMENT)
-                    {
+                with (ErrorCode) {
+                    if (type is Type.DOCUMENT) {
                         return DOCUMENT_TYPE;
                     }
-                    if (data.length < MIN_ELEMENT_SIZE)
-                    {
-                        if (data.length !is ubyte.sizeof)
-                        {
+                    if (data.length < MIN_ELEMENT_SIZE) {
+                        if (data.length !is ubyte.sizeof) {
                             return TOO_SMALL;
                         }
-                        else if (data[0]!is 0)
-                        {
+                        else if (data[0]!is 0) {
                             return INVALID_NULL;
                         }
                     }
                 TypeCase:
-                    switch (type)
-                    {
-                        static foreach (E; EnumMembers!Type)
-                        {
+                    switch (type) {
+                        static foreach (E; EnumMembers!Type) {
                     case E:
-                            static if ((isNative(E) || (E is Type.DEFINED_ARRAY)))
-                            {
+                            static if ((isNative(E) || (E is Type.DEFINED_ARRAY))) {
                                 return ILLEGAL_TYPE;
                             }
                             break TypeCase;
@@ -1256,15 +1065,12 @@ struct Document
                     default:
                         return INVALID_TYPE;
                     }
-                    if (size > data.length)
-                    {
+                    if (size > data.length) {
                         return OVERFLOW;
                     }
-                    if (type is Type.BINARY)
-                    {
+                    if (type is Type.BINARY) {
                         const leb128_size = LEB128.decode!ulong(data[valuePos .. $]);
-                        if (leb128_size.value > uint.max)
-                        {
+                        if (leb128_size.value > uint.max) {
                             return OVERFLOW;
                         }
                     }
@@ -1273,23 +1079,18 @@ struct Document
             }
         }
 
-        @property const pure
-        {
+        @property const pure {
             /**
              * Check if the type match That template.
              * That template must have one parameter T as followes
              * @return true if the element is the type That
             */
-            bool isThat(alias That)()
-            {
+            bool isThat(alias That)() {
             TypeCase:
-                switch (type)
-                {
-                    static foreach (E; EnumMembers!Type)
-                    {
+                switch (type) {
+                    static foreach (E; EnumMembers!Type) {
                 case E:
-                        static if (isHiBONType(E))
-                        {
+                        static if (isHiBONType(E)) {
                             alias T = Value.TypeT!E;
                             return That!T;
                         }
@@ -1304,11 +1105,9 @@ struct Document
         /**
          * Compare two elements
          */
-        bool opEquals(ref const Element other) const
-        {
+        bool opEquals(ref const Element other) const {
             immutable s = size;
-            if (s !is other.size)
-            {
+            if (s !is other.size) {
                 return false;
             }
             return data[0 .. s] == other.data[0 .. s];

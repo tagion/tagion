@@ -18,15 +18,12 @@ import tagion.services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, 
 import tagion.gossip.AddressBook : addressbook, NodeAddress;
 
 void fileDiscoveryService(
-    Pubkey pubkey,
-    shared p2plib.Node node,
-    string task_name,
-    immutable(Options) opts) nothrow
-{ //TODO: for test
-    try
-    {
-        scope (success)
-        {
+        Pubkey pubkey,
+        shared p2plib.Node node,
+        string task_name,
+        immutable(Options) opts) nothrow { //TODO: for test
+    try {
+        scope (success) {
             ownerTid.prioritySend(Control.END);
         }
         log.register(task_name);
@@ -35,8 +32,7 @@ void fileDiscoveryService(
 
         bool stop = false;
 
-        void initialize()
-        {
+        void initialize() {
             static uint count;
             count++;
             addressbook.load(shared_storage, false);
@@ -45,8 +41,7 @@ void fileDiscoveryService(
             addressbook.save(shared_storage, true);
         }
 
-        void updateAddressbook()
-        {
+        void updateAddressbook() {
             static uint count;
             count++;
             log.trace("update %d %s", count, pubkey.cutHex);
@@ -57,21 +52,17 @@ void fileDiscoveryService(
         log("File Discovery started");
         ownerTid.send(Control.LIVE);
         bool addressbook_done;
-        while (!stop)
-        {
+        while (!stop) {
             const message = receiveTimeout(
-                500.msecs,
-                (Control control) {
-                if (control is Control.STOP)
-                {
+                    500.msecs,
+                    (Control control) {
+                if (control is Control.STOP) {
                     stop = true;
                 }
             },
-                (DiscoveryRequestCommand request) {
-                with (DiscoveryRequestCommand)
-                {
-                    final switch (request)
-                    {
+                    (DiscoveryRequestCommand request) {
+                with (DiscoveryRequestCommand) {
+                    final switch (request) {
                     case RequestTable:
                         addressbook_done = false;
                         break;
@@ -86,24 +77,20 @@ void fileDiscoveryService(
                 }
             }
             );
-            if (!addressbook_done)
-            {
-                if (!message)
-                {
+            if (!addressbook_done) {
+                if (!message) {
                     updateAddressbook;
                 }
                 log.trace("FILE NETWORK READY %d < %d (%s) done = %s", addressbook.numOfNodes, opts.nodes, addressbook
                         .isReady, addressbook_done);
-                if (addressbook.isReady)
-                {
+                if (addressbook.isReady) {
                     ownerTid.send(DiscoveryControl.READY);
                     addressbook_done = true;
                 }
             }
         }
     }
-    catch (Throwable t)
-    {
+    catch (Throwable t) {
         fatal(t);
     }
 }

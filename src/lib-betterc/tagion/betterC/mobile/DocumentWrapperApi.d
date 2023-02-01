@@ -34,12 +34,10 @@ public Recycle!Document recyclerDoc;
 //     recyclerDoc._active -> fail;
 // }
 
-extern (C)
-{
+extern (C) {
     enum BAD_RESULT = 0;
 
-    string[] parse_string(const char* str, const uint len)
-    {
+    string[] parse_string(const char* str, const uint len) {
         string[] result;
         return result;
     }
@@ -71,18 +69,15 @@ extern (C)
     //     return BAD_RESULT;
     // }
     /// Creating Document by ubyte array
-    export uint32_t create_doc(const uint8_t* data_ptr, const uint32_t len)
-    {
+    export uint32_t create_doc(const uint8_t* data_ptr, const uint32_t len) {
         // immutable(ubyte)[] data = cast(immutable(ubyte)[]) data_ptr[0 .. len];
         ubyte[] data;
         data.create(len);
-        for (size_t i = 0; i < len; i++)
-        {
+        for (size_t i = 0; i < len; i++) {
             data[i] = data_ptr[i];
         }
         auto doc = Document(cast(immutable)(data));
-        if (doc.isInorder())
-        {
+        if (doc.isInorder()) {
             auto docId = recyclerDoc.create(doc);
             return docId;
         }
@@ -90,10 +85,8 @@ extern (C)
     }
 
     /// Deleting the specific Document
-    export void delete_doc_by_id(const uint32_t id)
-    {
-        if (id !is BAD_RESULT)
-        {
+    export void delete_doc_by_id(const uint32_t id) {
+        if (id !is BAD_RESULT) {
             recyclerDoc.erase(id);
         }
     }
@@ -109,32 +102,26 @@ extern (C)
     // }
 
     /// Getting the int value from Document by string key
-    export int32_t doc_get_int_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len)
-    {
+    export int32_t doc_get_int_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         // immutable key = cast(immutable)(key_str[0 .. len]);
         char[] key;
         key.create(len);
-        for (int i = 0; i < len; i++)
-        {
+        for (int i = 0; i < len; i++) {
             key[i] = key_str[i];
         }
-        if (recyclerDoc(doc_id).hasMember(cast(string)(key)))
-        {
+        if (recyclerDoc(doc_id).hasMember(cast(string)(key))) {
             return recyclerDoc(doc_id)[cast(string) key].get!int;
         }
         return BAD_RESULT;
     }
     /// Getting the ulong value from Document by string key
-    export int64_t doc_get_ulong_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len)
-    {
+    export int64_t doc_get_ulong_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         char[] key;
         key.create(len);
-        for (int i = 0; i < len; i++)
-        {
+        for (int i = 0; i < len; i++) {
             key[i] = key_str[i];
         }
-        if (recyclerDoc(doc_id).hasMember(cast(string)(key)))
-        {
+        if (recyclerDoc(doc_id).hasMember(cast(string)(key))) {
             return recyclerDoc(doc_id)[cast(string) key].get!ulong;
         }
         return BAD_RESULT;
@@ -153,16 +140,13 @@ extern (C)
 
     // /// getting the string value from Document by string key
     // /// It uses UF-16 codding
-    export const(char*) doc_get_str_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len)
-    {
+    export const(char*) doc_get_str_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         char[] key;
         key.create(len);
-        for (int i = 0; i < len; i++)
-        {
+        for (int i = 0; i < len; i++) {
             key[i] = key_str[i];
         }
-        if (recyclerDoc(doc_id).hasMember(cast(string)(key)))
-        {
+        if (recyclerDoc(doc_id).hasMember(cast(string)(key))) {
             string str = recyclerDoc(doc_id)[cast(string) key].get!string;
             return str.ptr;
         }
@@ -192,16 +176,13 @@ extern (C)
 
     // /// getting the Document value from Document by string key
     // /// It uses UF-16 codding
-    export uint64_t doc_get_docLen_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len)
-    {
+    export uint64_t doc_get_docLen_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         char[] key;
         key.create(len);
-        for (int i = 0; i < len; i++)
-        {
+        for (int i = 0; i < len; i++) {
             key[i] = key_str[i];
         }
-        if (recyclerDoc(doc_id).hasMember(cast(string)(key)))
-        {
+        if (recyclerDoc(doc_id).hasMember(cast(string)(key))) {
             const doc = recyclerDoc(doc_id)[cast(string) key].get!Document;
             return doc.serialize.length;
         }
@@ -222,16 +203,13 @@ extern (C)
 
     // /// getting the Document value from Document by string key
     // /// It uses UF-16 codding
-    export uint8_t* doc_get_docPtr_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len)
-    {
+    export uint8_t* doc_get_docPtr_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         char[] key;
         key.create(len);
-        for (int i = 0; i < len; i++)
-        {
+        for (int i = 0; i < len; i++) {
             key[i] = key_str[i];
         }
-        if (recyclerDoc(doc_id).hasMember(cast(string)(key)))
-        {
+        if (recyclerDoc(doc_id).hasMember(cast(string)(key))) {
             const doc = recyclerDoc(doc_id)[cast(string) key].get!Document;
             return cast(ubyte*) doc.serialize.ptr;
         }
@@ -240,16 +218,14 @@ extern (C)
 
     // /// getting the Document value
     // /// It uses UF-16 codding
-    export uint64_t get_docLen(const uint32_t doc_id)
-    {
+    export uint64_t get_docLen(const uint32_t doc_id) {
         const doc = recyclerDoc(doc_id);
         return doc.serialize.length;
     }
 
     // /// getting the Document value
     // /// It uses UF-16 codding
-    export uint8_t* get_docPtr(const uint32_t doc_id)
-    {
+    export uint8_t* get_docPtr(const uint32_t doc_id) {
         const doc = recyclerDoc(doc_id);
         return cast(ubyte*) doc.serialize.ptr;
     }
@@ -264,16 +240,13 @@ extern (C)
     //     return BAD_RESULT;
     // }
 
-    export uint64_t doc_get_bufferLen_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len)
-    {
+    export uint64_t doc_get_bufferLen_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         char[] key;
         key.create(len);
-        for (int i = 0; i < len; i++)
-        {
+        for (int i = 0; i < len; i++) {
             key[i] = key_str[i];
         }
-        if (recyclerDoc(doc_id).hasMember(cast(string)(key)))
-        {
+        if (recyclerDoc(doc_id).hasMember(cast(string)(key))) {
             const buf = recyclerDoc(doc_id)[cast(string) key].get!Buffer;
             return buf.length;
         }
@@ -290,24 +263,20 @@ extern (C)
     //     return null;
     // }
 
-    export uint8_t* doc_get_bufferPtr_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len)
-    {
+    export uint8_t* doc_get_bufferPtr_by_key(const uint32_t doc_id, const char* key_str, const uint32_t len) {
         char[] key;
         key.create(len);
-        for (int i = 0; i < len; i++)
-        {
+        for (int i = 0; i < len; i++) {
             key[i] = key_str[i];
         }
-        if (recyclerDoc(doc_id).hasMember(cast(string)(key)))
-        {
+        if (recyclerDoc(doc_id).hasMember(cast(string)(key))) {
             const doc = recyclerDoc(doc_id)[cast(string) key].get!Buffer;
             return cast(ubyte*) doc.ptr;
         }
         return null;
     }
 
-    export uint64_t doc_get_memberCount(const uint32_t doc_id)
-    {
+    export uint64_t doc_get_memberCount(const uint32_t doc_id) {
         return recyclerDoc(doc_id).length;
     }
     // /// Getting the keys of Document

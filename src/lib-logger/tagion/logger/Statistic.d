@@ -7,7 +7,7 @@ import std.format;
 import tagion.hibon.HiBONRecord;
 
 @safe
-struct Statistic(T, Flag!"histogram" flag=No.histogram) {
+struct Statistic(T, Flag!"histogram" flag = No.histogram) {
     protected {
         double sum2 = 0.0;
         double sum = 0.0;
@@ -30,35 +30,34 @@ struct Statistic(T, Flag!"histogram" flag=No.histogram) {
         N++;
         static if (flag) {
             _histogram.update(
-                value,
-                () => 1,
-                (ref uint a) => a+=1);
+                    value,
+                    () => 1,
+                    (ref uint a) => a += 1);
         }
     }
-
 
     alias Result = Tuple!(double, "sigma", double, "mean", uint, "N", T, "min", T, "max");
     mixin HiBONRecord;
 
     const pure nothrow @nogc {
-    const(Result) result() {
-        immutable mx = sum / N;
-        immutable mx2 = mx * mx;
-        immutable M = sum2 + N * mx2 - 2 * mx * sum;
-        import std.math : sqrt;
-        return Result(sqrt(M / (N - 1)), mx, N, _min, _max);
-    }
+        const(Result) result() {
+            immutable mx = sum / N;
+            immutable mx2 = mx * mx;
+            immutable M = sum2 + N * mx2 - 2 * mx * sum;
+            import std.math : sqrt;
 
-
-    static if (flag) {
-        bool contains(const T size) {
-            return (size in _histogram) !is null;
+            return Result(sqrt(M / (N - 1)), mx, N, _min, _max);
         }
 
-        const(uint[T]) histogram() {
-            return _histogram;
+        static if (flag) {
+            bool contains(const T size) {
+                return (size in _histogram) !is null;
+            }
+
+            const(uint[T]) histogram() {
+                return _histogram;
+            }
         }
-    }
     }
     string toString() const {
         return format("N=%d sum2=%s sum=%s min=%s max=%s", N, sum2, sum, _min, _max);
@@ -120,9 +119,10 @@ unittest {
     assert(histogram.get(-10, 0) == samples.filter!(a => a == -10).count);
 }
 
-version(unittest) {
+version (unittest) {
     import std.algorithm.iteration : each, filter;
     import std.algorithm.searching : count, maxElement, minElement;
     import std.math.operations : isClose;
+
     alias approx = (a, b) => isClose(a, b, 0.001);
 }

@@ -348,14 +348,14 @@ int check_reports(string[] paths, const bool verbose) {
 
                 report(feature_test_code, feature_group.info.property.description);
                 const show_scenario = feature_test_code == TestCode.error
-                                   || feature_test_code == TestCode.started;
+                    || feature_test_code == TestCode.started;
                 foreach (scenario_group; feature_group.scenarios) {
                     const scenario_test_code = testCode(scenario_group);
                     scenario_count.update(scenario_test_code);
                     if (show_scenario) {
                         report(scenario_test_code, "\t%s", scenario_group.info.property
-                        .description);
-                        foreach(err; getBDDErrors(scenario_group)) {
+                                .description);
+                        foreach (err; getBDDErrors(scenario_group)) {
                             report(scenario_test_code, "\t\t%s", err.msg);
                         }
                     }

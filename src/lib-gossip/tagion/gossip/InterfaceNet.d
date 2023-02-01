@@ -20,8 +20,7 @@ alias consensus = consensusCheckArguments!(GossipConsensusException);
 
 //import tagion.hashgraph.HashGraphBasic : Tides;
 version (none) @safe
-interface NetCallbacks : EventMonitorCallbacks
-{
+interface NetCallbacks : EventMonitorCallbacks {
 
     //    void sent_tidewave(immutable(Pubkey) receiving_channel, const(Tides) tides);
 
@@ -32,15 +31,13 @@ interface NetCallbacks : EventMonitorCallbacks
 }
 
 @safe
-interface P2pNet
-{
+interface P2pNet {
     void send(const(Pubkey) channel, const(HiRPC.Sender) doc);
     void close();
 }
 
 @safe
-interface GossipNet : P2pNet
-{
+interface GossipNet : P2pNet {
     alias ChannelFilter = bool delegate(const(Pubkey) channel) @safe;
     alias SenderCallBack = const(HiRPC.Sender) delegate() @safe;
     const(sdt_t) time() pure const nothrow;
@@ -53,8 +50,7 @@ interface GossipNet : P2pNet
 }
 
 @safe
-interface ScriptNet
-{
+interface ScriptNet {
     import std.concurrency;
 
     @property void transcript_tid(Tid tid);

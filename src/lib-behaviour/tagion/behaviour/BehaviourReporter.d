@@ -9,5 +9,4 @@ interface BehaviourReporter {
     const(Exception) after(scope const(FeatureGroup*) feature_group) nothrow;
 }
 
-
 static shared(BehaviourReporter) reporter;

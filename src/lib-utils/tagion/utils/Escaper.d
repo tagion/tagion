@@ -93,7 +93,7 @@ Escaper!S escaper(S)(S range) {
 ///Examples: Escaping a text range
 @safe
 unittest {
-//    import std.stdio;
+    //    import std.stdio;
     import std.algorithm.comparison : equal;
 
     { /// Simple string unchanged

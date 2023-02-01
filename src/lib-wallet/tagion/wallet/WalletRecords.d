@@ -6,11 +6,9 @@ import tagion.basic.Types : Buffer, Pubkey;
 import tagion.script.TagionCurrency;
 import tagion.script.StandardRecords : StandardBill;
 
-@safe
-{
+@safe {
     @RecordType("Quiz")
-    struct Quiz
-    {
+    struct Quiz {
         @Label("$Q") string[] questions;
         mixin HiBONRecord;
     }
@@ -19,13 +17,11 @@ import tagion.script.StandardRecords : StandardBill;
 
 +/
     @RecordType("PIN")
-    struct DevicePIN
-    {
+    struct DevicePIN {
         Buffer D; /// Device number
         Buffer U; /// Device random
         Buffer S; /// Check sum value
-        void recover(ref scope ubyte[] R, scope const(ubyte[]) P) pure nothrow const
-        {
+        void recover(ref scope ubyte[] R, scope const(ubyte[]) P) pure nothrow const {
             import tagion.utils.Miscellaneous : xor;
 
             xor(R, D, P);
@@ -40,8 +36,7 @@ import tagion.script.StandardRecords : StandardBill;
     // }
 
     @RecordType("Wallet")
-    struct RecoverGenerator
-    {
+    struct RecoverGenerator {
         Buffer[] Y; /// Recorvery seed
         Buffer S; /// Check value S=H(H(R))
         @Label("N") uint confidence;

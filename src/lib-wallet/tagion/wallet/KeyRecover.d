@@ -24,10 +24,8 @@ import tagion.wallet.WalletRecords : RecoverGenerator;
  + Exception type used by for key-recovery module
  +/
 @safe
-class KeyRecorverException : TagionException
-{
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
-    {
+class KeyRecorverException : TagionException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, file, line);
     }
 }
@@ -35,38 +33,32 @@ class KeyRecorverException : TagionException
 alias check = Check!KeyRecorverException;
 
 @safe
-struct KeyRecover
-{
+struct KeyRecover {
     enum MAX_QUESTION = 10;
     enum MAX_SEEDS = 64;
     const HashNet net;
     protected RecoverGenerator generator;
 
     @nogc
-    this(const HashNet net) pure nothrow
-    {
+    this(const HashNet net) pure nothrow {
         this.net = net;
     }
 
-    this(const HashNet net, Document doc)
-    {
+    this(const HashNet net, Document doc) {
         this.net = net;
         generator = RecoverGenerator(doc);
     }
 
-    this(const HashNet net, RecoverGenerator generator)
-    {
+    this(const HashNet net, RecoverGenerator generator) {
         this.net = net;
         this.generator = generator;
     }
 
-    inout(HiBON) toHiBON() inout
-    {
+    inout(HiBON) toHiBON() inout {
         return generator.toHiBON;
     }
 
-    const(Document) toDoc() const
-    {
+    const(Document) toDoc() const {
         return generator.toDoc;
     }
 
@@ -74,16 +66,13 @@ struct KeyRecover
      Generates the quiz hash of the from a list of questions and answers
      +/
     Buffer[] quiz(scope const(string[]) questions, scope const(char[][]) answers) const @trusted
-    in
-    {
+    in {
         assert(questions.length is answers.length);
     }
-    do
-    {
+    do {
         auto results = new Buffer[questions.length];
         foreach (ref result, question, answer; lockstep(results, questions, answers, StoppingPolicy
-                .requireSameLength))
-        {
+                .requireSameLength)) {
             scope strip_down = cast(ubyte[]) answer.strip_down;
             scope answer_hash = net.rawCalcHash(strip_down);
             scope question_hash = net.rawCalcHash(question.representation);
@@ -100,46 +89,37 @@ struct KeyRecover
 
     @nogc
     static uint numberOfSeeds(const uint M, const uint N) pure nothrow
-    in
-    {
+    in {
         assert(M >= N);
         assert(M <= 10);
     }
-    do
-    {
+    do {
         return (M - N) * N + 1;
     }
 
     @nogc
-    static unittest
-    {
+    static unittest {
         assert(numberOfSeeds(10, 5) is 26);
     }
 
-    Buffer checkHash(scope const(ubyte[]) value, scope const(ubyte[]) salt = null) const
-    {
+    Buffer checkHash(scope const(ubyte[]) value, scope const(ubyte[]) salt = null) const {
         return net.rawCalcHash(net.rawCalcHash(value) ~ salt);
     }
 
     static void iterateSeeds(
-        const uint M, const uint N,
-        scope void delegate(scope const(uint[]) indices) @safe dg)
-    {
+            const uint M, const uint N,
+            scope void delegate(scope const(uint[]) indices) @safe dg) {
         scope include = new uint[N];
         iota(N).copy(include);
-        void local_search(const int index, const int size) @safe
-        {
-            if (index >= 0)
-            {
+        void local_search(const int index, const int size) @safe {
+            if (index >= 0) {
                 dg(include);
                 pragma(msg, "review(cbr): Side channel attack fixed");
-                if (include[index] < size)
-                {
+                if (include[index] < size) {
                     include[index]++;
                     local_search(index, size);
                 }
-                else if (index > 0)
-                {
+            else if (index > 0) {
                     include[index - 1]++;
                     local_search(index - 1, size - 1);
                 }
@@ -149,17 +129,14 @@ struct KeyRecover
         local_search(cast(int) include.length - 1, M - 1);
     }
 
-    void createKey(scope const(string[]) questions, scope const(char[][]) answers, const uint confidence)
-    {
+    void createKey(scope const(string[]) questions, scope const(char[][]) answers, const uint confidence) {
         createKey(quiz(questions, answers), confidence);
     }
 
-    void createKey(Buffer[] A, const uint confidence)
-    {
+    void createKey(Buffer[] A, const uint confidence) {
         scope R = new ubyte[net.hashSize];
         scramble(R);
-        scope (exit)
-        {
+        scope (exit) {
             scramble(R);
         }
         quizSeed(R, A, confidence);
@@ -168,15 +145,12 @@ struct KeyRecover
     /++
      Generates the quiz seed values from the privat key R and the quiz list
      +/
-    void quizSeed(scope ref const(ubyte[]) R, scope Buffer[] A, const uint confidence)
-    {
-        scope (success)
-        {
+    void quizSeed(scope ref const(ubyte[]) R, scope Buffer[] A, const uint confidence) {
+        scope (success) {
             generator.confidence = confidence;
             generator.S = checkHash(R);
         }
-        scope (failure)
-        {
+        scope (failure) {
             generator.Y = null;
             generator.S = null;
             generator.confidence = 0;
@@ -204,8 +178,7 @@ struct KeyRecover
                 seeds, MAX_SEEDS));
         generator.Y = new Buffer[seeds];
         uint count;
-        void calculate_this_seeds(scope const(uint[]) indices) @safe
-        {
+        void calculate_this_seeds(scope const(uint[]) indices) @safe {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
             pragma(msg, "review(cbr): Recovery now used Y_a = R x H(A_a) instead of Y_a = R x H(A_a)");
 
@@ -218,13 +191,11 @@ struct KeyRecover
         iterateSeeds(number_of_questions, confidence, &calculate_this_seeds);
     }
 
-    bool findSecret(scope ref ubyte[] R, scope const(string[]) questions, scope const(char[][]) answers) const
-    {
+    bool findSecret(scope ref ubyte[] R, scope const(string[]) questions, scope const(char[][]) answers) const {
         return findSecret(R, quiz(questions, answers));
     }
 
-    bool findSecret(scope ref ubyte[] R, Buffer[] A) const
-    {
+    bool findSecret(scope ref ubyte[] R, Buffer[] A) const {
 
         
 
@@ -233,24 +204,21 @@ struct KeyRecover
         
 
         .check(generator.confidence <= A.length,
-            message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
+                message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
                 A.length, generator.confidence));
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, generator.confidence);
 
         bool result;
-        void search_for_the_secret(scope const(uint[]) indices) @safe
-        {
+        void search_for_the_secret(scope const(uint[]) indices) @safe {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
             pragma(msg, "review(cbr): Recovery now used Y_a = R x H(A_a) instead of Y_a = R x H(A_a)");
             const guess = net.rawCalcHash(xor(list_of_selected_answers_and_the_secret));
             scope _R = new ubyte[net.hashSize];
-            foreach (y; generator.Y)
-            {
+            foreach (y; generator.Y) {
                 xor(_R, y, guess);
                 pragma(msg, "review(cbr): constant time on a equal - sidechannel attack");
-                if (generator.S == checkHash(_R))
-                {
+                if (generator.S == checkHash(_R)) {
                     _R.copy(R);
                     result = true;
                 }
@@ -264,12 +232,10 @@ struct KeyRecover
 }
 
 char[] strip_down(const(char[]) text) pure @safe
-out (result)
-{
+out (result) {
     assert(result.length > 0);
 }
-do
-{
+do {
     import std.ascii : toLower, isAlphaNum;
 
     return text
@@ -280,8 +246,7 @@ do
 
 static immutable(string[]) standard_questions;
 
-shared static this()
-{
+shared static this() {
     standard_questions = [
         "What is your favorite book?",
         "What is the name of the road you grew up on?",
@@ -296,8 +261,7 @@ shared static this()
     ];
 }
 
-unittest
-{
+unittest {
     import tagion.crypto.SecureNet : StdHashNet;
     import std.array : join;
 

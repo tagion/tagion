@@ -12,8 +12,7 @@ import tagion.hibon.HiBONRecord : isHiBONRecord;
  * \interface HashChainStorage
  * Interface represents entity that provides access to storage of hash chain blocks
  */
-@safe interface HashChainStorage(Block : HashChainBlock) if (isHiBONRecord!Block)
-{
+@safe interface HashChainStorage(Block : HashChainBlock) if (isHiBONRecord!Block) {
     /** Writes given block to storage 
      *      @param block - block to write
      */

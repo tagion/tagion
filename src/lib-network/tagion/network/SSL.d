@@ -20,7 +20,7 @@ protected enum _SSLErrorCodes {
 }
 
 version (WOLFSSL) {
-   // alias SSLErrorCodes = _SSLErrorCodes;
+    // alias SSLErrorCodes = _SSLErrorCodes;
     extern (C) {
         private import tagion.network.wolfssl.c.error_ssl;
         private import tagion.network.wolfssl.c.wolfcrypt.error_crypt;
@@ -78,7 +78,7 @@ version (WOLFSSL) {
     alias SSL_Init = wolfSSL_Init;
     alias SSL_Cleanup = wolfSSL_Cleanup;
     enum SSLErrorCodes_code = generator_SSLErrorCodes;
-//    pragma(msg, SSLErrorCodes_code);
+    //    pragma(msg, SSLErrorCodes_code);
     mixin(SSLErrorCodes_code);
 
     void ERR_error_string_n(int err, char* buf, size_t size) {

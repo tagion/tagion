@@ -10,25 +10,20 @@ import tagion.betterC.utils.platform : calloc;
 
 //import core.stdc.stdio;
 
-struct Text
-{
+struct Text {
 @nogc:
-    protected
-    {
+    protected {
         char[] str;
         size_t index;
     }
 
-    this(const size_t size)
-    {
-        if (size > 0)
-        {
+    this(const size_t size) {
+        if (size > 0) {
             str.create(size);
         }
     }
 
-    this(const(char[]) _str)
-    {
+    this(const(char[]) _str) {
         this(_str.length + 1);
         str[0 .. _str.length] = _str[0 .. $];
         index = _str.length;
@@ -37,109 +32,88 @@ struct Text
     /**
        This takes over the overship of the data
      */
-    this(ref Text _surrender)
-    {
+    this(ref Text _surrender) {
         this.str = _surrender.str;
         this.index = _surrender.index;
         _surrender.str = null;
         _surrender.index = 0;
     }
 
-    char[] expropriate()
-    {
-        scope (exit)
-        {
+    char[] expropriate() {
+        scope (exit) {
             str = null;
             index = 0;
         }
         return str[0 .. index];
     }
 
-    @property size_t length() const pure
-    {
+    @property size_t length() const pure {
         return index;
     }
 
-    char opIndex(const size_t i) pure const
-    {
-        if (i < index)
-        {
+    char opIndex(const size_t i) pure const {
+        if (i < index) {
             return str[i];
         }
         return '\0';
     }
 
     string opSlice(const size_t from, const size_t to) const
-    in
-    {
+    in {
         assert(from <= to);
         assert(to <= index);
     }
-    do
-    {
+    do {
         return cast(string)(str[from .. to]);
     }
 
-    string opSlice() const pure
-    {
+    string opSlice() const pure {
         return cast(immutable) str[0 .. index];
     }
 
     alias serialize = opSlice;
-    void opOpAssign(string op)(const(char[]) cat) if (op == "~")
-    {
+    void opOpAssign(string op)(const(char[]) cat) if (op == "~") {
         const new_index = index + cat.length;
-        scope (exit)
-        {
+        scope (exit) {
             index = new_index;
         }
-        if (index + cat.length + 1 > str.length)
-        {
+        if (index + cat.length + 1 > str.length) {
             resize(str, index + cat.length + 1);
         }
         str[index .. new_index] = cat;
         str[new_index] = '\0';
     }
 
-    ref Text opCall(const(char[]) cat) return
-    {
+    ref Text opCall(const(char[]) cat) return {
         opOpAssign!"~"(cat);
         return this;
     }
 
-    ref Text opCall(T)(T num, const size_t base = 10) if (isIntegral!T)
-    {
+    ref Text opCall(T)(T num, const size_t base = 10) if (isIntegral!T) {
         //const negative=(num < 0);
         enum numbers = "0123456789abcdef";
-        static if (isSigned!T)
-        {
+        static if (isSigned!T) {
             enum max_size = T.min.stringof.length + 1;
         }
-        else
-        {
+        else {
             enum max_size = T.max.stringof.length + 1;
         }
 
-        if (index + max_size > str.length)
-        {
+        if (index + max_size > str.length) {
             resize(str, index + max_size);
         }
-        static if (isSigned!T)
-        {
-            if (num < 0)
-            {
+        static if (isSigned!T) {
+            if (num < 0) {
                 str[index] = '-';
                 num = -num;
                 index++;
             }
         }
-        const(char[]) fill_numbers(T num, char[] s)
-        {
+        const(char[]) fill_numbers(T num, char[] s) {
             alias Mutable = Unqual!T;
             Mutable n = num;
             uint i;
-            do
-            {
+            do {
                 const n_index = cast(uint)(n % cast(T) base);
                 s[i++] = numbers[n_index];
                 n /= base;
@@ -150,8 +124,7 @@ struct Text
 
         char[max_size] buf;
         const reverse_numbers = fill_numbers(num, buf);
-        foreach_reverse (i, c; reverse_numbers)
-        {
+        foreach_reverse (i, c; reverse_numbers) {
             str[index] = c;
             index++;
         }
@@ -159,20 +132,17 @@ struct Text
         return this;
     }
 
-    void dispose()
-    {
+    void dispose() {
         str.dispose;
         index = 0;
     }
 
-    ~this()
-    {
+    ~this() {
         str.dispose;
     }
 }
 
-unittest
-{
+unittest {
     //    import core.stdc.stdio;
     Text text;
     immutable(char[12]) check = "Some text 42";

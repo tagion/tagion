@@ -18,43 +18,36 @@ enum COMPRESSED_PUBKEY_SIZE = 33;
 enum SECKEY_SIZE = 32;
 
 @trusted
-void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null)
-        if (T.sizeof is 1)
-{
+void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) if (T.sizeof is 1) {
     // import std.random;
     ubyte[] seed;
     seed.create(data.length);
 
     randomize(cast(immutable) seed);
-    foreach (i; data)
-    {
+    foreach (i; data) {
         data[i] ^= seed[i];
     }
 }
 
-@trusted uint hashSize() pure nothrow
-{
+@trusted uint hashSize() pure nothrow {
     return HASH_SIZE;
 }
 
-@trusted BinBuffer rawCalcHash(scope const(ubyte[]) data)
-{
+@trusted BinBuffer rawCalcHash(scope const(ubyte[]) data) {
     BinBuffer res;
     res.write(hash.secp256k1_count_hash(data));
 
     return res;
 }
 
-@trusted immutable(ubyte[]) rawCalcHash(const BinBuffer buffer)
-{
+@trusted immutable(ubyte[]) rawCalcHash(const BinBuffer buffer) {
     BinBuffer res;
     res.write(hash.secp256k1_count_hash(buffer.serialize));
 
     return res.serialize;
 }
 
-@trusted immutable(BinBuffer) calcHash(scope const(ubyte[]) data)
-{
+@trusted immutable(BinBuffer) calcHash(scope const(ubyte[]) data) {
     return cast(immutable) rawCalcHash(data);
 }
 
@@ -64,38 +57,32 @@ void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null)
 //     assert(h2.length is 0 || h2.length is HASH_SIZE,
 //             format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, HASH_SIZE));
 // }
-do
-{
+do {
     BinBuffer res;
     pragma(msg, "dlang: Pre and post condition does not work here");
-    if (h1.length !is 0 && h2.length !is 0)
-    {
+    if (h1.length !is 0 && h2.length !is 0) {
         ubyte[] concatenat;
         concatenat.create(h1.length + h2.length);
         concatenat[0 .. h1.length] = h1;
         concatenat[h1.length .. $] = h2;
         return cast(immutable) rawCalcHash(concatenat);
     }
-    else if (h1.length is 0)
-    {
+    else if (h1.length is 0) {
         res.write(h2);
     }
-    else if (h2.length is 0)
-    {
+    else if (h2.length is 0) {
         res.write(h1);
     }
 
     return cast(immutable) res;
 }
 
-struct AES
-{
+struct AES {
     enum KEY_LENGTH = 256;
     enum KEY_SIZE = KEY_LENGTH / 8;
     enum BLOCK_SIZE = 16;
 
-    static size_t enclength(const size_t inputlength)
-    {
+    static size_t enclength(const size_t inputlength) {
         return ((inputlength / BLOCK_SIZE) + ((inputlength % BLOCK_SIZE == 0) ? 0 : 1)) * BLOCK_SIZE;
     }
 
@@ -103,30 +90,24 @@ struct AES
 
     alias T_AES = Tiny_AES!(KEY_LENGTH, Mode.CBC);
 
-    static void crypt_parse(bool ENCRYPT = true)(const(ubyte[]) key, ubyte[BLOCK_SIZE] iv, ref ubyte[] data)
-    {
+    static void crypt_parse(bool ENCRYPT = true)(const(ubyte[]) key, ubyte[BLOCK_SIZE] iv, ref ubyte[] data) {
         scope aes = T_AES(key[0 .. KEY_SIZE], iv);
-        static if (ENCRYPT)
-        {
+        static if (ENCRYPT) {
             aes.encrypt(data);
         }
-        else
-        {
+        else {
             aes.decrypt(data);
         }
     }
 
     static void crypt(bool ENCRYPT = true)(scope const(ubyte[]) key, scope const(ubyte[]) iv, scope const(
-            ubyte[]) indata, ref ubyte[] outdata)
-    {
-        if (outdata is null)
-        {
+            ubyte[]) indata, ref ubyte[] outdata) {
+        if (outdata is null) {
             outdata.create(indata.length);
         }
         outdata[0 .. $] = indata[0 .. $];
         size_t old_length;
-        if (outdata.length % BLOCK_SIZE !is 0)
-        {
+        if (outdata.length % BLOCK_SIZE !is 0) {
             old_length = outdata.length;
             // outdata.length = enclength(outdata.length);
             outdata.create(enclength(outdata.length));
@@ -139,8 +120,7 @@ struct AES
     alias decrypt = crypt!false;
 }
 
-struct SecureNet
-{
+struct SecureNet {
     import tagion.basic.Types : Pubkey, Signature;
 
     private Pubkey _pubkey;
@@ -151,8 +131,7 @@ struct SecureNet
     enum SIGNATURE_SIZE = 64;
     private secp256k1_context* _ctx;
 
-    enum Format
-    {
+    enum Format {
         DER = 1,
         COMPACT = DER << 1,
         RAW = COMPACT << 1,
@@ -164,13 +143,11 @@ struct SecureNet
 
     @trusted
     immutable(ubyte[]) sign(const(ubyte[]) data, const(ubyte[]) sec) const
-    in
-    {
+    in {
         assert(data.length == 32);
         assert(sec.length <= 32);
     }
-    do
-    {
+    do {
         ubyte[] result;
         const msgdata = data.ptr;
         const secKey = sec.ptr;
@@ -178,28 +155,24 @@ struct SecureNet
         secp256k1_ecdsa_signature* sig = &sig_array;
 
         int ret = secp256k1_ecdsa_sign(_ctx, sig, msgdata, secKey, null, null);
-        if (_format_sign is Format.DER)
-        {
+        if (_format_sign is Format.DER) {
             ubyte[DER_SIGNATURE_SIZE] outputSer_array;
             ubyte* outputSer = outputSer_array.ptr;
             size_t outputLen = outputSer_array.length;
             ret = secp256k1_ecdsa_signature_serialize_der(_ctx, outputSer, &outputLen, sig);
-            if (ret)
-            {
+            if (ret) {
                 result.create(outputLen);
                 result[0 .. $] = outputSer_array[0 .. outputLen];
                 // immutable(ubyte[]) result = outputSer_array[0 .. outputLen].idup;
                 return cast(immutable) result;
             }
         }
-        if (_format_sign is Format.COMPACT)
-        {
+        if (_format_sign is Format.COMPACT) {
             ubyte[SIGNATURE_SIZE] outputSer_array;
             ubyte* outputSer = outputSer_array.ptr;
             //            size_t outputLen = outputSer_array.length;
             ret = secp256k1_ecdsa_signature_serialize_compact(_ctx, outputSer, sig);
-            if (ret)
-            {
+            if (ret) {
                 // immutable(ubyte[]) result = outputSer_array.idup;
                 result.create(outputSer_array.length);
                 result[0 .. $] = outputSer_array[0 .. $];
@@ -227,12 +200,10 @@ struct SecureNet
 
     @trusted
     void privKeyTweakMul(const(ubyte[]) privkey, const(ubyte[]) tweak, ref ubyte[] tweak_privkey) const
-    in
-    {
+    in {
         assert(privkey.length == 32);
     }
-    do
-    {
+    do {
         pragma(msg, "fixme(cbr): privkey must be scrambled");
         tweak_privkey[0 .. privkey.length] = privkey[0 .. $];
         ubyte* _privkey = tweak_privkey.ptr;
@@ -243,12 +214,10 @@ struct SecureNet
 
     @trusted
     void privKeyTweakAdd(const(ubyte[]) privkey, const(ubyte[]) tweak, ref ubyte[] tweak_privkey) const
-    in
-    {
+    in {
         assert(privkey.length == 32);
     }
-    do
-    {
+    do {
         //        auto ctx=getContext();
         pragma(msg, "fixme(cbr): privkey must be scrambled");
         tweak_privkey[0 .. privkey.length] = privkey[0 .. $];
@@ -259,8 +228,7 @@ struct SecureNet
     }
 
     @trusted
-    immutable(ubyte[]) pubKeyTweakMul(const(ubyte[]) pubkey, const(ubyte[]) tweak, immutable bool compress = true) const
-    {
+    immutable(ubyte[]) pubKeyTweakMul(const(ubyte[]) pubkey, const(ubyte[]) tweak, immutable bool compress = true) const {
         //        auto ctx=getContext();
         ubyte[] pubkey_array;
         pubkey_array.create(pubkey.length);
@@ -276,14 +244,12 @@ struct SecureNet
 
         ubyte[] outputSer_array;
         SECP256K1 flag;
-        if (compress)
-        {
+        if (compress) {
             outputSer_array.create(COMPRESSED_PUBKEY_SIZE);
             // outputSer_array = new ubyte[COMPRESSED_PUBKEY_SIZE];
             flag = SECP256K1.EC_COMPRESSED;
         }
-        else
-        {
+        else {
             outputSer_array.create(UNCOMPRESSED_PUBKEY_SIZE);
             // outputSer_array = new ubyte[UNCOMPRESSED_PUBKEY_SIZE];
             flag = SECP256K1.EC_UNCOMPRESSED;
@@ -299,23 +265,18 @@ struct SecureNet
 
     @trusted
     immutable(ubyte[]) computePubkey(scope const(ubyte[]) seckey, immutable bool compress = true) const
-    in
-    {
+    in {
         assert(seckey.length == SECKEY_SIZE);
     }
-    out (result)
-    {
-        if (compress)
-        {
+    out (result) {
+        if (compress) {
             assert(result.length == COMPRESSED_PUBKEY_SIZE);
         }
-        else
-        {
+        else {
             assert(result.length == UNCOMPRESSED_PUBKEY_SIZE);
         }
     }
-    do
-    {
+    do {
         //        auto ctx=getContext();
         const(ubyte)* sec = seckey.ptr;
 
@@ -325,14 +286,12 @@ struct SecureNet
         // ubyte[pubkey_size] outputSer_array;
         ubyte[] outputSer_array;
         SECP256K1 flag;
-        if (compress)
-        {
+        if (compress) {
             outputSer_array.create(COMPRESSED_PUBKEY_SIZE);
             // outputSer_array = new ubyte[COMPRESSED_PUBKEY_SIZE];
             flag = SECP256K1.EC_COMPRESSED;
         }
-        else
-        {
+        else {
             outputSer_array.create(UNCOMPRESSED_PUBKEY_SIZE);
             // outputSer_array = new ubyte[UNCOMPRESSED_PUBKEY_SIZE];
             flag = SECP256K1.EC_UNCOMPRESSED;
@@ -351,13 +310,11 @@ struct SecureNet
 
     @trusted BinBuffer createECDHSecret(scope const(ubyte[]) seckey, const(
             ubyte[]) pubkey) const
-    in
-    {
+    in {
         assert(seckey.length <= SECKEY_SIZE);
         assert(pubkey.length <= UNCOMPRESSED_PUBKEY_SIZE);
     }
-    do
-    {
+    do {
         //        auto ctx=getContext();
         const secdata = seckey.ptr;
         const pubdata = pubkey.ptr;
@@ -380,23 +337,19 @@ struct SecureNet
     }
 
     @trusted bool secKeyVerify(scope const(ubyte[]) seckey) const
-    in
-    {
+    in {
         assert(seckey.length == 32);
     }
-    do
-    {
+    do {
         const(ubyte)* sec = seckey.ptr;
         return secp256k1_ec_seckey_verify(_ctx, sec) == 1;
     }
 
     @trusted void createKeyPair(ref ubyte[] privkey)
-    in
-    {
+    in {
         assert(secKeyVerify(privkey));
     }
-    do
-    {
+    do {
         import std.string : representation;
 
         _pubkey = computePubkey(privkey);
@@ -428,8 +381,7 @@ struct SecureNet
 
         AES.encrypt(aes_key.serialize, aes_iv.serialize, encrypted_privkey, privkey);
 
-        void do_secret_stuff(scope void delegate(const(ubyte[]) privkey) @safe dg)
-        {
+        void do_secret_stuff(scope void delegate(const(ubyte[]) privkey) @safe dg) {
             // CBR:
             // Yes I know it is security by obscurity
             // But just don't want to have the private in clear text in memory
@@ -438,8 +390,7 @@ struct SecureNet
 
             ubyte[] privkey;
             privkey.create(encrypted_privkey);
-            scope (exit)
-            {
+            scope (exit) {
                 ubyte[] seed;
                 seed.create(32);
                 scramble(seed, aes_key.serialize);
@@ -455,13 +406,11 @@ struct SecureNet
         // struct SignWrapper {
         @trusted
         immutable(ubyte[]) raw_sign(const(ubyte[]) data, const(ubyte[]) sec) const
-        in
-        {
+        in {
             assert(data.length == 32);
             assert(sec.length <= 32);
         }
-        do
-        {
+        do {
             ubyte[] result;
             const msgdata = data.ptr;
             const secKey = sec.ptr;
@@ -495,44 +444,31 @@ struct SecureNet
             return cast(immutable) result;
         }
 
-        @trusted immutable(ubyte[]) sign(const(ubyte[]) message) const
-        {
+        @trusted immutable(ubyte[]) sign(const(ubyte[]) message) const {
             immutable(ubyte)[] result;
-            do_secret_stuff((const(ubyte[]) privkey) {
-                result = raw_sign(message, privkey);
-            });
+            do_secret_stuff((const(ubyte[]) privkey) { result = raw_sign(message, privkey); });
             return result;
         }
         // }
         // SignWrapper sign_wrapper;
         // sign_dg = &sign_wrapper.sign;
 
-        void tweakMul(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey)
-        {
-            do_secret_stuff((const(ubyte[]) privkey) @safe {
-                privKeyTweakMul(privkey, tweak_code, tweak_privkey);
-            });
+        void tweakMul(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) {
+            do_secret_stuff((const(ubyte[]) privkey) @safe { privKeyTweakMul(privkey, tweak_code, tweak_privkey); });
         }
 
-        void tweakAdd(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey)
-        {
-            do_secret_stuff((const(ubyte[]) privkey) @safe {
-                privKeyTweakAdd(privkey, tweak_code, tweak_privkey);
-            });
+        void tweakAdd(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) {
+            do_secret_stuff((const(ubyte[]) privkey) @safe { privKeyTweakAdd(privkey, tweak_code, tweak_privkey); });
         }
 
-        immutable(ubyte[]) ECDHSecret(const(ubyte[]) pubkey) const
-        {
+        immutable(ubyte[]) ECDHSecret(const(ubyte[]) pubkey) const {
             BinBuffer result;
-            do_secret_stuff((const(ubyte[]) privkey) @trusted {
-                result = createECDHSecret(privkey, pubkey);
-            });
+            do_secret_stuff((const(ubyte[]) privkey) @trusted { result = createECDHSecret(privkey, pubkey); });
             return result.serialize;
         }
     }
 
-    @trusted immutable(ubyte[]) HMAC(scope const(ubyte[]) data) const
-    {
+    @trusted immutable(ubyte[]) HMAC(scope const(ubyte[]) data) const {
 
         scope hmac = hash.secp256k1_count_hmac_hash(data);
         auto res_size = hmac.length;
@@ -542,27 +478,23 @@ struct SecureNet
         return cast(immutable) result;
     }
 
-    Pubkey pubkey() pure const nothrow
-    {
+    Pubkey pubkey() pure const nothrow {
         return _pubkey;
     }
 
-    Pubkey derivePubkey(string tweak_word) const
-    {
+    Pubkey derivePubkey(string tweak_word) const {
         const tweak_code = HMAC(tweak_word.representation);
         return derivePubkey(tweak_code);
     }
 
-    Pubkey derivePubkey(const(ubyte[]) tweak_code) const
-    {
+    Pubkey derivePubkey(const(ubyte[]) tweak_code) const {
         Pubkey result;
         const pkey = cast(const(ubyte[])) _pubkey;
         result = pubKeyTweakMul(pkey, tweak_code);
         return result;
     }
 
-    Pubkey derivePubkey(BinBuffer tweak_buf) const
-    {
+    Pubkey derivePubkey(BinBuffer tweak_buf) const {
         Pubkey result;
         //     // ubyte[] tweak_arr;
         //     // tweak_arr.create(tweak_buf.length);
@@ -573,14 +505,12 @@ struct SecureNet
 
     @trusted
     bool verify(const(ubyte[]) data, const(ubyte[]) signature, const(ubyte[]) pub) const
-    in
-    {
+    in {
         assert(data.length == 32);
         assert(signature.length <= 520);
         assert(pub.length <= 520);
     }
-    do
-    {
+    do {
         int ret;
         const sigdata = signature.ptr;
         auto siglen = signature.length;
@@ -589,24 +519,19 @@ struct SecureNet
 
         secp256k1_ecdsa_signature sig;
         secp256k1_pubkey pubkey;
-        if (_format_verify & Format.DER)
-        {
+        if (_format_verify & Format.DER) {
             ret = secp256k1_ecdsa_signature_parse_der(_ctx, &sig, sigdata, siglen);
         }
-        if (ret)
-        {
+        if (ret) {
             goto PARSED;
         }
-        if (_format_verify & Format.COMPACT)
-        {
+        if (_format_verify & Format.COMPACT) {
             ret = secp256k1_ecdsa_signature_parse_compact(_ctx, &sig, sigdata);
         }
-        if (ret)
-        {
+        if (ret) {
             goto PARSED;
         }
-        if ((_format_verify & Format.RAW) || (_format_verify == 0))
-        {
+        if ((_format_verify & Format.RAW) || (_format_verify == 0)) {
             import core.stdc.string : memcpy;
 
             memcpy(&(sig.data), sigdata, siglen);

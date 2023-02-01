@@ -13,13 +13,11 @@ import tagion.basic.Types : Buffer;
  * \struct Fingerprint
  * Struct stores fingerprint and helps with pretty output
  */
-@safe struct Fingerprint
-{
+@safe struct Fingerprint {
     /** Buffer representing fingerprint */
     Buffer buffer;
 
-    this(Buffer buffer)
-    {
+    this(Buffer buffer) {
         this.buffer = buffer;
     }
 
@@ -28,12 +26,10 @@ import tagion.basic.Types : Buffer;
      *      @param sink - delegate to write output directly
      *      @param fmt - format specificators
      */
-    @trusted void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt) const
-    {
+    @trusted void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt) const {
         string fmt_number;
 
-        switch (fmt.spec)
-        {
+        switch (fmt.spec) {
         case 's': // this is default format for fingerprint
         case 'X':
             fmt_number = "%02X ";
@@ -52,8 +48,7 @@ import tagion.basic.Types : Buffer;
         string result;
 
         const width = fmt.width is 0 ? buffer.length + 1 : fmt.width;
-        foreach (i; 0 .. buffer.length)
-        {
+        foreach (i; 0 .. buffer.length) {
             result ~= std.format.format(fmt_number, BigInt(buffer[i]));
 
             if ((i + 1) % width is 0)
@@ -64,8 +59,7 @@ import tagion.basic.Types : Buffer;
     }
 }
 
-unittest
-{
+unittest {
     /// Fingerprint_empty_sequence
     {
         assert(format("%s", Fingerprint([])) == "");
@@ -110,13 +104,11 @@ unittest
 
     /// Fingerprint_wrong_format_specifier
     {
-        try
-        {
+        try {
             format("%i", Fingerprint([]));
             assert(false); // Expecting exception
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
         }
     }
 }

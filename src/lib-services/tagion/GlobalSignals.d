@@ -27,7 +27,7 @@ static if (ver.linux && not_unittest) {
     private static extern (C) void shutdown(int sig) @nogc nothrow {
         if (!fault) {
             if (sig is SIGINT) {
-				printf("SIGINT=%d SIGTERM=%d\n", SIGINT, SIGTERM);
+                printf("SIGINT=%d SIGTERM=%d\n", SIGINT, SIGTERM);
                 printf("Shutdown sig %d about=%d\n", sig, abort);
                 if (abort) {
                     exit(0);

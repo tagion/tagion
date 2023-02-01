@@ -5,10 +5,8 @@ import tagion.basic.TagionExceptions;
 /++
  Exception type used by tagion.actor package
  +/
-@safe class ActorException : TagionException
-{
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow
-    {
+@safe class ActorException : TagionException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
         super(msg, file, line);
     }
 }

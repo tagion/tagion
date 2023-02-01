@@ -1,6 +1,5 @@
 extern (C):
 @nogc:
 
-void _start()
-{
+void _start() {
 }

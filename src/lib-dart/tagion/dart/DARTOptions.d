@@ -7,8 +7,7 @@ import tagion.basic.TagionExceptions;
 /** \struct DARTOptions
  * Options for DART
  */
-struct DARTOptions
-{
+struct DARTOptions {
     import tagion.utils.JSONCommon;
     import tagion.options.HostOptions;
 
@@ -27,7 +26,7 @@ struct DARTOptions
     /** flag for initialize DART */
     bool initialize;
     /** flag for synchronize DART */
-    bool synchronize;  
+    bool synchronize;
     /** flag for load full dart */
     bool fast_load;
     /** timeout in miliseconds */
@@ -36,8 +35,7 @@ struct DARTOptions
     /** \struct Synchronize
      * Options for synchronization
      */
-    struct Synchronize
-    {
+    struct Synchronize {
         /** timeout in miliseconds */
         ulong tick_timeout;
         /** timeout in miliseconds before receive*/
@@ -60,8 +58,7 @@ struct DARTOptions
     /** \struct Subscribe
      * Options for subscribe
      */
-    struct Subscribe
-    {
+    struct Subscribe {
         /** port for master node */
         ulong master_port;
         import tagion.utils.JSONCommon;
@@ -82,8 +79,7 @@ struct DARTOptions
 
     Subscribe subs;
 
-    struct Commands
-    {
+    struct Commands {
         /** timeout in miliseconds before read data */
         ulong read_timeout;
         mixin JSONCommon;

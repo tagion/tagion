@@ -1,18 +1,14 @@
 module tagion.betterC.utils.platform;
 
-public
-{
+public {
 
-    extern (C) void _d_array_slice_copy(void* dst, size_t dstlen, void* src, size_t srclen, size_t elemsz)
-    {
+    extern (C) void _d_array_slice_copy(void* dst, size_t dstlen, void* src, size_t srclen, size_t elemsz) {
         import std.compiler;
 
-        static if ((version_major == 2 && version_minor >= 100) || (vendor !is Vendor.llvm))
-        {
+        static if ((version_major == 2 && version_minor >= 100) || (vendor !is Vendor.llvm)) {
             pragma(msg, "Warning llvm_memcpy has not been enabled for ", vendor, " version ", version_major, ".", version_minor,);
         }
-        else
-        {
+        else {
             import ldc.intrinsics : llvm_memcpy;
 
             llvm_memcpy!size_t(dst, src, dstlen * elemsz, 0);
@@ -28,8 +24,7 @@ public
     //     return null;
     // }
 
-    version (WebAssembly)
-    {
+    version (WebAssembly) {
         pragma(msg, "WebAssembler Memory");
     @nogc:
         void* calloc(size_t nmemb, size_t size);
@@ -37,8 +32,7 @@ public
         void free(void* ptr);
         // void __assert(bool flag);
     }
-    else
-    {
+    else {
 
         import core.stdc.stdlib : calloc, realloc, free;
         import core.stdc.stdio;
@@ -48,32 +42,25 @@ public
 import std.meta;
 import std.traits;
 
-static void _static_call_all(string tocall, string namespace, Modules...)()
-{
-    static foreach (module_; Modules)
-    {
+static void _static_call_all(string tocall, string namespace, Modules...)() {
+    static foreach (module_; Modules) {
         {
             enum import_code = "import" ~ module_.stringof["module".length .. $] ~ ";";
             mixin(import_code);
-            void _static_caller(string[] members, string namespace = null)()
-            {
-                static foreach (name; members)
-                {
+            void _static_caller(string[] members, string namespace = null)() {
+                static foreach (name; members) {
                     {
                         enum fullname = (namespace is null) ? name : namespace ~ "." ~ name;
 
                         static if ((name.length > tocall.length) && (
-                                name[0 .. tocall.length] == tocall))
-                        {
+                                name[0 .. tocall.length] == tocall)) {
                             enum call_code = fullname ~ "();";
                             mixin(call_code);
                         }
-                        else
-                        {
+                        else {
                             enum is_code = "enum isType =is(" ~ fullname ~ ");";
                             mixin(is_code);
-                            static if (isType)
-                            {
+                            static if (isType) {
                                 {
                                     enum type_code = "alias Type =" ~ fullname ~ ";";
                                     mixin(type_code);

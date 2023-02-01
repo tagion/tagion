@@ -1,9 +1,7 @@
 module tagion.betterC.utils.Malloc;
 
-extern (C)
-{
-    void set_memory(void* ptr, size_t size)
-    {
+extern (C) {
+    void set_memory(void* ptr, size_t size) {
         free_block_list_head = cast(FreeBlock*)(ptr);
         (*free_block_list_head).size = size - FreeBlock.sizeof;
 
@@ -13,11 +11,9 @@ extern (C)
     }
 }
 
-@nogc nothrow
-{
+@nogc nothrow {
 
-    struct FreeBlock
-    {
+    struct FreeBlock {
         size_t size;
         FreeBlock* next;
     }
@@ -26,26 +22,22 @@ extern (C)
     enum overhead = size_t.sizeof;
     enum align_to = size_t.sizeof * 2;
 
-    void* malloc(size_t size)
-    {
+    void* malloc(size_t size) {
         size = (size + size_t.sizeof + (align_to - 1)) & ~(align_to - 1);
         FreeBlock* prev_block = free_block_list_head;
         // scope(success) {
         // }
-        for (FreeBlock* block = free_block_list_head; block !is null; block = block.next)
-        {
+        for (FreeBlock* block = free_block_list_head; block !is null; block = block.next) {
             // FreeBlock* block = free_block_list_head.next;
             // FreeBlock** head = &(free_block_list_head.next);
             // while (block !is null) {
             // writefln("Block size before %d", block.size);
-            if (block.size >= size)
-            {
+            if (block.size >= size) {
                 void* result = cast(void*) block + overhead;
                 // scope(exit) {
 
                 // }
-                if (block.size > size)
-                {
+                if (block.size > size) {
                     FreeBlock* rest = cast(FreeBlock*)(cast(void*) block + size + overhead);
                     // (*head).next = rest;
                     rest.size = block.size - size - overhead;
@@ -62,12 +54,10 @@ extern (C)
                     // writefln("size=%d rest.size=%d", size, rest.size);
                 }
                 // else {
-                if (block is free_block_list_head)
-                {
+                if (block is free_block_list_head) {
                     free_block_list_head = block.next;
                 }
-                else
-                {
+                else {
                     prev_block.next = block.next;
                 }
                 // (*head) = block.next;
@@ -88,21 +78,17 @@ extern (C)
         assert(0, "Out of memory");
     }
 
-    void* calloc(size_t nmemb, size_t size)
-    {
+    void* calloc(size_t nmemb, size_t size) {
         return malloc(nmemb * size);
     }
 
-    void* realloc(void* ptr, size_t size)
-    {
+    void* realloc(void* ptr, size_t size) {
         FreeBlock* block = cast(FreeBlock*)(ptr - overhead);
-        if (size <= block.size)
-        {
+        if (size <= block.size) {
             return ptr;
         }
         auto result = malloc(size);
-        scope (exit)
-        {
+        scope (exit) {
             free(ptr);
         }
         (cast(size_t*) result)[0 .. block.size / size_t.sizeof] =
@@ -110,64 +96,52 @@ extern (C)
         return result;
     }
 
-    void free(void* ptr)
-    {
+    void free(void* ptr) {
         FreeBlock* block = cast(FreeBlock*)(ptr - overhead);
         assert(free_block_list_head !is ptr, "Double free");
         block.next = free_block_list_head;
         free_block_list_head = block;
     }
 
-    bool isFree(void* ptr)
-    {
+    bool isFree(void* ptr) {
         FreeBlock* search_ptr = cast(FreeBlock*)(ptr - overhead);
-        for (FreeBlock* block = free_block_list_head; block !is null; block = block.next)
-        {
-            if (search_ptr is block)
-            {
+        for (FreeBlock* block = free_block_list_head; block !is null; block = block.next) {
+            if (search_ptr is block) {
                 return true;
             }
         }
         return false;
     }
 
-    size_t sizeOf(void* ptr)
-    {
+    size_t sizeOf(void* ptr) {
         FreeBlock* block = cast(FreeBlock*)(ptr - overhead);
         return block.size;
     }
 
-    size_t avail()
-    {
+    size_t avail() {
         size_t result;
-        for (FreeBlock* block = free_block_list_head; block !is null; block = block.next)
-        {
+        for (FreeBlock* block = free_block_list_head; block !is null; block = block.next) {
             result += block.size;
         }
         return result;
     }
 
-    size_t bigest()
-    {
+    size_t bigest() {
         import std.algorithm.comparison : max;
 
         size_t result;
-        for (FreeBlock* block = free_block_list_head; block !is null; block = block.next)
-        {
+        for (FreeBlock* block = free_block_list_head; block !is null; block = block.next) {
             result = max(result, block.size);
         }
         return result;
     }
 }
 
-unittest
-{
+unittest {
     import std.stdio;
 
-    void dump()
-    {
-        for (FreeBlock* block = free_block_list_head; block !is null; block = block.next)
-        {
+    void dump() {
+        for (FreeBlock* block = free_block_list_head; block !is null; block = block.next) {
             writefln("%s : %2d 0x%02x", block, block.size, block.size);
         }
     }
@@ -275,8 +249,7 @@ unittest
 
 }
 
-unittest
-{ /// calloc
+unittest { /// calloc
     import std.stdio;
 
     const mem_size = FreeBlock.sizeof * 32;

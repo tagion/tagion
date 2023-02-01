@@ -1,7 +1,5 @@
-
 module tagion.wallet.EvilWallet;
 import tagion.wallet.SecureWallet;
-
 
 import std.format;
 import std.string : representation;
@@ -36,9 +34,7 @@ import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 import tagion.wallet.WalletException : check;
 
-
-@safe struct EvilWallet(Net)
-{
+@safe struct EvilWallet(Net) {
     static assert(is(Net : SecureNet));
     protected RecoverGenerator _wallet;
     protected DevicePIN _pin;
@@ -49,57 +45,48 @@ import tagion.wallet.WalletException : check;
     //    @disable this();
 
     this(DevicePIN pin, RecoverGenerator wallet = RecoverGenerator.init, AccountDetails account = AccountDetails
-            .init)
-    { //nothrow {
+            .init) { //nothrow {
         _wallet = wallet;
         _pin = pin;
         this.account = account;
     }
 
-    this(const Document wallet_doc, const Document pin_doc = Document.init)
-    {
+    this(const Document wallet_doc, const Document pin_doc = Document.init) {
         auto __wallet = RecoverGenerator(wallet_doc);
         DevicePIN __pin;
-        if (!pin_doc.empty)
-        {
+        if (!pin_doc.empty) {
             __pin = DevicePIN(pin_doc);
         }
         this(__pin, __wallet);
     }
 
-    @nogc const(RecoverGenerator) wallet() pure const nothrow
-    {
+    @nogc const(RecoverGenerator) wallet() pure const nothrow {
         return _wallet;
     }
 
-    @nogc const(DevicePIN) pin() pure const nothrow
-    {
+    @nogc const(DevicePIN) pin() pure const nothrow {
         return _pin;
     }
 
-    @nogc uint confidence() pure const nothrow
-    {
+    @nogc uint confidence() pure const nothrow {
         return _wallet.confidence;
     }
 
     static EvilWallet createWallet(
-        scope const(string[]) questions,
-        scope const(char[][]) answers,
-        uint confidence,
-        const(char[]) pincode)
-    in
-    {
+            scope const(string[]) questions,
+    scope const(char[][]) answers,
+    uint confidence,
+    const(char[]) pincode)
+    in {
         assert(questions.length > 3, "Minimal amount of answers is 4");
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
     }
-    do
-    {
+    do {
         auto net = new Net;
         //        auto hashnet = new StdHashNet;
         auto recover = KeyRecover(net);
 
-        if (confidence == questions.length)
-        {
+        if (confidence == questions.length) {
             pragma(msg, "fixme(cbr): Due to some bug in KeyRecover");
             // Due to some bug in KeyRecover
             confidence--;
@@ -110,8 +97,7 @@ import tagion.wallet.WalletException : check;
         EvilWallet result;
         {
             auto R = new ubyte[net.hashSize];
-            scope (exit)
-            {
+            scope (exit) {
                 scramble(R);
             }
             recover.findSecret(R, questions, answers);
@@ -125,11 +111,10 @@ import tagion.wallet.WalletException : check;
     }
 
     protected void set_pincode(
-        const KeyRecover recover,
-        scope const(ubyte[]) R,
-        scope const(char[]) pincode,
-        Net _net = null)
-    {
+            const KeyRecover recover,
+            scope const(ubyte[]) R,
+    scope const(char[]) pincode,
+    Net _net = null) {
         const hash_size = ((net) ? net : _net).hashSize;
         auto seed = new ubyte[hash_size];
         scramble(seed);
@@ -140,12 +125,10 @@ import tagion.wallet.WalletException : check;
     }
 
     bool correct(const(string[]) questions, const(char[][]) answers)
-    in
-    {
+    in {
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
     }
-    do
-    {
+    do {
         net = new Net;
         auto recover = KeyRecover(net, _wallet);
         scope R = new ubyte[net.hashSize];
@@ -153,18 +136,15 @@ import tagion.wallet.WalletException : check;
     }
 
     bool recover(const(string[]) questions, const(char[][]) answers, const(char[]) pincode)
-    in
-    {
+    in {
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
     }
-    do
-    {
+    do {
         net = new Net;
         auto recover = KeyRecover(net, _wallet);
         auto R = new ubyte[net.hashSize];
         const result = recover.findSecret(R, questions, answers);
-        if (result)
-        {
+        if (result) {
             // auto pinhash = recover.checkHash(pincode.representation, _pin.U);
             set_pincode(recover, R, pincode);
             net.createKeyPair(R);
@@ -174,29 +154,24 @@ import tagion.wallet.WalletException : check;
         return false;
     }
 
-    @nogc bool isLoggedin() pure const nothrow
-    {
+    @nogc bool isLoggedin() pure const nothrow {
         pragma(msg, "fixme(cbr): Jam the net");
         return net !is null;
     }
 
-    protected void checkLogin() pure const
-    {
+    protected void checkLogin() pure const {
         check(isLoggedin(), "Need login first");
     }
 
-    bool login(const(char[]) pincode)
-    {
-        if (_pin.D)
-        {
+    bool login(const(char[]) pincode) {
+        if (_pin.D) {
             logout;
             auto hashnet = new Net;
             auto recover = KeyRecover(hashnet);
             auto pinhash = recover.checkHash(pincode.representation, _pin.U);
             auto R = new ubyte[hashnet.hashSize];
             _pin.recover(R, pinhash);
-            if (_pin.S == recover.checkHash(R))
-            {
+            if (_pin.S == recover.checkHash(R)) {
                 net = new Net;
                 net.createKeyPair(R);
                 return true;
@@ -205,13 +180,11 @@ import tagion.wallet.WalletException : check;
         return false;
     }
 
-    void logout() pure nothrow
-    {
+    void logout() pure nothrow {
         net = null;
     }
 
-    bool check_pincode(const(char[]) pincode)
-    {
+    bool check_pincode(const(char[]) pincode) {
         const hashnet = new Net;
         auto recover = KeyRecover(hashnet);
         const pinhash = recover.checkHash(pincode.representation, _pin.U);
@@ -220,16 +193,14 @@ import tagion.wallet.WalletException : check;
         return _pin.S == recover.checkHash(R);
     }
 
-    bool change_pincode(const(char[]) pincode, const(char[]) new_pincode)
-    {
+    bool change_pincode(const(char[]) pincode, const(char[]) new_pincode) {
         const hashnet = new Net;
         auto recover = KeyRecover(hashnet);
         const pinhash = recover.checkHash(pincode.representation, _pin.U);
         auto R = new ubyte[hashnet.hashSize];
         // xor(R, _pin.D, pinhash);
         _pin.recover(R, pinhash);
-        if (_pin.S == recover.checkHash(R))
-        {
+        if (_pin.S == recover.checkHash(R)) {
             // const new_pinhash = recover.checkHash(new_pincode.representation, _pin.U);
             set_pincode(recover, R, new_pincode);
             logout;
@@ -238,14 +209,13 @@ import tagion.wallet.WalletException : check;
         return false;
     }
 
-    void registerInvoice(ref Invoice invoice)
-    {
+    void registerInvoice(ref Invoice invoice) {
         checkLogin;
         string current_time = MonoTime.currTime.toString;
         scope seed = new ubyte[net.hashSize];
         scramble(seed);
         account.derive_state = net.rawCalcHash(
-            seed ~ account.derive_state ~ current_time.representation);
+                seed ~ account.derive_state ~ current_time.representation);
         scramble(seed);
         auto pkey = net.derivePubkey(account.derive_state);
         invoice.pkey = pkey;
@@ -256,8 +226,7 @@ import tagion.wallet.WalletException : check;
     //     invoices.each!((ref invoice) => registerInvoice(invoice));
     // }
 
-    static Invoice createInvoice(string label, TagionCurrency amount, Document info = Document.init)
-    {
+    static Invoice createInvoice(string label, TagionCurrency amount, Document info = Document.init) {
         Invoice new_invoice;
         new_invoice.name = label;
         new_invoice.amount = amount;
@@ -265,8 +234,7 @@ import tagion.wallet.WalletException : check;
         return new_invoice;
     }
 
-    bool payment(const(Invoice[]) orders, ref SignedContract result, bool setfee, double fee, bool invalid_signature, bool zero_pubkey, bool invalid_data_type)
-    {
+    bool payment(const(Invoice[]) orders, ref SignedContract result, bool setfee, double fee, bool invalid_signature, bool zero_pubkey, bool invalid_data_type) {
         checkLogin;
         const topay = orders.map!(b => b.amount).sum;
 
@@ -275,11 +243,12 @@ import tagion.wallet.WalletException : check;
         TagionCurrency fees;
         if (setfee) {
             fees = fee.to!double.TGN;
-        } else {
+        }
+        else {
             fees = globals.fees();
         }
 
-        const amount = topay + fees; 
+        const amount = topay + fees;
         StandardBill[] contract_bills;
         collect_bills(amount, contract_bills); // changed to always be true.
 
@@ -287,8 +256,7 @@ import tagion.wallet.WalletException : check;
 
         result.contract.inputs = contract_bills.map!(b => net.hashOf(b.toDoc)).array;
         const rest = total - amount;
-        if (rest > 0)
-        {
+        if (rest > 0) {
             Invoice money_back;
             money_back.amount = rest;
             registerInvoice(money_back);
@@ -298,7 +266,7 @@ import tagion.wallet.WalletException : check;
                 auto zero_pkey = new HiBON();
                 result.contract.output[money_back.pkey] = Document(zero_pkey.serialize);
                 // result.contract.output[money_back.pkey] = Document(cast(ubyte[]) [0,0,0,0]);
-            } 
+            }
             else if (invalid_data_type) {
                 string invalid_rest = "test";
                 auto hibon_rest = new HiBON();
@@ -313,22 +281,16 @@ import tagion.wallet.WalletException : check;
         // set the pubkey of the contracts to 0x000
         if (zero_pubkey) {
             auto zero_pkey = new HiBON();
-            orders.each!((o) {
-                result.contract.output[o.pkey] = Document(zero_pkey.serialize);
-            });
-        } 
+            orders.each!((o) { result.contract.output[o.pkey] = Document(zero_pkey.serialize); });
+        }
         else if (invalid_data_type) {
             string invalid_amount = "testing";
             auto hibon_output = new HiBON();
             hibon_output[0] = invalid_amount;
-            orders.each!((o) {
-                result.contract.output[o.pkey] = Document(hibon_output);
-            });
+            orders.each!((o) { result.contract.output[o.pkey] = Document(hibon_output); });
         }
         else {
-            orders.each!((o) {
-            result.contract.output[o.pkey] = o.amount.toDoc;
-        });
+            orders.each!((o) { result.contract.output[o.pkey] = o.amount.toDoc; });
         }
 
         result.contract.script = Script("pay");
@@ -344,7 +306,7 @@ import tagion.wallet.WalletException : check;
                     immutable tweak_code = "invalid_signature_message";
                     bill_net.derive(tweak_code, shared_net);
                     return bill_net.sign(message);
-                } 
+                }
                 immutable tweak_code = account.derives[b.owner];
                 bill_net.derive(tweak_code, shared_net);
                 return bill_net.sign(message);
@@ -352,46 +314,38 @@ import tagion.wallet.WalletException : check;
             .array;
         return true;
 
-
     }
 
-    TagionCurrency available_balance() const pure
-    {
+    TagionCurrency available_balance() const pure {
         return account.available;
     }
 
-    TagionCurrency active_balance() const pure
-    {
+    TagionCurrency active_balance() const pure {
         return account.active;
     }
 
-    TagionCurrency total_balance() const pure
-    {
+    TagionCurrency total_balance() const pure {
         return account.total;
     }
 
     @trusted
-    void deactivate_bills()
-    {
+    void deactivate_bills() {
         account.activated.clear;
     }
 
-    const(HiRPC.Sender) get_request_update_wallet() const
-    {
+    const(HiRPC.Sender) get_request_update_wallet() const {
         HiRPC hirpc;
         auto h = new HiBON;
         h = account.derives.byKey.map!(p => cast(Buffer) p);
         return hirpc.search(h);
     }
 
-    void collect_bills(const TagionCurrency amount, out StandardBill[] active_bills)
-    {
+    void collect_bills(const TagionCurrency amount, out StandardBill[] active_bills) {
         import std.algorithm.sorting : isSorted, sort;
         import std.algorithm.iteration : cumulativeFold;
         import std.range : takeOne, tee;
 
-        if (!account.bills.isSorted!"a.value > b.value")
-        {
+        if (!account.bills.isSorted!"a.value > b.value") {
             account.bills.sort!"a.value > b.value";
         }
 
@@ -399,14 +353,13 @@ import tagion.wallet.WalletException : check;
         auto none_active = account.bills.filter!(b => !(b.owner in account.activated));
 
         // Check if we have enough money
-        
+
         TagionCurrency rest = amount;
         active_bills = none_active.filter!(b => b.value <= rest)
             .until!(b => rest <= 0)
             .tee!((b) { rest -= b.value; account.activated[b.owner] = true; })
             .array;
-        if (rest > 0)
-        {
+        if (rest > 0) {
             // Take an extra larger bill if not enough
             StandardBill extra_bill;
             none_active.each!(b => extra_bill = b);
@@ -417,18 +370,14 @@ import tagion.wallet.WalletException : check;
     }
 
     @trusted
-    bool set_response_update_wallet(const(HiRPC.Receiver) receiver) nothrow
-    {
-        if (receiver.isResponse)
-        {
-            try
-            {
+    bool set_response_update_wallet(const(HiRPC.Receiver) receiver) nothrow {
+        if (receiver.isResponse) {
+            try {
                 account.bills = receiver.response.result[].map!(e => StandardBill(e.get!Document))
                     .array;
                 return true;
             }
-            catch (Exception e)
-            {
+            catch (Exception e) {
                 import std.stdio;
                 import std.exception : assumeWontThrow;
 
@@ -439,8 +388,7 @@ import tagion.wallet.WalletException : check;
         return false;
     }
 
-    static TagionCurrency calcTotal(const(StandardBill[]) bills) pure
-    {
+    static TagionCurrency calcTotal(const(StandardBill[]) bills) pure {
         return bills.map!(b => b.value).sum;
     }
 }

@@ -327,25 +327,25 @@ bool hasErrors(ref const ScenarioGroup scenario_group) nothrow {
 const(BehaviourError)[] getBDDErrors(const(ScenarioGroup) scenarioGroup) {
     const(BehaviourError)[] errors;
     // How do i statically iteratate over each actionGroup member of scenarioGroup
-    foreach(info; scenarioGroup.given.infos) {
+    foreach (info; scenarioGroup.given.infos) {
         if (info.result.isRecordType!BehaviourError) {
             const result = BehaviourError(info.result);
             errors ~= result;
         }
     }
-    foreach(info; scenarioGroup.when.infos) {
+    foreach (info; scenarioGroup.when.infos) {
         if (info.result.isRecordType!BehaviourError) {
             const result = BehaviourError(info.result);
             errors ~= result;
         }
     }
-    foreach(info; scenarioGroup.then.infos) {
+    foreach (info; scenarioGroup.then.infos) {
         if (info.result.isRecordType!BehaviourError) {
             const result = BehaviourError(info.result);
             errors ~= result;
         }
     }
-    foreach(info; scenarioGroup.but.infos) {
+    foreach (info; scenarioGroup.but.infos) {
         if (info.result.isRecordType!BehaviourError) {
             const result = BehaviourError(info.result);
             errors ~= result;

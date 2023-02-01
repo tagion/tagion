@@ -19,27 +19,22 @@ import std.stdio;
 import std.concurrency;
 
 @safe
-class DARTFakeNet : StdSecureNet
-{
+class DARTFakeNet : StdSecureNet {
     enum FAKE = HiBONPrefix.HASH ~ "#fake";
-    this(string passphrase)
-    {
+    this(string passphrase) {
         this();
         generateKeyPair(passphrase);
     }
 
-    this()
-    {
+    this() {
         import tagion.crypto.secp256k1.NativeSecp256k1;
 
         this._crypt = new NativeSecp256k1;
 
     }
 
-    override immutable(Buffer) calcHash(scope const(ubyte[]) h) const
-    {
-        if (h.length is ulong.sizeof)
-        {
+    override immutable(Buffer) calcHash(scope const(ubyte[]) h) const {
+        if (h.length is ulong.sizeof) {
             scope ubyte[] fake_h;
             fake_h.length = hashSize;
             fake_h[0 .. ulong.sizeof] = h;
@@ -49,40 +44,33 @@ class DARTFakeNet : StdSecureNet
     }
 
     override immutable(Buffer) calcHash(
-        scope const(ubyte[]) h1,
-        scope const(ubyte[]) h2) const
-    {
+            scope const(ubyte[]) h1,
+    scope const(ubyte[]) h2) const {
         scope ubyte[] fake_h1;
         scope ubyte[] fake_h2;
-        if (h1.length is ulong.sizeof)
-        {
+        if (h1.length is ulong.sizeof) {
             fake_h1.length = hashSize;
             fake_h1[0 .. ulong.sizeof] = h1;
         }
-        else
-        {
+        else {
             fake_h1 = h1.dup;
         }
-        if (h2.length is ulong.sizeof)
-        {
+        if (h2.length is ulong.sizeof) {
             fake_h2.length = hashSize;
             fake_h2[0 .. ulong.sizeof] = h2;
         }
-        else
-        {
+        else {
             fake_h2 = h2.dup;
         }
         return super.calcHash(fake_h1, fake_h2);
     }
 
     @trusted
-    override immutable(Buffer) hashOf(scope const(Document) doc) const
-    {
+    override immutable(Buffer) hashOf(scope const(Document) doc) const {
         import tagion.hibon.HiBONBase : Type;
         import std.exception : assumeUnique;
 
-        if (doc.hasMember(FAKE) && (doc[FAKE].type is Type.UINT64))
-        {
+        if (doc.hasMember(FAKE) && (doc[FAKE].type is Type.UINT64)) {
             const x = doc[FAKE].get!ulong;
             import std.bitmanip : nativeToBigEndian;
 
@@ -94,8 +82,7 @@ class DARTFakeNet : StdSecureNet
         return super.hashOf(doc);
     }
 
-    static const(Document) fake_doc(const ulong x)
-    {
+    static const(Document) fake_doc(const ulong x) {
         auto hibon = new HiBON;
         hibon[FAKE] = x;
         return Document(hibon);

@@ -14,7 +14,7 @@ struct ver {
         enum code = format(q{
                 version(%s) enum opDispatch = true;
                 else         enum opDispatch = false;
-            },M);
+            }, M);
         mixin(code);
     }
 }
@@ -29,7 +29,7 @@ static if (ver.linux) {
     pragma(msg, "This is LINUX");
 }
 
-version(unittest)  {
+version (unittest) {
     // empty
     enum not_unittest = false;
 }

@@ -16,14 +16,12 @@ import std.format;
 
 // import std.stdio;
 
-struct WasmGas
-{
+struct WasmGas {
     enum set_gas_gauge = "$set_gas_gauge";
     enum read_gas_gauge = "$read_gas_gauge";
     protected WasmWriter writer;
 
-    this(ref WasmWriter writer)
-    {
+    this(ref WasmWriter writer) {
         this.writer = writer;
     }
 
@@ -43,18 +41,15 @@ struct WasmGas
      Returns:
      the index of the inserted sectype
      +/
-    uint inject(SecType)(SecType sectype)
-    {
+    uint inject(SecType)(SecType sectype) {
         uint idx;
         enum SectionId = WasmWriter.fromSecType!SecType;
-        if (writer.mod[SectionId] is null)
-        {
+        if (writer.mod[SectionId] is null) {
             idx = 0;
             writer.mod[SectionId] = new WasmWriter.WasmSection.SectionT!SecType;
             writer.mod[SectionId].sectypes = [sectype];
         }
-        else
-        {
+        else {
             idx = cast(uint)(writer.mod[SectionId].sectypes.length);
             writer.mod[SectionId].sectypes ~= sectype;
         }
@@ -62,26 +57,21 @@ struct WasmGas
     }
 
     alias InjectGas = void delegate(scope OutBuffer bout, const uint gas);
-    package void perform_gas_inject(InjectGas inject_gas)
-    {
+    package void perform_gas_inject(InjectGas inject_gas) {
         auto code_sec = writer.mod[Section.CODE];
 
         alias GasResult = Tuple!(uint, "gas", IR, "irtype");
 
-        const(GasResult) inject_gas_funcs(ref scope OutBuffer bout, ref ExprRange expr)
-        {
+        const(GasResult) inject_gas_funcs(ref scope OutBuffer bout, ref ExprRange expr) {
             scope wasmexpr = WasmExpr(bout);
             uint gas_count;
-            while (!expr.empty)
-            {
+            while (!expr.empty) {
                 const elm = expr.front;
                 const instr = instrTable[elm.code];
                 gas_count += instr.cost;
                 expr.popFront;
-                with (IRType)
-                {
-                    final switch (instr.irtype)
-                    {
+                with (IRType) {
+                    final switch (instr.irtype) {
                     case PREFIX:
                     case CODE:
                         wasmexpr(elm.code);
@@ -91,18 +81,15 @@ struct WasmGas
                         scope block_bout = new OutBuffer;
                         pragma(msg, "fixme(cbr): add block_block_out.reserve");
                         const block_result = inject_gas_funcs(block_bout, expr);
-                        if (elm.code is IR.IF)
-                        {
+                        if (elm.code is IR.IF) {
                             int if_gas_count = block_result.gas;
-                            if (block_result.irtype is IR.ELSE)
-                            {
+                            if (block_result.irtype is IR.ELSE) {
                                 const endif_result = inject_gas_funcs(block_bout, expr);
                                 if_gas_count = max(endif_result.gas, if_gas_count);
                             }
                             gas_count += if_gas_count;
                         }
-                        else
-                        {
+                        else {
                             inject_gas(bout, block_result.gas);
                         }
                         bout.write(block_bout);
@@ -125,10 +112,8 @@ struct WasmGas
                         wasmexpr(elm.code);
                         break;
                     case CONST:
-                        with (IR)
-                        {
-                            switch (elm.code)
-                            {
+                        with (IR) {
+                            switch (elm.code) {
                             case I32_CONST:
                                 wasmexpr(elm.code, elm.warg.get!int);
                                 break;
@@ -155,10 +140,8 @@ struct WasmGas
             return GasResult(gas_count, IR.END);
         }
 
-        if (code_sec)
-        {
-            foreach (ref c; code_sec.sectypes)
-            {
+        if (code_sec) {
+            foreach (ref c; code_sec.sectypes) {
                 scope expr_bout = new OutBuffer;
                 auto expr_range = c[];
                 expr_bout.reserve(c.expr.length * 5 / 4); // add 25%
@@ -172,8 +155,7 @@ struct WasmGas
         }
     }
 
-    void modify()
-    {
+    void modify() {
         /+
          Inject the Global variable
          +/
@@ -191,10 +173,8 @@ struct WasmGas
         // writefln("func_sec.sectypes=%s", func_sec.sectypes);
 
         // writefln("gas_count_func_idx=%d", gas_count_func_idx);
-        void inject_gas_count(scope OutBuffer bout, const uint gas)
-        {
-            if (gas > 0)
-            {
+        void inject_gas_count(scope OutBuffer bout, const uint gas) {
+            if (gas > 0) {
                 WasmExpr(bout)(IR.I32_CONST, gas)(IR.CALL, gas_count_func_idx);
             }
         }
@@ -299,8 +279,7 @@ struct WasmGas
     }
 }
 
-version (none) unittest
-{
+version (none) unittest {
     import std.stdio;
     import std.file;
     import std.exception : assumeUnique;
@@ -309,8 +288,7 @@ version (none) unittest
 
     //      import std.file : fread=read, fwrite=write;
 
-    @trusted static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max)
-    {
+    @trusted static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
         import std.file : _read = read;
 
         auto data = cast(ubyte[]) _read(name, upTo);

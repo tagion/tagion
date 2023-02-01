@@ -17,8 +17,7 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
  */
 
 @RecordType("EpochBlock")
-@safe class EpochChainBlock : HashChainBlock
-{
+@safe class EpochChainBlock : HashChainBlock {
     /** Fingerprint of this block */
     @Label("") Buffer fingerprint;
     /** Bullseye of DART database */
@@ -30,14 +29,14 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
 
     mixin JSONString;
 
-     /** Ctor creates block from recorder, previous hash and bullseye.
+    /** Ctor creates block from recorder, previous hash and bullseye.
      *      @param transactions - Document with list of transactions
      *      @param previous - fingerprint of the previous block
      *      @param bullseye - bullseye of database
      *      @param net - hash net
      */
     mixin HiBONRecord!(
-        q{
+            q{
             private this(
                 Document transactions,
                 Buffer previous,
@@ -60,23 +59,22 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
             }
         });
 
-    Buffer getHash() const
-    {
+    Buffer getHash() const {
         return this.fingerprint;
     }
 
-    Buffer getPrevious() const
-    {
+    Buffer getPrevious() const {
         return this.previous;
     }
 }
 
-unittest
-{
+unittest {
     import tagion.crypto.SecureNet : StdHashNet;
+
     /// EpochChainBlock_check_getters
     {
         import tagion.crypto.SecureNet : StdHashNet;
+
         auto hasher = new StdHashNet;
         Buffer bullseye = [1, 2, 3, 4];
         Buffer prev = null;
@@ -95,9 +93,11 @@ unittest
         Buffer prev = null;
         auto doc = Document();
         auto item_one = new EpochChainBlock(doc, prev, bullseye, hasher);
-        const ubyte[] expected_array = [56, 1, 2, 36, 64, 10, 69, 112, 111, 99, 104, 66, 108, 111, 99, 107, 3, 3,
+        const ubyte[] expected_array = [
+            56, 1, 2, 36, 64, 10, 69, 112, 111, 99, 104, 66, 108, 111, 99, 107, 3, 3,
             101, 121, 101, 4, 1, 2, 3, 4, 3, 8, 112, 114, 101, 118, 105, 111, 117, 115, 0, 2, 17, 116, 114, 97, 110,
-            115, 97, 99, 116, 105, 111, 110, 115, 95, 108, 105, 115, 116, 0];
+            115, 97, 99, 116, 105, 111, 110, 115, 95, 108, 105, 115, 116, 0
+        ];
 
         assert(item_one.toHiBON().serialize == expected_array);
     }

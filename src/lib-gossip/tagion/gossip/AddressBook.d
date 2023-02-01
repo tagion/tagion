@@ -15,10 +15,8 @@ import std.random;
 
 import tagion.basic.TagionExceptions;
 
-@safe class AddressBookException : TagionException
-{
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure
-    {
+@safe class AddressBookException : TagionException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, file, line);
     }
 }
@@ -32,8 +30,7 @@ enum lockext = "lock";
  * Lock file
  * @param filename - file to lock
  */
-void lock(string filename)
-{
+void lock(string filename) {
     import std.file : fwrite = write;
 
     immutable file_lock = filename.setExtension(lockext);
@@ -44,17 +41,14 @@ void lock(string filename)
  * Unlock file
  * @param filename - file to unlock
  */
-void unlock(string filename) nothrow
-{
+void unlock(string filename) nothrow {
     import std.file : remove;
 
     immutable file_lock = filename.setExtension(lockext);
-    try
-    {
+    try {
         file_lock.remove;
     }
-    catch (Exception e)
-    {
+    catch (Exception e) {
         // ignore
     }
 }
@@ -64,27 +58,24 @@ void unlock(string filename) nothrow
  * @param filename - file to check
  * @return true if locked
  */
-bool locked(string filename)
-{
+bool locked(string filename) {
     immutable file_lock = filename.setExtension(lockext);
     return file_lock.exists;
 }
 
 /** Address book for libp2p */
 @safe
-synchronized class AddressBook
-{
+synchronized class AddressBook {
     import core.time;
 
     alias NodeAddresses = NodeAddress[Pubkey];
-    alias NodePair = typeof((() @trusted => (cast(NodeAddresses)addresses).byKeyValue.front)());
+    alias NodePair = typeof((() @trusted => (cast(NodeAddresses) addresses).byKeyValue.front)());
 
-pragma(msg, "NodePair ", NodePair);
+    pragma(msg, "NodePair ", NodePair);
     /** \struct AddressDirectory
      * Storage for node addresses
      */
-    static struct AddressDirectory
-    {
+    static struct AddressDirectory {
         /* associative array with node addresses 
          * node address - value, public key - key
          */
@@ -104,22 +95,18 @@ pragma(msg, "NodePair ", NodePair);
      * @param nodes - number of active nodes
      */
     void number_of_active_nodes(const size_t nodes) pure nothrow
-    in
-    {
+    in {
         debug log.trace("this.nodes %s set to %s", this.nodes, nodes);
         assert(this.nodes is size_t.init);
     }
-    do
-    {
+    do {
         this.nodes = nodes;
     }
 
-    protected
-    {
+    protected {
         Random rnd;
     }
-    this()
-    {
+    this() {
         rnd = shared(Random)(unpredictableSeed);
     }
 
@@ -130,12 +117,10 @@ pragma(msg, "NodePair ", NodePair);
      * Create associative array with public keys and addresses of nodes
      * @return addresses of nodes
      */
-    immutable(NodeAddress[Pubkey]) _data() @trusted
-    {
+    immutable(NodeAddress[Pubkey]) _data() @trusted {
         pragma(msg, "fixme(cbr): AddressBook._data This function should be removed when the addressbook has been implemented");
         NodeAddress[Pubkey] result;
-        foreach (pkey, addr; addresses)
-        {
+        foreach (pkey, addr; addresses) {
             result[pkey] = addr;
         }
         return cast(immutable) result;
@@ -145,11 +130,9 @@ pragma(msg, "NodePair ", NodePair);
      * Overwrite node addresses associative array
      * @param addrs - array to overwrite
      */
-    private void overwrite(const(NodeAddress[Pubkey]) addrs)
-    {
+    private void overwrite(const(NodeAddress[Pubkey]) addrs) {
         addresses = null;
-        foreach (pkey, addr; addrs)
-        {
+        foreach (pkey, addr; addrs) {
             addresses[pkey] = addr;
         }
     }
@@ -159,27 +142,22 @@ pragma(msg, "NodePair ", NodePair);
      * @param filename - file to load
      * @param do_unlock - flag for unlock file
      */
-    void load(string filename, bool do_unlock = true) @trusted
-    {
-        void local_read() @safe
-        {
+    void load(string filename, bool do_unlock = true) @trusted {
+        void local_read() @safe {
             auto dir = filename.fread!AddressDirectory;
             overwrite(dir.addresses);
         }
 
-        if (filename.exists)
-        {
+        if (filename.exists) {
             int count_down = max_count;
-            while (filename.locked)
-            {
+            while (filename.locked) {
                 Thread.sleep(timeout.msecs);
                 count_down--;
                 check(count_down > 0, format("The bootstrap file is locked. Timeout can't load file %s", filename));
             }
             filename.lock;
             local_read;
-            if (do_unlock)
-            {
+            if (do_unlock) {
                 filename.unlock;
             }
         }
@@ -190,18 +168,15 @@ pragma(msg, "NodePair ", NodePair);
      * @param filename - file to save addresses
      * @param nonelock - flag tolock file for save operation
      */
-    void save(string filename, bool nonelock = false) @trusted
-    {
-        void local_write()
-        {
+    void save(string filename, bool nonelock = false) @trusted {
+        void local_write() {
             AddressDirectory dir;
             dir.addresses = cast(NodeAddress[Pubkey]) addresses;
             filename.fwrite(dir);
         }
 
         int count_down = max_count;
-        while (!nonelock && filename.locked)
-        {
+        while (!nonelock && filename.locked) {
             Thread.sleep(timeout.msecs);
             count_down--;
             check(count_down > 0, format("The bootstrap file is locked. Timeout can't save file %s", filename));
@@ -216,11 +191,9 @@ pragma(msg, "NodePair ", NodePair);
      * @param pkey - public key for check
      * @return initialized node address
      */
-    immutable(NodeAddress) opIndex(const Pubkey pkey) const pure nothrow
-    {
+    immutable(NodeAddress) opIndex(const Pubkey pkey) const pure nothrow {
         auto addr = pkey in addresses;
-        if (addr)
-        {
+        if (addr) {
             return cast(immutable)(*addr);
         }
         return NodeAddress.init;
@@ -232,17 +205,14 @@ pragma(msg, "NodePair ", NodePair);
      * @param pkey - key
      */
     void opIndexAssign(const NodeAddress addr, const Pubkey pkey)
-    in
-    {
+    in {
         assert(pkey.length is 33);
-        if ((pkey in addresses) !is null)
-        {
+        if ((pkey in addresses) !is null) {
             log.error(format("Address %s has already been set", pkey.cutHex));
         }
         assert((pkey in addresses) is null, format("Address %s has already been set", pkey.cutHex));
     }
-    do
-    {
+    do {
         import std.stdio;
         import tagion.utils.Miscellaneous : cutHex;
 
@@ -254,8 +224,7 @@ pragma(msg, "NodePair ", NodePair);
      * Remove addresses by public key
      * @param pkey - public key fo remove addresses
      */
-    void erase(const Pubkey pkey) pure nothrow
-    {
+    void erase(const Pubkey pkey) pure nothrow {
         addresses.remove(pkey);
     }
 
@@ -264,8 +233,7 @@ pragma(msg, "NodePair ", NodePair);
      * @param pkey - public key fo check
      * @return true if public key exist
      */
-    bool exists(const Pubkey pkey) const nothrow
-    {
+    bool exists(const Pubkey pkey) const nothrow {
         return (pkey in addresses) !is null;
     }
 
@@ -274,8 +242,7 @@ pragma(msg, "NodePair ", NodePair);
      * @param pkey - public key fo check
      * @return true if pkey active
      */
-    bool isActive(const Pubkey pkey) const pure nothrow
-    {
+    bool isActive(const Pubkey pkey) const pure nothrow {
         return (pkey in addresses) !is null;
     }
 
@@ -283,8 +250,7 @@ pragma(msg, "NodePair ", NodePair);
      * Return active node channels in network
      * @return active node channels
      */
-    immutable(Pubkey[]) activeNodeChannels() @trusted const pure nothrow
-    {
+    immutable(Pubkey[]) activeNodeChannels() @trusted const pure nothrow {
         import std.exception : assumeUnique;
 
         auto channels = (cast(NodeAddresses) addresses).keys;
@@ -295,8 +261,7 @@ pragma(msg, "NodePair ", NodePair);
      * Return amount of active nodes in network
      * @return amount of active nodes
      */
-    size_t numOfActiveNodes() const pure nothrow
-    {
+    size_t numOfActiveNodes() const pure nothrow {
         return addresses.length;
     }
 
@@ -304,8 +269,7 @@ pragma(msg, "NodePair ", NodePair);
      * Return amount of nodes in networt
      * @return amount of nodes
      */
-    size_t numOfNodes() const pure nothrow
-    {
+    size_t numOfNodes() const pure nothrow {
         return addresses.length;
     }
 
@@ -315,8 +279,7 @@ pragma(msg, "NodePair ", NodePair);
      * Check that nodes >= 4 and addresses >= nodes
      * @return true if network ready
      */
-    bool isReady() const pure nothrow
-    {
+    bool isReady() const pure nothrow {
         return (nodes >= 4) && (addresses.length >= nodes);
     }
 
@@ -324,10 +287,8 @@ pragma(msg, "NodePair ", NodePair);
      * For random generation node pair
      * @return node pair
      */
-    immutable(NodePair) random() @trusted const pure
-    {
-        if (addresses.length)
-        {
+    immutable(NodePair) random() @trusted const pure {
+        if (addresses.length) {
             import std.range : dropExactly;
 
             auto _addresses = cast(NodeAddresses) addresses;
@@ -342,8 +303,7 @@ pragma(msg, "NodePair ", NodePair);
      * @param index - index to select active channel
      * @return active channel
      */
-    const(Pubkey) selectActiveChannel(const size_t index) @trusted const pure
-    {
+    const(Pubkey) selectActiveChannel(const size_t index) @trusted const pure {
         import std.range : dropExactly;
 
         auto _addresses = cast(NodeAddresses) addresses;
@@ -353,8 +313,7 @@ pragma(msg, "NodePair ", NodePair);
 
 static shared(AddressBook) addressbook;
 
-shared static this()
-{
+shared static this() {
     addressbook = new shared(AddressBook);
 }
 
@@ -364,8 +323,7 @@ shared static this()
  */
 @safe
 @RecordType("NNR")
-struct NodeAddress
-{
+struct NodeAddress {
     enum tcp_token = "/tcp/";
     enum p2p_token = "/p2p/";
     enum intrn_token = "/node/";
@@ -383,7 +341,7 @@ struct NodeAddress
     DART.SectorRange sector;
 
     mixin HiBONRecord!(
-        q{
+            q{
             this(
             string address,
             immutable(DARTOptions) dart_opts,
@@ -425,8 +383,7 @@ struct NodeAddress
      * @param addr - address to parse
      * @return parsed address
      */
-    static string parseAddr(string addr)
-    {
+    static string parseAddr(string addr) {
         import std.string;
 
         pragma(msg, "fixme(cbr): change this to a more bust parse (use regex)");
@@ -443,8 +400,7 @@ struct NodeAddress
      * Parse node address to string
      * @return string address
      */
-    public string toString()
-    {
+    public string toString() {
         return address;
     }
 }

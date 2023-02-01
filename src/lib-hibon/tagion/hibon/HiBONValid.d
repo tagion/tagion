@@ -4,26 +4,22 @@ import tagion.hibon.Document : Document;
 import tagion.basic.Types : Buffer;
 
 bool error_callback(const Document main_doc, const Document.Element.ErrorCode error_code,
-    const(Document.Element) current, const(Document.Element) previous) nothrow @safe
-{
+        const(Document.Element) current, const(Document.Element) previous) nothrow @safe {
     import tagion.hibon.HiBONBase : Type, isDataBlock, isHiBONType;
     import LEB128 = tagion.utils.LEB128;
     import std.exception : assumeWontThrow;
     import std.traits : isIntegral, EnumMembers;
     import std.stdio;
 
-    static void hex_dump(Buffer data)
-    {
+    static void hex_dump(Buffer data) {
         import std.algorithm.comparison : min;
 
         uint addr;
         enum width = 16;
-        while (data.length)
-        {
+        while (data.length) {
             writef("\t\t%04X", addr);
             const data_size = min(data.length, width);
-            foreach (d; data[0 .. data_size])
-            {
+            foreach (d; data[0 .. data_size]) {
                 writef(" %02X", d);
             }
             writeln();
@@ -32,31 +28,25 @@ bool error_callback(const Document main_doc, const Document.Element.ErrorCode er
         }
     }
 
-    try
-    {
+    try {
         writefln("ErrorCode %s", error_code);
-        if (current.data.length)
-        {
+        if (current.data.length) {
             const current_pos = (() @trusted {
-                if (current.isEod)
-                {
+                if (current.isEod) {
                     return size_t(0);
                 }
                 return size_t(current.data.ptr - main_doc.data.ptr);
             })();
 
             const previous_pos = (() @trusted {
-                if (previous.isEod)
-                {
+                if (previous.isEod) {
                     return size_t(0);
                 }
                 return size_t(previous.data.ptr - main_doc.data.ptr);
             })();
 
-            CaseErrorCode: with (Document.Element.ErrorCode)
-            {
-                switch (error_code)
-                {
+            CaseErrorCode: with (Document.Element.ErrorCode) {
+                switch (error_code) {
                 case DOCUMENT_OVERFLOW:
                     return true;
                 default:
@@ -65,30 +55,24 @@ bool error_callback(const Document main_doc, const Document.Element.ErrorCode er
                     writefln("\tKeyPos   %d", current.keyPos);
                     writefln("\tvaluePos %d", current.valuePos);
                     writefln("\tkey      '%s'", current.key);
-                    with (Type)
-                    {
+                    with (Type) {
                 CaseType:
-                        switch (current.type)
-                        {
-                            static foreach (E; EnumMembers!(Type))
-                            {
+                        switch (current.type) {
+                            static foreach (E; EnumMembers!(Type)) {
                         case E:
-                                static if ((E is STRING) || (E is DOCUMENT) || (E is BINARY))
-                                {
+                                static if ((E is STRING) || (E is DOCUMENT) || (E is BINARY)) {
                                     writefln("\tdataPos  %d", current.dataPos);
                                     writefln("\tdataSize %d", current.dataSize);
                                     hex_dump(current.data[current.dataPos .. current.dataSize]);
                                 }
-                                else static if (E is BINARY)
-                                {
+                                else static if (E is BINARY) {
                                     const big_size = BigNumber.calc_size(data[valuePos .. $]);
                                     writefln("\tbigSize  %d", big_size);
                                     hex_dump(current.data[current.dataPos .. big_size]);
                                 }
-                                else static if (isDataBlock(E))
-                                {
+                                else static if (isDataBlock(E)) {
                                     const binary_len = LEB128.decode!uint(
-                                        current.data[current.valuePos .. $]);
+                                            current.data[current.valuePos .. $]);
                                     writefln("\tbin_size %d", binary_len);
                                     const buffer_pos = current.valuePos + binary_len.size;
                                     writefln("\tbin_pos  %d", buffer_pos);
@@ -96,45 +80,36 @@ bool error_callback(const Document main_doc, const Document.Element.ErrorCode er
                                         .. buffer_pos + binary_len.value];
                                     hex_dump(buffer);
                                 }
-                                else static if (isHiBONType(E))
-                                {
-                                    static if (E is TIME)
-                                    {
+                                else static if (isHiBONType(E)) {
+                                    static if (E is TIME) {
                                         alias T = long;
                                     }
-                                    else
-                                    {
+                                    else {
                                         alias T = Document.Value.TypeT!E;
                                     }
-                                    static if (isIntegral!T)
-                                    {
+                                    static if (isIntegral!T) {
                                         const leb128_size = LEB128.calc_size(
-                                            current.data[current.valuePos .. $]);
+                                                current.data[current.valuePos .. $]);
                                         writefln("\tleb128  %d", leb128_size);
                                         hex_dump(
-                                            current.data[current.valuePos
+                                                current.data[current.valuePos
                                                 .. current.valuePos + leb128_size]);
                                     }
-                                    else
-                                    {
+                                    else {
                                         hex_dump(
-                                            current.data[current.valuePos
+                                                current.data[current.valuePos
                                                 .. current.valuePos + T.sizeof]);
                                     }
                                 }
-                                else static if (E is VER)
-                                {
+                                else static if (E is VER) {
                                     const leb128_version_size = LEB128.calc_size(
-                                        current.data[ubyte.sizeof .. $]);
+                                            current.data[ubyte.sizeof .. $]);
                                     hex_dump(
-                                        current.data[ubyte.sizeof
+                                            current.data[ubyte.sizeof
                                             .. ubyte.sizeof + leb128_version_size]);
                                 }
-                                static if (isHiBONType(E))
-                                {
-                                    (() @trusted {
-                                        writefln("\tvalue  %s", current.by!E);
-                                    })();
+                                static if (isHiBONType(E)) {
+                                    (() @trusted { writefln("\tvalue  %s", current.by!E); })();
                                 }
 
                                 break CaseType;
@@ -149,8 +124,7 @@ bool error_callback(const Document main_doc, const Document.Element.ErrorCode er
         }
         return false;
     }
-    catch (Exception e)
-    {
+    catch (Exception e) {
         assumeWontThrow( //        (() @trusted {
         { stdout.flush; writefln("%s", e); });
         //        })();

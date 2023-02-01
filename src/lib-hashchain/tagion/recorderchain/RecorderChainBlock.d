@@ -19,8 +19,7 @@ import tagion.hibon.Document;
  * Class represents block from recorder chain
  */
 @RecordType("RCB")
-@safe class RecorderChainBlock : HashChainBlock
-{
+@safe class RecorderChainBlock : HashChainBlock {
     /** Fingerprint of this block */
     @Label("") Buffer fingerprint;
     /** Bullseye of DART database */
@@ -39,7 +38,7 @@ import tagion.hibon.Document;
      *      @param net - hash net
      */
     mixin HiBONRecord!(
-        q{
+            q{
             private this(
                 Document recorder_doc,
                 Buffer previous,
@@ -62,19 +61,16 @@ import tagion.hibon.Document;
             }
         });
 
-    Buffer getHash() const
-    {
+    Buffer getHash() const {
         return fingerprint;
     }
 
-    Buffer getPrevious() const
-    {
+    Buffer getPrevious() const {
         return previous;
     }
 }
 
-unittest
-{
+unittest {
     import tagion.basic.TagionExceptions : TagionException;
     import tagion.crypto.SecureNet : StdHashNet;
     import tagion.hibon.HiBON : HiBON;
@@ -133,13 +129,11 @@ unittest
         auto block_hibon = block.toHiBON;
         block_hibon.remove(GetLabel!(RecorderChainBlock.bullseye).name);
 
-        try
-        {
+        try {
             new RecorderChainBlock(Document(block_hibon));
             assert(false);
         }
-        catch (TagionException e)
-        {
+        catch (TagionException e) {
         }
     }
 }

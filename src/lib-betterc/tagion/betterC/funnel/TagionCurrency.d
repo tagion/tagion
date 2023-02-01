@@ -15,175 +15,142 @@ import tagion.betterC.wallet.WalletRecords;
 // import tagion.hibon.HiBONRecord : HiBONRecord, Label, RecordType;
 
 @safe
-TagionCurrency TGN(T)(T x) pure if (isNumeric!T)
-{
+TagionCurrency TGN(T)(T x) pure if (isNumeric!T) {
     return TagionCurrency(cast(double) x);
 }
 
 @trusted
-struct TagionCurrency
-{
+struct TagionCurrency {
     enum long AXION_UNIT = 1_000_000_000;
     enum long AXION_MAX = 1_000_000_000 * AXION_UNIT;
     enum UNIT = "TGN";
 
-    protected
-    {
+    protected {
         @Label("$v") long _axions;
     }
 
-    long get_axions() pure const
-    {
+    long get_axions() pure const {
         return _axions;
     }
 
-    this(T)(const T axions) pure if (isIntegral!T)
-    {
+    this(T)(const T axions) pure if (isIntegral!T) {
         _axions = axions;
     }
 
-    this(T)(T tagions) pure if (isFloatingPoint!T)
-    {
+    this(T)(T tagions) pure if (isFloatingPoint!T) {
         _axions = cast(long)(tagions * AXION_UNIT);
     }
 
-    inout(HiBONT) toHiBON() inout
-    {
+    inout(HiBONT) toHiBON() inout {
         auto hibon = HiBON();
         hibon["$v"] = _axions;
         return cast(inout) hibon;
     }
 
-    const(Document) toDoc()
-    {
+    const(Document) toDoc() {
         auto doc = Document(toHiBON.serialize);
         return cast(const) doc;
     }
 
-    this(Document doc)
-    {
+    this(Document doc) {
         _axions = doc["$v"].get!long;
     }
 
-    bool verify() const pure nothrow
-    {
+    bool verify() const pure nothrow {
         return _axions > -AXION_MAX && _axions < AXION_MAX;
     }
 
     TagionCurrency opBinary(string OP)(const TagionCurrency rhs) const pure
     if (
-        ["+", "-", "%"].canFind(OP))
-    {
+        ["+", "-", "%"].canFind(OP)) {
         enum code = format(q{return TagionCurrency(_axions %1$s rhs._axions);}, OP);
         mixin(code);
     }
 
     TagionCurrency opBinary(string OP, T)(T rhs) const pure
-    if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP)))
-    {
+    if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP))) {
         enum code = format(q{return TagionCurrency(_axions %s rhs);}, OP);
         mixin(code);
     }
 
     TagionCurrency opBinaryRight(string OP, T)(T left) const pure
-    if (isIntegral!T && (["+", "-", "*"].canFind(OP)))
-    {
+    if (isIntegral!T && (["+", "-", "*"].canFind(OP))) {
         enum code = format(q{return TagionCurrency(left %s _axions);}, OP);
         mixin(code);
     }
 
-    TagionCurrency opUnary(string OP)() const pure if (OP == "-" || OP == "-")
-    {
-        static if (OP == "-")
-        {
+    TagionCurrency opUnary(string OP)() const pure if (OP == "-" || OP == "-") {
+        static if (OP == "-") {
             return TagionCurrency(-_axions);
         }
-        else
-        {
+        else {
             return TagionCurrency(_axions);
         }
     }
 
     void opOpAssign(string OP)(const TagionCurrency rhs) pure
-    if (["+", "-", "%"].canFind(OP))
-    {
+    if (["+", "-", "%"].canFind(OP)) {
         enum code = format(q{_axions %s= rhs._axions;}, OP);
         mixin(code);
     }
 
     void opOpAssign(string OP, T)(const T rhs) pure
-    if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP)))
-    {
+    if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP))) {
         enum code = format(q{_axions %s= rhs;}, OP);
         mixin(code);
     }
 
     void opOpAssign(string OP, T)(const T rhs) pure
-    if (isFloatingPoint!T && (["*", "%", "/"].canFind(OP)))
-    {
+    if (isFloatingPoint!T && (["*", "%", "/"].canFind(OP))) {
         enum code = format(q{_axions %s= rhs;}, OP);
         mixin(code);
     }
 
-    const
-    {
+    const {
 
-        bool opEquals(const TagionCurrency x)
-        {
+        bool opEquals(const TagionCurrency x) {
             return _axions == x._axions;
         }
 
-        bool opEquals(T)(T x) if (isNumeric!T)
-        {
+        bool opEquals(T)(T x) if (isNumeric!T) {
             return _axions == x;
         }
 
-        int opCmp(const TagionCurrency x)
-        {
-            if (_axions < x._axions)
-            {
+        int opCmp(const TagionCurrency x) {
+            if (_axions < x._axions) {
                 return -1;
             }
-            else if (_axions > x._axions)
-            {
+            else if (_axions > x._axions) {
                 return 1;
             }
             return 0;
         }
 
-        int opCmp(T)(T x) if (isNumeric!T)
-        {
-            if (_axions < x)
-            {
+        int opCmp(T)(T x) if (isNumeric!T) {
+            if (_axions < x) {
                 return -1;
             }
-            else if (_axions > x)
-            {
+            else if (_axions > x) {
                 return 1;
             }
             return 0;
         }
 
-        long axios()
-        {
-            if (_axions < 0)
-            {
+        long axios() {
+            if (_axions < 0) {
                 return -(-_axions % AXION_UNIT);
             }
             return _axions % AXION_UNIT;
         }
 
-        long tagions()
-        {
-            if (_axions < 0)
-            {
+        long tagions() {
+            if (_axions < 0) {
                 return -(-_axions / AXION_UNIT);
             }
             return _axions / AXION_UNIT;
         }
 
-        double value()
-        {
+        double value() {
             return double(_axions) * AXION_UNIT;
         }
     }

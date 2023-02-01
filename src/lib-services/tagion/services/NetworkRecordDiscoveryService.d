@@ -21,32 +21,27 @@ import tagion.services.MdnsDiscoveryService;
 import tagion.basic.TagionExceptions : fatal;
 import tagion.crypto.SecureNet;
 
-enum DiscoveryRequestCommand
-{
+enum DiscoveryRequestCommand {
     BecomeOnline = 1,
     RequestTable = 2,
     BecomeOffline = 3,
     UpdateTable = 4 // on epoch
 }
 
-enum DiscoveryControl
-{
+enum DiscoveryControl {
     READY = 1,
     ONLINE = 2,
     OFFLINE = 3
 }
 
 void networkRecordDiscoveryService(
-    Pubkey pubkey,
-    shared p2plib.Node p2pnode,
-    string task_name,
-    immutable(Options) opts) nothrow
-{
-    try
-    {
+        Pubkey pubkey,
+        shared p2plib.Node p2pnode,
+        string task_name,
+        immutable(Options) opts) nothrow {
+    try {
 
-        scope (exit)
-        {
+        scope (exit) {
             ownerTid.prioritySend(Control.END);
         }
         log.register(task_name);
@@ -54,63 +49,55 @@ void networkRecordDiscoveryService(
 
         Tid bootstrap_tid;
 
-        final switch (opts.net_mode)
-        {
-        case NetworkMode.internal:
-            {
+        final switch (opts.net_mode) {
+        case NetworkMode.internal: {
                 bootstrap_tid = spawn(
-                    &mdnsDiscoveryService,
-                    pubkey,
-                    p2pnode,
-                    inner_task_name,
-                    opts);
+                        &mdnsDiscoveryService,
+                        pubkey,
+                        p2pnode,
+                        inner_task_name,
+                        opts);
                 break;
             }
-        case NetworkMode.local:
-            {
+        case NetworkMode.local: {
                 bootstrap_tid = spawn(
-                    &fileDiscoveryService,
-                    pubkey,
-                    p2pnode,
-                    inner_task_name,
-                    opts);
+                        &fileDiscoveryService,
+                        pubkey,
+                        p2pnode,
+                        inner_task_name,
+                        opts);
                 break;
             }
-        case NetworkMode.pub:
-            {
+        case NetworkMode.pub: {
                 bootstrap_tid = spawn(
-                    &serverFileDiscoveryService,
-                    pubkey,
-                    p2pnode,
-                    inner_task_name,
-                    opts);
+                        &serverFileDiscoveryService,
+                        pubkey,
+                        p2pnode,
+                        inner_task_name,
+                        opts);
                 break;
             }
         }
         assert(receiveOnly!Control is Control.LIVE);
-        scope (exit)
-        {
+        scope (exit) {
             bootstrap_tid.send(Control.STOP);
             assert(receiveOnly!Control is Control.END);
         }
 
         ownerTid.send(Control.LIVE);
         bool stop = false;
-        while (!stop)
-        {
+        while (!stop) {
             receive(
-                (DiscoveryRequestCommand request) { bootstrap_tid.send(request); },
-                (DiscoveryControl state) { ownerTid.send(state); },
-                (Control control) {
-                if (control is Control.STOP)
-                {
+                    (DiscoveryRequestCommand request) { bootstrap_tid.send(request); },
+                    (DiscoveryControl state) { ownerTid.send(state); },
+                    (Control control) {
+                if (control is Control.STOP) {
                     stop = true;
                 }
             });
         }
     }
-    catch (Throwable t)
-    {
+    catch (Throwable t) {
         fatal(t);
     }
 }

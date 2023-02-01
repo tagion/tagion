@@ -30,12 +30,10 @@ auto logo = import("logo.txt");
 
 mixin Main!(_main, "tagionrecorderchain");
 
-int _main(string[] args)
-{
+int _main(string[] args) {
     immutable program = args[0];
 
-    if (args.length == 1)
-    {
+    if (args.length == 1) {
         writeln("Error: No arguments provided for ", baseName(args[0]), "!");
         return 1;
     }
@@ -58,47 +56,43 @@ int _main(string[] args)
 
     GetoptResult main_args;
 
-    try
-    {
+    try {
         main_args = getopt(args,
-            std.getopt.config.caseSensitive,
-            std.getopt.config.bundling,
-            "chaindirectory|c", "Path to recorder chain directory", &chain_directory,
-            "dartfile|d", "Path to dart file", &dart_file,
-            "genesisdart|g", "Path to genesis dart file", &gen_dart_file,
+                std.getopt.config.caseSensitive,
+                std.getopt.config.bundling,
+                "chaindirectory|c", "Path to recorder chain directory", &chain_directory,
+                "dartfile|d", "Path to dart file", &dart_file,
+                "genesisdart|g", "Path to genesis dart file", &gen_dart_file,
         );
 
-        if (main_args.helpWanted)
-        {
+        if (main_args.helpWanted) {
             writeln(logo);
             defaultGetoptPrinter(
-                [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...]", program),
-                "",
-                "Examples:",
-                "# To run recorer chain specify 2 required parameters",
-                format("%s -с chain_directory -d DART_directory -i true", program),
-                "",
-                "<option>:",
+                    [
+                    // format("%s version %s", program, REVNO),
+                    "Documentation: https://tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...]", program),
+                    "",
+                    "Examples:",
+                    "# To run recorer chain specify 2 required parameters",
+                    format("%s -с chain_directory -d DART_directory -i true", program),
+                    "",
+                    "<option>:",
 
-            ].join("\n"),
-            main_args.options);
+                    ].join("\n"),
+                    main_args.options);
             return 0;
         }
     }
-    catch (Exception e)
-    {
+    catch (Exception e) {
         stderr.writefln(e.msg);
         return 1;
     }
 
     // Check genesis DART file 
-    if (!gen_dart_file.exists || gen_dart_file.extension != FileExtension.dart.withDot)
-    {
+    if (!gen_dart_file.exists || gen_dart_file.extension != FileExtension.dart.withDot) {
         writefln("Incorrect genesis DART file '%s'", gen_dart_file);
         return 1;
     }
@@ -108,19 +102,16 @@ int _main(string[] args)
 
     // Open new DART file
     DART dart;
-    try
-    {
+    try {
         dart = new DART(secure_net, dart_file);
     }
-    catch (Exception e)
-    {
+    catch (Exception e) {
         writefln("Invalid format of genesis DART file '%s'", gen_dart_file);
         return 1;
     }
 
     // Check existence of recorder chain directory
-    if (!chain_directory.exists)
-    {
+    if (!chain_directory.exists) {
         writefln("Recorder chain directory '%s' does not exist", chain_directory);
         return 1;
     }
@@ -129,36 +120,31 @@ int _main(string[] args)
     auto recorder_chain = new RecorderChain(storage);
 
     // Check validity of recorder chain
-    if (!recorder_chain.isValidChain)
-    {
+    if (!recorder_chain.isValidChain) {
         writeln("Recorder block chain is not valid!\nAbort");
         return 1;
     }
 
     // Collect info from chain directory
     auto blocks_count = recorder_chain.storage.getHashes.length;
-    if (blocks_count == 0)
-    {
+    if (blocks_count == 0) {
         writeln("No recorder chain files");
         return 1;
     }
 
     // Recover DART using blocks
-    try
-    {
+    try {
         recorder_chain.replay((RecorderChainBlock block) {
             auto recorder = factory.recorder(block.recorder_doc);
             dart.modify(recorder);
 
-            if (block.bullseye != dart.fingerprint)
-            {
+            if (block.bullseye != dart.fingerprint) {
                 throw new TagionException(
                     "DART fingerprint must be the same as recorder block bullseye");
             }
         });
     }
-    catch (TagionException e)
-    {
+    catch (TagionException e) {
         writefln("%s. Abort", e.msg);
         return 1;
     }

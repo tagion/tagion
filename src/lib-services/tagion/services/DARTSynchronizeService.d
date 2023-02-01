@@ -43,8 +43,7 @@ import tagion.basic.TagionExceptions;
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
 
-enum DARTSynchronizeState
-{
+enum DARTSynchronizeState {
     WAITING = 1,
     SYNCHRONIZING = 2,
     REPLAYING_JOURNALS = 3,
@@ -52,30 +51,24 @@ enum DARTSynchronizeState
     READY = 10,
 }
 
-struct ServiceState(T)
-{
+struct ServiceState(T) {
     mixin StateT!T;
-    this(T initial)
-    {
+    this(T initial) {
         _state = initial;
     }
 
-    void setState(T state)
-    {
-        if (state != _state)
-        {
+    void setState(T state) {
+        if (state != _state) {
             _state = state;
             notifyOwner(); //TODO: manualy notify?
         }
     }
 
-    @property T state()
-    {
+    @property T state() {
         return _state;
     }
 
-    void notifyOwner()
-    {
+    void notifyOwner() {
         send(ownerTid, _state);
     }
 }
@@ -83,15 +76,12 @@ struct ServiceState(T)
 alias DARTReadRequest = ResponseRequest!(tagion.services.DARTSynchronizeService.stringof);
 
 void dartSynchronizeServiceTask(Net : SecureNet)(
-    immutable(Options) opts,
-    shared(p2plib.NodeI) node,
-    shared(Net) master_net,
-    immutable(DART.SectorRange) sector_range) nothrow
-{
-    try
-    {
-        scope (success)
-        {
+        immutable(Options) opts,
+        shared(p2plib.NodeI) node,
+        shared(Net) master_net,
+        immutable(DART.SectorRange) sector_range) nothrow {
+    try {
+        scope (success) {
             ownerTid.prioritySend(Control.END);
         }
         const task_name = opts.dart.sync.task_name;
@@ -99,17 +89,14 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
 
         auto state = ServiceState!DARTSynchronizeState(DARTSynchronizeState.WAITING);
         auto pid = opts.dart.sync.protocol_id;
-        version (unittest)
-        {
+        version (unittest) {
             immutable filename = opts.dart.path.length == 0
                 ? fileId!(DART)(opts.dart.name).fullpath : opts.dart.path;
         }
-        else
-        {
+        else {
             immutable filename = opts.dart.path;
         }
-        if (opts.dart.initialize)
-        {
+        if (opts.dart.initialize) {
             DART.create(filename, BLOCK_SIZE);
         }
         log("DART file created with filename: %s", filename);
@@ -122,15 +109,12 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         dart.dump;
         log("DART bullseye: %s", dart.fingerprint.cutHex);
 
-        scope (exit)
-        {
+        scope (exit) {
             node.closeListener(pid);
         }
         bool stop;
-        void handleControl(Control ts)
-        {
-            with (Control) switch (ts)
-            {
+        void handleControl(Control ts) {
+            with (Control) switch (ts) {
             case STOP:
                 log("Kill dart synchronize service");
                 stop = true;
@@ -140,38 +124,34 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
             }
         }
 
-        void recorderReplayFunc(const(RecordFactory.Recorder) recorder) @safe
-        {
+        void recorderReplayFunc(const(RecordFactory.Recorder) recorder) @safe {
             dart.modify(recorder);
         }
 
         auto journalReplayFiber = new ReplayPool!string((string journal) => dart.replay(journal));
         auto recorderReplayFiber = new ReplayPool!(immutable(RecordFactory.Recorder))(
-            &recorderReplayFunc);
+                &recorderReplayFunc);
 
         auto connectionPool = new shared(ConnectionPoolT)(
-            opts.dart.sync.host.timeout.msecs);
+                opts.dart.sync.host.timeout.msecs);
         auto sync_factory = new P2pSynchronizationFactory(
-            dart, opts.port, node,
-            connectionPool, opts.dart, net.pubkey);
+                dart, opts.port, node,
+                connectionPool, opts.dart, net.pubkey);
         auto syncPool = new DARTSynchronizationPool!(StdHandlerPool!(ResponseHandler, uint))(dart.sectors,
-            journalReplayFiber, opts.dart);
+                journalReplayFiber, opts.dart);
         bool request_handling = false;
         // auto discoveryTid = spawn(&mdnsDiscoveryService, node, opts);
         // receiveOnly!Control;
-        scope (exit)
-        {
+        scope (exit) {
             log("exit scope: call stop");
             // discoveryTid.prioritySend(Control.STOP);
             // receiveOnly!Control;
             syncPool.stop;
         }
-        if (opts.dart.synchronize)
-        {
+        if (opts.dart.synchronize) {
             state.setState(DARTSynchronizeState.WAITING);
         }
-        else
-        {
+        else {
             state.setState(DARTSynchronizeState.READY);
         }
 
@@ -182,45 +162,36 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         //
         // Handles HiPRC for the DART
         //
-        void dartHiPRC(string taskName, immutable(HiRPC.Sender) sender)
-        {
-            Document loadAll(HiRPC hirpc)
-            {
+        void dartHiPRC(string taskName, immutable(HiRPC.Sender) sender) {
+            Document loadAll(HiRPC hirpc) {
                 return Document(dart.loadAll().serialize);
             }
 
-            void sendResult(Buffer result)
-            {
+            void sendResult(Buffer result) {
                 auto tid = locate(taskName);
-                if (tid !is Tid.init)
-                {
+                if (tid !is Tid.init) {
                     send(tid, result);
                 }
-                else
-                {
+                else {
                     log.warning("Couldn't locate task: %s", taskName);
                 }
             }
 
             const receiver = empty_hirpc.receive(sender);
-            if (receiver.supports!DART)
-            {
+            if (receiver.supports!DART) {
                 const request = dart(receiver, false);
                 const tosend = request.toDoc.serialize;
                 sendResult(tosend);
             }
-            else
-            {
+            else {
                 auto owners_doc = receiver.method.params["owners"].get!Document;
                 Buffer[] owners;
-                foreach (owner; owners_doc[])
-                {
+                foreach (owner; owners_doc[]) {
                     owners ~= owner.get!Buffer;
                 }
                 auto result_doc = loadAll(hrpc);
                 StandardBill[] bills;
-                foreach (archive_doc; result_doc[])
-                {
+                foreach (archive_doc; result_doc[]) {
                     auto archive = new Archive(net, archive_doc.get!Document);
                     if (!StandardBill.isRecord(archive.filed))
                         continue;
@@ -228,14 +199,12 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
 
                     import std.algorithm : canFind;
 
-                    if (owners.canFind(bill.owner))
-                    {
+                    if (owners.canFind(bill.owner)) {
                         bills ~= bill;
                     }
                 }
                 HiBON params = new HiBON;
-                foreach (i, bill; bills)
-                {
+                foreach (i, bill; bills) {
                     params[i] = bill.toHiBON;
                 }
                 auto response = empty_hirpc.result(receiver, params);
@@ -243,8 +212,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
             }
         }
 
-        void dartRead(immutable(DARTReadRequest)* resp, Buffer[][] fingerprints) @trusted
-        {
+        void dartRead(immutable(DARTReadRequest)* resp, Buffer[][] fingerprints) @trusted {
             import std.algorithm : joiner;
 
             immutable result = cast(immutable)(dart.loads(fingerprints.joiner, Archive.Type.NONE));
@@ -252,101 +220,81 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         }
 
         ownerTid.send(Control.LIVE);
-        while (!stop)
-        {
+        while (!stop) {
             const tick_timeout = state.checkState(DARTSynchronizeState.REPLAYING_JOURNALS,
-                DARTSynchronizeState.REPLAYING_RECORDERS)
+                    DARTSynchronizeState.REPLAYING_RECORDERS)
                 ? opts.dart.sync.reply_tick_timeout.msecs : opts.dart.sync.tick_timeout.msecs;
             receiveTimeout(tick_timeout, &handleControl,
-                (immutable(RecordFactory.Recorder) recorder) {
-                recorderReplayFiber.insert(recorder);
-            }, (Response!(ControlCode.Control_Connected) resp) {
-                connectionPool.add(resp.key, resp.stream, true);
-            }, (Response!(ControlCode.Control_Disconnected) resp) {
-                connectionPool.close(cast(void*) resp.key);
-            }, (Response!(ControlCode.Control_RequestHandled) resp) {
-                scope (exit)
-                {
-                    if (resp.stream !is null)
-                    {
+                    (immutable(RecordFactory.Recorder) recorder) { recorderReplayFiber.insert(recorder); }, (
+                    Response!(ControlCode.Control_Connected) resp) { connectionPool.add(resp.key, resp.stream, true); }, (
+                    Response!(ControlCode.Control_Disconnected) resp) { connectionPool.close(cast(void*) resp.key); }, (
+                    Response!(ControlCode.Control_RequestHandled) resp) {
+                scope (exit) {
+                    if (resp.stream !is null) {
                         destroy(resp.stream);
                     }
                 }
                 const doc = Document(resp.data);
                 const received = hrpc.receive(doc);
 
-                void closeConnection()
-                {
+                void closeConnection() {
                     connectionPool.close(resp.key);
                 }
 
-                void serverHandler()
-                {
-                    if (received.method.name == DART.Quries.dartModify)
-                    { //Not allowed
+                void serverHandler() {
+                    if (received.method.name == DART.Quries.dartModify) { //Not allowed
                         closeConnection();
                     }
                     auto request = dart(received);
                     connectionPool.send(resp.key, request.toDoc.serialize);
                 }
 
-                if (received.isMethod && state.checkState(DARTSynchronizeState.READY))
-                { //TODO: to switch
+                if (received.isMethod && state.checkState(DARTSynchronizeState.READY)) { //TODO: to switch
                     serverHandler();
                 }
-                else if (!received.isMethod && state.checkState(DARTSynchronizeState.SYNCHRONIZING))
-                {
+                else if (!received.isMethod && state.checkState(DARTSynchronizeState.SYNCHRONIZING)) {
                     syncPool.setResponse(resp);
                 }
-                else
-                {
+                else {
                     closeConnection();
                 }
 
             },
-                &dartHiPRC,
-                &dartRead, // version(none) {
-                (string taskName, Buffer data) {
+                    &dartHiPRC,
+                    &dartRead, // version(none) {
+                    (string taskName, Buffer data) {
                 log.trace("DSS: Received request from service: %s %d", taskName, data.length);
-                Document loadAll(HiRPC hirpc)
-                {
+                Document loadAll(HiRPC hirpc) {
                     return Document(dart.loadAll().serialize);
                 }
 
-                void sendResult(Buffer result)
-                {
+                void sendResult(Buffer result) {
                     auto tid = locate(taskName);
-                    if (tid != Tid.init)
-                    {
+                    if (tid != Tid.init) {
                         log.trace("Sending response back to %s", taskName);
                         send(tid, result);
                     }
-                    else
-                    {
+                    else {
                         log.warning("Couldn't locate task: %s", taskName);
                     }
                 }
 
                 const doc = Document(data);
                 const receiver = empty_hirpc.receive(doc);
-                if (receiver.supports!DART)
-                {
+                if (receiver.supports!DART) {
                     const request = dart(receiver, false);
                     const tosend = request.toDoc.serialize;
                     sendResult(tosend);
                 }
-                else
-                {
+                else {
                     auto owners_doc = receiver.method.params["owners"].get!Document;
                     Buffer[] owners;
-                    foreach (owner; owners_doc[])
-                    {
+                    foreach (owner; owners_doc[]) {
                         owners ~= owner.get!Buffer;
                     }
                     auto result_doc = loadAll(hrpc);
                     StandardBill[] bills;
-                    foreach (archive_doc; result_doc[])
-                    {
+                    foreach (archive_doc; result_doc[]) {
                         auto archive = new Archive(net, archive_doc.get!Document);
                         if (!StandardBill.isRecord(archive.filed))
                             continue;
@@ -354,29 +302,25 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
 
                         import std.algorithm : canFind;
 
-                        if (owners.canFind(bill.owner))
-                        {
+                        if (owners.canFind(bill.owner)) {
                             bills ~= bill;
                         }
                     }
                     HiBON params = new HiBON;
-                    foreach (i, bill; bills)
-                    {
+                    foreach (i, bill; bills) {
                         params[i] = bill.toHiBON;
                     }
                     auto response = empty_hirpc.result(receiver, params);
                     sendResult(response.toDoc.serialize);
                 }
             },
-                (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); },
+                    (immutable(TaskFailure) t) { stop = true; ownerTid.send(t); },
             );
             // try {
             connectionPool.tick();
-            if (opts.dart.synchronize)
-            {
+            if (opts.dart.synchronize) {
                 syncPool.tick();
-                if (addressbook.numOfNodes > 0 && syncPool.isReady)
-                {
+                if (addressbook.numOfNodes > 0 && syncPool.isReady) {
                     pragma(msg, "fixme(cbr): sync_factory.setNodeTable(addressbook._data) has been removed");
                     log.trace("syncPool.start active %d isReady %s", addressbook.numOfActiveNodes, addressbook
                             .isReady);
@@ -384,15 +328,13 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     syncPool.start(sync_factory);
                     state.setState(DARTSynchronizeState.SYNCHRONIZING);
                 }
-                if (syncPool.isOver)
-                {
+                if (syncPool.isOver) {
                     log.trace("syncPool.stop active %d isReady %s", addressbook.numOfActiveNodes, addressbook
                             .isReady);
                     syncPool.stop;
                     state.setState(DARTSynchronizeState.REPLAYING_JOURNALS);
                 }
-                if (syncPool.isError)
-                {
+                if (syncPool.isError) {
                     pragma(msg, "fixme(cbr): isError sync_factory.setNodeTable(addressbook._data) has been removed");
                     log("syncPool Error handling active %d isReady %s", addressbook.numOfActiveNodes, addressbook
                             .isReady);
@@ -400,27 +342,21 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     state.setState(DARTSynchronizeState.SYNCHRONIZING); //TODO: remove if notification not needed
                 }
             }
-            if (state.checkState(DARTSynchronizeState.REPLAYING_JOURNALS))
-            {
-                if (!journalReplayFiber.isOver)
-                {
+            if (state.checkState(DARTSynchronizeState.REPLAYING_JOURNALS)) {
+                if (!journalReplayFiber.isOver) {
                     journalReplayFiber.execute;
                 }
-                else
-                {
+                else {
                     journalReplayFiber.clear();
                     connectionPool.closeAll();
                     state.setState(DARTSynchronizeState.REPLAYING_RECORDERS);
                 }
             }
-            if (state.checkState(DARTSynchronizeState.REPLAYING_RECORDERS))
-            {
-                if (!recorderReplayFiber.isOver)
-                {
+            if (state.checkState(DARTSynchronizeState.REPLAYING_RECORDERS)) {
+                if (!recorderReplayFiber.isOver) {
                     recorderReplayFiber.execute;
                 }
-                else
-                {
+                else {
                     subscription.stop();
                     recorderReplayFiber.clear();
                     dart.dump(true);
@@ -428,11 +364,10 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                     state.setState(DARTSynchronizeState.READY);
                 }
             }
-            if (state.checkState(DARTSynchronizeState.READY) && !request_handling)
-            {
+            if (state.checkState(DARTSynchronizeState.READY) && !request_handling) {
                 node.listen(pid, &StdHandlerCallback, cast(string) task_name,
-                    opts.dart.sync.host.timeout.msecs,
-                    cast(uint) opts.dart.sync.host.max_size);
+                        opts.dart.sync.host.timeout.msecs,
+                        cast(uint) opts.dart.sync.host.max_size);
                 request_handling = true;
             }
             // catch (Throwable t) {
@@ -441,60 +376,49 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
             // }
         }
     }
-    catch (Throwable t)
-    {
+    catch (Throwable t) {
         fatal(t);
     }
 }
 
-private struct ActiveNodeSubscribtion(Net : HashNet)
-{
+private struct ActiveNodeSubscribtion(Net : HashNet) {
     protected Tid handlerTid;
     protected shared(p2plib.RequestStreamI) stream;
     protected bool subscribed;
     @disable this();
     // protected Net net;
-    @property bool isSubscribed()
-    {
+    @property bool isSubscribed() {
         return subscribed;
     }
 
     protected immutable(Options) opts;
-    this(immutable(Options) opts)
-    {
+    this(immutable(Options) opts) {
         this.opts = opts;
     }
 
-    version (none) void tryToSubscribe(NodeAddress[Pubkey] node_addreses, shared(p2plib.NodeI) node)
-    {
-        bool subscribeTo(NodeAddress address)
-        {
-            try
-            {
+    version (none) void tryToSubscribe(NodeAddress[Pubkey] node_addreses, shared(p2plib.NodeI) node) {
+        bool subscribeTo(NodeAddress address) {
+            try {
                 stream = node.connect(address.address, address.is_marshal,
-                    opts.dart.subs.protocol_id);
+                        opts.dart.subs.protocol_id);
                 auto taskName = opts.dart.subs.slave_task_name;
                 handlerTid = spawn(&handleSubscription, taskName);
                 receiveOnly!Control;
                 stream.listen(&StdHandlerCallback, taskName,
-                    opts.dart.subs.host.timeout.msecs, opts.dart.subs.host.max_size);
+                        opts.dart.subs.host.timeout.msecs, opts.dart.subs.host.max_size);
                 return true;
             }
-            catch (Exception e)
-            {
+            catch (Exception e) {
                 log.warning("Subscribe error: %s", e);
             }
             return false;
         }
         // writeln("looking for master node");
 
-        foreach (node_id, node_address; node_addreses)
-        { //TODO: should be random
-            if (!opts.dart.master_from_port || node_address.port == opts.dart.subs.master_port)
-            {
+        foreach (node_id, node_address; node_addreses) { //TODO: should be random
+            if (!opts.dart.master_from_port || node_address.port == opts.dart.subs.master_port) {
                 log.trace("Master node found");
-                if (subscribeTo(node_address))
-                {
+                if (subscribeTo(node_address)) {
                     subscribed = true;
                     return;
                 }
@@ -503,33 +427,28 @@ private struct ActiveNodeSubscribtion(Net : HashNet)
         }
     }
 
-    void stop()
-    {
+    void stop() {
         log.trace("Stop subscription");
-        if (subscribed && handlerTid !is Tid.init)
-        {
+        if (subscribed && handlerTid !is Tid.init) {
             send(handlerTid, Control.STOP);
             // receiveOnly!Control;
         }
     }
 
-    protected static void handleSubscription(string taskName)
-    { //TODO: moveout
+    protected static void handleSubscription(string taskName) { //TODO: moveout
         auto net = new Net;
         log.register(taskName);
         auto stop = false;
         ownerTid.send(Control.LIVE);
 
         auto manufactor = RecordFactory(net);
-        while (!stop)
-        {
+        while (!stop) {
             receive((Control cntrl) {
-                if (cntrl == Control.STOP)
-                {
+                if (cntrl == Control.STOP) {
                     stop = true;
                 }
             },
-                (Response!(ControlCode.Control_Disconnected) resp) {
+                    (Response!(ControlCode.Control_Disconnected) resp) {
                 writeln("Subscribe Disconnected key: ", resp.key);
             }, (
                     Response!(ControlCode.Control_RequestHandled) response) {

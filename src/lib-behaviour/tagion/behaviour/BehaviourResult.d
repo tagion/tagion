@@ -12,8 +12,7 @@ struct ResultOk {
     mixin HiBONRecord!();
 }
 
-
-static Document result_ok = result(ResultOk()).toDoc;/// This
+static Document result_ok = result(ResultOk()).toDoc; /// This
 
 /** 
  * Contains the Exception information  
