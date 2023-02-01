@@ -110,15 +110,15 @@ interface EventMonitorCallbacks {
 struct EventView {
     enum eventsName = "$events";
     uint id;
-    @label("$m", true) @(Filter.Initialized) uint mother;
-    @label("$f", true) @(Filter.Initialized) uint father;
+    @label("$m", true) @(filter.Initialized) uint mother;
+    @label("$f", true) @(filter.Initialized) uint father;
     @label("$n") size_t node_id;
     @label("$a") int altitude;
     @label("$o") int order;
     @label("$r") int round;
     @label("$rec") int round_received;
-    @label("$w", true) @(Filter.Initialized) bool witness;
-    @label("$famous", true) @(Filter.Initialized) bool famous;
+    @label("$w", true) @(filter.Initialized) bool witness;
+    @label("$famous", true) @(filter.Initialized) bool famous;
     @label("witness") uint[] witness_mask;
     @label("$strong") uint[] strongly_seeing_mask;
     @label("$seen") uint[] round_seen_mask;
@@ -170,9 +170,9 @@ struct EventBody {
     protected alias check = Check!HashGraphConsensusException;
     import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
 
-    @label("$p", true) @Filter(q{!a.empty}) Document payload; // Transaction
-    @label("$m", true) @(Filter.Initialized) Buffer mother; // Hash of the self-parent
-    @label("$f", true) @(Filter.Initialized) Buffer father; // Hash of the other-parent
+    @label("$p", true) @filter(q{!a.empty}) Document payload; // Transaction
+    @label("$m", true) @(filter.Initialized) Buffer mother; // Hash of the self-parent
+    @label("$f", true) @(filter.Initialized) Buffer father; // Hash of the other-parent
     @label("$a") int altitude;
     @label("$t") sdt_t time;
 
@@ -288,8 +288,8 @@ alias Tides = int[Pubkey];
 
 @RecordType("Wavefront") @safe
 struct Wavefront {
-    @label("$tides", true) @Filter(q{a.length is 0}) private Tides _tides;
-    @label("$events", true) @Filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;
+    @label("$tides", true) @filter(q{a.length is 0}) private Tides _tides;
+    @label("$events", true) @filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;
     @label("$state") ExchangeState state;
     enum tidesName = GetLabel!(_tides).name;
     enum epacksName = GetLabel!(epacks).name;

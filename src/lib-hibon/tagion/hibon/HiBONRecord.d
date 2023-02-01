@@ -105,11 +105,11 @@ struct label {
 }
 
 /++
- Filter attribute for toHiBON
+ filter attribute for toHiBON
  +/
-struct Filter {
-    string code; /// Filter function
-    enum Initialized = Filter(q{a !is a.init});
+struct filter {
+    string code; /// filter function
+    enum Initialized = filter(q{a !is a.init});
 }
 
 /++
@@ -241,7 +241,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.basic.TagionExceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,
-        label, GetLabel, Filter, Default, Inspect, VOID;
+        label, GetLabel, filter, Default, Inspect, VOID;
     import HiBONRecord = tagion.hibon.HiBONRecord; // : TYPENAME;
 
     protected alias check = Check!(HiBONRecordException);
@@ -348,8 +348,8 @@ mixin template HiBONRecord(string CTOR = "") {
                 // else {
                 //     enum name=basename!(this.tupleof[i]);
                 // }
-                static if (hasUDA!(this.tupleof[i], Filter)) {
-                    alias filters = getUDAs!(this.tupleof[i], Filter);
+                static if (hasUDA!(this.tupleof[i], filter)) {
+                    alias filters = getUDAs!(this.tupleof[i], filter);
                     static foreach (F; filters) {
                         {
                             alias filterFun = unaryFun!(F.code);
@@ -904,8 +904,8 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
         template NotBoth(bool FILTER) {
             @RecordType("NotBoth") static struct NotBoth {
                 static if (FILTER) {
-                    @label("*", true) @(Filter.Initialized) int x;
-                    @label("*", true) @(Filter.Initialized) @Filter(q{a < 42}) int y;
+                    @label("*", true) @(filter.Initialized) int x;
+                    @label("*", true) @(filter.Initialized) @filter(q{a < 42}) int y;
                 }
                 else {
                     @label("*", true) int x;
@@ -1391,7 +1391,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
     { // Default Attribute
         // The Default atttibute is used set a default i value in case the member was not defined in the Document
         static struct DefaultStruct {
-            @label("$x") @Filter(q{a != 17}) @Default(q{-1}) int x;
+            @label("$x") @filter(q{a != 17}) @Default(q{-1}) int x;
             mixin HiBONRecord;
         }
 

@@ -88,24 +88,24 @@ struct HiRPC {
     import tagion.hibon.HiBONRecord;
 
     struct Method {
-        @label("*", true) @(Filter.Initialized) uint id;
-        @label("*", true) @Filter(q{!a.empty}) Document params;
+        @label("*", true) @(filter.Initialized) uint id;
+        @label("*", true) @filter(q{!a.empty}) Document params;
         @label("method") @(Inspect.Initialized) string name;
 
         mixin HiBONRecord;
     }
 
     struct Response {
-        @label("*", true) @(Filter.Initialized) uint id;
+        @label("*", true) @(filter.Initialized) uint id;
         Document result;
         mixin HiBONRecord;
     }
 
     struct Error {
-        @label("*", true) @(Filter.Initialized) uint id;
-        @label("$data", true) @Filter(q{!a.empty}) Document data;
-        @label("$msg", true) @(Filter.Initialized) string message;
-        @label("$code", true) @(Filter.Initialized) int code;
+        @label("*", true) @(filter.Initialized) uint id;
+        @label("$data", true) @filter(q{!a.empty}) Document data;
+        @label("$msg", true) @(filter.Initialized) string message;
+        @label("$code", true) @(filter.Initialized) int code;
 
         static bool valid(const Document doc) {
             enum codeName = GetLabel!(code).name;
@@ -189,8 +189,8 @@ struct HiRPC {
 
         //@disable this();
         //        @label("") SecureNet net;
-        @label("$sign", true) @(Filter.Initialized) Signature signature;
-        @label("$pkey", true) @(Filter.Initialized) Pubkey pubkey;
+        @label("$sign", true) @(filter.Initialized) Signature signature;
+        @label("$pkey", true) @(filter.Initialized) Pubkey pubkey;
         @label("$msg") Document message;
         @label("") immutable Type type;
 
