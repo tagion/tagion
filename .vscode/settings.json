@@ -1,0 +1,6 @@
+{
+    "d.overrideDfmtEditorconfig": true,
+    "dfmt.braceStyle": "stroustrup",
+    "dfmt.splitOperatorAtLineEnd": true,
+    "dfmt.singleTemplateConstraintIndent": true
+}
