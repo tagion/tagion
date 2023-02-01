@@ -8,7 +8,7 @@ import std.range : only;
 import std.array : join;
 import std.conv : to;
 
-import tagion.hibon.HiBONRecord : HiBONRecord, Label, RecordType;
+import tagion.hibon.HiBONRecord : HiBONRecord, label, RecordType;
 
 @safe
 TagionCurrency TGN(T)(T x) pure if (isNumeric!T) {
@@ -22,7 +22,7 @@ struct TagionCurrency {
     enum UNIT = "TGN";
 
     protected {
-        @Label("$v") long _axions;
+        @label("$v") long _axions;
     }
 
     mixin HiBONRecord!(

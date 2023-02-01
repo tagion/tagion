@@ -16,11 +16,11 @@ enum OwnerKey = "$Y";
 
 @safe {
     @RecordType("BIL") struct StandardBill {
-        @Label("$V") TagionCurrency value; // Bill type
-        @Label("$k") uint epoch; // Epoch number
-        //        @Label("$T", true) string bill_type; // Bill type
-        @Label(OwnerKey) Pubkey owner; // Double hashed owner key
-        @Label("$G") Buffer gene; // Bill gene
+        @label("$V") TagionCurrency value; // Bill type
+        @label("$k") uint epoch; // Epoch number
+        //        @label("$T", true) string bill_type; // Bill type
+        @label(OwnerKey) Pubkey owner; // Double hashed owner key
+        @label("$G") Buffer gene; // Bill gene
         mixin HiBONRecord!(
                 q{
                 this(TagionCurrency value, const uint epoch, Pubkey owner, Buffer gene) {
@@ -33,12 +33,12 @@ enum OwnerKey = "$Y";
     }
 
     @RecordType("NNC") struct NetworkNameCard {
-        @Label("#name") string name; /// Tagion domain name
-        @Label(OwnerKey) Pubkey pubkey; /// NNC pubkey
-        @Label("$lang") string lang; /// Language used for the #name
-        @Label("$time") ulong time; /// Time-stamp of
-        // @Label("$sign") Buffer sign;    ///
-        @Label("$record") Buffer record; /// Hash pointer to NRC
+        @label("#name") string name; /// Tagion domain name
+        @label(OwnerKey) Pubkey pubkey; /// NNC pubkey
+        @label("$lang") string lang; /// Language used for the #name
+        @label("$time") ulong time; /// Time-stamp of
+        // @label("$sign") Buffer sign;    ///
+        @label("$record") Buffer record; /// Hash pointer to NRC
         mixin HiBONRecord;
 
         import tagion.crypto.SecureInterfaceNet : HashNet;
@@ -51,18 +51,18 @@ enum OwnerKey = "$Y";
     }
 
     @RecordType("NRC") struct NetworkNameRecord {
-        @Label("$name") Buffer name; /// Hash of the NNC.name
-        @Label("$prev") Buffer previous; /// Hash pointer to the previuos NRC
-        @Label("$index") uint index; /// Current index previous.index+1
-        @Label("$node") Buffer node; /// Hash pointer to NNR
-        @Label("$payload", true) Document payload; /// Hash pointer to payload
+        @label("$name") Buffer name; /// Hash of the NNC.name
+        @label("$prev") Buffer previous; /// Hash pointer to the previuos NRC
+        @label("$index") uint index; /// Current index previous.index+1
+        @label("$node") Buffer node; /// Hash pointer to NNR
+        @label("$payload", true) Document payload; /// Hash pointer to payload
         mixin HiBONRecord;
     }
 
     @RecordType("HL") struct HashLock {
         import tagion.crypto.SecureInterfaceNet;
 
-        @Label("$lock") Buffer lock; /// Of the NNC with the pubkey
+        @label("$lock") Buffer lock; /// Of the NNC with the pubkey
         mixin HiBONRecord!(q{
                 @disable this();
                 import tagion.crypto.SecureInterfaceNet : HashNet;
@@ -137,38 +137,38 @@ enum OwnerKey = "$Y";
             STERILE
         }
 
-        //        @Label("#node") Buffer node; /// Hash point of the public key
-        @Label("$name") Buffer name; /// Hash pointer to the
-        @Label("$time") ulong time;
-        @Label("$sign") uint sign; /// Signature of
-        @Label("$state") State state;
-        @Label("$gene") Buffer gene;
-        @Label("$addr") string address;
+        //        @label("#node") Buffer node; /// Hash point of the public key
+        @label("$name") Buffer name; /// Hash pointer to the
+        @label("$time") ulong time;
+        @label("$sign") uint sign; /// Signature of
+        @label("$state") State state;
+        @label("$gene") Buffer gene;
+        @label("$addr") string address;
         mixin HiBONRecord;
     }
 
     @RecordType("active0") struct ActiveNode {
-        @Label("$node") Buffer node; /// Pointer to the NNC
-        @Label("$drive") Buffer drive; /// The tweak of the used key
-        @Label("$sign") Buffer signed; /// Signed bulleye of the DART
+        @label("$node") Buffer node; /// Pointer to the NNC
+        @label("$drive") Buffer drive; /// The tweak of the used key
+        @label("$sign") Buffer signed; /// Signed bulleye of the DART
         mixin HiBONRecord;
 
     }
 
     @RecordType("$epoch0") struct EpochBlock {
-        @Label("$epoch") int epoch; /// Epoch number
-        @Label("$prev") Buffer previous; /// Hashpoint to the previous epoch block
-        @Label("$recorder") Buffer recoder; /// Fingerprint of the recorder
-        @Label("$global") Buffer global; /// Gloal nerwork paremeters
-        @Label("$actives") ActiveNode[] actives; /// List of active nodes Sorted by the $node
+        @label("$epoch") int epoch; /// Epoch number
+        @label("$prev") Buffer previous; /// Hashpoint to the previous epoch block
+        @label("$recorder") Buffer recoder; /// Fingerprint of the recorder
+        @label("$global") Buffer global; /// Gloal nerwork paremeters
+        @label("$actives") ActiveNode[] actives; /// List of active nodes Sorted by the $node
         mixin HiBONRecord;
     }
 
     enum EPOCH_TOP_NAME = "tagion";
 
     @RecordType("top") struct LastEpochRecord {
-        @Label("#name") string name;
-        @Label("$top") Buffer top;
+        @label("#name") string name;
+        @label("$top") Buffer top;
         mixin HiBONRecord!(q{
                 @disable this();
                 import tagion.crypto.SecureInterfaceNet : HashNet;
@@ -186,8 +186,8 @@ enum OwnerKey = "$Y";
     }
 
     struct Globals {
-        @Label("$fee") TagionCurrency fixed_fees; /// Fixed fees per Transcation
-        @Label("$mem") TagionCurrency storage_fee; /// Fees per byte
+        @label("$fee") TagionCurrency fixed_fees; /// Fixed fees per Transcation
+        @label("$mem") TagionCurrency storage_fee; /// Fees per byte
         TagionCurrency fees() pure const {
             return fixed_fees;
         }
@@ -196,16 +196,16 @@ enum OwnerKey = "$Y";
     }
 
     @RecordType("$master0") struct MasterGlobals {
-        //    @Label("$total") Number total;    /// Total tagions in the network
-        @Label("$rewards") ulong rewards; /// Epoch rewards
+        //    @label("$total") Number total;    /// Total tagions in the network
+        @label("$rewards") ulong rewards; /// Epoch rewards
         mixin HiBONRecord;
     }
 
     @RecordType("SMC") struct Contract {
-        @Label("$in") Buffer[] inputs; /// Hash pointer to input (DART)
-        @Label("$read", true) Buffer[] reads; /// Hash pointer to read-only input (DART)
-        @Label("$out") Document[Pubkey] output; // pubkey of the output
-        @Label("$run") Script script; // TVM-links / Wasm binary
+        @label("$in") Buffer[] inputs; /// Hash pointer to input (DART)
+        @label("$read", true) Buffer[] reads; /// Hash pointer to read-only input (DART)
+        @label("$out") Document[Pubkey] output; // pubkey of the output
+        @label("$run") Script script; // TVM-links / Wasm binary
         mixin HiBONRecord;
         bool verify() {
             return (inputs.length > 0) &&
@@ -214,16 +214,16 @@ enum OwnerKey = "$Y";
     }
 
     @RecordType("PAY") struct PayContract {
-        @Label("$bills", true) StandardBill[] bills; /// The actual inputs
+        @label("$bills", true) StandardBill[] bills; /// The actual inputs
         mixin HiBONRecord;
     }
 
     @RecordType("SSC") struct SignedContract {
-        @Label("$signs") Signature[] signs; /// Signature of all inputs
-        @Label("$contract") Contract contract; /// The contract must signed by all inputs
+        @label("$signs") Signature[] signs; /// Signature of all inputs
+        @label("$contract") Contract contract; /// The contract must signed by all inputs
         version (OLD_TRANSACTION) {
             pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
-            @Label("$in", true) StandardBill[] inputs; /// The actual inputs
+            @label("$in", true) StandardBill[] inputs; /// The actual inputs
         }
         mixin HiBONRecord;
     }
@@ -234,15 +234,15 @@ enum OwnerKey = "$Y";
      */
     @RecordType("Healthcheck") struct HealthcheckParams {
         /** amount of hashgraph rounds */
-        @Label("$hashgraph_rounds") ulong rounds;
+        @label("$hashgraph_rounds") ulong rounds;
         /**last epoch timestamp */
-        @Label("epoch_timestamp") long epoch_timestamp;
+        @label("epoch_timestamp") long epoch_timestamp;
         /** amount of transactions in last epoch */
-        @Label("$transactions_amount") uint transactions_amount;
+        @label("$transactions_amount") uint transactions_amount;
         /** number of current epoch */
-        @Label("$epoch_number") uint epoch_num;
+        @label("$epoch_number") uint epoch_num;
         /** check we not in last round */
-        @Label("$in_graph") bool in_graph;
+        @label("$in_graph") bool in_graph;
         mixin HiBONRecord!(
                 q{
                 this(ulong rounds, long epoch_timestamp, uint transactions_amount, uint epoch_num, bool in_graph) {
@@ -256,8 +256,8 @@ enum OwnerKey = "$Y";
     }
 
     struct Script {
-        @Label("$name") string name;
-        @Label("$env", true) Buffer link; // Hash pointer to smart contract object;
+        @label("$name") string name;
+        @label("$env", true) Buffer link; // Hash pointer to smart contract object;
         mixin HiBONRecord!(
                 q{
                 this(string name, Buffer link=null) {
@@ -282,16 +282,16 @@ enum OwnerKey = "$Y";
     @RecordType("Invoice") struct Invoice {
         string name;
         TagionCurrency amount;
-        @Label(OwnerKey) Pubkey pkey;
-        @Label("*", true) Document info;
+        @label(OwnerKey) Pubkey pkey;
+        @label("*", true) Document info;
         mixin HiBONRecord;
     }
 
     struct AccountDetails {
-        @Label("$derives") Buffer[Pubkey] derives;
-        @Label("$bills") StandardBill[] bills;
-        @Label("$state") Buffer derive_state;
-        @Label("$active") bool[Pubkey] activated; /// Actived bills
+        @label("$derives") Buffer[Pubkey] derives;
+        @label("$bills") StandardBill[] bills;
+        @label("$state") Buffer derive_state;
+        @label("$active") bool[Pubkey] activated; /// Actived bills
         import std.algorithm : map, sum, filter, any, each;
 
         bool remove_bill(Pubkey pk) {

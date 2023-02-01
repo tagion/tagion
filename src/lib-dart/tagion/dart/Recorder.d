@@ -11,7 +11,7 @@ import std.format;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : Label, STUB, isHiBONRecord, GetLabel, isStub, RecordType;
+import tagion.hibon.HiBONRecord : label, STUB, isHiBONRecord, GetLabel, isStub, RecordType;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Message;
 
@@ -364,13 +364,13 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
         ADD = 1,
     }
 
-    @Label(STUB, true) immutable(Buffer) fingerprint;
-    @Label("$a", true) const Document filed;
+    @label(STUB, true) immutable(Buffer) fingerprint;
+    @label("$a", true) const Document filed;
     enum archiveLabel = GetLabel!(this.filed).name;
     enum fingerprintLabel = GetLabel!(this.fingerprint).name;
     enum typeLabel = GetLabel!(this._type).name;
-    private @Label("$t", true) Type _type;
-    protected @Label("") bool _done;
+    private @label("$t", true) Type _type;
+    protected @label("") bool _done;
 
     mixin JSONString;
     private this(const HashNet net, const(Document) doc, const Type t = Type.NONE)

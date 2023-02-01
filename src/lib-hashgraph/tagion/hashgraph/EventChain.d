@@ -17,14 +17,14 @@ enum NIL = -1; // Defines an unconected Event
 
 @safe
 struct EventBodyCompact {
-    @Label("p", true) @Filter(q{!a.empty}) Document payload; // Transaction
-    @Label("m") @Filter(q{a != -1}) @Default(q{-1}) int mother; // Hash of the self-parent
-    @Label("f") @Filter(q{a != -1}) @Default(q{-1}) int father; // Hash of the other-parent
-    @Label("a") int altitude;
-    @Label("t") sdt_t time;
-    @Label("M", true) @(Filter.Initialized) Buffer mother_fingerprint; /// This event is connect to the previous mother
-    @Label("F", true) @(Filter.Initialized) Buffer father_fingerprint; /// This event is connect to the previous father
-    @Label("C", true) @(Filter.Initialized) Pubkey channel; /// Event Channel (Pubkey of the node);
+    @label("p", true) @Filter(q{!a.empty}) Document payload; // Transaction
+    @label("m") @Filter(q{a != -1}) @Default(q{-1}) int mother; // Hash of the self-parent
+    @label("f") @Filter(q{a != -1}) @Default(q{-1}) int father; // Hash of the other-parent
+    @label("a") int altitude;
+    @label("t") sdt_t time;
+    @label("M", true) @(Filter.Initialized) Buffer mother_fingerprint; /// This event is connect to the previous mother
+    @label("F", true) @(Filter.Initialized) Buffer father_fingerprint; /// This event is connect to the previous father
+    @label("C", true) @(Filter.Initialized) Pubkey channel; /// Event Channel (Pubkey of the node);
     mixin HiBONRecord!(q{
             import tagion.hashgraph.EventChain : NIL;
             // this(Document payload, int mother, int father, int altitude, sdt_t time) pure nothrow {
@@ -39,15 +39,15 @@ struct EventBodyCompact {
 
 @safe
 struct EventCompact {
-    @Label("s") Signature signature; // Signature
-    @Label("b") EventBodyCompact ebody; // Event Body
+    @label("s") Signature signature; // Signature
+    @label("b") EventBodyCompact ebody; // Event Body
     mixin HiBONRecord;
 }
 
 @safe
 struct EventEpochChunk {
-    @Label("epacks") EventCompact[] epacks;
-    @Label("chain") Buffer chain;
+    @label("epacks") EventCompact[] epacks;
+    @label("chain") Buffer chain;
     mixin HiBONRecord!(
             q{
             this(EventCompact[] epacks, Buffer chain) pure nothrow {

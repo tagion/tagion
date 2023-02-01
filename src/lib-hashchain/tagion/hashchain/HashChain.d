@@ -162,13 +162,13 @@ import tagion.utils.Miscellaneous : decode;
 }
 
 version (unittest) {
-    import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, Label;
+    import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, label;
     import tagion.crypto.SecureInterfaceNet : HashNet;
 
     @safe class DummyBlock : HashChainBlock {
-        @Label("") Buffer hash;
-        @Label("prev") Buffer previous;
-        @Label("dummy") int dummy;
+        @label("") Buffer hash;
+        @label("prev") Buffer previous;
+        @label("dummy") int dummy;
 
         mixin HiBONRecord!(
                 q{

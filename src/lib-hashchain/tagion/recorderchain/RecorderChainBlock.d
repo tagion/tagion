@@ -7,7 +7,7 @@ import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.dart.Recorder;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
-import tagion.hibon.HiBONRecord : Label, GetLabel, HiBONRecord, RecordType;
+import tagion.hibon.HiBONRecord : label, GetLabel, HiBONRecord, RecordType;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.Document;
 
@@ -21,13 +21,13 @@ import tagion.hibon.Document;
 @RecordType("RCB")
 @safe class RecorderChainBlock : HashChainBlock {
     /** Fingerprint of this block */
-    @Label("") Buffer fingerprint;
+    @label("") Buffer fingerprint;
     /** Bullseye of DART database */
-    @Label("eye") Buffer bullseye;
+    @label("eye") Buffer bullseye;
     /** Fingerprint of the previous block */
-    @Label("previous") Buffer previous;
+    @label("previous") Buffer previous;
     /** Recorder with database changes of this block */
-    @Label("recorder") Document recorder_doc;
+    @label("recorder") Document recorder_doc;
 
     mixin JSONString;
 

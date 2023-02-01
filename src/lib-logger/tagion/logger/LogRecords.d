@@ -23,11 +23,11 @@ enum LogFiltersAction {
  */
 @safe struct LogFilter {
     /** Task name to listen */
-    @Label("task") string task_name;
+    @label("task") string task_name;
     /** Log level. Applied for text logs */
-    @Label("level") LogLevel level;
+    @label("level") LogLevel level;
     /** Name of symbol to listen. Optional field */
-    @Label("symbol") string symbol_name;
+    @label("symbol") string symbol_name;
 
     mixin HiBONRecord!(q{
         /** Ctor for text logs
@@ -126,9 +126,7 @@ enum LogFiltersAction {
  */
 @safe struct TextLog {
     /** Text log message */
-    @Label("msg") string message;
-    /** Label of message field */
-    enum label = GetLabel!(message).name;
+    @label("msg") string message;
 
     mixin HiBONRecord!(q{
         /** Main ctor

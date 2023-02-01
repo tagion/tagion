@@ -11,11 +11,11 @@ struct Statistic(T, Flag!"histogram" flag = No.histogram) {
     protected {
         double sum2 = 0.0;
         double sum = 0.0;
-        @Label("min") T _min = T.max;
-        @Label("max") T _max = T.min;
+        @label("min") T _min = T.max;
+        @label("max") T _max = T.min;
         uint N;
         static if (flag) {
-            @Label("H") uint[T] _histogram;
+            @label("H") uint[T] _histogram;
         }
     }
 

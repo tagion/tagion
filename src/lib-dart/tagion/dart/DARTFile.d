@@ -25,8 +25,8 @@ private {
 
     import tagion.hibon.HiBON : HiBON;
 
-    //    import tagion.hibon.HiBONRecord : GetLabel, Label, HiBONPrefix, isStub, STUB;
-    import tagion.hibon.HiBONRecord : isStub, Label, Filter, GetLabel, RecordType;
+    //    import tagion.hibon.HiBONRecord : GetLabel, label, HiBONPrefix, isStub, STUB;
+    import tagion.hibon.HiBONRecord : isStub, label, Filter, GetLabel, RecordType;
     import tagion.hibon.Document : Document;
 
     import tagion.dart.BlockFile;
@@ -246,10 +246,10 @@ alias check = Check!DARTException;
         import std.stdio;
         import tagion.hibon.HiBONJSON;
 
-        @Label("") protected Buffer merkleroot; /// The sparsed Merkle root hash of the branches
-        @Label("$prints", true) @(Filter.Initialized) protected Buffer[] _fingerprints; /// Array of all the Leaves hashes
-        @Label("$idx", true) @(Filter.Initialized) protected uint[] _indices; /// Array of index pointer to BlockFile
-        @Label("") private bool done;
+        @label("") protected Buffer merkleroot; /// The sparsed Merkle root hash of the branches
+        @label("$prints", true) @(Filter.Initialized) protected Buffer[] _fingerprints; /// Array of all the Leaves hashes
+        @label("$idx", true) @(Filter.Initialized) protected uint[] _indices; /// Array of index pointer to BlockFile
+        @label("") private bool done;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {

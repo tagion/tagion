@@ -9,7 +9,7 @@ import tagion.script.StandardRecords : StandardBill;
 @safe {
     @RecordType("Quiz")
     struct Quiz {
-        @Label("$Q") string[] questions;
+        @label("$Q") string[] questions;
         mixin HiBONRecord;
     }
 
@@ -39,7 +39,7 @@ import tagion.script.StandardRecords : StandardBill;
     struct RecoverGenerator {
         Buffer[] Y; /// Recorvery seed
         Buffer S; /// Check value S=H(H(R))
-        @Label("N") uint confidence;
+        @label("N") uint confidence;
         mixin HiBONRecord;
     }
 

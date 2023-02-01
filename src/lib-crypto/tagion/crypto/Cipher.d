@@ -29,10 +29,10 @@ struct Cipher {
 
     @RecordType("TCD")
     struct CipherDocument {
-        @Label("$m") Buffer ciphermsg;
-        @Label("$n") Buffer nonce;
-        @Label("$a") Buffer authTag;
-        @Label("$k") Pubkey cipherPubkey;
+        @label("$m") Buffer ciphermsg;
+        @label("$n") Buffer nonce;
+        @label("$a") Buffer authTag;
+        @label("$k") Pubkey cipherPubkey;
         mixin HiBONRecord;
     }
 

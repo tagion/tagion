@@ -18,7 +18,7 @@ import tagion.basic.Types : Buffer;
 import tagion.Keywords;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, GetLabel, Label;
+import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, GetLabel, label;
 import tagion.hibon.HiBONJSON;
 
 import tagion.dart.DARTFile;
@@ -103,9 +103,9 @@ class DART : DARTFile {
 
     static struct SectorRange {
         private {
-            @Label("sector") ushort _sector;
-            @Label("from") ushort _from_sector;
-            @Label("to") ushort _to_sector;
+            @label("sector") ushort _sector;
+            @label("from") ushort _from_sector;
+            @label("to") ushort _to_sector;
         }
         @property ushort from_sector() inout {
             return _from_sector;
@@ -115,7 +115,7 @@ class DART : DARTFile {
             return _to_sector;
         }
 
-        @Label("") protected bool flag;
+        @label("") protected bool flag;
         mixin HiBONRecord!(q{
                 this(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
                     _from_sector = from_sector;

@@ -110,19 +110,19 @@ interface EventMonitorCallbacks {
 struct EventView {
     enum eventsName = "$events";
     uint id;
-    @Label("$m", true) @(Filter.Initialized) uint mother;
-    @Label("$f", true) @(Filter.Initialized) uint father;
-    @Label("$n") size_t node_id;
-    @Label("$a") int altitude;
-    @Label("$o") int order;
-    @Label("$r") int round;
-    @Label("$rec") int round_received;
-    @Label("$w", true) @(Filter.Initialized) bool witness;
-    @Label("$famous", true) @(Filter.Initialized) bool famous;
-    @Label("witness") uint[] witness_mask;
-    @Label("$strong") uint[] strongly_seeing_mask;
-    @Label("$seen") uint[] round_seen_mask;
-    @Label("$received") uint[] round_received_mask;
+    @label("$m", true) @(Filter.Initialized) uint mother;
+    @label("$f", true) @(Filter.Initialized) uint father;
+    @label("$n") size_t node_id;
+    @label("$a") int altitude;
+    @label("$o") int order;
+    @label("$r") int round;
+    @label("$rec") int round_received;
+    @label("$w", true) @(Filter.Initialized) bool witness;
+    @label("$famous", true) @(Filter.Initialized) bool famous;
+    @label("witness") uint[] witness_mask;
+    @label("$strong") uint[] strongly_seeing_mask;
+    @label("$seen") uint[] round_seen_mask;
+    @label("$received") uint[] round_received_mask;
     bool father_less;
 
     mixin HiBONRecord!(
@@ -170,11 +170,11 @@ struct EventBody {
     protected alias check = Check!HashGraphConsensusException;
     import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
 
-    @Label("$p", true) @Filter(q{!a.empty}) Document payload; // Transaction
-    @Label("$m", true) @(Filter.Initialized) Buffer mother; // Hash of the self-parent
-    @Label("$f", true) @(Filter.Initialized) Buffer father; // Hash of the other-parent
-    @Label("$a") int altitude;
-    @Label("$t") sdt_t time;
+    @label("$p", true) @Filter(q{!a.empty}) Document payload; // Transaction
+    @label("$m", true) @(Filter.Initialized) Buffer mother; // Hash of the self-parent
+    @label("$f", true) @(Filter.Initialized) Buffer father; // Hash of the other-parent
+    @label("$a") int altitude;
+    @label("$t") sdt_t time;
 
     bool verify() {
         return (father is null) ? true : (mother !is null);
@@ -243,10 +243,10 @@ struct EventBody {
 
 @safe
 struct EventPackage {
-    @Label("") Buffer fingerprint;
-    @Label("$sign") Signature signature;
-    @Label("$pkey") Pubkey pubkey;
-    @Label("$body") EventBody event_body;
+    @label("") Buffer fingerprint;
+    @label("$sign") Signature signature;
+    @label("$pkey") Pubkey pubkey;
+    @label("$body") EventBody event_body;
 
     mixin HiBONRecord!(
             q{
@@ -288,9 +288,9 @@ alias Tides = int[Pubkey];
 
 @RecordType("Wavefront") @safe
 struct Wavefront {
-    @Label("$tides", true) @Filter(q{a.length is 0}) private Tides _tides;
-    @Label("$events", true) @Filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;
-    @Label("$state") ExchangeState state;
+    @label("$tides", true) @Filter(q{a.length is 0}) private Tides _tides;
+    @label("$events", true) @Filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;
+    @label("$state") ExchangeState state;
     enum tidesName = GetLabel!(_tides).name;
     enum epacksName = GetLabel!(epacks).name;
     enum stateName = GetLabel!(state).name;
@@ -311,7 +311,7 @@ struct Wavefront {
     }
 
     private struct LoadTides {
-        @Label(tidesName) Tides tides;
+        @label(tidesName) Tides tides;
         mixin HiBONRecord!(
                 q{
                 this(const(Tides) _tides) const {
@@ -373,8 +373,8 @@ struct Wavefront {
 
 @safe
 struct EvaPayload {
-    @Label("$channel") Pubkey channel;
-    @Label("$nonce") Buffer nonce;
+    @label("$channel") Pubkey channel;
+    @label("$nonce") Buffer nonce;
     mixin HiBONRecord!(
             q{
             this(const Pubkey channel, const Buffer nonce) pure {
