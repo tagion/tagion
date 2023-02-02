@@ -1,5 +1,6 @@
 module tagion.services.TransactionService;
 
+import core.time;
 import std.stdio : writeln, writefln;
 import std.format;
 import std.socket;
@@ -90,7 +91,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             send(node_tid, opts.transaction.service.server.response_task_name, tosend);
         }
 
-        @safe class TransactionRelay : FiberServer.Relay {
+        @trusted class TransactionRelay : FiberServer.Relay {
             bool agent(FiberRelay ssl_relay) {
                 import tagion.hibon.HiBONJSON;
 
@@ -163,6 +164,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                             search(params, ssl_relay.id); //epoch number?
                             do {
                                 yield; /// Expects a response from the DART service
+                                Thread.sleep(1.seconds);    
                             }
                             while (!ssl_relay.available());
                             const response = ssl_relay.response;
@@ -174,6 +176,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                             areWeInGraph(ssl_relay.id);
                             do {
                                 yield;
+                                Thread.sleep(1.seconds);
                                 log.trace("SSLRelay available: %s", ssl_relay.available());
                             }
                             while (!ssl_relay.available());
@@ -197,6 +200,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                                     requestInputs(inputs, ssl_relay.id);
                                     do {
                                         yield;
+                                        Thread.sleep(1.seconds);
                                         log.trace("SSLRelay available: %s", ssl_relay.available());
                                     }
                                     while (!ssl_relay.available());
