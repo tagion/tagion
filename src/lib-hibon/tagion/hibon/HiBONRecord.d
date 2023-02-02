@@ -123,7 +123,7 @@ struct inspect {
 /++
  Used to set a member default value of the member is not defined in the Document
  +/
-struct Default {
+struct fixed {
     string code;
 }
 
@@ -241,7 +241,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.basic.TagionExceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,
-        label, GetLabel, filter, Default, inspect, VOID;
+        label, GetLabel, filter, fixed, inspect, VOID;
     import HiBONRecord = tagion.hibon.HiBONRecord; // : TYPENAME;
 
     protected alias check = Check!(HiBONRecordException);
@@ -589,7 +589,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         static if (HAS_TYPE) {
                             static assert(TYPENAME != label.name,
-                                    format("Default %s is already definded to %s but is redefined for %s.%s",
+                                    format("Fixed %s is already definded to %s but is redefined for %s.%s",
                                     TYPENAME, TYPE, ThisType.stringof,
                                     basename!(this.tupleof[i])));
                         }
@@ -599,11 +599,11 @@ mixin template HiBONRecord(string CTOR = "") {
                         enum optional = false;
                     }
                     static if (name.length) {
-                        static if (hasUDA!(this.tupleof[i], Default)) {
-                            alias assigns = getUDAs!(this.tupleof[i], Default);
+                        static if (hasUDA!(this.tupleof[i], fixed)) {
+                            alias assigns = getUDAs!(this.tupleof[i], fixed);
                             static assert(assigns.length is 1,
-                                    "Only one Default UDA allowed per member");
-                            static assert(!optional, "The optional parameter in label can not be used in connection with the Default attribute");
+                                    "Only one fixed UDA allowed per member");
+                            static assert(!optional, "The optional parameter in label can not be used in connection with the fixed attribute");
                             enum code = format(q{this.tupleof[i]=%s;}, assigns[0].code);
                             if (!doc.hasMember(name)) {
                                 mixin(code);
@@ -1388,26 +1388,26 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
         }
     }
 
-    { // Default Attribute
-        // The Default atttibute is used set a default i value in case the member was not defined in the Document
-        static struct DefaultStruct {
-            @label("$x") @filter(q{a != 17}) @Default(q{-1}) int x;
+    { // Fixed Attribute
+        // The fixed atttibute is used set a default i value in case the member was not defined in the Document
+        static struct FixedStruct {
+            @label("$x") @filter(q{a != 17}) @fixed(q{-1}) int x;
             mixin HiBONRecord;
         }
 
         { // No effect
-            DefaultStruct s;
+            FixedStruct s;
             s.x = 42;
             const s_doc = s.toDoc;
-            const result = DefaultStruct(s_doc);
+            const result = FixedStruct(s_doc);
             assert(result.x is 42);
         }
 
-        { // Because x=17 is filtered out the Default -1 value will be set
-            DefaultStruct s;
+        { // Because x=17 is filtered out the fixed -1 value will be set
+            FixedStruct s;
             s.x = 17;
             const s_doc = s.toDoc;
-            const result = DefaultStruct(s_doc);
+            const result = FixedStruct(s_doc);
             assert(result.x is -1);
         }
     }

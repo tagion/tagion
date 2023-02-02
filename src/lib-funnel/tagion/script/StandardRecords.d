@@ -7,8 +7,7 @@ import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONException;
-
-//import tagion.script.ScriptBase : Number;
+import std.range : empty;
 import tagion.script.TagionCurrency;
 import tagion.script.ScriptException : check;
 
@@ -18,7 +17,6 @@ enum OwnerKey = "$Y";
     @RecordType("BIL") struct StandardBill {
         @label("$V") TagionCurrency value; // Bill type
         @label("$k") uint epoch; // Epoch number
-        //        @label("$T", true) string bill_type; // Bill type
         @label(OwnerKey) Pubkey owner; // Double hashed owner key
         @label("$G") Buffer gene; // Bill gene
         version (OLD_TRANSACTION) {
@@ -42,7 +40,6 @@ enum OwnerKey = "$Y";
         @label(OwnerKey) Pubkey pubkey; /// NNC pubkey
         @label("$lang") string lang; /// Language used for the #name
         @label("$time") ulong time; /// Time-stamp of
-        // @label("$sign") Buffer sign;    ///
         @label("$record") Buffer record; /// Hash pointer to NRC
         mixin HiBONRecord;
 
@@ -271,13 +268,13 @@ enum OwnerKey = "$Y";
             @label("$env", true) Buffer link; // Hash pointer to smart contract object;
             mixin HiBONRecord!(
                     q{
-                this(string name=null, Buffer link=null) {
+                this(string name, Buffer link=null) {
                     this.name = name;
                     this.link = link;
                 }
             });
             bool verify() {
-                return (wasm.empty) ^ (link.empty);
+                return (name.empty) ^ (link.empty);
             }
 
         }
