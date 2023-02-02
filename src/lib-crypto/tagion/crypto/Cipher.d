@@ -27,7 +27,7 @@ struct Cipher {
     //     this.net = net;
     // }
 
-    @RecordType("TCD")
+    @recordType("TCD")
     struct CipherDocument {
         @label("$m") Buffer ciphermsg;
         @label("$n") Buffer nonce;

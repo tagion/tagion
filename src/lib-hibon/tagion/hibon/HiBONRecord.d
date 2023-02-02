@@ -35,8 +35,8 @@ Param: doc
 */
 @safe
 bool isRecord(T)(const Document doc) nothrow pure {
-    static if (hasUDA!(T, RecordType)) {
-        enum record_type = getUDAs!(T, RecordType)[0].name;
+    static if (hasUDA!(T, recordType)) {
+        enum record_type = getUDAs!(T, recordType)[0].name;
         return doc.hasMember(TYPENAME) && assumeWontThrow(doc[TYPENAME] == record_type);
     }
     return false;
@@ -128,7 +128,7 @@ struct fixed {
 /++
  Sets the HiBONRecord type
  +/
-struct RecordType {
+struct recordType {
     string name;
     string code; // This is is mixed after the Document constructor
 }
@@ -163,14 +163,14 @@ enum VOID = "*";
 
 mixin template HiBONRecordType() {
     import tagion.hibon.Document : Document;
-    import tagion.hibon.HiBONRecord : TYPENAME;
+    import tagion.hibon.HiBONRecord : TYPENAME, recordType;
     import std.traits : getUDAs, hasUDA, isIntegral, isUnsigned;
 
     alias ThisType = typeof(this);
 
-    static if (hasUDA!(ThisType, RecordType)) {
-        alias record_types = getUDAs!(ThisType, RecordType);
-        static assert(record_types.length is 1, "Only one RecordType UDA allowed");
+    static if (hasUDA!(ThisType, recordType)) {
+        alias record_types = getUDAs!(ThisType, recordType);
+        static assert(record_types.length is 1, "Only one recordType UDA allowed");
         static if (record_types[0].name.length) {
             enum type_name = record_types[0].name;
             import tagion.hibon.HiBONRecord : isRecordT=isRecord;
@@ -466,8 +466,8 @@ mixin template HiBONRecord(string CTOR = "") {
                 check(_type == type_name, format("Wrong %s type %s should be %s",
                         TYPENAME, _type, type_name));
             }
-            static if (hasUDA!(ThisType, RecordType)) {
-                enum record = getUDAs!(ThisType, RecordType)[0];
+            static if (hasUDA!(ThisType, recordType)) {
+                enum record = getUDAs!(ThisType, recordType)[0];
                 static if (record.code) {
                     scope (exit) {
                         mixin(record.code);
@@ -738,7 +738,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
     import std.algorithm.comparison : equal;
     import tagion.hibon.HiBONException : HiBONException, HiBONRecordException;
 
-    @RecordType("SIMPEL") static struct Simpel {
+    @recordType("SIMPEL") static struct Simpel {
         int s;
         string text;
         mixin HiBONRecord!(q{
@@ -749,7 +749,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
 
     }
 
-    @RecordType("SIMPELLABEL") static struct SimpelLabel {
+    @recordType("SIMPELLABEL") static struct SimpelLabel {
         @label("$S") int s;
         @label("TEXT") string text;
         mixin HiBONRecord!(q{
@@ -759,7 +759,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
             });
     }
 
-    @RecordType("BASIC") static struct BasicData {
+    @recordType("BASIC") static struct BasicData {
         int i32;
         uint u32;
         long i64;
@@ -789,7 +789,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
     }
 
     template SimpelOption(string LABEL = "") {
-        @RecordType(LABEL)
+        @recordType(LABEL)
         static struct SimpelOption {
             int not_an_option;
             @label("s", true) int s;
@@ -900,7 +900,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
 
     { // Check verify member
         template NotBoth(bool FILTER) {
-            @RecordType("NotBoth") static struct NotBoth {
+            @recordType("NotBoth") static struct NotBoth {
                 static if (FILTER) {
                     @label("*", true) @(filter.Initialized) int x;
                     @label("*", true) @(filter.Initialized) @filter(q{a < 42}) int y;

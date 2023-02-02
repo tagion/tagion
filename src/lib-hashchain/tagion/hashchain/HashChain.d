@@ -162,7 +162,7 @@ import tagion.utils.Miscellaneous : decode;
 }
 
 version (unittest) {
-    import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, label;
+    import tagion.hibon.HiBONRecord : HiBONRecord, recordType, label;
     import tagion.crypto.SecureInterfaceNet : HashNet;
 
     @safe class DummyBlock : HashChainBlock {

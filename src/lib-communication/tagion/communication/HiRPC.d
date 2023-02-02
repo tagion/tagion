@@ -174,7 +174,7 @@ struct HiRPC {
         return Type.none;
     }
 
-    @RecordType("HiPRC")
+    @recordType("HiPRC")
     struct Post(Direction DIRECTION) {
         union Message {
             Method method;

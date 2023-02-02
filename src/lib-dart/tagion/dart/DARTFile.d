@@ -26,7 +26,7 @@ private {
     import tagion.hibon.HiBON : HiBON;
 
     //    import tagion.hibon.HiBONRecord : GetLabel, label, HiBONPrefix, isStub, STUB;
-    import tagion.hibon.HiBONRecord : isStub, label, record_filter=filter, GetLabel, RecordType;
+    import tagion.hibon.HiBONRecord : isStub, label, record_filter=filter, GetLabel, recordType;
     import tagion.hibon.Document : Document;
 
     import tagion.dart.BlockFile;
@@ -242,7 +242,7 @@ alias check = Check!DARTException;
     /++
 
 +/
-    @RecordType("Branches") struct Branches {
+    @recordType("Branches") struct Branches {
         import std.stdio;
         import tagion.hibon.HiBONJSON;
 

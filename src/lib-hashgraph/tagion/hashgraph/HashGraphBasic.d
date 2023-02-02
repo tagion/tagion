@@ -286,7 +286,7 @@ struct EventPackage {
 
 alias Tides = int[Pubkey];
 
-@RecordType("Wavefront") @safe
+@recordType("Wavefront") @safe
 struct Wavefront {
     @label("$tides", true) @filter(q{a.length is 0}) private Tides _tides;
     @label("$events", true) @filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;

@@ -33,7 +33,7 @@ mixin template Property() {
         });
 }
 
-@RecordType("Feature")
+@recordType("Feature")
 struct Feature {
     mixin Property;
 }

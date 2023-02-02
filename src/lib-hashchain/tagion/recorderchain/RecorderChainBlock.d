@@ -7,7 +7,7 @@ import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.dart.Recorder;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
-import tagion.hibon.HiBONRecord : label, GetLabel, HiBONRecord, RecordType;
+import tagion.hibon.HiBONRecord : label, GetLabel, HiBONRecord, recordType;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.Document;
 
@@ -18,7 +18,7 @@ import tagion.hibon.Document;
  * \class RecorderChainBlock
  * Class represents block from recorder chain
  */
-@RecordType("RCB")
+@recordType("RCB")
 @safe class RecorderChainBlock : HashChainBlock {
     /** Fingerprint of this block */
     @label("") Buffer fingerprint;

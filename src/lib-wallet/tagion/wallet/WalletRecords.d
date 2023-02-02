@@ -7,7 +7,7 @@ import tagion.script.TagionCurrency;
 import tagion.script.StandardRecords : StandardBill;
 
 @safe {
-    @RecordType("Quiz")
+    @recordType("Quiz")
     struct Quiz {
         @label("$Q") string[] questions;
         mixin HiBONRecord;
@@ -16,7 +16,7 @@ import tagion.script.StandardRecords : StandardBill;
     /++
 
 +/
-    @RecordType("PIN")
+    @recordType("PIN")
     struct DevicePIN {
         Buffer D; /// Device number
         Buffer U; /// Device random
@@ -30,12 +30,12 @@ import tagion.script.StandardRecords : StandardBill;
         mixin HiBONRecord;
     }
 
-    // @RecordType("Wallet") struct Wallet {
+    // @recordType("Wallet") struct Wallet {
     //     KeyRecover.RecoverGenerator generator;
     //     mixin HiBONRecord;
     // }
 
-    @RecordType("Wallet")
+    @recordType("Wallet")
     struct RecoverGenerator {
         Buffer[] Y; /// Recorvery seed
         Buffer S; /// Check value S=H(H(R))

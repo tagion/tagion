@@ -18,7 +18,7 @@ import tagion.basic.Types : Buffer;
 import tagion.Keywords;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord : HiBONRecord, RecordType, GetLabel, label;
+import tagion.hibon.HiBONRecord : HiBONRecord, recordType, GetLabel, label;
 import tagion.hibon.HiBONJSON;
 
 import tagion.dart.DARTFile;
@@ -213,7 +213,7 @@ class DART : DARTFile {
     alias HiRPCSender = HiRPC.Sender;
     alias HiRPCReceiver = HiRPC.Receiver;
 
-    @RecordType("Rims")
+    @recordType("Rims")
     struct Rims {
         Buffer rims;
         protected enum root_rim = [];
@@ -552,7 +552,7 @@ class DART : DARTFile {
         bool empty() const pure nothrow;
     }
 
-    @RecordType("Journal") struct Journal {
+    @recordType("Journal") struct Journal {
         uint index;
         RecordFactory.Recorder recorder;
         enum indexName = GetLabel!(index).name;

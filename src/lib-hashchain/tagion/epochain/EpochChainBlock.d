@@ -4,7 +4,7 @@ module tagion.epochain.EpochChainBlock;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONRecord : label, HiBONRecord, RecordType;
+import tagion.hibon.HiBONRecord : label, HiBONRecord, recordType;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 
@@ -16,7 +16,7 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
  * Class represents epoch block from recorder chain
  */
 
-@RecordType("EpochBlock")
+@recordType("EpochBlock")
 @safe class EpochChainBlock : HashChainBlock {
     /** Fingerprint of this block */
     @label("") Buffer fingerprint;

@@ -14,7 +14,7 @@ import tagion.script.ScriptException : check;
 enum OwnerKey = "$Y";
 
 @safe {
-    @RecordType("BIL") struct StandardBill {
+    @recordType("BIL") struct StandardBill {
         @label("$V") TagionCurrency value; // Bill type
         @label("$k") uint epoch; // Epoch number
         @label(OwnerKey) Pubkey owner; // Double hashed owner key
@@ -35,7 +35,7 @@ enum OwnerKey = "$Y";
         }
     }
 
-    @RecordType("NNC") struct NetworkNameCard {
+    @recordType("NNC") struct NetworkNameCard {
         @label("#name") string name; /// Tagion domain name
         @label(OwnerKey) Pubkey pubkey; /// NNC pubkey
         @label("$lang") string lang; /// Language used for the #name
@@ -52,7 +52,7 @@ enum OwnerKey = "$Y";
         }
     }
 
-    @RecordType("NRC") struct NetworkNameRecord {
+    @recordType("NRC") struct NetworkNameRecord {
         @label("$name") Buffer name; /// Hash of the NNC.name
         @label("$prev") Buffer previous; /// Hash pointer to the previuos NRC
         @label("$index") uint index; /// Current index previous.index+1
@@ -61,7 +61,7 @@ enum OwnerKey = "$Y";
         mixin HiBONRecord;
     }
 
-    @RecordType("HL") struct HashLock {
+    @recordType("HL") struct HashLock {
         import tagion.crypto.SecureInterfaceNet;
 
         @label("$lock") Buffer lock; /// Of the NNC with the pubkey
@@ -131,7 +131,7 @@ enum OwnerKey = "$Y";
 
     }
 
-    version (none) @RecordType("NNR") struct NetworkNodeRecord {
+    version (none) @recordType("NNR") struct NetworkNodeRecord {
         enum State {
             PROSPECT,
             STANDBY,
@@ -149,7 +149,7 @@ enum OwnerKey = "$Y";
         mixin HiBONRecord;
     }
 
-    @RecordType("active0") struct ActiveNode {
+    @recordType("active0") struct ActiveNode {
         @label("$node") Buffer node; /// Pointer to the NNC
         @label("$drive") Buffer drive; /// The tweak of the used key
         @label("$sign") Buffer signed; /// Signed bulleye of the DART
@@ -157,7 +157,7 @@ enum OwnerKey = "$Y";
 
     }
 
-    @RecordType("$epoch0") struct EpochBlock {
+    @recordType("$epoch0") struct EpochBlock {
         @label("$epoch") int epoch; /// Epoch number
         @label("$prev") Buffer previous; /// Hashpoint to the previous epoch block
         @label("$recorder") Buffer recoder; /// Fingerprint of the recorder
@@ -168,7 +168,7 @@ enum OwnerKey = "$Y";
 
     enum EPOCH_TOP_NAME = "tagion";
 
-    @RecordType("top") struct LastEpochRecord {
+    @recordType("top") struct LastEpochRecord {
         @label("#name") string name;
         @label("$top") Buffer top;
         mixin HiBONRecord!(q{
@@ -197,13 +197,13 @@ enum OwnerKey = "$Y";
         mixin HiBONRecord;
     }
 
-    @RecordType("$master0") struct MasterGlobals {
+    @recordType("$master0") struct MasterGlobals {
         //    @label("$total") Number total;    /// Total tagions in the network
         @label("$rewards") ulong rewards; /// Epoch rewards
         mixin HiBONRecord;
     }
 
-    @RecordType("SMC") struct Contract {
+    @recordType("SMC") struct Contract {
         @label("$in") Buffer[] inputs; /// Hash pointer to input (DART)
         @label("$read", true) Buffer[] reads; /// Hash pointer to read-only input (DART)
         version (OLD_TRANSACTION) {
@@ -220,12 +220,12 @@ enum OwnerKey = "$Y";
         }
     }
 
-    @RecordType("PAY") struct PayContract {
+    @recordType("PAY") struct PayContract {
         @label("$bills", true) StandardBill[] bills; /// The actual inputs
         mixin HiBONRecord;
     }
 
-    @RecordType("SSC") struct SignedContract {
+    @recordType("SSC") struct SignedContract {
         @label("$signs") Signature[] signs; /// Signature of all inputs
         @label("$contract") Contract contract; /// The contract must signed by all inputs
         version (OLD_TRANSACTION) {
@@ -239,7 +239,7 @@ enum OwnerKey = "$Y";
      * \struct HealthcheckParams
      * Struct store paramentrs for healthcheck request
      */
-    @RecordType("Healthcheck") struct HealthcheckParams {
+    @recordType("Healthcheck") struct HealthcheckParams {
         /** amount of hashgraph rounds */
         @label("$hashgraph_rounds") ulong rounds;
         /**last epoch timestamp */
@@ -288,7 +288,7 @@ enum OwnerKey = "$Y";
             SignedContract
     );
 
-    @RecordType("Invoice") struct Invoice {
+    @recordType("Invoice") struct Invoice {
         string name;
         TagionCurrency amount;
         @label(OwnerKey) Pubkey pkey;

@@ -11,7 +11,7 @@ import std.format;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : label, STUB, isHiBONRecord, GetLabel, isStub, RecordType;
+import tagion.hibon.HiBONRecord : label, STUB, isHiBONRecord, GetLabel, isStub, recordType;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Message;
 
@@ -92,7 +92,7 @@ class RecordFactory {
      +  modify method
      +/
     @safe
-    @RecordType("Recorder")
+    @recordType("Recorder")
     class Recorder {
         /// This will order REMOVE before add
         alias Archives = RedBlackTree!(Archive, (a, b) => (a.fingerprint < b.fingerprint) || (

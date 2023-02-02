@@ -322,7 +322,7 @@ shared static this() {
  * Struct for node addresses 
  */
 @safe
-@RecordType("NNR")
+@recordType("NNR")
 struct NodeAddress {
     enum tcp_token = "/tcp/";
     enum p2p_token = "/p2p/";
