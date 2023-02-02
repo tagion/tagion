@@ -115,9 +115,9 @@ struct filter {
 /++
  Validates the Document type on construction
  +/
-struct Inspect {
+struct inspect {
     string code; ///
-    enum Initialized = Inspect(q{a !is a.init});
+    enum Initialized = inspect(q{a !is a.init});
 }
 
 /++
@@ -241,7 +241,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.basic.TagionExceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,
-        label, GetLabel, filter, Default, Inspect, VOID;
+        label, GetLabel, filter, Default, inspect, VOID;
     import HiBONRecord = tagion.hibon.HiBONRecord; // : TYPENAME;
 
     protected alias check = Check!(HiBONRecordException);
@@ -619,8 +619,8 @@ mixin template HiBONRecord(string CTOR = "") {
                                 continue ForeachTuple;
                             }
                         }
-                        static if (hasUDA!(this.tupleof[i], Inspect)) {
-                            alias Inspects = getUDAs!(this.tupleof[i], Inspect);
+                        static if (hasUDA!(this.tupleof[i], inspect)) {
+                            alias Inspects = getUDAs!(this.tupleof[i], inspect);
                             scope (exit) {
                                 static foreach (F; Inspects) {
                                     {
@@ -1019,7 +1019,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
 
     {
         static struct Test {
-            @Inspect(q{a < 42}) @Inspect(q{a > 3}) int x;
+            @inspect(q{a < 42}) @inspect(q{a > 3}) int x;
             mixin HiBONRecord;
         }
 

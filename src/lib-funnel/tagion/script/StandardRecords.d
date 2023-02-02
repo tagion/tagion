@@ -21,8 +21,9 @@ enum OwnerKey = "$Y";
         //        @label("$T", true) string bill_type; // Bill type
         @label(OwnerKey) Pubkey owner; // Double hashed owner key
         @label("$G") Buffer gene; // Bill gene
-        mixin HiBONRecord!(
-                q{
+        version (OLD_TRANSACTION) {
+            mixin HiBONRecord!(
+                    q{
                 this(TagionCurrency value, const uint epoch, Pubkey owner, Buffer gene) {
                     this.value = value;
                     this.epoch = epoch;
@@ -30,6 +31,10 @@ enum OwnerKey = "$Y";
                     this.gene = gene;
                 }
             });
+        }
+        else {
+            mixin HiBONRecord;
+        }
     }
 
     @RecordType("NNC") struct NetworkNameCard {
@@ -204,12 +209,17 @@ enum OwnerKey = "$Y";
     @RecordType("SMC") struct Contract {
         @label("$in") Buffer[] inputs; /// Hash pointer to input (DART)
         @label("$read", true) Buffer[] reads; /// Hash pointer to read-only input (DART)
-        @label("$out") Document[Pubkey] output; // pubkey of the output
-        @label("$run") Script script; // TVM-links / Wasm binary
+        version (OLD_TRANSACTION) {
+            @label("$out") Document[Pubkey] output; // pubkey of the output
+            @label("$run") Script script; // TVM-links / Wasm binary
+        }
+        else {
+            @label("$out") Pubkey[] output; // pubkey of the output
+
+        }
         mixin HiBONRecord;
         bool verify() {
-            return (inputs.length > 0) &&
-                (output.length > 0);
+            return (inputs.length > 0);
         }
     }
 
@@ -255,20 +265,22 @@ enum OwnerKey = "$Y";
             });
     }
 
-    struct Script {
-        @label("$name") string name;
-        @label("$env", true) Buffer link; // Hash pointer to smart contract object;
-        mixin HiBONRecord!(
-                q{
-                this(string name, Buffer link=null) {
+    version (OLD_TRANSACTION) {
+        struct Script {
+            @label("$name", true) string name;
+            @label("$env", true) Buffer link; // Hash pointer to smart contract object;
+            mixin HiBONRecord!(
+                    q{
+                this(string name=null, Buffer link=null) {
                     this.name = name;
                     this.link = link;
                 }
             });
-        // bool verify() {
-        //     return (wasm.length is 0) ^ (link.empty);
-        // }
+            bool verify() {
+                return (wasm.empty) ^ (link.empty);
+            }
 
+        }
     }
 
     alias ListOfRecords = AliasSeq!(

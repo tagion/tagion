@@ -90,7 +90,7 @@ struct HiRPC {
     struct Method {
         @label("*", true) @(filter.Initialized) uint id;
         @label("*", true) @filter(q{!a.empty}) Document params;
-        @label("method") @(Inspect.Initialized) string name;
+        @label("method") @(inspect.Initialized) string name;
 
         mixin HiBONRecord;
     }
