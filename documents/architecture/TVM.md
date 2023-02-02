@@ -24,3 +24,12 @@ The service does the following:
     - Executes the instructions and produces output draft archives
 - If input was Contract-S then a Contract-SC is sent to the Epoch Creator Service.
 - Sends output draft archives and input archives to Transcript Service.
+
+```mermaid
+sequenceDiagram
+    participant Contract Interface
+    participant TVM
+    participant Epoch Creator
+    Contract Interface ->> TVM: Contract-S + Archives(inputs)
+    TVM ->> Epoch Creator: Contract+SC 
+```

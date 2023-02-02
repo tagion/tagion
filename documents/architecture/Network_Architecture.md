@@ -52,7 +52,7 @@ rankdir=UD;
   };
  subgraph cluster_2 {
     peripheries=0;
-	TVM -> EpochCreator [label=contract color=green];
+	TVM -> EpochCreator [label="contract-SC" color=green];
     DART -> Replicator [label=recorder color=red dir=both];
   };
   subgraph cluster_3 {
