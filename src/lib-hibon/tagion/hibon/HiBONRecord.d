@@ -34,15 +34,13 @@ Param: doc
 	Returns: true if the doc has the correct Recorder type 
 */
 @safe
-bool isRecordType(T)(const Document doc) nothrow pure {
+bool isRecord(T)(const Document doc) nothrow pure {
     static if (hasUDA!(T, RecordType)) {
         enum record_type = getUDAs!(T, RecordType)[0].name;
         return doc.hasMember(TYPENAME) && assumeWontThrow(doc[TYPENAME] == record_type);
     }
     return false;
 }
-
-alias isRecord = isRecordType;
 
 enum STUB = HiBONPrefix.HASH ~ "";
 @safe bool isStub(const Document doc) {
@@ -175,7 +173,7 @@ mixin template HiBONRecordType() {
         static assert(record_types.length is 1, "Only one RecordType UDA allowed");
         static if (record_types[0].name.length) {
             enum type_name = record_types[0].name;
-            import tagion.hibon.HiBONRecord : isRecordT = isRecordType;
+            import tagion.hibon.HiBONRecord : isRecordT=isRecord;
 
             alias isRecord = isRecordT!ThisType;
             version (none) static bool isRecord(const Document doc) nothrow {
@@ -252,7 +250,7 @@ mixin template HiBONRecord(string CTOR = "") {
     mixin JSONString;
 
     mixin HiBONRecordType;
-    alias isRecord = HiBONRecord.isRecordType!ThisType;
+    alias isRecord = HiBONRecord.isRecord!ThisType;
 
     enum HAS_TYPE = hasMember!(ThisType, "type_name");
     static bool less_than(Key)(Key a, Key b) if (!is(Key : string)) {
@@ -814,8 +812,8 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
             assert(s == s_check);
             assert(s_check.toJSON.toString == format("%j", s_check));
 
-            assert(isRecordType!Simpel(docS));
-            assert(!isRecordType!SimpelLabel(docS));
+            assert(isRecord!Simpel(docS));
+            assert(!isRecord!SimpelLabel(docS));
         }
 
         {

@@ -310,12 +310,12 @@ bool hasErrors(const(FeatureGroup*) feature_group) nothrow {
 bool hasErrors(ref const ScenarioGroup scenario_group) nothrow {
     static foreach (i, Type; Fields!ScenarioGroup) {
         static if (isActionGroup!Type) {
-            if (scenario_group.tupleof[i].infos.any!(info => info.result.isRecordType!BehaviourError)) {
+            if (scenario_group.tupleof[i].infos.any!(info => info.result.isRecord!BehaviourError)) {
                 return true;
             }
         }
         else static if (isInfo!Type) {
-            if (scenario_group.tupleof[i].result.isRecordType!BehaviourError) {
+            if (scenario_group.tupleof[i].result.isRecord!BehaviourError) {
                 return true;
             }
         }
@@ -328,25 +328,25 @@ const(BehaviourError)[] getBDDErrors(const(ScenarioGroup) scenarioGroup) {
     const(BehaviourError)[] errors;
     // How do i statically iteratate over each actionGroup member of scenarioGroup
     foreach (info; scenarioGroup.given.infos) {
-        if (info.result.isRecordType!BehaviourError) {
+        if (info.result.isRecord!BehaviourError) {
             const result = BehaviourError(info.result);
             errors ~= result;
         }
     }
     foreach (info; scenarioGroup.when.infos) {
-        if (info.result.isRecordType!BehaviourError) {
+        if (info.result.isRecord!BehaviourError) {
             const result = BehaviourError(info.result);
             errors ~= result;
         }
     }
     foreach (info; scenarioGroup.then.infos) {
-        if (info.result.isRecordType!BehaviourError) {
+        if (info.result.isRecord!BehaviourError) {
             const result = BehaviourError(info.result);
             errors ~= result;
         }
     }
     foreach (info; scenarioGroup.but.infos) {
-        if (info.result.isRecordType!BehaviourError) {
+        if (info.result.isRecord!BehaviourError) {
             const result = BehaviourError(info.result);
             errors ~= result;
         }
@@ -401,7 +401,7 @@ Checks if a feature has passed all tests
  */
 @safe
 bool hasPassed(ref const FeatureGroup feature_group) nothrow {
-    return feature_group.info.result.isRecordType!Result &&
+    return feature_group.info.result.isRecord!Result &&
         feature_group.scenarios.all!(scenario => scenario.hasPassed);
 }
 
@@ -424,7 +424,7 @@ bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
                     .tupleof[i].infos
                     .any!(info => !info
                         .result
-                        .isRecordType!Result)) {
+                        .isRecord!Result)) {
                 return false;
             }
         }
@@ -432,7 +432,7 @@ bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
             if (!scenario_group
                     .tupleof[i]
                     .result
-                    .isRecordType!Result) {
+                    .isRecord!Result) {
                 return false;
             }
         }
