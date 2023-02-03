@@ -7,7 +7,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 
 @safe
-@RecordType("OK")
+@recordType("OK")
 struct ResultOk {
     mixin HiBONRecord!();
 }
@@ -18,7 +18,7 @@ static Document result_ok = result(ResultOk()).toDoc; /// This
  * Contains the Exception information  
 */
 @safe
-@RecordType("BDDError")
+@recordType("BDDError")
 struct BehaviourError {
     string msg; ///  Error message in the Exception
     string[] trace; ///. Exception line trace of in the exception
@@ -37,7 +37,7 @@ struct BehaviourError {
  * Stores the result from a BDD Action, Senario or Feature
  */
 @safe
-@RecordType("BDDResult")
+@recordType("BDDResult")
 struct Result {
     Document outcome; /// BDD test return document
     mixin HiBONRecord!();

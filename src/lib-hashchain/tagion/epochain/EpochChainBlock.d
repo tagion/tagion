@@ -4,7 +4,7 @@ module tagion.epochain.EpochChainBlock;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONRecord : Label, HiBONRecord, RecordType;
+import tagion.hibon.HiBONRecord : label, HiBONRecord, recordType;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 
@@ -16,16 +16,16 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
  * Class represents epoch block from recorder chain
  */
 
-@RecordType("EpochBlock")
+@recordType("EpochBlock")
 @safe class EpochChainBlock : HashChainBlock {
     /** Fingerprint of this block */
-    @Label("") Buffer fingerprint;
+    @label("") Buffer fingerprint;
     /** Bullseye of DART database */
-    @Label("eye") Buffer bullseye;
+    @label("eye") Buffer bullseye;
     /** Fingerprint of the previous block */
-    @Label("previous") Buffer previous;
+    @label("previous") Buffer previous;
     /** List of the transactions */
-    @Label("transactions_list") Document transactions_list;
+    @label("transactions_list") Document transactions_list;
 
     mixin JSONString;
 

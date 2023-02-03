@@ -89,8 +89,9 @@ private {
             sendToLogSubService(info, doc);
         }
 
-        if (info.isTextLog && doc.hasMember(TextLog.label)) {
-            string output = formatLog(info.level, info.task_name, doc[TextLog.label].get!string);
+        enum _msg=GetLabel!(TextLog.message).name;
+        if (info.isTextLog && doc.hasMember(_msg)) {
+            string output = formatLog(info.level, info.task_name, doc[_msg].get!string);
 
             // Output text log to file
             if (logging) {

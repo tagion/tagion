@@ -88,24 +88,24 @@ struct HiRPC {
     import tagion.hibon.HiBONRecord;
 
     struct Method {
-        @Label("*", true) @(Filter.Initialized) uint id;
-        @Label("*", true) @Filter(q{!a.empty}) Document params;
-        @Label("method") @(Inspect.Initialized) string name;
+        @label("*", true) @(filter.Initialized) uint id;
+        @label("*", true) @filter(q{!a.empty}) Document params;
+        @label("method") @(inspect.Initialized) string name;
 
         mixin HiBONRecord;
     }
 
     struct Response {
-        @Label("*", true) @(Filter.Initialized) uint id;
+        @label("*", true) @(filter.Initialized) uint id;
         Document result;
         mixin HiBONRecord;
     }
 
     struct Error {
-        @Label("*", true) @(Filter.Initialized) uint id;
-        @Label("$data", true) @Filter(q{!a.empty}) Document data;
-        @Label("$msg", true) @(Filter.Initialized) string message;
-        @Label("$code", true) @(Filter.Initialized) int code;
+        @label("*", true) @(filter.Initialized) uint id;
+        @label("$data", true) @filter(q{!a.empty}) Document data;
+        @label("$msg", true) @(filter.Initialized) string message;
+        @label("$code", true) @(filter.Initialized) int code;
 
         static bool valid(const Document doc) {
             enum codeName = GetLabel!(code).name;
@@ -174,7 +174,7 @@ struct HiRPC {
         return Type.none;
     }
 
-    @RecordType("HiPRC")
+    @recordType("HiPRC")
     struct Post(Direction DIRECTION) {
         union Message {
             Method method;
@@ -188,11 +188,11 @@ struct HiRPC {
         static assert(Message.error.id.alignof == Message.id.alignof);
 
         //@disable this();
-        //        @Label("") SecureNet net;
-        @Label("$sign", true) @(Filter.Initialized) Signature signature;
-        @Label("$pkey", true) @(Filter.Initialized) Pubkey pubkey;
-        @Label("$msg") Document message;
-        @Label("") immutable Type type;
+        //        @label("") SecureNet net;
+        @label("$sign", true) @(filter.Initialized) Signature signature;
+        @label("$pkey", true) @(filter.Initialized) Pubkey pubkey;
+        @label("$msg") Document message;
+        @label("") immutable Type type;
 
         @nogc const pure nothrow {
             bool isMethod() {
@@ -250,10 +250,10 @@ struct HiRPC {
             }
             return true;
         }
-        //        @Label("") protected Buffer fingerprint;
+        //        @label("") protected Buffer fingerprint;
         static if (DIRECTION is Direction.RECEIVE) {
-            @Label("") protected Message _message;
-            @Label("") immutable SignedState signed;
+            @label("") protected Message _message;
+            @label("") immutable SignedState signed;
             enum signName = GetLabel!(signature).name;
             enum pubkeyName = GetLabel!(pubkey).name;
             enum messageName = GetLabel!(message).name;

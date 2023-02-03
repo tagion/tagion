@@ -1153,7 +1153,7 @@ class BlockFile {
      + If possible it recycling old deleted blocks
      +/
     class AllocatedChain {
-        @RecordType("ACHAIN") struct Chain {
+        @recordType("ACHAIN") struct Chain {
             Buffer data;
             uint begin_index;
             mixin HiBONRecord;

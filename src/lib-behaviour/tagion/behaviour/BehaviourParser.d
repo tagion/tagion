@@ -15,7 +15,7 @@ import std.meta;
 import std.uni : toLower;
 import std.conv : to;
 
-import tagion.hibon.HiBONRecord : RecordType, GetLabel;
+import tagion.hibon.HiBONRecord : recordType, GetLabel;
 import tagion.behaviour.BehaviourException;
 import tagion.behaviour.BehaviourFeature : ActionProperties;
 
