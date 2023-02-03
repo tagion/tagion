@@ -28,9 +28,14 @@
 
         search: 'auto', // default
 
-            search: [
-              '/',            // => /README.md
-            ],
+        search: [
+          '/',            // => /README.md
+        ],
+
+		schemas : [
+			["ddoc://", "localhost:3000/"],
+			["src://", "https://github.com/tagion/tagion/tree/current-doc/src/"],
+		],
 
 		  markdown: {
 			  renderer: {
@@ -48,6 +53,7 @@
 
     </script>
     <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+    <script src="documents/_static/docsify-var.js"></script>
     <script src="documents/_static/docsify-viz.js"></script>
   </body>
 </html>
