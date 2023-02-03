@@ -82,7 +82,7 @@ enum isMethod(This, string method_name) = isUDA!(This, method_name, method);
  */
 template isRequest(This, string method_name) {
     alias member = __traits(getMember, This, method_name);
-    enum isRequest = isCallable!member && !is(ReturnType!member == void);
+    enum isRequest = isMethod!(This, method_name) && isCallable!member && !is(ReturnType!member == void);
 }
 
 /// Test if the UDA check functions
@@ -105,6 +105,7 @@ static unittest {
 
     static assert(!isRequest!(S, "with_uda"));
     static assert(isRequest!(S, "with_return"));
+    static assert(!isRequest!(S, "no_uda"));
 }
 
 /**
@@ -223,6 +224,8 @@ mixin template TaskActor() {
 */
     void receive() @trusted {
         enum actor_methods = allMemberFilter!(This, isMethod);
+        pragma(msg, "Actor methods ", actor_methods);
+    pragma(msg, "Response methods ", allMemberFilter!(This, isRequest));
         enum code = format(q{concurrency.receive(%-(&%s, %));}, actor_methods);
         mixin(code);
     }
@@ -270,7 +273,7 @@ Same as receiver but with a timeout
 
 bool isRunning(string task_name) @trusted {
     if (task_name in child_actor_tids) {
-        return concurrency.locate(task_name) != Tid.init;
+        return concurrency.locate(task_name) !is Tid.init;
     }
     return false;
 }
@@ -285,18 +288,33 @@ protected static string generateAllMethods(alias This)() {
             mixin(code);
             static if (isCallable!Func && hasUDA!(Func, method)) {
                 static if (!hasUDA!(Func, local)) {
-                    pragma(msg, "Func return ", ReturnType!Func);
+                    pragma(msg, "Func ", m, " ", FunctionTypeOf!Func, " return ", ReturnType!Func);
                     static if (is(ReturnType!Func == void)) {
-                        enum method_code = format!q{
+                        enum method_code = format(q{
                         alias FuncParams_%1$s=AliasSeq!%2$s;
                         void %1$s(FuncParams_%1$s args) @trusted {
                             concurrency.send(tid, args);
-                        }}(m, Parameters!(Func).stringof);
+                        }
+                        }, m, Parameters!(Func).stringof);
                     }
                     else { // Request method
-                        pragma(msg, "Returns ", RetrunType!Func);
+                        pragma(msg, "Returns ", ReturnType!Func);
                         pragma(msg, "Params ", Parameters!Func);
                         // Request
+                        enum method_code = format(q{
+                        alias FuncParams_%1$s=AliasSeq!%2$s;
+
+                        void _%1$s(FuncParams_%1$s args) @trusted {
+                            /* 
+                             * This cast should be ok because Tid only contains
+                             * a MessageBox class which are thread safe
+                             */
+                            immutable response_tid=cast(immutable)concurrency.thisTid;
+                        
+                            concurrency.send(tid, response_tid, args);
+                        }
+                             
+                        }, m, Parameters!(Func).stringof);
                     }
                     result ~= method_code;
                 }
@@ -724,7 +742,12 @@ unittest {
     }
 
     {
+
         MyRequestActor a;
         pragma(msg, "all method filter", allMemberFilter!(MyRequestActor, isMethod));
+        auto request_actor_factoty = actor!MyRequestActor;
+        pragma(msg, "-----");
+        pragma(msg, generateAllMethods!MyRequestActor);
+        pragma(msg, "-----");
     }
 }
