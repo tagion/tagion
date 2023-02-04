@@ -237,6 +237,7 @@ template EnumContinuousSequency(Enum) if (is(Enum == enum)) {
     enum EnumContinuousSequency = Sequency!(EnumMembers!Enum);
 }
 
+///
 static unittest {
     enum Count {
         zero,
@@ -282,6 +283,7 @@ template doFront(Range) if (isInputRange!Range) {
     }
 }
 
+///
 @safe
 unittest {
     {
@@ -295,6 +297,7 @@ unittest {
     }
 }
 
+/// isEqual is the same as `is()` function which can be used in template filters 
 enum isEqual(T1, T2) = is(T1 == T2);
 //enum isUnqualEqual(T1, T2) = is(Unqual!T1 == T2);
 
@@ -310,15 +313,24 @@ unittest {
     static assert(Left!(Unqual!U));
 }
 
+/* 
+ * Returns the first element in the range r and pops then next
+ * Params:
+ *   r = 
+ * Returns: r.front
+ */
 auto eatOne(R)(ref R r) if (isInputRange!R) {
     import std.range;
 
     scope (exit) {
-        r.popFront;
+        if (!r.empty) {
+            r.popFront;
+        }
     }
     return r.front;
 }
 
+///
 unittest {
     const(int)[] a = [1, 2, 3];
     assert(eatOne(a) == 1);
@@ -436,17 +448,28 @@ static unittest {
 }
 
 enum unitdata = "unitdata";
+
 /**
-   Returns:
-   unittest data filename
+* Used in unitttest local the path package/unitdata/filename 
+* Params:
+*   filename = name of the unitdata file
+*   file = defailt location of the module
+* Returns:
+*   unittest data filename
  */
-@safe
-string unitfile(string filename, string file = __FILE__) {
+string unitfile(string filename, string file = __FILE__) @safe {
     import std.path;
 
     return buildPath(file.dirName, unitdata, filename);
 }
 
+/** 
+ * Mangle of a callable symbol
+ * Params:
+ *   T = callable symbol 
+ * Returns:
+ *   mangle of callable T
+ */
 template mangleFunc(alias T) if (isCallable!T) {
     import core.demangle : mangle;
 
@@ -503,31 +526,4 @@ pragma(msg, "fixme(ib): replace template with functions like sendTrusted");
     }
 }
 
-private import std.range;
-private import tagion.basic.Types : FileExtension;
 
-//private std.range.primitives;
-string fileExtension(string path) {
-    import std.path : extension;
-    import tagion.basic.Types : DOT;
-
-    switch (path.extension) {
-        static foreach (ext; EnumMembers!FileExtension) {
-    case DOT ~ ext:
-            return ext;
-        }
-    default:
-        return null;
-    }
-    assert(0);
-}
-
-unittest {
-    import tagion.basic.Types : FileExtension;
-    import std.path : setExtension;
-
-    assert(!"somenone_invalid_file.extension".fileExtension);
-    immutable valid_filename = "somenone_valid_file".setExtension(FileExtension.hibon);
-    assert(valid_filename.fileExtension);
-    assert(valid_filename.fileExtension == FileExtension.hibon);
-}
