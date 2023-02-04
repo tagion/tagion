@@ -1,6 +1,6 @@
+/// HiBON Remote Pprocedure Call
 module tagion.communication.HiRPC;
 
-//import std.stdio;
 import std.format;
 import std.traits : EnumMembers;
 import std.exception : assumeWontThrow;
@@ -16,6 +16,8 @@ import tagion.Keywords;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.utils.Miscellaneous : toHexString;
 
+
+/// HiRPC format exception
 @safe
 class HiRPCException : HiBONException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
@@ -23,6 +25,7 @@ class HiRPCException : HiBONException {
     }
 }
 
+/// UDA to make a RPC member
 struct HiRPCMethod {
     string name;
 }
@@ -52,60 +55,32 @@ private static string[] _Callers(T)() {
 
 enum Callers(T) = _Callers!T();
 
-private static string[] _Methods(T)() {
-    import std.traits : isCallable, hasUDA, getUDAs;
 
-    string[] result;
-    static foreach (name; __traits(derivedMembers, T)) {
-        {
-            static if (is(typeof(__traits(getMember, T, name)))) {
-                enum prot = __traits(getProtection,
-                            __traits(getMember, T, name));
-                static if (prot == "public") {
-                    enum code = format(q{alias MemberA=T.%s;}, name);
-                    mixin(code);
-                    static if (hasUDA!(MemberA, HiRPCMethod)) {
-                        enum hirpc_method = getUDAs!(MemberA, HiRPCMethod)[0];
-                        static if (hirpc_method.name) {
-                            enum method_name = hirpc_method.name;
-                        }
-                        else {
-                            enum method_name = name;
-                        }
-                        result ~= method_name;
-                    }
-                }
-            }
-        }
-    }
-    return result;
-}
-
-enum Methods(T) = _Methods!T();
-
-@safe
-struct HiRPC {
+/// HiRPC handler
+@safe struct HiRPC {
     import tagion.hibon.HiBONRecord;
 
+    /// HiRPC call method 
     struct Method {
-        @label("*", true) @(filter.Initialized) uint id;
-        @label("*", true) @filter(q{!a.empty}) Document params;
-        @label("method") @(inspect.Initialized) string name;
+        @label("*", true) @(filter.Initialized) uint id; /// RPC identifier
+        @label("*", true) @filter(q{!a.empty}) Document params; /// RPC arguments
+        @label("method") @(inspect.Initialized) string name;    /// RPC method name
 
         mixin HiBONRecord;
     }
-
+    /// HiRPC result from a method
     struct Response {
-        @label("*", true) @(filter.Initialized) uint id;
-        Document result;
+        @label("*", true) @(filter.Initialized) uint id; /// RPC response id, if given by the method
+        Document result; /// Return data from the method request
         mixin HiBONRecord;
     }
 
+    /// HiRPC error response for a method
     struct Error {
-        @label("*", true) @(filter.Initialized) uint id;
-        @label("$data", true) @filter(q{!a.empty}) Document data;
-        @label("$msg", true) @(filter.Initialized) string message;
-        @label("$code", true) @(filter.Initialized) int code;
+        @label("*", true) @(filter.Initialized) uint id; /// RPC response id, if given by the method 
+        @label("$data", true) @filter(q{!a.empty}) Document data; /// Optional error response package
+        @label("$msg", true) @(filter.Initialized) string message; /// Optional Error text message
+        @label("$code", true) @(filter.Initialized) int code; /// Optional error code
 
         static bool valid(const Document doc) {
             enum codeName = GetLabel!(code).name;
@@ -117,6 +92,10 @@ struct HiRPC {
         mixin HiBONRecord;
     }
 
+    // 
+    /// Params:
+    ///   doc = Method, Response or Error document.
+    /// Returns: RPC id if given or else return id 0
     static uint getId(const Document doc) nothrow {
         enum idLabel = GetLabel!(Error.id).name;
         if (doc.hasMember(idLabel)) {
@@ -125,26 +104,35 @@ struct HiRPC {
         return uint.init;
     }
 
+    /// Check is T is a message
+    /// Params: T is message data type
+    /// Returns: true if T is HiRPC message type
     enum isMessage(T) = is(T : const(Method)) || is(T : const(Response)) || is(T : const(Error));
 
+    /// State of the signature in the HiRPC 
     enum SignedState {
-        INVALID = -1,
-        NOSIGN = 0,
-        VALID = 1
+        INVALID = -1,  /// Incorrect signature
+        NOSIGN = 0,    /// HiRPC has no signature
+        VALID = 1      /// HiRPC was signed correctly
     }
 
+    /// Message type
     enum Type : uint {
         none, /// No valid Type
-        method, /// Action method
-        result, /// Respose
-        error
+        method, /// HiRPC Action method
+        result, /// HiRPC Respose message
+        error   /// HiRPC Error message
     }
 
+    /// HiRPC Post direction
     enum Direction {
-        SEND,
-        RECEIVE
+        SEND, /// Marks the HiRPC Post as a sender type
+        RECEIVE /// Marks the HiRPC Post as a receiver type
     }
-
+    
+    /// get the message to of the message
+    /// Params: T message data type
+    /// Returns: The type of the HiRPC message 
     static Type getType(T)(const T message) if (isHiBONRecord!T) {
         static if (is(T : const(Method))) {
             return Type.method;
@@ -160,6 +148,7 @@ struct HiRPC {
         }
     }
 
+    /// Ditto 
     static Type getType(const Document doc) {
         import std.conv : to;
 
@@ -174,6 +163,7 @@ struct HiRPC {
         return Type.none;
     }
 
+    /// HiRPC Post (Sender,Receiver)
     @recordType("HiPRC")
     struct Post(Direction DIRECTION) {
         union Message {
@@ -187,22 +177,22 @@ struct HiRPC {
         static assert(Message.response.id.alignof == Message.id.alignof);
         static assert(Message.error.id.alignof == Message.id.alignof);
 
-        //@disable this();
-        //        @label("") SecureNet net;
-        @label("$sign", true) @(filter.Initialized) Signature signature;
-        @label("$pkey", true) @(filter.Initialized) Pubkey pubkey;
-        @label("$msg") Document message;
+        @label("$sign", true) @(filter.Initialized) Signature signature;  /// Signature of the message
+        @label("$pkey", true) @(filter.Initialized) Pubkey pubkey;        /// Owner key of the message
+        @label("$msg") Document message; /// the HiRPC message
         @label("") immutable Type type;
 
         @nogc const pure nothrow {
+            /// Returns: true if the message is a method
             bool isMethod() {
                 return type is Type.method;
             }
-
+            /// Returns: true if the message is a response
             bool isResponse() {
                 return type is Type.result;
             }
 
+            /// Returns: true of the message is an error
             bool isError() {
                 return type is Type.error;
             }
@@ -250,7 +240,6 @@ struct HiRPC {
             }
             return true;
         }
-        //        @label("") protected Buffer fingerprint;
         static if (DIRECTION is Direction.RECEIVE) {
             @label("") protected Message _message;
             @label("") immutable SignedState signed;
@@ -323,21 +312,43 @@ struct HiRPC {
                 this(net, pack.toDoc);
             }
 
+            /** 
+             * 
+             * Returns: if the message type is an error it returns it
+            * or else it throws an exception
+             */
             @trusted const(Error) error() const pure {
                 check(type is Type.error, format("Message type %s expected not %s", Type.error, type));
                 return _message.error;
             }
 
-            @trusted const(Response) response() const pure {
+            /** 
+             * 
+             * Returns: if the message type is an response it returns it
+            * or else it throws an exception
+             */
+             @trusted const(Response) response() const pure {
                 check(type is Type.result, format("Message type %s expected not %s", Type.result, type));
                 return _message.response;
             }
 
+            /** 
+            * 
+            * Returns: if the message type is an response it returns it
+            * or else it throws an exception
+            */
             @trusted const(Method) method() const pure {
                 check(type is Type.method, format("Message type %s expected not %s", Type.method, type));
                 return _message.method;
             }
 
+            /** 
+             * Create T with the method params and the arguments.
+             *  T(args, method.param)
+             * Params:
+             *   args = arguments to the
+             * Returns: the constructed T
+             */
             const(T) params(T, Args...)(Args args) const if (isHiBONRecord!T) {
                 return T(args, method.params);
             }

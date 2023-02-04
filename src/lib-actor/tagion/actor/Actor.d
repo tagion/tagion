@@ -28,6 +28,7 @@ struct local;
 @safe
 struct task;
 
+/// UDA to enable emulation of an Actor
 @safe
 struct emulate(Actor);
 
@@ -40,7 +41,7 @@ struct ActorID {
     string mangle_name; /// The mangle name of the actor
 }
 
-alias ActorFlag = Flag!"action";
+alias ActorFlag = Flag!"action"; /// Used as bool result flag for the response
 
 /* 
      * 
