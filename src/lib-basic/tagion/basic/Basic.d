@@ -89,7 +89,7 @@ unittest {
 template EnumText(string name, string[] list, bool first = true) {
     static if (first) {
         enum begin = "enum " ~ name ~ "{";
-        alias EnumText!(begin, list, false) EnumText;
+        alias EnumText=EnumText!(begin, list, false);
     }
     else static if (list.length > 0) {
         enum k = list[0];
