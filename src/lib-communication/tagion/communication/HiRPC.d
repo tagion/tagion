@@ -1,4 +1,6 @@
-/// HiBON Remote Pprocedure Call
+/** 
+* HiBON Remote Pprocedure Call
+*/
 module tagion.communication.HiRPC;
 
 import std.format;
@@ -15,7 +17,6 @@ import tagion.basic.TagionExceptions : Check;
 import tagion.Keywords;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.utils.Miscellaneous : toHexString;
-
 
 /// HiRPC format exception
 @safe
@@ -55,16 +56,16 @@ private static string[] _Callers(T)() {
 
 enum Callers(T) = _Callers!T();
 
-
 /// HiRPC handler
-@safe struct HiRPC {
+@safe
+struct HiRPC {
     import tagion.hibon.HiBONRecord;
 
     /// HiRPC call method 
     struct Method {
         @label("*", true) @(filter.Initialized) uint id; /// RPC identifier
         @label("*", true) @filter(q{!a.empty}) Document params; /// RPC arguments
-        @label("method") @(inspect.Initialized) string name;    /// RPC method name
+        @label("method") @(inspect.Initialized) string name; /// RPC method name
 
         mixin HiBONRecord;
     }
@@ -111,9 +112,9 @@ enum Callers(T) = _Callers!T();
 
     /// State of the signature in the HiRPC 
     enum SignedState {
-        INVALID = -1,  /// Incorrect signature
-        NOSIGN = 0,    /// HiRPC has no signature
-        VALID = 1      /// HiRPC was signed correctly
+        INVALID = -1, /// Incorrect signature
+        NOSIGN = 0, /// HiRPC has no signature
+        VALID = 1 /// HiRPC was signed correctly
     }
 
     /// Message type
@@ -121,7 +122,7 @@ enum Callers(T) = _Callers!T();
         none, /// No valid Type
         method, /// HiRPC Action method
         result, /// HiRPC Respose message
-        error   /// HiRPC Error message
+        error /// HiRPC Error message
     }
 
     /// HiRPC Post direction
@@ -129,7 +130,7 @@ enum Callers(T) = _Callers!T();
         SEND, /// Marks the HiRPC Post as a sender type
         RECEIVE /// Marks the HiRPC Post as a receiver type
     }
-    
+
     /// get the message to of the message
     /// Params: T message data type
     /// Returns: The type of the HiRPC message 
@@ -177,8 +178,8 @@ enum Callers(T) = _Callers!T();
         static assert(Message.response.id.alignof == Message.id.alignof);
         static assert(Message.error.id.alignof == Message.id.alignof);
 
-        @label("$sign", true) @(filter.Initialized) Signature signature;  /// Signature of the message
-        @label("$pkey", true) @(filter.Initialized) Pubkey pubkey;        /// Owner key of the message
+        @label("$sign", true) @(filter.Initialized) Signature signature; /// Signature of the message
+        @label("$pkey", true) @(filter.Initialized) Pubkey pubkey; /// Owner key of the message
         @label("$msg") Document message; /// the HiRPC message
         @label("") immutable Type type;
 
@@ -240,6 +241,7 @@ enum Callers(T) = _Callers!T();
             }
             return true;
         }
+
         static if (DIRECTION is Direction.RECEIVE) {
             @label("") protected Message _message;
             @label("") immutable SignedState signed;
@@ -327,7 +329,7 @@ enum Callers(T) = _Callers!T();
              * Returns: if the message type is an response it returns it
             * or else it throws an exception
              */
-             @trusted const(Response) response() const pure {
+            @trusted const(Response) response() const pure {
                 check(type is Type.result, format("Message type %s expected not %s", Type.result, type));
                 return _message.response;
             }

@@ -1,3 +1,4 @@
+/// Basic functions used in the tagion project
 module tagion.basic.Basic;
 
 private import std.string : format, join, strip;
@@ -15,26 +16,8 @@ import std.conv;
  a immuatble do
 +/
 immutable(BUF) buf_idup(BUF)(immutable(Buffer) buffer) {
+    pragma(msg, "fixme(cbr): looks redundent");
     return cast(BUF)(buffer.idup);
-}
-
-/++
-   Returns:
-   The position of first '.' in string and
- +/
-template find_dot(string str, size_t index = 0) {
-    static if (index >= str.length) {
-        enum zero_index = 0;
-        alias zero_index find_dot;
-    }
-    else static if (str[index] == '.') {
-        enum index_plus_one = index + 1;
-        static assert(index_plus_one < str.length, "Static name ends with a dot");
-        alias index_plus_one find_dot;
-    }
-    else {
-        alias find_dot!(str, index + 1) find_dot;
-    }
 }
 
 /++
@@ -84,20 +67,22 @@ mixin template FUNCTION_NAME() {
 
 unittest {
     enum name_another = "another";
+    import std.algorithm.searching : countUntil;
+
     struct Something {
         mixin("int " ~ name_another ~ ";");
         void check() {
-            assert(find_dot!(this.another.stringof) == this_dot.length);
-            assert(basename!(this.another) == name_another);
+        // Check that basename removes (this.) from the scope name space
+            static assert(this.another.stringof.countUntil('.') == this_dot.countUntil('.'));
+            static assert(basename!(this.another) == name_another);
         }
     }
 
     Something something;
-    static assert(find_dot!((something.another).stringof) == something.stringof.length + 1);
+    // check that basename work in global scope (not this.)
+    static assert(something.stringof.countUntil('.') == -1);
     static assert(basename!(something.another) == name_another);
-    something.check();
 }
-
 /++
  Builds and enum string out of a string array
 +/
