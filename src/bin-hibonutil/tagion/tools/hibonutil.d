@@ -1,4 +1,4 @@
-/// \file hibonutil.d
+/// HiBON utility to convert and check HiBON format 
 module tagion.tools.hibonutil;
 
 import std.getopt;

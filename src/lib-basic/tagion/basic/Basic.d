@@ -266,10 +266,11 @@ static unittest {
 }
 
 /**
- Returns:
- If the range is not empty the first element is return
- else the .init value of the range element type is return
- The first element is returned
+* 
+* Returns:
+* If the range is not empty the first element is return
+* else the .init value of the range element type is return
+* The first element is returned
 */
 template doFront(Range) if (isInputRange!Range) {
     alias T = ForeachType!Range;
@@ -319,6 +320,7 @@ unittest {
  *   r = 
  * Returns: r.front
  */
+version(none)
 auto eatOne(R)(ref R r) if (isInputRange!R) {
     import std.range;
 
@@ -331,6 +333,7 @@ auto eatOne(R)(ref R r) if (isInputRange!R) {
 }
 
 ///
+version(none)
 unittest {
     const(int)[] a = [1, 2, 3];
     assert(eatOne(a) == 1);

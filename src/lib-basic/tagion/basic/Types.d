@@ -68,6 +68,34 @@ enum Control {
     END /// Send for the child to the ownerTid when the task ends
 }
 
+private import std.range;
+
+//private std.range.primitives;
+string fileExtension(string path) {
+    import std.path : extension;
+    import tagion.basic.Types : DOT;
+
+    switch (path.extension) {
+        static foreach (ext; EnumMembers!FileExtension) {
+    case DOT ~ ext:
+            return ext;
+        }
+    default:
+        return null;
+    }
+    assert(0);
+}
+
+unittest {
+    import tagion.basic.Types : FileExtension;
+    import std.path : setExtension;
+
+    assert(!"somenone_invalid_file.extension".fileExtension);
+    immutable valid_filename = "somenone_valid_file".setExtension(FileExtension.hibon);
+    assert(valid_filename.fileExtension);
+    assert(valid_filename.fileExtension == FileExtension.hibon);
+}
+
 enum FileExtension {
     json = "json", // JSON File format
     hibon = "hibon", // HiBON file format
