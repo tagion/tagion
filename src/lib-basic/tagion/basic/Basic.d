@@ -65,6 +65,7 @@ mixin template FUNCTION_NAME() {
     enum __FUNCTION_NAME__ = basename!(__FUNCTION__)[0 .. $ - 1];
 }
 
+///
 unittest {
     enum name_another = "another";
     import std.algorithm.searching : countUntil;
@@ -94,11 +95,11 @@ template EnumText(string name, string[] list, bool first = true) {
     else static if (list.length > 0) {
         enum k = list[0];
         enum code = name ~ k ~ " = " ~ '"' ~ k ~ '"' ~ ',';
-        alias EnumText!(code, list[1 .. $], false) EnumText;
+        alias EnumText=EnumText!(code, list[1 .. $], false);
     }
     else {
         enum code = name ~ "}";
-        alias code EnumText;
+        alias EnumText=code;
     }
 }
 
