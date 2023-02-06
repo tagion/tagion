@@ -36,6 +36,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
     const Genesis[] genesis;
     const int number_of_nodes;
     string module_path;
+    BDDOptions bdd_options;
 
     Node[] nodes;
     string[] node_logs;
@@ -53,6 +54,7 @@ class CreateNetworkWithNAmountOfNodesInModeone
         this.module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
         this.increase_port = bdd_options.network.increase_port;
         this.tx_increase_port = bdd_options.network.tx_increase_port;
+        this.bdd_options = bdd_options;
     }
 
     @Given("i have _wallets")
@@ -83,7 +85,13 @@ class CreateNetworkWithNAmountOfNodesInModeone
             nodes ~= node;
         }
 
-        Node node_master = new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, 1, true);
+        Node node_master;
+        if (bdd_options.network.monitor) {
+            node_master = new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, 1, true, true);
+        } else {
+            node_master = new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, 1, true);
+        }
+
         node_master.start();
         nodes ~= node_master;
 

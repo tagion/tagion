@@ -41,6 +41,7 @@ class CreateNetworkWithNAmountOfNodesInModezero {
     const Genesis[] genesis;
     const int number_of_nodes;
     string module_path;
+    BDDOptions bdd_options;
 
     Node[] nodes;
     string[] node_logs;
@@ -57,6 +58,7 @@ class CreateNetworkWithNAmountOfNodesInModezero {
         this.module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
         this.increase_port = bdd_options.network.increase_port;
         this.tx_increase_port = bdd_options.network.tx_increase_port;
+        this.bdd_options = bdd_options;
 
     }
 
@@ -82,7 +84,13 @@ class CreateNetworkWithNAmountOfNodesInModezero {
             Node node = new Node(module_path, i, number_of_nodes, increase_port+i, tx_increase_port+i, 0);
             nodes ~= node;
         }
-        Node node_master = new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, 0, true);
+        Node node_master;
+        if (bdd_options.network.monitor) {
+            node_master = new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, 0, true, true);
+        } else {
+            node_master = new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, 0, true);
+        }
+        
         nodes ~= node_master;
         node_master.start();
 

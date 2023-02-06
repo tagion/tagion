@@ -156,6 +156,7 @@ class Node
     immutable bool dart_synchronize;
     immutable uint mode;
     immutable string module_path;
+    immutable bool monitor;
 
     this(
         string module_path,
@@ -165,11 +166,12 @@ class Node
         uint transaction_port,
         uint mode,
         bool master = false,
+        bool monitor = false,
     )
     {
-
         this.mode = mode;
         this.module_path = module_path;
+        this.monitor = monitor;
 
         if (mode == 1) {
             this.node_number = node_number;
@@ -212,7 +214,7 @@ class Node
         auto f = File("/dev/null", "w");
 
         if (mode == 1) {
-            immutable node_command = 
+            string[] node_command = 
             [
                 tools.tagionwave,
                 "--net-mode=local",
@@ -225,9 +227,12 @@ class Node
                 format("--logger-filename=%s", logger_file),
                 "-N", nodes.to!string,
             ];
+            if (monitor) {
+                node_command ~= "--monitor";
+            }
             this.pid = spawnProcess(node_command, std.stdio.stdin, f, f);
         } else {
-            immutable node_command = 
+            string[] node_command = 
             [
                 tools.tagionwave,
                 "-N", nodes.to!string, 
@@ -237,7 +242,11 @@ class Node
                 format("--logger-filename=%s", logger_file),
                 format("--transaction-port=%s", transaction_port),
             ];
+            if (monitor) {
+                node_command ~= "--monitor";
+            }
             this.pid = spawnProcess(node_command, std.stdio.stdin, f, f, null, Config.none, module_path.buildPath("network", "data"));
         }
+
     }
 }
