@@ -22,6 +22,7 @@ int _main(string[] args)
     setDefaultBDDOptions(bdd_options);
     bdd_options.scenario_name = __MODULE__;
     bdd_options.network.mode = 1;
+    // bdd_options.network.monitor = true;
 
     bdd_options.save(format("/tmp/%s.json", scenario_name));
 

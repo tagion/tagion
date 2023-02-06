@@ -76,15 +76,6 @@ class CreateNetworkWithNAmountOfNodesInModeone
     @When("network is started")
     Document started() @trusted
     {
-
-        // start all normal nodes
-        for (int i = 1; i < number_of_nodes; i++)
-        {
-            Node node = new Node(module_path, i, number_of_nodes, increase_port, tx_increase_port, 1);
-            node.start();
-            nodes ~= node;
-        }
-
         Node node_master;
         if (bdd_options.network.monitor) {
             node_master = new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, 1, true, true);
@@ -93,6 +84,15 @@ class CreateNetworkWithNAmountOfNodesInModeone
         }
 
         node_master.start();
+
+        // start all normal nodes
+        for (int i = 1; i < number_of_nodes; i++)
+        {
+            Node node = new Node(module_path, i, number_of_nodes, increase_port, tx_increase_port, 1);
+            node.start();
+            nodes ~= node;
+        }
+        // add the node_master as the last element to the list.
         nodes ~= node_master;
 
         return result_ok;
