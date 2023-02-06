@@ -173,6 +173,11 @@ class RecordFactory {
             return archives.length;
         }
 
+    /**
+     * Check if the recorder contains archives
+     * Returns:
+     *   true if the recorder is empty
+     */
         bool empty() pure const nothrow {
             return archives.length == 0;
         }
