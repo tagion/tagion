@@ -20,15 +20,22 @@ clean: clean-ddoc
 help-ddoc:
 	$(PRECMD)
 	${call log.header, $@ :: help}
-	${cal llog.help, "make docs", "Create the docs with addrdox"}
+	${cal log.help, "make ddoc", "Create the docs with addrdox"}
 
 .PHONY: help-ddoc
 
 help: help-ddoc
 
 ddoc:
-	@echo making docs
-	$(PRECMD) $(ADRDOX) -i --skeleton $(DTUB)/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC)
+	$(PRECMD) 
+	echo "making ddoc"
+	$(ADRDOX) -i --skeleton $(DTUB)/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC)
 
 .PHONY: ddoc
 
+servedocs:
+	$(PRECMD)
+	echo "Serving docs"
+	docsify serve -p 3000 &
+	$(CD) $(BUILDDOC) &&
+	python -m http.server 3001 &
