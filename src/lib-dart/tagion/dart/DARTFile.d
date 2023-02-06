@@ -1,3 +1,4 @@
+/// Handles the lower level operation of DART database 
 module tagion.dart.DARTFile;
 
 private {
@@ -40,6 +41,7 @@ private {
     import tagion.utils.Miscellaneous : toHex = toHexString;
 }
 
+/// Hash null definition (all zero values)
 immutable(Buffer) hash_null;
 shared static this() @trusted {
     import tagion.crypto.SecureNet : StdHashNet;
@@ -155,45 +157,72 @@ alias check = Check!DARTException;
         }
     }
 
+    /** 
+     * Close the DARTFile
+     */
     void close() @trusted {
         blockfile.close;
         blockfile.destroy;
         blockfile = null;
     }
 
+    /* 
+     * The Merkle root of the DARTFile
+     * Returns: the `bullseye` of the DARTFile
+     */
     immutable(Buffer) fingerprint() pure const nothrow {
         return _fingerprint;
     }
 
+    /// Ditto for fingerprint
     alias bullseye = fingerprint;
 
     /++
      Creates an empty Recorder
      +/
+/**
+ * Creates a recorder factor  
+ * Returns: 
+* 
+ */
     RecordFactory.Recorder recorder() nothrow {
         return manufactor.recorder;
     }
 
-    /++
-     Creates an empty Recorder
-     +/
+    /** 
+     * Creates a recorder from a document using the RecorderFactory used by the DART
+     * Params:
+     *   doc = list of archives in document format
+     * Returns: 
+     *   a recorder of the document
+     */
     RecordFactory.Recorder recorder(const(Document) doc) {
         return manufactor.recorder(doc);
     }
 
-    /++
-     + Creates a Recorder base on an existing archive list
-
-     + Params:
-     +     archives = Archive list
-     +/
+/**
+ * Ditto
+ * Params:
+ *   archives = Archive data which contails an ordred list of archives 
+ * Returns: 
+ * recorder of the list of archives
+ */
     RecordFactory.Recorder recorder(RecordFactory.Recorder.Archives archives) nothrow {
         return manufactor.recorder(archives);
     }
-
-    static immutable(Buffer) sparsed_merkletree(const HashNet net, const(Buffer[]) tabel)
+/**
+ * Calculates the sparsed Merkle root from the branch-table list
+* The size of the table must be KEY_SPAN
+* Leaves in the branch table which doen't exist should have the value null
+ * Params:
+ *   net = The hash object/function used to calculate the hashs
+ *   table = List if hash-value(fingerprint) in the branch
+ * Returns: 
+ *  The Merkle root
+ */
+    static immutable(Buffer) sparsed_merkletree(const HashNet net, const(Buffer[]) table)
     in {
-        assert(tabel.length == KEY_SPAN);
+        assert(table.length == KEY_SPAN);
     }
     do {
         immutable(Buffer) merkletree(
@@ -222,8 +251,8 @@ alias check = Check!DARTException;
             }
         }
 
-        immutable mid = tabel.length >> 1;
-        return merkletree(tabel[0 .. mid], tabel[mid .. $]);
+        immutable mid = table.length >> 1;
+        return merkletree(table[0 .. mid], table[mid .. $]);
     }
 
     // alias Leave=Tuple!(uint, "index", Buffer, "fingerprint");
@@ -782,27 +811,27 @@ alias check = Check!DARTException;
     }
 
     enum RIMS_IN_SECTOR = 2;
-    /++
-     + Sample of the DART Map
-     +       |    Sector   |key[2]|key[3]|key[4]|
-     +   rim |  00  |  01  |  02  |  03  |  04  | ....
-     + ------+------+------+------+------+------+-----
-     +       |  20  |  A3  |  33  |  B1  |  17   -> arcive fingerprint=20_A3_33_B1_17....
-     +       |  **  |  **  |  **  |  **  |  42   -> arcive fingerprint=20_A3_33_B1_42....
-     +       |  **  |  **  |  57  |  B1  |  17   -> arcive fingerprint=20_A3_57_B1_17....
-     +       |  **  |  **  |  **  |  **  |  42   -> arcive fingerprint=20_A3_57_B1_42....
-     +       |  **  |  **  |  C2  |              -> arcive fingerprint=20_A3_C3....
-     +       |  **  |  **  |  CA  |  48  |       -> arcive fingerprint=20_A3_CA_48....
-     +       |  **  |  **  |  **  |  68  |       -> arcive fingerprint=20_A3_CA_48....
-     + Note ** meams the same value as above
-     + The first two rims is set the sector and the following is rims
-     + represents the key index into the Branches incices
+    /**
+     * Sample of the DART Map
+     * |      |    Sector   |key[2]|key[3]|key[4]|
+     * |  rim |  00  |  01  |  02  |  03  |  04  | ....
+     * |------|------|------|------|------|------|-----
+     * |      |  20  |  A3  |  33  |  B1  |  17   -> arcive fingerprint=20_A3_33_B1_17....
+     * |      |  **  |  **  |  **  |  **  |  42   -> arcive fingerprint=20_A3_33_B1_42....
+     * |      |  **  |  **  |  57  |  B1  |  17   -> arcive fingerprint=20_A3_57_B1_17....
+     * |      |  **  |  **  |  **  |  **  |  42   -> arcive fingerprint=20_A3_57_B1_42....
+     * |      |  **  |  **  |  C2  |              -> arcive fingerprint=20_A3_C3....
+     * |      |  **  |  **  |  CA  |  48  |       -> arcive fingerprint=20_A3_CA_48....
+     * |      |  **  |  **  |  **  |  68  |       -> arcive fingerprint=20_A3_CA_48....
+     * Note ** meams the same value as above
+     * The first two rims is set the sector and the following is rims
+     * represents the key index into the Branches incices
 
-     + The modify_records contains the archives which is going to be added or deleted
-     + The type of archive tells which actions are going to be performed by the modifier
-     + If the function executes succesfully then the DART is update or else it does not affect the DART
-     + The function return the bulleye of the dart
-     +/
+     * The modify_records contains the archives which is going to be added or deleted
+     * The type of archive tells which actions are going to be performed by the modifier
+     * If the function executes succesfully then the DART is update or else it does not affect the DART
+     * The function return the bulleye of the dart
+     */
     Buffer modify(const(RecordFactory.Recorder) modify_records, GetType get_type = null) {
         if (get_type is null) {
             get_type = (a) => a.type;

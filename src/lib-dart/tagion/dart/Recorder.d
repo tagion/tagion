@@ -130,10 +130,7 @@ class RecordFactory {
         }
 
         private this(Document doc) {
-
-            
-
-                .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
+            .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             this.archives = new Archives;
             foreach (e; doc[]) {
                 if (e.key != TYPENAME) {
@@ -168,6 +165,10 @@ class RecordFactory {
             }
         }
 
+    /** 
+     * Length of the archives
+     * Returns: number of archives 
+     */
         size_t length() pure const nothrow {
             return archives.length;
         }
