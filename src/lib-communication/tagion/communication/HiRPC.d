@@ -93,7 +93,7 @@ struct HiRPC {
         mixin HiBONRecord;
     }
 
-    // 
+    /// Get the id of the document doc
     /// Params:
     ///   doc = Method, Response or Error document.
     /// Returns: RPC id if given or else return id 0
@@ -105,7 +105,7 @@ struct HiRPC {
         return uint.init;
     }
 
-    /// Check is T is a message
+    /// Check if is T is a message
     /// Params: T is message data type
     /// Returns: true if T is HiRPC message type
     enum isMessage(T) = is(T : const(Method)) || is(T : const(Response)) || is(T : const(Error));
@@ -203,7 +203,6 @@ struct HiRPC {
             import std.traits : isCallable, hasUDA, getUDAs;
 
             if (type is Type.method) {
-            CaseMethod:
                 switch (method.name) {
                     static foreach (name; __traits(derivedMembers, T)) {
                         {
@@ -435,6 +434,10 @@ struct HiRPC {
     alias check = Check!HiRPCException;
     const SecureNet net;
 
+    /* 
+ * Generate a random id 
+ * Returns: random id
+ */
     const(uint) generateId() const {
         uint id = 0;
         import tagion.utils.Random;
@@ -448,11 +451,28 @@ struct HiRPC {
         return id;
     }
 
-    immutable(Sender) opDispatch(string method, T)(ref auto const T params, const uint id = uint
-            .max) const {
+    /** 
+     * Creates a sender via opDispatch.method with argument params
+     * Params:
+     *   method = opDispatch method name
+     *   params = argument for method
+     *   id = optional id
+     * Returns: The created sender
+     */
+    immutable(Sender) opDispatch(string method, T)(
+            ref auto const T params,
+            const uint id = uint.max) const {
         return action(method, params, id);
     }
 
+    /** 
+     * Creates a sneder with a runtime method name 
+     * Params:
+     *   method = method name 
+     *   params = argument for the method
+     *   id = opitional id
+     * Returns: 
+     */
     immutable(Sender) action(string method, const Document params, const uint id = uint.max) const {
         Method message;
         message.id = (id is uint.max) ? generateId : id;
@@ -465,38 +485,60 @@ struct HiRPC {
         return sender;
     }
 
+    /// Ditto
     immutable(Sender) action(T)(string method, T params, const uint id = uint.max) const
     if (isHiBONRecord!T) {
         return action(method, params.toDoc, id);
     }
 
+    /// Ditto
     immutable(Sender) action(string method, const(HiBON) params = null, const uint id = uint.max) const {
         const doc = Document(params);
         return action(method, doc, id);
     }
 
-    immutable(Sender) result(ref const(Receiver) receiver, const Document params) const {
+    /**
+     * Create a return sender including the return value
+     * return_value:
+     *   receiver = HiRPC receiver
+     *   return_value = return value from method 
+     * Returns:
+     *   Response sender to be return to the caller
+     */
+    immutable(Sender) result(ref const(Receiver) receiver, const Document return_value) const {
         Response message;
         message.id = receiver.method.id;
-        message.result = params;
-        const method = receiver.method;
-        auto sender = Sender(net, message);
+        message.result = return_value;
+        immutable sender = Sender(net, message);
         return sender;
     }
 
-    immutable(Sender) result(T)(ref const(Receiver) receiver, T params) const
+    /// Ditto
+    immutable(Sender) result(T)(ref const(Receiver) receiver, T return_value) const
     if (isHiBONRecord!T) {
-        return result(receiver, params.toDoc);
+        return result(receiver, return_value.toDoc);
     }
 
-    immutable(Sender) result(ref const(Receiver) receiver, const(HiBON) params) const {
-        return result(receiver, Document(params));
+    /// Ditto
+    immutable(Sender) result(ref const(Receiver) receiver, const(HiBON) return_value) const {
+        return result(receiver, Document(return_value));
     }
 
+    /**
+     * Creates error response sender from a receiver 
+     * Params:
+     *   receiver = HiRPC receiver 
+     *   msg = error text message
+     *   code = error code
+     *   data = error data load
+     * Returns: 
+     *  Response error sender
+     */
     immutable(Sender) error(ref const(Receiver) receiver, string msg, const int code = 0, Document data = Document()) const {
         return error(receiver.method.id, msg, code, data);
     }
 
+    /// Ditto
     immutable(Sender) error(const uint id, string msg, const int code = 0, Document data = Document()) const {
         Error message;
         message.id = id;
@@ -506,28 +548,22 @@ struct HiRPC {
         return Sender(net, message);
     }
 
+    /**
+     * Creates a receiver from a Document doc 
+     * Params:
+     *   doc = HiBON Document
+     * Returns: 
+     *   A checked receiver
+     */
     final immutable(Receiver) receive(Document doc) const {
         auto receiver = Receiver(net, doc);
         return receiver;
     }
 
+    /// Ditto
     final immutable(Receiver) receive(T)(T sender) const if (isHiBONRecord!T) {
         auto receiver = Receiver(net, sender.toDoc);
         return receiver;
-    }
-
-    static void check_type(T)(Document doc, string key) {
-        immutable msg = format("Wrong type of member '%s', expected type but the type was",
-                key);
-        enum E = Document.Value.asType!T;
-        // immutable msg=format("Wrong type of member '%s', expected type %s but the type was %s",
-        //     key, TypeString!T, doc[key].typeString);
-        check(doc[key].type is E, msg);
-    }
-
-    static void check_element(T)(Document doc, string key) {
-        check(doc.hasMember(key), format("Member '%s' missing", key));
-        check_type!T(doc, key);
     }
 }
 
@@ -552,17 +588,21 @@ unittest {
         HiRPC bad_hirpc = HiRPC(new BadSecureNet(passphrase));
         auto params = new HiBON;
         params["test"] = 42;
+        // Create a send method name func_name and argument params
         const sender = hirpc.action(func_name, params);
+        // Sender with bad credetials
         const invalid_sender = bad_hirpc.action(func_name, params, sender.method.id);
 
         const doc = sender.toDoc;
         const invalid_doc = invalid_sender.toDoc;
 
+        // Convert the do to a received HiRPC
         const receiver = hirpc.receive(doc);
         const invalid_receiver = hirpc.receive(invalid_doc);
 
         assert(receiver.method.id is sender.method.id);
         assert(receiver.method.name == sender.method.name);
+        // Check that the received HiRPC is sigen correctly
         assert(receiver.signed is HiRPC.SignedState.VALID);
 
         assert(invalid_receiver.method.id is sender.method.id);

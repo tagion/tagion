@@ -73,6 +73,7 @@ private import std.range;
 //private std.range.primitives;
 string fileExtension(string path) {
     import std.path : extension;
+    import std.traits : EnumMembers;
     import tagion.basic.Types : DOT;
 
     switch (path.extension) {
@@ -105,7 +106,7 @@ enum FileExtension {
     markdown = "md", // DART data-base
     dsrc = "d", // DART data-base
     recchainblock = "rcb", // Recorder chain block file format
-    epochdumpblock = "epdmp" // Epoch dump chain block file format
+    epochdumpblock = "epdmp", // Epoch dump chain block file format
 }
 
 enum DOT = '.'; /// File extension separator

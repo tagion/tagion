@@ -12,8 +12,7 @@ import std.range : only;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.basic.Types : FileExtension;
-import tagion.basic.Basic : fileExtension;
+import tagion.basic.Types : FileExtension, fileExtension;
 import tagion.hibon.HiBONJSON;
 import std.utf : toUTF8;
 import std.encoding : BOMSeq, BOM;

@@ -10,7 +10,7 @@ import tagion.utils.Miscellaneous : cutHex;
 import tagion.services.Options;
 import tagion.logger.Logger;
 import tagion.basic.Types : Buffer, Control, Pubkey;
-import tagion.basic.Basic : nameOf;
+import tagion.basic.Basic : NameOf;
 import tagion.basic.TagionExceptions : TagionException, fatal;
 import tagion.services.MdnsDiscoveryService;
 

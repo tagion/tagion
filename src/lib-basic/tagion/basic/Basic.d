@@ -20,13 +20,6 @@ immutable(BUF) buf_idup(BUF)(immutable(Buffer) buffer) {
     return cast(BUF)(buffer.idup);
 }
 
-/++
- Wraps a safe version of to!string for a BitArray
- +/
-string toText(const(BitArray) bits) @trusted {
-    return bits.to!string;
-}
-
 template suffix(string name, size_t index) {
     static if (index is 0) {
         alias suffix = name;
@@ -53,7 +46,7 @@ template basename(alias K) {
     enum basename = suffix!(name, name.length);
 }
 
-enum nameOf(alias nameType) = __traits(identifier, nameType);
+enum NameOf(alias nameType) = __traits(identifier, nameType);
 
 /++
  Returns:
@@ -73,7 +66,7 @@ unittest {
     struct Something {
         mixin("int " ~ name_another ~ ";");
         void check() {
-        // Check that basename removes (this.) from the scope name space
+            // Check that basename removes (this.) from the scope name space
             static assert(this.another.stringof.countUntil('.') == this_dot.countUntil('.'));
             static assert(basename!(this.another) == name_another);
         }
@@ -90,16 +83,16 @@ unittest {
 template EnumText(string name, string[] list, bool first = true) {
     static if (first) {
         enum begin = "enum " ~ name ~ "{";
-        alias EnumText=EnumText!(begin, list, false);
+        alias EnumText = EnumText!(begin, list, false);
     }
     else static if (list.length > 0) {
         enum k = list[0];
         enum code = name ~ k ~ " = " ~ '"' ~ k ~ '"' ~ ',';
-        alias EnumText=EnumText!(code, list[1 .. $], false);
+        alias EnumText = EnumText!(code, list[1 .. $], false);
     }
     else {
         enum code = name ~ "}";
-        alias EnumText=code;
+        alias EnumText = code;
     }
 }
 
@@ -266,7 +259,7 @@ static unittest {
 }
 
 /**
-* 
+* Tries to do a front but it is empty it return T.init 
 * Returns:
 * If the range is not empty the first element is return
 * else the .init value of the range element type is return
@@ -320,7 +313,6 @@ unittest {
  *   r = 
  * Returns: r.front
  */
-version(none)
 auto eatOne(R)(ref R r) if (isInputRange!R) {
     import std.range;
 
@@ -333,7 +325,6 @@ auto eatOne(R)(ref R r) if (isInputRange!R) {
 }
 
 ///
-version(none)
 unittest {
     const(int)[] a = [1, 2, 3];
     assert(eatOne(a) == 1);
@@ -528,5 +519,3 @@ pragma(msg, "fixme(ib): replace template with functions like sendTrusted");
         }
     }
 }
-
-
