@@ -21,6 +21,7 @@ help-ddoc:
 	$(PRECMD)
 	${call log.header, $@ :: help}
 	${cal log.help, "make ddoc", "Create the docs with addrdox"}
+	${cal log.help, "make servedocs", "Run the md doc server and ddoc server"}
 
 .PHONY: help-ddoc
 
@@ -36,6 +37,4 @@ ddoc:
 servedocs:
 	$(PRECMD)
 	echo "Serving docs"
-	docsify serve -p 3000 &
-	$(CD) $(BUILDDOC) &&
-	python -m http.server 3001 &
+	(trap 'kill 0' SIGINT; docsify serve & $(CD) $(BUILDDOC) && python -m http.server 3001)
