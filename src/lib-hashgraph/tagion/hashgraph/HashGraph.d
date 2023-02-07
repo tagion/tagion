@@ -264,7 +264,6 @@ class HashGraph
             const send_channel = responde(
                 &not_used_channels,
                 &payload_sender);
-            log.trace("Sending INIT_TIDE to %s", send_channel.cutHex);
             if (send_channel !is Pubkey(null))
             {
                 getNode(send_channel).state = ExchangeState.INIT_TIDE;

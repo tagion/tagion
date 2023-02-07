@@ -432,8 +432,7 @@ static void async_send(
 
         void send_to_channel(immutable(Pubkey) channel, Document doc)
         {
-            log.trace("Sending to channel: %s \n %s \n", channel.cutHex, doc.toJSON);
-            log.trace("Data buffer: %s", doc.data);
+            log.trace("Sending to channel: %s", channel.cutHex);
             auto streamId = connectionPoolBridge[channel];
             if (streamId == 0 || !connectionPool.contains(streamId))
             {
@@ -468,7 +467,6 @@ static void async_send(
                 log.fatal(e.msg);
                 concurrency.send(concurrency.ownerTid, channel);
             }
-            log.trace("Sent to channel: %s", channel.cutHex);
         }
 
         auto stop = false;
@@ -515,11 +513,10 @@ static void async_send(
                 try
                 {
                     import tagion.hibon.Document;
-                    log.trace("Data received");
                     auto doc = Document(resp.data);
                     const receiver = hirpc.receive(doc);
                     Pubkey received_pubkey = receiver.pubkey;
-                    log("*** received from: %s\n %s\n", received_pubkey.cutHex, doc.toJSON);
+                    log("*** received from: %s", received_pubkey.cutHex);
                     const streamId = connectionPoolBridge[received_pubkey];
                     if (!streamId)
                     {

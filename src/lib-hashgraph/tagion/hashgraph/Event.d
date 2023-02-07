@@ -481,19 +481,15 @@ class Round
             const votes_mask = BitMask(round_to_be_decided.events
                                     .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
                                     .map!((e) => e.node_id));
-            log.trace("\n VOTES MASK: \n %s \n %s\n ", votes_mask, hashgraph.channels.map!(a=>a.toHexString));
             if (hashgraph.can_round_be_decided(round_to_be_decided))
             {
-                log.trace("can be decided");
                 if (votes_mask.isMajority(hashgraph))
                 {
-                    log.trace("majority");
                     const round_decided = votes_mask[]
                         .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]._witness.famous(
                                 hashgraph));
                     if (round_decided)
                     {
-                        log.trace("decided");
                         collect_received_round(round_to_be_decided, hashgraph);
                         round_to_be_decided._decided = true;
                         last_decided_round = round_to_be_decided;
