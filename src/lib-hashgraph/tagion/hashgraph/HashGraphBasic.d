@@ -81,7 +81,6 @@ alias convertState = convertEnum!(ExchangeState, GossipConsensusException);
 @safe
 interface EventMonitorCallbacks {
     nothrow {
-        void create(const(Event) e);
         void connect(const(Event) e);
         void witness(const(Event) e);
         void round_seen(const(Event) e);

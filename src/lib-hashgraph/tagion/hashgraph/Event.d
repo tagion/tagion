@@ -598,11 +598,6 @@ class Event
         _witness_mask[node_id] = true;
         _count++;
 
-        if (Event.callbacks)
-        {
-            Event.callbacks.create(this);
-        }
-
     }
 
     ~this()
@@ -986,6 +981,10 @@ class Event
             else if (!isEva)
             {
                 check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
+            }
+
+            if (callbacks) {
+                callbacks.connect(this);
             }
         }
     }

@@ -230,6 +230,7 @@ class Node
             if (monitor) {
                 node_command ~= "--monitor";
             }
+            writefln("%s", node_command);
             this.pid = spawnProcess(node_command, std.stdio.stdin, f, f);
         } else {
             string[] node_command = 
@@ -245,6 +246,7 @@ class Node
             if (monitor) {
                 node_command ~= "--monitor";
             }
+            writefln("%s", node_command);
             this.pid = spawnProcess(node_command, std.stdio.stdin, f, f, null, Config.none, module_path.buildPath("network", "data"));
         }
 
