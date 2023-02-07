@@ -126,7 +126,7 @@ class MonitorCallBacks : EventMonitorCallbacks {
         return hibon;
     }
 
-    // nothrow {
+    nothrow {
         import tagion.basic.Debug;
         import tagion.hibon.HiBONJSON;
         void connect(const(Event) e) {
@@ -369,7 +369,7 @@ class MonitorCallBacks : EventMonitorCallbacks {
             //import tagion.Base : cutHex;
             // writefln("Impl. needed. %s  node=%s ",  __FUNCTION__, n.pubkey.cutHex);
         }
-    // }
+    }
 
     @trusted
     this(Tid socket_thread_id,
