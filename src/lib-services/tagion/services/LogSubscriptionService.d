@@ -18,7 +18,7 @@ import tagion.logger.LogRecords;
 import tagion.services.Options : Options;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : GetLabel;
+import tagion.hibon.HiBONType : GetLabel;
 import tagion.network.FiberServer : FiberServer, FiberRelay;
 import tagion.network.ServerAPI : ServerAPI;
 import tagion.network.SSLSocket : SSLSocket;
@@ -258,7 +258,7 @@ void logSubscriptionServiceTask(Options opts) nothrow {
 
         /** Method that receives logs from \link LoggerService
           *     @param filter - metadata about received log
-          *     @param data - Document that contains either TextLog or any \link HiBONRecord variable
+          *     @param data - Document that contains either TextLog or any \link HiBONType variable
           */
         @safe void receiveLogs(immutable(LogInfo) info, immutable(Document) doc) {
             auto log_data = new HiBON;

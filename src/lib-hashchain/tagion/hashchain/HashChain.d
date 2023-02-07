@@ -7,7 +7,7 @@ import std.range.primitives : back, popBack;
 import tagion.basic.Types : Buffer;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
-import tagion.hibon.HiBONRecord : isHiBONRecord;
+import tagion.hibon.HiBONType : isHiBONRecord;
 import tagion.utils.Miscellaneous : decode;
 
 /** @brief File contains class HashChain
@@ -162,7 +162,7 @@ import tagion.utils.Miscellaneous : decode;
 }
 
 version (unittest) {
-    import tagion.hibon.HiBONRecord : HiBONRecord, recordType, label;
+    import tagion.hibon.HiBONType : HiBONType, recordType, label;
     import tagion.crypto.SecureInterfaceNet : HashNet;
 
     @safe class DummyBlock : HashChainBlock {
@@ -170,7 +170,7 @@ version (unittest) {
         @label("prev") Buffer previous;
         @label("dummy") int dummy;
 
-        mixin HiBONRecord!(
+        mixin HiBONType!(
                 q{
             private this(
                 Buffer previous,

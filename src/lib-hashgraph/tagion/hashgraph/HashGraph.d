@@ -17,7 +17,7 @@ import tagion.hashgraph.Event;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : isHiBONRecord;
+import tagion.hibon.HiBONType : isHiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
@@ -787,7 +787,7 @@ class HashGraph {
      +/
     //   @trusted
     void fwrite(string filename, Pubkey[string] node_labels = null) {
-        import tagion.hibon.HiBONRecord : fwrite;
+        import tagion.hibon.HiBONType : fwrite;
 
         size_t[Pubkey] node_id_relocation;
         if (node_labels.length) {

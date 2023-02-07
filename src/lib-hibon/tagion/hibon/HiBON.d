@@ -26,7 +26,7 @@ import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
-import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, isHiBONRecordArray;
+import tagion.hibon.HiBONType : isHiBON, isHiBONRecord, isHiBONRecordArray;
 
 import tagion.basic.Message : message;
 import tagion.basic.Types : Buffer;

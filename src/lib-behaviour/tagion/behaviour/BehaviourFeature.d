@@ -10,7 +10,7 @@ import std.format;
 import std.typecons;
 import tagion.basic.Basic : isOneOf, staticSearchIndexOf;
 
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONType;
 import tagion.hibon.Document;
 
 /* 
@@ -21,7 +21,7 @@ import tagion.hibon.Document;
 mixin template Property() {
     string description;
     @label(VOID, true) string[] comments;
-    mixin HiBONRecord!(q{
+    mixin HiBONType!(q{
             this(string description, string[] comments=null ) pure nothrow {
                 this.description = description;
                 this.comments = comments;
@@ -72,7 +72,7 @@ struct Info(alias Property) {
     Property property; /// The property is a Feature, Scenario or an Action
     string name; /// Name of the function member, scenario call or feature module
     Document result; /// The result after execution of the property (See BehaviourResult)
-    mixin HiBONRecord!();
+    mixin HiBONType!();
 }
 
 /// Returns: true if I is a Info template
@@ -84,7 +84,7 @@ enum isInfo(alias I) = __traits(isSame, TemplateOf!I, Info);
  */
 struct ActionGroup(Property) if (isOneOf!(Property, ActionProperties)) {
     Info!Property[] infos;
-    mixin HiBONRecord!();
+    mixin HiBONType!();
 }
 
 /// Returns: true if I is a ActionGroup
@@ -102,7 +102,7 @@ struct ScenarioGroup {
     @label(VOID, true) ActionGroup!(When) when; /// When actions
     ActionGroup!(Then) then; /// Then actions
     @label(VOID, true) ActionGroup!(But) but; /// But actions
-    mixin HiBONRecord!();
+    mixin HiBONType!();
 }
 
 /** 
@@ -113,7 +113,7 @@ struct FeatureGroup {
     @label(VOID, true) string alternative;
     Info!Feature info; /// Information of the Feature
     ScenarioGroup[] scenarios; /// This all the information of each Sceanrio
-    mixin HiBONRecord!();
+    mixin HiBONType!();
 }
 
 /// All action-properties of a Scenario

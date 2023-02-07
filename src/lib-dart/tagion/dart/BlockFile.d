@@ -26,7 +26,7 @@ import tagion.basic.TagionExceptions : Check;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONType;
 import tagion.dart.DARTException : BlockFileException;
 import tagion.logger.Statistic;
 
@@ -1156,7 +1156,7 @@ class BlockFile {
         @recordType("ACHAIN") struct Chain {
             Buffer data;
             uint begin_index;
-            mixin HiBONRecord;
+            mixin HiBONType;
         }
 
         protected Chain chain;

@@ -14,7 +14,7 @@ import std.stdio;
 import std.stdio;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONType;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONException : HiBONRecordException;
 

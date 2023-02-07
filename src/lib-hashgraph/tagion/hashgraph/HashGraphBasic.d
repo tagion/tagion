@@ -12,7 +12,7 @@ import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.utils.BitMask;
 import tagion.hibon.HiBON : HiBON;
 import tagion.communication.HiRPC : HiRPC;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONType;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.utils.StdTime;
 
@@ -125,7 +125,7 @@ struct EventView {
     @label("$received") uint[] round_received_mask;
     bool father_less;
 
-    mixin HiBONRecord!(
+    mixin HiBONType!(
             q{
             this(const Event event, const size_t relocate_node_id=size_t.max) {
                 import std.algorithm : each;
@@ -180,7 +180,7 @@ struct EventBody {
         return (father is null) ? true : (mother !is null);
     }
 
-    mixin HiBONRecord!(
+    mixin HiBONType!(
             q{
             this(
                 Document payload,
@@ -248,7 +248,7 @@ struct EventPackage {
     @label("$pkey") Pubkey pubkey;
     @label("$body") EventBody event_body;
 
-    mixin HiBONRecord!(
+    mixin HiBONType!(
             q{
             import tagion.basic.ConsensusExceptions: ConsensusCheck=Check, EventConsensusException, ConsensusFailCode;
             protected alias consensus_check=ConsensusCheck!EventConsensusException;
@@ -312,7 +312,7 @@ struct Wavefront {
 
     private struct LoadTides {
         @label(tidesName) Tides tides;
-        mixin HiBONRecord!(
+        mixin HiBONType!(
                 q{
                 this(const(Tides) _tides) const {
                     tides=_tides;
@@ -375,7 +375,7 @@ struct Wavefront {
 struct EvaPayload {
     @label("$channel") Pubkey channel;
     @label("$nonce") Buffer nonce;
-    mixin HiBONRecord!(
+    mixin HiBONType!(
             q{
             this(const Pubkey channel, const Buffer nonce) pure {
                 this.channel=channel;

@@ -3,7 +3,7 @@ module tagion.crypto.SecureInterfaceNet;
 import std.typecons : TypedefType;
 import tagion.basic.Types : Buffer, Pubkey, Signature, isBufferTypeDef;
 
-import tagion.hibon.HiBONRecord : isHiBONRecord, HiBONPrefix;
+import tagion.hibon.HiBONType : isHiBONRecord, HiBONPrefix;
 import tagion.hibon.Document : Document;
 
 import tagion.basic.ConsensusExceptions : Check, SecurityConsensusException, ConsensusFailCode;

@@ -4,7 +4,7 @@ module tagion.epochain.EpochChainBlock;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONRecord : label, HiBONRecord, recordType;
+import tagion.hibon.HiBONType : label, HiBONType, recordType;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 
@@ -35,7 +35,7 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
      *      @param bullseye - bullseye of database
      *      @param net - hash net
      */
-    mixin HiBONRecord!(
+    mixin HiBONType!(
             q{
             private this(
                 Document transactions,

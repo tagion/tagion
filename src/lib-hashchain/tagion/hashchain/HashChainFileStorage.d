@@ -10,7 +10,7 @@ import tagion.basic.Types : Buffer, FileExtension, withDot;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
-import tagion.hibon.HiBONRecord : fread, fwrite;
+import tagion.hibon.HiBONType : fread, fwrite;
 import tagion.utils.Miscellaneous : decode, toHexString;
 
 /** @brief File contains class HashChainFileStorage

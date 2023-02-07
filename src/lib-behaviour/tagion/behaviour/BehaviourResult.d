@@ -3,13 +3,13 @@ The standard result types from a BDD
 */
 module tagion.behaviour.BehaviourResult;
 
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONType;
 import tagion.hibon.Document;
 
 @safe
 @recordType("OK")
 struct ResultOk {
-    mixin HiBONRecord!();
+    mixin HiBONType!();
 }
 
 static Document result_ok = result(ResultOk()).toDoc; /// This
@@ -22,7 +22,7 @@ static Document result_ok = result(ResultOk()).toDoc; /// This
 struct BehaviourError {
     string msg; ///  Error message in the Exception
     string[] trace; ///. Exception line trace of in the exception
-    mixin HiBONRecord!(q{
+    mixin HiBONType!(q{
             this(Exception e) nothrow @trusted {
                 import std.exception : assumeWontThrow;
                 import std.string : splitLines;
@@ -40,7 +40,7 @@ struct BehaviourError {
 @recordType("BDDResult")
 struct Result {
     Document outcome; /// BDD test return document
-    mixin HiBONRecord!();
+    mixin HiBONType!();
 }
 
 /** 
@@ -57,7 +57,7 @@ Result result(const Document doc) nothrow {
 }
 
 /**
- * ditto but takes a HiBONRecord instead of a Document
+ * ditto but takes a HiBONType instead of a Document
  */
 @safe
 Result result(T)(T hibon_record) if (isHiBONRecord!T) {

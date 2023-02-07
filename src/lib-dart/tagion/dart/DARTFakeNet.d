@@ -9,7 +9,7 @@ import tagion.dart.DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord : HiBONPrefix;
+import tagion.hibon.HiBONType : HiBONPrefix;
 import tagion.hibon.HiBON : HiBON;
 
 //import tagion.dart.DARTBasic;

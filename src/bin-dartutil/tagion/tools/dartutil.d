@@ -26,7 +26,7 @@ import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBON;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONType;
 
 import tagion.utils.Miscellaneous;
 import tagion.Keywords;

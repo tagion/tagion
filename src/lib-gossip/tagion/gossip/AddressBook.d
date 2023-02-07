@@ -1,7 +1,7 @@
 module tagion.gossip.AddressBook;
 
 import tagion.basic.Types : Pubkey;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONType;
 import tagion.dart.DART : DART;
 import tagion.dart.DARTOptions : DARTOptions;
 import tagion.logger.Logger : log;
@@ -80,7 +80,7 @@ synchronized class AddressBook {
          * node address - value, public key - key
          */
         NodeAddresses addresses;
-        mixin HiBONRecord;
+        mixin HiBONType;
     }
 
     /** used for lock, unlock file */
@@ -340,7 +340,7 @@ struct NodeAddress {
     /** DART sector */
     DART.SectorRange sector;
 
-    mixin HiBONRecord!(
+    mixin HiBONType!(
             q{
             this(
             string address,

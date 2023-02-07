@@ -7,7 +7,7 @@ import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.dart.Recorder;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
-import tagion.hibon.HiBONRecord : label, GetLabel, HiBONRecord, recordType;
+import tagion.hibon.HiBONType : label, GetLabel, HiBONType, recordType;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.Document;
 
@@ -37,7 +37,7 @@ import tagion.hibon.Document;
      *      @param bullseye - bullseye of database
      *      @param net - hash net
      */
-    mixin HiBONRecord!(
+    mixin HiBONType!(
             q{
             private this(
                 Document recorder_doc,

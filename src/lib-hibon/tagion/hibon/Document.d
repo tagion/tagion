@@ -25,7 +25,7 @@ import tagion.basic.Message : message;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException : check, HiBONException;
-import tagion.hibon.HiBONRecord : isHiBONRecord, isHiBONRecordArray;
+import tagion.hibon.HiBONType : isHiBONRecord, isHiBONRecordArray;
 import LEB128 = tagion.utils.LEB128;
 
 //import tagion.utils.LEB128 : isIntegral=isLEB128Integral;

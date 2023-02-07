@@ -18,7 +18,7 @@ import tagion.basic.Types : Buffer;
 import tagion.Keywords;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord : HiBONRecord, recordType, GetLabel, label;
+import tagion.hibon.HiBONType : HiBONType, recordType, GetLabel, label;
 import tagion.hibon.HiBONJSON;
 
 import tagion.dart.DARTFile;
@@ -136,7 +136,7 @@ class DART : DARTFile {
         }
 
         @label("") protected bool flag;
-        mixin HiBONRecord!(q{
+        mixin HiBONType!(q{
                 this(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
                     _from_sector = from_sector;
                     _to_sector = to_sector;
@@ -254,7 +254,7 @@ class DART : DARTFile {
             return result;
         }
 
-        mixin HiBONRecord!(
+        mixin HiBONType!(
                 q{
                 this(Buffer r) {
                     rims=r;
@@ -578,9 +578,6 @@ class DART : DARTFile {
         enum indexName = GetLabel!(index).name;
         enum recorderName = GetLabel!(recorder).name;
         this(RecordFactory manufactor, const Document doc) {
-
-            
-
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!uint;
             const recorder_doc = doc[recorderName].get!Document;
@@ -592,7 +589,7 @@ class DART : DARTFile {
             this.index = index;
         }
 
-        mixin HiBONRecord!"{}";
+        mixin HiBONType!"{}";
     }
 
     @safe

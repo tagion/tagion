@@ -19,7 +19,7 @@ import std.range : enumerate, tee;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONType;
 
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;

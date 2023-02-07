@@ -59,7 +59,7 @@ enum Callers(T) = _Callers!T();
 /// HiRPC handler
 @safe
 struct HiRPC {
-    import tagion.hibon.HiBONRecord;
+    import tagion.hibon.HiBONType;
 
     /// HiRPC call method 
     struct Method {
@@ -67,13 +67,13 @@ struct HiRPC {
         @label("*", true) @filter(q{!a.empty}) Document params; /// RPC arguments
         @label("method") @(inspect.Initialized) string name; /// RPC method name
 
-        mixin HiBONRecord;
+        mixin HiBONType;
     }
     /// HiRPC result from a method
     struct Response {
         @label("*", true) @(filter.Initialized) uint id; /// RPC response id, if given by the method
         Document result; /// Return data from the method request
-        mixin HiBONRecord;
+        mixin HiBONType;
     }
 
     /// HiRPC error response for a method
@@ -90,7 +90,7 @@ struct HiRPC {
             return doc.hasMember(codeName) || doc.hasMember(messageName) || doc.hasMember(dataName);
         }
 
-        mixin HiBONRecord;
+        mixin HiBONType;
     }
 
     /// Get the id of the document doc
@@ -425,7 +425,7 @@ struct HiRPC {
             }
         }
 
-        mixin HiBONRecord!("{}");
+        mixin HiBONType!("{}");
     }
 
     alias Sender = Post!(Direction.SEND);
@@ -569,7 +569,7 @@ struct HiRPC {
 
 ///
 unittest {
-    import tagion.hibon.HiBONRecord;
+    import tagion.hibon.HiBONType;
     import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
     import tagion.crypto.secp256k1.NativeSecp256k1;
 
@@ -611,7 +611,7 @@ unittest {
 
         static struct ResultStruct {
             int x;
-            mixin HiBONRecord;
+            mixin HiBONType;
         }
 
         { // Response

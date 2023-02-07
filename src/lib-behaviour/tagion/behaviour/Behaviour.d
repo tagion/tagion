@@ -15,7 +15,7 @@ import tagion.behaviour.BehaviourException;
 import tagion.behaviour.BehaviourResult;
 import tagion.behaviour.BehaviourReporter;
 import tagion.basic.Types : FileExtension;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONType;
 import tagion.basic.Basic : isOneOf;
 
 /**
@@ -167,7 +167,7 @@ FeatureGroup getFeature(alias M)() if (isFeature!M) {
 ///Examples: How to use getFeature on a feature
 @safe
 unittest { //
-    import tagion.hibon.HiBONRecord;
+    import tagion.hibon.HiBONType;
     import tagion.basic.Basic : unitfile;
     import core.demangle : mangle;
 
@@ -581,7 +581,7 @@ unittest {
 
 version (unittest) {
     import tagion.hibon.Document;
-    import tagion.hibon.HiBONRecord;
+    import tagion.hibon.HiBONType;
     import tagion.hibon.HiBONJSON;
     import std.exception;
 }

@@ -17,7 +17,7 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONtoText;
-import tagion.hibon.HiBONRecord : isHiBONRecord;
+import tagion.hibon.HiBONType : isHiBONRecord;
 
 import tagion.basic.Message : message;
 
@@ -121,7 +121,7 @@ mixin template JSONString() {
         import tagion.hibon.Document;
         import tagion.hibon.HiBON;
         import tagion.hibon.HiBONJSON;
-        import tagion.hibon.HiBONRecord;
+        import tagion.hibon.HiBONType;
 
         static if (isHiBONRecord!ThisT) {
             const doc = this.toDoc;

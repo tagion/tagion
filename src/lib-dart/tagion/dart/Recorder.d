@@ -11,7 +11,7 @@ import std.format;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : label, STUB, isHiBONRecord, GetLabel, isStub, recordType;
+import tagion.hibon.HiBONType : label, STUB, isHiBONRecord, GetLabel, isStub, recordType;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Message;
 
@@ -102,7 +102,7 @@ class RecordFactory {
         import tagion.hibon.HiBONJSON : JSONString;
 
         mixin JSONString;
-        import tagion.hibon.HiBONRecord : HiBONRecordType;
+        import tagion.hibon.HiBONType : HiBONRecordType;
 
         mixin HiBONRecordType;
         /++
@@ -619,7 +619,7 @@ unittest { // Archive
 }
 
 unittest { /// RecordFactory.Recorder.insert range
-    import tagion.hibon.HiBONRecord;
+    import tagion.hibon.HiBONType;
     import tagion.crypto.SecureNet;
     import std.range : iota, chain;
     import std.algorithm.sorting : sort;
@@ -632,7 +632,7 @@ unittest { /// RecordFactory.Recorder.insert range
     auto manufactor = RecordFactory(net);
     static struct Filed {
         int x;
-        mixin HiBONRecord!(
+        mixin HiBONType!(
                 q{
                 this(int x) {
                     this.x = x;

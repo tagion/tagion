@@ -10,7 +10,7 @@ import std.path : dirName;
 import std.outbuffer : OutBuffer;
 
 import tagion.utils.JSONCommon;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONType;
 
 struct SSLCert {
     string certificate; /// Certificate file name

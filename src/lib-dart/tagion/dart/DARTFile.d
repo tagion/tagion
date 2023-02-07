@@ -26,8 +26,8 @@ private {
 
     import tagion.hibon.HiBON : HiBON;
 
-    //    import tagion.hibon.HiBONRecord : GetLabel, label, HiBONPrefix, isStub, STUB;
-    import tagion.hibon.HiBONRecord : isStub, label, record_filter = filter, GetLabel, recordType;
+    //    import tagion.hibon.HiBONType : GetLabel, label, HiBONPrefix, isStub, STUB;
+    import tagion.hibon.HiBONType : isStub, label, record_filter = filter, GetLabel, recordType;
     import tagion.hibon.Document : Document;
 
     import tagion.dart.BlockFile;
@@ -403,7 +403,7 @@ alias check = Check!DARTException;
 
         mixin JSONString;
 
-        import tagion.hibon.HiBONRecord : HiBONRecordType;
+        import tagion.hibon.HiBONType : HiBONRecordType;
 
         mixin HiBONRecordType;
 

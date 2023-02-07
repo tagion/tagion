@@ -17,7 +17,7 @@ import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions;
 import tagion.GlobalSignals : abort;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONType;
 import tagion.services.LogSubscriptionService : logSubscriptionServiceTask;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.logger.Logger;
@@ -82,7 +82,7 @@ private {
 
     /** Task method that receives logs from Logger and sends them to console, file and LogSubscriptionService
      *      @param info - log info about passed log
-     *      @param doc - log itself, that can be either TextLog or some HiBONRecord variable
+     *      @param doc - log itself, that can be either TextLog or some HiBONType variable
      */
     @TaskMethod void receiveLogs(immutable(LogInfo) info, immutable(Document) doc) {
         if (matchAnyFilter(info)) {

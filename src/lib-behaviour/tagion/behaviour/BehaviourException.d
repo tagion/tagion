@@ -4,7 +4,7 @@ Exception use by the BDD runtime
 module tagion.behaviour.BehaviourException;
 
 import tagion.basic.TagionExceptions;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONType;
 
 /**
  Exception type used by tagion.hibon.HiBON module

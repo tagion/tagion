@@ -3,7 +3,7 @@ module tagion.hashchain.HashChainStorage;
 
 import tagion.basic.Types : Buffer;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
-import tagion.hibon.HiBONRecord : isHiBONRecord;
+import tagion.hibon.HiBONType : isHiBONRecord;
 
 /** @brief File contains interface for HashChainStorage
  */

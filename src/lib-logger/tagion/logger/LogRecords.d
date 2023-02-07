@@ -2,7 +2,7 @@
 
 module tagion.logger.LogRecords;
 
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONType;
 import tagion.logger.Logger : LogLevel;
 
 /** @brief Definitions of auxiliary structs and types for working with logs
@@ -29,7 +29,7 @@ enum LogFiltersAction {
     /** Name of symbol to listen. Optional field */
     @label("symbol") string symbol_name;
 
-    mixin HiBONRecord!(q{
+    mixin HiBONType!(q{
         /** Ctor for text logs
           *     @param task_name - task name
           *     @param level - log level
@@ -122,13 +122,13 @@ enum LogFiltersAction {
 
 /**
  * \struct TextLog
- * Struct for wrapping text log into \link HiBONRecord
+ * Struct for wrapping text log into \link HiBONType
  */
 @safe struct TextLog {
     /** Text log message */
     @label("msg") string message;
 
-    mixin HiBONRecord!(q{
+    mixin HiBONType!(q{
         /** Main ctor
          *     @param msg - text message
          */
