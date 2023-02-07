@@ -494,7 +494,7 @@ struct BitMask {
             }
         }
 
-        void and_filter(ref BitMask result, Range a, Range b) {
+        void and_filter(ref BitMask result, Range a, Range b) @safe {
             if (a.front < b.front) {
                 a.popFront;
             }
@@ -512,7 +512,7 @@ struct BitMask {
             and_filter(result, a, b);
         }
 
-        void xor_filter(ref BitMask result, Range a, Range b) {
+        void xor_filter(ref BitMask result, Range a, Range b) @safe {
             if (a.front < b.front) {
                 result[a.front] = true;
                 a.popFront;

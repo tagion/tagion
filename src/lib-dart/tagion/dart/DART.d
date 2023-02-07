@@ -36,11 +36,27 @@ import tagion.dart.Recorder : RecordFactory, Archive;
 alias hex = toHexString;
 
 enum SECTOR_MAX_SIZE = 1 << (ushort.sizeof * 8);
+/* 
+ * Calculates the correct to angle on the angle circle
+ * Params:
+ *   from_sector = angle from
+ *   to_sector = angle to
+ * Returns: 
+ *   to angle
+ */
 @safe
 uint calc_to_value(const ushort from_sector, const ushort to_sector) pure nothrow {
     return to_sector + ((from_sector >= to_sector) ? SECTOR_MAX_SIZE : 0);
 }
 
+    /** 
+     * Calculates the angle arc between from_sector to to_sector
+     * Params:
+     *   from_sector = angle from
+     *   to_sector =  angle to
+     * Returns: 
+     *   sector size
+     */
 @safe
 uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure nothrow {
     immutable from = from_sector;
@@ -48,9 +64,9 @@ uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure not
     return to - from;
 }
 
-/++
- some text
- +/
+/** 
+ * DART include support for synchronization 
+ */
 @safe
 class DART : DARTFile {
     immutable ushort from_sector;
@@ -58,10 +74,14 @@ class DART : DARTFile {
     const HiRPC hirpc;
 
     /** Creates DART with given net and by given file path
-    *       @param net Represent SecureNet for initializing DART
-    *       @param filename Represent path to DART file to open
-    *       @param from_sector Represents from angle for DART sharding. In development.
-    *       @param to_sector Represents to angle for DART sharding. In development.
+    * Params: 
+    *   net = Represent SecureNet for initializing DART
+    * Params: 
+    *   filename = Represent path to DART file to open
+    * Params: 
+    *   from_sector = Represents from angle for DART sharding. In development.
+    * Params: 
+    *   to_sector = Represents to angle for DART sharding. In development.
     */
     this(const SecureNet net,
             string filename,
