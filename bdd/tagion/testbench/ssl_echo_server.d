@@ -3,7 +3,7 @@ import tagion.behaviour.Behaviour;
 import tagion.testbench.network;
 import tagion.tools.Basic;
 
-import tagion.hibon.HiBONRecord : fwrite;
+import tagion.hibon.HiBONType : fwrite;
 
 import tagion.testbench.network.SSL_D_Client_test : DClientMultithreadingWithCServer;
 

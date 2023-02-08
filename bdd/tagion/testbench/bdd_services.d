@@ -3,8 +3,6 @@ module tagion.testbench.bdd_services;
 //import tagion.behaviour.Behaviour;
 import tagion.testbench.services;
 
-import tagion.hibon.HiBONRecord : fwrite;
-
 import tagion.tools.Basic;
 
 mixin Main!(_main, "services");
