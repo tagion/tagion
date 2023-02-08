@@ -374,7 +374,7 @@ struct HiBONT {
             TypeCase:
                 switch (type) {
                     foreach (E; EnumMembers!Type) {
-                        static if (isHiBONType(E) || isNative(E)) {
+                        static if (isHiBONBaseType(E) || isNative(E)) {
                 case E:
                             static if (E is Type.DOCUMENT) {
                                 const _size = value.by!(E).size;
@@ -443,7 +443,7 @@ struct HiBONT {
             TypeCase:
                 switch (type) {
                     static foreach (E; EnumMembers!Type) {
-                        static if (isHiBONType(E) || isNative(E)) {
+                        static if (isHiBONBaseType(E) || isNative(E)) {
                 case E:
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {

@@ -918,7 +918,7 @@ static assert(uint.sizeof == 4);
             with (Type)
         TypeCase : switch (type) {
                 static foreach (E; EnumMembers!Type) {
-                    static if (isHiBONType(E)) {
+                    static if (isHiBONBaseType(E)) {
             case E:
                         static if (E is DOCUMENT) {
                             immutable len = LEB128.decode!uint(data[value_pos .. $]);
@@ -945,7 +945,7 @@ static assert(uint.sizeof == 4);
                             return new Value(DataBlock(buffer));
                         }
                         else {
-                            if (isHiBONType(type)) {
+                            if (isHiBONBaseType(type)) {
                                 static if (E is TIME) {
                                     alias T = long;
                                 }
@@ -1070,7 +1070,7 @@ static assert(uint.sizeof == 4);
             bool as(T)(ref T result) pure nothrow {
                 switch (type) {
                     static foreach (E; EnumMembers!Type) {
-                        static if (isHiBONType(E)) {
+                        static if (isHiBONBaseType(E)) {
                 case E:
                             alias BaseT = Value.TypeT!E;
                             static if (isImplicitlyConvertible!(BaseT, T)) {
@@ -1211,7 +1211,7 @@ static assert(uint.sizeof == 4);
                 switch (type) {
                     static foreach (E; EnumMembers!Type) {
                 case E:
-                        static if (isHiBONType(E)) {
+                        static if (isHiBONBaseType(E)) {
                             alias T = Value.TypeT!E;
                             return That!T;
                         }
@@ -1233,7 +1233,7 @@ static assert(uint.sizeof == 4);
                     switch (type) {
                         static foreach (E; EnumMembers!Type) {
                     case E:
-                            static if (isHiBONType(E)) {
+                            static if (isHiBONBaseType(E)) {
                                 alias T = Value.TypeT!E;
                                 static if ((E is STRING) || (E is DOCUMENT) || (E is BINARY)) {
                                     return dataPos + dataSize;

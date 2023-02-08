@@ -5,7 +5,7 @@ import tagion.basic.Types : Buffer;
 
 bool error_callback(const Document main_doc, const Document.Element.ErrorCode error_code,
         const(Document.Element) current, const(Document.Element) previous) nothrow @safe {
-    import tagion.hibon.HiBONBase : Type, isDataBlock, isHiBONType;
+    import tagion.hibon.HiBONBase : Type, isDataBlock, isHiBONBaseType;
     import LEB128 = tagion.utils.LEB128;
     import std.exception : assumeWontThrow;
     import std.traits : isIntegral, EnumMembers;
@@ -80,7 +80,7 @@ bool error_callback(const Document main_doc, const Document.Element.ErrorCode er
                                         .. buffer_pos + binary_len.value];
                                     hex_dump(buffer);
                                 }
-                                else static if (isHiBONType(E)) {
+                                else static if (isHiBONBaseType(E)) {
                                     static if (E is TIME) {
                                         alias T = long;
                                     }
@@ -108,7 +108,7 @@ bool error_callback(const Document main_doc, const Document.Element.ErrorCode er
                                             current.data[ubyte.sizeof
                                             .. ubyte.sizeof + leb128_version_size]);
                                 }
-                                static if (isHiBONType(E)) {
+                                static if (isHiBONBaseType(E)) {
                                     (() @trusted { writefln("\tvalue  %s", current.by!E); })();
                                 }
 

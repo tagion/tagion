@@ -795,7 +795,7 @@ struct Document {
                 with (Type)
             TypeCase : switch (type) {
                     static foreach (E; EnumMembers!Type) {
-                        static if (isHiBONType(E)) {
+                        static if (isHiBONBaseType(E)) {
                 case E:
                             static if (E is DOCUMENT) {
                                 immutable len = LEB128.decode!uint(data[value_pos .. $]);
@@ -821,7 +821,7 @@ struct Document {
                                 return Value(DataBlock(data[value_pos .. $]));
                             }
                             else {
-                                if (isHiBONType(type)) {
+                                if (isHiBONBaseType(type)) {
                                     static if (E is TIME) {
                                         alias T = long;
                                     }
@@ -872,7 +872,7 @@ struct Document {
             bool as(T)(ref T result) {
                 switch (type) {
                     static foreach (E; EnumMembers!Type) {
-                        static if (isHiBONType(E)) {
+                        static if (isHiBONBaseType(E)) {
                 case E:
                             alias BaseT = Value.TypeT!E;
                             static if (isImplicitlyConvertible!(BaseT, T)) {
@@ -970,7 +970,7 @@ struct Document {
                     switch (type) {
                         static foreach (E; EnumMembers!Type) {
                     case E:
-                            static if (isHiBONType(E)) {
+                            static if (isHiBONBaseType(E)) {
                                 alias T = Value.TypeT!E;
                                 static if (
                                     (E is STRING) || (E is DOCUMENT) ||
@@ -1090,7 +1090,7 @@ struct Document {
                 switch (type) {
                     static foreach (E; EnumMembers!Type) {
                 case E:
-                        static if (isHiBONType(E)) {
+                        static if (isHiBONBaseType(E)) {
                             alias T = Value.TypeT!E;
                             return That!T;
                         }

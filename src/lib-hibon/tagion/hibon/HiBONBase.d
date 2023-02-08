@@ -156,7 +156,7 @@ enum isDataBlock(T) = is(T : const(DataBlock));
  Returns:
  true if the type is a valid HiBONType excluding narive types
 +/
-@safe bool isHiBONType(Type type) pure nothrow {
+@safe bool isHiBONBaseType(Type type) pure nothrow {
     bool[] make_flags() {
         bool[] str;
         str.length = ubyte.max + 1;
@@ -208,10 +208,10 @@ enum isDataBlock(T) = is(T : const(DataBlock));
 ///
 @nogc static unittest {
     with (Type) {
-        static assert(!isHiBONType(NONE));
-        static assert(!isHiBONType(DEFINED_ARRAY));
-        static assert(!isHiBONType(DEFINED_NATIVE));
-        static assert(!isHiBONType(VER));
+        static assert(!isHiBONBaseType(NONE));
+        static assert(!isHiBONBaseType(DEFINED_ARRAY));
+        static assert(!isHiBONBaseType(DEFINED_NATIVE));
+        static assert(!isHiBONBaseType(VER));
     }
 }
 
@@ -426,7 +426,7 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
      the size on bytes of the value as a HiBON type E
      +/
     @nogc uint size(Type E)() const pure nothrow {
-        static if (isHiBONType(E)) {
+        static if (isHiBONBaseType(E)) {
             alias T = TypeT!E;
             static if (isBasicValueType!T || (E is Type.UTC)) {
                 return T.sizeof;

@@ -278,7 +278,7 @@ static size_t size(U)(const(U[]) array) pure {
             TypeCase:
                 switch (type) {
                     foreach (E; EnumMembers!Type) {
-                        static if (isHiBONType(E) || isNative(E)) {
+                        static if (isHiBONBaseType(E) || isNative(E)) {
                 case E:
                             static if (E is Type.DOCUMENT) {
                                 const _size = value.by!(E).size;
@@ -354,7 +354,7 @@ static size_t size(U)(const(U[]) array) pure {
             TypeCase:
                 switch (type) {
                     static foreach (E; EnumMembers!Type) {
-                        static if (isHiBONType(E) || isNative(E)) {
+                        static if (isHiBONBaseType(E) || isNative(E)) {
                 case E:
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {

@@ -169,7 +169,7 @@ mixin template JSONString() {
             CaseType:
                 switch (e.type) {
                     static foreach (E; EnumMembers!Type) {
-                        static if (isHiBONType(E)) {
+                        static if (isHiBONBaseType(E)) {
                 case E:
                             static if (E is DOCUMENT) {
                                 const sub_doc = e.by!E;
@@ -362,7 +362,7 @@ mixin template JSONString() {
                 final switch (type) {
                     static foreach (E; EnumMembers!Type) {
                 case E:
-                        static if (isHiBONType(E)) {
+                        static if (isHiBONBaseType(E)) {
                             alias T = HiBON.Value.TypeT!E;
                             scope value = jvalue.array[VALUE];
 

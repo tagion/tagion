@@ -297,7 +297,7 @@ mixin(Init_HiBON_Types!("__gshared immutable hibon_types=", 0));
 /**
  * @return true if the type is a valid HiBONType excluding narive types
  */
-bool isHiBONType(Type type) {
+bool isHiBONBaseType(Type type) {
     return hibon_types[type];
 }
 
@@ -539,7 +539,7 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
      * @return the size on bytes of the value as a HiBON type E
      */
     uint size(Type E)() const pure nothrow {
-        static if (isHiBONType(E)) {
+        static if (isHiBONBaseType(E)) {
             alias T = TypeT!E;
             static if (isBasicValueType!T || (E is Type.UTC)) {
                 return T.sizeof;
