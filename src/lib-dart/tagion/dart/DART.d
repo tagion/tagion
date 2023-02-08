@@ -1,3 +1,4 @@
+/// DART database build on DARTFile including CRUD commands and synchronization
 module tagion.dart.DART;
 
 import std.stdio;
@@ -49,7 +50,7 @@ uint calc_to_value(const ushort from_sector, const ushort to_sector) pure nothro
     return to_sector + ((from_sector >= to_sector) ? SECTOR_MAX_SIZE : 0);
 }
 
-    /** 
+/** 
      * Calculates the angle arc between from_sector to to_sector
      * Params:
      *   from_sector = angle from
@@ -76,11 +77,8 @@ class DART : DARTFile {
     /** Creates DART with given net and by given file path
     * Params: 
     *   net = Represent SecureNet for initializing DART
-    * Params: 
     *   filename = Represent path to DART file to open
-    * Params: 
     *   from_sector = Represents from angle for DART sharding. In development.
-    * Params: 
     *   to_sector = Represents to angle for DART sharding. In development.
     */
     this(const SecureNet net,
@@ -94,11 +92,12 @@ class DART : DARTFile {
     }
 
     /** Creates DART with given net and by given file path safely with catching possible exceptions
-    *       @param net Represent SecureNet for initializing DART
-    *       @param filename Represent path to DART file to open
-    *       @param exception Field used for returning exception in case when something gone wrong
-    *       @param from_sector Represents from angle for DART sharding. In development.
-    *       @param to_sector Represents to angle for DART sharding. In development.
+    * Params:
+    *       net  = Represent SecureNet for initializing DART
+    *       filename = Represent path to DART file to open
+    *       exception = Field used for returning exception in case when something gone wrong
+    *       from_sector = Represents from angle for DART sharding. In development.
+    *       to_sector = Represents to angle for DART sharding. In development.
     */
     this(const SecureNet net,
             string filename,
@@ -113,24 +112,47 @@ class DART : DARTFile {
         }
     }
 
+    /** 
+     * Check if the sector is within the DART angle
+     * Params:
+     *   sector = the sector in the DART
+     * Returns: true of the sector is within the DART range
+     */
     bool inRange(const ushort sector) pure nothrow {
         return SectorRange.sectorInRange(sector, from_sector, to_sector);
     }
 
+    /** 
+ * Creates a SectorRange for the DART
+ * Returns: range of sectors
+ */
     SectorRange sectors() pure nothrow {
         return SectorRange(from_sector, to_sector);
     }
 
+    /** 
+     * Sector range 
+     */
     static struct SectorRange {
         private {
-            @label("sector") ushort _sector;
+            @label("") ushort _sector;
             @label("from") ushort _from_sector;
             @label("to") ushort _to_sector;
         }
+        /**
+ * The start start sector
+ * Returns: start angle
+ */
+        /// Returns: start angle
         @property ushort from_sector() inout {
             return _from_sector;
         }
 
+        /// Returns: to sector
+        /**
+ * The end sector
+ * Returns: end angle 
+ */
         @property ushort to_sector() inout {
             return _to_sector;
         }
@@ -144,18 +166,43 @@ class DART : DARTFile {
                 }
             });
 
+        /// Returns: true if range is full-angle 
+        /**
+ * Checks if the range is a full angle dart (0x0000 to 0xFFFF)
+ * Returns: true if it a full-range=full-angle
+ */
         bool isFullRange() const pure nothrow {
             return _from_sector == _to_sector;
         }
 
+        /** 
+     * Checks if the sector is within the sector-range
+     * Params:
+     *   sector = sector number
+     * Returns: true if sector is within the range
+     */
         bool inRange(const ushort sector) const pure nothrow {
             return sectorInRange(sector, _from_sector, _to_sector);
         }
 
+        /** 
+     * Checks if the sector of a rim is within the sector-range
+     * Params:
+     *   rims = a rim path 
+     * Returns: 
+     */
         bool inRange(const Rims rims) const pure nothrow {
             return sectorInRange(rims.sector, _from_sector, _to_sector);
         }
 
+        /**
+     * Checks if sector is within range 
+     * Params:
+     *   sector = sector number
+     *   from_sector = sector start angle
+     *   to_sector = sector end angle
+     * Returns: true if the sector is within the angle-span 
+     */
         static bool sectorInRange(
                 const ushort sector,
                 const ushort from_sector,
@@ -170,10 +217,17 @@ class DART : DARTFile {
             }
         }
 
+        /* 
+     * Check if current sector has reached the end
+     * Returns: true of the sector reach the end of the angle-span
+     */
         bool empty() const pure nothrow {
             return !inRange(_sector) || flag;
         }
 
+        /** 
+     * Progress one sector
+     */
         void popFront() {
             if (!empty) {
                 _sector++;
@@ -182,14 +236,23 @@ class DART : DARTFile {
             }
         }
 
+        /* 
+     * Gets the current sector
+     * Returns: current sector
+     */
         ushort front() const pure nothrow {
             return _sector;
         }
 
-        string toString() inout {
+        /* 
+     * Gives an representation of the angle span
+     * Returns: text of angle span
+     */
+        string toString() const pure {
             return format("(%d, %d)", _from_sector, _to_sector);
         }
 
+        ///
         unittest {
             enum full_dart_sectors_count = ushort.max + 1;
             { //SectorRange: full sector iterator
@@ -233,12 +296,18 @@ class DART : DARTFile {
     alias HiRPCSender = HiRPC.Sender;
     alias HiRPCReceiver = HiRPC.Receiver;
 
+    /**
+     * Rim selecter
+     */
     @recordType("Rims")
     struct Rims {
         Buffer rims;
         protected enum root_rim = [];
         static immutable root = Rims(root_rim);
-        ushort sector() const pure nothrow
+        /**
+         * Returns: sector of the selected rims
+         */
+ushort sector() const pure nothrow
         in {
             pragma(msg, "fixme(vp) have to be check: rims is root_rim");
 
@@ -307,13 +376,14 @@ class DART : DARTFile {
         }
     }
 
-    /++
-     + The dartBullseye method is called from opCall function
-     + This function return current database bullseye.
-     + @param received - the HiRPC received package
-     + @param read_only - !Because this function is a read only the read_only parameter has no effect 
-     + @return HiRPC result that contains current database bullseye
-     +/
+    /**
+     * The dartBullseye method is called from opCall function
+     * This function return current database bullseye.
+     * Params:
+received = the HiRPC received package
+     * @param read_only - !Because this function is a read only the read_only parameter has no effect 
+     * @return HiRPC result that contains current database bullseye
+     */
     @HiRPCMethod private const(HiRPCSender) dartBullseye(ref const(HiRPCReceiver) received, const bool read_only)
     in {
         mixin FUNCTION_NAME;
@@ -324,48 +394,48 @@ class DART : DARTFile {
         hibon_params[Params.bullseye] = bullseye;
         return hirpc.result(received, hibon_params);
     }
-    /++
-     + The dartRead method is called from opCall function
-     + This function reads list of archive specified in the list of fingerprints.
+    /**
+     * The dartRead method is called from opCall function
+     * This function reads list of archive specified in the list of fingerprints.
 
-     + The result is returned as a Recorder object
-     + read from the DART
+     * The result is returned as a Recorder object
+     * read from the DART
 
-     + Note:
-     + Because this function is a read only the read_only parameter has no effect
+     * Note:
+     * Because this function is a read only the read_only parameter has no effect
 
-     + params: received is the HiRPC package
-     + Example:
-     ---
-     + // HiRPC metode
-     + {
-     +  ....
-     +    message : {
-     +        method : "dartRead"
-     +            params : {
-     +                fingerprints : [
-     +                     <GENERIC>,
-     +                     <GENERIC>,
-     +                     .....
-     +                          ]
-     +                     }
-     +                 ...
-     +                }
-     +             }
+     * params: received is the HiRPC package
+     * Example:
+     * ---
+     * // HiRPC metode
+     * {
+     *  ....
+     *    message : {
+     *        method : "dartRead"
+     *            params : {
+     *                fingerprints : [
+     *                     <GENERIC>,
+     *                     <GENERIC>,
+     *                     .....
+     *                          ]
+     *                     }
+     *                 ...
+     *                }
+     *             }
 
-     + // HiRPC Result
-     +   {
-     +   ....
-     +       message : {
-     +           result : {
-     +               recoder : <DOCUMENT> // Recorder
-     +                   limit   : <UINT32> // Optional
-     +       // This parameter is set if fingerprints list exceeds the limit
-     +                    }
-     +               }
-     +   }
-     ---
-     +/
+     * // HiRPC Result
+     *   {
+     *   ....
+     *       message : {
+     *           result : {
+     *               recoder : <DOCUMENT> // Recorder
+     *                   limit   : <UINT32> // Optional
+     *       // This parameter is set if fingerprints list exceeds the limit
+     *                    }
+     *               }
+     *   }
+     * ---
+     */
     private const(HiRPCSender) dartRead(
             ref const(HiRPCReceiver) received,
             const bool read_only)
@@ -379,44 +449,44 @@ class DART : DARTFile {
         const recorder = loads(fingerprints, Archive.Type.ADD);
         return hirpc.result(received, recorder.toDoc);
     }
-    /++
-     +  The dartRim method is called from opCall function
-     +
-     +  This method reads the Branches object at the specified rim
-     +
-     +  Note:
-     +  Because this function is a read only the read_only parameter has no effect
-     +
-     +  Params:
-     +      received is the HiRPC package
-     +  Example:
-     +  ---
-     +  // HiRPC format
-     +
-     +  {
-     +      ....
-     +      message : {
-     +        method : "dartRim",
-     +            params : {
-     +                rims : <GENERIC>
-     +            }
-     +        }
-     +  }
-     +
-     +  // HiRPC Result
-     +  {
-     +    ....
-     +    message : {
-     +        result : {
-     +            branches : <DOCUMENT> // Branches
-     +            limit    : <UINT32> // Optional
-     +                // This parameter is set if fingerprints list exceeds the limit
-     +            }
-     +        }
-     +  }
-     +
-     + ----
-     +/
+    /**
+     *  The dartRim method is called from opCall function
+     *
+     *  This method reads the Branches object at the specified rim
+     *
+     *  Note:
+     *  Because this function is a read only the read_only parameter has no effect
+     *
+     *  Params:
+     *      received is the HiRPC package
+     *  Example:
+     *  ---
+     *  // HiRPC format
+     *
+     *  {
+     *      ....
+     *      message : {
+     *        method : "dartRim",
+     *            params : {
+     *                rims : <GENERIC>
+     *            }
+     *        }
+     *  }
+     *
+     *  // HiRPC Result
+     *  {
+     *    ....
+     *    message : {
+     *        result : {
+     *            branches : <DOCUMENT> // Branches
+     *            limit    : <UINT32> // Optional
+     *                // This parameter is set if fingerprints list exceeds the limit
+     *            }
+     *        }
+     *  }
+     *
+     * ----
+     */
     private const(HiRPCSender) dartRim(
             ref const(HiRPCReceiver) received,
             const bool read_only)
@@ -454,41 +524,41 @@ class DART : DARTFile {
         return hirpc.result(received, hibon_params);
     }
 
-    /++
-     +  The dartModify method is called from opCall function
-     +
-     +  This function execute and modify function according to the recorder parameter
-     +
-     +  Note:
-     +  This function will fail if read only the read_only is true
-     +
-     +  Params: received is the HiRPC package
-     +
-     +   Example:
-     +  ---
-     +     // HiRPC format
-     +   {
-     +       ....
-     +       message : {
-     +           method : "dartModify"
-     +           params : {
-     +               recorder : <DOCUNENT> // Recorder object
-     +           }
-     +       }
-     +   }
-     +
-     +  // HiRPC Result
-     +  {
-     +       ....
-     +       message : {
-     +           result   : {
-     +           bullseye : <GENERIC> // Returns the update bullseye of the DART
-     +           }
-     +       }
-     +  }
-     +
-     ---
-     +/
+    /**
+     *  The dartModify method is called from opCall function
+     *
+     *  This function execute and modify function according to the recorder parameter
+     *
+     *  Note:
+     *  This function will fail if read only the read_only is true
+     *
+     *  Params: received is the HiRPC package
+     *
+     *   Example:
+     *  ---
+     *     // HiRPC format
+     *   {
+     *       ....
+     *       message : {
+     *           method : "dartModify"
+     *           params : {
+     *               recorder : <DOCUNENT> // Recorder object
+     *           }
+     *       }
+     *   }
+     *
+     *  // HiRPC Result
+     *  {
+     *       ....
+     *       message : {
+     *           result   : {
+     *           bullseye : <GENERIC> // Returns the update bullseye of the DART
+     *           }
+     *       }
+     *  }
+     *
+     * ---
+     */
 
     @HiRPCMethod private const(HiRPCSender) dartModify(
             ref const(HiRPCReceiver) received,
@@ -506,18 +576,18 @@ class DART : DARTFile {
         return hirpc.result(received, hibon_params);
     }
 
-    /++
-     + This function handels HPRC quries to the DART
-     + Params:
-     +     received = Request HiRPC object
-     + If read_only is true deleting and erasing data in the DART will return an error
-     + Note.
-     + When the DART is accessed from an external HiRPC this flag should be kept false.
-     +
-     + Returns:
-     +     The response from HPRC if the method is supported
-     +     else the response return is marked empty
-     +/
+    /**
+     * This function handels HPRC quries to the DART
+     * Params:
+     *     received = Request HiRPC object
+     * If read_only is true deleting and erasing data in the DART will return an error
+     * Note.
+     * When the DART is accessed from an external HiRPC this flag should be kept false.
+     *
+     * Returns:
+     *     The response from HPRC if the method is supported
+     *     else the response return is marked empty
+     */
     const(HiRPCSender) opCall(
             ref const(HiRPCReceiver) received,
             const bool read_only = true) {
@@ -537,53 +607,79 @@ class DART : DARTFile {
         return hirpc.error(received, message, 22);
     }
 
+    /**
+     * Interface to the DART synchronizer
+     */
     @safe
     interface Synchronizer {
-        /++
-         + Recommend to put a yield the SynchronizationFiber between send and receive between the DART's
-         +/
+        /**
+         * Recommend to put a yield the SynchronizationFiber between send and receive between the DART's
+         */
         const(HiRPCReceiver) query(ref const(HiRPCSender) request);
-        /++
-         + Stores the add and remove actions in the journal replay log file
-         +/
+        /**
+         * Stores the add and remove actions in the journal replay log file
+         * 
+         * Params:
+         *   recorder = DART recorder
+         */
         void record(RecordFactory.Recorder recorder);
-        /++
-         + This function is call when hole branches doesn't exist in the foreign DART
-         + and need to be removed in the local DART
-         +/
+        /**
+         * This function is call when hole branches doesn't exist in the foreign DART
+         * and need to be removed in the local DART
+         * Params:
+         *   rims = path to the selected rim
+         */
         void remove_recursive(const Rims rims);
-        /++
-         + This function is called when the SynchronizationFiber run function finishes
-         +/
+        /**
+         * This function is called when the SynchronizationFiber run function finishes
+         */
         void finish();
-        /++
-         + Called in by the SynchronizationFiber constructor
-         + which enable the query function to yield the run function in SynchronizationFiber
-         +
-         + Params:
-         +     owner = is the dart to be modified
-         +     fiber = is the synchronizer fiber object
-         +/
+        /**
+         * Called in by the SynchronizationFiber constructor
+         * which enable the query function to yield the run function in SynchronizationFiber
+         *
+         * Params:
+         *     owner = is the dart to be modified
+         *     fiber = is the synchronizer fiber object
+         */
         void set(DART owner, SynchronizationFiber fiber, HiRPC hirpc);
-        /++
-         + Returns:
-         +     If the SynchronizationFiber has finished then this function returns `true`
-         +/
+        /**
+         * Checks if the syncronizer is empty
+         * Returns:
+         *     If the SynchronizationFiber has finished then this function returns `true`
+         */
         bool empty() const pure nothrow;
     }
 
+    /** 
+ * Recorder journal
+ */
     @recordType("Journal") struct Journal {
         uint index;
         RecordFactory.Recorder recorder;
         enum indexName = GetLabel!(index).name;
         enum recorderName = GetLabel!(recorder).name;
+        /**
+         * Creator of the Journal recorder
+         * Params:
+         *   manufactor = Recorder factory
+         *   doc = Journal document
+         */
         this(RecordFactory manufactor, const Document doc) {
+
+            
+
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!uint;
             const recorder_doc = doc[recorderName].get!Document;
             recorder = manufactor.recorder(recorder_doc);
         }
-
+        /** 
+         * Ditto
+         * Params:
+         *   recorder = DART recorder
+         *   index = index number
+         */
         this(const RecordFactory.Recorder recorder, const uint index) const pure nothrow @nogc {
             this.recorder = recorder;
             this.index = index;
@@ -592,6 +688,9 @@ class DART : DARTFile {
         mixin HiBONType!"{}";
     }
 
+    /**
+     *  Standards DART Synchronization object
+     */
     @safe
     static abstract class StdSynchronizer : Synchronizer {
 
@@ -605,21 +704,26 @@ class DART : DARTFile {
             uint index; /// Current block index
             HiRPC hirpc;
         }
-        /++
-         + Params:
-         +     journal_filename = Name of blockfile used for recording the modification journal
-         +                        Must be created by BlockFile.create method
-         +     chunck_size = Set the max number of archives removed per chuck
-         +/
+        /**
+         * 
+         * Params:
+         *     journal_filename = Name of blockfile used for recording the modification journal
+         *                        Must be created by BlockFile.create method
+         *     chunck_size = Set the max number of archives removed per chuck
+         */
         this(string journal_filename, const uint chunck_size = 0x400) {
             journalfile = BlockFile(journal_filename);
             this.chunck_size = chunck_size;
         }
 
+        /** 
+         * Update the add the recorder to the journal and store it
+         * Params:
+         *   recorder = DART recorder
+         */
         void record(const RecordFactory.Recorder recorder) @safe {
             if (!recorder.empty) {
                 const journal = const(Journal)(recorder, index);
-                auto hibon = new HiBON;
                 const allocated = journalfile.save(journal.toDoc.serialize);
                 index = allocated.begin_index;
                 journalfile.root_index = index;
@@ -628,9 +732,13 @@ class DART : DARTFile {
                 }
             }
         }
-
-        void remove_recursive(const Rims params) {
-            auto rim_walker = owner.rimWalkerRange(params.rims);
+        /** 
+         * Remove all archive at selected rim path
+         * Params:
+         *   selected_rims = selected rims to be removed
+         */
+        void remove_recursive(const Rims selected_rims) {
+            auto rim_walker = owner.rimWalkerRange(selected_rims.rims);
             uint count = 0;
             auto recorder_worker = owner.recorder;
             foreach (archive_data; rim_walker) {
@@ -647,6 +755,13 @@ class DART : DARTFile {
             record(recorder_worker);
         }
 
+        /**
+         * 
+         * Params:
+         *   owner = DART to be synchronized
+         *   fiber = syncronizer fiber
+         *   hirpc = remote credential used 
+         */
         void set(
                 DART owner,
                 SynchronizationFiber fiber,
@@ -658,33 +773,52 @@ class DART : DARTFile {
             emplace(&this.hirpc, hirpc);
         }
 
+        /** 
+         * Should be called when the synchronization has finished
+         */
         void finish() {
             journalfile.close;
             _finished = true;
         }
 
+        /**
+         * Should be call on timeout timeout
+         */
         void timeout() {
             journalfile.close;
             _timeout = true;
         }
 
+        /**
+         * Checks if synchronization has ended
+         * Returns: true on empty
+         */
         bool empty() const pure nothrow {
             return (_finished || _timeout);
         }
-
+        /* 
+         * Check the synchronization timeout
+         * Returns: true on timeout
+         */
         bool timeout() const pure nothrow {
             return _timeout;
         }
     }
-
+    /**
+     * Creates a synchronization fiber from a synchroizer 
+     * Params:
+     *   synchonizer = synchronizer to be used
+     *   rims = selected rim path
+     * Returns: 
+     *  synchronization fiber
+     */
     SynchronizationFiber synchronizer(Synchronizer synchonizer, const Rims rims) {
         return new SynchronizationFiber(rims, synchonizer);
     }
 
-    private DART that() pure nothrow @nogc {
-        return this;
-    }
-
+    /**
+     * Synchronizer which supports synchronization from multiplet DART's 
+     */
     @safe
     class SynchronizationFiber : Fiber {
         protected Synchronizer sync;
@@ -694,11 +828,15 @@ class DART : DARTFile {
         this(const Rims root_rims, Synchronizer sync) @trusted {
             this.root_rims = root_rims;
             this.sync = sync;
-            sync.set(that, this, that.hirpc);
+            sync.set(this.outer, this, this.outer.hirpc);
             super(&run);
         }
 
         protected uint _id;
+        /* 
+         * Id for the HiRPC
+         * Returns: HiRPC id
+        */
         @property uint id() {
             if (_id == 0) {
                 _id = hirpc.generateId();
@@ -706,6 +844,9 @@ class DART : DARTFile {
             return _id;
         }
 
+        /**
+         * Function to hanle syncronization stage for the DART
+         */
         final void run()
         in {
             assert(sync);
@@ -739,12 +880,7 @@ class DART : DARTFile {
                     auto foreign_recoder = manufactor.recorder(result_archives.response.result);
                     //
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
-                    // The archive fingerprints is removed from the branches
-                    // Archive[Buffer] set_of_archives;
-                    // foreach (a; foreign_recoder.archives[]) {
-                    //     set_of_archives[a.fingerprint] = a;
-                    // }
-                    //                    sync.record(foreign_recoder);
+                    // 
 
                     auto foreign_fingerprints = foreign_branches.fingerprints.dup;
                     auto local_recorder = recorder;
@@ -784,25 +920,28 @@ class DART : DARTFile {
             iterate(root_rims);
             sync.finish;
         }
-
+        /**
+         * Checks if the synchronized  has reached the end 
+         * Returns: true if empty
+         */
         final bool empty() const pure nothrow {
             return sync.empty;
         }
     }
 
-    /++
-     + Replays the journal file to update the DART
-     + The update blockfile can be generated from the synchroning process from an foreign dart
-     +
-     + If the process is broken for some reason this the resumed by running the replay function again
-     + on the same block file
-     +
-     + Params:
-     +     journal_filename = Name of the BlockFile to be replaied
-     +
-     + Throws:
-     +     The function will throw an exception if something went wrong in the process.
-     +/
+    /**
+     * Replays the journal file to update the DART
+     * The update blockfile can be generated from the synchroning process from an foreign dart
+     *
+     * If the process is broken for some reason this the resumed by running the replay function again
+     * on the same block file
+     *
+     * Params:
+     *     journal_filename = Name of the BlockFile to be replaied
+     *
+     * Throws:
+     *     The function will throw an exception if something went wrong in the process.
+     */
     void replay(const(string) journal_filename) {
         auto journalfile = BlockFile(journal_filename, true);
         scope (exit) {
@@ -883,6 +1022,7 @@ class DART : DARTFile {
 
     }
 
+    ///
     unittest {
         import tagion.utils.Random;
         import tagion.dart.BlockFile;
