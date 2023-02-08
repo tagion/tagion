@@ -149,9 +149,6 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         void yield() @trusted {
                             Fiber.yield;
                         }
-                        void sleep(Duration val = 1.seconds) @trusted {
-                            Thread.sleep(val);
-                        }
 
                         version (OLD_TRANSACTION) {
                             pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
