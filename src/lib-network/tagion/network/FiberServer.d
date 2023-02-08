@@ -192,7 +192,7 @@ class FiberServer {
                     // Response receiver from the service
                     fiber.call;
                 }
-                else if (fiber.available && socket_set.isSet(fiber.client)) {
+                else if (socket_set.isSet(fiber.client)) {
                     fiber.call;
                 }
                 if (fiber.state is Fiber.State.TERM) {
