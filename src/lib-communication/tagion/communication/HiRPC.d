@@ -134,7 +134,7 @@ struct HiRPC {
     /// get the message to of the message
     /// Params: T message data type
     /// Returns: The type of the HiRPC message 
-    static Type getType(T)(const T message) if (isHiBONRecord!T) {
+    static Type getType(T)(const T message) if (isHiBONType!T) {
         static if (is(T : const(Method))) {
             return Type.method;
         }
@@ -309,7 +309,7 @@ struct HiRPC {
                 signed = verifySignature(net, message, signature, pubkey);
             }
 
-            this(T)(const SecureNet net, T pack) if (isHiBONRecord!T) {
+            this(T)(const SecureNet net, T pack) if (isHiBONType!T) {
                 this(net, pack.toDoc);
             }
 
@@ -350,11 +350,11 @@ struct HiRPC {
              *   args = arguments to the
              * Returns: the constructed T
              */
-            const(T) params(T, Args...)(Args args) const if (isHiBONRecord!T) {
+            const(T) params(T, Args...)(Args args) const if (isHiBONType!T) {
                 return T(args, method.params);
             }
 
-            const(T) result(T, Args...)(Args args) const if (isHiBONRecord!T) {
+            const(T) result(T, Args...)(Args args) const if (isHiBONType!T) {
                 return T(response.result);
             }
 
@@ -374,8 +374,8 @@ struct HiRPC {
             }
         }
         else {
-            this(T)(const SecureNet net, const T post) if (isHiBONRecord!T || is(T : const Document)) {
-                static if (isHiBONRecord!T) {
+            this(T)(const SecureNet net, const T post) if (isHiBONType!T || is(T : const Document)) {
+                static if (isHiBONType!T) {
                     message = post.toDoc;
                 }
                 else {
@@ -487,7 +487,7 @@ struct HiRPC {
 
     /// Ditto
     immutable(Sender) action(T)(string method, T params, const uint id = uint.max) const
-    if (isHiBONRecord!T) {
+    if (isHiBONType!T) {
         return action(method, params.toDoc, id);
     }
 
@@ -515,7 +515,7 @@ struct HiRPC {
 
     /// Ditto
     immutable(Sender) result(T)(ref const(Receiver) receiver, T return_value) const
-    if (isHiBONRecord!T) {
+    if (isHiBONType!T) {
         return result(receiver, return_value.toDoc);
     }
 
@@ -561,7 +561,7 @@ struct HiRPC {
     }
 
     /// Ditto
-    final immutable(Receiver) receive(T)(T sender) const if (isHiBONRecord!T) {
+    final immutable(Receiver) receive(T)(T sender) const if (isHiBONType!T) {
         auto receiver = Receiver(net, sender.toDoc);
         return receiver;
     }

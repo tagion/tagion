@@ -41,8 +41,6 @@ import tagion.wallet.WalletException : check;
     AccountDetails account;
     protected SecureNet net;
 
-    //    @disable this();
-
     this(DevicePIN pin, RecoverGenerator wallet = RecoverGenerator.init, AccountDetails account = AccountDetails
             .init) { //nothrow {
         _wallet = wallet;

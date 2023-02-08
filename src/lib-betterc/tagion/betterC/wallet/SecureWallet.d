@@ -253,7 +253,6 @@ struct SecureWallet(Net) {
         //     const enough = collect_bills(amount, contract_bills);
         //     if (enough) {
         //         const total = contract_bills.map!(b => b.value).sum;
-        //         // pragma(msg, "isHiBONRecord ",isHiBONRecord!(typeof(result.contract.input[0])));
 
         //         result.contract.input = contract_bills.map!(b => net.hashOf(b.toDoc)).array;
         //         const rest = total - amount;

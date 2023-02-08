@@ -95,12 +95,12 @@ interface EventMonitorCallbacks {
         //        void forked(const(Event) e);
         void epoch(const(Event[]) received_event);
         void send(const Pubkey channel, lazy const Document doc);
-        final void send(T)(const Pubkey channel, lazy T pack) if (isHiBONRecord!T) {
+        final void send(T)(const Pubkey channel, lazy T pack) if (isHiBONType!T) {
             send(channel, pack.toDoc);
         }
 
         void receive(lazy const Document doc);
-        final void receive(T)(lazy const T pack) if (isHiBONRecord!T) {
+        final void receive(T)(lazy const T pack) if (isHiBONType!T) {
             receive(pack.toDoc);
         }
     }
@@ -385,6 +385,6 @@ struct EvaPayload {
     );
 }
 
-static assert(isHiBONRecord!Wavefront);
-static assert(isHiBONRecord!(EventPackage));
-static assert(isHiBONRecord!(immutable(EventPackage)));
+static assert(isHiBONType!Wavefront);
+static assert(isHiBONType!(EventPackage));
+static assert(isHiBONType!(immutable(EventPackage)));

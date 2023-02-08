@@ -7,7 +7,7 @@ import std.range.primitives : back, popBack;
 import tagion.basic.Types : Buffer;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
-import tagion.hibon.HiBONType : isHiBONRecord;
+import tagion.hibon.HiBONType : isHiBONType;
 import tagion.utils.Miscellaneous : decode;
 
 /** @brief File contains class HashChain
@@ -17,7 +17,7 @@ import tagion.utils.Miscellaneous : decode;
  * \class HashChain
  * Class stores dynamic info and handles local files of hash chain
  */
-@safe class HashChain(Block : HashChainBlock) if (isHiBONRecord!Block) {
+@safe class HashChain(Block : HashChainBlock) if (isHiBONType!Block) {
     /** Handler of chain blocks storage */
     protected HashChainStorage!Block _storage;
 

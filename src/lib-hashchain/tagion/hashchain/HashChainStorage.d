@@ -3,7 +3,7 @@ module tagion.hashchain.HashChainStorage;
 
 import tagion.basic.Types : Buffer;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
-import tagion.hibon.HiBONType : isHiBONRecord;
+import tagion.hibon.HiBONType : isHiBONType;
 
 /** @brief File contains interface for HashChainStorage
  */
@@ -12,7 +12,7 @@ import tagion.hibon.HiBONType : isHiBONRecord;
  * \interface HashChainStorage
  * Interface represents entity that provides access to storage of hash chain blocks
  */
-@safe interface HashChainStorage(Block : HashChainBlock) if (isHiBONRecord!Block) {
+@safe interface HashChainStorage(Block : HashChainBlock) if (isHiBONType!Block) {
     /** Writes given block to storage 
      *      @param block - block to write
      */

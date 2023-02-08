@@ -211,7 +211,7 @@ int _main(string[] args) {
             return db(receiver, false);
         }
 
-        Nullable!T readRecord(T)(Buffer hash, HiRPC hirpc, DART db) if (isHiBONRecord!T) {
+        Nullable!T readRecord(T)(Buffer hash, HiRPC hirpc, DART db) if (isHiBONType!T) {
             auto result = readFromDB([hash], hirpc, db);
 
             auto factory = RecordFactory(net);
@@ -241,7 +241,7 @@ int _main(string[] args) {
      * @param indent_line - flag to put indent line in console before printing doc
      * @param alternative_text - text to replace doc output when flag verbose is off
      */
-    void toConsole(T)(T doc, bool indent_line = false, string alternative_text = "") if (isHiBONRecord!T || is(T == Document)) {
+    void toConsole(T)(T doc, bool indent_line = false, string alternative_text = "") if (isHiBONType!T || is(T == Document)) {
         if (verbose) {
             if (indent_line)
                 writeln;

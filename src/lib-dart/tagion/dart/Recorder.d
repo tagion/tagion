@@ -11,7 +11,7 @@ import std.format;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONType : label, STUB, isHiBONRecord, GetLabel, isStub, recordType;
+import tagion.hibon.HiBONType : label, STUB, isHiBONType, GetLabel, isStub, recordType;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Message;
 
@@ -256,7 +256,7 @@ class RecordFactory {
         }
 
         const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE)
-                if ((isHiBONRecord!T) && !is(T : const(Recorder))) {
+                if ((isHiBONType!T) && !is(T : const(Recorder))) {
             return insert(pack.toDoc, type);
         }
 
@@ -278,10 +278,10 @@ class RecordFactory {
         }
 
         @trusted void insert(R)(R range, const Archive.Type type = Archive.Type.NONE)
-                if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONRecord!(
+                if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONType!(
                     ElementType!R))) {
             alias FiledType = ElementType!R;
-            static if (isHiBONRecord!FiledType) {
+            static if (isHiBONType!FiledType) {
                 archives.insert(range.map!(a => new Archive(net, a.toDoc, type)));
             }
             else {
@@ -301,7 +301,7 @@ class RecordFactory {
         //     return archive;
         // }
 
-        // const(Archive) add(T)(T pack) if (isHiBONRecord!T) {
+        // const(Archive) add(T)(T pack) if (isHiBONType!T) {
         //     auto archive = new Archive(net, doc, Archive.Type.ADD);
         //     archives.insert(archive);
         //     return archive;
@@ -415,7 +415,7 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
         this(null, doc, t);
     }
 
-    // this(H)(const HashNet net, ref const(H) h, const Type t = Type.NONE) if (isHiBONRecord!H) {
+    // this(H)(const HashNet net, ref const(H) h, const Type t = Type.NONE) if (isHiBONType!H) {
     //     this(net, h.toDoc, t);
     // }
 
@@ -517,7 +517,7 @@ unittest { // Archive
     auto net = new DARTFakeNet;
     auto manufactor = RecordFactory(net);
 
-    static assert(isHiBONRecord!Archive);
+    static assert(isHiBONType!Archive);
     Document filed_doc; // This is the data which is filed in the DART
     {
         auto hibon = new HiBON;

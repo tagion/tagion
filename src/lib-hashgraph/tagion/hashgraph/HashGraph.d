@@ -17,7 +17,7 @@ import tagion.hashgraph.Event;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONType : isHiBONRecord;
+import tagion.hibon.HiBONType : isHiBONType;
 import tagion.communication.HiRPC;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
@@ -971,7 +971,7 @@ class HashGraph {
                     channel_queues[channel].write(doc);
                 }
 
-                final void send(T)(const(Pubkey) channel, T pack) if (isHiBONRecord!T) {
+                final void send(T)(const(Pubkey) channel, T pack) if (isHiBONType!T) {
                     send(channel, pack.toDoc);
                 }
 

@@ -60,6 +60,6 @@ Result result(const Document doc) nothrow {
  * ditto but takes a HiBONType instead of a Document
  */
 @safe
-Result result(T)(T hibon_record) if (isHiBONRecord!T) {
+Result result(T)(T hibon_record) if (isHiBONType!T) {
     return result(hibon_record.toDoc);
 }

@@ -26,7 +26,7 @@ import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
-import tagion.hibon.HiBONType : isHiBON, isHiBONRecord, isHiBONRecordArray;
+import tagion.hibon.HiBONType : isHiBON, isHiBONType, isHiBONRecordArray;
 
 import tagion.basic.Message : message;
 import tagion.basic.Types : Buffer;
@@ -212,7 +212,7 @@ static size_t size(U)(const(U[]) array) pure {
         //      return result;
         // }
 
-        T new_get(T)() const if (isHiBONRecord!T || isHiBON!T) {
+        T new_get(T)() const if (isHiBONType!T || isHiBON!T) {
             return T.init;
         }
         /++
@@ -221,7 +221,7 @@ static size_t size(U)(const(U[]) array) pure {
          Throws:
          If the member does not match the type T and HiBONException is thrown
          +/
-        T get(T)() const if (isHiBONRecord!T || isHiBON!T) {
+        T get(T)() const if (isHiBONType!T || isHiBON!T) {
             with (Type) {
                 switch (type) {
                 case DOCUMENT:
@@ -244,7 +244,7 @@ static size_t size(U)(const(U[]) array) pure {
             assert(0);
         }
 
-        const(T) get(T)() const if (!isHiBONRecord!T && !isHiBON!T) {
+        const(T) get(T)() const if (!isHiBONType!T && !isHiBON!T) {
             enum E = Value.asType!T;
 
             
@@ -461,7 +461,7 @@ static size_t size(U)(const(U[]) array) pure {
         h[key] = h;
     }
 
-    void opIndexAssign(T)(T x, const string key) @trusted if (!isHiBON!T && !isHiBONRecord!T && !isHiBONRecordArray!T) {
+    void opIndexAssign(T)(T x, const string key) @trusted if (!isHiBON!T && !isHiBONType!T && !isHiBONRecordArray!T) {
 
         
 

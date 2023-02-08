@@ -69,12 +69,12 @@ enum OwnerKey = "$Y";
                 @disable this();
                 import tagion.crypto.SecureInterfaceNet : HashNet;
                 import tagion.script.ScriptException : check;
-                import tagion.hibon.HiBONType : isHiBONRecord, hasHashKey;
+                import tagion.hibon.HiBONType : isHiBONType, hasHashKey;
                 this(const(HashNet) net, const(Document) doc) {
                     check(doc.hasHashKey, "Document should have a hash key");
                     lock = net.rawCalcHash(doc.serialize);
                 }
-                this(T)(const(HashNet) net, ref const(T) h) if (isHiBONRecord!T) {
+                this(T)(const(HashNet) net, ref const(T) h) if (isHiBONType!T) {
                     this(net, h.toDoc);
                 }
             });
@@ -83,7 +83,7 @@ enum OwnerKey = "$Y";
             return lock == net.rawCalcHash(doc.serialize);
         }
 
-        bool verify(T)(const(HashNet) net, ref T h) const if (isHiBONRecord!T) {
+        bool verify(T)(const(HashNet) net, ref T h) const if (isHiBONType!T) {
             return verify(net, h.toDoc);
         }
 

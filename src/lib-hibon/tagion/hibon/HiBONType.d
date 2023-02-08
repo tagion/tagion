@@ -22,10 +22,10 @@ enum isHiBON(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
             "toHiBON") && (is(ReturnType!(T.toHiBON) : const(HiBON)));
 
 ///  Returns: true if struct or class supports toDoc
-enum isHiBONRecord(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
+enum isHiBONType(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
             "toDoc") && (is(ReturnType!(T.toDoc) : const(Document)));
 
-enum isHiBONRecordArray(T) = isArray!T && isHiBONRecord!(ForeachType!T);
+enum isHiBONRecordArray(T) = isArray!T && isHiBONType!(ForeachType!T);
 
 /**
 	Used for HiBONRecords which have a recorder type
@@ -154,7 +154,7 @@ template GetLabel(alias member) {
     }
 }
 
-// bool hasHashKey(T)(T value) if (isHiBONRecord!T) {
+// bool hasHashKey(T)(T value) if (isHiBONType!T) {
 //     return value.keys[0] is HiBONPrefix.HASH;
 // }
 
@@ -238,7 +238,7 @@ mixin template HiBONType(string CTOR = "") {
     import tagion.basic.Basic : basename, CastTo;
     import tagion.basic.TagionExceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
-    import tagion.hibon.HiBONType : isHiBON, isHiBONRecord, HiBONRecordType,
+    import tagion.hibon.HiBONType : isHiBON, isHiBONType, HiBONRecordType,
         label, GetLabel, filter, fixed, inspect, VOID;
     import HiBONType = tagion.hibon.HiBONType; // : TYPENAME;
 
@@ -258,7 +258,7 @@ mixin template HiBONType(string CTOR = "") {
         static if (HiBON.Value.hasType!BaseKey || is(BaseKey == enum)) {
             return Key(a) < Key(b);
         }
-        else static if (isHiBONRecord!BaseKey) {
+        else static if (isHiBONType!BaseKey) {
             return a.toDoc.serialize < b.toDoc.serialize;
         }
         else {
@@ -307,7 +307,7 @@ mixin template HiBONType(string CTOR = "") {
                         static if (HiBON.Value.hasType!BaseIndex || is(BaseIndex == enum)) {
                             element[0] = Index(key);
                         }
-                        else static if (isHiBONRecord!BaseIndex) {
+                        else static if (isHiBONType!BaseIndex) {
                             element[0] = BaseIndex(key.toDoc);
                         }
                         else {
@@ -369,7 +369,7 @@ mixin template HiBONType(string CTOR = "") {
                     else static if (isHiBON!BaseT) {
                         hibon[name] = m.toHiBON;
                     }
-                    else static if (isHiBONRecord!BaseT) {
+                    else static if (isHiBONType!BaseT) {
                         hibon[name] = m.toDoc;
                     }
                     else static if (is(MemberT == enum)) {
@@ -703,7 +703,7 @@ mixin template HiBONType(string CTOR = "") {
     file.write(filename, doc.serialize);
 }
 
-@safe void fwrite(T)(const(char[]) filename, const T rec) if (isHiBONRecord!T) {
+@safe void fwrite(T)(const(char[]) filename, const T rec) if (isHiBONType!T) {
     fwrite(filename, rec.toDoc);
 }
 
@@ -723,7 +723,7 @@ mixin template HiBONType(string CTOR = "") {
     return doc;
 }
 
-T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
+T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
     const doc = filename.fread;
     return T(doc, args);
 }
