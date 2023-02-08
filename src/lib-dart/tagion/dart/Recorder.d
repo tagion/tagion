@@ -67,7 +67,8 @@ class RecordFactory {
      * Params: doc
      */
     immutable(Recorder) uniqueRecorder(const(Document) doc) const  @trusted {
-        return cast(immutable)(new Recorder(doc));
+        const result=new const(Recorder)(doc);
+        return cast(immutable)result;
     }
 
     /**
