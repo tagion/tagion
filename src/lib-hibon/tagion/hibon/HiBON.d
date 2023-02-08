@@ -26,7 +26,7 @@ import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
-import tagion.hibon.HiBONType : isHiBON, isHiBONType, isHiBONRecordArray;
+import tagion.hibon.HiBONType : isHiBON, isHiBONType, isHiBONTypeArray;
 
 import tagion.basic.Message : message;
 import tagion.basic.Types : Buffer;
@@ -453,7 +453,7 @@ static size_t size(U)(const(U[]) array) pure {
         opIndexAssign(x.toHiBON, key);
     }
 
-    void opIndexAssign(T)(T x, const string key) if (isHiBONRecordArray!T) {
+    void opIndexAssign(T)(T x, const string key) if (isHiBONTypeArray!T) {
         auto h = new HiBON;
         foreach (v_key, v; x) {
             h[v_key] = x;
@@ -461,7 +461,7 @@ static size_t size(U)(const(U[]) array) pure {
         h[key] = h;
     }
 
-    void opIndexAssign(T)(T x, const string key) @trusted if (!isHiBON!T && !isHiBONType!T && !isHiBONRecordArray!T) {
+    void opIndexAssign(T)(T x, const string key) @trusted if (!isHiBON!T && !isHiBONType!T && !isHiBONTypeArray!T) {
 
         
 

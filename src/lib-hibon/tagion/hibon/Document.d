@@ -25,7 +25,7 @@ import tagion.basic.Message : message;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException : check, HiBONException;
-import tagion.hibon.HiBONType : isHiBONType, isHiBONRecordArray;
+import tagion.hibon.HiBONType : isHiBONType, isHiBONTypeArray;
 import LEB128 = tagion.utils.LEB128;
 
 //import tagion.utils.LEB128 : isIntegral=isLEB128Integral;
@@ -969,9 +969,6 @@ static assert(uint.sizeof == 4);
             default:
                 //empty
             }
-
-            
-
             .check(0, message("Invalid type %s", type));
             assert(0);
         }
@@ -1007,7 +1004,7 @@ static assert(uint.sizeof == 4);
                 return T(doc);
             }
 
-            @trusted T get(T)() if (isHiBONRecordArray!T) {
+            @trusted T get(T)() if (isHiBONTypeArray!T) {
                 alias ElementT = ForeachType!T;
                 const doc = get!Document;
                 alias UnqualT = Unqual!T;
@@ -1054,7 +1051,7 @@ static assert(uint.sizeof == 4);
             }
 
             const(T) get(T)() const
-            if (!isHiBONType!T && !isHiBONRecordArray!T && !is(T == enum)) {
+            if (!isHiBONType!T && !isHiBONTypeArray!T && !is(T == enum)) {
                 enum E = Value.asType!T;
                 import std.format;
 

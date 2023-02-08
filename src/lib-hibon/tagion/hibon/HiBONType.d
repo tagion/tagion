@@ -25,7 +25,7 @@ enum isHiBON(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
 enum isHiBONType(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
             "toDoc") && (is(ReturnType!(T.toDoc) : const(Document)));
 
-enum isHiBONRecordArray(T) = isArray!T && isHiBONType!(ForeachType!T);
+enum isHiBONTypeArray(T) = isArray!T && isHiBONType!(ForeachType!T);
 
 /**
 	Used for HiBONRecords which have a recorder type
