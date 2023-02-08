@@ -139,26 +139,12 @@ class MonitorCallBacks : EventMonitorCallbacks {
 
             auto hibon = createHiBON(e);
 
-            // assumeWontThrow({
-            //     hibon[Params.altitude] = e.altitude;
-            //     hibon[Params.order] = e.received_order;
-            //     hibon[Params.number] = e.round.number;
-            //     if (e.mother !is null) {
-            //         hibon[Params.mother] = e.mother.id;
-            //     }
-            //     if (e.father !is null) {
-            //         hibon[Params.father] = e.father.id;
-            //     }
-            //     if (e.payload.empty) {
-            //         hibon[Params.payload] = e.payload;
-            //     }
-            // });
             try {
                 hibon[Params.altitude] = e.altitude;
-                // hibon[Params.order] = e.received_order;
-                // if (e.hasRound) {
-                //     hibon[Params.number] = e.round.number;
-                // }
+                hibon[Params.order] = e.received_order;
+                if (e.hasRound) {
+                    hibon[Params.number] = e.round.number;
+                }
                 if (e.mother !is null) {
                     hibon[Params.mother] = e.mother.id;
                 }
@@ -181,30 +167,50 @@ class MonitorCallBacks : EventMonitorCallbacks {
             immutable _witness = e.witness !is null;
 
             auto hibon = createHiBON(e);
-            assumeWontThrow({ hibon[Params.witness] = _witness; });
-            log("WITNESS");
+            try {
+                hibon[Params.witness] = _witness;
+            } catch(Exception excp) {
+                // empty
+            }
+            log("WITNESS %s", hibon.toPretty);
             socket_send(hibon);
         }
 
+    // not called
         void witness_mask(const(Event) e) {
 
             auto hibon = createHiBON(e);
-            assumeWontThrow({ hibon[Params.witness_mask] = bitarray2bool(e.witness_mask); });
-            log("WITNESS MASK");
+            try {
+                hibon[Params.witness_mask] = bitarray2bool(e.witness_mask);
+            } catch (Exception excp) {
+                //empty
+            }
+            log("WITNESS MASK %s", hibon.toPretty);
 
             socket_send(hibon);
         }
 
         void round_seen(const(Event) e) {
-            // auto hibon=createHiBON(e);
-            // hibon[Keywords.round_seen]=bitarray2bool(e.witness.round_seen_mask);
-            // socket_send(hibon);
+            log("BEFORE ROUND SEEN");
+            // log("%s", e.witness.round_seen_mask);
+            auto hibon=createHiBON(e);
+            // try {
+            //     hibon[Keywords.round_seen]=bitarray2bool(e.witness.round_seen_mask); 
+            // } catch(Exception excp) {
+            //     log(excp);
+            // }
+            // log("ROUND SEEN %s", hibon.toPretty);
+            socket_send(hibon);
         }
 
         void round_received(const(Event) e) {
             auto hibon = createHiBON(e);
-            assumeWontThrow({ hibon[Params.received_number] = e.round_received.number; });
-            log("ROUND RECEIVED");
+            try {
+                hibon[Params.received_number] = e.round_received.number;
+            } catch(Exception excp) {
+                //empty
+            }
+            log("ROUND RECEIVED: %s", hibon.toPretty);
 
             socket_send(hibon);
         }
@@ -213,6 +219,7 @@ class MonitorCallBacks : EventMonitorCallbacks {
             auto hibon = new HiBON;
             auto round = new HiBON;
             const r = rounder.last_decided_round;
+
             assumeWontThrow({
                 round[Params.number] = r.number;
                 round[Params.decided] = true;
@@ -275,16 +282,23 @@ class MonitorCallBacks : EventMonitorCallbacks {
         //     socket_send(hibon);
         // }
 
-        void round(const(Event) e) {
+
+        void round(const(Event) e)
+        {
             auto hibon = createHiBON(e);
+            auto round = new HiBON;
             try {
-                hibon[Params.number] = e.round.number;
+                round[Params.number] = e.round.number;
+                round[Keywords.completed]=e.round.decided;
+                hibon[Keywords.round]=round;
             } catch(Exception excp) {
                 //empty
             }
+            // assumeWontThrow({ round[Params.number] = e.round.number; });
             log("SENDING ROUND: %s", hibon.toPretty);
             socket_send(hibon);
         }
+
 
         // void forked(const(Event) e) {
         //     auto hibon=createHiBON(e);
