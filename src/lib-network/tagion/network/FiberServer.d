@@ -188,14 +188,11 @@ class FiberServer {
                         fiber.reset;
                     }
                 }
-                else if (fiber.available) {
+                else if (fiber.available && fiber.locked) {
                     // Response receiver from the service
                     fiber.call;
                 }
-                else if (fiber.locked) {
-                    fiber.call;
-                }
-                else if (socket_set.isSet(fiber.client)) {
+                else if (fiber.available && socket_set.isSet(fiber.client)) {
                     fiber.call;
                 }
                 if (fiber.state is Fiber.State.TERM) {

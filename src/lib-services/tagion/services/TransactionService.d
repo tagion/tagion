@@ -164,12 +164,8 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         log("Method name: %s", method_name);
                         switch (method_name) {
                         case "search":
-                            search(params, ssl_relay.id); //epoch number?
-                            do {
-                                yield; /// Expects a response from the DART service
-                                sleep;    
-                            }
-                            while (!ssl_relay.available());
+                            search(params, ssl_relay.id);
+                            assert(ssl_relay.available);
                             const response = ssl_relay.response;
                             ssl_relay.send(response);
                             break;
@@ -177,12 +173,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
 
                             log("sending healthcheck request");
                             areWeInGraph(ssl_relay.id);
-                            do {
-                                yield;
-                                sleep;
-                                log.trace("SSLRelay available: %s", ssl_relay.available());
-                            }
-                            while (!ssl_relay.available());
+                            assert(ssl_relay.available);
                             const response = ssl_relay.response;
                             log("sending healthcheck response %s", Document(response).toJSON);
                             ssl_relay.send(response);
@@ -201,12 +192,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
 
                                     auto inputs = signed_contract.contract.inputs;
                                     requestInputs(inputs, ssl_relay.id);
-                                    do {
-                                        yield;
-                                        sleep;
-                                        log.trace("SSLRelay available: %s", ssl_relay.available());
-                                    }
-                                    while (!ssl_relay.available());
+                                    assert(ssl_relay.available);
                                     //() @trusted => Fiber.yield; // Expect an Recorder resonse for the DART service
                                     const response = ssl_relay.response;
                                     const received = internal_hirpc.receive(Document(response));
