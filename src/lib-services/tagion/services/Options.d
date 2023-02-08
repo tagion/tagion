@@ -352,7 +352,6 @@ static ref auto all_getopt(
         "boot", format("Shared boot file: default: %s", options.path_to_shared_info), &(options.path_to_shared_info),
         "passphrasefile", "File with setted passphrase for keys pair", &(options.path_to_stored_passphrase),
         "recorderchain", "Path to folder with recorder chain blocks stored for DART recovery", &(options.recorder_chain.folder_path),
-        "epoch-dump-enabled", "Not perform transaction dump", &(options.epoch_dump.enabled),
         "transactiondumpfolder", "Set separative folder for transaction dump", &(options.epoch_dump.transaction_dumps_directory),
         "startup-dalay", format("Set a delay before node will start following hashgraph: default: %d ms", options.startup_delay), &(options.startup_delay) 
     );

@@ -187,32 +187,27 @@ jobs:
         scenario: ${{ fromJson(needs.create_tagion_images.outputs.scenario_matrix) }}
     steps:
       - name: Run docker
-        id: run_docker
         continue-on-error: true
         run: |
             SCENARIO=${{ matrix.scenario }}
             echo "RUN SCENARIO: $SCENARIO"
-            BRANCH=$(echo "${{ github.head_ref }}" | tr / _)
-            CONTAINER_NAME="$BRANCH_$SCENARIO"
             mkdir -p /tmp/scenario-result/${{ github.head_ref }}/$SCENARIO
-            docker run -d --rm --name $CONTAINER_NAME -v /tmp/scenario-result/${{ github.head_ref }}/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
-            echo "container_name=$CONTAINER_NAME" >> $GITHUB_OUTPUT
+            docker run -d --rm --name ${{ github.head_ref }}_$SCENARIO -v /tmp/scenario-result/${{ github.head_ref }}/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
             echo "$SCENARIO executed"
       - name: Wait untill docker finished
         timeout-minutes: 5
         continue-on-error: true
         run: |
           SCENARIO=${{ matrix.scenario }}
-          CONTAINER_NAME=${{ steps.run_docker.outputs.container_name }}
-          echo "$CONTAINER_NAME"
+          
           DELAY=5
           while true
           do
             sleep $DELAY
-            result=$( docker inspect -f '{{.State.Running}}' $CONTAINER_NAME 2>/dev/null )    
+            result=$( docker inspect -f '{{.State.Running}}' ${{ github.head_ref }}_$SCENARIO 2>/dev/null )    
             echo "Check result: $result"
             if [ "$result" = true ]; then
-                echo "Container $CONTAINER_NAME  exists"
+                echo 'Container $SCENARIO  exists'
                 continue
             fi
             break
@@ -298,8 +293,8 @@ jobs:
       ##  if: always()
       ##  run: sudo rm -rf /tmp/scenario-result/${{ github.head_ref }}
 
-      # - name: Clean bins
-      #   if: always()
-      #   uses: geekyeggo/delete-artifact@v2
-      #   with:
-      #       name: core-bins
+      - name: Clean bins
+        if: always()
+        uses: geekyeggo/delete-artifact@v2
+        with:
+            name: core-bins

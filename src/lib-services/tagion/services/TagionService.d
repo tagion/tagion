@@ -414,7 +414,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         gossip_net.start_listening();
 
         const startup_duration = dur!"hnsecs"(Clock.currTime().stdTime-startup_timestamp);
-        if(opts.startup_delay.msecs > startup_duration){
+        if (opts.startup_delay.msecs > startup_duration){
             Thread.sleep(opts.startup_delay.msecs - startup_duration);
         } 
         while (!stop && !abort) {

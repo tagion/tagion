@@ -481,7 +481,6 @@ static void async_send(
                 catch (Exception e)
                 {
                     log.warning("Error on sending to channel: %s", e);
-                    // concurrency.send(concurrency.ownerTid, channel); //???
                 }
             },
                 (Pubkey channel, uint id) {
@@ -516,7 +515,7 @@ static void async_send(
                     auto doc = Document(resp.data);
                     const receiver = hirpc.receive(doc);
                     Pubkey received_pubkey = receiver.pubkey;
-                    log("*** received from: %s", received_pubkey.cutHex);
+                    log("Received from: %s", received_pubkey.cutHex);
                     const streamId = connectionPoolBridge[received_pubkey];
                     if (!streamId)
                     {
