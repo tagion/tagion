@@ -20,6 +20,13 @@ IMPORTS=$(for P in $IMPORT_PATH; do echo -I="$P"; done);
 IMPORTS+=" $REPO_DIR/bdd/";
 # echo $IMPORTS;
 
+<<<<<<< HEAD
 DCD_PATH="$HOME/.local/share/code-d/bin/";
 
 $DCD_PATH/'dcd-client' --socketFile=$SOCKET_FILE $IMPORTS;
+=======
+# Use binaries form vscode code-d extension
+DCD_CLIENT="$HOME/.local/share/code-d/bin/dcd-client";
+
+$DCD_CLIENT --socketFile=$SOCKET_FILE $IMPORTS;
+>>>>>>> current
