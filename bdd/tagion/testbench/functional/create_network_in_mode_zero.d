@@ -41,6 +41,7 @@ class CreateNetworkWithNAmountOfNodesInModezero {
     const Genesis[] genesis;
     const int number_of_nodes;
     string module_path;
+    BDDOptions bdd_options;
 
     Node[] nodes;
     string[] node_logs;
@@ -57,6 +58,7 @@ class CreateNetworkWithNAmountOfNodesInModezero {
         this.module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
         this.increase_port = bdd_options.network.increase_port;
         this.tx_increase_port = bdd_options.network.tx_increase_port;
+        this.bdd_options = bdd_options;
 
     }
 
@@ -77,26 +79,47 @@ class CreateNetworkWithNAmountOfNodesInModezero {
     @When("network is started")
     Document started() @trusted {
 
-        nodes ~= new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, true, "internal");
+        for (int i = 1; i < number_of_nodes; i++)
+        {
+            Node node = new Node(module_path, i, number_of_nodes, increase_port+i, tx_increase_port+i, 0);
+            nodes ~= node;
+        }
+        Node node_master;
+        if (bdd_options.network.monitor) {
+            node_master = new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, 0, true, true);
+        } else {
+            node_master = new Node(module_path, number_of_nodes, number_of_nodes, increase_port, tx_increase_port, 0, true);
+        }
+        
+        nodes ~= node_master;
+        node_master.start();
+
 
         return result_ok;
-        
+
     }
 
     @Then("the nodes should be in_graph")
     Document ingraph() @trusted {
-        /* return Document(); */
 
         int sleep_before = 30;
         Thread.sleep(sleep_before.seconds);
-        check(waitUntilInGraph(60, 1, nodes[0].transaction_port+1) == true, "in_graph not found in log");
+        check(waitUntilInGraph(60, 1, nodes[$-1].transaction_port) == true, "in_graph not found in log");
 
         return result_ok;
     }
 
     @Then("the wallets should receive genesis amount")
     Document amount() {
-        return Document();
+        foreach (i, genesis_amount; genesis)
+        {
+            Balance balance = wallets[i].getBalance(nodes[$-1].transaction_port);
+            check(balance.returnCode == true, "Error in updating balance");
+            writefln("%s", balance);
+            check(balance.total == genesis[i].amount, "Balance not updated");
+        }
+        // check that wallets were updated correctly
+        return result_ok;
     }
 
 }

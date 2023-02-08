@@ -24,7 +24,7 @@ import tagion.basic.TagionExceptions : TagionException;
 import tagion.utils.BitMask;
 import tagion.logger.Logger;
 
-// import tagion.Keywords;
+import tagion.Keywords;
 
 @safe
 class MonitorException : TagionException {
@@ -90,19 +90,20 @@ class MonitorCallBacks : EventMonitorCallbacks {
         void inner_send() {
             const doc = Document(hibon);
 
-            // with (FileExtension) {
-            //     switch (ext) {
-            // case json:
-            _socket_thread_id.send(doc.toJSON.toString);
-
-            //         break;
-            //     case hibon:
-            //         _socket_thread_id.send(doc);
-            //         break;
-            //     default:
-            //         throw new MonitorException(message("Bad fileformat %s. Only %s and %s allowed", json, hibon));
-            //     }
-            // }
+            with (FileExtension) {
+                switch (ext) {
+                case json:
+                    log("SENDING JSON: %s", doc.toJSON.toString);
+                    _socket_thread_id.send(doc.toJSON.toString);
+                    break;
+                case hibon:
+                    log("SENDING HIBON");
+                    _socket_thread_id.send(doc);
+                    break;
+                default:
+                    throw new MonitorException(message("Bad fileformat %s. Only %s and %s allowed", json, hibon));
+                }
+            }
         }
 
         assumeWontThrow(inner_send());
@@ -110,33 +111,54 @@ class MonitorCallBacks : EventMonitorCallbacks {
 
     static HiBON createHiBON(const(Event) e) nothrow {
         auto hibon = new HiBON;
-        assumeWontThrow({ hibon[basename!(e.id)] = e.id; hibon[basename!(e.node_id)] = e.node_id; });
+ 
+        // assumeWontThrow(() { 
+        //     hibon[basename!(e.id)] = e.id; 
+        //     hibon[basename!(e.node_id)] = e.node_id; 
+        //     });
+
+        try {
+            hibon[basename!(e.id)] = e.id;
+            hibon[basename!(e.node_id)] = e.node_id;
+        } catch (Exception excp) {
+            // empty
+        }
         return hibon;
     }
 
     nothrow {
-        void create(const(Event) e) {
+        import tagion.basic.Debug;
+        import tagion.hibon.HiBONJSON;
+        void connect(const(Event) e) {
             // if(e.mother !is null) {
             //     // writeln("Mother id", e.mother.id);
             // }
+            log("EVENT PACKAGE: %s", e.event_package.toDoc.toPretty);
 
             immutable _witness = e.witness !is null;
 
             auto hibon = createHiBON(e);
-            assumeWontThrow({
+
+            try {
                 hibon[Params.altitude] = e.altitude;
                 hibon[Params.order] = e.received_order;
-                hibon[Params.number] = e.round.number;
+                if (e.hasRound) {
+                    hibon[Params.number] = e.round.number;
+                }
                 if (e.mother !is null) {
                     hibon[Params.mother] = e.mother.id;
                 }
                 if (e.father !is null) {
                     hibon[Params.father] = e.father.id;
                 }
-                if (e.payload.empty) {
+                if (!e.payload.empty) {
                     hibon[Params.payload] = e.payload;
                 }
-            });
+            } catch ( Exception excp) {
+                //empty
+            }
+
+            log("HIBON AFTER: %s", hibon.toPretty);
 
             socket_send(hibon);
         }
@@ -145,26 +167,51 @@ class MonitorCallBacks : EventMonitorCallbacks {
             immutable _witness = e.witness !is null;
 
             auto hibon = createHiBON(e);
-            assumeWontThrow({ hibon[Params.witness] = _witness; });
+            try {
+                hibon[Params.witness] = _witness;
+            } catch(Exception excp) {
+                // empty
+            }
+            log("WITNESS %s", hibon.toPretty);
             socket_send(hibon);
         }
 
+    // not called
         void witness_mask(const(Event) e) {
 
             auto hibon = createHiBON(e);
-            assumeWontThrow({ hibon[Params.witness_mask] = bitarray2bool(e.witness_mask); });
+            try {
+                hibon[Params.witness_mask] = bitarray2bool(e.witness_mask);
+            } catch (Exception excp) {
+                //empty
+            }
+            log("WITNESS MASK %s", hibon.toPretty);
+
             socket_send(hibon);
         }
 
         void round_seen(const(Event) e) {
-            // auto hibon=createHiBON(e);
-            // hibon[Keywords.round_seen]=bitarray2bool(e.witness.round_seen_mask);
-            // socket_send(hibon);
+            log("BEFORE ROUND SEEN");
+            // log("%s", e.witness.round_seen_mask);
+            auto hibon=createHiBON(e);
+            // try {
+            //     hibon[Keywords.round_seen]=bitarray2bool(e.witness.round_seen_mask); 
+            // } catch(Exception excp) {
+            //     log(excp);
+            // }
+            // log("ROUND SEEN %s", hibon.toPretty);
+            socket_send(hibon);
         }
 
         void round_received(const(Event) e) {
             auto hibon = createHiBON(e);
-            assumeWontThrow({ hibon[Params.received_number] = e.round_received.number; });
+            try {
+                hibon[Params.received_number] = e.round_received.number;
+            } catch(Exception excp) {
+                //empty
+            }
+            log("ROUND RECEIVED: %s", hibon.toPretty);
+
             socket_send(hibon);
         }
 
@@ -172,11 +219,14 @@ class MonitorCallBacks : EventMonitorCallbacks {
             auto hibon = new HiBON;
             auto round = new HiBON;
             const r = rounder.last_decided_round;
+
             assumeWontThrow({
                 round[Params.number] = r.number;
                 round[Params.decided] = true;
                 round[Params.decided_count] = rounder.cached_decided_count; // decided_count;
             });
+            log("ROUND DECIDED");
+
             //hibon[Params.round]=round;
             socket_send(hibon);
         }
@@ -185,6 +235,8 @@ class MonitorCallBacks : EventMonitorCallbacks {
             auto hibon = new HiBON;
             auto round = new HiBON;
             assumeWontThrow({ round[Params.number] = r.number; round[Params.coin] = true; hibon[Params.round] = round; });
+            log("COIN ROUND");
+
             socket_send(hibon);
         }
 
@@ -230,14 +282,23 @@ class MonitorCallBacks : EventMonitorCallbacks {
         //     socket_send(hibon);
         // }
 
-        void round(const(Event) e) {
+
+        void round(const(Event) e)
+        {
             auto hibon = createHiBON(e);
             auto round = new HiBON;
-            assumeWontThrow({ round[Params.number] = e.round.number; });
-            // round[Keywords.completed]=e.round.completed;
-            // hibon[Keywords.round]=round;
+            try {
+                round[Params.number] = e.round.number;
+                round[Keywords.completed]=e.round.decided;
+                hibon[Keywords.round]=round;
+            } catch(Exception excp) {
+                //empty
+            }
+            // assumeWontThrow({ round[Params.number] = e.round.number; });
+            log("SENDING ROUND: %s", hibon.toPretty);
             socket_send(hibon);
         }
+
 
         // void forked(const(Event) e) {
         //     auto hibon=createHiBON(e);
@@ -287,9 +348,6 @@ class MonitorCallBacks : EventMonitorCallbacks {
             socket_send(epoch);
         }
 
-        void connect(const(Event) e) {
-            // Empty for now
-        }
 
         void receive(lazy const(Document) doc) {
 

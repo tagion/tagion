@@ -68,8 +68,6 @@ class GenerateDart
             dart_path = env.bdd_log.buildPath(module_path, "dart.drt");
 
         }
-
-
         immutable dart_init_command = [
             tools.dartutil,
             "--initialize",
@@ -81,9 +79,6 @@ class GenerateDart
         writefln("%s", init_dart_pipe.stdout.byLine);
 
         check(dart_path.exists, "Dart not created");
-
-
-
 
         return result_ok;
 
@@ -148,15 +143,8 @@ class GenerateDart
 
         }
 
-        // copy dart to node0 if mode0
-        if (bdd_options.network.mode == 0) {
-            string node0_dart_path = buildPath(data_path, "node0");
-            mkdirRecurse(node0_dart_path);
-            node0_dart_path.copy(dart_path);
-            check(node0_dart_path.exists, "dart not found in node0");
-        }
-
-        check(genesis_path.exists, "Genesis file not created");
+        check(genesis_path.exists, "genesis file not created");
+        check((dart_path.getSize > 0), "initialized dart file is empty");
 
         // verify that everything looks correct.
         return result_ok;

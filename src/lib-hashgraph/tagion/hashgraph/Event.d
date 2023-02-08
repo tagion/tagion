@@ -503,10 +503,6 @@ class Event {
         _witness_mask[node_id] = true;
         _count++;
 
-        if (Event.callbacks) {
-            Event.callbacks.create(this);
-        }
-
     }
 
     ~this() {

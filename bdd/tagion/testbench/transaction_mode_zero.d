@@ -21,6 +21,7 @@ int _main(string[] args)
     BDDOptions bdd_options;
     setDefaultBDDOptions(bdd_options);
     bdd_options.scenario_name = __MODULE__;
+    // bdd_options.network.monitor = true;
 
     bdd_options.save(format("/tmp/%s.json", scenario_name));
 
@@ -60,10 +61,10 @@ int _main(string[] args)
 
     // auto double_spend_context = double_spend_feature.run;
 
-    // auto kill_network_feature = automation!(kill_network)();
-    // kill_network_feature.KillTheNetworkWithPIDS(
-    //     create_network_in_mode_zero_context.CreateNetworkWithNAmountOfNodesInModezero);
-    // auto kill_network_context = kill_network_feature.run;
+    auto kill_network_feature = automation!(kill_network)();
+    kill_network_feature.KillTheNetworkWithPIDS(
+        create_network_in_mode_zero_context.CreateNetworkWithNAmountOfNodesInModezero, bdd_options);
+    auto kill_network_context = kill_network_feature.run;
 
     return 0;
 
