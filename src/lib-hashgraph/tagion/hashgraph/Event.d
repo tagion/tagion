@@ -926,10 +926,7 @@ class Event
                         ConsensusFailCode.EVENT_MOTHER_CHANNEL);
                 }
                 hashgraph.front_seat(this);
-                if (Event.callbacks)
-                {
-                    Event.callbacks.connect(this);
-                }
+
             }
             _mother = hashgraph.register(event_package.event_body.mother);
             if (_mother)
