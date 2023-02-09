@@ -1,10 +1,10 @@
-/// \file DARTOptions.d
+/// Options for the DART
 module tagion.dart.DARTOptions;
 
 import tagion.basic.Basic : basename;
 import tagion.basic.TagionExceptions;
 
-/** \struct DARTOptions
+/**
  * Options for DART
  */
 struct DARTOptions {
@@ -32,7 +32,7 @@ struct DARTOptions {
     /** timeout in miliseconds */
     ulong tick_timeout;
 
-    /** \struct Synchronize
+    /** 
      * Options for synchronization
      */
     struct Synchronize {
@@ -55,7 +55,7 @@ struct DARTOptions {
 
     Synchronize sync;
 
-    /** \struct Subscribe
+    /** 
      * Options for subscribe
      */
     struct Subscribe {

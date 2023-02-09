@@ -58,7 +58,7 @@ shared static this() @trusted {
  +     fingerprint[rim]
  +/
 @safe
-ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure {
+ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure @nogc{
     import std.stdio;
 
     return rim_keys[rim];
@@ -70,7 +70,7 @@ ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure {
  +     Sector number of a fingerpint
  +/
 @safe
-ushort root_sector(const(ubyte[]) fingerprint) pure {
+ushort root_sector(const(ubyte[]) fingerprint) pure nothrow @nogc {
     return fingerprint[1] | (fingerprint[0] << 8);
 }
 
