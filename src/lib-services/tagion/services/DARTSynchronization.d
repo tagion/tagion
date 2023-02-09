@@ -1,4 +1,4 @@
-module tagion.dart.DARTSynchronization;
+module tagion.services.DARTSynchronization;
 
 import std.conv;
 import std.stdio;

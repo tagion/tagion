@@ -23,7 +23,7 @@ import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 
-import tagion.dart.DARTSynchronization;
+import tagion.services.DARTSynchronization;
 import tagion.tasks.ResponseRequest;
 
 version (unittest) import tagion.dart.BlockFile : fileId;
@@ -463,7 +463,7 @@ private struct ActiveNodeSubscribtion(Net : HashNet) {
 
 /+
 Error: constructor
-tagion.dart.DARTSynchronization.P2pSynchronizationFactory.this(
+tagion.services.DARTSynchronization.P2pSynchronizationFactory.this(
     DART dart,
     shared(Node) node,
     shared(ConnectionPool!(shared(Stream), ulong)) connection_pool,
