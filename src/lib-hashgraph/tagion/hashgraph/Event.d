@@ -599,6 +599,10 @@ class Event {
         BitMask _round_seen_mask;
     }
 
+    const(BitMask) round_seen_mask() const pure nothrow @nogc {
+        return _round_seen_mask;
+    }
+
     private {
         Round _round;
         Round _round_received;
@@ -714,6 +718,9 @@ class Event {
             with (hashgraph) {
                 witness_search_statistic(iterative_witness_search_count);
                 mixin Log!(witness_search_statistic);
+            }
+            if (callbacks) {
+                callbacks.witness_mask(this);
             }
         }
         const(BitMask) local_calc_witness_mask(const Event e, const BitMask voting_mask, const BitMask marker_mask) nothrow @safe {
