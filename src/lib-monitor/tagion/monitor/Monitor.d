@@ -120,6 +120,12 @@ class MonitorCallBacks : EventMonitorCallbacks {
         try {
             hibon[basename!(e.id)] = e.id;
             hibon[basename!(e.node_id)] = e.node_id;
+            if (e.mother !is null) {
+                hibon[Params.mother] = e.mother.id;
+            }
+            if (e.father !is null) {
+               hibon[Params.father] = e.father.id;
+            }
         } catch (Exception excp) {
             // empty
         }
