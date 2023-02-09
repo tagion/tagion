@@ -195,14 +195,11 @@ alias check = Check!DARTException;
     /// Ditto for fingerprint
     alias bullseye = fingerprint;
 
-    /++
-     Creates an empty Recorder
-     +/
     /**
- * Creates a recorder factor  
- * Returns: 
-* 
- */
+     * Creates a recorder factor  
+     * Returns: 
+     *  recorder
+     */
     RecordFactory.Recorder recorder() nothrow {
         return manufactor.recorder;
     }
@@ -557,15 +554,15 @@ alias check = Check!DARTException;
         return null;
     }
 
-    @safe static class RimWalkerFiber : Fiber {
+    @safe
+    class RimWalkerFiber : Fiber {
         immutable(Buffer) rim_paths;
         protected Buffer data;
         protected bool _finished;
-        protected DARTFile owner;
         /** 
- * Sector for the walker
- * Returns: the sector of the rim
- */
+         * Sector for the walker
+         * Returns: the sector of the rim
+         */
         ushort sector() const pure nothrow
         in {
             assert(rim_paths.length >= ubyte.sizeof, assumeWontThrow(format("rim_paths is too short %d >= %d", rim_paths
@@ -581,19 +578,17 @@ alias check = Check!DARTException;
             return bigEndianToNative!ushort(rim_paths[0 .. ushort.sizeof]);
         }
         /** 
- * 
- * Params:
- *   owner = DART to be ranged
- *   rim_paths = rim selected path
- */
-        this(DARTFile owner, const(Buffer) rim_paths) @trusted
+         * Creates a walker from the DART path
+         * Params:
+         *   rim_paths = rim selected path
+         */
+        this(const(Buffer) rim_paths) @trusted
         in {
             assert(rim_paths.length >= ubyte.sizeof, format("Size of rim_paths should have a size of %d or more", ubyte
                     .sizeof));
         }
         do {
             this.rim_paths = rim_paths;
-            this.owner = owner;
             super(&run);
             popFront;
         }
@@ -603,7 +598,7 @@ alias check = Check!DARTException;
                     immutable uint index,
                     immutable uint rim = 0) @safe {
                 if (index !is INDEX_NULL) {
-                    data = owner.blockfile.load(index);
+                    data = this.outer.blockfile.load(index);
                     const doc = Document(data);
                     if (rim < rim_paths.length) {
                         if (Branches.isRecord(doc)) {
@@ -628,7 +623,7 @@ alias check = Check!DARTException;
                 }
             }
 
-            treverse(owner.blockfile.masterBlock.root_index);
+            treverse(this.outer.blockfile.masterBlock.root_index);
             _finished = true;
         }
 
@@ -668,7 +663,7 @@ alias check = Check!DARTException;
      *     A range on DARTFile as a Fiber
      */
     RimWalkerFiber rimWalkerRange(immutable(Buffer) rim_paths) {
-        return new RimWalkerFiber(this, rim_paths);
+        return new RimWalkerFiber(rim_paths);
     }
 
     /** 
