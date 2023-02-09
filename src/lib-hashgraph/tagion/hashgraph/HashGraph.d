@@ -74,7 +74,6 @@ class HashGraph {
     }
 
     package HiRPC hirpc;
-    //    protected bool _in_graph;
 
     // function not used
     @nogc

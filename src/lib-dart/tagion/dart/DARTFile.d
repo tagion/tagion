@@ -58,7 +58,7 @@ shared static this() @trusted {
  +     fingerprint[rim]
  +/
 @safe
-ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure @nogc{
+ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure @nogc {
     import std.stdio;
 
     return rim_keys[rim];
@@ -70,10 +70,28 @@ ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure @nogc{
  +     Sector number of a fingerpint
  +/
 @safe
-ushort root_sector(const(ubyte[]) fingerprint) pure nothrow @nogc {
-    return fingerprint[1] | (fingerprint[0] << 8);
+ushort sector(const(ubyte[]) fingerprint) pure nothrow @nogc
+in (fingerprint.length >= ubyte.sizeof)
+do {
+    ushort result = ushort(fingerprint[0]) << 8;
+    if (fingerprint.length > ubyte.sizeof) {
+        result |= fingerprint[1];
+
+    }
+    return result;
 }
 
+@safe
+unittest {
+    import std.stdio;
+
+    assert(sector([0xA7]) == 0xA700);
+    assert(sector([0xA7, 0x15]) == 0xA715);
+    assert(sector([0xA7, 0x15, 0xE3]) == 0xA715);
+
+}
+
+enum SECTOR_MAX_SIZE = 1 << (ushort.sizeof * 8);
 @safe
 void printfp(string msg, const Buffer[] fingerprints) {
     import std.stdio;
@@ -282,7 +300,9 @@ alias check = Check!DARTException;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
+
             
+
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if (doc.hasMember(indicesName)) {
                 _indices = new uint[KEY_SPAN];
@@ -370,7 +390,9 @@ alias check = Check!DARTException;
                 foreach (key, index; _indices) {
                     if (index !is INDEX_NULL) {
                         hibon_indices[key] = index;
+
                         
+
                         .check(_fingerprints[key]!is null,
                         format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
@@ -481,7 +503,9 @@ alias check = Check!DARTException;
             if (merkleroot is null) {
                 foreach (key, index; _indices) {
                     if ((index !is INDEX_NULL) && (_fingerprints[key] is null)) {
+
                         
+
                             .check((index in index_used) is null,
                                     format("The DART contains a recursive tree @ index %d", index));
                         index_used[index] = true;
@@ -886,7 +910,7 @@ alias check = Check!DARTException;
                 scope (success) {
                     blockfile.erase(erase_block_index);
                 }
-                immutable sector = root_sector(archive.fingerprint);
+                immutable sector = sector(archive.fingerprint);
                 Branches branches;
                 if (rim < RIMS_IN_SECTOR) {
                     if (branch_index !is INDEX_NULL) {

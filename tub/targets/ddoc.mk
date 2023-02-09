@@ -27,7 +27,7 @@ help-ddoc:
 
 help: help-ddoc
 
-ddoc:
+ddoc: $(BUILDDOC)/.way
 	$(PRECMD) 
 	echo "making ddoc"
 	$(ADRDOX) -i --skeleton $(DTUB)/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC)

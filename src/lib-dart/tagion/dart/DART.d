@@ -36,9 +36,8 @@ import tagion.dart.Recorder : RecordFactory, Archive;
 
 alias hex = toHexString;
 
-enum SECTOR_MAX_SIZE = 1 << (ushort.sizeof * 8);
-/* 
- * Calculates the correct to angle on the angle circle
+/**
+ * Calculates the to-angle on the angle circle 
  * Params:
  *   from_sector = angle from
  *   to_sector = angle to
@@ -46,8 +45,19 @@ enum SECTOR_MAX_SIZE = 1 << (ushort.sizeof * 8);
  *   to angle
  */
 @safe
-uint calc_to_value(const ushort from_sector, const ushort to_sector) pure nothrow {
+uint calc_to_value(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
     return to_sector + ((from_sector >= to_sector) ? SECTOR_MAX_SIZE : 0);
+}
+
+@safe
+unittest {
+    // One sector
+    assert(calc_to_value(0x46A6, 0x46A7) == 0x46A7);
+    // Full round
+    assert(calc_to_value(0x46A6, 0x46A6) == 0x46A6+SECTOR_MAX_SIZE);
+    // Round around
+    assert(calc_to_value(0x46A7, 0x46A6) == 0x46A6+SECTOR_MAX_SIZE);
+
 }
 
 /** 
@@ -59,12 +69,27 @@ uint calc_to_value(const ushort from_sector, const ushort to_sector) pure nothro
      *   sector size
      */
 @safe
-uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure nothrow {
+uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
     immutable from = from_sector;
     immutable to = calc_to_value(from_sector, to_sector);
     return to - from;
 }
 
+@safe
+unittest { // check calc_sector_size
+    // Full round
+    assert(calc_sector_size(0x543A,0x543A) == SECTOR_MAX_SIZE);
+    // One sector
+    assert(calc_sector_size(0x543A,0x543B) == 1);
+    // Part angle
+writefln("angle %04X", 
+    calc_sector_size(0x1000,0xF000) );
+    assert(calc_sector_size(0x1000,0xF000) == 0xE000);
+    // Wrap around angle
+    assert(calc_sector_size(0xF000,0x1000) == 0x2000);
+
+
+}
 /** 
  * DART include support for synchronization 
  */
@@ -148,11 +173,10 @@ class DART : DARTFile {
             return _from_sector;
         }
 
-        /// Returns: to sector
         /**
- * The end sector
- * Returns: end angle 
- */
+         * The end sector
+         * Returns: end angle 
+         */
         @property ushort to_sector() inout {
             return _to_sector;
         }
@@ -166,43 +190,42 @@ class DART : DARTFile {
                 }
             });
 
-        /// Returns: true if range is full-angle 
         /**
- * Checks if the range is a full angle dart (0x0000 to 0xFFFF)
- * Returns: true if it a full-range=full-angle
- */
+         * Checks if the range is a full angle dart (0x0000 to 0xFFFF)
+         * Returns: true if it a full-range=full-angle
+         */
         bool isFullRange() const pure nothrow {
             return _from_sector == _to_sector;
         }
 
         /** 
-     * Checks if the sector is within the sector-range
-     * Params:
-     *   sector = sector number
-     * Returns: true if sector is within the range
-     */
+         * Checks if the sector is within the sector-range
+         * Params:
+         *   sector = sector number
+         * Returns: true if sector is within the range
+         */
         bool inRange(const ushort sector) const pure nothrow {
             return sectorInRange(sector, _from_sector, _to_sector);
         }
 
         /** 
-     * Checks if the sector of a rim is within the sector-range
-     * Params:
-     *   rims = a rim path 
-     * Returns: 
-     */
+         * Checks if the sector of a rim is within the sector-range
+         * Params:
+         *   rims = a rim path 
+         * Returns: 
+         */
         bool inRange(const Rims rims) const pure nothrow {
             return sectorInRange(rims.sector, _from_sector, _to_sector);
         }
 
         /**
-     * Checks if sector is within range 
-     * Params:
-     *   sector = sector number
-     *   from_sector = sector start angle
-     *   to_sector = sector end angle
-     * Returns: true if the sector is within the angle-span 
-     */
+         * Checks if sector is within range 
+         * Params:
+         *   sector = sector number
+         *   from_sector = sector start angle
+         *   to_sector = sector end angle
+         * Returns: true if the sector is within the angle-span 
+         */
         static bool sectorInRange(
                 const ushort sector,
                 const ushort from_sector,
@@ -218,16 +241,16 @@ class DART : DARTFile {
         }
 
         /* 
-     * Check if current sector has reached the end
-     * Returns: true of the sector reach the end of the angle-span
-     */
+         * Check if current sector has reached the end
+         * Returns: true of the sector reach the end of the angle-span
+         */
         bool empty() const pure nothrow {
             return !inRange(_sector) || flag;
         }
 
         /** 
-     * Progress one sector
-     */
+         * Progress one sector
+         */
         void popFront() {
             if (!empty) {
                 _sector++;
@@ -236,18 +259,18 @@ class DART : DARTFile {
             }
         }
 
-        /* 
-     * Gets the current sector
-     * Returns: current sector
-     */
+        /**
+         * Gets the current sector
+         * Returns: current sector
+         */
         ushort front() const pure nothrow {
             return _sector;
         }
 
-        /* 
-     * Gives an representation of the angle span
-     * Returns: text of angle span
-     */
+        /** 
+         * Gives an representation of the angle span
+         * Returns: text of angle span
+         */
         string toString() const pure {
             return format("(%d, %d)", _from_sector, _to_sector);
         }
@@ -307,7 +330,8 @@ class DART : DARTFile {
         /**
          * Returns: sector of the selected rims
          */
-ushort sector() const pure nothrow
+
+        ushort sector() const pure nothrow
         in {
             pragma(msg, "fixme(vp) have to be check: rims is root_rim");
 
@@ -316,11 +340,10 @@ ushort sector() const pure nothrow
                     .length));
         }
         do {
-            if (rims.length == 0)
+            if (rims.length == 0) {
                 return ushort.init;
-            assert(rims.length == 1);
-            ushort result = ushort(rims[0]) + ushort(rims[1] << ubyte.sizeof * 8);
-            return result;
+            }
+            return .sector(rims);
         }
 
         mixin HiBONType!(
@@ -344,17 +367,34 @@ ushort sector() const pure nothrow
     }
 
     static {
+       /**
+       * Constructs a HiRPC method for dartRead 
+       * Params:
+       *   fingerprints = List of hash-pointers 
+       *   hirpc = HiRPC credentials 
+       *   id = HiRPC id 
+       * Returns: 
+       *   HiRPC Sender
+       */
         @HiRPCMethod() const(HiRPCSender) dartRead(Range)(
                 Range fingerprints,
                 HiRPC hirpc = HiRPC(null),
-                uint id = 0) if (isInputRange!Range && is(ElementType!Range : const(Buffer))) { //if (is(ForeachType!Range : Buffer)) {
+                uint id = 0) if (isInputRange!Range && is(ElementType!Range : const(Buffer))) { 
             auto params = new HiBON;
             auto params_fingerprints = new HiBON;
             params_fingerprints = fingerprints.filter!(b => b.length !is 0);
             params[Params.fingerprints] = params_fingerprints;
             return hirpc.dartRead(params, id);
         }
-
+       /**
+        * Constructs a HiRPC method for dartRim
+        * Params:
+        *   rims = rim-path to the DART sub-tree
+        *   hirpc = HiRPC credentials
+        *   id = HiRPC id
+        * Returns: 
+        *   HiRPC sender
+        */
         @HiRPCMethod() const(HiRPCSender) dartRim(
                 ref const Rims rims,
                 HiRPC hirpc = HiRPC(null),
@@ -362,6 +402,15 @@ ushort sector() const pure nothrow
             return hirpc.dartRim(rims, id);
         }
 
+       /**
+        * Constructs a HiRPC method for dartModify
+        * Params:
+        *   recorder = recoreder of archives
+        *   hirpc = HiRPC credentials
+        *   id = HiRPC id
+        * Returns: 
+        *   HiRPC sender
+        */
         @HiRPCMethod() const(HiRPCSender) dartModify(
                 ref const RecordFactory.Recorder recorder,
                 HiRPC hirpc = HiRPC(null),
@@ -369,6 +418,14 @@ ushort sector() const pure nothrow
             return hirpc.dartModify(recorder, id);
         }
 
+        /**
+         * Constructs a HiRPC method for the dartBullseye 
+         * Params:
+         *   hirpc = HiRPC credentials
+         *   id = HiRPC id
+         * Returns: 
+         *   HiRPC sender
+         */
         @HiRPCMethod() const(HiRPCSender) dartBullseye(
                 HiRPC hirpc = HiRPC(null),
                 uint id = 0) {
@@ -1022,7 +1079,7 @@ received = the HiRPC received package
 
     }
 
-    ///
+    ///Examples: how use the DART
     unittest {
         import tagion.utils.Random;
         import tagion.dart.BlockFile;
@@ -1138,9 +1195,7 @@ received = the HiRPC received package
                     else {
                         assert(dart_A.fingerprint !is null);
                     }
-                    //                   assert(0, "UNITTEST END");
                 }
-                //                   assert(0, "UNITTEST END");
             }
 
             { // Single element different sectors
