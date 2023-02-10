@@ -1,3 +1,4 @@
+/// HashGraph basic support functions
 module tagion.hashgraph.HashGraphBasic;
 
 import std.stdio;
@@ -24,14 +25,44 @@ import tagion.basic.ConsensusExceptions : convertEnum, GossipConsensusException,
 enum minimum_nodes = 3;
 import tagion.utils.Miscellaneous : cutHex;
 
-/++
- + Calculates the majority votes
- + Params:
- +     voting    = Number of votes
- +     node_size = Total bumber of votes
- + Returns:
- +     Returns `true` if the votes are more than 2/3
- +/
+/// check function used in the Event package
+// Returns the highest altitude
+@safe @nogc
+int highest(int a, int b) pure nothrow {
+    if (higher(a, b)) {
+        return a;
+    }
+    else {
+        return b;
+    }
+}
+
+// Is a higher or equal to b
+@safe @nogc
+bool higher(int a, int b) pure nothrow {
+    return a - b > 0;
+}
+
+@safe
+unittest { // Test of the altitude measure function
+    int x = int.max - 10;
+    int y = x + 20;
+    assert(x > 0);
+    assert(y < 0);
+    assert(highest(x, y) == y);
+    assert(higher(y, x));
+    assert(!higher(x, x));
+}
+
+
+/**
+ * Calculates the majority votes
+ * Params:
+ *     voting    = Number of votes
+ *     node_size = Total bumber of votes
+ * Returns:
+ *     Returns `true` if the votes are more than 2/3
+ */
 @safe @nogc
 bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
@@ -78,6 +109,7 @@ enum ExchangeState : uint {
 
 alias convertState = convertEnum!(ExchangeState, GossipConsensusException);
 
+/// HashGraph monitor call-back interface
 @safe
 interface EventMonitorCallbacks {
     nothrow {
@@ -106,7 +138,7 @@ interface EventMonitorCallbacks {
     }
 }
 
-// EventView is used to store event has a
+/// EventView is used to store event has a
 struct EventView {
     enum eventsName = "$events";
     uint id;

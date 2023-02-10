@@ -1,3 +1,4 @@
+/// HashGraph Event
 module tagion.hashgraph.Event;
 
 //import std.stdio;
@@ -29,38 +30,9 @@ import tagion.basic.Basic : this_dot, basename, EnumText, buf_idup;
 import tagion.Keywords : Keywords;
 
 import tagion.logger.Logger;
-import tagion.hashgraph.HashGraphBasic : isMajority, isAllVotes, EventBody, EventPackage, EvaPayload, Tides, EventMonitorCallbacks;
+import tagion.hashgraph.HashGraphBasic : isMajority, isAllVotes, higher, EventBody, EventPackage, EvaPayload, Tides, EventMonitorCallbacks;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.utils.BitMask : BitMask;
-
-/// check function used in the Event package
-// Returns the highest altitude
-@safe @nogc
-int highest(int a, int b) pure nothrow {
-    if (higher(a, b)) {
-        return a;
-    }
-    else {
-        return b;
-    }
-}
-
-// Is a higher or equal to b
-@safe @nogc
-bool higher(int a, int b) pure nothrow {
-    return a - b > 0;
-}
-
-@safe
-unittest { // Test of the altitude measure function
-    int x = int.max - 10;
-    int y = x + 20;
-    assert(x > 0);
-    assert(y < 0);
-    assert(highest(x, y) == y);
-    assert(higher(y, x));
-    assert(!higher(x, x));
-}
 
 @safe
 class Round {

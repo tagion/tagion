@@ -1,3 +1,4 @@
+/// Consensus HashGraph main object 
 module tagion.hashgraph.HashGraph;
 
 import std.stdio;
