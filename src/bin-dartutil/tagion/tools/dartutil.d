@@ -18,7 +18,7 @@ import tagion.basic.Types : Buffer, FileExtension;
 import tagion.basic.Basic : tempfile;
 
 import tagion.communication.HiRPC;
-import tagion.dart.DARTSynchronization;
+import tagion.services.DARTSynchronization;
 import tagion.gossip.GossipNet;
 import tagion.gossip.AddressBook;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
