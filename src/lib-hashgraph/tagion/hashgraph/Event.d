@@ -34,26 +34,46 @@ import tagion.hashgraph.HashGraphBasic : isMajority, isAllVotes, higher, EventBo
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.utils.BitMask : BitMask;
 
+/// Handles the round information for the events in the Hashgraph
 @safe
 class Round {
     //    bool erased;
     enum uint total_limit = 3;
     enum int coin_round_limit = 10;
-    private Round _previous;
-    private Round _next;
-    private bool _decided;
+    protected {
+        Round _previous;
+        Round _next;
+        bool _decided;
+    }
     immutable int number;
 
     private Event[] _events;
 
+    /**
+ * Compare the round number  
+ * Params:
+ *   rhs = round to be checked
+ * Returns: true if equal or less than
+ */
     @nogc bool lessOrEqual(const Round rhs) pure const nothrow {
         return (number - rhs.number) <= 0;
     }
 
+    /**
+     * Number of events in a round should be the same 
+     * as the number of nodes in the hashgraph
+     * Returns: number of nodes in the round 
+     */
     @nogc const(uint) node_size() pure const nothrow {
         return cast(uint) _events.length;
     }
 
+    /**
+     * Construct a round from the previous round
+     * Params:
+     *   previous = previous round
+     *   node_size = size of events in a round
+     */
     private this(Round previous, const size_t node_size) pure nothrow {
         if (previous) {
             number = previous.number + 1;
@@ -66,12 +86,20 @@ class Round {
         _events = new Event[node_size];
     }
 
+    /**
+     * All the events in the first ooccurrences of this round
+     * Returns: all events in a round
+     */
     @nogc
     const(Event[]) events() const pure nothrow {
         return _events;
     }
 
-    //@nogc
+    /**
+     * Adds the even to round
+     * Params:
+     *   event = the event to be added
+     */
     package void add(Event event) pure nothrow
     in {
         assert(_events[event.node_id] is null, "Event at node_id " ~ event.node_id.to!string ~ " should only be added once");
@@ -81,16 +109,29 @@ class Round {
         event._round = this;
     }
 
+    /**
+     * Check of the round has no events
+     * Returns: true of the round is empty
+     */
     @nogc
     bool empty() const pure nothrow {
         return !_events.any!((e) => e !is null);
     }
 
+    /**
+     * Counts the number of events which has been set in this round
+     * Returns: number of events set
+     */
     @nogc
     size_t event_count() const pure nothrow {
         return _events.count!((e) => e !is null);
     }
 
+    /**
+     * Remove the event from the round 
+     * Params:
+     *   event = event to be removed
+     */
     @nogc
     private void remove(const(Event) event) nothrow
     in {
@@ -104,14 +145,16 @@ class Round {
         }
     }
 
+    /**
+     * Scrap all rounds and events from this round and downwards 
+     * Params:
+     *   hashgraph = the hashgraph owning the events/rounds
+     */
     @trusted
     private void scrap(HashGraph hashgraph)
     in {
         assert(!_previous, "Round can not be scrapped due that a previous round still exists");
     }
-    // out {
-    //     assert(_events.all!((e) => e is null));
-    // }
     do {
         uint count;
         void scrap_events(Event e) {
@@ -132,15 +175,30 @@ class Round {
         }
     }
 
+    /**
+     * Check if the round has been decided
+     * Returns: true if the round has been decided
+     */
     @nogc bool decided() const pure nothrow {
         return _decided;
     }
 
+    /**
+     * Get the event a the node_id 
+     * Params:
+     *   node_id = node id number
+     * Returns: 
+     *   Event at the node_id
+     */
     @nogc
     inout(Event) event(const size_t node_id) pure inout {
         return _events[node_id];
     }
 
+    /**
+     * Previous round from this round
+     * Returns: previous round
+     */
     @nogc
     package inout(Round) previous() inout pure nothrow {
         return _previous;
@@ -151,6 +209,10 @@ class Round {
         assert(!_next || (_next.number - 1 is number));
     }
 
+    /**
+     * The rounder takes care of cleaning up old round 
+     * and keeps track of if an round has been decided or can be decided
+     */
     struct Rounder {
         Round last_round;
         Round last_decided_round;
@@ -181,6 +243,10 @@ class Round {
             local_erase(last_round);
         }
 
+    /**
+     * Cleans up old round and events if they are no-longer needed
+     */
+        package
         void dustman() {
             void local_dustman(Round r) {
                 if (r !is null) {
@@ -205,11 +271,19 @@ class Round {
             }
         }
 
+ /**
+  * Number of round epoch in the rounder queue
+  * Returns: size of the queue
+   */
         @nogc
         size_t length() const pure nothrow {
             return this[].walkLength;
         }
 
+    /**
+     * Number of the same as hashgraph
+     * Returns: number of nodes
+     */
         uint node_size() const pure nothrow
         in {
             assert(last_round, "Last round must be initialized before this function is called");
@@ -219,6 +293,11 @@ class Round {
 
         }
 
+    /**
+     * Sets the round for an event and creates an new round if needed
+     * Params:
+     *   e = event
+     */
         void next_round(Event e) nothrow
         in {
             assert(last_round, "Base round must be created");
@@ -244,6 +323,12 @@ class Round {
             }
         }
 
+    /**
+     * Check of a round has been decided
+     * Params:
+     *   test_round = round to be tested
+     * Returns: 
+     */
         @nogc
         bool decided(const Round test_round) pure const nothrow {
             bool _decided(const Round r) pure nothrow {
@@ -259,11 +344,20 @@ class Round {
             return _decided(last_decided_round);
         }
 
+    /**
+     * Calculates the number of rounds since the last decided round
+     * Returns: number of undecided roundes 
+     */
         @nogc
         int coin_round_distance() pure const nothrow {
             return last_round.number - last_decided_round.number;
         }
 
+
+    /**
+     * Number of decided round in cached in memory
+     * Returns: Number of cached dicided rounds
+     */
         @nogc
         uint cached_decided_count() pure const nothrow {
             uint _cached_decided_count(const Round r, const uint i = 0) pure nothrow {
@@ -276,11 +370,21 @@ class Round {
             return _cached_decided_count(last_round);
         }
 
+    /**
+     * Check the coin round limit
+     * Returns: true if the coin round has beed exceeded 
+     */
         @nogc
         bool check_decided_round_limit() pure const nothrow {
             return cached_decided_count > total_limit;
         }
 
+    /**
+     * Call to collect and order the epoch
+     * Params:
+     *   r = decided round to collect events to produce the epoch
+     *   hashgraph = hashgraph which ownes this rounds
+     */
         private void collect_received_round(Round r, HashGraph hashgraph) {
             uint mark_received_iteration_count;
             uint order_compare_iteration_count;
@@ -371,6 +475,12 @@ class Round {
             hashgraph.epoch(event_collection, times[mid], r);
         }
 
+    
+    /**
+     * Called to check of the round can be decided
+     * Params:
+     *   hashgraph = hashgraph which owns the round 
+     */
         void check_decided_round(HashGraph hashgraph) @trusted {
             auto round_to_be_decided = last_decided_round._next;
 
@@ -393,16 +503,24 @@ class Round {
             }
         }
 
+    /**
+     * Range from this round and down
+     * Returns: range of rounds 
+     */
         @nogc
         package Range!false opSlice() pure nothrow {
             return Range!false(last_round);
         }
 
+    /// Ditto
         @nogc
         Range!true opSlice() const pure nothrow {
             return Range!true(last_round);
         }
 
+    /**
+     * Range of rounds 
+     */
         @nogc
         struct Range(bool CONST = true) {
             private Round round;
@@ -452,6 +570,7 @@ class Round {
 
 }
 
+/// HashGraph Event
 @safe
 class Event {
     package static bool scrapping;
@@ -465,6 +584,13 @@ class Event {
         return _count;
     }
 
+
+    /**
+     * Builds an event from an eventpackage
+     * Params:
+     *   epack = event-package to build from
+     *   hashgraph = the hashgraph which produce the event
+     */
     package this(
             immutable(EventPackage)* epack,
             HashGraph hashgraph,
@@ -498,6 +624,10 @@ class Event {
         }
     }
 
+    /**
+     * The witness event will point to the witness object
+     * This object contains infomation about the voting etc. for the witness event
+     */
     @safe
     class Witness {
         protected static uint _count;
@@ -506,13 +636,21 @@ class Event {
         }
 
         private {
-            immutable(BitMask) _seeing_witness_in_previous_round_mask; /// The marks resulting to this witness
-            BitMask _strong_seeing_mask;
-            bool _famous;
+            immutable(BitMask) _seeing_witness_in_previous_round_mask; /// The mask resulting to this witness
+            BitMask _strong_seeing_mask; /// Nodes which has voted this witness as strogly seen
+            bool _famous; /// True if the witness is voted famous
         }
 
+/**
+ * Contsruct a witness of an event
+ * Params:
+ *   owner_event = the event which is voted to be a witness
+ *   seeing_witness_in_previous_round_mask = The witness seen from this event to the privious witness.
+ */
         @trusted
-        this(Event owner_event, ref const(BitMask) seeing_witness_in_previous_round_mask) nothrow
+        this(
+            Event owner_event, 
+            ref const(BitMask) seeing_witness_in_previous_round_mask) nothrow
         in {
             assert(owner_event);
         }
@@ -527,20 +665,39 @@ class Event {
         }
 
         pure nothrow final {
+/**
+ * Nodes which see this witness as strogly seen
+ * Returns: strogly seening mask 
+ */
             @nogc
             const(BitMask) strong_seeing_mask() const {
                 return _strong_seeing_mask;
             }
 
+
+    /**
+     * Strongly seen witness from the previous round 
+     * Returns: previous stongly seen witness
+     */
             @nogc
-            ref const(BitMask) round_seen_mask() const {
+            const(BitMask) round_seen_mask() const {
                 return _seeing_witness_in_previous_round_mask;
             }
 
+    /**
+     * Checks if the witness is famous
+     * Returns: ture if famous
+     */
             bool famous() const {
                 return _famous;
             }
 
+    /**
+     *  Checks and set if the event has been voted famous
+     * Params:
+     *   hashgraph = hashgraph owning the event 
+     * Returns: true if the witness is famous 
+     */
             @nogc
             private bool famous(const HashGraph hashgraph) {
                 if (!_famous) {
@@ -571,16 +728,25 @@ class Event {
         BitMask _round_seen_mask;
     }
 
+ /**
+  * The rounds see forward from this event
+  * Returns:  round seen mask
+  */
     const(BitMask) round_seen_mask() const pure nothrow @nogc {
         return _round_seen_mask;
     }
 
     private {
-        Round _round;
-        Round _round_received;
-        BitMask _round_received_mask;
+        Round _round; /// The where the event has been created
+        Round _round_received; /// The round in which the event has been voted to be received
+        BitMask _round_received_mask; /// Voting mask for the received rounds
     }
 
+    /**
+     * Attach the mother round to this event
+     * Params:
+     *   hashgraph = the graph which produces this event
+     */
     package void attach_round(HashGraph hashgraph) pure nothrow {
         if (!_round) {
             _round = _mother._round;
@@ -590,7 +756,7 @@ class Event {
     immutable uint id;
 
     /**
-       This function is
+    *  Makes the event a witness  
     */
     package void witness_event() nothrow
     in {
@@ -601,8 +767,13 @@ class Event {
         _witness = new Witness(this, round_mask);
     }
 
-    immutable size_t node_id;
+    immutable size_t node_id; /// Node number of the event
 
+    /**
+     * Sets the received order of the event
+     * Params:
+     *   iteration_count = iteration count used for debugging
+     */
     private void received_order(ref uint iteration_count) pure nothrow {
         if (isFatherLess) {
             if (_mother) {
@@ -649,6 +820,11 @@ class Event {
         }
     }
 
+    /**
+     * Decides if the event is strogly seen 
+     * Params:
+     *   hashgraph = event owner
+     */
     private void strong_seeing(HashGraph hashgraph) pure nothrow {
         uint strong_seeing_interation_count;
         scope (exit) {
@@ -679,7 +855,13 @@ class Event {
         local_strong_seeing(_round._previous, _witness.round_seen_mask);
     }
 
-    // +++
+    /**
+     * Calculated the witness mask for the event
+     * which marks the witness see from this event
+     * Params:
+     *   hashgraph = 
+     * Returns: 
+     */
     private const(BitMask) calc_witness_mask(HashGraph hashgraph) nothrow
     in {
         assert(!_mother._witness_mask[].empty);
@@ -728,6 +910,11 @@ class Event {
         return local_calc_witness_mask(this, BitMask(), BitMask());
     }
 
+     /**
+      * Connect the event to the hashgraph
+      * Params:
+      *   hashgraph = event owner 
+      */
     package final void connect(HashGraph hashgraph)
     in {
         assert(hashgraph.areWeInGraph);
@@ -797,7 +984,12 @@ class Event {
         }
     }
 
-    // +++
+    /**
+     * Disconnect this event from hashgraph
+     * Used to remove events which are no longer needed 
+     * Params:
+     *   hashgraph = event owner
+     */
     @trusted
     final private void disconnect(HashGraph hashgraph)
     in {
@@ -819,41 +1011,80 @@ class Event {
         _daughter = _son = null;
     }
 
+    /**
+     * Mother event
+     * Throws: EventException if the mother has been grounded
+     * Returns: mother event 
+     */
     final const(Event) mother() const pure {
         Event.check(!isGrounded, ConsensusFailCode.EVENT_MOTHER_GROUNDED);
         return _mother;
     }
 
-    final const(Event) father() const pure {
+    /**
+     * Mother event
+     * Throws: EventException if the mother has been grounded
+     * Returns: mother event 
+     */
+     final const(Event) father() const pure {
         Event.check(!isGrounded, ConsensusFailCode.EVENT_FATHER_GROUNDED);
         return _father;
     }
 
     @nogc pure nothrow const final {
+ /**
+  * The event-body from this event 
+  * Returns: event-body
+  */
         ref const(EventBody) event_body() {
             return event_package.event_body;
         }
 
+    /**
+     * The recived round for this event
+     * Returns: received round
+     */
         const(Round) round_received() {
             return _round_received;
         }
 
+    /**
+     * Channel from which this event has received
+     * Returns: channel
+     */
         immutable(Pubkey) channel() {
             return event_package.pubkey;
         }
 
+    /**
+     * Get the mask of the received rounds
+     * Returns: received round mask 
+     */
         const(BitMask) round_received_mask() {
             return _round_received_mask;
         }
 
+    /**
+     * Checks if this event is the last one on this node
+     * Returns: true if the event is in front
+     */
         bool isFront() {
             return _daughter is null;
         }
+
+    /**
+     * Check if an evnet has around 
+     * Returns: true if an round exist for this event
+     */
 
         bool hasRound() {
             return (_round !is null);
         }
 
+    /**
+     * Round of this event
+     * Returns: round
+     */
         const(Round) round()
         out (result) {
             assert(result, "Round must be set before this function is called");
@@ -862,18 +1093,36 @@ class Event {
             return _round;
         }
 
+       /**
+        * The witness seen from this event 
+        * Returns: witness mask
+        */
         const(BitMask) witness_mask() {
             return _witness_mask;
         }
 
+    /**
+     * Gets the witness infomatioin of the event
+     * Returns: 
+     * if this event is a witness the witness is returned
+     * else null is returned
+     */
         const(Witness) witness() {
             return _witness;
         }
 
+    /**
+     * Get the altitude of the event
+     * Returns: altitude
+     */
         immutable(int) altitude() {
             return event_package.event_body.altitude;
         }
 
+    /**
+     *  Calculates the order of this event
+     * Returns: order
+     */
         int expected_order() {
             const m = (_mother) ? _mother._received_order : int.init;
             const f = (_father) ? _father._received_order : int.init;
@@ -882,11 +1131,18 @@ class Event {
             result = (result is int.init) ? int.init + 1 : result;
             return result;
         }
-
+     /**
+      * Is this event owner but this node 
+      * Returns: true if the evnet is owned
+      */
         bool nodeOwner() {
             return node_id is 0;
         }
 
+    /**
+     * Gets the event order number 
+     * Returns: order
+     */
         int received_order()
         in {
             assert(isEva || (_received_order !is int.init), "The received order of this event has not been defined");
@@ -895,18 +1151,34 @@ class Event {
             return _received_order;
         }
 
+      /**
+       * Checks if the event is connected in the graph 
+       * Returns: true if the event is corrected 
+       */
         bool connected() {
             return (_mother !is null);
         }
+
+      /**
+       * Gets the daughter event
+       * Returns: the daughter
+       */
 
         const(Event) daughter() {
             return _daughter;
         }
 
+      /**
+       * Gets the son of this event
+       * Returns: the son
+       */
         const(Event) son() {
             return _son;
         }
-
+      /**
+       * Get 
+       * Returns: 
+       */
         const(Document) payload() {
             return event_package.event_body.payload;
         }
