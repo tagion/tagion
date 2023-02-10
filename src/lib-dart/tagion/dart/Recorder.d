@@ -43,8 +43,8 @@ class RecordFactory {
     }
     /**
      * Creates an empty Recorder
-* Returns:
-* new empty recorder
+     * Returns:
+     * new empty recorder
      */
     Recorder recorder() nothrow {
         return new Recorder;
@@ -62,7 +62,6 @@ class RecordFactory {
     }
 
     /**
-     * Same as
      * Same as recorder but produce an immutable recorder
      * Params: doc
      */
@@ -85,7 +84,6 @@ class RecordFactory {
 
     /**
      * Creates a Recorder base on an existing archive list
-
      * Params:
      *     archives = Archive list
      */
@@ -372,20 +370,23 @@ alias GetType = Archive.Type delegate(const(Archive)) @safe;
 enum Add = (const(Archive) a) => Archive.Type.ADD;
 enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
 
+/**
+ * Archive element used in the DART Recorder
+ */
 @safe class Archive {
     enum Type : int {
-        NONE = 0,
-        REMOVE = -1,
-        ADD = 1,
+        NONE = 0,  /// NOP DART instruction
+        REMOVE = -1,  /// Archive marked as remove instruction
+        ADD = 1,      /// Archive marked as add instrunction
     }
 
-    @label(STUB, true) immutable(Buffer) fingerprint;
-    @label("$a", true) const Document filed;
+    @label(STUB, true) immutable(Buffer) fingerprint; /// Stub hash-pointer used in sharding
+    @label("$a", true) const Document filed; /// The actual data strute stored 
     enum archiveLabel = GetLabel!(this.filed).name;
     enum fingerprintLabel = GetLabel!(this.fingerprint).name;
     enum typeLabel = GetLabel!(this._type).name;
-    private @label("$t", true) Type _type;
-    protected @label("") bool _done;
+    private @label("$t", true) Type _type; /// Acrhive type
+    protected @label("") bool _done;  /// Marks if the operation was done on the archive
 
     mixin JSONString;
     /* 
@@ -539,8 +540,8 @@ in(t !is Type.ADD)
     }
 
     /**
-     * Returns:
-     *     Generates Buffer to be store in the BlockFile
+     * Generates Document to be store in the BlockFile
+     * Returns: the document to be stored
      */
     const(Document) store() const
     out (result) {

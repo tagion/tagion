@@ -720,7 +720,15 @@ alias check = Check!DARTException;
         }
         return result;
     }
-    // Loads all the archives in the list of fingerprints
+    /**
+ * Loads all the archives in the list of fingerprints
+ * 
+ * Params:
+ *   fingerprints = range of fingerprints
+ *   type = types of archives
+ * Returns: 
+*   recorder of the read archives
+ */
     RecordFactory.Recorder loads(Range)(
             Range fingerprints,
             Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : Buffer)) {
@@ -764,8 +772,6 @@ alias check = Check!DARTException;
                 }
             }
         }
-
-        auto root_index = blockfile.masterBlock.root_index;
 
         auto sorted_fingerprints = fingerprints.filter!(a => a.length !is 0).array.dup;
         sorted_fingerprints.sort;
@@ -819,6 +825,12 @@ alias check = Check!DARTException;
             }
         }
 
+        /**
+     * Checks if all the archives in the range are of the type REMOVE
+     * Params:
+     *   get_type = archive type get function
+     * Returns: true if all the archives are removes
+     */
         bool onlyRemove(const GetType get_type) const pure {
             if (get_type) {
                 return current
@@ -829,20 +841,35 @@ alias check = Check!DARTException;
         }
 
         @nogc pure nothrow {
+            /** 
+             * Checks if the range only contains one archive 
+             * Returns: true range if single
+             */
             bool single() const {
                 return current.length == 1;
             }
 
+            /**
+             * Checks if the range is empty
+             * Returns: true if empty
+             */
             bool empty() const {
                 return current.length == 0;
             }
 
+            /**
+             *  Progress one archive
+             */
             void popFront() {
                 if (!empty) {
                     current = current[1 .. $];
                 }
             }
 
+            /**
+             * Gets the current archive in the range
+             * Returns: current archive and return null if the range is empty
+             */
             inout(Archive) front() inout {
                 if (empty) {
                     return null;
@@ -850,21 +877,29 @@ alias check = Check!DARTException;
                 return current[0];
             }
 
+            /**
+             * Force the range to be empty
+             */
             void force_empty() {
                 current = null;
             }
 
+            /**
+             * Number of archive left in the range
+             * Returns: size of the range
+             */
             size_t length() const {
                 return current.length;
             }
         }
-        RimKeyRange save() pure nothrow {
+        /**
+         *  Creates new range at the current position
+         * Returns: copy of this range
+         */
+        RimKeyRange save() pure nothrow @nogc {
             return RimKeyRange(current);
         }
 
-        size_t length() pure const nothrow {
-            return current.length;
-        }
     }
 
     enum RIMS_IN_SECTOR = 2;
@@ -940,9 +975,6 @@ alias check = Check!DARTException;
                     if (branch_index !is INDEX_NULL) {
                         immutable data = blockfile.load(branch_index);
                         const doc = Document(data);
-
-                        
-
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
                         if (Branches.isRecord(doc)) {
                             branches = Branches(doc);
@@ -1150,12 +1182,12 @@ alias check = Check!DARTException;
     }
 
     /** 
- * Loads the branches from the DART at rim_path
- * Params:
- *   rim_path = rim path select the branches
- * Returns:
- *   the branches a the rim_path
- */
+     * Loads the branches from the DART at rim_path
+     * Params:
+     *   rim_path = rim path select the branches
+     * Returns:
+     *   the branches a the rim_path
+     */
     Branches branches(const(ubyte[]) rim_path) {
         Branches search(const(ubyte[]) rim_path, const uint index, const uint rim = 0) {
             immutable data = blockfile.load(index);
@@ -1191,7 +1223,7 @@ alias check = Check!DARTException;
      *  the rim-range at rim_path
      */
     RimRange iterator(const(ubyte[]) rim_path) @trusted {
-        auto range = new RimRange(this, rim_path);
+        auto range = new RimRange(rim_path);
         range.call;
         return range;
     }
@@ -1201,14 +1233,16 @@ alias check = Check!DARTException;
      */
     @safe class RimRange : Fiber {
         protected {
-            DARTFile owner;
             const(ubyte[]) rim_path;
             Buffer data;
             bool _finished;
         }
-
-        this(DARTFile dart, const(ubyte[]) rim_path) @trusted {
-            owner = dart;
+        /**
+         * Create a rim range form the DARTFile
+         * Params:
+         *   rim_path = rim path
+         */
+        private this(const(ubyte[]) rim_path) @trusted {
             this.rim_path = rim_path;
             super(&run);
         }
@@ -1230,7 +1264,7 @@ alias check = Check!DARTException;
 
             uint search(const(ubyte[]) rim_path, const uint index, const uint rim = 0) @safe {
                 if (index !is INDEX_NULL) {
-                    immutable local_data = owner.blockfile.load(index);
+                    immutable local_data = this.outer.blockfile.load(index);
                     const doc = Document(local_data);
                     if (Branches.isRecord(doc)) {
                         Branches branches = Branches(doc);
@@ -1255,14 +1289,17 @@ alias check = Check!DARTException;
             _finished = true;
         }
 
+        /// Progress to next Buffer
         final void popFront() @trusted {
             call;
         }
 
+        /// Returns: true if empty
         final bool empty() pure const nothrow {
             return _finished;
         }
 
+        /// Returns: current buffer
         final Buffer front() pure const nothrow {
             return data;
         }
@@ -1413,16 +1450,10 @@ alias check = Check!DARTException;
         immutable filename = fileId!DARTFile.fullpath;
         immutable filename_A = fileId!DARTFile("A").fullpath;
         immutable filename_B = fileId!DARTFile("B").fullpath;
-        immutable filename_C = fileId!DARTFile("C").fullpath;
 
         { // Test the fake hash on Archive
-            import std.bitmanip;
-
             auto doc_in = DARTFakeNet.fake_doc(table[0]);
             auto a_in = new Archive(net, doc_in, Archive.Type.ADD);
-            auto a_table = a_in.fingerprint.peek!ulong;
-            auto doc_out = a_in.toDoc;
-            auto a_out = new Archive(net, doc_out);
 
             // Test recorder
             auto recorder = manufactor.recorder;
@@ -1443,10 +1474,6 @@ alias check = Check!DARTException;
             }
 
             test_tabel.sort;
-
-            foreach (t; test_tabel) {
-                const doc = DARTFakeNet.fake_doc(t);
-            }
 
             uint i;
             foreach (a; recorder.archives) {
@@ -1650,7 +1677,6 @@ alias check = Check!DARTException;
         }
 
         { // Random write on to an existing DART and the bulleye is check
-            auto rand = Random!ulong(1234_5678_9012_345UL);
             immutable(ulong[]) selected_table = [
                 0xABBA_1234_DF92_7BA7,
                 0xABBA_1234_62BD_7814,
@@ -1739,7 +1765,6 @@ alias check = Check!DARTException;
             }
             DARTFile.create(filename_A);
             DARTFile.create(filename_B);
-            RecordFactory.Recorder recorder_A;
             // Recorder recorder_B;
             auto dart_A = new DARTFile(net, filename_A);
             auto dart_B = new DARTFile(net, filename_B);
@@ -1780,7 +1805,7 @@ alias check = Check!DARTException;
                     // dart_A.dump;
                 }
                 auto recorder_B = dart_B.recorder;
-                auto save_range = saved_archives.bitsSet;
+
                 saved_archives.bitsSet.each!(n => recorder_B.add(net.fake_doc(random_table[n])));
                 dart_B.modify(recorder_B);
                 // dart_B.dump;
