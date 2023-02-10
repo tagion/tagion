@@ -26,6 +26,9 @@ import tagion.logger.Logger;
 
 import tagion.Keywords;
 
+import std.format;
+import std.string;
+
 @safe
 class MonitorException : TagionException {
     this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
@@ -120,10 +123,20 @@ class MonitorCallBacks : EventMonitorCallbacks {
         try {
             hibon[basename!(e.id)] = e.id;
             hibon[basename!(e.node_id)] = e.node_id;
+            if (e.mother !is null) {
+                hibon[Params.mother] = e.mother.id;
+            }
+            if (e.father !is null) {
+               hibon[Params.father] = e.father.id;
+            }
         } catch (Exception excp) {
             // empty
         }
         return hibon;
+    }
+
+    const(string) getBitMaskString(const(BitMask) bitmask, uint node_size) @trusted {
+        return format("%*.*s", node_size, node_size, bitmask);
     }
 
     nothrow {
@@ -176,31 +189,33 @@ class MonitorCallBacks : EventMonitorCallbacks {
             socket_send(hibon);
         }
 
-    // not called
         void witness_mask(const(Event) e) {
 
             auto hibon = createHiBON(e);
             try {
-                hibon[Params.witness_mask] = bitarray2bool(e.witness_mask);
+                const string mask = getBitMaskString(e.witness_mask, e.round.node_size);
+                log("WITNESS MASK: %s", mask);
+                hibon[Params.witness_mask] = mask;
             } catch (Exception excp) {
                 //empty
             }
-            log("WITNESS MASK %s", hibon.toPretty);
-
+            
             socket_send(hibon);
         }
 
-        void round_seen(const(Event) e) {
-            log("BEFORE ROUND SEEN");
-            // log("%s", e.witness.round_seen_mask);
-            auto hibon=createHiBON(e);
+        void round_seen(const(Event) e) @trusted {
+            // log.error("BEFORE ROUND SEEN");
+            log("BITMASK: %.16s", e.round_seen_mask);
+            
+            // log("%s", format("%s", e.witness.round_seen_mask));
+            // auto hibon=createHiBON(e);
             // try {
             //     hibon[Keywords.round_seen]=bitarray2bool(e.witness.round_seen_mask); 
             // } catch(Exception excp) {
             //     log(excp);
             // }
             // log("ROUND SEEN %s", hibon.toPretty);
-            socket_send(hibon);
+            // socket_send(hibon);
         }
 
         void round_received(const(Event) e) {
