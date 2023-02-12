@@ -5,13 +5,10 @@ import std.stdio;
 import std.conv;
 import std.format;
 import std.exception : assumeWontThrow;
-import std.typecons : TypedefType;
-import std.algorithm.searching : count, all, any;
-import std.algorithm.iteration : map, each, filter, fold;
-import std.algorithm.comparison : max;
 import std.algorithm.sorting : sort;
-import std.range.primitives : walkLength;
-import std.range : dropExactly, lockstep, tee;
+import std.algorithm.searching : all;
+import std.algorithm.iteration : map, each, filter;
+import std.range : tee;
 import std.array : array;
 
 import tagion.hashgraph.Event;
@@ -20,7 +17,6 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONType : isHiBONType;
 import tagion.communication.HiRPC;
-import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
 
 import tagion.basic.Debug : __format;
@@ -29,7 +25,6 @@ import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
 
 import tagion.logger.Logger;
-import tagion.utils.Miscellaneous : toHex = toHexString;
 import tagion.gossip.InterfaceNet;
 
 version (unittest) {
@@ -70,7 +65,7 @@ class HashGraph {
         sdt_t last_epoch_time;
     }
 
-/**
+    /**
  * Get a map of all the nodes currently handled by the graph 
  * Returns: 
  */
@@ -100,7 +95,7 @@ class HashGraph {
     const EpochCallback epoch_callback; /// Call when an epoch has been produced
     const EventPackageCallback epack_callback; /// Call back which is called when an event-package has been added to the event chache.
 
-/**
+    /**
  * Creates a graph with node_size nodes
  * Params:
  *   node_size = number of nodes handles byt the graph
@@ -325,6 +320,8 @@ class HashGraph {
     Event registerEventPackage(
             immutable(EventPackage*) event_pack)
     in {
+        import tagion.utils.Miscellaneous : toHexString;
+
         assert(event_pack.fingerprint !in _event_cache, format("Event %s has already been registerd", event_pack
                 .fingerprint.toHexString));
     }
@@ -1120,6 +1117,7 @@ class HashGraph {
                 // writefln("%s %s round_offset=%d order_offset=%d",
                 //     h1.name, h2.name, comp.round_offset, comp.order_offset);
                 const result = comp.compare;
+                assert(result, format("HashGraph %s and %s is not the same", h1.name, h2.name));
             }
         }
     }
@@ -1127,6 +1125,8 @@ class HashGraph {
 
 version (unittest) {
     import Basic = tagion.basic.Basic;
+    import std.range : dropExactly;
+    import tagion.utils.Miscellaneous : cutHex;
 
     const(Basic.FileNames) fileId(T = HashGraph)(string prefix = null) @safe {
         import basic = tagion.basic.Basic;
