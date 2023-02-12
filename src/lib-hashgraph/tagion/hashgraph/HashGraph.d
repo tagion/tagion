@@ -788,7 +788,7 @@ class HashGraph {
     //   @trusted
     void fwrite(string filename, Pubkey[string] node_labels = null) {
         import tagion.hibon.HiBONType : fwrite;
-
+        import tagion.hashgraphview.EventView;
         size_t[Pubkey] node_id_relocation;
         if (node_labels.length) {
             assert(node_labels.length is nodes.length);

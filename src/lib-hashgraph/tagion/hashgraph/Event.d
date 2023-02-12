@@ -30,8 +30,9 @@ import tagion.basic.Basic : this_dot, basename, EnumText, buf_idup;
 import tagion.Keywords : Keywords;
 
 import tagion.logger.Logger;
-import tagion.hashgraph.HashGraphBasic : isMajority, isAllVotes, higher, EventBody, EventPackage, EvaPayload, Tides, EventMonitorCallbacks;
+import tagion.hashgraph.HashGraphBasic : isMajority, isAllVotes, higher, EventBody, EventPackage, EvaPayload, Tides;
 import tagion.hashgraph.HashGraph : HashGraph;
+import tagion.hashgraphview.EventMonitorCallbacks;
 import tagion.utils.BitMask : BitMask;
 
 /// Handles the round information for the events in the Hashgraph
