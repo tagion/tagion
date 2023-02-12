@@ -65,13 +65,17 @@ class HashGraph {
     Statistic!long epoch_delay_statistic;
     private {
         BitMask _excluded_nodes_mask;
-        Node[Pubkey] nodes; // List of participating nodes T
+        Node[Pubkey] _nodes; // List of participating _nodes T
         uint event_id;
         sdt_t last_epoch_time;
     }
 
+    const(Node[Pubkey]) nodes() const pure nothrow @nogc {
+        return _nodes;
+    }
+
     public const(Node[Pubkey]) getNodes() pure const nothrow {
-        return nodes;
+        return _nodes;
     }
 
     package HiRPC hirpc;
@@ -113,7 +117,7 @@ class HashGraph {
 
     void initialize_witness(const(immutable(EventPackage)*[]) epacks)
     in {
-        assert(nodes.length > 0 && (channel in nodes),
+        assert(_nodes.length > 0 && (channel in _nodes),
                 "Owen Eva event needs to be create before witness can be initialized");
     }
     do {
@@ -141,7 +145,7 @@ class HashGraph {
                 }
             }
             foreach (channel, recovered_node; recovered_nodes) {
-                if (!(channel in nodes)) {
+                if (!(channel in _nodes)) {
                     if (recovered_node.event) {
                         init_event(recovered_node.event.event_package);
                     }
@@ -149,24 +153,24 @@ class HashGraph {
             }
         }
         scope (failure) {
-            nodes = recovered_nodes;
+            _nodes = recovered_nodes;
         }
-        recovered_nodes = nodes;
-        nodes = null;
+        recovered_nodes = _nodes;
+        _nodes = null;
         check(isMajority(cast(uint) epacks.length), ConsensusFailCode.HASHGRAPH_EVENT_INITIALIZE);
         consensus(epacks.length)
             .check(epacks.length <= node_size, ConsensusFailCode.HASHGRAPH_EVENT_INITIALIZE);
         getNode(channel); // Make sure that node_id == 0 is owner node
         foreach (epack; epacks) {
             if (epack.pubkey != channel) {
-                check(!(epack.pubkey in nodes), ConsensusFailCode.HASHGRAPH_DUBLICATE_WITNESS);
+                check(!(epack.pubkey in _nodes), ConsensusFailCode.HASHGRAPH_DUBLICATE_WITNESS);
                 auto node = getNode(epack.pubkey);
             }
         }
     }
 
     package bool can_round_be_decided(const Round r) nothrow {
-        const result = nodes
+        const result = _nodes
             .byValue
             .filter!((n) => (r.events[n.node_id] is null))
             .filter!((n) => !excluded_nodes_mask[n.node_id])
@@ -182,7 +186,7 @@ class HashGraph {
 
     // Function is not used
     bool areWeOnline() const pure nothrow {
-        return nodes.length > 0;
+        return _nodes.length > 0;
     }
 
     bool areWeInGraph() const pure nothrow {
@@ -195,14 +199,14 @@ class HashGraph {
 
     @trusted
     const(Pubkey[]) channels() const pure nothrow {
-        return nodes.keys;
+        return _nodes.keys;
     }
 
     bool not_used_channels(const(Pubkey) selected_channel) {
         if (selected_channel == channel) {
             return false;
         }
-        const node = nodes.get(selected_channel, null);
+        const node = _nodes.get(selected_channel, null);
         if (node) {
             return node.state is ExchangeState.NONE;
         }
@@ -432,7 +436,7 @@ class HashGraph {
         return hirpc.wavefront(wave, id);
     }
 
-    /++ to synchronize two nodes A and B
+    /++ to synchronize two _nodes A and B
      +  1)
      +  Node A send it's wave front to B
      +  This is done via the waveFront function
@@ -448,7 +452,7 @@ class HashGraph {
      +/
     const(Wavefront) tidalWave() pure {
         Tides tides;
-        foreach (pkey, n; nodes) {
+        foreach (pkey, n; _nodes) {
             if (n.isOnline) {
                 tides[pkey] = n.altitude;
                 assert(n._event.isFront);
@@ -464,7 +468,7 @@ class HashGraph {
 
         immutable(EventPackage)*[] result;
         Tides owner_tides;
-        foreach (n; nodes) {
+        foreach (n; _nodes) {
             if (n.channel in tides) {
                 const other_altitude = tides[n.channel];
                 foreach (e; n[]) {
@@ -507,17 +511,17 @@ class HashGraph {
                 front_seat(first_event);
             }
         }
-        auto result = nodes.byValue
+        auto result = _nodes.byValue
             .filter!((n) => (n._event !is null))
             .map!((n) => cast(immutable(EventPackage)*) n._event.event_package)
             .array;
 
         const contain_all =
-            nodes
+            _nodes
                 .byValue
                 .all!((n) => n._event !is null);
 
-        const state = (nodes.length is node_size && contain_all) ? ExchangeState.COHERENT : ExchangeState.RIPPLE;
+        const state = (_nodes.length is node_size && contain_all) ? ExchangeState.COHERENT : ExchangeState.RIPPLE;
 
         return Wavefront(result, null, state);
     }
@@ -705,16 +709,16 @@ class HashGraph {
 
     import std.traits : fullyQualifiedName;
 
-    alias NodeRange = typeof((cast(const) nodes).byValue);
+    alias NodeRange = typeof((cast(const) _nodes).byValue);
 
     @nogc
     NodeRange opSlice() const pure nothrow {
-        return nodes.byValue;
+        return _nodes.byValue;
     }
 
     @nogc
     size_t active_nodes() const pure nothrow {
-        return nodes.length;
+        return _nodes.length;
     }
 
     @nogc
@@ -724,14 +728,8 @@ class HashGraph {
 
     package Node getNode(Pubkey channel) pure {
         const next_id = next_node_id;
-        return nodes.require(channel, new Node(channel, next_id));
+        return _nodes.require(channel, new Node(channel, next_id));
     }
-
-    // public bool canSelectNode(Pubkey channel) pure nothrow {
-    //     import std.exception: assumeWontThrow
-    //     const node = assumeWontThrow(getNode(channel));
-    //     return node.state is ExchangeState.NONE;
-    // }
 
     @nogc
     bool isMajority(const uint voting) const pure nothrow {
@@ -741,16 +739,16 @@ class HashGraph {
     private void remove_node(Node n) nothrow
     in {
         assert(n !is null);
-        assert(n.channel in nodes, __format("Node id %d is not removable because it does not exist", n
+        assert(n.channel in _nodes, __format("Node id %d is not removable because it does not exist", n
                 .node_id));
     }
     do {
-        nodes.remove(n.channel);
+        _nodes.remove(n.channel);
     }
 
     bool remove_node(const Pubkey pkey) nothrow {
-        if (pkey in nodes) {
-            nodes.remove(pkey);
+        if (pkey in _nodes) {
+            _nodes.remove(pkey);
             return true;
         }
         return false;
@@ -767,11 +765,11 @@ class HashGraph {
 
     @trusted
     size_t next_node_id() const pure nothrow {
-        if (nodes.length is 0) {
+        if (_nodes.length is 0) {
             return 0;
         }
         scope BitMask used_nodes;
-        nodes.byValue
+        _nodes.byValue
             .map!(a => a.node_id)
             .each!((n) { used_nodes[n] = true; });
         return (~used_nodes)[].front;
@@ -789,9 +787,10 @@ class HashGraph {
     void fwrite(string filename, Pubkey[string] node_labels = null) {
         import tagion.hibon.HiBONType : fwrite;
         import tagion.hashgraphview.EventView;
+
         size_t[Pubkey] node_id_relocation;
         if (node_labels.length) {
-            assert(node_labels.length is nodes.length);
+            assert(node_labels.length is _nodes.length);
             auto names = node_labels.keys;
             names.sort;
             foreach (i, name; names) {
@@ -802,7 +801,7 @@ class HashGraph {
         // writefln("node_id_relocation=%s", node_id_relocation.byKeyValue.map!((n) => format("%d[%s]", n.value, n.key.cutHex)));
         auto events = new HiBON;
         (() @trusted {
-            foreach (n; nodes) {
+            foreach (n; _nodes) {
                 const node_id = (node_id_relocation.length is 0) ? size_t.max : node_id_relocation[n.channel];
                 n[]
                     .filter!((e) => !e.isGrounded)
@@ -815,106 +814,8 @@ class HashGraph {
         filename.fwrite(h);
     }
 
-    @safe
-    struct Compare {
-        enum ErrorCode {
-            NONE,
-            NODES_DOES_NOT_MATCH,
-            FINGERPRINT_NOT_THE_SAME,
-            MOTHER_NOT_THE_SAME,
-            FATHER_NOT_THE_SAME,
-            ALTITUDE_NOT_THE_SAME,
-            ORDER_NOT_THE_SAME,
-            ROUND_NOT_THE_SAME,
-            ROUND_RECEIVED_NOT_THE_SAME,
-            WITNESS_CONFLICT,
-        }
+    import tagion.hashgraphview.Compare;
 
-        alias ErrorCallback = bool delegate(const Event e1, const Event e2, const ErrorCode code) nothrow @safe;
-        const HashGraph h1, h2;
-        const ErrorCallback error_callback;
-        int order_offset;
-        int round_offset;
-        uint count;
-        this(const HashGraph h1, const HashGraph h2, const ErrorCallback error_callback) {
-            this.h1 = h1;
-            this.h2 = h2;
-            this.error_callback = error_callback;
-        }
-
-        bool compare() @trusted {
-            count = 0;
-            auto h1_nodes = h1.nodes
-                .byValue
-                .map!((n) => n[])
-                .array;
-            typeof(h1_nodes) h2_nodes;
-            try {
-                h2_nodes = h1.nodes
-                    .byValue
-                    .map!((n) => h2.nodes[n.channel][])
-                    .array;
-            }
-            catch (Exception e) {
-                if (error_callback) {
-                    error_callback(null, null, ErrorCode.NODES_DOES_NOT_MATCH);
-                }
-                return false;
-            }
-            bool ok = true;
-
-            foreach (ref h1_events, ref h2_events; lockstep(h1_nodes, h2_nodes)) {
-                while (!h1_events.empty && higher(h1_events.front.altitude, h2_events
-                        .front.altitude)) {
-                    h1_events.popFront;
-                }
-                while (!h2_events.empty && higher(h2_events.front.altitude, h1_events
-                        .front.altitude)) {
-                    h2_events.popFront;
-                }
-                bool check(bool ok, const ErrorCode code) {
-                    if (!ok && error_callback) {
-                        return error_callback(h1_events.front, h2_events.front, code);
-                    }
-                    return ok;
-                }
-
-                if (!h1_events.empty && !h2_events.empty) {
-                    order_offset = h1_events.front.received_order - h2_events.front.received_order;
-                    if (!h1_events.front.hasRound || !h2_events.front.hasRound) {
-                        return error_callback(null, null, ErrorCode.NODES_DOES_NOT_MATCH);
-                    }
-                    round_offset = h1_events.front.round.number - h2_events.front.round.number;
-                }
-                //error_callback(h1_events.front, h2_events.front, ErrorCode.NONE);
-                while (!h1_events.empty && !h2_events.empty) {
-                    const e1 = h1_events.front;
-                    const e2 = h2_events.front;
-
-                    with (ErrorCode) {
-                        ok &= check(e1.fingerprint == e2.fingerprint, FINGERPRINT_NOT_THE_SAME);
-                        ok &= check(e1.event_body.mother == e2.event_body.mother, MOTHER_NOT_THE_SAME);
-                        ok &= check(e1.event_body.father == e2.event_body.father, FATHER_NOT_THE_SAME);
-                        ok &= check(e1.altitude == e2.altitude, ALTITUDE_NOT_THE_SAME);
-                        ok &= check(e1.received_order - e2.received_order == order_offset, ORDER_NOT_THE_SAME);
-                        ok &= check(e1.round.number - e2.round.number == round_offset, ROUND_NOT_THE_SAME);
-                        if ((e1.round_received) && (e2.round_received)) {
-                            ok &= check(e1.round_received.number - e2.round_received.number == round_offset,
-                                    ROUND_RECEIVED_NOT_THE_SAME);
-                        }
-                        ok &= check((e1.witness is null) == (e2.witness is null), WITNESS_CONFLICT);
-                    }
-                    // if (!ok) {
-                    //     return ok;
-                    // }
-                    count++;
-                    h1_events.popFront;
-                    h2_events.popFront;
-                }
-            }
-            return ok;
-        }
-    }
     /++
      This function makes sure that the HashGraph has all the events connected to this event
      +/
