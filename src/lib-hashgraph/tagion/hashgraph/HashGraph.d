@@ -49,7 +49,7 @@ class HashGraph {
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
     import tagion.logger.Statistic;
 
-    immutable size_t node_size;
+    immutable size_t node_size; /// Number of active nodes in the graph
     immutable(string) name; // Only used for debugging
     Statistic!uint witness_search_statistic;
     Statistic!uint strong_seeing_statistic;
@@ -70,11 +70,11 @@ class HashGraph {
         sdt_t last_epoch_time;
     }
 
+/**
+ * Get a map of all the nodes currently handled by the graph 
+ * Returns: 
+ */
     const(Node[Pubkey]) nodes() const pure nothrow @nogc {
-        return _nodes;
-    }
-
-    public const(Node[Pubkey]) getNodes() pure const nothrow {
         return _nodes;
     }
 
@@ -91,15 +91,25 @@ class HashGraph {
         return _excluded_nodes_mask;
     }
 
-    package Round.Rounder _rounds;
+    package Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
 
     alias ValidChannel = bool delegate(const Pubkey channel);
-    const ValidChannel valid_channel;
+    const ValidChannel valid_channel; /// Valiates of a node at channel is valid
     alias EpochCallback = void delegate(const(Event[]) events, const sdt_t epoch_time) @safe;
     alias EventPackageCallback = void delegate(immutable(EventPackage*) epack) @safe;
-    const EpochCallback epoch_callback;
-    const EventPackageCallback epack_callback;
+    const EpochCallback epoch_callback; /// Call when an epoch has been produced
+    const EventPackageCallback epack_callback; /// Call back which is called when an event-package has been added to the event chache.
 
+/**
+ * Creates a graph with node_size nodes
+ * Params:
+ *   node_size = number of nodes handles byt the graph
+ *   net = Securety element handles hash function, signing and signature validation
+ *   valid_channel = call-back to check if a node is valid
+ *   epoch_callback = call-back which is called when an epoch has been produced
+ *   epack_callback = call-back call if when a package has been added to the cache.
+ *   name = used for debuging label the node name
+ */
     this(const size_t node_size,
             const SecureNet net,
             const ValidChannel valid_channel,
@@ -122,7 +132,6 @@ class HashGraph {
     }
     do {
         Node[Pubkey] recovered_nodes;
-        Event[] initialized_events;
         auto owner_node = getNode(channel);
         scope (success) {
             void init_event(immutable(EventPackage*) epack) {
@@ -182,11 +191,6 @@ class HashGraph {
     @nogc
     const(Round.Rounder) rounds() const pure nothrow {
         return _rounds;
-    }
-
-    // Function is not used
-    bool areWeOnline() const pure nothrow {
-        return _nodes.length > 0;
     }
 
     bool areWeInGraph() const pure nothrow {
@@ -798,7 +802,6 @@ class HashGraph {
             }
 
         }
-        // writefln("node_id_relocation=%s", node_id_relocation.byKeyValue.map!((n) => format("%d[%s]", n.value, n.key.cutHex)));
         auto events = new HiBON;
         (() @trusted {
             foreach (n; _nodes) {
@@ -932,10 +935,6 @@ class HashGraph {
                 do {
                     super(&run);
                     _hashgraph = h;
-                    // //this.name=name;
-                    // if (_hashgraph.name == "Alice") {
-                    //     _hashgraph.print_flag=true;
-                    // }
                 }
 
                 const(HashGraph) hashgraph() const pure nothrow {
