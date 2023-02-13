@@ -1,7 +1,7 @@
 module tagion.crypto.SecureInterfaceNet;
 
 import std.typecons : TypedefType;
-import tagion.basic.Types : Buffer, Pubkey, Signature, isBufferTypedef;
+import tagion.basic.Types : Buffer, Pubkey, Signature, isBufferType;
 
 import tagion.hibon.HiBONType : isHiBONType, HiBONPrefix;
 import tagion.hibon.Document : Document;
@@ -13,28 +13,28 @@ alias check = Check!SecurityConsensusException;
 @safe
 interface HashNet {
     uint hashSize() const pure nothrow;
-    final immutable(Buffer) rawCalcHash(Buf)(scope const(Buf) data) const
-    if (isBufferTypedef!Buf) {
-        return rawCalcHash(cast(TypedefType!Buf) data);
-    }
 
-    final immutable(Buffer) calcHash(Buf)(scope const(Buf) data) const
-    if (isBufferTypedef!Buf) {
-        return calcHash(cast(TypedefType!Buf) data);
+    final immutable(Buffer) calcHash(B)(scope const(B) data) const
+    if (isBufferType!B) {
+        return rawCalcHash(cast(TypedefType!B) data);
     }
 
     immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const;
-    immutable(Buffer) calcHash(scope const(ubyte[]) data) const;
     immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure;
     /++
      Hash used for Merkle tree
      +/
     immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
 
-    Buffer hashOf(const(Document) doc) const;
+immutable(Buffer) calcHash(const(Document) doc) const;
 
-    final Buffer hashOf(T)(T value) const if (isHiBONType!T) {
-        return hashOf(value.toDoc);
+final immutable(Buffer) calcHash(T)(T value) const if (isHiBONType!T) {
+    return calcHash(value.toDoc);
+        }
+    Buffer _hashOf(const(Document) doc) const;
+
+    final Buffer _hashOf(T)(T value) const if (isHiBONType!T) {
+        return _hashOf(value.toDoc);
     }
 }
 

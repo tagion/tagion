@@ -244,7 +244,7 @@ import tagion.wallet.WalletException : check;
             if (enough) {
                 const total = contract_bills.map!(b => b.value).sum;
 
-                result.contract.inputs = contract_bills.map!(b => net.hashOf(b.toDoc)).array;
+                result.contract.inputs = contract_bills.map!(b => net._hashOf(b.toDoc)).array;
                 const rest = total - amount;
                 if (rest > 0) {
                     Invoice money_back;
@@ -255,7 +255,7 @@ import tagion.wallet.WalletException : check;
                 orders.each!((o) { result.contract.output[o.pkey] = o.amount.toDoc; });
                 result.contract.script = Script("pay");
 
-                immutable message = net.hashOf(result.contract.toDoc);
+                immutable message = net.calcHash(result.contract.toDoc);
                 auto shared_net = (() @trusted { return cast(shared) net; })();
                 auto bill_net = new Net;
                 // Sign all inputs

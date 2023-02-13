@@ -49,14 +49,14 @@ do {
     // TODO: set also time?
 
     NetworkNameRecord nrc;
-    nrc.name = net.hashOf(nnc);
+    nrc.name = net._hashOf(nnc);
 
     NodeAddress na;
     // TODO: init NodeAddress
 
     // Bind hashes
-    nrc.node = net.hashOf(na);
-    nnc.record = net.hashOf(nrc);
+    nrc.node = net._hashOf(na);
+    nnc.record = net._hashOf(nrc);
 
     auto hr = HashLock(net, nnc);
 

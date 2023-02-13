@@ -57,7 +57,7 @@ version (OLD_TRANSACTION) {
             
 
                 .check(signed_contract.signs.length > 0, ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE);
-            const message = net.hashOf(signed_contract.contract.toDoc);
+            const message = net.calcHash(signed_contract.contract.toDoc);
 
             
 
@@ -71,7 +71,7 @@ version (OLD_TRANSACTION) {
             foreach (i, print, input, signature; lockstep(signed_contract.contract.inputs, signed_contract.inputs, signed_contract
                     .signs)) {
 
-                immutable fingerprint = net.hashOf(input.toDoc);
+                immutable fingerprint = net.calcHash(input.toDoc);
 
                 
 
@@ -152,7 +152,7 @@ else {
                 if (signed_contract.signs.length == 0) {
                     return ConsensusFailCode.SMARTSCRIPT_NO_SIGNATURE;
                 }
-                const message = net.hashOf(signed_contract.contract.toDoc);
+                const message = net.calcHas(signed_contract.contract.toDoc);
                 if (signed_contract.signs.length != inputs.length) {
                     return ConsensusFailCode.SMARTSCRIPT_MISSING_SIGNATURE_OR_INPUTS;
                 }
@@ -172,7 +172,7 @@ else {
                 foreach (print, input, signature; zip(signed_contract.contract.inputs,
                         inputs[],
                         signed_contract.signs)) {
-                    immutable fingerprint = net.hashOf(input);
+                    immutable fingerprint = net._hashOf(input);
 
                     if (print != fingerprint) {
                         return ConsensusFailCode.SMARTSCRIPT_FINGERPRINT_DOES_NOT_MATCH_INPUT;
@@ -297,12 +297,12 @@ version (OLD_TRANSACTION) {
             SignedContract ssc;
             Contract contract;
 
-            contract.inputs = [net.hashOf(input_bill.toDoc)];
+            contract.inputs = [net.HashNet._hashOf(input_bill)];
             contract.output[bob.pubkey] = amount.toDoc;
             contract.script = Script("pay");
 
             ssc.contract = contract;
-            ssc.signs = [alice.sign(net.hashOf(contract.toDoc))];
+            ssc.signs = [alice.sign(net.calcHash(contract.toDoc))];
             ssc.inputs = [input_bill];
             return ssc;
         }
@@ -310,7 +310,7 @@ version (OLD_TRANSACTION) {
         // function for signing all bills
         void sign_all_bills(const StandardBill[] input_bills, const StandardBill[] output_bills, const SecureNet net, ref SignedContract signed_contract) {
             Contract contract;
-            contract.inputs = input_bills.map!(b => net.hashOf(b.toDoc)).array;
+            contract.inputs = input_bills.map!(b => net._hashOf(b.toDoc)).array;
             foreach (bill; output_bills) {
                 contract.output[bill.owner] = bill.value.toDoc;
             }
@@ -383,7 +383,7 @@ version (OLD_TRANSACTION) {
             auto output_bill2 = ssc_2.output_bills[0];
             assert(output_bill1.gene.length != 0, "Output bill gene is empty");
             assert(output_bill1.gene != output_bill2.gene, "Output bill gene are same");
-            assert(net.hashOf(output_bill1.toDoc) != net.hashOf(output_bill2.toDoc), "Bills with same owner key has same hash");
+            assert(net.HashNet._hashOf(output_bill1) != net.HashNet._hashOf(output_bill2), "Bills with same owner key has same hash");
         }
     }
 }
@@ -409,7 +409,7 @@ else {
                 }
 
                 auto signed_doc = net.sign(doc);
-                contract.inputs ~= net.hashOf(bill);
+                contract.inputs ~= net._hashOf(bill);
                 signed_contract.signs ~= signed_doc.signature;
                 assert(net.verify(doc, signed_doc.signature, net.pubkey));
             }
@@ -496,12 +496,12 @@ else {
                     }
 
                     auto signed_doc = alice.sign(doc);
-                    contract.inputs ~= alice.hashOf(bill);
+                    contract.inputs ~= alice._hashOf(bill);
                     signed_contract.signs ~= signed_doc.signature;
                     assert(alice.verify(doc, signed_doc.signature, alice.pubkey));
                 }
                 auto other_bill = StandardBill(4300.TGN, epoch, alice.derivePubkey("alice3"), null);
-                contract.inputs ~= alice.hashOf(other_bill);
+                contract.inputs ~= alice._hashOf(other_bill);
                 signed_contract.contract = contract;
 
                 auto bob_bill = StandardBill(1000.TGN, epoch, bob.pubkey, null);

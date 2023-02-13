@@ -47,7 +47,7 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
                 this.previous = previous;
                 this.bullseye = bullseye;
 
-                this.fingerprint = net.hashOf(toDoc);
+                this.fingerprint = net.calcHash(toDoc);
             }
 
             private this(
@@ -55,7 +55,7 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
                 const(HashNet) net)
             {
                 this(doc);
-                this.fingerprint = net.hashOf(toDoc);
+                this.fingerprint = net.calcHash(toDoc);
             }
         });
 
@@ -83,7 +83,7 @@ unittest {
 
         assert(item_one.bullseye == bullseye);
         assert(item_one.getPrevious() is null);
-        assert(hasher.hashOf(item_one.toDoc) == item_one.getHash());
+        assert(hasher.calcHash(item_one.toDoc) == item_one.getHash());
     }
 
     /// EpochChainBlock_check_hibon_serialization

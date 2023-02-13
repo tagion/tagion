@@ -86,7 +86,11 @@ class StdHashNet : HashNet {
         return rawCalcHash(h1 ~ h2);
     }
 
-    Buffer hashOf(const(Document) doc) const {
+    immutable(Buffer) calcHash(const(Document) doc) const {
+        return rawCalcHash(doc.serialize);
+    }
+
+    Buffer _hashOf(const(Document) doc) const {
         if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
             if (doc.keys.front == STUB) {
                 return doc[STUB].get!Buffer;
@@ -458,7 +462,7 @@ unittest { // StdHashNet
     assert(isStub(stub));
     assert(!hasHashKey(stub));
 
-    assert(net.hashOf(stub) == stub_fingerprint);
+    assert(net._hashOf(stub) == stub_fingerprint);
 
     enum key_name = "#name";
     enum keytext = "some_key_text";
@@ -472,7 +476,7 @@ unittest { // StdHashNet
 
     assert(!isStub(hash_doc));
     assert(hasHashKey(hash_doc));
-    assert(net.hashOf(hash_doc) == hashkey_fingerprint);
+    assert(net._hashOf(hash_doc) == hashkey_fingerprint);
 }
 
 class BadSecureNet : StdSecureNet {

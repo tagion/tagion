@@ -117,7 +117,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     auto smart_script = new SmartScript(signed_contract);
                     smart_script.check(net);
                     const signed_contract_doc = signed_contract.toDoc;
-                    const fingerprint = net.HashNet.hashOf(signed_contract_doc);
+                    const fingerprint = net.HashNet.calcHash(signed_contract_doc);
                     uint prev_index = index;
                     smart_script.run(current_epoch + 1, index, last_bullseye, net);
                     assert(index == prev_index + smart_script.output_bills.length);
@@ -175,7 +175,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     foreach (input; signed_contract.contract.inputs) {
                         foreach (input_archive; inputs_recorder[]) {
                             const bill = StandardBill(input_archive.filed);
-                            if (net.hashOf(bill.toDoc) == input) {
+                            if (net._hashOf(bill.toDoc) == input) {
                                 signed_contract.inputs ~= bill;
                             }
                         }
@@ -194,7 +194,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     }
                     if (!invalid) {
                         const signed_contract_doc = signed_contract.toDoc;
-                        const fingerprint = net.hashOf(signed_contract_doc);
+                        const fingerprint = net.calcHash(signed_contract_doc);
                         const added = to_smart_script(signed_contract, output_index);
                         if (added && fingerprint in smart_scripts) {
                             scope smart_script = smart_scripts[fingerprint];

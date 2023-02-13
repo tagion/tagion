@@ -52,12 +52,12 @@ version (none) void updateAddNetworkNameCard(const HashNet net, NetworkNameCard 
     // nnc_new.time = current_time?
 
     NetworkNameRecord nrc_new;
-    nrc_new.name = net.hashOf(nnc_new.toDoc);
-    nrc_new.previous = net.hashOf(nrc.toDoc);
+    nrc_new.name = net._hashOf(nnc_new.toDoc);
+    nrc_new.previous = net._hashOf(nrc.toDoc);
     nrc_new.index = nrc.index + 1;
     nrc_new.node = nrc.node; // update NodeAddress?
 
-    nnc_new.record = net.hashOf(nrc_new.toDoc);
+    nnc_new.record = net._hashOf(nrc_new.toDoc);
 
     auto hr_new = HashLock(net, nnc_new);
 
@@ -85,7 +85,7 @@ version (none) void updateAddEpochBlock(const HashNet net, EpochBlock epoch_bloc
         .Recorder recorder) {
     EpochBlock epoch_block_new;
     epoch_block_new.epoch = epoch_block.epoch + 1;
-    epoch_block_new.previous = net.hashOf(epoch_block);
+    epoch_block_new.previous = net._hashOf(epoch_block);
 
     auto le_block_new = LastEpochRecord(net, epoch_block_new);
 
@@ -367,7 +367,8 @@ int _main(string[] args) {
             auto nnc = nnc_out.get;
             toConsole(nnc, true, format("\nFound %s '%s'", typeof(nnc).stringof, nncreadname));
 
-            auto signature_out = readStandardRecord!HashLock(net, hirpc, db, net.hashOf(HashLock(net, nnc)));
+            auto signature_out = readStandardRecord!HashLock(net, hirpc, db, 
+            net._hashOf(HashLock(net, nnc)));
             writeln;
             if (signature_out.isNull)
                 writefln("WARNING: Signature for %s '%s' is not verified!", typeof(nnc).stringof, nnc
@@ -417,7 +418,8 @@ int _main(string[] args) {
             else {
                 auto nrc = nrc_out.get;
 
-                auto signature = readStandardRecord!HashLock(net, hirpc, db, net.hashOf(HashLock(net, nnc)));
+                auto signature = readStandardRecord!HashLock(net, hirpc, db, 
+                net._hashOf(HashLock(net, nnc)));
                 if (signature.isNull) {
                     writefln("WARNING: Signature for %s '%s' is not verified! Unable to update record\nAbort", typeof(
                             nnc).stringof, nnc.name);

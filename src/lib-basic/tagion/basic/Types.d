@@ -6,7 +6,7 @@ enum BufferType {
     PUBKEY, /// Public key buffer type
     PRIVKEY, /// Private key buffer type
     SIGNATURE, /// Signature buffer type
-    HASH, /// Hash pointre buffer type
+    HASHPOINTER, /// Hash pointre buffer type
     MESSAGE, /// Message buffer type
     //    PAYLOAD /// Payload buffer type
 }
@@ -26,17 +26,12 @@ alias Privkey = Typedef!(Buffer, null, BufferType.PRIVKEY.stringof); /// Private
 * Used as hash-pointer of a Document and is used as index in the DART
 * This document can contain a '#' value and there for it should not be used as a signed message.
 */
-alias Fingerprint = Typedef!(Buffer, null, BufferType.HASH.stringof);
+alias Fingerprint = Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
 
 /**
 * This is the raw-hash value of a message and is used when message is signed.
 */
-alias Message = Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
-
-version (none) {
-    alias Message = Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
-    alias HashPointer = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
-}
+alias DARTIndex = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 
 /+
  Returns:

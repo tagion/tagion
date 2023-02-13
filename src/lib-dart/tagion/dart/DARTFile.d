@@ -513,7 +513,7 @@ alias check = Check!DARTException;
                             _fingerprints[key] = subbranch.fingerprint(dartfile, index_used);
                         }
                         else {
-                            _fingerprints[key] = dartfile.manufactor.net.hashOf(doc);
+                            _fingerprints[key] = dartfile.manufactor.net.calcHash(doc);
                         }
                     }
                 }
@@ -1170,7 +1170,7 @@ alias check = Check!DARTException;
                     }
                 }
                 else {
-                    rec.stub(manufactor.net.hashOf(doc));
+                    rec.stub(manufactor.net._hashOf(doc));
                 }
             }
         }
@@ -1334,7 +1334,7 @@ alias check = Check!DARTException;
                     }
                 }
                 else {
-                    immutable fingerprint = manufactor.net.hashOf(doc);
+                    immutable fingerprint = manufactor.net._hashOf(doc);
                     auto lastRing = full ? fingerprint.length : rim + 1;
                     writefln("%s%s [%d]", indent, fingerprint[0 .. lastRing].hex, branch_index);
                 }
@@ -1488,7 +1488,7 @@ alias check = Check!DARTException;
                 i = 0;
                 immutable key = rim_range.front.fingerprint.rim_key(rim);
                 foreach (a; rim_range) {
-                    while (net.hashOf(DARTFakeNet.fake_doc(test_tabel[i])).rim_key(rim) !is key) {
+                    while (net._hashOf(DARTFakeNet.fake_doc(test_tabel[i])).rim_key(rim) !is key) {
                         i++;
                     }
                     i++;

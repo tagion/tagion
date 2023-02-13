@@ -48,7 +48,7 @@ enum OwnerKey = "$Y";
         static Buffer dartHash(const(HashNet) net, string name) {
             NetworkNameCard nnc;
             nnc.name = name;
-            return net.hashOf(nnc);
+            return net._hashOf(nnc);
         }
     }
 
@@ -176,14 +176,14 @@ enum OwnerKey = "$Y";
                 import tagion.crypto.SecureInterfaceNet : HashNet;
                 this(const(HashNet) net, ref const(EpochBlock) block) {
                     name = EPOCH_TOP_NAME;
-                    top = net.hashOf(block);
+                    top = net.calcHash(block);
                 }
             });
 
         static Buffer dartHash(const(HashNet) net) {
             EpochBlock b;
             auto record = LastEpochRecord(net, b);
-            return net.hashOf(record);
+            return net.calcHash(record);
         }
     }
 

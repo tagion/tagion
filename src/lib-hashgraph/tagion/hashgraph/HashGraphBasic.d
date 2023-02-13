@@ -207,7 +207,7 @@ struct EventPackage {
                 this(doc_epack);
                 consensus_check(pubkey.length !is 0, ConsensusFailCode.EVENT_MISSING_PUBKEY);
                 consensus_check(signature.length !is 0, ConsensusFailCode.EVENT_MISSING_SIGNATURE);
-                fingerprint=net.hashOf(event_body);
+                fingerprint=net.calcHash(event_body);
                 consensus_check(net.verify(fingerprint, signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
             }
 
@@ -217,14 +217,14 @@ struct EventPackage {
             this(const SecureNet net, immutable(EventBody) ebody) {
                 pubkey=net.pubkey;
                 event_body=ebody;
-                fingerprint=net.hashOf(event_body);
+                fingerprint=net.calcHash(event_body);
                 signature=net.sign(fingerprint);
             }
 
             this(const SecureNet net, const Pubkey pkey, const Signature signature, immutable(EventBody) ebody) {
                 pubkey=pkey;
                 event_body=ebody;
-                fingerprint=net.hashOf(event_body);
+                fingerprint=net.calcHash(event_body);
                 this.signature=signature;
                 consensus_check(net.verify(fingerprint, signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
             }

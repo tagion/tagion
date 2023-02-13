@@ -405,7 +405,7 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
     }
     do {
         if (.isStub(doc)) {
-            fingerprint = net.hashOf(doc);
+            fingerprint = net._hashOf(doc);
         }
         else {
             if (doc.hasMember(archiveLabel)) {
@@ -415,7 +415,7 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
                 filed = doc;
             }
             if (net) {
-                fingerprint = net.hashOf(filed);
+                fingerprint = net._hashOf(filed);
             }
             else {
                 fingerprint = null;
@@ -577,7 +577,7 @@ unittest { // Archive
         hibon["text"] = "Some text";
         filed_doc = Document(hibon);
     }
-    immutable filed_doc_fingerprint = net.hashOf(filed_doc);
+    immutable filed_doc_fingerprint = net._hashOf(filed_doc);
 
     Archive a;
     { // Simple archive

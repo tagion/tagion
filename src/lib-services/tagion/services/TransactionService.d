@@ -218,7 +218,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                                     }
                                     foreach (input; signed_contract.contract.inputs) {
                                         foreach (bill; payment.bills) {
-                                            if (hirpc.net.hashOf(bill.toDoc) == input) {
+                                            if (hirpc.net._hashOf(bill.toDoc) == input) {
                                                 signed_contract.inputs ~= bill;
                                             }
                                         }
