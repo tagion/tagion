@@ -20,8 +20,8 @@ clean: clean-ddoc
 help-ddoc:
 	$(PRECMD)
 	${call log.header, $@ :: help}
-	${cal log.help, "make ddoc", "Create the docs with addrdox"}
-	${cal log.help, "make servedocs", "Run the md doc server and ddoc server"}
+	${call log.help, "make ddoc", "Create the docs with addrdox"}
+	${call log.help, "make servedocs", "Run the md doc server and ddoc server"}
 
 .PHONY: help-ddoc
 
@@ -37,4 +37,4 @@ ddoc: $(BUILDDOC)/.way
 servedocs:
 	$(PRECMD)
 	echo "Serving docs"
-	(trap 'kill 0' SIGINT; docsify serve & $(CD) $(BUILDDOC) && python -m http.server 3001)
+	(trap 'kill 0' SIGINT; docsify serve & $(CD) $(BUILDDOC) && python3 -m http.server 3001)
