@@ -203,18 +203,16 @@ class MonitorCallBacks : EventMonitorCallbacks {
         }
 
         void round_seen(const(Event) e) @trusted {
-            // log.error("BEFORE ROUND SEEN");
-            log("BITMASK: %.16s", e.round_seen_mask);
+            // check if working
+            // log("ROUND SEEN BITMASK %s", getBitMaskString(e.round_seen_mask, e.round.node_size));
             
-            // log("%s", format("%s", e.witness.round_seen_mask));
-            // auto hibon=createHiBON(e);
-            // try {
-            //     hibon[Keywords.round_seen]=bitarray2bool(e.witness.round_seen_mask); 
-            // } catch(Exception excp) {
-            //     log(excp);
-            // }
-            // log("ROUND SEEN %s", hibon.toPretty);
-            // socket_send(hibon);
+            auto hibon=createHiBON(e);
+            try {
+                hibon[Keywords.round_seen] = getBitMaskString(e.round_seen_mask, e.round.node_size); 
+            } catch(Exception excp) {
+                // empty
+            }
+            socket_send(hibon);
         }
 
         void round_received(const(Event) e) {
@@ -266,21 +264,31 @@ class MonitorCallBacks : EventMonitorCallbacks {
         //     socket_send(hibon);
         // }
 
-        // void strongly_seeing(const(Event) e) {
-        //     auto hibon=createHiBON(e);
-        //     hibon[Keywords.strongly_seeing]=e.strongly_seeing;
-        //     hibon[Keywords.strong_mask]=bitarray2bool(e.witness.strong_seeing_mask);
-        //     socket_send(hibon);
-        // }
+        void strongly_seeing(const(Event) e) {
+            log("STRONG SEEING");
+            auto hibon=createHiBON(e);
+
+            try {
+                // hibon[Keywords.strongly_seeing]=e.strongly_seeing;
+                hibon[Keywords.strong_mask]=getBitMaskString(e.witness.strong_seeing_mask, e.round.node_size);
+            } catch(Exception excp) {
+                // empty
+            }
+
+
+            socket_send(hibon);
+        }
 
         void famous(const(Event) e) {
-            // auto hibon=createHiBON(e);
-            // auto w=e.witness;
-            // assumeWontThrow({
-            //         hibon[Params.famous]=w.famous;
-            //         // hibon[Params.famous_votes]=w.famous_votes;
-            //     });
-            // socket_send(hibon);
+            log("FAMOUS");
+            auto hibon=createHiBON(e);
+
+            try {
+                hibon[Params.famous] = e.witness.famous;
+            } catch (Exception excp) {
+                // empty
+            }
+            socket_send(hibon);
         }
 
         // void son(const(Event) e) {

@@ -410,6 +410,10 @@ class Round {
                     const round_decided = votes_mask[]
                         .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]._witness.famous(
                             hashgraph));
+                    if (Event.callbacks) {
+                        votes_mask[].filter!((vote_node_id) => round_to_be_decided._events[vote_node_id]._witness.famous)
+                            .each!((vote_node_id) => Event.callbacks.famous(round_to_be_decided._events[vote_node_id]));
+                    }
                     if (round_decided) {
                         collect_received_round(round_to_be_decided, hashgraph);
                         round_to_be_decided._decided = true;
@@ -573,7 +577,9 @@ class Event {
             private bool famous(const HashGraph hashgraph) {
                 if (!_famous) {
                     _famous = _strong_seeing_mask.isMajority(hashgraph);
+
                 }
+
                 return _famous;
             }
         }
@@ -713,7 +719,6 @@ class Event {
                 }
             }
         }
-
         local_strong_seeing(_round._previous, _witness.round_seen_mask);
     }
 
@@ -816,6 +821,10 @@ class Event {
                     _witness = new Witness(this, witness_seen_mask);
 
                     strong_seeing(hashgraph);
+                    if (callbacks) {
+                        callbacks.strongly_seeing(this);
+                    }
+
                     with (hashgraph) {
                         mixin Log!(strong_seeing_statistic);
                     }
