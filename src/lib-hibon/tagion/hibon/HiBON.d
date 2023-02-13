@@ -29,7 +29,7 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONType : isHiBON, isHiBONType, isHiBONTypeArray;
 
 import tagion.basic.Message : message;
-import tagion.basic.Types : Buffer;
+import tagion.basic.Types : Buffer, isTypedef;
 import tagion.basic.Basic : CastTo;
 import LEB128 = tagion.utils.LEB128;
 
@@ -203,19 +203,6 @@ static size_t size(U)(const(U[]) array) pure {
         }
 
         /++
-         Sets the key of the Member
-         Returns:
-         The a member with a name of key
-         +/
-        // static Member search(const string key) pure {
-        //      auto result=new Member(key);
-        //      return result;
-        // }
-
-        T new_get(T)() const if (isHiBONType!T || isHiBON!T) {
-            return T.init;
-        }
-        /++
          Returns:
          The value as type T
          Throws:
@@ -234,9 +221,6 @@ static size_t size(U)(const(U[]) array) pure {
                     return T(doc);
                     break;
                 default:
-
-                    
-
                         .check(0, message("Expected HiBON type %s but apply type (%s) which is not supported",
                                 type, T.stringof));
                 }
@@ -244,16 +228,19 @@ static size_t size(U)(const(U[]) array) pure {
             assert(0);
         }
 
-        const(T) get(T)() const if (!isHiBONType!T && !isHiBON!T) {
+        const(T) get(T)() const if (!isHiBONType!T && !isHiBON!T && !isTypedef!T) {
             enum E = Value.asType!T;
-
-            
-
             .check(E is type, message("Expected HiBON type %s but apply type %s (%s)",
                     type, E, T.stringof));
             return value.by!E;
         }
 
+        inout(T) get(T)() inout  if (isTypedef!T) {
+            alias BaseType = TypedefType!T;
+        const ret = get!BaseType;
+            return T(ret);
+        }
+        
         /++
          Returns:
          The value as HiBON Type E

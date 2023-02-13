@@ -8,7 +8,7 @@ enum BufferType {
     SIGNATURE, /// Signature buffer type
     HASH, /// Hash pointre buffer type
     MESSAGE, /// Message buffer type
-//    PAYLOAD /// Payload buffer type
+    //    PAYLOAD /// Payload buffer type
 }
 
 enum BillType {
@@ -22,8 +22,16 @@ alias Pubkey = Typedef!(Buffer, null, BufferType.PUBKEY.stringof); /// Buffer us
 alias Signature = Typedef!(Buffer, null, BufferType.SIGNATURE.stringof); /// Signarure of message
 alias Privkey = Typedef!(Buffer, null, BufferType.PRIVKEY.stringof); /// Private key
 
-//alias Payload = Typedef!(Buffer, null, BufferType.PAYLOAD.stringof); // Buffer used fo the event payload
-alias Fingerprint = Typedef!(Buffer, null, BufferType.HASH.stringof); /// Used for crypto-graphical hash values
+/**
+* Used as hash-pointer of a Document and is used as index in the DART
+* This document can contain a '#' value and there for it should not be used as a signed message.
+*/
+alias Fingerprint = Typedef!(Buffer, null, BufferType.HASH.stringof);
+
+/**
+* This is the raw-hash value of a message and is used when message is signed.
+*/
+alias Message = Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
 
 version (none) {
     alias Message = Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
@@ -35,7 +43,7 @@ version (none) {
  true if T is a const(ubyte)[]
 +/
 enum isBufferType(T) = is(T : const(ubyte[])) || is(TypedefType!T : const(ubyte[]));
-enum isBufferTypeDef(T) = is(TypedefType!T : const(ubyte[])) && !is(T : const(ubyte[]));
+enum isBufferTypedef(T) = is(TypedefType!T : const(ubyte[])) && !is(T : const(ubyte[]));
 
 /*
 Returns:
@@ -51,8 +59,8 @@ static unittest {
     static assert(!isBufferType!(char[]));
     static assert(isBufferType!(Pubkey));
 
-    static assert(isBufferTypeDef!Pubkey);
-    static assert(!isBufferTypeDef!(const(ubyte)[]));
+    static assert(isBufferTypedef!Pubkey);
+    static assert(!isBufferTypedef!(const(ubyte)[]));
 
     static assert(isBuffer!Pubkey);
     static assert(isBuffer!(immutable(ubyte)[]));
@@ -122,4 +130,14 @@ string withDot(FileExtension ext) pure nothrow {
 @safe
 unittest {
     assert(FileExtension.markdown.withDot == ".md");
+}
+
+import std.traits : TemplateOf;
+
+enum isTypedef(T) = __traits(isSame, TemplateOf!T, Typedef);
+
+static unittest {
+    alias MyInt = Typedef!int;
+    static assert(isTypedef!MyInt);
+    static assert(!isTypedef!int);
 }

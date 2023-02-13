@@ -26,6 +26,7 @@ import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException : check, HiBONException;
 import tagion.hibon.HiBONType : isHiBONType, isHiBONTypeArray;
+import tagion.basic.Types : isTypedef;
 import LEB128 = tagion.utils.LEB128;
 
 //import tagion.utils.LEB128 : isIntegral=isLEB128Integral;
@@ -81,8 +82,27 @@ static assert(uint.sizeof == 4);
         }
     }
 
-    // import tagion.hibon.HiBONJSON : JSONString;
-    // mixin JSONString;
+    bool hasHashKey() pure const nothrow {
+        import tagion.hibon.HiBONType : HiBONPrefix;
+        return !empty &&
+            keys.front[0] is HiBONPrefix.HASH;
+    }
+
+    unittest {
+        { // empty document has no hash-key
+            const doc = Document();
+            assert(!doc.hasHashKey);
+        }
+        auto h = new HiBON;
+        { // Document without hash-key
+            h["x"] = 17;
+            assert(!Document(h).hasHashKey);
+        }
+        { // Document with hash-key
+            h["#x"] = 42;
+            assert(Document(h).hasHashKey);
+        }
+    }
 
     /++
      This function returns the HiBON version
@@ -575,8 +595,6 @@ static assert(uint.sizeof == 4);
 
     @safe struct RangeT(T) {
         Range range;
-        enum EType = Value.asType!T;
-        static assert(EType !is Type.NONE, format("Range type %s not supported", T.stringof));
         this(immutable(ubyte)[] data) pure {
             range = Range(data);
         }
