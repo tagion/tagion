@@ -350,7 +350,7 @@ class Round {
                 .until!((e) => (e._round_received !is null))
                 .filter!((e) => (e._round_received_mask.isMajority(hashgraph))))
                 .joiner
-                .tee!((e) => e._round_received = r)
+                .tee!((e) => e.round_received = r)
                 .map!((e) => e);
 
             bool order_less(const Event a, const Event b) @safe {
@@ -607,6 +607,16 @@ class Event {
         Round _round;
         Round _round_received;
         BitMask _round_received_mask;
+    }
+
+
+    void round_received(Round r) nothrow 
+    in (_round_received is null ) 
+    do {
+        _round_received = r;
+        if (callbacks) {
+            callbacks.round_received(this);
+        }
     }
 
     package void attach_round(HashGraph hashgraph) pure nothrow {

@@ -178,7 +178,6 @@ class MonitorCallBacks : EventMonitorCallbacks {
 
         void witness(const(Event) e) {
             immutable _witness = e.witness !is null;
-
             auto hibon = createHiBON(e);
             try {
                 hibon[Params.witness] = _witness;
@@ -225,7 +224,6 @@ class MonitorCallBacks : EventMonitorCallbacks {
             } catch(Exception excp) {
                 //empty
             }
-            log("ROUND RECEIVED: %s", hibon.toPretty);
 
             socket_send(hibon);
         }
