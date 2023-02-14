@@ -20,7 +20,7 @@ private {
     import core.thread : Fiber;
     import std.range.primitives : isInputRange, ElementType;
 
-    import tagion.basic.Types : Buffer;
+    import tagion.basic.Types : Buffer, isBufferType, isTypedef;
     import tagion.basic.Basic : EnumText, assumeTrusted;
     import tagion.Keywords;
 
@@ -58,9 +58,7 @@ shared static this() @trusted {
  +     fingerprint[rim]
  +/
 @safe
-ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure @nogc {
-    import std.stdio;
-
+ubyte rim_key(F)(F rim_keys, const uint rim) pure @nogc if (isBufferType!F) {
     return rim_keys[rim];
 }
 
@@ -70,7 +68,7 @@ ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure @nogc {
  +     Sector number of a fingerpint
  +/
 @safe
-ushort sector(const(ubyte[]) fingerprint) pure nothrow @nogc
+ushort sector(F)(const(F) fingerprint) pure nothrow @nogc if (isBufferType!F)
 in (fingerprint.length >= ubyte.sizeof)
 do {
     ushort result = ushort(fingerprint[0]) << 8;
@@ -83,11 +81,13 @@ do {
 
 @safe
 unittest {
+    import tagion.basic.Types : Fingerprint;
     import std.stdio;
-
-    assert(sector([0xA7]) == 0xA700);
-    assert(sector([0xA7, 0x15]) == 0xA715);
-    assert(sector([0xA7, 0x15, 0xE3]) == 0xA715);
+    ubyte[] buf1=[0xA7];
+    assert(sector(buf1) == 0xA700);
+    assert(sector(cast(Fingerprint)[0xA7, 0x15]) == 0xA715);
+    Buffer buf2=[0xA7, 0x15, 0xE3];
+    assert(sector(buf2)== 0xA715);
 
 }
 
@@ -1215,7 +1215,7 @@ alias check = Check!DARTException;
         return search(rim_path, blockfile.masterBlock.root_index);
     }
 
-    /* 
+    /**
      * Creates a range at which iterate and read the data in the DART at rim_path 
      * Params:
      *   rim_path = rim_path where to select the range 

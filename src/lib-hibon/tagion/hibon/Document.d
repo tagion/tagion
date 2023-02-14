@@ -899,6 +899,7 @@ static assert(uint.sizeof == 4);
             }
         }
     }
+    enum isDocTypedef(T) = isTypedef!T && !is(T == sdt_t);
 
     /**
  * HiBON Element representation
@@ -1022,18 +1023,20 @@ static assert(uint.sizeof == 4);
                 return T(doc);
             }
 
-            T get(T)() if (isTypedef!T) {
+
+            T get(T)() if (isDocTypedef!T) {
                 alias BaseType = TypedefType!T;
                 const ret = get!BaseType;
                 return T(ret);
             }
 
             static unittest {
+    import std.typecons : Typedef;
                 alias BUF=immutable(ubyte)[];
                 alias Tdef=Typedef!(BUF, null, "SPECIAL");
                 pragma(msg, "DOC get ", typeof(get!Tdef));
-                
-            }
+                static assert(is(typeof(get!Tdef) == Tdef));
+           }
 
             @trusted T get(T)() if (isHiBONTypeArray!T) {
                 alias ElementT = ForeachType!T;
@@ -1046,9 +1049,6 @@ static assert(uint.sizeof == 4);
                     }
                 }
                 else {
-
-                    
-
                         .check(doc.isArray, "Document must be an array");
                     result.length = doc.length;
                     foreach (ref a, e; lockstep(result, doc[])) {
@@ -1082,7 +1082,7 @@ static assert(uint.sizeof == 4);
             }
 
             const(T) get(T)() const
-            if (!isHiBONType!T && !isHiBONTypeArray!T && !is(T == enum) && !isTypedef!T) {
+            if (!isHiBONType!T && !isHiBONTypeArray!T && !is(T == enum) && !isDocTypedef!T) {
                 enum E = Value.asType!T;
                 import std.format;
 

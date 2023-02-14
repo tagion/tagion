@@ -235,12 +235,21 @@ static size_t size(U)(const(U[]) array) pure {
             return value.by!E;
         }
 
-        inout(T) get(T)() inout  if (isTypedef!T) {
+        inout(T) get(T)() inout  if (Document.isDocTypedef!T) {
             alias BaseType = TypedefType!T;
         const ret = get!BaseType;
             return T(ret);
         }
-        
+
+        unittest {
+    import std.typecons : Typedef;
+                alias BUF=immutable(ubyte)[];
+                alias Tdef=Typedef!(BUF, null, "SPECIAL");
+                      auto h=new HiBON;
+                Tdef buf=[0x17, 0x42];
+                h["b"]=buf;
+                assert(Document(h)["b"].get!Tdef == buf);
+       }
         /++
          Returns:
          The value as HiBON Type E
