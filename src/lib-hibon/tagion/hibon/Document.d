@@ -1034,7 +1034,6 @@ static assert(uint.sizeof == 4);
     import std.typecons : Typedef;
                 alias BUF=immutable(ubyte)[];
                 alias Tdef=Typedef!(BUF, null, "SPECIAL");
-                pragma(msg, "DOC get ", typeof(get!Tdef));
                 static assert(is(typeof(get!Tdef) == Tdef));
            }
 
