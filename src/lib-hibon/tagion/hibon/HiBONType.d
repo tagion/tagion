@@ -230,7 +230,7 @@ mixin template HiBONType(string CTOR = "") {
     import std.range.primitives : isInputRange;
     import std.algorithm.iteration : map;
     import std.meta : staticMap, AliasSeq;
-    import std.array : join, array;
+    import std.array : join, array, assocArray;
 
     import tagion.basic.Basic : basename, EnumContinuousSequency;
 
@@ -492,8 +492,14 @@ mixin template HiBONType(string CTOR = "") {
                     enum do_foreach = true;
                 }
                 else static if (isAssociativeArray!R) {
-                    R result;
-                    enum do_foreach = true;
+                    alias ValueT = ForeachType!R;
+                    alias KeyT = KeyType!R;
+                    R result = assocArray(
+                        doc.keys.map!(key => key.to!KeyT), 
+                doc[].map!(e => e.get!ValueT));
+                //R result;
+                    enum do_foreach = false;
+                    
                 }
                 else {
                     return R(doc);

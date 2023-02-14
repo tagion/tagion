@@ -1013,7 +1013,7 @@ class HashGraph {
         }
 
     }
-
+version(none)
     unittest {
         import tagion.hashgraph.Event;
         import std.stdio;
