@@ -1022,6 +1022,19 @@ static assert(uint.sizeof == 4);
                 return T(doc);
             }
 
+            T get(T)() if (isTypedef!T) {
+                alias BaseType = TypedefType!T;
+                const ret = get!BaseType;
+                return T(ret);
+            }
+
+            static unittest {
+                alias BUF=immutable(ubyte)[];
+                alias Tdef=Typedef!(BUF, null, "SPECIAL");
+                pragma(msg, "DOC get ", typeof(get!Tdef));
+                
+            }
+
             @trusted T get(T)() if (isHiBONTypeArray!T) {
                 alias ElementT = ForeachType!T;
                 const doc = get!Document;
@@ -1069,7 +1082,7 @@ static assert(uint.sizeof == 4);
             }
 
             const(T) get(T)() const
-            if (!isHiBONType!T && !isHiBONTypeArray!T && !is(T == enum)) {
+            if (!isHiBONType!T && !isHiBONTypeArray!T && !is(T == enum) && !isTypedef!T) {
                 enum E = Value.asType!T;
                 import std.format;
 
