@@ -83,11 +83,12 @@ do {
 unittest {
     import tagion.basic.Types : Fingerprint;
     import std.stdio;
-    ubyte[] buf1=[0xA7];
+
+    ubyte[] buf1 = [0xA7];
     assert(sector(buf1) == 0xA700);
     assert(sector(cast(Fingerprint)[0xA7, 0x15]) == 0xA715);
-    Buffer buf2=[0xA7, 0x15, 0xE3];
-    assert(sector(buf2)== 0xA715);
+    Buffer buf2 = [0xA7, 0x15, 0xE3];
+    assert(sector(buf2) == 0xA715);
 
 }
 
@@ -975,6 +976,7 @@ alias check = Check!DARTException;
                     if (branch_index !is INDEX_NULL) {
                         immutable data = blockfile.load(branch_index);
                         const doc = Document(data);
+                        
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
                         if (Branches.isRecord(doc)) {
                             branches = Branches(doc);
@@ -1170,7 +1172,7 @@ alias check = Check!DARTException;
                     }
                 }
                 else {
-                    rec.stub(manufactor.net._hashOf(doc));
+                    rec.stub(manufactor.net.dartIndex(doc));
                 }
             }
         }
@@ -1334,7 +1336,7 @@ alias check = Check!DARTException;
                     }
                 }
                 else {
-                    immutable fingerprint = manufactor.net._hashOf(doc);
+                    immutable fingerprint = manufactor.net.dartIndex(doc);
                     auto lastRing = full ? fingerprint.length : rim + 1;
                     writefln("%s%s [%d]", indent, fingerprint[0 .. lastRing].hex, branch_index);
                 }
@@ -1488,7 +1490,7 @@ alias check = Check!DARTException;
                 i = 0;
                 immutable key = rim_range.front.fingerprint.rim_key(rim);
                 foreach (a; rim_range) {
-                    while (net._hashOf(DARTFakeNet.fake_doc(test_tabel[i])).rim_key(rim) !is key) {
+                    while (net.dartIndex(DARTFakeNet.fake_doc(test_tabel[i])).rim_key(rim) !is key) {
                         i++;
                     }
                     i++;

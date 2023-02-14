@@ -48,7 +48,7 @@ enum OwnerKey = "$Y";
         static Buffer dartHash(const(HashNet) net, string name) {
             NetworkNameCard nnc;
             nnc.name = name;
-            return net._hashOf(nnc);
+            return net.dartIndex(nnc);
         }
     }
 

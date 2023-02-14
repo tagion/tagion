@@ -49,14 +49,14 @@ do {
     // TODO: set also time?
 
     NetworkNameRecord nrc;
-    nrc.name = net._hashOf(nnc);
+    nrc.name = net.dartIndex(nnc);
 
     NodeAddress na;
     // TODO: init NodeAddress
 
     // Bind hashes
-    nrc.node = net._hashOf(na);
-    nnc.record = net._hashOf(nrc);
+    nrc.node = net.dartIndex(na);
+    nnc.record = net.dartIndex(nrc);
 
     auto hr = HashLock(net, nnc);
 

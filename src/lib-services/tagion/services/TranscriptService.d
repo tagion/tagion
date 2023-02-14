@@ -175,7 +175,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     foreach (input; signed_contract.contract.inputs) {
                         foreach (input_archive; inputs_recorder[]) {
                             const bill = StandardBill(input_archive.filed);
-                            if (net._hashOf(bill.toDoc) == input) {
+                            if (net.dartIndex(bill.toDoc) == input) {
                                 signed_contract.inputs ~= bill;
                             }
                         }

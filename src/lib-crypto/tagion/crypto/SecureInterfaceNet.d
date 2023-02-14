@@ -26,16 +26,18 @@ interface HashNet {
      +/
     immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
 
-immutable(Buffer) calcHash(const(Document) doc) const;
+    immutable(Buffer) calcHash(const(Document) doc) const;
 
-final immutable(Buffer) calcHash(T)(T value) const if (isHiBONType!T) {
-    return calcHash(value.toDoc);
-        }
-    Buffer _hashOf(const(Document) doc) const;
-
-    final Buffer _hashOf(T)(T value) const if (isHiBONType!T) {
-        return _hashOf(value.toDoc);
+    final immutable(Buffer) calcHash(T)(T value) const if (isHiBONType!T) {
+        return calcHash(value.toDoc);
     }
+
+    Buffer dartIndex(const(Document) doc) const;
+
+    final Buffer dartIndex(T)(T value) const if (isHiBONType!T) {
+        return dartIndex(value.toDoc);
+    }
+
 }
 
 @safe

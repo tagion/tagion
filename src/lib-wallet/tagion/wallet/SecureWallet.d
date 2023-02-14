@@ -244,7 +244,7 @@ import tagion.wallet.WalletException : check;
             if (enough) {
                 const total = contract_bills.map!(b => b.value).sum;
 
-                result.contract.inputs = contract_bills.map!(b => net._hashOf(b.toDoc)).array;
+                result.contract.inputs = contract_bills.map!(b => net.dartIndex(b.toDoc)).array;
                 const rest = total - amount;
                 if (rest > 0) {
                     Invoice money_back;
