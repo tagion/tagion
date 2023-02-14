@@ -87,7 +87,7 @@ template isSpecialKeyType(T) {
 
     static if (isAssociativeArray!T) {
         alias KeyT = KeyType!T;
-        enum isSpecialKeyType = !(isUnsigned!KeyT) && !is(KeyT : string);
+        enum isSpecialKeyType = Value.hasType!KeyT;
     }
     else {
         enum isSpecialKeyType = false;
