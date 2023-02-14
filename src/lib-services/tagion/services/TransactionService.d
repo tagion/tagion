@@ -16,7 +16,7 @@ import tagion.network.FiberServer : FiberServer, FiberRelay;
 import tagion.logger.Logger;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
-import tagion.basic.Types : Control, Buffer;
+import tagion.basic.Types : Control, DARTIndex, Buffer;
 
 import tagion.hibon.Document;
 import tagion.communication.HiRPC;
@@ -69,7 +69,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
 
         auto dart_sync_tid = locate(opts.dart.sync.task_name);
 
-        @trusted void requestInputs(const(Buffer[]) inputs, uint id) {
+        @trusted void requestInputs(const(DARTIndex[]) inputs, uint id) {
             auto sender = DART.dartRead(inputs, internal_hirpc, id);
             auto tosend = sender.toDoc.serialize; //internal_hirpc.toHiBON(sender).serialize;
             dart_sync_tid.send(opts.transaction.service.server.response_task_name, tosend);

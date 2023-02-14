@@ -308,7 +308,11 @@ version (OLD_TRANSACTION) {
         }
 
         // function for signing all bills
-        void sign_all_bills(const StandardBill[] input_bills, const StandardBill[] output_bills, const SecureNet net, ref SignedContract signed_contract) {
+        void sign_all_bills(
+                const StandardBill[] input_bills,
+                const StandardBill[] output_bills,
+                const SecureNet net,
+                ref SignedContract signed_contract) {
             Contract contract;
             contract.inputs = input_bills.map!(b => net.dartIndex(b.toDoc)).array;
             foreach (bill; output_bills) {

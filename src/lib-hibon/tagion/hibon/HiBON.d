@@ -1064,7 +1064,7 @@ static size_t size(U)(const(U[]) array) pure {
         h[time] = sdt_t(1_100_100_101);
 
         const doc = Document(h);
-
+        assert(doc[time].type is Type.TIME); 
         assert(doc[time].get!sdt_t == 1_100_100_101);
     }
 

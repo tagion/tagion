@@ -5,17 +5,18 @@ import std.stdio;
 import core.thread : Fiber;
 import core.exception : RangeError;
 import std.conv : ConvException;
+import std.range : empty;
 
 //import std.stdio;
 
 import std.traits : EnumMembers;
 import std.format : format;
 import std.range : isInputRange, ElementType;
-import std.algorithm.iteration : filter;
+import std.algorithm.iteration : filter, map;
 
 import tagion.basic.Debug : __format;
 import tagion.basic.Basic : FUNCTION_NAME;
-import tagion.basic.Types : Buffer;
+import tagion.basic.Types : DARTIndex, Buffer;
 import tagion.Keywords;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
@@ -380,7 +381,7 @@ class DART : DARTFile {
         @HiRPCMethod() const(HiRPCSender) dartRead(Range)(
                 Range fingerprints,
                 HiRPC hirpc = HiRPC(null),
-                uint id = 0) if (isInputRange!Range && is(ElementType!Range : const(Buffer))) {
+                uint id = 0) if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
             auto params = new HiBON;
             auto params_fingerprints = new HiBON;
             params_fingerprints = fingerprints.filter!(b => b.length !is 0);
@@ -936,7 +937,7 @@ received = the HiRPC received package
                     //
                     // Read all the archives from the foreign DART
                     //
-                    const request_archives = dartRead(foreign_branches.fingerprints, hirpc, id);
+                    const request_archives = dartRead(foreign_branches.fingerprints.map!(f => DARTIndex(f)), hirpc, id);
                     const result_archives = sync.query(request_archives);
                     auto foreign_recoder = manufactor.recorder(result_archives.response.result);
                     //
@@ -961,7 +962,7 @@ received = the HiRPC received package
                         }
                         else if (foreign_print) {
                             // Foreign is poits to branches
-                            if (local_print) {
+                            if (!local_print.empty) {
                                 const possible_branches_data = load(local_branches, key);
                                 if (!Branches.isRecord(Document(possible_branches_data))) {
                                     // If branch is an archive then it is removed because if it exists in foreign DART
@@ -971,7 +972,7 @@ received = the HiRPC received package
                             }
                             iterate(sub_rims);
                         }
-                        else if (local_print) {
+                        else if (!local_print.empty) {
                             sync.remove_recursive(sub_rims);
                         }
                     }

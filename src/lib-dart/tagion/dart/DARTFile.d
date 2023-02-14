@@ -20,7 +20,7 @@ private {
     import core.thread : Fiber;
     import std.range.primitives : isInputRange, ElementType;
 
-    import tagion.basic.Types : Buffer, isBufferType, isTypedef;
+    import tagion.basic.Types : Buffer, DARTIndex, isBufferType, isTypedef;
     import tagion.basic.Basic : EnumText, assumeTrusted;
     import tagion.Keywords;
 
@@ -279,6 +279,16 @@ alias check = Check!DARTException;
     @safe struct Leave {
         uint index;
         Buffer fingerprint;
+        this(const uint index, Buffer fingerprint) {
+            this.index = index;
+            this.fingerprint = fingerprint;
+        }
+
+        this(const uint index, DARTIndex hash_pointer) {
+            this.index = index;
+            this.fingerprint = cast(Buffer) hash_pointer;
+        }
+
         bool empty() pure const nothrow {
             return (index is INDEX_NULL) && (fingerprint is null);
         }
@@ -976,7 +986,9 @@ alias check = Check!DARTException;
                     if (branch_index !is INDEX_NULL) {
                         immutable data = blockfile.load(branch_index);
                         const doc = Document(data);
+
                         
+
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
                         if (Branches.isRecord(doc)) {
                             branches = Branches(doc);
@@ -1364,7 +1376,7 @@ alias check = Check!DARTException;
                 Buffer[] results;
                 foreach (a; recorder.archives) {
                     assert(a.done);
-                    results ~= a.fingerprint;
+                    results ~= cast(Buffer) a.fingerprint;
                 }
                 return results;
 

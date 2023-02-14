@@ -173,7 +173,7 @@ mixin template HiBONRecordType() {
         static assert(record_types.length is 1, "Only one recordType UDA allowed");
         static if (record_types[0].name.length) {
             enum type_name = record_types[0].name;
-            import tagion.hibon.HiBONType : isRecordT=isRecord;
+            import tagion.hibon.HiBONType : isRecordT = isRecord;
 
             alias isRecord = isRecordT!ThisType;
             version (none) static bool isRecord(const Document doc) nothrow {
@@ -228,8 +228,9 @@ mixin template HiBONType(string CTOR = "") {
     import std.functional : unaryFun;
     import std.range : iota, enumerate, lockstep;
     import std.range.primitives : isInputRange;
+    import std.algorithm.iteration : map;
     import std.meta : staticMap, AliasSeq;
-    import std.array : join;
+    import std.array : join, array;
 
     import tagion.basic.Basic : basename, EnumContinuousSequency;
 
@@ -480,9 +481,11 @@ mixin template HiBONType(string CTOR = "") {
                 static if (isArray!R) {
                     alias UnqualU = Unqual!MemberU;
                     check(doc.isArray, format("Document is expected to be an array"));
-                    UnqualU[] result;
+                    MemberU[] result;
                     result.length = doc.length;
-                    enum do_foreach = true;
+                    pragma(msg, "MemberU ", MemberU, " UnqualU ", UnqualU);
+                    result = doc[].map!(e => e.get!MemberU).array;
+                    enum do_foreach = false;
                 }
                 else static if (isSpecialKeyType!R) {
                     R result;
@@ -546,6 +549,10 @@ mixin template HiBONType(string CTOR = "") {
                             }
                         }
                         else {
+                            pragma(msg, "typeof(result[e.index]) ", typeof(result[e.index]),
+                            " typeof(value) ", typeof(value));
+
+                            // (() @trusted
                             result[e.index] = value;
                         }
                     }
@@ -610,7 +617,8 @@ mixin template HiBONType(string CTOR = "") {
                         }
                         enum member_name = this.tupleof[i].stringof;
                         alias MemberT = typeof(m);
-                        alias BaseT = TypedefType!MemberT;
+                        //alias BaseT = TypedefType!MemberT;
+                        alias BaseT = MemberT;
                         alias UnqualT = Unqual!BaseT;
                         static if (optional) {
                             if (!doc.hasMember(name)) {
@@ -635,11 +643,16 @@ mixin template HiBONType(string CTOR = "") {
                             m = doc[name].get!BaseT;
                             //                            static if (isIntegral!(OriginalType
                         }
+                        else static if (Document.isDocTypedef!BaseT) {
+                            m = doc[name].get!BaseT;
+                        }
                         else static if (Document.Value.hasType!BaseT) {
+                            pragma(msg, "hasType ", BaseT, " typeof ", typeof(m));
                             m = doc[name].get!BaseT;
                         }
                         else static if (is(BaseT == struct)) {
                             auto sub_doc = doc[name].get!Document;
+                            pragma(msg, "BaseT ", BaseT);
                             m = BaseT(sub_doc);
                         }
                         else static if (is(BaseT == class)) {
@@ -672,7 +685,6 @@ mixin template HiBONType(string CTOR = "") {
                 else {
                     static assert(0, format("Type %s for member %s is not supported",
                             BaseT.stringof, name));
-                    enum code = "";
                 }
             }
         }

@@ -7,7 +7,7 @@ import std.array : join;
 import std.exception : assumeUnique;
 
 import tagion.services.Options;
-import tagion.basic.Types : Control, Buffer;
+import tagion.basic.Types : Control, DARTIndex, Buffer;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 
@@ -83,7 +83,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             }
         }
 
-        @trusted const(RecordFactory.Recorder) requestInputs(const(Buffer[]) inputs) {
+        @trusted const(RecordFactory.Recorder) requestInputs(const(DARTIndex[]) inputs) {
             auto sender = DART.dartRead(inputs, empty_hirpc);
             auto tosend = sender.toDoc.serialize;
             if (dart_tid !is Tid.init) {
@@ -152,7 +152,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                 const payload_doc = Document(payloads_buff);
                 log("Received epoch: len:%d", payload_doc.length);
 
-                scope bool[Buffer] used_inputs;
+                scope bool[DARTIndex] used_inputs;
                 scope (exit) {
                     used_inputs = null;
                     smart_scripts = null;

@@ -4,7 +4,7 @@ import std.random;
 
 //import tagion.gossip.InterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.basic.Types : Buffer, Control;
+import tagion.basic.Types : Buffer, DARTIndex, Control;
 import tagion.dart.DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : RecordFactory;
@@ -66,7 +66,7 @@ class DARTFakeNet : StdSecureNet {
     }
 
     @trusted
-    override immutable(Buffer) dartIndex(scope const(Document) doc) const {
+    override const(DARTIndex) dartIndex(const(Document) doc) const {
         import tagion.hibon.HiBONBase : Type;
         import std.exception : assumeUnique;
 
@@ -77,7 +77,7 @@ class DARTFakeNet : StdSecureNet {
             ubyte[] fingerprint;
             fingerprint.length = hashSize;
             fingerprint[0 .. ulong.sizeof] = nativeToBigEndian(x);
-            return assumeUnique(fingerprint);
+            return DARTIndex(assumeUnique(fingerprint));
         }
         return super.dartIndex(doc);
     }

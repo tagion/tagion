@@ -14,7 +14,7 @@ import std.typecons;
 
 import tagion.dart.DART : DART;
 import tagion.dart.DARTFile;
-import tagion.basic.Types : Buffer, FileExtension;
+import tagion.basic.Types : Buffer, DARTIndex, FileExtension;
 import tagion.basic.Basic : tempfile;
 
 import tagion.communication.HiRPC;
@@ -281,10 +281,10 @@ int _main(string[] args) {
         }
     }
     else if (dartread) {
-        Buffer[] fingerprints;
+        DARTIndex[] fingerprints;
         try {
             fingerprints = dartread_args
-                .map!(hash => decode(hash)).array;
+                .map!(hash => DARTIndex(decode(hash))).array;
         }
         catch (Exception e) {
             writefln("Error parsing hash string: %s. Abort", e.msg);

@@ -22,7 +22,7 @@ import tagion.dart.BlockFile;
 import tagion.dart.Recorder;
 
 import tagion.dart.DARTOptions : DARTOptions;
-import tagion.basic.Types : Buffer, Pubkey, Control;
+import tagion.basic.Types : Buffer, DARTIndex, Pubkey, Control;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.hibon.HiBONJSON;
@@ -88,7 +88,7 @@ class ModifyRequestHandler : ResponseHandler {
 class ReadRequestHandler : ResponseHandler {
     private {
         pragma(msg, "fixme(cbr): Why is this a Document[Buffer], why not just a Recorder? It seems to solve the same problem");
-        Document[Buffer] fp_result;
+        Document[DARTIndex] fp_result;
         Buffer[] requested_fp;
         HiRPC hirpc;
         HiRPCReceiver receiver;

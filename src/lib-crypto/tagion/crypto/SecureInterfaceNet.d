@@ -1,7 +1,7 @@
 module tagion.crypto.SecureInterfaceNet;
 
 import std.typecons : TypedefType;
-import tagion.basic.Types : Buffer, Pubkey, Signature, isBufferType;
+import tagion.basic.Types : Buffer, DARTIndex, Pubkey, Signature, isBufferType;
 
 import tagion.hibon.HiBONType : isHiBONType, HiBONPrefix;
 import tagion.hibon.Document : Document;
@@ -26,15 +26,20 @@ interface HashNet {
      +/
     immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
 
+    final immutable(Buffer) calcHash(B)(scope const(B) h1, scope const(B) h2) const
+    if (isBufferType!B) {
+        return calcHash(cast(TypedefType!B) h1, cast(TypedefType!B) h2);
+    }
+
     immutable(Buffer) calcHash(const(Document) doc) const;
 
     final immutable(Buffer) calcHash(T)(T value) const if (isHiBONType!T) {
         return calcHash(value.toDoc);
     }
 
-    Buffer dartIndex(const(Document) doc) const;
+    const(DARTIndex) dartIndex(const(Document) doc) const;
 
-    final Buffer dartIndex(T)(T value) const if (isHiBONType!T) {
+    final const(DARTIndex) dartIndex(T)(T value) const if (isHiBONType!T) {
         return dartIndex(value.toDoc);
     }
 

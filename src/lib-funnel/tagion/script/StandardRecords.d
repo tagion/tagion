@@ -2,7 +2,7 @@ module tagion.script.StandardRecords;
 
 import std.meta : AliasSeq;
 
-import tagion.basic.Types : Buffer, Pubkey, Signature;
+import tagion.basic.Types : Buffer, DARTIndex, Pubkey, Signature;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONType;
@@ -40,12 +40,13 @@ enum OwnerKey = "$Y";
         @label(OwnerKey) Pubkey pubkey; /// NNC pubkey
         @label("$lang") string lang; /// Language used for the #name
         @label("$time") ulong time; /// Time-stamp of
-        @label("$record") Buffer record; /// Hash pointer to NRC
+        @label("$record") DARTIndex record; /// Hash pointer to NRC
         mixin HiBONType;
 
         import tagion.crypto.SecureInterfaceNet : HashNet;
 
-        static Buffer dartHash(const(HashNet) net, string name) {
+        static DARTIndex dartHash(const(HashNet) net, string name) {
+            pragma(msg, "fixme(cbr): Should just used dartIndex");
             NetworkNameCard nnc;
             nnc.name = name;
             return net.dartIndex(nnc);
@@ -53,10 +54,10 @@ enum OwnerKey = "$Y";
     }
 
     @recordType("NRC") struct NetworkNameRecord {
-        @label("$name") Buffer name; /// Hash of the NNC.name
+        @label("$name") DARTIndex name; /// Hash of the NNC.name
         @label("$prev") Buffer previous; /// Hash pointer to the previuos NRC
         @label("$index") uint index; /// Current index previous.index+1
-        @label("$node") Buffer node; /// Hash pointer to NNR
+        @label("$node") DARTIndex node; /// Hash pointer to NNR
         @label("$payload", true) Document payload; /// Hash pointer to payload
         mixin HiBONType;
     }
@@ -204,8 +205,8 @@ enum OwnerKey = "$Y";
     }
 
     @recordType("SMC") struct Contract {
-        @label("$in") Buffer[] inputs; /// Hash pointer to input (DART)
-        @label("$read", true) Buffer[] reads; /// Hash pointer to read-only input (DART)
+        @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
+        @label("$read", true) DARTIndex[] reads; /// Hash pointer to read-only input (DART)
         version (OLD_TRANSACTION) {
             @label("$out") Document[Pubkey] output; // pubkey of the output
             @label("$run") Script script; // TVM-links / Wasm binary

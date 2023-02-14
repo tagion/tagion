@@ -2,7 +2,7 @@ module tagion.crypto.SecureNet;
 
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.aes.AESCrypto;
-import tagion.basic.Types : Buffer, Signature;
+import tagion.basic.Types : Buffer, DARTIndex, Signature;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONType : HiBONPrefix, STUB;
 import tagion.basic.ConsensusExceptions;
@@ -90,16 +90,16 @@ class StdHashNet : HashNet {
         return rawCalcHash(doc.serialize);
     }
 
-    Buffer dartIndex(const(Document) doc) const {
+    const(DARTIndex) dartIndex(const(Document) doc) const {
         if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
             if (doc.keys.front == STUB) {
-                return doc[STUB].get!Buffer;
+                return doc[STUB].get!DARTIndex;
             }
             auto first = doc[].front;
             immutable value_data = first.data[first.dataPos .. first.dataPos + first.dataSize];
-            return rawCalcHash(value_data);
+            return DARTIndex(rawCalcHash(value_data));
         }
-        return rawCalcHash(doc.serialize);
+        return DARTIndex(rawCalcHash(doc.serialize));
     }
 
 }
@@ -163,7 +163,8 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     Signature sign(const(ubyte[]) message) const
     in {
-        assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
+        assert(_secret !is null,
+                format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
         assert(message.length == 32);
     }
     do {

@@ -84,6 +84,7 @@ static assert(uint.sizeof == 4);
 
     bool hasHashKey() pure const nothrow {
         import tagion.hibon.HiBONType : HiBONPrefix;
+
         return !empty &&
             keys.front[0] is HiBONPrefix.HASH;
     }
@@ -899,6 +900,7 @@ static assert(uint.sizeof == 4);
             }
         }
     }
+
     enum isDocTypedef(T) = isTypedef!T && !is(T == sdt_t);
 
     /**
@@ -988,6 +990,9 @@ static assert(uint.sizeof == 4);
             default:
                 //empty
             }
+
+            
+
             .check(0, message("Invalid type %s", type));
             assert(0);
         }
@@ -1023,7 +1028,6 @@ static assert(uint.sizeof == 4);
                 return T(doc);
             }
 
-
             T get(T)() if (isDocTypedef!T) {
                 alias BaseType = TypedefType!T;
                 const ret = get!BaseType;
@@ -1031,11 +1035,12 @@ static assert(uint.sizeof == 4);
             }
 
             static unittest {
-    import std.typecons : Typedef;
-                alias BUF=immutable(ubyte)[];
-                alias Tdef=Typedef!(BUF, null, "SPECIAL");
+                import std.typecons : Typedef;
+
+                alias BUF = immutable(ubyte)[];
+                alias Tdef = Typedef!(BUF, null, "SPECIAL");
                 static assert(is(typeof(get!Tdef) == Tdef));
-           }
+            }
 
             @trusted T get(T)() if (isHiBONTypeArray!T) {
                 alias ElementT = ForeachType!T;
@@ -1048,6 +1053,9 @@ static assert(uint.sizeof == 4);
                     }
                 }
                 else {
+
+                    
+
                         .check(doc.isArray, "Document must be an array");
                     result.length = doc.length;
                     foreach (ref a, e; lockstep(result, doc[])) {
@@ -1080,7 +1088,7 @@ static assert(uint.sizeof == 4);
                 return cast(T) x;
             }
 
-            const(T) get(T)() const
+            T get(T)() const
             if (!isHiBONType!T && !isHiBONTypeArray!T && !is(T == enum) && !isDocTypedef!T) {
                 enum E = Value.asType!T;
                 import std.format;
