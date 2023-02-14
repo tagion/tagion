@@ -87,7 +87,7 @@ template isSpecialKeyType(T) {
 
     static if (isAssociativeArray!T) {
         alias KeyT = KeyType!T;
-        enum isSpecialKeyType = Value.hasType!KeyT;
+        enum isSpecialKeyType = !ValueT!(false, void, void).hasType!KeyT;
     }
     else {
         enum isSpecialKeyType = false;
@@ -495,11 +495,11 @@ mixin template HiBONType(string CTOR = "") {
                     alias ValueT = ForeachType!R;
                     alias KeyT = KeyType!R;
                     R result = assocArray(
-                        doc.keys.map!(key => key.to!KeyT), 
-                doc[].map!(e => e.get!ValueT));
-                //R result;
+                            doc.keys.map!(key => key.to!KeyT),
+                            doc[].map!(e => e.get!ValueT));
+                    //R result;
                     enum do_foreach = false;
-                    
+
                 }
                 else {
                     return R(doc);
