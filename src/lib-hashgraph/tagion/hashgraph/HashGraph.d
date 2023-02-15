@@ -357,7 +357,7 @@ class HashGraph {
             }
         }
 
-        final Event lookup(scope Buffer fingerprint) {
+        final Event lookup(const(Buffer) fingerprint) {
             if (fingerprint in _event_cache) {
                 return _event_cache[fingerprint];
             }
@@ -377,7 +377,7 @@ class HashGraph {
             return (fingerprint in event_package_cache) !is null;
         }
 
-        final Event register(scope const(Buffer) fingerprint) {
+        final Event register(const(Buffer) fingerprint) {
             Event event;
             if (fingerprint) {
                 event = lookup(fingerprint);
@@ -390,7 +390,7 @@ class HashGraph {
 
     protected Register _register;
 
-    package final Event register(scope const(Buffer) fingerprint) {
+    package final Event register(const(Buffer) fingerprint) {
         if (_register) {
             return _register.register(fingerprint);
         }
@@ -1013,7 +1013,7 @@ class HashGraph {
         }
 
     }
-version(none)
+    
     unittest {
         import tagion.hashgraph.Event;
         import std.stdio;

@@ -3,7 +3,14 @@ module tagion.dart.Recorder;
 
 import tagion.hibon.HiBONJSON;
 
+version(REDBLACKTREE_SAFE_PROBLEM) {
+/// dmd v2.100+ has problem with rbtree
+/// Fix: This module hacks the @safe rbtree so it works with dmd v2.100 
+import tagion.std.container.rbtree : RedBlackTree;
+}
+else {
 import std.container.rbtree : RedBlackTree;
+}
 import std.range.primitives : isInputRange, ElementType;
 import std.algorithm.iteration : map;
 import std.format;
@@ -136,7 +143,7 @@ class RecordFactory {
     @recordType("Recorder")
     class Recorder {
         /// This will order REMOVE before add
-        alias Archives = RedBlackTree!(Archive, (a, b) => (a.fingerprint < b.fingerprint) || (
+        alias Archives = RedBlackTree!(Archive, (a, b) @safe => (a.fingerprint < b.fingerprint) || (
                 a.fingerprint == b.fingerprint) && (a._type < a._type));
         package Archives archives;
 

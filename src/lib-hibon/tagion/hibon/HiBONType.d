@@ -483,7 +483,6 @@ mixin template HiBONType(string CTOR = "") {
                     check(doc.isArray, format("Document is expected to be an array"));
                     MemberU[] result;
                     result.length = doc.length;
-                    pragma(msg, "MemberU ", MemberU, " UnqualU ", UnqualU);
                     result = doc[].map!(e => e.get!MemberU).array;
                     enum do_foreach = false;
                 }
@@ -497,7 +496,6 @@ mixin template HiBONType(string CTOR = "") {
                     R result = assocArray(
                             doc.keys.map!(key => key.to!KeyT),
                             doc[].map!(e => e.get!ValueT));
-                    //R result;
                     enum do_foreach = false;
 
                 }
@@ -653,12 +651,10 @@ mixin template HiBONType(string CTOR = "") {
                             m = doc[name].get!BaseT;
                         }
                         else static if (Document.Value.hasType!BaseT) {
-                            pragma(msg, "hasType ", BaseT, " typeof ", typeof(m));
                             m = doc[name].get!BaseT;
                         }
                         else static if (is(BaseT == struct)) {
                             auto sub_doc = doc[name].get!Document;
-                            pragma(msg, "BaseT ", BaseT);
                             m = BaseT(sub_doc);
                         }
                         else static if (is(BaseT == class)) {

@@ -436,12 +436,12 @@ enum Mutable : ubyte {
 
 enum Types : ubyte {
     EMPTY = 0x40, /// Empty block
-    @string("func") FUNC = 0x60, /// functype
+    @("func") FUNC = 0x60, /// functype
     FUNCREF = 0x70, /// funcref
-    @string("i32") I32 = 0x7F, /// i32 valtype
-    @string("i64") I64 = 0x7E, /// i64 valtype
-    @string("f32") F32 = 0x7D, /// f32 valtype
-    @string("f64") F64 = 0x7C, /// f64 valtype
+    @("i32") I32 = 0x7F, /// i32 valtype
+    @("i64") I64 = 0x7E, /// i64 valtype
+    @("f32") F32 = 0x7D, /// f32 valtype
+    @("f64") F64 = 0x7C, /// f64 valtype
 }
 
 template toWasmType(T) {
@@ -504,10 +504,10 @@ template toDType(Types t) {
 }
 
 enum IndexType : ubyte {
-    @string("func") FUNC = 0x00, /// func x:typeidx
-    @string("table") TABLE = 0x01, /// func  tt:tabletype
-    @string("memory") MEMORY = 0x02, /// mem mt:memtype
-    @string("global") GLOBAL = 0x03, /// global gt:globaltype
+    @("func") FUNC = 0x00, /// func x:typeidx
+    @("table") TABLE = 0x01, /// func  tt:tabletype
+    @("memory") MEMORY = 0x02, /// mem mt:memtype
+    @("global") GLOBAL = 0x03, /// global gt:globaltype
 }
 
 @safe static string indexName(const IndexType idx) pure {
