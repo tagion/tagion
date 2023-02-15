@@ -90,11 +90,14 @@ interface EventMonitorCallbacks {
         void round_received(const(Event) e);
         void famous(const(Event) e);
         void round(const(Event) e);
+        void strongly_seeing(const(Event) e);
         //        void son(const(Event) e);
         //       void daughter(const(Event) e);
         //        void forked(const(Event) e);
         void epoch(const(Event[]) received_event);
         void send(const Pubkey channel, lazy const Document doc);
+        void remove(const(Event) e);
+
         final void send(T)(const Pubkey channel, lazy T pack) if (isHiBONType!T) {
             send(channel, pack.toDoc);
         }
