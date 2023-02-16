@@ -122,7 +122,7 @@ unittest {
 version (unittest) {
     import std.algorithm.iteration : each, filter;
     import std.algorithm.searching : count, maxElement, minElement;
-    import std.math : approxEqual;
+    import std.math : isClose;
 
-    alias approx = approxEqual;
+    alias approx = (a, b) => isClose(a, b, 0.001);
 }

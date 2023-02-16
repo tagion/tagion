@@ -313,6 +313,8 @@ class DART : DARTFile {
         }
     }
 
+    pragma(msg, "Callers ", Callers!DART);
+    //    mixin(EnumText!(q{Quries}, Callers!DART));
     mixin(EnumText!(q{Quries}, Callers!DART));
 
     alias HiRPCSender = HiRPC.Sender;
@@ -378,7 +380,7 @@ class DART : DARTFile {
        * Returns: 
        *   HiRPC Sender
        */
-        @HiRPCMethod() const(HiRPCSender) dartRead(Range)(
+        const(HiRPCSender) dartRead(Range)(
                 Range fingerprints,
                 HiRPC hirpc = HiRPC(null),
                 uint id = 0) if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
@@ -388,6 +390,7 @@ class DART : DARTFile {
             params[Params.fingerprints] = params_fingerprints;
             return hirpc.dartRead(params, id);
         }
+
         /**
         * Constructs a HiRPC method for dartRim
         * Params:
@@ -397,7 +400,7 @@ class DART : DARTFile {
         * Returns: 
         *   HiRPC sender
         */
-        @HiRPCMethod() const(HiRPCSender) dartRim(
+        const(HiRPCSender) dartRim(
                 ref const Rims rims,
                 HiRPC hirpc = HiRPC(null),
                 uint id = 0) {
@@ -413,7 +416,7 @@ class DART : DARTFile {
         * Returns: 
         *   HiRPC sender
         */
-        @HiRPCMethod() const(HiRPCSender) dartModify(
+        const(HiRPCSender) dartModify(
                 ref const RecordFactory.Recorder recorder,
                 HiRPC hirpc = HiRPC(null),
                 uint id = 0) {
@@ -428,7 +431,7 @@ class DART : DARTFile {
          * Returns: 
          *   HiRPC sender
          */
-        @HiRPCMethod() const(HiRPCSender) dartBullseye(
+        const(HiRPCSender) dartBullseye(
                 HiRPC hirpc = HiRPC(null),
                 uint id = 0) {
             return hirpc.dartBullseye(null, id);
@@ -443,7 +446,7 @@ received = the HiRPC received package
      * @param read_only - !Because this function is a read only the read_only parameter has no effect 
      * @return HiRPC result that contains current database bullseye
      */
-    @HiRPCMethod private const(HiRPCSender) dartBullseye(
+    @HiRPCMethod() private const(HiRPCSender) dartBullseye(
             ref const(HiRPCReceiver) received,
             const bool read_only)
     in {
@@ -497,7 +500,7 @@ received = the HiRPC received package
      *   }
      * ---
      */
-    private const(HiRPCSender) dartRead(
+    @HiRPCMethod() private const(HiRPCSender) dartRead(
             ref const(HiRPCReceiver) received,
             const bool read_only)
     in {
@@ -548,7 +551,7 @@ received = the HiRPC received package
      *
      * ----
      */
-    private const(HiRPCSender) dartRim(
+    @HiRPCMethod() private const(HiRPCSender) dartRim(
             ref const(HiRPCReceiver) received,
             const bool read_only)
     in {
@@ -622,7 +625,7 @@ received = the HiRPC received package
      * Returns: HiBON Sender 
      */
 
-    @HiRPCMethod private const(HiRPCSender) dartModify(
+    @HiRPCMethod() private const(HiRPCSender) dartModify(
             ref const(HiRPCReceiver) received,
             const bool read_only)
     in {
