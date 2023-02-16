@@ -32,30 +32,13 @@ struct HiRPCMethod {
 }
 
 private static string[] _Callers(T)() {
-    import std.traits : isCallable, hasUDA, getUDAs, FunctionTypeOf;
+    import std.traits : isCallable, hasUDA, getUDAs;
 
     string[] result;
     static foreach (name; __traits(derivedMembers, T)) {
-        {
-            static if (is(typeof(__traits(getMember, T, name)))) {
-                enum prot = __traits(getProtection,
-                            __traits(getMember, T, name));
-                static if (prot == "public") {
-                    enum code = format(q{alias MemberA=T.%s;}, name);
-                    mixin(code);
-                    static foreach (Overload; __traits(getOverloads, T, name)) {
-                        pragma(msg, "hasUDA ", hasUDA!(Overload, HiRPCMethod));
-                        static if (hasUDA!(Overload, HiRPCMethod)) {
-                            {
-                                pragma(msg, "---- ", FunctionTypeOf!(Overload));
-                                pragma(msg, "//// ", getUDAs!(Overload, HiRPCMethod), " : ", name);
-                                alias hirpc_method = getUDAs!(Overload, HiRPCMethod)[0];
-                                pragma(msg, "hirpc_method ", hirpc_method);
-                                result ~= name;
-                            }
-                        }
-                    }
-                }
+        static foreach (Overload; __traits(getOverloads, T, name)) {
+            static if (hasUDA!(Overload, HiRPCMethod)) {
+                result ~= name;
             }
         }
     }
