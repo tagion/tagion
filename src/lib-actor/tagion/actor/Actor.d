@@ -63,7 +63,6 @@ enum isTrue(alias eval) = __traits(compiles, eval) && eval;
     * member_name = the a member of the actor
     * Returns: true of member the UDA
     */
-//enum isUDA(This, string member_name, UDA) = isTrue!(hasUDA!(__traits(getMember, This, member_name), UDA));
 template isUDA(This, string member_name, UDA) {
     alias Overload = __traits(getOverloads, This, member_name);
     static if (Overload.length is 1) {
