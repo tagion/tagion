@@ -1,9 +1,17 @@
-ADRDOX:=dub run adrdox --
+DDFLAGS+=-Dd=$(BUILDDOC)
+DDFLAGS+=-op -o-
+DDFLAGS+=$(DVERSION)=OLD_TRANSACTION 
+DDFLAGS+=-J=$(DBUILD) 
+# We need the relative path since dmd will output the generated html in that relative directory
+DDFILES+=${shell realpath --relative-to $(REPOROOT) $(DSRCALL)}
+DDTEMPLATE+=$(DTUB)/docs_template/
 
 env-ddoc:
 	$(PRECMD)
 	$(call log.header, $@ :: env)
-	$(call log.kvp, ADRDOX, $(ADRDOX))
+	$(call log.kvp, DDFLAGS, $(DDFLAGS))
+	# $(call log.kvp, DDFILES, $(DDFILES))
+	$(call log.kvp, DDTEMPLATE, $(DDTEMPLATE))
 
 .PHONY: env-ddoc
 
@@ -27,10 +35,10 @@ help-ddoc:
 
 help: help-ddoc
 
-ddoc:
-	$(PRECMD) 
-	echo "making ddoc"
-	$(ADRDOX) -i --skeleton $(DTUB)/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC)
+ddoc: $(DSRCALL)
+	$(PRECMD)
+	$(DC) $(DDFLAGS) $(DDFILES) ${addprefix -I,$(DINC)} $(DDTEMPLATE)/theme.ddoc
+	$(CP) $(DDTEMPLATE)/style.css $(BUILDDOC)/
 
 .PHONY: ddoc
 
