@@ -66,7 +66,6 @@ enum isTrue(alias eval) = __traits(compiles, eval) && eval;
 //enum isUDA(This, string member_name, UDA) = isTrue!(hasUDA!(__traits(getMember, This, member_name), UDA));
 template isUDA(This, string member_name, UDA) {
     alias Overload = __traits(getOverloads, This, member_name);
-    pragma(msg, "Overload ", Overload.length);
     static if (Overload.length is 1) {
         enum isUDA = hasUDA!(Overload[0], UDA);
     }
@@ -303,7 +302,6 @@ protected static string generateAllMethods(alias This)() {
     import std.array : join;
 
     string[] result;
-    pragma(msg, " generatedAllMethods ", This);
     static foreach (m; __traits(allMembers, This)) {
         {
             static if (isMethod!(This, m)) {
@@ -312,7 +310,6 @@ protected static string generateAllMethods(alias This)() {
                     static assert(Overload.length is 1, 
                     format("Multiple methods of %s for Actor %s not allowed", m, This.stringof));
                     alias Func=FunctionTypeOf!(Overload[0]);
-                    pragma(msg, "Func ", m, " ", FunctionTypeOf!Func, " return ", ReturnType!Func);
                     static if (is(ReturnType!Func == void)) {
                         enum method_code = format(q{
                         alias FuncParams_%1$s=AliasSeq!%2$s;
