@@ -76,7 +76,9 @@ class MonitorCallBacks : EventMonitorCallbacks {
             "received_number",
             "coin",
             "coin_round",
-            "round"
+            "round",
+            "is_grounded",
+            "count",
         ];
     mixin(EnumText!("Params", _params));
 
@@ -116,20 +118,18 @@ class MonitorCallBacks : EventMonitorCallbacks {
     static HiBON createHiBON(const(Event) e) nothrow {
         auto hibon = new HiBON;
  
-        // assumeWontThrow(() { 
-        //     hibon[basename!(e.id)] = e.id; 
-        //     hibon[basename!(e.node_id)] = e.node_id; 
-        //     });
 
         try {
             hibon[basename!(e.id)] = e.id;
             hibon[basename!(e.node_id)] = e.node_id;
+            hibon[Params.count] = Event.count;
             if (e.mother !is null) {
                 hibon[Params.mother] = e.mother.id;
             }
             if (e.father !is null) {
                hibon[Params.father] = e.father.id;
             }
+
         } catch (Exception excp) {
             // empty
         }
@@ -179,7 +179,6 @@ class MonitorCallBacks : EventMonitorCallbacks {
 
         void witness(const(Event) e) {
             immutable _witness = e.witness !is null;
-
             auto hibon = createHiBON(e);
             try {
                 hibon[Params.witness] = _witness;
@@ -205,18 +204,16 @@ class MonitorCallBacks : EventMonitorCallbacks {
         }
 
         void round_seen(const(Event) e) @trusted {
-            // log.error("BEFORE ROUND SEEN");
-            log("BITMASK: %.16s", e.round_seen_mask);
+            // check if working
+            log("ROUND SEEN BITMASK %s", getBitMaskString(e.round_seen_mask, e.round.node_size));
             
-            // log("%s", format("%s", e.witness.round_seen_mask));
-            // auto hibon=createHiBON(e);
-            // try {
-            //     hibon[Keywords.round_seen]=bitarray2bool(e.witness.round_seen_mask); 
-            // } catch(Exception excp) {
-            //     log(excp);
-            // }
-            // log("ROUND SEEN %s", hibon.toPretty);
-            // socket_send(hibon);
+            auto hibon=createHiBON(e);
+            try {
+                hibon[Keywords.round_seen] = getBitMaskString(e.round_seen_mask, e.round.node_size); 
+            } catch(Exception excp) {
+                // empty
+            }
+            socket_send(hibon);
         }
 
         void round_received(const(Event) e) {
@@ -226,7 +223,6 @@ class MonitorCallBacks : EventMonitorCallbacks {
             } catch(Exception excp) {
                 //empty
             }
-            log("ROUND RECEIVED: %s", hibon.toPretty);
 
             socket_send(hibon);
         }
@@ -269,21 +265,31 @@ class MonitorCallBacks : EventMonitorCallbacks {
         //     socket_send(hibon);
         // }
 
-        // void strongly_seeing(const(Event) e) {
-        //     auto hibon=createHiBON(e);
-        //     hibon[Keywords.strongly_seeing]=e.strongly_seeing;
-        //     hibon[Keywords.strong_mask]=bitarray2bool(e.witness.strong_seeing_mask);
-        //     socket_send(hibon);
-        // }
+        void strongly_seeing(const(Event) e) {
+            log("STRONG SEEING");
+            auto hibon=createHiBON(e);
+
+            try {
+                // hibon[Keywords.strongly_seeing]=e.strongly_seeing;
+                hibon[Keywords.strong_mask]=getBitMaskString(e.witness.strong_seeing_mask, e.round.node_size);
+            } catch(Exception excp) {
+                // empty
+            }
+
+
+            socket_send(hibon);
+        }
 
         void famous(const(Event) e) {
-            // auto hibon=createHiBON(e);
-            // auto w=e.witness;
-            // assumeWontThrow({
-            //         hibon[Params.famous]=w.famous;
-            //         // hibon[Params.famous_votes]=w.famous_votes;
-            //     });
-            // socket_send(hibon);
+            log("FAMOUS");
+            auto hibon=createHiBON(e);
+
+            try {
+                hibon[Params.famous] = e.witness.famous;
+            } catch (Exception excp) {
+                // empty
+            }
+            socket_send(hibon);
         }
 
         // void son(const(Event) e) {
@@ -323,9 +329,30 @@ class MonitorCallBacks : EventMonitorCallbacks {
         // }
 
         void remove(const(Event) e) {
+            // set the daugther to be grounded
+            set_grounded(e.daughter);
+
             auto hibon = createHiBON(e);
-            assumeWontThrow({ hibon[Params.remove] = true; });
+            try {
+                hibon[Params.remove] = true;
+            } catch (Exception excp) {
+                // empty
+            }
+            log("REMOVED EVENT: %s", hibon.toPretty);
+            // assumeWontThrow({ hibon[Params.remove] = true; });
             socket_send(hibon);
+        }
+
+        // sets the event to
+        void set_grounded(const(Event) e) {
+            // log("SETTING GROUNDED");
+            // auto hibon = createHiBON(e);
+            // try {
+            //     hibon[Params.is_grounded] = true;
+            // } catch (Exception excp) {
+            //     // empty
+            // }
+            // socket_send(hibon);
         }
 
         void remove(const(Round) r) {
