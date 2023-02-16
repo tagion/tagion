@@ -15,7 +15,7 @@ endif
 ifeq ($(DC),gdc)
 COMPILER=gdc
 else ifeq ($(DC),gdmd)
-COMPILER=gdc
+COMPILER=dmd
 else ifeq ($(DC),ldc)
 COMPILER=ldc
 else ifeq ($(DC),ldc2)
@@ -70,10 +70,10 @@ DIMPORTFILE=-J
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
-DDEBUG := -f-d-debug
-DUNITTEST := -f-d-unittest
-DMAIN := -f-d-main
-DIP := unknown-dip
+DDEBUG := -fdebug
+DUNITTEST := -funittest
+DMAIN := -fmain
+DIP := -ftransition=dip
 DDEBUG_SYMBOLS := -g
 DBETTERC := --betterC
 DCOMPILE_ONLY := -c
