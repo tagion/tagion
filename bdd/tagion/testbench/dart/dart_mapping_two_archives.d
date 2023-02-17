@@ -9,6 +9,7 @@ import std.stdio : writefln;
 import std.format : format;
 
 import tagion.dart.DARTFakeNet;
+import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.dart.DART : DART;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.testbench.tools.BDDOptions;
@@ -32,9 +33,11 @@ class AddOneArchive {
     BDDOptions bdd_options;
     string module_path;
     string dartfilename;
-    auto net = new DARTFakeNet("very_secret");
+    const SecureNet net;
 
     this(BDDOptions bdd_options) {
+        this.net = new DARTFakeNet("very_secret");
+
         this.bdd_options = bdd_options;
         this.module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
     }
@@ -47,9 +50,9 @@ class AddOneArchive {
         // create the dartfile
         DART.create(dartfilename);
 
-        // Exception dart_exception;
-        // auto db = new DART(net, dartfilename, dart_exception);
-        // check(!(dart_exception is null), format("Failed to open DART: %s", dart_exception.msg));
+        Exception dart_exception;
+        auto db = new DART(net, dartfilename, dart_exception);
+        check(!(dart_exception is null), format("Failed to open DART: %s", dart_exception.msg));
         
 
         return result_ok;
