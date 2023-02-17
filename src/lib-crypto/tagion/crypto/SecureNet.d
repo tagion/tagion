@@ -89,21 +89,6 @@ class StdHashNet : HashNet {
     immutable(Buffer) calcHash(const(Document) doc) const {
         return rawCalcHash(doc.serialize);
     }
-version(none)
-    const(DARTIndex) _dartIndex(const(Document) doc) const {
-        import tagion.hibon.HiBONType : HiBONPrefix;
-
-        if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
-            if (doc.keys.front == STUB) {
-                return doc[STUB].get!DARTIndex;
-            }
-            auto first = doc[].front;
-            immutable value_data = first.data[first.dataPos .. first.dataPos + first.dataSize];
-            return DARTIndex(rawCalcHash(value_data));
-        }
-        return DARTIndex(rawCalcHash(doc.serialize));
-    }
-
 }
 
 @safe
