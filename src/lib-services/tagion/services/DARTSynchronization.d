@@ -17,12 +17,13 @@ import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;
+import tagion.dart.DARTBasic : DARTIndex;
 
 //import tagion.dart.DARTBasic;
 import tagion.dart.Recorder;
 
 import tagion.dart.DARTOptions : DARTOptions;
-import tagion.basic.Types : Buffer, DARTIndex, Pubkey, Control;
+import tagion.basic.Types : Buffer, Pubkey, Control;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.hibon.HiBONJSON;

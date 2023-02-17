@@ -2,7 +2,7 @@ module tagion.crypto.SecureNet;
 
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.aes.AESCrypto;
-import tagion.basic.Types : Buffer, DARTIndex, Signature;
+import tagion.basic.Types : Buffer, Signature;
 import tagion.hibon.Document : Document;
 import tagion.basic.ConsensusExceptions;
 import tagion.hibon.HiBONType : STUB;

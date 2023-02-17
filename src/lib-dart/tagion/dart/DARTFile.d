@@ -20,7 +20,7 @@ private {
     import core.thread : Fiber;
     import std.range.primitives : isInputRange, ElementType;
 
-    import tagion.basic.Types : Buffer, DARTIndex, isBufferType, isTypedef;
+    import tagion.basic.Types : Buffer, isBufferType, isTypedef;
     import tagion.basic.Basic : EnumText, assumeTrusted;
     import tagion.Keywords;
 
@@ -308,7 +308,9 @@ alias check = Check!DARTException;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
+
             
+
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if (doc.hasMember(indicesName)) {
                 _indices = new uint[KEY_SPAN];

@@ -20,7 +20,7 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONType : label, STUB, isHiBONType, GetLabel, isStub, recordType;
-import tagion.basic.Types : Buffer, DARTIndex;
+import tagion.basic.Types : Buffer;
 import tagion.basic.Message;
 
 import tagion.dart.DARTException : DARTRecorderException;

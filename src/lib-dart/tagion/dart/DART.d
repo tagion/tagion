@@ -16,7 +16,7 @@ import std.algorithm.iteration : filter, map;
 
 import tagion.basic.Debug : __format;
 import tagion.basic.Basic : FUNCTION_NAME;
-import tagion.basic.Types : DARTIndex, Buffer;
+import tagion.basic.Types : Buffer;
 import tagion.Keywords;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
@@ -34,6 +34,7 @@ import tagion.Keywords : isValid;
 import tagion.basic.TagionExceptions : Check;
 import tagion.dart.BlockFile : BlockFile;
 import tagion.dart.Recorder : RecordFactory, Archive;
+import tagion.dart.DARTBasic : DARTIndex;
 
 alias hex = toHexString;
 
