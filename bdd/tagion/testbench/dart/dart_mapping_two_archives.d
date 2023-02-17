@@ -11,9 +11,15 @@ import std.format : format;
 import tagion.dart.DARTFakeNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.dart.DART : DART;
-import tagion.basic.Types : Buffer, FileExtension;
+import tagion.dart.Recorder : Archive, RecordFactory;
+
+
+import tagion.basic.Types : Buffer, FileExtension, DARTIndex;
 import tagion.testbench.tools.BDDOptions;
 import tagion.testbench.tools.Environment;
+import tagion.actor.TaskWrapper;
+import tagion.utils.Miscellaneous : toHexString;
+
 
 
 enum feature = Feature(
@@ -34,12 +40,16 @@ class AddOneArchive {
     string module_path;
     string dartfilename;
     const SecureNet net;
+    DART db;
+
+    DARTIndex doc_fingerprint;
+    DARTIndex bullseye;
 
     this(BDDOptions bdd_options) {
-        this.net = new DARTFakeNet("very_secret");
-
+        net = new DARTFakeNet("very_secret");
+        
         this.bdd_options = bdd_options;
-        this.module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
+        module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
     }
 
     @Given("I have a dartfile.")
@@ -51,21 +61,32 @@ class AddOneArchive {
         DART.create(dartfilename);
 
         Exception dart_exception;
-        auto db = new DART(net, dartfilename, dart_exception);
+        db = new DART(net, dartfilename, dart_exception);
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
         
-
         return result_ok;
     }
 
     @Given("I add one archive1 in sector A.")
     Document a() {
-        return Document();
+        
+        // const archive_1 = new Archive(net, net.fake_doc(0xABB7_1111_1111_0000UL), Archive.Type.NONE);
+        auto recorder_1 = db.recorder();
+        const doc = DARTFakeNet.fake_doc(0xABB7_1111_1111_0000UL);
+        recorder_1.add(doc);
+        doc_fingerprint = DARTIndex(recorder_1[].front.fingerprint);
+        bullseye = db.modify(recorder_1);
+        return result_ok;
     }
 
     @Then("the archive should be read and checked.")
     Document checked() {
-        return Document();
+        writefln("doc_fingerprint: %s", doc_fingerprint.toHexString());
+        writefln("bullseye: %s", bullseye.toHexString());
+
+        check(doc_fingerprint == bullseye, "fingerprint and bullseyes not the same");
+        
+        return result_ok;
     }
 
 }
