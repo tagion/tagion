@@ -15,6 +15,8 @@ import tagion.hibon.HiBONType;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONException : HiBONRecordException;
 
+import tagion.dart.DARTBasic;
+
 import tagion.basic.Basic : basename;
 import tagion.basic.Types : Buffer, Pubkey;
 import tagion.script.StandardRecords;

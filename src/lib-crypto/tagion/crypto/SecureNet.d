@@ -4,8 +4,8 @@ import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.aes.AESCrypto;
 import tagion.basic.Types : Buffer, DARTIndex, Signature;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONType : HiBONPrefix, STUB;
 import tagion.basic.ConsensusExceptions;
+import tagion.hibon.HiBONType : STUB;
 
 void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) @safe if (T.sizeof is 1) {
     import std.random;
@@ -90,7 +90,9 @@ class StdHashNet : HashNet {
         return rawCalcHash(doc.serialize);
     }
 
-    const(DARTIndex) dartIndex(const(Document) doc) const {
+    const(DARTIndex) _dartIndex(const(Document) doc) const {
+        import tagion.hibon.HiBONType : HiBONPrefix;
+
         if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
             if (doc.keys.front == STUB) {
                 return doc[STUB].get!DARTIndex;
@@ -463,22 +465,6 @@ unittest { // StdHashNet
 
     assert(isStub(stub));
     assert(!hasHashKey(stub));
-
-    assert(net.dartIndex(stub) == stub_fingerprint);
-
-    enum key_name = "#name";
-    enum keytext = "some_key_text";
-    immutable hashkey_fingerprint = net.calcHash(keytext.representation);
-    Document hash_doc;
-    {
-        auto hibon = new HiBON;
-        hibon[key_name] = keytext;
-        hash_doc = Document(hibon);
-    }
-
-    assert(!isStub(hash_doc));
-    assert(hasHashKey(hash_doc));
-    assert(net.dartIndex(hash_doc) == hashkey_fingerprint);
 }
 
 class BadSecureNet : StdSecureNet {

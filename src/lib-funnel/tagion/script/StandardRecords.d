@@ -11,6 +11,8 @@ import std.range : empty;
 import tagion.script.TagionCurrency;
 import tagion.script.ScriptException : check;
 
+import tagion.dart.DARTBasic;
+
 enum OwnerKey = "$Y";
 
 @safe {

@@ -33,7 +33,7 @@ private {
     import tagion.dart.BlockFile;
     import tagion.dart.Recorder;
     import tagion.dart.DARTException : DARTException;
-
+    import tagion.dart.DARTBasic;
     import tagion.crypto.SecureInterfaceNet : HashNet;
 
     //import tagion.basic.Basic;
@@ -308,9 +308,7 @@ alias check = Check!DARTException;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
-
             
-
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if (doc.hasMember(indicesName)) {
                 _indices = new uint[KEY_SPAN];

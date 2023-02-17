@@ -21,6 +21,8 @@ import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.communication.HiRPC;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
+import tagion.dart.DARTBasic;
+
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Fingerprint : Fingerprint;
