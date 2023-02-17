@@ -89,7 +89,7 @@ class StdHashNet : HashNet {
     immutable(Buffer) calcHash(const(Document) doc) const {
         return rawCalcHash(doc.serialize);
     }
-
+version(none)
     const(DARTIndex) _dartIndex(const(Document) doc) const {
         import tagion.hibon.HiBONType : HiBONPrefix;
 

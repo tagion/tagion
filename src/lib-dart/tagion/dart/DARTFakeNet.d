@@ -83,7 +83,7 @@ class DARTFakeNet : StdSecureNet {
          //return rawCalcHash(doc.serialize);
     }
 
-
+ version(none)
     @trusted
     override const(DARTIndex) _dartIndex(const(Document) doc) const {
         import tagion.hibon.HiBONBase : Type;

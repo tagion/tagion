@@ -37,8 +37,10 @@ interface HashNet {
         return calcHash(value.toDoc);
     }
 
+    version(none)
     const(DARTIndex) _dartIndex(const(Document) doc) const;
 
+    version(none)
     final const(DARTIndex) _dartIndex(T)(T value) const if (isHiBONType!T) {
         return dartIndex(value.toDoc);
     }
