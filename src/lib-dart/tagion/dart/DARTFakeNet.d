@@ -20,7 +20,7 @@ import std.concurrency;
 
 @safe
 class DARTFakeNet : StdSecureNet {
-    enum FAKE = HiBONPrefix.HASH ~ "#fake";
+    enum FAKE = "$fake#";
     this(string passphrase) {
         this();
         generateKeyPair(passphrase);
