@@ -11,6 +11,7 @@ int main(string[] args) {
     import transaction = tagion.testbench.transaction;
     import receive_epoch = tagion.testbench.receive_epoch;
     import transaction_mode_zero = tagion.testbench.transaction_mode_zero;
+    import dart_test = tagion.testbench.dart_test;
     alias alltools = AliasSeq!(
             ssl_server,
             bdd_services,
@@ -18,6 +19,7 @@ int main(string[] args) {
             transaction,
             receive_epoch,  
             transaction_mode_zero,
+            dart_test,
 
     );
     mixin doOneMain!(alltools);
