@@ -66,11 +66,30 @@ class DARTFakeNet : StdSecureNet {
     }
 
     @trusted
+    override immutable(Buffer) calcHash(const(Document) doc) const {
+        import tagion.hibon.HiBONBase : Type;
+        import std.exception : assumeUnique;
+
+       if (doc.hasMember(FAKE) && (doc[FAKE].type is Type.UINT64)) {
+            const x = doc[FAKE].get!ulong;
+            import std.bitmanip : nativeToBigEndian;
+
+            ubyte[] fingerprint;
+            fingerprint.length = hashSize;
+            fingerprint[0 .. ulong.sizeof] = nativeToBigEndian(x);
+            return assumeUnique(fingerprint);
+        }
+        return super.calcHash(doc);
+         //return rawCalcHash(doc.serialize);
+    }
+
+
+    @trusted
     override const(DARTIndex) _dartIndex(const(Document) doc) const {
         import tagion.hibon.HiBONBase : Type;
         import std.exception : assumeUnique;
 
-        if (doc.hasMember(FAKE) && (doc[FAKE].type is Type.UINT64)) {
+       if (doc.hasMember(FAKE) && (doc[FAKE].type is Type.UINT64)) {
             const x = doc[FAKE].get!ulong;
             import std.bitmanip : nativeToBigEndian;
 

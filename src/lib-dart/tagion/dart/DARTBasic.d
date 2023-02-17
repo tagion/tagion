@@ -25,5 +25,4 @@ const(DARTIndex) dartIndex(const(HashNet) net, const(Document) doc) {
 @safe
 const(DARTIndex) dartIndex(T)(const(HashNet) net, T value) if (isHiBONType!T) {
     return net._dartIndex(value.toDoc);
-    //return dartIndex(net, value.toDoc);
 }
