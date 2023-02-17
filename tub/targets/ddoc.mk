@@ -35,12 +35,20 @@ help-ddoc:
 
 help: help-ddoc
 
+# tmp
+BUILDDOX=$(DTUB)/ddox/
+DDOXJSON=$(BUILDDOX)/docs.json
+
 ddoc: $(DSRCALL)
 	$(PRECMD)
-	$(DC) $(DDFLAGS) $(DDFILES) ${addprefix -I,$(DINC)} $(DDTEMPLATE)/theme.ddoc
+	$(DC) -Xf $(DDOXJSON) $(DDFLAGS) $(DDFILES) ${addprefix -I,$(DINC)} $(DDTEMPLATE)/theme.ddoc
 	$(CP) $(DDTEMPLATE)/style.css $(BUILDDOC)/
 
 .PHONY: ddoc
+
+$(DDOXJSON): ddoc
+ddox: $(DDOXJSON)
+	dub run ddox --config=application -- serve-html $(DDOXJSON)
 
 servedocs:
 	$(PRECMD)
