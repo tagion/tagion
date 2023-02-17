@@ -1013,111 +1013,116 @@ class HashGraph {
         }
 
     }
-    
-    unittest {
-        import tagion.hashgraph.Event;
-        import std.stdio;
-        import std.traits;
-        import std.conv;
-        import std.datetime;
-        import tagion.hibon.HiBONJSON;
-        import tagion.logger.Logger : log, LogLevel;
 
-        log.push(LogLevel.NONE);
+    import std.compiler;
 
-        enum NodeLabel {
-            Alice,
-            Bob,
-            Carol,
-            Dave,
+    static if (!vendor.llvm || !(version_major == 2 && version_minor == 99)) {
+        // Unittest segfaults in LDC 1.29 (2.099)
+        unittest {
+            import tagion.hashgraph.Event;
+            import std.stdio;
+            import std.traits;
+            import std.conv;
+            import std.datetime;
+            import tagion.hibon.HiBONJSON;
+            import tagion.logger.Logger : log, LogLevel;
 
-            Elisa,
-            Freja,
-            George, // Hermine,
+            log.push(LogLevel.NONE);
 
-            // Illa,
-            // Joella,
-            // Kattie,
-            // Laureen,
-            // Manual,
-            // Niels,
-            // Ove,
-            // Poul,
-            // Roberto,
-            // Samatha,
-            // Tamekia,
+            enum NodeLabel {
+                Alice,
+                Bob,
+                Carol,
+                Dave,
 
-        }
+                Elisa,
+                Freja,
+                George, // Hermine,
 
-        auto node_labels = [EnumMembers!NodeLabel].map!((E) => E.to!string).array;
-        auto network = new TestNetwork(node_labels); //!NodeLabel();
-        network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
-        network.random.seed(123456789);
+                // Illa,
+                // Joella,
+                // Kattie,
+                // Laureen,
+                // Manual,
+                // Niels,
+                // Ove,
+                // Poul,
+                // Roberto,
+                // Samatha,
+                // Tamekia,
 
-        network.global_time = SysTime.fromUnixTime(1_614_355_286); //SysTime(DateTime(2021, 2, 26, 15, 59, 46));
-
-        const channels = network.channels;
-
-        try {
-            foreach (i; 0 .. 550) {
-                const channel_number = network.random.value(0, channels.length);
-                const channel = channels[channel_number];
-                auto current = network.networks[channel];
-                (() @trusted { current.call; })();
             }
-        }
-        catch (Exception e) {
-            (() @trusted { writefln("%s", e); assert(0, e.msg); })();
-        }
 
-        version (none) {
-            writefln("Save Alice");
-            Pubkey[string] node_labels;
+            auto node_labels = [EnumMembers!NodeLabel].map!((E) => E.to!string).array;
+            auto network = new TestNetwork(node_labels); //!NodeLabel();
+            network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
+            network.random.seed(123456789);
 
-            foreach (channel, _net; network.networks) {
-                node_labels[_net._hashgraph.name] = channel;
-            }
-            foreach (_net; network.networks) {
-                const filename = fileId(_net._hashgraph.name);
-                _net._hashgraph.fwrite(filename.fullpath, node_labels);
-            }
-        }
+            network.global_time = SysTime.fromUnixTime(1_614_355_286); //SysTime(DateTime(2021, 2, 26, 15, 59, 46));
 
-        bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
-            static string print(const Event e) nothrow {
-                if (e) {
-                    const round_received = (e.round_received) ? e.round_received.number.to!string : "#";
-                    return assumeWontThrow(format("(%d:%d:%d:r=%d:rr=%s:%s)",
-                            e.id, e.node_id, e.altitude, e.round.number, round_received,
-                            e.fingerprint.cutHex));
+            const channels = network.channels;
+
+            try {
+                foreach (i; 0 .. 550) {
+                    const channel_number = network.random.value(0, channels.length);
+                    const channel = channels[channel_number];
+                    auto current = network.networks[channel];
+                    (() @trusted { current.call; })();
                 }
-                return assumeWontThrow(format("(%d:%d:%s:%s)", 0, -1, 0, "nil"));
+            }
+            catch (Exception e) {
+                (() @trusted { writefln("%s", e); assert(0, e.msg); })();
             }
 
-            assumeWontThrow(writefln("Event %s and %s %s", print(e1), print(e2), code));
-            return false;
-        }
+            version (none) {
+                writefln("Save Alice");
+                Pubkey[string] node_labels;
 
-        auto names = network.networks.byValue
-            .map!((net) => net._hashgraph.name)
-            .array.dup
-            .sort
-            .array;
+                foreach (channel, _net; network.networks) {
+                    node_labels[_net._hashgraph.name] = channel;
+                }
+                foreach (_net; network.networks) {
+                    const filename = fileId(_net._hashgraph.name);
+                    _net._hashgraph.fwrite(filename.fullpath, node_labels);
+                }
+            }
 
-        HashGraph[string] hashgraphs;
-        foreach (net; network.networks) {
-            hashgraphs[net._hashgraph.name] = net._hashgraph;
-        }
+            bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
+                static string print(const Event e) nothrow {
+                    if (e) {
+                        const round_received = (e.round_received) ? e.round_received.number.to!string : "#";
+                        return assumeWontThrow(format("(%d:%d:%d:r=%d:rr=%s:%s)",
+                                e.id, e.node_id, e.altitude, e.round.number, round_received,
+                                e.fingerprint.cutHex));
+                    }
+                    return assumeWontThrow(format("(%d:%d:%s:%s)", 0, -1, 0, "nil"));
+                }
 
-        foreach (i, name_h1; names[0 .. $ - 1]) {
-            const h1 = hashgraphs[name_h1];
-            foreach (name_h2; names[i + 1 .. $]) {
-                const h2 = hashgraphs[name_h2];
-                auto comp = Compare(h1, h2, &event_error);
-                // writefln("%s %s round_offset=%d order_offset=%d",
-                //     h1.name, h2.name, comp.round_offset, comp.order_offset);
-                const result = comp.compare;
-                assert(result, format("HashGraph %s and %s is not the same", h1.name, h2.name));
+                assumeWontThrow(writefln("Event %s and %s %s", print(e1), print(e2), code));
+                return false;
+            }
+
+            auto names = network.networks.byValue
+                .map!((net) => net._hashgraph.name)
+                .array.dup
+                .sort
+                .array;
+
+            HashGraph[string] hashgraphs;
+            foreach (net; network.networks) {
+                hashgraphs[net._hashgraph.name] = net._hashgraph;
+            }
+
+            foreach (i, name_h1; names[0 .. $ - 1]) {
+                const h1 = hashgraphs[name_h1];
+                foreach (name_h2; names[i + 1 .. $]) {
+                    const h2 = hashgraphs[name_h2];
+                    auto comp = Compare(h1, h2, &event_error);
+                    // writefln("%s %s round_offset=%d order_offset=%d",
+                    //     h1.name, h2.name, comp.round_offset, comp.order_offset);
+                    const result = comp.compare;
+                    assert(result, format("HashGraph %s and %s is not the same", h1.name, h2.name));
+                }
             }
         }
     }
