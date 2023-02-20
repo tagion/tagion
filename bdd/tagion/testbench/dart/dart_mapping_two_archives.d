@@ -14,7 +14,7 @@ import tagion.dart.DART : DART;
 import tagion.dart.Recorder : Archive, RecordFactory;
 
 
-import tagion.basic.Types : Buffer, DARTIndex;
+import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 import tagion.testbench.tools.Environment;
 import tagion.actor.TaskWrapper;
 import tagion.utils.Miscellaneous : toHexString;
@@ -106,7 +106,7 @@ class AddAnotherArchive {
 
         const bullseye = db.bullseye();
         const doc = DARTFakeNet.fake_doc(info.table[0]);
-        check(bullseye == info.net.dartIndex(doc), "Bullseye not equal to doc");
+        check(bullseye == dartIndex(info.net, doc), "Bullseye not equal to doc");
 
         return result_ok;
     }
@@ -128,6 +128,7 @@ class AddAnotherArchive {
 
     @Then("both archives should be read and checked.")
     Document readAndChecked() {
+
         return Document();
     }
 
