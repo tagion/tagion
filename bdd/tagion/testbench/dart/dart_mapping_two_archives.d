@@ -13,13 +13,11 @@ import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.dart.DART : DART;
 import tagion.dart.Recorder : Archive, RecordFactory;
 
-
 import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 import tagion.testbench.tools.Environment;
 import tagion.actor.TaskWrapper;
 import tagion.utils.Miscellaneous : toHexString;
 import tagion.testbench.dart.dartinfo;
-
 
 enum feature = Feature(
         "Dart mapping of two archives",
@@ -32,7 +30,7 @@ alias FeatureContext = Tuple!(
     FeatureGroup*, "result"
 );
 
-
+DARTIndex[] fingerprints;
 
 @safe @Scenario("Add one archive.",
     ["mark #one_archive"])
@@ -51,19 +49,19 @@ class AddOneArchive {
     Document dartfile() {
         // create the directory to store the DART in.
         mkdirRecurse(info.module_path);
-               // create the dartfile
+        // create the dartfile
         DART.create(info.dartfilename);
 
         Exception dart_exception;
         db = new DART(info.net, info.dartfilename, dart_exception);
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
-        
+
         return result_ok;
     }
 
     @Given("I add one archive1 in sector A.")
     Document a() {
-        
+
         auto recorder = db.recorder();
         const doc = DARTFakeNet.fake_doc(info.table[0]);
         recorder.add(doc);
@@ -78,6 +76,7 @@ class AddOneArchive {
         writefln("bullseye: %s", bullseye.toHexString());
 
         check(doc_fingerprint == bullseye, "fingerprint and bullseyes not the same");
+        fingerprints ~= doc_fingerprint;
         db.close();
         return result_ok;
     }
@@ -103,25 +102,29 @@ class AddAnotherArchive {
         db = new DART(info.net, info.dartfilename, dart_exception);
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
 
-
         const bullseye = db.bullseye();
         const doc = DARTFakeNet.fake_doc(info.table[0]);
-        check(bullseye == dartIndex(info.net, doc), "Bullseye not equal to doc");
+        const doc_bullseye = dartIndex(info.net, doc);
+        check(bullseye == doc_bullseye, "Bullseye not equal to doc");
 
         return result_ok;
     }
 
     @Given("i add another archive2 in sector A.")
     Document inSectorA() {
-        
         auto recorder = db.recorder();
         const doc = DARTFakeNet.fake_doc(info.table[1]);
         recorder.add(doc);
         doc_fingerprint = DARTIndex(recorder[].front.fingerprint);
         bullseye = db.modify(recorder);
+
         writefln("doc_fingerprint: %s", doc_fingerprint.toHexString());
         writefln("bullseye: %s", bullseye.toHexString());
         check(doc_fingerprint != bullseye, "Bullseye not updated");
+
+        fingerprints ~= doc_fingerprint;
+
+        check(bullseye == info.net.calcHash(fingerprints[0], fingerprints[1]), "Bullseye not equal to the hash of the two archives");
         return result_ok;
 
     }
