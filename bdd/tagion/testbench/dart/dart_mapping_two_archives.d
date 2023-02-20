@@ -133,13 +133,12 @@ class AddAnotherArchive {
 
         fingerprints ~= doc_fingerprint;
 
-        check(bullseye == info.net.calcHash(fingerprints[0], fingerprints[1]), "Bullseye not equal to the hash of the two archives");
         return result_ok;
 
     }
 
     @Then("both archives should be read and checked.")
-    Document readAndChecked() @trusted {
+    Document readAndChecked() {
 
         const sender = DART.dartRead(fingerprints, info.hirpc);
         auto receiver = info.hirpc.receive(sender.toDoc);
@@ -151,21 +150,21 @@ class AddAnotherArchive {
             const(ulong) archive = data.filed[FAKE].get!ulong;
             check(archive == info.table[i], "Retrieved data not the same");
         }
-        writefln("RESULT \n %s", doc.toPretty);
 
         return result_ok;
     }
 
     @Then("check the branch of sector A.")
     Document ofSectorA() {
-        return Document();
+        return result_ok;
     }
 
     @Then("check the bullseye.")
     Document checkTheBullseye() {
-        return Document();
-    }
+        check(bullseye == info.net.calcHash(fingerprints[0], fingerprints[1]), "Bullseye not equal to the hash of the two archives");
 
+        return result_ok;
+    }
 }
 
 @safe @Scenario("Remove archive",
