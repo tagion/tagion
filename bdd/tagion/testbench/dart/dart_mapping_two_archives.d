@@ -14,12 +14,11 @@ import tagion.dart.DART : DART;
 import tagion.dart.Recorder : Archive, RecordFactory;
 
 
-import tagion.basic.Types : Buffer, FileExtension, DARTIndex;
-import tagion.testbench.tools.BDDOptions;
+import tagion.basic.Types : Buffer, DARTIndex;
 import tagion.testbench.tools.Environment;
 import tagion.actor.TaskWrapper;
 import tagion.utils.Miscellaneous : toHexString;
-
+import tagion.testbench.dart.dartinfo;
 
 
 enum feature = Feature(
@@ -33,35 +32,30 @@ alias FeatureContext = Tuple!(
     FeatureGroup*, "result"
 );
 
+
+
 @safe @Scenario("Add one archive.",
     ["mark #one_archive"])
 class AddOneArchive {
-    BDDOptions bdd_options;
-    string module_path;
-    string dartfilename;
-    const SecureNet net;
     DART db;
 
     DARTIndex doc_fingerprint;
     DARTIndex bullseye;
+    const DartInfo info;
 
-    this(BDDOptions bdd_options) {
-        net = new DARTFakeNet("very_secret");
-        
-        this.bdd_options = bdd_options;
-        module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
+    this(const DartInfo info) {
+        this.info = info;
     }
 
     @Given("I have a dartfile.")
     Document dartfile() {
         // create the directory to store the DART in.
-        mkdirRecurse(module_path);
-        dartfilename = buildPath(module_path, "default".setExtension(FileExtension.dart));
-        // create the dartfile
-        DART.create(dartfilename);
+        mkdirRecurse(info.module_path);
+               // create the dartfile
+        DART.create(info.dartfilename);
 
         Exception dart_exception;
-        db = new DART(net, dartfilename, dart_exception);
+        db = new DART(info.net, info.dartfilename, dart_exception);
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
         
         return result_ok;
@@ -70,12 +64,11 @@ class AddOneArchive {
     @Given("I add one archive1 in sector A.")
     Document a() {
         
-        // const archive_1 = new Archive(net, net.fake_doc(0xABB7_1111_1111_0000UL), Archive.Type.NONE);
-        auto recorder_1 = db.recorder();
-        const doc = DARTFakeNet.fake_doc(0xABB7_1111_1111_0000UL);
-        recorder_1.add(doc);
-        doc_fingerprint = DARTIndex(recorder_1[].front.fingerprint);
-        bullseye = db.modify(recorder_1);
+        auto recorder = db.recorder();
+        const doc = DARTFakeNet.fake_doc(info.table[0]);
+        recorder.add(doc);
+        doc_fingerprint = DARTIndex(recorder[].front.fingerprint);
+        bullseye = db.modify(recorder);
         return result_ok;
     }
 
@@ -85,7 +78,7 @@ class AddOneArchive {
         writefln("bullseye: %s", bullseye.toHexString());
 
         check(doc_fingerprint == bullseye, "fingerprint and bullseyes not the same");
-        
+        db.close();
         return result_ok;
     }
 
@@ -95,14 +88,42 @@ class AddOneArchive {
     ["mark #two_archives"])
 class AddAnotherArchive {
 
+    DART db;
+    DARTIndex doc_fingerprint;
+    DARTIndex bullseye;
+
+    const DartInfo info;
+    this(const DartInfo info) {
+        this.info = info;
+    }
+
     @Given("#one_archive")
     Document onearchive() {
-        return Document();
+        Exception dart_exception;
+        db = new DART(info.net, info.dartfilename, dart_exception);
+        check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
+
+
+        const bullseye = db.bullseye();
+        const doc = DARTFakeNet.fake_doc(info.table[0]);
+        check(bullseye == info.net.dartIndex(doc), "Bullseye not equal to doc");
+
+        return result_ok;
     }
 
     @Given("i add another archive2 in sector A.")
     Document inSectorA() {
-        return Document();
+        
+        auto recorder = db.recorder();
+        const doc = DARTFakeNet.fake_doc(info.table[1]);
+        recorder.add(doc);
+        doc_fingerprint = DARTIndex(recorder[].front.fingerprint);
+        bullseye = db.modify(recorder);
+        writefln("doc_fingerprint: %s", doc_fingerprint.toHexString());
+        writefln("bullseye: %s", bullseye.toHexString());
+        check(doc_fingerprint != bullseye, "Bullseye not updated");
+        return result_ok;
+
     }
 
     @Then("both archives should be read and checked.")
