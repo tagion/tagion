@@ -19,6 +19,10 @@ import tagion.actor.TaskWrapper;
 import tagion.utils.Miscellaneous : toHexString;
 import tagion.testbench.dart.dartinfo;
 
+import tagion.communication.HiRPC;
+import tagion.hibon.HiBONJSON : toPretty;
+
+
 enum feature = Feature(
         "Dart mapping of two archives",
         ["All test in this bdd should use dart fakenet."]);
@@ -131,6 +135,13 @@ class AddAnotherArchive {
 
     @Then("both archives should be read and checked.")
     Document readAndChecked() {
+
+        const sender = DART.dartRead(fingerprints, info.hirpc);
+        auto receiver = info.hirpc.receive(sender.toDoc);
+        auto result = db(receiver, false);
+        auto tosend = info.hirpc.toHiBON(result);
+        const tosendResult = tosend.method.params;
+        writefln("%s", tosendResult.toPretty);
 
         return Document();
     }

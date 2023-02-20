@@ -13,6 +13,7 @@ import tagion.testbench.tools.Environment;
     
 import tagion.dart.DARTFakeNet : DARTFakeNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
+import tagion.communication.HiRPC : HiRPC;
 
 import std.path : setExtension, buildPath;
 import tagion.basic.Types : FileExtension;
@@ -31,8 +32,10 @@ int _main(string[] args) {
     const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
     const string dartfilename = buildPath(module_path, "default".setExtension(FileExtension.dart));
     const SecureNet net = new DARTFakeNet("very_secret");
+    const hirpc = HiRPC(net);
 
-    DartInfo dart_info = DartInfo(dartfilename, module_path, net);
+
+    DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
 
     auto dart_mapping_two_archives_feature = automation!(dart_mapping_two_archives)();
 
