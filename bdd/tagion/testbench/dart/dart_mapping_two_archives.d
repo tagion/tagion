@@ -79,9 +79,6 @@ class AddOneArchive {
 
     @Then("the archive should be read and checked.")
     Document checked() {
-        writefln("doc_fingerprint: %s", doc_fingerprint.toHexString());
-        writefln("bullseye: %s", bullseye.toHexString());
-
         check(doc_fingerprint == bullseye, "fingerprint and bullseyes not the same");
         fingerprints ~= doc_fingerprint;
         db.close();
@@ -127,8 +124,6 @@ class AddAnotherArchive {
         doc_fingerprint = DARTIndex(recorder[].front.fingerprint);
         bullseye = db.modify(recorder);
 
-        writefln("doc_fingerprint: %s", doc_fingerprint.toHexString());
-        writefln("bullseye: %s", bullseye.toHexString());
         check(doc_fingerprint != bullseye, "Bullseye not updated");
 
         fingerprints ~= doc_fingerprint;
@@ -156,28 +151,47 @@ class AddAnotherArchive {
 
     @Then("check the branch of sector A.")
     Document ofSectorA() {
+
         return result_ok;
     }
 
     @Then("check the bullseye.")
     Document checkTheBullseye() {
         check(bullseye == info.net.calcHash(fingerprints[0], fingerprints[1]), "Bullseye not equal to the hash of the two archives");
-
+        db.close();
         return result_ok;
     }
 }
 
-@safe @Scenario("Remove archive",
-    [])
+@safe @Scenario("Remove archive", [])
 class RemoveArchive {
+    DART db;
+
+    DARTIndex doc_fingerprint;
+    DARTIndex bullseye;
+    const DartInfo info;
+
+    this(const DartInfo info) {
+        this.info = info;
+    }
 
     @Given("#two_archives")
     Document twoarchives() {
-        return Document();
+        Exception dart_exception;
+        db = new DART(info.net, info.dartfilename, dart_exception);
+        check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
+
+        // should we check something here???
+        return result_ok;
     }
 
     @Given("i remove archive1.")
     Document archive1() {
+
+        auto recorder = db.recorder();
+        recorder.remove(fingerprints[0]);
+        bullseye = db.modify(recorder);
+
         return Document();
     }
 
@@ -187,8 +201,7 @@ class RemoveArchive {
     }
 
     @Then("check the bullseye.")
-    Document bullseye() {
+    Document _bullseye() {
         return Document();
     }
-
 }

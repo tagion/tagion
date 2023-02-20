@@ -41,6 +41,7 @@ int _main(string[] args) {
 
     dart_mapping_two_archives_feature.AddOneArchive(dart_info);
     dart_mapping_two_archives_feature.AddAnotherArchive(dart_info);
+    dart_mapping_two_archives_feature.RemoveArchive(dart_info);
     
     auto dart_mapping_two_archives_context = dart_mapping_two_archives_feature.run();
 
