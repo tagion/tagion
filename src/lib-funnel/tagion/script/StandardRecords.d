@@ -2,7 +2,7 @@ module tagion.script.StandardRecords;
 
 import std.meta : AliasSeq;
 
-import tagion.basic.Types : Buffer, DARTIndex, Pubkey, Signature;
+import tagion.basic.Types : Buffer, Pubkey, Signature;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONType;
@@ -10,6 +10,8 @@ import tagion.hibon.HiBONException;
 import std.range : empty;
 import tagion.script.TagionCurrency;
 import tagion.script.ScriptException : check;
+
+import tagion.dart.DARTBasic;
 
 enum OwnerKey = "$Y";
 

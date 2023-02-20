@@ -28,11 +28,6 @@ alias Privkey = Typedef!(Buffer, null, BufferType.PRIVKEY.stringof); /// Private
 */
 alias Fingerprint = Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
 
-/**
-* This is the raw-hash value of a message and is used when message is signed.
-*/
-alias DARTIndex = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
-
 /+
  Returns:
  true if T is a const(ubyte)[]

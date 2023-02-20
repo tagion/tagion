@@ -3,13 +3,13 @@ module tagion.dart.Recorder;
 
 import tagion.hibon.HiBONJSON;
 
-version(REDBLACKTREE_SAFE_PROBLEM) {
-/// dmd v2.100+ has problem with rbtree
-/// Fix: This module hacks the @safe rbtree so it works with dmd v2.100 
-import tagion.std.container.rbtree : RedBlackTree;
+version (REDBLACKTREE_SAFE_PROBLEM) {
+    /// dmd v2.100+ has problem with rbtree
+    /// Fix: This module hacks the @safe rbtree so it works with dmd v2.100 
+    import tagion.std.container.rbtree : RedBlackTree;
 }
 else {
-import std.container.rbtree : RedBlackTree;
+    import std.container.rbtree : RedBlackTree;
 }
 import std.range.primitives : isInputRange, ElementType;
 import std.algorithm.iteration : map;
@@ -20,10 +20,11 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONType : label, STUB, isHiBONType, GetLabel, isStub, recordType;
-import tagion.basic.Types : Buffer, DARTIndex;
+import tagion.basic.Types : Buffer;
 import tagion.basic.Message;
 
 import tagion.dart.DARTException : DARTRecorderException;
+import tagion.dart.DARTBasic;
 
 import tagion.basic.TagionExceptions : Check;
 

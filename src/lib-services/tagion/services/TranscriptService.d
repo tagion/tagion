@@ -7,7 +7,7 @@ import std.array : join;
 import std.exception : assumeUnique;
 
 import tagion.services.Options;
-import tagion.basic.Types : Control, DARTIndex, Buffer;
+import tagion.basic.Types : Control, Buffer;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 
@@ -21,6 +21,8 @@ import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.communication.HiRPC;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
+import tagion.dart.DARTBasic;
+
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Fingerprint : Fingerprint;

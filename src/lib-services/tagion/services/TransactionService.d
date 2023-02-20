@@ -16,7 +16,7 @@ import tagion.network.FiberServer : FiberServer, FiberRelay;
 import tagion.logger.Logger;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
-import tagion.basic.Types : Control, DARTIndex, Buffer;
+import tagion.basic.Types : Control, Buffer;
 
 import tagion.hibon.Document;
 import tagion.communication.HiRPC;
@@ -30,6 +30,7 @@ import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
 //import tagion.dart.DARTFile;
 import tagion.dart.DART;
 import tagion.dart.Recorder : RecordFactory;
+import tagion.dart.DARTBasic;
 
 @safe class HiRPCNet : StdSecureNet {
     this(string passphrase) {

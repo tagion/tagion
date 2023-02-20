@@ -20,7 +20,7 @@ private {
     import core.thread : Fiber;
     import std.range.primitives : isInputRange, ElementType;
 
-    import tagion.basic.Types : Buffer, DARTIndex, isBufferType, isTypedef;
+    import tagion.basic.Types : Buffer, isBufferType, isTypedef;
     import tagion.basic.Basic : EnumText, assumeTrusted;
     import tagion.Keywords;
 
@@ -33,7 +33,7 @@ private {
     import tagion.dart.BlockFile;
     import tagion.dart.Recorder;
     import tagion.dart.DARTException : DARTException;
-
+    import tagion.dart.DARTBasic;
     import tagion.crypto.SecureInterfaceNet : HashNet;
 
     //import tagion.basic.Basic;
