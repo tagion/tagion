@@ -21,6 +21,9 @@ import tagion.testbench.dart.dartinfo;
 
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBONJSON : toPretty;
+import tagion.Keywords;
+import tagion.basic.Types : Buffer;
+import std.range;
 
 
 enum feature = Feature(
@@ -94,6 +97,8 @@ class AddAnotherArchive {
     DART db;
     DARTIndex doc_fingerprint;
     DARTIndex bullseye;
+    enum FAKE = "$fake#";
+
 
     const DartInfo info;
     this(const DartInfo info) {
@@ -134,16 +139,21 @@ class AddAnotherArchive {
     }
 
     @Then("both archives should be read and checked.")
-    Document readAndChecked() {
+    Document readAndChecked() @trusted {
 
         const sender = DART.dartRead(fingerprints, info.hirpc);
         auto receiver = info.hirpc.receive(sender.toDoc);
         auto result = db(receiver, false);
-        auto tosend = info.hirpc.toHiBON(result);
-        const tosendResult = tosend.method.params;
-        writefln("%s", tosendResult.toPretty);
+        const doc = result.message[Keywords.result].get!Document;        
+        const recorder = db.recorder(doc);
+    
+        foreach(i, data; recorder[].enumerate) {          
+            const(ulong) archive = data.filed[FAKE].get!ulong;
+            check(archive == info.table[i], "Retrieved data not the same");
+        }
+        writefln("RESULT \n %s", doc.toPretty);
 
-        return Document();
+        return result_ok;
     }
 
     @Then("check the branch of sector A.")
