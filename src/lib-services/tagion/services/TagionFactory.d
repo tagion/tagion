@@ -25,7 +25,7 @@ import tagion.basic.TagionExceptions;
 import p2plib = p2p.node;
 import tagion.services.DARTService;
 import tagion.services.DARTSynchronizeService;
-import tagion.services.DARTSynchronization;
+import tagion.dart.DARTSynchronization;
 import tagion.dart.DART;
 
 import tagion.services.TagionService;

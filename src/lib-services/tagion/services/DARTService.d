@@ -28,7 +28,7 @@ import tagion.basic.Basic;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
-import tagion.services.DARTSynchronization;
+import tagion.dart.DARTSynchronization;
 import tagion.dart.Recorder : RecordFactory;
 
 import tagion.services.Options;

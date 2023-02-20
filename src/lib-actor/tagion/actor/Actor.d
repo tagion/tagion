@@ -63,15 +63,7 @@ enum isTrue(alias eval) = __traits(compiles, eval) && eval;
     * member_name = the a member of the actor
     * Returns: true of member the UDA
     */
-template isUDA(This, string member_name, UDA) {
-    alias Overload = __traits(getOverloads, This, member_name);
-    static if (Overload.length is 1) {
-        enum isUDA = hasUDA!(Overload[0], UDA);
-    }
-    else {
-        enum isUDA = false;
-    }
-}
+enum isUDA(This, string member_name, UDA) = isTrue!(hasUDA!(__traits(getMember, This, member_name), UDA));
 
 /**
     * Returns: true if member_name is task method of the actor 
@@ -82,8 +74,6 @@ enum isTask(This, string member_name) = isUDA!(This, member_name, task);
     * Returns: true if the member name is a method of the task This 
     */
 enum isMethod(This, string method_name) = isUDA!(This, method_name, method);
-
-enum isLocal(This, string method_name) = isUDA!(This, method_name, local);
 
 /** 
  * Params:
@@ -236,7 +226,7 @@ mixin template TaskActor() {
     void receive() @trusted {
         enum actor_methods = allMemberFilter!(This, isMethod);
         pragma(msg, "Actor methods ", actor_methods);
-        pragma(msg, "Response methods ", allMemberFilter!(This, isRequest));
+    pragma(msg, "Response methods ", allMemberFilter!(This, isRequest));
         enum code = format(q{concurrency.receive(%-(&%s, %));}, actor_methods);
         mixin(code);
     }
@@ -254,18 +244,11 @@ Same as receiver but with a timeout
     shared static this() {
         import std.traits : hasUDA, getUDAs;
 
-        pragma(msg, " Before hasUDA ", This);
-        pragma(msg, " Before emulate ", hasUDA!(This, emulate));
         static if (hasUDA!(This, emulate)) {
             import std.algorithm : sort;
 
-            pragma(msg, "Before getUDAs ", This);
-            //  pragma(msg, "__CTOR ", __traits(getOverloads, This, "this"));
-            pragma(msg, "---------- ", getUDAs!(This, emulate));
             alias EmulatedActor = TemplateArgsOf!(getUDAs!(This, emulate)[0])[0];
             enum methods_from_emulated_actor = allMemberFilter!(EmulatedActor, isMethod);
-            pragma(msg, "-----////----- ", getUDAs!(This, emulate));
-
             static foreach (emulated_method; methods_from_emulated_actor) {
                 {
                     enum has_emulated_member = __traits(hasMember, This, emulated_method);
@@ -285,7 +268,6 @@ Same as receiver but with a timeout
                     }
                 }
             }
-            pragma(msg, "--- Finish --- ", getUDAs!(This, emulate));
         }
     }
 }
@@ -303,12 +285,11 @@ protected static string generateAllMethods(alias This)() {
     string[] result;
     static foreach (m; __traits(allMembers, This)) {
         {
-            static if (isMethod!(This, m)) {
-                static if (!isLocal!(This, m)) {
-                    alias Overload=__traits(getOverloads, This, m);
-                    static assert(Overload.length is 1, 
-                    format("Multiple methods of %s for Actor %s not allowed", m, This.stringof));
-                    alias Func=FunctionTypeOf!(Overload[0]);
+            enum code = format!(q{alias Func=This.%s;})(m);
+            mixin(code);
+            static if (isCallable!Func && hasUDA!(Func, method)) {
+                static if (!hasUDA!(Func, local)) {
+                    pragma(msg, "Func ", m, " ", FunctionTypeOf!Func, " return ", ReturnType!Func);
                     static if (is(ReturnType!Func == void)) {
                         enum method_code = format(q{
                         alias FuncParams_%1$s=AliasSeq!%2$s;

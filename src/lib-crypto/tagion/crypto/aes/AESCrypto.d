@@ -43,7 +43,7 @@ struct AESCrypto(int KEY_LENGTH) {
             }
         }
 
-        static void crypt(bool ENCRYPT = true)(scope const(ubyte[]) key, scope const(ubyte[]) iv, return scope const(
+        static void crypt(bool ENCRYPT = true)(scope const(ubyte[]) key, scope const(ubyte[]) iv, scope const(
                 ubyte[]) indata, ref ubyte[] outdata) pure nothrow @safe
         in {
             if (outdata.length) {
@@ -58,7 +58,7 @@ struct AESCrypto(int KEY_LENGTH) {
             if (outdata.length < indata.length) {
                 outdata = indata.dup;
             }
-            else if (&outdata[0] !is &indata[0]) {  
+            else {
                 outdata[0 .. $] = indata[0 .. $];
             }
             size_t old_length;

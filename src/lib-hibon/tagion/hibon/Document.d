@@ -26,7 +26,6 @@ import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException : check, HiBONException;
 import tagion.hibon.HiBONType : isHiBONType, isHiBONTypeArray;
-import tagion.basic.Types : isTypedef;
 import LEB128 = tagion.utils.LEB128;
 
 //import tagion.utils.LEB128 : isIntegral=isLEB128Integral;
@@ -82,28 +81,8 @@ static assert(uint.sizeof == 4);
         }
     }
 
-    bool hasHashKey() pure const nothrow {
-        import tagion.hibon.HiBONType : HiBONPrefix;
-
-        return !empty &&
-            keys.front[0] is HiBONPrefix.HASH;
-    }
-
-    unittest {
-        { // empty document has no hash-key
-            const doc = Document();
-            assert(!doc.hasHashKey);
-        }
-        auto h = new HiBON;
-        { // Document without hash-key
-            h["x"] = 17;
-            assert(!Document(h).hasHashKey);
-        }
-        { // Document with hash-key
-            h["#x"] = 42;
-            assert(Document(h).hasHashKey);
-        }
-    }
+    // import tagion.hibon.HiBONJSON : JSONString;
+    // mixin JSONString;
 
     /++
      This function returns the HiBON version
@@ -596,6 +575,8 @@ static assert(uint.sizeof == 4);
 
     @safe struct RangeT(T) {
         Range range;
+        enum EType = Value.asType!T;
+        static assert(EType !is Type.NONE, format("Range type %s not supported", T.stringof));
         this(immutable(ubyte)[] data) pure {
             range = Range(data);
         }
@@ -901,8 +882,6 @@ static assert(uint.sizeof == 4);
         }
     }
 
-    enum isDocTypedef(T) = isTypedef!T && !is(T == sdt_t);
-
     /**
  * HiBON Element representation
  */
@@ -990,9 +969,6 @@ static assert(uint.sizeof == 4);
             default:
                 //empty
             }
-
-            
-
             .check(0, message("Invalid type %s", type));
             assert(0);
         }
@@ -1026,20 +1002,6 @@ static assert(uint.sizeof == 4);
             T get(T)() if (isHiBONType!T) {
                 const doc = get!Document;
                 return T(doc);
-            }
-
-            T get(T)() if (isDocTypedef!T) {
-                alias BaseType = TypedefType!T;
-                const ret = get!BaseType;
-                return T(ret);
-            }
-
-            static unittest {
-                import std.typecons : Typedef;
-
-                alias BUF = immutable(ubyte)[];
-                alias Tdef = Typedef!(BUF, null, "SPECIAL");
-                static assert(is(typeof(get!Tdef) == Tdef));
             }
 
             @trusted T get(T)() if (isHiBONTypeArray!T) {
@@ -1088,8 +1050,8 @@ static assert(uint.sizeof == 4);
                 return cast(T) x;
             }
 
-            T get(T)() const
-            if (!isHiBONType!T && !isHiBONTypeArray!T && !is(T == enum) && !isDocTypedef!T) {
+            const(T) get(T)() const
+            if (!isHiBONType!T && !isHiBONTypeArray!T && !is(T == enum)) {
                 enum E = Value.asType!T;
                 import std.format;
 

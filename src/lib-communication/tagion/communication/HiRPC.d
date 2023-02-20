@@ -36,9 +36,18 @@ private static string[] _Callers(T)() {
 
     string[] result;
     static foreach (name; __traits(derivedMembers, T)) {
-        static foreach (Overload; __traits(getOverloads, T, name)) {
-            static if (hasUDA!(Overload, HiRPCMethod)) {
-                result ~= name;
+        {
+            static if (is(typeof(__traits(getMember, T, name)))) {
+                enum prot = __traits(getProtection,
+                            __traits(getMember, T, name));
+                static if (prot == "public") {
+                    enum code = format(q{alias MemberA=T.%s;}, name);
+                    mixin(code);
+                    static if (hasUDA!(MemberA, HiRPCMethod)) {
+                        enum hirpc_method = getUDAs!(MemberA, HiRPCMethod)[0];
+                        result ~= name;
+                    }
+                }
             }
         }
     }
@@ -192,11 +201,37 @@ struct HiRPC {
 
         bool supports(T)() const {
             import std.traits : isCallable, hasUDA, getUDAs;
-            import std.algorithm.searching : canFind;
 
-            pragma(msg, "Supports ", Callers!T);
-            return (type is Type.method) &&
-                Callers!T.canFind(method.name);
+            if (type is Type.method) {
+                switch (method.name) {
+                    static foreach (name; __traits(derivedMembers, T)) {
+                        {
+                            static if (is(typeof(__traits(getMember, T, name)))) {
+                                enum prot = __traits(getProtection,
+                                            __traits(getMember, T, name));
+                                static if (prot == "public") {
+                                    enum code = format(q{alias MemberA=T.%s;}, name);
+                                    mixin(code);
+                                    static if (hasUDA!(MemberA, HiRPCMethod)) {
+                                        enum hirpc_method = getUDAs!(MemberA, HiRPCMethod)[0];
+                                        static if (hirpc_method.name) {
+                                            enum method_name = hirpc_method.name;
+                                        }
+                                        else {
+                                            enum method_name = name;
+                                        }
+                case method_name:
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                default:
+                    // empty
+                }
+            }
+            return false;
         }
 
         bool verify(const Document doc) {

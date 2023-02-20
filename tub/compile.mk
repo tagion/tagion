@@ -5,11 +5,7 @@ DRTFALGS+=$(COVOPT)
 COVWAY=$(DLOGCOV)/.way
 endif
 DFLAGS+=$(DIP25) $(DIP1000)
-
-ifneq ($(COMPILER),gdc)
 DFLAGS+=$(DPREVIEW)=inclusiveincontracts
-endif
-
 DFLAGS+=-J$(DTUB)/logos/
 
 #

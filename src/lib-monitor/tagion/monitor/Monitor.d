@@ -6,8 +6,7 @@ import tagion.network.ListenerSocket;
 
 import tagion.hashgraph.Event : Event, Round;
 import tagion.hashgraph.HashGraph : HashGraph;
-import tagion.hashgraph.HashGraphBasic : Tides;
-import tagion.hashgraphview.EventMonitorCallbacks:  EventMonitorCallbacks;
+import tagion.hashgraph.HashGraphBasic : Tides, EventMonitorCallbacks;
 
 //import tagion.hashg : EventMonitorCallbacks; //NetCallbacks;
 //import tagion.gossip.GossipNet : StdGossipNet;

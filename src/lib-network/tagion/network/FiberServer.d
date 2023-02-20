@@ -432,6 +432,9 @@ class FiberServer {
             }
         }
 
+        ~this() {
+            shutdown;
+        }
     }
 
     /++

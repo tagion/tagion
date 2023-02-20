@@ -4,8 +4,8 @@ import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.aes.AESCrypto;
 import tagion.basic.Types : Buffer, Signature;
 import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONType : HiBONPrefix, STUB;
 import tagion.basic.ConsensusExceptions;
-import tagion.hibon.HiBONType : STUB;
 
 void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) @safe if (T.sizeof is 1) {
     import std.random;
@@ -86,7 +86,15 @@ class StdHashNet : HashNet {
         return rawCalcHash(h1 ~ h2);
     }
 
-    immutable(Buffer) calcHash(const(Document) doc) const {
+    Buffer hashOf(const(Document) doc) const {
+        if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
+            if (doc.keys.front == STUB) {
+                return doc[STUB].get!Buffer;
+            }
+            auto first = doc[].front;
+            immutable value_data = first.data[first.dataPos .. first.dataPos + first.dataSize];
+            return rawCalcHash(value_data);
+        }
         return rawCalcHash(doc.serialize);
     }
 }
@@ -150,8 +158,7 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     Signature sign(const(ubyte[]) message) const
     in {
-        assert(_secret !is null,
-                format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
+        assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
         assert(message.length == 32);
     }
     do {
@@ -450,6 +457,22 @@ unittest { // StdHashNet
 
     assert(isStub(stub));
     assert(!hasHashKey(stub));
+
+    assert(net.hashOf(stub) == stub_fingerprint);
+
+    enum key_name = "#name";
+    enum keytext = "some_key_text";
+    immutable hashkey_fingerprint = net.calcHash(keytext.representation);
+    Document hash_doc;
+    {
+        auto hibon = new HiBON;
+        hibon[key_name] = keytext;
+        hash_doc = Document(hibon);
+    }
+
+    assert(!isStub(hash_doc));
+    assert(hasHashKey(hash_doc));
+    assert(net.hashOf(hash_doc) == hashkey_fingerprint);
 }
 
 class BadSecureNet : StdSecureNet {

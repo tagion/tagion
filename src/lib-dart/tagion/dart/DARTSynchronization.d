@@ -1,4 +1,4 @@
-module tagion.services.DARTSynchronization;
+module tagion.dart.DARTSynchronization;
 
 import std.conv;
 import std.stdio;
@@ -17,7 +17,6 @@ import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.BlockFile;
-import tagion.dart.DARTBasic : DARTIndex;
 
 //import tagion.dart.DARTBasic;
 import tagion.dart.Recorder;
@@ -89,7 +88,7 @@ class ModifyRequestHandler : ResponseHandler {
 class ReadRequestHandler : ResponseHandler {
     private {
         pragma(msg, "fixme(cbr): Why is this a Document[Buffer], why not just a Recorder? It seems to solve the same problem");
-        Document[DARTIndex] fp_result;
+        Document[Buffer] fp_result;
         Buffer[] requested_fp;
         HiRPC hirpc;
         HiRPCReceiver receiver;

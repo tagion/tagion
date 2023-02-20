@@ -49,7 +49,7 @@ import tagion.hibon.Document;
                 this.previous = previous;
                 this.bullseye = bullseye;
 
-                this.fingerprint = net.calcHash(toDoc);
+                this.fingerprint = net.hashOf(toDoc);
             }
 
             private this(
@@ -57,7 +57,7 @@ import tagion.hibon.Document;
                 const(HashNet) net)
             {
                 this(doc);
-                this.fingerprint = net.calcHash(toDoc);
+                this.fingerprint = net.hashOf(toDoc);
             }
         });
 
@@ -97,7 +97,7 @@ unittest {
         assert(block.bullseye == bullseye);
         assert(block.recorder_doc == doc_recorder);
 
-        assert(block.fingerprint == net.calcHash(block.toDoc));
+        assert(block.fingerprint == net.hashOf(block.toDoc));
     }
 
     /// RecorderChainBlock_toHiBON
@@ -112,7 +112,7 @@ unittest {
         assert(block.toHiBON[bullseyeLabel].get!Buffer == bullseye);
         assert(block.toHiBON[recorderLabel].get!Document.serialize == doc_recorder.serialize);
 
-        assert(net.calcHash(Document(block.toHiBON)) == block.fingerprint);
+        assert(net.hashOf(Document(block.toHiBON)) == block.fingerprint);
     }
 
     /// RecorderChainBlock_restore_from_doc

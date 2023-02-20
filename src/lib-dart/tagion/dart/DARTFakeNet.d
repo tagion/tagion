@@ -1,10 +1,10 @@
 module tagion.dart.DARTFakeNet;
 
-import std.typecons : Typedef;
+import std.random;
 
 //import tagion.gossip.InterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.basic.Types : Buffer, Control, BufferType;
+import tagion.basic.Types : Buffer, Control;
 import tagion.dart.DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : RecordFactory;
@@ -12,14 +12,15 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONType : HiBONPrefix;
 import tagion.hibon.HiBON : HiBON;
 
-/**
-* This is the raw-hash value of a message and is used when message is signed.
-*/
-alias DARTIndex = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
+//import tagion.dart.DARTBasic;
+import tagion.dart.Recorder;
+
+import std.stdio;
+import std.concurrency;
 
 @safe
 class DARTFakeNet : StdSecureNet {
-    enum FAKE = "$fake#";
+    enum FAKE = HiBONPrefix.HASH ~ "#fake";
     this(string passphrase) {
         this();
         generateKeyPair(passphrase);
@@ -65,7 +66,7 @@ class DARTFakeNet : StdSecureNet {
     }
 
     @trusted
-    override immutable(Buffer) calcHash(const(Document) doc) const {
+    override immutable(Buffer) hashOf(scope const(Document) doc) const {
         import tagion.hibon.HiBONBase : Type;
         import std.exception : assumeUnique;
 
@@ -78,8 +79,7 @@ class DARTFakeNet : StdSecureNet {
             fingerprint[0 .. ulong.sizeof] = nativeToBigEndian(x);
             return assumeUnique(fingerprint);
         }
-        return super.calcHash(doc);
-        //return rawCalcHash(doc.serialize);
+        return super.hashOf(doc);
     }
 
     static const(Document) fake_doc(const ulong x) {

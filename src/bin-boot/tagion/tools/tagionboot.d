@@ -15,7 +15,7 @@ import stdrnd = std.random;
 import tagion.gossip.AddressBook;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.basic.Types : Buffer, DARTIndex, Pubkey;
+import tagion.basic.Types : Buffer, Pubkey;
 import tagion.basic.Basic : basename;
 import tagion.script.StandardRecords;
 import tagion.crypto.SecureNet;
@@ -27,7 +27,6 @@ import tagion.wallet.SecureWallet;
 //import tagion.dart.DARTFile;
 import tagion.dart.Recorder;
 import tagion.hibon.HiBONType : fread, fwrite;
-import tagion.dart.DARTBasic;
 
 //import tagion.revision;
 import std.array : join;
@@ -50,14 +49,14 @@ do {
     // TODO: set also time?
 
     NetworkNameRecord nrc;
-    nrc.name = DARTIndex(net.dartIndex(nnc));
+    nrc.name = net.hashOf(nnc);
 
     NodeAddress na;
     // TODO: init NodeAddress
 
     // Bind hashes
-    nrc.node = DARTIndex(net.dartIndex(na));
-    nnc.record = DARTIndex(net.dartIndex(nrc));
+    nrc.node = net.hashOf(na);
+    nnc.record = net.hashOf(nrc);
 
     auto hr = HashLock(net, nnc);
 

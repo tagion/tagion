@@ -1,4 +1,4 @@
-module tagion.hashgraphview.EventChain;
+module tagion.hashgraph.EventChain;
 
 import std.algorithm : map;
 import std.array : array;
@@ -25,7 +25,16 @@ struct EventBodyCompact {
     @label("M", true) @(filter.Initialized) Buffer mother_fingerprint; /// This event is connect to the previous mother
     @label("F", true) @(filter.Initialized) Buffer father_fingerprint; /// This event is connect to the previous father
     @label("C", true) @(filter.Initialized) Pubkey channel; /// Event Channel (Pubkey of the node);
-    mixin HiBONType;
+    mixin HiBONType!(q{
+            import tagion.hashgraph.EventChain : NIL;
+            // this(Document payload, int mother, int father, int altitude, sdt_t time) pure nothrow {
+            //     this.payload=payload;
+            //     this.mother=mother;
+            //     this.mother=father;
+            //     this.altitude=altitude;
+            //     this.time=time;
+            // }
+        });
 }
 
 @safe
