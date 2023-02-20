@@ -1,3 +1,4 @@
+/// Block files system (file system support for DART)
 module tagion.dart.BlockFile;
 
 import console = std.stdio;
@@ -59,6 +60,7 @@ void truncate(ref File file, long length) {
 
 alias check = Check!BlockFileException;
 
+/// Block file operation
 @safe
 class BlockFile {
     enum FILE_LABEL = "DART:0.0";
@@ -119,9 +121,7 @@ class BlockFile {
             if (next_range.empty) {
                 return INDEX_NULL;
             }
-            else {
-                return next_range.back;
-            }
+            return next_range.back;
         }
 
         uint previous(const uint index) const {
@@ -129,9 +129,7 @@ class BlockFile {
             if (previous_range.empty) {
                 return INDEX_NULL;
             }
-            else {
-                return previous_range.front;
-            }
+            return previous_range.front;
         }
 
         void add(const uint index) {
@@ -457,7 +455,10 @@ class BlockFile {
         }
     }
 
-    protected this(string filename, immutable uint SIZE, const bool read_only = false) {
+    protected this(
+            string filename,
+            immutable uint SIZE,
+            const bool read_only = false) {
         File file;
 
         if (read_only) {
@@ -469,7 +470,9 @@ class BlockFile {
         this(file, SIZE);
     }
 
-    protected this(File file, immutable uint SIZE) {
+    protected this(
+            File file,
+            immutable uint SIZE) {
         this.BLOCK_SIZE = SIZE;
         DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
         this.file = file;
@@ -486,8 +489,10 @@ class BlockFile {
         recycle_indices = RecycleIndices(this);
     }
 
-    static BlockFile Inspect(string filename, void delegate(string msg) @safe report, const uint max_iteration = uint
-            .max) {
+    static BlockFile Inspect(
+            string filename,
+            void delegate(string msg) @safe report,
+            const uint max_iteration = uint.max) {
         BlockFile result;
         void try_it(void delegate() @safe dg) {
             try {

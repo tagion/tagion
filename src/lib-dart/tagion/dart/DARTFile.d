@@ -20,7 +20,7 @@ private {
     import core.thread : Fiber;
     import std.range.primitives : isInputRange, ElementType;
 
-    import tagion.basic.Types : Buffer;
+    import tagion.basic.Types : Buffer, isBufferType, isTypedef;
     import tagion.basic.Basic : EnumText, assumeTrusted;
     import tagion.Keywords;
 
@@ -33,7 +33,7 @@ private {
     import tagion.dart.BlockFile;
     import tagion.dart.Recorder;
     import tagion.dart.DARTException : DARTException;
-
+    import tagion.dart.DARTBasic;
     import tagion.crypto.SecureInterfaceNet : HashNet;
 
     //import tagion.basic.Basic;
@@ -58,9 +58,7 @@ shared static this() @trusted {
  +     fingerprint[rim]
  +/
 @safe
-ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure @nogc{
-    import std.stdio;
-
+ubyte rim_key(F)(F rim_keys, const uint rim) pure @nogc if (isBufferType!F) {
     return rim_keys[rim];
 }
 
@@ -70,10 +68,31 @@ ubyte rim_key(const(ubyte[]) rim_keys, const uint rim) pure @nogc{
  +     Sector number of a fingerpint
  +/
 @safe
-ushort root_sector(const(ubyte[]) fingerprint) pure nothrow @nogc {
-    return fingerprint[1] | (fingerprint[0] << 8);
+ushort sector(F)(const(F) fingerprint) pure nothrow @nogc if (isBufferType!F)
+in (fingerprint.length >= ubyte.sizeof)
+do {
+    ushort result = ushort(fingerprint[0]) << 8;
+    if (fingerprint.length > ubyte.sizeof) {
+        result |= fingerprint[1];
+
+    }
+    return result;
 }
 
+@safe
+unittest {
+    import tagion.basic.Types : Fingerprint;
+    import std.stdio;
+
+    ubyte[] buf1 = [0xA7];
+    assert(sector(buf1) == 0xA700);
+    assert(sector(cast(Fingerprint)[0xA7, 0x15]) == 0xA715);
+    Buffer buf2 = [0xA7, 0x15, 0xE3];
+    assert(sector(buf2) == 0xA715);
+
+}
+
+enum SECTOR_MAX_SIZE = 1 << (ushort.sizeof * 8);
 @safe
 void printfp(string msg, const Buffer[] fingerprints) {
     import std.stdio;
@@ -177,14 +196,11 @@ alias check = Check!DARTException;
     /// Ditto for fingerprint
     alias bullseye = fingerprint;
 
-    /++
-     Creates an empty Recorder
-     +/
     /**
- * Creates a recorder factor  
- * Returns: 
-* 
- */
+     * Creates a recorder factor  
+     * Returns: 
+     *  recorder
+     */
     RecordFactory.Recorder recorder() nothrow {
         return manufactor.recorder;
     }
@@ -263,6 +279,16 @@ alias check = Check!DARTException;
     @safe struct Leave {
         uint index;
         Buffer fingerprint;
+        this(const uint index, Buffer fingerprint) {
+            this.index = index;
+            this.fingerprint = fingerprint;
+        }
+
+        this(const uint index, DARTIndex hash_pointer) {
+            this.index = index;
+            this.fingerprint = cast(Buffer) hash_pointer;
+        }
+
         bool empty() pure const nothrow {
             return (index is INDEX_NULL) && (fingerprint is null);
         }
@@ -282,7 +308,9 @@ alias check = Check!DARTException;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
+
             
+
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if (doc.hasMember(indicesName)) {
                 _indices = new uint[KEY_SPAN];
@@ -370,7 +398,9 @@ alias check = Check!DARTException;
                 foreach (key, index; _indices) {
                     if (index !is INDEX_NULL) {
                         hibon_indices[key] = index;
+
                         
+
                         .check(_fingerprints[key]!is null,
                         format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
@@ -481,7 +511,9 @@ alias check = Check!DARTException;
             if (merkleroot is null) {
                 foreach (key, index; _indices) {
                     if ((index !is INDEX_NULL) && (_fingerprints[key] is null)) {
+
                         
+
                             .check((index in index_used) is null,
                                     format("The DART contains a recursive tree @ index %d", index));
                         index_used[index] = true;
@@ -492,7 +524,7 @@ alias check = Check!DARTException;
                             _fingerprints[key] = subbranch.fingerprint(dartfile, index_used);
                         }
                         else {
-                            _fingerprints[key] = dartfile.manufactor.net.hashOf(doc);
+                            _fingerprints[key] = dartfile.manufactor.net.calcHash(doc);
                         }
                     }
                 }
@@ -533,15 +565,15 @@ alias check = Check!DARTException;
         return null;
     }
 
-    @safe static class RimWalkerFiber : Fiber {
+    @safe
+    class RimWalkerFiber : Fiber {
         immutable(Buffer) rim_paths;
         protected Buffer data;
         protected bool _finished;
-        protected DARTFile owner;
         /** 
- * Sector for the walker
- * Returns: the sector of the rim
- */
+         * Sector for the walker
+         * Returns: the sector of the rim
+         */
         ushort sector() const pure nothrow
         in {
             assert(rim_paths.length >= ubyte.sizeof, assumeWontThrow(format("rim_paths is too short %d >= %d", rim_paths
@@ -557,19 +589,17 @@ alias check = Check!DARTException;
             return bigEndianToNative!ushort(rim_paths[0 .. ushort.sizeof]);
         }
         /** 
- * 
- * Params:
- *   owner = DART to be ranged
- *   rim_paths = rim selected path
- */
-        this(DARTFile owner, const(Buffer) rim_paths) @trusted
+         * Creates a walker from the DART path
+         * Params:
+         *   rim_paths = rim selected path
+         */
+        this(const(Buffer) rim_paths) @trusted
         in {
             assert(rim_paths.length >= ubyte.sizeof, format("Size of rim_paths should have a size of %d or more", ubyte
                     .sizeof));
         }
         do {
             this.rim_paths = rim_paths;
-            this.owner = owner;
             super(&run);
             popFront;
         }
@@ -579,7 +609,7 @@ alias check = Check!DARTException;
                     immutable uint index,
                     immutable uint rim = 0) @safe {
                 if (index !is INDEX_NULL) {
-                    data = owner.blockfile.load(index);
+                    data = this.outer.blockfile.load(index);
                     const doc = Document(data);
                     if (rim < rim_paths.length) {
                         if (Branches.isRecord(doc)) {
@@ -604,7 +634,7 @@ alias check = Check!DARTException;
                 }
             }
 
-            treverse(owner.blockfile.masterBlock.root_index);
+            treverse(this.outer.blockfile.masterBlock.root_index);
             _finished = true;
         }
 
@@ -644,7 +674,7 @@ alias check = Check!DARTException;
      *     A range on DARTFile as a Fiber
      */
     RimWalkerFiber rimWalkerRange(immutable(Buffer) rim_paths) {
-        return new RimWalkerFiber(this, rim_paths);
+        return new RimWalkerFiber(rim_paths);
     }
 
     /** 
@@ -701,7 +731,15 @@ alias check = Check!DARTException;
         }
         return result;
     }
-    // Loads all the archives in the list of fingerprints
+    /**
+ * Loads all the archives in the list of fingerprints
+ * 
+ * Params:
+ *   fingerprints = range of fingerprints
+ *   type = types of archives
+ * Returns: 
+*   recorder of the read archives
+ */
     RecordFactory.Recorder loads(Range)(
             Range fingerprints,
             Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : Buffer)) {
@@ -745,8 +783,6 @@ alias check = Check!DARTException;
                 }
             }
         }
-
-        auto root_index = blockfile.masterBlock.root_index;
 
         auto sorted_fingerprints = fingerprints.filter!(a => a.length !is 0).array.dup;
         sorted_fingerprints.sort;
@@ -800,6 +836,12 @@ alias check = Check!DARTException;
             }
         }
 
+        /**
+     * Checks if all the archives in the range are of the type REMOVE
+     * Params:
+     *   get_type = archive type get function
+     * Returns: true if all the archives are removes
+     */
         bool onlyRemove(const GetType get_type) const pure {
             if (get_type) {
                 return current
@@ -810,20 +852,35 @@ alias check = Check!DARTException;
         }
 
         @nogc pure nothrow {
+            /** 
+             * Checks if the range only contains one archive 
+             * Returns: true range if single
+             */
             bool single() const {
                 return current.length == 1;
             }
 
+            /**
+             * Checks if the range is empty
+             * Returns: true if empty
+             */
             bool empty() const {
                 return current.length == 0;
             }
 
+            /**
+             *  Progress one archive
+             */
             void popFront() {
                 if (!empty) {
                     current = current[1 .. $];
                 }
             }
 
+            /**
+             * Gets the current archive in the range
+             * Returns: current archive and return null if the range is empty
+             */
             inout(Archive) front() inout {
                 if (empty) {
                     return null;
@@ -831,21 +888,29 @@ alias check = Check!DARTException;
                 return current[0];
             }
 
+            /**
+             * Force the range to be empty
+             */
             void force_empty() {
                 current = null;
             }
 
+            /**
+             * Number of archive left in the range
+             * Returns: size of the range
+             */
             size_t length() const {
                 return current.length;
             }
         }
-        RimKeyRange save() pure nothrow {
+        /**
+         *  Creates new range at the current position
+         * Returns: copy of this range
+         */
+        RimKeyRange save() pure nothrow @nogc {
             return RimKeyRange(current);
         }
 
-        size_t length() pure const nothrow {
-            return current.length;
-        }
     }
 
     enum RIMS_IN_SECTOR = 2;
@@ -886,7 +951,7 @@ alias check = Check!DARTException;
                 scope (success) {
                     blockfile.erase(erase_block_index);
                 }
-                immutable sector = root_sector(archive.fingerprint);
+                immutable sector = sector(archive.fingerprint);
                 Branches branches;
                 if (rim < RIMS_IN_SECTOR) {
                     if (branch_index !is INDEX_NULL) {
@@ -1119,7 +1184,7 @@ alias check = Check!DARTException;
                     }
                 }
                 else {
-                    rec.stub(manufactor.net.hashOf(doc));
+                    rec.stub(manufactor.net.dartIndex(doc));
                 }
             }
         }
@@ -1131,12 +1196,12 @@ alias check = Check!DARTException;
     }
 
     /** 
- * Loads the branches from the DART at rim_path
- * Params:
- *   rim_path = rim path select the branches
- * Returns:
- *   the branches a the rim_path
- */
+     * Loads the branches from the DART at rim_path
+     * Params:
+     *   rim_path = rim path select the branches
+     * Returns:
+     *   the branches a the rim_path
+     */
     Branches branches(const(ubyte[]) rim_path) {
         Branches search(const(ubyte[]) rim_path, const uint index, const uint rim = 0) {
             immutable data = blockfile.load(index);
@@ -1164,7 +1229,7 @@ alias check = Check!DARTException;
         return search(rim_path, blockfile.masterBlock.root_index);
     }
 
-    /* 
+    /**
      * Creates a range at which iterate and read the data in the DART at rim_path 
      * Params:
      *   rim_path = rim_path where to select the range 
@@ -1172,7 +1237,7 @@ alias check = Check!DARTException;
      *  the rim-range at rim_path
      */
     RimRange iterator(const(ubyte[]) rim_path) @trusted {
-        auto range = new RimRange(this, rim_path);
+        auto range = new RimRange(rim_path);
         range.call;
         return range;
     }
@@ -1182,14 +1247,16 @@ alias check = Check!DARTException;
      */
     @safe class RimRange : Fiber {
         protected {
-            DARTFile owner;
             const(ubyte[]) rim_path;
             Buffer data;
             bool _finished;
         }
-
-        this(DARTFile dart, const(ubyte[]) rim_path) @trusted {
-            owner = dart;
+        /**
+         * Create a rim range form the DARTFile
+         * Params:
+         *   rim_path = rim path
+         */
+        private this(const(ubyte[]) rim_path) @trusted {
             this.rim_path = rim_path;
             super(&run);
         }
@@ -1211,7 +1278,7 @@ alias check = Check!DARTException;
 
             uint search(const(ubyte[]) rim_path, const uint index, const uint rim = 0) @safe {
                 if (index !is INDEX_NULL) {
-                    immutable local_data = owner.blockfile.load(index);
+                    immutable local_data = this.outer.blockfile.load(index);
                     const doc = Document(local_data);
                     if (Branches.isRecord(doc)) {
                         Branches branches = Branches(doc);
@@ -1236,14 +1303,17 @@ alias check = Check!DARTException;
             _finished = true;
         }
 
+        /// Progress to next Buffer
         final void popFront() @trusted {
             call;
         }
 
+        /// Returns: true if empty
         final bool empty() pure const nothrow {
             return _finished;
         }
 
+        /// Returns: current buffer
         final Buffer front() pure const nothrow {
             return data;
         }
@@ -1278,7 +1348,7 @@ alias check = Check!DARTException;
                     }
                 }
                 else {
-                    immutable fingerprint = manufactor.net.hashOf(doc);
+                    immutable fingerprint = manufactor.net.dartIndex(doc);
                     auto lastRing = full ? fingerprint.length : rim + 1;
                     writefln("%s%s [%d]", indent, fingerprint[0 .. lastRing].hex, branch_index);
                 }
@@ -1306,7 +1376,7 @@ alias check = Check!DARTException;
                 Buffer[] results;
                 foreach (a; recorder.archives) {
                     assert(a.done);
-                    results ~= a.fingerprint;
+                    results ~= cast(Buffer) a.fingerprint;
                 }
                 return results;
 
@@ -1394,16 +1464,10 @@ alias check = Check!DARTException;
         immutable filename = fileId!DARTFile.fullpath;
         immutable filename_A = fileId!DARTFile("A").fullpath;
         immutable filename_B = fileId!DARTFile("B").fullpath;
-        immutable filename_C = fileId!DARTFile("C").fullpath;
 
         { // Test the fake hash on Archive
-            import std.bitmanip;
-
             auto doc_in = DARTFakeNet.fake_doc(table[0]);
             auto a_in = new Archive(net, doc_in, Archive.Type.ADD);
-            auto a_table = a_in.fingerprint.peek!ulong;
-            auto doc_out = a_in.toDoc;
-            auto a_out = new Archive(net, doc_out);
 
             // Test recorder
             auto recorder = manufactor.recorder;
@@ -1425,10 +1489,6 @@ alias check = Check!DARTException;
 
             test_tabel.sort;
 
-            foreach (t; test_tabel) {
-                const doc = DARTFakeNet.fake_doc(t);
-            }
-
             uint i;
             foreach (a; recorder.archives) {
                 assert(a.filed.data == net.fake_doc(test_tabel[i]).data);
@@ -1442,7 +1502,7 @@ alias check = Check!DARTException;
                 i = 0;
                 immutable key = rim_range.front.fingerprint.rim_key(rim);
                 foreach (a; rim_range) {
-                    while (net.hashOf(DARTFakeNet.fake_doc(test_tabel[i])).rim_key(rim) !is key) {
+                    while (net.dartIndex(DARTFakeNet.fake_doc(test_tabel[i])).rim_key(rim) !is key) {
                         i++;
                     }
                     i++;
@@ -1631,7 +1691,6 @@ alias check = Check!DARTException;
         }
 
         { // Random write on to an existing DART and the bulleye is check
-            auto rand = Random!ulong(1234_5678_9012_345UL);
             immutable(ulong[]) selected_table = [
                 0xABBA_1234_DF92_7BA7,
                 0xABBA_1234_62BD_7814,
@@ -1720,7 +1779,6 @@ alias check = Check!DARTException;
             }
             DARTFile.create(filename_A);
             DARTFile.create(filename_B);
-            RecordFactory.Recorder recorder_A;
             // Recorder recorder_B;
             auto dart_A = new DARTFile(net, filename_A);
             auto dart_B = new DARTFile(net, filename_B);
@@ -1761,7 +1819,7 @@ alias check = Check!DARTException;
                     // dart_A.dump;
                 }
                 auto recorder_B = dart_B.recorder;
-                auto save_range = saved_archives.bitsSet;
+
                 saved_archives.bitsSet.each!(n => recorder_B.add(net.fake_doc(random_table[n])));
                 dart_B.modify(recorder_B);
                 // dart_B.dump;

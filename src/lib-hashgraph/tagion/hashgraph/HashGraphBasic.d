@@ -1,3 +1,4 @@
+/// HashGraph basic support functions
 module tagion.hashgraph.HashGraphBasic;
 
 import std.stdio;
@@ -24,14 +25,44 @@ import tagion.basic.ConsensusExceptions : convertEnum, GossipConsensusException,
 enum minimum_nodes = 3;
 import tagion.utils.Miscellaneous : cutHex;
 
-/++
- + Calculates the majority votes
- + Params:
- +     voting    = Number of votes
- +     node_size = Total bumber of votes
- + Returns:
- +     Returns `true` if the votes are more than 2/3
- +/
+/// check function used in the Event package
+// Returns the highest altitude
+@safe @nogc
+int highest(int a, int b) pure nothrow {
+    if (higher(a, b)) {
+        return a;
+    }
+    else {
+        return b;
+    }
+}
+
+// Is a higher or equal to b
+@safe @nogc
+bool higher(int a, int b) pure nothrow {
+    return a - b > 0;
+}
+
+@safe
+unittest { // Test of the altitude measure function
+    int x = int.max - 10;
+    int y = x + 20;
+    assert(x > 0);
+    assert(y < 0);
+    assert(highest(x, y) == y);
+    assert(higher(y, x));
+    assert(!higher(x, x));
+}
+
+
+/**
+ * Calculates the majority votes
+ * Params:
+ *     voting    = Number of votes
+ *     node_size = Total bumber of votes
+ * Returns:
+ *     Returns `true` if the votes are more than 2/3
+ */
 @safe @nogc
 bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
@@ -79,93 +110,6 @@ enum ExchangeState : uint {
 alias convertState = convertEnum!(ExchangeState, GossipConsensusException);
 
 @safe
-interface EventMonitorCallbacks {
-    nothrow {
-        void connect(const(Event) e);
-        void witness(const(Event) e);
-        void witness_mask(const(Event) e);
-        void round_seen(const(Event) e);
-        void round(const(Event) e);
-        void round_decided(const(Round.Rounder) rounder);
-        void round_received(const(Event) e);
-        void famous(const(Event) e);
-        void round(const(Event) e);
-        void strongly_seeing(const(Event) e);
-        //        void son(const(Event) e);
-        //       void daughter(const(Event) e);
-        //        void forked(const(Event) e);
-        void epoch(const(Event[]) received_event);
-        void send(const Pubkey channel, lazy const Document doc);
-        void remove(const(Event) e);
-
-        final void send(T)(const Pubkey channel, lazy T pack) if (isHiBONType!T) {
-            send(channel, pack.toDoc);
-        }
-
-        void receive(lazy const Document doc);
-        final void receive(T)(lazy const T pack) if (isHiBONType!T) {
-            receive(pack.toDoc);
-        }
-    }
-}
-
-// EventView is used to store event has a
-struct EventView {
-    enum eventsName = "$events";
-    uint id;
-    @label("$m", true) @(filter.Initialized) uint mother;
-    @label("$f", true) @(filter.Initialized) uint father;
-    @label("$n") size_t node_id;
-    @label("$a") int altitude;
-    @label("$o") int order;
-    @label("$r") int round;
-    @label("$rec") int round_received;
-    @label("$w", true) @(filter.Initialized) bool witness;
-    @label("$famous", true) @(filter.Initialized) bool famous;
-    @label("witness") uint[] witness_mask;
-    @label("$strong") uint[] strongly_seeing_mask;
-    @label("$seen") uint[] round_seen_mask;
-    @label("$received") uint[] round_received_mask;
-    bool father_less;
-
-    mixin HiBONType!(
-            q{
-            this(const Event event, const size_t relocate_node_id=size_t.max) {
-                import std.algorithm : each;
-                id=event.id;
-                if (event.isGrounded) {
-                    mother=father=uint.max;
-                }
-                else {
-                    if (event.mother) {
-                        mother=event.mother.id;
-                    }
-                    if (event.father) {
-                        father=event.father.id;
-                    }
-                }
-                node_id=(relocate_node_id is size_t.max)?event.node_id:relocate_node_id;
-                altitude=event.altitude;
-                order=event.received_order;
-                witness=event.witness !is null;
-                event.witness_mask[].each!((n) => witness_mask~=cast(uint)(n));
-                round=(event.hasRound)?event.round.number:event.round.number.min;
-                father_less=event.isFatherLess;
-                if (witness) {
-                    event.witness.strong_seeing_mask[].each!((n) => strongly_seeing_mask~=cast(uint)(n));
-                    event.witness.round_seen_mask[].each!((n) => round_seen_mask~=cast(uint)(n));
-                    famous = event.witness.famous;
-                }
-                if (!event.round_received_mask[].empty) {
-                    event.round_received_mask[].each!((n) => round_received_mask~=cast(uint)(n));
-                }
-                round_received=(event.round_received)?event.round_received.number:int.min;
-            }
-        });
-
-}
-
-@safe
 struct EventBody {
     enum int eva_altitude = -77;
     import tagion.basic.ConsensusExceptions;
@@ -177,7 +121,8 @@ struct EventBody {
     @label("$m", true) @(filter.Initialized) Buffer mother; // Hash of the self-parent
     @label("$f", true) @(filter.Initialized) Buffer father; // Hash of the other-parent
     @label("$a") int altitude;
-    @label("$t") sdt_t time;
+  //  @label("$t") sdt_t time;
+    @label("") sdt_t time;
 
     bool verify() {
         return (father is null) ? true : (mother !is null);
@@ -263,7 +208,7 @@ struct EventPackage {
                 this(doc_epack);
                 consensus_check(pubkey.length !is 0, ConsensusFailCode.EVENT_MISSING_PUBKEY);
                 consensus_check(signature.length !is 0, ConsensusFailCode.EVENT_MISSING_SIGNATURE);
-                fingerprint=net.hashOf(event_body);
+                fingerprint=net.calcHash(event_body);
                 consensus_check(net.verify(fingerprint, signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
             }
 
@@ -273,14 +218,14 @@ struct EventPackage {
             this(const SecureNet net, immutable(EventBody) ebody) {
                 pubkey=net.pubkey;
                 event_body=ebody;
-                fingerprint=net.hashOf(event_body);
+                fingerprint=net.calcHash(event_body);
                 signature=net.sign(fingerprint);
             }
 
             this(const SecureNet net, const Pubkey pkey, const Signature signature, immutable(EventBody) ebody) {
                 pubkey=pkey;
                 event_body=ebody;
-                fingerprint=net.hashOf(event_body);
+                fingerprint=net.calcHash(event_body);
                 this.signature=signature;
                 consensus_check(net.verify(fingerprint, signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
             }

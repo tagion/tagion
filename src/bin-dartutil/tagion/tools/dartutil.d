@@ -14,11 +14,11 @@ import std.typecons;
 
 import tagion.dart.DART : DART;
 import tagion.dart.DARTFile;
-import tagion.basic.Types : Buffer, FileExtension;
+import tagion.basic.Types : Buffer, DARTIndex, FileExtension;
 import tagion.basic.Basic : tempfile;
 
 import tagion.communication.HiRPC;
-import tagion.dart.DARTSynchronization;
+import tagion.services.DARTSynchronization;
 import tagion.gossip.GossipNet;
 import tagion.gossip.AddressBook;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
@@ -52,12 +52,12 @@ version (none) void updateAddNetworkNameCard(const HashNet net, NetworkNameCard 
     // nnc_new.time = current_time?
 
     NetworkNameRecord nrc_new;
-    nrc_new.name = net.hashOf(nnc_new.toDoc);
-    nrc_new.previous = net.hashOf(nrc.toDoc);
+    nrc_new.name = net.dartIndex(nnc_new.toDoc);
+    nrc_new.previous = net.dartIndex(nrc.toDoc);
     nrc_new.index = nrc.index + 1;
     nrc_new.node = nrc.node; // update NodeAddress?
 
-    nnc_new.record = net.hashOf(nrc_new.toDoc);
+    nnc_new.record = net.dartIndex(nrc_new.toDoc);
 
     auto hr_new = HashLock(net, nnc_new);
 
@@ -85,7 +85,7 @@ version (none) void updateAddEpochBlock(const HashNet net, EpochBlock epoch_bloc
         .Recorder recorder) {
     EpochBlock epoch_block_new;
     epoch_block_new.epoch = epoch_block.epoch + 1;
-    epoch_block_new.previous = net.hashOf(epoch_block);
+    epoch_block_new.previous = net.dartIndex(epoch_block);
 
     auto le_block_new = LastEpochRecord(net, epoch_block_new);
 
@@ -281,10 +281,10 @@ int _main(string[] args) {
         }
     }
     else if (dartread) {
-        Buffer[] fingerprints;
+        DARTIndex[] fingerprints;
         try {
             fingerprints = dartread_args
-                .map!(hash => decode(hash)).array;
+                .map!(hash => DARTIndex(decode(hash))).array;
         }
         catch (Exception e) {
             writefln("Error parsing hash string: %s. Abort", e.msg);
@@ -367,7 +367,8 @@ int _main(string[] args) {
             auto nnc = nnc_out.get;
             toConsole(nnc, true, format("\nFound %s '%s'", typeof(nnc).stringof, nncreadname));
 
-            auto signature_out = readStandardRecord!HashLock(net, hirpc, db, net.hashOf(HashLock(net, nnc)));
+            auto signature_out = readStandardRecord!HashLock(net, hirpc, db,
+                    net.dartIndex(HashLock(net, nnc)));
             writeln;
             if (signature_out.isNull)
                 writefln("WARNING: Signature for %s '%s' is not verified!", typeof(nnc).stringof, nnc
@@ -417,7 +418,8 @@ int _main(string[] args) {
             else {
                 auto nrc = nrc_out.get;
 
-                auto signature = readStandardRecord!HashLock(net, hirpc, db, net.hashOf(HashLock(net, nnc)));
+                auto signature = readStandardRecord!HashLock(net, hirpc, db,
+                        net.dartIndex(HashLock(net, nnc)));
                 if (signature.isNull) {
                     writefln("WARNING: Signature for %s '%s' is not verified! Unable to update record\nAbort", typeof(
                             nnc).stringof, nnc.name);

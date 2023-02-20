@@ -180,7 +180,7 @@ version (unittest) {
                 this.previous = previous;
                 this.dummy = dummy;
 
-                this.hash = net.hashOf(toDoc);
+                this.hash = net.calcHash(toDoc);
             }
 
             private this(
@@ -188,7 +188,7 @@ version (unittest) {
                 const(HashNet) net)
             {
                 this(doc);
-                this.hash = net.hashOf(toDoc);
+                this.hash = net.calcHash(toDoc);
             }
         });
 

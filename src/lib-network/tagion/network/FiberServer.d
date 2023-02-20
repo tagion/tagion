@@ -432,9 +432,6 @@ class FiberServer {
             }
         }
 
-        ~this() {
-            shutdown;
-        }
     }
 
     /++

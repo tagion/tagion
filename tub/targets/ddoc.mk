@@ -1,17 +1,9 @@
-DDFLAGS+=-Dd=$(BUILDDOC)
-DDFLAGS+=-op -o-
-DDFLAGS+=$(DVERSION)=OLD_TRANSACTION 
-DDFLAGS+=-J=$(DBUILD) 
-# We need the relative path since dmd will output the generated html in that relative directory
-DDFILES+=${shell realpath --relative-to $(REPOROOT) $(DSRCALL)}
-DDTEMPLATE+=$(DTUB)/docs_template/
+ADRDOX:=dub run adrdox --
 
 env-ddoc:
 	$(PRECMD)
 	$(call log.header, $@ :: env)
-	$(call log.kvp, DDFLAGS, $(DDFLAGS))
-	# $(call log.kvp, DDFILES, $(DDFILES))
-	$(call log.kvp, DDTEMPLATE, $(DDTEMPLATE))
+	$(call log.kvp, ADRDOX, $(ADRDOX))
 
 .PHONY: env-ddoc
 
@@ -28,29 +20,21 @@ clean: clean-ddoc
 help-ddoc:
 	$(PRECMD)
 	${call log.header, $@ :: help}
-	${cal log.help, "make ddoc", "Create the docs with addrdox"}
-	${cal log.help, "make servedocs", "Run the md doc server and ddoc server"}
+	${call log.help, "make ddoc", "Create the docs with addrdox"}
+	${call log.help, "make servedocs", "Run the md doc server and ddoc server"}
 
 .PHONY: help-ddoc
 
 help: help-ddoc
 
-# tmp
-BUILDDOX=$(DTUB)/ddox/
-DDOXJSON=$(BUILDDOX)/docs.json
-
-ddoc: $(DSRCALL)
-	$(PRECMD)
-	$(DC) -Xf $(DDOXJSON) $(DDFLAGS) $(DDFILES) ${addprefix -I,$(DINC)} $(DDTEMPLATE)/theme.ddoc
-	$(CP) $(DDTEMPLATE)/style.css $(BUILDDOC)/
+ddoc: $(BUILDDOC)/.way
+	$(PRECMD) 
+	echo "making ddoc"
+	$(ADRDOX) -i --skeleton $(DTUB)/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC)
 
 .PHONY: ddoc
-
-$(DDOXJSON): ddoc
-ddox: $(DDOXJSON)
-	dub run ddox --config=application -- serve-html $(DDOXJSON)
 
 servedocs:
 	$(PRECMD)
 	echo "Serving docs"
-	(trap 'kill 0' SIGINT; docsify serve & $(CD) $(BUILDDOC) && python -m http.server 3001)
+	(trap 'kill 0' SIGINT; docsify serve & $(CD) $(BUILDDOC) && python3 -m http.server 3001)

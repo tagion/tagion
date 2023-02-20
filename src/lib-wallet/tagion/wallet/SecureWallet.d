@@ -15,6 +15,8 @@ import tagion.hibon.HiBONType;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONException : HiBONRecordException;
 
+import tagion.dart.DARTBasic;
+
 import tagion.basic.Basic : basename;
 import tagion.basic.Types : Buffer, Pubkey;
 import tagion.script.StandardRecords;
@@ -244,7 +246,7 @@ import tagion.wallet.WalletException : check;
             if (enough) {
                 const total = contract_bills.map!(b => b.value).sum;
 
-                result.contract.inputs = contract_bills.map!(b => net.hashOf(b.toDoc)).array;
+                result.contract.inputs = contract_bills.map!(b => net.dartIndex(b.toDoc)).array;
                 const rest = total - amount;
                 if (rest > 0) {
                     Invoice money_back;
@@ -255,7 +257,7 @@ import tagion.wallet.WalletException : check;
                 orders.each!((o) { result.contract.output[o.pkey] = o.amount.toDoc; });
                 result.contract.script = Script("pay");
 
-                immutable message = net.hashOf(result.contract.toDoc);
+                immutable message = net.calcHash(result.contract.toDoc);
                 auto shared_net = (() @trusted { return cast(shared) net; })();
                 auto bill_net = new Net;
                 // Sign all inputs
