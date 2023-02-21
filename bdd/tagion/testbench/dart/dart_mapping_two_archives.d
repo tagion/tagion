@@ -25,7 +25,6 @@ import tagion.Keywords;
 import tagion.basic.Types : Buffer;
 import std.range;
 
-
 enum feature = Feature(
         "Dart mapping of two archives",
         ["All test in this bdd should use dart fakenet."]);
@@ -96,7 +95,6 @@ class AddAnotherArchive {
     DARTIndex bullseye;
     enum FAKE = "$fake#";
 
-
     const DartInfo info;
     this(const DartInfo info) {
         this.info = info;
@@ -138,10 +136,10 @@ class AddAnotherArchive {
         const sender = DART.dartRead(fingerprints, info.hirpc);
         auto receiver = info.hirpc.receive(sender.toDoc);
         auto result = db(receiver, false);
-        const doc = result.message[Keywords.result].get!Document;        
+        const doc = result.message[Keywords.result].get!Document;
         const recorder = db.recorder(doc);
-    
-        foreach(i, data; recorder[].enumerate) {          
+
+        foreach (i, data; recorder[].enumerate) {
             const(ulong) archive = data.filed[FAKE].get!ulong;
             check(archive == info.table[i], "Retrieved data not the same");
         }
@@ -151,6 +149,18 @@ class AddAnotherArchive {
 
     @Then("check the branch of sector A.")
     Document ofSectorA() {
+        const sender = DART.dartRead(fingerprints, info.hirpc);
+
+        // DARTIndex[] rim_path;
+
+        // foreach(sector; db.sectors) {
+        //     auto rims = DART.Rims(sector);
+        //     writefln("%s", rims);
+
+        // }
+        // auto receiver = info.hirpc.receive(sender.toDoc);
+        // auto result = db(receiver, false);
+        // const doc = result.message[Keywords.result].get!Document;
 
         return result_ok;
     }
