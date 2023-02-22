@@ -11,6 +11,7 @@ import std.format : format;
 import tagion.dart.DARTFakeNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.dart.DART : DART;
+import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : Archive, RecordFactory;
 
 import tagion.dart.DARTBasic : DARTIndex, dartIndex;
@@ -24,6 +25,7 @@ import tagion.hibon.HiBONJSON : toPretty;
 import tagion.Keywords;
 import tagion.basic.Types : Buffer;
 import std.range;
+import std.digest;
 
 enum feature = Feature(
         "Dart mapping of two archives",
@@ -148,21 +150,20 @@ class AddAnotherArchive {
     }
 
     @Then("check the branch of sector A.")
-    Document ofSectorA() {
-        const sender = DART.dartRead(fingerprints, info.hirpc);
+    Document ofSectorA() @trusted {
 
-        // DARTIndex[] rim_path;
+        const sender = DART.dartRim(DART.Rims.root, info.hirpc);
+        auto receiver = info.hirpc.receive(sender.toDoc);
+        auto result = db(receiver, false);
+        const doc = result.message[Keywords.result].get!Document;
 
-        // foreach(sector; db.sectors) {
-        //     auto rims = DART.Rims(sector);
-        //     writefln("%s", rims);
+        auto branches = DARTFile.Branches(doc);
 
-        // }
-        // auto receiver = info.hirpc.receive(sender.toDoc);
-        // auto result = db(receiver, false);
-        // const doc = result.message[Keywords.result].get!Document;
+        // ?
+        // const(DARTIndex[]) test = branches.fingerprints;
 
-        return result_ok;
+        // writefln("%s", doc.toPretty);
+        return Document();
     }
 
     @Then("check the bullseye.")
@@ -201,8 +202,8 @@ class RemoveArchive {
         auto recorder = db.recorder();
         recorder.remove(fingerprints[0]);
         bullseye = db.modify(recorder);
-
-        return Document();
+        
+        return result_ok;
     }
 
     @Then("check that archive2 has been moved from the branch in sector A.")
@@ -212,6 +213,7 @@ class RemoveArchive {
 
     @Then("check the bullseye.")
     Document _bullseye() {
-        return Document();
+        check(bullseye == fingerprints[1], "Bullseye not updated correctly. Not equal to other element");
+        return result_ok;
     }
 }
