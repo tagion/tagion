@@ -27,6 +27,9 @@ import tagion.basic.Types : Buffer;
 import std.range;
 import std.digest;
 
+import tagion.hibon.HiBONType;
+
+
 enum feature = Feature(
         "Dart mapping of two archives",
         ["All test in this bdd should use dart fakenet."]);
@@ -158,12 +161,13 @@ class AddAnotherArchive {
         const doc = result.message[Keywords.result].get!Document;
 
         auto branches = DARTFile.Branches(doc);
+        check(DARTFile.Branches.isRecord(doc) == true, "Should not be an archive because multiple data is stored");
 
-        // ?
-        // const(DARTIndex[]) test = branches.fingerprints;
 
-        // writefln("%s", doc.toPretty);
-        return Document();
+        // auto test = doc["$prints"].get!uint;
+        writefln("%s", branches);
+        
+        return result_ok;
     }
 
     @Then("check the bullseye.")
