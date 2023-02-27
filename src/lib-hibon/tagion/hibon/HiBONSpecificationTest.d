@@ -314,7 +314,7 @@ unittest {
 
         double value = 42.42;
         // convert to IEEE754 byte array representation
-        Buffer rawRep = value.nativeToLittleEndian;
+        Buffer rawRep = value.nativeToLittleEndian.idup;
         ubyte[] expectedResult = [11, SpecType.Float64, 0, 0];
         // concat head and tail as expected result
         expectedResult = expectedResult ~ rawRep;
