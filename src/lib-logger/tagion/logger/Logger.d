@@ -60,9 +60,7 @@ static struct Logger {
 */
     @trusted
     void register(string task_name) nothrow
-    in {
-        assert(logger_tid == logger_tid.init);
-    }
+        in(logger_tid is logger_tid.init)
     do {
         push(LogLevel.ALL);
         scope (exit) {
