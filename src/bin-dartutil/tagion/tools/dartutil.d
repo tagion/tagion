@@ -14,7 +14,9 @@ import std.typecons;
 
 import tagion.dart.DART : DART;
 import tagion.dart.DARTFile;
-import tagion.basic.Types : Buffer, DARTIndex, FileExtension;
+import tagion.basic.Types : Buffer, FileExtension;
+import tagion.dart.DARTBasic : DARTIndex;
+
 import tagion.basic.Basic : tempfile;
 
 import tagion.communication.HiRPC;
