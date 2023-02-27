@@ -35,6 +35,27 @@ Now you should be able to run ```make unittest```
 ./tub # Build flow scripts
 ./Makefile # Pre-build Make file
 ```
+
+## Generating Docs
+### Installation
+You have to install docsify globally.
+```
+npm i docsify-cli -g
+```
+### Building the docs
+To build the docs use the command:
+
+```
+make ddoc
+```
+
+### Runnning the document servers
+
+```
+make servedocs
+```
+
+This will start two servers ( default 3000 and 3001 ), with each of them running the different servers.
 ### Tools 
 [See tools](src/bin-tools/tagion/tools/README.md)
 
