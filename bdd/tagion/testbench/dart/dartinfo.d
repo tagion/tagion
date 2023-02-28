@@ -15,4 +15,7 @@ struct DartInfo {
         0xABB9_14ab_cdef_1234,
         0xABB9_15ab_cdef_1234
     ];
+
+    const enum FAKE = "$fake#";
+
 }
