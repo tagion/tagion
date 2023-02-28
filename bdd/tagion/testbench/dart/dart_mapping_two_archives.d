@@ -29,7 +29,6 @@ import std.range;
 
 import tagion.hibon.HiBONType;
 
-
 enum feature = Feature(
         "Dart mapping of two archives",
         ["All test in this bdd should use dart fakenet."]);
@@ -143,7 +142,7 @@ class AddAnotherArchive {
         auto result = db(receiver, false);
         const doc = result.message[Keywords.result].get!Document;
         const recorder = db.recorder(doc);
-
+    
         foreach (i, data; recorder[].enumerate) {
             const(ulong) archive = data.filed[FAKE].get!ulong;
             check(archive == info.table[i], "Retrieved data not the same");
@@ -154,44 +153,56 @@ class AddAnotherArchive {
 
     @Then("check the branch of sector A.")
     Document ofSectorA() @trusted {
+        alias Rims = DART.Rims; 
+        Rims rim;
 
-        const rim_sender = DART.dartRim(DART.Rims.root, info.hirpc);
-        auto rim_receiver = info.hirpc.receive(rim_sender.toDoc);
-        auto rim_result = db(rim_receiver, false);
-        const rim_doc = rim_result.message[Keywords.result].get!Document;
-        check(DARTFile.Branches.isRecord(rim_doc) == true, "Should not be an archive because multiple data is stored");
+        rim = Rims.root;
 
-        auto rim_fingerprints = DARTFile.Branches(rim_doc).fingerprints.map!(f => DARTIndex(f))
-                                                                    .filter!(l => !l.empty);
-        immutable sub_read_sender = DART.dartRead(rim_fingerprints);
-        auto sub_read_receiver = info.hirpc.receive(sub_read_sender.toDoc);
-        auto sub_read_result = db(sub_read_receiver, false);
-        const sub_read_doc = sub_read_result.message[Keywords.result].get!Document;
+        Document getRim(Rims rim, HiRPC hirpc) {
+            const rim_sender = DART.dartRim(rim, hirpc);
+            auto rim_receiver = info.hirpc.receive(rim_sender.toDoc);
+            auto rim_result = db(rim_receiver, false);
+            return rim_result.message[Keywords.result].get!Document;            
+        }
+
+        // root rim ([])
+        auto rim_doc = getRim(rim, info.hirpc);
+        check(DARTFile.Branches.isRecord(rim_doc), "Should not be an archive because multiple data is stored");
+        auto rim_fingerprints = DARTFile.Branches(rim_doc).fingerprints
+            .enumerate
+            .filter!(f => !f.value.empty);
+
+
+        // sub rim 1 ([AB])
+        immutable key1 = cast(ubyte) rim_fingerprints.front.index;
+        rim = Rims(rim, key1);
+        auto sub1_rim_doc = getRim(rim, info.hirpc);
+        check(DARTFile.Branches.isRecord(sub1_rim_doc), "Should not be an archive because multiple data is stored");
+        auto sub1_rim_fingerprints = DARTFile.Branches(sub1_rim_doc).fingerprints
+            .enumerate
+            .filter!(f => !f.value.empty);
+
+        // sub rim 2 ([ABB9])
+        immutable key2 = cast(ubyte) sub1_rim_fingerprints.front.index;
+        rim = Rims(rim, key2);
+        auto sub2_rim_doc = getRim(rim, info.hirpc);
+
+        auto sub2_rim_fingerprints = DARTFile.Branches(sub2_rim_doc).fingerprints
+            .filter!(f => !f.empty)
+            .map!(f => DARTIndex(f));
+        writefln("fingerprint 2 %s", sub2_rim_fingerprints);
         
-        
-        writefln("%s", sub_read_doc.toPretty);
-        
-
-        // foreach(k, data; rim_fingerprints.enumerate) {
-        //     immutable key = cast(ubyte) k;
-        //     writefln("%s: %s", data, key);
-
-        //     // immutable sub_rims = DART.dartRim(DART.Rims.root ~ key);
-        //     //171
-
-        // }
-        // const doc = result.message[Keywords.result].get!Document;
-
-        // writefln("%s", doc.toPretty);
-
-
-
-        // check(DARTFile.Branches.isRecord(doc) == true, "Should not be an archive because multiple data is stored");
-
-
-        // auto test = doc["$prints"].get!uint;
-        // writefln("%s", branches);
-        
+        // check the archives
+        const sender = DART.dartRead(sub2_rim_fingerprints, info.hirpc);
+        auto receiver = info.hirpc.receive(sender.toDoc);
+        auto result = db(receiver, false);
+        const doc = result.message[Keywords.result].get!Document;
+        const recorder = db.recorder(doc);
+    
+        foreach (i, data; recorder[].enumerate) {
+            const(ulong) archive = data.filed[FAKE].get!ulong;
+            check(archive == info.table[i], "Retrieved data not the same");
+        }
         return result_ok;
     }
 
@@ -227,11 +238,9 @@ class RemoveArchive {
 
     @Given("i remove archive1.")
     Document archive1() {
-
         auto recorder = db.recorder();
         recorder.remove(fingerprints[0]);
         bullseye = db.modify(recorder);
-        
         return result_ok;
     }
 
