@@ -57,10 +57,10 @@ wallet: target-tagionwallet
 #
 # Logservicetest utility
 #
-# FIXME(IB) should be removed when ddeps works correctly
-target-tagionlogservicetest: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-tagionlogservicetest: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-logservicetest/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,tagionlogservicetest,}
+# # FIXME(IB) should be removed when ddeps works correctly
+# target-tagionlogservicetest: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+# target-tagionlogservicetest: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-logservicetest/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
+# ${call DO_BIN,tagionlogservicetest,}
 
 #
 # Subscription utility

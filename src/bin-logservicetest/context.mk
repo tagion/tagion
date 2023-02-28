@@ -4,7 +4,7 @@ DEPS += lib-utils
 DEPS += lib-communication
 DEPS += lib-funnel
 
-PROGRAM := tagionlogservicetest
+# PROGRAM := tagionlogservicetest
 
 $(PROGRAM).configure: SOURCE := tagion/*.d
 
