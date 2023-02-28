@@ -42,6 +42,24 @@ alias FeatureContext = Tuple!(
 
 DARTIndex[] fingerprints;
 
+alias Rims = DART.Rims; 
+
+
+Document getRim(Rims rim, HiRPC hirpc, DART db) @safe {
+    const rim_sender = DART.dartRim(rim, hirpc);
+    auto rim_receiver = hirpc.receive(rim_sender.toDoc);
+    auto rim_result = db(rim_receiver, false);
+    return rim_result.message[Keywords.result].get!Document;            
+}
+
+Document getRead(DARTIndex[] fingerprints, HiRPC hirpc, DART db) @safe {
+    const sender = DART.dartRead(fingerprints, hirpc);
+    auto receiver = hirpc.receive(sender.toDoc);
+    auto result = db(receiver, false);
+    return result.message[Keywords.result].get!Document;
+}
+
+
 @safe @Scenario("Add one archive.",
     ["mark #one_archive"])
 class AddOneArchive {
@@ -97,7 +115,6 @@ class AddAnotherArchive {
     DART db;
     DARTIndex doc_fingerprint;
     DARTIndex bullseye;
-    enum FAKE = "$fake#";
 
     const DartInfo info;
     this(const DartInfo info) {
@@ -137,14 +154,12 @@ class AddAnotherArchive {
     @Then("both archives should be read and checked.")
     Document readAndChecked() {
 
-        const sender = DART.dartRead(fingerprints, info.hirpc);
-        auto receiver = info.hirpc.receive(sender.toDoc);
-        auto result = db(receiver, false);
-        const doc = result.message[Keywords.result].get!Document;
+        const doc = getRead(fingerprints, info.hirpc, db);
+
         const recorder = db.recorder(doc);
     
         foreach (i, data; recorder[].enumerate) {
-            const(ulong) archive = data.filed[FAKE].get!ulong;
+            const(ulong) archive = data.filed[info.FAKE].get!ulong;
             check(archive == info.table[i], "Retrieved data not the same");
         }
 
@@ -152,21 +167,13 @@ class AddAnotherArchive {
     }
 
     @Then("check the branch of sector A.")
-    Document ofSectorA() @trusted {
-        alias Rims = DART.Rims; 
+    Document ofSectorA() {
         Rims rim;
 
         rim = Rims.root;
 
-        Document getRim(Rims rim, HiRPC hirpc) {
-            const rim_sender = DART.dartRim(rim, hirpc);
-            auto rim_receiver = info.hirpc.receive(rim_sender.toDoc);
-            auto rim_result = db(rim_receiver, false);
-            return rim_result.message[Keywords.result].get!Document;            
-        }
-
         // root rim ([])
-        auto rim_doc = getRim(rim, info.hirpc);
+        auto rim_doc = getRim(rim, info.hirpc, db);
         check(DARTFile.Branches.isRecord(rim_doc), "Should not be an archive because multiple data is stored");
         auto rim_fingerprints = DARTFile.Branches(rim_doc).fingerprints
             .enumerate
@@ -176,7 +183,7 @@ class AddAnotherArchive {
         // sub rim 1 ([AB])
         immutable key1 = cast(ubyte) rim_fingerprints.front.index;
         rim = Rims(rim, key1);
-        auto sub1_rim_doc = getRim(rim, info.hirpc);
+        auto sub1_rim_doc = getRim(rim, info.hirpc, db);
         check(DARTFile.Branches.isRecord(sub1_rim_doc), "Should not be an archive because multiple data is stored");
         auto sub1_rim_fingerprints = DARTFile.Branches(sub1_rim_doc).fingerprints
             .enumerate
@@ -185,22 +192,20 @@ class AddAnotherArchive {
         // sub rim 2 ([ABB9])
         immutable key2 = cast(ubyte) sub1_rim_fingerprints.front.index;
         rim = Rims(rim, key2);
-        auto sub2_rim_doc = getRim(rim, info.hirpc);
+        auto sub2_rim_doc = getRim(rim, info.hirpc, db);
 
         auto sub2_rim_fingerprints = DARTFile.Branches(sub2_rim_doc).fingerprints
             .filter!(f => !f.empty)
-            .map!(f => DARTIndex(f));
-        writefln("fingerprint 2 %s", sub2_rim_fingerprints);
+            .map!(f => DARTIndex(f))
+            .array;
         
         // check the archives
-        const sender = DART.dartRead(sub2_rim_fingerprints, info.hirpc);
-        auto receiver = info.hirpc.receive(sender.toDoc);
-        auto result = db(receiver, false);
-        const doc = result.message[Keywords.result].get!Document;
+        const doc = getRead(sub2_rim_fingerprints, info.hirpc, db);
+
         const recorder = db.recorder(doc);
     
         foreach (i, data; recorder[].enumerate) {
-            const(ulong) archive = data.filed[FAKE].get!ulong;
+            const(ulong) archive = data.filed[info.FAKE].get!ulong;
             check(archive == info.table[i], "Retrieved data not the same");
         }
         return result_ok;
@@ -232,7 +237,6 @@ class RemoveArchive {
         db = new DART(info.net, info.dartfilename, dart_exception);
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
 
-        // should we check something here???
         return result_ok;
     }
 
@@ -246,12 +250,43 @@ class RemoveArchive {
 
     @Then("check that archive2 has been moved from the branch in sector A.")
     Document a() {
-        return Document();
+        Rims rim;
+        rim = Rims.root;
+
+        // root rim ([])
+        auto rim_doc = getRim(rim, info.hirpc, db);
+        check(DARTFile.Branches.isRecord(rim_doc), "Should not be an archive because multiple data is stored");
+        auto rim_fingerprints = DARTFile.Branches(rim_doc).fingerprints
+            .enumerate
+            .filter!(f => !f.value.empty);
+
+
+        // sub rim 1 ([AB])
+        immutable key1 = cast(ubyte) rim_fingerprints.front.index;
+        rim = Rims(rim, key1);
+        auto sub1_rim_doc = getRim(rim, info.hirpc, db);
+        check(DARTFile.Branches.isRecord(sub1_rim_doc), "Should not be an archive because multiple data is stored");
+        auto sub1_rim_fingerprints = DARTFile.Branches(sub1_rim_doc).fingerprints
+            .filter!(f => !f.empty)
+            .map!(f => DARTIndex(f))
+            .array;
+
+        check(sub1_rim_fingerprints.length == 1, "fingerprint not removed");
+        
+        const doc = getRead(sub1_rim_fingerprints, info.hirpc, db);
+        const recorder = db.recorder(doc);
+    
+        auto data = recorder[].front;
+        const(ulong) archive = data.filed[info.FAKE].get!ulong;
+        check(archive == info.table[1], "Data is not correct");
+
+        return result_ok;
     }
 
     @Then("check the bullseye.")
     Document _bullseye() {
         check(bullseye == fingerprints[1], "Bullseye not updated correctly. Not equal to other element");
+        db.close();
         return result_ok;
     }
 }
