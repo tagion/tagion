@@ -1,4 +1,4 @@
-module tagion.testbench.dart_test;
+module tagion.testbench.dart_deep_rim_test;
 
 
 import tagion.behaviour.Behaviour;
@@ -30,19 +30,21 @@ int _main(string[] args) {
     bdd_options.scenario_name = __MODULE__;
 
     const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
-    const string dartfilename = buildPath(module_path, "dart_mapping_two_archives".setExtension(FileExtension.dart));
+    const string dartfilename = buildPath(module_path, "dart_deep_rim_test".setExtension(FileExtension.dart));
     const SecureNet net = new DARTFakeNet("very_secret");
     const hirpc = HiRPC(net);
 
     DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
 
-    auto dart_mapping_two_archives_feature = automation!(dart_mapping_two_archives)();
+    auto dart_deep_rim_feature = automation!(dart_two_archives_deep_rim)();
 
-    dart_mapping_two_archives_feature.AddOneArchive(dart_info);
-    dart_mapping_two_archives_feature.AddAnotherArchive(dart_info);
-    dart_mapping_two_archives_feature.RemoveArchive(dart_info);
+    dart_deep_rim_feature.AddOneArchive(dart_info);
+    dart_deep_rim_feature.AddAnotherArchive(dart_info);
+    dart_deep_rim_feature.RemoveArchive(dart_info);
     
-    auto dart_mapping_two_archives_context = dart_mapping_two_archives_feature.run();
+    auto dart_deep_rim_context = dart_deep_rim_feature.run();
+
+
     return 0;
 }
 

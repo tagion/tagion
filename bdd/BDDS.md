@@ -64,5 +64,7 @@
 
 [HiRPC_format_check.md](tagion/testbench/communication/HiRPC_format_check.md)
 
+[dart_two_archives_deep_rim.md](tagion/testbench/dart/dart_two_archives_deep_rim.md)
+
 [dart_mapping_two_archives.md](tagion/testbench/dart/dart_mapping_two_archives.md)
 
