@@ -360,6 +360,9 @@ class DART : DARTFile {
                 do  {
                     rims=[sector >> 8*ubyte.sizeof, sector & ubyte.max];
                 }
+                this(const Rims rim, const ubyte key) {
+                    rims = rim.rims ~ key;
+                }
             });
 
         /**
@@ -375,7 +378,7 @@ class DART : DARTFile {
         /**
        * Constructs a HiRPC method for dartRead 
        * Params:
-       *   fingerprints = List of hash-pointers 
+       *   fingerprints = List of hash-pointers to archives! Only fingerprints of valid archives are accepted.
        *   hirpc = HiRPC credentials 
        *   id = HiRPC id 
        * Returns: 
