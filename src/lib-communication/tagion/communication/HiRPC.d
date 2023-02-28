@@ -32,7 +32,7 @@ struct HiRPCMethod {
 }
 
 private static string[] _Callers(T)() {
-    import std.traits : isCallable, hasUDA, getUDAs;
+    import std.traits : isCallable, hasUDA;
 
     string[] result;
     static foreach (name; __traits(derivedMembers, T)) {
@@ -191,7 +191,7 @@ struct HiRPC {
         }
 
         bool supports(T)() const {
-            import std.traits : isCallable, hasUDA, getUDAs;
+            import std.traits : isCallable, hasUDA;
             import std.algorithm.searching : canFind;
 
             pragma(msg, "Supports ", Callers!T);

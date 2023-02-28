@@ -238,6 +238,7 @@ unittest {
 * Returns: The behaviour property of T and void if T does not have a behaviour property
 */
 template getProperty(alias T) {
+    pragma(msg, "getProperty ", FunctionTypeOf!T, " ", FunctionTypeOf!(T).stringof);
     alias getUDAsProperty = ApplyLeft!(getUDAs, T);
     alias all_behaviour_properties = staticMap!(getUDAsProperty, ActionProperties);
     static assert(all_behaviour_properties.length <= 1,
@@ -397,7 +398,10 @@ static unittest { //
 * Returns: The Scenario UDA of T and if T is not a Scenario then result is false 
 */
 template getScenario(T) if (is(T == class) || is(T == struct)) {
+    pragma(msg, "getScenario ", __traits(allMembers, T));
+pragma(msg, "hasUDA ", hasUDA!(T, Scenario));
     enum scenario_attr = getUDAs!(T, Scenario);
+pragma(msg, "hasMember ", __traits(hasMember, T, "__ctor"));
     static assert(scenario_attr.length <= 1,
             format!"%s is not a %s"(T.stringof, Scenario.stringof));
     static if (scenario_attr.length is 1) {

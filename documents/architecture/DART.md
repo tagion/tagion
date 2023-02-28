@@ -79,7 +79,7 @@ digraph G {
   }
 }
 ```
-Note. The synchronization method can be found in DART.SynchronizationFiber which also support HiPRC. 
+Note. The synchronization method can be found in DART. SynchronizationFiber which also support HiPRC. 
 For sample code see the unittest in the DART module.
 DART also includes a journal-files which can be used in case of a crash.
 
@@ -89,7 +89,7 @@ The acceptance criteria specification for the synchronization  process can be fo
 
 ### DART Operation
 
-When the DART success-fully has reached the current bulleye state then the DART is ready to receive Recorders from the transcript service. That will keep the DART in the consensus state as long as the network produces Epochs and Recorders.
+When the DART success-fully has reached the current bullseye state then the DART is ready to receive Recorders from the transcript service. That will keep the DART in the consensus state as long as the network produces Epochs and Recorders.
 
 In the case that an Epoch do not have majority voting on the last bullseye, then the Transcript Service sends a DART undo command to the DART services. This means that the previous Recorder must be undo and this is done by requesting the Recorder from the Replicator and the Recorder is reversed by the `dartModify` command. 
 The bullseye after the Recorder has been executed is written into the next Epoch to ensure the consensus state of the database. In other words, a database state is first final in the next consensus round if all the network participants have agreed on the state. That is the last valid consensus database state, consensus bullseye, in the network.

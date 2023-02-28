@@ -96,7 +96,7 @@ unittest {
 
 @safe struct Task(alias Func) {
     static assert(is(Func == struct));
-    import std.traits : Parameters, ParameterIdentifierTuple, isFunction, isDelegate, isFunctionPointer, hasUDA, getUDAs;
+    import std.traits : Parameters, ParameterIdentifierTuple, isFunction, isDelegate, isFunctionPointer, hasUDA;
     import std.meta : AliasSeq;
     import std.exception;
 

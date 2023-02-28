@@ -6,7 +6,7 @@ module tagion.hibon.Document;
 
 //import std.format;
 import std.meta : AliasSeq, Filter;
-import std.traits : isBasicType, isSomeString, isNumeric, getUDAs, EnumMembers, Unqual, ForeachType,
+import std.traits : isBasicType, isSomeString, isNumeric,  EnumMembers, Unqual, ForeachType,
     isIntegral, hasMember, isArrayT = isArray, isAssociativeArray, OriginalType, isCallable;
 import std.conv : to, emplace;
 import std.algorithm.iteration : map;

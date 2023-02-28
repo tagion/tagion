@@ -29,6 +29,8 @@
 		- [BDDEnvironment](documents/behaviour/BDDEnvironment.md)
 	- Specifications
 
+- Project goals
+	- [Goals Q1-Q2 2023](documents/project/project_goals_2023_Q1_Q2.md)
+
 - [Modules](src/)
-- [project_goals](documents/project_goals.md)
 - [Relase_notes](documents/Relase_notes.md)
