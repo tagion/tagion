@@ -3,13 +3,12 @@ module tagion.wasm.WasmWriter;
 import std.outbuffer;
 import std.bitmanip : nativeToLittleEndian;
 import std.traits : isIntegral, isFloatingPoint, EnumMembers, hasMember, Unqual,
-    TemplateArgsOf, PointerTarget, getUDAs, hasUDA, isPointer, ConstOf, ForeachType;
+    TemplateArgsOf, PointerTarget, getUDAs,  isPointer, ConstOf, ForeachType, FieldNameTuple;
 import std.typecons : Tuple;
 import std.format;
 import std.algorithm.iteration : each, map, sum, fold, filter;
 import std.range.primitives : isInputRange;
 
-//import std.traits : Unqual, TemplateArgsOf, PointerTarget, getUDAs;
 import std.meta : staticMap, Replace;
 import std.exception : assumeUnique;
 import std.range : lockstep;
@@ -411,7 +410,8 @@ import tagion.wasm.WasmException;
                     assert(_desc is IType);
                 }
                 do {
-                    static foreach (m; __traits(allMembers, ImportDesc)) {
+                    //static foreach (m; __traits(allMembers, ImportDesc)) {
+                    static foreach (m; FieldNameTuple!ImportDesc) {
                         {
                             enum get_indextype_code = format(q{enum get_indextype=getUDAs!(%s, IndexType);},
                                         m);

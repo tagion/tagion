@@ -5,7 +5,7 @@ module tagion.betterC.hibon.HiBONBase;
 @nogc:
 
 import std.meta : AliasSeq;
-import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, Unqual, getUDAs, hasUDA;
+import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, Unqual, getUDAs, hasUDA, FieldNameTuple;
 import std.range.primitives : isInputRange;
 
 version (WebAssembly) {
@@ -439,7 +439,7 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
     /**
      * convert the T to a HiBON-Type
      */
-    enum asType(T) = GetType!(Unqual!T, __traits(allMembers, ValueT));
+    enum asType(T) = GetType!(Unqual!T, FieldNameTuple!(ValueT));
 
     /**
      is true if the type T is support by the HiBON
