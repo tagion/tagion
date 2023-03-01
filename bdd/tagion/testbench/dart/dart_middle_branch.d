@@ -6,6 +6,8 @@ import std.typecons : Tuple;
 import std.file : mkdirRecurse;
 import std.stdio : writefln;
 import std.format : format;
+import std.algorithm : map, filter;
+
 
 import tagion.dart.DARTFakeNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
@@ -88,7 +90,26 @@ class AddOneArchiveAndSnap {
     @Then("the branch should snap back.")
     Document back() {
         const doc = goToSplit(Rims.root, info.hirpc, db);
-        writefln("%s", doc.toPretty);
+
+        const DARTIndex[] fingerprints = getFingerprints(doc, db);
+        const read_doc = getRead(fingerprints, info.hirpc, db);
+        const recorder = db.recorder(read_doc);
+
+        foreach (i, data; recorder[].enumerate) {
+            const(ulong) archive = data.filed[info.FAKE].get!ulong;
+            check(archive == info.deep_table[i+1], "Retrieved data not the same");
+        }
+
+        auto rim_fingerprints = DARTFile.Branches(doc)
+            .fingerprints
+            .enumerate
+            .filter!(f => !f.value.empty)
+            .array;
+        // need to get the current rim from the fingreprints with slicing and add the key to that and traverse deeper
+
+        writefln("%s", read_doc.toPretty);
+        writefln("%s", rim_fingerprints);
+        
         return Document();
     }
 
