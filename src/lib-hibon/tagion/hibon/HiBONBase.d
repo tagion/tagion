@@ -7,7 +7,7 @@ import tagion.utils.StdTime;
 import std.format;
 import std.meta : AliasSeq, allSatisfy;
 import std.traits : isBasicType, isSomeString, isNumeric, isType, EnumMembers,
-    Unqual, getUDAs, hasUDA;
+    Unqual, getUDAs, hasUDA, FieldNameTuple;
 import std.typecons : tuple, TypedefType;
 import std.range.primitives : isInputRange;
 
@@ -252,13 +252,12 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
 
     }
     alias NativeValueDataTypes = AliasSeq!();
-   /++
+    /++
      Returns:
      the value as HiBON type E
      +/
 
     @trusted @nogc auto by(Type type)() pure const {
-        import std.traits : FieldNameTuple;
         static foreach (i, name; FieldNameTuple!ValueT) {
             {
                 enum member_code = format(q{alias member = ValueT.%s;}, name);
@@ -307,13 +306,14 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
     /++
      convert the T to a HiBON-Type
      +/
-    enum asType(T) = GetType!(Unqual!T, __traits(allMembers, ValueT));
+    enum asType(T) = GetType!(Unqual!T, FieldNameTuple!ValueT);
+    //    enum asType(T) = _GetType!(Unqual!T); //, __traits(allMembers, ValueT));
     /++
      is true if the type T is support by the HiBON
      +/
     enum hasType(T) = asType!T !is Type.NONE;
 
-    version (none) static unittest {
+    static unittest {
         static assert(hasType!int);
     }
 
