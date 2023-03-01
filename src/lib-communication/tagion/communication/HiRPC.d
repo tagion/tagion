@@ -27,18 +27,34 @@ class HiRPCException : HiBONException {
 }
 
 /// UDA to make a RPC member
-struct HiRPCMethod {
-    string name;
-}
+enum HiRPCMethod;
 
 private static string[] _Callers(T)() {
     import std.traits : isCallable, hasUDA;
+    import std.meta : ApplyRight, Filter;
 
     string[] result;
     static foreach (name; __traits(derivedMembers, T)) {
-        static foreach (Overload; __traits(getOverloads, T, name)) {
-            static if (hasUDA!(Overload, HiRPCMethod)) {
-                result ~= name;
+        {
+            pragma(msg, "Derived ", name);
+            alias Overloads = __traits(getOverloads, T, name);
+            static if (Overloads.length) {
+                // static foreach (Overload; __traits(getOverloads, T, name)) {
+                pragma(msg, "Overloads ", Overloads);
+                alias hasMethod = ApplyRight!(hasUDA, HiRPCMethod);
+                //pragma(msg, "!!! Filter ", Filter!(hasMethod, Overloads));
+                static foreach (i; 0 .. Overloads.length) {
+                    pragma(msg, " is method ", hasUDA!(Overloads[i], HiRPCMethod));
+                    pragma(msg, " is method ", hasMethod!(Overloads[i]));
+                    static if (hasUDA!(Overloads[i], HiRPCMethod)) {
+                        result ~= name;
+                    }
+                }
+                // static if (hasUDA!(Overloads, HiRPCMethod)) {
+                //static if (Filter!(hasMethod, Overloads).length) {
+                //   pragma(msg, "result ",  " : ", name);
+                //  result ~= name;
+                //}
             }
         }
     }

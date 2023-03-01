@@ -431,7 +431,7 @@ class HashGraph {
         return front_seat_event;
     }
 
-    @HiRPCMethod() const(HiRPC.Sender) wavefront(
+    @HiRPCMethod const(HiRPC.Sender) wavefront(
             const Wavefront wave,
             const uint id = 0) {
         return hirpc.wavefront(wave, id);

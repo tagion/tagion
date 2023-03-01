@@ -54,7 +54,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
         }
 
         Fingerprint requestBullseye() {
-            auto sender = DART.dartBullseye();
+            auto sender = .dartBullseye();
             if (dart_tid !is Tid.init) {
                 dart_tid.send(task_name, sender.toDoc.serialize);
 
@@ -86,7 +86,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
         }
 
         @trusted const(RecordFactory.Recorder) requestInputs(const(DARTIndex[]) inputs) {
-            auto sender = DART.dartRead(inputs, empty_hirpc);
+            auto sender = .dartRead(inputs, empty_hirpc);
             auto tosend = sender.toDoc.serialize;
             if (dart_tid !is Tid.init) {
                 dart_tid.send(task_name, tosend);

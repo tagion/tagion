@@ -315,11 +315,8 @@ class DART : DARTFile {
     }
 
     pragma(msg, "Callers ", Callers!DART);
-    //    mixin(EnumText!(q{Quries}, Callers!DART));
-    mixin(EnumText!(q{Quries}, Callers!DART));
-
-    alias HiRPCSender = HiRPC.Sender;
-    alias HiRPCReceiver = HiRPC.Receiver;
+    //mixin(EnumText!(q{Quries}, Callers!DART));
+    mixin(EnumText!(q{Quries}, ["dartRead", "dartRim", "dartModify", "dartBullseye"])); //allers!DART));
 
     /**
      * Rim selecter
@@ -371,74 +368,6 @@ class DART : DARTFile {
         }
     }
 
-    static {
-        /**
-       * Constructs a HiRPC method for dartRead 
-       * Params:
-       *   fingerprints = List of hash-pointers 
-       *   hirpc = HiRPC credentials 
-       *   id = HiRPC id 
-       * Returns: 
-       *   HiRPC Sender
-       */
-        const(HiRPCSender) dartRead(Range)(
-                Range fingerprints,
-                HiRPC hirpc = HiRPC(null),
-                uint id = 0) if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
-            auto params = new HiBON;
-            auto params_fingerprints = new HiBON;
-            params_fingerprints = fingerprints.filter!(b => b.length !is 0);
-            params[Params.fingerprints] = params_fingerprints;
-            return hirpc.dartRead(params, id);
-        }
-
-        /**
-        * Constructs a HiRPC method for dartRim
-        * Params:
-        *   rims = rim-path to the DART sub-tree
-        *   hirpc = HiRPC credentials
-        *   id = HiRPC id
-        * Returns: 
-        *   HiRPC sender
-        */
-        const(HiRPCSender) dartRim(
-                ref const Rims rims,
-                HiRPC hirpc = HiRPC(null),
-                uint id = 0) {
-            return hirpc.dartRim(rims, id);
-        }
-
-        /**
-        * Constructs a HiRPC method for dartModify
-        * Params:
-        *   recorder = recoreder of archives
-        *   hirpc = HiRPC credentials
-        *   id = HiRPC id
-        * Returns: 
-        *   HiRPC sender
-        */
-        const(HiRPCSender) dartModify(
-                ref const RecordFactory.Recorder recorder,
-                HiRPC hirpc = HiRPC(null),
-                uint id = 0) {
-            return hirpc.dartModify(recorder, id);
-        }
-
-        /**
-         * Constructs a HiRPC method for the dartBullseye 
-         * Params:
-         *   hirpc = HiRPC credentials
-         *   id = HiRPC id
-         * Returns: 
-         *   HiRPC sender
-         */
-        const(HiRPCSender) dartBullseye(
-                HiRPC hirpc = HiRPC(null),
-                uint id = 0) {
-            return hirpc.dartBullseye(null, id);
-        }
-    }
-
     /**
      * The dartBullseye method is called from opCall function
      * This function return current database bullseye.
@@ -447,8 +376,8 @@ received = the HiRPC received package
      * @param read_only - !Because this function is a read only the read_only parameter has no effect 
      * @return HiRPC result that contains current database bullseye
      */
-    @HiRPCMethod() private const(HiRPCSender) dartBullseye(
-            ref const(HiRPCReceiver) received,
+    @HiRPCMethod private const(HiRPC.Sender) dartBullseye(
+            ref const(HiRPC.Receiver) received,
             const bool read_only)
     in {
         mixin FUNCTION_NAME;
@@ -501,8 +430,8 @@ received = the HiRPC received package
      *   }
      * ---
      */
-    @HiRPCMethod() private const(HiRPCSender) dartRead(
-            ref const(HiRPCReceiver) received,
+    @HiRPCMethod private const(HiRPC.Sender) dartRead(
+            ref const(HiRPC.Receiver) received,
             const bool read_only)
     in {
         mixin FUNCTION_NAME;
@@ -552,8 +481,8 @@ received = the HiRPC received package
      *
      * ----
      */
-    @HiRPCMethod() private const(HiRPCSender) dartRim(
-            ref const(HiRPCReceiver) received,
+    @HiRPCMethod private const(HiRPC.Sender) dartRim(
+            ref const(HiRPC.Receiver) received,
             const bool read_only)
     in {
         mixin FUNCTION_NAME;
@@ -626,8 +555,8 @@ received = the HiRPC received package
      * Returns: HiBON Sender 
      */
 
-    @HiRPCMethod() private const(HiRPCSender) dartModify(
-            ref const(HiRPCReceiver) received,
+    @HiRPCMethod private const(HiRPC.Sender) dartModify(
+            ref const(HiRPC.Receiver) received,
             const bool read_only)
     in {
         mixin FUNCTION_NAME;
@@ -654,8 +583,8 @@ received = the HiRPC received package
      *     The response from HPRC if the method is supported
      *     else the response return is marked empty
      */
-    const(HiRPCSender) opCall(
-            ref const(HiRPCReceiver) received,
+    const(HiRPC.Sender) opCall(
+            ref const(HiRPC.Receiver) received,
             const bool read_only = true) {
         import std.conv : to;
 
@@ -681,7 +610,7 @@ received = the HiRPC received package
         /**
          * Recommend to put a yield the SynchronizationFiber between send and receive between the DART's
          */
-        const(HiRPCReceiver) query(ref const(HiRPCSender) request);
+        const(HiRPC.Receiver) query(ref const(HiRPC.Sender) request);
         /**
          * Stores the add and remove actions in the journal replay log file
          * 
@@ -924,7 +853,7 @@ received = the HiRPC received package
                 // Request Branches or Recorder at rims from the foreign DART.
                 //
                 const local_branches = branches(params.rims);
-                const request_branches = dartRim(params, hirpc, id);
+                const request_branches = .dartRim(params, hirpc, id);
                 const result_branches = sync.query(request_branches);
                 if (!Branches.isRecord(result_branches.response.result)) {
                     if (result_branches.isRecord!(RecordFactory.Recorder)) {
@@ -941,7 +870,7 @@ received = the HiRPC received package
                     //
                     // Read all the archives from the foreign DART
                     //
-                    const request_archives = dartRead(foreign_branches.fingerprints.map!(f => DARTIndex(f)), hirpc, id);
+                    const request_archives = .dartRead(foreign_branches.fingerprints.map!(f => DARTIndex(f)), hirpc, id);
                     const result_archives = sync.query(request_archives);
                     auto foreign_recoder = manufactor.recorder(result_archives.response.result);
                     //
@@ -1061,7 +990,7 @@ received = the HiRPC received package
             // This function emulates the connection between two DART's
             // in a single thread
             //
-            const(HiRPCReceiver) query(ref const(HiRPCSender) request) {
+            const(HiRPC.Receiver) query(ref const(HiRPC.Sender) request) {
                 Document send_request_to_foreign_dart(const Document foreign_doc) {
                     //
                     // Remote excution
@@ -1579,4 +1508,70 @@ received = the HiRPC received package
             }
         }
     }
+}
+
+/**
+       * Constructs a HiRPC method for dartRead 
+       * Params:
+       *   fingerprints = List of hash-pointers 
+       *   hirpc = HiRPC credentials 
+       *   id = HiRPC id 
+       * Returns: 
+       *   HiRPC Sender
+       */
+const(HiRPC.Sender) dartRead(Range)(
+        Range fingerprints,
+        HiRPC hirpc = HiRPC(null),
+        uint id = 0) @safe if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
+    auto params = new HiBON;
+    auto params_fingerprints = new HiBON;
+    params_fingerprints = fingerprints.filter!(b => b.length !is 0);
+    params[DART.Params.fingerprints] = params_fingerprints;
+    return hirpc.dartRead(params, id);
+}
+
+/**
+        * Constructs a HiRPC method for dartRim
+        * Params:
+        *   rims = rim-path to the DART sub-tree
+        *   hirpc = HiRPC credentials
+        *   id = HiRPC id
+        * Returns: 
+        *   HiRPC sender
+        */
+const(HiRPC.Sender) dartRim(
+        ref const DART.Rims rims,
+        HiRPC hirpc = HiRPC(null),
+        uint id = 0) @safe {
+    return hirpc.dartRim(rims, id);
+}
+
+/**
+        * Constructs a HiRPC method for dartModify
+        * Params:
+        *   recorder = recoreder of archives
+        *   hirpc = HiRPC credentials
+        *   id = HiRPC id
+        * Returns: 
+        *   HiRPC sender
+        */
+const(HiRPC.Sender) dartModify(
+        ref const RecordFactory.Recorder recorder,
+        HiRPC hirpc = HiRPC(null),
+        uint id = 0) @safe {
+    return hirpc.dartModify(recorder, id);
+}
+
+/**
+         * Constructs a HiRPC method for the dartBullseye 
+         * Params:
+         *   hirpc = HiRPC credentials
+         *   id = HiRPC id
+         * Returns: 
+         *   HiRPC sender
+         */
+const(HiRPC.Sender) dartBullseye(
+        HiRPC hirpc = HiRPC(null),
+        uint id = 0) @safe {
+    return hirpc.dartBullseye(null, id);
 }
