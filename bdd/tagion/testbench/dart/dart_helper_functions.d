@@ -16,7 +16,7 @@ Document getRim(DART.Rims rim, HiRPC hirpc, DART db) @safe {
     return rim_result.message[Keywords.result].get!Document;
 }
 
-Document getRead(DARTIndex[] fingerprints, HiRPC hirpc, DART db) @safe {
+Document getRead(const DARTIndex[] fingerprints, HiRPC hirpc, DART db) @safe {
     const sender = DART.dartRead(fingerprints, hirpc);
     auto receiver = hirpc.receive(sender.toDoc);
     auto result = db(receiver, false);

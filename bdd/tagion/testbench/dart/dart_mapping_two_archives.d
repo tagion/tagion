@@ -27,7 +27,7 @@ import tagion.Keywords;
 import tagion.basic.Types : Buffer;
 import std.range;
 
-import tagion.testbench.dart.dart_helper_functions : getRim, getRead;
+import tagion.testbench.dart.dart_helper_functions : getRim, getRead, goToSplit, getFingerprints;
 
 import tagion.hibon.HiBONType;
 
@@ -155,41 +155,13 @@ class AddAnotherArchive {
 
     @Then("check the branch of sector A.")
     Document ofSectorA() {
-        Rims rim;
 
-        rim = Rims.root;
+        const doc = goToSplit(Rims.root, info.hirpc, db);
+        const DARTIndex[] rim_fingerprints = getFingerprints(doc);
 
-        // root rim ([])
-        auto rim_doc = getRim(rim, info.hirpc, db);
-        check(DARTFile.Branches.isRecord(rim_doc), "Should not be an archive because multiple data is stored");
-        auto rim_fingerprints = DARTFile.Branches(rim_doc).fingerprints
-            .enumerate
-            .filter!(f => !f.value.empty);
+        const read_doc = getRead(rim_fingerprints, info.hirpc, db);
 
-
-        // sub rim 1 ([AB])
-        immutable key1 = cast(ubyte) rim_fingerprints.front.index;
-        rim = Rims(rim, key1);
-        auto sub1_rim_doc = getRim(rim, info.hirpc, db);
-        check(DARTFile.Branches.isRecord(sub1_rim_doc), "Should not be an archive because multiple data is stored");
-        auto sub1_rim_fingerprints = DARTFile.Branches(sub1_rim_doc).fingerprints
-            .enumerate
-            .filter!(f => !f.value.empty);
-
-        // sub rim 2 ([ABB9])
-        immutable key2 = cast(ubyte) sub1_rim_fingerprints.front.index;
-        rim = Rims(rim, key2);
-        auto sub2_rim_doc = getRim(rim, info.hirpc, db);
-
-        auto sub2_rim_fingerprints = DARTFile.Branches(sub2_rim_doc).fingerprints
-            .filter!(f => !f.empty)
-            .map!(f => DARTIndex(f))
-            .array;
-        
-        // check the archives
-        const doc = getRead(sub2_rim_fingerprints, info.hirpc, db);
-
-        const recorder = db.recorder(doc);
+        const recorder = db.recorder(read_doc);
     
         foreach (i, data; recorder[].enumerate) {
             const(ulong) archive = data.filed[info.FAKE].get!ulong;
