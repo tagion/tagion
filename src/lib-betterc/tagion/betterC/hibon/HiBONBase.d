@@ -404,7 +404,7 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
      * @return the value as HiBON type E
       */
     auto by(Type type)() pure const {
-        enum code = GetFunctions!("", true, __traits(allMembers, ValueT));
+        enum code = GetFunctions!("", true, FieldNameTuple!ValueT);
         mixin(code);
         assert(0);
     }
