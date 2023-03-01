@@ -14,7 +14,7 @@ import std.conv;
 import std.algorithm;
 import core.thread;
 import core.time;
-import std.math.operations : approxEqual;
+import std.math.operations : isClose;
 
 
 import tagion.testbench.tools.Environment;
@@ -115,7 +115,7 @@ class DoubleSpendSameWallet
     @Then("wallet B should only receive the invoice amount.")
     Document amount()
     {
-        check(wallet_1.total.approxEqual(genesis[1].amount + invoice_amount) == true, "Balance not correct");
+        check(isClose(wallet_1.total, genesis[1].amount + invoice_amount, 1e-2, 1e-5) == true, "Balance not correct");
         return result_ok;
     }
 
@@ -123,7 +123,7 @@ class DoubleSpendSameWallet
     Document fee()
     {
         writefln("total: %s, amount: %s", wallet_0.total, genesis[0].amount-invoice_amount-0.1);
-        check(wallet_0.total.approxEqual(genesis[0].amount-invoice_amount-0.1) == true, "Balance not correct");
+        check(isClose(wallet_0.total, genesis[0].amount-invoice_amount-0.1, 1e-2, 1e-5) == true, "Balance not correct");
         return result_ok;
     }
 
