@@ -43,6 +43,7 @@ struct ActorID {
 
 alias ActorFlag = Flag!"action"; /// Used as bool result flag for the response
 
+pragma(msg, "---- Actor ----");
 /* 
      * 
      * Params:
@@ -305,10 +306,10 @@ protected static string generateAllMethods(alias This)() {
         {
             static if (isMethod!(This, m)) {
                 static if (!isLocal!(This, m)) {
-                    alias Overload=__traits(getOverloads, This, m);
-                    static assert(Overload.length is 1, 
-                    format("Multiple methods of %s for Actor %s not allowed", m, This.stringof));
-                    alias Func=FunctionTypeOf!(Overload[0]);
+                    alias Overload = __traits(getOverloads, This, m);
+                    static assert(Overload.length is 1,
+                            format("Multiple methods of %s for Actor %s not allowed", m, This.stringof));
+                    alias Func = FunctionTypeOf!(Overload[0]);
                     static if (is(ReturnType!Func == void)) {
                         enum method_code = format(q{
                         alias FuncParams_%1$s=AliasSeq!%2$s;
@@ -629,6 +630,7 @@ version (unittest) {
 /// Test of actor with common constructor
 @safe
 unittest {
+    pragma(msg, __FUNCTION__);
     log.silent = true;
     enum common_text = "common_text";
     // Creates the actor factory with common argument
@@ -694,6 +696,7 @@ version (unittest) {
 /// Examples: Create and emulator of an actor
 @safe
 unittest {
+    pragma(msg, __FUNCTION__);
     log.silent = true;
     auto actor_emulator = actor!MyEmulator()("task1");
     scope (exit) {
@@ -746,6 +749,7 @@ unittest {
 
 @safe
 unittest {
+    pragma(msg, __FUNCTION__);
     static struct MyRequestActor {
         @method string request(string text) {
             return "<" ~ text ~ ">";
@@ -771,3 +775,5 @@ unittest {
         pragma(msg, "-----");
     }
 }
+
+pragma(msg, "--- Actor end ---");

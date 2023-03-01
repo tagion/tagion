@@ -18,7 +18,6 @@ template getName(alias member) {
     enum getName = fullyQualifiedName!(member).splitter('.').tail(1).front;
 }
 
-
 /**
     Params: 
         member = symbol of a member
@@ -44,6 +43,8 @@ template hasMemberUDA(alias member, alias UDA) {
     alias hasMemberUDA = Filter!(hasTheUDA, Overloads);
 }
 
+enum hasOneMemberUDA(alias member, alias UDA) = hasMemberUDA!(member, UDA).length is 1;
+
 /**
  * Params:
  *     member = symbol of a member
@@ -65,6 +66,7 @@ static unittest {
     struct special {
         string label;
     }
+
     struct S {
         @test
         int func() {

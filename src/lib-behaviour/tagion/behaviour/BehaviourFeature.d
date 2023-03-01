@@ -165,7 +165,11 @@ static unittest { // Test of getAllCallable
  * Returns: true if the alias T is an Action
  */
 template hasActions(alias T) if (isCallable!T) {
-    alias hasProperty = ApplyLeft!(hasUDA, T);
+    import tagion.basic.traits : hasOneMemberUDA;
+
+    pragma(msg, "!!!!!!! hasActions ", FunctionTypeOf!T);
+    //    enum hasOneMemberUDA(alias member, alias UDA) = hasMemberUDA!(member, UDA).length is 1; 
+    alias hasProperty = ApplyLeft!(hasOneMemberUDA, T);
     enum hasActions = anySatisfy!(hasProperty, ActionProperties);
 }
 
@@ -238,8 +242,9 @@ unittest {
 * Returns: The behaviour property of T and void if T does not have a behaviour property
 */
 template getProperty(alias T) {
-    pragma(msg, "getProperty ", FunctionTypeOf!T, " ", FunctionTypeOf!(T).stringof);
-    alias getUDAsProperty = ApplyLeft!(getUDAs, T);
+    import tagion.basic.traits : getMemberUDAs;
+
+    alias getUDAsProperty = ApplyLeft!(getMemberUDAs, T);
     alias all_behaviour_properties = staticMap!(getUDAsProperty, ActionProperties);
     static assert(all_behaviour_properties.length <= 1,
             format!"The behaviour %s has more than one property %s"(T.strinof, all_behaviour_properties.stringof));
@@ -399,9 +404,9 @@ static unittest { //
 */
 template getScenario(T) if (is(T == class) || is(T == struct)) {
     pragma(msg, "getScenario ", __traits(allMembers, T));
-pragma(msg, "hasUDA ", hasUDA!(T, Scenario));
+    pragma(msg, "hasUDA ", hasUDA!(T, Scenario));
     enum scenario_attr = getUDAs!(T, Scenario);
-pragma(msg, "hasMember ", __traits(hasMember, T, "__ctor"));
+    pragma(msg, "hasMember ", __traits(hasMember, T, "__ctor"));
     static assert(scenario_attr.length <= 1,
             format!"%s is not a %s"(T.stringof, Scenario.stringof));
     static if (scenario_attr.length is 1) {
