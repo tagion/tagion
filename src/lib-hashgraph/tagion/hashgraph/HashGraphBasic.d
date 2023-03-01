@@ -54,7 +54,6 @@ unittest { // Test of the altitude measure function
     assert(!higher(x, x));
 }
 
-
 /**
  * Calculates the majority votes
  * Params:
@@ -115,13 +114,13 @@ struct EventBody {
     import tagion.basic.ConsensusExceptions;
 
     protected alias check = Check!HashGraphConsensusException;
-    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember;
+    import std.traits : getSymbolsByUDA, OriginalType, Unqual, hasMember;
 
     @label("$p", true) @filter(q{!a.empty}) Document payload; // Transaction
     @label("$m", true) @(filter.Initialized) Buffer mother; // Hash of the self-parent
     @label("$f", true) @(filter.Initialized) Buffer father; // Hash of the other-parent
     @label("$a") int altitude;
-  //  @label("$t") sdt_t time;
+    //  @label("$t") sdt_t time;
     @label("") sdt_t time;
 
     bool verify() {

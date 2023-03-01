@@ -254,6 +254,7 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
     // else {
     alias NativeValueDataTypes = AliasSeq!();
     // }
+version(none)
     protected template GetFunctions(string text, bool first, TList...) {
         static if (TList.length is 0) {
             enum GetFunctions = text
@@ -283,14 +284,60 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
 
     }
 
+version(none)
+    protected static string generateFunctions() {
+        import std.traits : FieldNameTuple;
+        import std.array : join;
+
+        string[] lines;
+        static foreach (i, name; FieldNameTuple!ValueT) {
+            {
+                enum member_code = format(q{alias member = ValueT.%s;}, name);
+                pragma(msg, "== Code ", member_code);
+                mixin(member_code);
+                enum MemberType = getUDAs!(member, Type)[0];
+                alias MemberT = typeof(member);
+                enum valid_value = !((MemberType is Type.NONE) || (!NATIVE
+                            && isOneOf!(MemberT, NativeValueDataTypes)));
+                static if (valid_value) {
+                    lines ~= format(q{
+                        %s static if ( type is Type.%s ) {
+                           return %s;
+                           }},
+                            (i == 0) ? "" : "else ", MemberType, name);
+                }
+
+            }
+        }
+        return lines.join("\n");
+    }
     /++
      Returns:
      the value as HiBON type E
      +/
 
     @trusted @nogc auto by(Type type)() pure const {
-        enum code = GetFunctions!("", true, __traits(allMembers, ValueT));
+        import std.traits : FieldNameTuple;
+
+        /*
+    enum code = GetFunctions!("", true, __traits(allMembers, ValueT));
         mixin(code);
+*/
+        static foreach (i, name; FieldNameTuple!ValueT) {
+            {
+                enum member_code = format(q{alias member = ValueT.%s;}, name);
+                mixin(member_code);
+                enum MemberType = getUDAs!(member, Type)[0];
+                alias MemberT = typeof(member);
+                enum valid_value = !((MemberType is Type.NONE) || (!NATIVE
+                            && isOneOf!(MemberT, NativeValueDataTypes)));
+
+                static if (type is MemberType) {
+                    static assert(valid_value, format("The type %s named ValueT.%s is not valid value", type, name));
+                    return this.tupleof[i];
+                }
+            }
+        }
         assert(0);
     }
 

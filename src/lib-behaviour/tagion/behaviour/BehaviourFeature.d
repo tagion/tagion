@@ -8,6 +8,7 @@ import std.traits;
 import std.meta : AliasSeq, Filter, aliasSeqOf, ApplyLeft, ApplyRight, allSatisfy, anySatisfy, Alias, Erase, aliasSeqOf;
 import std.format;
 import std.typecons;
+import tagion.basic.traits : hasOneMemberUDA;
 import tagion.basic.Basic : isOneOf, staticSearchIndexOf;
 
 import tagion.hibon.HiBONType;
@@ -165,10 +166,6 @@ static unittest { // Test of getAllCallable
  * Returns: true if the alias T is an Action
  */
 template hasActions(alias T) if (isCallable!T) {
-    import tagion.basic.traits : hasOneMemberUDA;
-
-    pragma(msg, "!!!!!!! hasActions ", FunctionTypeOf!T);
-    //    enum hasOneMemberUDA(alias member, alias UDA) = hasMemberUDA!(member, UDA).length is 1; 
     alias hasProperty = ApplyLeft!(hasOneMemberUDA, T);
     enum hasActions = anySatisfy!(hasProperty, ActionProperties);
 }
@@ -204,7 +201,7 @@ static unittest { // Test of getAllActions
  */
 template getActions(T, Property) if (is(T == class) || is(T == struct)) {
     alias behaviours = getAllActions!T;
-    alias behaviour_with_property = Filter!(ApplyRight!(hasUDA, Property), behaviours);
+    alias behaviour_with_property = Filter!(ApplyRight!(hasOneMemberUDA, Property), behaviours);
     static if (behaviour_with_property.length > 0) {
         alias getActions = behaviour_with_property;
     }
@@ -219,12 +216,12 @@ unittest {
     alias behaviour_with_given = getActions!(BehaviourUnittest.Some_awesome_feature, Given);
     static assert(allSatisfy!(isCallable, behaviour_with_given));
 
-    static assert(allSatisfy!(ApplyRight!(hasUDA, Given), behaviour_with_given));
+    static assert(allSatisfy!(ApplyRight!(hasOneMemberUDA, Given), behaviour_with_given));
     static assert(is(getActions!(BehaviourUnittest.Some_awesome_feature_bad_format_missing_given, Given) == void));
 
     alias behaviour_with_when = getActions!(BehaviourUnittest.Some_awesome_feature, When);
     static assert(isCallable!(behaviour_with_when));
-    static assert(hasUDA!(behaviour_with_when, When));
+    static assert(hasOneMemberUDA!(behaviour_with_when, When));
 
 }
 
@@ -403,10 +400,7 @@ static unittest { //
 * Returns: The Scenario UDA of T and if T is not a Scenario then result is false 
 */
 template getScenario(T) if (is(T == class) || is(T == struct)) {
-    pragma(msg, "getScenario ", __traits(allMembers, T));
-    pragma(msg, "hasUDA ", hasUDA!(T, Scenario));
     enum scenario_attr = getUDAs!(T, Scenario);
-    pragma(msg, "hasMember ", __traits(hasMember, T, "__ctor"));
     static assert(scenario_attr.length <= 1,
             format!"%s is not a %s"(T.stringof, Scenario.stringof));
     static if (scenario_attr.length is 1) {

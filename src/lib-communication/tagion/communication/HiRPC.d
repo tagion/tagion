@@ -191,7 +191,7 @@ struct HiRPC {
         }
 
         bool supports(T)() const {
-            import std.traits : isCallable, hasUDA;
+            import std.traits : isCallable;
             import std.algorithm.searching : canFind;
 
             pragma(msg, "Supports ", Callers!T);

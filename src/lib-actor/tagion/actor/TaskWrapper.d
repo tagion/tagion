@@ -9,6 +9,7 @@ import std.algorithm.mutation : remove;
 
 import tagion.basic.Types : Control;
 import tagion.basic.Basic : TrustedConcurrency;
+import tagion.basic.traits : hasOneMemberUDA;
 import tagion.logger.Logger;
 import tagion.logger.LogRecords : LogFilter, LogFilterArray, LogFiltersAction, LogInfo;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
@@ -21,8 +22,7 @@ alias Recorder = RecordFactory.Recorder;
 
 mixin TrustedConcurrency;
 
-@safe struct TaskMethod {
-}
+enum TaskMethod;
 
 alias TaskInfo = Tuple!(Tid, "tid", string, "task_name");
 @safe struct TidTable {
@@ -125,7 +125,8 @@ unittest {
                 {
                     enum code = format!(q{alias Type=Func.%s;})(m);
                     mixin(code);
-                    static if (isCallable!Type && hasUDA!(Type, TaskMethod)) {
+                    alias Overloads = __traits(getOverloads, Func, m);
+                    static if (isCallable!Type && hasUDA!(Overloads[0], TaskMethod)) {
                         enum method_code = format!q{
                             alias FuncParams_%1$s=AliasSeq!%2$s;
                             void %1$s(FuncParams_%1$s args) {
@@ -140,18 +141,6 @@ unittest {
 
         enum send_methods = generateSendFunctions;
         mixin(send_methods);
-    }
-
-    version (none) static void stopTasks() {
-        writeln("stopTasks");
-
-        // Stop tasks in LIFO order
-        while (!_tid_table.empty) {
-            auto task_info = _tid_table.pop_back;
-            writeln("stopTasks step ", task_info);
-            send(task_info.tid, Control.STOP);
-            writeln(format("Stopping '%s'... %s", task_info.task_name, receiveOnly!Control));
-        }
     }
 
     static void registerLogger(string task_name) {

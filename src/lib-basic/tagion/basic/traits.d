@@ -93,6 +93,5 @@ static unittest {
     static assert(hasMemberUDA!(S.func, special).length is 1);
     static assert(__traits(isSame, hasMemberUDA!(S.func, special)[0], getOverloads!(S.func)[1]));
     enum s_special = getMemberUDAs!(S.func, special)[0];
-    pragma(msg, "!!!!!!! ", s_special);
     static assert(s_special == special("text"));
 }
