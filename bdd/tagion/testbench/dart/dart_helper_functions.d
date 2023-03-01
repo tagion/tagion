@@ -9,7 +9,6 @@ import tagion.dart.DARTFile : DARTFile;
 import std.range;
 import std.algorithm : map, filter;
 
-
 Document getRim(DART.Rims rim, HiRPC hirpc, DART db) @safe {
     const rim_sender = DART.dartRim(rim, hirpc);
     auto rim_receiver = hirpc.receive(rim_sender.toDoc);
@@ -42,4 +41,11 @@ Document goToSplit(const DART.Rims rim, const HiRPC hirpc, DART db) @safe {
     }
 
     return goToSplit(DART.Rims(rim, rim_fingerprints.front.index), hirpc, db);
+}
+
+DARTIndex[] getFingerprints(const Document doc) @safe {
+    return DARTFile.Branches(doc).fingerprints
+        .filter!(f => !f.empty)
+        .map!(f => DARTIndex(f))
+        .array;
 }

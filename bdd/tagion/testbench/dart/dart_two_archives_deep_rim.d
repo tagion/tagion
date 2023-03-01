@@ -29,7 +29,7 @@ import std.range;
 
 import tagion.hibon.HiBONType;
 
-import tagion.testbench.dart.dart_helper_functions : getRim, getRead, goToSplit;
+import tagion.testbench.dart.dart_helper_functions : getRim, getRead, goToSplit, getFingerprints;
 
 enum feature = Feature(
         "Dart two archives deep rim",
@@ -150,17 +150,8 @@ class AddAnotherArchive {
 
     @Then("check sector_A.")
     Document sectorA() {
-
-
-
-
         const doc = goToSplit(Rims.root, info.hirpc, db);
-        
-        auto rim_fingerprints = DARTFile.Branches(doc).fingerprints
-            .filter!(f => !f.empty)
-            .map!(f => DARTIndex(f))
-            .array;
-
+        const DARTIndex[] rim_fingerprints = getFingerprints(doc);
 
         writefln("works! %s", doc.toPretty);
         writefln("%s", rim_fingerprints);
