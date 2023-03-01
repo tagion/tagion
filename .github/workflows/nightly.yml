@@ -1,0 +1,80 @@
+name: Unittest and Nightly build
+on:
+  push: 
+    branches: [ "current" ]
+env:
+  ## Sets environment variable
+  TARGET_BUILD: x86_64-linux
+  PARALEL: 1
+  RETENTION_DAYS_BINS: 3
+  TAGION_CACHE_DIR: ~/tagion_cache 
+  RUN_SCENARIOUS_PARALEL: true
+  ## TODO: add ldc2/dmd switch & version
+jobs:
+  build_and_unittest:
+    runs-on: self-hosted
+    steps:
+      - name: Cleanup
+        run: sudo rm -rf *
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Use cache of libs
+        run: |
+          if [ -d ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }} ]; then
+            echo "Copying cache"
+            mkdir -p ./build/${{ env.TARGET_BUILD }}
+            ls ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD}}/
+            cp -fr ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD}}/* ./build/${{ env.TARGET_BUILD }}/
+            ls ./build/${{ env.TARGET_BUILD }}/
+          else 
+            echo "Cache not found"
+          fi
+
+      - name: Build
+        run: |
+          source ~/.bashrc
+          make bins -j ${{ env.PARALEL }}
+          
+      - name: Upload bins
+        uses: actions/upload-artifact@v3
+        with:
+          name: core-bins
+          path: build/${{ env.TARGET_BUILD }}/bin/tagion
+          retention-days: ${{ env.RETENTION_DAYS_BINS }}
+
+      - name: Make cache of libs
+        run: |
+          ls
+          DIFF=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/tmp)
+          DIFF+=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/lib)
+          if [ "$DIFF" != "" ] ; then
+            sudo rm -rf ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}
+            sudo mkdir -p ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}
+            sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
+            sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
+          fi
+
+      - name: Run unittests
+        run: |
+          source ~/.bashrc
+          make unittest -j ${{ env.PARALEL }}
+      - name: Upload unittest result
+        uses: actions/upload-artifact@v3
+        with:
+          name: core-unittests-logs
+          path: logs/${{ env.TARGET_BUILD }}/unittest.log
+
+      - name: Check unittests
+        run: cat logs/${{ env.TARGET_BUILD }}/unittest.log | grep -E "^[0-9]+ modules passed unittests"
+
+      - name: Report unittests
+        if: success()
+        run: |
+          RESULT=$(cat logs/${{ env.TARGET_BUILD }}/unittest.log | grep -E "^[0-9]+ modules passed unittests")
+          echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
+      - name: Report unittests
+        if: failure()
+        run: |
+          RESULT=$(cat logs/${{ env.TARGET_BUILD }}/unittest.log | grep FAILED)
+          echo -e "### :heavy_exclamation_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
