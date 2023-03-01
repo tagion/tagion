@@ -19,6 +19,7 @@ struct DartInfo {
     const ulong[] deep_table = [
         0xABB9_13ab_10ef_1234,
         0xABB9_13ab_11ef_1234,
+        0xABB9_14ab_cdef_1234,
     ];
 
     const enum FAKE = "$fake#";

@@ -184,6 +184,7 @@ class RemoveArchive {
 
     DARTIndex doc_fingerprint;
     DARTIndex bullseye;
+
     const DartInfo info;
 
     this(const DartInfo info) {
@@ -229,4 +230,5 @@ class RemoveArchive {
         db.close();
         return result_ok;
     }
+
 }

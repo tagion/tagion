@@ -20,6 +20,8 @@ import tagion.basic.Types : FileExtension;
 
 import tagion.testbench.dart.dartinfo;
 
+import tagion.basic.Version;
+
 
 mixin Main!(_main);
 
@@ -41,8 +43,19 @@ int _main(string[] args) {
     dart_deep_rim_feature.AddOneArchive(dart_info);
     dart_deep_rim_feature.AddAnotherArchive(dart_info);
     dart_deep_rim_feature.RemoveArchive(dart_info);
-    
     auto dart_deep_rim_context = dart_deep_rim_feature.run();
+
+
+    // static if (ver.DART_SNAP_BRANCH) {
+    //     auto dart_middle_branch_feature = automation!(dart_middle_branch)();
+    //     dart_middle_branch_feature.AddOneArchiveAndSnap(dart_info);
+    //     auto dart_middle_branch_context = dart_middle_branch_feature.run();
+    // } else {
+    //     pragma(msg, "fixme(phr): DART snapback problem");
+    // }
+    auto dart_middle_branch_feature = automation!(dart_middle_branch)();
+    dart_middle_branch_feature.AddOneArchiveAndSnap(dart_info);
+    auto dart_middle_branch_context = dart_middle_branch_feature.run();
 
 
     return 0;
