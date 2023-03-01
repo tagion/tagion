@@ -370,42 +370,27 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
         @Type(Type.NATIVE_STRING_ARRAY) string[] native_string_array;
 
     }
-    // else {
     alias NativeValueDataTypes = AliasSeq!();
-    // }
-    protected template GetFunctions(string text, bool first, TList...) {
-        static if (TList.length is 0) {
-            enum GetFunctions = text ~ "else {\n    static assert(0, \"Not support illegal \"); \n}";
-        }
-        else {
-            enum name = TList[0];
-            enum member_code = "alias member=ValueT." ~ name ~ ";";
-            mixin(member_code);
-            static if (__traits(compiles, typeof(member)) && hasUDA!(member, Type)) {
-                enum MemberType = getUDAs!(member, Type)[0];
-                alias MemberT = typeof(member);
-                static if ((MemberType is Type.NONE) || (!NATIVE && isOneOf!(MemberT, NativeValueDataTypes))) {
-                    enum code = "";
-                }
-                else {
-                    enum code_else = (first) ? "" : "else ";
-                    enum code = code_else ~ "static if ( type is " ~ MemberType.stringof ~ " ) {\n    return " ~ name ~ ";\n}\n";
-                }
-                enum GetFunctions = GetFunctions!(text ~ code, false, TList[1 .. $]);
-            }
-            else {
-                enum GetFunctions = GetFunctions!(text, false, TList[1 .. $]);
-            }
-        }
-
-    }
-
     /**
      * @return the value as HiBON type E
       */
-    auto by(Type type)() pure const {
-        enum code = GetFunctions!("", true, FieldNameTuple!ValueT);
-        mixin(code);
+    @trusted @nogc auto by(Type type)() pure const {
+        import std.format;
+        static foreach (i, name; FieldNameTuple!ValueT) {
+            {
+                enum member_code = format(q{alias member = ValueT.%s;}, name);
+                mixin(member_code);
+                enum MemberType = getUDAs!(member, Type)[0];
+                alias MemberT = typeof(member);
+                enum valid_value = !((MemberType is Type.NONE) || (!NATIVE
+                            && isOneOf!(MemberT, NativeValueDataTypes)));
+
+                static if (type is MemberType) {
+                    static assert(valid_value, format("The type %s named ValueT.%s is not valid value", type, name));
+                    return this.tupleof[i];
+                }
+            }
+        }
         assert(0);
     }
 
