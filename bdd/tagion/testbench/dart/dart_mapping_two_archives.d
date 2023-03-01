@@ -209,31 +209,14 @@ class RemoveArchive {
 
     @Then("check that archive2 has been moved from the branch in sector A.")
     Document a() {
-        Rims rim;
-        rim = Rims.root;
-
-        // root rim ([])
-        auto rim_doc = getRim(rim, info.hirpc, db);
-        check(DARTFile.Branches.isRecord(rim_doc), "Should not be an archive because multiple data is stored");
-        auto rim_fingerprints = DARTFile.Branches(rim_doc).fingerprints
-            .enumerate
-            .filter!(f => !f.value.empty);
 
 
-        // sub rim 1 ([AB])
-        immutable key1 = cast(ubyte) rim_fingerprints.front.index;
-        rim = Rims(rim, key1);
-        auto sub1_rim_doc = getRim(rim, info.hirpc, db);
-        check(DARTFile.Branches.isRecord(sub1_rim_doc), "Should not be an archive because multiple data is stored");
-        auto sub1_rim_fingerprints = DARTFile.Branches(sub1_rim_doc).fingerprints
-            .filter!(f => !f.empty)
-            .map!(f => DARTIndex(f))
-            .array;
-
-        check(sub1_rim_fingerprints.length == 1, "fingerprint not removed");
+        const doc = goToSplit(Rims.root, info.hirpc, db);
+        writefln("%s", doc.toPretty);
+        const DARTIndex[] rim_fingerprints = getFingerprints(doc, db);
         
-        const doc = getRead(sub1_rim_fingerprints, info.hirpc, db);
-        const recorder = db.recorder(doc);
+        const read_doc = getRead(rim_fingerprints, info.hirpc, db);
+        const recorder = db.recorder(read_doc);
     
         auto data = recorder[].front;
         const(ulong) archive = data.filed[info.FAKE].get!ulong;
