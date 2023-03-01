@@ -153,15 +153,21 @@ class AddAnotherArchive {
         const doc = goToSplit(Rims.root, info.hirpc, db);
         const DARTIndex[] rim_fingerprints = getFingerprints(doc);
 
-        writefln("works! %s", doc.toPretty);
-        writefln("%s", rim_fingerprints);
+        const read_doc = getRead(rim_fingerprints, info.hirpc, db);
+        const recorder = db.recorder(read_doc);
+        foreach (i, data; recorder[].enumerate) {
+            const(ulong) archive = data.filed[info.FAKE].get!ulong;
+            check(archive == info.deep_table[i], "Retrieved data not the same");
+        }
 
-        return Document();
+        return result_ok;
     }
 
     @Then("check the _bullseye.")
     Document _bullseye() {
-        return Document();  
+        check(bullseye == info.net.calcHash(fingerprints[0], fingerprints[1]), "Bullseye not equal to the hash of the two archives");
+        db.close();
+        return result_ok;
     }
 
 }
@@ -181,22 +187,42 @@ class RemoveArchive {
 
     @Given("#two_archives")
     Document twoarchives() {
-        return Document();
+        Exception dart_exception;
+        db = new DART(info.net, info.dartfilename, dart_exception);
+        check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
+
+        return result_ok;
     }
 
     @Given("i remove archive1.")
     Document archive1() {
-        return Document();
+        auto recorder = db.recorder();
+        recorder.remove(fingerprints[0]);
+        bullseye = db.modify(recorder);
+        return result_ok;
     }
 
     @Then("check that archive2 has been moved from the branch in sector A.")
     Document a() {
-        return Document();
+
+        const doc = goToSplit(Rims.root, info.hirpc, db);
+        const DARTIndex[] rim_fingerprints = getFingerprints(doc, db);
+        
+        const read_doc = getRead(rim_fingerprints, info.hirpc, db);
+        const recorder = db.recorder(read_doc);
+    
+        auto data = recorder[].front;
+        const(ulong) archive = data.filed[info.FAKE].get!ulong;
+        check(archive == info.deep_table[1], "Data is not correct");
+
+        return result_ok;
     }
 
     @Then("check the _bullseye.")
     Document _bullseye() {
-        return Document();
+        check(bullseye == fingerprints[1], "Bullseye not updated correctly. Not equal to other element");
+        db.close();
+        return result_ok;
     }
 
 }

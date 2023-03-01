@@ -210,9 +210,7 @@ class RemoveArchive {
     @Then("check that archive2 has been moved from the branch in sector A.")
     Document a() {
 
-
         const doc = goToSplit(Rims.root, info.hirpc, db);
-        writefln("%s", doc.toPretty);
         const DARTIndex[] rim_fingerprints = getFingerprints(doc, db);
         
         const read_doc = getRead(rim_fingerprints, info.hirpc, db);
