@@ -27,6 +27,8 @@ import tagion.Keywords;
 import tagion.basic.Types : Buffer;
 import std.range;
 
+import tagion.testbench.dart.dart_helper_functions : getRim, getRead;
+
 import tagion.hibon.HiBONType;
 
 enum feature = Feature(
@@ -43,21 +45,6 @@ alias FeatureContext = Tuple!(
 DARTIndex[] fingerprints;
 
 alias Rims = DART.Rims; 
-
-
-Document getRim(Rims rim, HiRPC hirpc, DART db) @safe {
-    const rim_sender = DART.dartRim(rim, hirpc);
-    auto rim_receiver = hirpc.receive(rim_sender.toDoc);
-    auto rim_result = db(rim_receiver, false);
-    return rim_result.message[Keywords.result].get!Document;            
-}
-
-Document getRead(DARTIndex[] fingerprints, HiRPC hirpc, DART db) @safe {
-    const sender = DART.dartRead(fingerprints, hirpc);
-    auto receiver = hirpc.receive(sender.toDoc);
-    auto result = db(receiver, false);
-    return result.message[Keywords.result].get!Document;
-}
 
 
 @safe @Scenario("Add one archive.",
