@@ -251,78 +251,14 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
         @Type(Type.NATIVE_STRING_ARRAY) string[] native_string_array;
 
     }
-    // else {
     alias NativeValueDataTypes = AliasSeq!();
-    // }
-version(none)
-    protected template GetFunctions(string text, bool first, TList...) {
-        static if (TList.length is 0) {
-            enum GetFunctions = text
-                ~ "else {\n    static assert(0, format(\"Not support illegal %s \", type )); \n}";
-        }
-        else {
-            enum name = TList[0];
-            enum member_code = "alias member=ValueT." ~ name ~ ";";
-            mixin(member_code);
-            static if (__traits(compiles, typeof(member)) && hasUDA!(member, Type)) {
-                enum MemberType = getUDAs!(member, Type)[0];
-                alias MemberT = typeof(member);
-                static if ((MemberType is Type.NONE) || (!NATIVE
-                        && isOneOf!(MemberT, NativeValueDataTypes))) {
-                    enum code = "";
-                }
-                else {
-                    enum code = format("%sstatic if ( type is Type.%s ) {\n    return %s;\n}\n",
-                                (first) ? "" : "else ", MemberType, name);
-                }
-                enum GetFunctions = GetFunctions!(text ~ code, false, TList[1 .. $]);
-            }
-            else {
-                enum GetFunctions = GetFunctions!(text, false, TList[1 .. $]);
-            }
-        }
-
-    }
-
-version(none)
-    protected static string generateFunctions() {
-        import std.traits : FieldNameTuple;
-        import std.array : join;
-
-        string[] lines;
-        static foreach (i, name; FieldNameTuple!ValueT) {
-            {
-                enum member_code = format(q{alias member = ValueT.%s;}, name);
-                pragma(msg, "== Code ", member_code);
-                mixin(member_code);
-                enum MemberType = getUDAs!(member, Type)[0];
-                alias MemberT = typeof(member);
-                enum valid_value = !((MemberType is Type.NONE) || (!NATIVE
-                            && isOneOf!(MemberT, NativeValueDataTypes)));
-                static if (valid_value) {
-                    lines ~= format(q{
-                        %s static if ( type is Type.%s ) {
-                           return %s;
-                           }},
-                            (i == 0) ? "" : "else ", MemberType, name);
-                }
-
-            }
-        }
-        return lines.join("\n");
-    }
-    /++
+   /++
      Returns:
      the value as HiBON type E
      +/
 
     @trusted @nogc auto by(Type type)() pure const {
         import std.traits : FieldNameTuple;
-
-        /*
-    enum code = GetFunctions!("", true, __traits(allMembers, ValueT));
-        mixin(code);
-*/
         static foreach (i, name; FieldNameTuple!ValueT) {
             {
                 enum member_code = format(q{alias member = ValueT.%s;}, name);
