@@ -326,6 +326,7 @@ class DART : DARTFile {
      */
     @recordType("Rims")
     struct Rims {
+        import std.traits : isIntegral;
         Buffer rims;
         protected enum root_rim = [];
         static immutable root = Rims(root_rim);
@@ -360,8 +361,11 @@ class DART : DARTFile {
                 do  {
                     rims=[sector >> 8*ubyte.sizeof, sector & ubyte.max];
                 }
-                this(const Rims rim, const ubyte key) {
-                    rims = rim.rims ~ key;
+                this(I)(const Rims rim, const I key) if (isIntegral!I) 
+                in (key >= 0 && key <= ubyte.max) 
+                do {
+
+                    rims = rim.rims ~ cast(ubyte) key;
                 }
             });
 
