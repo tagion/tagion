@@ -32,21 +32,21 @@ import tagion.hibon.HiBONType;
 import tagion.testbench.dart.dart_helper_functions : getRim, getRead, goToSplit, getFingerprints;
 
 enum feature = Feature(
-        "Dart two archives deep rim",
-        ["All test in this bdd should use dart fakenet."]);
+            "Dart two archives deep rim",
+            ["All test in this bdd should use dart fakenet."]);
 
 alias FeatureContext = Tuple!(
-    AddOneArchive, "AddOneArchive",
-    AddAnotherArchive, "AddAnotherArchive",
-    RemoveArchive, "RemoveArchive",
-    FeatureGroup*, "result"
+        AddOneArchive, "AddOneArchive",
+        AddAnotherArchive, "AddAnotherArchive",
+        RemoveArchive, "RemoveArchive",
+        FeatureGroup*, "result"
 );
 
 DARTIndex[] fingerprints;
 alias Rims = DART.Rims;
 
 @safe @Scenario("Add one archive.",
-    ["mark #one_archive"])
+        ["mark #one_archive"])
 class AddOneArchive {
     DART db;
 
@@ -93,7 +93,7 @@ class AddOneArchive {
 }
 
 @safe @Scenario("Add another archive.",
-    ["mark #two_archives"])
+        ["mark #two_archives"])
 class AddAnotherArchive {
     DART db;
 
@@ -165,7 +165,8 @@ class AddAnotherArchive {
 
     @Then("check the _bullseye.")
     Document _bullseye() {
-        check(bullseye == info.net.calcHash(fingerprints[0], fingerprints[1]), "Bullseye not equal to the hash of the two archives");
+        check(bullseye == info.net.binaryHash(fingerprints[0], fingerprints[1]),
+        "Bullseye not equal to the hash of the two archives");
         db.close();
         return result_ok;
     }
@@ -173,7 +174,7 @@ class AddAnotherArchive {
 }
 
 @safe @Scenario("Remove archive",
-    [])
+        [])
 class RemoveArchive {
     DART db;
 
@@ -207,10 +208,10 @@ class RemoveArchive {
 
         const doc = goToSplit(Rims.root, info.hirpc, db);
         const DARTIndex[] rim_fingerprints = getFingerprints(doc, db);
-        
+
         const read_doc = getRead(rim_fingerprints, info.hirpc, db);
         const recorder = db.recorder(read_doc);
-    
+
         auto data = recorder[].front;
         const(ulong) archive = data.filed[info.FAKE].get!ulong;
         check(archive == info.deep_table[1], "Data is not correct");

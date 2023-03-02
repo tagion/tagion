@@ -42,7 +42,7 @@ class DARTFakeNet : StdSecureNet {
         return super.rawCalcHash(h);
     }
 
-    override immutable(Buffer) calcHash(
+    override immutable(Buffer) binaryHash(
             scope const(ubyte[]) h1,
     scope const(ubyte[]) h2) const {
         scope ubyte[] fake_h1;
@@ -61,7 +61,7 @@ class DARTFakeNet : StdSecureNet {
         else {
             fake_h2 = h2.dup;
         }
-        return super.calcHash(fake_h1, fake_h2);
+        return super.binaryHash(fake_h1, fake_h2);
     }
 
     @trusted

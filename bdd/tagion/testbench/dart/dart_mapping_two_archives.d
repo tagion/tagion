@@ -33,23 +33,22 @@ import tagion.testbench.dart.dart_helper_functions : getRim, getRead, goToSplit,
 import tagion.hibon.HiBONType;
 
 enum feature = Feature(
-        "Dart mapping of two archives",
-        ["All test in this bdd should use dart fakenet."]);
+            "Dart mapping of two archives",
+            ["All test in this bdd should use dart fakenet."]);
 
 alias FeatureContext = Tuple!(
-    AddOneArchive, "AddOneArchive",
-    AddAnotherArchive, "AddAnotherArchive",
-    RemoveArchive, "RemoveArchive",
-    FeatureGroup*, "result"
+        AddOneArchive, "AddOneArchive",
+        AddAnotherArchive, "AddAnotherArchive",
+        RemoveArchive, "RemoveArchive",
+        FeatureGroup*, "result"
 );
 
 DARTIndex[] fingerprints;
 
-alias Rims = DART.Rims; 
-
+alias Rims = DART.Rims;
 
 @safe @Scenario("Add one archive.",
-    ["mark #one_archive"])
+        ["mark #one_archive"])
 class AddOneArchive {
     DART db;
 
@@ -97,7 +96,7 @@ class AddOneArchive {
 }
 
 @safe @Scenario("Add another archive.",
-    ["mark #two_archives"])
+        ["mark #two_archives"])
 class AddAnotherArchive {
 
     DART db;
@@ -145,7 +144,7 @@ class AddAnotherArchive {
         const doc = getRead(fingerprints, info.hirpc, db);
 
         const recorder = db.recorder(doc);
-    
+
         foreach (i, data; recorder[].enumerate) {
             const(ulong) archive = data.filed[info.FAKE].get!ulong;
             check(archive == info.table[i], "Retrieved data not the same");
@@ -163,7 +162,7 @@ class AddAnotherArchive {
         const read_doc = getRead(rim_fingerprints, info.hirpc, db);
 
         const recorder = db.recorder(read_doc);
-    
+
         foreach (i, data; recorder[].enumerate) {
             const(ulong) archive = data.filed[info.FAKE].get!ulong;
             check(archive == info.table[i], "Retrieved data not the same");
@@ -173,7 +172,8 @@ class AddAnotherArchive {
 
     @Then("check the bullseye.")
     Document checkTheBullseye() {
-        check(bullseye == info.net.calcHash(fingerprints[0], fingerprints[1]), "Bullseye not equal to the hash of the two archives");
+        check(bullseye == info.net.binaryHash(fingerprints[0], fingerprints[1]),
+        "Bullseye not equal to the hash of the two archives");
         db.close();
         return result_ok;
     }
@@ -214,10 +214,10 @@ class RemoveArchive {
 
         const doc = goToSplit(Rims.root, info.hirpc, db);
         const DARTIndex[] rim_fingerprints = getFingerprints(doc, db);
-        
+
         const read_doc = getRead(rim_fingerprints, info.hirpc, db);
         const recorder = db.recorder(read_doc);
-    
+
         auto data = recorder[].front;
         const(ulong) archive = data.filed[info.FAKE].get!ulong;
         check(archive == info.table[1], "Data is not correct");

@@ -5,12 +5,12 @@ import std.typecons : TypedefType;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.aes.AESCrypto;
 import tagion.basic.Types : Buffer;
-import tagion.crypto.Types :  Signature, Fingerprint;
+import tagion.crypto.Types : Signature, Fingerprint;
 import tagion.hibon.Document : Document;
 import tagion.basic.ConsensusExceptions;
 import tagion.hibon.HiBONType : STUB;
 
-void scramble(T,B=T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof) { 
+void scramble(T, B = T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof) {
     import std.random;
 
     auto gen = Mt19937(unpredictableSeed);
@@ -60,7 +60,7 @@ class StdHashNet : HashNet {
         return assumeUnique(result);
     }
 
-    immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const
+    immutable(Buffer) binaryHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const
     in {
         assert(h1.length is 0 || h1.length is HASH_SIZE,
                 format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
@@ -429,17 +429,17 @@ unittest { // StdHashNet
     { // calcHash should not be used on a Document hashOf should be used instead
         assertThrown!AssertError(net.calcHash(doc.serialize));
 
-        assertThrown!AssertError(net.calcHash(doc.serialize, null));
-        assertThrown!AssertError(net.calcHash(null, doc.serialize));
+        assertThrown!AssertError(net.binaryHash(doc.serialize, null));
+        assertThrown!AssertError(net.binaryHash(null, doc.serialize));
     }
 
     {
-        assert(net.calcHash(null, null).length is 0);
-        assert(net.calcHash(doc_fingerprint, null) == doc_fingerprint);
-        assert(net.calcHash(null, doc_fingerprint) == doc_fingerprint);
+        assert(net.binaryHash(null, null).length is 0);
+        assert(net.binaryHash(doc_fingerprint, null) == doc_fingerprint);
+        assert(net.binaryHash(null, doc_fingerprint) == doc_fingerprint);
     }
 
-    immutable stub_fingerprint = net.calcHash(doc_fingerprint, doc_fingerprint);
+    immutable stub_fingerprint = net.binaryHash(doc_fingerprint, doc_fingerprint);
     Document stub;
     {
         auto hibon = new HiBON;

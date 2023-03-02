@@ -2,7 +2,7 @@ module tagion.crypto.SecureInterfaceNet;
 
 import std.typecons : TypedefType;
 import tagion.basic.Types : Buffer, isBufferType;
-import tagion.crypto.Types :  Pubkey, Signature, Fingerprint;
+import tagion.crypto.Types : Pubkey, Signature, Fingerprint;
 
 import tagion.hibon.HiBONType : isHiBONType, HiBONPrefix;
 import tagion.hibon.Document : Document;
@@ -25,11 +25,11 @@ interface HashNet {
     /++
      Hash used for Merkle tree
      +/
-    immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
+    immutable(Buffer) binaryHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
 
-    final immutable(Buffer) calcHash(B)(scope const(B) h1, scope const(B) h2) const
+    final immutable(Buffer) binaryHash(B)(scope const(B) h1, scope const(B) h2) const
     if (isBufferType!B) {
-        return calcHash(cast(TypedefType!B) h1, cast(TypedefType!B) h2);
+        return binaryHash(cast(TypedefType!B) h1, cast(TypedefType!B) h2);
     }
 
     immutable(Buffer) calcHash(const(Document) doc) const;
