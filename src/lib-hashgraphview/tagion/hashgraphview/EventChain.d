@@ -4,7 +4,8 @@ import std.algorithm : map;
 import std.array : array;
 import std.range : iota;
 
-import tagion.basic.Types : Buffer, Pubkey, Signature;
+import tagion.basic.Types : Buffer;
+import tagion.crypto.Types :  Pubkey, Signature;
 import tagion.utils.StdTime : sdt_t;
 import tagion.hibon.HiBONType;
 import tagion.hibon.HiBON : HiBON;

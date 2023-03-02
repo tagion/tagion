@@ -1,6 +1,7 @@
 module tagion.crypto.Cipher;
 
-import tagion.basic.Types : Buffer, Pubkey;
+import tagion.basic.Types : Buffer;
+import tagion.crypto.Types :  Pubkey;
 import tagion.hibon.HiBONType;
 import tagion.hibon.Document;
 import std.exception : assumeUnique;

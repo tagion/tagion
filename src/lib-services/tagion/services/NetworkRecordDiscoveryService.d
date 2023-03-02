@@ -6,7 +6,8 @@ import std.concurrency;
 import std.format;
 
 import tagion.services.Options;
-import tagion.basic.Types : Buffer, Control, Pubkey;
+import tagion.basic.Types : Buffer, Control;
+import tagion.crypto.Types :   Pubkey;
 import tagion.logger.Logger;
 import tagion.utils.StdTime;
 

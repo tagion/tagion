@@ -12,7 +12,8 @@ import p2p.cgo.c_helper;
 
 import tagion.services.Options;
 import tagion.logger.Logger;
-import tagion.basic.Types : Buffer, Control, Pubkey;
+import tagion.basic.Types : Buffer, Control;
+import tagion.crypto.Types :   Pubkey;
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTFile;

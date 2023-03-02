@@ -6,10 +6,9 @@ import std.format;
 import std.array : join;
 import std.conv : to;
 
-// import tagion.revision;
-//import tagion.services.Options;
-import tagion.basic.Types : Buffer, Pubkey, isBufferType;
+import tagion.basic.Types : Buffer, isBufferType;
 import tagion.basic.Basic : EnumText, buf_idup, basename;
+import tagion.crypto.Types :  Pubkey;
 
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous : cutHex;

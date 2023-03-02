@@ -1,7 +1,8 @@
 module tagion.crypto.SecureInterfaceNet;
 
 import std.typecons : TypedefType;
-import tagion.basic.Types : Buffer, Pubkey, Signature, isBufferType;
+import tagion.basic.Types : Buffer, isBufferType;
+import tagion.crypto.Types :  Pubkey, Signature, Fingerprint;
 
 import tagion.hibon.HiBONType : isHiBONType, HiBONPrefix;
 import tagion.hibon.Document : Document;

@@ -9,9 +9,10 @@ import p2plib = p2p.node;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.services.Options;
 import tagion.logger.Logger;
-import tagion.basic.Types : Buffer, Control, Pubkey;
+import tagion.basic.Types : Buffer, Control;
 import tagion.basic.Basic : NameOf;
 import tagion.basic.TagionExceptions : TagionException, fatal;
+import tagion.crypto.Types :  Pubkey;
 import tagion.services.MdnsDiscoveryService;
 
 import tagion.services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;

@@ -12,7 +12,8 @@ import tagion.services.Options;
 import tagion.utils.Random;
 
 import tagion.GlobalSignals : abort;
-import tagion.basic.Types : Pubkey, Control;
+import tagion.basic.Types :  Control;
+import tagion.crypto.Types : Pubkey;
 import tagion.logger.Logger;
 
 //import tagion.services.TagionService;

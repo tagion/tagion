@@ -13,10 +13,11 @@ import tagion.hashgraphview.EventMonitorCallbacks:  EventMonitorCallbacks;
 //import tagion.gossip.GossipNet : StdGossipNet;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 
-import tagion.basic.Basic : basename;
-import tagion.basic.Types : Pubkey, FileExtension;
-import tagion.basic.Basic : EnumText;
+import tagion.basic.Types :  FileExtension;
+import tagion.basic.Basic : basename, EnumText;
 import tagion.basic.Message;
+
+import tagion.crypto.Types : Pubkey;
 
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;

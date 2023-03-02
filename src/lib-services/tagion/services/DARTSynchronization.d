@@ -23,7 +23,8 @@ import tagion.dart.DARTBasic : DARTIndex;
 import tagion.dart.Recorder;
 
 import tagion.dart.DARTOptions : DARTOptions;
-import tagion.basic.Types : Buffer, Pubkey, Control;
+import tagion.basic.Types : Buffer, Control;
+import tagion.crypto.Types :  Pubkey;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.hibon.HiBONJSON;

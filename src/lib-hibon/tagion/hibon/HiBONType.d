@@ -1283,7 +1283,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
             alias Text = Typedef!(string, null, "Text");
 
             // Pubkey is a Typedef
-            import tagion.basic.Types : Pubkey;
+            import tagion.crypto.Types : Pubkey;
 
             static struct TextArray {
                 Text[] texts;

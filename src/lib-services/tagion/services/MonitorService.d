@@ -10,9 +10,10 @@ import std.concurrency;
 import tagion.logger.Logger;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
-import tagion.basic.Types : Control, Pubkey;
+import tagion.basic.Types : Control;
 import tagion.basic.Basic : basename;
 import tagion.basic.TagionExceptions : TagionException;
+import tagion.crypto.Types :  Pubkey;
 
 import tagion.hibon.Document;
 import tagion.network.ListenerSocket;

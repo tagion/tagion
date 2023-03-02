@@ -19,7 +19,8 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONException : HiBONRecordException;
 
 import tagion.basic.Basic : basename;
-import tagion.basic.Types : Buffer, Pubkey;
+import tagion.basic.Types : Buffer;
+import tagion.crypto.Types :  Pubkey;
 import tagion.script.StandardRecords;
 import tagion.crypto.SecureNet : scramble;
 import tagion.crypto.SecureInterfaceNet : SecureNet;

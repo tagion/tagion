@@ -12,7 +12,8 @@ import tagion.hibon.HiBONException;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
 
-import tagion.basic.Types : Buffer, Pubkey, Signature;
+import tagion.basic.Types : Buffer;
+import tagion.crypto.Types :  Pubkey, Signature;
 import tagion.basic.TagionExceptions : Check;
 import tagion.Keywords;
 import tagion.crypto.SecureInterfaceNet : SecureNet;

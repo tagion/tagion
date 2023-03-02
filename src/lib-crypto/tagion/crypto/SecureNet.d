@@ -1,13 +1,16 @@
 module tagion.crypto.SecureNet;
 
+import std.typecons : TypedefType;
+
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.aes.AESCrypto;
-import tagion.basic.Types : Buffer, Signature;
+import tagion.basic.Types : Buffer;
+import tagion.crypto.Types :  Signature, Fingerprint;
 import tagion.hibon.Document : Document;
 import tagion.basic.ConsensusExceptions;
 import tagion.hibon.HiBONType : STUB;
 
-void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) @safe if (T.sizeof is 1) {
+void scramble(T,B=T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof) { 
     import std.random;
 
     auto gen = Mt19937(unpredictableSeed);
@@ -94,7 +97,7 @@ class StdHashNet : HashNet {
 @safe
 class StdSecureNet : StdHashNet, SecureNet {
     import tagion.crypto.secp256k1.NativeSecp256k1;
-    import tagion.basic.Types : Pubkey;
+    import tagion.crypto.Types : Pubkey;
     import tagion.crypto.aes.AESCrypto;
 
     import tagion.basic.ConsensusExceptions;

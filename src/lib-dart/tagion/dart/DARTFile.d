@@ -81,7 +81,7 @@ do {
 
 @safe
 unittest {
-    import tagion.basic.Types : Fingerprint;
+    import tagion.crypto.Types : Fingerprint;
     import std.stdio;
 
     ubyte[] buf1 = [0xA7];

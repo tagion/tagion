@@ -1,7 +1,7 @@
 /// HashGraph basic support functions
 module tagion.hashgraphview.EventMonitorCallbacks;
 
-import tagion.basic.Types : Pubkey;
+import tagion.crypto.Types : Pubkey;
 import tagion.hashgraph.Event;
 import tagion.hibon.HiBONType;
 import tagion.hibon.Document : Document;

@@ -7,7 +7,8 @@ import tagion.betterC.hibon.HiBON;
 import tagion.betterC.hibon.Document;
 import tagion.betterC.wallet.WalletRecords : GetLabel, Label;
 import tagion.betterC.utils.Memory;
-import tagion.basic.Types : Buffer, Pubkey, Signature;
+import tagion.basic.Types : Buffer;
+import tagion.crypto.Types :  Pubkey, Signature;
 import tagion.betterC.wallet.Net;
 
 struct HiRPC {

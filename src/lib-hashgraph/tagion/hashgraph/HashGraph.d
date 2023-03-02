@@ -20,7 +20,8 @@ import tagion.communication.HiRPC;
 import tagion.utils.StdTime;
 
 import tagion.basic.Debug : __format;
-import tagion.basic.Types : Pubkey, Signature, Privkey, Buffer;
+import tagion.basic.Types :  Buffer;
+import tagion.crypto.Types : Pubkey, Signature, Privkey;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
 

@@ -18,16 +18,6 @@ enum BillType {
 }
 
 alias Buffer = immutable(ubyte)[]; /// General buffer
-alias Pubkey = Typedef!(Buffer, null, BufferType.PUBKEY.stringof); /// Buffer used for public keys
-alias Signature = Typedef!(Buffer, null, BufferType.SIGNATURE.stringof); /// Signarure of message
-alias Privkey = Typedef!(Buffer, null, BufferType.PRIVKEY.stringof); /// Private key
-
-/**
-* Used as hash-pointer of a Document and is used as index in the DART
-* This document can contain a '#' value and there for it should not be used as a signed message.
-*/
-alias Fingerprint = Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
-
 /+
  Returns:
  true if T is a const(ubyte)[]
@@ -42,17 +32,18 @@ true if T is a Buffer (immutable(ubyte))
 enum isBuffer(T) = is(T : immutable(ubyte[])) || is(TypedefType!T : immutable(ubyte[]));
 
 static unittest {
+    alias MyBuf=Typedef!(Buffer, null, "MyBuf");
     static assert(isBufferType!(immutable(ubyte[])));
     static assert(isBufferType!(immutable(ubyte)[]));
     static assert(isBufferType!(const(ubyte)[]));
     static assert(isBufferType!(ubyte[]));
     static assert(!isBufferType!(char[]));
-    static assert(isBufferType!(Pubkey));
+    static assert(isBufferType!(MyBuf));
 
-    static assert(isBufferTypedef!Pubkey);
+    static assert(isBufferTypedef!MyBuf);
     static assert(!isBufferTypedef!(const(ubyte)[]));
 
-    static assert(isBuffer!Pubkey);
+    static assert(isBuffer!MyBuf);
     static assert(isBuffer!(immutable(ubyte)[]));
     static assert(!isBuffer!(const(ubyte[])));
 
