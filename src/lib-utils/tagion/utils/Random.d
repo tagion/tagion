@@ -9,7 +9,7 @@ struct Random(T = uint) {
         seed(seed_value);
     }
 
-private this(T m_z, T m_w) pure nothrow {
+    private this(T m_z, T m_w) pure nothrow {
         this.m_z = m_z;
         this.m_w = m_w;
     }
@@ -46,28 +46,30 @@ private this(T m_z, T m_w) pure nothrow {
         return (m_z << 16) + m_w;
     }
 
-    enum bool empty=false;
+    enum bool empty = false;
 
     Random save() pure nothrow {
-       return Random(m_z, m_w); 
+        return Random(m_z, m_w);
     }
-import std.range.primitives : isInputRange, isForwardRange, isInfinite;
 
-static assert(isInputRange!(Random));
-static assert(isForwardRange!(Random));
-static assert(isInfinite!(Random));
+    import std.range.primitives : isInputRange, isForwardRange, isInfinite;
+
+    static assert(isInputRange!(Random));
+    static assert(isForwardRange!(Random));
+    static assert(isInfinite!(Random));
 
 }
+
 @safe
 unittest {
     import std.range : take;
     import std.algorithm.comparison : equal;
-    auto r=Random!uint(1234);
-    auto r_forward=r.save;
+
+    auto r = Random!uint(1234);
+    auto r_forward = r.save;
     assert(equal(r.take(5), r_forward.take(5)));
 
     r.take(7);
-    r_forward=r.save;
+    r_forward = r.save;
     assert(equal(r.take(4), r_forward.take(4)));
 }
-
