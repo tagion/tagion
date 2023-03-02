@@ -36,25 +36,14 @@ private static string[] _Callers(T)() {
     string[] result;
     static foreach (name; __traits(derivedMembers, T)) {
         {
-            pragma(msg, "Derived ", name);
             alias Overloads = __traits(getOverloads, T, name);
             static if (Overloads.length) {
-                // static foreach (Overload; __traits(getOverloads, T, name)) {
-                pragma(msg, "Overloads ", Overloads);
                 alias hasMethod = ApplyRight!(hasUDA, HiRPCMethod);
-                //pragma(msg, "!!! Filter ", Filter!(hasMethod, Overloads));
                 static foreach (i; 0 .. Overloads.length) {
-                    pragma(msg, " is method ", hasUDA!(Overloads[i], HiRPCMethod));
-                    pragma(msg, " is method ", hasMethod!(Overloads[i]));
                     static if (hasUDA!(Overloads[i], HiRPCMethod)) {
                         result ~= name;
                     }
                 }
-                // static if (hasUDA!(Overloads, HiRPCMethod)) {
-                //static if (Filter!(hasMethod, Overloads).length) {
-                //   pragma(msg, "result ",  " : ", name);
-                //  result ~= name;
-                //}
             }
         }
     }
@@ -209,9 +198,7 @@ struct HiRPC {
         bool supports(T)() const {
             import std.traits : isCallable;
             import std.algorithm.searching : canFind;
-
-            pragma(msg, "Supports ", Callers!T);
-            return (type is Type.method) &&
+          return (type is Type.method) &&
                 Callers!T.canFind(method.name);
         }
 

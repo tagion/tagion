@@ -316,8 +316,8 @@ class DART : DARTFile {
     }
 
     pragma(msg, "Callers ", Callers!DART);
-    //mixin(EnumText!(q{Quries}, Callers!DART));
-    mixin(EnumText!(q{Quries}, ["dartRead", "dartRim", "dartModify", "dartBullseye"])); //allers!DART));
+    mixin(EnumText!(q{Quries}, Callers!DART));
+    //mixin(EnumText!(q{Quries}, ["dartRead", "dartRim", "dartModify", "dartBullseye"])); //allers!DART));
 
     /**
      * Rim selecter

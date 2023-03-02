@@ -307,7 +307,6 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
      convert the T to a HiBON-Type
      +/
     enum asType(T) = GetType!(Unqual!T, FieldNameTuple!ValueT);
-    //    enum asType(T) = _GetType!(Unqual!T); //, __traits(allMembers, ValueT));
     /++
      is true if the type T is support by the HiBON
      +/

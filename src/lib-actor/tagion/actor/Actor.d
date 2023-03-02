@@ -43,7 +43,6 @@ struct ActorID {
 
 alias ActorFlag = Flag!"action"; /// Used as bool result flag for the response
 
-pragma(msg, "---- Actor ----");
 /* 
      * 
      * Params:
@@ -630,7 +629,6 @@ version (unittest) {
 /// Test of actor with common constructor
 @safe
 unittest {
-    pragma(msg, __FUNCTION__);
     log.silent = true;
     enum common_text = "common_text";
     // Creates the actor factory with common argument
@@ -696,7 +694,6 @@ version (unittest) {
 /// Examples: Create and emulator of an actor
 @safe
 unittest {
-    pragma(msg, __FUNCTION__);
     log.silent = true;
     auto actor_emulator = actor!MyEmulator()("task1");
     scope (exit) {
@@ -749,7 +746,6 @@ unittest {
 
 @safe
 unittest {
-    pragma(msg, __FUNCTION__);
     static struct MyRequestActor {
         @method string request(string text) {
             return "<" ~ text ~ ">";
@@ -775,5 +771,3 @@ unittest {
         pragma(msg, "-----");
     }
 }
-
-pragma(msg, "--- Actor end ---");
