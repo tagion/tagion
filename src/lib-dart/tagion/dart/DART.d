@@ -35,7 +35,7 @@ import tagion.dart.BlockFile : BlockFile;
 import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTFile;
 import tagion.dart.DARTBasic : DARTIndex;
-import CRUD = tagion.dart.DARTCRUD;
+import CRUD = tagion.dart.DARTcrud;
 
 alias hex = toHexString;
 

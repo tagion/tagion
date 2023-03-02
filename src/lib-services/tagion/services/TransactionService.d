@@ -31,7 +31,7 @@ import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
 import tagion.dart.DART;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.dart.DARTBasic;
-import tagion.dart.DARTCRUD : dartRead;
+import tagion.dart.DARTcrud : dartRead;
 
 @safe class HiRPCNet : StdSecureNet {
     this(string passphrase) {

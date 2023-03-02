@@ -1,4 +1,4 @@
-module tagion.dart.DARTCRUD;
+module tagion.dart.DARTcrud;
 
 import std.range : isInputRange, ElementType;
 import std.algorithm.iteration : filter;

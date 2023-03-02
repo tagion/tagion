@@ -26,7 +26,7 @@ import tagion.dart.DART;
 import tagion.dart.DARTFile;
 import tagion.dart.DARTBasic;
 import tagion.dart.Recorder : RecordFactory;
-import tagion.dart.DARTCRUD : dartRead, dartBullseye;
+import tagion.dart.DARTcrud : dartRead, dartBullseye;
 
 // This function performs Smart contract executions
 void transcriptServiceTask(string task_name, string dart_task_name, string recorder_task_name, string epoch_dumper_task_name) nothrow {
