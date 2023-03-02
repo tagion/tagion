@@ -1,5 +1,5 @@
-module tagion.testbench.dart.dart_mapping_two_archives;
-// Default import list for bdd
+module tagion.testbench.dart.dart_two_archives_deep_rim;
+
 import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
@@ -14,9 +14,8 @@ import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.dart.DART : DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : Archive, RecordFactory;
-import tagion.dart.DARTBasic : DARTIndex, dartIndex;
-import tagion.dart.DARTcrud : dartRead, dartRim;
 
+import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 import tagion.testbench.tools.Environment;
 import tagion.actor.TaskWrapper;
 import tagion.utils.Miscellaneous : toHexString;
@@ -28,12 +27,12 @@ import tagion.Keywords;
 import tagion.basic.Types : Buffer;
 import std.range;
 
-import tagion.testbench.dart.dart_helper_functions : getRim, getRead, goToSplit, getFingerprints;
-
 import tagion.hibon.HiBONType;
 
+import tagion.testbench.dart.dart_helper_functions : getRim, getRead, goToSplit, getFingerprints;
+
 enum feature = Feature(
-        "Dart mapping of two archives",
+        "Dart two archives deep rim",
         ["All test in this bdd should use dart fakenet."]);
 
 alias FeatureContext = Tuple!(
@@ -44,9 +43,7 @@ alias FeatureContext = Tuple!(
 );
 
 DARTIndex[] fingerprints;
-
-alias Rims = DART.Rims; 
-
+alias Rims = DART.Rims;
 
 @safe @Scenario("Add one archive.",
     ["mark #one_archive"])
@@ -75,11 +72,10 @@ class AddOneArchive {
         return result_ok;
     }
 
-    @Given("I add one archive1 in sector A.")
-    Document a() {
-
+    @Given("I add one archive1 in a sector.")
+    Document sector() {
         auto recorder = db.recorder();
-        const doc = DARTFakeNet.fake_doc(info.table[0]);
+        const doc = DARTFakeNet.fake_doc(info.deep_table[0]);
         recorder.add(doc);
         doc_fingerprint = DARTIndex(recorder[].front.fingerprint);
         bullseye = db.modify(recorder);
@@ -99,12 +95,12 @@ class AddOneArchive {
 @safe @Scenario("Add another archive.",
     ["mark #two_archives"])
 class AddAnotherArchive {
-
     DART db;
+
     DARTIndex doc_fingerprint;
     DARTIndex bullseye;
-
     const DartInfo info;
+
     this(const DartInfo info) {
         this.info = info;
     }
@@ -116,17 +112,17 @@ class AddAnotherArchive {
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
 
         const bullseye = db.bullseye();
-        const doc = DARTFakeNet.fake_doc(info.table[0]);
+        const doc = DARTFakeNet.fake_doc(info.deep_table[0]);
         const doc_bullseye = dartIndex(info.net, doc);
         check(bullseye == doc_bullseye, "Bullseye not equal to doc");
 
         return result_ok;
     }
 
-    @Given("i add another archive2 in sector A.")
-    Document inSectorA() {
+    @Given("i add another archive2 in the same sector, 5 rims deep as archive1.")
+    Document archive1() {
         auto recorder = db.recorder();
-        const doc = DARTFakeNet.fake_doc(info.table[1]);
+        const doc = DARTFakeNet.fake_doc(info.deep_table[1]);
         recorder.add(doc);
         doc_fingerprint = DARTIndex(recorder[].front.fingerprint);
         bullseye = db.modify(recorder);
@@ -136,56 +132,53 @@ class AddAnotherArchive {
         fingerprints ~= doc_fingerprint;
 
         return result_ok;
-
     }
 
     @Then("both archives should be read and checked.")
-    Document readAndChecked() {
-
+    Document checked() {
         const doc = getRead(fingerprints, info.hirpc, db);
 
         const recorder = db.recorder(doc);
-    
+
         foreach (i, data; recorder[].enumerate) {
             const(ulong) archive = data.filed[info.FAKE].get!ulong;
-            check(archive == info.table[i], "Retrieved data not the same");
+            check(archive == info.deep_table[i], "Retrieved data not the same");
         }
 
         return result_ok;
     }
 
-    @Then("check the branch of sector A.")
-    Document ofSectorA() {
-
+    @Then("check sector_A.")
+    Document sectorA() {
         const doc = goToSplit(Rims.root, info.hirpc, db);
         const DARTIndex[] rim_fingerprints = getFingerprints(doc);
 
         const read_doc = getRead(rim_fingerprints, info.hirpc, db);
-
         const recorder = db.recorder(read_doc);
-    
         foreach (i, data; recorder[].enumerate) {
             const(ulong) archive = data.filed[info.FAKE].get!ulong;
-            check(archive == info.table[i], "Retrieved data not the same");
+            check(archive == info.deep_table[i], "Retrieved data not the same");
         }
+
         return result_ok;
     }
 
-    @Then("check the bullseye.")
-    Document checkTheBullseye() {
+    @Then("check the _bullseye.")
+    Document _bullseye() {
         check(bullseye == info.net.calcHash(fingerprints[0], fingerprints[1]), "Bullseye not equal to the hash of the two archives");
         db.close();
         return result_ok;
     }
+
 }
 
-@safe @Scenario("Remove archive", [])
+@safe @Scenario("Remove archive",
+    [])
 class RemoveArchive {
     DART db;
 
     DARTIndex doc_fingerprint;
     DARTIndex bullseye;
-
     const DartInfo info;
 
     this(const DartInfo info) {
@@ -220,12 +213,12 @@ class RemoveArchive {
     
         auto data = recorder[].front;
         const(ulong) archive = data.filed[info.FAKE].get!ulong;
-        check(archive == info.table[1], "Data is not correct");
+        check(archive == info.deep_table[1], "Data is not correct");
 
         return result_ok;
     }
 
-    @Then("check the bullseye.")
+    @Then("check the _bullseye.")
     Document _bullseye() {
         check(bullseye == fingerprints[1], "Bullseye not updated correctly. Not equal to other element");
         db.close();

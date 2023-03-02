@@ -26,6 +26,8 @@ import tagion.gossip.GossipNet;
 import tagion.gossip.AddressBook;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.dart.DARTFakeNet : DARTFakeNet;
+
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBON;
@@ -38,6 +40,7 @@ import tagion.script.StandardRecords;
 import tagion.script.NameCardScripts : readStandardRecord;
 
 import tagion.tools.Basic;
+import tagion.dart.DARTFakeNet;
 
 /**
  * @brief tool for working with local DART database
@@ -116,6 +119,7 @@ int _main(string[] args) {
     bool dartrpc = false;
     bool eye;
     bool verbose;
+    bool fake = false;
 
     bool initialize = false;
     string passphrase = "verysecret";
@@ -139,6 +143,7 @@ int _main(string[] args) {
                 "eye", "Prints the bullseye", &eye,
                 "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
                 "verbose", "Print output to console", &verbose,
+                "fake", format("Use fakenet instead of real hashes : default :%s", fake), &fake,
         );
     }
     catch (Exception e) {
@@ -175,8 +180,15 @@ int _main(string[] args) {
         return 0;
     }
 
-    SecureNet net = new StdSecureNet;
-    net.generateKeyPair(passphrase);
+    SecureNet net;
+
+    if (fake) {
+        net = new DARTFakeNet("very_secret");
+    } else {
+        net = new StdSecureNet;
+        net.generateKeyPair(passphrase);
+    }
+
     const hirpc = HiRPC(net);
 
     if (initialize) {

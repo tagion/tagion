@@ -358,6 +358,12 @@ class DART : DARTFile {
                 do  {
                     rims=[sector >> 8*ubyte.sizeof, sector & ubyte.max];
                 }
+                this(I)(const Rims rim, const I key) if (isIntegral!I) 
+                in (key >= 0 && key <= ubyte.max) 
+                do {
+
+                    rims = rim.rims ~ cast(ubyte) key;
+                }
             });
 
         /**

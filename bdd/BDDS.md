@@ -48,7 +48,11 @@
 
 [Implement_secure_key_generation_at_network_startup.md](tagion/testbench/backlog/Implement_secure_key_generation_at_network_startup.md)
 
+[dart_middle_branch.md](tagion/testbench/dart/dart_middle_branch.md)
+
 [dart_mapping_two_archives.md](tagion/testbench/dart/dart_mapping_two_archives.md)
+
+[dart_two_archives_deep_rim.md](tagion/testbench/dart/dart_two_archives_deep_rim.md)
 
 [create_transaction.md](tagion/testbench/functional/create_transaction.md)
 

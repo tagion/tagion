@@ -30,10 +30,9 @@ int _main(string[] args) {
     bdd_options.scenario_name = __MODULE__;
 
     const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
-    const string dartfilename = buildPath(module_path, "default".setExtension(FileExtension.dart));
+    const string dartfilename = buildPath(module_path, "dart_mapping_two_archives".setExtension(FileExtension.dart));
     const SecureNet net = new DARTFakeNet("very_secret");
     const hirpc = HiRPC(net);
-
 
     DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
 
@@ -44,7 +43,6 @@ int _main(string[] args) {
     dart_mapping_two_archives_feature.RemoveArchive(dart_info);
     
     auto dart_mapping_two_archives_context = dart_mapping_two_archives_feature.run();
-
     return 0;
 }
 
