@@ -1,3 +1,4 @@
+/// Helper functions for interfacing with the DART. 
 module tagion.testbench.dart.dart_helper_functions;
 
 import tagion.hibon.Document;
@@ -16,6 +17,14 @@ import tagion.dart.DARTcrud : dartRead, dartRim;
 
 import std.stdio : writefln;
 
+/** 
+ * Takes a Rim and returns the document.
+ * Params:
+ *   rim = The rim to check
+ *   hirpc = The hirpc used
+ *   db = The dart 
+ * Returns: Result Document with branches and or records.
+ */
 Document getRim(DART.Rims rim, HiRPC hirpc, DART db) @safe {
     const rim_sender = dartRim(rim, hirpc);
     auto rim_receiver = hirpc.receive(rim_sender.toDoc);
@@ -23,6 +32,14 @@ Document getRim(DART.Rims rim, HiRPC hirpc, DART db) @safe {
     return rim_result.message[Keywords.result].get!Document;
 }
 
+/** 
+ * Reads a list of DARTIndexes and returnts the document
+ * Params:
+ *   fingerprints = list of fingerprints to read
+ *   hirpc = the hirpc used
+ *   db = The dart
+ * Returns: Result Document.
+ */
 Document getRead(const DARTIndex[] fingerprints, HiRPC hirpc, DART db) @safe {
     const sender = dartRead(fingerprints, hirpc);
     auto receiver = hirpc.receive(sender.toDoc);
@@ -30,6 +47,14 @@ Document getRead(const DARTIndex[] fingerprints, HiRPC hirpc, DART db) @safe {
     return result.message[Keywords.result].get!Document;
 }
 
+/** 
+ * Traverses dart until a split occurs.
+ * Params:
+ *   rim = 
+ *   hirpc = 
+ *   db = 
+ * Returns: Document with split, or the last document able to be retrieved if no splits.
+ */
 Document goToSplit(const DART.Rims rim, const HiRPC hirpc, DART db) @safe {
     writefln("running with %s", rim);
     const rim_doc = getRim(rim, hirpc, db);
@@ -50,6 +75,13 @@ Document goToSplit(const DART.Rims rim, const HiRPC hirpc, DART db) @safe {
     return rim_doc;
 }
 
+/** 
+ * Helper method to retrieve fingerprints from a Document
+ * Params:
+ *   doc = The Document with fingerprints
+ *   db = 
+ * Returns: Returns a list of fingerprints from a Document
+ */
 DARTIndex[] getFingerprints(const Document doc, DART db = null) @safe {
 
     if (RecordFactory.Recorder.isRecord(doc)) {
