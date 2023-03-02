@@ -31,6 +31,7 @@ import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
 import tagion.dart.DART;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.dart.DARTBasic;
+import tagion.dart.DARTCRUD : dartRead;
 
 @safe class HiRPCNet : StdSecureNet {
     this(string passphrase) {
@@ -71,7 +72,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
         auto dart_sync_tid = locate(opts.dart.sync.task_name);
 
         @trusted void requestInputs(const(DARTIndex[]) inputs, uint id) {
-            auto sender = .dartRead(inputs, internal_hirpc, id);
+            auto sender = dartRead(inputs, internal_hirpc, id);
             auto tosend = sender.toDoc.serialize; //internal_hirpc.toHiBON(sender).serialize;
             dart_sync_tid.send(opts.transaction.service.server.response_task_name, tosend);
         }

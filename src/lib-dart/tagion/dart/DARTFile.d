@@ -141,7 +141,8 @@ alias check = Check!DARTException;
     enum MIN_BLOCK_SIZE = 0x80;
     static create(string filename, const uint block_size = MIN_BLOCK_SIZE)
     in {
-        assert(block_size >= MIN_BLOCK_SIZE, format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
+        assert(block_size >= MIN_BLOCK_SIZE,
+                format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
     }
     do {
         BlockFile.create(filename, DARTFile.stringof, block_size);
@@ -511,6 +512,7 @@ alias check = Check!DARTException;
             if (merkleroot is null) {
                 foreach (key, index; _indices) {
                     if ((index !is INDEX_NULL) && (_fingerprints[key] is null)) {
+                        
                             .check((index in index_used) is null,
                                     format("The DART contains a recursive tree @ index %d", index));
                         index_used[index] = true;
