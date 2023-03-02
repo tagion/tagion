@@ -11,11 +11,13 @@ import std.algorithm : map, filter;
 
 import tagion.dart.DARTFakeNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
+
 import tagion.dart.DART : DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : Archive, RecordFactory;
-
 import tagion.dart.DARTBasic : DARTIndex, dartIndex;
+import tagion.dart.DARTcrud : dartRead, dartRim;
+
 import tagion.testbench.tools.Environment;
 import tagion.actor.TaskWrapper;
 import tagion.utils.Miscellaneous : toHexString;
@@ -138,7 +140,7 @@ class AddAnotherArchive {
     @Then("both archives should be read and checked.")
     Document readAndChecked() {
 
-        const sender = DART.dartRead(fingerprints, info.hirpc);
+        const sender = dartRead(fingerprints, info.hirpc);
         auto receiver = info.hirpc.receive(sender.toDoc);
         auto result = db(receiver, false);
         const doc = result.message[Keywords.result].get!Document;
@@ -155,7 +157,7 @@ class AddAnotherArchive {
     @Then("check the branch of sector A.")
     Document ofSectorA() @trusted {
 
-        const rim_sender = DART.dartRim(DART.Rims.root, info.hirpc);
+        const rim_sender = dartRim(DART.Rims.root, info.hirpc);
         auto rim_receiver = info.hirpc.receive(rim_sender.toDoc);
         auto rim_result = db(rim_receiver, false);
         const rim_doc = rim_result.message[Keywords.result].get!Document;
@@ -163,7 +165,7 @@ class AddAnotherArchive {
 
         auto rim_fingerprints = DARTFile.Branches(rim_doc).fingerprints.map!(f => DARTIndex(f))
                                                                     .filter!(l => !l.empty);
-        immutable sub_read_sender = DART.dartRead(rim_fingerprints);
+        immutable sub_read_sender = dartRead(rim_fingerprints);
         auto sub_read_receiver = info.hirpc.receive(sub_read_sender.toDoc);
         auto sub_read_result = db(sub_read_receiver, false);
         const sub_read_doc = sub_read_result.message[Keywords.result].get!Document;

@@ -16,6 +16,7 @@ import tagion.dart.DART : DART;
 import tagion.dart.DARTFile;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.dart.DARTBasic : DARTIndex;
+import tagion.dart.DARTcrud : dartRead, dartModify;
 
 import tagion.basic.Basic : tempfile;
 
@@ -293,7 +294,7 @@ int _main(string[] args) {
             return 1;
         }
 
-        const sender = DART.dartRead(fingerprints, hirpc);
+        const sender = dartRead(fingerprints, hirpc);
         auto receiver = hirpc.receive(sender.toDoc);
         auto result = db(receiver, false);
         auto tosend = hirpc.toHiBON(result);
@@ -342,7 +343,7 @@ int _main(string[] args) {
                 const doc = inputfilename.fread;
                 auto factory = RecordFactory(net);
                 auto recorder = factory.recorder(doc);
-                auto sended = DART.dartModify(recorder, hirpc);
+                auto sended = dartModify(recorder, hirpc);
                 auto received = hirpc.receive(sended);
                 auto result = db(received, false);
                 auto tosend = hirpc.toHiBON(result);
