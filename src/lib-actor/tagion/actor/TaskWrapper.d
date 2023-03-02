@@ -13,7 +13,6 @@ import tagion.basic.traits : hasOneMemberUDA;
 import tagion.logger.Logger;
 import tagion.logger.LogRecords : LogFilter, LogFilterArray, LogFiltersAction, LogInfo;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
-import tagion.utils.Fingerprint : Fingerprint;
 import tagion.services.LoggerService;
 import tagion.dart.Recorder;
 import tagion.hibon.Document : Document;
@@ -99,6 +98,7 @@ unittest {
     import std.traits : Parameters, ParameterIdentifierTuple, isFunction, isDelegate, isFunctionPointer, hasUDA;
     import std.meta : AliasSeq;
     import std.exception;
+    import tagion.utils.Fingerprint : Fingerprint_;
 
     alias Params = Parameters!Func;
     alias ParamNames = ParameterIdentifierTuple!Func;
@@ -144,12 +144,9 @@ unittest {
     }
 
     static void registerLogger(string task_name) {
-        writeln("REGISTER ", task_name);
-
         static if (is(Func == LoggerTask)) {
             register(task_name, thisTid);
             log.set_logger_task(task_name);
-            writeln("Register: ", task_name);
         }
         else {
             log.register(task_name);

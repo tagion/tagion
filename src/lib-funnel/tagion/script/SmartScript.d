@@ -24,7 +24,7 @@ import tagion.hibon.HiBONType : GetLabel;
 import tagion.logger.Logger;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
-import tagion.utils.Fingerprint : Fingerprint;
+import tagion.utils.Fingerprint : Fingerprint_;
 import std.bitmanip : nativeToBigEndian;
 
 //import tagion.script.ScriptCrypto;
@@ -94,9 +94,10 @@ version (OLD_TRANSACTION) {
             return _output_bills;
         }
 
-        void run(const uint epoch, ref uint index_in_epoch, const Fingerprint bullseye, const HashNet net) {
+        void run(const uint epoch, ref uint index_in_epoch, const Fingerprint_ bullseye, const HashNet net) {
             enum transactions_name = "#trans";
-            immutable source = (() @trusted =>
+        version(none)       
+    immutable source = (() @trusted =>
                     format(": %s %s ;", transactions_name, signed_contract.contract.script)
             )();
 
@@ -334,7 +335,7 @@ version (OLD_TRANSACTION) {
             auto smart_script = new SmartScript(ssc);
             uint index = 1;
             try {
-                smart_script.run(epoch + 1, index, Fingerprint([0, 0, 0, 0]), new StdHashNet());
+                smart_script.run(epoch + 1, index, Fingerprint_([0, 0, 0, 0]), new StdHashNet());
                 assert(false, "Input and Output amount not checked");
             }
             catch (SmartScriptException e) {
@@ -348,7 +349,7 @@ version (OLD_TRANSACTION) {
             auto smart_script = new SmartScript(ssc);
             uint index = 1;
             try {
-                smart_script.run(epoch + 1, index, Fingerprint([0, 0, 0, 0]), new StdHashNet());
+                smart_script.run(epoch + 1, index, Fingerprint_([0, 0, 0, 0]), new StdHashNet());
             }
             catch (SmartScriptException e) {
                 assert(false, format("Exception code: %s", e.code));
@@ -361,7 +362,7 @@ version (OLD_TRANSACTION) {
             auto smart_script = new SmartScript(ssc);
             uint index = 1;
             try {
-                smart_script.run(epoch + 1, index, Fingerprint([0, 0, 0, 0]), new StdHashNet());
+                smart_script.run(epoch + 1, index, Fingerprint_([0, 0, 0, 0]), new StdHashNet());
             }
             catch (SmartScriptException e) {
                 assert(false, format("Exception code: %s", e.code));
@@ -381,8 +382,8 @@ version (OLD_TRANSACTION) {
             SmartScript ssc_1 = new SmartScript(signed_contract_1);
             SmartScript ssc_2 = new SmartScript(signed_contract_2);
             uint index = 1;
-            ssc_1.run(55, index, Fingerprint([0, 0, 0, 0]), new StdHashNet());
-            ssc_2.run(55, index, Fingerprint([0, 0, 0, 0]), new StdHashNet());
+            ssc_1.run(55, index, Fingerprint_([0, 0, 0, 0]), new StdHashNet());
+            ssc_2.run(55, index, Fingerprint_([0, 0, 0, 0]), new StdHashNet());
             assert(index == 3);
             assert(ssc_1.output_bills.length == 1, "Smart contract generate more than one output");
             auto output_bill1 = ssc_1.output_bills[0];

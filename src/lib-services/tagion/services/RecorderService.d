@@ -12,7 +12,7 @@ import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.recorderchain.RecorderChain;
 import tagion.services.Options : Options;
 import tagion.actor.TaskWrapper;
-import tagion.utils.Fingerprint : Fingerprint;
+import tagion.utils.Fingerprint : Fingerprint_;
 import tagion.utils.Miscellaneous : cutHex;
 
 mixin TrustedConcurrency;
@@ -21,6 +21,7 @@ mixin TrustedConcurrency;
  */
 
 @safe struct RecorderTask {
+    import tagion.utils.Fingerprint : Fingerprint_;
     mixin TaskBasic;
 
     /** Recorder chain stored for working with blocks */
@@ -34,7 +35,7 @@ mixin TrustedConcurrency;
      *      @param bullseye - bullseye of the database
      */
     @TaskMethod void receiveRecorder(immutable(RecordFactory.Recorder) recorder, immutable(
-            Fingerprint) bullseye) {
+            Fingerprint_) bullseye) {
         auto last_block = recorder_chain.getLastBlock;
         auto block = new RecorderChainBlock(
                 recorder.toDoc,
@@ -70,6 +71,7 @@ mixin TrustedConcurrency;
 unittest {
     import tagion.basic.Basic : tempfile;
     import tagion.services.Options : setDefaultOption;
+    import tagion.utils.Fingerprint : Fingerprint_;
 
     const temp_folder = tempfile ~ "/";
 
@@ -95,7 +97,7 @@ unittest {
 
     auto factory = RecordFactory(new StdHashNet);
     immutable empty_recorder = cast(immutable) factory.recorder;
-    immutable empty_bullseye = Fingerprint([]);
+    immutable empty_bullseye = Fingerprint_([]);
 
     foreach (i; 0 .. blocks_count) {
         recorderService.receiveRecorder(empty_recorder, empty_bullseye);

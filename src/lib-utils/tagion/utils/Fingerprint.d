@@ -13,7 +13,8 @@ import tagion.basic.Types : Buffer;
  * \struct Fingerprint
  * Struct stores fingerprint and helps with pretty output
  */
-@safe struct Fingerprint {
+deprecated("Use the Typedef Fingerprint in tagion.crypto.Types ")
+@safe struct Fingerprint_ {
     /** Buffer representing fingerprint */
     Buffer buffer;
 
@@ -62,12 +63,12 @@ import tagion.basic.Types : Buffer;
 unittest {
     /// Fingerprint_empty_sequence
     {
-        assert(format("%s", Fingerprint([])) == "");
+        assert(format("%s", Fingerprint_([])) == "");
     }
 
     /// Fingerprint_single_number
     {
-        assert(format("%X", Fingerprint([255])) == "FF");
+        assert(format("%X", Fingerprint_([255])) == "FF");
     }
 
     Buffer fingerprint = [
@@ -76,26 +77,26 @@ unittest {
 
     /// Fingerprint_equal_s_and_X_format
     {
-        assert(format("%X", Fingerprint(
-                fingerprint)) == format("%s", Fingerprint(
+        assert(format("%X", Fingerprint_(
+                fingerprint)) == format("%s", Fingerprint_(
                 fingerprint)));
     }
 
     /// Fingerprint_format_X
     {
-        assert(format("%X", Fingerprint(
+        assert(format("%X", Fingerprint_(
                 fingerprint)) == "8F 00 33 84 29 F4 69 16 B6 4B AD 88 11 D0 5B 27");
     }
 
     /// Fingerprint_format_d
     {
-        assert(format("%d", Fingerprint(
+        assert(format("%d", Fingerprint_(
                 fingerprint)) == "143 0 51 132 41 244 105 22 182 75 173 136 17 208 91 39");
     }
 
     /// Fingerprint_format_4x
     {
-        assert(format("%4x", Fingerprint(
+        assert(format("%4x", Fingerprint_(
                 fingerprint)) == "8f 00 33 84 \n" ~
                 "29 f4 69 16 \n" ~
                 "b6 4b ad 88 \n" ~
@@ -105,7 +106,7 @@ unittest {
     /// Fingerprint_wrong_format_specifier
     {
         try {
-            format("%i", Fingerprint([]));
+            format("%i", Fingerprint_([]));
             assert(false); // Expecting exception
         }
         catch (Exception e) {
