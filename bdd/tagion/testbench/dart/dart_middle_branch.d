@@ -102,15 +102,17 @@ class AddOneArchiveAndSnap {
 
         auto rim_fingerprints = DARTFile.Branches(doc)
             .fingerprints
-            .enumerate
-            .filter!(f => !f.value.empty)
+            .filter!(f => !f.empty)
             .array;
-        // need to get the current rim from the fingreprints with slicing and add the key to that and traverse deeper
 
-        writefln("%s", read_doc.toPretty);
-        writefln("%s", rim_fingerprints);
-        
-        return Document();
+
+        foreach(i; 0..2) {
+            const rim = Rims(rim_fingerprints[i][0..3]);
+            const rim_doc = getRim(rim, info.hirpc, db);
+            check(RecordFactory.Recorder.isRecord(rim_doc), format("branch %s not snapped back", rim));
+        }
+
+        return result_ok;
     }
 
 }

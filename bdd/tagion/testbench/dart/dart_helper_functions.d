@@ -12,6 +12,8 @@ import tagion.hibon.HiBONJSON : toPretty;
 import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTcrud : dartRead, dartRim;
 
+
+
 import std.stdio : writefln;
 
 Document getRim(DART.Rims rim, HiRPC hirpc, DART db) @safe {
@@ -29,6 +31,7 @@ Document getRead(const DARTIndex[] fingerprints, HiRPC hirpc, DART db) @safe {
 }
 
 Document goToSplit(const DART.Rims rim, const HiRPC hirpc, DART db) @safe {
+    writefln("running with %s", rim);
     const rim_doc = getRim(rim, hirpc, db);
 
     if (DARTFile.Branches.isRecord(rim_doc)) {
