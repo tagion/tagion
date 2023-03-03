@@ -19,7 +19,7 @@ $(DBUILD)/gen.ddeps.json: $(DBUILD)/gen.dfiles.mk
 	$(PRECMD)
 	if [ ! -f "$@" ]; then
 	${call log.kvp, $(@F), $(PLATFORM)}
-	$(DC) $(DFLAGS) $(UNITTEST_FLAGS) ${addprefix -I,$(DINC)} --o- $(NO_OBJ)  $(DJSON)=$@ ${sort $(DFILES)}
+	$(DC) $(DFLAGS) $(UNITTEST_FLAGS) ${addprefix -I,$(DINC)} $(NO_OBJ) $(DJSON)=$@ ${sort $(DFILES)}
 	fi
 
 ddeps: $(DBUILD)/gen.ddeps.json
