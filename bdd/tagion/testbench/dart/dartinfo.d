@@ -28,7 +28,6 @@ struct DartInfo {
 
     State[] states;
 
-
     void generateStates() {
         states.length = 4;
         auto rnd = RandomT(0x1234UL);

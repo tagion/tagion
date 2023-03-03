@@ -1,5 +1,6 @@
 /// Pseudo random range
 module tagion.utils.Random;
+import std.format;
 
 @safe @nogc
 struct Random(T = uint) {
@@ -57,6 +58,10 @@ struct Random(T = uint) {
     static assert(isInputRange!(Random));
     static assert(isForwardRange!(Random));
     static assert(isInfinite!(Random));
+
+    string toString() const pure {
+        return format("m_z %s, m_w %s, value %s", m_z, m_w, front);
+    }
 
 }
 
