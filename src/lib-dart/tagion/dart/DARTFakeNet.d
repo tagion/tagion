@@ -4,6 +4,7 @@ import std.typecons : Typedef;
 
 //import tagion.gossip.InterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.Types : Fingerprint;
 import tagion.basic.Types : Buffer, Control, BufferType;
 import tagion.dart.DART;
 import tagion.dart.DARTFile : DARTFile;
@@ -32,14 +33,14 @@ class DARTFakeNet : StdSecureNet {
 
     }
 
-    override immutable(Buffer) calcHash(scope const(ubyte[]) h) const {
+    override Fingerprint calcHash(scope const(ubyte[]) h) const {
         if (h.length is ulong.sizeof) {
             scope ubyte[] fake_h;
             fake_h.length = hashSize;
             fake_h[0 .. ulong.sizeof] = h;
-            return fake_h.idup;
+            return Fingerprint(fake_h.idup);
         }
-        return super.rawCalcHash(h);
+        return super.calcHash(h);
     }
 
     override immutable(Buffer) binaryHash(
@@ -65,7 +66,7 @@ class DARTFakeNet : StdSecureNet {
     }
 
     @trusted
-    override immutable(Buffer) calcHash(const(Document) doc) const {
+    override Fingerprint calcHash(const(Document) doc) const {
         import tagion.hibon.HiBONBase : Type;
         import std.exception : assumeUnique;
 
@@ -76,7 +77,7 @@ class DARTFakeNet : StdSecureNet {
             ubyte[] fingerprint;
             fingerprint.length = hashSize;
             fingerprint[0 .. ulong.sizeof] = nativeToBigEndian(x);
-            return assumeUnique(fingerprint);
+            return Fingerprint(assumeUnique(fingerprint));
         }
         return super.calcHash(doc);
         //return rawCalcHash(doc.serialize);

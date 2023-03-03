@@ -8,6 +8,7 @@ import tagion.hashchain.HashChainStorage : HashChainStorage;
 import tagion.hashchain.HashChainFileStorage : HashChainFileStorage;
 import tagion.epochain.EpochChainBlock;
 import tagion.epochain.EpochChain;
+import tagion.crypto.Types : Fingerprint; 
 import tagion.basic.Types : Control, Buffer;
 import tagion.basic.Basic : TrustedConcurrency;
 import tagion.hibon.Document;
@@ -21,6 +22,7 @@ mixin TrustedConcurrency;
  */
 
 struct EpochDumpTask {
+    import tagion.crypto.Types : Fingerprint;
     mixin TaskBasic;
 
     alias DumpEpochChainStorage = HashChainStorage!EpochChainBlock;
@@ -32,9 +34,9 @@ struct EpochDumpTask {
     /** Default hasher */
     const StdHashNet hash_net = new StdHashNet;
 
-    @TaskMethod void dumpEpoch(Document transactions_list, Buffer bullseye) {
+    @TaskMethod void dumpEpoch(Document transactions_list, Fingerprint bullseye) {
         auto last_block = epoch_chain.getLastBlock();
-        auto last_hash = last_block ? last_block.fingerprint : [];
+        auto last_hash = last_block ? last_block.fingerprint : Fingerprint.init;
         auto block = new EpochChainBlock(transactions_list, last_hash, bullseye, this.hash_net);
         epoch_chain.append(block);
 

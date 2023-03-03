@@ -98,7 +98,6 @@ unittest {
     import std.traits : Parameters, ParameterIdentifierTuple, isFunction, isDelegate, isFunctionPointer, hasUDA;
     import std.meta : AliasSeq;
     import std.exception;
-    import tagion.utils.Fingerprint : Fingerprint_;
 
     alias Params = Parameters!Func;
     alias ParamNames = ParameterIdentifierTuple!Func;

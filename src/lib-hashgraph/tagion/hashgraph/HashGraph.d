@@ -947,7 +947,7 @@ class HashGraph {
                 private void run() {
                     { // Eva Event
                         immutable buf = cast(Buffer) _hashgraph.channel;
-                        const nonce = _hashgraph.hirpc.net.calcHash(buf);
+                        const nonce = cast(Buffer) _hashgraph.hirpc.net.calcHash(buf);
                         auto eva_event = _hashgraph.createEvaEvent(time, nonce);
 
                         if (eva_event is null) {

@@ -41,12 +41,8 @@ class StdHashNet : HashNet {
         return digest!SHA256(data).idup;
     }
 
-    immutable(Buffer) calcHash(scope const(ubyte[]) data) const {
-        version (unittest) {
-            assert(!Document(data.idup).isInorder,
-                    "calcHash should not be use on a Document use hashOf instead");
-        }
-        return rawCalcHash(data);
+    Fingerprint calcHash(scope const(ubyte[]) data) const {
+        return Fingerprint(rawCalcHash(data));
     }
 
     @trusted
@@ -89,8 +85,8 @@ class StdHashNet : HashNet {
         return rawCalcHash(h1 ~ h2);
     }
 
-    immutable(Buffer) calcHash(const(Document) doc) const {
-        return rawCalcHash(doc.serialize);
+    Fingerprint calcHash(const(Document) doc) const {
+        return Fingerprint(rawCalcHash(doc.serialize));
     }
 }
 
@@ -145,13 +141,13 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     protected NativeSecp256k1 _crypt;
 
-    bool verify(const(ubyte[]) message, const Signature signature, const Pubkey pubkey) const {
+    bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const {
         consensusCheck!(SecurityConsensusException)(signature.length != 0 && signature.length <= 520,
                 ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-        return _crypt.verify(message, cast(Buffer) signature, cast(Buffer) pubkey);
+        return _crypt.verify(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
     }
 
-    Signature sign(const(ubyte[]) message) const
+    Signature sign(const Fingerprint message) const
     in {
         assert(_secret !is null,
                 format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
@@ -162,7 +158,7 @@ class StdSecureNet : StdHashNet, SecureNet {
 
         assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
 
-        return Signature(_secret.sign(message));
+        return Signature(_secret.sign(cast(Buffer) message));
     }
 
     final void derive(string tweak_word, ref ubyte[] tweak_privkey) {
@@ -296,7 +292,7 @@ class StdSecureNet : StdHashNet, SecureNet {
                     import tagion.utils.Miscellaneous : xor;
 
                     auto data = xor(privkey, _mask);
-                    result = calcHash(calcHash(data));
+                    result = rawCalcHash(rawCalcHash(data));
                 });
                 return result;
             }
@@ -356,7 +352,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         SecureNet bad_net = new StdSecureNet;
         bad_net.generateKeyPair("Wrong Secret password");
 
-        const message = net.rawCalcHash(some_data.representation);
+        const message = net.calcHash(some_data.representation);
 
         Signature signature = net.sign(message);
 
@@ -461,8 +457,8 @@ class BadSecureNet : StdSecureNet {
         generateKeyPair(passphrase);
     }
 
-    override Signature sign(const(ubyte[]) message) const {
-        immutable false_message = super.rawCalcHash(message ~ message);
+    override Signature sign(const Fingerprint message) const {
+        const false_message = super.calcHash(message ~ message);
         return super.sign(false_message);
     }
 }

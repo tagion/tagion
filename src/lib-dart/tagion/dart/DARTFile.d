@@ -525,7 +525,7 @@ alias check = Check!DARTException;
                             _fingerprints[key] = subbranch.fingerprint(dartfile, index_used);
                         }
                         else {
-                            _fingerprints[key] = dartfile.manufactor.net.calcHash(doc);
+                            _fingerprints[key] = cast(Buffer)dartfile.manufactor.net.calcHash(doc);
                         }
                     }
                 }

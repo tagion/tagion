@@ -12,7 +12,7 @@ import std.datetime : Clock;
 
 import p2plib = p2p.node;
 
-import tagion.basic.Types :  Control, Buffer;
+import tagion.basic.Types : Control, Buffer;
 import tagion.basic.TagionExceptions : taskfailure, fatal;
 import tagion.crypto.Types : Pubkey;
 import tagion.communication.HiRPC;
@@ -350,7 +350,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
 
         {
             immutable buf = cast(Buffer) hashgraph.channel;
-            const nonce = net.calcHash(buf);
+            const nonce = cast(Buffer) net.calcHash(buf);
             auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
 
             if (eva_event is null) {

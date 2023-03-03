@@ -15,9 +15,9 @@ alias check = Check!SecurityConsensusException;
 interface HashNet {
     uint hashSize() const pure nothrow;
 
-    final immutable(Buffer) calcHash(B)(scope const(B) data) const
+    final Fingerprint calcHash(B)(scope const(B) data) const
     if (isBufferType!B) {
-        return rawCalcHash(cast(TypedefType!B) data);
+        return Fingerprint(rawCalcHash(cast(TypedefType!B) data));
     }
 
     immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const;
@@ -32,9 +32,9 @@ interface HashNet {
         return binaryHash(cast(TypedefType!B) h1, cast(TypedefType!B) h2);
     }
 
-    immutable(Buffer) calcHash(const(Document) doc) const;
+    Fingerprint calcHash(const(Document) doc) const;
 
-    final immutable(Buffer) calcHash(T)(T value) const if (isHiBONType!T) {
+    final Fingerprint calcHash(T)(T value) const if (isHiBONType!T) {
         return calcHash(value.toDoc);
     }
 }
@@ -43,16 +43,13 @@ interface HashNet {
 interface SecureNet : HashNet {
     import std.typecons : Tuple;
 
-    alias Signed = Tuple!(Signature, "signature", Buffer, "message");
+    alias Signed = Tuple!(Signature, "signature", Fingerprint, "message");
     @nogc Pubkey pubkey() pure const nothrow;
-    bool verify(immutable(ubyte[]) message, const Signature signature, const Pubkey pubkey) const;
+    bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const;
     final bool verify(const Document doc, const Signature signature, const Pubkey pubkey) const {
-
-        
-
             .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
             .SECURITY_MESSAGE_HASH_KEY);
-        immutable message = rawCalcHash(doc.serialize);
+        immutable message = calcHash(doc);
         return verify(message, signature, pubkey);
     }
 
@@ -63,15 +60,12 @@ interface SecureNet : HashNet {
 
     // The private should be added implicite by the GossipNet
     // The message is a hash of the 'real' message
-    Signature sign(immutable(ubyte[]) message) const;
+    Signature sign(const Fingerprint message) const;
 
     final Signed sign(const Document doc) const {
-
-        
-
             .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
             .SECURITY_MESSAGE_HASH_KEY);
-        immutable fingerprint = rawCalcHash(doc.serialize);
+        const fingerprint = calcHash(doc);
         return Signed(sign(fingerprint), fingerprint);
     }
 
@@ -85,7 +79,8 @@ interface SecureNet : HashNet {
     void eraseKey() pure nothrow;
 
     immutable(ubyte[]) ECDHSecret(
-            scope const(ubyte[]) seckey, scope const(Pubkey) pubkey) const;
+            scope const(ubyte[]) seckey,
+scope const(Pubkey) pubkey) const;
 
     immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
 

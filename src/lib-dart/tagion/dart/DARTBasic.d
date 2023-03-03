@@ -23,7 +23,7 @@ const(DARTIndex) dartIndex(const(HashNet) net, const(Document) doc) {
         immutable value_data = first.data[first.dataPos .. first.dataPos + first.dataSize];
         return DARTIndex(net.rawCalcHash(value_data));
     }
-    return DARTIndex(net.calcHash(doc));
+    return DARTIndex(net.rawCalcHash(doc.serialize));
 }
 
 @safe

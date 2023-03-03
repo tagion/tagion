@@ -18,9 +18,9 @@ import tagion.script.SmartScript;
 import tagion.script.StandardRecords : Contract, SignedContract, PayContract, StandardBill;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.Types : Fingerprint;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBONJSON;
-import tagion.utils.Fingerprint : Fingerprint_;
 
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
@@ -44,7 +44,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
         Tid dart_tid = locate(dart_task_name);
         Tid recorder_tid = locate(recorder_task_name);
         Tid epoch_dump_tid = locate(epoch_dumper_task_name);
-        SmartScript[Buffer] smart_scripts;
+        SmartScript[Fingerprint] smart_scripts;
 
         bool stop;
         void controller(Control ctrl) {
@@ -54,35 +54,35 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             }
         }
 
-        Fingerprint_ requestBullseye() {
+        Fingerprint requestBullseye() {
             auto sender = .dartBullseye();
             if (dart_tid !is Tid.init) {
                 dart_tid.send(task_name, sender.toDoc.serialize);
 
                 const result = receiveOnly!Buffer;
                 const received = empty_hirpc.receive(Document(result));
-                return Fingerprint_(received.response.result[DARTFile.Params.bullseye].get!Buffer);
+                return Fingerprint(received.response.result[DARTFile.Params.bullseye].get!Buffer);
             }
             else {
                 log.error("Cannot locate DART service");
                 stop = true;
-                return Fingerprint_([]);
+                return Fingerprint.init;
             }
         }
 
-        Fingerprint_ modifyDART(RecordFactory.Recorder recorder) {
+        Fingerprint modifyDART(RecordFactory.Recorder recorder) {
             auto sender = empty_hirpc.dartModify(recorder);
             if (dart_tid !is Tid.init) {
                 dart_tid.send(task_name, sender.toDoc.serialize);
 
                 const result = receiveOnly!Buffer;
                 const received = empty_hirpc.receive(Document(result));
-                return Fingerprint_(received.response.result[DARTFile.Params.bullseye].get!Buffer);
+                return Fingerprint(received.response.result[DARTFile.Params.bullseye].get!Buffer);
             }
             else {
                 log.error("Cannot locate DART service");
                 stop = true;
-                return Fingerprint_([]);
+                return Fingerprint.init;
             }
         }
 
@@ -104,14 +104,15 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             }
         }
 
-        void dumpRecorderBlock(immutable(RecordFactory.Recorder) recorder, immutable(Fingerprint_) dart_bullseye) {
+        void dumpRecorderBlock(immutable(RecordFactory.Recorder) recorder, 
+            const Fingerprint dart_bullseye) {
             if (recorder_tid is Tid.init) {
                 recorder_tid = locate(recorder_task_name);
             }
             recorder_tid.send(recorder, dart_bullseye);
         }
 
-        Fingerprint_ last_bullseye = requestBullseye();
+        Fingerprint last_bullseye = requestBullseye();
         log("Start with bullseye: %X", last_bullseye);
         bool to_smart_script(ref const(SignedContract) signed_contract, ref uint index) nothrow {
             try {

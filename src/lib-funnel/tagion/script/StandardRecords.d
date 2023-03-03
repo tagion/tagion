@@ -3,7 +3,7 @@ module tagion.script.StandardRecords;
 import std.meta : AliasSeq;
 
 import tagion.basic.Types : Buffer;
-import tagion.crypto.Types :  Pubkey, Signature;
+import tagion.crypto.Types :  Pubkey, Signature, Fingerprint;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONType;
@@ -174,7 +174,7 @@ enum OwnerKey = "$Y";
 
     @recordType("top") struct LastEpochRecord {
         @label("#name") string name;
-        @label("$top") Buffer top;
+        @label("$top") Fingerprint top;
         mixin HiBONType!(q{
                 @disable this();
                 import tagion.crypto.SecureInterfaceNet : HashNet;
@@ -184,7 +184,7 @@ enum OwnerKey = "$Y";
                 }
             });
 
-        static Buffer dartHash(const(HashNet) net) {
+        static Fingerprint dartHash(const(HashNet) net) {
             EpochBlock b;
             auto record = LastEpochRecord(net, b);
             return net.calcHash(record);

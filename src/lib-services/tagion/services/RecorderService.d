@@ -6,13 +6,13 @@ import tagion.basic.Basic : TrustedConcurrency;
 import tagion.basic.Types : Control;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.SecureNet : StdHashNet;
+import tagion.crypto.Types : Fingerprint;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.logger.Logger : log;
 import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.recorderchain.RecorderChain;
 import tagion.services.Options : Options;
 import tagion.actor.TaskWrapper;
-import tagion.utils.Fingerprint : Fingerprint_;
 import tagion.utils.Miscellaneous : cutHex;
 
 mixin TrustedConcurrency;
@@ -21,7 +21,6 @@ mixin TrustedConcurrency;
  */
 
 @safe struct RecorderTask {
-    import tagion.utils.Fingerprint : Fingerprint_;
     mixin TaskBasic;
 
     /** Recorder chain stored for working with blocks */
@@ -34,13 +33,13 @@ mixin TrustedConcurrency;
      *      @param recorder - recorder for new block
      *      @param bullseye - bullseye of the database
      */
-    @TaskMethod void receiveRecorder(immutable(RecordFactory.Recorder) recorder, immutable(
-            Fingerprint_) bullseye) {
+    @TaskMethod void receiveRecorder(immutable(RecordFactory.Recorder) recorder, const 
+            Fingerprint bullseye) {
         auto last_block = recorder_chain.getLastBlock;
         auto block = new RecorderChainBlock(
                 recorder.toDoc,
-                last_block ? last_block.fingerprint : [],
-                bullseye.buffer,
+                last_block ? last_block.fingerprint : Fingerprint,
+                bullseye,
                 net);
 
         recorder_chain.append(block);
@@ -71,7 +70,7 @@ mixin TrustedConcurrency;
 unittest {
     import tagion.basic.Basic : tempfile;
     import tagion.services.Options : setDefaultOption;
-    import tagion.utils.Fingerprint : Fingerprint_;
+import tagion.crypto.Types : Fingerprint;
 
     const temp_folder = tempfile ~ "/";
 
@@ -97,7 +96,7 @@ unittest {
 
     auto factory = RecordFactory(new StdHashNet);
     immutable empty_recorder = cast(immutable) factory.recorder;
-    immutable empty_bullseye = Fingerprint_([]);
+    immutable empty_bullseye = Fingerprint.init;
 
     foreach (i; 0 .. blocks_count) {
         recorderService.receiveRecorder(empty_recorder, empty_bullseye);
