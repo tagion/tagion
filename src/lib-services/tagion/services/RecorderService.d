@@ -21,9 +21,8 @@ mixin TrustedConcurrency;
  */
 
 @safe struct RecorderTask {
-    
-    import tagion.crypto.Types : Fingerprint;
-mixin TaskBasic;
+    import tagion.utils.Fingerprint : Fingerprint_;
+    mixin TaskBasic;
 
     /** Recorder chain stored for working with blocks */
     RecorderChain recorder_chain;
