@@ -37,7 +37,7 @@ int _main(string[] args) {
 
 
     DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
-    dart_info.generateStates();
+    const sequence=dart_info.generateStates(5, 7);
 
     auto dart_pseudo_random_feature = automation!(dart_pseudo_random)();
 

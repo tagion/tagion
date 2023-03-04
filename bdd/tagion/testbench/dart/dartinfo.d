@@ -27,24 +27,19 @@ struct DartInfo {
 
     const enum FAKE = "$fake#";
 
-    Sequence[] states;
+    SequenceT[] states;
 
     auto generateStates(const uint from, const uint to) {
        auto rnd = RandomT(0x1234);
        return recurrence!(
             (a, n) =>
             a[n-1].progress(rnd.value(from,to))
-        )(Sequence!ulong(rnd.save, from));
+        )(SequenceT(rnd.save, from));
     }
 
 }
 
 alias RandomT = Random!ulong;
+alias SequenceT = Sequence!ulong;
 
-struct State {
-    RandomT rand;
-    ulong number_of_archives;
-    auto list() {
-        return rand.save.take(number_of_archives);
-    }
-}
+

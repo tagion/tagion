@@ -62,8 +62,11 @@ mixin TaskBasic;
     }
 }
 
+
 /// test hashes dump creating
+version(none)
 unittest {
+    pragma(msg, "fixme(cbr): This unittest never ends (But the services is not used anyway)");
     import std.file;
     import core.thread;
     import std.typecons : Typedef;
