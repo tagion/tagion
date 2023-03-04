@@ -22,10 +22,7 @@ mixin TrustedConcurrency;
  */
 
 struct EpochDumpTask {
-    import std.typecons : Typedef;
-import tagion.crypto.Types : Fingerprint;
-    
-mixin TaskBasic;
+    mixin TaskBasic;
 
     alias DumpEpochChainStorage = HashChainStorage!EpochChainBlock;
     alias DumpEpochChainFileStorage = HashChainFileStorage!EpochChainBlock;
