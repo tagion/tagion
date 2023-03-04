@@ -21,7 +21,9 @@ mixin TrustedConcurrency;
  */
 
 @safe struct RecorderTask {
-    mixin TaskBasic;
+    
+    import tagion.crypto.Types : Fingerprint;
+mixin TaskBasic;
 
     /** Recorder chain stored for working with blocks */
     RecorderChain recorder_chain;
@@ -38,7 +40,7 @@ mixin TrustedConcurrency;
         auto last_block = recorder_chain.getLastBlock;
         auto block = new RecorderChainBlock(
                 recorder.toDoc,
-                last_block ? last_block.fingerprint : Fingerprint,
+                last_block ? last_block.fingerprint : Fingerprint.init,
                 bullseye,
                 net);
 

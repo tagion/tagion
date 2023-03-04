@@ -422,13 +422,6 @@ unittest { // StdHashNet
 
     immutable doc_fingerprint = net.rawCalcHash(doc.serialize);
 
-    { // calcHash should not be used on a Document hashOf should be used instead
-        assertThrown!AssertError(net.calcHash(doc.serialize));
-
-        assertThrown!AssertError(net.binaryHash(doc.serialize, null));
-        assertThrown!AssertError(net.binaryHash(null, doc.serialize));
-    }
-
     {
         assert(net.binaryHash(null, null).length is 0);
         assert(net.binaryHash(doc_fingerprint, null) == doc_fingerprint);
@@ -441,10 +434,6 @@ unittest { // StdHashNet
         auto hibon = new HiBON;
         hibon[STUB] = stub_fingerprint;
         stub = Document(hibon);
-    }
-
-    { // calcHash should not be used on a Document hashOf should be used instead
-        assertThrown!AssertError(net.calcHash(stub.serialize));
     }
 
     assert(isStub(stub));

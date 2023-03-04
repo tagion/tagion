@@ -40,7 +40,7 @@ class DARTFakeNet : StdSecureNet {
             fake_h[0 .. ulong.sizeof] = h;
             return Fingerprint(fake_h.idup);
         }
-        return super.calcHash(h);
+        return Fingerprint(super.rawCalcHash(h));
     }
 
     override immutable(Buffer) binaryHash(

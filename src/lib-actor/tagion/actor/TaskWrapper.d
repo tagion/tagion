@@ -98,7 +98,7 @@ unittest {
     import std.traits : Parameters, ParameterIdentifierTuple, isFunction, isDelegate, isFunctionPointer, hasUDA;
     import std.meta : AliasSeq;
     import std.exception;
-
+import std.typecons : Typedef;
     alias Params = Parameters!Func;
     alias ParamNames = ParameterIdentifierTuple!Func;
 
@@ -178,6 +178,7 @@ unittest {
 }
 
 @safe mixin template TaskBasic() {
+    import std.typecons : Typedef;
     bool stop;
     // TODO Do we need handle also "abort"?
 

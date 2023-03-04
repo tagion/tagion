@@ -22,8 +22,10 @@ mixin TrustedConcurrency;
  */
 
 struct EpochDumpTask {
-    import tagion.crypto.Types : Fingerprint;
-    mixin TaskBasic;
+    import std.typecons : Typedef;
+import tagion.crypto.Types : Fingerprint;
+    
+mixin TaskBasic;
 
     alias DumpEpochChainStorage = HashChainStorage!EpochChainBlock;
     alias DumpEpochChainFileStorage = HashChainFileStorage!EpochChainBlock;
@@ -64,10 +66,12 @@ struct EpochDumpTask {
 unittest {
     import std.file;
     import core.thread;
+    import std.typecons : Typedef;
     import tagion.services.EpochDumpService : EpochDumpTask;
     import tagion.actor.TaskWrapper : Task;
     import tagion.services.Options : Options, getOptions, setOptions;
     import tagion.hibon.HiBON;
+    import tagion.crypto.Types : Fingerprint;
 
     void saveHashedDump(Document list, Buffer bullseye, ref const string task_name) {
         Tid epoch_dump_service = locate(task_name);
