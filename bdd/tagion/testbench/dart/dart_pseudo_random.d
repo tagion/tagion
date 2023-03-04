@@ -80,10 +80,10 @@ class AddPseudoRandomData {
     @When("I randomly add all the data stored in the table to the two darts.")
     Document darts() {
         
-        info.states.each!writeln;
-        // foreach(state; info.states) {
-        //     writefln("%s", state);
-        // }
+        // info.states.each!writeln;
+        foreach(state; info.states) {
+            writefln("%s", state);
+        }
         // auto recorder = db.recorder();
         // const doc = DARTFakeNet.fake_doc(info.table[0]);
         // recorder.add(doc);
