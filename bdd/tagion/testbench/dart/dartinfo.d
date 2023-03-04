@@ -5,6 +5,7 @@ import tagion.utils.Random;
 import std.range;
 import std.stdio;
 
+import std.algorithm.iteration : each;
 
 struct DartInfo {
     const string dartfilename;
@@ -26,25 +27,15 @@ struct DartInfo {
 
     const enum FAKE = "$fake#";
 
-    State[] states;
+    Sequence[] states;
 
-    void generateStates() {
-        states.length = 4;
-        auto rnd = RandomT(0x1234UL);
-
-        states[0].rand = rnd.save;
-        states[0].number_of_archives = rnd.value(1UL, 5UL);
-
-        void innerGenerate(State prev_states, const uint index = 0) {
-            if (index < states.length) {
-                states[index].rand = prev_states.rand.drop(states[index].number_of_archives);
-                states[index].number_of_archives = rnd.value(1UL, 5UL);
-                innerGenerate(states[index], index+1);  
-            }
-        }
-        innerGenerate(states[0]);
+    auto generateStates(const uint from, const uint to) {
+       auto rnd = RandomT(0x1234);
+       return recurrence!(
+            (a, n) =>
+            a[n-1].progress(rnd.value(from,to))
+        )(Sequence!ulong(rnd.save, from));
     }
-
 
 }
 
@@ -57,4 +48,3 @@ struct State {
         return rand.save.take(number_of_archives);
     }
 }
-
