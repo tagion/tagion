@@ -128,7 +128,7 @@ struct EventBody {
         return (father is null) ? true : (mother !is null);
     }
 
-    mixin HiBONType!(
+    mixin HiBONRecord!(
             q{
             this(
                 Document payload,
@@ -196,7 +196,7 @@ struct EventPackage {
     @label("$pkey") Pubkey pubkey;
     @label("$body") EventBody event_body;
 
-    mixin HiBONType!(
+    mixin HiBONRecord!(
             q{
             import tagion.basic.ConsensusExceptions: ConsensusCheck=Check, EventConsensusException, ConsensusFailCode;
             protected alias consensus_check=ConsensusCheck!EventConsensusException;
@@ -264,7 +264,7 @@ struct Wavefront {
 
     private struct LoadTides {
         @label(tidesName) Tides tides;
-        mixin HiBONType!(
+        mixin HiBONRecord!(
                 q{
                 this(const(Tides) _tides) const {
                     tides=_tides;
@@ -327,7 +327,7 @@ struct Wavefront {
 struct EvaPayload {
     @label("$channel") Pubkey channel;
     @label("$nonce") Buffer nonce;
-    mixin HiBONType!(
+    mixin HiBONRecord!(
             q{
             this(const Pubkey channel, const Buffer nonce) pure {
                 this.channel=channel;
@@ -337,6 +337,6 @@ struct EvaPayload {
     );
 }
 
-static assert(isHiBONType!Wavefront);
-static assert(isHiBONType!(EventPackage));
-static assert(isHiBONType!(immutable(EventPackage)));
+static assert(isHiBONRecord!Wavefront);
+static assert(isHiBONRecord!(EventPackage));
+static assert(isHiBONRecord!(immutable(EventPackage)));

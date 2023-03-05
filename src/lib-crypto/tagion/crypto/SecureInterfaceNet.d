@@ -4,7 +4,7 @@ import std.typecons : TypedefType;
 import tagion.basic.Types : Buffer, isBufferType;
 import tagion.crypto.Types : Pubkey, Signature, Fingerprint;
 
-import tagion.hibon.HiBONRecord : isHiBONType, HiBONPrefix;
+import tagion.hibon.HiBONRecord : isHiBONRecord, HiBONPrefix;
 import tagion.hibon.Document : Document;
 
 import tagion.basic.ConsensusExceptions : Check, SecurityConsensusException, ConsensusFailCode;
@@ -34,7 +34,7 @@ interface HashNet {
 
     Fingerprint calcHash(const(Document) doc) const;
 
-    final Fingerprint calcHash(T)(T value) const if (isHiBONType!T) {
+    final Fingerprint calcHash(T)(T value) const if (isHiBONRecord!T) {
         return calcHash(value.toDoc);
     }
 }
@@ -54,7 +54,7 @@ interface SecureNet : HashNet {
     }
 
     final bool verify(T)(T pack, const Signature signature, const Pubkey pubkey) const
-    if (isHiBONType!T) {
+    if (isHiBONRecord!T) {
         return verify(pack.toDoc, signature, pubkey);
     }
 
@@ -69,7 +69,7 @@ interface SecureNet : HashNet {
         return Signed(sign(fingerprint), fingerprint);
     }
 
-    final Signed sign(T)(T pack) const if (isHiBONType!T) {
+    final Signed sign(T)(T pack) const if (isHiBONRecord!T) {
         return sign(pack.toDoc);
     }
 

@@ -29,7 +29,7 @@ enum LogFiltersAction {
     /** Name of symbol to listen. Optional field */
     @label("symbol") string symbol_name;
 
-    mixin HiBONType!(q{
+    mixin HiBONRecord!(q{
         /** Ctor for text logs
           *     @param task_name - task name
           *     @param level - log level
@@ -122,13 +122,13 @@ enum LogFiltersAction {
 
 /**
  * \struct TextLog
- * Struct for wrapping text log into \link HiBONType
+ * Struct for wrapping text log into \link HiBONRecord
  */
 @safe struct TextLog {
     /** Text log message */
     @label("msg") string message;
 
-    mixin HiBONType!(q{
+    mixin HiBONRecord!(q{
         /** Main ctor
          *     @param msg - text message
          */

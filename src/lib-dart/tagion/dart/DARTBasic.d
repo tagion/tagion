@@ -5,7 +5,7 @@ import std.typecons : Typedef;
 import tagion.basic.Types : Buffer, BufferType;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONRecord : isHiBONType;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
 
 /**
@@ -27,6 +27,6 @@ const(DARTIndex) dartIndex(const(HashNet) net, const(Document) doc) {
 }
 
 @safe
-const(DARTIndex) dartIndex(T)(const(HashNet) net, T value) if (isHiBONType!T) {
+const(DARTIndex) dartIndex(T)(const(HashNet) net, T value) if (isHiBONRecord!T) {
     return net.dartIndex(value.toDoc);
 }

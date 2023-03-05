@@ -8,7 +8,7 @@ import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Fingerprint;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
-import tagion.hibon.HiBONRecord : isHiBONType;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.utils.Miscellaneous : decode;
 
 /** @brief File contains class HashChain
@@ -18,7 +18,7 @@ import tagion.utils.Miscellaneous : decode;
  * \class HashChain
  * Class stores dynamic info and handles local files of hash chain
  */
-@safe class HashChain(Block : HashChainBlock) if (isHiBONType!Block) {
+@safe class HashChain(Block : HashChainBlock) if (isHiBONRecord!Block) {
     /** Handler of chain blocks storage */
     protected HashChainStorage!Block _storage;
 
@@ -163,7 +163,7 @@ import tagion.utils.Miscellaneous : decode;
 }
 
 version (unittest) {
-    import tagion.hibon.HiBONRecord : HiBONType, recordType, label;
+    import tagion.hibon.HiBONRecord : HiBONRecord, recordType, label;
     import tagion.crypto.SecureInterfaceNet : HashNet;
 
     @safe class DummyBlock : HashChainBlock {
@@ -171,7 +171,7 @@ version (unittest) {
         @label("prev") Fingerprint previous;
         @label("dummy") int dummy;
 
-        mixin HiBONType!(
+        mixin HiBONRecord!(
                 q{
             private this(
                 Fingerprint previous,

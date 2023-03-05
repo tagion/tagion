@@ -34,7 +34,7 @@ struct Cipher {
         @label("$n") Buffer nonce;
         @label("$a") Buffer authTag;
         @label("$k") Pubkey cipherPubkey;
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     static const(CipherDocument) encrypt(const(SecureNet) net, const(Pubkey) pubkey, const(Document) msg) {

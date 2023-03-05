@@ -20,7 +20,7 @@ import tagion.basic.Types : Buffer;
 import tagion.Keywords;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord : HiBONType, recordType, GetLabel, label;
+import tagion.hibon.HiBONRecord : HiBONRecord, recordType, GetLabel, label;
 import tagion.hibon.HiBONJSON;
 
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
@@ -183,7 +183,7 @@ class DART : DARTFile {
         }
 
         @label("") protected bool flag;
-        mixin HiBONType!(q{
+        mixin HiBONRecord!(q{
                 this(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
                     _from_sector = from_sector;
                     _to_sector = to_sector;
@@ -345,7 +345,7 @@ class DART : DARTFile {
             return .sector(rims);
         }
 
-        mixin HiBONType!(
+        mixin HiBONRecord!(
                 q{
                 this(Buffer r) {
                     rims=r;
@@ -687,7 +687,7 @@ received = the HiRPC received package
             this.index = index;
         }
 
-        mixin HiBONType!"{}";
+        mixin HiBONRecord!"{}";
     }
 
     /**

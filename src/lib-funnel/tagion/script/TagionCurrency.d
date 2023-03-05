@@ -8,7 +8,7 @@ import std.range : only;
 import std.array : join;
 import std.conv : to;
 
-import tagion.hibon.HiBONRecord : HiBONType, label, recordType;
+import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType;
 
 @safe
 TagionCurrency TGN(T)(T x) pure if (isNumeric!T) {
@@ -25,7 +25,7 @@ struct TagionCurrency {
         @label("$v") long _axions;
     }
 
-    mixin HiBONType!(
+    mixin HiBONRecord!(
             q{
             this(T)(T tagions) pure if (isFloatingPoint!T) {
                 scope(exit) {

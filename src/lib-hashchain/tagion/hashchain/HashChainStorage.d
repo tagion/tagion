@@ -3,7 +3,7 @@ module tagion.hashchain.HashChainStorage;
 
 import tagion.crypto.Types : Fingerprint;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
-import tagion.hibon.HiBONRecord : isHiBONType;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
 
 /** @brief File contains interface for HashChainStorage
  */
@@ -12,7 +12,7 @@ import tagion.hibon.HiBONRecord : isHiBONType;
  * \interface HashChainStorage
  * Interface represents entity that provides access to storage of hash chain blocks
  */
-@safe interface HashChainStorage(Block : HashChainBlock) if (isHiBONType!Block) {
+@safe interface HashChainStorage(Block : HashChainBlock) if (isHiBONRecord!Block) {
     /** Writes given block to storage 
      *      @param block - block to write
      */

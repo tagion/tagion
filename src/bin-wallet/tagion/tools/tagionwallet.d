@@ -62,7 +62,7 @@ Socket socket(AddressFamily af,
 struct Invoices {
     /** internal array */
     Invoice[] list;
-    mixin HiBONType;
+    mixin HiBONRecord;
 }
 
 /**

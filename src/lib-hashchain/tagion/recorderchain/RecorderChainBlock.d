@@ -8,7 +8,7 @@ import tagion.crypto.Types : Fingerprint;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.dart.Recorder;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
-import tagion.hibon.HiBONRecord : label, GetLabel, HiBONType, recordType;
+import tagion.hibon.HiBONRecord : label, GetLabel, HiBONRecord, recordType;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.Document;
 
@@ -38,7 +38,7 @@ import tagion.hibon.Document;
      *      @param bullseye - bullseye of database
      *      @param net - hash net
      */
-    mixin HiBONType!(
+    mixin HiBONRecord!(
             q{
             private this(
                 Document recorder_doc,

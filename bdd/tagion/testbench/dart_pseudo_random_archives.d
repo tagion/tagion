@@ -2,7 +2,7 @@ module tagion.testbench.dart_pseudo_random_archives;
 
 import tagion.behaviour.Behaviour;
 import tagion.testbench.functional;
-import tagion.hibon.HiBONType : fwrite;
+import tagion.hibon.HiBONRecord : fwrite;
 import tagion.tools.Basic;
 import std.traits : moduleName;
 

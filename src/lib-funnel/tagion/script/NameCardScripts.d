@@ -23,7 +23,7 @@ Nullable!T readStandardRecord(T)(
         HiRPC hirpc,
         DART db,
         Buffer hash,
-) if (isHiBONType!T) {
+) if (isHiBONRecord!T) {
 
     const(Document) readDocFromDB(Buffer[] fingerprints, HiRPC hirpc, DART db) {
         const sender = DART.dartRead(fingerprints, hirpc);
@@ -31,7 +31,7 @@ Nullable!T readStandardRecord(T)(
         return db(receiver, false).message["result"].get!Document;
     }
 
-    Nullable!T fromArchive(T)(const(Archive) archive) if (isHiBONType!T) {
+    Nullable!T fromArchive(T)(const(Archive) archive) if (isHiBONRecord!T) {
         if (archive is Archive.init) {
             return Nullable!T.init;
         }

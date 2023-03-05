@@ -154,7 +154,7 @@ enum isDataBlock(T) = is(T : const(DataBlock));
 
 /++
  Returns:
- true if the type is a valid HiBONType excluding narive types
+ true if the type is a valid HiBONRecord excluding narive types
 +/
 @safe bool isHiBONBaseType(Type type) pure nothrow {
     bool[] make_flags() {
@@ -175,7 +175,7 @@ enum isDataBlock(T) = is(T : const(DataBlock));
 
 /++
  Returns:
- true if the type is a valid HiBONType excluding narive types
+ true if the type is a valid HiBONRecord excluding narive types
 +/
 @safe bool isValidType(Type type) pure nothrow {
     bool[] make_flags() {

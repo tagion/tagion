@@ -72,7 +72,7 @@ void echoSSLSocketServer(string address, const ushort port, string cert) {
 }
 
 import tagion.hibon.Document;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.network.FiberServer;
 import tagion.network.SSLServiceOptions;
 import tagion.network.ServerAPI;
@@ -86,7 +86,7 @@ import tagion.GlobalSignals : abort;
 struct TestPackage {
     string label;
     int count;
-    mixin HiBONType!();
+    mixin HiBONRecord!();
 }
 
 void yield() @trusted {

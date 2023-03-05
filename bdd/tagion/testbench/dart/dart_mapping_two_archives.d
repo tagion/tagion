@@ -30,7 +30,7 @@ import std.range;
 
 import tagion.testbench.dart.dart_helper_functions : getRim, getRead, goToSplit, getFingerprints;
 
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 
 enum feature = Feature(
             "Dart mapping of two archives",

@@ -262,7 +262,7 @@ struct HiRPC {
                 signed = verifySignature(net, message, signature, pubkey);
             }
 
-            //     this(T)(const SecureNet net, T pack) if (isHiBONType!T) {
+            //     this(T)(const SecureNet net, T pack) if (isHiBONRecord!T) {
             //         this(net, pack.toDoc);
             //     }
 

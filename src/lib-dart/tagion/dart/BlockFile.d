@@ -1161,7 +1161,7 @@ class BlockFile {
         @recordType("ACHAIN") struct Chain {
             Buffer data;
             uint begin_index;
-            mixin HiBONType;
+            mixin HiBONRecord;
         }
 
         protected Chain chain;

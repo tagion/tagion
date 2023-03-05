@@ -80,7 +80,7 @@ synchronized class AddressBook {
          * node address - value, public key - key
          */
         NodeAddresses addresses;
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     /** used for lock, unlock file */
@@ -340,7 +340,7 @@ struct NodeAddress {
     /** DART sector */
     DART.SectorRange sector;
 
-    mixin HiBONType!(
+    mixin HiBONRecord!(
             q{
             this(
             string address,

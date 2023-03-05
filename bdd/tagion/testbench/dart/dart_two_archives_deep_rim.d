@@ -27,7 +27,7 @@ import tagion.Keywords;
 import tagion.basic.Types : Buffer;
 import std.range;
 
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 
 import tagion.testbench.dart.dart_helper_functions : getRim, getRead, goToSplit, getFingerprints;
 

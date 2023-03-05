@@ -37,7 +37,7 @@ struct Statistic(T, Flag!"histogram" flag = No.histogram) {
     }
 
     alias Result = Tuple!(double, "sigma", double, "mean", uint, "N", T, "min", T, "max");
-    mixin HiBONType;
+    mixin HiBONRecord;
 
     const pure nothrow @nogc {
         const(Result) result() {

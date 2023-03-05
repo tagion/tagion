@@ -194,7 +194,7 @@ Returns: the current mask
 
     /// This function should be rewritte it' for the event logging
     @trusted
-    void report(T)(string symbol_name, T h) const nothrow if (isHiBONType!T) {
+    void report(T)(string symbol_name, T h) const nothrow if (isHiBONRecord!T) {
         import std.exception : assumeWontThrow;
 
         if (isLoggerServiceRegistered) {
@@ -256,7 +256,7 @@ logs the fmt text in INFO level
             string symbol_name,
             T h,
             string file = __FILE__,
-            size_t line = __LINE__) nothrow if (isHiBONType!T) {
+            size_t line = __LINE__) nothrow if (isHiBONRecord!T) {
         static bool registered;
         if (!registered) {
             // Register the task name and the symbol_name
@@ -329,7 +329,7 @@ unittest {
 
     static struct S {
         int x;
-        mixin HiBONType!(
+        mixin HiBONRecord!(
                 q{this(int x) {this.x = x;}}
         );
     }
