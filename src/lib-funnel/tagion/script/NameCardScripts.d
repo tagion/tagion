@@ -10,7 +10,7 @@ import tagion.communication.HiRPC;
 import tagion.gossip.AddressBook;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
 
 import tagion.dart.Recorder;

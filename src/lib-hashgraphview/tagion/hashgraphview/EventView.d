@@ -2,7 +2,7 @@
 module tagion.hashgraphview.EventView;
 
 import tagion.hashgraph.Event;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 
 /// EventView is used to store event has a
 struct EventView {

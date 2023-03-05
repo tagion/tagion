@@ -1,4 +1,4 @@
-module tagion.hibon.HiBONType;
+module tagion.hibon.HiBONRecord;
 
 import std.stdio;
 import tagion.hibon.HiBONJSON;
@@ -163,7 +163,7 @@ enum VOID = "*";
 
 mixin template HiBONRecordType() {
     import tagion.hibon.Document : Document;
-    import tagion.hibon.HiBONType : TYPENAME, recordType;
+    import tagion.hibon.HiBONRecord : TYPENAME, recordType;
     import std.traits : getUDAs, hasUDA, isIntegral, isUnsigned;
 
     alias ThisType = typeof(this);
@@ -173,7 +173,7 @@ mixin template HiBONRecordType() {
         static assert(record_types.length is 1, "Only one recordType UDA allowed");
         static if (record_types[0].name.length) {
             enum type_name = record_types[0].name;
-            import tagion.hibon.HiBONType : isRecordT = isRecord;
+            import tagion.hibon.HiBONRecord : isRecordT = isRecord;
 
             alias isRecord = isRecordT!ThisType;
             version (none) static bool isRecord(const Document doc) nothrow {
@@ -239,9 +239,9 @@ mixin template HiBONType(string CTOR = "") {
     import tagion.basic.Basic : basename, CastTo;
     import tagion.basic.TagionExceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
-    import tagion.hibon.HiBONType : isHiBON, isHiBONType, HiBONRecordType,
+    import tagion.hibon.HiBONRecord : isHiBON, isHiBONType, HiBONRecordType,
         label, GetLabel, filter, fixed, inspect, VOID;
-    import HiBONType = tagion.hibon.HiBONType; // : TYPENAME;
+    import HiBONType = tagion.hibon.HiBONRecord; // : TYPENAME;
 
     protected alias check = Check!(HiBONRecordException);
 

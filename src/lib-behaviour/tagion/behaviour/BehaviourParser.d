@@ -15,7 +15,7 @@ import std.meta;
 import std.uni : toLower;
 import std.conv : to;
 
-import tagion.hibon.HiBONType : recordType, GetLabel;
+import tagion.hibon.HiBONRecord : recordType, GetLabel;
 import tagion.behaviour.BehaviourException;
 import tagion.behaviour.BehaviourFeature : ActionProperties;
 
@@ -269,7 +269,7 @@ unittest { /// Convert ProtoDBBTestComments to Feature
     immutable hibon_filename = markdown_filename
         .setExtension(FileExtension.hibon);
 
-    import tagion.hibon.HiBONType : fwrite, fread;
+    import tagion.hibon.HiBONRecord : fwrite, fread;
 
     hibon_filename.fwrite(feature);
 

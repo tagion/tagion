@@ -25,7 +25,7 @@ import tagion.basic.Message : message;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException : check, HiBONException;
-import tagion.hibon.HiBONType : isHiBONType, isHiBONTypeArray;
+import tagion.hibon.HiBONRecord : isHiBONType, isHiBONTypeArray;
 import tagion.basic.Types : isTypedef;
 import LEB128 = tagion.utils.LEB128;
 
@@ -83,7 +83,7 @@ static assert(uint.sizeof == 4);
     }
 
     bool hasHashKey() pure const nothrow {
-        import tagion.hibon.HiBONType : HiBONPrefix;
+        import tagion.hibon.HiBONRecord : HiBONPrefix;
 
         return !empty &&
             keys.front[0] is HiBONPrefix.HASH;

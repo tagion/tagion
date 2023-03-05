@@ -8,7 +8,7 @@ import std.range : only;
 import std.array : join;
 import std.conv : to;
 
-import tagion.hibon.HiBONType : HiBONType, label, recordType;
+import tagion.hibon.HiBONRecord : HiBONType, label, recordType;
 
 @safe
 TagionCurrency TGN(T)(T x) pure if (isNumeric!T) {

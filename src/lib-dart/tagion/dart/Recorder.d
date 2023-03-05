@@ -19,7 +19,7 @@ import std.range : empty;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONType : label, STUB, isHiBONType, GetLabel, isStub, recordType;
+import tagion.hibon.HiBONRecord : label, STUB, isHiBONType, GetLabel, isStub, recordType;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Message;
 
@@ -46,7 +46,7 @@ version (none) @safe
 Buffer dartIndex(const(HashNet) net, const(Document) doc) {
     return net.dartIndex(doc);
     version (none) {
-        import tagion.hibon.HiBONType : HiBONPrefix, STUB;
+        import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
 
         if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
             //if (doc.hasHashKey) {
@@ -151,7 +151,7 @@ class RecordFactory {
         import tagion.hibon.HiBONJSON : JSONString;
 
         mixin JSONString;
-        import tagion.hibon.HiBONType : HiBONRecordType;
+        import tagion.hibon.HiBONRecord : HiBONRecordType;
 
         mixin HiBONRecordType;
         /**
@@ -726,7 +726,7 @@ unittest { // Archive
 }
 
 unittest { /// RecordFactory.Recorder.insert range
-    import tagion.hibon.HiBONType;
+    import tagion.hibon.HiBONRecord;
     import tagion.crypto.SecureNet;
     import std.range : iota, chain;
     import std.algorithm.sorting : sort;

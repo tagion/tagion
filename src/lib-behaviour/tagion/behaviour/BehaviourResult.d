@@ -3,7 +3,7 @@ The standard result types from a BDD
 */
 module tagion.behaviour.BehaviourResult;
 
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 
 @safe

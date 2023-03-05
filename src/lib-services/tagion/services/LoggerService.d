@@ -17,7 +17,7 @@ import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions;
 import tagion.GlobalSignals : abort;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.services.LogSubscriptionService : logSubscriptionServiceTask;
 import tagion.services.Options : Options, setOptions, options;
 import tagion.logger.Logger;

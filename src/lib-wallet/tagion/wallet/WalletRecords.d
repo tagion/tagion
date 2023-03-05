@@ -1,6 +1,6 @@
 module tagion.wallet.WalletRecords;
 
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.wallet.KeyRecover : KeyRecover;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types :  Pubkey;

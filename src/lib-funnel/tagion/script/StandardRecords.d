@@ -6,7 +6,7 @@ import tagion.basic.Types : Buffer;
 import tagion.crypto.Types :  Pubkey, Signature, Fingerprint;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONException;
 import std.range : empty;
 import tagion.script.TagionCurrency;
@@ -73,7 +73,7 @@ enum OwnerKey = "$Y";
                 @disable this();
                 import tagion.crypto.SecureInterfaceNet : HashNet;
                 import tagion.script.ScriptException : check;
-                import tagion.hibon.HiBONType : isHiBONType, hasHashKey;
+                import tagion.hibon.HiBONRecord : isHiBONType, hasHashKey;
                 this(const(HashNet) net, const(Document) doc) {
                     check(doc.hasHashKey, "Document should have a hash key");
                     lock = net.rawCalcHash(doc.serialize);

@@ -3,7 +3,7 @@ module tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Event;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONType : isHiBONType;
+import tagion.hibon.HiBONRecord : isHiBONType;
 import tagion.hibon.Document : Document;
 
 //import tagion.utils.Queue;

@@ -11,7 +11,7 @@ import std.typecons;
 import tagion.basic.traits : hasOneMemberUDA;
 import tagion.basic.Basic : isOneOf, staticSearchIndexOf;
 
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 
 /* 

@@ -14,7 +14,7 @@ import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.utils.BitMask;
 import tagion.hibon.HiBON : HiBON;
 import tagion.communication.HiRPC : HiRPC;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.utils.StdTime;
 

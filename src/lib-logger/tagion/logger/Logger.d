@@ -8,7 +8,7 @@ import std.format;
 
 import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document : Document;
 import tagion.logger.LogRecords;
@@ -325,7 +325,7 @@ mixin template Log(alias name) {
 static Logger log;
 
 unittest {
-    import tagion.hibon.HiBONType;
+    import tagion.hibon.HiBONRecord;
 
     static struct S {
         int x;

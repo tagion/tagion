@@ -2,7 +2,7 @@
 
 module tagion.logger.LogRecords;
 
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.logger.Logger : LogLevel;
 
 /** @brief Definitions of auxiliary structs and types for working with logs

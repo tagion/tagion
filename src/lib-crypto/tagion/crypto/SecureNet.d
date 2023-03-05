@@ -8,7 +8,7 @@ import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Signature, Fingerprint;
 import tagion.hibon.Document : Document;
 import tagion.basic.ConsensusExceptions;
-import tagion.hibon.HiBONType : STUB;
+import tagion.hibon.HiBONRecord : STUB;
 
 void scramble(T, B = T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof) {
     import std.random;
@@ -403,7 +403,7 @@ class StdSecureNet : StdHashNet, SecureNet {
 
 unittest { // StdHashNet
     //import tagion.utils.Miscellaneous : toHex=toHexString;
-    import tagion.hibon.HiBONType : isStub, hasHashKey;
+    import tagion.hibon.HiBONRecord : isStub, hasHashKey;
     import std.string : representation;
     import std.exception : assertThrown;
     import core.exception : AssertError;

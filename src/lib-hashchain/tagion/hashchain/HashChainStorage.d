@@ -3,7 +3,7 @@ module tagion.hashchain.HashChainStorage;
 
 import tagion.crypto.Types : Fingerprint;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
-import tagion.hibon.HiBONType : isHiBONType;
+import tagion.hibon.HiBONRecord : isHiBONType;
 
 /** @brief File contains interface for HashChainStorage
  */

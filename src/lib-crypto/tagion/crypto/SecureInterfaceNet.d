@@ -4,7 +4,7 @@ import std.typecons : TypedefType;
 import tagion.basic.Types : Buffer, isBufferType;
 import tagion.crypto.Types : Pubkey, Signature, Fingerprint;
 
-import tagion.hibon.HiBONType : isHiBONType, HiBONPrefix;
+import tagion.hibon.HiBONRecord : isHiBONType, HiBONPrefix;
 import tagion.hibon.Document : Document;
 
 import tagion.basic.ConsensusExceptions : Check, SecurityConsensusException, ConsensusFailCode;

@@ -4,7 +4,7 @@ module tagion.epochain.EpochChainBlock;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONType : label, HiBONType, recordType;
+import tagion.hibon.HiBONRecord : label, HiBONType, recordType;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.Types : Fingerprint;

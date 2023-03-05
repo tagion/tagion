@@ -3,7 +3,7 @@ module tagion.hashgraphview.EventMonitorCallbacks;
 
 import tagion.crypto.Types : Pubkey;
 import tagion.hashgraph.Event;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document : Document;
 
 

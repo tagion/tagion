@@ -20,7 +20,7 @@ import tagion.basic.Types : Buffer;
 import tagion.Keywords;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONType : HiBONType, recordType, GetLabel, label;
+import tagion.hibon.HiBONRecord : HiBONType, recordType, GetLabel, label;
 import tagion.hibon.HiBONJSON;
 
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;

@@ -8,7 +8,7 @@ import tagion.crypto.Types : Fingerprint;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.dart.Recorder;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
-import tagion.hibon.HiBONType : label, GetLabel, HiBONType, recordType;
+import tagion.hibon.HiBONRecord : label, GetLabel, HiBONType, recordType;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.Document;
 

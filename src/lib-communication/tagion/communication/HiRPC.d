@@ -56,7 +56,7 @@ enum Callers(T) = _Callers!T();
 /// HiRPC handler
 @safe
 struct HiRPC {
-    import tagion.hibon.HiBONType;
+    import tagion.hibon.HiBONRecord;
 
     /// HiRPC call method 
     struct Method {
@@ -538,7 +538,7 @@ struct HiRPC {
 
 ///
 unittest {
-    import tagion.hibon.HiBONType;
+    import tagion.hibon.HiBONRecord;
     import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
     import tagion.crypto.secp256k1.NativeSecp256k1;
 

@@ -16,7 +16,7 @@ import tagion.script.TagionCurrency;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.dart.DARTBasic;
 
-import tagion.hibon.HiBONType : GetLabel;
+import tagion.hibon.HiBONRecord : GetLabel;
 
 import tagion.logger.Logger;
 import tagion.hibon.Document;

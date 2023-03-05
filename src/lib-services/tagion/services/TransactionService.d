@@ -101,7 +101,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 @trusted const(Document) receivessl() nothrow {
                     try {
                         import tagion.hibon.Document;
-                        import tagion.hibon.HiBONType;
+                        import tagion.hibon.HiBONRecord;
 
                         immutable buffer = ssl_relay.receive;
                         log("buffer receiver %d", buffer.length);

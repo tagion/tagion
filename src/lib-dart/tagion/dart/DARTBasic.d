@@ -5,8 +5,8 @@ import std.typecons : Typedef;
 import tagion.basic.Types : Buffer, BufferType;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONType : isHiBONType;
-import tagion.hibon.HiBONType : HiBONPrefix, STUB;
+import tagion.hibon.HiBONRecord : isHiBONType;
+import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
 
 /**
 * This is the raw-hash value of a message and is used when message is signed.

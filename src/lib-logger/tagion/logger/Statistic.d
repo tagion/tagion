@@ -4,7 +4,7 @@ import std.typecons : Tuple, Flag, Yes, No;
 import std.meta : AliasSeq;
 import std.format;
 
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 
 @safe
 struct Statistic(T, Flag!"histogram" flag = No.histogram) {

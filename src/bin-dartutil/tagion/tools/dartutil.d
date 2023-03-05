@@ -31,7 +31,7 @@ import tagion.dart.DARTFakeNet : DARTFakeNet;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBON;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 
 import tagion.utils.Miscellaneous;
 import tagion.Keywords;

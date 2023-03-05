@@ -28,7 +28,7 @@ import tagion.wallet.SecureWallet;
 
 //import tagion.dart.DARTFile;
 import tagion.dart.Recorder;
-import tagion.hibon.HiBONType : fread, fwrite;
+import tagion.hibon.HiBONRecord : fread, fwrite;
 import tagion.dart.DARTBasic;
 
 //import tagion.revision;

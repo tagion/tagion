@@ -18,7 +18,7 @@ import tagion.logger.LogRecords;
 import tagion.services.Options : Options;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONType : GetLabel;
+import tagion.hibon.HiBONRecord : GetLabel;
 import tagion.network.FiberServer : FiberServer, FiberRelay;
 import tagion.network.ServerAPI : ServerAPI;
 import tagion.network.SSLSocket : SSLSocket;

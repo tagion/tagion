@@ -8,7 +8,7 @@ import tagion.basic.Message;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 
 import std.exception : assumeUnique;
 import std.string : representation;
