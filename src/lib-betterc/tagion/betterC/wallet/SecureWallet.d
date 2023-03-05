@@ -134,7 +134,6 @@ struct SecureWallet(Net) {
     // }
 
     // bool isLoggedin() const {
-    //     // pragma(msg, "fixme(cbr): Yam the net");
     //     // return net !is null;
     //     return true;
     // }
@@ -230,7 +229,6 @@ struct SecureWallet(Net) {
 
         // if (topay > 0) {
         // const size_in_bytes = 500;
-        // pragma(msg, "fixme(cbr): Storage fee needs to be estimated");
         // const fees = globals.fees(topay, size_in_bytes);
         //     const amount = topay + fees;
         //     StandardBill[] contract_bills;
