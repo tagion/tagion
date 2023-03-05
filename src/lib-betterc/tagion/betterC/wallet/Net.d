@@ -51,15 +51,8 @@ void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) if (T.size
     return cast(immutable) rawCalcHash(data);
 }
 
-@trusted immutable(BinBuffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) // in {
-//     assert(h1.length is 0 || h1.length is HASH_SIZE,
-//             format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
-//     assert(h2.length is 0 || h2.length is HASH_SIZE,
-//             format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, HASH_SIZE));
-// }
-do {
+@trusted immutable(BinBuffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) {
     BinBuffer res;
-    pragma(msg, "dlang: Pre and post condition does not work here");
     if (h1.length !is 0 && h2.length !is 0) {
         ubyte[] concatenat;
         concatenat.create(h1.length + h2.length);

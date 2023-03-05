@@ -78,7 +78,6 @@ version (WOLFSSL) {
     alias SSL_Init = wolfSSL_Init;
     alias SSL_Cleanup = wolfSSL_Cleanup;
     enum SSLErrorCodes_code = generator_SSLErrorCodes;
-    //    pragma(msg, SSLErrorCodes_code);
     mixin(SSLErrorCodes_code);
 
     void ERR_error_string_n(int err, char* buf, size_t size) {

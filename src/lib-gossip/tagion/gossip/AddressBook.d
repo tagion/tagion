@@ -71,7 +71,6 @@ synchronized class AddressBook {
     alias NodeAddresses = NodeAddress[Pubkey];
     alias NodePair = typeof((() @trusted => (cast(NodeAddresses) addresses).byKeyValue.front)());
 
-    pragma(msg, "NodePair ", NodePair);
     /** \struct AddressDirectory
      * Storage for node addresses
      */
