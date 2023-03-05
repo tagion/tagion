@@ -1,5 +1,5 @@
-/// \file behaviour.d
-module tagion.tools.behaviour;
+/// Tool to generated behaviour driven code from markdown description 
+module tagion.tools.collider;
 
 /**
  * @brief tool generate d files from bdd md files and vice versa
