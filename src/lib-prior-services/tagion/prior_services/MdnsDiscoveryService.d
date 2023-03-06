@@ -1,4 +1,4 @@
-module tagion.services.MdnsDiscoveryService;
+module tagion.prior_services.MdnsDiscoveryService;
 
 import p2plib = p2p.node;
 import p2p.callback;
@@ -6,14 +6,14 @@ import p2p.callback;
 import core.time;
 import std.concurrency;
 
-import tagion.services.Options;
+import tagion.prior_services.Options;
 
 import tagion.logger.Logger;
 import tagion.basic.Types : Buffer, Control;
 import tagion.crypto.Types :   Pubkey;
 import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.basic.TagionExceptions : fatal;
-import tagion.services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
+import tagion.prior_services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
 
 void mdnsDiscoveryService(
         Pubkey pubkey,

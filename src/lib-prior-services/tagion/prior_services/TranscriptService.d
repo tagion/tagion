@@ -1,12 +1,12 @@
 /// Services handles the Smart-contract execution
-module tagion.services.TranscriptService;
+module tagion.prior_services.TranscriptService;
 
 import std.format;
 import std.concurrency;
 import std.array : join;
 import std.exception : assumeUnique;
 
-import tagion.services.Options;
+import tagion.prior_services.Options;
 import tagion.basic.Types : Control, Buffer;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;

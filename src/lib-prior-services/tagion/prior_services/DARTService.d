@@ -1,5 +1,5 @@
 /// Handels the DART command (readDART, rimDART and modifyDART)
-module tagion.services.DARTService;
+module tagion.prior_services.DARTService;
 
 import core.thread;
 import std.concurrency;
@@ -28,19 +28,19 @@ import tagion.basic.Basic;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
-import tagion.services.DARTSynchronization;
+import tagion.prior_services.DARTSynchronization;
 import tagion.dart.Recorder : RecordFactory;
 
-import tagion.services.Options;
+import tagion.prior_services.Options;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.communication.HandlerPool;
 
 import tagion.communication.HiRPC;
-import tagion.services.DARTSynchronizeService;
+import tagion.prior_services.DARTSynchronizeService;
 
-//import tagion.services.MdnsDiscoveryService;
+//import tagion.prior_services.MdnsDiscoveryService;
 import tagion.gossip.P2pGossipNet : ConnectionPool;
 import tagion.gossip.AddressBook : NodeAddress;
 

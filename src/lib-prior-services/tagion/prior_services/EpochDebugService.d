@@ -1,4 +1,4 @@
-module tagion.services.EpochDebugService;
+module tagion.prior_services.EpochDebugService;
 
 import std.concurrency;
 import tagion.basic.Types : Control;

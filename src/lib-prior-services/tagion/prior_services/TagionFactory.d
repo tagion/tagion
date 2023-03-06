@@ -1,5 +1,5 @@
 /// This handels the configuation of the different Modes
-module tagion.services.TagionFactory;
+module tagion.prior_services.TagionFactory;
 
 import core.thread;
 import std.concurrency;
@@ -7,7 +7,7 @@ import std.range : lockstep;
 import std.conv;
 import std.algorithm.searching : canFind;
 
-import tagion.services.Options;
+import tagion.prior_services.Options;
 
 import tagion.utils.Random;
 
@@ -16,7 +16,7 @@ import tagion.basic.Types :  Control;
 import tagion.crypto.Types : Pubkey;
 import tagion.logger.Logger;
 
-//import tagion.services.TagionService;
+//import tagion.prior_services.TagionService;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.gossip.AddressBook : addressbook;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -24,13 +24,13 @@ import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.options.ServiceNames : get_node_name;
 import tagion.basic.TagionExceptions;
 import p2plib = p2p.node;
-import tagion.services.DARTService;
-import tagion.services.DARTSynchronizeService;
-import tagion.services.DARTSynchronization;
+import tagion.prior_services.DARTService;
+import tagion.prior_services.DARTSynchronizeService;
+import tagion.prior_services.DARTSynchronization;
 import tagion.dart.DART;
 
-import tagion.services.TagionService;
-import tagion.services.MdnsDiscoveryService;
+import tagion.prior_services.TagionService;
+import tagion.prior_services.MdnsDiscoveryService;
 
 //import tagion.Keywords : NetworkMode;
 

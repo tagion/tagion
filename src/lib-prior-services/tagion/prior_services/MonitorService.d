@@ -1,5 +1,5 @@
 /// Services to handle remote view of the HashGraph
-module tagion.services.MonitorService;
+module tagion.prior_services.MonitorService;
 
 import std.stdio : writeln, writefln;
 import std.format;
@@ -8,7 +8,7 @@ import core.thread;
 import std.concurrency;
 
 import tagion.logger.Logger;
-import tagion.services.Options : Options, setOptions, options;
+import tagion.prior_services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
 import tagion.basic.Types : Control;
 import tagion.basic.Basic : basename;

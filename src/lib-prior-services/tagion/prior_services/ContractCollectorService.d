@@ -1,5 +1,5 @@
 /// Handles the validation and smart-contract and verifies the Archives in the network
-module tagion.services.ContactCollectorService;
+module tagion.prior_services.ContactCollectorService;
 
 import std.concurrency;
 import std.range : chain;
@@ -7,11 +7,11 @@ import std.range : chain;
 import tagion.basic.TagionExceptions;
 import tagion.basic.Types : Control;
 import tagion.logger.Logger;
-import tagion.services.Options;
+import tagion.prior_services.Options;
 import tagion.communication.HiRPC : HiRPC;
 import tagion.hashgraph.HashGraphBasic : EventPackage;
 import tagion.script.StandardRecords : SignedContract;
-import tagion.services.DARTSynchronizeService : DARTReadRequest;
+import tagion.prior_services.DARTSynchronizeService : DARTReadRequest;
 
 void contractCollectorTask(immutable(Options) opts) nothrow {
     try {
