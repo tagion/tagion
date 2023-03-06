@@ -1,3 +1,4 @@
+/// Basic functions used in the tagion project
 module tagion.basic.Basic;
 
 private import std.string : format, join, strip;
@@ -7,7 +8,6 @@ import std.bitmanip : BitArray;
 import std.meta : AliasSeq;
 import std.range.primitives : isInputRange;
 
-
 enum this_dot = "this.";
 import std.conv;
 
@@ -16,34 +16,8 @@ import std.conv;
  a immuatble do
 +/
 immutable(BUF) buf_idup(BUF)(immutable(Buffer) buffer) {
+    pragma(msg, "fixme(cbr): looks redundent");
     return cast(BUF)(buffer.idup);
-}
-
-/++
-   Returns:
-   The position of first '.' in string and
- +/
-template find_dot(string str, size_t index = 0) {
-    static if (index >= str.length) {
-        enum zero_index = 0;
-        alias zero_index find_dot;
-    }
-    else static if (str[index] == '.') {
-        enum index_plus_one = index + 1;
-        static assert(index_plus_one < str.length, "Static name ends with a dot");
-        alias index_plus_one find_dot;
-    }
-    else {
-        alias find_dot!(str, index + 1) find_dot;
-    }
-}
-
-
-/++
- Wraps a safe version of to!string for a BitArray
- +/
-string toText(const(BitArray) bits) @trusted {
-    return bits.to!string;
 }
 
 template suffix(string name, size_t index) {
@@ -72,7 +46,7 @@ template basename(alias K) {
     enum basename = suffix!(name, name.length);
 }
 
-enum nameOf(alias nameType) = __traits(identifier, nameType);
+enum NameOf(alias nameType) = __traits(identifier, nameType);
 
 /++
  Returns:
@@ -84,38 +58,41 @@ mixin template FUNCTION_NAME() {
     enum __FUNCTION_NAME__ = basename!(__FUNCTION__)[0 .. $ - 1];
 }
 
+///
 unittest {
     enum name_another = "another";
+    import std.algorithm.searching : countUntil;
+
     struct Something {
         mixin("int " ~ name_another ~ ";");
         void check() {
-            assert(find_dot!(this.another.stringof) == this_dot.length);
-            assert(basename!(this.another) == name_another);
+            // Check that basename removes (this.) from the scope name space
+            static assert(this.another.stringof.countUntil('.') == this_dot.countUntil('.'));
+            static assert(basename!(this.another) == name_another);
         }
     }
 
     Something something;
-    static assert(find_dot!((something.another).stringof) == something.stringof.length + 1);
+    // check that basename work in global scope (not this.)
+    static assert(something.stringof.countUntil('.') == -1);
     static assert(basename!(something.another) == name_another);
-    something.check();
 }
-
 /++
  Builds and enum string out of a string array
 +/
 template EnumText(string name, string[] list, bool first = true) {
     static if (first) {
         enum begin = "enum " ~ name ~ "{";
-        alias EnumText!(begin, list, false) EnumText;
+        alias EnumText = EnumText!(begin, list, false);
     }
     else static if (list.length > 0) {
         enum k = list[0];
         enum code = name ~ k ~ " = " ~ '"' ~ k ~ '"' ~ ',';
-        alias EnumText!(code, list[1 .. $], false) EnumText;
+        alias EnumText = EnumText!(code, list[1 .. $], false);
     }
     else {
         enum code = name ~ "}";
-        alias code EnumText;
+        alias EnumText = code;
     }
 }
 
@@ -219,7 +196,6 @@ static unittest {
     static assert(is(const(uint) == CastTo!(inout(uint), AliasSeq!(const(uint), const(string)))));
 }
 
-
 import std.typecons : Tuple;
 
 alias FileNames = Tuple!(string, "tempdir", string, "filename", string, "fullpath");
@@ -254,6 +230,7 @@ template EnumContinuousSequency(Enum) if (is(Enum == enum)) {
     enum EnumContinuousSequency = Sequency!(EnumMembers!Enum);
 }
 
+///
 static unittest {
     enum Count {
         zero,
@@ -282,10 +259,11 @@ static unittest {
 }
 
 /**
- Returns:
- If the range is not empty the first element is return
- else the .init value of the range element type is return
- The first element is returned
+* Tries to do a front but it is empty it return T.init 
+* Returns:
+* If the range is not empty the first element is return
+* else the .init value of the range element type is return
+* The first element is returned
 */
 template doFront(Range) if (isInputRange!Range) {
     alias T = ForeachType!Range;
@@ -299,6 +277,7 @@ template doFront(Range) if (isInputRange!Range) {
     }
 }
 
+///
 @safe
 unittest {
     {
@@ -312,6 +291,7 @@ unittest {
     }
 }
 
+/// isEqual is the same as `is()` function which can be used in template filters 
 enum isEqual(T1, T2) = is(T1 == T2);
 //enum isUnqualEqual(T1, T2) = is(Unqual!T1 == T2);
 
@@ -327,15 +307,24 @@ unittest {
     static assert(Left!(Unqual!U));
 }
 
+/* 
+ * Returns the first element in the range r and pops then next
+ * Params:
+ *   r = 
+ * Returns: r.front
+ */
 auto eatOne(R)(ref R r) if (isInputRange!R) {
     import std.range;
 
     scope (exit) {
-        r.popFront;
+        if (!r.empty) {
+            r.popFront;
+        }
     }
     return r.front;
 }
 
+///
 unittest {
     const(int)[] a = [1, 2, 3];
     assert(eatOne(a) == 1);
@@ -420,7 +409,6 @@ protected template _staticSearchIndexOf(int index, alias find, L...) {
         }
         else {
             enum found = find!(L[index]);
-            pragma(msg, "found ", found);
             static if (found) {
                 enum _staticSearchIndexOf = index;
             }
@@ -448,95 +436,86 @@ static unittest {
     import std.traits : isIntegral, isFloatingPoint;
 
     alias seq = AliasSeq!(string, int, long, char);
-    pragma(msg, "staticSearchIndexOf ", staticSearchIndexOf!(long, seq));
     static assert(staticSearchIndexOf!(long, seq) is 2);
     static assert(staticSearchIndexOf!(isIntegral, seq) is 1);
     static assert(staticSearchIndexOf!(isFloatingPoint, seq) is -1);
 }
 
 enum unitdata = "unitdata";
+
 /**
-   Returns:
-   unittest data filename
+* Used in unitttest local the path package/unitdata/filename 
+* Params:
+*   filename = name of the unitdata file
+*   file = defailt location of the module
+* Returns:
+*   unittest data filename
  */
-string unitfile(string filename, string file = __FILE__) {
+string unitfile(string filename, string file = __FILE__) @safe {
     import std.path;
 
     return buildPath(file.dirName, unitdata, filename);
 }
 
+/** 
+ * Mangle of a callable symbol
+ * Params:
+ *   T = callable symbol 
+ * Returns:
+ *   mangle of callable T
+ */
 template mangleFunc(alias T) if (isCallable!T) {
     import core.demangle : mangle;
 
     alias mangleFunc = mangle!(FunctionTypeOf!(T));
 }
 
+pragma(msg, "fixme(ib): replace template with functions like sendTrusted");
 @safe mixin template TrustedConcurrency() {
-    import concurrency = std.concurrency;
+    private {
+        import concurrency = std.concurrency;
+        import core.time : Duration;
 
-    alias Tid = concurrency.Tid;
+        alias Tid = concurrency.Tid;
 
-    static void send(Args...)(Tid tid, Args args) @trusted {
-        concurrency.send(tid, args);
-    }
-
-    static void prioritySend(Args...)(Tid tid, Args args) @trusted {
-        concurrency.prioritySend(tid, args);
-    }
-
-    static void receive(Args...)(Args args) @trusted {
-        concurrency.receive(args);
-    }
-
-    static auto receiveOnly(T...)() @trusted {
-        return concurrency.receiveOnly!T;
-    }
-
-    static Tid ownerTid() @trusted {
-        return concurrency.ownerTid;
-    }
-
-    static Tid thisTid() @safe {
-        return concurrency.thisTid;
-    }
-
-    static Tid spawn(F, Args...)(F fn, Args args) @trusted {
-        return concurrency.spawn(fn, args);
-    }
-
-    static Tid locate(string name) @trusted {
-        return concurrency.locate(name);
-    }
-
-    static bool register(string name, Tid tid) @trusted {
-        return concurrency.register(name, tid);
-    }
-
-}
-
-
-private import std.range;
-private import tagion.basic.Types : FileExtension;
-//private std.range.primitives;
-string fileExtension(string path) {
-    import std.path : extension;
-    enum dot=".";
-    switch (path.extension) {
-        static foreach(ext; EnumMembers!FileExtension) {
-            case dot~ext:
-            return ext;
+        static void send(Args...)(Tid tid, Args args) @trusted {
+            concurrency.send(tid, args);
         }
-        default:
-            return null;
-    }
-    assert(0);
-}
 
-unittest {
-    import tagion.basic.Types : FileExtension;
-    import std.path : setExtension;
-    assert(!"somenone_invalid_file.extension".fileExtension);
-    immutable valid_filename = "somenone_valid_file".setExtension(FileExtension.hibon);
-    assert(valid_filename.fileExtension);
-    assert(valid_filename.fileExtension == FileExtension.hibon);
+        static void prioritySend(Args...)(Tid tid, Args args) @trusted {
+            concurrency.prioritySend(tid, args);
+        }
+
+        static void receive(Args...)(Args args) @trusted {
+            concurrency.receive(args);
+        }
+
+        static auto receiveOnly(T...)() @trusted {
+            return concurrency.receiveOnly!T;
+        }
+
+        static bool receiveTimeout(T...)(Duration duration, T ops) @trusted {
+            return concurrency.receiveTimeout!T(duration, ops);
+        }
+
+        static Tid ownerTid() @trusted {
+            return concurrency.ownerTid;
+        }
+
+        static Tid thisTid() @safe {
+            return concurrency.thisTid;
+        }
+
+        static Tid spawn(F, Args...)(F fn, Args args) @trusted {
+            return concurrency.spawn(fn, args);
+        }
+
+        static Tid locate(string name) @trusted {
+            return concurrency.locate(name);
+        }
+
+        static bool register(string name, Tid tid) @trusted {
+            return concurrency.register(name, tid);
+        }
+    }
 }

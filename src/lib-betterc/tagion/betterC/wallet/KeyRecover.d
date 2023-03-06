@@ -13,11 +13,10 @@ import tagion.betterC.hibon.Document : Document;
 
 import tagion.basic.Types : Buffer;
 import std.string : representation;
-import std.range : iota, indexed, lockstep/*, StoppingPolicy*/; // commented stuff produce error no TypeInfo in betterC
+import std.range : iota, indexed, lockstep; // commented stuff produce error no TypeInfo in betterC
 import std.algorithm.mutation : copy;
 import std.algorithm.iteration : map, filter;
 import tagion.betterC.utils.Miscellaneous;
-
 
 import tagion.betterC.wallet.WalletRecords : RecoverGenerator;
 
@@ -51,19 +50,21 @@ struct KeyRecover {
         Buffer[] results;
         results.create(questions.length);
 
-//         foreach (ref result, question, answer; lockstep(results, questions, answers, StoppingPolicy
-//                 .requireSameLength)) {
-//             scope strip_down = cast(ubyte[]) answer.strip_down;
-//             scope answer_hash = net.calcHash(strip_down);
-//             scope question_hash = net.calcHash(question.representation);
-//             // scope (exit) {
-//             //     strip_down.sceamble;
-//             //     answer_hash.scramble;
-//             //     question_hash.scramble;
-//             // }
-// //            const hash = net.calcHash(answer);
-//             result = net.calcHash(answer_hash ~ question_hash );
-        // }
+        foreach (i, ref result; results) {
+            scope answer = answers[i];
+            scope question = questions[i];
+            scope strip_down = cast(ubyte[]) answer.strip_down;
+            scope answer_hash = rawCalcHash(strip_down);
+            scope question_hash = rawCalcHash(question.representation);
+            // scope (exit) {
+            //     strip_down.sceamble;
+            //     answer_hash.scramble;
+            //     question_hash.scramble;
+            // }
+            //            const hash = net.calcHash(answer);
+            answer_hash.write(question_hash.serialize);
+            result = rawCalcHash(answer_hash);
+        }
         return results;
     }
 
@@ -81,7 +82,7 @@ struct KeyRecover {
     }
 
     @trusted
-    Buffer checkHash(scope const(ubyte[]) value, scope const(ubyte[]) salt=null) const {
+    Buffer checkHash(scope const(ubyte[]) value, scope const(ubyte[]) salt = null) const {
         return rawCalcHash(rawCalcHash(value));
     }
 
@@ -103,7 +104,7 @@ struct KeyRecover {
                         include[index]++;
                         local_search(index, size);
                     }
-                    else if (index > 0) {
+                else if (index > 0) {
                         include[index - 1]++;
                         local_search(index - 1, size - 1);
                     }
@@ -182,16 +183,18 @@ out (result) {
     assert(result.length > 0);
 }
 do {
-    import std.ascii : toLower, isAlphaNum;
+    // import std.ascii : toLower, isAlphaNum;
 
     char[] res;
-    // res.create(text.length);
-    // foreach(i, letter; text) {
-    //     char c = cast(char) toLower(letter);
-    //     if (isAlphaNum(c)) {
-    //         res[i] = c;
-    //     }
-    // }
+    res.create(text.length);
+    foreach (i, letter; text) {
+        res[i] = text[i];
+        //     char c = cast(char) toLower(letter);
+        //     if (isAlphaNum(c)) {
+        //         res[i] = c;
+        //     }
+    }
+    // return res;
     return res;
 }
 
@@ -217,7 +220,6 @@ unittest {
     // import std.array : join, array;
 
     // auto selected_questions = indexed(standard_questions, [0, 2, 3, 7, 8]).array.idup;
-    // //pragma(msg, typeof(selected_questions));
     // //writefln("%s", selected_questions.join("\n"));
     // string[] answers = [
     //     "mobidick",

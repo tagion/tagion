@@ -200,8 +200,7 @@ struct HiBONT {
             int res = 1;
             if (this._key.length == key.length) {
                 res = 0;
-                foreach (i, elem; key)
-                {
+                foreach (i, elem; key) {
                     if (this._key[i] != elem) {
                         res = 1;
                     }
@@ -353,7 +352,8 @@ struct HiBONT {
 
             
 
-            .check(E is type, message("Expected HiBON type %s but apply type %s (%s)", type, E, T.stringof));
+            .check(E is type, message("Expected HiBON type %s but apply type %s (%s)", type, E, T
+                    .stringof));
             return value.by!E;
         }
 
@@ -374,7 +374,7 @@ struct HiBONT {
             TypeCase:
                 switch (type) {
                     foreach (E; EnumMembers!Type) {
-                        static if (isHiBONType(E) || isNative(E)) {
+                        static if (isHiBONBaseType(E) || isNative(E)) {
                 case E:
                             static if (E is Type.DOCUMENT) {
                                 const _size = value.by!(E).size;
@@ -404,7 +404,8 @@ struct HiBONT {
             }
         }
 
-        protected void appendList(Type E)(ref BinBuffer buffer) const if (isNativeArray(E)) {
+        protected void appendList(Type E)(ref BinBuffer buffer) const
+        if (isNativeArray(E)) {
             immutable size_index = buffer.length;
             buffer.write(uint.init);
             scope (exit) {
@@ -442,7 +443,7 @@ struct HiBONT {
             TypeCase:
                 switch (type) {
                     static foreach (E; EnumMembers!Type) {
-                        static if (isHiBONType(E) || isNative(E)) {
+                        static if (isHiBONBaseType(E) || isNative(E)) {
                 case E:
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {
@@ -528,6 +529,7 @@ struct HiBONT {
      */
     void opIndexAssign(T)(T x, const size_t index) if (!is(T : const(HiBONT))) {
         import tagion.betterC.utils.StringHelper;
+
         if (index <= uint.max) {
             const _key = int_to_str(index);
             opIndexAssign(x, _key);
@@ -731,34 +733,34 @@ struct HiBONT {
 
     ///
     // unittest {
-        // {
-        //     auto hibon = HiBON();
-        //     assert(hibon.isArray);
+    // {
+    //     auto hibon = HiBON();
+    //     assert(hibon.isArray);
 
-        //     hibon["0"] = 1;
-        //     assert(hibon.isArray);
-        //     hibon["1"] = 2;
-        //     assert(hibon.isArray);
-        //     hibon["2"] = 3;
-        //     assert(hibon.isArray);
-        //     hibon["x"] = 3;
-        //     assert(!hibon.isArray);
-        // }
-        // {
-        //     auto hibon = HiBON();
-        //     hibon["1"] = 1;
-        //     assert(!hibon.isArray);
-        //     hibon["0"] = 2;
-        //     assert(hibon.isArray);
-        //     hibon["4"] = 3;
-        //     assert(!hibon.isArray);
-        //     hibon["3"] = 4;
-        //     assert(!hibon.isArray);
-        //     hibon["2"] = 7;
-        //     assert(hibon.isArray);
-        //     hibon["05"] = 2;
-        //     assert(!hibon.isArray);
-        // }
+    //     hibon["0"] = 1;
+    //     assert(hibon.isArray);
+    //     hibon["1"] = 2;
+    //     assert(hibon.isArray);
+    //     hibon["2"] = 3;
+    //     assert(hibon.isArray);
+    //     hibon["x"] = 3;
+    //     assert(!hibon.isArray);
+    // }
+    // {
+    //     auto hibon = HiBON();
+    //     hibon["1"] = 1;
+    //     assert(!hibon.isArray);
+    //     hibon["0"] = 2;
+    //     assert(hibon.isArray);
+    //     hibon["4"] = 3;
+    //     assert(!hibon.isArray);
+    //     hibon["3"] = 4;
+    //     assert(!hibon.isArray);
+    //     hibon["2"] = 7;
+    //     assert(hibon.isArray);
+    //     hibon["05"] = 2;
+    //     assert(!hibon.isArray);
+    // }
     // }
 
     // unittest {
@@ -926,8 +928,6 @@ struct HiBONT {
     //     auto test_table_array = table_array.tupleof;
     //     scope (exit) {
     //         foreach (i, t; test_table_array) {
-
-                
 
     //                 .dispose(t);
     //         }

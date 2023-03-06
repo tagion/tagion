@@ -1,25 +1,32 @@
+/// Recorder for the archives sread/removed and added to the DART 
 module tagion.dart.Recorder;
 
-//import std.stdio;
 import tagion.hibon.HiBONJSON;
 
-import std.container.rbtree : RedBlackTree;
+version (REDBLACKTREE_SAFE_PROBLEM) {
+    /// dmd v2.100+ has problem with rbtree
+    /// Fix: This module hacks the @safe rbtree so it works with dmd v2.100 
+    import tagion.std.container.rbtree : RedBlackTree;
+}
+else {
+    import std.container.rbtree : RedBlackTree;
+}
 import std.range.primitives : isInputRange, ElementType;
 import std.algorithm.iteration : map;
 import std.format;
+import std.range : empty;
 
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : Label, STUB, isHiBONRecord, GetLabel, isStub, RecordType;
+import tagion.hibon.HiBONRecord : label, STUB, isHiBONRecord, GetLabel, isStub, recordType;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Message;
 
 import tagion.dart.DARTException : DARTRecorderException;
+import tagion.dart.DARTBasic;
 
 import tagion.basic.TagionExceptions : Check;
-
-//import tagion.utils.Miscellaneous : toHex=toHexString;
 
 import tagion.utils.Miscellaneous : toHexString;
 
@@ -27,7 +34,42 @@ alias hex = toHexString;
 
 private alias check = Check!DARTRecorderException;
 
-//    alias recorder=factory.recorder;
+/**
+ * Calculates the hash-pointer of the document 
+ * Params:
+ *   net = the hash function interface
+ *   doc = input to the hash function
+ * Returns: 
+ *   hash value of doc
+ */
+version (none) @safe
+Buffer dartIndex(const(HashNet) net, const(Document) doc) {
+    return net.dartIndex(doc);
+    version (none) {
+        import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
+
+        if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
+            //if (doc.hasHashKey) {
+            if (doc.keys.front == STUB) {
+                return doc[STUB].get!DARTIndex;
+            }
+            auto first = doc[].front;
+            immutable value_data = first.data[first.dataPos .. first.dataPos + first.dataSize];
+            return DARTIndex(net.rawCalcHash(value_data));
+        }
+        return DARTIndex(net.rawCalcHash(doc.serialize));
+    }
+}
+
+version (none) @safe
+Buffer dartIndex(T)(T value) if (isHiBONRecord) {
+    return dartIndex(value.toDoc);
+}
+
+/**
+ * Record factory
+ * Used to construct and handle DART recorder
+ */
 @safe
 class RecordFactory {
 
@@ -40,45 +82,52 @@ class RecordFactory {
     static RecordFactory opCall(const HashNet net) {
         return new RecordFactory(net);
     }
-    /++
-     Creates an empty Recorder
-     +/
+    /**
+     * Creates an empty Recorder
+     * Returns:
+     * new empty recorder
+     */
     Recorder recorder() nothrow {
         return new Recorder;
     }
 
-    /++
-     Creates an Recorder from a document
-     +/
+    /**
+     * Creates an Recorder from a document
+     * Params:
+     *   doc = Documemt formated as recorder
+     * Returns:
+     *   new recorder created from doc
+     */
     Recorder recorder(const(Document) doc) {
         return new Recorder(doc);
     }
 
-    /++
-     Same as recorder but produce an immutable recorder
-     +/
+    /**
+     * Same as recorder but produce an immutable recorder
+     * Params: doc
+     */
     immutable(Recorder) uniqueRecorder(const(Document) doc) const @trusted {
-        auto result = new const(Recorder)(doc);
-        return cast(immutable)result;
+        const result = new const(Recorder)(doc);
+        return cast(immutable) result;
     }
 
-    /++
-     This function should be use with care (rec should only be allocate once)
-     rec is set to null after
-     +/
+    /**
+     * This function should be use with care (rec should only be allocate once)
+    * Params:
+     * rec = is set to null after
+     */
     immutable(Recorder) uniqueRecorder(ref Recorder rec) const pure nothrow @trusted {
-        scope(exit) {
+        scope (exit) {
             rec = null;
         }
-        return cast(immutable)rec;
+        return cast(immutable) rec;
     }
 
-    /++
-     + Creates a Recorder base on an existing archive list
-
-     + Params:
-     +     archives = Archive list
-     +/
+    /**
+     * Creates a Recorder base on an existing archive list
+     * Params:
+     *     archives = Archive list
+     */
     Recorder recorder(Recorder.Archives archives) nothrow {
         return new Recorder(archives);
     }
@@ -87,15 +136,16 @@ class RecordFactory {
         return new Recorder(range);
     }
 
-    /++
-     +  Recorder to recorder (REMOVE, ADD) actions while can be executed by the
-     +  modify method
-     +/
+    /**
+     *  Recorder to recorder (REMOVE, ADD) actions while can be executed by the
+     *  modify method
+     */
     @safe
-    @RecordType("Recorder")
+    @recordType("Recorder")
     class Recorder {
         /// This will order REMOVE before add
-        alias Archives = RedBlackTree!(Archive, (a,b) => (a.fingerprint < b.fingerprint) || (a.fingerprint == b.fingerprint) && (a._type < a._type));
+        alias Archives = RedBlackTree!(Archive, (a, b) @safe => (a.fingerprint < b.fingerprint) || (
+                a.fingerprint == b.fingerprint) && (a._type < a._type));
         package Archives archives;
 
         import tagion.hibon.HiBONJSON : JSONString;
@@ -104,21 +154,21 @@ class RecordFactory {
         import tagion.hibon.HiBONRecord : HiBONRecordType;
 
         mixin HiBONRecordType;
-        /++
-         + Creates a Recorder with an empty archive list
-         + Params:
-         +     net = Secure net should be the same as define in the DARTFile class
-         +/
+        /**
+         * Creates a Recorder with an empty archive list
+         * Params:
+         *     net = Secure net should be the same as define in the DARTFile class
+         */
         private this() pure nothrow {
             this.archives = new Archives;
         }
 
-        /++
-         + Creates an Recorder base on an existing archive list
-         + Params:
-         +     net      = Secure net should be the same as define in the DARTFile class
-         +     archives = Archive list
-         +/
+        /**
+         * Creates an Recorder base on an existing archive list
+         * Params:
+         *     net      = Secure net should be the same as define in the DARTFile class
+         *     archives = Archive list
+         */
         private this(Archives archives) pure nothrow {
             this.archives = archives;
         }
@@ -129,6 +179,9 @@ class RecordFactory {
         }
 
         private this(Document doc) {
+
+            
+
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             this.archives = new Archives;
             foreach (e; doc[]) {
@@ -164,21 +217,30 @@ class RecordFactory {
             }
         }
 
+        /** 
+        * Length of the archives
+        * Returns: number of archives 
+        */
         size_t length() pure const nothrow {
             return archives.length;
         }
 
+        /**
+     * Check if the recorder contains archives
+     * Returns:
+     *   true if the recorder is empty
+     */
         bool empty() pure const nothrow {
             return archives.length == 0;
         }
 
-        /+
-         + Finds an archive with the fingerprint
-         +
-         + Returns:
-         +     The archive @ fingerprint and if it dosn't exists then a null reference is returned
-         +/
-        Archive find(immutable(Buffer) fingerprint) {
+        /**
+         * Finds an archive with the fingerprint
+         *
+         * Returns:
+         *     The archive @ fingerprint and if it dosn't exists then a null reference is returned
+         */
+        Archive find(const(DARTIndex) fingerprint) {
             // in {
             //     assert(fingerprint);
             // }
@@ -193,13 +255,17 @@ class RecordFactory {
             return null;
         }
 
+        Archive find(const(Buffer) fingerprint) {
+            return find(DARTIndex(fingerprint));
+        }
+        ///
         unittest { // Check find
             import tagion.crypto.SecureNet : StdHashNet;
 
             const hash_net = new StdHashNet;
 
             auto record_factory = RecordFactory(hash_net);
-            Archive[Buffer] set_of_archives;
+            Archive[DARTIndex] set_of_archives;
             foreach (i; 0 .. 7) {
                 auto hibon = new HiBON;
                 hibon["text"] = format("Some text %d", i);
@@ -231,10 +297,9 @@ class RecordFactory {
                 assert(recorder.find(none_existing_archive.fingerprint) is null);
             }
         }
-        /+
-         + Clear all archives
-         +/
-
+        /**
+         * Clear all archives
+         */
         void clear() {
             archives.clear;
         }
@@ -245,12 +310,13 @@ class RecordFactory {
             return archive;
         }
 
-        const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE) if ((isHiBONRecord!T) && !is(T : const(Recorder))) {
+        const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE)
+                if ((isHiBONRecord!T) && !is(T : const(Recorder))) {
             return insert(pack.toDoc, type);
         }
 
         void insert(Archive archive, const Archive.Type type = Archive.Type.NONE) {
-            if (archive.fingerprint is null) {
+            if (archive.fingerprint.empty) {
                 auto a = new Archive(net, archive.filed, type);
             }
             else {
@@ -267,7 +333,8 @@ class RecordFactory {
         }
 
         @trusted void insert(R)(R range, const Archive.Type type = Archive.Type.NONE)
-            if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONRecord!(ElementType!R))) {
+                if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONRecord!(
+                    ElementType!R))) {
             alias FiledType = ElementType!R;
             static if (isHiBONRecord!FiledType) {
                 archives.insert(range.map!(a => new Archive(net, a.toDoc, type)));
@@ -277,9 +344,9 @@ class RecordFactory {
             }
         }
 
-        void insert(Recorder r)  {
+        void insert(Recorder r) {
             archives.insert(r.archives[]);
-//            if (isInputRange!R && (is(ElemetType!R : const(Document))))  {
+            //            if (isInputRange!R && (is(ElemetType!R : const(Document))))  {
 
         }
         //        alias add(T) = insert!T(
@@ -301,9 +368,8 @@ class RecordFactory {
         //     return archive;
         // }
 
-        void remove(immutable(Buffer) fingerprint)
+        void remove(const(DARTIndex) fingerprint)
         in {
-            assert(!Document(fingerprint).isInorder, "The buffer is not a fingerprint it is a Document");
             assert(fingerprint.length is net.hashSize,
                     format("Length of the fingerprint must be %d but is %d", net.hashSize, fingerprint
                     .length));
@@ -313,9 +379,12 @@ class RecordFactory {
             archives.insert(archive);
         }
 
-        void stub(immutable(Buffer) fingerprint)
+        void remove(const(Buffer) fingerprint) {
+            remove(DARTIndex(fingerprint));
+        }
+
+        void stub(const(DARTIndex) fingerprint)
         in {
-            assert(!Document(fingerprint).isInorder, "The buffer is not a fingerprint it is a Document");
             assert(fingerprint.length is net.hashSize,
                     format("Length of the fingerprint must be %d but is %d", net.hashSize, fingerprint
                     .length));
@@ -323,6 +392,10 @@ class RecordFactory {
         do {
             auto archive = new Archive(fingerprint, Archive.Type.NONE);
             insert(archive);
+        }
+
+        void stub(const(Buffer) fingerprint) {
+            stub(DARTIndex(fingerprint));
         }
 
         void dump() const {
@@ -351,22 +424,32 @@ alias GetType = Archive.Type delegate(const(Archive)) @safe;
 enum Add = (const(Archive) a) => Archive.Type.ADD;
 enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
 
+/**
+ * Archive element used in the DART Recorder
+ */
 @safe class Archive {
     enum Type : int {
-        NONE = 0,
-        REMOVE = -1,
-        ADD = 1,
+        NONE = 0, /// NOP DART instruction
+        REMOVE = -1, /// Archive marked as remove instruction
+        ADD = 1, /// Archive marked as add instrunction
     }
 
-    @Label(STUB, true) immutable(Buffer) fingerprint;
-    @Label("$a", true) const Document filed;
+    @label(STUB, true) const(DARTIndex) fingerprint; /// Stub hash-pointer used in sharding
+    @label("$a", true) const Document filed; /// The actual data strute stored 
     enum archiveLabel = GetLabel!(this.filed).name;
     enum fingerprintLabel = GetLabel!(this.fingerprint).name;
     enum typeLabel = GetLabel!(this._type).name;
-    private @Label("$t", true) Type _type;
-    protected @Label("") bool _done;
+    private @label("$t", true) Type _type; /// Acrhive type
+    protected @label("") bool _done; /// Marks if the operation was done on the archive
 
     mixin JSONString;
+    /* 
+    * Construct a
+    * Params:
+    *   net = hash function used 
+    *   doc = document of an archive or filed doc
+    *   t = archive type
+    */
     private this(const HashNet net, const(Document) doc, const Type t = Type.NONE)
     in {
         if (net is null) {
@@ -376,7 +459,7 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
     }
     do {
         if (.isStub(doc)) {
-            fingerprint = net.hashOf(doc);
+            fingerprint = net.dartIndex(doc);
         }
         else {
             if (doc.hasMember(archiveLabel)) {
@@ -386,7 +469,7 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
                 filed = doc;
             }
             if (net) {
-                fingerprint = net.hashOf(filed);
+                fingerprint = net.dartIndex(filed);
             }
             else {
                 fingerprint = null;
@@ -399,14 +482,20 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
 
     }
 
+    /**
+     * Construct an archive from a Document
+     * Params:
+     *   doc = documnet of the filed data
+     *   t = archve type
+     */
     this(const(Document) doc, const Type t = Type.NONE) {
         this(null, doc, t);
     }
 
-    // this(H)(const HashNet net, ref const(H) h, const Type t = Type.NONE) if (isHiBONRecord!H) {
-    //     this(net, h.toDoc, t);
-    // }
-
+    /**
+     * Convert archive to a Document 
+     * Returns: documnet of the archive
+     */
     const(Document) toDoc() const {
         auto hibon = new HiBON;
         if (isStub) {
@@ -421,33 +510,61 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
         return Document(hibon);
     }
 
-    // Define a remove archive by it fingerprint
-    private this(Buffer fingerprint, const Type t = Type.NONE)
-    in {
-        assert(fingerprint);
-    }
+    /** 
+    * Define archive by it fingerprint
+    * Use to read or remove an archive with a fingerprint
+    * Params:
+    *   fingerprint = hash-key to select the archive
+    *   t = type must be either REMOVE or NONE 
+    */
+    private this(DARTIndex fingerprint, const Type t = Type.NONE)
+    in (!fingerprint.empty)
+    in (t !is Type.ADD)
     do {
         _type = t;
         filed = Document();
         this.fingerprint = fingerprint;
     }
 
+    /**
+     * Checks the translate function get_type result in a remove-type
+     * Params:
+     *   get_type = get-type translate function
+     * Returns: true if acrhive is a remove type 
+     *
+     */
     final bool isRemove(GetType get_type) const {
         return get_type(this) is Type.REMOVE;
     }
 
+    /**
+     * Checks if the archive type is a remove-type 
+     * Returns: true if type is REMOVE
+     */
     final bool isRemove() pure const nothrow {
         return type is Type.REMOVE;
     }
 
+    /** 
+     * Checks if the archive is an add-type
+     * Returns: true if type is ADD
+     */
     final bool isAdd() pure const nothrow {
         return type is Type.ADD;
     }
 
+    /**
+     * Check if archive is a stub
+     * Returns: true if archive is a stub
+     */
     final bool isStub() pure const nothrow {
         return filed.empty;
     }
 
+    /**
+     * Check if the filed archive is of type T 
+     * Returns: true if the archive is T
+     */
     final bool isRecord(T)() const {
         return T.isRecord(filed);
     }
@@ -456,16 +573,17 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
         return _done;
     }
 
+    /* 
+     * Type of the archive
+     * Returns: type 
+     */
     final Type type() const pure nothrow @nogc {
         return _type;
     }
 
-    bool xxx() const nothrow {
-        return true;
-    }
-    /++
-     An Archive is only allowed to be done once
-     +/
+    /**
+     * An Archive is only allowed to be done once
+     */
     package final void doit() const pure nothrow @trusted
     in {
         assert(!_done, "An Archive can only be done once");
@@ -475,10 +593,10 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
         *force_done = true;
     }
 
-    /++
-     + Returns:
-     +     Generates Buffer to be store in the BlockFile
-     +/
+    /**
+     * Generates Document to be store in the BlockFile
+     * Returns: the document to be stored
+     */
     const(Document) store() const
     out (result) {
         assert(!result.empty, format("Archive is %s type and it must contain data", type));
@@ -494,6 +612,7 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
 
 }
 
+///
 unittest { // Archive
     //    import std.stdio;
     import std.format;
@@ -512,7 +631,7 @@ unittest { // Archive
         hibon["text"] = "Some text";
         filed_doc = Document(hibon);
     }
-    immutable filed_doc_fingerprint = net.hashOf(filed_doc);
+    immutable filed_doc_fingerprint = net.dartIndex(filed_doc);
 
     Archive a;
     { // Simple archive
@@ -615,12 +734,13 @@ unittest { /// RecordFactory.Recorder.insert range
     import std.array : array;
 
     import std.stdio : writefln;
+
     const net = new StdHashNet;
     auto manufactor = RecordFactory(net);
     static struct Filed {
         int x;
         mixin HiBONRecord!(
-            q{
+                q{
                 this(int x) {
                     this.x = x;
                 }
@@ -631,10 +751,10 @@ unittest { /// RecordFactory.Recorder.insert range
 
     auto recorder = manufactor.recorder(range_filed);
 
-    enum recorder_sorted = (RecordFactory.Recorder rec) => rec[]
-        .map!(a => Filed(a.filed))
-        .array
-        .sort!((a, b) => a.x < b.x);
+    enum recorder_sorted = (RecordFactory.Recorder rec) @safe => rec[]
+            .map!(a => Filed(a.filed))
+            .array
+            .sort!((a, b) => a.x < b.x);
 
     { // Check the content of
         assert(equal(range_filed, recorder_sorted(recorder)));
@@ -644,8 +764,8 @@ unittest { /// RecordFactory.Recorder.insert range
         auto range_filed_insert = iota(5, 10).map!(i => Filed(i));
         recorder.insert(range_filed_insert);
         assert(equal(
-            chain(range_filed, range_filed_insert),
-            recorder_sorted(recorder)));
+                chain(range_filed, range_filed_insert),
+                recorder_sorted(recorder)));
     }
 
     { /// Insert recorder to recorder
@@ -654,7 +774,7 @@ unittest { /// RecordFactory.Recorder.insert range
         auto recorder_insert = manufactor.recorder(iota(0, 3).map!(i => Filed(i)));
         recorder_base.insert(recorder_insert);
         assert(equal(
-                 recorder_sorted(recorder_base),
-                 iota(0, 6).map!(i => Filed(i))));
+                recorder_sorted(recorder_base),
+                iota(0, 6).map!(i => Filed(i))));
     }
 }

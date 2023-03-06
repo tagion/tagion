@@ -94,7 +94,7 @@ struct Document {
 
     this(const HiBONT hibon) {
         //check hibon
-        auto mut_hibon = cast(HiBONT)hibon;
+        auto mut_hibon = cast(HiBONT) hibon;
         this._data = mut_hibon.serialize;
     }
 
@@ -460,7 +460,7 @@ struct Document {
                     return element;
                 }
             }
-             if (element.key(work_key) > key) {
+            if (element.key(work_key) > key) {
                 break;
             }
         }
@@ -494,10 +494,12 @@ struct Document {
      * @throw if the element with the key is not found then and HiBONException is thrown
        Or of the key is not an index a std.conv.ConvException is thrown
      */
-    @trusted @nogc const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
+    @trusted @nogc const(Element) opIndex(Index)(in Index index) const
+    if (isIntegral!Index) {
         import tagion.betterC.utils.StringHelper;
+
         auto index_string = int_to_str(index);
-        scope(exit){
+        scope (exit) {
             index_string.dispose;
         }
 
@@ -793,18 +795,20 @@ struct Document {
                 with (Type)
             TypeCase : switch (type) {
                     static foreach (E; EnumMembers!Type) {
-                        static if (isHiBONType(E)) {
+                        static if (isHiBONBaseType(E)) {
                 case E:
                             static if (E is DOCUMENT) {
                                 immutable len = LEB128.decode!uint(data[value_pos .. $]);
-                                return Value(Document(data[value_pos .. value_pos + len.size + len.value]));
+                                return Value(Document(
+                                        data[value_pos .. value_pos + len.size + len.value]));
                             }
                             else static if ((E is STRING) || (E is BINARY)) {
                                 alias T = Value.TypeT!E;
                                 alias U = ForeachType!T;
                                 immutable binary_len = LEB128.decode!uint(data[value_pos .. $]);
                                 immutable buffer_pos = value_pos + binary_len.size;
-                                immutable buffer = (cast(immutable(U)*)(data[buffer_pos .. $].ptr))[0 .. binary_len.value];
+                                immutable buffer = (cast(immutable(U)*)(data[buffer_pos .. $].ptr))[0 .. binary_len
+                                        .value];
                                 return Value(buffer);
                             }
                             else static if (E is BIGINT) {
@@ -817,7 +821,7 @@ struct Document {
                                 return Value(DataBlock(data[value_pos .. $]));
                             }
                             else {
-                                if (isHiBONType(type)) {
+                                if (isHiBONBaseType(type)) {
                                     static if (E is TIME) {
                                         alias T = long;
                                     }
@@ -831,7 +835,7 @@ struct Document {
                                         Value* result = cast(Value*)(&data[value_pos]);
                                         return *result;
                                     }
-                                } 
+                                }
                             }
                             break TypeCase;
                         }
@@ -868,7 +872,7 @@ struct Document {
             bool as(T)(ref T result) {
                 switch (type) {
                     static foreach (E; EnumMembers!Type) {
-                        static if (isHiBONType(E)) {
+                        static if (isHiBONBaseType(E)) {
                 case E:
                             alias BaseT = Value.TypeT!E;
                             static if (isImplicitlyConvertible!(BaseT, T)) {
@@ -966,7 +970,7 @@ struct Document {
                     switch (type) {
                         static foreach (E; EnumMembers!Type) {
                     case E:
-                            static if (isHiBONType(E)) {
+                            static if (isHiBONBaseType(E)) {
                                 alias T = Value.TypeT!E;
                                 static if (
                                     (E is STRING) || (E is DOCUMENT) ||
@@ -1086,7 +1090,7 @@ struct Document {
                 switch (type) {
                     static foreach (E; EnumMembers!Type) {
                 case E:
-                        static if (isHiBONType(E)) {
+                        static if (isHiBONBaseType(E)) {
                             alias T = Value.TypeT!E;
                             return That!T;
                         }

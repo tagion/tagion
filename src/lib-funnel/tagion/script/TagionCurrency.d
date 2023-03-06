@@ -8,7 +8,7 @@ import std.range : only;
 import std.array : join;
 import std.conv : to;
 
-import tagion.hibon.HiBONRecord : HiBONRecord, Label, RecordType;
+import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType;
 
 @safe
 TagionCurrency TGN(T)(T x) pure if (isNumeric!T) {
@@ -22,7 +22,7 @@ struct TagionCurrency {
     enum UNIT = "TGN";
 
     protected {
-        @Label("$v") long _axions;
+        @label("$v") long _axions;
     }
 
     mixin HiBONRecord!(
@@ -56,18 +56,21 @@ struct TagionCurrency {
                 toTagion(_axions)));
     }
 
-    TagionCurrency opBinary(string OP)(const TagionCurrency rhs) const pure if (
+    TagionCurrency opBinary(string OP)(const TagionCurrency rhs) const pure
+    if (
         ["+", "-", "%"].canFind(OP)) {
         enum code = format(q{return TagionCurrency(_axions %1$s rhs._axions);}, OP);
         mixin(code);
     }
 
-    TagionCurrency opBinary(string OP, T)(T rhs) const pure if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP))) {
+    TagionCurrency opBinary(string OP, T)(T rhs) const pure
+    if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP))) {
         enum code = format(q{return TagionCurrency(_axions %s rhs);}, OP);
         mixin(code);
     }
 
-    TagionCurrency opBinaryRight(string OP, T)(T left) const pure if (isIntegral!T && (["+", "-", "*"].canFind(OP))) {
+    TagionCurrency opBinaryRight(string OP, T)(T left) const pure
+    if (isIntegral!T && (["+", "-", "*"].canFind(OP))) {
         enum code = format(q{return TagionCurrency(left %s _axions);}, OP);
         mixin(code);
     }
@@ -81,7 +84,8 @@ struct TagionCurrency {
         }
     }
 
-    void opOpAssign(string OP)(const TagionCurrency rhs) pure if (["+", "-", "%"].canFind(OP)) {
+    void opOpAssign(string OP)(const TagionCurrency rhs) pure
+    if (["+", "-", "%"].canFind(OP)) {
         scope (exit) {
             check_range;
         }
@@ -89,7 +93,8 @@ struct TagionCurrency {
         mixin(code);
     }
 
-    void opOpAssign(string OP, T)(const T rhs) pure if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP))) {
+    void opOpAssign(string OP, T)(const T rhs) pure
+    if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP))) {
         scope (exit) {
             check_range;
         }
@@ -97,7 +102,8 @@ struct TagionCurrency {
         mixin(code);
     }
 
-    void opOpAssign(string OP, T)(const T rhs) pure if (isFloatingPoint!T && (["*", "%", "/"].canFind(OP))) {
+    void opOpAssign(string OP, T)(const T rhs) pure
+    if (isFloatingPoint!T && (["*", "%", "/"].canFind(OP))) {
         scope (exit) {
             check_range;
         }

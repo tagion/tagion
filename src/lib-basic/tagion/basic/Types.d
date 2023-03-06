@@ -8,7 +8,7 @@ enum BufferType {
     SIGNATURE, /// Signature buffer type
     HASHPOINTER, /// Hash pointre buffer type
     MESSAGE, /// Message buffer type
-    PAYLOAD /// Payload buffer type
+    //    PAYLOAD /// Payload buffer type
 }
 
 enum BillType {
@@ -18,27 +18,35 @@ enum BillType {
 }
 
 alias Buffer = immutable(ubyte)[]; /// General buffer
-alias Pubkey = Typedef!(Buffer, null, BufferType.PUBKEY.stringof); // Buffer used for public keys
-alias Signature = Typedef!(Buffer, null, BufferType.SIGNATURE.stringof);
-alias Privkey = Typedef!(Buffer, null, BufferType.PRIVKEY.stringof);
-
-alias Payload = Typedef!(Buffer, null, BufferType.PAYLOAD.stringof); // Buffer used fo the event payload
-version (none) {
-    alias Message = Typedef!(Buffer, null, BufferType.MESSAGE.stringof);
-    alias HashPointer = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
-}
-
 /+
  Returns:
- true if T is a buffer
+ true if T is a const(ubyte)[]
 +/
 enum isBufferType(T) = is(T : const(ubyte[])) || is(TypedefType!T : const(ubyte[]));
-enum isBufferTypeDef(T) = is(TypedefType!T : const(ubyte[])) && !is(T : const(ubyte[]));
+enum isBufferTypedef(T) = is(TypedefType!T : const(ubyte[])) && !is(T : const(ubyte[]));
+
+/*
+Returns:
+true if T is a Buffer (immutable(ubyte))
+*/
+enum isBuffer(T) = is(T : immutable(ubyte[])) || is(TypedefType!T : immutable(ubyte[]));
 
 static unittest {
+    alias MyBuf=Typedef!(Buffer, null, "MyBuf");
     static assert(isBufferType!(immutable(ubyte[])));
     static assert(isBufferType!(immutable(ubyte)[]));
-    static assert(isBufferType!(Pubkey));
+    static assert(isBufferType!(const(ubyte)[]));
+    static assert(isBufferType!(ubyte[]));
+    static assert(!isBufferType!(char[]));
+    static assert(isBufferType!(MyBuf));
+
+    static assert(isBufferTypedef!MyBuf);
+    static assert(!isBufferTypedef!(const(ubyte)[]));
+
+    static assert(isBuffer!MyBuf);
+    static assert(isBuffer!(immutable(ubyte)[]));
+    static assert(!isBuffer!(const(ubyte[])));
+
 }
 
 /++
@@ -51,6 +59,34 @@ enum Control {
     END /// Send for the child to the ownerTid when the task ends
 }
 
+private import std.range;
+
+//private std.range.primitives;
+string fileExtension(string path) {
+    import std.path : extension;
+    import std.traits : EnumMembers;
+    import tagion.basic.Types : DOT;
+
+    switch (path.extension) {
+        static foreach (ext; EnumMembers!FileExtension) {
+    case DOT ~ ext:
+            return ext;
+        }
+    default:
+        return null;
+    }
+    assert(0);
+}
+
+unittest {
+    import tagion.basic.Types : FileExtension;
+    import std.path : setExtension;
+
+    assert(!"somenone_invalid_file.extension".fileExtension);
+    immutable valid_filename = "somenone_valid_file".setExtension(FileExtension.hibon);
+    assert(valid_filename.fileExtension);
+    assert(valid_filename.fileExtension == FileExtension.hibon);
+}
 
 enum FileExtension {
     json = "json", // JSON File format
@@ -58,4 +94,31 @@ enum FileExtension {
     wasm = "wasm", // WebAssembler binary format
     wast = "wast", // WebAssembler text format
     dart = "drt", // DART data-base
+    markdown = "md", // DART data-base
+    dsrc = "d", // DART data-base
+    recchainblock = "rcb", // Recorder chain block file format
+    epochdumpblock = "epdmp", // Epoch dump chain block file format
+}
+
+enum DOT = '.'; /// File extension separator
+
+@safe
+string withDot(FileExtension ext) pure nothrow {
+
+    return DOT ~ ext;
+}
+
+@safe
+unittest {
+    assert(FileExtension.markdown.withDot == ".md");
+}
+
+import std.traits : TemplateOf;
+
+enum isTypedef(T) = __traits(isSame, TemplateOf!T, Typedef);
+
+static unittest {
+    alias MyInt = Typedef!int;
+    static assert(isTypedef!MyInt);
+    static assert(!isTypedef!int);
 }

@@ -28,8 +28,8 @@ struct BinBuffer {
             _data.create(size);
         }
     }
-    @trusted
-    ~this() {
+
+    @trusted ~this() {
         dispose;
     }
 
@@ -59,7 +59,8 @@ struct BinBuffer {
             _index = *index;
         }
         if (*index + add.length > _data.length) {
-            const new_size = _data.length + ((add.length < DEFAULT_SIZE) ? DEFAULT_SIZE : add.length);
+            const new_size = _data.length + ((add.length < DEFAULT_SIZE) ? DEFAULT_SIZE : add
+                    .length);
             _data.resize(new_size);
         }
         _data[*index .. *index + add.length] = add[0 .. $];

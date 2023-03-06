@@ -9,8 +9,8 @@ string int_to_str(T)(T data) if (isIntegral!T) {
     char[] res;
     res.create(data_size);
     auto pos = res.length - 1;
-    while(mut_data > 0) {
-        res[pos] =  cast(char)(data % 10 + '0');
+    while (mut_data > 0) {
+        res[pos] = cast(char)(data % 10 + '0');
         mut_data /= 10;
         pos++;
     }
@@ -28,13 +28,13 @@ int decimal_place(T)(T data) {
     return count;
 }
 
-int count_pieces(const (char)[] data, char splitter) {
+int count_pieces(const(char)[] data, char splitter) {
     int res = 1;
     size_t pos = 0;
     while (pos < data.length) {
         if (data[pos] == splitter) {
             res++;
-            while(data[pos] == splitter) {
+            while (data[pos] == splitter) {
                 pos++;
             }
         }
@@ -43,7 +43,7 @@ int count_pieces(const (char)[] data, char splitter) {
     return res;
 }
 
-size_t find_next_char(const (char)[] data, char symbol, size_t start_pos) {
+size_t find_next_char(const(char)[] data, char symbol, size_t start_pos) {
     for (size_t i = start_pos + 1; i < data.length; i++) {
         if (data[i] == symbol) {
             return i;
@@ -51,8 +51,9 @@ size_t find_next_char(const (char)[] data, char symbol, size_t start_pos) {
     }
     return data.length;
 }
-const (char[])[] split_by_char(const (char)[] data, char splitter) {
-    const (char)[][] res;
+
+const(char[])[] split_by_char(const(char)[] data, char splitter) {
+    const(char)[][] res;
     auto res_size = count_pieces(data, splitter);
     res.create(res_size);
     if (res_size != 1) {
@@ -66,7 +67,8 @@ const (char[])[] split_by_char(const (char)[] data, char splitter) {
             }
             start_pos = split_pos + 1;
             split_pos = find_next_char(data, splitter, split_pos);
-        } while(start_pos < data.length);
+        }
+        while (start_pos < data.length);
     }
     else {
         res[0] = data[0 .. $];
@@ -74,14 +76,13 @@ const (char[])[] split_by_char(const (char)[] data, char splitter) {
     return res;
 }
 
-void append(T) (ref T[] arr, T value)
-{
+void append(T)(ref T[] arr, T value) {
     auto arr_length = arr.length;
     // arr.length += 1;
 
     T[] tmp_arr;
     tmp_arr.create(arr_length + 1);
-    tmp_arr[0 .. $-1] = arr[0 .. $];
+    tmp_arr[0 .. $ - 1] = arr[0 .. $];
     arr.dispose;
     arr = tmp_arr;
     // tmp_arr.dispose;
@@ -90,7 +91,7 @@ void append(T) (ref T[] arr, T value)
     arr[$ - 1] = value;
 }
 
-T pop_back(T) (ref T[] arr)
+T pop_back(T)(ref T[] arr)
 in {
     assert(arr.length > 0);
 }
@@ -100,7 +101,6 @@ do {
     arr.resize(arr_length - 1);
     return result;
 }
-
 
 unittest {
     // no need to split
@@ -166,6 +166,5 @@ unittest {
 //         tmp[0].get!Buffer;
 //         tmp[1].get!bool;
 //     }
-
 
 // }

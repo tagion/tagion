@@ -62,7 +62,7 @@ struct BitMask {
 
     @trusted
     void toString(scope void delegate(scope const(char)[]) @trusted sink,
-            const FormatSpec!char fmt) const {
+    const FormatSpec!char fmt) const {
         enum separator = '_';
         import std.stdio;
 
@@ -228,7 +228,8 @@ struct BitMask {
                 }
                 enum HALF_SIZE = BIT_SIZE >> 1;
                 enum MASK = (size_t(1) << HALF_SIZE) - 1;
-                return local_count!HALF_SIZE(x & MASK) + local_count!HALF_SIZE((x >> HALF_SIZE) & MASK);
+                return local_count!HALF_SIZE(x & MASK) + local_count!HALF_SIZE(
+                        (x >> HALF_SIZE) & MASK);
             }
         }
 
@@ -253,8 +254,8 @@ struct BitMask {
 
         private this(
                 const(size_t[]) mask,
-                size_t index,
-                size_t bit_pos) pure nothrow {
+        size_t index,
+        size_t bit_pos) pure nothrow {
             this.mask = mask;
             this.index = index;
             this.bit_pos = bit_pos;
@@ -298,7 +299,8 @@ struct BitMask {
         pure nothrow {
             const {
                 size_t rest() {
-                    return (bit_pos < WORD_SIZE - 1) ? (mask[index] & ~((size_t(1) << (bit_pos + 1)) - 1)) : 0;
+                    return (bit_pos < WORD_SIZE - 1) ? (
+                            mask[index] & ~((size_t(1) << (bit_pos + 1)) - 1)) : 0;
                 }
 
                 bool empty() {
@@ -492,7 +494,7 @@ struct BitMask {
             }
         }
 
-        void and_filter(ref BitMask result, Range a, Range b) {
+        void and_filter(ref BitMask result, Range a, Range b) @safe {
             if (a.front < b.front) {
                 a.popFront;
             }
@@ -510,7 +512,7 @@ struct BitMask {
             and_filter(result, a, b);
         }
 
-        void xor_filter(ref BitMask result, Range a, Range b) {
+        void xor_filter(ref BitMask result, Range a, Range b) @safe {
             if (a.front < b.front) {
                 result[a.front] = true;
                 a.popFront;

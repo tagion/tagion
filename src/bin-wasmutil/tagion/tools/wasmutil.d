@@ -12,7 +12,7 @@ import std.json;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.Basic : basename;
-import tagion.basic.Types : Buffer, Pubkey;
+import tagion.basic.Types : Buffer;
 import tagion.hibon.HiBONJSON;
 import tagion.wasm.Wast;
 import tagion.wasm.WasmReader;
@@ -39,21 +39,12 @@ int main(string[] args) {
 
     string inputfilename;
     string outputfilename;
-    //    StandardBill bill;
-    // bool binary;
-
-    //    string passphrase="verysecret";
-    // ulong value=1000_000_000;
     bool print;
     bool inject_gas;
     bool verbose_switch;
-    //    WasmVerbose verbose_mode;
     string[] modify_from;
     string[] modify_to;
 
-    //    bill.toHiBON;
-
-    //   pragma(msg, "bill_type ", GetLabel!(StandardBill.bill_type));
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
@@ -68,29 +59,26 @@ int main(string[] args) {
             "print|p", format("Print the wasm as wast: %s", print), &print,
     );
 
-    // writefln("%s", modify_from);
-    // writefln("%s", modify_to);
-    // return 0;
     void help() {
         defaultGetoptPrinter(
                 [
-            // format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...] <in-file> <out-file>", program),
-            format("%s [<option>...] <in-file>", program),
-            "",
-            "Where:",
-            "<in-file>           Is an input file in .json or .hibon format",
-            // "<out-file>          Is an output file in .json or .hibon format",
-            "                    stdout is used of the output is not specifed the",
-            "",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <in-file> <out-file>", program),
+                format("%s [<option>...] <in-file>", program),
+                "",
+                "Where:",
+                "<in-file>           Is an input file in .json or .hibon format",
+                // "<out-file>          Is an output file in .json or .hibon format",
+                "                    stdout is used of the output is not specifed the",
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
-        main_args.options);
+                ].join("\n"),
+                main_args.options);
     }
 
     if (version_switch) {

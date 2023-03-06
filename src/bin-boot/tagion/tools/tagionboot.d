@@ -8,11 +8,16 @@ import std.exception : assumeUnique;
 import std.algorithm.iteration : map;
 import std.range;
 import std.array : array;
+import std.bitmanip : nativeToBigEndian;
+import tagion.utils.Random;
+import stdrnd = std.random;
 
 import tagion.gossip.AddressBook;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.basic.Types : Buffer, Pubkey;
+import tagion.basic.Types : Buffer;
+import tagion.crypto.Types :  Pubkey;
+import tagion.dart.DARTBasic : DARTIndex;
 import tagion.basic.Basic : basename;
 import tagion.script.StandardRecords;
 import tagion.crypto.SecureNet;
@@ -24,6 +29,7 @@ import tagion.wallet.SecureWallet;
 //import tagion.dart.DARTFile;
 import tagion.dart.Recorder;
 import tagion.hibon.HiBONRecord : fread, fwrite;
+import tagion.dart.DARTBasic;
 
 //import tagion.revision;
 import std.array : join;
@@ -46,14 +52,14 @@ do {
     // TODO: set also time?
 
     NetworkNameRecord nrc;
-    nrc.name = net.hashOf(nnc);
+    nrc.name = DARTIndex(net.dartIndex(nnc));
 
     NodeAddress na;
     // TODO: init NodeAddress
 
     // Bind hashes
-    nrc.node = net.hashOf(na);
-    nnc.record = net.hashOf(nrc);
+    nrc.node = DARTIndex(net.dartIndex(na));
+    nnc.record = DARTIndex(net.dartIndex(nrc));
 
     auto hr = HashLock(net, nnc);
 
@@ -68,11 +74,17 @@ mixin Main!(_main, "boot");
 int _main(string[] args) {
     immutable program = args[0];
     writefln("BOOT ", program);
-    immutable initial_gene = iota(256 / 8).map!(i => immutable(ubyte)(0b10101010)).array;
+    const net = new StdHashNet;
+    Buffer init_gene() {
+        auto rnd = Random!uint(stdrnd.unpredictableSeed);
+        return net.rawCalcHash(nativeToBigEndian(rnd.value()));
+    }
+
     bool version_switch;
 
     string invoicefile;
     string outputfile = "tmp/dart.hibon";
+    auto logo = import("logo.txt");
     //    StandardBill bill;
     uint number_of_bills;
     bool initbills = false;
@@ -96,22 +108,23 @@ int _main(string[] args) {
     }
 
     if (main_args.helpWanted) {
+        writeln(logo);
         defaultGetoptPrinter(
                 [
-            format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...] <invoice-file0> <invoice-file1>...", program),
-            "",
-            "Where:",
-            format("<file>           hibon outfile (Default %s)", outputfile),
-            "",
+                format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <invoice-file0> <invoice-file1>...", program),
+                "",
+                "Where:",
+                format("<file>           hibon outfile (Default %s)", outputfile),
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
-        main_args.options);
+                ].join("\n"),
+                main_args.options);
         return 0;
     }
     //writefln("args=%s", args);
@@ -123,12 +136,12 @@ int _main(string[] args) {
     //     outputfilename=args[1];
     // }
     writefln("args=%s", args);
-    const net = new StdHashNet;
     auto factory = RecordFactory(net);
     auto recorder = factory.recorder;
 
     void addGenesisEpoch(RecordFactory.Recorder recorder) {
         import tagion.dart.DARTFile : hash_null;
+
         EpochBlock block;
         block.previous = hash_null;
 
@@ -137,6 +150,7 @@ int _main(string[] args) {
         recorder.add(block);
         recorder.add(top_record);
     }
+
     addGenesisEpoch(recorder);
 
     const onehot = initbills + (!nnc_name.empty);
@@ -154,12 +168,12 @@ int _main(string[] args) {
         writeln("TEST MODE: Initialize dummy bills");
         alias StdSecureWallet = SecureWallet!StdSecureNet;
 
-        auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN);
+        auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN).array;
 
         const label = "some_name";
         foreach (amount; bill_amounts) {
             const invoice = StdSecureWallet.createInvoice(label, amount);
-            const bill = StandardBill(invoice.amount, 0, invoice.pkey, initial_gene);
+            const bill = StandardBill(invoice.amount, 0, invoice.pkey, init_gene);
 
             // Add the bill to the DART recorder
             recorder.add(bill);
@@ -179,7 +193,7 @@ int _main(string[] args) {
 
             const invoice = Invoice(invoice_doc);
 
-            const bill = StandardBill(invoice.amount, 0, invoice.pkey, initial_gene);
+            const bill = StandardBill(invoice.amount, 0, invoice.pkey, init_gene);
 
             // Add the bill to the DART recorder
             recorder.add(bill);

@@ -2,13 +2,15 @@ module tagion.betterC.utils.platform;
 
 public {
 
-    extern(C) void _d_array_slice_copy(void* dst, size_t dstlen, void* src, size_t srclen, size_t elemsz) {
+    extern (C) void _d_array_slice_copy(void* dst, size_t dstlen, void* src, size_t srclen, size_t elemsz) {
         import std.compiler;
+
         static if ((version_major == 2 && version_minor >= 100) || (vendor !is Vendor.llvm)) {
-            pragma(msg, "Warning llvm_memcpy has not been enabled for ", vendor, " version ", version_major, ".", version_minor, );
+            pragma(msg, "Warning llvm_memcpy has not been enabled for ", vendor, " version ", version_major, ".", version_minor,);
         }
         else {
             import ldc.intrinsics : llvm_memcpy;
+
             llvm_memcpy!size_t(dst, src, dstlen * elemsz, 0);
         }
     }
@@ -24,7 +26,7 @@ public {
 
     version (WebAssembly) {
         pragma(msg, "WebAssembler Memory");
-        @nogc:
+    @nogc:
         void* calloc(size_t nmemb, size_t size);
         void* realloc(void* ptr, size_t size);
         void free(void* ptr);
@@ -39,26 +41,28 @@ public {
 
 import std.meta;
 import std.traits;
+
 static void _static_call_all(string tocall, string namespace, Modules...)() {
     static foreach (module_; Modules) {
         {
-            enum import_code = "import"~module_.stringof["module".length..$]~";";
+            enum import_code = "import" ~ module_.stringof["module".length .. $] ~ ";";
             mixin(import_code);
-            void _static_caller(string[] members, string namespace=null)() {
-                static foreach(name; members) {
+            void _static_caller(string[] members, string namespace = null)() {
+                static foreach (name; members) {
                     {
-                        enum fullname = (namespace is null)?name:namespace~"."~name;
+                        enum fullname = (namespace is null) ? name : namespace ~ "." ~ name;
 
-                        static if ((name.length > tocall.length) && (name[0..tocall.length] == tocall)) {
-                            enum call_code = fullname~"();";
+                        static if ((name.length > tocall.length) && (
+                                name[0 .. tocall.length] == tocall)) {
+                            enum call_code = fullname ~ "();";
                             mixin(call_code);
                         }
                         else {
-                            enum is_code =  "enum isType =is("  ~ fullname  ~ ");";
+                            enum is_code = "enum isType =is(" ~ fullname ~ ");";
                             mixin(is_code);
                             static if (isType) {
                                 {
-                                    enum type_code =  "alias Type ="  ~ fullname  ~ ";";
+                                    enum type_code = "alias Type =" ~ fullname ~ ";";
                                     mixin(type_code);
 
                                     _static_caller!([__traits(allMembers, Type)], fullname);
@@ -93,10 +97,12 @@ extern(C) int main() {
 
 import tagion.betterC.utils.RBTree : RBTreeT;
 import tagion.betterC.hibon.HiBON : HiBONT;
+
 alias HiBONT_RBTreeT = RBTreeT!(HiBONT.Member*).Node;
-extern(C) HiBONT_RBTreeT _D6tagion7betterC5utils6RBTree__T7RBTreeTTPSQBqQBm5hibon5HiBON6HiBONT6MemberZQBs4NILLSQDgQDcQCxQCu__TQCqTQClZQCy4Node;
+extern (C) HiBONT_RBTreeT _D6tagion7betterC5utils6RBTree__T7RBTreeTTPSQBqQBm5hibon5HiBON6HiBONT6MemberZQBs4NILLSQDgQDcQCxQCu__TQCqTQClZQCy4Node;
 
 // extern(C) void  _D6tagion7betterC5utils6RBTree__T7RBTreeTTPSQBqQBm5hibon5HiBON6HiBONT6MemberZQBs20_staticCtor_L50_C5_1FNbNiNfZv() {
 // }
 
-pragma(msg, "HiBONT_RBTreeT ", _D6tagion7betterC5utils6RBTree__T7RBTreeTTPSQBqQBm5hibon5HiBON6HiBONT6MemberZQBs4NILLSQDgQDcQCxQCu__TQCqTQClZQCy4Node.sizeof);
+pragma(msg, "HiBONT_RBTreeT ", _D6tagion7betterC5utils6RBTree__T7RBTreeTTPSQBqQBm5hibon5HiBON6HiBONT6MemberZQBs4NILLSQDgQDcQCxQCu__TQCqTQClZQCy4Node
+        .sizeof);

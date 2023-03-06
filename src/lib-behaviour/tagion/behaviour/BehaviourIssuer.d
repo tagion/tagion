@@ -1,101 +1,118 @@
+/// \file BehaviourIssue.d
 module tagion.behaviour.BehaviourIssue;
 
-import tagion.behaviour.BehaviourBase;
 import std.traits;
 import std.algorithm : each, map;
 import std.range : tee, chain;
 import std.array : join, array;
 import std.format;
 
+import tagion.behaviour.BehaviourFeature;
+import tagion.utils.Escaper : escaper;
+
+@safe
 MarkdownT!(Stream) Markdown(Stream)(Stream bout) {
     alias MasterT = MarkdownT!Stream;
     MasterT.master = masterMarkdown;
     return MasterT(bout);
 }
 
+@safe
 DlangT!(Stream) Dlang(Stream)(Stream bout) {
     alias MasterT = DlangT!Stream;
     auto result = MasterT(bout);
     return result;
 }
 
+/**
+ * \struct MarkdownFMT
+ * Formator of the issuer
+ */
+
+@safe
 struct MarkdownFMT {
-    string indent;
     string name;
     string scenario;
     string feature;
     string property;
+    string comments;
 }
 
+/** 
+ * Default formater for Markdown 
+ */
+@safe
 static MarkdownFMT masterMarkdown = {
-    indent: "  ",
-    name: "`%2$s`",
-    scenario: "### %2$s: %3$s",
-    feature: "## %2$s: %3$s",
-    property: "%s*%s* %s",
+    name: "`%1$s`",
+    scenario: "### %1$s: %2$s",
+    feature: "## %1$s: %2$s",
+    property: "*%s* %s",
+    comments: "%-(%s\n%)",
 };
-
-enum EXT {
-    Markdown = "md",
-    Dlang = "d",
-}
 
 @safe
 struct MarkdownT(Stream) {
     Stream bout;
-    //  enum property_fmt="%s*%s* %s"; //=function(string indent, string propery, string description);
     static MarkdownFMT master;
 
-    void issue(Descriptor)(const(Descriptor) descriptor, string indent, string fmt) if (isDescriptor!Descriptor) {
-        bout.writefln(fmt, indent, Descriptor.stringof, descriptor.description);
-    }
-
-    void issue(I)(const(I) info, string indent, string fmt) if (isInfo!I) {
-        issue(info.property, indent, fmt);
-        bout.write("\n");
-        bout.writefln(master.name, indent ~ master.indent, info.name); //
-    }
-
-    void issue(Group)(const(Group) group, string indent, string fmt) if (isBehaviourGroup!Group) {
-        if (group !is group.init) {
-            issue(group.info, indent, master.property);
-            group.ands
-                .each!(a => issue(a, indent ~ master.indent, fmt));
+    void issue(Descriptor)(const(Descriptor) descriptor, string fmt,
+            string comment_fmt = null) if (isDescriptor!Descriptor) {
+        bout.writefln(fmt, Descriptor.stringof, descriptor.description);
+        if (descriptor.comments) {
+            comment_fmt = (comment_fmt is null) ? master.comments : comment_fmt;
+            bout.writefln(comment_fmt, descriptor.comments);
         }
     }
 
-    void issue(const(ScenarioGroup) scenario_group, string indent = null) {
-        issue(scenario_group.info, indent, master.scenario);
-        issue(scenario_group.given, indent ~ master.indent, master.property);
-        issue(scenario_group.when, indent ~ master.indent, master.property);
-        issue(scenario_group.then, indent ~ master.indent, master.property);
+    void issue(I)(const(I) info, string fmt) if (isInfo!I) {
+        issue(info.property, fmt);
+        bout.write("\n");
+        bout.writefln(master.name, info.name);
+        bout.write("\n");
     }
 
-    void issue(const(FeatureGroup) feature_group, string indent = null) {
-        issue(feature_group.info, indent, master.feature);
+    void issue(Group)(const(Group) group, string fmt) if (isActionGroup!Group) {
+        if (group !is group.init) {
+            group.infos.each!(info => issue(info, master.property));
+        }
+    }
+
+    void issue(const(ScenarioGroup) scenario_group) {
+        issue(scenario_group.info, master.scenario);
+        issue(scenario_group.given, master.property);
+        issue(scenario_group.when, master.property);
+        issue(scenario_group.then, master.property);
+        issue(scenario_group.but, master.property);
+    }
+
+    void issue(const(FeatureGroup) feature_group) {
+        issue(feature_group.info, master.feature);
         feature_group.scenarios
             .tee!(a => bout.write("\n"))
-            .each!(a => issue(a, indent ~ master.indent));
+            .each!(a => issue(a));
     }
 }
 
+/// Examples: Converting a Scenario to Markdown 
+@safe
 unittest { // Markdown scenario test
     auto bout = new OutBuffer;
     auto markdown = Markdown(bout);
     alias unit_mangle = mangleFunc!(MarkdownU);
     auto awesome = new Some_awesome_feature;
-    const runner_awesome = scenario(awesome);
-    const scenario_result = runner_awesome();
+    const scenario_result = run(awesome);
     {
         scope (exit) {
             bout.clear;
         }
         immutable filename = unit_mangle("descriptor")
             .unitfile
-            .setExtension(EXT.Markdown);
+            .setExtension(FileExtension.markdown);
         immutable expected = filename.freadText;
-        markdown.issue(scenario_result.given.info, null, markdown.master.property);
-//        filename.setExtension("mdtest").fwrite(bout.toString);
+        //io.writefln("scenario_result.given.infos %s", scenario_result.given.infos);
+        markdown.issue(scenario_result.given.infos[0], markdown.master.property);
+        version (behaviour_unitdata)
+            filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
     }
     {
@@ -104,18 +121,18 @@ unittest { // Markdown scenario test
         }
         immutable filename = unit_mangle("scenario")
             .unitfile
-            .setExtension(EXT.Markdown);
-        immutable expected = filename.freadText;
+            .setExtension(FileExtension.markdown);
         markdown.issue(scenario_result);
-//        filename.setExtension("mdtest").fwrite(bout.toString);
+        version (behaviour_unitdata)
+            filename.setExtension("mdtest").fwrite(bout.toString);
+
+        immutable expected = filename.freadText;
         assert(bout.toString == expected);
-        //io.writefln("bout=%s", bout);
-        //        filename.fwrite(bout.toString);
-        //        im
     }
-    //    assert(bout.toString == "Not code");
 }
 
+/// Examples: Convering a FeatureGroup to Markdown
+@safe
 unittest {
     auto bout = new OutBuffer;
     auto markdown = Markdown(bout);
@@ -127,16 +144,21 @@ unittest {
         }
         immutable filename = unit_mangle("feature")
             .unitfile
-            .setExtension(EXT.Markdown);
+            .setExtension(FileExtension.markdown);
+        markdown.issue(feature_group);
+        version (behaviour_unitdata)
+            filename.setExtension("mdtest").fwrite(bout.toString);
 
         immutable expected = filename.freadText;
-        markdown.issue(feature_group);
-//        filename.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
     }
 
 }
 
+/**
+ * \struct DlangT
+ * D-source generator
+ */
 @safe
 struct DlangT(Stream) {
     Stream bout;
@@ -145,8 +167,9 @@ struct DlangT(Stream) {
         preparations ~=
             q{
             // Auto generated imports
-            import tagion.behaviour.BehaviourBase;
+            import tagion.behaviour.BehaviourFeature;
             import tagion.behaviour.BehaviourException;
+            import tagion.behaviour.BehaviourResult;
         };
     }
 
@@ -155,21 +178,19 @@ struct DlangT(Stream) {
         return format(q{
                 @%2$s("%3$s")
                 Document %1$s() {
-                    check(false, "Check for '%1$s' not implemented");
-                    return Document();
-                }
-            },
+                        return Document();
+                    }
+                },
                 info.name,
                 Property.stringof,
-                info.property.description
+                info.property.description.escaper
         );
     }
 
-    string[] issue(Group)(const(Group) group) if (isBehaviourGroup!Group) {
+    string[] issue(Group)(const(Group) group) if (isActionGroup!Group) {
         if (group !is group.init) {
-            return chain([issue(group.info)],
-                    group.ands
-                    .map!(a => issue(a)))
+            return group.infos
+                .map!(info => issue(info))
                 .array;
         }
         return null;
@@ -177,21 +198,23 @@ struct DlangT(Stream) {
 
     string issue(const(ScenarioGroup) scenario_group) {
         immutable scenario_param = format(
-                "\"%s\",\n[%-(\"%3$s\"%,\n%)]",
+                "\"%s\",\n[%(%3$s,\n%)]",
                 scenario_group.info.property.description,
                 scenario_group.info.property.comments
+                .map!(comment => comment.escaper.array)
         );
         auto behaviour_groups = chain(
                 issue(scenario_group.given),
                 issue(scenario_group.when),
                 issue(scenario_group.then),
+                issue(scenario_group.but),
         );
         return format(q{
                 @safe @Scenario(%1$s)
                     class %2$s {
-                    %3$s
-                        }
-            },
+                        %3$s
+                    }
+                },
                 scenario_param,
                 scenario_group.info.name,
                 behaviour_groups
@@ -199,27 +222,45 @@ struct DlangT(Stream) {
         );
     }
 
-    void issue(const(FeatureGroup) feature_group, string indent = null) {
-        immutable comments = format("[%-(\"%3$s\"%,\n%)]", feature_group.info.property.comments);
+    void issue(const(FeatureGroup) feature_group) {
+        immutable comments = format("[%(%s,\n%)]",
+                feature_group.info.property.comments
+                .map!(comment => comment.escaper.array)
+        );
+        auto feature_tuple = chain(
+                feature_group.scenarios
+                .map!(scenario => [scenario.info.name, scenario.info.name]),
+        [["FeatureGroup*", "result"]])
+            .map!(ctx_type => format(`%s, "%s"`, ctx_type[0], ctx_type[1]))
+            .join(",\n");
+
         bout.writefln(q{
                 module %1$s;
-                %4$s
+                %5$s
                 enum feature = Feature(
                     "%2$s",
                     %3$s);
-
+                
+                alias FeatureContext = Tuple!(
+                    %4$s
+                );
             },
                 feature_group.info.name,
                 feature_group.info.property.description,
                 comments,
-                preparations.join
+                feature_tuple,
+                preparations.join("\n")
         );
-        feature_group.scenarios
-            .map!(s => issue(s))
-            .each!(a => bout.write(a));
+        if (feature_group.scenarios.length) {
+            feature_group.scenarios
+                .map!(s => issue(s))
+                .each!(a => bout.write(a));
+        }
     }
 }
 
+/// Examples: Converting a FeatureGroup to a D-source skeleten
+@safe
 unittest {
     auto bout = new OutBuffer;
     auto dlang = Dlang(bout);
@@ -231,46 +272,44 @@ unittest {
         }
         immutable filename = unit_mangle("feature")
             .unitfile
-            .setExtension(EXT.Dlang);
+            .setExtension(FileExtension.dsrc);
         dlang.issue(feature_group);
-        immutable expected = filename.freadText;
-            // .splitLines
-            // .map!(a => a.strip)
-            // .join("\n");
         immutable result = bout.toString;
-            // .splitLines
-            // .map!(a => a.strip)
-            // .join("\n");
-        // filename.setExtension("dtest").fwrite(result);
+        version (behaviour_unitdata)
+            filename.setExtension("dtest").fwrite(result.trim_source.join("\n"));
+        immutable expected = filename.freadText;
         assert(equal(
                 result
-                .splitLines
-                .map!(a => a.strip)
-                .filter!(a => a.length !is 0),
+                .trim_source,
                 expected
-                .splitLines
-                .map!(a => a.strip)
-                .filter!(a => a.length !is 0)));
+                .trim_source
+        ));
     }
 }
 
 version (unittest) {
-    import tagion.basic.Basic : mangleFunc, unitfile;
-    import tagion.behaviour.BehaviourUnittest;
-    import tagion.behaviour.Behaviour;
-    import tagion.hibon.Document;
     import std.algorithm.comparison : equal;
     import std.algorithm.iteration : filter;
     import std.string : strip, splitLines;
+    import std.file : fwrite = write, freadText = readText;
     import std.range : zip, enumerate;
+    import std.path;
+    import std.outbuffer;
+
+    import tagion.basic.Basic : mangleFunc, unitfile;
+    import tagion.basic.Types : FileExtension;
+    import tagion.behaviour.BehaviourUnittest;
+    import tagion.behaviour.Behaviour;
+    import tagion.hibon.Document;
 
     alias MarkdownU = Markdown!OutBuffer;
     alias DlangU = Dlang!OutBuffer;
+    ///Returns: a stripped version of a d-source text
+    auto trim_source(S)(S source) {
+        return source
+            .splitLines
+            .map!(a => a.strip)
+            .filter!(a => a.length !is 0);
 
-    import std.file : fwrite = write, freadText = readText;
-
-    //    import std.stdio;
-    import std.path;
-    import std.outbuffer;
-    import io = std.stdio;
+    }
 }

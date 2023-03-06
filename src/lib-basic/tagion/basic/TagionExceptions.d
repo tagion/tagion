@@ -16,24 +16,6 @@ class TagionException : Exception, TagionExceptionInterface {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
         super(msg, file, line);
     }
-
-    /++
-     This function set the taskname set by the logger
-     The version LOGGER must be enabled for this to work
-     The function is used to send the exception to the task owner ownerTid
-     Returns:
-     The immutable version of the Exception
-     +/
-    version (none) @trusted final immutable(TaskException) taskException() {
-        // version(LOGGER) {
-        import tagion.logger.Logger;
-
-        // if (task_name.length > 0) {
-        //     task_name=log.task_name;
-        // }
-        // }
-        return immutable(TaskException)(cast(immutable) this, log.task_name);
-    }
 }
 
 /++
@@ -65,12 +47,6 @@ static immutable(TaskFailure) taskException(const(Throwable) e) @nogc nothrow { 
 
     return immutable(TaskFailure)(cast(immutable) e, log.task_name);
 }
-
-// @trusted
-// static void send(immutable(TaskFailure) task_e) {
-//     import std.concurrency;
-//     ownerTid.send(task_e);
-// }
 
 @safe
 static void fatal(const(Throwable) e) nothrow {

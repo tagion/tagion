@@ -23,7 +23,7 @@ void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) if (T.size
     ubyte[] seed;
     seed.create(data.length);
 
-    randomize(cast(immutable)seed);
+    randomize(cast(immutable) seed);
     foreach (i; data) {
         data[i] ^= seed[i];
     }
@@ -48,25 +48,17 @@ void scramble(T)(scope ref T[] data, scope const(ubyte[]) xor = null) if (T.size
 }
 
 @trusted immutable(BinBuffer) calcHash(scope const(ubyte[]) data) {
-    return cast(immutable)rawCalcHash(data);
+    return cast(immutable) rawCalcHash(data);
 }
 
-@trusted immutable(BinBuffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2)
-// in {
-//     assert(h1.length is 0 || h1.length is HASH_SIZE,
-//             format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
-//     assert(h2.length is 0 || h2.length is HASH_SIZE,
-//             format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, HASH_SIZE));
-// }
-do {
+@trusted immutable(BinBuffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) {
     BinBuffer res;
-    pragma(msg, "dlang: Pre and post condition does not work here");
     if (h1.length !is 0 && h2.length !is 0) {
         ubyte[] concatenat;
         concatenat.create(h1.length + h2.length);
         concatenat[0 .. h1.length] = h1;
         concatenat[h1.length .. $] = h2;
-        return cast(immutable)rawCalcHash(concatenat);
+        return cast(immutable) rawCalcHash(concatenat);
     }
     else if (h1.length is 0) {
         res.write(h2);
@@ -75,54 +67,58 @@ do {
         res.write(h1);
     }
 
-    return cast(immutable)res;
+    return cast(immutable) res;
 }
+
 struct AES {
-        enum KEY_LENGTH = 256;
-        enum KEY_SIZE = KEY_LENGTH / 8;
-        enum BLOCK_SIZE = 16;
+    enum KEY_LENGTH = 256;
+    enum KEY_SIZE = KEY_LENGTH / 8;
+    enum BLOCK_SIZE = 16;
 
-        static size_t enclength(const size_t inputlength) {
-            return ((inputlength / BLOCK_SIZE) + ((inputlength % BLOCK_SIZE == 0) ? 0 : 1)) * BLOCK_SIZE;
-        }
-        import tagion.crypto.aes.tiny_aes.tiny_aes;
-
-        alias T_AES = Tiny_AES!(KEY_LENGTH, Mode.CBC);
-
-        static void crypt_parse(bool ENCRYPT = true)(const(ubyte[]) key, ubyte[BLOCK_SIZE] iv, ref ubyte[] data) {
-            scope aes = T_AES(key[0 .. KEY_SIZE], iv);
-            static if (ENCRYPT) {
-                aes.encrypt(data);
-            }
-            else {
-                aes.decrypt(data);
-            }
-        }
-
-        static void crypt(bool ENCRYPT = true)(scope const(ubyte[]) key, scope const(ubyte[]) iv, scope const(ubyte[]) indata, ref ubyte[] outdata) {
-            if (outdata is null) {
-                outdata.create(indata.length);
-            }
-            outdata[0 .. $] = indata[0 .. $];
-            size_t old_length;
-            if (outdata.length % BLOCK_SIZE !is 0) {
-                old_length = outdata.length;
-                // outdata.length = enclength(outdata.length);
-                outdata.create(enclength(outdata.length));
-            }
-            ubyte[BLOCK_SIZE] temp_iv = iv[0 .. BLOCK_SIZE];
-            crypt_parse!ENCRYPT(key, temp_iv, outdata);
-        }
-
-        alias encrypt = crypt!true;
-        alias decrypt = crypt!false;
+    static size_t enclength(const size_t inputlength) {
+        return ((inputlength / BLOCK_SIZE) + ((inputlength % BLOCK_SIZE == 0) ? 0 : 1)) * BLOCK_SIZE;
     }
 
+    import tagion.crypto.aes.tiny_aes.tiny_aes;
+
+    alias T_AES = Tiny_AES!(KEY_LENGTH, Mode.CBC);
+
+    static void crypt_parse(bool ENCRYPT = true)(const(ubyte[]) key, ubyte[BLOCK_SIZE] iv, ref ubyte[] data) {
+        scope aes = T_AES(key[0 .. KEY_SIZE], iv);
+        static if (ENCRYPT) {
+            aes.encrypt(data);
+        }
+        else {
+            aes.decrypt(data);
+        }
+    }
+
+    static void crypt(bool ENCRYPT = true)(scope const(ubyte[]) key, scope const(ubyte[]) iv, scope const(
+            ubyte[]) indata, ref ubyte[] outdata) {
+        if (outdata is null) {
+            outdata.create(indata.length);
+        }
+        outdata[0 .. $] = indata[0 .. $];
+        size_t old_length;
+        if (outdata.length % BLOCK_SIZE !is 0) {
+            old_length = outdata.length;
+            // outdata.length = enclength(outdata.length);
+            outdata.create(enclength(outdata.length));
+        }
+        ubyte[BLOCK_SIZE] temp_iv = iv[0 .. BLOCK_SIZE];
+        crypt_parse!ENCRYPT(key, temp_iv, outdata);
+    }
+
+    alias encrypt = crypt!true;
+    alias decrypt = crypt!false;
+}
+
 struct SecureNet {
-    import tagion.basic.Types : Pubkey, Signature;
+    import tagion.crypto.Types : Pubkey, Signature;
+
     private Pubkey _pubkey;
-//     // private SignDelegate _crypt;
-//     immutable(ubyte[]) delegate(const(ubyte[])) sign_dg;
+    //     // private SignDelegate _crypt;
+    //     immutable(ubyte[]) delegate(const(ubyte[])) sign_dg;
 
     enum DER_SIGNATURE_SIZE = 72;
     enum SIGNATURE_SIZE = 64;
@@ -159,9 +155,9 @@ struct SecureNet {
             ret = secp256k1_ecdsa_signature_serialize_der(_ctx, outputSer, &outputLen, sig);
             if (ret) {
                 result.create(outputLen);
-                result[0.. $] = outputSer_array[0 .. outputLen];
+                result[0 .. $] = outputSer_array[0 .. outputLen];
                 // immutable(ubyte[]) result = outputSer_array[0 .. outputLen].idup;
-                return cast(immutable)result;
+                return cast(immutable) result;
             }
         }
         if (_format_sign is Format.COMPACT) {
@@ -173,14 +169,14 @@ struct SecureNet {
                 // immutable(ubyte[]) result = outputSer_array.idup;
                 result.create(outputSer_array.length);
                 result[0 .. $] = outputSer_array[0 .. $];
-                return cast(immutable)result;
+                return cast(immutable) result;
             }
         }
-            //    writefln("Format=%s", _format_sign);
+        //    writefln("Format=%s", _format_sign);
         result.create(SIGNATURE_SIZE);
         result[0 .. $] = sig.data[0 .. SIGNATURE_SIZE];
         // immutable(ubyte[]) result = sig.data[0 .. SIGNATURE_SIZE].idup;
-        return cast(immutable)result;
+        return cast(immutable) result;
     }
 
     // Signature sign(const(ubyte[]) message) const
@@ -188,11 +184,11 @@ struct SecureNet {
     //     assert(message.length == 32);
     // }
     // do {
-        // import std.traits;
+    // import std.traits;
 
-        // assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
+    // assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
 
-        // return Signature(sign_dg(message));
+    // return Signature(sign_dg(message));
     // }
 
     @trusted
@@ -302,7 +298,7 @@ struct SecureNet {
         ubyte[] result;
         result.create(outputLen);
         result[0 .. $] = outputSer_array[0 .. outputLen];
-        return cast(immutable)result;
+        return cast(immutable) result;
     }
 
     @trusted BinBuffer createECDHSecret(scope const(ubyte[]) seckey, const(
@@ -401,51 +397,51 @@ struct SecureNet {
             dg(privkey);
         }
         // struct SignWrapper {
-            @trusted
-            immutable(ubyte[]) raw_sign(const(ubyte[]) data, const(ubyte[]) sec) const
-            in {
-                assert(data.length == 32);
-                assert(sec.length <= 32);
-            }
-            do {
-                ubyte[] result;
-                const msgdata = data.ptr;
-                const secKey = sec.ptr;
-                secp256k1_ecdsa_signature sig_array;
-                secp256k1_ecdsa_signature* sig = &sig_array;
+        @trusted
+        immutable(ubyte[]) raw_sign(const(ubyte[]) data, const(ubyte[]) sec) const
+        in {
+            assert(data.length == 32);
+            assert(sec.length <= 32);
+        }
+        do {
+            ubyte[] result;
+            const msgdata = data.ptr;
+            const secKey = sec.ptr;
+            secp256k1_ecdsa_signature sig_array;
+            secp256k1_ecdsa_signature* sig = &sig_array;
 
-                // int ret = secp256k1_ecdsa_sign(_ctx, sig, msgdata, secKey, null, null);
-                // check(ret == 1, ConsensusFailCode.SECURITY_SIGN_FAULT);
-                // if (_format_sign is Format.DER) {
-                //     ubyte[DER_SIGNATURE_SIZE] outputSer_array;
-                //     ubyte* outputSer = outputSer_array.ptr;
-                //     size_t outputLen = outputSer_array.length;
-                //     ret = secp256k1_ecdsa_signature_serialize_der(_ctx, outputSer, &outputLen, sig);
-                //     if (ret) {
-                //         immutable(ubyte[]) result = outputSer_array[0 .. outputLen].idup;
-                //         return result;
-                //     }
-                // }
-                // if (_format_sign is Format.COMPACT) {
-                //     ubyte[SIGNATURE_SIZE] outputSer_array;
-                //     ubyte* outputSer = outputSer_array.ptr;
-                //     //            size_t outputLen = outputSer_array.length;
-                //     ret = secp256k1_ecdsa_signature_serialize_compact(_ctx, outputSer, sig);
-                //     if (ret) {
-                //         immutable(ubyte[]) result = outputSer_array.idup;
-                //         return result;
-                //     }
-                // }
-                // //        writefln("Format=%s", _format_sign);
-                // immutable(ubyte[]) result = sig.data[0 .. SIGNATURE_SIZE].idup;
-                return cast(immutable)result;
-            }
+            // int ret = secp256k1_ecdsa_sign(_ctx, sig, msgdata, secKey, null, null);
+            // check(ret == 1, ConsensusFailCode.SECURITY_SIGN_FAULT);
+            // if (_format_sign is Format.DER) {
+            //     ubyte[DER_SIGNATURE_SIZE] outputSer_array;
+            //     ubyte* outputSer = outputSer_array.ptr;
+            //     size_t outputLen = outputSer_array.length;
+            //     ret = secp256k1_ecdsa_signature_serialize_der(_ctx, outputSer, &outputLen, sig);
+            //     if (ret) {
+            //         immutable(ubyte[]) result = outputSer_array[0 .. outputLen].idup;
+            //         return result;
+            //     }
+            // }
+            // if (_format_sign is Format.COMPACT) {
+            //     ubyte[SIGNATURE_SIZE] outputSer_array;
+            //     ubyte* outputSer = outputSer_array.ptr;
+            //     //            size_t outputLen = outputSer_array.length;
+            //     ret = secp256k1_ecdsa_signature_serialize_compact(_ctx, outputSer, sig);
+            //     if (ret) {
+            //         immutable(ubyte[]) result = outputSer_array.idup;
+            //         return result;
+            //     }
+            // }
+            // //        writefln("Format=%s", _format_sign);
+            // immutable(ubyte[]) result = sig.data[0 .. SIGNATURE_SIZE].idup;
+            return cast(immutable) result;
+        }
 
-            @trusted immutable(ubyte[]) sign(const(ubyte[]) message) const {
-                immutable(ubyte)[] result;
-                do_secret_stuff((const(ubyte[]) privkey) { result = raw_sign(message, privkey); });
-                return result;
-            }
+        @trusted immutable(ubyte[]) sign(const(ubyte[]) message) const {
+            immutable(ubyte)[] result;
+            do_secret_stuff((const(ubyte[]) privkey) { result = raw_sign(message, privkey); });
+            return result;
+        }
         // }
         // SignWrapper sign_wrapper;
         // sign_dg = &sign_wrapper.sign;
@@ -460,9 +456,7 @@ struct SecureNet {
 
         immutable(ubyte[]) ECDHSecret(const(ubyte[]) pubkey) const {
             BinBuffer result;
-            do_secret_stuff((const(ubyte[]) privkey) @trusted {
-                result = createECDHSecret(privkey, pubkey);
-            });
+            do_secret_stuff((const(ubyte[]) privkey) @trusted { result = createECDHSecret(privkey, pubkey); });
             return result.serialize;
         }
     }
@@ -474,7 +468,7 @@ struct SecureNet {
         ubyte[] result;
         result.create(res_size);
         result[0 .. $] = hmac[0 .. $];
-        return cast(immutable)result;
+        return cast(immutable) result;
     }
 
     Pubkey pubkey() pure const nothrow {
@@ -495,10 +489,10 @@ struct SecureNet {
 
     Pubkey derivePubkey(BinBuffer tweak_buf) const {
         Pubkey result;
-    //     // ubyte[] tweak_arr;
-    //     // tweak_arr.create(tweak_buf.length);
-    //     // tweak_arr[0..$] = tweak_buf[0..$];
-    //     // return derivePubkey(tweak_arr);
+        //     // ubyte[] tweak_arr;
+        //     // tweak_arr.create(tweak_buf.length);
+        //     // tweak_arr[0..$] = tweak_buf[0..$];
+        //     // return derivePubkey(tweak_arr);
         return result;
     }
 

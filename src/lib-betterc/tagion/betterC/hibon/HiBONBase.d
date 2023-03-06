@@ -5,7 +5,7 @@ module tagion.betterC.hibon.HiBONBase;
 @nogc:
 
 import std.meta : AliasSeq;
-import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, Unqual, getUDAs, hasUDA;
+import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, Unqual, getUDAs, hasUDA, FieldNameTuple;
 import std.range.primitives : isInputRange;
 
 version (WebAssembly) {
@@ -219,7 +219,8 @@ version (none) struct Key {
                 else {
                     static if (is(T : const(char)[])) {
                         const leb128_len = LEB128.decode!uint(data);
-                        return (cast(immutable(char)*) data.ptr)[leb128_len.size .. leb128_len.size + leb128_len.value];
+                        return (cast(immutable(char)*) data.ptr)[leb128_len.size .. leb128_len.size + leb128_len
+                                .value];
                     }
                 }
                 break;
@@ -294,9 +295,9 @@ bool isArray(Type type) pure nothrow {
 mixin(Init_HiBON_Types!("__gshared immutable hibon_types=", 0));
 
 /**
- * @return true if the type is a valid HiBONType excluding narive types
+ * @return true if the type is a valid HiBONRecord excluding narive types
  */
-bool isHiBONType(Type type) {
+bool isHiBONBaseType(Type type) {
     return hibon_types[type];
 }
 
@@ -313,7 +314,8 @@ template Init_HiBON_Types(string text, uint i) {
     else {
         enum start_bracket = (i is 0) ? "[" : "";
         enum E = cast(Type) i;
-        enum flag = (!isNative(E) && (E !is Type.NONE) && (E !is Type.VER) && (E !is Type.DEFINED_ARRAY) && (E !is Type
+        enum flag = (!isNative(E) && (E !is Type.NONE) && (E !is Type.VER) && (
+                    E !is Type.DEFINED_ARRAY) && (E !is Type
                     .DEFINED_NATIVE));
         enum Init_HiBON_Types = Init_HiBON_Types!(text ~ start_bracket ~ flag.stringof ~ ",", i + 1);
     }
@@ -368,42 +370,27 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
         @Type(Type.NATIVE_STRING_ARRAY) string[] native_string_array;
 
     }
-    // else {
     alias NativeValueDataTypes = AliasSeq!();
-    // }
-    protected template GetFunctions(string text, bool first, TList...) {
-        static if (TList.length is 0) {
-            enum GetFunctions = text ~ "else {\n    static assert(0, \"Not support illegal \"); \n}";
-        }
-        else {
-            enum name = TList[0];
-            enum member_code = "alias member=ValueT." ~ name ~ ";";
-            mixin(member_code);
-            static if (__traits(compiles, typeof(member)) && hasUDA!(member, Type)) {
-                enum MemberType = getUDAs!(member, Type)[0];
-                alias MemberT = typeof(member);
-                static if ((MemberType is Type.NONE) || (!NATIVE && isOneOf!(MemberT, NativeValueDataTypes))) {
-                    enum code = "";
-                }
-                else {
-                    enum code_else = (first) ? "" : "else ";
-                    enum code = code_else ~ "static if ( type is " ~ MemberType.stringof ~ " ) {\n    return " ~ name ~ ";\n}\n";
-                }
-                enum GetFunctions = GetFunctions!(text ~ code, false, TList[1 .. $]);
-            }
-            else {
-                enum GetFunctions = GetFunctions!(text, false, TList[1 .. $]);
-            }
-        }
-
-    }
-
     /**
      * @return the value as HiBON type E
       */
-    auto by(Type type)() pure const {
-        enum code = GetFunctions!("", true, __traits(allMembers, ValueT));
-        mixin(code);
+    @trusted @nogc auto by(Type type)() pure const {
+        import std.format;
+        static foreach (i, name; FieldNameTuple!ValueT) {
+            {
+                enum member_code = format(q{alias member = ValueT.%s;}, name);
+                mixin(member_code);
+                enum MemberType = getUDAs!(member, Type)[0];
+                alias MemberT = typeof(member);
+                enum valid_value = !((MemberType is Type.NONE) || (!NATIVE
+                            && isOneOf!(MemberT, NativeValueDataTypes)));
+
+                static if (type is MemberType) {
+                    static assert(valid_value, format("The type %s named ValueT.%s is not valid value", type, name));
+                    return this.tupleof[i];
+                }
+            }
+        }
         assert(0);
     }
 
@@ -437,7 +424,7 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
     /**
      * convert the T to a HiBON-Type
      */
-    enum asType(T) = GetType!(Unqual!T, __traits(allMembers, ValueT));
+    enum asType(T) = GetType!(Unqual!T, FieldNameTuple!(ValueT));
 
     /**
      is true if the type T is support by the HiBON
@@ -537,7 +524,7 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
      * @return the size on bytes of the value as a HiBON type E
      */
     uint size(Type E)() const pure nothrow {
-        static if (isHiBONType(E)) {
+        static if (isHiBONBaseType(E)) {
             alias T = TypeT!E;
             static if (isBasicValueType!T || (E is Type.UTC)) {
                 return T.sizeof;
@@ -545,7 +532,7 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
             else static if (is(T : U[], U) && isBasicValueType!U) {
                 return cast(uint)(by!(E).length * U.sizeof);
             }
-            else {
+        else {
                 static assert(0, "Type " ~ E.stringof ~ " of " ~ T.stringof ~ " is not defined");
             }
         }
@@ -724,8 +711,7 @@ do {
     }
     if (a.length == b.length) {
         res = 0;
-        foreach (i, elem; a)
-        {
+        foreach (i, elem; a) {
             if (elem != b[i]) {
                 res = 1;
                 break;

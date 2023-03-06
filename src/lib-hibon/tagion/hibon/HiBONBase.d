@@ -7,7 +7,7 @@ import tagion.utils.StdTime;
 import std.format;
 import std.meta : AliasSeq, allSatisfy;
 import std.traits : isBasicType, isSomeString, isNumeric, isType, EnumMembers,
-    Unqual, getUDAs, hasUDA;
+    Unqual, getUDAs, hasUDA, FieldNameTuple;
 import std.typecons : tuple, TypedefType;
 import std.range.primitives : isInputRange;
 
@@ -70,7 +70,7 @@ enum Type : ubyte {
     BIGINT = 0x1A, /// Signed Bigint
 
     VER = 0x1F, /// Version field
-        /// The following is only used internal (by HiBON) and should to be use in a stream Document
+    /// The following is only used internal (by HiBON) and should to be use in a stream Document
     DEFINED_NATIVE = 0x40, /// Reserved as a definition tag it's for Native types
     NATIVE_DOCUMENT = DEFINED_NATIVE | 0x3e, /// This type is only used as an internal represention (Document type)
 
@@ -154,9 +154,9 @@ enum isDataBlock(T) = is(T : const(DataBlock));
 
 /++
  Returns:
- true if the type is a valid HiBONType excluding narive types
+ true if the type is a valid HiBONRecord excluding narive types
 +/
-@safe bool isHiBONType(Type type) pure nothrow {
+@safe bool isHiBONBaseType(Type type) pure nothrow {
     bool[] make_flags() {
         bool[] str;
         str.length = ubyte.max + 1;
@@ -175,7 +175,7 @@ enum isDataBlock(T) = is(T : const(DataBlock));
 
 /++
  Returns:
- true if the type is a valid HiBONType excluding narive types
+ true if the type is a valid HiBONRecord excluding narive types
 +/
 @safe bool isValidType(Type type) pure nothrow {
     bool[] make_flags() {
@@ -208,10 +208,10 @@ enum isDataBlock(T) = is(T : const(DataBlock));
 ///
 @nogc static unittest {
     with (Type) {
-        static assert(!isHiBONType(NONE));
-        static assert(!isHiBONType(DEFINED_ARRAY));
-        static assert(!isHiBONType(DEFINED_NATIVE));
-        static assert(!isHiBONType(VER));
+        static assert(!isHiBONBaseType(NONE));
+        static assert(!isHiBONBaseType(DEFINED_ARRAY));
+        static assert(!isHiBONBaseType(DEFINED_NATIVE));
+        static assert(!isHiBONBaseType(VER));
     }
 }
 
@@ -251,46 +251,28 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
         @Type(Type.NATIVE_STRING_ARRAY) string[] native_string_array;
 
     }
-    // else {
     alias NativeValueDataTypes = AliasSeq!();
-    // }
-    protected template GetFunctions(string text, bool first, TList...) {
-        static if (TList.length is 0) {
-            enum GetFunctions = text
-                ~ "else {\n    static assert(0, format(\"Not support illegal %s \", type )); \n}";
-        }
-        else {
-            enum name = TList[0];
-            enum member_code = "alias member=ValueT." ~ name ~ ";";
-            mixin(member_code);
-            static if (__traits(compiles, typeof(member)) && hasUDA!(member, Type)) {
-                enum MemberType = getUDAs!(member, Type)[0];
-                alias MemberT = typeof(member);
-                static if ((MemberType is Type.NONE) || (!NATIVE
-                        && isOneOf!(MemberT, NativeValueDataTypes))) {
-                    enum code = "";
-                }
-                else {
-                    enum code = format("%sstatic if ( type is Type.%s ) {\n    return %s;\n}\n",
-                                (first) ? "" : "else ", MemberType, name);
-                }
-                enum GetFunctions = GetFunctions!(text ~ code, false, TList[1 .. $]);
-            }
-            else {
-                enum GetFunctions = GetFunctions!(text, false, TList[1 .. $]);
-            }
-        }
-
-    }
-
     /++
      Returns:
      the value as HiBON type E
      +/
 
     @trusted @nogc auto by(Type type)() pure const {
-        enum code = GetFunctions!("", true, __traits(allMembers, ValueT));
-        mixin(code);
+        static foreach (i, name; FieldNameTuple!ValueT) {
+            {
+                enum member_code = format(q{alias member = ValueT.%s;}, name);
+                mixin(member_code);
+                enum MemberType = getUDAs!(member, Type)[0];
+                alias MemberT = typeof(member);
+                enum valid_value = !((MemberType is Type.NONE) || (!NATIVE
+                            && isOneOf!(MemberT, NativeValueDataTypes)));
+
+                static if (type is MemberType) {
+                    static assert(valid_value, format("The type %s named ValueT.%s is not valid value", type, name));
+                    return this.tupleof[i];
+                }
+            }
+        }
         assert(0);
     }
 
@@ -324,13 +306,13 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
     /++
      convert the T to a HiBON-Type
      +/
-    enum asType(T) = GetType!(Unqual!T, __traits(allMembers, ValueT));
+    enum asType(T) = GetType!(Unqual!T, FieldNameTuple!ValueT);
     /++
      is true if the type T is support by the HiBON
      +/
     enum hasType(T) = asType!T !is Type.NONE;
 
-    version (none) static unittest {
+    static unittest {
         static assert(hasType!int);
     }
 
@@ -426,7 +408,7 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
      the size on bytes of the value as a HiBON type E
      +/
     @nogc uint size(Type E)() const pure nothrow {
-        static if (isHiBONType(E)) {
+        static if (isHiBONBaseType(E)) {
             alias T = TypeT!E;
             static if (isBasicValueType!T || (E is Type.UTC)) {
                 return T.sizeof;
@@ -434,7 +416,7 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
             else static if (is(T : U[], U) && isBasicValueType!U) {
                 return cast(uint)(by!(E).length * U.sizeof);
             }
-            else {
+        else {
                 static assert(0, format("Type %s of %s is not defined", E, T.stringof));
             }
         }

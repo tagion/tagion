@@ -1,0 +1,40 @@
+```graphviz
+digraph Message_flow {
+rankdir=UD;
+  compound=true;
+  labelangle=35;
+  node [style=filled]
+  node [ shape = "rect"];
+  DART [shape = cylinder];
+  TLS [ style=filled fillcolor=green ];
+  P2P [ style=filled fillcolor=red]
+  ContractInterface [ label="Contract\nInterface"]
+  ConsensusInterface [ label="Consensus\nInterface"]
+  Transcript [shape = note]
+  EpochCreator [label="Epoch\nCreator"]
+  subgraph cluster_1 {
+    peripheries=0;
+    TLS -> ContractInterface [label="HiRPC(contract)" color=green];
+ 	ContractInterface -> Collector [label=contract color=green];
+	Collector -> TVM [label="contract-S" color=green];
+	EpochCreator -> Collector [label=contract color=darkgreen];
+	EpochCreator -> Transcript [label=epoch color=green];
+    TVM -> Transcript [label="archives\nin/out" color=red];
+  };
+  subgraph cluster_3 {
+    peripheries=0;
+	DART -> ConsensusInterface [label="DART(ro)" dir=both color=magenta];
+    ConsensusInterface -> DART [label=recorder]
+    ConsensusInterface -> P2P [label=Document dir=both];
+  };
+  subgraph cluster_2 {
+    peripheries=0;
+	TVM -> EpochCreator [label=contract color=green];
+    DART -> Replicator [label=recorder color=red dir=both];
+  };
+  DART -> Collector [label=recorder color=red];
+  EpochCreator -> ConsensusInterface [label=gossip dir=both color=cyan4];
+  Transcript -> DART [label=recorder color=blue];
+  Replicator -> ConsensusInterface [label=recorder];
+}
+```

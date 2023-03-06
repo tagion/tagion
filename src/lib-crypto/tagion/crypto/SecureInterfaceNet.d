@@ -1,8 +1,8 @@
 module tagion.crypto.SecureInterfaceNet;
 
 import std.typecons : TypedefType;
-import tagion.basic.Types : Buffer, Pubkey, Signature, isBufferTypeDef;
-
+import tagion.basic.Types : Buffer, isBufferType;
+import tagion.crypto.Types : Pubkey, Signature, Fingerprint;
 
 import tagion.hibon.HiBONRecord : isHiBONRecord, HiBONPrefix;
 import tagion.hibon.Document : Document;
@@ -14,26 +14,28 @@ alias check = Check!SecurityConsensusException;
 @safe
 interface HashNet {
     uint hashSize() const pure nothrow;
-    final immutable(Buffer) rawCalcHash(Buf)(scope const(Buf) data) const if (isBufferTypeDef!Buf) {
-        return rawCalcHash(cast(TypedefType!Buf)data);
-    }
 
-    final immutable(Buffer) calcHash(Buf)(scope const(Buf) data) const if (isBufferTypeDef!Buf) {
-        return calcHash(cast(TypedefType!Buf)data);
+    final Fingerprint calcHash(B)(scope const(B) data) const
+    if (isBufferType!B) {
+        return Fingerprint(rawCalcHash(cast(TypedefType!B) data));
     }
 
     immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const;
-    immutable(Buffer) calcHash(scope const(ubyte[]) data) const;
     immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure;
     /++
      Hash used for Merkle tree
      +/
-    immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
+    immutable(Buffer) binaryHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
 
-    Buffer hashOf(const(Document) doc) const;
+    final immutable(Buffer) binaryHash(B)(scope const(B) h1, scope const(B) h2) const
+    if (isBufferType!B) {
+        return binaryHash(cast(TypedefType!B) h1, cast(TypedefType!B) h2);
+    }
 
-    final Buffer hashOf(T)(T value) const if (isHiBONRecord!T) {
-        return hashOf(value.toDoc);
+    Fingerprint calcHash(const(Document) doc) const;
+
+    final Fingerprint calcHash(T)(T value) const if (isHiBONRecord!T) {
+        return calcHash(value.toDoc);
     }
 }
 
@@ -41,13 +43,13 @@ interface HashNet {
 interface SecureNet : HashNet {
     import std.typecons : Tuple;
 
-    alias Signed = Tuple!(Signature, "signature", Buffer, "message");
+    alias Signed = Tuple!(Signature, "signature", Fingerprint, "message");
     @nogc Pubkey pubkey() pure const nothrow;
-    bool verify(immutable(ubyte[]) message, const Signature signature, const Pubkey pubkey) const;
+    bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const;
     final bool verify(const Document doc, const Signature signature, const Pubkey pubkey) const {
             .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
-                    .SECURITY_MESSAGE_HASH_KEY);
-        immutable message = rawCalcHash(doc.serialize);
+            .SECURITY_MESSAGE_HASH_KEY);
+        immutable message = calcHash(doc);
         return verify(message, signature, pubkey);
     }
 
@@ -58,15 +60,12 @@ interface SecureNet : HashNet {
 
     // The private should be added implicite by the GossipNet
     // The message is a hash of the 'real' message
-    Signature sign(immutable(ubyte[]) message) const;
+    Signature sign(const Fingerprint message) const;
 
     final Signed sign(const Document doc) const {
-
-
-
             .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
-                    .SECURITY_MESSAGE_HASH_KEY);
-        immutable fingerprint = rawCalcHash(doc.serialize);
+            .SECURITY_MESSAGE_HASH_KEY);
+        const fingerprint = calcHash(doc);
         return Signed(sign(fingerprint), fingerprint);
     }
 
@@ -80,7 +79,8 @@ interface SecureNet : HashNet {
     void eraseKey() pure nothrow;
 
     immutable(ubyte[]) ECDHSecret(
-            scope const(ubyte[]) seckey, scope const(Pubkey) pubkey) const;
+            scope const(ubyte[]) seckey,
+scope const(Pubkey) pubkey) const;
 
     immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
 

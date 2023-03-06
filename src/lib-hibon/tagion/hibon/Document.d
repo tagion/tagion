@@ -6,7 +6,7 @@ module tagion.hibon.Document;
 
 //import std.format;
 import std.meta : AliasSeq, Filter;
-import std.traits : isBasicType, isSomeString, isNumeric, getUDAs, EnumMembers, Unqual, ForeachType,
+import std.traits : isBasicType, isSomeString, isNumeric,  EnumMembers, Unqual, ForeachType,
     isIntegral, hasMember, isArrayT = isArray, isAssociativeArray, OriginalType, isCallable;
 import std.conv : to, emplace;
 import std.algorithm.iteration : map;
@@ -25,7 +25,8 @@ import tagion.basic.Message : message;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException : check, HiBONException;
-import tagion.hibon.HiBONRecord : isHiBONRecord, isHiBONRecordArray;
+import tagion.hibon.HiBONRecord : isHiBONRecord, isHiBONTypeArray;
+import tagion.basic.Types : isTypedef;
 import LEB128 = tagion.utils.LEB128;
 
 //import tagion.utils.LEB128 : isIntegral=isLEB128Integral;
@@ -81,8 +82,28 @@ static assert(uint.sizeof == 4);
         }
     }
 
-    // import tagion.hibon.HiBONJSON : JSONString;
-    // mixin JSONString;
+    bool hasHashKey() pure const nothrow {
+        import tagion.hibon.HiBONRecord : HiBONPrefix;
+
+        return !empty &&
+            keys.front[0] is HiBONPrefix.HASH;
+    }
+
+    unittest {
+        { // empty document has no hash-key
+            const doc = Document();
+            assert(!doc.hasHashKey);
+        }
+        auto h = new HiBON;
+        { // Document without hash-key
+            h["x"] = 17;
+            assert(!Document(h).hasHashKey);
+        }
+        { // Document with hash-key
+            h["#x"] = 42;
+            assert(Document(h).hasHashKey);
+        }
+    }
 
     /++
      This function returns the HiBON version
@@ -169,6 +190,13 @@ static assert(uint.sizeof == 4);
         return cast(uint)(this[].walkLength);
     }
 
+    /* 
+	 * 
+	 * Returns: true If both documents are the same
+	 */
+    bool opEquals(const Document rhs) const pure nothrow @nogc {
+        return _data == rhs._data;
+    }
     /++
      The deligate used by the valid function to report errors
      +/
@@ -299,7 +327,7 @@ static assert(uint.sizeof == 4);
         /**
          * InputRange primitive operation that advances the range to its next element.
          */
-        void popFront() nothrow {
+        void popFront() pure nothrow {
             if (_data.length) {
                 _data = _data[Element(_data).size .. $];
             }
@@ -332,7 +360,7 @@ static assert(uint.sizeof == 4);
      Returns:
      A range of indices of the type of uint in the Document
      +/
-    auto indices() const {
+    auto indices() const pure {
         return map!"a.index"(this[]);
     }
 
@@ -349,7 +377,7 @@ static assert(uint.sizeof == 4);
      Returns:
      true if the key exist in the Document
      +/
-    bool hasMember(scope string key) const {
+    bool hasMember(scope string key) const pure nothrow {
         return !opBinaryRight!("in")(key).isEod();
     }
 
@@ -367,7 +395,7 @@ static assert(uint.sizeof == 4);
      Returns the element with the key
      If on element with this key has been found an empty element is returned
      +/
-    const(Element) opBinaryRight(string op)(in string key) const if (op == "in") {
+    const(Element) opBinaryRight(string op)(in string key) const pure if (op == "in") {
         foreach (ref element; this[]) {
             if (element.key == key) {
                 return element;
@@ -379,7 +407,7 @@ static assert(uint.sizeof == 4);
         return Element();
     }
 
-    const(Element) opBinaryRight(string op, Index)(const Index key) const
+    const(Element) opBinaryRight(string op, Index)(const Index key) const pure
     if ((op == "in") && (isIntegral!Index)) {
         foreach (ref element; this[]) {
             if (element.isIndex && (element.index == key)) {
@@ -398,7 +426,7 @@ static assert(uint.sizeof == 4);
      Throws:
      If the element with the key is not found then and HiBONException is thrown
      +/
-    const(Element) opIndex(in string key) const {
+    const(Element) opIndex(in string key) const pure {
         auto result = key in this;
 
         
@@ -416,10 +444,7 @@ static assert(uint.sizeof == 4);
      +/
     const(Element) opIndex(Index)(in Index index) const if (isIntegral!Index) {
         auto result = index in this;
-
-        
-
-        .check(!result.isEod, message("Member index %d not found", index));
+        check(!result.isEod, message("Member index %d not found", index));
         return result;
     }
 
@@ -530,7 +555,7 @@ static assert(uint.sizeof == 4);
      index = is offset index in side the buffer and index with be progressed
      +/
     @trusted static void build(T, Key)(ref ubyte[] buffer, Type type, Key key,
-            const(T) x, ref size_t index) pure
+    const(T) x, ref size_t index) pure
     if (is(Key : const(char[])) || is(Key == uint)) {
         buildKey(buffer, type, key, index);
         alias BaseT = TypedefType!T;
@@ -565,20 +590,18 @@ static assert(uint.sizeof == 4);
      Returns:
      Range (Array) of the type U
      +/
-    RangeT!U range(T : U[], U)() const {
+    RangeT!U range(T : U[], U)() const pure {
         return RangeT!U(data);
     }
 
     @safe struct RangeT(T) {
         Range range;
-        enum EType = Value.asType!T;
-        static assert(EType !is Type.NONE, format("Range type %s not supported", T.stringof));
-        this(immutable(ubyte)[] data) {
+        this(immutable(ubyte)[] data) pure {
             range = Range(data);
         }
 
         @property {
-            void popFront() {
+            void popFront() pure {
                 range.popFront;
             }
 
@@ -685,8 +708,8 @@ static assert(uint.sizeof == 4);
         test_tabel.TIME = 1001;
 
         alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof, // Credential,          Type.CREDENTIAL.stringof,
-                // CryptDoc,            Type.CRYPTDOC.stringof,
-                DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
+            // CryptDoc,            Type.CRYPTDOC.stringof,
+            DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
 
         TabelArray test_tabel_array;
         test_tabel_array.BINARY = [1, 2, 3];
@@ -878,6 +901,8 @@ static assert(uint.sizeof == 4);
         }
     }
 
+    enum isDocTypedef(T) = isTypedef!T && !is(T == sdt_t);
+
     /**
  * HiBON Element representation
  */
@@ -909,12 +934,12 @@ static assert(uint.sizeof == 4);
          throws:
          if  the type is invalid and HiBONException is thrown
          +/
-        @property @trusted const(Value*) value() const {
+        @property @trusted const(Value*) value() const pure {
             immutable value_pos = valuePos;
             with (Type)
         TypeCase : switch (type) {
                 static foreach (E; EnumMembers!Type) {
-                    static if (isHiBONType(E)) {
+                    static if (isHiBONBaseType(E)) {
             case E:
                         static if (E is DOCUMENT) {
                             immutable len = LEB128.decode!uint(data[value_pos .. $]);
@@ -941,7 +966,7 @@ static assert(uint.sizeof == 4);
                             return new Value(DataBlock(buffer));
                         }
                         else {
-                            if (isHiBONType(type)) {
+                            if (isHiBONBaseType(type)) {
                                 static if (E is TIME) {
                                     alias T = long;
                                 }
@@ -950,7 +975,7 @@ static assert(uint.sizeof == 4);
                                 }
                                 static if (isIntegral!T) {
                                     auto result = new Value(LEB128.decode!T(data[value_pos .. $])
-                                            .value);
+                                        .value);
                                     return result;
                                 }
                                 else {
@@ -979,7 +1004,7 @@ static assert(uint.sizeof == 4);
              throws:
              if the element does not contain the type E and HiBONException is thrown
              +/
-            auto by(Type E)() {
+            auto by(Type E)() pure {
 
                 
 
@@ -1003,7 +1028,21 @@ static assert(uint.sizeof == 4);
                 return T(doc);
             }
 
-            @trusted T get(T)() if (isHiBONRecordArray!T) {
+            T get(T)() if (isDocTypedef!T) {
+                alias BaseType = TypedefType!T;
+                const ret = get!BaseType;
+                return T(ret);
+            }
+
+            static unittest {
+                import std.typecons : Typedef;
+
+                alias BUF = immutable(ubyte)[];
+                alias Tdef = Typedef!(BUF, null, "SPECIAL");
+                static assert(is(typeof(get!Tdef) == Tdef));
+            }
+
+            @trusted T get(T)() if (isHiBONTypeArray!T) {
                 alias ElementT = ForeachType!T;
                 const doc = get!Document;
                 alias UnqualT = Unqual!T;
@@ -1049,8 +1088,8 @@ static assert(uint.sizeof == 4);
                 return cast(T) x;
             }
 
-            const(T) get(T)() const
-            if (!isHiBONRecord!T && !isHiBONRecordArray!T && !is(T == enum)) {
+            T get(T)() const
+            if (!isHiBONRecord!T && !isHiBONTypeArray!T && !is(T == enum) && !isDocTypedef!T) {
                 enum E = Value.asType!T;
                 import std.format;
 
@@ -1066,7 +1105,7 @@ static assert(uint.sizeof == 4);
             bool as(T)(ref T result) pure nothrow {
                 switch (type) {
                     static foreach (E; EnumMembers!Type) {
-                        static if (isHiBONType(E)) {
+                        static if (isHiBONBaseType(E)) {
                 case E:
                             alias BaseT = Value.TypeT!E;
                             static if (isImplicitlyConvertible!(BaseT, T)) {
@@ -1094,8 +1133,8 @@ static assert(uint.sizeof == 4);
                 
 
                     .check(isIndex, [
-                            "Key '", key.to!string, "' is not an index", key
-                            ].join);
+                    "Key '", key.to!string, "' is not an index", key
+                ].join);
                 return LEB128.decode!uint(data[keyPos .. $]).value;
             }
 
@@ -1144,6 +1183,27 @@ static assert(uint.sizeof == 4);
             bool isIndex() {
                 return data[Type.sizeof] is 0;
             }
+
+        }
+
+        /++
+         Returns:
+         true if the type and the value of the element is equal to rhs
+         +/
+        bool opEquals(T)(auto ref const T rhs) const pure nothrow if (!is(T : const(Element))) {
+            enum rhs_type = Value.asType!T;
+            return (rhs_type is type) && (assumeWontThrow(by!rhs_type) == rhs);
+        }
+
+        unittest { // Test if opEquals can handle types
+            auto h = new HiBON;
+            h["number"] = 42;
+            h["text"] = "42";
+            const doc = Document(h);
+            assert(doc["number"] == 42);
+            assert(doc["number"] != "42");
+            assert(doc["text"] != 42);
+            assert(doc["text"] == "42");
         }
 
         @property @nogc const pure nothrow {
@@ -1186,7 +1246,7 @@ static assert(uint.sizeof == 4);
                 switch (type) {
                     static foreach (E; EnumMembers!Type) {
                 case E:
-                        static if (isHiBONType(E)) {
+                        static if (isHiBONBaseType(E)) {
                             alias T = Value.TypeT!E;
                             return That!T;
                         }
@@ -1208,7 +1268,7 @@ static assert(uint.sizeof == 4);
                     switch (type) {
                         static foreach (E; EnumMembers!Type) {
                     case E:
-                            static if (isHiBONType(E)) {
+                            static if (isHiBONBaseType(E)) {
                                 alias T = Value.TypeT!E;
                                 static if ((E is STRING) || (E is DOCUMENT) || (E is BINARY)) {
                                     return dataPos + dataSize;
@@ -1365,6 +1425,7 @@ static assert(uint.sizeof == 4);
     }
 }
 
+@safe
 unittest { // Bugfix (Fails in isInorder);
     //    import std.stdio;
     {

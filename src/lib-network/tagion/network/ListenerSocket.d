@@ -39,26 +39,17 @@ struct ListenerSocket {
             masterTid = locate(task_name);
         }
         listen_task_name = [task_name, port.to!string].join(commonOptions.separator);
-
-        //        log.label(task_name);
-        //        log.register(task_name);
-        //        this.ownerTid=locate(task_name);
     }
 
     void stop() {
         if (!stop_listener) {
-            log("STOP %d !!!!!!!", port);
             stop_listener = true;
             if (listerner_thread !is null) {
-                log("STOP listener socket. %d", port);
                 //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
                 auto ping = new TcpSocket(new InternetAddress(commonOptions.url, port));
                 ping.close;
-                log("Wait for %d to close", port);
                 listerner_thread.join();
-                log("Thread joined %d", port);
             }
-
         }
     }
 
@@ -236,29 +227,22 @@ struct ListenerSocket {
     protected shared(SharedClients) shared_clients;
 
     void run() {
-        //        setOptions(opts);
-        // log.push(LoggerType.ALL);
-        // scope(exit) {
-        //     log.pop;
-        // }
-        log.register(listen_task_name); //format("%s_%d", task_name, port);
-        log("Listerner opened");
+        log.register(listen_task_name);
+        log("Listener opened");
 
-        //        writefln("!!!!!!!!!!!!!! Start %s for %s", clients is null, options.node_name);
         try {
             auto listener = new TcpSocket;
             log("Open Net %s:%s", address, port);
             auto add = new InternetAddress(address, port);
+            log("before bind listener");
             listener.bind(add);
             pragma(msg, "FixMe(cbr): why is this value 10");
+            log("before listener");
             listener.listen(10);
-
-            //writefln("Listening for backend connection on %s:%s", address, port);
-
+            log("before socketset");
             auto socketSet = new SocketSet(1);
 
             scope (exit) {
-                log("In scope exit listener socket.");
                 if (listener !is null) {
                     log("Close listener socket %d", port);
                     socketSet.reset;
@@ -266,23 +250,21 @@ struct ListenerSocket {
                     listener.close;
                 }
             }
-
+            log("before start");
             while (!stop_listener) {
+                log("inside while loop");
                 socketSet.add(listener);
                 pragma(msg, "FixMe(cbr): 500.msecs should be a options parameter");
                 Socket.select(socketSet, null, null, timeout.msecs);
                 if (socketSet.isSet(listener)) {
                     try {
                         auto client = listener.accept;
-                        log("Client connection to %s established, is blocking: %s.", client.remoteAddress.toString, client
-                                .blocking);
                         assert(client.isAlive);
                         assert(listener.isAlive);
                         this.add(client);
                     }
                     catch (SocketAcceptException ex) {
                         log.error("%s", ex);
-                        //writeln(ex);
                     }
                 }
                 socketSet.reset;
@@ -290,36 +272,25 @@ struct ListenerSocket {
 
         }
         catch (TagionException e) {
-            ///stderr.writeln(e.msg);
+            log("%s", e);
             stop_listener = true;
             if (masterTid != masterTid.init) {
                 masterTid.send(e.taskException);
             }
             else {
-                log(e.taskException);
+                log.warning("Exception caugth: %s", e.taskException);
             }
         }
         catch (Throwable t) {
-            //stderr.writeln(e.msg);
+            log("%s", t);
+
             stop_listener = true;
             if (masterTid != masterTid.init) {
                 masterTid.send(t.taskException);
             }
             else {
-                log(t.taskException);
-                //throw e;
+                log.warning("Exception caugth: %s", t.taskException);
             }
         }
-        // catch(Throwable t) {
-        //     stderr.writeln(t.toString);
-        //     stop_listener=true;
-        //     t.msg ~= " - From listener thread";
-        //     if (masterTid != masterTid.init) {
-        //         masterTid.send(cast(immutable)t);
-        //     }
-        //     else {
-        //         throw t;
-        //     }
-        // }
     }
 }

@@ -1,0 +1,34 @@
+```graphviz
+digraph tagion_hierarchy {
+    rankdir=UD;
+    size="8,5"
+   node [style=filled shape=rect]
+Tagionwave [color=blue]
+TagionFactory [label="Tagion\nFactory"]
+DART [shape = cylinder]
+ContractInterface [label="Contract\nInterface"]
+Transcript [shape = note]
+Collector [shape=rect]
+EpochCreator [label="Epoch\Creator"]
+EpochDump [label="Epoch\nDump"]
+ConsensusInterface [shape=rect label="Consensus\nInterface"]
+LoggerSubscription [label="Logger\nSubscription"]
+TLS [color=green]
+P2P [color=red]
+node [shape = rect];
+	Tagionwave -> Logger -> LoggerSubscription;
+	Tagionwave -> TagionFactory;
+	TagionFactory -> Tagion;
+	Tagion -> ConsensusInterface -> P2P;
+	DART -> Replicator;
+	Tagion -> DART;
+    Tagion -> EpochCreator;
+	EpochCreator -> ContractInterface;
+	EpochCreator -> Transcript;
+	EpochCreator -> Collector;
+	Transcript -> EpochDump;
+	EpochCreator -> Monitor;
+	Collector -> TVM;
+	ContractInterface -> TLS;
+}
+```

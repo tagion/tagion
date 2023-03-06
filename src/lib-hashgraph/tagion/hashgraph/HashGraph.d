@@ -1,32 +1,31 @@
+/// Consensus HashGraph main object 
 module tagion.hashgraph.HashGraph;
 
 import std.stdio;
 import std.conv;
 import std.format;
 import std.exception : assumeWontThrow;
-import std.typecons : TypedefType;
-import std.algorithm.searching : count, all, any;
-import std.algorithm.iteration : map, each, filter, fold;
-import std.algorithm.comparison : max;
 import std.algorithm.sorting : sort;
-import std.range.primitives : walkLength;
-import std.range : dropExactly, lockstep, tee;
+import std.algorithm.searching : all;
+import std.algorithm.iteration : map, each, filter;
+import std.range : tee;
 import std.array : array;
+
 import tagion.hashgraph.Event;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.communication.HiRPC;
-import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
 
-import tagion.basic.Types : Pubkey, Signature, Privkey, Buffer;
+import tagion.basic.Debug : __format;
+import tagion.basic.Types :  Buffer;
+import tagion.crypto.Types : Pubkey, Signature, Privkey;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
 
 import tagion.logger.Logger;
-import tagion.utils.Miscellaneous : toHex = toHexString;
 import tagion.gossip.InterfaceNet;
 
 version (unittest) {
@@ -46,7 +45,7 @@ class HashGraph {
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
     import tagion.logger.Statistic;
 
-    immutable size_t node_size;
+    immutable size_t node_size; /// Number of active nodes in the graph
     immutable(string) name; // Only used for debugging
     Statistic!uint witness_search_statistic;
     Statistic!uint strong_seeing_statistic;
@@ -62,17 +61,22 @@ class HashGraph {
     Statistic!long epoch_delay_statistic;
     private {
         BitMask _excluded_nodes_mask;
-        Node[Pubkey] nodes; // List of participating nodes T
+        Node[Pubkey] _nodes; // List of participating _nodes T
         uint event_id;
         sdt_t last_epoch_time;
     }
 
-    public const(Node[Pubkey]) getNodes() pure const nothrow {
-        return nodes;
+    /**
+ * Get a map of all the nodes currently handled by the graph 
+ * Returns: 
+ */
+    const(Node[Pubkey]) nodes() const pure nothrow @nogc {
+        return _nodes;
     }
 
     package HiRPC hirpc;
-    //    protected bool _in_graph;
+
+    // function not used
     @nogc
     bool active() pure const nothrow {
         return true;
@@ -83,21 +87,31 @@ class HashGraph {
         return _excluded_nodes_mask;
     }
 
-    package Round.Rounder _rounds;
+    package Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
 
     alias ValidChannel = bool delegate(const Pubkey channel);
-    const ValidChannel valid_channel;
+    const ValidChannel valid_channel; /// Valiates of a node at channel is valid
     alias EpochCallback = void delegate(const(Event[]) events, const sdt_t epoch_time) @safe;
     alias EventPackageCallback = void delegate(immutable(EventPackage*) epack) @safe;
-    const EpochCallback epoch_callback;
-    const EventPackageCallback epack_callback;
+    const EpochCallback epoch_callback; /// Call when an epoch has been produced
+    const EventPackageCallback epack_callback; /// Call back which is called when an event-package has been added to the event chache.
 
+    /**
+ * Creates a graph with node_size nodes
+ * Params:
+ *   node_size = number of nodes handles byt the graph
+ *   net = Securety element handles hash function, signing and signature validation
+ *   valid_channel = call-back to check if a node is valid
+ *   epoch_callback = call-back which is called when an epoch has been produced
+ *   epack_callback = call-back call if when a package has been added to the cache.
+ *   name = used for debuging label the node name
+ */
     this(const size_t node_size,
-        const SecureNet net,
-        const ValidChannel valid_channel,
-        const EpochCallback epoch_callback,
-        const EventPackageCallback epack_callback=null,
-        string name = null) {
+            const SecureNet net,
+            const ValidChannel valid_channel,
+            const EpochCallback epoch_callback,
+            const EventPackageCallback epack_callback = null,
+            string name = null) {
         hirpc = HiRPC(net);
         this.node_size = node_size;
         this.valid_channel = valid_channel;
@@ -109,12 +123,11 @@ class HashGraph {
 
     void initialize_witness(const(immutable(EventPackage)*[]) epacks)
     in {
-        assert(nodes.length > 0 && (channel in nodes),
+        assert(_nodes.length > 0 && (channel in _nodes),
                 "Owen Eva event needs to be create before witness can be initialized");
     }
     do {
         Node[Pubkey] recovered_nodes;
-        Event[] initialized_events;
         auto owner_node = getNode(channel);
         scope (success) {
             void init_event(immutable(EventPackage*) epack) {
@@ -137,7 +150,7 @@ class HashGraph {
                 }
             }
             foreach (channel, recovered_node; recovered_nodes) {
-                if (!(channel in nodes)) {
+                if (!(channel in _nodes)) {
                     if (recovered_node.event) {
                         init_event(recovered_node.event.event_package);
                     }
@@ -145,24 +158,24 @@ class HashGraph {
             }
         }
         scope (failure) {
-            nodes = recovered_nodes;
+            _nodes = recovered_nodes;
         }
-        recovered_nodes = nodes;
-        nodes = null;
+        recovered_nodes = _nodes;
+        _nodes = null;
         check(isMajority(cast(uint) epacks.length), ConsensusFailCode.HASHGRAPH_EVENT_INITIALIZE);
         consensus(epacks.length)
             .check(epacks.length <= node_size, ConsensusFailCode.HASHGRAPH_EVENT_INITIALIZE);
         getNode(channel); // Make sure that node_id == 0 is owner node
         foreach (epack; epacks) {
             if (epack.pubkey != channel) {
-                check(!(epack.pubkey in nodes), ConsensusFailCode.HASHGRAPH_DUBLICATE_WITNESS);
+                check(!(epack.pubkey in _nodes), ConsensusFailCode.HASHGRAPH_DUBLICATE_WITNESS);
                 auto node = getNode(epack.pubkey);
             }
         }
     }
 
     package bool can_round_be_decided(const Round r) nothrow {
-        const result = nodes
+        const result = _nodes
             .byValue
             .filter!((n) => (r.events[n.node_id] is null))
             .filter!((n) => !excluded_nodes_mask[n.node_id])
@@ -176,10 +189,6 @@ class HashGraph {
         return _rounds;
     }
 
-    bool areWeOnline() const pure nothrow {
-        return nodes.length > 0;
-    }
-
     bool areWeInGraph() const pure nothrow {
         return _rounds.last_decided_round !is null;
     }
@@ -190,14 +199,14 @@ class HashGraph {
 
     @trusted
     const(Pubkey[]) channels() const pure nothrow {
-        return nodes.keys;
+        return _nodes.keys;
     }
 
     bool not_used_channels(const(Pubkey) selected_channel) {
         if (selected_channel == channel) {
             return false;
         }
-        const node = nodes.get(selected_channel, null);
+        const node = _nodes.get(selected_channel, null);
         if (node) {
             return node.state is ExchangeState.NONE;
         }
@@ -223,6 +232,7 @@ class HashGraph {
         }
 
         const(HiRPC.Sender) ripple_sender() @safe {
+            log("Send ripple");
             const ripple_wavefront = rippleWave(Wavefront());
             const sender = hirpc.wavefront(ripple_wavefront);
             return sender;
@@ -281,6 +291,7 @@ class HashGraph {
         return _event_cache.length;
     }
 
+    // function not used
     @nogc
     bool isRegistered(scope const(ubyte[]) fingerprint) const pure nothrow {
         return (fingerprint in _event_cache) !is null;
@@ -289,7 +300,7 @@ class HashGraph {
     package void epoch(const(Event)[] events, const sdt_t epoch_time, const Round decided_round) {
         import std.stdio;
 
-        log("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d",
+        log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d",
                 name, decided_round.number,
                 Event.count, Event.Witness.count, events.length);
         if (epoch_callback !is null) {
@@ -310,6 +321,8 @@ class HashGraph {
     Event registerEventPackage(
             immutable(EventPackage*) event_pack)
     in {
+        import tagion.utils.Miscellaneous : toHexString;
+
         assert(event_pack.fingerprint !in _event_cache, format("Event %s has already been registerd", event_pack
                 .fingerprint.toHexString));
     }
@@ -345,7 +358,7 @@ class HashGraph {
             }
         }
 
-        final Event lookup(scope Buffer fingerprint) {
+        final Event lookup(const(Buffer) fingerprint) {
             if (fingerprint in _event_cache) {
                 return _event_cache[fingerprint];
             }
@@ -360,11 +373,12 @@ class HashGraph {
             return null;
         }
 
+        // function not used
         final bool isCached(scope const(Buffer) fingerprint) const pure nothrow {
             return (fingerprint in event_package_cache) !is null;
         }
 
-        final Event register(scope const(Buffer) fingerprint) {
+        final Event register(const(Buffer) fingerprint) {
             Event event;
             if (fingerprint) {
                 event = lookup(fingerprint);
@@ -377,7 +391,7 @@ class HashGraph {
 
     protected Register _register;
 
-    package final Event register(scope const(Buffer) fingerprint) {
+    package final Event register(const(Buffer) fingerprint) {
         if (_register) {
             return _register.register(fingerprint);
         }
@@ -418,13 +432,13 @@ class HashGraph {
         return front_seat_event;
     }
 
-    @HiRPCMethod() const(HiRPC.Sender) wavefront(
+    @HiRPCMethod const(HiRPC.Sender) wavefront(
             const Wavefront wave,
             const uint id = 0) {
         return hirpc.wavefront(wave, id);
     }
 
-    /++ to synchronize two nodes A and B
+    /++ to synchronize two _nodes A and B
      +  1)
      +  Node A send it's wave front to B
      +  This is done via the waveFront function
@@ -440,7 +454,7 @@ class HashGraph {
      +/
     const(Wavefront) tidalWave() pure {
         Tides tides;
-        foreach (pkey, n; nodes) {
+        foreach (pkey, n; _nodes) {
             if (n.isOnline) {
                 tides[pkey] = n.altitude;
                 assert(n._event.isFront);
@@ -456,7 +470,7 @@ class HashGraph {
 
         immutable(EventPackage)*[] result;
         Tides owner_tides;
-        foreach (n; nodes) {
+        foreach (n; _nodes) {
             if (n.channel in tides) {
                 const other_altitude = tides[n.channel];
                 foreach (e; n[]) {
@@ -499,17 +513,17 @@ class HashGraph {
                 front_seat(first_event);
             }
         }
-        auto result = nodes.byValue
+        auto result = _nodes.byValue
             .filter!((n) => (n._event !is null))
             .map!((n) => cast(immutable(EventPackage)*) n._event.event_package)
             .array;
 
         const contain_all =
-            nodes
-            .byValue
-            .all!((n) => n._event !is null);
+            _nodes
+                .byValue
+                .all!((n) => n._event !is null);
 
-        const state = (nodes.length is node_size && contain_all) ? ExchangeState.COHERENT : ExchangeState.RIPPLE;
+        const state = (_nodes.length is node_size && contain_all) ? ExchangeState.COHERENT : ExchangeState.RIPPLE;
 
         return Wavefront(result, null, state);
     }
@@ -529,9 +543,9 @@ class HashGraph {
         if (Event.callbacks) {
             Event.callbacks.receive(received_wave);
         }
-        log("received_wave(%s <- %s)", received_wave.state, received_node.state);
+        log.trace("received_wave(%s <- %s)", received_wave.state, received_node.state);
         scope (exit) {
-            log("next <- %s", received_node.state);
+            log.trace("next <- %s", received_node.state);
         }
         const(Wavefront) wavefront_response() @safe {
             with (ExchangeState) {
@@ -546,14 +560,13 @@ class HashGraph {
                     const ripple_wave = rippleWave(received_wave);
                     return ripple_wave;
                 case COHERENT:
-                    log.trace("COHERENT");
                     received_node.state = NONE;
                     if (!areWeInGraph) {
                         try {
                             initialize_witness(received_wave.epacks);
                         }
                         catch (ConsensusException e) {
-                            // intilaized witness not correct
+                            // initialized witness not correct
                         }
                     }
                     break;
@@ -571,7 +584,6 @@ class HashGraph {
                     assert(registered);
                     return buildWavefront(FIRST_WAVE, received_wave.tides);
                 case BREAKING_WAVE:
-                    log.trace("BREAKING_WAVE");
                     received_node.state = NONE;
                     break;
                 case FIRST_WAVE:
@@ -699,16 +711,16 @@ class HashGraph {
 
     import std.traits : fullyQualifiedName;
 
-    alias NodeRange = typeof((cast(const) nodes).byValue);
+    alias NodeRange = typeof((cast(const) _nodes).byValue);
 
     @nogc
     NodeRange opSlice() const pure nothrow {
-        return nodes.byValue;
+        return _nodes.byValue;
     }
 
     @nogc
     size_t active_nodes() const pure nothrow {
-        return nodes.length;
+        return _nodes.length;
     }
 
     @nogc
@@ -718,14 +730,8 @@ class HashGraph {
 
     package Node getNode(Pubkey channel) pure {
         const next_id = next_node_id;
-        return nodes.require(channel, new Node(channel, next_id));
+        return _nodes.require(channel, new Node(channel, next_id));
     }
-
-    // public bool canSelectNode(Pubkey channel) pure nothrow {
-    //     import std.exception: assumeWontThrow
-    //     const node = assumeWontThrow(getNode(channel));
-    //     return node.state is ExchangeState.NONE;
-    // }
 
     @nogc
     bool isMajority(const uint voting) const pure nothrow {
@@ -735,16 +741,16 @@ class HashGraph {
     private void remove_node(Node n) nothrow
     in {
         assert(n !is null);
-        assert(n.channel in nodes, format("Node id %d is not removable because it does not exist", n
+        assert(n.channel in _nodes, __format("Node id %d is not removable because it does not exist", n
                 .node_id));
     }
     do {
-        nodes.remove(n.channel);
+        _nodes.remove(n.channel);
     }
 
     bool remove_node(const Pubkey pkey) nothrow {
-        if (pkey in nodes) {
-            nodes.remove(pkey);
+        if (pkey in _nodes) {
+            _nodes.remove(pkey);
             return true;
         }
         return false;
@@ -761,11 +767,11 @@ class HashGraph {
 
     @trusted
     size_t next_node_id() const pure nothrow {
-        if (nodes.length is 0) {
+        if (_nodes.length is 0) {
             return 0;
         }
         scope BitMask used_nodes;
-        nodes.byValue
+        _nodes.byValue
             .map!(a => a.node_id)
             .each!((n) { used_nodes[n] = true; });
         return (~used_nodes)[].front;
@@ -782,10 +788,11 @@ class HashGraph {
     //   @trusted
     void fwrite(string filename, Pubkey[string] node_labels = null) {
         import tagion.hibon.HiBONRecord : fwrite;
+        import tagion.hashgraphview.EventView;
 
         size_t[Pubkey] node_id_relocation;
         if (node_labels.length) {
-            assert(node_labels.length is nodes.length);
+            assert(node_labels.length is _nodes.length);
             auto names = node_labels.keys;
             names.sort;
             foreach (i, name; names) {
@@ -793,10 +800,9 @@ class HashGraph {
             }
 
         }
-        // writefln("node_id_relocation=%s", node_id_relocation.byKeyValue.map!((n) => format("%d[%s]", n.value, n.key.cutHex)));
         auto events = new HiBON;
         (() @trusted {
-            foreach (n; nodes) {
+            foreach (n; _nodes) {
                 const node_id = (node_id_relocation.length is 0) ? size_t.max : node_id_relocation[n.channel];
                 n[]
                     .filter!((e) => !e.isGrounded)
@@ -809,106 +815,8 @@ class HashGraph {
         filename.fwrite(h);
     }
 
-    @safe
-    struct Compare {
-        enum ErrorCode {
-            NONE,
-            NODES_DOES_NOT_MATCH,
-            FINGERPRINT_NOT_THE_SAME,
-            MOTHER_NOT_THE_SAME,
-            FATHER_NOT_THE_SAME,
-            ALTITUDE_NOT_THE_SAME,
-            ORDER_NOT_THE_SAME,
-            ROUND_NOT_THE_SAME,
-            ROUND_RECEIVED_NOT_THE_SAME,
-            WITNESS_CONFLICT,
-        }
+    import tagion.hashgraphview.Compare;
 
-        alias ErrorCallback = bool delegate(const Event e1, const Event e2, const ErrorCode code) nothrow @safe;
-        const HashGraph h1, h2;
-        const ErrorCallback error_callback;
-        int order_offset;
-        int round_offset;
-        uint count;
-        this(const HashGraph h1, const HashGraph h2, const ErrorCallback error_callback) {
-            this.h1 = h1;
-            this.h2 = h2;
-            this.error_callback = error_callback;
-        }
-
-        bool compare() @trusted {
-            count = 0;
-            auto h1_nodes = h1.nodes
-                .byValue
-                .map!((n) => n[])
-                .array;
-            typeof(h1_nodes) h2_nodes;
-            try {
-                h2_nodes = h1.nodes
-                    .byValue
-                    .map!((n) => h2.nodes[n.channel][])
-                    .array;
-            }
-            catch (Exception e) {
-                if (error_callback) {
-                    error_callback(null, null, ErrorCode.NODES_DOES_NOT_MATCH);
-                }
-                return false;
-            }
-            bool ok = true;
-
-            foreach (ref h1_events, ref h2_events; lockstep(h1_nodes, h2_nodes)) {
-                while (!h1_events.empty && higher(h1_events.front.altitude, h2_events
-                        .front.altitude)) {
-                    h1_events.popFront;
-                }
-                while (!h2_events.empty && higher(h2_events.front.altitude, h1_events
-                        .front.altitude)) {
-                    h2_events.popFront;
-                }
-                bool check(bool ok, const ErrorCode code) {
-                    if (!ok && error_callback) {
-                        return error_callback(h1_events.front, h2_events.front, code);
-                    }
-                    return ok;
-                }
-
-                if (!h1_events.empty && !h2_events.empty) {
-                    order_offset = h1_events.front.received_order - h2_events.front.received_order;
-                    if (!h1_events.front.hasRound || !h2_events.front.hasRound) {
-                        return error_callback(null, null, ErrorCode.NODES_DOES_NOT_MATCH);
-                    }
-                    round_offset = h1_events.front.round.number - h2_events.front.round.number;
-                }
-                //error_callback(h1_events.front, h2_events.front, ErrorCode.NONE);
-                while (!h1_events.empty && !h2_events.empty) {
-                    const e1 = h1_events.front;
-                    const e2 = h2_events.front;
-
-                    with (ErrorCode) {
-                        ok &= check(e1.fingerprint == e2.fingerprint, FINGERPRINT_NOT_THE_SAME);
-                        ok &= check(e1.event_body.mother == e2.event_body.mother, MOTHER_NOT_THE_SAME);
-                        ok &= check(e1.event_body.father == e2.event_body.father, FATHER_NOT_THE_SAME);
-                        ok &= check(e1.altitude == e2.altitude, ALTITUDE_NOT_THE_SAME);
-                        ok &= check(e1.received_order - e2.received_order == order_offset, ORDER_NOT_THE_SAME);
-                        ok &= check(e1.round.number - e2.round.number == round_offset, ROUND_NOT_THE_SAME);
-                        if ((e1.round_received) && (e2.round_received)) {
-                            ok &= check(e1.round_received.number - e2.round_received.number == round_offset,
-                                    ROUND_RECEIVED_NOT_THE_SAME);
-                        }
-                        ok &= check((e1.witness is null) == (e2.witness is null), WITNESS_CONFLICT);
-                    }
-                    // if (!ok) {
-                    //     return ok;
-                    // }
-                    count++;
-                    h1_events.popFront;
-                    h2_events.popFront;
-                }
-            }
-            return ok;
-        }
-    }
     /++
      This function makes sure that the HashGraph has all the events connected to this event
      +/
@@ -1025,10 +933,6 @@ class HashGraph {
                 do {
                     super(&run);
                     _hashgraph = h;
-                    // //this.name=name;
-                    // if (_hashgraph.name == "Alice") {
-                    //     _hashgraph.print_flag=true;
-                    // }
                 }
 
                 const(HashGraph) hashgraph() const pure nothrow {
@@ -1043,7 +947,7 @@ class HashGraph {
                 private void run() {
                     { // Eva Event
                         immutable buf = cast(Buffer) _hashgraph.channel;
-                        const nonce = _hashgraph.hirpc.net.calcHash(buf);
+                        const nonce = cast(Buffer) _hashgraph.hirpc.net.calcHash(buf);
                         auto eva_event = _hashgraph.createEvaEvent(time, nonce);
 
                         if (eva_event is null) {
@@ -1111,109 +1015,115 @@ class HashGraph {
 
     }
 
-    unittest {
-        import tagion.hashgraph.Event;
-        import std.stdio;
-        import std.traits;
-        import std.conv;
-        import std.datetime;
-        import tagion.hibon.HiBONJSON;
-        import tagion.logger.Logger : log, LoggerType;
+    import std.compiler;
 
-        log.push(LoggerType.NONE);
+    static if (!vendor.llvm || !(version_major == 2 && version_minor == 99)) {
+        // Unittest segfaults in LDC 1.29 (2.099)
+        unittest {
+            import tagion.hashgraph.Event;
+            import std.stdio;
+            import std.traits;
+            import std.conv;
+            import std.datetime;
+            import tagion.hibon.HiBONJSON;
+            import tagion.logger.Logger : log, LogLevel;
 
-        enum NodeLabel {
-            Alice,
-            Bob,
-            Carol,
-            Dave,
+            log.push(LogLevel.NONE);
 
-            Elisa,
-            Freja,
-            George, // Hermine,
+            enum NodeLabel {
+                Alice,
+                Bob,
+                Carol,
+                Dave,
 
-            // Illa,
-            // Joella,
-            // Kattie,
-            // Laureen,
-            // Manual,
-            // Niels,
-            // Ove,
-            // Poul,
-            // Roberto,
-            // Samatha,
-            // Tamekia,
+                Elisa,
+                Freja,
+                George, // Hermine,
 
-        }
+                // Illa,
+                // Joella,
+                // Kattie,
+                // Laureen,
+                // Manual,
+                // Niels,
+                // Ove,
+                // Poul,
+                // Roberto,
+                // Samatha,
+                // Tamekia,
 
-        auto node_labels = [EnumMembers!NodeLabel].map!((E) => E.to!string).array;
-        auto network = new TestNetwork(node_labels); //!NodeLabel();
-        network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
-        network.random.seed(123456789);
-
-        network.global_time = SysTime.fromUnixTime(1_614_355_286); //SysTime(DateTime(2021, 2, 26, 15, 59, 46));
-
-        const channels = network.channels;
-
-        try {
-            foreach (i; 0 .. 550) {
-                const channel_number = network.random.value(0, channels.length);
-                const channel = channels[channel_number];
-                auto current = network.networks[channel];
-                (() @trusted { current.call; })();
             }
-        }
-        catch (Exception e) {
-            (() @trusted { writefln("%s", e); assert(0, e.msg); })();
-        }
 
-        version (none) {
-            writefln("Save Alice");
-            Pubkey[string] node_labels;
+            auto node_labels = [EnumMembers!NodeLabel].map!((E) => E.to!string).array;
+            auto network = new TestNetwork(node_labels); //!NodeLabel();
+            network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
+            network.random.seed(123456789);
 
-            foreach (channel, _net; network.networks) {
-                node_labels[_net._hashgraph.name] = channel;
-            }
-            foreach (_net; network.networks) {
-                const filename = fileId(_net._hashgraph.name);
-                _net._hashgraph.fwrite(filename.fullpath, node_labels);
-            }
-        }
+            network.global_time = SysTime.fromUnixTime(1_614_355_286); //SysTime(DateTime(2021, 2, 26, 15, 59, 46));
 
-        bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
-            static string print(const Event e) nothrow {
-                if (e) {
-                    const round_received = (e.round_received) ? e.round_received.number.to!string : "#";
-                    return assumeWontThrow(format("(%d:%d:%d:r=%d:rr=%s:%s)",
-                            e.id, e.node_id, e.altitude, e.round.number, round_received,
-                            e.fingerprint.cutHex));
+            const channels = network.channels;
+
+            try {
+                foreach (i; 0 .. 550) {
+                    const channel_number = network.random.value(0, channels.length);
+                    const channel = channels[channel_number];
+                    auto current = network.networks[channel];
+                    (() @trusted { current.call; })();
                 }
-                return assumeWontThrow(format("(%d:%d:%s:%s)", 0, -1, 0, "nil"));
+            }
+            catch (Exception e) {
+                (() @trusted { writefln("%s", e); assert(0, e.msg); })();
             }
 
-            assumeWontThrow(writefln("Event %s and %s %s", print(e1), print(e2), code));
-            return false;
-        }
+            version (none) {
+                writefln("Save Alice");
+                Pubkey[string] node_labels;
 
-        auto names = network.networks.byValue
-            .map!((net) => net._hashgraph.name)
-            .array.dup
-            .sort
-            .array;
+                foreach (channel, _net; network.networks) {
+                    node_labels[_net._hashgraph.name] = channel;
+                }
+                foreach (_net; network.networks) {
+                    const filename = fileId(_net._hashgraph.name);
+                    _net._hashgraph.fwrite(filename.fullpath, node_labels);
+                }
+            }
 
-        HashGraph[string] hashgraphs;
-        foreach (net; network.networks) {
-            hashgraphs[net._hashgraph.name] = net._hashgraph;
-        }
+            bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
+                static string print(const Event e) nothrow {
+                    if (e) {
+                        const round_received = (e.round_received) ? e.round_received.number.to!string : "#";
+                        return assumeWontThrow(format("(%d:%d:%d:r=%d:rr=%s:%s)",
+                                e.id, e.node_id, e.altitude, e.round.number, round_received,
+                                e.fingerprint.cutHex));
+                    }
+                    return assumeWontThrow(format("(%d:%d:%s:%s)", 0, -1, 0, "nil"));
+                }
 
-        foreach (i, name_h1; names[0 .. $ - 1]) {
-            const h1 = hashgraphs[name_h1];
-            foreach (name_h2; names[i + 1 .. $]) {
-                const h2 = hashgraphs[name_h2];
-                auto comp = Compare(h1, h2, &event_error);
-                // writefln("%s %s round_offset=%d order_offset=%d",
-                //     h1.name, h2.name, comp.round_offset, comp.order_offset);
-                const result = comp.compare;
+                assumeWontThrow(writefln("Event %s and %s %s", print(e1), print(e2), code));
+                return false;
+            }
+
+            auto names = network.networks.byValue
+                .map!((net) => net._hashgraph.name)
+                .array.dup
+                .sort
+                .array;
+
+            HashGraph[string] hashgraphs;
+            foreach (net; network.networks) {
+                hashgraphs[net._hashgraph.name] = net._hashgraph;
+            }
+
+            foreach (i, name_h1; names[0 .. $ - 1]) {
+                const h1 = hashgraphs[name_h1];
+                foreach (name_h2; names[i + 1 .. $]) {
+                    const h2 = hashgraphs[name_h2];
+                    auto comp = Compare(h1, h2, &event_error);
+                    // writefln("%s %s round_offset=%d order_offset=%d",
+                    //     h1.name, h2.name, comp.round_offset, comp.order_offset);
+                    const result = comp.compare;
+                    assert(result, format("HashGraph %s and %s is not the same", h1.name, h2.name));
+                }
             }
         }
     }
@@ -1221,6 +1131,8 @@ class HashGraph {
 
 version (unittest) {
     import Basic = tagion.basic.Basic;
+    import std.range : dropExactly;
+    import tagion.utils.Miscellaneous : cutHex;
 
     const(Basic.FileNames) fileId(T = HashGraph)(string prefix = null) @safe {
         import basic = tagion.basic.Basic;

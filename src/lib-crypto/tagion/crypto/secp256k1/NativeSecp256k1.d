@@ -825,10 +825,12 @@ unittest {
 
         auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.RAW, NativeSecp256k1.Format.RAW);
 
-        const aliceSecretKey = decode("37cf9a0f624a21b0821f4ab3f711ac3a86ac3ae8e4d25bdbd8cdcad7b6cf92d4");
+        const aliceSecretKey = decode(
+                "37cf9a0f624a21b0821f4ab3f711ac3a86ac3ae8e4d25bdbd8cdcad7b6cf92d4");
         const alicePublicKey = crypt.computePubkey(aliceSecretKey, false);
 
-        const bobSecretKey = decode("2f402cd0753d3afca00bd3f7661ca2f882176ae4135b415efae0e9c616b4a63e");
+        const bobSecretKey = decode(
+                "2f402cd0753d3afca00bd3f7661ca2f882176ae4135b415efae0e9c616b4a63e");
         const bobPublicKey = crypt.computePubkey(bobSecretKey, false);
 
         assert(alicePublicKey.toHexString == "0451958fb5c78264dc67edec62ad7cb0722ca7468e9781c1aebc0c05c5e8be05daa916301e6267fed2a662c9d727da9c3ffa4eab9f76dd848f60ef44d2917cf7ee");
@@ -854,7 +856,8 @@ unittest {
         writefln("       =%s", "049E35EFD4390AB5AB1CBD5C273D0D23E6D46C8CCF966C2CC62A4196AC58967AB9   7735ACB05E8646C557EF824F118C9B66AF162FCFAD14B91A145BC55693C342E6");
         assert(pubKey.toHexString!true == "049E35EFD4390AB5AB1CBD5C273D0D23E6D46C8CCF966C2CC62A4196AC58967AB97735ACB05E8646C557EF824F118C9B66AF162FCFAD14B91A145BC55693C342E6");
 
-        const ciphertextPrivKey = decode("f2785178d20217ed89e982ddca6491ed21d598d8545db503f1dee5e09c747164");
+        const ciphertextPrivKey = decode(
+                "f2785178d20217ed89e982ddca6491ed21d598d8545db503f1dee5e09c747164");
 
         ubyte[] sharedECCKey;
 

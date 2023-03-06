@@ -3,7 +3,8 @@ module tagion.betterC.wallet.WalletRecords;
 import tagion.betterC.hibon.HiBON;
 import tagion.betterC.hibon.Document : Document;
 import tagion.betterC.wallet.KeyRecover : KeyRecover;
-import tagion.basic.Types : Buffer, Pubkey, Signature;
+import tagion.basic.Types : Buffer;
+import tagion.crypto.Types :  Pubkey, Signature;
 import tagion.basic.Basic : basename;
 import tagion.betterC.utils.Memory;
 import tagion.betterC.utils.BinBuffer;
@@ -17,6 +18,7 @@ import std.typecons : TypedefType, Tuple;
 import std.range.primitives : isInputRange;
 
 import tagion.betterC.funnel.TagionCurrency;
+
 // import tagion.script.StandardRecords : StandardBill;
 
 template isSpecialKeyType(T) {
@@ -31,79 +33,79 @@ template isSpecialKeyType(T) {
     }
 }
 
-    static R toList(R)(const Document doc) {
-        alias MemberU = ForeachType!(R);
-        alias BaseU = TypedefType!MemberU;
-        static if (isArray!R) {
-            alias UnqualU = Unqual!MemberU;
-            UnqualU[] result;
-            result.length = doc.length;
-            enum do_foreach = true;
-        }
-        else static if (isSpecialKeyType!R) {
-            R result;
-            enum do_foreach = true;
-        }
-        else static if (isAssociativeArray!R) {
-            R result;
-            enum do_foreach = true;
-        }
-        else {
-            return R(doc);
-            enum do_foreach = false;
-        }
-        static if (do_foreach) {
-            foreach (elm; doc[]) {
+static R toList(R)(const Document doc) {
+    alias MemberU = ForeachType!(R);
+    alias BaseU = TypedefType!MemberU;
+    static if (isArray!R) {
+        alias UnqualU = Unqual!MemberU;
+        UnqualU[] result;
+        result.length = doc.length;
+        enum do_foreach = true;
+    }
+    else static if (isSpecialKeyType!R) {
+        R result;
+        enum do_foreach = true;
+    }
+    else static if (isAssociativeArray!R) {
+        R result;
+        enum do_foreach = true;
+    }
+    else {
+        return R(doc);
+        enum do_foreach = false;
+    }
+    static if (do_foreach) {
+        foreach (elm; doc[]) {
+            static if (isSpecialKeyType!R) {
+                const value_doc = elm.get!Document;
+                alias KeyT = KeyType!R;
+                alias BaseKeyT = TypedefType!KeyT;
+                static if (Document.Value.hasType!BaseKeyT || is(BaseKeyT == enum)) {
+                    const key = KeyT(value_doc[0].get!BaseKeyT);
+                }
+                else {
+                    auto key = KeyT(value_doc[0].get!BaseKeyT);
+                }
+                const e = value_doc[1];
+            }
+            else {
+                const e = elm;
+            }
+            static if (Document.Value.hasType!MemberU || is(BaseU == enum)) {
+                auto value = e.get!BaseU;
+            }
+            else static if (Document.Value.hasType!BaseU) {
+                // Special case for Typedef
+                auto value = MemberU(e.get!BaseU);
+            }
+            else {
+                const sub_doc = e.get!Document;
+                static if (is(BaseU == struct)) {
+                    auto value = BaseU(sub_doc);
+                }
+                else {
+                    auto value = toList!BaseU(sub_doc);
+                }
+                // else {
+                //     static assert(0,
+                //             format("Can not convert %s to Document", R.stringof));
+                // }
+            }
+            static if (isAssociativeArray!R) {
                 static if (isSpecialKeyType!R) {
-                    const value_doc = elm.get!Document;
-                    alias KeyT = KeyType!R;
-                    alias BaseKeyT = TypedefType!KeyT;
-                    static if (Document.Value.hasType!BaseKeyT || is(BaseKeyT == enum)) {
-                        const key = KeyT(value_doc[0].get!BaseKeyT);
-                    }
-                    else {
-                        auto key = KeyT(value_doc[0].get!BaseKeyT);
-                    }
-                    const e = value_doc[1];
+                    result[key] = value;
                 }
                 else {
-                    const e = elm;
-                }
-                static if (Document.Value.hasType!MemberU || is(BaseU == enum)) {
-                    auto value = e.get!BaseU;
-                }
-                else static if (Document.Value.hasType!BaseU) {
-                    // Special case for Typedef
-                    auto value = MemberU(e.get!BaseU);
-                }
-                else {
-                    const sub_doc = e.get!Document;
-                    static if (is(BaseU == struct)) {
-                        auto value = BaseU(sub_doc);
-                    }
-                    else {
-                        auto value = toList!BaseU(sub_doc);
-                    }
-                    // else {
-                    //     static assert(0,
-                    //             format("Can not convert %s to Document", R.stringof));
-                    // }
-                }
-                static if (isAssociativeArray!R) {
-                    static if (isSpecialKeyType!R) {
-                        result[key] = value;
-                    }
-                    else {
-                        result[e.key] = value;
-                    }
-                }
-                else {
-                    result[e.index] = value;
+                    result[e.key] = value;
                 }
             }
+            else {
+                result[e.index] = value;
+            }
         }
-        return cast(immutable)result;
     }
+    return cast(immutable) result;
+}
 
 struct RecordType {
     string name;
@@ -144,8 +146,7 @@ template GetLabel(alias member) {
         this(Document doc) {
             auto received_questions = doc["$Q"].get!Document;
             questions.create(received_questions.length);
-            foreach (element; received_questions[])
-            {
+            foreach (element; received_questions[]) {
                 questions[element.index] = element.get!string;
             }
         }
@@ -153,8 +154,7 @@ template GetLabel(alias member) {
         inout(HiBONT) toHiBON() inout {
             auto hibon = HiBON();
             auto tmp_arr = HiBON();
-            foreach (i, question; questions)
-            {
+            foreach (i, question; questions) {
                 tmp_arr[i] = question;
             }
             // GetLabel
@@ -169,11 +169,12 @@ template GetLabel(alias member) {
 
     @RecordType("PIN")
     struct DevicePIN {
-        Buffer D;     /// Device number
-        Buffer U;     /// Device random
-        Buffer S;     /// Check sum value
+        Buffer D; /// Device number
+        Buffer U; /// Device random
+        Buffer S; /// Check sum value
         void recover(ref scope ubyte[] R, scope const(ubyte[]) P) const {
             import tagion.betterC.utils.Miscellaneous : xor;
+
             xor(R, D, P);
         }
 
@@ -214,8 +215,7 @@ template GetLabel(alias member) {
         inout(HiBONT) toHiBON() inout {
             auto hibon = HiBON();
             auto tmp_arr = HiBON();
-            foreach (i, y; Y)
-            {
+            foreach (i, y; Y) {
                 tmp_arr[i] = y;
             }
             tmp_arr["S"] = S;
@@ -231,15 +231,15 @@ template GetLabel(alias member) {
         this(Document doc) {
             auto Y_data = doc["Y"].get!Document;
             Y.create(Y_data.length);
-            foreach (element; Y_data[])
-            {
+            foreach (element; Y_data[]) {
                 Y[element.index] = element.get!Buffer;
             }
             S = doc["S"].get!Buffer;
             confidence = doc["N"].get!uint;
         }
     }
-        struct AccountDetails {
+
+    struct AccountDetails {
         // @Label("$derives") Buffer[Pubkey] derives;
         @Label("$derives") Document derives;
         @Label("$bills") StandardBill[] bills;
@@ -258,10 +258,10 @@ template GetLabel(alias member) {
             // auto list = toList!Buffer[Pubkey](received_der);
             auto received_bills = doc[bills_name].get!Document;
             bills.create(received_bills.length);
-            foreach (element; received_bills[])
-            {
+            foreach (element; received_bills[]) {
                 enum value_name = GetLabel!(StandardBill.value).name;
-                bills[element.index].value = TagionCurrency(received_bills[value_name].get!Document);
+                bills[element.index].value = TagionCurrency(
+                        received_bills[value_name].get!Document);
                 bills[element.index].epoch = element.get!uint;
                 // bills[element.index].owner = element;
                 bills[element.index].gene = element.get!Buffer;
@@ -328,9 +328,8 @@ template GetLabel(alias member) {
          +/
             bool processed() {
                 bool res = false;
-                foreach (bill; bills)
-                {
-                    foreach(active; activated[]) {
+                foreach (bill; bills) {
+                    foreach (active; activated[]) {
                         const active_data = active.get!Document;
                         if (active_data[0].get!Buffer == bill.owner) {
 
@@ -352,7 +351,7 @@ template GetLabel(alias member) {
             TagionCurrency available() {
                 long result;
                 foreach (bill; bills) {
-                    foreach(active; activated[]) {
+                    foreach (active; activated[]) {
                         const active_data = active.get!Document;
                         if (active_data[0].get!Buffer == bill.owner) {
                             result += active_data[1].get!uint;
@@ -368,7 +367,7 @@ template GetLabel(alias member) {
             TagionCurrency active() {
                 long result;
                 foreach (bill; bills) {
-                    foreach(active; activated[]) {
+                    foreach (active; activated[]) {
                         const active_data = active.get!Document;
                         if (active_data[0].get!Buffer == bill.owner) {
                             result += active_data[1].get!uint;
@@ -377,10 +376,10 @@ template GetLabel(alias member) {
                 }
                 return TagionCurrency(result);
             }
-        //     /++
-        //  Returns:
-        //  The total balance including the active bills
-        //  +/
+            //     /++
+            //  Returns:
+            //  The total balance including the active bills
+            //  +/
             // TagionCurrency total() {
             //     return bills
             //         .map!(b => b.value)
@@ -388,7 +387,8 @@ template GetLabel(alias member) {
             // }
         }
     }
-        @RecordType("BIL") struct StandardBill {
+
+    @RecordType("BIL") struct StandardBill {
         @Label("$V") TagionCurrency value; // Bill type
         @Label("$k") uint epoch; // Epoch number
         //        @Label("$T", true) string bill_type; // Bill type
@@ -417,13 +417,15 @@ template GetLabel(alias member) {
             return Document(toHiBON.serialize);
         }
     }
-        @RecordType("Invoice") struct Invoice {
+
+    @RecordType("Invoice") struct Invoice {
         string name;
         TagionCurrency amount;
         Pubkey pkey;
         @Label("*", true) Document info;
         this(Document doc) {
         }
+
         inout(HiBONT) toHiBON() inout {
             auto hibon = HiBON();
             return cast(inout) hibon;
@@ -433,7 +435,8 @@ template GetLabel(alias member) {
             return Document(toHiBON.serialize);
         }
     }
-        @RecordType("SMC") struct Contract {
+
+    @RecordType("SMC") struct Contract {
         @Label("$in") Buffer[] input; /// Hash pointer to input (DART)
         @Label("$read", true) Buffer[] read; /// Hash pointer to read-only input (DART)
         @Label("$out") Document[Pubkey] output; // pubkey of the output
@@ -460,15 +463,18 @@ template GetLabel(alias member) {
             input = doc[input_name].get!Document;
 
         }
+
         inout(HiBONT) toHiBON() inout {
             auto hibon = HiBON();
-            return cast(inout)hibon;
+            return cast(inout) hibon;
         }
+
         const(Document) toDoc() {
             return Document(toHiBON.serialize);
         }
     }
-        struct Script {
+
+    struct Script {
         @Label("$name") string name;
         @Label("$env", true) Buffer link; // Hash pointer to smart contract object;
         // mixin HiBONRecord!(

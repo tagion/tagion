@@ -1,6 +1,6 @@
 module tagion.behaviour.BehaviourUnittest;
 
-import tagion.behaviour.BehaviourBase;
+import tagion.behaviour.BehaviourFeature;
 
 /// This module is only use to support the unittest
 version (unittest) {
@@ -12,19 +12,26 @@ version (unittest) {
     immutable(string) REPOROOT;
     shared static this() {
         REPOROOT = environment.get(REPOROOT.stringof, null);
+        if (REPOROOT is null) {
+
+            const gitrepo = execute(["git", "rev-parse", "--show-toplevel"]);
+            REPOROOT = gitrepo.output;
+        }
         assert(REPOROOT, format!"%s must be defined"(REPOROOT.stringof));
+    }
+
+    @safe
+    Document result(string test) {
+        auto h = new HiBON;
+        h["test"] = test;
+        return Document(h);
     }
 
     enum feature = Feature("Some awesome feature should print some cash out of the blue");
     // Behavioral examples
+    @safe
     @Scenario("Some awesome money printer")
     class Some_awesome_feature {
-        static Document result(string test) {
-            auto h = new HiBON;
-            h["test"] = test;
-            return Document(h);
-        }
-
         uint count;
         @Given("the card is valid")
         Document is_valid() {
@@ -32,13 +39,13 @@ version (unittest) {
             return result(__FUNCTION__);
         }
 
-        @And("the account is in credit")
+        @Given("the account is in credit")
         Document in_credit() {
             count++;
             return result(__FUNCTION__);
         }
 
-        @And("the dispenser contains cash")
+        @Given("the dispenser contains cash")
         Document contains_cash() {
             count++;
             return result(__FUNCTION__);
@@ -56,8 +63,14 @@ version (unittest) {
             return result(__FUNCTION__);
         }
 
-        @And("the cash is dispensed")
+        @Then("the cash is dispensed")
         Document is_dispensed() {
+            count++;
+            return result(__FUNCTION__);
+        }
+
+        @But("if the Customer does not take his card, then the card must be swollowed")
+        Document swollow_the_card() {
             count++;
             return result(__FUNCTION__);
         }
@@ -66,6 +79,7 @@ version (unittest) {
         }
     }
 
+    @safe
     @Scenario("Some money printer which is controlled by a bankster")
     class Some_awesome_feature_bad_format_double_property {
         @Given("the card is valid")
@@ -83,12 +97,13 @@ version (unittest) {
             return Document();
         }
 
-        @And("the cash is dispensed")
+        @Then("the cash is dispensed")
         Document is_dispensed() {
             return Document();
         }
     }
 
+    @safe
     @Scenario("Some money printer which has run out of paper")
     class Some_awesome_feature_bad_format_missing_given {
         @Then("the account is debited ")
@@ -99,12 +114,13 @@ version (unittest) {
             return Document();
         }
 
-        @And("the cash is dispensed")
+        @Then("the cash is dispensed")
         Document is_dispensed() {
             return Document();
         }
     }
 
+    @safe
     @Scenario("Some money printer which is gone wild and prints toilet paper")
     class Some_awesome_feature_bad_format_missing_then {
         @Given("the card is valid")
@@ -114,4 +130,8 @@ version (unittest) {
         }
     }
 
+}
+
+@safe
+struct This_is_not_a_scenario {
 }

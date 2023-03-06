@@ -133,7 +133,8 @@ DecodeLEB128!T decode(T = ulong)(const(ubyte[]) data) if (isUnsigned!T) {
         if ((d & 0x80) == 0) {
             len = i + 1;
             static if (!is(BaseT == ulong)) {
-                check(result <= BaseT.max, message("LEB128 decoding overflow of %x for %s", result, T.stringof));
+                check(result <= BaseT.max, message("LEB128 decoding overflow of %x for %s", result, T
+                        .stringof));
             }
             return DecodeLEB128!T(cast(BaseT) result, len);
         }
@@ -198,7 +199,9 @@ unittest {
         ok!ulong(27272727, buffer_4);
         const(ubyte[5]) buffer_5 = [181, 202, 212, 168, 5];
         ok!ulong(1427449141, buffer_5);
-        const(ubyte[10]) buffer_6 = [255, 255, 255, 255, 255, 255, 255, 255, 255, 1];
+        const(ubyte[10]) buffer_6 = [
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 1
+        ];
         ok!ulong(ulong.max, buffer_6);
     }
 
@@ -245,13 +248,21 @@ unittest {
         const(ubyte[1]) buffer_17 = [127];
         ok!long(-1L, buffer_17);
 
-        const(ubyte[10]) buffer_18 = [254, 255, 255, 255, 255, 255, 255, 255, 255, 0];
+        const(ubyte[10]) buffer_18 = [
+            254, 255, 255, 255, 255, 255, 255, 255, 255, 0
+        ];
         ok!long(long.max - 1, buffer_18);
-        const(ubyte[10]) buffer_19 = [255, 255, 255, 255, 255, 255, 255, 255, 255, 0];
+        const(ubyte[10]) buffer_19 = [
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 0
+        ];
         ok!long(long.max, buffer_19);
-        const(ubyte[10]) buffer_20 = [129, 128, 128, 128, 128, 128, 128, 128, 128, 127];
+        const(ubyte[10]) buffer_20 = [
+            129, 128, 128, 128, 128, 128, 128, 128, 128, 127
+        ];
         ok!long(long.min + 1, buffer_20);
-        const(ubyte[10]) buffer_21 = [128, 128, 128, 128, 128, 128, 128, 128, 128, 127];
+        const(ubyte[10]) buffer_21 = [
+            128, 128, 128, 128, 128, 128, 128, 128, 128, 127
+        ];
         ok!long(long.min, buffer_21);
     }
 

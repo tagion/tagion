@@ -2,21 +2,22 @@ module tagion.wallet.WalletRecords;
 
 import tagion.hibon.HiBONRecord;
 import tagion.wallet.KeyRecover : KeyRecover;
-import tagion.basic.Types : Buffer, Pubkey;
+import tagion.basic.Types : Buffer;
+import tagion.crypto.Types :  Pubkey;
 import tagion.script.TagionCurrency;
 import tagion.script.StandardRecords : StandardBill;
 
 @safe {
-    @RecordType("Quiz")
+    @recordType("Quiz")
     struct Quiz {
-        @Label("$Q") string[] questions;
+        @label("$Q") string[] questions;
         mixin HiBONRecord;
     }
 
     /++
 
 +/
-    @RecordType("PIN")
+    @recordType("PIN")
     struct DevicePIN {
         Buffer D; /// Device number
         Buffer U; /// Device random
@@ -30,16 +31,16 @@ import tagion.script.StandardRecords : StandardBill;
         mixin HiBONRecord;
     }
 
-    // @RecordType("Wallet") struct Wallet {
+    // @recordType("Wallet") struct Wallet {
     //     KeyRecover.RecoverGenerator generator;
     //     mixin HiBONRecord;
     // }
 
-    @RecordType("Wallet")
+    @recordType("Wallet")
     struct RecoverGenerator {
         Buffer[] Y; /// Recorvery seed
         Buffer S; /// Check value S=H(H(R))
-        @Label("N") uint confidence;
+        @label("N") uint confidence;
         mixin HiBONRecord;
     }
 

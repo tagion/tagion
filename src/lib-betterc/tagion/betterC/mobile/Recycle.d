@@ -12,21 +12,20 @@ struct Recycle(T) {
     /// Create an object of T and return it's index in '_active'
     const(uint) create(T x) {
         import core.stdc.stdio;
+
         if (_reuse.length > 0) {
             const reuse_id = _reuse.pop_back();
             _active[reuse_id] = x;
             return reuse_id;
         }
-        // _active ~= x;
-        pragma(msg, "create ", T);
         _active.append(x);
-        return cast(uint)_active.length - 1;
+        return cast(uint) _active.length - 1;
     }
 
     bool put(T x, const uint id) {
         bool result = false;
 
-        if(exists(id)) {
+        if (exists(id)) {
             _active[id] = x;
             result = true;
         }
@@ -41,6 +40,7 @@ struct Recycle(T) {
     }
     do {
         import std.algorithm.searching : count;
+
         _active[id] = T.init;
         // Check for avoiding the multiple append the same id
         if (_reuse.count(id) is 0) {
@@ -52,7 +52,7 @@ struct Recycle(T) {
     T opCall(const uint id)
     in {
         assert(id < _active.length);
-        assert(_active[id] !is T.init);
+        assert(_active[id]!is T.init);
     }
     do {
         return _active[id];
@@ -61,7 +61,7 @@ struct Recycle(T) {
     /// Checking for existence by id
     bool exists(const uint id) const nothrow {
         if (id < _active.length) {
-            return _active[id] !is T.init;
+            return _active[id]!is T.init;
         }
         return false;
     }

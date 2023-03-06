@@ -6,11 +6,9 @@ import std.format;
 import std.array : join;
 import std.conv : to;
 
-// import tagion.revision;
-//import tagion.services.Options;
-import tagion.basic.Types : Buffer, Pubkey, isBufferType;
+import tagion.basic.Types : Buffer, isBufferType;
 import tagion.basic.Basic : EnumText, buf_idup, basename;
-
+import tagion.crypto.Types :  Pubkey;
 
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous : cutHex;
@@ -64,7 +62,7 @@ class EmulatorGossipNet : GossipNet {
     @trusted
     static Tid getTidByNodeNumber(const uint i) {
         immutable taskname = i.get_node_name;
-        log("trying to locate: %s", taskname);
+        log.trace("Trying to locate: %s", taskname);
         auto tid = locate(taskname);
         return tid;
     }
@@ -84,7 +82,7 @@ class EmulatorGossipNet : GossipNet {
     void add_channel(const Pubkey channel) {
         _pkeys ~= channel;
         _tids[channel] = getTidByNodeNumber(node_counter);
-        log("channel: %s tid: %s", channel.cutHex, _tids[channel]);
+        log.trace("Add channel: %s tid: %s", channel.cutHex, _tids[channel]);
         node_counter++;
     }
 
@@ -112,10 +110,6 @@ class EmulatorGossipNet : GossipNet {
     }
 
     bool isValidChannel(const(Pubkey) channel) const pure nothrow {
-        // debug {
-        //     import std.exception : assumeWontThrow;
-        //     assumeWontThrow(log.trace("(channel in _tids) %s ((channel != mypk) %s", !!(channel in _tids), ((channel != mypk))));
-        //         }
         return (channel in _tids) !is null;
     }
 
@@ -124,9 +118,7 @@ class EmulatorGossipNet : GossipNet {
 
         foreach (count; 0 .. _tids.length * 2) {
             const node_index = uniform(0, cast(uint) _tids.length, random);
-            // log("selected index: %d %d", node_index, _tids.length);
             const send_channel = _pkeys[node_index];
-            // log("trying to select: %s, valid?: %s", send_channel.cutHex, channel_filter(send_channel));
             if ((send_channel != mypk) && channel_filter(send_channel)) {
                 return send_channel;
             }
@@ -135,31 +127,21 @@ class EmulatorGossipNet : GossipNet {
     }
 
     const(Pubkey) gossip(
-        const(ChannelFilter) channel_filter,
-        const(SenderCallBack) sender) {
+            const(ChannelFilter) channel_filter,
+            const(SenderCallBack) sender) {
         const send_channel = select_channel(channel_filter);
-        log("selected channel: %s", send_channel.cutHex);
+        log.trace("Selected channel: %s", send_channel.cutHex);
         if (send_channel.length) {
             send(send_channel, sender());
         }
         return send_channel;
     }
 
-    //     void dump(const(HiBON[]) events) const {
-    //         foreach(e; events) {
-    //             auto pack_doc=Document(e.serialize);
-    //             immutable pack=buildEventPackage(this, pack_doc);
-    // //            immutable fingerprint=pack.event_body.fingerprint;
-    //             log("\tsending %s f=%s a=%d", pack.pubkey.cutHex, pack.fingerprint.cutHex, pack.event_body.altitude);
-    //         }
-    //     }
-
     version (none) void dump(const(HiBON[]) events) const {
         foreach (e; events) {
             auto pack_doc = Document(e.serialize);
             immutable pack = buildEventPackage(this, pack_doc);
-            //            immutable fingerprint=pack.event_body.fingerprint;
-            log("\tsending %s f=%s a=%d", pack.pubkey.cutHex, pack.fingerprint.cutHex, pack
+            log.trace("Sending %s f=%s a=%d", pack.pubkey.cutHex, pack.fingerprint.cutHex, pack
                     .event_body.altitude);
         }
     }
@@ -169,15 +151,11 @@ class EmulatorGossipNet : GossipNet {
         import std.algorithm.searching : countUntil;
         import tagion.hibon.HiBONJSON;
 
-        log.trace("send to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
+        log("Send to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
                 .toDoc.serialize.length);
-        // log("%s", sender.toDoc.toJSON);
-        // if ( callbacks ) {
-        //     callbacks.send(channel, sender.toDoc);
-        // }
-        // log(_tids)
         Thread.sleep(duration);
         _tids[channel].send(sender.toDoc);
-        log.trace("sended");
+        log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
+                .toDoc.serialize.length);
     }
 }

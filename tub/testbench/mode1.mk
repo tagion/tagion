@@ -1,11 +1,12 @@
-export MODE1_ROOT:=$(TESTBENCH)/mode1
+export MODE1_ROOT:=$(TESTLOG)/mode1
 #export MODE1_DART:=$(MODE1_ROOT)/dart.drt
 #export MODE1_CONFIG:=$(MODE1_ROOT)/tagionwave.json
 #export MODE1_SRC_CONFIG:=$(FUND)/mode1/tagionwave.json
 #export MODE1_LOG:=$(MODE1_ROOT)/mode1_script.log
-MODE1_FLAGS:=-N 7 -t 300
+MODE1_BOOT=$(MODE1_ROOT)/boot.hibon
+MODE1_FLAGS:=-N $(NODES) -t 300
 MODE1_FLAGS+=--net-mode=local
-MODE1_FLAGS+=--boot=$(MODE1_ROOT)/boot.hibon
+MODE1_FLAGS+=--boot=$(MODE1_BOOT)
 #MODE1_FLAGS+=--epochs=$(EPOCHS)
 
 ifdef INSCREEN
@@ -21,6 +22,7 @@ MODE1_CONFIG_$1=$$(MODE1_ROOT)/tagionwave-$1.json
 MODE1_DARTFILE_$1=$$(MODE1_ROOT)/dart-$1.drt
 MODE1_PID_$1=$$(MODE1_ROOT)/tagionwave-$1.pid
 MODE1_LOG_$1=$$(MODE1_ROOT)/tagionwave-$1.log
+MODE1_RECCHAIN_$1=$$(MODE1_ROOT)/recorderchain-$1/
 
 mode1-run-$1: export TAGIONCONFIG=$$(MODE1_CONFIG_$1)
 mode1-run-$1: export TAGIONLOG=$$(MODE1_LOG_$1)
@@ -28,6 +30,7 @@ mode1-run-$1: export TAGIONLOG=$$(MODE1_LOG_$1)
 mode1-$1: DARTFILE=$$(MODE1_DART_$1)
 mode1-$1: target-tagionwave
 mode1-$1: $$(MODE1_ROOT)/.way
+#mode1-$1: $$(MODE1_RECCHAIN)/.way
 #mode1-$1: $$(MODE1_CONFIG)
 #mode1-$1: $$(MODE1_DART)
 
@@ -71,7 +74,7 @@ $$(MODE1_CONFIG_$1): $$(MODE1_ROOT)/.way
 $$(MODE1_CONFIG_$1): target-tagionwave
 $$(MODE1_CONFIG_$1):
 	$$(PRECMD)
-	$$(TAGIONWAVE) $$@ $$(MODE1_FLAGS) --port $$(HOSTPORT) -p $$(TRANSACTIONPORT) -P $$(MONITORPORT) --dart-filename=$$(MODE1_DARTFILE_$1) --dart-synchronize=$$(DARTSYNC) --dart-init=$$(DARTINIT) --pid=$$(MODE1_PID_$1) -O
+	$$(TAGIONWAVE) $$@ $$(MODE1_FLAGS) --port $$(HOSTPORT) -p $$(TRANSACTIONPORT) -P $$(MONITORPORT) --dart-filename=$$(MODE1_DARTFILE_$1) --dart-synchronize=$$(DARTSYNC) --dart-init=$$(DARTINIT) --pid=$$(MODE1_PID_$1) -O --recorderchain=$$(MODE1_RECCHAIN_$1)
 
 mode1-config: $$(MODE1_CONFIG_$1)
 
@@ -90,21 +93,14 @@ env-mode1: env-mode1-$1
 endef
 
 mode1: $(MODE1_ROOT)/.way
-mode1: tagionwave $(MODE1_DART)
+mode1: tagionwave $(MODE1_DART) mode1-unboot
 
 .PHONY: mode1
-testbench: mode1
+testnet: mode1
 
-# $(MODE1_DART): | dart
-# $(MODE1_DART): $(DARTDB)
-# 	$(PRECMD)
-# 	$(MKDIR) $(@D)
-# 	$(CP) $< $@
-
-# $(MODE1_CONFIG): $$(MODE1_ROOT)/.way
-# $(MODE1_CONFIG): $(MODE1_SRC_CONFIG)
-# 	$(PRECMD)
-# 	cp $< $@
+mode1-unboot:
+	$(RRECMD)
+	$(RM) $(MODE1_BOOT)
 
 help-mode1:
 	$(PRECMD)
@@ -123,13 +119,12 @@ env-mode1:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.kvp, MODE1_FLAGS,"$(MODE1_FLAGS)"}
+	${call log.kvp, MODE1_BOOT,"$(MODE1_BOOT)"}
 	${call log.env, MODE1_LIST,$(MODE1_LIST)}
 	${call log.close}
 
 .PHONY: env-mode1
-env-testbench: env-mode1
-
-#run: mode1
+env-testnet: env-mode1
 
 clean-mode1:
 	$(PRECMD)
@@ -139,7 +134,7 @@ clean-mode1:
 
 .PHONY: clean-mode1
 
-clean-testbench: clean-mode1
+clean-testnet: clean-mode1
 
 ${foreach mode1,$(MODE1_LIST),${call MODE1,$(mode1)}}
 
@@ -147,7 +142,7 @@ check-mode1:
 	$(PRECMD)
 	${call log.header, $@ :: check}
 	echo "Bullseye mode1"
-	@${foreach node_name,$(MODE1_LIST),  dartutil --eye -d$(MODE1_DARTFILE_$(node_name));}
+	@${foreach node_name,$(MODE1_LIST),   $(DBIN)/dartutil --eye -d$(MODE1_DARTFILE_$(node_name));}
 	${call log.close}
 
 check: check-mode1

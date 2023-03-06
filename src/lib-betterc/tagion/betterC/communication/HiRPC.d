@@ -7,9 +7,9 @@ import tagion.betterC.hibon.HiBON;
 import tagion.betterC.hibon.Document;
 import tagion.betterC.wallet.WalletRecords : GetLabel, Label;
 import tagion.betterC.utils.Memory;
-import tagion.basic.Types : Buffer, Pubkey, Signature;
+import tagion.basic.Types : Buffer;
+import tagion.crypto.Types :  Pubkey, Signature;
 import tagion.betterC.wallet.Net;
-
 
 struct HiRPC {
     // import tagion.hibon.HiBONRecord;
@@ -17,7 +17,7 @@ struct HiRPC {
     struct Method {
         @Label("*", true) uint id;
         @Label("*", true) Document params;
-        @Label("method")  string name;
+        @Label("method") string name;
 
         this(Document doc) {
             enum id_name = GetLabel!(id).name;
@@ -39,7 +39,7 @@ struct HiRPC {
             hibon[params_name] = params;
             hibon[method_name] = name;
 
-            return cast(inout)hibon;
+            return cast(inout) hibon;
         }
 
         const(Document) toDoc() {
@@ -67,7 +67,7 @@ struct HiRPC {
             hibon[id_name] = id;
             hibon[result_name] = result;
 
-            return cast(inout)hibon;
+            return cast(inout) hibon;
         }
 
         const(Document) toDoc() {
@@ -106,7 +106,7 @@ struct HiRPC {
             hibon[message_name] = message;
             hibon[code_name] = code;
 
-            return cast(inout)hibon;
+            return cast(inout) hibon;
         }
 
         const(Document) toDoc() {
@@ -168,7 +168,7 @@ struct HiRPC {
             pubkey = received_pubkey;
 
             message = doc[message_name].get!Document;
-            type = cast(Type)doc[type_name].get!uint;
+            type = cast(Type) doc[type_name].get!uint;
         }
 
         inout(HiBONT) toHiBON() inout {
@@ -181,9 +181,9 @@ struct HiRPC {
             hibon[signature_name] = signature;
             hibon[pubkey_name] = pubkey;
             hibon[message_name] = message;
-            hibon[type_name] = cast(uint)type;
+            hibon[type_name] = cast(uint) type;
 
-            return cast(inout)hibon;
+            return cast(inout) hibon;
         }
 
         const(Document) toDoc() {
@@ -191,44 +191,17 @@ struct HiRPC {
         }
 
         bool supports(T)() const {
-            import std.traits : isCallable, hasUDA, getUDAs;
+            import std.traits : isCallable;
+            import std.algorithm.searching : canFind;
 
-            if (type is Type.method) {
-            CaseMethod:
-                switch (method.name) {
-                    static foreach (name; __traits(derivedMembers, T)) {
-                        {
-                            static if (is(typeof(__traits(getMember, T, name)))) {
-                                enum prot = __traits(getProtection,
-                                            __traits(getMember, T, name));
-                                static if (prot == "public") {
-                                    enum code = format(q{alias MemberA=T.%s;}, name);
-                                    mixin(code);
-                                    static if (hasUDA!(MemberA, HiRPCMethod)) {
-                                        enum hirpc_method = getUDAs!(MemberA, HiRPCMethod)[0];
-                                        static if (hirpc_method.name) {
-                                            enum method_name = hirpc_method.name;
-                                        }
-                                        else {
-                                            enum method_name = name;
-                                        }
-                case method_name:
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                default:
-                    // empty
-                }
-            }
-            return false;
+            return (type is Type.method) &&
+                Callers!T.canFind(method.name);
         }
 
         bool verify(const Document doc) {
             return true;
         }
+
         static if (DIRECTION is Direction.RECEIVE) {
             @Label("") protected Message _message;
             @Label("") immutable SignedState signed;
@@ -241,21 +214,22 @@ struct HiRPC {
 
             this(const SecureNet net, const Document doc) {
                 enum type_name = GetLabel!(type).name;
-                type = cast(Type)doc[type_name].get!uint;
+                type = cast(Type) doc[type_name].get!uint;
                 message = doc[messageName].get!Document;
 
                 enum signature_name = GetLabel!(signature).name;
                 enum pubkey_name = GetLabel!(pubkey).name;
                 auto received_sign = doc[signature_name].get!Buffer;
                 signature.create(received_sign.length);
-                signature = received_sign[0..$];
+                signature = received_sign[0 .. $];
 
                 auto received_pubkey = doc[pubkey_name].get!Buffer;
                 pubkey.create(received_pubkey.length);
-                pubkey = received_pubkey[0..$];
-                static SignedState verifySignature(const SecureNet net, const Document doc, const(ubyte[]) sgn, const(ubyte[]) pkey) {
+                pubkey = received_pubkey[0 .. $];
+                static SignedState verifySignature(const SecureNet net, const Document doc, const(
+                        ubyte[]) sgn, const(ubyte[]) pkey) {
                     if (sgn.length) {
-        //                 //immutable fingerprint=net.hashOf(msg);
+                        //                 //immutable fingerprint=net.hashOf(msg);
                         if (net.verify(doc.serialize, sgn, pkey)) {
                             return SignedState.VALID;
                         }
@@ -287,9 +261,9 @@ struct HiRPC {
                 signed = verifySignature(net, message, signature, pubkey);
             }
 
-        //     this(T)(const SecureNet net, T pack) if (isHiBONRecord!T) {
-        //         this(net, pack.toDoc);
-        //     }
+            //     this(T)(const SecureNet net, T pack) if (isHiBONRecord!T) {
+            //         this(net, pack.toDoc);
+            //     }
 
             @trusted const(Error) error() const pure {
                 return _message.error;
@@ -332,7 +306,7 @@ struct HiRPC {
                 // type = getType(post);
                 auto doc = post;
                 enum type_name = GetLabel!(type).name;
-                type = cast(Type)doc[type_name].get!uint;
+                type = cast(Type) doc[type_name].get!uint;
                 // immutable signed=net.sign(message);
                 // fingerprint=signed.message;
 
@@ -366,6 +340,7 @@ struct HiRPC {
         }
 
     }
+
     alias Sender = Post!(Direction.SEND);
     alias Receiver = Post!(Direction.RECEIVE);
     const SecureNet net;
@@ -377,7 +352,7 @@ struct HiRPC {
 
         // auto rnd = Random!uint(stdrnd.unpredictableSeed);
         do {
-        //     id = rnd.value();
+            //     id = rnd.value();
         }
         while (id is 0 || id is uint.max);
         return id;

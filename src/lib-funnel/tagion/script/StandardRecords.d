@@ -2,26 +2,29 @@ module tagion.script.StandardRecords;
 
 import std.meta : AliasSeq;
 
-import tagion.basic.Types : Buffer, Pubkey, Signature;
+import tagion.basic.Types : Buffer;
+import tagion.crypto.Types :  Pubkey, Signature, Fingerprint;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONException;
-//import tagion.script.ScriptBase : Number;
+import std.range : empty;
 import tagion.script.TagionCurrency;
 import tagion.script.ScriptException : check;
+
+import tagion.dart.DARTBasic;
 
 enum OwnerKey = "$Y";
 
 @safe {
-    @RecordType("BIL") struct StandardBill {
-        @Label("$V") TagionCurrency value; // Bill type
-        @Label("$k") uint epoch; // Epoch number
-        //        @Label("$T", true) string bill_type; // Bill type
-        @Label(OwnerKey) Pubkey owner; // Double hashed owner key
-        @Label("$G") Buffer gene; // Bill gene
-        mixin HiBONRecord!(
-                q{
+    @recordType("BIL") struct StandardBill {
+        @label("$V") TagionCurrency value; // Bill type
+        @label("$k") uint epoch; // Epoch number
+        @label(OwnerKey) Pubkey owner; // Double hashed owner key
+        @label("$G") Buffer gene; // Bill gene
+        version (OLD_TRANSACTION) {
+            mixin HiBONRecord!(
+                    q{
                 this(TagionCurrency value, const uint epoch, Pubkey owner, Buffer gene) {
                     this.value = value;
                     this.epoch = epoch;
@@ -29,37 +32,43 @@ enum OwnerKey = "$Y";
                     this.gene = gene;
                 }
             });
-    }
-
-    @RecordType("NNC") struct NetworkNameCard {
-        @Label("#name") string name; /// Tagion domain name
-        @Label(OwnerKey) Pubkey pubkey;  /// NNC pubkey
-        @Label("$lang") string lang; /// Language used for the #name
-        @Label("$time") ulong time;  /// Time-stamp of
-        // @Label("$sign") Buffer sign;    ///
-        @Label("$record") Buffer record; /// Hash pointer to NRC
-        mixin HiBONRecord;
-
-        import tagion.crypto.SecureInterfaceNet : HashNet;
-        static Buffer dartHash(const(HashNet) net, string name) {
-            NetworkNameCard nnc;
-            nnc.name = name;
-            return net.hashOf(nnc);
+        }
+        else {
+            mixin HiBONRecord;
         }
     }
 
-    @RecordType("NRC") struct NetworkNameRecord {
-        @Label("$name") Buffer name; /// Hash of the NNC.name
-        @Label("$prev") Buffer previous; /// Hash pointer to the previuos NRC
-        @Label("$index") uint index; /// Current index previous.index+1
-        @Label("$node") Buffer node; /// Hash pointer to NNR
-        @Label("$payload", true) Document payload; /// Hash pointer to payload
+    @recordType("NNC") struct NetworkNameCard {
+        @label("#name") string name; /// Tagion domain name
+        @label(OwnerKey) Pubkey pubkey; /// NNC pubkey
+        @label("$lang") string lang; /// Language used for the #name
+        @label("$time") ulong time; /// Time-stamp of
+        @label("$record") DARTIndex record; /// Hash pointer to NRC
+        mixin HiBONRecord;
+
+        import tagion.crypto.SecureInterfaceNet : HashNet;
+
+        static DARTIndex dartHash(const(HashNet) net, string name) {
+            pragma(msg, "fixme(cbr): Should just used dartIndex");
+            NetworkNameCard nnc;
+            nnc.name = name;
+            return net.dartIndex(nnc);
+        }
+    }
+
+    @recordType("NRC") struct NetworkNameRecord {
+        @label("$name") DARTIndex name; /// Hash of the NNC.name
+        @label("$prev") Buffer previous; /// Hash pointer to the previuos NRC
+        @label("$index") uint index; /// Current index previous.index+1
+        @label("$node") DARTIndex node; /// Hash pointer to NNR
+        @label("$payload", true) Document payload; /// Hash pointer to payload
         mixin HiBONRecord;
     }
 
-    @RecordType("HL") struct HashLock {
+    @recordType("HL") struct HashLock {
         import tagion.crypto.SecureInterfaceNet;
-        @Label("$lock") Buffer lock;    /// Of the NNC with the pubkey
+
+        @label("$lock") Buffer lock; /// Of the NNC with the pubkey
         mixin HiBONRecord!(q{
                 @disable this();
                 import tagion.crypto.SecureInterfaceNet : HashNet;
@@ -74,9 +83,10 @@ enum OwnerKey = "$Y";
                 }
             });
 
-        bool verify (const(HashNet) net, const(Document) doc) const {
+        bool verify(const(HashNet) net, const(Document) doc) const {
             return lock == net.rawCalcHash(doc.serialize);
         }
+
         bool verify(T)(const(HashNet) net, ref T h) const if (isHiBONRecord!T) {
             return verify(net, h.toDoc);
         }
@@ -88,10 +98,12 @@ enum OwnerKey = "$Y";
         import tagion.script.ScriptException : ScriptException;
         import std.exception : assertThrown, assertNotThrown;
         import std.string : representation;
+
         const net = new StdHashNet;
         NetworkNameCard nnc;
         {
             import tagion.crypto.SecureNet : StdSecureNet;
+
             auto good_net = new StdSecureNet;
             good_net.generateKeyPair("very secret correct password");
             nnc.name = "some_name";
@@ -108,8 +120,8 @@ enum OwnerKey = "$Y";
                 });
         }
         // Invalid HR
-        const nohash=NoHash("no hash");
-//        const x=HashLock(net, nohash);
+        const nohash = NoHash("no hash");
+        //        const x=HashLock(net, nohash);
         assertThrown(HashLock(net, nohash));
         // Correct HR
         const hr = assertNotThrown(HashLock(net, nnc));
@@ -121,11 +133,9 @@ enum OwnerKey = "$Y";
             assert(hr.verify(net, nnc));
         }
 
-
     }
 
-    version (none)
-    @RecordType("NNR") struct NetworkNodeRecord {
+    version (none) @recordType("NNR") struct NetworkNodeRecord {
         enum State {
             PROSPECT,
             STANDBY,
@@ -133,135 +143,168 @@ enum OwnerKey = "$Y";
             STERILE
         }
 
-//        @Label("#node") Buffer node; /// Hash point of the public key
-        @Label("$name") Buffer name;  /// Hash pointer to the
-        @Label("$time") ulong time;
-        @Label("$sign") uint sign;    /// Signature of
-        @Label("$state") State state;
-        @Label("$gene") Buffer gene;
-        @Label("$addr") string address;
+        //        @label("#node") Buffer node; /// Hash point of the public key
+        @label("$name") Buffer name; /// Hash pointer to the
+        @label("$time") ulong time;
+        @label("$sign") uint sign; /// Signature of
+        @label("$state") State state;
+        @label("$gene") Buffer gene;
+        @label("$addr") string address;
         mixin HiBONRecord;
     }
 
-    @RecordType("active0") struct ActiveNode {
-        @Label("$node") Buffer node; /// Pointer to the NNC
-        @Label("$drive") Buffer drive; /// The tweak of the used key
-        @Label("$sign") Buffer signed; /// Signed bulleye of the DART
+    @recordType("active0") struct ActiveNode {
+        @label("$node") Buffer node; /// Pointer to the NNC
+        @label("$drive") Buffer drive; /// The tweak of the used key
+        @label("$sign") Buffer signed; /// Signed bulleye of the DART
         mixin HiBONRecord;
 
     }
 
-    @RecordType("$epoch0") struct EpochBlock {
-        @Label("$epoch") int epoch; /// Epoch number
-        @Label("$prev") Buffer previous; /// Hashpoint to the previous epoch block
-        @Label("$recorder") Buffer recoder; /// Fingerprint of the recorder
-        @Label("$global") Buffer global; /// Gloal nerwork paremeters
-        @Label("$actives") ActiveNode[] actives; /// List of active nodes Sorted by the $node
+    @recordType("$epoch0") struct EpochBlock {
+        @label("$epoch") int epoch; /// Epoch number
+        @label("$prev") Buffer previous; /// Hashpoint to the previous epoch block
+        @label("$recorder") Buffer recoder; /// Fingerprint of the recorder
+        @label("$global") Buffer global; /// Gloal nerwork paremeters
+        @label("$actives") ActiveNode[] actives; /// List of active nodes Sorted by the $node
         mixin HiBONRecord;
     }
 
     enum EPOCH_TOP_NAME = "tagion";
 
-    @RecordType("top") struct LastEpochRecord {
-        @Label("#name") string name;
-        @Label("$top") Buffer top;
+    @recordType("top") struct LastEpochRecord {
+        @label("#name") string name;
+        @label("$top") Fingerprint top;
         mixin HiBONRecord!(q{
                 @disable this();
                 import tagion.crypto.SecureInterfaceNet : HashNet;
                 this(const(HashNet) net, ref const(EpochBlock) block) {
                     name = EPOCH_TOP_NAME;
-                    top = net.hashOf(block);
+                    top = net.calcHash(block);
                 }
             });
 
-        static Buffer dartHash(const(HashNet) net) {
+        static Fingerprint dartHash(const(HashNet) net) {
             EpochBlock b;
             auto record = LastEpochRecord(net, b);
-            return net.hashOf(record);
+            return net.calcHash(record);
         }
     }
 
     struct Globals {
-        @Label("$fee") TagionCurrency fixed_fees; /// Fixed fees per Transcation
-        @Label("$mem") TagionCurrency storage_fee; /// Fees per byte
-        TagionCurrency fees(const TagionCurrency topay, const size_t size) pure const {
-            return fixed_fees + size * storage_fee;
+        @label("$fee") TagionCurrency fixed_fees; /// Fixed fees per Transcation
+        @label("$mem") TagionCurrency storage_fee; /// Fees per byte
+        TagionCurrency fees() pure const {
+            return fixed_fees;
         }
 
         mixin HiBONRecord;
     }
 
-    @RecordType("$master0") struct MasterGlobals {
-        //    @Label("$total") Number total;    /// Total tagions in the network
-        @Label("$rewards") ulong rewards; /// Epoch rewards
+    @recordType("$master0") struct MasterGlobals {
+        //    @label("$total") Number total;    /// Total tagions in the network
+        @label("$rewards") ulong rewards; /// Epoch rewards
         mixin HiBONRecord;
     }
 
-    @RecordType("SMC") struct Contract {
-        @Label("$in") Buffer[] inputs; /// Hash pointer to input (DART)
-        @Label("$read", true) Buffer[] reads; /// Hash pointer to read-only input (DART)
-        @Label("$out") Document[Pubkey] output; // pubkey of the output
-        @Label("$run") Script script; // TVM-links / Wasm binary
+    @recordType("SMC") struct Contract {
+        @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
+        @label("$read", true) DARTIndex[] reads; /// Hash pointer to read-only input (DART)
+        version (OLD_TRANSACTION) {
+            @label("$out") Document[Pubkey] output; // pubkey of the output
+            @label("$run") Script script; // TVM-links / Wasm binary
+        }
+        else {
+            @label("$out") Pubkey[] output; // pubkey of the output
+
+        }
         mixin HiBONRecord;
         bool verify() {
-            return (inputs.length > 0) &&
-                (output.length > 0);
+            return (inputs.length > 0);
         }
     }
 
-    @RecordType("PAY") struct PayContract {
-        @Label("$bills", true) StandardBill[] bills; /// The actual inputs
+    @recordType("PAY") struct PayContract {
+        @label("$bills", true) StandardBill[] bills; /// The actual inputs
         mixin HiBONRecord;
     }
 
-    @RecordType("SSC") struct SignedContract {
-        @Label("$signs") Signature[] signs; /// Signature of all inputs
-        @Label("$contract") Contract contract; /// The contract must signed by all inputs
-        version(OLD_TRANSACTION) {
-            pragma(msg, "OLD_TRANSACTION ",__FILE__,":",__LINE__);
-            @Label("$in", true) Document inputs; /// The actual inputs
-	}
+    @recordType("SSC") struct SignedContract {
+        @label("$signs") Signature[] signs; /// Signature of all inputs
+        @label("$contract") Contract contract; /// The contract must signed by all inputs
+        version (OLD_TRANSACTION) {
+            pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
+            @label("$in", true) StandardBill[] inputs; /// The actual inputs
+        }
         mixin HiBONRecord;
     }
 
-    struct Script {
-        @Label("$name") string name;
-        @Label("$env", true) Buffer link; // Hash pointer to smart contract object;
+    /**
+     * \struct HealthcheckParams
+     * Struct store paramentrs for healthcheck request
+     */
+    @recordType("Healthcheck") struct HealthcheckParams {
+        /** amount of hashgraph rounds */
+        @label("$hashgraph_rounds") ulong rounds;
+        /**last epoch timestamp */
+        @label("epoch_timestamp") long epoch_timestamp;
+        /** amount of transactions in last epoch */
+        @label("$transactions_amount") uint transactions_amount;
+        /** number of current epoch */
+        @label("$epoch_number") uint epoch_num;
+        /** check we not in last round */
+        @label("$in_graph") bool in_graph;
         mixin HiBONRecord!(
                 q{
+                this(ulong rounds, long epoch_timestamp, uint transactions_amount, uint epoch_num, bool in_graph) {
+                    this.rounds = rounds;
+                    this.epoch_timestamp = epoch_timestamp;
+                    this.transactions_amount = transactions_amount;
+                    this.epoch_num = epoch_num;
+                    this.in_graph = in_graph;
+                }
+            });
+    }
+
+    version (OLD_TRANSACTION) {
+        struct Script {
+            @label("$name", true) string name;
+            @label("$env", true) Buffer link; // Hash pointer to smart contract object;
+            mixin HiBONRecord!(
+                    q{
                 this(string name, Buffer link=null) {
                     this.name = name;
                     this.link = link;
                 }
             });
-        // bool verify() {
-        //     return (wasm.length is 0) ^ (link.empty);
-        // }
+            bool verify() {
+                return (name.empty) ^ (link.empty);
+            }
 
+        }
     }
 
     alias ListOfRecords = AliasSeq!(
             StandardBill,
             NetworkNameCard,
-            NetworkNameRecord,
-            // NetworkNodeRecord,
+            NetworkNameRecord, // NetworkNodeRecord,
             Contract,
             SignedContract
     );
 
-    @RecordType("Invoice") struct Invoice {
+    @recordType("Invoice") struct Invoice {
         string name;
         TagionCurrency amount;
-        @Label(OwnerKey) Pubkey pkey;
-        @Label("*", true) Document info;
+        @label(OwnerKey) Pubkey pkey;
+        @label("*", true) Document info;
         mixin HiBONRecord;
     }
 
     struct AccountDetails {
-        @Label("$derives") Buffer[Pubkey] derives;
-        @Label("$bills") StandardBill[] bills;
-        @Label("$state") Buffer derive_state;
-        @Label("$active") bool[Pubkey] activated; /// Actived bills
+        @label("$derives") Buffer[Pubkey] derives;
+        @label("$bills") StandardBill[] bills;
+        @label("$state") Buffer derive_state;
+        @label("$active") bool[Pubkey] activated; /// Actived bills
         import std.algorithm : map, sum, filter, any, each;
 
         bool remove_bill(Pubkey pk) {
@@ -338,6 +381,6 @@ enum OwnerKey = "$Y";
 static Globals globals;
 
 static this() {
-    globals.fixed_fees = 50.TGN; // Fixed fee
+    globals.fixed_fees = 1.TGN / 10; // Fixed fee
     globals.storage_fee = 1.TGN / 200; // Fee per stored byte
 }

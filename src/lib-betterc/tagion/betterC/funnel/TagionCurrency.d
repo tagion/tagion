@@ -4,6 +4,7 @@ import std.format;
 import std.traits : isIntegral, isNumeric, isFloatingPoint;
 import std.algorithm.searching : canFind;
 import std.range : only;
+
 // import std.array : join;
 // import std.conv : to;
 import tagion.betterC.hibon.HiBON;
@@ -59,18 +60,21 @@ struct TagionCurrency {
         return _axions > -AXION_MAX && _axions < AXION_MAX;
     }
 
-    TagionCurrency opBinary(string OP)(const TagionCurrency rhs) const pure if (
+    TagionCurrency opBinary(string OP)(const TagionCurrency rhs) const pure
+    if (
         ["+", "-", "%"].canFind(OP)) {
         enum code = format(q{return TagionCurrency(_axions %1$s rhs._axions);}, OP);
         mixin(code);
     }
 
-    TagionCurrency opBinary(string OP, T)(T rhs) const pure if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP))) {
+    TagionCurrency opBinary(string OP, T)(T rhs) const pure
+    if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP))) {
         enum code = format(q{return TagionCurrency(_axions %s rhs);}, OP);
         mixin(code);
     }
 
-    TagionCurrency opBinaryRight(string OP, T)(T left) const pure if (isIntegral!T && (["+", "-", "*"].canFind(OP))) {
+    TagionCurrency opBinaryRight(string OP, T)(T left) const pure
+    if (isIntegral!T && (["+", "-", "*"].canFind(OP))) {
         enum code = format(q{return TagionCurrency(left %s _axions);}, OP);
         mixin(code);
     }
@@ -84,17 +88,20 @@ struct TagionCurrency {
         }
     }
 
-    void opOpAssign(string OP)(const TagionCurrency rhs) pure if (["+", "-", "%"].canFind(OP)) {
+    void opOpAssign(string OP)(const TagionCurrency rhs) pure
+    if (["+", "-", "%"].canFind(OP)) {
         enum code = format(q{_axions %s= rhs._axions;}, OP);
         mixin(code);
     }
 
-    void opOpAssign(string OP, T)(const T rhs) pure if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP))) {
+    void opOpAssign(string OP, T)(const T rhs) pure
+    if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP))) {
         enum code = format(q{_axions %s= rhs;}, OP);
         mixin(code);
     }
 
-    void opOpAssign(string OP, T)(const T rhs) pure if (isFloatingPoint!T && (["*", "%", "/"].canFind(OP))) {
+    void opOpAssign(string OP, T)(const T rhs) pure
+    if (isFloatingPoint!T && (["*", "%", "/"].canFind(OP))) {
         enum code = format(q{_axions %s= rhs;}, OP);
         mixin(code);
     }

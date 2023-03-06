@@ -5,7 +5,12 @@ DRTFALGS+=$(COVOPT)
 COVWAY=$(DLOGCOV)/.way
 endif
 DFLAGS+=$(DIP25) $(DIP1000)
+
+ifneq ($(COMPILER),gdc)
 DFLAGS+=$(DPREVIEW)=inclusiveincontracts
+endif
+
+DFLAGS+=-J$(DTUB)/logos/
 
 #
 # Change extend of the LIB
@@ -14,7 +19,7 @@ LIBEXT=${if $(SHARED),$(DLLEXT),$(STAEXT)}
 
 #
 # D compiler
-#
+#/
 $(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 	$(PRECMD)
 	${call log.kvp, compile, $(MODE)}
@@ -25,13 +30,11 @@ $(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 # Compile and link or split link
 #
 ifdef SPLIT_LINKER
-#$(DOBJ)/%.$(OBJEXT): $(PREBUILD)
-
 $(DOBJ)/lib%.$(OBJEXT): $(DOBJ)/.way
 	$(PRECMD)
 	${call log.kvp, compile$(MODE)}
 	echo ${DFILES}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) $(DCOMPILE_ONLY)  $(OUTPUT)$@
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} $(DCOMPILE_ONLY)  $(OUTPUT)$@
 
 $(DLIB)/lib%.$(DLLEXT): $(DOBJ)/lib%.$(OBJEXT)
 	$(PRECMD)
@@ -42,7 +45,7 @@ else
 $(DLIB)/%.$(DLLEXT):
 	$(PRECMD)
 	${call log.kvp, link$(MODE), $(DMODULE)}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) ${LDFLAGS} $(LIBS) $(OBJS) $(DCOMPILE_ONLY)  $(OUTPUT)$@
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} ${LDFLAGS} $(LIBS) $(OBJS) $(DCOMPILE_ONLY)  $(OUTPUT)$@
 endif
 
 #
@@ -52,7 +55,8 @@ endif
 $(DBIN)/%:
 	$(PRECMD)
 	${call log.kvp, bin$(MOD), $*}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $(DFILES) ${LDFLAGS} $(LIBS) $(OBJS) $(OUTPUT)$@
+	echo $(DFILES) > /tmp/dfiles.mk
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} ${LDFLAGS} $(LIBS) $(OBJS) $(OUTPUT)$@
 
 #
 # Proto targets for unittest
@@ -63,17 +67,24 @@ UNITTEST_BIN?=$(DBIN)/unittest
 UNITTEST_LOG?=$(DLOG)/unittest.log
 
 proto-unittest-run: $(DLOG)/.way
-proto-unittest-run: $(UNITTEST_BIN)
+proto-unittest-run: proto-unittest-build
 	$(PRECMD)
 	$(SCRIPT_LOG) $(UNITTEST_BIN) $(UNITTEST_LOG)
+
+proto-unittest-build: $(UNITTEST_BIN)
 
 $(UNITTEST_BIN):DFLAGS+=$(DIP25) $(DIP1000)
 $(UNITTEST_BIN): $(COVWAY) $$(DFILES)
 	$(PRECMD)
 	echo deps $?
 	echo LIBS=$(LIBS)
-	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFALGS) ${addprefix -I,$(DINC)} $(DFILES) $(LIBS) $(OUTPUT)$@
+	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFALGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} $(LIBS) $(OUTPUT)$@
 
+unittest: revision
+
+unitmain: DFLAGS+=$(DVERSION)=unitmain
+unitmain: UNITTEST_FLAGS:=$(DDEBUG) $(DDBUG_SYMBOLS)
+unitmain: unittest
 
 clean-unittest:
 	$(PRECMD)
@@ -89,6 +100,9 @@ help-unittest:
 	${call log.help, "make help-unittest", "Will display this part"}
 	${call log.help, "make clean-unittest", "Clean unittest files"}
 	${call log.help, "make env-uintest", "List all unittest parameters"}
+	${call log.help, "make unittest", "Compiles/Links and runs the unittest"}
+	${call log.help, "make unitmain", "Used to run a single unittest as a main" }
+	${call log.help, "make build-unittest-build", "Compiles/Links the unittest"}
 	${call log.close}
 
 help: help-unittest

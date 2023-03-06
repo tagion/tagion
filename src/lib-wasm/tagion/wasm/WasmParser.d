@@ -130,27 +130,27 @@ import tagion.utils.LEB128;
                                 break;
                             }
                         }
-                        else if (source[_end_pos .. _end_pos + 2] == "(;") {
+            else if (source[_end_pos .. _end_pos + 2] == "(;") {
                             _end_pos += 2;
                             level++;
                         }
-                        else {
+            else {
                             _end_pos++;
                         }
                     }
                 }
-                else if ((_end_pos + 1 < source.length) && (source[_end_pos .. _end_pos + 2] == ";;")) {
+            else if ((_end_pos + 1 < source.length) && (source[_end_pos .. _end_pos + 2] == ";;")) {
                     type = Token.Type.COMMENT;
                     _end_pos += 2;
                     while ((_end_pos < source.length) && (!is_newline(source[_end_pos .. $]))) {
                         _end_pos++;
                     }
                 }
-                else if ((source[_end_pos] is '(') || (source[_end_pos] is ')')) {
+            else if ((source[_end_pos] is '(') || (source[_end_pos] is ')')) {
                     type = Token.Type.BRACKET;
                     _end_pos++;
                 }
-                else if (source[_end_pos] is '"' || source[_end_pos] is '\'') {
+            else if (source[_end_pos] is '"' || source[_end_pos] is '\'') {
                     type = Token.Type.TEXT;
                     const quote = source[_begin_pos];
                     _end_pos++;
@@ -177,7 +177,7 @@ import tagion.utils.LEB128;
                         }
                     }
                 }
-                else {
+            else {
                     while ((_end_pos < source.length)
                             && is_none_white(source[_end_pos]) && (source[_end_pos]!is ')')) {
                         _end_pos++;
@@ -301,90 +301,78 @@ unittest {
     immutable(Token[]) tokens = [
         {line: 1, pos: 0, symbol: "(", type: Token.Type.BRACKET},
         {line: 1, pos: 1, symbol: "module", type: Token.Type.WORD},
-        {line: 2, pos: 0, symbol: "(", type: Token.Type.BRACKET}, {
-            line: 2, pos: 1, symbol: "type", type: Token.Type.WORD
-        },
-        {line: 2, pos: 6, symbol: "$0", type: Token.Type.WORD}, {line: 2, pos: 9, symbol: "(", type: Token.Type.BRACKET},
+        {line: 2, pos: 0, symbol: "(", type: Token.Type.BRACKET},
+        {line: 2, pos: 1, symbol: "type", type: Token.Type.WORD},
+        {line: 2, pos: 6, symbol: "$0", type: Token.Type.WORD},
+        {line: 2, pos: 9, symbol: "(", type: Token.Type.BRACKET},
         {line: 2, pos: 10, symbol: "func", type: Token.Type.WORD},
         {line: 2, pos: 15, symbol: "(", type: Token.Type.BRACKET},
         {line: 2, pos: 16, symbol: "param", type: Token.Type.WORD},
         {line: 2, pos: 22, symbol: "f64", type: Token.Type.WORD},
-        {line: 2, pos: 26, symbol: "f64", type: Token.Type.WORD}, {
-            line: 2, pos: 29, symbol: ")", type: Token.Type.BRACKET
-        },
+        {line: 2, pos: 26, symbol: "f64", type: Token.Type.WORD},
+        {line: 2, pos: 29, symbol: ")", type: Token.Type.BRACKET},
         {line: 2, pos: 31, symbol: "(", type: Token.Type.BRACKET},
         {line: 2, pos: 32, symbol: "result", type: Token.Type.WORD},
-        {line: 2, pos: 39, symbol: "f64", type: Token.Type.WORD}, {
-            line: 2, pos: 42, symbol: ")", type: Token.Type.BRACKET
-        },
+        {line: 2, pos: 39, symbol: "f64", type: Token.Type.WORD},
+        {line: 2, pos: 42, symbol: ")", type: Token.Type.BRACKET},
         {line: 2, pos: 43, symbol: ")", type: Token.Type.BRACKET},
         {line: 2, pos: 44, symbol: ")", type: Token.Type.BRACKET},
-        {line: 3, pos: 0, symbol: "(", type: Token.Type.BRACKET}, {
-            line: 3, pos: 1, symbol: "type", type: Token.Type.WORD
-        },
-        {line: 3, pos: 6, symbol: "$1", type: Token.Type.WORD}, {line: 3, pos: 9, symbol: "(", type: Token.Type.BRACKET},
+        {line: 3, pos: 0, symbol: "(", type: Token.Type.BRACKET},
+        {line: 3, pos: 1, symbol: "type", type: Token.Type.WORD},
+        {line: 3, pos: 6, symbol: "$1", type: Token.Type.WORD},
+        {line: 3, pos: 9, symbol: "(", type: Token.Type.BRACKET},
         {line: 3, pos: 10, symbol: "func", type: Token.Type.WORD},
         {line: 3, pos: 15, symbol: "(", type: Token.Type.BRACKET},
         {line: 3, pos: 16, symbol: "param", type: Token.Type.WORD},
         {line: 3, pos: 22, symbol: "i32", type: Token.Type.WORD},
-        {line: 3, pos: 26, symbol: "i32", type: Token.Type.WORD}, {
-            line: 3, pos: 29, symbol: ")", type: Token.Type.BRACKET
-        },
+        {line: 3, pos: 26, symbol: "i32", type: Token.Type.WORD},
+        {line: 3, pos: 29, symbol: ")", type: Token.Type.BRACKET},
         {line: 3, pos: 31, symbol: "(", type: Token.Type.BRACKET},
         {line: 3, pos: 32, symbol: "result", type: Token.Type.WORD},
-        {line: 3, pos: 39, symbol: "i32", type: Token.Type.WORD}, {
-            line: 3, pos: 42, symbol: ")", type: Token.Type.BRACKET
-        },
+        {line: 3, pos: 39, symbol: "i32", type: Token.Type.WORD},
+        {line: 3, pos: 42, symbol: ")", type: Token.Type.BRACKET},
         {line: 3, pos: 43, symbol: ")", type: Token.Type.BRACKET},
         {line: 3, pos: 44, symbol: ")", type: Token.Type.BRACKET},
-        {line: 4, pos: 0, symbol: "(", type: Token.Type.BRACKET}, {
-            line: 4, pos: 1, symbol: "type", type: Token.Type.WORD
-        },
-        {line: 4, pos: 6, symbol: "$2", type: Token.Type.WORD}, {line: 4, pos: 9, symbol: "(", type: Token.Type.BRACKET},
+        {line: 4, pos: 0, symbol: "(", type: Token.Type.BRACKET},
+        {line: 4, pos: 1, symbol: "type", type: Token.Type.WORD},
+        {line: 4, pos: 6, symbol: "$2", type: Token.Type.WORD},
+        {line: 4, pos: 9, symbol: "(", type: Token.Type.BRACKET},
         {line: 4, pos: 10, symbol: "func", type: Token.Type.WORD},
         {line: 4, pos: 14, symbol: ")", type: Token.Type.BRACKET},
-        {line: 4, pos: 15, symbol: ")", type: Token.Type.BRACKET}, {
-            line: 5, pos: 0, symbol: "(", type: Token.Type.BRACKET
-        },
-        {line: 5, pos: 1, symbol: "memory", type: Token.Type.WORD}, {
-            line: 5, pos: 8, symbol: "$4", type: Token.Type.WORD
-        },
-        {line: 5, pos: 12, symbol: "2", type: Token.Type.WORD}, {line: 5, pos: 13, symbol: ")", type: Token.Type.BRACKET},
-        {line: 6, pos: 0, symbol: "(", type: Token.Type.BRACKET}, {
-            line: 6, pos: 1, symbol: "table", type: Token.Type.WORD
-        },
-        {line: 6, pos: 7, symbol: "$3", type: Token.Type.WORD}, {line: 6, pos: 11, symbol: "1", type: Token.Type.WORD},
+        {line: 4, pos: 15, symbol: ")", type: Token.Type.BRACKET},
+        {line: 5, pos: 0, symbol: "(", type: Token.Type.BRACKET},
+        {line: 5, pos: 1, symbol: "memory", type: Token.Type.WORD},
+        {line: 5, pos: 8, symbol: "$4", type: Token.Type.WORD},
+        {line: 5, pos: 12, symbol: "2", type: Token.Type.WORD},
+        {line: 5, pos: 13, symbol: ")", type: Token.Type.BRACKET},
+        {line: 6, pos: 0, symbol: "(", type: Token.Type.BRACKET},
+        {line: 6, pos: 1, symbol: "table", type: Token.Type.WORD},
+        {line: 6, pos: 7, symbol: "$3", type: Token.Type.WORD},
+        {line: 6, pos: 11, symbol: "1", type: Token.Type.WORD},
         {line: 6, pos: 13, symbol: "1", type: Token.Type.WORD},
         {line: 6, pos: 15, symbol: "funcref", type: Token.Type.WORD},
-        {line: 6, pos: 22, symbol: ")", type: Token.Type.BRACKET}, {
-            line: 7, pos: 0, symbol: "(", type: Token.Type.BRACKET
-        },
-        {line: 7, pos: 1, symbol: "global", type: Token.Type.WORD}, {
-            line: 7, pos: 8, symbol: "$5", type: Token.Type.WORD
-        },
-        {line: 7, pos: 12, symbol: "(", type: Token.Type.BRACKET}, {
-            line: 7, pos: 13, symbol: "mut", type: Token.Type.WORD
-        },
-        {line: 7, pos: 17, symbol: "i32", type: Token.Type.WORD}, {
-            line: 7, pos: 20, symbol: ")", type: Token.Type.BRACKET
-        },
+        {line: 6, pos: 22, symbol: ")", type: Token.Type.BRACKET},
+        {line: 7, pos: 0, symbol: "(", type: Token.Type.BRACKET},
+        {line: 7, pos: 1, symbol: "global", type: Token.Type.WORD},
+        {line: 7, pos: 8, symbol: "$5", type: Token.Type.WORD},
+        {line: 7, pos: 12, symbol: "(", type: Token.Type.BRACKET},
+        {line: 7, pos: 13, symbol: "mut", type: Token.Type.WORD},
+        {line: 7, pos: 17, symbol: "i32", type: Token.Type.WORD},
+        {line: 7, pos: 20, symbol: ")", type: Token.Type.BRACKET},
         {line: 7, pos: 22, symbol: "(", type: Token.Type.BRACKET},
         {line: 7, pos: 23, symbol: "i32.const", type: Token.Type.WORD},
         {line: 7, pos: 33, symbol: "66560", type: Token.Type.WORD},
         {line: 7, pos: 38, symbol: ")", type: Token.Type.BRACKET},
-        {line: 7, pos: 39, symbol: ")", type: Token.Type.BRACKET}, {
-            line: 8, pos: 0, symbol: "(", type: Token.Type.BRACKET
-        },
+        {line: 7, pos: 39, symbol: ")", type: Token.Type.BRACKET},
+        {line: 8, pos: 0, symbol: "(", type: Token.Type.BRACKET},
         {line: 8, pos: 1, symbol: "export", type: Token.Type.WORD},
         {line: 8, pos: 8, symbol: `"memory"`, type: Token.Type.TEXT},
         {line: 8, pos: 17, symbol: "(", type: Token.Type.BRACKET},
         {line: 8, pos: 18, symbol: "memory", type: Token.Type.WORD},
-        {line: 8, pos: 25, symbol: "$4", type: Token.Type.WORD}, {
-            line: 8, pos: 27, symbol: ")", type: Token.Type.BRACKET
-        },
-        {line: 8, pos: 28, symbol: ")", type: Token.Type.BRACKET}, {
-            line: 9, pos: 0, symbol: "(", type: Token.Type.BRACKET
-        },
+        {line: 8, pos: 25, symbol: "$4", type: Token.Type.WORD},
+        {line: 8, pos: 27, symbol: ")", type: Token.Type.BRACKET},
+        {line: 8, pos: 28, symbol: ")", type: Token.Type.BRACKET},
+        {line: 9, pos: 0, symbol: "(", type: Token.Type.BRACKET},
         {line: 9, pos: 1, symbol: "export", type: Token.Type.WORD},
         {line: 9, pos: 8, symbol: `"add"`, type: Token.Type.TEXT},
         {line: 9, pos: 14, symbol: "(", type: Token.Type.BRACKET},
@@ -417,14 +405,12 @@ unittest {
         {line: 13, pos: 19, symbol: ")", type: Token.Type.BRACKET},
         {line: 14, pos: 2, symbol: "(", type: Token.Type.BRACKET},
         {line: 14, pos: 3, symbol: "param", type: Token.Type.WORD},
-        {line: 14, pos: 9, symbol: "$0", type: Token.Type.WORD}, {
-            line: 14, pos: 12, symbol: "f64", type: Token.Type.WORD
-        },
+        {line: 14, pos: 9, symbol: "$0", type: Token.Type.WORD},
+        {line: 14, pos: 12, symbol: "f64", type: Token.Type.WORD},
         {line: 14, pos: 15, symbol: ")", type: Token.Type.BRACKET},
         {line: 15, pos: 2, symbol: "(", type: Token.Type.BRACKET},
-        {line: 15, pos: 3, symbol: "param", type: Token.Type.WORD}, {
-            line: 15, pos: 9, symbol: "$1", type: Token.Type.WORD
-        },
+        {line: 15, pos: 3, symbol: "param", type: Token.Type.WORD},
+        {line: 15, pos: 9, symbol: "$1", type: Token.Type.WORD},
         {line: 15, pos: 12, symbol: "f64", type: Token.Type.WORD},
         {line: 15, pos: 15, symbol: ")", type: Token.Type.BRACKET},
         {line: 16, pos: 2, symbol: "(", type: Token.Type.BRACKET},
@@ -445,25 +431,22 @@ unittest {
         {line: 22, pos: 24, symbol: "$1", type: Token.Type.WORD},
         {line: 22, pos: 26, symbol: ")", type: Token.Type.BRACKET},
         {line: 23, pos: 2, symbol: "(", type: Token.Type.BRACKET},
-        {line: 23, pos: 3, symbol: "param", type: Token.Type.WORD}, {
-            line: 23, pos: 9, symbol: "$0", type: Token.Type.WORD
-        },
+        {line: 23, pos: 3, symbol: "param", type: Token.Type.WORD},
+        {line: 23, pos: 9, symbol: "$0", type: Token.Type.WORD},
         {line: 23, pos: 12, symbol: "i32", type: Token.Type.WORD},
         {line: 23, pos: 15, symbol: ")", type: Token.Type.BRACKET},
         {line: 24, pos: 2, symbol: "(", type: Token.Type.BRACKET},
         {line: 24, pos: 3, symbol: "param", type: Token.Type.WORD},
-        {line: 24, pos: 9, symbol: "$1", type: Token.Type.WORD}, {
-            line: 24, pos: 12, symbol: "i32", type: Token.Type.WORD
-        },
+        {line: 24, pos: 9, symbol: "$1", type: Token.Type.WORD},
+        {line: 24, pos: 12, symbol: "i32", type: Token.Type.WORD},
         {line: 24, pos: 15, symbol: ")", type: Token.Type.BRACKET},
         {line: 25, pos: 2, symbol: "(", type: Token.Type.BRACKET},
         {line: 25, pos: 3, symbol: "result", type: Token.Type.WORD},
         {line: 25, pos: 10, symbol: "i32", type: Token.Type.WORD},
         {line: 25, pos: 13, symbol: ")", type: Token.Type.BRACKET},
         {line: 26, pos: 2, symbol: "(", type: Token.Type.BRACKET},
-        {line: 26, pos: 3, symbol: "local", type: Token.Type.WORD}, {
-            line: 26, pos: 9, symbol: "$2", type: Token.Type.WORD
-        },
+        {line: 26, pos: 3, symbol: "local", type: Token.Type.WORD},
+        {line: 26, pos: 9, symbol: "$2", type: Token.Type.WORD},
         {line: 26, pos: 12, symbol: "i32", type: Token.Type.WORD},
         {line: 26, pos: 15, symbol: ")", type: Token.Type.BRACKET},
         {line: 27, pos: 2, symbol: "block", type: Token.Type.WORD},
@@ -544,7 +527,8 @@ unittest {
         {line: 67, pos: 2, symbol: ")", type: Token.Type.BRACKET},
         {line: 69, pos: 0, symbol: `;;(custom_section "producers"`, type: Token.Type.COMMENT},
         {line: 70, pos: 0, symbol: ";;  (after code)", type: Token.Type.COMMENT},
-        {line: 71, pos: 0, symbol: `;;  "\01\0cprocessed-by\01\03ldc\061.20.1")`, type: Token.Type.COMMENT},
+        {line: 71, pos: 0, symbol: `;;  "\01\0cprocessed-by\01\03ldc\061.20.1")`, type: Token
+            .Type.COMMENT},
         {line: 73, pos: 0, symbol: ")", type: Token.Type.BRACKET},
     ];
 

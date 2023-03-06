@@ -87,8 +87,10 @@ struct Ddeps {
             switch (kind.str) {
             case "module":
                 auto mod = getImports(j["members"]);
-                mod.file = j["file"].str;
-                modules[j["name"].str] = mod;
+                if ("name" in j) {
+                    mod.file = j["file"].str;
+                    modules[j["name"].str] = mod;
+                }
                 break;
             default:
                 // empty
@@ -285,10 +287,12 @@ struct Ddeps {
                 //                immutable cirobjs=("CIRCULAR_"~name).map!((a) => (a == '.')?'_':a).map!((a) => cast(char)a.toUpper).array;
                 immutable cir = cirname(mod);
                 fout.writefln("%s: %s", cir, workdir);
-                immutable cir_fmt = "%-(\t${eval " ~ CIROBJS ~ "+= %s }\n%) }";
-                fout.writefln("\t%s", PRECMD.envFormat);
-                fout.writefln(cir_fmt, mod.allCircular
+                if (!mod.allCircular.empty) {
+                    immutable cir_fmt = "%-(\t${eval " ~ CIROBJS ~ "+= %s }\n%) }";
+                    fout.writefln("\t%s", PRECMD.envFormat);
+                    fout.writefln(cir_fmt, mod.allCircular
                         .map!((impmod) => impmod.objname));
+                }
                 fout.writefln("\t%s %s", TOUCH.envFormat, cir);
                 fout.writeln;
                 fout.writefln("%s: %s", mod.objname, cir);

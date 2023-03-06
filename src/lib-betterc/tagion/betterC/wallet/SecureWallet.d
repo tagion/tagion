@@ -2,36 +2,23 @@
 
 module tagion.betterC.wallet.SecureWallet;
 
-// import std.format;
 import std.string : representation;
 import std.algorithm : map, max, min, sum, until, each, filter, cache;
-// import std.range : tee;
-// import std.array;
-// import std.exception : assumeUnique;
+
 import core.time : MonoTime;
 import std.traits;
 
-//import std.stdio;
-//use hibon betterc
-// import tagion.betterC.hibon.HiBON : HiBON;
 import tagion.betterC.hibon.Document : Document;
 import tagion.betterC.wallet.Net;
 import tagion.betterC.utils.BinBuffer;
 import tagion.betterC.utils.Memory;
 import tagion.betterC.utils.Miscellaneous;
-// import tagion.basic.Basic : basename, Buffer, Pubkey;
 
-// // import tagion.gossip.GossipNet : StdSecureNet, StdHashNet, scramble;
-// import tagion.basic.Message;
-// import tagion.utils.Miscellaneous;
-// import tagion.Keywords;
 import tagion.betterC.funnel.TagionCurrency;
-// import tagion.communication.HiRPC;
+
 import tagion.betterC.wallet.KeyRecover;
 import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN, AccountDetails,
-                                             Invoice, StandardBill, SignedContract;
-
-//alias StdSecureWallet = SecureWallet!StdSecureNet;
+    Invoice, StandardBill, SignedContract;
 
 struct SecureWallet(Net) {
     static assert(is(Net : SecureNet));
@@ -41,7 +28,8 @@ struct SecureWallet(Net) {
     AccountDetails account;
     protected static SecureNet net;
 
-    this(DevicePIN pin, RecoverGenerator wallet = RecoverGenerator.init, AccountDetails account = AccountDetails.init) { //nothrow {
+    this(DevicePIN pin, RecoverGenerator wallet = RecoverGenerator.init, AccountDetails account = AccountDetails
+            .init) {
         _wallet = wallet;
         _pin = pin;
         this.account = account;
@@ -69,7 +57,7 @@ struct SecureWallet(Net) {
     }
 
     static SecureWallet createWallet(scope const(string[]) questions,
-            scope const(char[][]) answers, uint confidence, const(char[]) pincode)
+    scope const(char[][]) answers, uint confidence, const(char[]) pincode)
     in {
         assert(questions.length > 3, "Minimal amount of answers is 3");
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
@@ -88,7 +76,7 @@ struct SecureWallet(Net) {
         RecoverGenerator wallet;
         DevicePIN pin;
         {
-    //         // auto R = new ubyte[net.hashSize];
+            //         // auto R = new ubyte[net.hashSize];
             ubyte[] R;
             R.create(hashSize);
 
@@ -146,7 +134,6 @@ struct SecureWallet(Net) {
     // }
 
     // bool isLoggedin() const {
-    //     // pragma(msg, "fixme(cbr): Yam the net");
     //     // return net !is null;
     //     return true;
     // }
@@ -241,15 +228,13 @@ struct SecureWallet(Net) {
         // const topay = orders.map!(b => b.amount).sum;
 
         // if (topay > 0) {
-            // const size_in_bytes = 500;
-            // pragma(msg, "fixme(cbr): Storage fee needs to be estimated");
-            // const fees = globals.fees(topay, size_in_bytes);
+        // const size_in_bytes = 500;
+        // const fees = globals.fees(topay, size_in_bytes);
         //     const amount = topay + fees;
         //     StandardBill[] contract_bills;
         //     const enough = collect_bills(amount, contract_bills);
         //     if (enough) {
         //         const total = contract_bills.map!(b => b.value).sum;
-        //         // pragma(msg, "isHiBONRecord ",isHiBONRecord!(typeof(result.contract.input[0])));
 
         //         result.contract.input = contract_bills.map!(b => net.hashOf(b.toDoc)).array;
         //         const rest = total - amount;

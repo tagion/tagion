@@ -1,13 +1,12 @@
-MODE0_ROOT:=$(TESTBENCH)/mode0
+MODE0_ROOT:=$(TESTLOG)/mode0
 MODE0_DATA:=$(MODE0_ROOT)/data
 MODE0_DART:=$(MODE0_DATA)/node0/dart.drt
 MODE0_LOG:=$(MODE0_ROOT)/mode0_script.log
 MODE0_FLAGS:=-N 7 -t 200
+MODE0_FLAGS:=--monitor --monitor-port 10920
 MODE0_FLAGS+=--pid=$(MODE0_ROOT)/tagionwave.pid
-MODE0_FLAGS+=--dart-init=false
-MODE0_FLAGS+=--epochs=$(EPOCHS)
-
-mode0-ddd: DDD=1
+MODE0_FLAGS+=--dart-init=false;
+# MODE0_FLAGS+=--epochs=$(EPOCHS);
 
 mode0: mode0-dart
 mode0: $(MODE0_DATA)/.way
@@ -33,7 +32,7 @@ mode0:
 endif
 
 .PHONY: mode0
-testbench: mode0
+testnet: mode0
 
 mode0-dart: DARTDB=$(MODE0_DART)
 mode0-dart: dart
@@ -57,7 +56,7 @@ env-mode0:
 	${call log.close}
 
 .PHONY: env-mode0
-env-testbench: env-mode0
+env-testnet: env-mode0
 
 help-mode0:
 	$(PRECMD)
@@ -85,13 +84,13 @@ clean-mode0:
 
 .PHONY: clean-mode0
 
-clean-testbench: clean-mode0
+clean-testnet: clean-mode0
 
 check-mode0:
 	$(PRECMD)
 	${call log.header, $@ :: check}
 	echo "Bullseye mode0"
-	@${foreach node_no,0 1 2 3 4 5 6, dartutil --eye -d$(MODE0_DATA)/node$(node_no)/dart.drt;}
+	@${foreach node_no,0 1 2 3 4 5 6, $(DBIN)/dartutil --eye -d$(MODE0_DATA)/node$(node_no)/dart.drt;}
 	${call log.close}
 
 check: check-mode0

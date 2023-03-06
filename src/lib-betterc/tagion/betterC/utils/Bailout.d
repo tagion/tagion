@@ -27,10 +27,9 @@ protected __gshared const(char)[] _file;
  * @return buffer based on input data and arguments
  */
 
-bool isEqual(immutable (char)[] input_arr, string word, size_t start_pos) {
+bool isEqual(immutable(char)[] input_arr, string word, size_t start_pos) {
     bool res = true;
-    foreach (i, key; word)
-    {
+    foreach (i, key; word) {
         if (input_arr[start_pos + i] != key) {
             res = false;
             break;
@@ -38,6 +37,7 @@ bool isEqual(immutable (char)[] input_arr, string word, size_t start_pos) {
     }
     return res;
 }
+
 const(char[]) message(Args...)(string text, Args args) {
     auto temp = Text(_message_buffer.length);
     enum {
@@ -103,7 +103,7 @@ version (WebAssembly) {
 else {
     void dump() {
         if (message) {
-            printf("%s:%d:%s\n", file.ptr, line, message.ptr);
+            printf("%s:%d:%s\n", file.ptr, cast(int)line, message.ptr);
         }
         else {
             printf("No error\n");

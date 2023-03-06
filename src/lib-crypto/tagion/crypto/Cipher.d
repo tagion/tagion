@@ -1,6 +1,7 @@
 module tagion.crypto.Cipher;
 
-import tagion.basic.Types : Buffer, Pubkey;
+import tagion.basic.Types : Buffer;
+import tagion.crypto.Types :  Pubkey;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 import std.exception : assumeUnique;
@@ -27,12 +28,12 @@ struct Cipher {
     //     this.net = net;
     // }
 
-    @RecordType("TCD")
+    @recordType("TCD")
     struct CipherDocument {
-        @Label("$m") Buffer ciphermsg;
-        @Label("$n") Buffer nonce;
-        @Label("$a") Buffer authTag;
-        @Label("$k") Pubkey cipherPubkey;
+        @label("$m") Buffer ciphermsg;
+        @label("$n") Buffer nonce;
+        @label("$a") Buffer authTag;
+        @label("$k") Pubkey cipherPubkey;
         mixin HiBONRecord;
     }
 
@@ -98,7 +99,8 @@ struct Cipher {
         const result = Document(data);
         immutable full_size = result.full_size;
         //        writefln("full_size=%d data.length=%d", full_size, data.length);
-        check(full_size + CRC_SIZE <= data.length && full_size !is 0, ConsensusFailCode.CIPHER_DECRYPT_ERROR);
+        check(full_size + CRC_SIZE <= data.length && full_size !is 0, ConsensusFailCode
+                .CIPHER_DECRYPT_ERROR);
 
         const crc = data[0 .. full_size].crc32Of;
         // writefln("crc calc   %s", crc);
@@ -155,8 +157,10 @@ struct Cipher {
                     if (encrypted_doc.isInorder) {
                         import std.stdio : writefln;
                         import tagion.hibon.HiBONRecord : fwrite;
-                        immutable filename = fileId!Cipher(FileExtension.hibon, encrypted_doc.stringof).fullpath;
-                        writefln("Cipher unittest file %s",filename);
+
+                        immutable filename = fileId!Cipher(FileExtension.hibon, encrypted_doc
+                                .stringof).fullpath;
+                        writefln("Cipher unittest file %s", filename);
                         filename.fwrite(encrypted_doc);
                     }
                     assert(!encrypted_doc.isInorder);

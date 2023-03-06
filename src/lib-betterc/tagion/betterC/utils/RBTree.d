@@ -91,7 +91,7 @@ struct RBTreeT(K) {
                 if (owns) {
                     static if (isPointer!K) {
 
-
+                        
 
                             .dispose(current.item);
                     }
@@ -478,7 +478,7 @@ struct RBTreeT(K) {
             if (owns) {
                 static if (isPointer!K) {
 
-
+                    
 
                         .dispose(z.item);
                 }
@@ -719,8 +719,13 @@ struct RBTreeT(K) {
 
 unittest {
 
-    enum tcase = [60, 140, 20, 130, 30, 160, 110, 170, 40, 120, 50, 70, 100, 10, 150, 80, 90];
-    const(int[17]) result = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170];
+    enum tcase = [
+            60, 140, 20, 130, 30, 160, 110, 170, 40, 120, 50, 70, 100, 10, 150, 80,
+            90
+        ];
+    const(int[17]) result = [
+        10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170
+    ];
 
     assert(tcase.length == result.length);
 

@@ -26,10 +26,10 @@ import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
-import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, isHiBONRecordArray;
+import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, isHiBONTypeArray;
 
 import tagion.basic.Message : message;
-import tagion.basic.Types : Buffer;
+import tagion.basic.Types : Buffer, isTypedef;
 import tagion.basic.Basic : CastTo;
 import LEB128 = tagion.utils.LEB128;
 
@@ -203,19 +203,6 @@ static size_t size(U)(const(U[]) array) pure {
         }
 
         /++
-         Sets the key of the Member
-         Returns:
-         The a member with a name of key
-         +/
-        // static Member search(const string key) pure {
-        //      auto result=new Member(key);
-        //      return result;
-        // }
-
-        T new_get(T)() const if (isHiBONRecord!T || isHiBON!T) {
-            return T.init;
-        }
-        /++
          Returns:
          The value as type T
          Throws:
@@ -234,9 +221,6 @@ static size_t size(U)(const(U[]) array) pure {
                     return T(doc);
                     break;
                 default:
-
-
-
                         .check(0, message("Expected HiBON type %s but apply type (%s) which is not supported",
                                 type, T.stringof));
                 }
@@ -244,16 +228,28 @@ static size_t size(U)(const(U[]) array) pure {
             assert(0);
         }
 
-        const(T) get(T)() const if (!isHiBONRecord!T && !isHiBON!T) {
+        const(T) get(T)() const if (!isHiBONRecord!T && !isHiBON!T && !isTypedef!T) {
             enum E = Value.asType!T;
-
-
-
             .check(E is type, message("Expected HiBON type %s but apply type %s (%s)",
                     type, E, T.stringof));
             return value.by!E;
         }
 
+        inout(T) get(T)() inout  if (Document.isDocTypedef!T) {
+            alias BaseType = TypedefType!T;
+        const ret = get!BaseType;
+            return T(ret);
+        }
+
+        unittest {
+    import std.typecons : Typedef;
+                alias BUF=immutable(ubyte)[];
+                alias Tdef=Typedef!(BUF, null, "SPECIAL");
+                      auto h=new HiBON;
+                Tdef buf=[0x17, 0x42];
+                h["b"]=buf;
+                assert(Document(h)["b"].get!Tdef == buf);
+       }
         /++
          Returns:
          The value as HiBON Type E
@@ -278,7 +274,7 @@ static size_t size(U)(const(U[]) array) pure {
             TypeCase:
                 switch (type) {
                     foreach (E; EnumMembers!Type) {
-                        static if (isHiBONType(E) || isNative(E)) {
+                        static if (isHiBONBaseType(E) || isNative(E)) {
                 case E:
                             static if (E is Type.DOCUMENT) {
                                 const _size = value.by!(E).size;
@@ -354,7 +350,7 @@ static size_t size(U)(const(U[]) array) pure {
             TypeCase:
                 switch (type) {
                     static foreach (E; EnumMembers!Type) {
-                        static if (isHiBONType(E) || isNative(E)) {
+                        static if (isHiBONBaseType(E) || isNative(E)) {
                 case E:
                             alias T = Value.TypeT!E;
                             static if (E is DOCUMENT) {
@@ -388,7 +384,7 @@ static size_t size(U)(const(U[]) array) pure {
         }
     }
 
-    alias Members = RedBlackTree!(Member, (a, b) => (less_than(a.key, b.key)));
+    alias Members = RedBlackTree!(Member, (a, b) @safe => (less_than(a.key, b.key)));
 
     protected Members _members;
 
@@ -453,7 +449,7 @@ static size_t size(U)(const(U[]) array) pure {
         opIndexAssign(x.toHiBON, key);
     }
 
-    void opIndexAssign(T)(T x, const string key) if (isHiBONRecordArray!T) {
+    void opIndexAssign(T)(T x, const string key) if (isHiBONTypeArray!T) {
         auto h = new HiBON;
         foreach (v_key, v; x) {
             h[v_key] = x;
@@ -461,14 +457,14 @@ static size_t size(U)(const(U[]) array) pure {
         h[key] = h;
     }
 
-    void opIndexAssign(T)(T x, const string key) if (!isHiBON!T && !isHiBONRecord!T && !isHiBONRecordArray!T) {
+    void opIndexAssign(T)(T x, const string key) @trusted if (!isHiBON!T && !isHiBONRecord!T && !isHiBONTypeArray!T) {
 
-
+        
 
             .check(is_key_valid(key), message("Key is not a valid format '%s'", key));
         Member new_member = new Member(x, key);
 
-
+        
 
         .check(_members.insert(new_member) is 1, message("Element member %s already exists", key));
     }
@@ -482,13 +478,13 @@ static size_t size(U)(const(U[]) array) pure {
     void opIndexAssign(T, INDEX)(T x, const INDEX index) if (isIntegral!INDEX) {
         static if (INDEX.max > uint.max) {
 
-
+            
 
                 .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         static if (INDEX.min < uint.min) {
 
-
+            
 
                 .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
         }
@@ -509,7 +505,7 @@ static size_t size(U)(const(U[]) array) pure {
         scope search = new Member(key);
         auto range = _members.equalRange(search);
 
-
+        
 
         .check(!range.empty, message("Member '%s' does not exist", key));
         return range.front;
@@ -528,13 +524,13 @@ static size_t size(U)(const(U[]) array) pure {
     const(Member) opIndex(INDEX)(const INDEX index) const if (isIntegral!INDEX) {
         static if (INDEX.max > uint.max) {
 
-
+            
 
                 .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         static if (INDEX.min < uint.min) {
 
-
+            
 
                 .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
         }
@@ -597,13 +593,13 @@ static size_t size(U)(const(U[]) array) pure {
     @trusted void remove(INDEX)(const INDEX index) if (isIntegral!INDEX) {
         static if (INDEX.max > uint.max) {
 
-
+            
 
                 .check(index <= uint.max, message("Index out of range (index=%d)", index));
         }
         static if (INDEX.min < uint.min) {
 
-
+            
 
                 .check(index >= uint.min, message("Index must be zero or positive (index=%d)", index));
         }
@@ -705,7 +701,7 @@ static size_t size(U)(const(U[]) array) pure {
                 int, Type.INT32.stringof, long, Type.INT64.stringof, uint,
                 Type.UINT32.stringof, ulong, Type.UINT64.stringof, //                utc_t,  Type.UTC.stringof
 
-
+                
 
         );
 
@@ -722,8 +718,8 @@ static size_t size(U)(const(U[]) array) pure {
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
         alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof, // Credential,          Type.CREDENTIAL.stringof,
-                // CryptDoc,            Type.CRYPTDOC.stringof,
-                DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
+            // CryptDoc,            Type.CRYPTDOC.stringof,
+            DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
 
         TabelArray test_tabel_array;
         test_tabel_array.BINARY = [1, 2, 3];
@@ -1068,7 +1064,7 @@ static size_t size(U)(const(U[]) array) pure {
         h[time] = sdt_t(1_100_100_101);
 
         const doc = Document(h);
-
+        assert(doc[time].type is Type.TIME); 
         assert(doc[time].get!sdt_t == 1_100_100_101);
     }
 

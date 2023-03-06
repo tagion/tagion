@@ -1,8 +1,8 @@
 
-IOS_AARCH64=aarch64-iso
+IOS_AARCH64=aarch64-ios
 PLATFORMS+=$(IOS_AARCH64)
 
-ifeq ($(PLATFORM),$(ISO_AARCH64))
+ifeq ($(PLATFORM),$(IOS_AARCH64))
 ifndef CC_CROSS
 ${error CC_CROSS not defined}
 endif

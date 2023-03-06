@@ -4,9 +4,9 @@ import std.stdio;
 import tagion.hibon.HiBONJSON;
 
 import file = std.file;
-import std.exception : assumeUnique;
+import std.exception : assumeUnique, assumeWontThrow;
 import std.typecons : Tuple;
-import std.traits : hasMember, ReturnType, isArray, ForeachType, isUnsigned, isIntegral;
+import std.traits;
 
 import tagion.basic.Basic : basename, EnumContinuousSequency;
 import tagion.hibon.HiBONBase : ValueT;
@@ -25,7 +25,22 @@ enum isHiBON(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
 enum isHiBONRecord(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
             "toDoc") && (is(ReturnType!(T.toDoc) : const(Document)));
 
-enum isHiBONRecordArray(T) = isArray!T && isHiBONRecord!(ForeachType!T);
+enum isHiBONTypeArray(T) = isArray!T && isHiBONRecord!(ForeachType!T);
+
+/**
+	Used for HiBONRecords which have a recorder type
+	Param: T is the type of the recorder to be checked
+Param: doc 
+	Returns: true if the doc has the correct Recorder type 
+*/
+@safe
+bool isRecord(T)(const Document doc) nothrow pure {
+    static if (hasUDA!(T, recordType)) {
+        enum record_type = getUDAs!(T, recordType)[0].name;
+        return doc.hasMember(TYPENAME) && assumeWontThrow(doc[TYPENAME] == record_type);
+    }
+    return false;
+}
 
 enum STUB = HiBONPrefix.HASH ~ "";
 @safe bool isStub(const Document doc) {
@@ -37,10 +52,12 @@ enum HiBONPrefix {
     PARAM = '$'
 }
 
+@safe
 bool hasHashKey(T)(T doc) if (is(T : const(HiBON)) || is(T : const(Document))) {
     return !doc.empty && doc.keys.front[0] is HiBONPrefix.HASH && doc.keys.front != STUB;
 }
 
+@safe
 unittest {
     import std.range : iota;
     import std.array : array;
@@ -70,7 +87,7 @@ template isSpecialKeyType(T) {
 
     static if (isAssociativeArray!T) {
         alias KeyT = KeyType!T;
-        enum isSpecialKeyType = !(isUnsigned!KeyT) && !is(KeyT : string);
+        enum isSpecialKeyType = !ValueT!(false, void, void).hasType!KeyT;
     }
     else {
         enum isSpecialKeyType = false;
@@ -80,60 +97,60 @@ template isSpecialKeyType(T) {
 /++
  Label use to set the HiBON member name
  +/
-struct Label {
+struct label {
     string name; /// Name of the HiBON member
     bool optional; /// This flag is set to true if this paramer is optional
 }
 
 /++
- Filter attribute for toHiBON
+ filter attribute for toHiBON
  +/
-struct Filter {
-    string code; /// Filter function
-    enum Initialized = Filter(q{a !is a.init});
+struct filter {
+    string code; /// filter function
+    enum Initialized = filter(q{a !is a.init});
 }
 
 /++
  Validates the Document type on construction
  +/
-struct Inspect {
+struct inspect {
     string code; ///
-    enum Initialized = Inspect(q{a !is a.init});
+    enum Initialized = inspect(q{a !is a.init});
 }
 
 /++
  Used to set a member default value of the member is not defined in the Document
  +/
-struct Default {
+struct fixed {
     string code;
 }
 
 /++
  Sets the HiBONRecord type
  +/
-struct RecordType {
+struct recordType {
     string name;
     string code; // This is is mixed after the Document constructor
 }
 /++
- Gets the Label for HiBON member
+ Gets the label for HiBON member
  Params:
  member = is the member alias
  +/
 template GetLabel(alias member) {
     import std.traits : getUDAs, hasUDA;
 
-    static if (hasUDA!(member, Label)) {
-        enum label = getUDAs!(member, Label)[0];
-        static if (label.name == VOID) {
-            enum GetLabel = Label(basename!(member), label.optional);
+    static if (hasUDA!(member, label)) {
+        enum _label = getUDAs!(member, label)[0];
+        static if (_label.name == VOID) {
+            enum GetLabel = label(basename!(member), _label.optional);
         }
         else {
-            enum GetLabel = label;
+            enum GetLabel = _label;
         }
     }
     else {
-        enum GetLabel = Label(basename!(member));
+        enum GetLabel = label(basename!(member));
     }
 }
 
@@ -146,16 +163,20 @@ enum VOID = "*";
 
 mixin template HiBONRecordType() {
     import tagion.hibon.Document : Document;
-    import tagion.hibon.HiBONRecord : TYPENAME;
+    import tagion.hibon.HiBONRecord : TYPENAME, recordType;
     import std.traits : getUDAs, hasUDA, isIntegral, isUnsigned;
 
     alias ThisType = typeof(this);
-    static if (hasUDA!(ThisType, RecordType)) {
-        alias record_types = getUDAs!(ThisType, RecordType);
-        static assert(record_types.length is 1, "Only one RecordType UDA allowed");
+
+    static if (hasUDA!(ThisType, recordType)) {
+        alias record_types = getUDAs!(ThisType, recordType);
+        static assert(record_types.length is 1, "Only one recordType UDA allowed");
         static if (record_types[0].name.length) {
             enum type_name = record_types[0].name;
-            static bool isRecord(const Document doc) {
+            import tagion.hibon.HiBONRecord : isRecordT = isRecord;
+
+            alias isRecord = isRecordT!ThisType;
+            version (none) static bool isRecord(const Document doc) nothrow {
                 if (doc.hasMember(TYPENAME)) {
                     return doc[TYPENAME].get!string == type_name;
                 }
@@ -172,10 +193,10 @@ mixin template HiBONRecordType() {
  Examples:
  --------------------
  struct Test {
- @Label("$X") uint x; // The member in HiBON is "$X"
+ @label("$X") uint x; // The member in HiBON is "$X"
  string name;         // The member in HiBON is "name"
- @Label("num", true); // The member in HiBON is "num" and is optional
- @Label("") bool dummy; // This parameter is not included in the HiBON
+ @label("num", true); // The member in HiBON is "num" and is optional
+ @label("") bool dummy; // This parameter is not included in the HiBON
  HiBONRecord!("TEST");   // The "$type" is set to "TEST"
  }
  --------------------
@@ -195,6 +216,7 @@ mixin template HiBONRecordType() {
  --------------------
 
  +/
+
 pragma(msg, "fixme(cbr): The less_than function in this mixin is used for none string key (Should be added to the HiBON spec)");
 
 mixin template HiBONRecord(string CTOR = "") {
@@ -206,8 +228,9 @@ mixin template HiBONRecord(string CTOR = "") {
     import std.functional : unaryFun;
     import std.range : iota, enumerate, lockstep;
     import std.range.primitives : isInputRange;
+    import std.algorithm.iteration : map;
     import std.meta : staticMap, AliasSeq;
-    import std.array : join;
+    import std.array : join, array, assocArray;
 
     import tagion.basic.Basic : basename, EnumContinuousSequency;
 
@@ -217,7 +240,8 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.basic.TagionExceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,
-        Label, GetLabel, Filter, Default, Inspect, VOID;
+        label, GetLabel, filter, fixed, inspect, VOID;
+    import HiBONRecord = tagion.hibon.HiBONRecord; // : TYPENAME;
 
     protected alias check = Check!(HiBONRecordException);
 
@@ -226,9 +250,8 @@ mixin template HiBONRecord(string CTOR = "") {
 
     mixin JSONString;
 
-    alias ThisType = typeof(this);
-
     mixin HiBONRecordType;
+    alias isRecord = HiBONRecord.isRecord!ThisType;
 
     enum HAS_TYPE = hasMember!(ThisType, "type_name");
     static bool less_than(Key)(Key a, Key b) if (!is(Key : string)) {
@@ -318,15 +341,14 @@ mixin template HiBONRecord(string CTOR = "") {
         MemberLoop: foreach (i, m; this.tupleof) {
             static if (__traits(compiles, typeof(m))) {
                 enum default_name = basename!(this.tupleof[i]);
-                //                static if (hasUDA!(this.tupleof[i], Label)) {
                 alias label = GetLabel!(this.tupleof[i]);
                 enum name = label.name;
                 // }
                 // else {
                 //     enum name=basename!(this.tupleof[i]);
                 // }
-                static if (hasUDA!(this.tupleof[i], Filter)) {
-                    alias filters = getUDAs!(this.tupleof[i], Filter);
+                static if (hasUDA!(this.tupleof[i], filter)) {
+                    alias filters = getUDAs!(this.tupleof[i], filter);
                     static foreach (F; filters) {
                         {
                             alias filterFun = unaryFun!(F.code);
@@ -364,7 +386,7 @@ mixin template HiBONRecord(string CTOR = "") {
                             hibon[name] = toList(cast(UnqualT) m);
                         }
                         else {
-                            static assert(is(BaseT == HiBON) || is(BaseT : const(Document)), format(`A sub class/struct '%s' of type %s must have a toHiBON or must be ingnored with @Label("") UDA tag`,
+                            static assert(is(BaseT == HiBON) || is(BaseT : const(Document)), format(`A sub class/struct '%s' of type %s must have a toHiBON or must be ingnored with @label("") UDA tag`,
                                     name, BaseT.stringof));
                             hibon[name] = cast(BaseT) m;
                         }
@@ -410,7 +432,7 @@ mixin template HiBONRecord(string CTOR = "") {
 
     template GetKeyName(uint i) {
         enum default_name = basename!(this.tupleof[i]);
-        static if (hasUDA!(this.tupleof[i], Label)) {
+        static if (hasUDA!(this.tupleof[i], label)) {
             alias label = GetLabel!(this.tupleof[i]);
             enum GetKeyName = (label.name == VOID) ? default_name : label.name;
         }
@@ -445,8 +467,8 @@ mixin template HiBONRecord(string CTOR = "") {
                 check(_type == type_name, format("Wrong %s type %s should be %s",
                         TYPENAME, _type, type_name));
             }
-            static if (hasUDA!(ThisType, RecordType)) {
-                enum record = getUDAs!(ThisType, RecordType)[0];
+            static if (hasUDA!(ThisType, recordType)) {
+                enum record = getUDAs!(ThisType, recordType)[0];
                 static if (record.code) {
                     scope (exit) {
                         mixin(record.code);
@@ -459,17 +481,23 @@ mixin template HiBONRecord(string CTOR = "") {
                 static if (isArray!R) {
                     alias UnqualU = Unqual!MemberU;
                     check(doc.isArray, format("Document is expected to be an array"));
-                    UnqualU[] result;
+                    MemberU[] result;
                     result.length = doc.length;
-                    enum do_foreach = true;
+                    result = doc[].map!(e => e.get!MemberU).array;
+                    enum do_foreach = false;
                 }
                 else static if (isSpecialKeyType!R) {
                     R result;
                     enum do_foreach = true;
                 }
                 else static if (isAssociativeArray!R) {
-                    R result;
-                    enum do_foreach = true;
+                    alias ValueT = ForeachType!R;
+                    alias KeyT = KeyType!R;
+                    R result = assocArray(
+                            doc.keys.map!(key => key.to!KeyT),
+                            doc[].map!(e => e.get!ValueT));
+                    enum do_foreach = false;
+
                 }
                 else {
                     return R(doc);
@@ -520,7 +548,8 @@ mixin template HiBONRecord(string CTOR = "") {
                                 result[key] = value;
                             }
                             else {
-                                result[e.key] = value;
+                                alias ResultKeyType = KeyType!(typeof(result));
+                                result[e.key.to!ResultKeyType] = value;
                             }
                         }
                         else {
@@ -554,7 +583,7 @@ mixin template HiBONRecord(string CTOR = "") {
             ForeachTuple: foreach (i, ref m; this.tupleof) {
                 static if (__traits(compiles, typeof(m))) {
                     enum default_name = basename!(this.tupleof[i]);
-                    static if (hasUDA!(this.tupleof[i], Label)) {
+                    static if (hasUDA!(this.tupleof[i], label)) {
                         alias label = GetLabel!(this.tupleof[i]);
                         enum name = (label.name == VOID) ? default_name : label.name;
                         enum optional = label.optional;
@@ -565,21 +594,21 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         static if (HAS_TYPE) {
                             static assert(TYPENAME != label.name,
-                                    format("Default %s is already definded to %s but is redefined for %s.%s",
+                                    format("Fixed %s is already definded to %s but is redefined for %s.%s",
                                     TYPENAME, TYPE, ThisType.stringof,
                                     basename!(this.tupleof[i])));
                         }
                     }
-                    else {
+                else {
                         enum name = default_name;
                         enum optional = false;
                     }
                     static if (name.length) {
-                        static if (hasUDA!(this.tupleof[i], Default)) {
-                            alias assigns = getUDAs!(this.tupleof[i], Default);
+                        static if (hasUDA!(this.tupleof[i], fixed)) {
+                            alias assigns = getUDAs!(this.tupleof[i], fixed);
                             static assert(assigns.length is 1,
-                                    "Only one Default UDA allowed per member");
-                            static assert(!optional, "The optional parameter in Label can not be used in connection with the Default attribute");
+                                    "Only one fixed UDA allowed per member");
+                            static assert(!optional, "The optional parameter in label can not be used in connection with the fixed attribute");
                             enum code = format(q{this.tupleof[i]=%s;}, assigns[0].code);
                             if (!doc.hasMember(name)) {
                                 mixin(code);
@@ -588,15 +617,16 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         enum member_name = this.tupleof[i].stringof;
                         alias MemberT = typeof(m);
-                        alias BaseT = TypedefType!MemberT;
+                        //alias BaseT = TypedefType!MemberT;
+                        alias BaseT = MemberT;
                         alias UnqualT = Unqual!BaseT;
                         static if (optional) {
                             if (!doc.hasMember(name)) {
                                 continue ForeachTuple;
                             }
                         }
-                        static if (hasUDA!(this.tupleof[i], Inspect)) {
-                            alias Inspects = getUDAs!(this.tupleof[i], Inspect);
+                        static if (hasUDA!(this.tupleof[i], inspect)) {
+                            alias Inspects = getUDAs!(this.tupleof[i], inspect);
                             scope (exit) {
                                 static foreach (F; Inspects) {
                                     {
@@ -612,6 +642,9 @@ mixin template HiBONRecord(string CTOR = "") {
                         static if (is(BaseT == enum)) {
                             m = doc[name].get!BaseT;
                             //                            static if (isIntegral!(OriginalType
+                        }
+                        else static if (Document.isDocTypedef!BaseT) {
+                            m = doc[name].get!BaseT;
                         }
                         else static if (Document.Value.hasType!BaseT) {
                             m = doc[name].get!BaseT;
@@ -650,7 +683,6 @@ mixin template HiBONRecord(string CTOR = "") {
                 else {
                     static assert(0, format("Type %s for member %s is not supported",
                             BaseT.stringof, name));
-                    enum code = "";
                 }
             }
         }
@@ -667,7 +699,7 @@ mixin template HiBONRecord(string CTOR = "") {
  filename = is the name of the file
  hibon = is the HiBON object
  +/
-@safe void fwrite(string filename, const HiBON hibon) {
+@safe void fwrite(const(char[]) filename, const HiBON hibon) {
     file.write(filename, hibon.serialize);
 }
 
@@ -677,11 +709,11 @@ mixin template HiBONRecord(string CTOR = "") {
  filename = is the name of the file
  hibon = is the HiBON object
  +/
-@safe void fwrite(string filename, const Document doc) {
+@safe void fwrite(const(char[]) filename, const Document doc) {
     file.write(filename, doc.serialize);
 }
 
-@safe void fwrite(T)(string filename, const T rec) if (isHiBONRecord!T) {
+@safe void fwrite(T)(const(char[]) filename, const T rec) if (isHiBONRecord!T) {
     fwrite(filename, rec.toDoc);
 }
 
@@ -692,7 +724,7 @@ mixin template HiBONRecord(string CTOR = "") {
  Returns:
  The Document read from the file
  +/
-@trusted const(Document) fread(string filename) {
+@trusted const(Document) fread(const(char[]) filename) {
     import tagion.hibon.HiBONException : check;
 
     immutable data = assumeUnique(cast(ubyte[]) file.read(filename));
@@ -701,7 +733,7 @@ mixin template HiBONRecord(string CTOR = "") {
     return doc;
 }
 
-T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
+T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
     const doc = filename.fread;
     return T(doc, args);
 }
@@ -716,7 +748,7 @@ T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
     import std.algorithm.comparison : equal;
     import tagion.hibon.HiBONException : HiBONException, HiBONRecordException;
 
-    @RecordType("SIMPEL") static struct Simpel {
+    @recordType("SIMPEL") static struct Simpel {
         int s;
         string text;
         mixin HiBONRecord!(q{
@@ -727,9 +759,9 @@ T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
 
     }
 
-    @RecordType("SIMPELLABEL") static struct SimpelLabel {
-        @Label("$S") int s;
-        @Label("TEXT") string text;
+    @recordType("SIMPELLABEL") static struct SimpelLabel {
+        @label("$S") int s;
+        @label("TEXT") string text;
         mixin HiBONRecord!(q{
                 this(int s, string text) {
                     this.s=s; this.text=text;
@@ -737,7 +769,7 @@ T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
             });
     }
 
-    @RecordType("BASIC") static struct BasicData {
+    @recordType("BASIC") static struct BasicData {
         int i32;
         uint u32;
         long i64;
@@ -767,11 +799,11 @@ T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
     }
 
     template SimpelOption(string LABEL = "") {
-        @RecordType(LABEL)
+        @recordType(LABEL)
         static struct SimpelOption {
             int not_an_option;
-            @Label("s", true) int s;
-            @Label(VOID, true) string text;
+            @label("s", true) int s;
+            @label(VOID, true) string text;
             mixin HiBONRecord!();
         }
     }
@@ -784,11 +816,14 @@ T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
             assert(docS["s"].get!int == -42);
             assert(docS["text"].get!string == "some text");
             assert(docS[TYPENAME].get!string == Simpel.type_name);
-            assert(Simpel.isRecord(docS));
+            assert(isRecord!Simpel(docS));
             const s_check = Simpel(docS);
             // const s_check=Simpel(s);
             assert(s == s_check);
             assert(s_check.toJSON.toString == format("%j", s_check));
+
+            assert(isRecord!Simpel(docS));
+            assert(!isRecord!SimpelLabel(docS));
         }
 
         {
@@ -797,7 +832,7 @@ T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
             assert(docS["$S"].get!int == 42);
             assert(docS["TEXT"].get!string == "other text");
             assert(docS[TYPENAME].get!string == SimpelLabel.type_name);
-            assert(SimpelLabel.isRecord(docS));
+            assert(isRecord!SimpelLabel(docS));
             const s_check = SimpelLabel(docS);
 
             assert(s == s_check);
@@ -875,14 +910,14 @@ T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
 
     { // Check verify member
         template NotBoth(bool FILTER) {
-            @RecordType("NotBoth") static struct NotBoth {
+            @recordType("NotBoth") static struct NotBoth {
                 static if (FILTER) {
-                    @Label("*", true) @(Filter.Initialized) int x;
-                    @Label("*", true) @(Filter.Initialized) @Filter(q{a < 42}) int y;
+                    @label("*", true) @(filter.Initialized) int x;
+                    @label("*", true) @(filter.Initialized) @filter(q{a < 42}) int y;
                 }
                 else {
-                    @Label("*", true) int x;
-                    @Label("*", true) int y;
+                    @label("*", true) int x;
+                    @label("*", true) int y;
                 }
                 bool valid(const Document doc) {
                     return doc.hasMember("x") ^ doc.hasMember("y");
@@ -992,7 +1027,7 @@ T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
 
     {
         static struct Test {
-            @Inspect(q{a < 42}) @Inspect(q{a > 3}) int x;
+            @inspect(q{a < 42}) @inspect(q{a > 3}) int x;
             mixin HiBONRecord;
         }
 
@@ -1244,7 +1279,7 @@ T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
             alias Text = Typedef!(string, null, "Text");
 
             // Pubkey is a Typedef
-            import tagion.basic.Types : Pubkey;
+            import tagion.crypto.Types : Pubkey;
 
             static struct TextArray {
                 Text[] texts;
@@ -1361,26 +1396,26 @@ T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
         }
     }
 
-    { // Default Attribute
-        // The Default atttibute is used set a default i value in case the member was not defined in the Document
-        static struct DefaultStruct {
-            @Label("$x") @Filter(q{a != 17}) @Default(q{-1}) int x;
+    { // Fixed Attribute
+        // The fixed atttibute is used set a default i value in case the member was not defined in the Document
+        static struct FixedStruct {
+            @label("$x") @filter(q{a != 17}) @fixed(q{-1}) int x;
             mixin HiBONRecord;
         }
 
         { // No effect
-            DefaultStruct s;
+            FixedStruct s;
             s.x = 42;
             const s_doc = s.toDoc;
-            const result = DefaultStruct(s_doc);
+            const result = FixedStruct(s_doc);
             assert(result.x is 42);
         }
 
-        { // Because x=17 is filtered out the Default -1 value will be set
-            DefaultStruct s;
+        { // Because x=17 is filtered out the fixed -1 value will be set
+            FixedStruct s;
             s.x = 17;
             const s_doc = s.toDoc;
-            const result = DefaultStruct(s_doc);
+            const result = FixedStruct(s_doc);
             assert(result.x is -1);
         }
     }
@@ -1409,5 +1444,32 @@ T fread(T, Args...)(string filename, Args args) if (isHiBONRecord!T) {
             assert(result.i_b == -42);
         }
 
+    }
+
+    /// Associative Array with integral key
+    {
+        static struct ArrayKey(Key) {
+            string[Key] a;
+            mixin HiBONRecord;
+        }
+
+        {
+            import std.algorithm.sorting : sort;
+            import std.array : array, byPair;
+
+            ArrayKey!int a_int;
+            string[int] days = [1: "Monday", 2: "Tuesday", 3: "Wednesday"];
+            a_int.a = days;
+
+            const a_toDoc = a_int.toDoc;
+            auto result = ArrayKey!int(a_toDoc);
+
+            enum key_sort = q{a.key < b.key};
+
+            assert(equal(
+                    result.a.byPair.array.sort!key_sort,
+                    a_int.a.byPair.array.sort!key_sort)
+            );
+        }
     }
 }

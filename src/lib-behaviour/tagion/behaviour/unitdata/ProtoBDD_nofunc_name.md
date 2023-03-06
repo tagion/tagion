@@ -4,9 +4,11 @@
 
 ### Scenario: Some awesome money printer
 
-​    *Given* the card is valid
-      *And* the account is in credit
-      *And* the dispenser contains cash
+*Given* the card is valid
+      *Given* the account is in credit
+      *Given* the dispenser contains cash
     *When* the Customer request cash
     *Then* the account is debited
-      *And* the cash is dispensed
+      *Then* the cash is dispensed
+	  *But* if the card is not in credit
+

@@ -124,7 +124,7 @@ void dispose(T)(ref T die, string file = __FILE__, size_t line = __LINE__) if (i
             printf(memfree_trace, die.ptr, block, 'd', T.stringof.ptr);
             printf(mempos, die.ptr, 0, line, file.ptr);
         }
-        free(cast(void*)die.ptr);
+        free(cast(void*) die.ptr);
         die = null;
     }
 }
@@ -151,7 +151,6 @@ void memcpy_wrapper(T)(ref T desination, T source) {
         memcpy(desination, source, source.length);
     }
 }
-
 
 enum SECP256K1 : uint {
     FLAGS_TYPE_MASK = SECP256K1_FLAGS_TYPE_MASK,
