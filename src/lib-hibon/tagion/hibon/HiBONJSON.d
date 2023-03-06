@@ -50,7 +50,6 @@ protected Type[string] generateLabelMap(const(string[Type]) typemap) {
     return result;
 }
 
-// dfmt off
 enum typeMap=[
     Type.NONE       : NotSupported,
     Type.VER        : NotSupported,
@@ -67,8 +66,6 @@ enum typeMap=[
     Type.UINT64     : "u64",
     Type.BIGINT     : "big",
     Type.HASHDOC    : "#",
-    // Type.CRYPTDOC   : "(#)",
-    // Type.CREDENTIAL : "&",
 
     Type.DEFINED_NATIVE : NotSupported,
 
@@ -78,7 +75,6 @@ enum typeMap=[
     Type.NATIVE_DOCUMENT_ARRAY : NotSupported,
     Type.NATIVE_STRING_ARRAY   : NotSupported
     ];
-// dfmt on
 
 static unittest {
     static foreach (E; EnumMembers!Type) {
@@ -203,9 +199,6 @@ mixin template JSONString() {
                         }
                     }
                 default:
-
-                    
-
                         .check(0, message("HiBON type %s not supported and can not be converted to JSON",
                                 e.type));
                 }
@@ -337,7 +330,6 @@ mixin template JSONString() {
         assert(0);
     }
 
-    //static HiBON Obj(scope JSONValue json);
     static HiBON JSON(Key)(scope JSONValue json) {
         static bool set(ref HiBON sub_result, Key key, scope JSONValue jvalue) {
             if (jvalue.type is JSONType.string) {
@@ -373,7 +365,7 @@ mixin template JSONString() {
                                 static if (E is BINARY) {
                                     import std.uni : toLower;
 
-                                    sub_result[key] = HiBONdecode(value.str).idup; //str[HEX_PREFIX.length..$]);
+                                    sub_result[key] = HiBONdecode(value.str).idup; 
                                 }
                                 else {
                                     sub_result[key] = get!T(value);
@@ -395,9 +387,6 @@ mixin template JSONString() {
             with (JSONType) {
                 final switch (jvalue.type) {
                 case null_:
-
-                    
-
                         .check(0, "HiBON does not support null");
                     break;
                 case string:
@@ -585,4 +574,9 @@ mixin template JSONString() {
         assert(doc == parse_doc);
         assert(doc.toJSON.toString == parse_doc.toJSON.toString);
     }
+}
+
+@safe
+unittest {
+
 }
