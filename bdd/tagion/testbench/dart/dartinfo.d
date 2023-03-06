@@ -12,6 +12,8 @@ struct DartInfo {
     const string module_path;
     const SecureNet net;
     const HiRPC hirpc;
+    const string dartfilename2;
+
 
     const ulong[] table = [
         0xABB9_13ab_cdef_1234,
