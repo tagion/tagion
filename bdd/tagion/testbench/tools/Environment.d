@@ -6,7 +6,9 @@ import std.algorithm.iteration : map;
 import std.array;
 import std.path;
 import std.exception;
-
+import std.traits;
+import std.conv;
+import std.format;
 import tagion.basic.Types : FileExtension, DOT;
 
 import tagion.behaviour.BehaviourFeature;
@@ -57,6 +59,12 @@ class Reporter : BehaviourReporter {
     }
 }
 
+
+enum Stage{
+    commit,
+    acceptance,
+    perfomance,
+}
 struct Environment {
     string dbin;
     string dlog;
@@ -65,6 +73,33 @@ struct Environment {
     string bdd_results;
     string reporoot;
     string fund;
+    string test_stage;
+
+
+    Stage stage() const pure {
+        switch ( test_stage ) {
+        
+        static foreach ( E; EnumMembers!Stage ) {
+            case E.stringof: 
+                return E; 
+        }
+
+        default:
+            //empty
+        }
+
+        switch ( test_stage.to!uint ) {
+        
+        static foreach(i; 0..EnumMembers!Stage.length) {
+            case i:
+                return cast(Stage) i;
+        }
+        default:
+            //empty
+        }
+
+        assert(0, format("variable is not legal %s", test_stage));
+    }
 }
 
 immutable Environment env;
@@ -84,7 +119,7 @@ import std.stdio;
 shared static this() {
     Environment temp;
     uint errors;
-    static foreach (name; [__traits(allMembers, Environment)]) {
+    static foreach (name; FieldNameTuple!Environment) {
         {
             enum NAME = name.map!(a => cast(char) a.toUpper).array;
             try {
