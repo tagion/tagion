@@ -49,9 +49,9 @@ class AddPseudoRandomData {
 
     DARTIndex doc_fingerprint;
     DARTIndex bullseye;
-    const DartInfo info;
+    DartInfo info;
 
-    this(const DartInfo info) {
+    this(DartInfo info) {
         this.info = info;
     }
 
@@ -71,26 +71,29 @@ class AddPseudoRandomData {
 
     @Given("I have a pseudo random sequence of data stored in a table with a seed.")
     Document seed() {
-        foreach(state; info.states) {
-            writefln("%s", state);
-        }
-        // check(!info.states.empty, "pseudo random sequence not generated");
-        
-
+        check(!info.states.empty, "Pseudo random sequence not generated");
         return result_ok;
     }
 
     @When("I randomly add all the data stored in the table to the two darts.")
     Document darts() {
-        
-        // info.states.each!writeln;
+        auto recorder = db.recorder();
 
-        // auto recorder = db.recorder();
-        // const doc = DARTFakeNet.fake_doc(info.table[0]);
-        // recorder.add(doc);
+        import std.random;
+        auto rnd = MinstdRand0(42);
 
 
-        return Document();
+        foreach(state; info.states.randomShuffle(rnd)) {
+            const(Document[]) docs = state.list.map!(r => DARTFakeNet.fake_doc(r)).array;
+            foreach(doc; docs) {
+                recorder.add(doc);
+            }
+            db.modify(recorder);
+        }
+
+        return result_ok;        
+
+
     }
 
     @Then("the bullseyes of the two darts should be the same.")

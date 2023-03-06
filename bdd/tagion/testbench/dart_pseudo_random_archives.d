@@ -41,9 +41,8 @@ int _main(string[] args) {
         const SecureNet net = new DARTFakeNet("very_secret");
         const hirpc = HiRPC(net);
 
-
         DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
-        dart_info.states = dart_info.generateStates(1, 10).take(10).array;
+        dart_info.states = dart_info.generateStates(1, 100).take(10).array;
 
         auto dart_pseudo_random_feature = automation!(dart_pseudo_random)();
 
