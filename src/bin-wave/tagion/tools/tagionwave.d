@@ -14,12 +14,12 @@ import std.json : JSONException;
 import tagion.basic.Types : Control;
 import tagion.basic.Basic : TrustedConcurrency;
 import tagion.logger.Logger;
-import tagion.services.Options;
+import tagion.prior_services.Options;
 import tagion.options.CommonOptions : setCommonOptions;
 
-import tagion.services.TagionService;
-import tagion.services.LoggerService;
-import tagion.services.TagionFactory;
+import tagion.prior_services.TagionService;
+import tagion.prior_services.LoggerService;
+import tagion.prior_services.TagionFactory;
 import tagion.GlobalSignals;
 import tagion.network.SSLServiceOptions : SSLCert, configureSSLCert;
 import tagion.actor.TaskWrapper;
@@ -146,7 +146,7 @@ int _main(string[] args) {
 
     /** Options for SSL service */
     immutable service_options = getOptions();
-    // Set the shared common options for all services
+    // Set the shared common options for all prior_services
     setCommonOptions(service_options.common);
 
     if (service_options.pid_file.length) {

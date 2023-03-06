@@ -1,6 +1,6 @@
 /// Handles the backup of the Recorders
 
-module tagion.services.RecorderService;
+module tagion.prior_services.RecorderService;
 
 import tagion.basic.Basic : TrustedConcurrency;
 import tagion.basic.Types : Control;
@@ -11,7 +11,7 @@ import tagion.dart.Recorder : RecordFactory;
 import tagion.logger.Logger : log;
 import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.recorderchain.RecorderChain;
-import tagion.services.Options : Options;
+import tagion.prior_services.Options : Options;
 import tagion.actor.TaskWrapper;
 import tagion.utils.Miscellaneous : cutHex;
 
@@ -69,7 +69,7 @@ mixin TrustedConcurrency;
 /// RecorderService_add_many_blocks
 unittest {
     import tagion.basic.Basic : tempfile;
-    import tagion.services.Options : setDefaultOption;
+    import tagion.prior_services.Options : setDefaultOption;
 import tagion.crypto.Types : Fingerprint;
 
     const temp_folder = tempfile ~ "/";

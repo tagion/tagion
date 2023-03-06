@@ -50,7 +50,6 @@ protected Type[string] generateLabelMap(const(string[Type]) typemap) {
     return result;
 }
 
-// dfmt off
 enum typeMap=[
     Type.NONE       : NotSupported,
     Type.VER        : NotSupported,
@@ -67,8 +66,6 @@ enum typeMap=[
     Type.UINT64     : "u64",
     Type.BIGINT     : "big",
     Type.HASHDOC    : "#",
-    // Type.CRYPTDOC   : "(#)",
-    // Type.CREDENTIAL : "&",
 
     Type.DEFINED_NATIVE : NotSupported,
 
@@ -78,7 +75,6 @@ enum typeMap=[
     Type.NATIVE_DOCUMENT_ARRAY : NotSupported,
     Type.NATIVE_STRING_ARRAY   : NotSupported
     ];
-// dfmt on
 
 static unittest {
     static foreach (E; EnumMembers!Type) {
@@ -203,9 +199,6 @@ mixin template JSONString() {
                         }
                     }
                 default:
-
-                    
-
                         .check(0, message("HiBON type %s not supported and can not be converted to JSON",
                                 e.type));
                 }
@@ -337,7 +330,6 @@ mixin template JSONString() {
         assert(0);
     }
 
-    //static HiBON Obj(scope JSONValue json);
     static HiBON JSON(Key)(scope JSONValue json) {
         static bool set(ref HiBON sub_result, Key key, scope JSONValue jvalue) {
             if (jvalue.type is JSONType.string) {
@@ -373,7 +365,7 @@ mixin template JSONString() {
                                 static if (E is BINARY) {
                                     import std.uni : toLower;
 
-                                    sub_result[key] = HiBONdecode(value.str).idup; //str[HEX_PREFIX.length..$]);
+                                    sub_result[key] = HiBONdecode(value.str).idup; 
                                 }
                                 else {
                                     sub_result[key] = get!T(value);
@@ -395,9 +387,6 @@ mixin template JSONString() {
             with (JSONType) {
                 final switch (jvalue.type) {
                 case null_:
-
-                    
-
                         .check(0, "HiBON does not support null");
                     break;
                 case string:
@@ -455,11 +444,16 @@ mixin template JSONString() {
     import tagion.hibon.HiBON : HiBON;
     import std.typecons : Tuple;
 
-    alias Tabel = Tuple!(float, Type.FLOAT32.stringof, double,
-            Type.FLOAT64.stringof, bool, Type.BOOLEAN.stringof, int,
-            Type.INT32.stringof, long, Type.INT64.stringof, uint,
-            Type.UINT32.stringof, ulong, Type.UINT64.stringof, BigNumber,
-            Type.BIGINT.stringof, sdt_t, Type.TIME.stringof);
+    alias Tabel = Tuple!(
+    float, Type.FLOAT32.stringof, 
+    double, Type.FLOAT64.stringof, 
+    bool, Type.BOOLEAN.stringof, 
+    int, Type.INT32.stringof, 
+    long, Type.INT64.stringof, 
+    uint, Type.UINT32.stringof, 
+    ulong, Type.UINT64.stringof, 
+    BigNumber, Type.BIGINT.stringof, 
+    sdt_t, Type.TIME.stringof);
 
     Tabel test_tabel;
     test_tabel.FLOAT32 = 1.23;
@@ -483,8 +477,6 @@ mixin template JSONString() {
     test_tabel_array.BINARY = [1, 2, 3];
     test_tabel_array.STRING = "Text";
     test_tabel_array.HASHDOC = DataBlock(27, [3, 4, 5]);
-    // test_tabel_array.CRYPTDOC      = CryptDoc(42, [6,7,8]);
-    // test_tabel_array.CREDENTIAL    = Credential(117, [9,10,11]);
 
     { // Empty Document
         const doc = Document();
@@ -512,26 +504,9 @@ mixin template JSONString() {
         //
         const doc = Document(hibon);
 
-        auto json = doc.toJSON;
-        //        import std.stdio;
-        // writefln("Before\n%s", json.toPrettyString);
-        // writefln("%s", doc.data);
-        string str = json.toString;
-        auto parse = str.parseJSON;
-        auto h = parse.toHiBON;
-
-        const parse_doc = Document(h);
-
         pragma(msg, "fixme(cbr): For some unknown reason toString (mixin JSONString)",
                 " is not @safe for Document and HiBON");
 
-        // (() @trusted {
-        //         // assert(doc.toJSON.toString == format("%j", doc));
-        //         // assert(doc.toJSON.toPrettyString == format("%J", doc));
-        //         assert(doc.serialize.to!string == format("%s", doc));
-        //         // assert(Document(hibon).toJSON.toString == format("%j", hibon));
-        // })();
-        // But this is @safe
         assert(doc.toJSON.toPrettyString == doc.toPretty);
         assert(doc.toJSON.toPrettyString == hibon.toPretty);
     }
@@ -540,13 +515,11 @@ mixin template JSONString() {
         auto hibon = new HiBON;
         {
             foreach (i, t; test_tabel) {
-                enum name = test_tabel.fieldNames[i];
                 hibon[i] = t;
             }
             auto sub_hibon = new HiBON;
             hibon[sub_hibon.stringof] = sub_hibon;
             foreach (i, t; test_tabel_array) {
-                enum name = test_tabel_array.fieldNames[i];
                 sub_hibon[i] = t;
             }
         }
@@ -558,32 +531,21 @@ mixin template JSONString() {
         const doc = Document(hibon);
 
         auto json = doc.toJSON;
-        import std.stdio;
 
-        // writefln("Before\n%s", json.toPrettyString);
-        // writefln("%s", doc.data);
         string str = json.toString;
         auto parse = str.parseJSON;
         auto h = parse.toHiBON;
 
         const parse_doc = Document(h.serialize);
-        //      writefln("After\n%s", parse_doc.toJSON(true).toPrettyString);
 
         assert(doc == parse_doc);
         assert(doc.toJSON.toString == parse_doc.toJSON.toString);
-        // (() @trusted {
-        //     assert(doc.toJSON.toString == format("%j", doc));
-        //     assert(doc.toJSON.toPrettyString == format("%J", doc));
-        //     assert(doc.serialize.to!string == format("%s", doc));
-        //     assert(Document(hibon).toJSON.toString == format("%j", hibon));
-        // })();
     }
 
     { // Test sample 3 HiBON Array and Object
         auto hibon = new HiBON;
         {
             foreach (i, t; test_tabel) {
-                enum name = test_tabel.fieldNames[i];
                 hibon[i] = t;
             }
             auto sub_hibon = new HiBON;
@@ -591,7 +553,6 @@ mixin template JSONString() {
             // Which result keep hibon as an array
             hibon[hibon.length] = sub_hibon;
             foreach (i, t; test_tabel_array) {
-                enum name = test_tabel_array.fieldNames[i];
                 sub_hibon[i] = t;
             }
         }
@@ -603,26 +564,19 @@ mixin template JSONString() {
         const doc = Document(hibon);
 
         auto json = doc.toJSON;
-        import std.stdio;
-
-        // writefln("Before\n%s", json.toPrettyString);
-        // writefln("%s", doc.data);
 
         string str = json.toString;
         auto parse = str.parseJSON;
         auto h = parse.toHiBON;
 
         const parse_doc = Document(h.serialize);
-        //writefln("After\n%s", parse_doc.toJSON(true).toPrettyString);
 
         assert(doc == parse_doc);
         assert(doc.toJSON.toString == parse_doc.toJSON.toString);
-        // (() @trusted {
-        //     assert(doc.toJSON.toString == format("%j", doc));
-        //     assert(doc.toJSON.toPrettyString == format("%J", doc));
-        //     assert(doc.serialize.to!string == format("%s", doc));
-        //     assert(Document(hibon).toJSON.toString == format("%j", hibon));
-        // })();
-
     }
+}
+
+@safe
+unittest {
+
 }

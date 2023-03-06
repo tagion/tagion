@@ -1,4 +1,4 @@
-module tagion.services.ServerFileDiscoveryService;
+module tagion.prior_services.ServerFileDiscoveryService;
 
 import std.stdio;
 import core.time;
@@ -12,17 +12,17 @@ import std.array;
 import p2plib = p2p.node;
 import std.net.curl;
 
-// import tagion.services.LoggerService;
+// import tagion.prior_services.LoggerService;
 import tagion.logger.Logger;
 import tagion.basic.Types : Buffer, Control;
 import tagion.crypto.Types :  Pubkey;
 import tagion.basic.TagionExceptions : fatal, TagionException;
 
-import tagion.services.Options;
+import tagion.prior_services.Options;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
-import tagion.services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
+import tagion.prior_services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
 
 //import tagion.gossip.P2pGossipNet : ActiveNodeAddressBook;
 import tagion.gossip.AddressBook : NodeAddress;

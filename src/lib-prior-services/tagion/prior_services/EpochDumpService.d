@@ -1,6 +1,6 @@
 /// This module will make dump of the Epoch's
 
-module tagion.services.EpochDumpService;
+module tagion.prior_services.EpochDumpService;
 
 import std.concurrency;
 
@@ -14,7 +14,7 @@ import tagion.basic.Basic : TrustedConcurrency;
 import tagion.hibon.Document;
 import tagion.actor.TaskWrapper;
 import tagion.crypto.SecureNet : StdHashNet;
-import tagion.services.Options : Options, setDefaultOption;
+import tagion.prior_services.Options : Options, setDefaultOption;
 
 mixin TrustedConcurrency;
 
@@ -67,9 +67,9 @@ unittest {
     import std.file;
     import core.thread;
     import std.typecons : Typedef;
-    import tagion.services.EpochDumpService : EpochDumpTask;
+    import tagion.prior_services.EpochDumpService : EpochDumpTask;
     import tagion.actor.TaskWrapper : Task;
-    import tagion.services.Options : Options, getOptions, setOptions;
+    import tagion.prior_services.Options : Options, getOptions, setOptions;
     import tagion.hibon.HiBON;
     import tagion.crypto.Types : Fingerprint;
 

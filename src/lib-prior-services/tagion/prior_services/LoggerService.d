@@ -1,5 +1,5 @@
 /// Service for handling both text logs and variable logging
-module tagion.services.LoggerService;
+module tagion.prior_services.LoggerService;
 
 import std.array;
 import std.stdio;
@@ -18,8 +18,8 @@ import tagion.basic.TagionExceptions;
 import tagion.GlobalSignals : abort;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
-import tagion.services.LogSubscriptionService : logSubscriptionServiceTask;
-import tagion.services.Options : Options, setOptions, options;
+import tagion.prior_services.LogSubscriptionService : logSubscriptionServiceTask;
+import tagion.prior_services.Options : Options, setOptions, options;
 import tagion.logger.Logger;
 import tagion.logger.LogRecords;
 import tagion.actor.TaskWrapper;

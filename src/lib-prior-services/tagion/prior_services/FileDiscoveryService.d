@@ -1,4 +1,4 @@
-module tagion.services.FileDiscoveryService;
+module tagion.prior_services.FileDiscoveryService;
 
 import core.time;
 import std.format;
@@ -7,15 +7,15 @@ import std.file;
 
 import p2plib = p2p.node;
 import tagion.utils.Miscellaneous : cutHex;
-import tagion.services.Options;
+import tagion.prior_services.Options;
 import tagion.logger.Logger;
 import tagion.basic.Types : Buffer, Control;
 import tagion.basic.Basic : NameOf;
 import tagion.basic.TagionExceptions : TagionException, fatal;
 import tagion.crypto.Types :  Pubkey;
-import tagion.services.MdnsDiscoveryService;
+import tagion.prior_services.MdnsDiscoveryService;
 
-import tagion.services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
+import tagion.prior_services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
 import tagion.gossip.AddressBook : addressbook, NodeAddress;
 
 void fileDiscoveryService(

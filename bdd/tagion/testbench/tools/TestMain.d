@@ -9,7 +9,7 @@ import std.format;
 import std.string : join;
 import tagion.tools.revision : revision_text;
 
-import tagion.services.Options;
+import tagion.prior_services.Options;
 
 MainSetup!TestOpt mainSetup(TestOpt)(
         string config_file,

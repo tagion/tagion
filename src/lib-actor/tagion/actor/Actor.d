@@ -235,8 +235,6 @@ mixin template TaskActor() {
 */
     void receive() @trusted {
         enum actor_methods = allMemberFilter!(This, isMethod);
-        pragma(msg, "Actor methods ", actor_methods);
-        pragma(msg, "Response methods ", allMemberFilter!(This, isRequest));
         enum code = format(q{concurrency.receive(%-(&%s, %));}, actor_methods);
         mixin(code);
     }
@@ -254,17 +252,11 @@ Same as receiver but with a timeout
     shared static this() {
         import std.traits : hasUDA, getUDAs;
 
-        pragma(msg, " Before hasUDA ", This);
-        pragma(msg, " Before emulate ", hasUDA!(This, emulate));
         static if (hasUDA!(This, emulate)) {
             import std.algorithm : sort;
 
-            pragma(msg, "Before getUDAs ", This);
-            //  pragma(msg, "__CTOR ", __traits(getOverloads, This, "this"));
-            pragma(msg, "---------- ", getUDAs!(This, emulate));
             alias EmulatedActor = TemplateArgsOf!(getUDAs!(This, emulate)[0])[0];
             enum methods_from_emulated_actor = allMemberFilter!(EmulatedActor, isMethod);
-            pragma(msg, "-----////----- ", getUDAs!(This, emulate));
 
             static foreach (emulated_method; methods_from_emulated_actor) {
                 {
@@ -285,7 +277,6 @@ Same as receiver but with a timeout
                     }
                 }
             }
-            pragma(msg, "--- Finish --- ", getUDAs!(This, emulate));
         }
     }
 }
@@ -318,8 +309,6 @@ protected static string generateAllMethods(alias This)() {
                         }, m, Parameters!(Func).stringof);
                     }
                     else { // Request method
-                        pragma(msg, "Returns ", ReturnType!Func);
-                        pragma(msg, "Params ", Parameters!Func);
                         // Request
                         enum method_code = format(q{
                         alias FuncParams_%1$s=AliasSeq!%2$s;
@@ -764,10 +753,6 @@ unittest {
     {
 
         MyRequestActor a;
-        pragma(msg, "all method filter", allMemberFilter!(MyRequestActor, isMethod));
         auto request_actor_factoty = actor!MyRequestActor;
-        pragma(msg, "-----");
-        pragma(msg, generateAllMethods!MyRequestActor);
-        pragma(msg, "-----");
     }
 }

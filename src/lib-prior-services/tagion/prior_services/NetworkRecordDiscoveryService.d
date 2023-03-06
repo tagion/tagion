@@ -1,11 +1,11 @@
-module tagion.services.NetworkRecordDiscoveryService;
+module tagion.prior_services.NetworkRecordDiscoveryService;
 
 import core.time;
 import std.datetime;
 import std.concurrency;
 import std.format;
 
-import tagion.services.Options;
+import tagion.prior_services.Options;
 import tagion.basic.Types : Buffer, Control;
 import tagion.crypto.Types :   Pubkey;
 import tagion.logger.Logger;
@@ -14,9 +14,9 @@ import tagion.utils.StdTime;
 import p2plib = p2p.node;
 import tagion.gossip.AddressBook : addressbook;
 import tagion.communication.HiRPC;
-import tagion.services.ServerFileDiscoveryService;
-import tagion.services.FileDiscoveryService;
-import tagion.services.MdnsDiscoveryService;
+import tagion.prior_services.ServerFileDiscoveryService;
+import tagion.prior_services.FileDiscoveryService;
+import tagion.prior_services.MdnsDiscoveryService;
 
 import tagion.basic.TagionExceptions : fatal;
 import tagion.crypto.SecureNet;

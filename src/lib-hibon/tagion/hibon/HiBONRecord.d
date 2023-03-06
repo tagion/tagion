@@ -553,10 +553,6 @@ mixin template HiBONRecord(string CTOR = "") {
                             }
                         }
                         else {
-                            pragma(msg, "typeof(result[e.index]) ", typeof(result[e.index]),
-                            " typeof(value) ", typeof(value));
-
-                            // (() @trusted
                             result[e.index] = value;
                         }
                     }

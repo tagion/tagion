@@ -13,7 +13,7 @@ import tagion.basic.traits : hasOneMemberUDA;
 import tagion.logger.Logger;
 import tagion.logger.LogRecords : LogFilter, LogFilterArray, LogFiltersAction, LogInfo;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
-import tagion.services.LoggerService;
+import tagion.prior_services.LoggerService;
 import tagion.dart.Recorder;
 import tagion.hibon.Document : Document;
 
@@ -239,8 +239,8 @@ version (unittest) @safe struct FakeTask {
 }
 
 @safe unittest {
-    import tagion.services.Options : Options, setDefaultOption;
-    import tagion.services.LoggerService;
+    import tagion.prior_services.Options : Options, setDefaultOption;
+    import tagion.prior_services.LoggerService;
     import tagion.logger.Logger;
 
     enum main_task = "taskwrapperunittest";

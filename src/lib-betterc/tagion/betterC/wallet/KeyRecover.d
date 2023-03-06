@@ -220,7 +220,6 @@ unittest {
     // import std.array : join, array;
 
     // auto selected_questions = indexed(standard_questions, [0, 2, 3, 7, 8]).array.idup;
-    // //pragma(msg, typeof(selected_questions));
     // //writefln("%s", selected_questions.join("\n"));
     // string[] answers = [
     //     "mobidick",

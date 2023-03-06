@@ -194,7 +194,6 @@ struct HiRPC {
             import std.traits : isCallable;
             import std.algorithm.searching : canFind;
 
-            pragma(msg, "Supports ", Callers!T);
             return (type is Type.method) &&
                 Callers!T.canFind(method.name);
         }

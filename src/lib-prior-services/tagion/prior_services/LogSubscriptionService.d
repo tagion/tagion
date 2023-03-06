@@ -1,6 +1,6 @@
 /// Service created for filtering and sending proper logs to subscribers
 
-module tagion.services.LogSubscriptionService;
+module tagion.prior_services.LogSubscriptionService;
 
 import std.algorithm : map, filter;
 import std.algorithm.searching : canFind;
@@ -15,7 +15,7 @@ import tagion.basic.TagionExceptions : fatal, taskfailure;
 import tagion.communication.HiRPC : HiRPC;
 import tagion.logger.Logger : log, LogLevel;
 import tagion.logger.LogRecords;
-import tagion.services.Options : Options;
+import tagion.prior_services.Options : Options;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : GetLabel;

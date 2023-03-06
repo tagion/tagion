@@ -71,7 +71,6 @@ synchronized class AddressBook {
     alias NodeAddresses = NodeAddress[Pubkey];
     alias NodePair = typeof((() @trusted => (cast(NodeAddresses) addresses).byKeyValue.front)());
 
-    pragma(msg, "NodePair ", NodePair);
     /** \struct AddressDirectory
      * Storage for node addresses
      */
@@ -273,7 +272,7 @@ synchronized class AddressBook {
         return addresses.length;
     }
 
-    import tagion.services.Options;
+    import tagion.prior_services.Options;
 
     /**
      * Check that nodes >= 4 and addresses >= nodes
