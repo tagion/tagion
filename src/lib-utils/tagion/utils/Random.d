@@ -85,7 +85,7 @@ unittest {
 
 /// This data type can be used to group a sequence of pseudo random sequency
 @nogc @safe
-struct Sequence(T = uint) {
+struct Sequency(T = uint) {
     import std.range;
 
     Random!T rand;
@@ -93,7 +93,7 @@ struct Sequence(T = uint) {
     /** 
      * Returns: sequency of random numbers
      */
-    auto list() pure nothrow {
+    auto list() const pure nothrow {
         return rand.save.take(size);
     }
 
@@ -104,8 +104,8 @@ struct Sequence(T = uint) {
      * Returns: 
      *   the net sequency after next_size randoms
      */
-    Sequence progress(T next_size) const pure nothrow {
-        Sequence result;
+    Sequency progress(T next_size) const pure nothrow {
+        Sequency result;
         result.rand = rand.save.drop(size);
         result.size = next_size;
         return result;
@@ -143,7 +143,7 @@ unittest {
         auto rand_range = recurrence!(
                 (a, n) =>
                 a[n - 1].progress(start.value(4, 8))
-        )(Sequence!uint(start.save, 5));
+        )(Sequency!uint(start.save, 5));
 
         // Store the begen of the random start
         auto begin = start;
