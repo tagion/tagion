@@ -23,6 +23,6 @@ CROSS_OS=mobile
 DFLAGS+=-mtriple=$(MTRIPLE) 
 
 platform-mobile:
-	$(DC)  $(DFLAGS) ${addprefix -I,$(DINC)} --shared -of=mobile.so ${sort $(DFILES)}
+	$(DC)  $(DFLAGS) ${addprefix -I,$(DINC)} --shared -of=libtagionmobile.so ${sort $(DFILES)}
 
 .PHONY: platform
