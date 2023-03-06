@@ -15,7 +15,10 @@ import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.communication.HiRPC : HiRPC;
 
 import std.path : setExtension, buildPath;
+import std.range : take;
+import std.array;
 import tagion.basic.Types : FileExtension;
+
 
 import tagion.testbench.dart.dartinfo;
 
@@ -37,7 +40,7 @@ int _main(string[] args) {
 
 
     DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
-    const sequence=dart_info.generateStates(5, 7);
+    dart_info.states = dart_info.generateStates(1, 10).take(10).array;
 
     auto dart_pseudo_random_feature = automation!(dart_pseudo_random)();
 

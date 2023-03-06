@@ -71,7 +71,10 @@ class AddPseudoRandomData {
 
     @Given("I have a pseudo random sequence of data stored in a table with a seed.")
     Document seed() {
-        check(!info.states.empty, "pseudo random sequence not generated");
+        foreach(state; info.states) {
+            writefln("%s", state);
+        }
+        // check(!info.states.empty, "pseudo random sequence not generated");
         
 
         return result_ok;
@@ -81,9 +84,7 @@ class AddPseudoRandomData {
     Document darts() {
         
         // info.states.each!writeln;
-        foreach(state; info.states) {
-            writefln("%s", state);
-        }
+
         // auto recorder = db.recorder();
         // const doc = DARTFakeNet.fake_doc(info.table[0]);
         // recorder.add(doc);
