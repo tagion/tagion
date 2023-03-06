@@ -44,7 +44,6 @@ OUTPUT	= -of
 HF		= -Hf
 DF		= -Df
 DD		= -Dd
-NO_OBJ	= -o-
 DDOC_MACRO=
 endif
 
