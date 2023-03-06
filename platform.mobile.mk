@@ -16,9 +16,13 @@ MTRIPLE=aarch64-android-linux
 # DFLAGS+=-gcc=$(NDKPATH)/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang"
 # # NDK Linux native linker
 # DFLAGS+=-linker=$(NDKPATH)/toolchains/llvm/prebuilt/linux-x86_64/bin/ld.lld
+
+# HACK: not define the arch flags -m32
+CROSS_OS=mobile
+
 DFLAGS+=-mtriple=$(MTRIPLE) 
 
 platform-mobile:
-	$(DC)  $(DFLAGS) ${addprefix -I,$(DINC)} $(SHARED) -of=mobile.so ${sort $(DFILES)}
+	$(DC)  $(DFLAGS) ${addprefix -I,$(DINC)} --shared -of=mobile.so ${sort $(DFILES)}
 
 .PHONY: platform
