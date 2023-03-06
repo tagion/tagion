@@ -15,7 +15,7 @@ import tagion.hashgraph.Event;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONType : isHiBONType;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.utils.StdTime;
 
@@ -787,7 +787,7 @@ class HashGraph {
      +/
     //   @trusted
     void fwrite(string filename, Pubkey[string] node_labels = null) {
-        import tagion.hibon.HiBONType : fwrite;
+        import tagion.hibon.HiBONRecord : fwrite;
         import tagion.hashgraphview.EventView;
 
         size_t[Pubkey] node_id_relocation;
@@ -873,7 +873,7 @@ class HashGraph {
                     channel_queues[channel].write(doc);
                 }
 
-                final void send(T)(const(Pubkey) channel, T pack) if (isHiBONType!T) {
+                final void send(T)(const(Pubkey) channel, T pack) if (isHiBONRecord!T) {
                     send(channel, pack.toDoc);
                 }
 
@@ -947,7 +947,7 @@ class HashGraph {
                 private void run() {
                     { // Eva Event
                         immutable buf = cast(Buffer) _hashgraph.channel;
-                        const nonce = _hashgraph.hirpc.net.calcHash(buf);
+                        const nonce = cast(Buffer) _hashgraph.hirpc.net.calcHash(buf);
                         auto eva_event = _hashgraph.createEvaEvent(time, nonce);
 
                         if (eva_event is null) {

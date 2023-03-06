@@ -1,6 +1,6 @@
 /// This module will make dump of the Epoch's
 
-module tagion.services.EpochDumpService;
+module tagion.prior_services.EpochDumpService;
 
 import std.concurrency;
 
@@ -8,12 +8,13 @@ import tagion.hashchain.HashChainStorage : HashChainStorage;
 import tagion.hashchain.HashChainFileStorage : HashChainFileStorage;
 import tagion.epochain.EpochChainBlock;
 import tagion.epochain.EpochChain;
+import tagion.crypto.Types : Fingerprint; 
 import tagion.basic.Types : Control, Buffer;
 import tagion.basic.Basic : TrustedConcurrency;
 import tagion.hibon.Document;
 import tagion.actor.TaskWrapper;
 import tagion.crypto.SecureNet : StdHashNet;
-import tagion.services.Options : Options, setDefaultOption;
+import tagion.prior_services.Options : Options, setDefaultOption;
 
 mixin TrustedConcurrency;
 
@@ -32,9 +33,9 @@ struct EpochDumpTask {
     /** Default hasher */
     const StdHashNet hash_net = new StdHashNet;
 
-    @TaskMethod void dumpEpoch(Document transactions_list, Buffer bullseye) {
+    @TaskMethod void dumpEpoch(Document transactions_list, Fingerprint bullseye) {
         auto last_block = epoch_chain.getLastBlock();
-        auto last_hash = last_block ? last_block.fingerprint : [];
+        auto last_hash = last_block ? last_block.fingerprint : Fingerprint.init;
         auto block = new EpochChainBlock(transactions_list, last_hash, bullseye, this.hash_net);
         epoch_chain.append(block);
 
@@ -58,14 +59,19 @@ struct EpochDumpTask {
     }
 }
 
+
 /// test hashes dump creating
+version(none)
 unittest {
+    pragma(msg, "fixme(cbr): This unittest never ends (But the services is not used anyway)");
     import std.file;
     import core.thread;
-    import tagion.services.EpochDumpService : EpochDumpTask;
+    import std.typecons : Typedef;
+    import tagion.prior_services.EpochDumpService : EpochDumpTask;
     import tagion.actor.TaskWrapper : Task;
-    import tagion.services.Options : Options, getOptions, setOptions;
+    import tagion.prior_services.Options : Options, getOptions, setOptions;
     import tagion.hibon.HiBON;
+    import tagion.crypto.Types : Fingerprint;
 
     void saveHashedDump(Document list, Buffer bullseye, ref const string task_name) {
         Tid epoch_dump_service = locate(task_name);

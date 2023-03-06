@@ -13,7 +13,7 @@ import tagion.basic.traits : hasOneMemberUDA;
 import tagion.logger.Logger;
 import tagion.logger.LogRecords : LogFilter, LogFilterArray, LogFiltersAction, LogInfo;
 import tagion.basic.TagionExceptions : fatal, TaskFailure;
-import tagion.services.LoggerService;
+import tagion.prior_services.LoggerService;
 import tagion.dart.Recorder;
 import tagion.hibon.Document : Document;
 
@@ -98,8 +98,7 @@ unittest {
     import std.traits : Parameters, ParameterIdentifierTuple, isFunction, isDelegate, isFunctionPointer, hasUDA;
     import std.meta : AliasSeq;
     import std.exception;
-    import tagion.utils.Fingerprint : Fingerprint_;
-
+import std.typecons : Typedef;
     alias Params = Parameters!Func;
     alias ParamNames = ParameterIdentifierTuple!Func;
 
@@ -179,6 +178,7 @@ unittest {
 }
 
 @safe mixin template TaskBasic() {
+    import std.typecons : Typedef;
     bool stop;
     // TODO Do we need handle also "abort"?
 
@@ -239,8 +239,8 @@ version (unittest) @safe struct FakeTask {
 }
 
 @safe unittest {
-    import tagion.services.Options : Options, setDefaultOption;
-    import tagion.services.LoggerService;
+    import tagion.prior_services.Options : Options, setDefaultOption;
+    import tagion.prior_services.LoggerService;
     import tagion.logger.Logger;
 
     enum main_task = "taskwrapperunittest";

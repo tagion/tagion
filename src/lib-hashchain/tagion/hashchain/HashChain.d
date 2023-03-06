@@ -5,9 +5,10 @@ import std.range : empty;
 import std.range.primitives : back, popBack;
 
 import tagion.basic.Types : Buffer;
+import tagion.crypto.Types : Fingerprint;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
-import tagion.hibon.HiBONType : isHiBONType;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.utils.Miscellaneous : decode;
 
 /** @brief File contains class HashChain
@@ -17,7 +18,7 @@ import tagion.utils.Miscellaneous : decode;
  * \class HashChain
  * Class stores dynamic info and handles local files of hash chain
  */
-@safe class HashChain(Block : HashChainBlock) if (isHiBONType!Block) {
+@safe class HashChain(Block : HashChainBlock) if (isHiBONRecord!Block) {
     /** Handler of chain blocks storage */
     protected HashChainStorage!Block _storage;
 
@@ -41,7 +42,7 @@ import tagion.utils.Miscellaneous : decode;
         // Table for searching where
         //      key: fingerprints of blocks
         //      value: previous hashes of this blocks
-        Buffer[Buffer] link_table;
+        Fingerprint[Fingerprint] link_table;
         foreach (hash; hashes) {
             link_table[hash] = _storage.read(hash).getPrevious;
         }
@@ -135,7 +136,7 @@ import tagion.utils.Miscellaneous : decode;
     void replayFrom(void delegate(Block) @safe action, bool delegate(Block) @safe condition) {
         // If we start from found block (not next after it) we possible can duplicate records
 
-        Buffer[] hash_stack;
+        Fingerprint[] hash_stack;
 
         // Go through hash chain until condition is triggered
         auto current_block = _last_block;
@@ -162,18 +163,18 @@ import tagion.utils.Miscellaneous : decode;
 }
 
 version (unittest) {
-    import tagion.hibon.HiBONType : HiBONType, recordType, label;
+    import tagion.hibon.HiBONRecord : HiBONRecord, recordType, label;
     import tagion.crypto.SecureInterfaceNet : HashNet;
 
     @safe class DummyBlock : HashChainBlock {
-        @label("") Buffer hash;
-        @label("prev") Buffer previous;
+        @label("") Fingerprint hash;
+        @label("prev") Fingerprint previous;
         @label("dummy") int dummy;
 
-        mixin HiBONType!(
+        mixin HiBONRecord!(
                 q{
             private this(
-                Buffer previous,
+                Fingerprint previous,
                 const(HashNet) net,
                 int dummy = 0)
             {
@@ -192,11 +193,11 @@ version (unittest) {
             }
         });
 
-        Buffer getHash() const {
+        Fingerprint getHash() const {
             return hash;
         }
 
-        Buffer getPrevious() const {
+        Fingerprint getPrevious() const {
             return previous;
         }
     }
@@ -216,7 +217,7 @@ unittest {
 
     HashNet net = new StdHashNet;
 
-    const Buffer empty_hash = [];
+    const empty_hash = Fingerprint.init;
     const temp_folder = tempfile ~ "/";
 
     alias Storage = HashChainStorage!DummyBlock;
@@ -260,7 +261,7 @@ unittest {
         Storage storage = new StorageImpl(temp_folder, net);
         auto chain = new ChainImpl(storage);
 
-        auto block0 = new DummyBlock([], net);
+        auto block0 = new DummyBlock(Fingerprint.init, net);
         chain.append(block0);
         auto block1 = new DummyBlock(chain.getLastBlock.getHash, net);
         chain.append(block1);
@@ -285,7 +286,7 @@ unittest {
         Storage storage = new StorageImpl(temp_folder, net);
         auto chain = new ChainImpl(storage);
 
-        auto block0 = new DummyBlock([], net);
+        auto block0 = new DummyBlock(Fingerprint.init, net);
         chain.append(block0);
         auto block1 = new DummyBlock(chain.getLastBlock.getHash, net);
         chain.append(block1);
@@ -294,7 +295,7 @@ unittest {
 
         assert(chain.isValidChain);
 
-        Buffer[] hashes;
+        Fingerprint[] hashes;
 
         chain.replay((DummyBlock b) @safe { hashes ~= b.getHash; });
 
@@ -318,14 +319,14 @@ unittest {
         foreach (i; 0 .. blocks_count) {
             auto last_block = chain.getLastBlock;
 
-            blocks ~= new DummyBlock(last_block is null ? [] : last_block.getHash, net);
+            blocks ~= new DummyBlock(last_block is null ? Fingerprint.init : last_block.getHash, net);
 
             chain.append(blocks.back);
         }
         assert(chain.isValidChain);
 
         enum some_block_index = 2;
-        Buffer[] hashes;
+        Fingerprint[] hashes;
 
         // Replay from block with specified index
         chain.replayFrom((DummyBlock b) @safe { hashes ~= b.getHash; }, (b) => b.getHash == blocks[some_block_index]

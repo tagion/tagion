@@ -1,6 +1,6 @@
 module tagion.wallet.WalletRecords;
 
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.wallet.KeyRecover : KeyRecover;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types :  Pubkey;
@@ -11,7 +11,7 @@ import tagion.script.StandardRecords : StandardBill;
     @recordType("Quiz")
     struct Quiz {
         @label("$Q") string[] questions;
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     /++
@@ -28,12 +28,12 @@ import tagion.script.StandardRecords : StandardBill;
             xor(R, D, P);
         }
 
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     // @recordType("Wallet") struct Wallet {
     //     KeyRecover.RecoverGenerator generator;
-    //     mixin HiBONType;
+    //     mixin HiBONRecord;
     // }
 
     @recordType("Wallet")
@@ -41,7 +41,7 @@ import tagion.script.StandardRecords : StandardBill;
         Buffer[] Y; /// Recorvery seed
         Buffer S; /// Check value S=H(H(R))
         @label("N") uint confidence;
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
 }

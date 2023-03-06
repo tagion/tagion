@@ -1,5 +1,5 @@
 /// Handles the synchronization with other DART's
-module tagion.services.DARTSynchronizeService;
+module tagion.prior_services.DARTSynchronizeService;
 
 import core.thread;
 import std.concurrency;
@@ -10,7 +10,7 @@ import p2plib = p2p.interfaces;
 import p2p.callback;
 import p2p.cgo.c_helper;
 
-import tagion.services.Options;
+import tagion.prior_services.Options;
 import tagion.logger.Logger;
 import tagion.basic.Types : Buffer, Control;
 import tagion.crypto.Types :   Pubkey;
@@ -24,7 +24,7 @@ import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 
-import tagion.services.DARTSynchronization;
+import tagion.prior_services.DARTSynchronization;
 import tagion.tasks.ResponseRequest;
 
 version (unittest) import tagion.dart.BlockFile : fileId;
@@ -35,7 +35,7 @@ import tagion.communication.HiRPC;
 import tagion.script.StandardRecords;
 import tagion.communication.HandlerPool;
 
-//import tagion.services.MdnsDiscoveryService;
+//import tagion.prior_services.MdnsDiscoveryService;
 import tagion.gossip.P2pGossipNet : ConnectionPool; //, ActiveNodeAddressBook;
 import tagion.gossip.AddressBook : NodeAddress, addressbook;
 
@@ -74,7 +74,7 @@ struct ServiceState(T) {
     }
 }
 
-alias DARTReadRequest = ResponseRequest!(tagion.services.DARTSynchronizeService.stringof);
+alias DARTReadRequest = ResponseRequest!(tagion.prior_services.DARTSynchronizeService.stringof);
 
 void dartSynchronizeServiceTask(Net : SecureNet)(
         immutable(Options) opts,

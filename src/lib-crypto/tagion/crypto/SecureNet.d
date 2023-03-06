@@ -5,12 +5,12 @@ import std.typecons : TypedefType;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.aes.AESCrypto;
 import tagion.basic.Types : Buffer;
-import tagion.crypto.Types :  Signature, Fingerprint;
+import tagion.crypto.Types : Signature, Fingerprint;
 import tagion.hibon.Document : Document;
 import tagion.basic.ConsensusExceptions;
-import tagion.hibon.HiBONType : STUB;
+import tagion.hibon.HiBONRecord : STUB;
 
-void scramble(T,B=T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof) { 
+void scramble(T, B = T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof) {
     import std.random;
 
     auto gen = Mt19937(unpredictableSeed);
@@ -41,12 +41,8 @@ class StdHashNet : HashNet {
         return digest!SHA256(data).idup;
     }
 
-    immutable(Buffer) calcHash(scope const(ubyte[]) data) const {
-        version (unittest) {
-            assert(!Document(data.idup).isInorder,
-                    "calcHash should not be use on a Document use hashOf instead");
-        }
-        return rawCalcHash(data);
+    Fingerprint calcHash(scope const(ubyte[]) data) const {
+        return Fingerprint(rawCalcHash(data));
     }
 
     @trusted
@@ -60,7 +56,7 @@ class StdHashNet : HashNet {
         return assumeUnique(result);
     }
 
-    immutable(Buffer) calcHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const
+    immutable(Buffer) binaryHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const
     in {
         assert(h1.length is 0 || h1.length is HASH_SIZE,
                 format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
@@ -89,8 +85,8 @@ class StdHashNet : HashNet {
         return rawCalcHash(h1 ~ h2);
     }
 
-    immutable(Buffer) calcHash(const(Document) doc) const {
-        return rawCalcHash(doc.serialize);
+    Fingerprint calcHash(const(Document) doc) const {
+        return Fingerprint(rawCalcHash(doc.serialize));
     }
 }
 
@@ -145,13 +141,13 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     protected NativeSecp256k1 _crypt;
 
-    bool verify(const(ubyte[]) message, const Signature signature, const Pubkey pubkey) const {
+    bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const {
         consensusCheck!(SecurityConsensusException)(signature.length != 0 && signature.length <= 520,
                 ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-        return _crypt.verify(message, cast(Buffer) signature, cast(Buffer) pubkey);
+        return _crypt.verify(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
     }
 
-    Signature sign(const(ubyte[]) message) const
+    Signature sign(const Fingerprint message) const
     in {
         assert(_secret !is null,
                 format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
@@ -162,7 +158,7 @@ class StdSecureNet : StdHashNet, SecureNet {
 
         assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
 
-        return Signature(_secret.sign(message));
+        return Signature(_secret.sign(cast(Buffer) message));
     }
 
     final void derive(string tweak_word, ref ubyte[] tweak_privkey) {
@@ -296,7 +292,7 @@ class StdSecureNet : StdHashNet, SecureNet {
                     import tagion.utils.Miscellaneous : xor;
 
                     auto data = xor(privkey, _mask);
-                    result = calcHash(calcHash(data));
+                    result = rawCalcHash(rawCalcHash(data));
                 });
                 return result;
             }
@@ -356,7 +352,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         SecureNet bad_net = new StdSecureNet;
         bad_net.generateKeyPair("Wrong Secret password");
 
-        const message = net.rawCalcHash(some_data.representation);
+        const message = net.calcHash(some_data.representation);
 
         Signature signature = net.sign(message);
 
@@ -407,7 +403,7 @@ class StdSecureNet : StdHashNet, SecureNet {
 
 unittest { // StdHashNet
     //import tagion.utils.Miscellaneous : toHex=toHexString;
-    import tagion.hibon.HiBONType : isStub, hasHashKey;
+    import tagion.hibon.HiBONRecord : isStub, hasHashKey;
     import std.string : representation;
     import std.exception : assertThrown;
     import core.exception : AssertError;
@@ -426,29 +422,18 @@ unittest { // StdHashNet
 
     immutable doc_fingerprint = net.rawCalcHash(doc.serialize);
 
-    { // calcHash should not be used on a Document hashOf should be used instead
-        assertThrown!AssertError(net.calcHash(doc.serialize));
-
-        assertThrown!AssertError(net.calcHash(doc.serialize, null));
-        assertThrown!AssertError(net.calcHash(null, doc.serialize));
-    }
-
     {
-        assert(net.calcHash(null, null).length is 0);
-        assert(net.calcHash(doc_fingerprint, null) == doc_fingerprint);
-        assert(net.calcHash(null, doc_fingerprint) == doc_fingerprint);
+        assert(net.binaryHash(null, null).length is 0);
+        assert(net.binaryHash(doc_fingerprint, null) == doc_fingerprint);
+        assert(net.binaryHash(null, doc_fingerprint) == doc_fingerprint);
     }
 
-    immutable stub_fingerprint = net.calcHash(doc_fingerprint, doc_fingerprint);
+    immutable stub_fingerprint = net.binaryHash(doc_fingerprint, doc_fingerprint);
     Document stub;
     {
         auto hibon = new HiBON;
         hibon[STUB] = stub_fingerprint;
         stub = Document(hibon);
-    }
-
-    { // calcHash should not be used on a Document hashOf should be used instead
-        assertThrown!AssertError(net.calcHash(stub.serialize));
     }
 
     assert(isStub(stub));
@@ -461,8 +446,8 @@ class BadSecureNet : StdSecureNet {
         generateKeyPair(passphrase);
     }
 
-    override Signature sign(const(ubyte[]) message) const {
-        immutable false_message = super.rawCalcHash(message ~ message);
+    override Signature sign(const Fingerprint message) const {
+        const false_message = super.calcHash(message ~ message);
         return super.sign(false_message);
     }
 }

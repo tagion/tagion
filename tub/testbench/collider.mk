@@ -17,9 +17,9 @@ bddtagion: tagion
 	$(PRECMD)
 	$(DBIN)/tagion -f
 
-bddfiles: behaviour bddcontent
+bddfiles: collider bddcontent
 	$(PRECMD)
-	$(BEHAVIOUR) $(BDD_FLAGS)
+	$(COLLIDER) $(BDD_FLAGS)
 
 .PHONY: bddcontent
 
@@ -40,7 +40,7 @@ test-%: run-%
 	$(PRECMD)
 	${call log.header, $* :: test bdd}
 	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
-	$(BEHAVIOUR) -c $(BDD_RESULTS)
+	$(COLLIDER) -c $(BDD_RESULTS)
 
 ddd-%:
 	$(PRECMD)
@@ -63,10 +63,10 @@ bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way
 	$(PRECMD)
 	$(TESTPROGRAM) -f
 
-bddreport: target-hibonutil behaviour
+bddreport: target-hibonutil collider
 	$(PRECMD)
 	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
-	$(BEHAVIOUR) -cv $(BDD_RESULTS)
+	$(COLLIDER) -cv $(BDD_RESULTS)
 
 %.md.tmp: %.md
 	$(PRECMD)
@@ -111,7 +111,7 @@ help-bdd:
 	${call log.help, "make bddenv", "Generates a environment test script"}
 	${call log.help, "make bddinit", "Initialize the testbench tool"}
 	${call log.help, "make bddstrip", "Strips bad chars from BDD markdown files "}
-	${call log.help, "make behaviour", "Builds the BDD tool"}
+	${call log.help, "make collider", "Builds the BDD tool"}
 	${call log.help, "make clean-bddtest", "Remove the bdd log files"}
 	${call log.help, "make clean-reports", "Remove all the bdd reports"}
 	${call log.help, "make clean-bdd", "Remove all the bdd files"}
@@ -130,7 +130,7 @@ clean-reports:
 clean-bdd: clean-bddtest clean-reports
 	$(PRECMD)
 	${call log.header, $@ :: clean}
-	$(RM) $(BEHAVIOUR) $(BEHAVIOUR).o $(TESTPROGRAM) $(TESTPROGRAM).o $(BDDBINS)
+	$(RM) $(COLLIDER) $(COLLIDER).o $(TESTPROGRAM) $(TESTPROGRAM).o $(BDDBINS)
 
 # Delete hibon files
 clean-bddtest:

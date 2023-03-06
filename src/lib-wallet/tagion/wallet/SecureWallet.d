@@ -11,7 +11,7 @@ import core.time : MonoTime;
 //import std.stdio;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONException : HiBONRecordException;
 
@@ -464,7 +464,7 @@ import tagion.wallet.WalletException : check;
 
         { // Create a number of bills in the seneder_wallet
             auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN);
-            auto gene = net.calcHash("gene".representation);
+            auto gene = cast(Buffer) net.calcHash("gene".representation);
             const uint epoch = 42;
 
             const label = "some_name";

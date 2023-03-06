@@ -4,12 +4,13 @@ import std.typecons : Typedef;
 
 //import tagion.gossip.InterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.Types : Fingerprint;
 import tagion.basic.Types : Buffer, Control, BufferType;
 import tagion.dart.DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONType : HiBONPrefix;
+import tagion.hibon.HiBONRecord : HiBONPrefix;
 import tagion.hibon.HiBON : HiBON;
 
 /**
@@ -32,17 +33,17 @@ class DARTFakeNet : StdSecureNet {
 
     }
 
-    override immutable(Buffer) calcHash(scope const(ubyte[]) h) const {
+    override Fingerprint calcHash(scope const(ubyte[]) h) const {
         if (h.length is ulong.sizeof) {
             scope ubyte[] fake_h;
             fake_h.length = hashSize;
             fake_h[0 .. ulong.sizeof] = h;
-            return fake_h.idup;
+            return Fingerprint(fake_h.idup);
         }
-        return super.rawCalcHash(h);
+        return Fingerprint(super.rawCalcHash(h));
     }
 
-    override immutable(Buffer) calcHash(
+    override immutable(Buffer) binaryHash(
             scope const(ubyte[]) h1,
     scope const(ubyte[]) h2) const {
         scope ubyte[] fake_h1;
@@ -61,11 +62,11 @@ class DARTFakeNet : StdSecureNet {
         else {
             fake_h2 = h2.dup;
         }
-        return super.calcHash(fake_h1, fake_h2);
+        return super.binaryHash(fake_h1, fake_h2);
     }
 
     @trusted
-    override immutable(Buffer) calcHash(const(Document) doc) const {
+    override Fingerprint calcHash(const(Document) doc) const {
         import tagion.hibon.HiBONBase : Type;
         import std.exception : assumeUnique;
 
@@ -76,7 +77,7 @@ class DARTFakeNet : StdSecureNet {
             ubyte[] fingerprint;
             fingerprint.length = hashSize;
             fingerprint[0 .. ulong.sizeof] = nativeToBigEndian(x);
-            return assumeUnique(fingerprint);
+            return Fingerprint(assumeUnique(fingerprint));
         }
         return super.calcHash(doc);
         //return rawCalcHash(doc.serialize);

@@ -101,7 +101,7 @@ ${call DO_BIN,tagion,}
 #
 # Binary of BBD generator tool
 #
-target-behaviour: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-behaviour: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-behaviour/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,behaviour,}
+target-collider: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-collider: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-collider/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
+${call DO_BIN,collider,}
 

@@ -1,4 +1,4 @@
-module tagion.services.DARTSynchronization;
+module tagion.prior_services.DARTSynchronization;
 
 import std.conv;
 import std.stdio;
@@ -410,7 +410,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
 
 pragma(msg, "fixme(cbr): Why is the unittest uncommented (P2pSynchronizationFactory has no unittest)");
 version (none) unittest {
-    import tagion.services.Options;
+    import tagion.prior_services.Options;
     import p2p.node : RequestStream, Node;
 
     @trusted

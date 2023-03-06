@@ -8,13 +8,13 @@ import std.exception : assumeWontThrow;
 
 import tagion.basic.Types : Buffer;
 import tagion.basic.Basic : EnumText;
-import tagion.crypto.Types :  Signature, Pubkey;
+import tagion.crypto.Types :  Signature, Pubkey, Fingerprint;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.utils.BitMask;
 import tagion.hibon.HiBON : HiBON;
 import tagion.communication.HiRPC : HiRPC;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.utils.StdTime;
 
@@ -128,7 +128,7 @@ struct EventBody {
         return (father is null) ? true : (mother !is null);
     }
 
-    mixin HiBONType!(
+    mixin HiBONRecord!(
             q{
             this(
                 Document payload,
@@ -196,7 +196,7 @@ struct EventPackage {
     @label("$pkey") Pubkey pubkey;
     @label("$body") EventBody event_body;
 
-    mixin HiBONType!(
+    mixin HiBONRecord!(
             q{
             import tagion.basic.ConsensusExceptions: ConsensusCheck=Check, EventConsensusException, ConsensusFailCode;
             protected alias consensus_check=ConsensusCheck!EventConsensusException;
@@ -208,8 +208,9 @@ struct EventPackage {
                 this(doc_epack);
                 consensus_check(pubkey.length !is 0, ConsensusFailCode.EVENT_MISSING_PUBKEY);
                 consensus_check(signature.length !is 0, ConsensusFailCode.EVENT_MISSING_SIGNATURE);
-                fingerprint=net.calcHash(event_body);
-                consensus_check(net.verify(fingerprint, signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
+                auto _fingerprint=net.calcHash(event_body);
+                fingerprint = cast(Buffer) _fingerprint;
+                consensus_check(net.verify(_fingerprint, signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
             }
 
             /++
@@ -218,16 +219,19 @@ struct EventPackage {
             this(const SecureNet net, immutable(EventBody) ebody) {
                 pubkey=net.pubkey;
                 event_body=ebody;
-                fingerprint=net.calcHash(event_body);
-                signature=net.sign(fingerprint);
+                auto _fingerprint=net.calcHash(event_body);
+                fingerprint = cast(Buffer) _fingerprint;
+                signature=net.sign(_fingerprint);
             }
 
             this(const SecureNet net, const Pubkey pkey, const Signature signature, immutable(EventBody) ebody) {
                 pubkey=pkey;
                 event_body=ebody;
-                fingerprint=net.calcHash(event_body);
+                auto _fingerprint=net.calcHash(event_body);
+                fingerprint = cast(Buffer) _fingerprint;
                 this.signature=signature;
-                consensus_check(net.verify(fingerprint, signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
+                consensus_check(net.verify(_fingerprint, signature, pubkey), 
+                ConsensusFailCode.EVENT_BAD_SIGNATURE);
             }
         });
 }
@@ -260,7 +264,7 @@ struct Wavefront {
 
     private struct LoadTides {
         @label(tidesName) Tides tides;
-        mixin HiBONType!(
+        mixin HiBONRecord!(
                 q{
                 this(const(Tides) _tides) const {
                     tides=_tides;
@@ -323,7 +327,7 @@ struct Wavefront {
 struct EvaPayload {
     @label("$channel") Pubkey channel;
     @label("$nonce") Buffer nonce;
-    mixin HiBONType!(
+    mixin HiBONRecord!(
             q{
             this(const Pubkey channel, const Buffer nonce) pure {
                 this.channel=channel;
@@ -333,6 +337,6 @@ struct EvaPayload {
     );
 }
 
-static assert(isHiBONType!Wavefront);
-static assert(isHiBONType!(EventPackage));
-static assert(isHiBONType!(immutable(EventPackage)));
+static assert(isHiBONRecord!Wavefront);
+static assert(isHiBONRecord!(EventPackage));
+static assert(isHiBONRecord!(immutable(EventPackage)));

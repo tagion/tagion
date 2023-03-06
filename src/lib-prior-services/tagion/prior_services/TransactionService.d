@@ -1,5 +1,5 @@
 /// This module handles and pre-validates the Smart contract send to the network
-module tagion.services.TransactionService;
+module tagion.prior_services.TransactionService;
 
 import std.stdio : writeln, writefln;
 import std.format;
@@ -14,7 +14,7 @@ import tagion.network.SSLSocket : SSLSocket;
 
 import tagion.network.FiberServer : FiberServer, FiberRelay;
 import tagion.logger.Logger;
-import tagion.services.Options : Options, setOptions, options;
+import tagion.prior_services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
 import tagion.basic.Types : Control, Buffer;
 
@@ -101,7 +101,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 @trusted const(Document) receivessl() nothrow {
                     try {
                         import tagion.hibon.Document;
-                        import tagion.hibon.HiBONType;
+                        import tagion.hibon.HiBONRecord;
 
                         immutable buffer = ssl_relay.receive;
                         log("buffer receiver %d", buffer.length);

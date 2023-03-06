@@ -1,5 +1,5 @@
 /// Tagion main services
-module tagion.services.TagionService;
+module tagion.prior_services.TagionService;
 
 import core.thread : Thread;
 import core.time;
@@ -12,7 +12,7 @@ import std.datetime : Clock;
 
 import p2plib = p2p.node;
 
-import tagion.basic.Types :  Control, Buffer;
+import tagion.basic.Types : Control, Buffer;
 import tagion.basic.TagionExceptions : taskfailure, fatal;
 import tagion.crypto.Types : Pubkey;
 import tagion.communication.HiRPC;
@@ -31,16 +31,16 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.logger.Logger;
 import tagion.monitor.Monitor : MonitorCallBacks;
 import tagion.script.StandardRecords;
-import tagion.services.Options : Options, setOptions, OptionException, NetworkMode, main_task;
-import tagion.services.DARTService;
-import tagion.services.DARTSynchronizeService;
-import tagion.services.TransactionService;
-import tagion.services.TranscriptService;
-import tagion.services.FileDiscoveryService;
-import tagion.services.NetworkRecordDiscoveryService;
-import tagion.services.MonitorService;
-import tagion.services.RecorderService : RecorderTask;
-import tagion.services.EpochDumpService : EpochDumpTask;
+import tagion.prior_services.Options : Options, setOptions, OptionException, NetworkMode, main_task;
+import tagion.prior_services.DARTService;
+import tagion.prior_services.DARTSynchronizeService;
+import tagion.prior_services.TransactionService;
+import tagion.prior_services.TranscriptService;
+import tagion.prior_services.FileDiscoveryService;
+import tagion.prior_services.NetworkRecordDiscoveryService;
+import tagion.prior_services.MonitorService;
+import tagion.prior_services.RecorderService : RecorderTask;
+import tagion.prior_services.EpochDumpService : EpochDumpTask;
 import tagion.actor.TaskWrapper : Task;
 import tagion.utils.Random;
 import tagion.utils.Queue;
@@ -350,7 +350,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
 
         {
             immutable buf = cast(Buffer) hashgraph.channel;
-            const nonce = net.calcHash(buf);
+            const nonce = cast(Buffer) net.calcHash(buf);
             auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
 
             if (eva_event is null) {

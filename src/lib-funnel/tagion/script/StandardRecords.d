@@ -3,10 +3,10 @@ module tagion.script.StandardRecords;
 import std.meta : AliasSeq;
 
 import tagion.basic.Types : Buffer;
-import tagion.crypto.Types :  Pubkey, Signature;
+import tagion.crypto.Types :  Pubkey, Signature, Fingerprint;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONException;
 import std.range : empty;
 import tagion.script.TagionCurrency;
@@ -23,7 +23,7 @@ enum OwnerKey = "$Y";
         @label(OwnerKey) Pubkey owner; // Double hashed owner key
         @label("$G") Buffer gene; // Bill gene
         version (OLD_TRANSACTION) {
-            mixin HiBONType!(
+            mixin HiBONRecord!(
                     q{
                 this(TagionCurrency value, const uint epoch, Pubkey owner, Buffer gene) {
                     this.value = value;
@@ -34,7 +34,7 @@ enum OwnerKey = "$Y";
             });
         }
         else {
-            mixin HiBONType;
+            mixin HiBONRecord;
         }
     }
 
@@ -44,7 +44,7 @@ enum OwnerKey = "$Y";
         @label("$lang") string lang; /// Language used for the #name
         @label("$time") ulong time; /// Time-stamp of
         @label("$record") DARTIndex record; /// Hash pointer to NRC
-        mixin HiBONType;
+        mixin HiBONRecord;
 
         import tagion.crypto.SecureInterfaceNet : HashNet;
 
@@ -62,23 +62,23 @@ enum OwnerKey = "$Y";
         @label("$index") uint index; /// Current index previous.index+1
         @label("$node") DARTIndex node; /// Hash pointer to NNR
         @label("$payload", true) Document payload; /// Hash pointer to payload
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     @recordType("HL") struct HashLock {
         import tagion.crypto.SecureInterfaceNet;
 
         @label("$lock") Buffer lock; /// Of the NNC with the pubkey
-        mixin HiBONType!(q{
+        mixin HiBONRecord!(q{
                 @disable this();
                 import tagion.crypto.SecureInterfaceNet : HashNet;
                 import tagion.script.ScriptException : check;
-                import tagion.hibon.HiBONType : isHiBONType, hasHashKey;
+                import tagion.hibon.HiBONRecord : isHiBONRecord, hasHashKey;
                 this(const(HashNet) net, const(Document) doc) {
                     check(doc.hasHashKey, "Document should have a hash key");
                     lock = net.rawCalcHash(doc.serialize);
                 }
-                this(T)(const(HashNet) net, ref const(T) h) if (isHiBONType!T) {
+                this(T)(const(HashNet) net, ref const(T) h) if (isHiBONRecord!T) {
                     this(net, h.toDoc);
                 }
             });
@@ -87,7 +87,7 @@ enum OwnerKey = "$Y";
             return lock == net.rawCalcHash(doc.serialize);
         }
 
-        bool verify(T)(const(HashNet) net, ref T h) const if (isHiBONType!T) {
+        bool verify(T)(const(HashNet) net, ref T h) const if (isHiBONRecord!T) {
             return verify(net, h.toDoc);
         }
 
@@ -113,7 +113,7 @@ enum OwnerKey = "$Y";
         bad_nnc.name = "some_other_name";
         static struct NoHash {
             string name;
-            mixin HiBONType!(q{
+            mixin HiBONRecord!(q{
                     this(string name) {
                         this.name = name;
                     }
@@ -150,14 +150,14 @@ enum OwnerKey = "$Y";
         @label("$state") State state;
         @label("$gene") Buffer gene;
         @label("$addr") string address;
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     @recordType("active0") struct ActiveNode {
         @label("$node") Buffer node; /// Pointer to the NNC
         @label("$drive") Buffer drive; /// The tweak of the used key
         @label("$sign") Buffer signed; /// Signed bulleye of the DART
-        mixin HiBONType;
+        mixin HiBONRecord;
 
     }
 
@@ -167,15 +167,15 @@ enum OwnerKey = "$Y";
         @label("$recorder") Buffer recoder; /// Fingerprint of the recorder
         @label("$global") Buffer global; /// Gloal nerwork paremeters
         @label("$actives") ActiveNode[] actives; /// List of active nodes Sorted by the $node
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     enum EPOCH_TOP_NAME = "tagion";
 
     @recordType("top") struct LastEpochRecord {
         @label("#name") string name;
-        @label("$top") Buffer top;
-        mixin HiBONType!(q{
+        @label("$top") Fingerprint top;
+        mixin HiBONRecord!(q{
                 @disable this();
                 import tagion.crypto.SecureInterfaceNet : HashNet;
                 this(const(HashNet) net, ref const(EpochBlock) block) {
@@ -184,7 +184,7 @@ enum OwnerKey = "$Y";
                 }
             });
 
-        static Buffer dartHash(const(HashNet) net) {
+        static Fingerprint dartHash(const(HashNet) net) {
             EpochBlock b;
             auto record = LastEpochRecord(net, b);
             return net.calcHash(record);
@@ -198,13 +198,13 @@ enum OwnerKey = "$Y";
             return fixed_fees;
         }
 
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     @recordType("$master0") struct MasterGlobals {
         //    @label("$total") Number total;    /// Total tagions in the network
         @label("$rewards") ulong rewards; /// Epoch rewards
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     @recordType("SMC") struct Contract {
@@ -218,7 +218,7 @@ enum OwnerKey = "$Y";
             @label("$out") Pubkey[] output; // pubkey of the output
 
         }
-        mixin HiBONType;
+        mixin HiBONRecord;
         bool verify() {
             return (inputs.length > 0);
         }
@@ -226,7 +226,7 @@ enum OwnerKey = "$Y";
 
     @recordType("PAY") struct PayContract {
         @label("$bills", true) StandardBill[] bills; /// The actual inputs
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     @recordType("SSC") struct SignedContract {
@@ -236,7 +236,7 @@ enum OwnerKey = "$Y";
             pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
             @label("$in", true) StandardBill[] inputs; /// The actual inputs
         }
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     /**
@@ -254,7 +254,7 @@ enum OwnerKey = "$Y";
         @label("$epoch_number") uint epoch_num;
         /** check we not in last round */
         @label("$in_graph") bool in_graph;
-        mixin HiBONType!(
+        mixin HiBONRecord!(
                 q{
                 this(ulong rounds, long epoch_timestamp, uint transactions_amount, uint epoch_num, bool in_graph) {
                     this.rounds = rounds;
@@ -270,7 +270,7 @@ enum OwnerKey = "$Y";
         struct Script {
             @label("$name", true) string name;
             @label("$env", true) Buffer link; // Hash pointer to smart contract object;
-            mixin HiBONType!(
+            mixin HiBONRecord!(
                     q{
                 this(string name, Buffer link=null) {
                     this.name = name;
@@ -297,7 +297,7 @@ enum OwnerKey = "$Y";
         TagionCurrency amount;
         @label(OwnerKey) Pubkey pkey;
         @label("*", true) Document info;
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     struct AccountDetails {
@@ -374,7 +374,7 @@ enum OwnerKey = "$Y";
                     .sum;
             }
         }
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 }
 

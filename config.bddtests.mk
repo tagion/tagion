@@ -8,6 +8,7 @@ TESTMAIN?=testbench
 # BDDS+=receive_epoch
 BDDS+=dart_test
 BDDS+=dart_deep_rim_test
+BDDS+=dart_pseudo_random_archives
 
 run-ssl_echo_server: sslextras
 

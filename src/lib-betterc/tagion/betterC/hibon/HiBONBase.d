@@ -295,7 +295,7 @@ bool isArray(Type type) pure nothrow {
 mixin(Init_HiBON_Types!("__gshared immutable hibon_types=", 0));
 
 /**
- * @return true if the type is a valid HiBONType excluding narive types
+ * @return true if the type is a valid HiBONRecord excluding narive types
  */
 bool isHiBONBaseType(Type type) {
     return hibon_types[type];

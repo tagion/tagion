@@ -13,6 +13,7 @@ int main(string[] args) {
     import transaction_mode_zero = tagion.testbench.transaction_mode_zero;
     import dart_test = tagion.testbench.dart_test;
     import dart_deep_rim_test = tagion.testbench.dart_deep_rim_test;
+    import dart_pseudo_random_archives = tagion.testbench.dart_pseudo_random_archives;
 
     alias alltools = AliasSeq!(
             ssl_server,
@@ -23,6 +24,7 @@ int main(string[] args) {
             transaction_mode_zero,
             dart_test,
             dart_deep_rim_test,
+            dart_pseudo_random_archives,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

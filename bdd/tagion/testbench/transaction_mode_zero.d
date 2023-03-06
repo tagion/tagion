@@ -2,7 +2,7 @@ module tagion.testbench.transaction_mode_zero;
 
 import tagion.behaviour.Behaviour;
 import tagion.testbench.functional;
-import tagion.hibon.HiBONType : fwrite;
+import tagion.hibon.HiBONRecord : fwrite;
 import std.stdio;
 
 import tagion.tools.Basic;

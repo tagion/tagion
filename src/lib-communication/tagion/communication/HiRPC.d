@@ -56,7 +56,7 @@ enum Callers(T) = _Callers!T();
 /// HiRPC handler
 @safe
 struct HiRPC {
-    import tagion.hibon.HiBONType;
+    import tagion.hibon.HiBONRecord;
 
     /// HiRPC call method 
     struct Method {
@@ -64,13 +64,13 @@ struct HiRPC {
         @label("*", true) @filter(q{!a.empty}) Document params; /// RPC arguments
         @label("method") @(inspect.Initialized) string name; /// RPC method name
 
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
     /// HiRPC result from a method
     struct Response {
         @label("*", true) @(filter.Initialized) uint id; /// RPC response id, if given by the method
         Document result; /// Return data from the method request
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     /// HiRPC error response for a method
@@ -87,7 +87,7 @@ struct HiRPC {
             return doc.hasMember(codeName) || doc.hasMember(messageName) || doc.hasMember(dataName);
         }
 
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     /// Get the id of the document doc
@@ -131,7 +131,7 @@ struct HiRPC {
     /// get the message to of the message
     /// Params: T message data type
     /// Returns: The type of the HiRPC message 
-    static Type getType(T)(const T message) if (isHiBONType!T) {
+    static Type getType(T)(const T message) if (isHiBONRecord!T) {
         static if (is(T : const(Method))) {
             return Type.method;
         }
@@ -278,7 +278,7 @@ struct HiRPC {
                 signed = verifySignature(net, message, signature, pubkey);
             }
 
-            this(T)(const SecureNet net, T pack) if (isHiBONType!T) {
+            this(T)(const SecureNet net, T pack) if (isHiBONRecord!T) {
                 this(net, pack.toDoc);
             }
 
@@ -319,11 +319,11 @@ struct HiRPC {
              *   args = arguments to the
              * Returns: the constructed T
              */
-            const(T) params(T, Args...)(Args args) const if (isHiBONType!T) {
+            const(T) params(T, Args...)(Args args) const if (isHiBONRecord!T) {
                 return T(args, method.params);
             }
 
-            const(T) result(T, Args...)(Args args) const if (isHiBONType!T) {
+            const(T) result(T, Args...)(Args args) const if (isHiBONRecord!T) {
                 return T(response.result);
             }
 
@@ -343,8 +343,8 @@ struct HiRPC {
             }
         }
         else {
-            this(T)(const SecureNet net, const T post) if (isHiBONType!T || is(T : const Document)) {
-                static if (isHiBONType!T) {
+            this(T)(const SecureNet net, const T post) if (isHiBONRecord!T || is(T : const Document)) {
+                static if (isHiBONRecord!T) {
                     message = post.toDoc;
                 }
                 else {
@@ -394,7 +394,7 @@ struct HiRPC {
             }
         }
 
-        mixin HiBONType!("{}");
+        mixin HiBONRecord!("{}");
     }
 
     alias Sender = Post!(Direction.SEND);
@@ -456,7 +456,7 @@ struct HiRPC {
 
     /// Ditto
     immutable(Sender) action(T)(string method, T params, const uint id = uint.max) const
-    if (isHiBONType!T) {
+    if (isHiBONRecord!T) {
         return action(method, params.toDoc, id);
     }
 
@@ -484,7 +484,7 @@ struct HiRPC {
 
     /// Ditto
     immutable(Sender) result(T)(ref const(Receiver) receiver, T return_value) const
-    if (isHiBONType!T) {
+    if (isHiBONRecord!T) {
         return result(receiver, return_value.toDoc);
     }
 
@@ -530,7 +530,7 @@ struct HiRPC {
     }
 
     /// Ditto
-    final immutable(Receiver) receive(T)(T sender) const if (isHiBONType!T) {
+    final immutable(Receiver) receive(T)(T sender) const if (isHiBONRecord!T) {
         auto receiver = Receiver(net, sender.toDoc);
         return receiver;
     }
@@ -538,7 +538,7 @@ struct HiRPC {
 
 ///
 unittest {
-    import tagion.hibon.HiBONType;
+    import tagion.hibon.HiBONRecord;
     import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
     import tagion.crypto.secp256k1.NativeSecp256k1;
 
@@ -580,7 +580,7 @@ unittest {
 
         static struct ResultStruct {
             int x;
-            mixin HiBONType;
+            mixin HiBONRecord;
         }
 
         { // Response

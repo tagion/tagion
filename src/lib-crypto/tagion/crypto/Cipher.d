@@ -2,7 +2,7 @@ module tagion.crypto.Cipher;
 
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types :  Pubkey;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 import std.exception : assumeUnique;
 
@@ -34,7 +34,7 @@ struct Cipher {
         @label("$n") Buffer nonce;
         @label("$a") Buffer authTag;
         @label("$k") Pubkey cipherPubkey;
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     static const(CipherDocument) encrypt(const(SecureNet) net, const(Pubkey) pubkey, const(Document) msg) {
@@ -156,7 +156,7 @@ struct Cipher {
                     passed[0] = true;
                     if (encrypted_doc.isInorder) {
                         import std.stdio : writefln;
-                        import tagion.hibon.HiBONType : fwrite;
+                        import tagion.hibon.HiBONRecord : fwrite;
 
                         immutable filename = fileId!Cipher(FileExtension.hibon, encrypted_doc
                                 .stringof).fullpath;

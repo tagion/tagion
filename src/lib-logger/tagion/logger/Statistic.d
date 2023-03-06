@@ -4,7 +4,7 @@ import std.typecons : Tuple, Flag, Yes, No;
 import std.meta : AliasSeq;
 import std.format;
 
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 
 @safe
 struct Statistic(T, Flag!"histogram" flag = No.histogram) {
@@ -37,7 +37,7 @@ struct Statistic(T, Flag!"histogram" flag = No.histogram) {
     }
 
     alias Result = Tuple!(double, "sigma", double, "mean", uint, "N", T, "min", T, "max");
-    mixin HiBONType;
+    mixin HiBONRecord;
 
     const pure nothrow @nogc {
         const(Result) result() {

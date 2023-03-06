@@ -1,8 +1,11 @@
 module tagion.testbench.dart.dartinfo;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.communication.HiRPC : HiRPC;
+import tagion.utils.Random;
+import std.range;
+import std.stdio;
 
-
+import std.algorithm.iteration : each;
 
 struct DartInfo {
     const string dartfilename;
@@ -24,4 +27,19 @@ struct DartInfo {
 
     const enum FAKE = "$fake#";
 
+    SequenceT[] states;
+
+    auto generateStates(const uint from, const uint to) {
+       auto rnd = RandomT(0x1234);
+       return recurrence!(
+            (a, n) =>
+            a[n-1].progress(rnd.value(from,to))
+        )(SequenceT(rnd.save, from));
+    }
+
 }
+
+alias RandomT = Random!ulong;
+alias SequenceT = Sequence!ulong;
+
+

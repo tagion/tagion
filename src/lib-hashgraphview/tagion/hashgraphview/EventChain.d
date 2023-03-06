@@ -7,7 +7,7 @@ import std.range : iota;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types :  Pubkey, Signature;
 import tagion.utils.StdTime : sdt_t;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -26,21 +26,21 @@ struct EventBodyCompact {
     @label("M", true) @(filter.Initialized) Buffer mother_fingerprint; /// This event is connect to the previous mother
     @label("F", true) @(filter.Initialized) Buffer father_fingerprint; /// This event is connect to the previous father
     @label("C", true) @(filter.Initialized) Pubkey channel; /// Event Channel (Pubkey of the node);
-    mixin HiBONType;
+    mixin HiBONRecord;
 }
 
 @safe
 struct EventCompact {
     @label("s") Signature signature; // Signature
     @label("b") EventBodyCompact ebody; // Event Body
-    mixin HiBONType;
+    mixin HiBONRecord;
 }
 
 @safe
 struct EventEpochChunk {
     @label("epacks") EventCompact[] epacks;
     @label("chain") Buffer chain;
-    mixin HiBONType!(
+    mixin HiBONRecord!(
             q{
             this(EventCompact[] epacks, Buffer chain) pure nothrow {
                 this.epacks=epacks;

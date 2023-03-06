@@ -1,5 +1,4 @@
-module tagion.testbench.dart_test;
-
+module tagion.testbench.dart_pseudo_random_archives;
 
 import tagion.behaviour.Behaviour;
 import tagion.testbench.functional;
@@ -20,6 +19,8 @@ import tagion.basic.Types : FileExtension;
 
 import tagion.testbench.dart.dartinfo;
 
+import tagion.basic.Version;
+
 
 mixin Main!(_main);
 
@@ -30,20 +31,23 @@ int _main(string[] args) {
     bdd_options.scenario_name = __MODULE__;
 
     const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
-    const string dartfilename = buildPath(module_path, "dart_mapping_two_archives".setExtension(FileExtension.dart));
+    const string dartfilename = buildPath(module_path, "dart_pseudo_random_test".setExtension(FileExtension.dart));
     const SecureNet net = new DARTFakeNet("very_secret");
     const hirpc = HiRPC(net);
 
+
     DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
+    const sequence=dart_info.generateStates(5, 7);
 
-    auto dart_mapping_two_archives_feature = automation!(dart_mapping_two_archives)();
+    auto dart_pseudo_random_feature = automation!(dart_pseudo_random)();
 
-    dart_mapping_two_archives_feature.AddOneArchive(dart_info);
-    dart_mapping_two_archives_feature.AddAnotherArchive(dart_info);
-    dart_mapping_two_archives_feature.RemoveArchive(dart_info);
+    dart_pseudo_random_feature.AddPseudoRandomData(dart_info);
     
-    auto dart_mapping_two_archives_context = dart_mapping_two_archives_feature.run();
+    auto dart_pseudo_random_context = dart_pseudo_random_feature.run();
+
     return 0;
+
+
 }
 
 

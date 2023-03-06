@@ -2,7 +2,7 @@
 module tagion.hashgraphview.EventView;
 
 import tagion.hashgraph.Event;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 
 /// EventView is used to store event has a
 struct EventView {
@@ -23,7 +23,7 @@ struct EventView {
     @label("$received") uint[] round_received_mask;
     bool father_less;
 
-    mixin HiBONType!(
+    mixin HiBONRecord!(
             q{
             this(const Event event, const size_t relocate_node_id=size_t.max) {
                 import std.algorithm : each;

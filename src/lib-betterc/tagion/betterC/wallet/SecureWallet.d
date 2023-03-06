@@ -2,39 +2,23 @@
 
 module tagion.betterC.wallet.SecureWallet;
 
-// import std.format;
 import std.string : representation;
 import std.algorithm : map, max, min, sum, until, each, filter, cache;
 
-// import std.range : tee;
-// import std.array;
-// import std.exception : assumeUnique;
 import core.time : MonoTime;
 import std.traits;
 
-//import std.stdio;
-//use hibon betterc
-// import tagion.betterC.hibon.HiBON : HiBON;
 import tagion.betterC.hibon.Document : Document;
 import tagion.betterC.wallet.Net;
 import tagion.betterC.utils.BinBuffer;
 import tagion.betterC.utils.Memory;
 import tagion.betterC.utils.Miscellaneous;
 
-// import tagion.basic.Basic : basename, Buffer, Pubkey;
-
-// // import tagion.gossip.GossipNet : StdSecureNet, StdHashNet, scramble;
-// import tagion.basic.Message;
-// import tagion.utils.Miscellaneous;
-// import tagion.Keywords;
 import tagion.betterC.funnel.TagionCurrency;
 
-// import tagion.communication.HiRPC;
 import tagion.betterC.wallet.KeyRecover;
 import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN, AccountDetails,
     Invoice, StandardBill, SignedContract;
-
-//alias StdSecureWallet = SecureWallet!StdSecureNet;
 
 struct SecureWallet(Net) {
     static assert(is(Net : SecureNet));
@@ -45,7 +29,7 @@ struct SecureWallet(Net) {
     protected static SecureNet net;
 
     this(DevicePIN pin, RecoverGenerator wallet = RecoverGenerator.init, AccountDetails account = AccountDetails
-            .init) { //nothrow {
+            .init) {
         _wallet = wallet;
         _pin = pin;
         this.account = account;
@@ -150,7 +134,6 @@ struct SecureWallet(Net) {
     // }
 
     // bool isLoggedin() const {
-    //     // pragma(msg, "fixme(cbr): Yam the net");
     //     // return net !is null;
     //     return true;
     // }
@@ -246,7 +229,6 @@ struct SecureWallet(Net) {
 
         // if (topay > 0) {
         // const size_in_bytes = 500;
-        // pragma(msg, "fixme(cbr): Storage fee needs to be estimated");
         // const fees = globals.fees(topay, size_in_bytes);
         //     const amount = topay + fees;
         //     StandardBill[] contract_bills;

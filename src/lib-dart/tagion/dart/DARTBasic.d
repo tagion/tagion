@@ -5,8 +5,8 @@ import std.typecons : Typedef;
 import tagion.basic.Types : Buffer, BufferType;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONType : isHiBONType;
-import tagion.hibon.HiBONType : HiBONPrefix, STUB;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
+import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
 
 /**
 * This is the raw-hash value of a message and is used when message is signed.
@@ -23,10 +23,10 @@ const(DARTIndex) dartIndex(const(HashNet) net, const(Document) doc) {
         immutable value_data = first.data[first.dataPos .. first.dataPos + first.dataSize];
         return DARTIndex(net.rawCalcHash(value_data));
     }
-    return DARTIndex(net.calcHash(doc));
+    return DARTIndex(cast(Buffer)net.calcHash(doc));
 }
 
 @safe
-const(DARTIndex) dartIndex(T)(const(HashNet) net, T value) if (isHiBONType!T) {
+const(DARTIndex) dartIndex(T)(const(HashNet) net, T value) if (isHiBONRecord!T) {
     return net.dartIndex(value.toDoc);
 }

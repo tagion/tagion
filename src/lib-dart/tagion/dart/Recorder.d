@@ -19,7 +19,7 @@ import std.range : empty;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONType : label, STUB, isHiBONType, GetLabel, isStub, recordType;
+import tagion.hibon.HiBONRecord : label, STUB, isHiBONRecord, GetLabel, isStub, recordType;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Message;
 
@@ -46,7 +46,7 @@ version (none) @safe
 Buffer dartIndex(const(HashNet) net, const(Document) doc) {
     return net.dartIndex(doc);
     version (none) {
-        import tagion.hibon.HiBONType : HiBONPrefix, STUB;
+        import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
 
         if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
             //if (doc.hasHashKey) {
@@ -62,7 +62,7 @@ Buffer dartIndex(const(HashNet) net, const(Document) doc) {
 }
 
 version (none) @safe
-Buffer dartIndex(T)(T value) if (isHiBONType) {
+Buffer dartIndex(T)(T value) if (isHiBONRecord) {
     return dartIndex(value.toDoc);
 }
 
@@ -151,7 +151,7 @@ class RecordFactory {
         import tagion.hibon.HiBONJSON : JSONString;
 
         mixin JSONString;
-        import tagion.hibon.HiBONType : HiBONRecordType;
+        import tagion.hibon.HiBONRecord : HiBONRecordType;
 
         mixin HiBONRecordType;
         /**
@@ -311,7 +311,7 @@ class RecordFactory {
         }
 
         const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE)
-                if ((isHiBONType!T) && !is(T : const(Recorder))) {
+                if ((isHiBONRecord!T) && !is(T : const(Recorder))) {
             return insert(pack.toDoc, type);
         }
 
@@ -333,10 +333,10 @@ class RecordFactory {
         }
 
         @trusted void insert(R)(R range, const Archive.Type type = Archive.Type.NONE)
-                if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONType!(
+                if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONRecord!(
                     ElementType!R))) {
             alias FiledType = ElementType!R;
-            static if (isHiBONType!FiledType) {
+            static if (isHiBONRecord!FiledType) {
                 archives.insert(range.map!(a => new Archive(net, a.toDoc, type)));
             }
             else {
@@ -356,7 +356,7 @@ class RecordFactory {
         //     return archive;
         // }
 
-        // const(Archive) add(T)(T pack) if (isHiBONType!T) {
+        // const(Archive) add(T)(T pack) if (isHiBONRecord!T) {
         //     auto archive = new Archive(net, doc, Archive.Type.ADD);
         //     archives.insert(archive);
         //     return archive;
@@ -624,7 +624,7 @@ unittest { // Archive
     auto net = new DARTFakeNet;
     auto manufactor = RecordFactory(net);
 
-    static assert(isHiBONType!Archive);
+    static assert(isHiBONRecord!Archive);
     Document filed_doc; // This is the data which is filed in the DART
     {
         auto hibon = new HiBON;
@@ -726,7 +726,7 @@ unittest { // Archive
 }
 
 unittest { /// RecordFactory.Recorder.insert range
-    import tagion.hibon.HiBONType;
+    import tagion.hibon.HiBONRecord;
     import tagion.crypto.SecureNet;
     import std.range : iota, chain;
     import std.algorithm.sorting : sort;
@@ -739,7 +739,7 @@ unittest { /// RecordFactory.Recorder.insert range
     auto manufactor = RecordFactory(net);
     static struct Filed {
         int x;
-        mixin HiBONType!(
+        mixin HiBONRecord!(
                 q{
                 this(int x) {
                     this.x = x;

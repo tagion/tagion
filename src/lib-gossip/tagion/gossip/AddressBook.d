@@ -1,7 +1,7 @@
 module tagion.gossip.AddressBook;
 
 import tagion.crypto.Types : Pubkey;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.dart.DART : DART;
 import tagion.dart.DARTOptions : DARTOptions;
 import tagion.logger.Logger : log;
@@ -71,7 +71,6 @@ synchronized class AddressBook {
     alias NodeAddresses = NodeAddress[Pubkey];
     alias NodePair = typeof((() @trusted => (cast(NodeAddresses) addresses).byKeyValue.front)());
 
-    pragma(msg, "NodePair ", NodePair);
     /** \struct AddressDirectory
      * Storage for node addresses
      */
@@ -80,7 +79,7 @@ synchronized class AddressBook {
          * node address - value, public key - key
          */
         NodeAddresses addresses;
-        mixin HiBONType;
+        mixin HiBONRecord;
     }
 
     /** used for lock, unlock file */
@@ -273,7 +272,7 @@ synchronized class AddressBook {
         return addresses.length;
     }
 
-    import tagion.services.Options;
+    import tagion.prior_services.Options;
 
     /**
      * Check that nodes >= 4 and addresses >= nodes
@@ -340,7 +339,7 @@ struct NodeAddress {
     /** DART sector */
     DART.SectorRange sector;
 
-    mixin HiBONType!(
+    mixin HiBONRecord!(
             q{
             this(
             string address,

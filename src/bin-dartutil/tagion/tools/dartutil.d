@@ -21,7 +21,7 @@ import tagion.dart.DARTcrud : dartRead, dartModify;
 import tagion.basic.Basic : tempfile;
 
 import tagion.communication.HiRPC;
-import tagion.services.DARTSynchronization;
+import tagion.prior_services.DARTSynchronization;
 import tagion.gossip.GossipNet;
 import tagion.gossip.AddressBook;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
@@ -31,7 +31,7 @@ import tagion.dart.DARTFakeNet : DARTFakeNet;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBON;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 
 import tagion.utils.Miscellaneous;
 import tagion.Keywords;
@@ -226,7 +226,7 @@ int _main(string[] args) {
             return db(receiver, false);
         }
 
-        Nullable!T readRecord(T)(Buffer hash, HiRPC hirpc, DART db) if (isHiBONType!T) {
+        Nullable!T readRecord(T)(Buffer hash, HiRPC hirpc, DART db) if (isHiBONRecord!T) {
             auto result = readFromDB([hash], hirpc, db);
 
             auto factory = RecordFactory(net);
@@ -256,7 +256,7 @@ int _main(string[] args) {
      * @param indent_line - flag to put indent line in console before printing doc
      * @param alternative_text - text to replace doc output when flag verbose is off
      */
-    void toConsole(T)(T doc, bool indent_line = false, string alternative_text = "") if (isHiBONType!T || is(T == Document)) {
+    void toConsole(T)(T doc, bool indent_line = false, string alternative_text = "") if (isHiBONRecord!T || is(T == Document)) {
         if (verbose) {
             if (indent_line)
                 writeln;

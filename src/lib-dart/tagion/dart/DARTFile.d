@@ -26,8 +26,8 @@ private {
 
     import tagion.hibon.HiBON : HiBON;
 
-    //    import tagion.hibon.HiBONType : GetLabel, label, HiBONPrefix, isStub, STUB;
-    import tagion.hibon.HiBONType : isStub, label, record_filter = filter, GetLabel, recordType;
+    //    import tagion.hibon.HiBONRecord : GetLabel, label, HiBONPrefix, isStub, STUB;
+    import tagion.hibon.HiBONRecord : isStub, label, record_filter = filter, GetLabel, recordType;
     import tagion.hibon.Document : Document;
 
     import tagion.dart.BlockFile;
@@ -264,7 +264,7 @@ alias check = Check!DARTException;
                 return _left_fingerprint;
             }
             else {
-                return net.calcHash(_left_fingerprint, _right_fingerprint);
+                return net.binaryHash(_left_fingerprint, _right_fingerprint);
             }
         }
 
@@ -434,7 +434,7 @@ alias check = Check!DARTException;
 
         mixin JSONString;
 
-        import tagion.hibon.HiBONType : HiBONRecordType;
+        import tagion.hibon.HiBONRecord : HiBONRecordType;
 
         mixin HiBONRecordType;
 
@@ -512,6 +512,9 @@ alias check = Check!DARTException;
             if (merkleroot is null) {
                 foreach (key, index; _indices) {
                     if ((index !is INDEX_NULL) && (_fingerprints[key] is null)) {
+
+                        
+
                             .check((index in index_used) is null,
                                     format("The DART contains a recursive tree @ index %d", index));
                         index_used[index] = true;
@@ -522,7 +525,7 @@ alias check = Check!DARTException;
                             _fingerprints[key] = subbranch.fingerprint(dartfile, index_used);
                         }
                         else {
-                            _fingerprints[key] = dartfile.manufactor.net.calcHash(doc);
+                            _fingerprints[key] = cast(Buffer)dartfile.manufactor.net.calcHash(doc);
                         }
                     }
                 }

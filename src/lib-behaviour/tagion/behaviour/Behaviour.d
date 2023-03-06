@@ -15,7 +15,7 @@ import tagion.behaviour.BehaviourException;
 import tagion.behaviour.BehaviourResult;
 import tagion.behaviour.BehaviourReporter;
 import tagion.basic.Types : FileExtension;
-import tagion.hibon.HiBONType;
+import tagion.hibon.HiBONRecord;
 import tagion.basic.Basic : isOneOf;
 
 /**
@@ -167,7 +167,7 @@ FeatureGroup getFeature(alias M)() if (isFeature!M) {
 ///Examples: How to use getFeature on a feature
 @safe
 unittest { //
-    import tagion.hibon.HiBONType;
+    import tagion.hibon.HiBONRecord;
     import tagion.basic.Basic : unitfile;
     import core.demangle : mangle;
 
@@ -202,7 +202,6 @@ auto automation(alias M)() if (isFeature!M) {
                     format("Scenarion '%s' does not exists. Possible scenarions is\n%s",
                     scenario_name, [FeatureContext.fieldNames[0 .. $ - 1]].join(",\n")));
             alias _Scenario = FeatureContext.Types[tuple_index];
-            pragma(msg, "Args.length ", Args.length);
             context[tuple_index] = new _Scenario(args);
         }
 
@@ -581,7 +580,7 @@ unittest {
 
 version (unittest) {
     import tagion.hibon.Document;
-    import tagion.hibon.HiBONType;
+    import tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONJSON;
     import std.exception;
 }

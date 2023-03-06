@@ -58,7 +58,6 @@ string[] parse_string(const char* str, const uint len) {
 /// Staritng d-runtime
 export static int64_t start_rt() {
     // recyclerDoc = create!(Recycle!Document);
-    // pragma(msg, typeof(recyclerDoc));
     return -1;
 }
 

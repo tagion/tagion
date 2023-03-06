@@ -2,7 +2,7 @@
 module tagion.hashchain.HashChainBlock;
 
 import std.range : empty;
-import tagion.basic.Types : Buffer;
+import tagion.crypto.Types : Fingerprint;
 import tagion.hibon.HiBON : HiBON;
 
 /** @brief File contains interface for HashChainBlock
@@ -16,12 +16,12 @@ import tagion.hibon.HiBON : HiBON;
     /** Returns hash of block
      *      \return hash
      */
-    Buffer getHash() const;
+    Fingerprint getHash() const;
 
     /** Returns fingerprint of previous block in chain
      *      \return fingerprint of previous block
      */
-    Buffer getPrevious() const;
+    Fingerprint getPrevious() const;
 
     /** Converts structure to HiBON
      *      \return HiBON copy of this structure

@@ -54,6 +54,8 @@
 
 [dart_two_archives_deep_rim.md](tagion/testbench/dart/dart_two_archives_deep_rim.md)
 
+[dart_pseudo_random.md](tagion/testbench/dart/dart_pseudo_random.md)
+
 [create_transaction.md](tagion/testbench/functional/create_transaction.md)
 
 [create_dart.md](tagion/testbench/functional/create_dart.md)

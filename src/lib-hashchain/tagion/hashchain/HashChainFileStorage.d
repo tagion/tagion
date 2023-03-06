@@ -6,11 +6,12 @@ import std.algorithm : filter, map;
 import std.file;
 import std.path;
 
+import tagion.crypto.Types : Fingerprint;
 import tagion.basic.Types : Buffer, FileExtension, withDot;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
-import tagion.hibon.HiBONType : fread, fwrite;
+import tagion.hibon.HiBONRecord : fread, fwrite;
 import tagion.utils.Miscellaneous : decode, toHexString;
 
 /** @brief File contains class HashChainFileStorage
@@ -49,7 +50,7 @@ import tagion.utils.Miscellaneous : decode, toHexString;
      *      @param fingerprint - fingerprint of block to read
      *      \return chain block, or null if such block file doesn't exist
      */
-    Block read(Buffer fingerprint) {
+    Block read(const Fingerprint fingerprint) {
         try {
             auto doc = fread(makePath(fingerprint));
             // TODO: bad decision, redesign to have automatic set hash from only doc
@@ -78,7 +79,7 @@ import tagion.utils.Miscellaneous : decode, toHexString;
     /** Collects all block filenames in chain folder 
      *      \return array of block filenames in this folder
      */
-    Buffer[] getHashes() @trusted {
+    Fingerprint[] getHashes() @trusted {
         enum BLOCK_FILENAME_LEN = StdHashNet.HASH_SIZE * 2;
 
         return folder_path.dirEntries(SpanMode.shallow)
@@ -87,7 +88,7 @@ import tagion.utils.Miscellaneous : decode, toHexString;
             .filter!(f => f.extension == getExtension.withDot)
             .filter!(f => f.stripExtension.length == BLOCK_FILENAME_LEN)
             .map!(f => f.stripExtension)
-            .map!(f => f.decode)
+            .map!(f => Fingerprint(f.decode))
             .array;
     }
 
@@ -114,7 +115,7 @@ import tagion.utils.Miscellaneous : decode, toHexString;
          *      @param fingerprint - fingerprint of block to make path
          *      \return path to block with given fingerprint
          */
-        string makePath(Buffer fingerprint) {
+        string makePath(const Fingerprint fingerprint) {
             return buildPath(
                     folder_path,
                     fingerprint.toHexString.setExtension(getExtension));

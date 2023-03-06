@@ -18,8 +18,6 @@ struct Recycle(T) {
             _active[reuse_id] = x;
             return reuse_id;
         }
-        // _active ~= x;
-        pragma(msg, "create ", T);
         _active.append(x);
         return cast(uint) _active.length - 1;
     }

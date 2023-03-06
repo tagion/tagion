@@ -1,5 +1,5 @@
 /// Service for handling both text logs and variable logging
-module tagion.services.LoggerService;
+module tagion.prior_services.LoggerService;
 
 import std.array;
 import std.stdio;
@@ -17,9 +17,9 @@ import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions;
 import tagion.GlobalSignals : abort;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONType;
-import tagion.services.LogSubscriptionService : logSubscriptionServiceTask;
-import tagion.services.Options : Options, setOptions, options;
+import tagion.hibon.HiBONRecord;
+import tagion.prior_services.LogSubscriptionService : logSubscriptionServiceTask;
+import tagion.prior_services.Options : Options, setOptions, options;
 import tagion.logger.Logger;
 import tagion.logger.LogRecords;
 import tagion.actor.TaskWrapper;
@@ -82,7 +82,7 @@ private {
 
     /** Task method that receives logs from Logger and sends them to console, file and LogSubscriptionService
      *      @param info - log info about passed log
-     *      @param doc - log itself, that can be either TextLog or some HiBONType variable
+     *      @param doc - log itself, that can be either TextLog or some HiBONRecord variable
      */
     @TaskMethod void receiveLogs(immutable(LogInfo) info, immutable(Document) doc) {
         if (matchAnyFilter(info)) {

@@ -1,4 +1,4 @@
-module tagion.hibon.HiBONType;
+module tagion.hibon.HiBONRecord;
 
 import std.stdio;
 import tagion.hibon.HiBONJSON;
@@ -22,10 +22,10 @@ enum isHiBON(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
             "toHiBON") && (is(ReturnType!(T.toHiBON) : const(HiBON)));
 
 ///  Returns: true if struct or class supports toDoc
-enum isHiBONType(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
+enum isHiBONRecord(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
             "toDoc") && (is(ReturnType!(T.toDoc) : const(Document)));
 
-enum isHiBONTypeArray(T) = isArray!T && isHiBONType!(ForeachType!T);
+enum isHiBONTypeArray(T) = isArray!T && isHiBONRecord!(ForeachType!T);
 
 /**
 	Used for HiBONRecords which have a recorder type
@@ -126,7 +126,7 @@ struct fixed {
 }
 
 /++
- Sets the HiBONType type
+ Sets the HiBONRecord type
  +/
 struct recordType {
     string name;
@@ -154,7 +154,7 @@ template GetLabel(alias member) {
     }
 }
 
-// bool hasHashKey(T)(T value) if (isHiBONType!T) {
+// bool hasHashKey(T)(T value) if (isHiBONRecord!T) {
 //     return value.keys[0] is HiBONPrefix.HASH;
 // }
 
@@ -163,7 +163,7 @@ enum VOID = "*";
 
 mixin template HiBONRecordType() {
     import tagion.hibon.Document : Document;
-    import tagion.hibon.HiBONType : TYPENAME, recordType;
+    import tagion.hibon.HiBONRecord : TYPENAME, recordType;
     import std.traits : getUDAs, hasUDA, isIntegral, isUnsigned;
 
     alias ThisType = typeof(this);
@@ -173,7 +173,7 @@ mixin template HiBONRecordType() {
         static assert(record_types.length is 1, "Only one recordType UDA allowed");
         static if (record_types[0].name.length) {
             enum type_name = record_types[0].name;
-            import tagion.hibon.HiBONType : isRecordT = isRecord;
+            import tagion.hibon.HiBONRecord : isRecordT = isRecord;
 
             alias isRecord = isRecordT!ThisType;
             version (none) static bool isRecord(const Document doc) nothrow {
@@ -197,7 +197,7 @@ mixin template HiBONRecordType() {
  string name;         // The member in HiBON is "name"
  @label("num", true); // The member in HiBON is "num" and is optional
  @label("") bool dummy; // This parameter is not included in the HiBON
- HiBONType!("TEST");   // The "$type" is set to "TEST"
+ HiBONRecord!("TEST");   // The "$type" is set to "TEST"
  }
  --------------------
  CTOR = is used for constructor
@@ -205,7 +205,7 @@ mixin template HiBONRecordType() {
  --------------------
  struct TestCtor {
  uint x;
- HiBONType!("TEST2",
+ HiBONRecord!("TEST2",
  q{
  this(uint x) {
  this.x=x;
@@ -219,7 +219,7 @@ mixin template HiBONRecordType() {
 
 pragma(msg, "fixme(cbr): The less_than function in this mixin is used for none string key (Should be added to the HiBON spec)");
 
-mixin template HiBONType(string CTOR = "") {
+mixin template HiBONRecord(string CTOR = "") {
 
     import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember, isCallable,
         EnumMembers, ForeachType, isArray, isAssociativeArray, KeyType, ValueType;
@@ -239,9 +239,9 @@ mixin template HiBONType(string CTOR = "") {
     import tagion.basic.Basic : basename, CastTo;
     import tagion.basic.TagionExceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
-    import tagion.hibon.HiBONType : isHiBON, isHiBONType, HiBONRecordType,
+    import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,
         label, GetLabel, filter, fixed, inspect, VOID;
-    import HiBONType = tagion.hibon.HiBONType; // : TYPENAME;
+    import HiBONRecord = tagion.hibon.HiBONRecord; // : TYPENAME;
 
     protected alias check = Check!(HiBONRecordException);
 
@@ -251,7 +251,7 @@ mixin template HiBONType(string CTOR = "") {
     mixin JSONString;
 
     mixin HiBONRecordType;
-    alias isRecord = HiBONType.isRecord!ThisType;
+    alias isRecord = HiBONRecord.isRecord!ThisType;
 
     enum HAS_TYPE = hasMember!(ThisType, "type_name");
     static bool less_than(Key)(Key a, Key b) if (!is(Key : string)) {
@@ -259,7 +259,7 @@ mixin template HiBONType(string CTOR = "") {
         static if (HiBON.Value.hasType!BaseKey || is(BaseKey == enum)) {
             return Key(a) < Key(b);
         }
-        else static if (isHiBONType!BaseKey) {
+        else static if (isHiBONRecord!BaseKey) {
             return a.toDoc.serialize < b.toDoc.serialize;
         }
         else {
@@ -308,7 +308,7 @@ mixin template HiBONType(string CTOR = "") {
                         static if (HiBON.Value.hasType!BaseIndex || is(BaseIndex == enum)) {
                             element[0] = Index(key);
                         }
-                        else static if (isHiBONType!BaseIndex) {
+                        else static if (isHiBONRecord!BaseIndex) {
                             element[0] = BaseIndex(key.toDoc);
                         }
                         else {
@@ -370,7 +370,7 @@ mixin template HiBONType(string CTOR = "") {
                     else static if (isHiBON!BaseT) {
                         hibon[name] = m.toHiBON;
                     }
-                    else static if (isHiBONType!BaseT) {
+                    else static if (isHiBONRecord!BaseT) {
                         hibon[name] = m.toDoc;
                     }
                     else static if (is(MemberT == enum)) {
@@ -553,10 +553,6 @@ mixin template HiBONType(string CTOR = "") {
                             }
                         }
                         else {
-                            pragma(msg, "typeof(result[e.index]) ", typeof(result[e.index]),
-                            " typeof(value) ", typeof(value));
-
-                            // (() @trusted
                             result[e.index] = value;
                         }
                     }
@@ -568,7 +564,7 @@ mixin template HiBONType(string CTOR = "") {
                 && isCallable!(valid) && __traits(compiles, valid(doc));
             static if (do_valid) {
                 check(valid(doc),
-                        format("Document verification faild for HiBONType %s",
+                        format("Document verification faild for HiBONRecord %s",
                         ThisType.stringof));
             }
 
@@ -578,7 +574,7 @@ mixin template HiBONType(string CTOR = "") {
             static if (do_verify) {
                 scope (exit) {
                     check(this.verify(),
-                            format("Document verification faild for HiBONType %s",
+                            format("Document verification faild for HiBONRecord %s",
                             ThisType.stringof));
                 }
             }
@@ -717,7 +713,7 @@ mixin template HiBONType(string CTOR = "") {
     file.write(filename, doc.serialize);
 }
 
-@safe void fwrite(T)(const(char[]) filename, const T rec) if (isHiBONType!T) {
+@safe void fwrite(T)(const(char[]) filename, const T rec) if (isHiBONRecord!T) {
     fwrite(filename, rec.toDoc);
 }
 
@@ -737,7 +733,7 @@ mixin template HiBONType(string CTOR = "") {
     return doc;
 }
 
-T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
+T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
     const doc = filename.fread;
     return T(doc, args);
 }
@@ -755,7 +751,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
     @recordType("SIMPEL") static struct Simpel {
         int s;
         string text;
-        mixin HiBONType!(q{
+        mixin HiBONRecord!(q{
                 this(int s, string text) {
                     this.s=s; this.text=text;
                 }
@@ -766,7 +762,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
     @recordType("SIMPELLABEL") static struct SimpelLabel {
         @label("$S") int s;
         @label("TEXT") string text;
-        mixin HiBONType!(q{
+        mixin HiBONRecord!(q{
                 this(int s, string text) {
                     this.s=s; this.text=text;
                 }
@@ -782,7 +778,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
         double f64;
         string text;
         bool flag;
-        mixin HiBONType!(q{this(int i32,
+        mixin HiBONRecord!(q{this(int i32,
                     uint u32,
                     long i64,
                     ulong u64,
@@ -808,7 +804,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
             int not_an_option;
             @label("s", true) int s;
             @label(VOID, true) string text;
-            mixin HiBONType!();
+            mixin HiBONRecord!();
         }
     }
 
@@ -927,7 +923,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
                     return doc.hasMember("x") ^ doc.hasMember("y");
                 }
 
-                mixin HiBONType!(q{
+                mixin HiBONRecord!(q{
                         this(int x, int y) {
                             this.x=x; this.y=y;
                         }
@@ -989,7 +985,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
         @safe static struct SuperStruct {
             Simpel sub;
             string some_text;
-            mixin HiBONType!(q{
+            mixin HiBONRecord!(q{
                     this(string some_text, int s, string text) {
                         this.some_text=some_text;
                         sub=Simpel(s, text);
@@ -1009,7 +1005,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
         @safe static class SuperClass {
             Simpel sub;
             string class_some_text;
-            mixin HiBONType!(q{
+            mixin HiBONRecord!(q{
                     this(string some_text, int s, string text) @safe {
                         this.class_some_text=some_text;
                         sub=Simpel(s, text);
@@ -1032,7 +1028,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
     {
         static struct Test {
             @inspect(q{a < 42}) @inspect(q{a > 3}) int x;
-            mixin HiBONType;
+            mixin HiBONRecord;
         }
 
         Test s;
@@ -1048,7 +1044,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
     { // Base type array
         static struct Array {
             int[] a;
-            mixin HiBONType;
+            mixin HiBONRecord;
         }
 
         Array s;
@@ -1064,7 +1060,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
     { // String array
         static struct StringArray {
             string[] texts;
-            mixin HiBONType;
+            mixin HiBONRecord;
         }
 
         StringArray s;
@@ -1114,7 +1110,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
             @safe static struct StructWithRange {
                 R range;
                 static assert(isInputRange!R);
-                mixin HiBONType!(q{
+                mixin HiBONRecord!(q{
                         this(T[] array) {
                             this.range=R(array);
                         }
@@ -1157,7 +1153,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
             {
                 static struct SimpelArray {
                     Simpel[] array;
-                    mixin HiBONType;
+                    mixin HiBONRecord;
                 }
 
                 { // SimpelArray with empty array
@@ -1190,7 +1186,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
         { // Jagged Array
             @safe static struct Jagged {
                 Simpel[][] y;
-                mixin HiBONType;
+                mixin HiBONRecord;
             }
 
             Simpel[][] ragged = [
@@ -1215,7 +1211,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
         {
             @safe static struct Associative {
                 Simpel[string] a;
-                mixin HiBONType;
+                mixin HiBONRecord;
             }
 
             Associative associative;
@@ -1247,7 +1243,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
             { // Single enum
                 static struct CountStruct {
                     Count count;
-                    mixin HiBONType;
+                    mixin HiBONRecord;
                 }
 
                 CountStruct s;
@@ -1263,7 +1259,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
             { // Array of enum
                 static struct CountArray {
                     Count[] count;
-                    mixin HiBONType;
+                    mixin HiBONRecord;
                 }
 
                 CountArray s;
@@ -1287,7 +1283,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
 
             static struct TextArray {
                 Text[] texts;
-                mixin HiBONType;
+                mixin HiBONRecord;
             }
 
             TextArray s;
@@ -1326,7 +1322,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
             alias Tabel = int[Bytes];
             static struct StructBytes {
                 Tabel tabel;
-                mixin HiBONType;
+                mixin HiBONRecord;
             }
 
             static assert(isSpecialKeyType!Tabel);
@@ -1359,11 +1355,11 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
             assert(s_doc == result.toDoc);
         }
 
-        { // Typedef of a HiBONType is used as key in an associative-array
+        { // Typedef of a HiBONRecord is used as key in an associative-array
             static struct KeyStruct {
                 int x;
                 string text;
-                mixin HiBONType!(q{
+                mixin HiBONRecord!(q{
                         this(int x, string text) {
                             this.x=x; this.text=text;
                         }
@@ -1376,7 +1372,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
 
             static struct StructKeys {
                 Tabel tabel;
-                mixin HiBONType;
+                mixin HiBONRecord;
             }
 
             Tabel list = [
@@ -1404,7 +1400,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
         // The fixed atttibute is used set a default i value in case the member was not defined in the Document
         static struct FixedStruct {
             @label("$x") @filter(q{a != 17}) @fixed(q{-1}) int x;
-            mixin HiBONType;
+            mixin HiBONRecord;
         }
 
         { // No effect
@@ -1430,7 +1426,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
             short i_s;
             ubyte u_b;
             byte i_b;
-            mixin HiBONType;
+            mixin HiBONRecord;
         }
 
         { //
@@ -1454,7 +1450,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONType!T) {
     {
         static struct ArrayKey(Key) {
             string[Key] a;
-            mixin HiBONType;
+            mixin HiBONRecord;
         }
 
         {

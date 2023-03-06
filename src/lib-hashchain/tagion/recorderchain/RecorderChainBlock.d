@@ -4,10 +4,11 @@ module tagion.recorderchain.RecorderChainBlock;
 import std.array;
 
 import tagion.basic.Types : Buffer, FileExtension;
+import tagion.crypto.Types : Fingerprint;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.dart.Recorder;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
-import tagion.hibon.HiBONType : label, GetLabel, HiBONType, recordType;
+import tagion.hibon.HiBONRecord : label, GetLabel, HiBONRecord, recordType;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.Document;
 
@@ -21,11 +22,11 @@ import tagion.hibon.Document;
 @recordType("RCB")
 @safe class RecorderChainBlock : HashChainBlock {
     /** Fingerprint of this block */
-    @label("") Buffer fingerprint;
+    @label("") Fingerprint fingerprint;
     /** Bullseye of DART database */
-    @label("eye") Buffer bullseye;
+    @label("eye") Fingerprint bullseye;
     /** Fingerprint of the previous block */
-    @label("previous") Buffer previous;
+    @label("previous") Fingerprint previous;
     /** Recorder with database changes of this block */
     @label("recorder") Document recorder_doc;
 
@@ -37,12 +38,12 @@ import tagion.hibon.Document;
      *      @param bullseye - bullseye of database
      *      @param net - hash net
      */
-    mixin HiBONType!(
+    mixin HiBONRecord!(
             q{
             private this(
                 Document recorder_doc,
-                Buffer previous,
-                Buffer bullseye,
+                Fingerprint previous,
+                Fingerprint bullseye,
                 const(HashNet) net)
             {
                 this.recorder_doc = recorder_doc;
@@ -61,11 +62,11 @@ import tagion.hibon.Document;
             }
         });
 
-    Buffer getHash() const {
+    Fingerprint getHash() const {
         return fingerprint;
     }
 
-    Buffer getPrevious() const {
+    Fingerprint getPrevious() const {
         return previous;
     }
 }
@@ -86,8 +87,8 @@ unittest {
 
     auto doc_recorder = dummy_recorder.toDoc;
 
-    Buffer bullseye = [1, 2, 3, 4, 5, 6, 7, 8];
-    Buffer previous = [1, 2, 4, 8, 16, 32, 64, 128];
+    Fingerprint bullseye = [1, 2, 3, 4, 5, 6, 7, 8];
+    Fingerprint previous = [1, 2, 4, 8, 16, 32, 64, 128];
 
     /// RecorderChainBlock_create_block
     {

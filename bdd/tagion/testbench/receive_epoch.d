@@ -2,7 +2,7 @@ module tagion.testbench.receive_epoch;
 
 import tagion.behaviour.Behaviour;
 import tagion.testbench.functional;
-import tagion.hibon.HiBONType : fwrite;
+import tagion.hibon.HiBONRecord : fwrite;
 import std.stdio;
 
 import tagion.tools.Basic;

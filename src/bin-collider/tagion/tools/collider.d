@@ -1,5 +1,5 @@
-/// \file behaviour.d
-module tagion.tools.behaviour;
+/// Tool to generated behaviour driven code from markdown description 
+module tagion.tools.collider;
 
 /**
  * @brief tool generate d files from bdd md files and vice versa
@@ -29,7 +29,7 @@ import tagion.behaviour.Emendation : emendation, suggestModuleName;
 import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.Behaviour : TestCode, testCode, testColor, getBDDErrors;
 
-import tagion.hibon.HiBONType : fwrite, fread;
+import tagion.hibon.HiBONRecord : fwrite, fread;
 
 import tagion.utils.Term;
 

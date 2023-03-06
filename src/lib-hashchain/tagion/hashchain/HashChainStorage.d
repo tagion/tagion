@@ -1,9 +1,9 @@
 /// \file HashChainStorage.d
 module tagion.hashchain.HashChainStorage;
 
-import tagion.basic.Types : Buffer;
+import tagion.crypto.Types : Fingerprint;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
-import tagion.hibon.HiBONType : isHiBONType;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
 
 /** @brief File contains interface for HashChainStorage
  */
@@ -12,7 +12,7 @@ import tagion.hibon.HiBONType : isHiBONType;
  * \interface HashChainStorage
  * Interface represents entity that provides access to storage of hash chain blocks
  */
-@safe interface HashChainStorage(Block : HashChainBlock) if (isHiBONType!Block) {
+@safe interface HashChainStorage(Block : HashChainBlock) if (isHiBONRecord!Block) {
     /** Writes given block to storage 
      *      @param block - block to write
      */
@@ -22,7 +22,7 @@ import tagion.hibon.HiBONType : isHiBONType;
      *      @param fingerprint - fingerprint of block to read
      *      \return block with given fingerprint, null - if such block doesn't exist
      */
-    Block read(Buffer fingerprint);
+    Block read(Fingerprint fingerprint);
 
     /** Finds block that satisfies given predicate 
      *      @param predicate - predicate for block
@@ -33,5 +33,5 @@ import tagion.hibon.HiBONType : isHiBONType;
     /** Return list of all hashes in storage
      *      \return list of hashes
      */
-    Buffer[] getHashes();
+    Fingerprint[] getHashes();
 }

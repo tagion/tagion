@@ -27,6 +27,7 @@ unittest {
     import tagion.basic.Types : FileExtension;
     import tagion.crypto.SecureNet : StdSecureNet;
     import tagion.crypto.SecureInterfaceNet : SecureNet;
+    import tagion.crypto.Types : Fingerprint;
     import tagion.dart.DART : DART;
     import tagion.dart.Recorder;
     import tagion.script.StandardRecords : StandardBill;
@@ -79,8 +80,9 @@ unittest {
             dart.modify(bills_recorder, Add);
 
             auto last_block = recorder_chain.getLastBlock;
-            auto previous_hash = last_block is null ? [] : last_block.getHash;
-            recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc, previous_hash, dart.fingerprint, net));
+            auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
+            recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc, 
+            previous_hash, Fingerprint(dart.fingerprint), net));
         }
 
         assert(recorder_chain.isValidChain);
@@ -141,8 +143,10 @@ unittest {
             dart.modify(bills_recorder, Add);
 
             auto last_block = recorder_chain.getLastBlock;
-            auto previous_hash = last_block is null ? [] : last_block.getHash;
-            recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc, previous_hash, dart.fingerprint, net));
+            auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
+            recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc, 
+            previous_hash, 
+            Fingerprint(dart.fingerprint), net));
         }
 
         assert(recorder_chain.isValidChain);
@@ -200,8 +204,12 @@ unittest {
             dart.modify(bills_recorder, Add);
 
             auto last_block = recorder_chain.getLastBlock;
-            auto previous_hash = last_block is null ? [] : last_block.getHash;
-            recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc, previous_hash, dart.fingerprint, net));
+            auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
+            recorder_chain.append(new RecorderChainBlock(
+            bills_recorder.toDoc, 
+            previous_hash, 
+            Fingerprint(dart.fingerprint), 
+            net));
 
             // In the middle of the chain copy dart that will be "outdated"
             if (i == some_block_index) {
@@ -266,8 +274,12 @@ unittest {
             dart.modify(bills_recorder, Add);
 
             auto last_block = recorder_chain.getLastBlock;
-            auto previous_hash = last_block is null ? [] : last_block.getHash;
-            recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc, previous_hash, dart.fingerprint, net));
+            auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
+            recorder_chain.append(new RecorderChainBlock(
+            bills_recorder.toDoc, 
+                previous_hash, 
+            Fingerprint(dart.fingerprint), 
+            net));
         }
 
         assert(recorder_chain.isValidChain);
