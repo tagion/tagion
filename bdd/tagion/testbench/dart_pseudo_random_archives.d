@@ -44,7 +44,7 @@ int _main(string[] args) {
         const hirpc = HiRPC(net);
 
         DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc, dartfilename2);
-        dart_info.states = dart_info.generateStates(1, 10).take(10).array;
+        dart_info.states = dart_info.generateStates(1, 10).take(100).array;
 
         auto dart_pseudo_random_feature = automation!(dart_pseudo_random)();
 
@@ -52,7 +52,7 @@ int _main(string[] args) {
         
         auto dart_pseudo_random_context = dart_pseudo_random_feature.run();
 
-    }
+    } 
 
     return 0;
 

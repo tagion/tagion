@@ -12,10 +12,14 @@ import std.algorithm : map, filter;
 import tagion.hibon.HiBONJSON : toPretty;
 import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTcrud : dartRead, dartRim;
+import std.random : randomShuffle, MinstdRand0;
+import tagion.utils.Random;
+import tagion.dart.DARTFakeNet;
+import std.algorithm : each;
 
 
 
-import std.stdio : writefln;
+import std.stdio : writefln, writeln;
 
 /** 
  * Takes a Rim and returns the document.
@@ -96,3 +100,18 @@ DARTIndex[] getFingerprints(const Document doc, DART db = null) @safe {
         .array;
 }
 
+DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @safe {
+    DARTIndex[] fingerprints;
+
+    foreach(state; states.dup.randomShuffle(rnd)) {
+        auto recorder = db.recorder();
+
+        const(Document[]) docs = state.list.map!(r => DARTFakeNet.fake_doc(r)).array;
+        foreach(doc; docs) {
+            recorder.add(doc);
+            fingerprints ~= DARTIndex(recorder[].front.fingerprint);
+        }
+        db.modify(recorder);
+    }
+    return fingerprints;
+}

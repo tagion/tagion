@@ -26,10 +26,12 @@ import tagion.hibon.HiBONJSON : toPretty;
 import tagion.Keywords;
 import std.range;
 import tagion.utils.Random;
+import std.random : randomShuffle, MinstdRand0;
+
 
 import tagion.hibon.HiBONRecord;
 
-import tagion.testbench.dart.dart_helper_functions : getRim, getRead, goToSplit, getFingerprints;
+import tagion.testbench.dart.dart_helper_functions;
 import std.digest;
 
 enum feature = Feature(
@@ -83,32 +85,14 @@ class AddPseudoRandomData {
 
     @When("I randomly add all the data stored in the table to the two darts.")
     Document darts() {
-        import std.random;
+        // shufflerandom seems to be modifying and saving the state. Research tommorow.
 
-        auto recorder1 = db1.recorder();
+        // writefln("%s", typeof(info.states));
 
-        auto rnd1 = MinstdRand0(42);
+        db1_fingerprints = randomAdd(info.states, MinstdRand0(40), db1);
 
-        foreach(state; info.states.randomShuffle(rnd1)) {
-            const(Document[]) docs = state.list.map!(r => DARTFakeNet.fake_doc(r)).array;
-            foreach(doc; docs) {
-                recorder1.add(doc);
-                db1_fingerprints ~= DARTIndex(recorder1[].front.fingerprint);
-            }
-            db1.modify(recorder1);
-        }
+        db2_fingerprints = randomAdd(info.states, MinstdRand0(42), db2);
 
-        auto rnd2 = MinstdRand0(10);
-        auto recorder2 = db2.recorder();
-
-        foreach(state; info.states.randomShuffle(rnd2)) {
-            const(Document[]) docs = state.list.map!(r => DARTFakeNet.fake_doc(r)).array;
-            foreach(doc; docs) {
-                recorder2.add(doc);
-                db2_fingerprints ~= DARTIndex(recorder2[].front.fingerprint);
-            }
-            db2.modify(recorder2);
-        }
 
         return result_ok;        
 
@@ -118,17 +102,11 @@ class AddPseudoRandomData {
     @Then("the bullseyes of the two darts should be the same.")
     Document same() {
 
-
-        // check that data is the same
-        writefln("db1: %s", db1_fingerprints.map!(f => f.toHexString));
-        writefln("db2: %s", db2_fingerprints.map!(f => f.toHexString));
         check(db1.bullseye == db2.bullseye, "Bullseyes not the same");
-
-
 
         db1.close();
         db2.close();
-        return Document();
+        return result_ok;
     }
 
 }
