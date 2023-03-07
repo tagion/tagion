@@ -61,7 +61,7 @@ jobs:
       - name: Run Bdd tests
         run: |
           source ~/.bashrc
-          make bddtest TEST_STAGE=commit | tail -n 3 > ./bddresult.log
+          make bddtest TEST_STAGE=commit | tail -n 3 | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' > ./bddresult.log
       
       - name: Report Bdd result
         run: |
