@@ -65,7 +65,7 @@ jobs:
       
       - name: Report Bdd result
         run: |
-          cat ./bddresult.log >> $GITHUB_STEP_SUMMARY
+          cat -e ./bddresult.log >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Bdd result
         uses: actions/upload-artifact@v3
