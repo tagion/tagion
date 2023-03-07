@@ -11,6 +11,9 @@
 	- [Network_Modes](documents/architecture/Network_Modes.md)
 	- [Network_bootstrap](documents/architecture/Network_bootstrap.md)
 
+- Tools
+	- [Tagion dev-tool](documents/tools/tagion_dev_tool.md)
+
 - Protocols
 	- [HiBON](documents/protocols/hibon/README.md)
 		- [Hash_invariant_Binary_Object_Notation](documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md)
@@ -18,9 +21,9 @@
 		- [HiBON_JSON_format](/documents/protocols/hibon/HiBON_JSON_format.md)
 		- [HiBON_LEB128](/documents/protocols/hibon/HiBON_LEB128.md)
 		- [HiBON_Record](/documents/protocols/hibon/HiBON_Record.md)
-	- [Contract format](/documents/protocols/contract/README.md)
+	- Contract format
 		- [Contract](/documents/protocols/contract/Contract.md)
-	- [DART](/documents/protocols/dart/README.md)
+	- DART
 		- [Recorder](/documents/protocols/dart/Recorder.md)
 -- Testing
 	- Behaviour tests

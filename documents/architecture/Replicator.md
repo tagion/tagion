@@ -10,7 +10,6 @@ Output:
   -  A Recorder(add/delete) is sent to the [Node Interface](/documents/architecture/NodeInterface.md) Service.
   -  A Recorder(add/delete) (undo) is sent to the [DART](/documents/architecture/DART.md) Service.
 
-
 The acceptance criteria specification process can be found in [Replicator](
 /bdd/tagion/testbench/services/Replicator.md)
 
@@ -23,4 +22,6 @@ sequenceDiagram
     Replicator -->> DART: Recorder(delete/add) (undo)
     Node Interface ->> Replicator: Recorder(add/delete)
     Replicator -->> Node Interface: Recorder(add/delete) 
-````
+```
+
+The Recorder protocol can be found in [Recorder](documents/protocols/dart/Recorder.md)
