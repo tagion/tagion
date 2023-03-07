@@ -1,4 +1,4 @@
-module tagion.actor.TaskWrapper;
+module tagion.taskwrapper.TaskWrapper;
 
 import std.stdio;
 import std.format;
