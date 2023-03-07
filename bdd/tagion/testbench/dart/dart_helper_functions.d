@@ -95,3 +95,4 @@ DARTIndex[] getFingerprints(const Document doc, DART db = null) @safe {
         .map!(f => DARTIndex(f))
         .array;
 }
+

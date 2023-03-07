@@ -76,7 +76,6 @@ class AddOneArchive {
 
     @Given("I add one archive1 in sector A.")
     Document a() {
-
         auto recorder = db.recorder();
         const doc = DARTFakeNet.fake_doc(info.table[0]);
         recorder.add(doc);
@@ -92,7 +91,6 @@ class AddOneArchive {
         db.close();
         return result_ok;
     }
-
 }
 
 @safe @Scenario("Add another archive.",

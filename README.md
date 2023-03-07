@@ -63,7 +63,7 @@ This will start two servers ( default 3000 and 3001 ), with each of them running
 The [Tagion Node Architecture](documents/architecture/Network_Architecture.md)
 
 ### BDD-test tools
-[BDD-tool](src/bin-behaviour/tagion/tools/README.md)
+[BDD-tool](src/bin-collider/tagion/tools/README.md)
 
 
 ### Unit types
