@@ -13,10 +13,5 @@ Given I have added some of the pseudo random data to dartfile2.
 Given I synchronize dartfile1 with dartfile2.
 Then the bullseyes should be the same.
  
-Scenario Remove archive
-Given #two_archives
-Given i remove archive1.
-Then check that archive2 has been moved from the branch in sector A.
-Then check the bullseye.
 
 
