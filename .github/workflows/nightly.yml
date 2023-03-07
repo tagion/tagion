@@ -87,6 +87,30 @@ jobs:
           name: core-bins
           path: build/${{ env.TARGET_BUILD }}/bin/tagion
           retention-days: ${{ env.RETENTION_DAYS_BINS }}
+      
+      - name: Create passed tag
+        if: success()
+        uses: actions/github-script@v5
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/passed',
+              sha: context.sha
+            })
+            
+      - name: Create failed tag
+        if: failure()
+        uses: actions/github-script@v5
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/failed',
+              sha: context.sha
+            })
 
       - name: Make cache of libs
         run: |
