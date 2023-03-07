@@ -74,7 +74,7 @@ jobs:
           path: logs/${{ env.TARGET_BUILD }}/bdd/
 
       - name: Check bdd result
-        run: cat ./bddresult.log | grep Features | grep -E "failed\s0\/"
+        run: cat -e ./bddresult.log | grep Features | grep -E "failed\s0\/"
 
       - name: Build
         run: |
