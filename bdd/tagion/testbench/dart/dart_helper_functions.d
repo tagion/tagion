@@ -100,6 +100,14 @@ DARTIndex[] getFingerprints(const Document doc, DART db = null) @safe {
         .array;
 }
 
+/** 
+ * Adds archive in a shuffled random order based on the sequence states.
+ * Params:
+ *   states = the random sequence.
+ *   rnd = seed for random number generator.
+ *   db = The dart
+ * Returns: list of fingerprints added to the db.
+ */
 DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @safe {
     DARTIndex[] fingerprints;
 
@@ -116,6 +124,13 @@ DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @
     return fingerprints;
 }
 
+/** 
+ * Removes archive in a random order.
+ * Params:
+ *   fingerprints = The fingerprints to remove
+ *   rnd = the random seed
+ *   db = the database
+ */
 void randomRemove(const DARTIndex[] fingerprints, MinstdRand0 rnd, DART db) @safe {
     auto recorder = db.recorder();
 
