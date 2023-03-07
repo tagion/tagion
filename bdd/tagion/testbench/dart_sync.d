@@ -42,6 +42,7 @@ int _main(string[] args) {
         dart_info.states = dart_info.generateStates(1, 10).take(100).array;
 
         auto dart_sync_full_empty_feature = automation!(basic_dart_sync)();
+        dart_sync_full_empty_feature.FullSync(dart_info);
         dart_sync_full_empty_feature.run();
     }
 
