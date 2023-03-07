@@ -12,7 +12,7 @@ import tagion.logger.Logger : log;
 import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.recorderchain.RecorderChain;
 import tagion.prior_services.Options : Options;
-import tagion.actor.TaskWrapper;
+import tagion.taskwrapper.TaskWrapper;
 import tagion.utils.Miscellaneous : cutHex;
 
 mixin TrustedConcurrency;

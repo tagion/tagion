@@ -41,7 +41,7 @@ import tagion.prior_services.NetworkRecordDiscoveryService;
 import tagion.prior_services.MonitorService;
 import tagion.prior_services.RecorderService : RecorderTask;
 import tagion.prior_services.EpochDumpService : EpochDumpTask;
-import tagion.actor.TaskWrapper : Task;
+import tagion.taskwrapper.TaskWrapper : Task;
 import tagion.utils.Random;
 import tagion.utils.Queue;
 import tagion.utils.StdTime;
