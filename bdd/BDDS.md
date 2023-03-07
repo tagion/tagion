@@ -64,6 +64,8 @@
 
 [HiRPC_format_check.md](tagion/testbench/communication/HiRPC_format_check.md)
 
+[basic_dart_sync.md](tagion/testbench/dart/basic_dart_sync.md)
+
 [dart_pseudo_random.md](tagion/testbench/dart/dart_pseudo_random.md)
 
 [dart_middle_branch.md](tagion/testbench/dart/dart_middle_branch.md)
