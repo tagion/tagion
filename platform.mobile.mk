@@ -1,6 +1,5 @@
 PLATFORMS+=MOBILE
-DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
-DINC+=src/bin-wallet/
+DINC?=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 # Betterc source files
 # DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc/*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
 DFILES?=${shell fd -e d . src/lib-mobile}
