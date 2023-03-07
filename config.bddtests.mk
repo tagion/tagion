@@ -7,7 +7,7 @@ BDDS+=transaction_mode_zero # acceptance
 BDDS+=receive_epoch # acceptance
 BDDS+=dart_test # commit
 BDDS+=dart_deep_rim_test # commit
-# BDDS+=dart_pseudo_random_archives # commit
+BDDS+=dart_pseudo_random_archives # commit
 
 run-ssl_echo_server: sslextras
 
