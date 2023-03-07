@@ -115,3 +115,13 @@ DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @
     }
     return fingerprints;
 }
+
+void randomRemove(const DARTIndex[] fingerprints, MinstdRand0 rnd, DART db) @safe {
+    auto recorder = db.recorder();
+
+    foreach(fingerprint; fingerprints.dup.randomShuffle(rnd)) {
+        recorder.remove(fingerprint);
+    }
+
+    db.modify(recorder);
+}

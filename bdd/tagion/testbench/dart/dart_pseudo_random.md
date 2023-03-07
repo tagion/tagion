@@ -8,3 +8,7 @@ When I randomly add all the data stored in the table to the two darts.
 Then the bullseyes of the two darts should be the same.
 
 
+Scenario Remove pseudo random data.
+Given two pseudo random darts and fingerprints
+When i randomly go through n fingerprints and remove them from both darts.
+Then the bullseyes of the two darts should be the same.
