@@ -49,6 +49,8 @@ int _main(string[] args) {
         auto dart_pseudo_random_feature = automation!(dart_pseudo_random)();
 
         dart_pseudo_random_feature.AddPseudoRandomData(dart_info);
+        dart_pseudo_random_feature.RemovePseudoRandomData(dart_info);
+
         
         auto dart_pseudo_random_context = dart_pseudo_random_feature.run();
 
