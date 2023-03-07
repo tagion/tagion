@@ -13,6 +13,7 @@ import std.path : extension, setExtension, dirName, buildPath;
 import std.file : exists, dirEntries, SpanMode, readText, fwrite = write;
 import std.string : join, strip, splitLines;
 import std.algorithm.iteration : filter, map, joiner, fold, uniq, splitter, each;
+import std.algorithm.sorting : sort;
 import std.regex : regex, matchFirst;
 import std.parallelism : parallel;
 import std.array : join, split, array;
@@ -240,7 +241,9 @@ void generate_packages(const(ModuleInfo[]) list_of_modules) {
         fout.writeln;
 
         modules_in_the_same_package
-            .map!(mod => mod.name)
+            .map!(mod => mod.name.idup)
+            .array
+            .sort
             .each!(module_name => fout.writefln(q{public import %s=%s;},
                     module_name.split(DOT).tail(1).front, // Module identifier
                     module_name));
