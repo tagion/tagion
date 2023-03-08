@@ -58,6 +58,8 @@
 
 [dart_middle_branch.md](bdd/tagion/testbench/dart/dart_middle_branch.md)
 
+[basic_dart_partial_sync.md](bdd/tagion/testbench/dart/basic_dart_partial_sync.md)
+
 [dart_mapping_two_archives.md](bdd/tagion/testbench/dart/dart_mapping_two_archives.md)
 
 [dart_two_archives_deep_rim.md](bdd/tagion/testbench/dart/dart_two_archives_deep_rim.md)

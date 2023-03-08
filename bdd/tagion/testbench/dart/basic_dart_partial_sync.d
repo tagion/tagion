@@ -1,4 +1,4 @@
-module tagion.testbench.dart.basic_dart_sync;
+module tagion.testbench.dart.basic_dart_partial_sync;
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
@@ -33,27 +33,29 @@ import std.random : randomShuffle, MinstdRand0, randomSample;
 import tagion.hibon.HiBONRecord;
 
 import tagion.testbench.dart.dart_helper_functions;
-import std.digest;
 
 enum feature = Feature(
-        "DARTSynchronization full sync",
+        "DARTSynchronization partial sync.",
         ["All test in this bdd should use dart fakenet."]);
 
 alias FeatureContext = Tuple!(
-    FullSync, "FullSync",
+    PartialSync, "PartialSync",
     FeatureGroup*, "result"
 );
 
-@safe @Scenario("Full sync.",
+@safe @Scenario("Partial sync.",
     [])
-class FullSync {
+class PartialSync {
     DART db1;
     DART db2;
 
     DARTIndex[] db1_fingerprints;
+    DARTIndex[] db2_fingerprints;
 
     const ushort angle = 0;
     const ushort size = 10;
+
+    ulong[][] sector_states;
 
     DartInfo info;
 
@@ -73,22 +75,28 @@ class FullSync {
         db1 = new DART(info.net, info.dartfilename, dart_exception);
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
 
-        auto sector_states = info.states
+        sector_states = info.states
             .map!(state => state.list
-                    .map!(archive => putInSector(archive, angle, size))).array;
+                    .map!(archive => putInSector(archive, angle, size)).array).array;
 
         db1_fingerprints = randomAdd(sector_states, MinstdRand0(65), db1);
 
         return result_ok;
     }
 
-    @Given("I have a empty dartfile2.")
-    Document emptyDartfile2() {
+    @Given("I have added some of the pseudo random data to dartfile2.")
+    Document toDartfile2() {
         DART.create(info.dartfilename2);
 
         Exception dart_exception;
         db2 = new DART(info.net, info.dartfilename2, dart_exception);
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
+
+        auto partial_sector_states = sector_states.randomSample(sector_states.length / 2, MinstdRand0(423)).array;
+
+        db2_fingerprints = randomAdd(partial_sector_states, MinstdRand0(314), db2);
+
+        check(db1.bullseye != db2.bullseye, "Bullseyes should not be the same");
 
         return result_ok;
     }

@@ -16,10 +16,12 @@ import std.random : randomShuffle, MinstdRand0;
 import tagion.utils.Random;
 import tagion.dart.DARTFakeNet;
 import std.algorithm : each;
-
-
+import tagion.basic.Basic : tempfile;
 
 import std.stdio : writefln, writeln;
+import std.format;
+import tagion.dart.BlockFile : BlockFile;
+
 
 /** 
  * Takes a Rim and returns the document.
@@ -108,14 +110,15 @@ DARTIndex[] getFingerprints(const Document doc, DART db = null) @safe {
  *   db = The dart
  * Returns: list of fingerprints added to the db.
  */
+
 DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @safe {
     DARTIndex[] fingerprints;
 
-    foreach(state; states.dup.randomShuffle(rnd)) {
+    foreach (state; states.dup.randomShuffle(rnd)) {
         auto recorder = db.recorder();
 
         const(Document[]) docs = state.list.map!(r => DARTFakeNet.fake_doc(r)).array;
-        foreach(doc; docs) {
+        foreach (doc; docs) {
             recorder.add(doc);
             fingerprints ~= DARTIndex(recorder[].front.fingerprint);
         }
@@ -123,6 +126,23 @@ DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @
     }
     return fingerprints;
 }
+
+DARTIndex[] randomAdd(T)(T ranges, MinstdRand0 rnd, DART db) @safe 
+if (isRandomAccessRange!T && isInputRange!(ElementType!T) && is(ElementType!(ElementType!T): const(ulong)))
+{
+    DARTIndex[] fingerprints;
+    foreach (range; ranges.randomShuffle(rnd)) {
+        auto recorder = db.recorder();
+        auto docs = range.map!(r => DARTFakeNet.fake_doc(r));
+        foreach (doc; docs) {
+            recorder.add(doc);
+            fingerprints ~= DARTIndex(recorder[].front.fingerprint);
+        }
+        db.modify(recorder);
+    }
+    return fingerprints;
+}
+
 
 /** 
  * Removes archive in a random order.
@@ -134,12 +154,24 @@ DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @
 void randomRemove(const DARTIndex[] fingerprints, MinstdRand0 rnd, DART db) @safe {
     auto recorder = db.recorder();
 
-    foreach(fingerprint; fingerprints.dup.randomShuffle(rnd)) {
+    foreach (fingerprint; fingerprints.dup.randomShuffle(rnd)) {
         recorder.remove(fingerprint);
     }
 
     db.modify(recorder);
 }
+
+ulong putInSector(ulong archive, const ushort angle, const ushort size) @safe {
+    
+    enum size_none_sector = (ulong.sizeof - ushort.sizeof)*8;
+    const ulong sector = ((archive >> size_none_sector - angle) % size + angle) << size_none_sector;
+
+    const(ulong) new_archive = archive & ~(ulong(ushort.max) << size_none_sector) | ulong(sector) << size_none_sector;
+
+
+    return new_archive;
+}
+
 
 
 static class TestSynchronizer : DART.StdSynchronizer {
@@ -178,4 +210,36 @@ static class TestSynchronizer : DART.StdSynchronizer {
         const received = owner.hirpc.receive(response_doc);
         return received;
     }
+}
+
+/** 
+ * Syncs to darts
+ * Params:
+ *   db1 = Dart to sync From
+ *   db2 = Dart to sync TO
+ *   from = angle start
+ *   to = angle end
+ */
+void sync_darts(DART db1, DART db2, const ushort from, const ushort to) @safe {
+
+    enum TEST_BLOCK_SIZE = 0x80;
+    string[] journal_filenames;
+    
+    foreach (sector; DART.SectorRange(from, to)) {
+        writefln("running sector %04x", sector);
+        immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
+        journal_filenames ~= journal_filename;
+        BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+        auto synch = new TestSynchronizer(journal_filename, db2, db1);
+
+        auto db2_synchronizer = db2.synchronizer(synch, DART.Rims(sector));
+        // D!(sector, "%x");
+        while (!db2_synchronizer.empty) {
+            (() @trusted => db2_synchronizer.call)();
+        }
+    }
+    foreach (journal_filename; journal_filenames) {
+        db2.replay(journal_filename);
+    }
+        
 }
