@@ -70,7 +70,11 @@ pem_files
 
 # Remove this when the test should be written
 bdd/tagion/testbench/backlog
-bdd/tagion/testbench/services
 bdd/tagion/testbench/communication
-
+bdd/tagion/testbench/services/Collector_service.d
+bdd/tagion/testbench/services/ContractInterface_service.d
+bdd/tagion/testbench/services/Logger_subscription_service.d
+bdd/tagion/testbench/services/Logger_subscription_service_with_parameter.d
+bdd/tagion/testbench/services/Recorder_chain_service.d
+bdd/tagion/testbench/services/Transcript_service.d
 tagionwave.json
