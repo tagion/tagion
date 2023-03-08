@@ -14,7 +14,9 @@
 
 [HiRPC_format_check.md](bdd/tagion/testbench/communication/HiRPC_format_check.md)
 
-[actor_supervisor_services.md](bdd/tagion/testbench/services/actor_supervisor_services.md)
+[actor_supervisor.md](bdd/tagion/testbench/services/actor_supervisor.md)
+
+[actor_message.md](bdd/tagion/testbench/services/actor_message.md)
 
 [Implement_the_epoch_block_chain.md](bdd/tagion/testbench/backlog/Implement_the_epoch_block_chain.md)
 
