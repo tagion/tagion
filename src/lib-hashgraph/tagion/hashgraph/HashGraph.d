@@ -846,7 +846,9 @@ class HashGraph {
                     ChannelQueue[Pubkey] channel_queues;
                     sdt_t _current_time;
                 }
-
+                void start_listening()  {
+                    // empty
+                }
                 @property
                 void time(const(sdt_t) t) {
                     _current_time = sdt_t(t);

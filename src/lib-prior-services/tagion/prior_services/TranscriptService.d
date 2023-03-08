@@ -228,10 +228,9 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     log("Sending to DART len: %d", recorder.length);
                     recorder.dump;
                     auto bullseye = modifyDART(recorder);
-                    if (!options.epoch_dump.disable_transaction_dumping) {
-                        epoch_dump_tid.send(Document(contracts_dump), bullseye);
+                    if (options.recorder_chain.enabled) {
+                        dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), bullseye);
                     }
-                    dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), bullseye);
                 }
                 else {
                     log("Received empty epoch");

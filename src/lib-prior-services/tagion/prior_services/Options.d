@@ -70,6 +70,7 @@ struct Options {
     uint epoch_limit; /// The round until it has produced epoch_limit
     NetworkMode net_mode;
     import tagion.options.CommonOptions;
+    uint startup_delay;
 
     CommonOptions common;
 
@@ -78,7 +79,7 @@ struct Options {
     struct EpochDumpSettings {
         string task_name;
         string transaction_dumps_directory;
-        bool disable_transaction_dumping;
+        bool enabled;
         mixin JSONCommon;
     }
 
@@ -212,6 +213,7 @@ struct Options {
     struct RecorderChain {
         string task_name; /// Name of the recorder task
         string folder_path; /// Folder used for the recorder service files, default empty path means this feature is disabled
+        bool enabled;
         mixin JSONCommon;
     }
 
@@ -347,8 +349,8 @@ static ref auto all_getopt(
         "boot", format("Shared boot file: default: %s", options.path_to_shared_info), &(options.path_to_shared_info),
         "passphrasefile", "File with setted passphrase for keys pair", &(options.path_to_stored_passphrase),
         "recorderchain", "Path to folder with recorder chain blocks stored for DART recovery", &(options.recorder_chain.folder_path),
-        "disabledumping", "Not perform transaction dump", &(options.epoch_dump.disable_transaction_dumping),
-        "transactiondumpfolder", "Set separative folder for transaction dump", &(options.epoch_dump.transaction_dumps_directory) 
+        "transactiondumpfolder", "Set separative folder for transaction dump", &(options.epoch_dump.transaction_dumps_directory),
+        "startup-dalay", format("Set a delay before node will start following hashgraph: default: %d ms", options.startup_delay), &(options.startup_delay) 
     );
 }
 
@@ -376,6 +378,7 @@ static setDefaultOption(ref Options options)
         min_port = 6000;
         path_to_shared_info = "/tmp/boot.hibon";
         p2plogs = false;
+        startup_delay = 500;
         with (host)
         {
             timeout = 3000;
@@ -494,11 +497,13 @@ static setDefaultOption(ref Options options)
     with (options.recorder_chain)
     {
         task_name = "recorder-service";
+        enabled = false;
     }
     // Epoch dumping
     with(options.epoch_dump)
     {
         task_name = "epoch-dump-task";
+        enabled = false;
     }
     // Discovery
     with (options.discovery)
