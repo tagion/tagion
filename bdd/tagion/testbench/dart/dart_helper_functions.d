@@ -16,9 +16,12 @@ import std.random : randomShuffle, MinstdRand0;
 import tagion.utils.Random;
 import tagion.dart.DARTFakeNet;
 import std.algorithm : each;
+import tagion.basic.Basic : tempfile;
 
 import std.stdio : writefln, writeln;
-import tagion.utils.Miscellaneous : toHexString;
+import std.format;
+import tagion.dart.BlockFile : BlockFile;
+
 
 /** 
  * Takes a Rim and returns the document.
@@ -207,4 +210,36 @@ static class TestSynchronizer : DART.StdSynchronizer {
         const received = owner.hirpc.receive(response_doc);
         return received;
     }
+}
+
+/** 
+ * Syncs to darts
+ * Params:
+ *   db1 = Dart to sync From
+ *   db2 = Dart to sync TO
+ *   from = angle start
+ *   to = angle end
+ */
+void sync_darts(DART db1, DART db2, const ushort from, const ushort to) @safe {
+
+    enum TEST_BLOCK_SIZE = 0x80;
+    string[] journal_filenames;
+    
+    foreach (sector; DART.SectorRange(from, to)) {
+        writefln("running sector %04x", sector);
+        immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
+        journal_filenames ~= journal_filename;
+        BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+        auto synch = new TestSynchronizer(journal_filename, db2, db1);
+
+        auto db2_synchronizer = db2.synchronizer(synch, DART.Rims(sector));
+        // D!(sector, "%x");
+        while (!db2_synchronizer.empty) {
+            (() @trusted => db2_synchronizer.call)();
+        }
+    }
+    foreach (journal_filename; journal_filenames) {
+        db2.replay(journal_filename);
+    }
+        
 }

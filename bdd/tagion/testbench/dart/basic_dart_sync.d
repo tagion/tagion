@@ -53,7 +53,7 @@ class FullSync {
     DART db2;
 
     DARTIndex[] db1_fingerprints;
-    string[] journal_filenames;
+    
 
     const ushort angle = 0;
     const ushort size = 10;
@@ -99,27 +99,7 @@ class FullSync {
 
     @Given("I synchronize dartfile1 with dartfile2.")
     Document withDartfile2() {
-
-
-        enum TEST_BLOCK_SIZE = 0x80;
-
-        foreach (sector; DART.SectorRange(angle, size)) {
-            writefln("running sector %04x", sector);
-            immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
-            journal_filenames ~= journal_filename;
-            BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-            auto synch = new TestSynchronizer(journal_filename, db2, db1);
-
-            auto db2_synchronizer = db2.synchronizer(synch, DART.Rims(sector));
-            // D!(sector, "%x");
-            while (!db2_synchronizer.empty) {
-                (() @trusted => db2_synchronizer.call)();
-            }
-        }
-        foreach (journal_filename; journal_filenames) {
-            db2.replay(journal_filename);
-        }
-        
+        sync_darts(db1, db2, angle, size);
         return result_ok;
     }
 
