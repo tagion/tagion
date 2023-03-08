@@ -15,6 +15,7 @@ int main(string[] args) {
     import dart_deep_rim_test = tagion.testbench.dart_deep_rim_test;
     import dart_pseudo_random_archives = tagion.testbench.dart_pseudo_random_archives;
     import dart_sync = tagion.testbench.dart_sync;
+    import dart_partial_sync = tagion.testbench.dart_partial_sync;
 
     alias alltools = AliasSeq!(
             ssl_server,
@@ -27,6 +28,7 @@ int main(string[] args) {
             dart_deep_rim_test,
             dart_pseudo_random_archives,
             dart_sync,
+            dart_partial_sync,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

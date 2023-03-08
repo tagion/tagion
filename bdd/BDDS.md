@@ -78,3 +78,5 @@
 
 [dart_mapping_two_archives.md](bdd/tagion/testbench/dart/dart_mapping_two_archives.md)
 
+[basic_dart_partial_sync.md](bdd/tagion/testbench/dart/basic_dart_partial_sync.md)
+

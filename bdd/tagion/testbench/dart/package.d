@@ -1,5 +1,6 @@
 module tagion.testbench.dart;
 
+public import basic_dart_partial_sync=tagion.testbench.dart.basic_dart_partial_sync;
 public import basic_dart_sync=tagion.testbench.dart.basic_dart_sync;
 public import dart_mapping_two_archives=tagion.testbench.dart.dart_mapping_two_archives;
 public import dart_middle_branch=tagion.testbench.dart.dart_middle_branch;
