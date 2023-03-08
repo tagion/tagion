@@ -41,9 +41,9 @@ int _main(string[] args) {
         DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc, dartfilename2);
         dart_info.states = dart_info.generateStates(0, 10).take(10).array;
 
-        auto dart_sync_full_empty_feature = automation!(basic_dart_sync)();
-        dart_sync_full_empty_feature.FullSync(dart_info);
-        dart_sync_full_empty_feature.run();
+        auto dart_sync_feature = automation!(basic_dart_sync)();
+        dart_sync_feature.FullSync(dart_info);
+        dart_sync_feature.run();
     }
 
     return 0;
