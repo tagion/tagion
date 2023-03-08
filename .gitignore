@@ -1,9 +1,6 @@
 # Ignore all
 *
 
-
-
-
 # Unignore all with extensions
 !*.*
 
@@ -16,6 +13,9 @@
 *~
 *#
 .#*
+
+# Vim
+Session.vim
 
 # Local setup file
 local.*
