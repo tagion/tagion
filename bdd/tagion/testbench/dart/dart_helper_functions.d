@@ -140,3 +140,42 @@ void randomRemove(const DARTIndex[] fingerprints, MinstdRand0 rnd, DART db) @saf
 
     db.modify(recorder);
 }
+
+
+static class TestSynchronizer : DART.StdSynchronizer {
+    protected DART foreign_dart;
+    protected DART owner;
+    this(string journal_filename, DART owner, DART foreign_dart) @safe {
+        this.foreign_dart = foreign_dart;
+        this.owner = owner;
+        super(journal_filename);
+    }
+
+    //
+    // This function emulates the connection between two DART's
+    // in a single thread
+    //
+    const(HiRPC.Receiver) query(ref const(HiRPC.Sender) request) {
+        Document send_request_to_foreign_dart(const Document foreign_doc) {
+            //
+            // Remote excution
+            // Receive on the foreign end
+            const foreign_receiver = foreign_dart.hirpc.receive(foreign_doc);
+            // Make query in to the foreign DART
+            const foreign_response = foreign_dart(foreign_receiver);
+
+            return foreign_response.toDoc;
+        }
+
+        immutable foreign_doc = request.toDoc;
+        (() @trusted { fiber.yield; })();
+        // Here a yield loop should be implement to poll for response from the foriegn DART
+        // A timeout should also be implemented in this poll loop
+        const response_doc = send_request_to_foreign_dart(foreign_doc);
+        //
+        // Process the response returned for the foreign DART
+        //
+        const received = owner.hirpc.receive(response_doc);
+        return received;
+    }
+}
