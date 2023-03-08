@@ -64,6 +64,8 @@
 
 [actor_supervisor.md](bdd/tagion/testbench/services/actor_supervisor.md)
 
+[actor_message.md](bdd/tagion/testbench/services/actor_message.md)
+
 [HiRPC_format_check.md](bdd/tagion/testbench/communication/HiRPC_format_check.md)
 
 [basic_dart_sync.md](bdd/tagion/testbench/dart/basic_dart_sync.md)
