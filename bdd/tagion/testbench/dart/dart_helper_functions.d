@@ -17,9 +17,8 @@ import tagion.utils.Random;
 import tagion.dart.DARTFakeNet;
 import std.algorithm : each;
 
-
-
 import std.stdio : writefln, writeln;
+import tagion.utils.Miscellaneous : toHexString;
 
 /** 
  * Takes a Rim and returns the document.
@@ -108,14 +107,15 @@ DARTIndex[] getFingerprints(const Document doc, DART db = null) @safe {
  *   db = The dart
  * Returns: list of fingerprints added to the db.
  */
+
 DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @safe {
     DARTIndex[] fingerprints;
 
-    foreach(state; states.dup.randomShuffle(rnd)) {
+    foreach (state; states.dup.randomShuffle(rnd)) {
         auto recorder = db.recorder();
 
         const(Document[]) docs = state.list.map!(r => DARTFakeNet.fake_doc(r)).array;
-        foreach(doc; docs) {
+        foreach (doc; docs) {
             recorder.add(doc);
             fingerprints ~= DARTIndex(recorder[].front.fingerprint);
         }
@@ -123,6 +123,23 @@ DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @
     }
     return fingerprints;
 }
+
+DARTIndex[] randomAdd(T)(T ranges, MinstdRand0 rnd, DART db) @safe 
+if (isRandomAccessRange!T && isInputRange!(ElementType!T) && is(ElementType!(ElementType!T): const(ulong)))
+{
+    DARTIndex[] fingerprints;
+    foreach (range; ranges.randomShuffle(rnd)) {
+        auto recorder = db.recorder();
+        auto docs = range.map!(r => DARTFakeNet.fake_doc(r));
+        foreach (doc; docs) {
+            recorder.add(doc);
+            fingerprints ~= DARTIndex(recorder[].front.fingerprint);
+        }
+        db.modify(recorder);
+    }
+    return fingerprints;
+}
+
 
 /** 
  * Removes archive in a random order.
@@ -134,12 +151,24 @@ DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @
 void randomRemove(const DARTIndex[] fingerprints, MinstdRand0 rnd, DART db) @safe {
     auto recorder = db.recorder();
 
-    foreach(fingerprint; fingerprints.dup.randomShuffle(rnd)) {
+    foreach (fingerprint; fingerprints.dup.randomShuffle(rnd)) {
         recorder.remove(fingerprint);
     }
 
     db.modify(recorder);
 }
+
+ulong putInSector(ulong archive, const ushort angle, const ushort size) @safe {
+    
+    enum size_none_sector = (ulong.sizeof - ushort.sizeof)*8;
+    const ulong sector = ((archive >> size_none_sector - angle) % size + angle) << size_none_sector;
+
+    const(ulong) new_archive = archive & ~(ulong(ushort.max) << size_none_sector) | ulong(sector) << size_none_sector;
+
+
+    return new_archive;
+}
+
 
 
 static class TestSynchronizer : DART.StdSynchronizer {

@@ -72,8 +72,21 @@ class FullSync {
         Exception dart_exception;
         db1 = new DART(info.net, info.dartfilename, dart_exception);
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
+        
+        const ushort angle = 10;
+        const ushort size = 11;
+        const ulong archive = 0x11610UL;
+        // const test = putInSector(archive, angle, size);
 
-        db1_fingerprints = randomAdd(info.states, MinstdRand0(65), db1);
+        auto sector_states = info.states
+                                .map!(state => state.list
+                                    .map!(archive => putInSector(archive, angle, size))).array;
+
+
+        // writefln("%s", sector_states);
+        
+        
+        db1_fingerprints = randomAdd(sector_states, MinstdRand0(65), db1);
         
         return result_ok;
     }
@@ -92,6 +105,8 @@ class FullSync {
 
     @Given("I synchronize dartfile1 with dartfile2.")
     Document withDartfile2() {
+
+
         enum TEST_BLOCK_SIZE = 0x80;
 
         foreach (sector; db2.sectors) {
@@ -110,7 +125,6 @@ class FullSync {
         foreach (journal_filename; journal_filenames) {
             db2.replay(journal_filename);
         }
-
         
         return result_ok;
     }
