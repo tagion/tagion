@@ -55,6 +55,9 @@ class FullSync {
     DARTIndex[] db1_fingerprints;
     string[] journal_filenames;
 
+    const ushort angle = 0;
+    const ushort size = 10;
+
     DartInfo info;
 
     this(DartInfo info) {
@@ -72,19 +75,10 @@ class FullSync {
         Exception dart_exception;
         db1 = new DART(info.net, info.dartfilename, dart_exception);
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
-        
-        const ushort angle = 10;
-        const ushort size = 11;
-        const ulong archive = 0x11610UL;
-        // const test = putInSector(archive, angle, size);
 
         auto sector_states = info.states
                                 .map!(state => state.list
                                     .map!(archive => putInSector(archive, angle, size))).array;
-
-
-        // writefln("%s", sector_states);
-        
         
         db1_fingerprints = randomAdd(sector_states, MinstdRand0(65), db1);
         
@@ -109,7 +103,7 @@ class FullSync {
 
         enum TEST_BLOCK_SIZE = 0x80;
 
-        foreach (sector; db2.sectors) {
+        foreach (sector; DART.SectorRange(angle, size)) {
             writefln("running sector %04x", sector);
             immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
             journal_filenames ~= journal_filename;
