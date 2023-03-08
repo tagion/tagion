@@ -42,7 +42,7 @@ int _main(string[] args) {
         dart_info.states = dart_info.generateStates(0, 10).take(10).array;
 
         auto dart_sync_feature = automation!(basic_dart_partial_sync)();
-        // dart_sync_feature.PartialSync(dart_info);
+        dart_sync_feature.PartialSync(dart_info);
         dart_sync_feature.run();
     }
 
