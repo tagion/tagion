@@ -7,6 +7,7 @@ import std.algorithm.iteration : map, cache, joiner;
 import std.string : join, strip;
 import std.algorithm;
 import std.algorithm.sorting : sort;
+import std.algorithm.searching : any;
 import std.typecons : Flag, No, Yes;
 import std.ascii : toUpper, toLower, isAlphaNum, isWhite;
 import std.array : split, array;
@@ -77,7 +78,7 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
         scenario_group.info.name = scenario_group.info.property.description.camelName(Yes.BigCamel);
         collectNames;
         int bail_out = 6;
-        while (!names.isUnique && names.all!(a => a.isValidName) && bail_out > 0) {
+        while ((!names.isUnique && bail_out > 0) || names.any!(a => !a.isValidName) ) {
 
             collectNames;
             bail_out--;
@@ -136,6 +137,14 @@ void takeName(ref string action_name, string description) {
 @safe
 bool isValidName(const string name) pure nothrow @nogc {
     return !name.empty && !name[0].isNumber;
+}
+
+@safe
+unittest {
+    assert(!isValidName(""));
+    assert(!isValidName("1not_valid_name"));
+    assert(!isValidName("1"));
+    assert(isValidName("valid_name"));
 }
 /++
 + 
