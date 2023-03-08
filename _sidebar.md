@@ -30,7 +30,8 @@
 		- [BDD_Process](documents/behaviour/BDD_Process.md)
 		- [BDDLogger](documents/behaviour/BDDLogger.md)
 		- [BDDEnvironment](documents/behaviour/BDDEnvironment.md)
-	- Specifications
+	- List of behaviour tests
+		- [BDD tests](bdd/BDDS.md)
 
 - Project goals
 	- [Goals Q1-Q2 2023](documents/project/project_goals_2023_Q1_Q2.md)
