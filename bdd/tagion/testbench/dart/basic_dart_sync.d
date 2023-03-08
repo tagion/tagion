@@ -8,12 +8,15 @@ import std.file : mkdirRecurse;
 import std.stdio;
 import std.format : format;
 import std.algorithm : map, filter, each, sort, equal;
+import tagion.basic.Basic : tempfile;
 
 import tagion.dart.DARTFakeNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.dart.DART : DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : Archive, RecordFactory;
+import tagion.testbench.tools.Environment;
+import tagion.dart.BlockFile : BlockFile;
 
 import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 import tagion.testbench.tools.Environment;
@@ -50,6 +53,7 @@ class FullSync {
     DART db2;
 
     DARTIndex[] db1_fingerprints;
+    string[] journal_filenames;
 
     DartInfo info;
 
@@ -69,7 +73,7 @@ class FullSync {
         db1 = new DART(info.net, info.dartfilename, dart_exception);
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
 
-        db1_fingerprints = randomAdd(info.states, MinstdRand0(312), db1);
+        db1_fingerprints = randomAdd(info.states, MinstdRand0(65), db1);
         
         return result_ok;
     }
@@ -88,15 +92,36 @@ class FullSync {
 
     @Given("I synchronize dartfile1 with dartfile2.")
     Document withDartfile2() {
+        enum TEST_BLOCK_SIZE = 0x80;
 
+        foreach (sector; db2.sectors) {
+            writefln("running sector %04x", sector);
+            immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
+            journal_filenames ~= journal_filename;
+            BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+            auto synch = new TestSynchronizer(journal_filename, db2, db1);
+
+            auto db2_synchronizer = db2.synchronizer(synch, DART.Rims(sector));
+            // D!(sector, "%x");
+            while (!db2_synchronizer.empty) {
+                (() @trusted => db2_synchronizer.call)();
+            }
+        }
+        foreach (journal_filename; journal_filenames) {
+            db2.replay(journal_filename);
+        }
 
         
-        return Document();
+        return result_ok;
     }
 
     @Then("the bullseyes should be the same.")
     Document theSame() {
-        return Document();
+        check(db1.bullseye == db2.bullseye, "Bullseyes not the same");
+
+        db1.close();
+        db2.close();
+        return result_ok;
     }
 
 }
