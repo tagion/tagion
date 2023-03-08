@@ -1,4 +1,3 @@
-ANDROID_NDK = $(ANDROID_TOOLS)/android-ndk-r23b
 
 ANDROID_ARMV7A = armv7a-linux-androideabi
 

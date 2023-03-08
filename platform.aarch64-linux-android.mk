@@ -25,7 +25,7 @@ TRIPLE = $(ANDROID_ARCH)
 
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 
-ifdef BETTERC
+#ifdef BETTERC
 #DFLAGS+=$(DBETTERC)
 #
 # DFILES include
@@ -33,11 +33,11 @@ ifdef BETTERC
 DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc/*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
 #unittest: DFILES+=src/lib-betterc/tests/unittest.d
 
-LIBNAME?=libwallet-betterc-$(CROSS_ARCH)
+LIBNAME?=libmobile-$(CROSS_ARCH)
 LIBRARY=$(DLIB)/$(LIBNAME).$(LIBEXT)
 LIBOBJECT=$(DOBJ)/$(LIBNAME).$(OBJEXT)
 
-MODE:=-lib-betterc
+MODE:=-lib-mobile
 
 #
 # Switch in the betterC flags if has been defined
@@ -98,7 +98,6 @@ target-android: DFLAGS+=--defaultlib=libdruntime-ldc.a,libphobos2-ldc.a
 #target-android: DFLAGS+=-I/home/carsten/work/tagion/src/lib-basic/ -I/home/carsten/work/tagion/src/lib-crypto/
 target-android: DFLAGS+=-mtriple=$(PLATFORM)
 target-android: DFLAGS+=-Xcc=--sysroot=$(ANDROID_SYSROOT)
-#/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/
 target-android: DFLAGS+=$(DBETTERC)
 
 target-android: LDFLAGS+=$(ANDROID_LDFLAGS)
@@ -142,4 +141,4 @@ clean: clean-android
 ${call DDEPS,$(DBUILD),$(DFILES)}
 
 
-endif
+#endif

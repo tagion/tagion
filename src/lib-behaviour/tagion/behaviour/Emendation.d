@@ -10,6 +10,8 @@ import std.algorithm.sorting : sort;
 import std.typecons : Flag, No, Yes;
 import std.ascii : toUpper, toLower, isAlphaNum, isWhite;
 import std.array : split, array;
+import std.uni : isNumber;
+import std.range : empty;
 
 /**
 This function tries to add functions name to a feature group for the action description
@@ -75,7 +77,7 @@ void emendation(ref FeatureGroup feature_group, string module_name = null) {
         scenario_group.info.name = scenario_group.info.property.description.camelName(Yes.BigCamel);
         collectNames;
         int bail_out = 6;
-        while (!names.isUnique && bail_out > 0) {
+        while (!names.isUnique && names.all!(a => a.isValidName) && bail_out > 0) {
 
             collectNames;
             bail_out--;
@@ -130,6 +132,11 @@ void takeName(ref string action_name, string description) {
         .join(" ");
 }
 
+
+@safe
+bool isValidName(const string name) pure nothrow @nogc {
+    return !name.empty && !name[0].isNumber;
+}
 /++
 + 
 + Params:
@@ -203,7 +210,7 @@ unittest {
 /** 
  * 
  * Params:
- *   list_of_names = list of names which is goint to be checked
+ *   list_of_names = list of names which is going to be checked
  * Returns: true if all the names in the list is unique and not empty
  */
 @safe
@@ -213,14 +220,13 @@ bool isUnique(string[] list_of_names) nothrow {
     import std.array : array;
     import std.algorithm.searching : all;
 
-    return (list_of_names.length == 0) ||
-        list_of_names
-            .all!(name => name.length != 0)
-        &&
+    return (list_of_names.length == 0) || 
+        (list_of_names
+            .all!(name => name.length != 0) &&
         list_of_names
             .array
             .sort
-            .isStrictlyMonotonic;
+            .isStrictlyMonotonic);
 }
 
 ///Examples:  Test of the isUnique
