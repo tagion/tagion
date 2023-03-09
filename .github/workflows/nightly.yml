@@ -1,7 +1,10 @@
 name: Unittest and Nightly build
 on:
+  workflow_dispatch:
   push: 
-    branches: [ "current" ]
+    branches: 
+      - current
+      - '*' ## Remove after test
 env:
   ## Sets environment variable
   TARGET_BUILD: x86_64-linux
@@ -30,31 +33,6 @@ jobs:
           else 
             echo "Cache not found"
           fi
-
-      - name: Build
-        run: |
-          source ~/.bashrc
-          make bins -j ${{ env.PARALEL }}
-          
-      - name: Upload bins
-        uses: actions/upload-artifact@v3
-        with:
-          name: core-bins
-          path: build/${{ env.TARGET_BUILD }}/bin/tagion
-          retention-days: ${{ env.RETENTION_DAYS_BINS }}
-
-      - name: Make cache of libs
-        run: |
-          ls
-          DIFF=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/tmp)
-          DIFF+=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/lib)
-          if [ "$DIFF" != "" ] ; then
-            sudo rm -rf ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}
-            sudo mkdir -p ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}
-            sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
-            sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
-          fi
-
       - name: Run unittests
         run: |
           source ~/.bashrc
@@ -78,3 +56,70 @@ jobs:
         run: |
           RESULT=$(cat logs/${{ env.TARGET_BUILD }}/unittest.log | grep FAILED)
           echo -e "### :heavy_exclamation_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
+
+
+      - name: Run Bdd tests
+        run: |
+          source ~/.bashrc
+          make bddtest TEST_STAGE=commit | tail -n 3 | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' > ./bddresult.log
+      
+      - name: Report Bdd result
+        run: |
+          cat -e ./bddresult.log >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Bdd result
+        uses: actions/upload-artifact@v3
+        with:
+          name: core-bdd-logs
+          path: logs/${{ env.TARGET_BUILD }}/bdd/
+
+      - name: Check bdd result
+        run: cat -e ./bddresult.log | grep Features | grep -E "failed\s0\/"
+
+      - name: Build
+        run: |
+          source ~/.bashrc
+          make tagion -j ${{ env.PARALEL }}
+          
+      - name: Upload bins
+        uses: actions/upload-artifact@v3
+        with:
+          name: core-bins
+          path: build/${{ env.TARGET_BUILD }}/bin/tagion
+          retention-days: ${{ env.RETENTION_DAYS_BINS }}
+      
+      - name: Create passed tag
+        if: success()
+        uses: actions/github-script@v5
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/passed',
+              sha: context.sha
+            })
+            
+      - name: Create failed tag
+        if: failure()
+        uses: actions/github-script@v5
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/failed',
+              sha: context.sha
+            })
+
+      - name: Make cache of libs
+        run: |
+          ls
+          DIFF=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/tmp)
+          DIFF+=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/lib)
+          if [ "$DIFF" != "" ] ; then
+            sudo rm -rf ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}
+            sudo mkdir -p ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}
+            sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
+            sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
+          fi
