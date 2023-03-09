@@ -12,6 +12,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document : Document;
 import tagion.logger.LogRecords;
+import tagion.basic.Version : ver;
 
 extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
 
@@ -155,7 +156,7 @@ Returns: the current mask
 */
     @trusted
     void report(const LogLevel level, lazy scope string text) const nothrow {
-        if ((masks.length > 0) && (level & masks[$ - 1]) && !silent) {
+        if (ver.not_unittest && (masks.length > 0) && (level & masks[$ - 1]) && !silent) {
             import std.exception : assumeWontThrow;
             import std.conv : to;
 

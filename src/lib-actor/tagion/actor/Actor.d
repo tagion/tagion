@@ -707,6 +707,7 @@ unittest {
 /// Examples: Supervisor Actor call a child actor
 @safe
 unittest {
+    log.silent = true;
     @safe
     static struct MySuperActor {
         @task void run() {
@@ -735,6 +736,8 @@ unittest {
 
 @safe
 unittest {
+    log.silent = true;
+    @safe
     static struct MyRequestActor {
         @method string request(string text) {
             return "<" ~ text ~ ">";
