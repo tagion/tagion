@@ -220,7 +220,7 @@ static class TestSynchronizer : DART.StdSynchronizer {
  *   from = angle start
  *   to = angle end
  */
-void sync_darts(DART db1, DART db2, const ushort from, const ushort to) @safe {
+void syncDarts(DART db1, DART db2, const ushort from, const ushort to) @safe {
 
     enum TEST_BLOCK_SIZE = 0x80;
     string[] journal_filenames;
