@@ -63,7 +63,7 @@ class Reporter : BehaviourReporter {
 enum Stage{
     commit,
     acceptance,
-    perfomance,
+    performance,
 }
 struct Environment {
     string dbin;

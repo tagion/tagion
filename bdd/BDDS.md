@@ -76,6 +76,8 @@
 
 [dart_two_archives_deep_rim.md](bdd/tagion/testbench/dart/dart_two_archives_deep_rim.md)
 
+[dart_stress_test.md](bdd/tagion/testbench/dart/dart_stress_test.md)
+
 [dart_mapping_two_archives.md](bdd/tagion/testbench/dart/dart_mapping_two_archives.md)
 
 [dart_sync_snap_back.md](bdd/tagion/testbench/dart/dart_sync_snap_back.md)
