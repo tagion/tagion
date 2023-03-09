@@ -43,11 +43,15 @@ int _main(string[] args) {
         const hirpc = HiRPC(net);
 
         DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
-        dart_info.states = dart_info.generateStates(1, 10).take(100).array;
+       
+
+        const ulong samples = 1_000_000;
+        dart_info.fixed_states = DartInfo.generateFixedStates(samples);
+
 
         auto dart_ADD_stress_feature = automation!(dart_stress_test)();
 
-        dart_ADD_stress_feature.AddPseudoRandomData(dart_info);
+        dart_ADD_stress_feature.AddPseudoRandomData(dart_info, samples);
 
         
         auto dart_ADD_stress_context = dart_ADD_stress_feature.run();
