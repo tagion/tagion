@@ -103,7 +103,7 @@ class PartialSync {
 
     @Given("I synchronize dartfile1 with dartfile2.")
     Document withDartfile2() {
-        sync_darts(db1, db2, angle, size);
+        syncDarts(db1, db2, angle, size);
         return result_ok;
     }
 
