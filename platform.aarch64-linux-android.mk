@@ -25,8 +25,6 @@ TRIPLE = $(ANDROID_ARCH)
 
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 
-#ifdef BETTERC
-#DFLAGS+=$(DBETTERC)
 #
 # DFILES include
 #
@@ -43,7 +41,6 @@ MODE:=-lib-mobile
 # Switch in the betterC flags if has been defined
 #
 
-#ANDROID_DFLAGS+=$(DBETTERC)
 #
 # Swicth off the phobos and druntime
 #
@@ -62,7 +59,6 @@ ANDROID_LDFLAGS+=$(ANDROID_SYSROOT)/usr/lib/$(PLATFORM)/$(ANDROID_API)/crtend_so
 endif
 
 ANDROID_LDFLAGS+=--fix-cortex-a53-843419
-#ANDROID_LDFLAGS+=-flto=thin
 #
 # Link all into one library
 #
@@ -70,7 +66,6 @@ ANDROID_LDFLAGS+=--fix-cortex-a53-843419
 ANDROID_DFLAGS+=--defaultlib=libdruntime-ldc-lto.a,libphobos2-ldc-lto.a
 
 ANDROID_DFLAGS+=-L$(LDC_BUILD_RUNTIME_TMP)/lib/
-#ANDROID_DFLAGS+=-L/home/carsten/work/ldc-runtime/ldc-build-runtime.tmp/lib/
 ANDROID_DFLAGS+=-I$(LDC_BUILD_RUNTIME_TMP)/ldc-src/runtime/phobos/
 ANDROID_DFLAGS+=-I$(LDC_BUILD_RUNTIME_TMP)/ldc-src/runtime/druntime/src/
 ANDROID_DFLAGS+=--conf=
@@ -137,4 +132,3 @@ clean: clean-android
 ${call DDEPS,$(DBUILD),$(DFILES)}
 
 
-#endif
