@@ -4,7 +4,6 @@ on:
   push: 
     branches: 
       - current
-      - '*' ## Remove after test
 env:
   ## Sets environment variable
   TARGET_BUILD: x86_64-linux
@@ -61,11 +60,15 @@ jobs:
       - name: Run Bdd tests
         run: |
           source ~/.bashrc
-          make bddtest TEST_STAGE=commit | tail -n 3 | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' > ./bddresult.log
+          make bddtest TEST_STAGE=commit | tail -n 3 | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' > bddconsole.log
+
+      - name: Create bdd result
+        run: |
+          for i in ./logs/${{ env.TARGET_BUILD }}/bdd/results/*.json; do cat $i | jq '.info.name,.info.result.outcome."$@",.info.result.outcome.msg?'; done  | sed 'N;N;s/\n/ - /g' |  tr -d '"' | sed s/"- null"// > ./bddresult.log
       
       - name: Report Bdd result
         run: |
-          cat -e ./bddresult.log >> $GITHUB_STEP_SUMMARY
+          cat ./bddresult.log >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Bdd result
         uses: actions/upload-artifact@v3
@@ -74,7 +77,7 @@ jobs:
           path: logs/${{ env.TARGET_BUILD }}/bdd/
 
       - name: Check bdd result
-        run: cat -e ./bddresult.log | grep Features | grep -E "failed\s0\/"
+        run: cat ./bddconsole.log | tail -n 1 | grep -E "Test result success!"
 
       - name: Build
         run: |
@@ -89,7 +92,7 @@ jobs:
           retention-days: ${{ env.RETENTION_DAYS_BINS }}
       
       - name: Create passed tag
-        if: success()
+        if: ${{ success() && (github.ref == 'refs/heads/current') }}
         uses: actions/github-script@v5
         with:
           script: |
@@ -101,7 +104,7 @@ jobs:
             })
             
       - name: Create failed tag
-        if: failure()
+        if: ${{ failure() && (github.ref == 'refs/heads/current') }}
         uses: actions/github-script@v5
         with:
           script: |
