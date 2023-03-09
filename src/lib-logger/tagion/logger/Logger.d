@@ -156,7 +156,7 @@ Returns: the current mask
 */
     @trusted
     void report(const LogLevel level, lazy scope string text) const nothrow {
-        if (ver.not_unittest && (masks.length > 0) && (level & masks[$ - 1]) && !silent) {
+        if ( (masks.length > 0) && (level & masks[$ - 1]) && !silent) {
             import std.exception : assumeWontThrow;
             import std.conv : to;
 
