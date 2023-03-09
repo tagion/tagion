@@ -19,6 +19,7 @@ import std.path : setExtension, buildPath;
 import tagion.basic.Types : FileExtension;
 import tagion.testbench.tools.Environment;
 import tagion.testbench.dart.dartinfo;
+import std.stdio;
 
 import tagion.basic.Version;
 
@@ -34,10 +35,11 @@ int _main(string[] args) {
 
         const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
         const string dartfilename = buildPath(module_path, "dart_deep_rim_test".setExtension(FileExtension.dart));
+        const string dartfilename2 = buildPath(module_path, "start_empty_sync_test".setExtension(FileExtension.dart));
         const SecureNet net = new DARTFakeNet("very_secret");
         const hirpc = HiRPC(net);
 
-        DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
+        DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc, dartfilename2);
 
         auto dart_deep_rim_feature = automation!(dart_two_archives_deep_rim)();
 
@@ -47,6 +49,12 @@ int _main(string[] args) {
         auto dart_deep_rim_context = dart_deep_rim_feature.run();
 
 
+        static if (ver.DART_SNAP_BRANCH) {
+            auto dart_sync_snap_feature = automation!(dart_sync_snap_back)();
+            dart_sync_snap_feature.SyncToAnotherDb(dart_info);
+            auto dart_sync_snap_context = dart_sync_snap_feature.run();
+        }
+        
         static if (ver.DART_SNAP_BRANCH) {
             auto dart_middle_branch_feature = automation!(dart_middle_branch)();
             dart_middle_branch_feature.AddOneArchiveAndSnap(dart_info);
