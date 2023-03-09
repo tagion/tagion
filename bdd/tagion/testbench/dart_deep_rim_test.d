@@ -1,6 +1,5 @@
 module tagion.testbench.dart_deep_rim_test;
 
-
 import tagion.behaviour.Behaviour;
 import tagion.testbench.functional;
 import tagion.hibon.HiBONRecord : fwrite;
@@ -10,7 +9,7 @@ import std.traits : moduleName;
 import tagion.testbench.dart;
 import tagion.testbench.tools.BDDOptions;
 import tagion.testbench.tools.Environment;
-    
+
 import tagion.dart.DARTFakeNet : DARTFakeNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.communication.HiRPC : HiRPC;
@@ -23,9 +22,7 @@ import std.stdio;
 
 import tagion.basic.Version;
 
-
 mixin Main!(_main);
-
 
 int _main(string[] args) {
     if (env.stage == Stage.commit) {
@@ -34,8 +31,10 @@ int _main(string[] args) {
         bdd_options.scenario_name = __MODULE__;
 
         const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
-        const string dartfilename = buildPath(module_path, "dart_deep_rim_test".setExtension(FileExtension.dart));
-        const string dartfilename2 = buildPath(module_path, "start_empty_sync_test".setExtension(FileExtension.dart));
+        const string dartfilename = buildPath(module_path, "dart_deep_rim_test".setExtension(
+                FileExtension.dart));
+        const string dartfilename2 = buildPath(module_path, "start_empty_sync_test".setExtension(
+                FileExtension.dart));
         const SecureNet net = new DARTFakeNet("very_secret");
         const hirpc = HiRPC(net);
 
@@ -48,23 +47,20 @@ int _main(string[] args) {
         dart_deep_rim_feature.RemoveArchive(dart_info);
         auto dart_deep_rim_context = dart_deep_rim_feature.run();
 
-
         static if (ver.DART_SNAP_BRANCH) {
             auto dart_sync_snap_feature = automation!(dart_sync_snap_back)();
             dart_sync_snap_feature.SyncToAnotherDb(dart_info);
             auto dart_sync_snap_context = dart_sync_snap_feature.run();
         }
-        
+
         static if (ver.DART_SNAP_BRANCH) {
             auto dart_middle_branch_feature = automation!(dart_middle_branch)();
             dart_middle_branch_feature.AddOneArchiveAndSnap(dart_info);
             auto dart_middle_branch_context = dart_middle_branch_feature.run();
-        } else {
+        }
+        else {
             pragma(msg, "fixme(pr): DART snapback problem");
         }
     }
     return 0;
 }
-
-
-
