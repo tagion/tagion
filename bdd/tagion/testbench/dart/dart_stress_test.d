@@ -10,6 +10,7 @@ import std.format : format;
 import std.algorithm : map, filter, each, sort, equal;
 import tagion.communication.HiRPC;
 import tagion.dart.DARTcrud : dartRead;
+import tagion.testbench.tools.BDDOptions;
 
 import tagion.dart.DARTFakeNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
@@ -53,6 +54,7 @@ class AddPseudoRandomData {
     DartInfo info;
     const ulong samples;
     ulong[][] data;
+    BDDOptions bdd_options;
 
     this(DartInfo info, const ulong samples) {
         this.info = info;
@@ -149,12 +151,15 @@ class AddPseudoRandomData {
     @Then("the data should be read and checked.")
     Document checked() {
 
-        auto fout = File("/tmp/dart_stress.csv", "w");
+        
+
+        auto fout = File(format("%s", buildPath(info.module_path, "dart_stress_test.csv")), "w");
 
         scope(exit) {
             fout.close();
         }
 
+        fout.writeln("INSERT,READ,REMOVE");
         foreach(single_time; data) {
             fout.writefln("%(%s, %)", single_time);
         }
