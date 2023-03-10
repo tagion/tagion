@@ -182,7 +182,7 @@ ulong putInSector(ulong archive, const ushort angle, const ushort size) @safe {
 }
 
 
-
+// same as in unittests.
 static class TestSynchronizer : DART.StdSynchronizer {
     protected DART foreign_dart;
     protected DART owner;
