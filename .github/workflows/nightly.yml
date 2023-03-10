@@ -17,7 +17,11 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Cleanup
-        run: sudo rm -rf * .*
+        run: |
+          sudo rm -rf *
+          sudo rm -rf .git
+          sudo rm -rf .github
+          sudo rm -rf .vscode
       - name: Checkout
         uses: actions/checkout@v3
 
