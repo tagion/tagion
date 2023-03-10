@@ -92,28 +92,19 @@ jobs:
           retention-days: ${{ env.RETENTION_DAYS_BINS }}
       
       - name: Create passed tag
-        if: ${{ success() && (github.ref == 'refs/heads/current') }}
-        uses: actions/github-script@v5
+        if: success() && (github.ref == 'refs/heads/current')
+        uses: rickstaa/action-create-tag@v1
         with:
-          script: |
-            github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: 'refs/tags/passed',
-              sha: context.sha
-            })
-            
+          tag: "passed"
+          force_push_tag: true
+
       - name: Create failed tag
-        if: ${{ failure() && (github.ref == 'refs/heads/current') }}
-        uses: actions/github-script@v5
+        if: failure() && (github.ref == 'refs/heads/current')
+        uses: rickstaa/action-create-tag@v1
         with:
-          script: |
-            github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: 'refs/tags/failed',
-              sha: context.sha
-            })
+          tag: "failed"
+          force_push_tag: true
+
 
       - name: Make cache of libs
         run: |
