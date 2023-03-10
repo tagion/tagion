@@ -33,7 +33,7 @@ mixin TrustedConcurrency;
      *      @param recorder - recorder for new block
      *      @param bullseye - bullseye of the database
      */
-    @TaskMethod void receiveRecorder(immutable(RecordFactory.Recorder) recorder, const 
+    @TaskMethod void receiveRecorder(immutable(RecordFactory.Recorder) recorder, const
             Fingerprint bullseye) {
         auto last_block = recorder_chain.getLastBlock;
         auto block = new RecorderChainBlock(
@@ -68,9 +68,10 @@ mixin TrustedConcurrency;
 
 /// RecorderService_add_many_blocks
 unittest {
+    log.silent = true;
     import tagion.basic.Basic : tempfile;
     import tagion.prior_services.Options : setDefaultOption;
-import tagion.crypto.Types : Fingerprint;
+    import tagion.crypto.Types : Fingerprint;
 
     const temp_folder = tempfile ~ "/";
 

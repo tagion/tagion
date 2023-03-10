@@ -31,7 +31,7 @@ import std.random : randomShuffle, MinstdRand0, randomSample;
 import tagion.hibon.HiBONRecord;
 
 import tagion.testbench.dart.dart_helper_functions;
-import std.digest;
+
 
 enum feature = Feature(
         "Dart pseudo random test",

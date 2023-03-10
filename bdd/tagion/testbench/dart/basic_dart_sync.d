@@ -33,7 +33,6 @@ import std.random : randomShuffle, MinstdRand0, randomSample;
 import tagion.hibon.HiBONRecord;
 
 import tagion.testbench.dart.dart_helper_functions;
-import std.digest;
 
 enum feature = Feature(
         "DARTSynchronization full sync",
@@ -95,7 +94,7 @@ class FullSync {
 
     @Given("I synchronize dartfile1 with dartfile2.")
     Document withDartfile2() {
-        sync_darts(db1, db2, angle, size);
+        syncDarts(db1, db2, angle, size);
         return result_ok;
     }
 

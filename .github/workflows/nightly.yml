@@ -1,7 +1,9 @@
 name: Unittest and Nightly build
 on:
+  workflow_dispatch:
   push: 
-    branches: [ "current" ]
+    branches: 
+      - current
 env:
   ## Sets environment variable
   TARGET_BUILD: x86_64-linux
@@ -15,7 +17,11 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Cleanup
-        run: sudo rm -rf *
+        run: |
+          sudo rm -rf *
+          sudo rm -rf .git
+          sudo rm -rf .github
+          sudo rm -rf .vscode
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -30,31 +36,6 @@ jobs:
           else 
             echo "Cache not found"
           fi
-
-      - name: Build
-        run: |
-          source ~/.bashrc
-          make bins -j ${{ env.PARALEL }}
-          
-      - name: Upload bins
-        uses: actions/upload-artifact@v3
-        with:
-          name: core-bins
-          path: build/${{ env.TARGET_BUILD }}/bin/tagion
-          retention-days: ${{ env.RETENTION_DAYS_BINS }}
-
-      - name: Make cache of libs
-        run: |
-          ls
-          DIFF=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/tmp)
-          DIFF+=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/lib)
-          if [ "$DIFF" != "" ] ; then
-            sudo rm -rf ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}
-            sudo mkdir -p ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}
-            sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
-            sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
-          fi
-
       - name: Run unittests
         run: |
           source ~/.bashrc
@@ -78,3 +59,65 @@ jobs:
         run: |
           RESULT=$(cat logs/${{ env.TARGET_BUILD }}/unittest.log | grep FAILED)
           echo -e "### :heavy_exclamation_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
+
+
+      - name: Run Bdd tests
+        run: |
+          source ~/.bashrc
+          make bddtest TEST_STAGE=commit | tail -n 3 | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' > bddconsole.log
+
+      - name: Create bdd result
+        run: |
+          for i in ./logs/${{ env.TARGET_BUILD }}/bdd/results/*.json; do cat $i | jq '.info.name,.info.result.outcome."$@",.info.result.outcome.msg?'; done  | sed 'N;N;s/\n/ - /g' |  tr -d '"' | sed s/"- null"// > ./bddresult.log
+      
+      - name: Report Bdd result
+        run: |
+          cat ./bddresult.log >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Bdd result
+        uses: actions/upload-artifact@v3
+        with:
+          name: core-bdd-logs
+          path: logs/${{ env.TARGET_BUILD }}/bdd/
+
+      - name: Check bdd result
+        run: cat ./bddconsole.log | tail -n 1 | grep -E "Test result success!"
+
+      - name: Build
+        run: |
+          source ~/.bashrc
+          make tagion -j ${{ env.PARALEL }}
+          
+      - name: Upload bins
+        uses: actions/upload-artifact@v3
+        with:
+          name: core-bins
+          path: build/${{ env.TARGET_BUILD }}/bin/tagion
+          retention-days: ${{ env.RETENTION_DAYS_BINS }}
+      
+      - name: Create passed tag
+        if: success() && (github.ref == 'refs/heads/current')
+        uses: rickstaa/action-create-tag@v1
+        with:
+          tag: "passed"
+          force_push_tag: true
+
+      - name: Create failed tag
+        if: failure() && (github.ref == 'refs/heads/current')
+        uses: rickstaa/action-create-tag@v1
+        with:
+          tag: "failed"
+          force_push_tag: true
+
+
+      - name: Make cache of libs
+        run: |
+          ls
+          DIFF=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/tmp)
+          DIFF+=$(diff --speed-large-files --recursive --brief ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/lib)
+          if [ "$DIFF" != "" ] ; then
+            sudo rm -rf ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}
+            sudo mkdir -p ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}
+            sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD}}/tmp ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
+            sudo /bin/cp -rf ./build/${{ env.TARGET_BUILD }}/lib ${{ env.TAGION_CACHE_DIR }}/${{ env.TARGET_BUILD }}/
+          fi

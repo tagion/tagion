@@ -161,6 +161,15 @@ void randomRemove(const DARTIndex[] fingerprints, MinstdRand0 rnd, DART db) @saf
     db.modify(recorder);
 }
 
+
+/** 
+ * Changes the sector in which the archive is created in. This is for testing only an angle of the database. 
+ * Params:
+ *   archive = the archive to change
+ *   angle = The angle / sector 
+ *   size = The size from the angle so that it is possible to have more than one.
+ * Returns: new ulong where the sector has been changed.
+ */
 ulong putInSector(ulong archive, const ushort angle, const ushort size) @safe {
     
     enum size_none_sector = (ulong.sizeof - ushort.sizeof)*8;
@@ -173,7 +182,7 @@ ulong putInSector(ulong archive, const ushort angle, const ushort size) @safe {
 }
 
 
-
+// same as in unittests.
 static class TestSynchronizer : DART.StdSynchronizer {
     protected DART foreign_dart;
     protected DART owner;
@@ -220,7 +229,7 @@ static class TestSynchronizer : DART.StdSynchronizer {
  *   from = angle start
  *   to = angle end
  */
-void sync_darts(DART db1, DART db2, const ushort from, const ushort to) @safe {
+void syncDarts(DART db1, DART db2, const ushort from, const ushort to) @safe {
 
     enum TEST_BLOCK_SIZE = 0x80;
     string[] journal_filenames;

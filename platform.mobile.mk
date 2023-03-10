@@ -1,6 +1,6 @@
-PLATFORMS+=MOBILE
+PLATFORMS+=mobile
 
-ifeq ($(PLATFORMS), mobile)
+ifeq ($(PLATFORM), mobile)
 DINC?=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 # Betterc source files
 # DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc/*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
