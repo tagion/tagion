@@ -70,6 +70,7 @@ struct Options {
     uint epoch_limit; /// The round until it has produced epoch_limit
     NetworkMode net_mode;
     import tagion.options.CommonOptions;
+
     uint startup_delay;
 
     CommonOptions common;
@@ -205,6 +206,7 @@ struct Options {
         bool flush; /// Will automatic flush the logger file when a message has been received
         bool to_console; /// Will duplicate logger information to the console
         uint mask; /// Logger mask
+        uint trunc_size; /// Truct size in bytes (if zero the logger file is not truncated)
         mixin JSONCommon;
     }
 
@@ -343,6 +345,7 @@ static ref auto all_getopt(
         "dart-path", "Path to dart file", &(options.dart.path),
         "logger-filename" , format("Logger file name: default: %s", options.logger.file_name), &(options.logger.file_name),
         "logger-mask|l" , format("Logger mask: default: %d", options.logger.mask), &(options.logger.mask),
+        "logger-size", format("Max size of the logger file (zero means no limit)"), &options.logger.trunc_size,
         "logsub|L" , format("Logger subscription service enabled: default: %d", options.logsubscription.enable), &(options.logsubscription.enable),
         "net-mode", format("Network mode: one of [%s]: default: %s", [EnumMembers!NetworkMode].map!(t=>t.to!string).join(", "), options.net_mode), &(options.net_mode),
         "p2p-logger", format("Enable conssole logs for libp2p: default: %s", options.p2plogs), &(options.p2plogs),
