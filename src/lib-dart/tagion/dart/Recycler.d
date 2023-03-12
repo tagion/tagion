@@ -84,7 +84,7 @@ struct Recycler {
     /**
     Returns: true if the segments overlaps
 */
-    private bool noOverlaps() const pure nothrow {
+    private bool noOverlaps() const pure nothrow @nogc {
         import std.range : slide;
         import std.algorithm.searching : any;
         import std.algorithm.iteration : map;
