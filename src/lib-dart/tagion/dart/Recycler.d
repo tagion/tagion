@@ -1,6 +1,11 @@
 module tagion.dart.Recycler;
 
 import std.typecons : Typedef;
+import std.container.rbtree : RedBlackTree;
+
+import std.stdio;
+
+import tagion.dart.BlockFile : BlockFile;
 
 /// BlockFile file position index
 alias BlockIndex = Typedef!(ulong, ulong.init, "BINDEX");
@@ -16,7 +21,7 @@ struct Segment {
     }
 
     BlockIndex end() const pure nothrow @nogc {
-        return index + size;
+        return BlockIndex(index + size);
     }
 }
 
@@ -35,7 +40,7 @@ struct Recycler {
     do {
         this.owner = owner;
         indices = new Indices;
-        recycle_segments = new Segments;
+        segments = new Segments;
     }
 
     version (none) BlockIndex next(const BlockIndex index) const pure {
@@ -56,7 +61,7 @@ struct Recycler {
 
     protected void insert(const(Segment)* segment) pure {
         indices.insert(segment);
-        segments.insert(segement);
+        segments.insert(segment);
     }
 
     void recycle(const(Segment)* segment) {
@@ -70,19 +75,60 @@ struct Recycler {
             return;
         }
 
-
     }
 
-    bool isValid() {
-        return segment_overlap = indeces[]
-            .recurrence!q{a[n-1].end < a[n].index}
-            .all;
-
+    invariant {
+        assert(noOverlaps, "Recycle segments has overlaps");
     }
+
+    /**
+    Returns: true if the segments overlaps
+*/
+    private bool noOverlaps() const pure nothrow {
+        import std.range : slide;
+        import std.algorithm.searching : any;
+        import std.algorithm.iteration : map;
+version(none)
+        if (indices.length <= 1) {
+            return false;
+        }
+        /// Check a pair of segments overlaps
+        static bool overlaps(R)(ref R pair) pure nothrow @nogc {
+            const prev_end = pair.front.end;
+            pair.popFront;
+            const current_index = pair.front.index;
+            return prev_end > current_index;
+        }
+
+        return !indices[]
+            .slide(2)
+            .map!(slice => overlaps(slice))
+            .any;
+    }
+}
+
+import std.traits;
+import std.range;
+
+Recurrence!(fun, CommonType!(State), State.length)
+_recurrence(alias fun, State...)(State initial) {
+    pragma(msg, "State ", State);
+    pragma(msg, "CommonType!State ", CommonType!State);
+    CommonType!(State)[State.length] state;
+    foreach (i, Unused; State) {
+        state[i] = initial[i];
+    }
+    return typeof(return)(state);
 }
 
 version (unittest) {
     enum SMALL_BLOCK_SIZE = 0x40;
+    import Basic = tagion.basic.Basic;
+    import tagion.basic.Types : FileExtension;
+
+    const(Basic.FileNames) fileId(T = BlockFile)(string prefix = null) @safe {
+        return Basic.fileId!T(FileExtension.block, prefix);
+    }
 }
 
 @safe
