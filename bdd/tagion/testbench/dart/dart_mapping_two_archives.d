@@ -215,6 +215,7 @@ class RemoveArchive {
         const read_doc = getRead(rim_fingerprints, info.hirpc, db);
         const recorder = db.recorder(read_doc);
 
+        check(recorder[].walkLength == 1, "fingerprint not removed");
         auto data = recorder[].front;
         const(ulong) archive = data.filed[info.FAKE].get!ulong;
         check(archive == info.table[1], "Data is not correct");
