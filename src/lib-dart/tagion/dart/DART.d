@@ -108,9 +108,9 @@ class DART : DARTFile {
     *   to_sector = Represents to angle for DART sharding. In development.
     */
     this(const SecureNet net,
-            string filename,
-            const ushort from_sector = 0,
-            const ushort to_sector = 0) @safe {
+        string filename,
+        const ushort from_sector = 0,
+        const ushort to_sector = 0) @safe {
         super(net, filename);
         this.from_sector = from_sector;
         this.to_sector = to_sector;
@@ -127,10 +127,10 @@ class DART : DARTFile {
     *       to_sector = Represents to angle for DART sharding. In development.
     */
     this(const SecureNet net,
-            string filename,
-            out Exception exception,
-            const ushort from_sector = 0,
-            const ushort to_sector = 0) @safe {
+        string filename,
+        out Exception exception,
+        const ushort from_sector = 0,
+        const ushort to_sector = 0) @safe {
         try {
             this(net, filename, from_sector, to_sector);
         }
@@ -228,9 +228,9 @@ class DART : DARTFile {
          * Returns: true if the sector is within the angle-span 
          */
         static bool sectorInRange(
-                const ushort sector,
-                const ushort from_sector,
-                const ushort to_sector) pure nothrow {
+            const ushort sector,
+            const ushort from_sector,
+            const ushort to_sector) pure nothrow {
             if (to_sector == from_sector) {
                 return true;
             }
@@ -333,7 +333,7 @@ class DART : DARTFile {
             pragma(msg, "fixme(vp) have to be check: rims is root_rim");
 
             assert(rims.length >= ushort.sizeof || rims.length == 0,
-                    __format("Rims size must be %d or more ubytes contain a sector but contains %d", ushort.sizeof, rims
+                __format("Rims size must be %d or more ubytes contain a sector but contains %d", ushort.sizeof, rims
                     .length));
         }
         do {
@@ -344,7 +344,7 @@ class DART : DARTFile {
         }
 
         mixin HiBONRecord!(
-                q{
+            q{
                 this(Buffer r) {
                     rims=r;
                 }
@@ -382,8 +382,8 @@ received = the HiRPC received package
      * @return HiRPC result that contains current database bullseye
      */
     @HiRPCMethod private const(HiRPC.Sender) dartBullseye(
-            ref const(HiRPC.Receiver) received,
-            const bool read_only)
+        ref const(HiRPC.Receiver) received,
+        const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -436,8 +436,8 @@ received = the HiRPC received package
      * ---
      */
     @HiRPCMethod private const(HiRPC.Sender) dartRead(
-            ref const(HiRPC.Receiver) received,
-            const bool read_only)
+        ref const(HiRPC.Receiver) received,
+        const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -487,8 +487,8 @@ received = the HiRPC received package
      * ----
      */
     @HiRPCMethod private const(HiRPC.Sender) dartRim(
-            ref const(HiRPC.Receiver) received,
-            const bool read_only)
+        ref const(HiRPC.Receiver) received,
+        const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -561,8 +561,8 @@ received = the HiRPC received package
      */
 
     @HiRPCMethod private const(HiRPC.Sender) dartModify(
-            ref const(HiRPC.Receiver) received,
-            const bool read_only)
+        ref const(HiRPC.Receiver) received,
+        const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -589,8 +589,8 @@ received = the HiRPC received package
      *     else the response return is marked empty
      */
     const(HiRPC.Sender) opCall(
-            ref const(HiRPC.Receiver) received,
-            const bool read_only = true) {
+        ref const(HiRPC.Receiver) received,
+        const bool read_only = true) {
         import std.conv : to;
 
         const method = received.method;
@@ -763,9 +763,9 @@ received = the HiRPC received package
          *   hirpc = remote credential used 
          */
         void set(
-                DART owner,
-                SynchronizationFiber fiber,
-                HiRPC hirpc) nothrow @trusted {
+            DART owner,
+            SynchronizationFiber fiber,
+            HiRPC hirpc) nothrow @trusted {
             import std.conv : emplace;
 
             this.fiber = fiber;
@@ -876,7 +876,7 @@ received = the HiRPC received package
                     // Read all the archives from the foreign DART
                     //
                     const request_archives = CRUD.dartRead(
-                            foreign_branches
+                        foreign_branches
                             .fingerprints.map!(f => DARTIndex(f)), hirpc, id);
                     const result_archives = sync.query(request_archives);
                     auto foreign_recoder = manufactor.recorder(result_archives.response.result);
@@ -952,6 +952,8 @@ received = the HiRPC received package
         // Adding and Removing archives
         void local_replay(bool remove)() @safe {
             for (uint index = journalfile.masterBlock.root_index; index !is INDEX_NULL;
+
+                
 
                 ) {
                 immutable data = journalfile.load(index);
@@ -1049,7 +1051,7 @@ received = the HiRPC received package
             auto random_tabel = new ulong[N];
             foreach (ref r; random_tabel) {
                 immutable sector = rand.value(0x0000_0000_0000_ABBAUL, 0x0000_0000_0000_ABBDUL) << (
-                        8 * 6);
+                    8 * 6);
                 r = rand.value(0x0000_1234_5678_0000UL | sector, 0x0000_1334_FFFF_0000UL | sector);
             }
 

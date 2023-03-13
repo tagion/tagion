@@ -25,25 +25,22 @@ TRIPLE = $(ANDROID_ARCH)
 
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 
-ifdef BETTERC
-#DFLAGS+=$(DBETTERC)
 #
 # DFILES include
 #
 DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc/*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
 #unittest: DFILES+=src/lib-betterc/tests/unittest.d
 
-LIBNAME?=libwallet-betterc-$(CROSS_ARCH)
+LIBNAME?=libmobile-$(CROSS_ARCH)
 LIBRARY=$(DLIB)/$(LIBNAME).$(LIBEXT)
 LIBOBJECT=$(DOBJ)/$(LIBNAME).$(OBJEXT)
 
-MODE:=-lib-betterc
+MODE:=-lib-mobile
 
 #
 # Switch in the betterC flags if has been defined
 #
 
-#ANDROID_DFLAGS+=$(DBETTERC)
 #
 # Swicth off the phobos and druntime
 #
@@ -59,14 +56,9 @@ ANDROID_LDFLAGS+=-m aarch64linux
 ANDROID_LDFLAGS+=-L$(ANDROID_ROOT)/lib64/clang/$(ANDROID_CLANG_VER)/lib/linux/aarch64
 ANDROID_LDFLAGS+=$(ANDROID_ROOT)/lib64/clang/$(ANDROID_CLANG_VER)/lib/linux/libclang_rt.builtins-aarch64-android.a
 ANDROID_LDFLAGS+=$(ANDROID_SYSROOT)/usr/lib/$(PLATFORM)/$(ANDROID_API)/crtend_so.o
-#ANDROID_LDFLAGS+=${shell find $(DTMP_SECP256K1)/src/.libs -name "*.o"}
-else
-${error The none betterC version is not implemented yet. Set BETTERC=1}
-#XFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc*" -not -path "*/tests/*"}
 endif
 
 ANDROID_LDFLAGS+=--fix-cortex-a53-843419
-#ANDROID_LDFLAGS+=-flto=thin
 #
 # Link all into one library
 #
@@ -74,7 +66,6 @@ ANDROID_LDFLAGS+=--fix-cortex-a53-843419
 ANDROID_DFLAGS+=--defaultlib=libdruntime-ldc-lto.a,libphobos2-ldc-lto.a
 
 ANDROID_DFLAGS+=-L$(LDC_BUILD_RUNTIME_TMP)/lib/
-#ANDROID_DFLAGS+=-L/home/carsten/work/ldc-runtime/ldc-build-runtime.tmp/lib/
 ANDROID_DFLAGS+=-I$(LDC_BUILD_RUNTIME_TMP)/ldc-src/runtime/phobos/
 ANDROID_DFLAGS+=-I$(LDC_BUILD_RUNTIME_TMP)/ldc-src/runtime/druntime/src/
 ANDROID_DFLAGS+=--conf=
@@ -98,7 +89,6 @@ target-android: DFLAGS+=--defaultlib=libdruntime-ldc.a,libphobos2-ldc.a
 #target-android: DFLAGS+=-I/home/carsten/work/tagion/src/lib-basic/ -I/home/carsten/work/tagion/src/lib-crypto/
 target-android: DFLAGS+=-mtriple=$(PLATFORM)
 target-android: DFLAGS+=-Xcc=--sysroot=$(ANDROID_SYSROOT)
-#/home/carsten/Android/android-ndk-r23b/toolchains/llvm/prebuilt/linux-x86_64/sysroot/
 target-android: DFLAGS+=$(DBETTERC)
 
 target-android: LDFLAGS+=$(ANDROID_LDFLAGS)
@@ -142,4 +132,3 @@ clean: clean-android
 ${call DDEPS,$(DBUILD),$(DFILES)}
 
 
-endif

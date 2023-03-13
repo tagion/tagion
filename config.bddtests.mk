@@ -8,6 +8,9 @@ BDDS+=receive_epoch # acceptance
 BDDS+=dart_test # commit
 BDDS+=dart_deep_rim_test # commit
 BDDS+=dart_pseudo_random_archives # commit
+BDDS+=dart_sync # commit
+BDDS+=dart_partial_sync # commit
+BDDS+=dart_stress # performance
 
 run-ssl_echo_server: sslextras
 

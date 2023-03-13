@@ -2,8 +2,10 @@ module tagion.testbench.dart.dartinfo;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.communication.HiRPC : HiRPC;
 import tagion.utils.Random;
+import std.algorithm;
 import std.range;
 import std.stdio;
+import std.traits;
 
 import std.algorithm.iteration : each;
 
@@ -12,6 +14,8 @@ struct DartInfo {
     const string module_path;
     const SecureNet net;
     const HiRPC hirpc;
+    const string dartfilename2;
+
 
     const ulong[] table = [
         0xABB9_13ab_cdef_1234,
@@ -35,6 +39,20 @@ struct DartInfo {
         )(SequenceT(rnd.save, from));
     }
     SequenceT[] states;
+
+    static auto generateFixedStates(const ulong samples) {
+        auto start = RandomT(0x1234);
+        auto rand_range = recurrence!(q{
+        a[n-1].drop(1)
+        })(start);
+
+        return(rand_range
+                .take(samples)
+                .map!q{a.take(1)}
+                .joiner);        
+    }
+
+    ReturnType!generateFixedStates fixed_states;    
     
 
 

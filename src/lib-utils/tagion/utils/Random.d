@@ -91,9 +91,9 @@ struct Sequence(T = uint) {
     Random!T rand;
     T size;
     /** 
-     * Returns: sequency of random numbers
+     * Returns: sequence of random numbers
      */
-    auto list() pure nothrow {
+    auto list() const pure nothrow {
         return rand.save.take(size);
     }
 
@@ -102,7 +102,7 @@ struct Sequence(T = uint) {
      * Params:
      *   next_size = the number of random to the next sequency 
      * Returns: 
-     *   the net sequency after next_size randoms
+     *   the net sequence after next_size randoms
      */
     Sequence progress(T next_size) const pure nothrow {
         Sequence result;

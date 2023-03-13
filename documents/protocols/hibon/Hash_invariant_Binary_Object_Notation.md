@@ -28,7 +28,7 @@ The HiBON  binary format describe here in pseudo-BNF format.
 | i32       | signed 32 integer in leb128 format                       |
 | i64       | signed 32 integer in leb128 format                       |
 | u32       | unsigned 32 integer in leb128 format                     |
-| u32       | unsigned 64 integer in leb128 format                     |
+| u64       | unsigned 64 integer in leb128 format                     |
 | f32       | float in little endian format                            |
 | f64       | double in little endian format                           |
 | len       | is a length file as u32 except the '\x00' is not allowed |
@@ -48,19 +48,14 @@ element    ::=                        // TYPE key value
  	| DOCUMENT key document
  	| BINARY key binary
  	| BOOLEAN key ('\x00'|'\x01')
- 	| SDT key i64              // Standard Time counted as the total 100nsecs from midnight, 
+ 	| TIME key i64              // Standard Time counted as the total 100nsecs from midnight, 
  	                           // January 1st, 1 A.D. UTC.
     | INT32 key i32
     | INT64 key i64
     | BIGINT key ibig
     | UINT32 key u32
     | UINT64 key u64
-    | CUSTOM key document       // Used to define none standard costume types
-                                // document is array where the first element is
-                                // contains the name of the type and the value data
     | HASHDOC key hashdoc       // Is the hash pointer to a HiBON 
-    | CRYPTDOC key cryptdoc     // Is the encrypted HiBON document 
-    | CREDENTIAL key credentail // Used to store public key and/or signatures
     | VER u32             // This field sets the version
     | RFU
     | ERROR
@@ -71,7 +66,7 @@ binary     ::= len byte*       // Array of byte containg len elements
 u32        ::= leb128!uint     // leb128 decoded to a 32 bits unsigend integer
 i32        ::= leb128!int      // leb128 decoded to a 32 bits sigend integer
 u64        ::= leb128!ulong    // leb128 decoded to a 64 bits unsigend integer
-i32        ::= leb128!long     // leb128 decoded to a 64 bits sigend integer
+i64        ::= leb128!long     // leb128 decoded to a 64 bits sigend integer
 f32        ::= decode!float    // 32 bits floatingpoint
 f64        ::= decode!double   // 64 bits floatingpoint
 bigint     ::= len uint[] sign // Contains a big-integer value stored on multible of 4 bytes which represents
@@ -91,23 +86,20 @@ null       ::= '\x00'          // Define as one byte with the value of zero
 key_index  ::= null u32     // Defined the key as an unsigend 32 bits number used for document arrays
 key_string ::= len key_text   // Is a key subset of the ascii see rule 1. 
 // Type codes
-FLOAT64    ::= '\x01'
-FLOAT32    ::= '\x21'
-STRING     ::= '\x02'
-DOCUMENT   ::= '\x03'
-BINARY     ::= '\x05'
-CRYPTDOC   ::= '\x06'
+STRING     ::= '\x01'
+DOCUMENT   ::= '\x02'
+BINARY     ::= '\x03'
 BOOLEAN    ::= '\x08'
-UTC        ::= '\x09'
-INT32      ::= '\x10'
+TIME       ::= '\x09'
+HASHDOC    ::= '\x0F'
+INT32      ::= '\x11'
 INT64      ::= '\x12'
-UINT32     ::= '\x20'
-UINT64     ::= '\x22'
-HASHDOC    ::= '\x23'
-BIGINT     ::= '\x1B'
-CREDENTIAL ::= '\x1F'
-CUSTOM     ::= '\x23'
-VER        ::- '\x3F'
+UINT32     ::= '\x13'
+UINT64     ::= '\x14'
+FLOAT32    ::= '\x17'
+FLOAT64    ::= '\x18'
+BIGINT     ::= '\x1A'
+VER        ::- '\x1F'
 // Following types must result in an format error
 RFC        ::= '\x40' | '\x7e' | '\x80' | '\xC3' | '\xFE' | '\xC2' | '\x13'
 ERROR      ::= others 

@@ -1,4 +1,4 @@
-module tagion.actor.TaskWrapper;
+module tagion.taskwrapper.TaskWrapper;
 
 import std.stdio;
 import std.format;
@@ -65,6 +65,7 @@ alias TaskInfo = Tuple!(Tid, "tid", string, "task_name");
 }
 
 unittest {
+    log.silent = true;
     TidTable table;
     assert(table.empty);
 
@@ -98,7 +99,8 @@ unittest {
     import std.traits : Parameters, ParameterIdentifierTuple, isFunction, isDelegate, isFunctionPointer, hasUDA;
     import std.meta : AliasSeq;
     import std.exception;
-import std.typecons : Typedef;
+    import std.typecons : Typedef;
+
     alias Params = Parameters!Func;
     alias ParamNames = ParameterIdentifierTuple!Func;
 
@@ -179,6 +181,7 @@ import std.typecons : Typedef;
 
 @safe mixin template TaskBasic() {
     import std.typecons : Typedef;
+
     bool stop;
     // TODO Do we need handle also "abort"?
 
@@ -239,13 +242,12 @@ version (unittest) @safe struct FakeTask {
 }
 
 @safe unittest {
+    log.silent = true;
     import tagion.prior_services.Options : Options, setDefaultOption;
     import tagion.prior_services.LoggerService;
     import tagion.logger.Logger;
 
     enum main_task = "taskwrapperunittest";
-
-    log.silent = true;
 
     Options options;
     setDefaultOption(options);
@@ -286,5 +288,4 @@ version (unittest) @safe struct FakeTask {
 
     // TODO: add tests for tasks table
 
-    log.silent = false;
 }

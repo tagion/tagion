@@ -22,7 +22,7 @@ import tagion.prior_services.LogSubscriptionService : logSubscriptionServiceTask
 import tagion.prior_services.Options : Options, setOptions, options;
 import tagion.logger.Logger;
 import tagion.logger.LogRecords;
-import tagion.actor.TaskWrapper;
+import tagion.taskwrapper.TaskWrapper;
 
 mixin TrustedConcurrency;
 

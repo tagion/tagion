@@ -17,7 +17,6 @@ import tagion.dart.Recorder : Archive, RecordFactory;
 
 import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 import tagion.testbench.tools.Environment;
-import tagion.actor.TaskWrapper;
 import tagion.utils.Miscellaneous : toHexString;
 import tagion.testbench.dart.dartinfo;
 
