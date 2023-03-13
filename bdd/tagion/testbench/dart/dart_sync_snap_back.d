@@ -63,7 +63,6 @@ class SyncToAnotherDb {
     }
     @Given("I have a dartfile with one archive.")
     Document archive() {
-        writefln("wowo");
         Exception dart_exception;
         db1 = new DART(info.net, info.dartfilename, dart_exception); 
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
