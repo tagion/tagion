@@ -1,0 +1,9 @@
+# Block file recycler
+
+
+```graphviz
+digraph {
+   a [shape=record label="left | {above|middle|below} | <f1>right"]
+   b [shape=record label="{row1\l|row2\r|{row3\nleft|<f2>row3\nright}|row4}"]
+}
+```

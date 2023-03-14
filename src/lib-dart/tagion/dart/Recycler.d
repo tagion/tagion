@@ -43,22 +43,6 @@ struct Recycler {
         segments = new Segments;
     }
 
-    version (none) BlockIndex next(const BlockIndex index) const pure {
-        auto next_range = indices.lowerBound(index);
-        if (next_range.empty) {
-            return NullIndex;
-        }
-        return next_range.front;
-    }
-
-    version (none) BlockIndex previous(const BlockIndex index) const pure {
-        auto previous_range = indices.upperBound(index);
-        if (previous_range.empty) {
-            return NullIndex;
-        }
-        return previous_range.back;
-    }
-
     protected void insert(const(Segment)* segment) pure {
         indices.insert(segment);
         segments.insert(segment);
@@ -74,7 +58,7 @@ struct Recycler {
             insert(segment);
             return;
         }
-
+        
     }
 
     invariant {
@@ -88,7 +72,6 @@ struct Recycler {
         import std.range : slide;
         import std.algorithm.searching : any;
         import std.algorithm.iteration : map;
-version(none)
         if (indices.length <= 1) {
             return false;
         }
@@ -105,20 +88,6 @@ version(none)
             .map!(slice => overlaps(slice))
             .any;
     }
-}
-
-import std.traits;
-import std.range;
-
-Recurrence!(fun, CommonType!(State), State.length)
-_recurrence(alias fun, State...)(State initial) {
-    pragma(msg, "State ", State);
-    pragma(msg, "CommonType!State ", CommonType!State);
-    CommonType!(State)[State.length] state;
-    foreach (i, Unused; State) {
-        state[i] = initial[i];
-    }
-    return typeof(return)(state);
 }
 
 version (unittest) {
