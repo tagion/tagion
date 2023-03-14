@@ -18,8 +18,6 @@
 
 [actor_message.md](bdd/tagion/testbench/services/actor_message.md)
 
-[actor_request_response.md](bdd/tagion/testbench/services/actor_request_response.md)
-
 [Implement_the_epoch_block_chain.md](bdd/tagion/testbench/backlog/Implement_the_epoch_block_chain.md)
 
 [ContractInterface_service.md](bdd/tagion/testbench/backlog/ContractInterface_service.md)
@@ -60,9 +58,9 @@
 
 [dart_middle_branch.md](bdd/tagion/testbench/dart/dart_middle_branch.md)
 
-[basic_dart_partial_sync.md](bdd/tagion/testbench/dart/basic_dart_partial_sync.md)
-
 [dart_stress_test.md](bdd/tagion/testbench/dart/dart_stress_test.md)
+
+[basic_dart_partial_sync.md](bdd/tagion/testbench/dart/basic_dart_partial_sync.md)
 
 [dart_mapping_two_archives.md](bdd/tagion/testbench/dart/dart_mapping_two_archives.md)
 

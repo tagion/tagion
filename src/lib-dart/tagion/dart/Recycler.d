@@ -73,7 +73,7 @@ struct Recycler {
         import std.algorithm.searching : any;
         import std.algorithm.iteration : map;
         if (indices.length <= 1) {
-            return false;
+            return true;
         }
         /// Check a pair of segments overlaps
         static bool overlaps(R)(ref R pair) pure nothrow @nogc {
