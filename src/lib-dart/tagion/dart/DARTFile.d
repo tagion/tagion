@@ -512,9 +512,6 @@ alias check = Check!DARTException;
             if (merkleroot is null) {
                 foreach (key, index; _indices) {
                     if ((index !is INDEX_NULL) && (_fingerprints[key] is null)) {
-
-                        
-
                             .check((index in index_used) is null,
                                     format("The DART contains a recursive tree @ index %d", index));
                         index_used[index] = true;
@@ -1828,45 +1825,71 @@ alias check = Check!DARTException;
                 assert(dart_A.fingerprint == dart_B.fingerprint);
             })();
         }
-        version (none) { //Read stubs test
-            writeln("FROM THIS");
-            auto rand = Random!ulong(1234_5678_9012_345UL);
-            enum N = 50;
-            auto random_table = new ulong[N];
-            auto random_stubs = new ulong[N];
-            foreach (ref r; random_table) {
-                r = rand.value(0x20_21_22_36_40_50_80_90, 0x20_26_22_36_40_50_80_90);
-            }
+        {
+            // The bug we want to find
+            //  EYE: abb913ab11ef1234000000000000000000000000000000000000000000000000
+            //  | AB [17]
+            //  | .. | B9 [16]
+            //  | .. | .. | 13 [15]
+            //  | .. | .. | .. | AB [14]
+            //  | .. | .. | .. | .. abb913ab11ef1234000000000000000000000000000000000000000000000000 [7]
+            // As it can be seen the branch has not snapped back to the first rim. The database should instead look like 
+            // this:
+            //  | AB [17]
+            //  | .. | .. abb913ab11ef1234000000000000000000000000000000000000000000000000 [7]
 
-            foreach (ref r; random_stubs) {
-                r = rand.value(0x20_27_22_36_40_50_80_90, 0x20_29_22_36_40_50_80_90);
-            }
+            import std.algorithm : map;
+            import std.stdio : writefln;
             DARTFile.create(filename_A);
-            DARTFile.create(filename_B);
-
             auto dart_A = new DARTFile(net, filename_A);
-            auto dart_B = new DARTFile(net, filename_B);
-            Recorder recorder_A;
-            Recorder recorder_B;
 
-            write(dart_A, random_table, recorder_A);
-            write(dart_A, random_stubs, recorder_B, true);
-            // recorder_B.dump;
-            // dart_A.dump;
+            const ulong[] deep_table = [
+                0xABB9_13ab_11ef_01,
+                0xABB9_13ab_11ef_02,
+            ];
 
-            auto rec = dart_A.readStubs();
-            // rec.dump;
+            auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
+            auto recorder = dart_A.recorder();
+            foreach(doc; docs) {
+                recorder.add(doc);
+            }
+            auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
+            writefln("%s", remove_fingerprint);
+            
+            dart_A.modify(recorder);
+            dart_A.dump();
 
-            dart_B.modify(rec);
-            // dart_B.dump;
-            // dart_A.dump;
+            auto remove_recorder = dart_A.recorder();
+            remove_recorder.remove(remove_fingerprint);
+            dart_A.modify(remove_recorder);
+            dart_A.dump();
+            
 
-            // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
-            assert(dart_A.fingerprint == dart_B.fingerprint);
 
-            // Check fingerprint on load
-            auto read_dart_A = new DARTFile(net, filename_A);
-            writefln("read_dart_A %s", read_dart_A.fingerprint.cutHex);
+            // bug fixing
         }
+        {
+            // this test is just a support to see how the real result should be of the previous test.
+            DARTFile.create(filename_A);
+            auto dart_A = new DARTFile(net, filename_A);
+
+            const ulong archive = 0xABB9_13ab_11ef_02;
+
+            auto doc = DARTFakeNet.fake_doc(archive);
+            auto recorder = dart_A.recorder();
+            
+            
+            recorder.add(doc);
+            
+            auto fingerprint = DARTIndex(recorder[].front.fingerprint);
+            dart_A.modify(recorder);
+
+            dart_A.dump();
+            assert(dart_A.bullseye == fingerprint);
+            
+            
+        }
+
+        
     }
 }
