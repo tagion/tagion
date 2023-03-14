@@ -50,7 +50,7 @@ jobs:
           path: build/${{ env.TARGET_BUILD }}/bin/tagion
           retention-days: ${{ env.RETENTION_DAYS_BINS }}
       - name: Set current date as env variable
-        run: echo "NOW=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
+        run: echo "NOW=$(date +%s)" >> $GITHUB_ENV
       - id: commit
         uses: pr-mpt/actions-commit-hash@v2
       - run: |
