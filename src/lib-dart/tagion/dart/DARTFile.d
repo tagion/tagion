@@ -934,7 +934,7 @@ alias check = Check!DARTException;
      * The modify_records contains the archives which is going to be added or deleted
      * The type of archive tells which actions are going to be performed by the modifier
      * If the function executes succesfully then the DART is update or else it does not affect the DART
-     * The function return the bulleye of the dart
+     * The function returns the bullseye of the dart
      */
     Buffer modify(const(RecordFactory.Recorder) modify_records, GetType get_type = null) {
         if (get_type is null) {
@@ -1826,7 +1826,7 @@ alias check = Check!DARTException;
                 assert(dart_A.fingerprint == dart_B.fingerprint);
             })();
         }
-        {
+        { 
             // The bug we want to find
             //  EYE: abb913ab11ef1234000000000000000000000000000000000000000000000000
             //  | AB [17]
@@ -1841,78 +1841,80 @@ alias check = Check!DARTException;
 
             import std.algorithm : map;
             import std.range : empty;
-            DARTFile.create(filename_A);
-            auto dart_A = new DARTFile(net, filename_A);
-
-            const ulong[] deep_table = [
-                0xABB9_13ab_11ef_0123,
-                0xABB9_13ab_11ef_0234,
-            ];
-
-            auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-            auto recorder = dart_A.recorder();
-            foreach(doc; docs) {
-                recorder.add(doc);
-            }
-            auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
-            // writefln("%s", remove_fingerprint);
-            
-            dart_A.modify(recorder);
-            dart_A.dump();
-
-            auto remove_recorder = dart_A.recorder();
-            remove_recorder.remove(remove_fingerprint);
-            dart_A.modify(remove_recorder);
-            dart_A.dump();
-
-
-
             bool hasArchive(Branches branches) {
-
                 auto full_branches = branches.fingerprints
                                             .filter!(f => !f.empty)
                                             .array;
-                return full_branches.length > 1;
-                
+                writefln("number of branches %s", full_branches.length);
+                return full_branches.length == 0;
             }
-            ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x11, 0xef];
+            
+            {
+
+                DARTFile.create(filename_A);
+                auto dart_A = new DARTFile(net, filename_A);
+
+                const ulong[] deep_table = [
+                    0xABB9_13ab_11ef_0123,
+                    0xABB9_13ab_11ef_0234,
+                ];
+
+                auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
+                auto recorder = dart_A.recorder();
+                foreach(doc; docs) {
+                    recorder.add(doc);
+                }
+                auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
+                // writefln("%s", remove_fingerprint);
+            
+                dart_A.modify(recorder);
+                dart_A.dump();
+
+                auto remove_recorder = dart_A.recorder();
+                remove_recorder.remove(remove_fingerprint);
+                dart_A.modify(remove_recorder);
+                dart_A.dump();
+
+                ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x11, 0xef];
 
         
-            auto branches = dart_A.branches(rim_path[0..3]);
-            writefln("TOP BRANCH PASS: %s", hasArchive(branches));
+                auto branches = dart_A.branches(rim_path[0..3]);
+                writefln("TOP BRANCH PASS: %s", hasArchive(branches));
             
             
-            auto deep_branches = dart_A.branches(rim_path);
-            writefln("DEEP BRANCH PASS: %s", hasArchive(deep_branches)); 
+                auto deep_branches = dart_A.branches(rim_path);
+                writefln("DEEP BRANCH PASS: %s", !hasArchive(deep_branches)); 
                       
-        }
-        {
-            // this test is just a support to see how the real result should be of the previous test.
-            DARTFile.create(filename_A);
-            auto dart_A = new DARTFile(net, filename_A);
+            }
+            {
+                // this test is just a support to see how the real result should be of the previous test.
+                DARTFile.create(filename_A);
+                auto dart_A = new DARTFile(net, filename_A);
 
-            const ulong archive = 0xABB9_13ab_11ef_0223;
+                const ulong archive = 0xABB9_13ab_11ef_0234;
 
-            auto doc = DARTFakeNet.fake_doc(archive);
-            auto recorder = dart_A.recorder();
+                auto doc = DARTFakeNet.fake_doc(archive);
+                auto recorder = dart_A.recorder();
             
             
-            recorder.add(doc);
+                recorder.add(doc);
             
-            auto fingerprint = DARTIndex(recorder[].front.fingerprint);
-            dart_A.modify(recorder);
+                auto fingerprint = DARTIndex(recorder[].front.fingerprint);
+                dart_A.modify(recorder);
 
-            // dart_A.dump();
-            assert(dart_A.bullseye == fingerprint);
+                // dart_A.dump();
+                assert(dart_A.bullseye == fingerprint);
             
-            ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x11, 0xef];
+                ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x11, 0xef];
 
+                auto branches = dart_A.branches(rim_path[0..3]);
+                writefln("TOP BRANCH PASS: %s", hasArchive(branches));
             
-            foreach(i, rim; rim_path) {
-                auto branches = dart_A.branches(rim_path[0..i+1]);
-                // writefln("%(%02X %) %s", rim_path[0..i+1],  branches.toPretty);
-            } 
             
+                auto deep_branches = dart_A.branches(rim_path);
+                writefln("DEEP BRANCH PASS: %s", !hasArchive(deep_branches));             
+           
+            }
         }
 
         
