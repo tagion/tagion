@@ -46,11 +46,12 @@ int _main(string[] args) {
        
 
         const ulong samples = 10_000_000;
+        const ulong number_of_records = 10_000;
         dart_info.fixed_states = DartInfo.generateFixedStates(samples);
 
         auto dart_ADD_stress_feature = automation!(dart_stress_test)();
 
-        dart_ADD_stress_feature.AddPseudoRandomData(dart_info, samples);
+        dart_ADD_stress_feature.AddPseudoRandomData(dart_info, samples, number_of_records);
 
         auto dart_ADD_stress_context = dart_ADD_stress_feature.run();
 

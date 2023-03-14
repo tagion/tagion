@@ -77,7 +77,8 @@ class FullSync {
                     .map!(archive => putInSector(archive, angle, size))).array;
 
         db1_fingerprints = randomAdd(sector_states, MinstdRand0(65), db1);
-
+        check(!db1_fingerprints.empty, "No fingerprints added");
+        
         return result_ok;
     }
 
