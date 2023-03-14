@@ -54,16 +54,15 @@ jobs:
       - id: commit
         uses: pr-mpt/actions-commit-hash@v2
       - run: |
-          mkdir build/${{ env.TARGET_BUILD }}/bin/tagion_bin
-          cp build/${{ env.TARGET_BUILD }}/bin/tagion build/${{ env.TARGET_BUILD }}/bin/tagion_bin/
+          mkdir build/${{ env.TARGET_BUILD }}/bin/${{ env.NOW }}_tagion_${{ steps.commit.outputs.short }}
+          cp build/${{ env.TARGET_BUILD }}/bin/tagion build/${{ env.TARGET_BUILD }}/bin/${{ env.NOW }}_tagion_${{ steps.commit.outputs.short }}/
       - name: Upload to S3
         uses: shallwefootball/s3-upload-action@master
         with:
           aws_key_id: ${{ secrets.AWS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
           aws_bucket: ${{ secrets.AWS_BUCKET }}
-          source_dir: build/${{ env.TARGET_BUILD }}/bin/tagion_bin
-          destination_dir: ${{ env.NOW }}_tagion_${{ steps.commit.outputs.short }}
+          source_dir: build/${{ env.TARGET_BUILD }}/bin/${{ env.NOW }}_tagion_${{ steps.commit.outputs.short }}
 
       
   create_tagion_images:
