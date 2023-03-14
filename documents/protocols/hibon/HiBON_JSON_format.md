@@ -54,7 +54,7 @@ Form a converter to be able complaint with HiBON and JSON conversion standard. T
 
 This examples contains all the types in HiBON as an HiBON object inside and HiBON object.
 
-```JSON
+```json
 {
     "BIGINT": [
         "big",
@@ -123,7 +123,7 @@ Same value as test sample 1 except that index is use to store data.
 
 Note. Because the inner object is name "sub_hibon" the main HiBON is defined as an object.
 
-```JSON
+```json
 {
     "0": [
         "f32",
@@ -190,7 +190,7 @@ HiBON data are shown as array of byte values
 
 Same value as test sample 1 and 2 except that is all stored in array.
 
-```JSON
+```json
 [
     [
         "f32",
