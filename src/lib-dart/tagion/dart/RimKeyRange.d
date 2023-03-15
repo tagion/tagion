@@ -3,7 +3,7 @@ import std.range;
 import tagion.dart.Recorder;
 import std.traits : ReturnType;
 import std.random;
-import std.algorithm : filter, map;
+import std.algorithm : filter, map, joiner;
 import std.stdio : writefln;
 
 
@@ -161,8 +161,8 @@ unittest {
     auto net = new DARTFakeNet;
 
 
-    auto getDocs(const ulong start, const uint amount) {
-        auto start = Random!ulong(start);
+    auto getDocs(const ulong random_number, const uint amount) {
+        auto start = Random!ulong(random_number);
         auto rand_range = recurrence!(q{a[n-1].drop(1)})(start);
 
         auto rand_range_result = rand_range
@@ -173,23 +173,23 @@ unittest {
     }
     
 
-    auto archives_ADD = docs.map!(d => new Archive(net, d, Archive.Type.ADD));
-    auto archives_REMOVE = docs.map!(d => new Archive(net, d, Archive.Type.REMOVE));
+    auto archives_ADD = getDocs(0x1234, 100).array.map!(d => new Archive(net, d, Archive.Type.ADD));
+    auto archives_REMOVE = getDocs(0x1234, 100).array.map!(d => new Archive(net, d, Archive.Type.REMOVE));
     
     {
         auto archives = chain(archives_ADD, archives_REMOVE);
-        foreach(archive; archives) {
-            writefln("%s", archive);
-        }
+        // foreach(archive; archives) {
+        //     writefln("%s", archive);
+        // }
     }
 
     {
         auto archives = chain(archives_REMOVE, archives_ADD);
     }
 
-    {
-        auto archives = chain(archives_ADD, archives_REMOVE).randomShuffle(MinstdRand0(45));
-    }
+    // {
+    //     auto archives = chain(archives_ADD, archives_REMOVE).array.randomShuffle(MinstdRand0(45));
+    // }
 
     
 
