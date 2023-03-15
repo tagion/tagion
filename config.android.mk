@@ -1,84 +1,94 @@
+# Should be general condition for linux-android independent of arch
+ifeq ($(TARGET), aarch64-linux-android)
+ANDROID_API?=21
 
-ANDROID_TOOLCHAIN=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(OS)-$(ARCH)
+ANDROID_TOOLCHAIN?=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(OS)-$(ARCH)
+
 CC=$(ANDROID_TOOLCHAIN)/$(TRIPLET)$(ANDROID_API)-clang
 AR=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)-ar
 AS=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)-as
-CC=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)$(API)-clang
-CXX=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)$(API)-clang++
+CC=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)$(ANDROID_API)-clang
+CXX=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)$(ANDROID_API)-clang++
 LD=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)-ld
 RANLIB=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)-ranlib
 STRIP=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)-strip
 
-# ---
+## Still need to see if can somehow specify the ldc's lib-dirs from commandline
+ANDROID_LDC_LIBS=$(ANDROID_LDC)
+
+CROSS_ENABLED=1
+endif
+
+# -- # # ---
 ifdef ANDROID_TOOLS
-ANDROID_API?=30
-
-ANDROID_HOST=${call join-with,-,$(GETHOSTOS) $(GETARCH)}
-
-ANDROID_OS=android
-export ANDROID_ROOT=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(ANDROID_HOST)
-export ANDROID_TOOLCHAIN=$(ANDROID_ROOT)/bin
-
-export ANDROID_LD=$(ANDROID_TOOLCHAIN)/ld
-export ANDROID_CC=$(ANDROID_TOOLCHAIN)/clang
-export ANDROID_CPP=$(ANDROID_TOOLCHAIN)/clang++
-export ANDROID_CROSS_CC=$(ANDROID_TOOLCHAIN)/$(TRIPPLE)
-
-export ANDROID_SYSROOT=${abspath $(ANDROID_TOOLCHAIN)/../sysroot}
-export ANDROID_LIBPATH=${abspath $(ANDROID_TOOLCHAIN)/../lib}
-export ANDROID_USRLIB=${abspath $(ANDROID_SYSROOT)/usr/lib}
-
-export ANDROID_CLANG_VER?=${shell ${ANDROID_CC} --version | $(DTUB)/clang_version.pl}
-
-export ANDROID_CMAKE =$(ANDROID_NDK)/build/cmake/android.toolchain.cmake
-
-#export ANDROID_LIBPATH =$(/lib64/clang/12.0.8/lib/linux/aarch64
-
-#
-# Android link flags
-#
-export ANDROID_LDFLAGS
-ANDROID_LDFLAGS+=-z noexecstack
-ANDROID_LDFLAGS+=-EL
-ANDROID_LDFLAGS+=--warn-shared-textrel
-ANDROID_LDFLAGS+=-z now
-ANDROID_LDFLAGS+=-z relro
-ANDROID_LDFLAGS+=-z max-page-size=4096
-ANDROID_LDFLAGS+=--hash-style=gnu
-ANDROID_LDFLAGS+=--enable-new-dtags
-ANDROID_LDFLAGS+=--eh-frame-hdr
-ANDROID_LDFLAGS+=-L$(ANDROID_LIBPATH)/gcc/$(PLATFORM)/4.9.x
-ANDROID_LDFLAGS+=-L$(ANDROID_USRLIB)/$(PLATFORM)/$(ANDROID_API)
-ANDROID_LDFLAGS+=-L$(ANDROID_USRLIB)/$(PLATFORM)
-ANDROID_LDFLAGS+=-L$(ANDROID_USRLIB)
-ANDROID_LDFLAGS+=-l:libunwind.a
-ANDROID_LDFLAGS+=-ldl
-ANDROID_LDFLAGS+=-lc
-ANDROID_LDFLAGS+=-lm
-
-#
-#
-#
-export ANDROID_DFLAGS
-ANDROID_DFLAGS+=-mtriple=$(TRIPLET)
-ANDROID_DFLAGS+=-Xcc=--sysroot=$(ANDROID_SYSROOT)
-
-#ANDROID_CONFIG_MK:=$(DBUILD)/gen.android.mk
-
-target-android: $(DBUILD)
-target-android: ANDROID_LDFLAGS+=${shell find $(DTMP_SECP256K1)/src/.libs -name "*.o"}
-
-#target-android: $(ANDROID_CONFIG_MK)
-
-
-$(ANDROID_CONFIG_MK): $(DBUILD)
-	env | $(DTUB)/copy_env.d -r "^ANDROID_" -w "CROSS_" -t target-android -e ANDROID_ENABLED >  $(ANDROID_CONFIG_MK)
-
-#-include $(ANDROID_CONFIG_MK)
-
-target-android:
-	@echo $(CROSS_OS)
-	@echo $(CROSS_CC)
+# -- # ANDROID_API?=30
+# -- # 
+# -- # ANDROID_HOST=${call join-with,-,$(GETHOSTOS) $(GETARCH)}
+# -- # 
+# -- # ANDROID_OS=android
+# -- # export ANDROID_ROOT=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(ANDROID_HOST)
+# -- # export ANDROID_TOOLCHAIN=$(ANDROID_ROOT)/bin
+# -- # 
+# -- # export ANDROID_LD=$(ANDROID_TOOLCHAIN)/ld
+# -- # export ANDROID_CC=$(ANDROID_TOOLCHAIN)/clang
+# -- # export ANDROID_CPP=$(ANDROID_TOOLCHAIN)/clang++
+# -- # export ANDROID_CROSS_CC=$(ANDROID_TOOLCHAIN)/$(TRIPPLE)
+# -- # 
+# -- # export ANDROID_SYSROOT=${abspath $(ANDROID_TOOLCHAIN)/../sysroot}
+# -- # export ANDROID_LIBPATH=${abspath $(ANDROID_TOOLCHAIN)/../lib}
+# -- # export ANDROID_USRLIB=${abspath $(ANDROID_SYSROOT)/usr/lib}
+# -- # 
+# -- # export ANDROID_CLANG_VER?=${shell ${ANDROID_CC} --version | $(DTUB)/clang_version.pl}
+# -- # 
+# -- # export ANDROID_CMAKE =$(ANDROID_NDK)/build/cmake/android.toolchain.cmake
+# -- # 
+# -- # #export ANDROID_LIBPATH =$(/lib64/clang/12.0.8/lib/linux/aarch64
+# -- # 
+# -- # #
+# -- # # Android link flags
+# -- # #
+# -- # export ANDROID_LDFLAGS
+# -- # ANDROID_LDFLAGS+=-z noexecstack
+# -- # ANDROID_LDFLAGS+=-EL
+# -- # ANDROID_LDFLAGS+=--warn-shared-textrel
+# -- # ANDROID_LDFLAGS+=-z now
+# -- # ANDROID_LDFLAGS+=-z relro
+# -- # ANDROID_LDFLAGS+=-z max-page-size=4096
+# -- # ANDROID_LDFLAGS+=--hash-style=gnu
+# -- # ANDROID_LDFLAGS+=--enable-new-dtags
+# -- # ANDROID_LDFLAGS+=--eh-frame-hdr
+# -- # ANDROID_LDFLAGS+=-L$(ANDROID_LIBPATH)/gcc/$(PLATFORM)/4.9.x
+# -- # ANDROID_LDFLAGS+=-L$(ANDROID_USRLIB)/$(PLATFORM)/$(ANDROID_API)
+# -- # ANDROID_LDFLAGS+=-L$(ANDROID_USRLIB)/$(PLATFORM)
+# -- # ANDROID_LDFLAGS+=-L$(ANDROID_USRLIB)
+# -- # ANDROID_LDFLAGS+=-l:libunwind.a
+# -- # ANDROID_LDFLAGS+=-ldl
+# -- # ANDROID_LDFLAGS+=-lc
+# -- # ANDROID_LDFLAGS+=-lm
+# -- # 
+# -- # #
+# -- # #
+# -- # #
+# -- # export ANDROID_DFLAGS
+# -- # ANDROID_DFLAGS+=-mtriple=$(TRIPLET)
+# -- # ANDROID_DFLAGS+=-Xcc=--sysroot=$(ANDROID_SYSROOT)
+# -- # 
+# -- # #ANDROID_CONFIG_MK:=$(DBUILD)/gen.android.mk
+# -- # 
+# -- # target-android: $(DBUILD)
+# -- # target-android: ANDROID_LDFLAGS+=${shell find $(DTMP_SECP256K1)/src/.libs -name "*.o"}
+# -- # 
+# -- # #target-android: $(ANDROID_CONFIG_MK)
+# -- # 
+# -- # 
+# -- # $(ANDROID_CONFIG_MK): $(DBUILD)
+# -- # 	env | $(DTUB)/copy_env.d -r "^ANDROID_" -w "CROSS_" -t target-android -e ANDROID_ENABLED >  $(ANDROID_CONFIG_MK)
+# -- # 
+# -- # #-include $(ANDROID_CONFIG_MK)
+# -- # 
+# -- # target-android:
+# -- # 	@echo $(CROSS_OS)
+# -- # 	@echo $(CROSS_CC)
 
 
 env-android:
