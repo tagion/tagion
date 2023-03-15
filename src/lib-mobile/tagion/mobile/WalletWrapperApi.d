@@ -62,12 +62,13 @@ export static int64_t stop_rt() {
     }
     return -1;
 }
-//const uint8_t* data_ptr, const uint32_t len
-export uint wallet_create(const uint8_t* pincodePtr, const uint32_t pincodeLen, const uint32_t aes_doc_id,
+//const uint8_t* data_ptr, const uint32_t len                                                  /// Not used
+export uint wallet_create(const uint8_t* pincodePtr, const uint32_t pincodeLen, const uint32_t __aes_doc_id,
         const char* questionsPtr, const uint32_t qestionslen, const char* answersPtr,
         const uint32_t answerslen, uint32_t confidence) {
     immutable pincode = cast(immutable)(pincodePtr[0 .. pincodeLen]);
 
+    const aes_doc_id = generateAESKey(0);
     const aes_key_data = recyclerDoc(aes_doc_id);
 
     immutable decr_pincode = decrypt(pincode, aes_key_data);
