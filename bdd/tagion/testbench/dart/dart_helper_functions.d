@@ -62,7 +62,6 @@ Document getRead(const DARTIndex[] fingerprints, HiRPC hirpc, DART db) @safe {
  * Returns: Document with split, or the last document able to be retrieved if no splits.
  */
 Document goToSplit(const DART.Rims rim, const HiRPC hirpc, DART db) @safe {
-    writefln("running with %s", rim);
     const rim_doc = getRim(rim, hirpc, db);
 
     if (DARTFile.Branches.isRecord(rim_doc)) {
