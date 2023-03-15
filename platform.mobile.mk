@@ -6,12 +6,16 @@ DINC?=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 # Betterc source files
 # DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc/*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
 DFILESSS+=${shell fd -e d . src/lib-mobile}
+
 # LIBSECP=/home/lucas/wrk/tagion/src/wrap-secp256k1/secp256k1/.libs/libsecp256k1_la-secp256k1.o
 LIBSECP+=/home/lucas/wrk/tagion/libsecp256k1.a
 MTRIPLE=aarch64-android-linux
 TARGET?=-mtriple=$(MTRIPLE) 
 # DFLAGS+=--relocation-model=pic 
-#
+DFLAGS+=--link-defaultlib-shared=false
+DFLAGS+=--g
+# DFLAGS+=--betterC
+# DFILESSS+=${shell fd -e d . src/lib-betterc/}
 
 
 # We need the hosts precompiled runtime libraries and linker from android
@@ -35,7 +39,7 @@ platform-mobile:
 platform-nolink:
 	$(DC) $(TARGET) $(DFLAGS) -c -i ${addprefix -I,$(DINC)} $(LIBSECP) ${sort $(DFILESSS)} -od=$(DBUILD)
 
-platform-main: DFILESSS+=src/lib-mobile/app.d
+platform-main: DFILESSS+=app.d
 platform-main: DFLAGS+=-g
 platform-main:
 	$(DC) $(TARGET) $(DFLAGS) -i ${addprefix -I,$(DINC)} $(LIBSECP) ${sort $(DFILESSS)} -of=$(DBUILD)/d_create_wallet
