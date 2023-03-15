@@ -17,7 +17,6 @@ STRIP=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)-strip
 ANDROID_LDC_LIBS=$(ANDROID_LDC)
 
 CROSS_ENABLED=1
-endif
 
 env-android:
 	$(PRECMD)
