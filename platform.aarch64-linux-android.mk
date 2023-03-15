@@ -19,10 +19,6 @@ CROSS_ARCH=aarch64
 ANDROID_ARCH=$(ANDROID_AARCH64)
 DFLAGS+=-mtriple=$(PLATFORM)
 
-env-android:
-	$(PRECMD)
-	echo $(ANDROID_NDK)
-
-env: env-android
+${call DDEPS,$(DBUILD),$(DFILES)}
 
 endif

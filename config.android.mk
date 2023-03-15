@@ -1,5 +1,5 @@
 # Should be general condition for linux-android independent of arch
-ifeq ($(PLATFORM), aarch64-linux-android)
+ifeq ($(TARGET), aarch64-linux-android)
 ANDROID_API?=21
 
 ANDROID_TOOLCHAIN?=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(OS)-$(ARCH)
@@ -17,7 +17,6 @@ STRIP=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)-strip
 ANDROID_LDC_LIBS=$(ANDROID_LDC)
 
 CROSS_ENABLED=1
-endif
 
 env-android:
 	$(PRECMD)
