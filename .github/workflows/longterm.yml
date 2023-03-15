@@ -55,7 +55,7 @@ jobs:
         uses: pr-mpt/actions-commit-hash@v2
       - run: |
           tar -czvf ${{ env.NOW }}_tagion_${{ steps.commit.outputs.short }}.tar.gz ./build/${{ env.TARGET_BUILD }}/bin/tagion
-          export AWS_KEY_ID=${{ secrets.AWS_KEY_ID }}
+          export AWS_ACCESS_KEY_ID=${{ secrets.AWS_KEY_ID }}
           export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY}}
           aws s3 cp ${{ env.NOW }}_tagion_${{ steps.commit.outputs.short }}.tar.gz s3://core-tagion
           aws s3 ls core-tagion
