@@ -1,5 +1,5 @@
 # Should be general condition for linux-android independent of arch
-ifeq ($(TARGET), aarch64-linux-android)
+ifeq ($(PLATFORM), aarch64-linux-android)
 ANDROID_API?=21
 
 ANDROID_TOOLCHAIN?=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(OS)-$(ARCH)
@@ -17,6 +17,7 @@ STRIP=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)-strip
 ANDROID_LDC_LIBS=$(ANDROID_LDC)
 
 CROSS_ENABLED=1
+endif
 
 env-android:
 	$(PRECMD)
@@ -42,8 +43,25 @@ env: env-android
 help-android:
 	$(PRECMD)
 	${call log.header, $@ :: help}
-	${call log.help, "Configure", "The path to the NDK is by the ANDROID_NDK"}
-	${call log.help, "", "and the SDK version is set by the ANDROID_SDK_NO"}
+	echo '     _________________________________________ '
+	echo '    / It looks like youre trying to cross     \'
+	echo '    | compile for android, did you know that  |'
+	echo '    | you need androids snowflake linker in   |'
+	echo '    | order to that. You can specify it by    |'
+	echo '    | providing the path you android ndk with |'
+	echo '    \ ANDROID_NDK=                            /'
+	echo '     ----------------------------------------- '
+	echo '     \                                         '
+	echo '      \                                        '
+	echo '         __                                    '
+	echo '        /  \                                   '
+	echo '        |  |                                   '
+	echo '        @  @                                   '
+	echo '        |  |                                   '
+	echo '        || |/                                  '
+	echo '        || ||                                  '
+	echo '        |\_/|                                  '
+	echo '        \___/                                  '
 	${call log.help, "make env-android", "Will list the current setting"}
 	${call log.help, "make help-android", "This will show how to change tagion platform change"}
 	${call log.close}
