@@ -168,7 +168,7 @@ A BDD should be executed in order from the first ***Scenario*** to the last and 
 
 The out of the BDD (Feature) should be stored in a file an can be process or analyzed after the test has been performed.
 
-```D
+```d
 /// Example executing the Scenario Some_awesome_feature.
 const senario_result = run!(Some_awesome_feature); 
 

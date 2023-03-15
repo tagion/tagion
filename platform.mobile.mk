@@ -1,11 +1,18 @@
-PLATFORMS+=mobile
+PLATFORMS+=MOBILE
 
 ifeq ($(PLATFORM), mobile)
+
 DINC?=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 # Betterc source files
 # DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc/*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
-DFILES?=${shell fd -e d . src/lib-mobile}
+DFILESSS+=${shell fd -e d . src/lib-mobile}
+# LIBSECP=/home/lucas/wrk/tagion/src/wrap-secp256k1/secp256k1/.libs/libsecp256k1_la-secp256k1.o
+LIBSECP+=/home/lucas/wrk/tagion/libsecp256k1.a
 MTRIPLE=aarch64-android-linux
+TARGET?=-mtriple=$(MTRIPLE) 
+# DFLAGS+=--relocation-model=pic 
+#
+
 
 # We need the hosts precompiled runtime libraries and linker from android
 # LDCHOSTPATH?=/home/lucas/wrk/dondroid/ldc2-1.29.0-android-aarch64/
@@ -22,9 +29,15 @@ MTRIPLE=aarch64-android-linux
 # HACK: not define the arch flags -m32
 CROSS_OS=mobile
 
-platform-mobile: DFLAGS+=-mtriple=$(MTRIPLE) 
-
 platform-mobile:
-	$(DC)  $(DFLAGS) -i ${addprefix -I,$(DINC)} --shared -of=$(DBUILD)/libtagionmobile.so ${sort $(DFILES)}
+	$(DC) $(TARGET) $(DFLAGS) -i ${addprefix -I,$(DINC)} $(LIBSECP) --shared ${sort $(DFILESSS)} -of=$(DBUILD)/libtagionmobile.so
+
+platform-nolink:
+	$(DC) $(TARGET) $(DFLAGS) -c -i ${addprefix -I,$(DINC)} $(LIBSECP) ${sort $(DFILESSS)} -od=$(DBUILD)
+
+platform-main: DFILESSS+=src/lib-mobile/app.d
+platform-main: DFLAGS+=-g
+platform-main:
+	$(DC) $(TARGET) $(DFLAGS) -i ${addprefix -I,$(DINC)} $(LIBSECP) ${sort $(DFILESSS)} -of=$(DBUILD)/d_create_wallet
 
 endif
