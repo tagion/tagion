@@ -1,8 +1,7 @@
 ifdef CROSS_ENABLED
 
 CONFIGUREFLAGS_SECP256K1 += --host=$(TRIPLET)
-CONFIGUREFLAGS_SECP256K1 += --target=$(TRIPLET)
-CONFIGUREFLAGS_SECP256K1 += --with-sysroot=$(CROSS_SYSROOT)
+# CONFIGUREFLAGS_SECP256K1 += --with-sysroot=$(CROSS_SYSROOT)
 
 ifeq ($(findstring ios,$(CROSS_OS)),ios)
 include ${call dir.resolve, cross.ios.mk}
