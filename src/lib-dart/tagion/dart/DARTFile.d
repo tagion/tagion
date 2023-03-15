@@ -939,6 +939,8 @@ alias check = Check!DARTException;
     Buffer modify(const(RecordFactory.Recorder) modify_records, GetType get_type = null) {
         import std.stdio : writefln, writeln;
         import tagion.hibon.HiBONJSON : toPretty;
+        import tagion.utils.Miscellaneous : toHexString;
+
         if (get_type is null) {
             get_type = (a) => a.type;
         }
@@ -1000,11 +1002,11 @@ alias check = Check!DARTException;
                                 immutable rim_key = sub_archive.fingerprint.rim_key(rim);
                                 if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                                     // writefln("sub_archive %s", sub_archive);
-                                    writefln("rim_key: %02X", rim_key);
                                     // it goes through all the levels on the branch and comes to here. At this point it breaks to
                                     // rim 1 which actually seems like the correct behaviour?
+                                    writefln("branch[%02X] %s", rim_key, branches[rim_key].fingerprint.toHexString);
+
                                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1, true);
-                                    writefln("branch[%02X]", rim_key);
                                 }
                             }
                             while (!range.empty);
@@ -1026,6 +1028,7 @@ alias check = Check!DARTException;
                                     range.popFront;
                                     if (single_archive.fingerprint == archive_in_dart.fingerprint) {
                                         if (single_archive.isRemove(get_type)) {
+                                            writefln("single archive remove %s", single_archive.fingerprint.toHexString);
                                             single_archive.doit;
                                             return Leave(INDEX_NULL, null);
                                         }
@@ -1118,7 +1121,6 @@ alias check = Check!DARTException;
                                 immutable rim_key = sub_archive.fingerprint.rim_key(rim);
                                 auto sub_range = RimKeyRange(range, rim);
                                 if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-                                    writefln("onlyremove");
                                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
                                 }
                             }
@@ -1146,7 +1148,8 @@ alias check = Check!DARTException;
             }
             return Leave(INDEX_NULL, null);
         }
-
+        
+        // no reason to have if else here?
         if (modify_records.empty) {
             return _fingerprint;
         }
