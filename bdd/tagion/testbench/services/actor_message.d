@@ -1,10 +1,14 @@
 module tagion.testbench.services.actor_message;
+
+import tagion.actor.Actor;
+import core.time;
+import std.stdio;
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
-import tagion.actor.Actor;
+
 
 enum feature = Feature(
             "Actor messaging",
@@ -20,33 +24,80 @@ alias FeatureContext = Tuple!(
         [])
 class MessageBetweenSupervisorAndChild {
 
-    static struct SuperActor {
-        @task void run() {
-            alias MyActorFactory = ActorHandle!(MyActor);
-            alive;
+    private enum Get {
+        Some,
+        Arg
+    }
+
+    @safe
+    private struct MyActor {
+        long count;
+        string some_name;
+        /**
+        Actor method which sets the str
+        */
+        @method void some(string str) {
+            some_name = str;
+        }
+
+        /// Decrease the count value `by`
+        @method void decrease(int by) {
+            count -= by;
+        }
+
+        /*/1** */ 
+        /** Actor method send a opt to the actor and */ 
+        /** sends back an a response to the owner task */
+        /**1/ */
+        /*@method void get(Get opt) { // reciever */
+        /*    final switch (opt) { */
+        /*    case Get.Some: */
+        /*        sendOwner(some_name); */
+        /*        break; */
+        /*    case Get.Arg: */
+        /*        sendOwner(count); */
+        /*        break; */
+        /*    } */
+        /*} */
+
+        mixin TaskActor; /// Thes the struct into an Actor
+
+        /// UDA @task mark that this is the task for the Actor
+        @task void runningTask(long label) {
+            count = label;
+            //...
+            alive; // Actor is now alive
             while (!stop) {
-                receive;
+                receiveTimeout(100.msecs);
             }
         }
-        mixin TaskActor;
     }
-    
-    static struct ChildActor {
-        string mood = "none";
-        @method void setMood(string str) {
-            mood = str;
-        }
-    }
+    static assert(isActor!MyActor);
+
+    /* @safe */
+    /* static struct MySuperActor { */
+    /*     @task void run() { */
+    /*         alias MyActorFactory = ActorHandle!(MyActor); */
+    /*         alive; */
+    /*         while (!stop) { */
+    /*             receive; */
+    /*         } */
+    /*     } */
+
+    /*     mixin TaskActor; */
+    /* } */
 
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() {
-        auto supervisor_factory = actor!SuperActor;
-        auto child_factory = actor!ChildActor;
+        auto actor_factory = actor!MyActor;
+        /* auto supervisor_factory = actor!MySuperActor; */
 
-        auto supervisor = supervisor_factory("super");
-        auto niñoUno = child_factory("child1");
-        auto niñoDos = child_factory("child2");
+        /* auto supervisor = supervisor_factory("super"); */
+        auto niñoUno = actor_factory("child1", 10);
+        auto niñoDos = actor_factory("child2", 10);
         
+        /* writeln(supervisor); */
+        writefln("CHILD: %s", niñoDos);
         return Document();
     }
 
