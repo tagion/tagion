@@ -2,6 +2,8 @@
 module tagion.utils.Random;
 import std.format;
 
+
+/// Generates a pseudo random sequence
 @safe @nogc
 struct Random(T = uint) {
     @nogc {
@@ -16,20 +18,43 @@ struct Random(T = uint) {
             this.m_w = m_w;
         }
 
+    /**
+     * 
+     * Params:
+     *   seed_value = is the seend of the pseudo random
+     */
         void seed(const T seed_value) pure nothrow {
             m_z = 13 * seed_value;
             m_w = 7 * seed_value;
         }
 
+        /**
+         *  
+         * Returns: next random value 
+         */
         T value() {
             popFront;
             return front;
         }
 
-        T value(const(T) range) {
-            return value % range;
+        /**
+         * 
+         * Params:
+         *   max = sets the max value
+         * Returns: 
+         *   next random value less than max
+         */
+        T value(const(T) max) {
+            return value % max;
         }
 
+        /**
+         * 
+         * Params:
+         *   from = start value
+         *   to = until value
+         * Returns: random value in the range from..to
+         */
         T value(const(T) from, const(T) to)
         in {
             assert(to > from);
@@ -39,17 +64,28 @@ struct Random(T = uint) {
             return (value % range) + from;
         }
 
+        /**
+         * pops the next random value
+         */
         void popFront() pure nothrow {
             m_z = 36_969 * (m_z & T.max) + (m_z >> 16);
             m_w = 18_000 * (m_w & T.max) + (m_w >> 16);
         }
 
+        /**
+         * 
+         * Returns: current random value 
+         */
         T front() const pure nothrow {
             return (m_z << 16) + m_w;
         }
 
         enum bool empty = false;
 
+        /**
+         * Saves the forward range
+         * Returns: new random 
+         */
         Random save() const pure nothrow {
             return Random(m_z, m_w);
         }
@@ -60,12 +96,18 @@ struct Random(T = uint) {
         static assert(isForwardRange!(Random));
         static assert(isInfinite!(Random));
     }
+    /**
+     * 
+     * Returns: inner parameter for the random sequnece 
+     */
     string toString() const pure {
         return format("m_z %s, m_w %s, value %s", m_z, m_w, front);
     }
 
 }
 
+
+///
 @safe
 unittest {
     import std.range : take, drop;
