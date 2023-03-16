@@ -11,10 +11,10 @@ private {
     import std.range;
     import std.algorithm.searching : count, maxElement, all;
     import std.algorithm.comparison : equal;
-
+    
     import std.array : array;
 
-    import std.traits : ReturnType;
+    import std.traits;
     import std.typecons;
     import std.conv : to;
     import core.thread : Fiber;
@@ -103,6 +103,11 @@ void printfp(string msg, const Buffer[] fingerprints) {
         }
     }
 }
+
+static auto createRimKeys(DARTFile.Branches branches) pure nothrow {
+    return branches.fingerprints.enumerate.filter!(f => !f.value.empty).map!(f => f.index);
+}
+
 
 alias check = Check!DARTException;
 
@@ -334,6 +339,41 @@ alias check = Check!DARTException;
                     _fingerprints[e.index] = e.get!(immutable(ubyte)[]).idup;
                 }
             }
+        }
+
+        struct Range {
+
+            ReturnType!(createRimKeys) _range;
+
+
+            this(ref Branches branches) pure nothrow {
+                _range = createRimKeys(branches);
+            }
+
+            bool empty() pure nothrow {
+                return _range.empty;
+            }
+
+            size_t front() pure nothrow {
+                return _range.front;
+            }
+
+            void popFront() pure nothrow {
+                _range.popFront;
+            }
+            
+            Range save() pure nothrow {
+                Range result;
+                result._range = _range;
+                return result;
+            }
+
+            static assert(isInputRange!Range);
+            static assert(isForwardRange!Range);
+        }
+
+        Range opSlice() const pure nothrow {
+            return Range(this);
         }
 
         /* 
