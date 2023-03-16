@@ -1194,15 +1194,22 @@ alias check = Check!DARTException;
                         }
                     }
                     immutable count = branches.count;
+                    __write("COUNT: %s, lonely_rim_key", count, lonely_rim_key);
+                    
+                    version(none)
                     if (count == 0) {
                         return Leave.init;
                     }
+
+                    version(none)
                     if ((count == 1) && (lonely_rim_key !is INDEX_NULL)) {
+                        __write("INSIDE LONELY");
                         // Return the leave if the branches only contain one leave
                         return branches[lonely_rim_key];
                     }
 
-                    __write("creating block file");
+                    __write("save block file, is_single: %s", branches.isSingle);
+
                     return Leave(blockfile.save(branches.toHiBON.serialize)
                             .begin_index, branches.fingerprint(this));
                     
