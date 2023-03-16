@@ -27,14 +27,13 @@
         loadSidebar: true,
 
         search: 'auto', // default
-
         search: [
           '/',            // => /README.md
         ],
 
 		schemas : [
 			["ddoc://", "http://localhost:3001/"],
-			["src://", "https://github.com/tagion/tagion/tree/current-doc/src/"],
+			["src://", "https://github.com/tagion/tagion/tree/current/src/"],
 		],
 
 		  markdown: {
@@ -55,6 +54,7 @@
     <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
     <script src="documents/_static/docsify-var.js"></script>
     <script src="documents/_static/docsify-viz.js"></script>
+	<script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
 	<script src="//cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-d.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script></script>
   </body>
