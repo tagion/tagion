@@ -8,7 +8,7 @@ private {
 
     import std.algorithm.sorting : sort;
     import std.algorithm.iteration : filter, each;
-
+    import std.range;
     import std.algorithm.searching : count, maxElement, all;
     import std.algorithm.comparison : equal;
 
@@ -965,24 +965,24 @@ alias check = Check!DARTException;
             }
         }
 
-        void setBranch(ref Branches branches, const uint rim_key, const Leave leave) {
-            import std.range : enumerate, empty;
-            branches[rim_key] = leave;
-            // __write("before is single: %s", branches.isSingle);
-            if (leave is Leave.init && branches.isSingle) {
-                const single_rim_key = branches.fingerprints
-                                    .enumerate
-                                    .filter!(f => !f.value.empty)
-                                    .front
-                                    .index;
+        // void setBranch(ref Branches branches, const uint rim_key, const Leave leave) {
+        //     import std.range : enumerate, empty;
+        //     branches[rim_key] = leave;
+        //     // __write("before is single: %s", branches.isSingle);
+        //     if (leave is Leave.init && branches.isSingle) {
+        //         const single_rim_key = branches.fingerprints
+        //                             .enumerate
+        //                             .filter!(f => !f.value.empty)
+        //                             .front
+        //                             .index;
                 
                 
-                __write("need snapback!");
-                const single_leave = Leave(branches.indices[single_rim_key], branches.fingerprints[single_rim_key]);
-                __write("single_leave %s", single_leave.toPretty);
-                // auto fingerprint = branches.filter!(a => !f.empty)
-            }
-        }
+        //         __write("need snapback!");
+        //         const single_leave = Leave(branches.indices[single_rim_key], branches.fingerprints[single_rim_key]);
+        //         __write("single_leave %s", single_leave.toPretty);
+        //         // auto fingerprint = branches.filter!(a => !f.empty)
+        //     }
+        // }
         ///
         if (get_type is null) {
             get_type = (a) => a.type;
@@ -1018,7 +1018,7 @@ alias check = Check!DARTException;
                         auto sub_range = RimKeyRange(range, rim);
                         immutable rim_key = sub_range.front.fingerprint.rim_key(rim);
                         if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-
+                            __write("a");
                             const leave = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
                            
                             branches[rim_key] = leave;
@@ -1043,19 +1043,35 @@ alias check = Check!DARTException;
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
                         if (Branches.isRecord(doc)) {
                             branches = Branches(doc);
+                            Leave last_leave;
+                            bool is_archive;
                             do {
                                 auto sub_range = RimKeyRange(range, rim);
                                 const sub_archive = sub_range.front;
                                 immutable rim_key = sub_archive.fingerprint.rim_key(rim);
                                 if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
+                                    Leave current_leave;
+                                    __write("b");
 
-
-                                    const leave = traverse_dart(sub_range, branches.index(rim_key), rim + 1, true);      
-                                    setBranch(branches, rim_key, leave);
+                                    branches[rim_key] = current_leave = traverse_dart(sub_range, branches.index(rim_key), rim + 1, true);
+                                    if (current_leave !is Leave.init) {
+                                        last_leave = current_leave;
+                                        is_archive = !Branches.isRecord(sub_archive.filed);
+                                    }
+                                    // setBranch(branches, rim_key, leave);
                                 }
-
                             }
+                            // if the range is empty then we return a null leave.
                             while (!range.empty);
+                            if (branches.empty) {
+                                return Leave.init;
+                            }
+                            if (branches.fingerprints.filter!(f => !f.empty).walkLength == 1 && is_archive && rim > RIMS_IN_SECTOR) {
+                                
+                                __write("Leave=%s, is_archive=%s, rim_number=%s", last_leave.toPretty, is_archive, rim);
+                                // return last_leave;
+                            }
+
                         }
                         else {
                             // DART does not store a branch this means that it contains a leave.
@@ -1078,7 +1094,7 @@ alias check = Check!DARTException;
                                             __write("single archive remove %s", one_archive.fingerprint.toHexString);
                                             one_archive.doit;
                                             pragma(msg, "fixme(pr): refactor Leave(INDEX_NULL, null) to Leave.init");
-                                            return Leave(INDEX_NULL, null);
+                                            return Leave.init;
                                         }
                                         else {
                                             return Leave(blockfile.save(one_archive.store.serialize)
@@ -1100,8 +1116,9 @@ alias check = Check!DARTException;
                                                     rim);
 
                                             if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-                                                const leave = traverse_dart(sub_range, INDEX_NULL, rim + 1);
-                                                setBranch(branches, rim_key, leave);
+                                                __write("c");
+
+                                                branches[rim_key] = traverse_dart(sub_range, INDEX_NULL, rim + 1);
                                             }
 
 
@@ -1133,8 +1150,9 @@ alias check = Check!DARTException;
                                     const sub_archive = sub_range.front;
                                     immutable rim_key = sub_archive.fingerprint.rim_key(rim);
                                     if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-                                        const leave = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
-                                        setBranch(branches, rim_key, leave);
+                                        __write("d");
+
+                                        branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
                                     }
                                 }
                                 while (!archive_range.empty);
@@ -1150,7 +1168,7 @@ alias check = Check!DARTException;
                             if (!one_archive.done) {
                                 range.popFront;
                                 if (one_archive.isRemove(get_type)) {
-                                    return Leave(INDEX_NULL, null);
+                                    return Leave.init;
                                 }
                                 else {
                                     one_archive.doit;
@@ -1177,8 +1195,9 @@ alias check = Check!DARTException;
                                 immutable rim_key = sub_archive.fingerprint.rim_key(rim);
                                 auto sub_range = RimKeyRange(range, rim);
                                 if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-                                    const leave = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
-                                    setBranch(branches, rim_key, leave);
+                                    __write("e");
+
+                                    branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
                                 }
                             }
                             while (!range.empty);
@@ -1186,7 +1205,7 @@ alias check = Check!DARTException;
                     }
                     immutable count = branches.count;
                     if (count == 0) {
-                        return Leave(INDEX_NULL, null);
+                        return Leave.init;
                     }
                     else if ((count == 1) && (lonely_rim_key !is INDEX_NULL)) {
                         // Return the leave if the branches only contain one leave
@@ -1203,7 +1222,7 @@ alias check = Check!DARTException;
                     assert(0, format("Range %s not expected", R.stringof));
                 }
             }
-            return Leave(INDEX_NULL, null);
+            return Leave.init;
         }
         
         // no reason to have if else here?
@@ -1212,6 +1231,8 @@ alias check = Check!DARTException;
         }
         else {
             auto range = modify_records.archives[];
+             __write("0");
+
             immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
 
             scope (success) {
