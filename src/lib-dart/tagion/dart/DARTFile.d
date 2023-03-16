@@ -1099,19 +1099,12 @@ alias check = Check!DARTException;
                             }
                             // if the range is empty then we return a null leave.
                             while (!range.empty);
-
                             if (branches.empty) {
                                 return Leave.init;
                             }
                             if (branches.fingerprints.filter!(f => !f.empty).walkLength == 1 && rim > RIMS_IN_SECTOR) {
                                 
-                                
                                 __write("Leave=%s, rim_number=%s", last_leave.toPretty, rim);
-                                if (rim > 5) {
-                                    __write("return last leave");
-                                    // return last_leave;
-                                }
-
                                 // return last_leave;
                             }
 
@@ -1240,8 +1233,22 @@ alias check = Check!DARTException;
                             while (!range.empty);
                         }
                     }
+                    immutable count = branches.count;
+                    __write("COUNT: %s, lonely_rim_key", count, lonely_rim_key);
                     
-                    __write("save block file, is_single: %s, rim: %s", branches.isSingle, rim);
+                    version(none)
+                    if (count == 0) {
+                        return Leave.init;
+                    }
+
+                    version(none)
+                    if ((count == 1) && (lonely_rim_key !is INDEX_NULL)) {
+                        __write("INSIDE LONELY");
+                        // Return the leave if the branches only contain one leave
+                        return branches[lonely_rim_key];
+                    }
+
+                    __write("save block file, is_single: %s", branches.isSingle);
 
                     return Leave(blockfile.save(branches.toHiBON.serialize)
                             .begin_index, branches.fingerprint(this));
@@ -1729,6 +1736,7 @@ alias check = Check!DARTException;
             //dart_A.dump;
             assert(bulleye_A == bulleye_B);
         }
+
         { // Random remove and the bulleye is check
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 1000;
@@ -1783,6 +1791,7 @@ alias check = Check!DARTException;
             // The bull eye of the two DART must be the same
             assert(bulleye_A == bulleye_B);
         }
+
         { // Random remove and the bulleye is check
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 1000;
