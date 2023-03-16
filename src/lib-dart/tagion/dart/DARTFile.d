@@ -1026,7 +1026,7 @@ alias check = Check!DARTException;
                     }
                     erase_block_index = branch_index;
                     if (branches.empty) {
-                        return Leave(INDEX_NULL, null);
+                        return Leave.init;
                     }
                     return Leave(blockfile.save(branches.toHiBON.serialize)
                             .begin_index, branches.fingerprint(this));
@@ -1042,7 +1042,6 @@ alias check = Check!DARTException;
                         if (Branches.isRecord(doc)) {
                             branches = Branches(doc);
                             Leave last_leave;
-                            bool is_archive;
                             do {
                                 auto sub_range = RimKeyRange(range, rim);
                                 const sub_archive = sub_range.front;
@@ -1054,7 +1053,6 @@ alias check = Check!DARTException;
                                     branches[rim_key] = current_leave = traverse_dart(sub_range, branches.index(rim_key), rim + 1, true);
                                     if (current_leave !is Leave.init) {
                                         last_leave = current_leave;
-                                        is_archive = !Branches.isRecord(sub_archive.filed);
                                     }
                                     // setBranch(branches, rim_key, leave);
                                 }
@@ -1064,9 +1062,9 @@ alias check = Check!DARTException;
                             if (branches.empty) {
                                 return Leave.init;
                             }
-                            if (branches.fingerprints.filter!(f => !f.empty).walkLength == 1 && is_archive && rim > RIMS_IN_SECTOR) {
+                            if (branches.fingerprints.filter!(f => !f.empty).walkLength == 1 && rim > RIMS_IN_SECTOR) {
                                 
-                                __write("Leave=%s, is_archive=%s, rim_number=%s", last_leave.toPretty, is_archive, rim);
+                                __write("Leave=%s, rim_number=%s", last_leave.toPretty, rim);
                                 // return last_leave;
                             }
 
