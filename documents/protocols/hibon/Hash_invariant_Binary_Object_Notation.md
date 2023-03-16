@@ -1,6 +1,3 @@
-This is something
-: This is definition for that thing
-: something else
 
 # Hash invariant Binary Object Notation
 

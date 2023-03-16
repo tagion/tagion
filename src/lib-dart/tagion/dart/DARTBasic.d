@@ -1,3 +1,4 @@
+/// Basic fuinction and types used in the DART database
 module tagion.dart.DARTBasic;
 
 import std.typecons : Typedef;
@@ -13,6 +14,16 @@ import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
 */
 alias DARTIndex = Typedef!(Buffer, null, BufferType.HASHPOINTER.stringof);
 
+/**
+ * Calculates the fingerprint used as an index for the DART
+ * Handles the hashkey '#' and stub used in the DART
+ * Params:
+ *   net = Hash function interface
+ *   doc = document to be hashed
+ * Returns: 
+ *   The DART fingerprint
+ */
+
 @safe
 const(DARTIndex) dartIndex(const(HashNet) net, const(Document) doc) {
     if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
@@ -23,9 +34,10 @@ const(DARTIndex) dartIndex(const(HashNet) net, const(Document) doc) {
         immutable value_data = first.data[first.dataPos .. first.dataPos + first.dataSize];
         return DARTIndex(net.rawCalcHash(value_data));
     }
-    return DARTIndex(cast(Buffer)net.calcHash(doc));
+    return DARTIndex(cast(Buffer) net.calcHash(doc));
 }
 
+/// Ditto
 @safe
 const(DARTIndex) dartIndex(T)(const(HashNet) net, T value) if (isHiBONRecord!T) {
     return net.dartIndex(value.toDoc);
