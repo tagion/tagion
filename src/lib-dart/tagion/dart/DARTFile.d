@@ -1028,10 +1028,8 @@ alias check = Check!DARTException;
                     if (branches.empty) {
                         return Leave(INDEX_NULL, null);
                     }
-                    else {
-                        return Leave(blockfile.save(branches.toHiBON.serialize)
-                                .begin_index, branches.fingerprint(this));
-                    }
+                    return Leave(blockfile.save(branches.toHiBON.serialize)
+                            .begin_index, branches.fingerprint(this));
                 }
                 else static if (is(R == RimKeyRange)) {
                     uint lonely_rim_key;
@@ -1093,40 +1091,36 @@ alias check = Check!DARTException;
                                         if (one_archive.isRemove(get_type)) {
                                             __write("single archive remove %s", one_archive.fingerprint.toHexString);
                                             one_archive.doit;
-                                            pragma(msg, "fixme(pr): refactor Leave(INDEX_NULL, null) to Leave.init");
                                             return Leave.init;
                                         }
-                                        else {
-                                            return Leave(blockfile.save(one_archive.store.serialize)
-                                                    .begin_index,
-                                                    one_archive.fingerprint, Yes.filed_archive);
-                                        }
+                                        return Leave(blockfile.save(one_archive.store.serialize)
+                                                .begin_index,
+                                                one_archive.fingerprint, Yes.filed_archive);
+                                    
                                                                                  
                                     }
-                                    else {
-                                        // multiple archives left in the database
-                                        auto recorder = manufactor.recorder;
-                                        recorder.insert(archive_in_dart);
-                                        recorder.insert(one_archive);
-                                        auto archives_range = recorder.archives[];
-                                        do {
-                                            auto sub_range = RimKeyRange(archives_range, rim);
-                                            const sub_archive = sub_range.front;
-                                            immutable rim_key = sub_archive.fingerprint.rim_key(
-                                                    rim);
+                                    // multiple archives left in the database
+                                    auto recorder = manufactor.recorder;
+                                    recorder.insert(archive_in_dart);
+                                    recorder.insert(one_archive);
+                                    auto archives_range = recorder.archives[];
+                                    do {
+                                        auto sub_range = RimKeyRange(archives_range, rim);
+                                        const sub_archive = sub_range.front;
+                                        immutable rim_key = sub_archive.fingerprint.rim_key(
+                                                rim);
 
-                                            if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-                                                __write("c");
+                                        if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
+                                            __write("c");
 
-                                                branches[rim_key] = traverse_dart(sub_range, INDEX_NULL, rim + 1);
-                                            }
-
-
+                                            branches[rim_key] = traverse_dart(sub_range, INDEX_NULL, rim + 1);
                                         }
-                                        while (!archives_range.empty);
-                                        __write("single branch removed: %s", branches.toPretty);
-                                        __write("single branch_length=%s", branches.isSingle);                                        
+
+
                                     }
+                                    while (!archives_range.empty);
+                                    __write("single branch removed: %s", branches.toPretty);
+                                    __write("single branch_length=%s", branches.isSingle);                                        
                                 }
                             }
                             else {
@@ -1170,23 +1164,21 @@ alias check = Check!DARTException;
                                 if (one_archive.isRemove(get_type)) {
                                     return Leave.init;
                                 }
-                                else {
-                                    one_archive.doit;
-                                    lonely_rim_key = one_archive.fingerprint.rim_key(rim);
-                                    if (rim is RIMS_IN_SECTOR) {
-                                        // Return a branch with as single leave when the leave is on the on
-                                        // the edge between the sector
-                                        branches[lonely_rim_key] = Leave(blockfile.save(one_archive.store.serialize)
-                                                .begin_index, one_archive.fingerprint);
-                                        return Leave(blockfile.save(branches.toHiBON.serialize)
-                                                .begin_index, branches.fingerprint(this));
-                                    }
-                                    else {
-                                        __write("single archive fingerprint %s", one_archive.fingerprint);
-                                        return Leave(blockfile.save(one_archive.store.serialize)
-                                                .begin_index, one_archive.fingerprint, Yes.filed_archive);
-                                    }
+
+                                one_archive.doit;
+                                lonely_rim_key = one_archive.fingerprint.rim_key(rim);
+                                if (rim is RIMS_IN_SECTOR) {
+                                    // Return a branch with as single leave when the leave is on the on
+                                    // the edge between the sector
+                                    branches[lonely_rim_key] = Leave(blockfile.save(one_archive.store.serialize)
+                                            .begin_index, one_archive.fingerprint);
+                                    return Leave(blockfile.save(branches.toHiBON.serialize)
+                                            .begin_index, branches.fingerprint(this));
                                 }
+                                __write("single archive fingerprint %s", one_archive.fingerprint);
+                                return Leave(blockfile.save(one_archive.store.serialize)
+                                        .begin_index, one_archive.fingerprint, Yes.filed_archive);
+
                             }
                         }
                         else {
@@ -1207,16 +1199,15 @@ alias check = Check!DARTException;
                     if (count == 0) {
                         return Leave.init;
                     }
-                    else if ((count == 1) && (lonely_rim_key !is INDEX_NULL)) {
+                    if ((count == 1) && (lonely_rim_key !is INDEX_NULL)) {
                         // Return the leave if the branches only contain one leave
                         return branches[lonely_rim_key];
                     }
-                    else {
-                        __write("creating block file");
-                        return Leave(blockfile.save(branches.toHiBON.serialize)
-                                .begin_index, branches.fingerprint(this));
-                    }
-                    assert(0);
+
+                    __write("creating block file");
+                    return Leave(blockfile.save(branches.toHiBON.serialize)
+                            .begin_index, branches.fingerprint(this));
+                    
                 }
                 else {
                     assert(0, format("Range %s not expected", R.stringof));
@@ -1225,36 +1216,33 @@ alias check = Check!DARTException;
             return Leave.init;
         }
         
-        // no reason to have if else here?
         if (modify_records.empty) {
             return _fingerprint;
         }
-        else {
-            auto range = modify_records.archives[];
-             __write("0");
+        auto range = modify_records.archives[];
+            __write("0");
 
-            immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
+        immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
 
-            scope (success) {
-                // On success the new root_index is set and the DART is updated
-                _fingerprint = new_root.fingerprint;
-                if ((new_root.fingerprint is null) || (new_root.index is INDEX_NULL)) {
-                    // All data has been delete so a new blockfile is created
-                    blockfile.close;
-                    blockfile = BlockFile.reset(filename);
-                }
-                else {
-                    blockfile.root_index = new_root.index;
-                    blockfile.store;
-                }
-            }
-            scope (failure) {
-                // On failure drop the BlockFile and reopen it
+        scope (success) {
+            // On success the new root_index is set and the DART is updated
+            _fingerprint = new_root.fingerprint;
+            if ((new_root.fingerprint is null) || (new_root.index is INDEX_NULL)) {
+                // All data has been delete so a new blockfile is created
                 blockfile.close;
-                blockfile = BlockFile(filename);
+                blockfile = BlockFile.reset(filename);
             }
-            return new_root.fingerprint;
+            else {
+                blockfile.root_index = new_root.index;
+                blockfile.store;
+            }
         }
+        scope (failure) {
+            // On failure drop the BlockFile and reopen it
+            blockfile.close;
+            blockfile = BlockFile(filename);
+        }
+        return new_root.fingerprint;
     }
 
     RecordFactory.Recorder readStubs() { //RIMS_IN_SECTOR
