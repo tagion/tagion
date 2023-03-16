@@ -1,4 +1,10 @@
 
+
+
+
+### DEPRECATE, for android should just use the precompiled static libraries
+
+
 LDC_NAME=ldc2-1.29.0-beta1-$(GETHOSTOS)-$(GETARCH)
 LDC_TAR_NAME=$(LDC_NAME).tar.xz
 LDC_URL=https://github.com/ldc-developers/ldc/releases/download/v1.29.0-beta1/$(LDC_TAR_NAME)

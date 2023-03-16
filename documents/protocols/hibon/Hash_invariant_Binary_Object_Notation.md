@@ -1,6 +1,3 @@
-This is something
-: This is definition for that thing
-: something else
 
 # Hash invariant Binary Object Notation
 
@@ -189,7 +186,7 @@ The flowing ASCII chars are not allowed for '\x00' to '\x20' and all ASCII value
 
 
 
-```D
+```d
 /++
  Returns:
  true if the key is a valid HiBON key
@@ -230,7 +227,7 @@ The converted value must be less than or equal to `0xFFFFFFFF`
 
  *Example code is_index function in D*
 
-```D
+```d
 /++
  Converts from a text to a index
  Params:
@@ -268,7 +265,7 @@ The key is ordered if the key value is less than next key value. If the key **is
 
 *Example code is_key_ordered function in D*
 
-```D
+```d
 /++
  This function decides the order of the HiBON keys
  Returns:

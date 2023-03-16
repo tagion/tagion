@@ -4,7 +4,7 @@ The LEB128 https://en.wikipedia.org/wiki/LEB128 format is used store the integer
 
 **Sample to encode to LEB128 in D** 
 
-```D
+```d
 @safe
 immutable(ubyte[]) encode(T)(const T v) pure if(isUnsigned!T && isIntegral!T) {
     ubyte[T.sizeof+2] data;
@@ -50,7 +50,7 @@ immutable(ubyte[]) encode(T)(const T v) pure if(isSigned!T && isIntegral!T) {
 
 **Sample code to decode a array of bytes in LEB128 in D**
 
-```D
+```d
 alias DecodeLEB128(T)=Tuple!(T, "value", size_t, "size");
 
 @safe
@@ -115,7 +115,7 @@ Complaint test for encoding LEB128 as a sample code in D syntax
 
 **Test sample 1**
 
-```D
+```d
 assert(encode!int(-1) == [127]);
 wint(int.min) == [128, 128, 128, 128, 120]);
 assert(encode!long(int.min) == [128, 128, 128, 128, 120]);
@@ -139,7 +139,7 @@ Complaint test for decoding LEB128 as a sample code in D syntax.
 
 **Test sample 2**
 
-```D
+```d
 assert(decode!int([127]).value == -1);
 assert(decode!int([128, 128, 128, 128, 120]).value == int.min);
 assert(decode!int([255, 255, 255, 255, 7]).value == int.max);
