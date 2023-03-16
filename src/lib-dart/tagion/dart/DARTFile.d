@@ -349,11 +349,15 @@ alias check = Check!DARTException;
             }
         }
 
-        auto opSlice() {
-            return fingerprints.enumerate.filter!(f => !f.value.empty).map!(f => f.index);
+        auto keys() {
+            return _fingerprints.enumerate.filter!(f => !f.value.empty).map!(f => f.index);
         }
 
-        /* 
+        auto opSlice() {
+            return keys.map!(key => Leave(indices[key], fingerprints[key]));
+        }
+
+     /* 
      * Check if the Branches has storage indices
      * Returns: true if the branch has BlockFile indices
      */
@@ -1086,28 +1090,17 @@ alias check = Check!DARTException;
                                 return Leave.init;
                             }
 
-                            if (branches.isSingle) {
-                                const single_rim_key = branches[].front;
-                                __write("branch range: %(%02X %)", branches[]);
-                                __write("single_rim_key: %02X [%d]", single_rim_key, branches.indices[single_rim_key]);
-                                if (!__dummy) {
-                                    __dummy = true;
-
-                                    const single_index = branches.indices[single_rim_key];
-
-                                    // writefln("INSIDE DUMMY: single_rim_key: %02X [%d]", single_rim_key, single_index);
-                                    
-                                    // if (PRINT) {
-                                    
-                                    //     blockfile.load(single_index);
-                                    // }
-                                    // __write("buffer length: %d", buf.length);
-                                    // const single_doc = Document(blockfile.load(branches.indices[single_rim_key]));
-                                    // const single_archive = new Archive(manufactor.net, single_doc);
-                                    // __write("Archive: %s, rin_number=%s", single_doc.toPretty, rim);
-                                    // __write("Leave=%s, rim_number=%s", last_leave.toPretty, rim);
- 
+                            if (branches.isSingle && rim > RIMS_IN_SECTOR) {
+                            
+                                const single_leave = branches[].front;
+                                __write("X single_leave: %s", single_leave.toPretty);
+                                if (PRINT) {
+                                    return single_leave;
                                 }
+                                
+                                // __write("branch range: %(%02X %)", branches[]);
+                                // __write("single_rim_key: %02X [%d]", single_rim_key, branches.opSlice);
+                                
 
                             }
 
