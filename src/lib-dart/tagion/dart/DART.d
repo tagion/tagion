@@ -666,9 +666,6 @@ received = the HiRPC received package
          *   doc = Journal document
          */
         this(RecordFactory manufactor, const Document doc) {
-
-            
-
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!uint;
             const recorder_doc = doc[recorderName].get!Document;

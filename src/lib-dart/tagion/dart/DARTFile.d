@@ -105,16 +105,22 @@ void printfp(string msg, const Buffer[] fingerprints) {
 }
 
     import std.algorithm;
-auto createRimKeys(DARTFile.Branches branches) pure nothrow {
-    return branches.fingerprints.enumerate.filter!(f => !f.value.empty).map!(f => f.index);
+auto createRimKeys(DARTFile.Branches branches) { 
+ //    return branches.fingerprints.enumerate.filter!(f => !f.value.empty).map!(f => f.index);
+    //DARTFile.Branches branches;
+   // return branches;
+    return branches.fingerprints.enumerate.filter!(f => !f.value.empty);
 }
 
 
 
 static assert(isCallable!(createRimKeys));
 
-alias X=ReturnType!createRimKeys;
 
+//alias X=typeof(createRimKeys(DARTFile.Branches.init));
+
+//alias X=FunctionTypeOf!(createRimKeys);
+alias X=ReturnType!createRimKeys;
 alias check = Check!DARTException;
 
 /++
@@ -347,8 +353,21 @@ alias check = Check!DARTException;
             }
         }
 
+
+    private auto createRimKeys() {
+        return fingerprints.enumerate.filter!(f => !f.value.empty);
+    }
+
+    alias RimRange=ReturnType!createRimKeys;
+
+    RimRange opSlice() {
+        return createRimKeys;
+    }
+    
+    version(none)
         struct Range {
 
+ //           X _range;
            // alias X=ReturnType!(.createRimKeys);
 //            ReturnType!createRimKeys _range;
 
@@ -381,6 +400,7 @@ alias check = Check!DARTException;
 }
 }
 
+version(none)
         Range opSlice() const pure nothrow {
            //. return Range(this);
     return Range.init;
