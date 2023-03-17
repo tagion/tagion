@@ -69,7 +69,7 @@ class SyncToAnotherDb {
 
         const bullseye = db1.bullseye();
 
-        db1.dump();
+        // db1.dump();
 
         const doc = DARTFakeNet.fake_doc(info.deep_table[1]);
         const doc_bullseye = dartIndex(info.net, doc);
