@@ -81,14 +81,18 @@ class MessageBetweenSupervisorAndChild {
     enum child2_task_name = "child2";
     ActorFactory!MySuperActor supervisor_factory;
     ActorHandle!MySuperActor supervisor_handle;
+    alias ChildHandle = ActorHandle!MyActor;
 
     @safe
     static struct MySuperActor {
+        ChildHandle niño_uno_handle;
+        ChildHandle niño_dos_handle;
+
         @task void run() {
             auto my_actor_factory = actor!MyActor;
 
-            auto niñoUno = my_actor_factory(child1_task_name, 10);
-            auto niñoDos = my_actor_factory(child2_task_name, 65);
+            niño_uno_handle = my_actor_factory(child1_task_name, 10);
+            niño_dos_handle = my_actor_factory(child2_task_name, 65);
 
             alive;
             while (!stop) {
@@ -98,6 +102,10 @@ class MessageBetweenSupervisorAndChild {
 
         @method void isChildRunning(string task_name) {
             sendOwner(isRunning(task_name));
+        }
+        
+        @method void sendStatusToChild1(int status) {
+            niño_dos_handle.decrease(status);
         }
 
         mixin TaskActor;
@@ -126,7 +134,9 @@ class MessageBetweenSupervisorAndChild {
 
     @Then("send a message to #child1")
     Document aMessageToChild1() {
-        return Document();
+        /* supervisor_handle.sendMessageToChild(supervisor_handle.niñoUno_handle, "Do you like candy?"); */
+        supervisor_handle.sendStatusToChild1(1);
+        return result_ok;
     }
 
     @Then("send this message back from #child1 to #super")
@@ -149,7 +159,7 @@ class MessageBetweenSupervisorAndChild {
         supervisor_handle.stop;
         check(!isRunning(child1_task_name), "child1 is still running");
         check(!isRunning(child2_task_name), "child2 is still running");
-        return Document();
+        return result_ok;
     }
 
 }

@@ -191,7 +191,7 @@ mixin template TaskActor() {
     }
 
     /** 
-         * This function will stop all the actors which are owende my this actor
+         * This function will stop all the actors which are owned my this actor
          */
     void stopAll() @trusted {
         foreach (ref tid; child_actor_tids.byValue) {
