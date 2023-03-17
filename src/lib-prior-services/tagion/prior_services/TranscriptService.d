@@ -104,8 +104,8 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
             }
         }
 
-        void dumpRecorderBlock(immutable(RecordFactory.Recorder) recorder, 
-            const Fingerprint dart_bullseye) {
+        void dumpRecorderBlock(immutable(RecordFactory.Recorder) recorder,
+                const Fingerprint dart_bullseye) {
             if (recorder_tid is Tid.init) {
                 recorder_tid = locate(recorder_task_name);
             }
@@ -113,7 +113,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
         }
 
         Fingerprint last_bullseye = requestBullseye();
-        log("Start with bullseye: %X", last_bullseye);
+        log("Start with bullseye: %s", last_bullseye.hex);
         bool to_smart_script(ref const(SignedContract) signed_contract, ref uint index) nothrow {
             try {
                 version (OLD_TRANSACTION) {
@@ -228,10 +228,9 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                     log("Sending to DART len: %d", recorder.length);
                     recorder.dump;
                     auto bullseye = modifyDART(recorder);
-                    if (!options.epoch_dump.disable_transaction_dumping) {
-                        epoch_dump_tid.send(Document(contracts_dump), bullseye);
+                    if (options.recorder_chain.enabled) {
+                        dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), bullseye);
                     }
-                    dumpRecorderBlock(rec_factory.uniqueRecorder(recorder), bullseye);
                 }
                 else {
                     log("Received empty epoch");
