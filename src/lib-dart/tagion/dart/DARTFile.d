@@ -334,9 +334,6 @@ alias check = Check!DARTException;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
-
-            
-
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if (doc.hasMember(indicesName)) {
                 _indices = new uint[KEY_SPAN];
@@ -352,56 +349,15 @@ alias check = Check!DARTException;
             }
         }
 
-        private auto createRimKeys() {
-            return fingerprints.enumerate.filter!(f => !f.value.empty);
+        auto keys() {
+            return _fingerprints.enumerate.filter!(f => !f.value.empty).map!(f => f.index);
         }
 
-        alias RimRange = ReturnType!createRimKeys;
-
-        RimRange opSlice() {
-            return createRimKeys;
+        auto opSlice() {
+            return keys.map!(key => Leave(indices[key], fingerprints[key]));
         }
 
-        version (none) struct Range {
-
-            //           X _range;
-            // alias X=ReturnType!(.createRimKeys);
-            //            ReturnType!createRimKeys _range;
-
-            this(ref Branches branches) pure nothrow {
-                //              _range = createRimKeys(branches);
-            }
-
-            version (none) {
-                bool empty() pure nothrow {
-                    return _range.empty;
-                }
-
-                size_t front() pure nothrow {
-                    return _range.front;
-                }
-
-                void popFront() pure nothrow {
-                    _range.popFront;
-                }
-
-                Range save() pure nothrow {
-                    Range result;
-                    result._range = _range;
-                    return result;
-                }
-
-                static assert(isInputRange!Range);
-                static assert(isForwardRange!Range);
-            }
-        }
-
-        version (none) Range opSlice() const pure nothrow {
-            //. return Range(this);
-            return Range.init;
-        }
-
-        /* 
+     /* 
      * Check if the Branches has storage indices
      * Returns: true if the branch has BlockFile indices
      */
@@ -1057,7 +1013,7 @@ alias check = Check!DARTException;
         if (get_type is null) {
             get_type = (a) => a.type;
         }
-
+        bool __dummy;
         Leave traverse_dart(R)(
             ref R range,
             const uint branch_index,
@@ -1133,11 +1089,19 @@ alias check = Check!DARTException;
                             if (branches.empty) {
                                 return Leave.init;
                             }
-                            if (branches.fingerprints.filter!(f => !f.empty)
-                                .walkLength == 1 && rim > RIMS_IN_SECTOR) {
 
-                                __write("Leave=%s, rim_number=%s", last_leave.toPretty, rim);
-                                // return last_leave;
+                            if (branches.isSingle && rim > RIMS_IN_SECTOR) {
+                            
+                                const single_leave = branches[].front;
+                                __write("X single_leave: %s", single_leave.toPretty);
+                                if (PRINT) {
+                                    return single_leave;
+                                }
+                                
+                                // __write("branch range: %(%02X %)", branches[]);
+                                // __write("single_rim_key: %02X [%d]", single_rim_key, branches.opSlice);
+                                
+
                             }
 
                         }
@@ -1265,20 +1229,7 @@ alias check = Check!DARTException;
                             while (!range.empty);
                         }
                     }
-                    immutable count = branches.count;
-                    __write("COUNT: %s, lonely_rim_key", count, lonely_rim_key);
 
-                    version (none)
-                        if (count == 0) {
-                            return Leave.init;
-                        }
-
-                    version (none)
-                        if ((count == 1) && (lonely_rim_key !is INDEX_NULL)) {
-                            __write("INSIDE LONELY");
-                            // Return the leave if the branches only contain one leave
-                            return branches[lonely_rim_key];
-                        }
 
                     __write("save block file, is_single: %s", branches.isSingle);
 
@@ -2014,7 +1965,7 @@ alias check = Check!DARTException;
 
                 const ulong[] deep_table = [
                     0xABB9_13ab_11ef_0923,
-                    0xABB9_13ab_11ef_1134,
+                    0xABB9_13ab_11ef_1234,
                 ];
 
                 auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
