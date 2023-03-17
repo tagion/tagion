@@ -1953,6 +1953,7 @@ alias check = Check!DARTException;
             import std.range : empty;
             import std.format;
 
+
             bool hasArchive(Branches branches) {
                 auto full_branches = branches.fingerprints
                     .filter!(f => !f.empty)
@@ -2054,7 +2055,7 @@ alias check = Check!DARTException;
                 }
                 auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
                 dart_A.modify(recorder);
-                dart_A.dump();
+                // dart_A.dump();
                 
                 auto remove_recorder = dart_A.recorder();
                 remove_recorder.remove(remove_fingerprint);
@@ -2065,7 +2066,64 @@ alias check = Check!DARTException;
 
                 pragma(msg, "fixme(pr): better check for archives");
                 assert(branches.fingerprints.filter!(f=>!f.empty).array.length == 2, "should contain two archives");
-                dart_A.dump();
+                // dart_A.dump();
+            }
+
+            {
+                // ADD ADD REMOVE
+                // we start by creating the following archive structure.
+                // | AB [9]
+                // | .. | B9 [8]
+                // | .. | .. | 13 [7]
+                // | .. | .. | .. | AB [6]
+                // | .. | .. | .. | .. | 11 [4]
+                // | .. | .. | .. | .. | .. | EF [3]
+                // | .. | .. | .. | .. | .. | .. abb913ab11ef0923 [1]
+                // | .. | .. | .. | .. | .. | .. abb913ab11ef1234 [2]
+  
+                // now we remove one of the archives located in EF [3]. And add another archive afterwards in the same recorder.
+                // EYE: f32ee782a2576cdb57cc36c9e64409f36aa7747dd6c4ff1df8166b268b6ee0b1
+                // | AB [17]
+                // | .. | B9 [16]
+                // | .. | .. | 13 [15]
+                // | .. | .. | .. | AB [14]
+                // | .. | .. | .. | .. | 11 [13]
+                // | .. | .. | .. | .. | .. | EF [12]
+                // | .. | .. | .. | .. | .. | .. abb913ab11ef1234 [2]
+                // | .. | .. | .. | .. | .. | .. abb913ab11ef2078 [11]
+                DARTFile.create(filename_A);
+                auto dart_A = new DARTFile(net, filename_A);
+
+                const ulong[] deep_table = [
+                    0xABB9_13ab_11ef_0923,
+                    0xABB9_13ab_11ef_1234,
+                    0xABB9_13ab_11ef_2078,
+                ];
+
+                auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a)).array;
+                auto recorder = dart_A.recorder();
+
+                assert(docs.length == 3);
+                recorder.add(docs[0]);
+                recorder.add(docs[1]);
+                auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
+
+                dart_A.modify(recorder);
+                // dart_A.dump();
+                
+                auto next_recorder = dart_A.recorder();
+                next_recorder.remove(remove_fingerprint);
+                next_recorder.add(docs[2]);
+
+                dart_A.modify(next_recorder);
+                
+                ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x11, 0xef];
+                auto branches = dart_A.branches(rim_path);
+
+                pragma(msg, "fixme(pr): better check for archives");
+                assert(branches.fingerprints.filter!(f=>!f.empty).array.length == 2, "should contain two archives");
+                // dart_A.dump();
+
             }
         }
 
