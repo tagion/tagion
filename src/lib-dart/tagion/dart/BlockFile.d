@@ -1076,6 +1076,16 @@ class BlockFile {
         return build_sequency(first_block);
     }
 
+    immutable(Buffer) cacheLoad(const uint index) nothrow {
+        auto allocated_range =  allocated_chains.filter!(a => a.begin_index == index);
+        if (allocated_range.empty) {
+            return allocated_range.front.data;
+         }
+
+        return assumeWontThrow(load(index));
+   }
+
+
     /++
      + Marks a chain for blocks as erased
      + This function does actually erease the block before the store method is called

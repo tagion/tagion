@@ -17,16 +17,13 @@ import tagion.logger.Logger;
 import tagion.actor.ActorException;
 
 /// method define receiver method for the task actor
-@safe
-struct method;
+enum method;
 
 /// This make a local method used internaly by the actor
-@safe
-struct local;
+enum local;
 
 /// task is a UDA used to define the run function of a task actor
-@safe
-struct task;
+enum task;
 
 /// UDA to enable emulation of an Actor
 @safe
