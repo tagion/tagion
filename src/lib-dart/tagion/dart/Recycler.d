@@ -8,7 +8,8 @@ import std.stdio;
 import tagion.hibon.Document;
 import tagion.dart.BlockFile : BlockFile;
 
-import LEB128=tagion.utils.LEB128;
+import LEB128 = tagion.utils.LEB128;
+
 /// BlockFile file position index
 alias Index = Typedef!(ulong, ulong.init, "BINDEX");
 
@@ -60,7 +61,7 @@ struct Recycler {
             insert(segment);
             return;
         }
-        
+
     }
 
     invariant {
@@ -74,6 +75,7 @@ struct Recycler {
         import std.range : slide;
         import std.algorithm.searching : any;
         import std.algorithm.iteration : map;
+
         if (indices.length <= 1) {
             return true;
         }
@@ -114,24 +116,25 @@ unittest {
 
 }
 
-
 @safe
 struct BlockSegment {
     ulong previous; /// Previous block index
     ulong next; /// Next block index
     Document doc;
-//    Buffer data;   
-//ulong size; /// size in bytes
+    //    Buffer data;   
+    //ulong size; /// size in bytes
     //uint number_of_blocks; /// Number of blocks
     invariant {
         assert(previous < next);
     }
+
     ulong totalSize() const pure nothrow @nogc {
-        return LEB128.calc_size(previous)+LEB128.calc_size(next)+doc.full_size;
+        return LEB128.calc_size(previous) + LEB128.calc_size(next) + doc.full_size;
     }
+
     uint blocks(const uint block_size) const pure nothrow @nogc {
-        const total_size=totalSize;
-        return total_size/block_size+(total_size % block_size == 0)?0:1;
+        const total_size = totalSize;
+        return total_size / block_size + (total_size % block_size == 0) ? 0 : 1;
     }
 
     void write(ref File file) const {
@@ -141,6 +144,22 @@ struct BlockSegment {
     }
 
     this(ref File file) {
-        
+        enum MIN_SIZE = 3 * (ulong.sizeof + 3); // 3 time leb128 ulong
+        ubyte[MIN_SIZE] _pre_buf;
+        ubyte[] pre_buf = _pre_buf;
+        //file.rawRead(buf);
+        /+
+{ // previous
+        const dec_leb = decode!ulong(pre_buf);
+        previous=dec_leb.value;
+        dec_leb = decode!ulong(pre_buf);
+        pre_buf
+        pre_buf
+        next=dec_leb.value;
+        dec_leb = decode!ulong(pre_buf);
+        doc_size=dec_leb.value;
+
+        +/
+
     }
 }
