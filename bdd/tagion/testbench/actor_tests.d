@@ -19,9 +19,8 @@ mixin Main!(_main);
 
 int _main(string[] args) {
     if (env.stage == Stage.commit) {
-        BDDOptions bdd_options;
-        setDefaultBDDOptions(bdd_options);
-        bdd_options.scenario_name = __MODULE__;
+        auto actor_supervisor_message_feature = automation!(actor_message)();
+        auto actor_supervisor_message_context = actor_supervisor_message_feature.run();
     }
 
     return 0;

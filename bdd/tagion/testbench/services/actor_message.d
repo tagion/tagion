@@ -9,6 +9,7 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
+import concurrency = std.concurrency;
 
 enum feature = Feature(
             "Actor messaging",
@@ -75,20 +76,28 @@ class MessageBetweenSupervisorAndChild {
     static assert(isActor!MyActor);
 
 
-    enum superviser_task_name = "supervise";
+    enum supervisor_task_name = "supervisor";
     enum child1_task_name = "child1";
     enum child2_task_name = "child2";
+    ActorFactory!MySuperActor supervisor_factory;
+    ActorHandle!MySuperActor supervisor_handle;
+
     @safe
     static struct MySuperActor {
         @task void run() {
             auto my_actor_factory = actor!MyActor;
-            /* ActorHandle!(MyActor); */
-            auto niñoUno = my_actor_factory (child1_task_name, 10);
-            auto niñoDos = my_actor_factory (child2_task_name, 10);
+
+            auto niñoUno = my_actor_factory(child1_task_name, 10);
+            auto niñoDos = my_actor_factory(child2_task_name, 65);
+
             alive;
             while (!stop) {
                 receive;
             }
+        }
+
+        @method void isChildRunning(string task_name) {
+            sendOwner(isRunning(task_name));
         }
 
         mixin TaskActor;
@@ -97,16 +106,22 @@ class MessageBetweenSupervisorAndChild {
 
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() {
-        auto supervisor_factory = actor!MySuperActor;
+        supervisor_factory = actor!MySuperActor;
 
-        supervisor_factory(superviser_task_name);
+        supervisor_handle = supervisor_factory(supervisor_task_name);
+        check(isRunning(supervisor_task_name), "Supervisor is running");
 
-        return Document();
+        return result_ok;
     }
 
     @When("the #super has started the #child1 and #child2")
-    Document theChild1AndChild2() {
-        return Document();
+    Document theChild1AndChild2() @trusted {
+        supervisor_handle.isChildRunning(child1_task_name);
+        check(concurrency.receiveOnly!bool, "child1 is running");
+
+        supervisor_handle.isChildRunning(child2_task_name);
+        check(concurrency.receiveOnly!bool, "child2 is running");
+        return result_ok;
     }
 
     @Then("send a message to #child1")
@@ -131,6 +146,9 @@ class MessageBetweenSupervisorAndChild {
 
     @Then("stop the #super")
     Document stopTheSuper() {
+        supervisor_handle.stop;
+        check(!isRunning(child1_task_name), "child1 is still running");
+        check(!isRunning(child2_task_name), "child2 is still running");
         return Document();
     }
 
