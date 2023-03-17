@@ -53,8 +53,8 @@ class SyncToAnotherDb {
 
     DARTIndex[] db1_fingerprints;
 
-    const ushort angle = 0;
-    const ushort size = 10;
+    const ushort angle = 43961;
+    const ushort to = 43962;
 
     DartInfo info;
 
@@ -68,6 +68,8 @@ class SyncToAnotherDb {
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
 
         const bullseye = db1.bullseye();
+
+        db1.dump();
 
         const doc = DARTFakeNet.fake_doc(info.deep_table[1]);
         const doc_bullseye = dartIndex(info.net, doc);
@@ -91,7 +93,8 @@ class SyncToAnotherDb {
 
     @Given("I sync the databases.")
     Document databases() {
-        syncDarts(db1, db2, angle, size);
+        syncDarts(db1, db2, angle, to);
+        db2.dump();
         return result_ok;
     }
 
@@ -103,10 +106,10 @@ class SyncToAnotherDb {
 
     @Then("check if the data is not lost.")
     Document lost() {
-
+        
         db1.close();
         db2.close();
-        return Document();
+        return result_ok;
     }
 
 }

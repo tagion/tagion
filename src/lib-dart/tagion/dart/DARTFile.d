@@ -812,8 +812,6 @@ alias check = Check!DARTException;
                 }
                 else {
                     // Loads the Archives into the archives
-                    version (DART_SNAP_SYNC)
-                        
                             .check(ordered_fingerprints.length == 1,
                                 format("Data base is broken at rim=%d fingerprint=%s",
                                     rim, ordered_fingerprints[0].toHex));
