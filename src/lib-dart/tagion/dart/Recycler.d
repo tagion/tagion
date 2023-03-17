@@ -5,23 +5,25 @@ import std.container.rbtree : RedBlackTree;
 
 import std.stdio;
 
+import tagion.hibon.Document;
 import tagion.dart.BlockFile : BlockFile;
 
+import LEB128=tagion.utils.LEB128;
 /// BlockFile file position index
-alias BlockIndex = Typedef!(ulong, ulong.init, "BINDEX");
+alias Index = Typedef!(ulong, ulong.init, "BINDEX");
 
-enum NullIndex = BlockIndex.init;
+enum NullIndex = Index.init;
 
 @safe
 struct Segment {
-    BlockIndex index; // Block file index
+    Index index; // Block file index
     uint size;
     invariant {
         assert(size > 0);
     }
 
-    BlockIndex end() const pure nothrow @nogc {
-        return BlockIndex(index + size);
+    Index end() const pure nothrow @nogc {
+        return Index(index + size);
     }
 }
 
@@ -110,4 +112,35 @@ unittest {
     }
     auto recycler = Recycler(blockfile);
 
+}
+
+
+@safe
+struct BlockSegment {
+    ulong previous; /// Previous block index
+    ulong next; /// Next block index
+    Document doc;
+//    Buffer data;   
+//ulong size; /// size in bytes
+    //uint number_of_blocks; /// Number of blocks
+    invariant {
+        assert(previous < next);
+    }
+    ulong totalSize() const pure nothrow @nogc {
+        return LEB128.calc_size(previous)+LEB128.calc_size(next)+doc.full_size;
+    }
+    uint blocks(const uint block_size) const pure nothrow @nogc {
+        const total_size=totalSize;
+        return total_size/block_size+(total_size % block_size == 0)?0:1;
+    }
+
+    void write(ref File file) const {
+        file.write(LEB128.encode(previous));
+        file.write(LEB128.encode(next));
+        file.write(doc.serialize);
+    }
+
+    this(ref File file) {
+        
+    }
 }
