@@ -812,7 +812,7 @@ alias check = Check!DARTException;
                 }
                 else {
                     // Loads the Archives into the archives
-                    version (DART_SNAP_BRANCH)
+                    version (DART_SNAP_SYNC)
                         
                             .check(ordered_fingerprints.length == 1,
                                 format("Data base is broken at rim=%d fingerprint=%s",
@@ -1102,10 +1102,6 @@ alias check = Check!DARTException;
                                 if (!Branches.isRecord(single_doc)) {
                                     return single_leave;
                                 }
-                                
-                                // __write("branch range: %(%02X %)", branches[]);
-                                // __write("single_rim_key: %02X [%d]", single_rim_key, branches.opSlice);
-                                
 
                             }
 
