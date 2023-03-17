@@ -1192,7 +1192,59 @@ received = the HiRPC received package
                 assert(dart_A.fingerprint !is null);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
             }
+            { // Synchronization of an empty DART 
+                // from DART A against DART B with ONE archive when DART A is empty
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
+                RecordFactory.Recorder recorder_B;
+                // Recorder recorder_B;
+                auto dart_A = new DART(net, filename_A, from, to);
+                auto dart_B = new DART(net, filename_B, from, to);
+                //
+                string[] journal_filenames;
+                scope (success) {
+                    // writefln("Exit scope");
+                    dart_A.close;
+                    dart_B.close;
+                    filename_A.remove;
+                    filename_B.remove;
+                    foreach (journal_filename; journal_filenames) {
+                        journal_filename.remove;
+                    }
+                }
 
+                const ulong[] single_archive = [0xABB9_13ab_11ef_0923];
+
+                write(dart_B, single_archive, recorder_B);
+                // dart_B.dump;
+
+                //
+                // Synchronize DART_B -> DART_A
+                //
+                // Collecting the journal file
+
+                foreach (sector; dart_A.sectors) {
+                    immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
+                    journal_filenames ~= journal_filename;
+                    BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    // D!(sector, "%x");
+                    while (!dart_A_synchronizer.empty) {
+                        (() @trusted => dart_A_synchronizer.call)();
+                    }
+                }
+                foreach (journal_filename; journal_filenames) {
+                    dart_A.replay(journal_filename);
+                }
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint == dart_B.fingerprint);
+
+            }
             { // Synchronization of an empty DART
                 // from DART A against DART B when DART A is empty
                 // writefln("Test 1");
