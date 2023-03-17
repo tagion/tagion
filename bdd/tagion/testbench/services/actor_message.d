@@ -24,10 +24,10 @@ alias FeatureContext = Tuple!(
         [])
 class MessageBetweenSupervisorAndChild {
 
-    private enum Get {
-        Some,
-        Arg
-    }
+    /* private enum Get { */
+    /*     Some, */
+    /*     Arg */
+    /* } */
 
     @safe
     private struct MyActor {
@@ -74,30 +74,33 @@ class MessageBetweenSupervisorAndChild {
     }
     static assert(isActor!MyActor);
 
-    /* @safe */
-    /* static struct MySuperActor { */
-    /*     @task void run() { */
-    /*         alias MyActorFactory = ActorHandle!(MyActor); */
-    /*         alive; */
-    /*         while (!stop) { */
-    /*             receive; */
-    /*         } */
-    /*     } */
 
-    /*     mixin TaskActor; */
-    /* } */
+    enum superviser_task_name = "supervise";
+    enum child1_task_name = "child1";
+    enum child2_task_name = "child2";
+    @safe
+    static struct MySuperActor {
+        @task void run() {
+            auto my_actor_factory = actor!MyActor;
+            /* ActorHandle!(MyActor); */
+            auto niñoUno = my_actor_factory (child1_task_name, 10);
+            auto niñoDos = my_actor_factory (child2_task_name, 10);
+            alive;
+            while (!stop) {
+                receive;
+            }
+        }
+
+        mixin TaskActor;
+    }
+    static assert(isActor!MySuperActor);
 
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() {
-        auto actor_factory = actor!MyActor;
-        /* auto supervisor_factory = actor!MySuperActor; */
+        auto supervisor_factory = actor!MySuperActor;
 
-        /* auto supervisor = supervisor_factory("super"); */
-        auto niñoUno = actor_factory("child1", 10);
-        auto niñoDos = actor_factory("child2", 10);
-        
-        /* writeln(supervisor); */
-        writefln("CHILD: %s", niñoDos);
+        supervisor_factory(superviser_task_name);
+
         return Document();
     }
 
