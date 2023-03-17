@@ -1961,7 +1961,6 @@ alias check = Check!DARTException;
             }
 
             {
-                writefln("runnning dart failing test");
                 DARTFile.create(filename_A);
                 auto dart_A = new DARTFile(net, filename_A);
 
@@ -1979,24 +1978,21 @@ alias check = Check!DARTException;
                 // writefln("%s", remove_fingerprint);
 
                 dart_A.modify(recorder, null, true);
-                dart_A.dump();
+                // dart_A.dump();
 
                 auto remove_recorder = dart_A.recorder();
                 remove_recorder.remove(remove_fingerprint);
                 dart_A.modify(remove_recorder, null, true);
-                dart_A.dump();
+                // dart_A.dump();
 
                 ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x11, 0xef];
 
                 auto branches = dart_A.branches(rim_path[0 .. 3]);
-                writefln("TOP BRANCH PASS: %s", hasArchive(branches));
 
-                auto deep_branches = dart_A.branches(rim_path);
-                writefln("DEEP BRANCH PASS: %s", !hasArchive(deep_branches));
-
+                assert(hasArchive(branches), "branch not snapped back to rim 3");
+               
             }
             {
-                writefln("POSITIVE TEST");
                 // this test is just a support to see how the real result should be of the previous test.
                 DARTFile.create(filename_A);
                 auto dart_A = new DARTFile(net, filename_A);
@@ -2017,10 +2013,7 @@ alias check = Check!DARTException;
                 ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x11, 0xef];
 
                 auto branches = dart_A.branches(rim_path[0 .. 3]);
-                writefln("TOP BRANCH PASS: %s", hasArchive(branches));
-
-                auto deep_branches = dart_A.branches(rim_path);
-                writefln("DEEP BRANCH PASS: %s", !hasArchive(deep_branches));
+                assert(hasArchive(branches), "branch not snapped back to rim 3");
 
             }
         }
