@@ -1,3 +1,4 @@
+/// Contains all the HiRPC DART crud commands
 module tagion.dart.DARTcrud;
 
 import std.range : isInputRange, ElementType;
@@ -8,6 +9,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.dart.DART : DART;
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic : DARTIndex;
+
 /**
        * Constructs a HiRPC method for dartRead 
        * Params:

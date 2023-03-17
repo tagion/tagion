@@ -18,8 +18,6 @@
 
 [actor_message.md](bdd/tagion/testbench/services/actor_message.md)
 
-[actor_request_response.md](bdd/tagion/testbench/services/actor_request_response.md)
-
 [Implement_the_epoch_block_chain.md](bdd/tagion/testbench/backlog/Implement_the_epoch_block_chain.md)
 
 [ContractInterface_service.md](bdd/tagion/testbench/backlog/ContractInterface_service.md)

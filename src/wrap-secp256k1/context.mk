@@ -1,6 +1,8 @@
 
 
 LIBSECP256K1_NAME:=libsecp256k1
+
+# It seems the build creates both the shared and static library regardless of this options being enabled or disabled
 ifdef SHARED
 LIBSECP256K1_FILE:=$(LIBSECP256K1_NAME).$(DLLEXT)
 CONFIGUREFLAGS_SECP256K1 += --enable-shared=yes
@@ -23,6 +25,7 @@ CONFIGUREFLAGS_SECP256K1 += --enable-module-recovery
 CONFIGUREFLAGS_SECP256K1 += --enable-module-schnorrsig
 CONFIGUREFLAGS_SECP256K1 += CRYPTO_LIBS=$(DTMP)/ CRYPTO_CFLAGS=$(DSRC_OPENSSL)/include/
 CONFIGUREFLAGS_SECP256K1 += --prefix=$(DLIB)
+CONFIGUREFLAGS_SECP256K1 += CFLAGS=-fPIC
 include ${call dir.resolve, cross.mk}
 
 secp256k1: $(LIBSECP256K1) $(DSRC_SECP256K1)/include/secp256k1_hash.h

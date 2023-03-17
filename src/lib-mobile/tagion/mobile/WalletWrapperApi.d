@@ -62,12 +62,13 @@ export static int64_t stop_rt() {
     }
     return -1;
 }
-//const uint8_t* data_ptr, const uint32_t len
-export uint wallet_create(const uint8_t* pincodePtr, const uint32_t pincodeLen, const uint32_t aes_doc_id,
+//const uint8_t* data_ptr, const uint32_t len                                                  /// Not used
+export uint wallet_create(const uint8_t* pincodePtr, const uint32_t pincodeLen, const uint32_t __aes_doc_id,
         const char* questionsPtr, const uint32_t qestionslen, const char* answersPtr,
         const uint32_t answerslen, uint32_t confidence) {
     immutable pincode = cast(immutable)(pincodePtr[0 .. pincodeLen]);
 
+    const aes_doc_id = generateAESKey(0);
     const aes_key_data = recyclerDoc(aes_doc_id);
 
     immutable decr_pincode = decrypt(pincode, aes_key_data);
@@ -88,6 +89,20 @@ export uint wallet_create(const uint8_t* pincodePtr, const uint32_t pincodeLen, 
     const doc_id = recyclerDoc.create(Document(result));
     return doc_id;
 }
+
+/// wallet_create
+// unittest {
+//     uint8_t* pincodePtr = cast(ubyte*) [1,1,1,1];
+//     uint32_t pincodeLen = 4;
+//     uint32_t aes_doc_id = 0;
+//     char* questionsPtr = cast(char*) "q1;q2;q3;q4";
+//     uint32_t questionLen = 4;
+//     char* answersPtr = cast(char*) "a1;a2;a3;a4";
+//     uint32_t answersLen = 4;
+//     uint32_t confidence = 4;
+//     auto wallet_id = wallet_create(pincodePtr, pincodeLen, aes_doc_id, questionsPtr, questionLen, answersPtr, answersLen, confidence);
+//     writeln("WalletID: %s", wallet_id);
+// }
 
 export uint invoice_create(const uint32_t doc_id, const uint32_t dev_pin_doc_id,
         const uint8_t* pincodePtr, const uint32_t pincodeLen,

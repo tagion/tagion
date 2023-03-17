@@ -31,8 +31,6 @@ import tagion.utils.Random;
 import std.random : randomShuffle, MinstdRand0, randomSample;
 import std.datetime.stopwatch;
 
-
-
 import tagion.hibon.HiBONRecord;
 
 import tagion.testbench.dart.dart_helper_functions;
@@ -48,21 +46,28 @@ alias FeatureContext = Tuple!(
 
 @safe @Scenario("Add pseudo random data.",
     [])
-class AddPseudoRandomData {
+class AddPseudoRandomData
+{
     DART db1;
 
     DartInfo info;
     const ulong samples;
+    const ulong number_of_records;
     ulong[][] data;
     BDDOptions bdd_options;
 
-    this(DartInfo info, const ulong samples) {
+    this(DartInfo info, const ulong samples, const ulong number_of_records)
+    {
+        check(samples % number_of_records == 0, 
+            format("Number of samples %s and records %s each time does not match.", samples, number_of_records));
         this.info = info;
         this.samples = samples;
+        this.number_of_records = number_of_records;
     }
 
     @Given("I have one dartfile.")
-    Document dartfile() {
+    Document dartfile()
+    {
         mkdirRecurse(info.module_path);
         // create the dartfile
         DART.create(info.dartfilename);
@@ -75,26 +80,27 @@ class AddPseudoRandomData {
     }
 
     @Given("I have a pseudo random sequence of data stored in a table with a seed.")
-    Document seed() {
+    Document seed()
+    {
         check(!info.fixed_states.empty, "Pseudo random sequence not generated");
         return result_ok;
     }
 
     @When("I increasingly add more data in each recorder and time it.")
-    Document it() {
+    Document it()
+    {
 
         auto insert_watch = StopWatch(AutoStart.no);
         auto read_watch = StopWatch(AutoStart.no);
         auto remove_watch = StopWatch(AutoStart.no);
 
-        
-
         RecordFactory.Recorder[] recorders;
 
-        foreach (i; 0 .. samples/10_000) {
+        foreach (i; 0 .. samples / number_of_records)
+        {
             writefln("running %s", i);
 
-            auto docs = info.fixed_states.take(10_000)
+            auto docs = info.fixed_states.take(number_of_records)
                 .map!(a => DARTFakeNet.fake_doc(a));
 
             auto recorder = db1.recorder();
@@ -103,7 +109,7 @@ class AddPseudoRandomData {
             recorder.insert(docs, Archive.Type.ADD);
             auto fingerprints = recorder[]
                 .map!(a => a.fingerprint);
-            
+
             ulong[] insert_add_single_time;
             insert_watch.start();
             db1.modify(recorder);
@@ -125,7 +131,8 @@ class AddPseudoRandomData {
         }
         import tagion.dart.Recorder : Remove;
 
-        foreach (i, recorder; recorders.enumerate) {
+        foreach (i, recorder; recorders.enumerate)
+        {
             remove_watch.start();
             db1.modify(recorder, Remove);
             remove_watch.stop();
@@ -136,31 +143,32 @@ class AddPseudoRandomData {
         const long insert_time = insert_watch.peek.total!"msecs";
         const long read_time = read_watch.peek.total!"msecs";
         const long remove_time = remove_watch.peek.total!"msecs";
-        const total_time = insert_time+read_time+remove_time;
-
+        const total_time = insert_time + read_time + remove_time;
 
         writefln("INSERT took %d msecs", insert_time);
         writefln("READ took %d msecs", read_time);
         writefln("REMOVE took %d msecs", remove_time);
 
-        writefln("TOTAL: %d msecs. IRR pr. sec: %.1f", insert_time+read_time+remove_time, samples/double(total_time)*1000.0);
+        writefln("TOTAL: %d msecs. IRR pr. sec: %.1f", insert_time + read_time + remove_time, samples / double(
+                total_time) * 1000.0);
 
         return result_ok;
     }
 
     @Then("the data should be read and checked.")
-    Document checked() {
-
-        
+    Document checked()
+    {
 
         auto fout = File(format("%s", buildPath(info.module_path, "dart_stress_test.csv")), "w");
 
-        scope(exit) {
+        scope (exit)
+        {
             fout.close();
         }
 
         fout.writeln("INSERT,READ,REMOVE");
-        foreach(single_time; data) {
+        foreach (single_time; data)
+        {
             fout.writefln("%(%s, %)", single_time);
         }
 
