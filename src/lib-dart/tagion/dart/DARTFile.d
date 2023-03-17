@@ -2125,6 +2125,63 @@ alias check = Check!DARTException;
                 // dart_A.dump();
 
             }
+
+            {
+                // Double snap back. Add 2 x 2 archives and remove one in each so both branches should snap back.
+                // EYE: 13c0d1bdc484c65f84968f8bcd1eb873520cfda16c070fdac4f5eb54f1fa54d9
+                // | AB [11]
+                // | .. | B9 [10]
+                // | .. | .. | 13 [9]
+                // | .. | .. | .. | AB [8]
+                // | .. | .. | .. | .. | 11 [4]
+                // | .. | .. | .. | .. | .. | EF [3]
+                // | .. | .. | .. | .. | .. | .. abb913ab11ef0923 [1]
+                // | .. | .. | .. | .. | .. | .. abb913ab11ef1234 [2]
+                // | .. | .. | .. | .. | 12 [7]
+                // | .. | .. | .. | .. | .. abb913ab121356 [5]
+                // | .. | .. | .. | .. | .. abb913ab121412 [6]
+                // Then the db should look like this:
+                // EYE: a8db386daf51e78165021eae66ef072815d52bfcdd776e59f065a742e680ffb0
+                // | AB [17]
+                // | .. | B9 [16]
+                // | .. | .. | 13 [15]
+                // | .. | .. | .. | AB [14]
+                // | .. | .. | .. | .. abb913ab11ef [2]
+                // | .. | .. | .. | .. abb913ab1214 [6]
+                DARTFile.create(filename_A);
+                auto dart_A = new DARTFile(net, filename_A);
+
+                const ulong[] deep_table = [
+                    0xABB9_13ab_11ef_0923,
+                    0xABB9_13ab_11ef_1234,
+                    0xABB9_13ab_1213_5678,
+                    0xABB9_13ab_1214_1234,
+                ];
+
+                auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
+                auto recorder = dart_A.recorder();
+                foreach (doc; docs) {
+                    recorder.add(doc);
+                }
+
+                auto fingerprints = recorder[].map!(r => r.fingerprint).array;
+                assert(fingerprints.length == 4);
+                dart_A.modify(recorder);
+                // dart_A.dump();
+
+                auto remove_recorder = dart_A.recorder();
+                remove_recorder.remove(fingerprints[0]);
+                remove_recorder.remove(fingerprints[2]);
+                dart_A.modify(remove_recorder);
+                // dart_A.dump();
+
+                ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab];
+                auto branches = dart_A.branches(rim_path);
+
+                pragma(msg, "fixme(pr): better check for archives");
+                assert(branches.fingerprints.filter!(f=>!f.empty).array.length == 2, "should contain two archives");
+
+            }
         }
 
     }
