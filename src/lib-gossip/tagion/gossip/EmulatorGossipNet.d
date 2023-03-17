@@ -158,4 +158,8 @@ class EmulatorGossipNet : GossipNet {
         log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
                 .toDoc.serialize.length);
     }
+    
+    void start_listening(){
+        // NO IMPLEMENTATION NEEDED
+    }
 }

@@ -61,7 +61,7 @@ static struct Logger {
 */
     @trusted
     void register(string task_name) nothrow
-        in(logger_tid is logger_tid.init)
+    in (logger_tid is logger_tid.init)
     do {
         push(LogLevel.ALL);
         scope (exit) {
@@ -156,7 +156,7 @@ Returns: the current mask
 */
     @trusted
     void report(const LogLevel level, lazy scope string text) const nothrow {
-        if ( (masks.length > 0) && (level & masks[$ - 1]) && !silent) {
+        if ((masks.length > 0) && (level & masks[$ - 1]) && !silent) {
             import std.exception : assumeWontThrow;
             import std.conv : to;
 
@@ -181,13 +181,12 @@ Returns: the current mask
                     logger_tid.send(info, doc);
                 }
                 catch (Exception e) {
-                    import core.stdc.stdio;
+                    import std.stdio;
 
-                    scope const _level = assumeWontThrow(toStringz(level.to!string));
-                    scope const _text = assumeWontThrow(toStringz(text));
-                    fprintf(stderr, "\t%s:%s: %s", _task_name.toStringz, _level, _text);
-                    scope const _msg = assumeWontThrow(toStringz(e.toString));
-                    fprintf(stderr, "%s", _msg);
+                    assumeWontThrow({ 
+                        stderr.writefln("\t%s:%s: %s", task_name, level, text); 
+                        stderr.writefln("%s", e); 
+                    }());
                 }
             }
         }
@@ -205,12 +204,13 @@ Returns: the current mask
                 logger_tid.send(info, doc);
             }
             catch (Exception e) {
-                import core.stdc.stdio;
+                import std.stdio;
 
-                scope const _symbol_name = assumeWontThrow(toStringz(symbol_name));
-                fprintf(stderr, "\t%s:%s env", _task_name.toStringz, _symbol_name);
-                scope const _msg = assumeWontThrow(toStringz(e.toString));
-                fprintf(stderr, "%s", _msg);
+                assumeWontThrow({ 
+                stderr.writefln("%s", e.msg); 
+                stderr.writefln("\t%s:%s env", task_name, symbol_name); 
+            }());
+
             }
         }
     }

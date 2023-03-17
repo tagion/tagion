@@ -1,6 +1,7 @@
 /// This module handles and pre-validates the Smart contract send to the network
 module tagion.prior_services.TransactionService;
 
+import core.time;
 import std.stdio : writeln, writefln;
 import std.format;
 import std.socket;
@@ -12,7 +13,7 @@ import std.socket : SocketType, AddressFamily, SocketOptionLevel, SocketOption;
 import tagion.network.ServerAPI;
 import tagion.network.SSLSocket : SSLSocket;
 
-import tagion.network.FiberServer : FiberServer, FiberRelay;
+import tagion.network.FiberServer : FiberServer, FiberRelay, SocketTimeout;
 import tagion.logger.Logger;
 import tagion.prior_services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
@@ -75,6 +76,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             auto sender = dartRead(inputs, internal_hirpc, id);
             auto tosend = sender.toDoc.serialize; //internal_hirpc.toHiBON(sender).serialize;
             dart_sync_tid.send(opts.transaction.service.server.response_task_name, tosend);
+            yield;
         }
 
         @trusted void search(Document doc, uint id) {
@@ -85,41 +87,36 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
             auto sender = internal_hirpc.search(n_params, id);
             auto tosend = sender.toDoc.serialize;
             dart_sync_tid.send(opts.transaction.service.server.response_task_name, tosend);
+            yield;
         }
 
         @trusted void areWeInGraph(uint id) {
             auto sender = internal_hirpc.healthcheck(new HiBON(), id);
             auto tosend = sender.toDoc.serialize;
             send(node_tid, opts.transaction.service.server.response_task_name, tosend);
+            yield;
         }
 
         @safe class TransactionRelay : FiberServer.Relay {
             bool agent(FiberRelay ssl_relay) {
                 import tagion.hibon.HiBONJSON;
 
-                /**Returns: Document from ssl with received buffer*/
-                @trusted const(Document) receivessl() nothrow {
-                    try {
-                        import tagion.hibon.Document;
-                        import tagion.hibon.HiBONRecord;
+                @trusted const(Document) receivessl() {
+                    import tagion.hibon.Document;
+                    import tagion.hibon.HiBONRecord;
 
-                        immutable buffer = ssl_relay.receive;
-                        log("buffer receiver %d", buffer.length);
-                        const result = Document(buffer);
-                        bool check_doc(const Document main_doc,
-                                const Document.Element.ErrorCode error_code,
-                                const(Document.Element) current,
-                                const(Document.Element) previous) nothrow @safe {
-                            return false;
-                        }
+                    immutable buffer = ssl_relay.receive;
+                    log("buffer receiver %d", buffer.length);
+                    const result = Document(buffer);
+                    bool check_doc(const Document main_doc,
+                            const Document.Element.ErrorCode error_code,
+                            const(Document.Element) current,
+                            const(Document.Element) previous) nothrow @safe {
+                        return false;
+                    }
 
-                        result.valid(&check_doc);
-                        return result;
-                    }
-                    catch (Exception t) {
-                        log.warning("Exception caught: %s", t);
-                    }
-                    return Document();
+                    result.valid(&check_doc);
+                    return result;
                 }
 
                 Document doc;
@@ -164,11 +161,10 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         log("Method name: %s", method_name);
                         switch (method_name) {
                         case "search":
-                            search(params, ssl_relay.id); //epoch number?
-                            do {
-                                yield; /// Expects a response from the DART service
+                            search(params, ssl_relay.id);
+                            if(!ssl_relay.available) {
+                                return true;
                             }
-                            while (!ssl_relay.available());
                             const response = ssl_relay.response;
                             ssl_relay.send(response);
                             break;
@@ -176,11 +172,9 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
 
                             log("sending healthcheck request");
                             areWeInGraph(ssl_relay.id);
-                            do {
-                                yield;
-                                log.trace("SSLRelay available: %s", ssl_relay.available());
+                            if(!ssl_relay.available) {
+                                return true;
                             }
-                            while (!ssl_relay.available());
                             const response = ssl_relay.response;
                             log("sending healthcheck response %s", Document(response).toJSON);
                             ssl_relay.send(response);
@@ -199,11 +193,9 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
 
                                     auto inputs = signed_contract.contract.inputs;
                                     requestInputs(inputs, ssl_relay.id);
-                                    do {
-                                        yield;
-                                        log.trace("SSLRelay available: %s", ssl_relay.available());
+                                    if(!ssl_relay.available) {
+                                        return true;
                                     }
-                                    while (!ssl_relay.available());
                                     //() @trusted => Fiber.yield; // Expect an Recorder resonse for the DART service
                                     const response = ssl_relay.response;
                                     const received = internal_hirpc.receive(Document(response));
@@ -278,6 +270,9 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
 
                     }
                 }
+                catch (SocketTimeout e) {
+                    log.error("Socket timeout: %s", e.msg);
+                }
                 catch (TagionException e) {
                     log.error("Bad contract: %s", e.msg);
                     const bad_response = hirpc.error(respone_id, e.msg, 1);
@@ -299,7 +294,6 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                 SocketType.STREAM,
                 opts.transaction.service.cert.certificate,
                 opts.transaction.service.cert.private_key);
-        listener.setOption(SocketOptionLevel.SOCKET, SocketOption.REUSEADDR, 0);
         ServerAPI script_api = ServerAPI(opts.transaction.service.server, listener, relay);
         auto script_thread = script_api.start;
 

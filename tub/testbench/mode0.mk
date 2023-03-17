@@ -3,9 +3,10 @@ MODE0_DATA:=$(MODE0_ROOT)/data
 MODE0_DART:=$(MODE0_DATA)/node0/dart.drt
 MODE0_LOG:=$(MODE0_ROOT)/mode0_script.log
 MODE0_FLAGS:=-N 7 -t 200
-MODE0_FLAGS:=--monitor --monitor-port 10920
+MODE0_FLAGS+=--monitor --monitor-port 10920
 MODE0_FLAGS+=--pid=$(MODE0_ROOT)/tagionwave.pid
-MODE0_FLAGS+=--dart-init=false;
+MODE0_FLAGS+=--dart-init=false
+MODE0_FLAGS+=--logger-size=2000
 # MODE0_FLAGS+=--epochs=$(EPOCHS);
 
 mode0: mode0-dart
@@ -28,6 +29,7 @@ mode0:
 else
 mode0:
 	cd $(MODE0_ROOT)
+	echo MODE0_FLAGS=$(MODE0_FLAGS) >/tmp/mode0_flags.txt
 	script -c "$(TAGIONWAVE) $(MODE0_FLAGS)" $(MODE0_LOG)
 endif
 

@@ -23,6 +23,7 @@ import tagion.prior_services.Options : Options, setOptions, options;
 import tagion.logger.Logger;
 import tagion.logger.LogRecords;
 import tagion.taskwrapper.TaskWrapper;
+import tagion.dart.BlockFile : truncate;
 
 mixin TrustedConcurrency;
 
@@ -89,13 +90,22 @@ private {
             sendToLogSubService(info, doc);
         }
 
-        enum _msg=GetLabel!(TextLog.message).name;
+        enum _msg = GetLabel!(TextLog.message).name;
         if (info.isTextLog && doc.hasMember(_msg)) {
             string output = formatLog(info.level, info.task_name, doc[_msg].get!string);
 
             // Output text log to file
             if (logging) {
                 file.writeln(output);
+                if (options.logger.trunc_size) {
+                    const file_tell = file.tell;
+                    if (options.logger.trunc_size <= file_tell) {
+                        file.writefln("Truncated at %d", file_tell);
+                        file.flush;
+                        truncate(file, file_tell);
+                        file.seek(0);
+                    }
+                }
             }
 
             // Output text log to console
