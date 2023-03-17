@@ -37,6 +37,24 @@ jobs:
           else 
             echo "Cache not found"
           fi
+          
+      - name: Run Bdd tests
+        run: |
+          source ~/.bashrc
+          make bddtest TEST_STAGE=acceptance | tail -n 3 | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' > bddconsole.log
+     
+      - name: Upload Bdd result
+        uses: actions/upload-artifact@v3
+        with:
+          name: core-bdd-logs
+          path: logs/${{ env.TARGET_BUILD }}/bdd/
+      - name: Report Bdd result
+        run: |
+          cat ./bddconsole.log | tail -n 3 >> $GITHUB_STEP_SUMMARY
+
+      # - name: Check bdd result
+      #  run: cat ./bddconsole.log | tail -n 1 | grep -E "Test result success!"
+
      
       - name: Build
         run: |
@@ -130,6 +148,9 @@ jobs:
     runs-on: self-hosted
     needs: create_tagion_images
     steps: 
+    
+      - id: commit
+        uses: pr-mpt/actions-commit-hash@v2
       - name: Cleanup
         run: rm -rf * ; ls; pwd;
 
@@ -147,8 +168,8 @@ jobs:
           set +e
           ulimit -c unlimited
           sudo sysctl -w kernel.core_pattern=/tgn/results/core.%u.%p.%t
-          mkdir -p /tmp/scenario-result/${{ github.head_ref }}
-          sudo chmod -R 777 /tmp/scenario-result/${{ github.head_ref }}
+          mkdir -p /tmp/scenario-result/${{ steps.commit.outputs.short }}
+          sudo chmod -R 777 /tmp/scenario-result/${{ steps.commit.outputs.short }}
             
   run_scenario:
     runs-on: self-hosted
@@ -157,13 +178,15 @@ jobs:
       matrix:
         scenario: ${{ fromJson(needs.create_tagion_images.outputs.scenario_matrix) }}
     steps:
+      - id: commit
+        uses: pr-mpt/actions-commit-hash@v2
       - name: Run docker
         continue-on-error: true
         run: |
             SCENARIO=${{ matrix.scenario }}
             echo "RUN SCENARIO: $SCENARIO"
-            mkdir -p /tmp/scenario-result/${{ github.head_ref }}/$SCENARIO
-            docker run -d --rm --name ${{ github.head_ref }}_$SCENARIO -v /tmp/scenario-result/${{ github.head_ref }}/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
+            mkdir -p /tmp/scenario-result/${{ steps.commit.outputs.short }}/$SCENARIO
+            docker run -d --rm --name ${{ steps.commit.outputs.short }}_$SCENARIO -v /tmp/scenario-result/${{ steps.commit.outputs.short }}/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
             echo "$SCENARIO executed"
       - name: Wait untill docker finished
         timeout-minutes: 5
@@ -175,7 +198,7 @@ jobs:
           while true
           do
             sleep $DELAY
-            result=$( docker inspect -f '{{.State.Running}}' ${{ github.head_ref }}_$SCENARIO 2>/dev/null )    
+            result=$( docker inspect -f '{{.State.Running}}' ${{ steps.commit.outputs.short }}_$SCENARIO 2>/dev/null )    
             echo "Check result: $result"
             if [ "$result" = true ]; then
                 echo 'Container $SCENARIO  exists'
@@ -188,7 +211,7 @@ jobs:
         if: always()
         run: |
           SCENARIO=${{ matrix.scenario }}
-          app="${{ github.head_ref }}_$SCENARIO"
+          app="${{ steps.commit.outputs.short }}_$SCENARIO"
           if docker ps | awk -v app="$app" 'NR > 1 && $NF == app{ret=1; exit} END{exit !ret}'; then
             docker stop "$app" && docker rm -f "$app"
           fi
@@ -197,10 +220,12 @@ jobs:
     needs: run_scenario
     continue-on-error: true
     steps:
+      - id: commit
+        uses: pr-mpt/actions-commit-hash@v2
       - name: log status
         run: |
             set +e
-            PATH_TO_LOGS="/tmp/scenario-result/${{ github.head_ref }}/**/*.result.json"
+            PATH_TO_LOGS="/tmp/scenario-result/${{ steps.commit.outputs.short }}/**/*.result.json"
             REPORT="|Scenario|Test case|Passed|Message|Error|\n|-|-|-|-|-|\n"
             failed_scenarios=false
               for logfile in $PATH_TO_LOGS
@@ -239,20 +264,20 @@ jobs:
             REPORT=$( echo "${REPORT//null/}" )
             REPORT=$( echo "${REPORT//\"/}" )
             echo -e "$REPORT"  >> $GITHUB_STEP_SUMMARY
-            sudo chmod -R 777 /tmp/scenario-result/${{ github.head_ref }}
+            sudo chmod -R 777 /tmp/scenario-result/${{ steps.commit.outputs.short }}
             if $failed_scenarios 
             then
                 echo "Scenarious failed"
             fi
       - name: Set folder permision
         if: always()
-        run: sudo chmod -R 777 /tmp/scenario-result/${{ github.head_ref }}
+        run: sudo chmod -R 777 /tmp/scenario-result/${{ steps.commit.outputs.short }}
       - name: upload artifacts
         if: always()
         uses: actions/upload-artifact@v2.2.0
         with:
           name: core-scenarious-results
-          path: /tmp/scenario-result/${{ github.head_ref }}/
+          path: /tmp/scenario-result/${{ steps.commit.outputs.short }}/
           if-no-files-found: error
           retention-days: 5
       ##- name: Clean logs

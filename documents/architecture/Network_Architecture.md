@@ -20,7 +20,7 @@ A node consist of the following services.
 
 * Support services
 	- [Logger](/documents/architecture/Logger.md) takes care of handling the logger information for all the services.
-	- [Logger Subscription](/document/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
+	- [Logger Subscription](/documents/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
 	- [Monitor](/documents/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
 
 
