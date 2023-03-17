@@ -94,7 +94,7 @@ class SyncToAnotherDb {
     @Given("I sync the databases.")
     Document databases() {
         syncDarts(db1, db2, angle, to);
-        db2.dump();
+        // db2.dump();
         return result_ok;
     }
 

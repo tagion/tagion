@@ -1216,7 +1216,7 @@ received = the HiRPC received package
                 const ulong[] single_archive = [0xABB9_13ab_11ef_0923];
 
                 write(dart_B, single_archive, recorder_B);
-                dart_B.dump;
+                // dart_B.dump;
 
                 //
                 // Synchronize DART_B -> DART_A
