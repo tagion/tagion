@@ -1093,8 +1093,13 @@ alias check = Check!DARTException;
                             if (branches.isSingle && rim > RIMS_IN_SECTOR) {
                             
                                 const single_leave = branches[].front;
+                                const buf = blockfile.cacheLoad(single_leave.index);
+                                const single_doc = Document(buf);
+
                                 __write("X single_leave: %s", single_leave.toPretty);
-                                if (PRINT) {
+                                __write("DOCUMENT: %s", single_doc.toPretty);
+
+                                if (!Branches.isRecord(single_doc)) {
                                     return single_leave;
                                 }
                                 
@@ -1950,6 +1955,7 @@ alias check = Check!DARTException;
 
             import std.algorithm : map;
             import std.range : empty;
+            import std.format;
 
             bool hasArchive(Branches branches) {
                 auto full_branches = branches.fingerprints
