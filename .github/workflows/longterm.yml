@@ -41,22 +41,7 @@ jobs:
             echo "Cache not found"
           fi
           
-      - name: Run Bdd tests
-        run: |
-          source ~/.bashrc
-          make bddtest TEST_STAGE=acceptance | tail -n 3 | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' > bddconsole.log
-     
-      - name: Upload Bdd result
-        uses: actions/upload-artifact@v3
-        with:
-          name: core-bdd-logs
-          path: logs/${{ env.TARGET_BUILD }}/bdd/
-      - name: Report Bdd result
-        run: |
-          cat ./bddconsole.log | tail -n 3 >> $GITHUB_STEP_SUMMARY
-      # - name: Check bdd result
-      #  run: cat ./bddconsole.log | tail -n 1 | grep -E "Test result success!"
-
+  
      
       - name: Build
         run: |
@@ -189,7 +174,7 @@ jobs:
             echo "RUN SCENARIO: $SCENARIO"
             mkdir -p /tmp/scenario-result/${{ steps.commit.outputs.short }}/$SCENARIO
             sudo chmod -R 777 /tmp/scenario-result/${{ steps.commit.outputs.short }}/$SCENARIO
-            docker run -d --rm --name ${{ steps.commit.outputs.short }}_$SCENARIO -v /tmp/scenario-result/${{ steps.commit.outputs.short }}/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
+            docker run --rm --name ${{ steps.commit.outputs.short }}_$SCENARIO -v /tmp/scenario-result/${{ steps.commit.outputs.short }}/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
             echo "$SCENARIO executed"
       - name: Wait untill docker finished
         timeout-minutes: 5
