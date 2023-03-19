@@ -1,8 +1,11 @@
-name: Once a day test 
+name: Nightly build
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 21 * * *'
+  # workflow_dispatch:
+  # schedule:
+  #   - cron: '0 21 * * *'
+  push: 
+    branches: 
+      - as-ci-bdd
 env:
   ## Sets environment variable
   TARGET_BUILD: x86_64-linux
@@ -162,6 +165,7 @@ jobs:
             SCENARIO=${{ matrix.scenario }}
             echo "RUN SCENARIO: $SCENARIO"
             mkdir -p /tmp/scenario-result/${{ github.head_ref }}/$SCENARIO
+            sudo chmod -R 777 /tmp/scenario-result/${{ github.head_ref }}/$SCENARIO
             docker run -d --rm --name ${{ github.head_ref }}_$SCENARIO -v /tmp/scenario-result/${{ github.head_ref }}/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
             echo "$SCENARIO executed"
       - name: Wait untill docker finished
@@ -169,11 +173,12 @@ jobs:
         continue-on-error: true
         run: |
           SCENARIO=${{ matrix.scenario }}
-          
+          set +e
           DELAY=5
           while true
           do
             sleep $DELAY
+            docker container list
             result=$( docker inspect -f '{{.State.Running}}' ${{ github.head_ref }}_$SCENARIO 2>/dev/null )    
             echo "Check result: $result"
             if [ "$result" = true ]; then

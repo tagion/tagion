@@ -1,4 +1,4 @@
-name: Unittest and Nightly build
+name: Daily test & build
 on:
   workflow_dispatch:
   push: 
