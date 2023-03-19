@@ -180,23 +180,6 @@ jobs:
       matrix:
         scenario: ${{ fromJson(needs.create_tagion_images.outputs.scenario_matrix) }}
     steps:
-      - id: commit
-        uses: pr-mpt/actions-commit-hash@v2
-      - name: Run docker
-        continue-on-error: true
-        run: |
-            SCENARIO=${{ matrix.scenario }}
-            echo "RUN SCENARIO: $SCENARIO"
-            mkdir -p /tmp/scenario-result/${{ steps.commit.outputs.short }}/$SCENARIO
-            docker run -d --rm --name ${{ steps.commit.outputs.short }}_$SCENARIO -v /tmp/scenario-result/${{ steps.commit.outputs.short }}/$SCENARIO:/tgn/results/ tagion/qa-toolkit:$GITHUB_SHA timeout --preserve-status 5m run-qa.sh $SCENARIO $MODE
-            echo "$SCENARIO executed"
-run_scenario:
-    runs-on: self-hosted
-    needs: [before_run, create_tagion_images]
-    strategy:
-      matrix:
-        scenario: ${{ fromJson(needs.create_tagion_images.outputs.scenario_matrix) }}
-    steps:
       - name: Run docker
         continue-on-error: true
         run: |
@@ -235,7 +218,6 @@ run_scenario:
           if docker ps | awk -v app="$app" 'NR > 1 && $NF == app{ret=1; exit} END{exit !ret}'; then
             docker stop "$app" && docker rm -f "$app"
           fi
-
   after_run:
     runs-on: self-hosted
     needs: run_scenario
