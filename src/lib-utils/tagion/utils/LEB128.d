@@ -48,6 +48,16 @@ size_t calc_size(T)(const T v) pure nothrow if (isUnsigned!(T)) {
     return result;
 }
 
+/// Returns: the max size to store a T as a
+template DataSize(T) if (isIntegral!T) {
+    static if (isUnsigned!T) {
+        enum DataSize = T.sizeof + 2;
+    }
+    else {
+        enum DataSize = (T.sizeof * 9 + 1) / 8 + 1;
+    }
+}
+
 @safe @nogc
 size_t calc_size(T)(const T v) pure nothrow if (isSigned!(T)) {
     if (v == T.min) {
@@ -75,7 +85,7 @@ size_t calc_size(T)(const T v) pure nothrow if (isSigned!(T)) {
 
 @safe
 immutable(ubyte[]) encode(T)(const T v) pure if (isUnsigned!T && isIntegral!T) {
-    ubyte[T.sizeof + 2] data;
+    ubyte[DataSize!T] data;
     alias BaseT = TypedefType!T;
     BaseT value = cast(BaseT) v;
     foreach (i, ref d; data) {
@@ -92,7 +102,7 @@ immutable(ubyte[]) encode(T)(const T v) pure if (isUnsigned!T && isIntegral!T) {
 @safe
 immutable(ubyte[]) encode(T)(const T v) pure if (isSigned!T && isIntegral!T) {
     enum DATA_SIZE = (T.sizeof * 9 + 1) / 8 + 1;
-    ubyte[DATA_SIZE] data;
+    ubyte[DataSize!T] data;
     if (v == T.min) {
         foreach (ref d; data[0 .. $ - 1]) {
             d = 0x80;

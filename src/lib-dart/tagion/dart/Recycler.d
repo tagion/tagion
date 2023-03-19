@@ -127,54 +127,54 @@ struct BlockSegment {
                  */
     Document doc; /// Document stored in the segment
     invariant {
-        assert(((previous == 0 ) && (next == 0)) || (previous < next));
+        assert(((previous == 0) && (next == 0)) || (previous < next));
     }
 
     ulong totalSize() const pure nothrow @nogc {
         return LEB128.calc_size(previous) + LEB128.calc_size(next) + doc.full_size;
     }
 
-    version(none)
-    uint blocks(const uint block_size) const pure nothrow @nogc {
+    version (none) uint blocks(const uint block_size) const pure nothrow @nogc {
         const total_size = totalSize;
         return total_size / block_size + (total_size % block_size == 0) ? 0 : 1;
     }
 
-    void write(ref File file) const {  
+    void write(ref File file) const {
+        file.rawWrite(doc.serialize);
         file.rawWrite(LEB128.encode(previous));
         file.rawWrite(LEB128.encode(next));
-        file.rawWrite(doc.serialize);
     }
 
     @disable this();
-    this(const Document doc, const ulong previous, const ulong next) {
+    this(const Document doc, const ulong previousi = 0, const ulong next = 0) {
         this.previous = previous;
         this.next = next;
         this.doc = doc;
     }
 
     this(ref File file) {
-        enum MIN_SIZE = 3 * (ulong.sizeof + 3); // 3 time leb128 ulong
-        ubyte[MIN_SIZE] _pre_buf;
-        ubyte[] pre_buf = _pre_buf;
-        const segment_start = file.tell;
-        file.rawRead(pre_buf);
+        import tagion.hibon.HiBONRecord : fread;
 
+        doc = file.fread;
+        ubyte[LEB128.DataSize!ulong] _pre_buf;
+        ubyte[] pre_buf = _pre_buf;
+        file.rawRead(pre_buf);
         previous = LEB128.read!ulong(pre_buf).value;
         next = LEB128.read!ulong(pre_buf).value;
-        // Set the file position indicator to where start of doc
-        file.seek(segment_start + MIN_SIZE - pre_buf.length);
-
-        Buffer readDoc() @trusted {
-            import std.exception : assumeUnique;
-
-            const doc_size = LEB128.read!size_t(pre_buf);
-            auto doc_data = new ubyte[doc_size.size + doc_size.value];
-            file.rawRead(doc_data);
-            return assumeUnique(doc_data);
-        }
-
-        doc = readDoc;
     }
 
+    static void updateIndex(ref File file, const ulong previous, const ulong next) 
+    in(previous < next)
+    do {
+        const segment_start = file.tell;
+        {
+            ubyte[LEB128.DataSize!ulong] _buf;
+            ubyte[] buf = _buf;
+            file.rawRead(buf);
+            const doc_size = LEB128.read!ulong(buf);
+            file.seek(segment_start + doc_size.size + doc_size.value);
+        }
+        file.rawWrite(LEB128.encode(previous));
+        file.rawWrite(LEB128.encode(next));
+    }
 }
