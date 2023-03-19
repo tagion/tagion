@@ -5,6 +5,7 @@ import std.container.rbtree : RedBlackTree;
 
 import std.stdio;
 
+import tagion.basic.Types : Buffer;
 import tagion.hibon.Document;
 import tagion.dart.BlockFile : BlockFile;
 
@@ -118,48 +119,62 @@ unittest {
 
 @safe
 struct BlockSegment {
-    ulong previous; /// Previous block index
-    ulong next; /// Next block index
-    Document doc;
-    //    Buffer data;   
-    //ulong size; /// size in bytes
-    //uint number_of_blocks; /// Number of blocks
+    ulong previous; /** Block index of the previous block-segment
+                    * If this is 0 then this is the first segment    
+                    */
+    ulong next; /** Block index of the next block 
+                 * If this is 0 then this is the last segment
+                 */
+    Document doc; /// Document stored in the segment
     invariant {
-        assert(previous < next);
+        assert(((previous == 0 ) && (next == 0)) || (previous < next));
     }
 
     ulong totalSize() const pure nothrow @nogc {
         return LEB128.calc_size(previous) + LEB128.calc_size(next) + doc.full_size;
     }
 
+    version(none)
     uint blocks(const uint block_size) const pure nothrow @nogc {
         const total_size = totalSize;
         return total_size / block_size + (total_size % block_size == 0) ? 0 : 1;
     }
 
-    void write(ref File file) const {
-        file.write(LEB128.encode(previous));
-        file.write(LEB128.encode(next));
-        file.write(doc.serialize);
+    void write(ref File file) const {  
+        file.rawWrite(LEB128.encode(previous));
+        file.rawWrite(LEB128.encode(next));
+        file.rawWrite(doc.serialize);
+    }
+
+    @disable this();
+    this(const Document doc, const ulong previous, const ulong next) {
+        this.previous = previous;
+        this.next = next;
+        this.doc = doc;
     }
 
     this(ref File file) {
         enum MIN_SIZE = 3 * (ulong.sizeof + 3); // 3 time leb128 ulong
         ubyte[MIN_SIZE] _pre_buf;
         ubyte[] pre_buf = _pre_buf;
-        //file.rawRead(buf);
-        /+
-{ // previous
-        const dec_leb = decode!ulong(pre_buf);
-        previous=dec_leb.value;
-        dec_leb = decode!ulong(pre_buf);
-        pre_buf
-        pre_buf
-        next=dec_leb.value;
-        dec_leb = decode!ulong(pre_buf);
-        doc_size=dec_leb.value;
+        const segment_start = file.tell;
+        file.rawRead(pre_buf);
 
-        +/
+        previous = LEB128.read!ulong(pre_buf).value;
+        next = LEB128.read!ulong(pre_buf).value;
+        // Set the file position indicator to where start of doc
+        file.seek(segment_start + MIN_SIZE - pre_buf.length);
 
+        Buffer readDoc() @trusted {
+            import std.exception : assumeUnique;
+
+            const doc_size = LEB128.read!size_t(pre_buf);
+            auto doc_data = new ubyte[doc_size.size + doc_size.value];
+            file.rawRead(doc_data);
+            return assumeUnique(doc_data);
+        }
+
+        doc = readDoc;
     }
+
 }

@@ -248,7 +248,8 @@ unittest {
 }
 
 @safe @nogc
-DecodeLEB128!T takeOne(T)(ref const(ubyte)[] data) pure nothrow {
+DecodeLEB128!T read(T, U:
+        const(ubyte))(ref U[] data) pure nothrow {
     const result = decode!T(data);
     data = data[result.size .. $];
     return result;
@@ -258,25 +259,25 @@ DecodeLEB128!T takeOne(T)(ref const(ubyte)[] data) pure nothrow {
 @safe
 unittest {
     const(ubyte)[] buf;
-    { // takeOne of empty
-        const dec_range = takeOne!ulong(buf);
+    { // read of empty
+        const dec_range = read!ulong(buf);
         assert(dec_range.size == 0);
     }
 
     buf ~= 1234.encode;
-    { // takeOne of one
-        const dec_range = takeOne!ulong(buf);
+    { // read of one
+        const dec_range = read!ulong(buf);
         assert(dec_range.value == 1234);
         assert(dec_range.size == 2);
     }
     buf ~= 2755.encode ~ encode(-0x1245);
-    { // takeOne of two
-        const dec_range = takeOne!ulong(buf);
+    { // read of two
+        const dec_range = read!ulong(buf);
         assert(dec_range.value == 2755);
         assert(dec_range.size == 2);
     }
-    { // takeOne of the last one
-        const dec_range = takeOne!long(buf);
+    { // read of the last one
+        const dec_range = read!long(buf);
         assert(dec_range.value == -0x1245);
         assert(dec_range.size == 2);
     }
