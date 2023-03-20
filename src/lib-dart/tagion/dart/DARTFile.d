@@ -587,7 +587,7 @@ alias check = Check!DARTException;
     }
 
     /** 
-    * Reads the data at branch key
+    * Reads the data at branch key  
     * Params: 
     *    b = branches to read from
     *    key = key in the branch to read from 
@@ -1465,6 +1465,10 @@ alias check = Check!DARTException;
         local_dump(blockfile.masterBlock.root_index);
     }
 
+    package Document cacheLoad(const uint index) {
+        return Document(blockfile.cacheLoad(index));
+    }
+
     version (unittest) {
         import tagion.dart.DARTFakeNet;
 
@@ -1952,11 +1956,12 @@ alias check = Check!DARTException;
             import std.format;
 
 
-            bool hasArchive(Branches branches) {
-                auto full_branches = branches.fingerprints
-                    .filter!(f => !f.empty)
-                    .array;
-                return full_branches.length == 0;
+            size_t numberOfArchives(Branches branches, DARTFile db) {
+                return branches.indices
+                            .filter!(i => i !is INDEX_NULL)
+                            .map!(i => Branches.isRecord(db.cacheLoad(i)))
+                            .walkLength;
+
             }
 
             {
@@ -1986,9 +1991,11 @@ alias check = Check!DARTException;
 
                 ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x11, 0xef];
 
-                auto branches = dart_A.branches(rim_path[0 .. 3]);
+                auto branches = dart_A.branches([0xAB, 0xB9]);
 
-                assert(hasArchive(branches), "branch not snapped back to rim 3");
+
+                assert(numberOfArchives(branches, dart_A) == 1, "Branch not snapped back to rim 3");
+                // assert(hasArchive(branches, dart_A, 1), "branch not snapped back to rim 3");
                
             }
             {
@@ -2012,8 +2019,8 @@ alias check = Check!DARTException;
                 ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x11, 0xef];
 
                 auto branches = dart_A.branches(rim_path[0 .. 3]);
-                assert(hasArchive(branches), "branch not snapped back to rim 3");
-
+                
+                assert(numberOfArchives(branches, dart_A) == 1, "Branch not snapped back to rim 3");
             }
             {
                 // middle branch test.
@@ -2062,8 +2069,8 @@ alias check = Check!DARTException;
                 ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab];
                 auto branches = dart_A.branches(rim_path);
 
-                pragma(msg, "fixme(pr): better check for archives");
-                assert(branches.fingerprints.filter!(f=>!f.empty).array.length == 2, "should contain two archives");
+                assert(numberOfArchives(branches, dart_A) == 2, "Branch not snapped back");
+
                 // dart_A.dump();
             }
 
@@ -2119,7 +2126,8 @@ alias check = Check!DARTException;
                 auto branches = dart_A.branches(rim_path);
 
                 pragma(msg, "fixme(pr): better check for archives");
-                assert(branches.fingerprints.filter!(f=>!f.empty).array.length == 2, "should contain two archives");
+                assert(numberOfArchives(branches, dart_A) == 2, "Should contain two archives");
+
                 // dart_A.dump();
 
             }
@@ -2176,9 +2184,7 @@ alias check = Check!DARTException;
                 ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab];
                 auto branches = dart_A.branches(rim_path);
 
-                pragma(msg, "fixme(pr): better check for archives");
-                assert(branches.fingerprints.filter!(f=>!f.empty).array.length == 2, "should contain two archives");
-
+                assert(numberOfArchives(branches, dart_A) == 2, "Should contain two archives");
             }
         }
 
