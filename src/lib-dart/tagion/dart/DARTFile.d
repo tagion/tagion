@@ -297,24 +297,21 @@ alias check = Check!DARTException;
 
         uint index;
         Buffer fingerprint;
-        Flag!"filed_archive" filed_archive;
 
         bool empty() pure const nothrow {
             return (index is INDEX_NULL) && (fingerprint is null);
         }
 
         mixin HiBONRecord!(q{ 
-            this(const uint index, Buffer fingerprint, Flag!"filed_archive" filed_archive = No.filed_archive) {
+            this(const uint index, Buffer fingerprint) {
                 this.index = index;
                 this.fingerprint = fingerprint;
-                this.filed_archive = filed_archive;
 
             }
 
-            this(const uint index, DARTIndex hash_pointer, Flag!"filed_archive" filed_archive = No.filed_archive) {
+            this(const uint index, DARTIndex hash_pointer) {
                 this.index = index;
                 this.fingerprint = cast(Buffer) hash_pointer;
-                this.filed_archive = filed_archive;
 
             }
         });
@@ -1129,7 +1126,7 @@ alias check = Check!DARTException;
                                         }
                                         return Leave(blockfile.save(one_archive.store.serialize)
                                                 .begin_index,
-                                            one_archive.fingerprint, Yes.filed_archive);
+                                            one_archive.fingerprint);
 
                                     }
                                     // multiple archives left in the database
@@ -1210,7 +1207,7 @@ alias check = Check!DARTException;
                                 }
                                 __write("single archive fingerprint %s", one_archive.fingerprint);
                                 return Leave(blockfile.save(one_archive.store.serialize)
-                                        .begin_index, one_archive.fingerprint, Yes.filed_archive);
+                                        .begin_index, one_archive.fingerprint);
 
                             }
                         }
