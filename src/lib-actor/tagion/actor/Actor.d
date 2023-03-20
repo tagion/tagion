@@ -470,7 +470,7 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
     return result;
 }
 
-/// Decaration use for the unittest
+/// Declaration use for the unittest
 version (unittest) {
     import std.stdio;
     import core.time;
@@ -649,8 +649,8 @@ version (unittest) {
         }
 
         /** 
-* Actor method send a opt to the actor and 
-* sends back an a response to the owner task
+        * Actor method send a opt to the actor and 
+        * sends back an a response to the owner task
         */
         @method void get(Get opt) { // reciever
             final switch (opt) {

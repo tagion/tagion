@@ -21,60 +21,62 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
+enum Gettes {
+    Some,
+    Arg
+}
+
+@safe
+struct MyActor {
+    import tagion.testbench.actor_tests;
+
+
+    long count;
+    string some_name;
+    /**
+    Actor method which sets the str
+    */
+    @method void some(string str) {
+        some_name = str;
+    }
+
+    /// Decrease the count value `by`
+    @method void decrease(int by) {
+        count -= by;
+    }
+
+    /** 
+    * Actor method send a opt to the actor and 
+    * sends back an a response to the owner task
+    */
+    /* @method void get(Gettes opt) { // reciever */
+    /*     final switch (opt) { */
+    /*     case Gettes.Some: */
+    /*         sendOwner(some_name); */
+    /*         break; */
+    /*     case Gettes.Arg: */
+    /*         sendOwner(count); */
+    /*         break; */
+    /*     } */
+    /* } */
+
+    mixin TaskActor; /// Turns the struct into an Actor
+
+    /// UDA @task mark that this is the task for the Actor
+    @task void runningTask(long label) {
+        count = label;
+        //...
+        alive; // Actor is now alive
+        while (!stop) {
+            receiveTimeout(100.msecs);
+        }
+    }
+}
+static assert(isActor!MyActor);
+
 @safe @Scenario("Message between supervisor and child",
         [])
 class MessageBetweenSupervisorAndChild {
-
-    /* private enum Get { */
-    /*     Some, */
-    /*     Arg */
-    /* } */
-
-    @safe
-    private struct MyActor {
-        long count;
-        string some_name;
-        /**
-        Actor method which sets the str
-        */
-        @method void some(string str) {
-            some_name = str;
-        }
-
-        /// Decrease the count value `by`
-        @method void decrease(int by) {
-            count -= by;
-        }
-
-        /*/1** */ 
-        /** Actor method send a opt to the actor and */ 
-        /** sends back an a response to the owner task */
-        /**1/ */
-        /*@method void get(Get opt) { // reciever */
-        /*    final switch (opt) { */
-        /*    case Get.Some: */
-        /*        sendOwner(some_name); */
-        /*        break; */
-        /*    case Get.Arg: */
-        /*        sendOwner(count); */
-        /*        break; */
-        /*    } */
-        /*} */
-
-        mixin TaskActor; /// Thes the struct into an Actor
-
-        /// UDA @task mark that this is the task for the Actor
-        @task void runningTask(long label) {
-            count = label;
-            //...
-            alive; // Actor is now alive
-            while (!stop) {
-                receiveTimeout(100.msecs);
-            }
-        }
-    }
-    static assert(isActor!MyActor);
-
 
     enum supervisor_task_name = "supervisor";
     enum child1_task_name = "child1";
@@ -107,6 +109,10 @@ class MessageBetweenSupervisorAndChild {
         @method void sendStatusToChild1(int status) {
             niño_dos_handle.decrease(status);
         }
+
+        /* @method void receiveStatusFromChild1(Get get) { */
+        /*     return niño_dos_handle.get(get); */
+        /* } */
 
         mixin TaskActor;
     }
@@ -141,7 +147,9 @@ class MessageBetweenSupervisorAndChild {
 
     @Then("send this message back from #child1 to #super")
     Document fromChild1ToSuper() {
-        return Document();
+        /* writeln(supervisor_handle.receiveStatusFromChild1(Get.Arg)); */
+
+        return result_ok;
     }
 
     @Then("send a message to #child2")
