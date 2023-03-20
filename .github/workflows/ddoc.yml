@@ -36,6 +36,8 @@ jobs:
           go version
           sudo rm -rf /usr/bin/go
           sudo mkdir -p /usr/bin/go
+          cd /usr/bin/go
           sudo wget https://go.dev/dl/go1.20.2.linux-amd64.tar.gz
+          ls -l
           sudo tar xf go1.20.2.linux-amd64.tar.gz
           go version
