@@ -1989,13 +1989,10 @@ alias check = Check!DARTException;
                 dart_A.modify(remove_recorder);
                 // dart_A.dump();
 
-                ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x11, 0xef];
-
                 auto branches = dart_A.branches([0xAB, 0xB9]);
 
 
-                assert(numberOfArchives(branches, dart_A) == 1, "Branch not snapped back to rim 3");
-                // assert(hasArchive(branches, dart_A, 1), "branch not snapped back to rim 3");
+                assert(numberOfArchives(branches, dart_A) == 1, "Branch not snapped back to rim 2");
                
             }
             {
@@ -2016,11 +2013,9 @@ alias check = Check!DARTException;
                 // dart_A.dump();
                 assert(dart_A.bullseye == fingerprint);
 
-                ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x11, 0xef];
-
-                auto branches = dart_A.branches(rim_path[0 .. 3]);
+                auto branches = dart_A.branches([0xAB, 0xB9]);
                 
-                assert(numberOfArchives(branches, dart_A) == 1, "Branch not snapped back to rim 3");
+                assert(numberOfArchives(branches, dart_A) == 1, "Branch not snapped back to rim 2");
             }
             {
                 // middle branch test.
