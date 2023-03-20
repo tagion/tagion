@@ -122,7 +122,6 @@ alias check = Check!DARTException;
 
 @safe class DARTFile {
     enum KEY_SPAN = ubyte.max + 1;
-    enum uint request_limit = KEY_SPAN;
     enum INDEX_NULL = BlockFile.INDEX_NULL;
     immutable(string) filename;
 
