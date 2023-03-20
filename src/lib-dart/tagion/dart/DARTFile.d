@@ -1011,7 +1011,7 @@ alias check = Check!DARTException;
                             if (branches.isSingle && rim > RIMS_IN_SECTOR) {
                             
                                 const single_leave = branches[].front;
-                                const buf = blockfile.cacheLoad(single_leave.index);
+                                const buf = cacheLoad(single_leave.index);
                                 const single_doc = Document(buf);
 
                                 if (!Branches.isRecord(single_doc)) {
@@ -1022,6 +1022,7 @@ alias check = Check!DARTException;
 
                         }
                         else {
+                            // This is a standalone archive ("single").
                             // DART does not store a branch this means that it contains a leave.
                             // Leave means and archive
                             // The new Archives is constructed to include the archive which is already in the DART
@@ -1032,16 +1033,21 @@ alias check = Check!DARTException;
                                 blockfile.erase(branch_index);
 
                             }
+                            pragma(msg, "fixme(pr): review this for refactor of dart.");
                             if (range.oneLeft) {
                                 auto one_archive = range.front;
                                 if (!one_archive.done) {
                                     range.popFront;
-                                    if (one_archive.fingerprint == archive_in_dart.fingerprint) {
+
+                                    // if (!Branch.isRecord(one_archive.filed))
+                                    if (one_archive.fingerprint == archive_in_dart.fingerprint) 
+                                    {
                                         // if only one archive left in database
                                         if (one_archive.isRemove(get_type)) {
                                             one_archive.doit;
                                             return Leave.init;
                                         }
+                                        pragma(msg, "fixme(pr): This scenario is never called. Why is it here?");
                                         return Leave(blockfile.save(one_archive.store.serialize)
                                                 .begin_index,
                                             one_archive.fingerprint);
@@ -1101,6 +1107,7 @@ alias check = Check!DARTException;
                             auto one_archive = range.front;
                             if (!one_archive.done) {
                                 range.popFront;
+                                pragma(msg, "This line is never called");
                                 if (one_archive.isRemove(get_type)) {
                                     return Leave.init;
                                 }
@@ -1141,6 +1148,7 @@ alias check = Check!DARTException;
                     assert(0, format("Range %s not expected", R.stringof));
                 }
             }
+            pragma(msg, "fixme(pr): create test for empty range (recorder)");
             return Leave.init;
         }
 
