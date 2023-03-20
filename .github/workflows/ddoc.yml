@@ -20,3 +20,17 @@ jobs:
           sudo apt-get -y --allow-unauthenticated install --reinstall d-apt-keyring
           sudo apt-get update -y && sudo apt-get install -y dmd-compiler dub
           sudo apt-get -y install make screen autoconf golang clang libclang-dev libtool
+          cd /usr/local/bin
+          wget https://github.com/ldc-developers/ldc/releases/download/v1.29.0/ldc2-1.29.0-linux-x86_64.tar.xz
+          tar xf ldc2-1.29.0-linux-x86_64.tar.xz
+          export PATH="/usr/local/bin/ldc2-1.29.0-linux-x86_64/bin:$PATH"
+          wget https://downloads.dlang.org/pre-releases/2.x/2.102.0/dmd.2.102.0-rc.1.linux.tar.xz
+          tar xf dmd.2.102.0-rc.1.linux.tar.xz
+          export PATH="/usr/local/bin/dmd2/linux/bin64:$PATH"
+          wget https://github.com/jacob-carlborg/dstep/releases/download/v1.0.0/dstep-1.0.0-linux-x86_64.tar.xz
+          tar xf dstep-1.0.0-linux-x86_64.tar.xz
+          dstep --version # 1.0.0
+          ldc2 --version
+          dmd --version
+          which go
+          go version
