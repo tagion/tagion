@@ -14,6 +14,7 @@ alias Index = Typedef!(ulong, ulong.init, "BINDEX");
 
 enum NullIndex = Index.init;
 
+
 @safe
 struct Segment {
     Index index; // Block file index
