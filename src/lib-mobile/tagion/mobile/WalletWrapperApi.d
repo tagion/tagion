@@ -90,20 +90,6 @@ export uint wallet_create(const uint8_t* pincodePtr, const uint32_t pincodeLen, 
     return doc_id;
 }
 
-/// wallet_create
-// unittest {
-//     uint8_t* pincodePtr = cast(ubyte*) [1,1,1,1];
-//     uint32_t pincodeLen = 4;
-//     uint32_t aes_doc_id = 0;
-//     char* questionsPtr = cast(char*) "q1;q2;q3;q4";
-//     uint32_t questionLen = 4;
-//     char* answersPtr = cast(char*) "a1;a2;a3;a4";
-//     uint32_t answersLen = 4;
-//     uint32_t confidence = 4;
-//     auto wallet_id = wallet_create(pincodePtr, pincodeLen, aes_doc_id, questionsPtr, questionLen, answersPtr, answersLen, confidence);
-//     writeln("WalletID: %s", wallet_id);
-// }
-
 export uint invoice_create(const uint32_t doc_id, const uint32_t dev_pin_doc_id,
         const uint8_t* pincodePtr, const uint32_t pincodeLen,
         const uint32_t aes_doc_id, const uint64_t amount,

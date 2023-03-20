@@ -1,8 +1,6 @@
 
 
-
-
-### DEPRECATE, for android should just use the precompiled static libraries
+### DEPRECATE, non aarch64 android still use this target
 
 
 LDC_NAME=ldc2-1.29.0-beta1-$(GETHOSTOS)-$(GETARCH)
