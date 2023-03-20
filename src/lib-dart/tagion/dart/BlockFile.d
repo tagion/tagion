@@ -1083,11 +1083,10 @@ class BlockFile {
         auto allocated_range =  allocated_chains.filter!(a => a.begin_index == index);
         if (!allocated_range.empty) {
             return allocated_range.front.data;
-         }
+        }
 
         return assumeWontThrow(load(index));
-   }
-
+    }
 
     /++
      + Marks a chain for blocks as erased

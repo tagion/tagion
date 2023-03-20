@@ -48,6 +48,16 @@ size_t calc_size(T)(const T v) pure nothrow if (isUnsigned!(T)) {
     return result;
 }
 
+/// Returns: the max size to store a T as a
+template DataSize(T) if (isIntegral!T) {
+    static if (isUnsigned!T) {
+        enum DataSize = T.sizeof + 2;
+    }
+    else {
+        enum DataSize = (T.sizeof * 9 + 1) / 8 + 1;
+    }
+}
+
 @safe @nogc
 size_t calc_size(T)(const T v) pure nothrow if (isSigned!(T)) {
     if (v == T.min) {
@@ -75,7 +85,7 @@ size_t calc_size(T)(const T v) pure nothrow if (isSigned!(T)) {
 
 @safe
 immutable(ubyte[]) encode(T)(const T v) pure if (isUnsigned!T && isIntegral!T) {
-    ubyte[T.sizeof + 2] data;
+    ubyte[DataSize!T] data;
     alias BaseT = TypedefType!T;
     BaseT value = cast(BaseT) v;
     foreach (i, ref d; data) {
@@ -92,7 +102,7 @@ immutable(ubyte[]) encode(T)(const T v) pure if (isUnsigned!T && isIntegral!T) {
 @safe
 immutable(ubyte[]) encode(T)(const T v) pure if (isSigned!T && isIntegral!T) {
     enum DATA_SIZE = (T.sizeof * 9 + 1) / 8 + 1;
-    ubyte[DATA_SIZE] data;
+    ubyte[DataSize!T] data;
     if (v == T.min) {
         foreach (ref d; data[0 .. $ - 1]) {
             d = 0x80;
@@ -134,9 +144,6 @@ if (isUnsigned!T) {
         if (shift >= MAX_LIMIT) {
             return ErrorValue!T;
         }
-        // check(shift < MAX_LIMIT,
-        //     format("LEB128 decoding buffer over limit of %d %d", MAX_LIMIT, shift));
-
         result |= (d & 0x7FUL) << shift;
         if ((d & 0x80) == 0) {
             len = i + 1;
@@ -144,15 +151,12 @@ if (isUnsigned!T) {
                 if (result > BaseT.max) {
                     return ErrorValue!T;
                 }
-                // check(result <= BaseT.max, format("LEB128 decoding overflow of %x for %s", result, T.stringof));
             }
             return DecodeLEB128!T(cast(BaseT) result, len);
         }
         shift += 7;
     }
     return ErrorValue!T;
-    // check(0, format("Bad LEB128 format for type %s data=%s", T.stringof, data[0..min(MAX_LIMIT,data.length)]));
-    //    assert(0);
 }
 
 /++
@@ -184,16 +188,11 @@ DecodeLEB128!T decode(T = long)(const(ubyte[]) data) pure nothrow if (isSigned!T
                 if (T.min > result) {
                     return ErrorValue!T;
                 }
-                // check((T.min <= result) && (result <= T.max),
-                //     format("LEB128 out of range %d for %s", result, T.stringof));
             }
             return DecodeLEB128!T(cast(BaseT) result, len);
         }
     }
     return ErrorValue!T;
-
-    // check(0, format("Bad LEB128 format for type %s data=%s", T.stringof, data[0..min(MAX_LIMIT,data.length)]));
-    // assert(0);
 }
 
 ///
@@ -255,5 +254,41 @@ unittest {
     { // Bug fix
         assert(calc_size(-77) == 2);
         ok!int(-77, [179, 127]);
+    }
+}
+
+@safe @nogc
+DecodeLEB128!T read(T, U:
+        const(ubyte))(ref U[] data) pure nothrow {
+    const result = decode!T(data);
+    data = data[result.size .. $];
+    return result;
+}
+
+///
+@safe
+unittest {
+    const(ubyte)[] buf;
+    { // read of empty
+        const dec_range = read!ulong(buf);
+        assert(dec_range.size == 0);
+    }
+
+    buf ~= 1234.encode;
+    { // read of one
+        const dec_range = read!ulong(buf);
+        assert(dec_range.value == 1234);
+        assert(dec_range.size == 2);
+    }
+    buf ~= 2755.encode ~ encode(-0x1245);
+    { // read of two
+        const dec_range = read!ulong(buf);
+        assert(dec_range.value == 2755);
+        assert(dec_range.size == 2);
+    }
+    { // read of the last one
+        const dec_range = read!long(buf);
+        assert(dec_range.value == -0x1245);
+        assert(dec_range.size == 2);
     }
 }

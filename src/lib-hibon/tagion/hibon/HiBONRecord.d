@@ -733,9 +733,26 @@ mixin template HiBONRecord(string CTOR = "") {
     return doc;
 }
 
+@safe
 T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
     const doc = filename.fread;
     return T(doc, args);
+}
+
+@safe
+Document fread(ref File file) {
+    import LEB128 = tagion.utils.LEB128;
+
+    enum LEB128_SIZE = ulong.sizeof + 2;
+    ubyte[LEB128_SIZE] _buf;
+    ubyte[] buf = _buf;
+    file.rawRead(buf);
+    const doc_start = file.tell;
+    const doc_size = LEB128.read!size_t(buf);
+    auto data = new ubyte[doc_size.size + doc_size.value];
+    file.seek(doc_start);
+    file.rawRead(data);
+    return (() @trusted => Document(assumeUnique(data)))();
 }
 
 @safe unittest {
