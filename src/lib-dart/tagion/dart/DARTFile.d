@@ -106,19 +106,6 @@ void printfp(string msg, const Buffer[] fingerprints) {
 
 import std.algorithm;
 
-auto createRimKeys(DARTFile.Branches branches) {
-    //    return branches.fingerprints.enumerate.filter!(f => !f.value.empty).map!(f => f.index);
-    //DARTFile.Branches branches;
-    // return branches;
-    return branches.fingerprints.enumerate.filter!(f => !f.value.empty);
-}
-
-static assert(isCallable!(createRimKeys));
-
-//alias X=typeof(createRimKeys(DARTFile.Branches.init));
-
-//alias X=FunctionTypeOf!(createRimKeys);
-alias X = ReturnType!createRimKeys;
 alias check = Check!DARTException;
 
 /++
