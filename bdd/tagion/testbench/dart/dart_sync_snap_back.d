@@ -82,7 +82,6 @@ class SyncToAnotherDb {
 
     @Given("I have a empty dartfile2.")
     Document dartfile2() {
-        writefln("%s", info.dartfilename2);
         DART.create(info.dartfilename2);
         Exception dart_exception;
         db2 = new DART(info.net, info.dartfilename2, dart_exception);

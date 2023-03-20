@@ -9,6 +9,7 @@ import tagion.dart.BlockFile : BlockFile;
 
 import tagion.dart.BlockSegment : Index, NullIndex;
 
+
 @safe
 struct Segment {
     Index index; // Block file index
