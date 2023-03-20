@@ -4,9 +4,7 @@ on:
     branches:
       - current
       - ddoc-github-pages
-
- workflow_dispatch:
-
+      
 permissions:
   contents: read
   pages: write
