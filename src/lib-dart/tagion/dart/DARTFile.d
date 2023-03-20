@@ -837,12 +837,9 @@ alias check = Check!DARTException;
      * Returns: true if all the archives are removes
      */
         bool onlyRemove(const GetType get_type) const pure {
-            if (get_type) {
-                return current
-                    .all!((const(Archive) a) => a.type is Archive.Type.REMOVE);
-            }
             return current
-                .all!((const(Archive) a) => a.type is Archive.Type.REMOVE);
+                .all!(a => get_type(a) is Archive.Type.REMOVE);
+        
         }
 
         @nogc pure nothrow {
