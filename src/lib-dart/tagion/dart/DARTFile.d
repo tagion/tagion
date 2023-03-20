@@ -93,16 +93,7 @@ unittest {
 }
 
 enum SECTOR_MAX_SIZE = 1 << (ushort.sizeof * 8);
-@safe
-void printfp(string msg, const Buffer[] fingerprints) {
-    import std.stdio;
 
-    foreach (fp; fingerprints) {
-        if (fp) {
-            writeln(msg, fp.hex);
-        }
-    }
-}
 
 import std.algorithm;
 
@@ -272,11 +263,6 @@ alias check = Check!DARTException;
         immutable mid = table.length >> 1;
         return merkletree(table[0 .. mid], table[mid .. $]);
     }
-
-    // alias Leave=Tuple!(uint, "index", Buffer, "fingerprint");
-    // bool empty(const Leave leave) pure nothrow {
-    //     return (leave.index is DARTFile.INDEX_NULL) && ( leave.fingerprint is null);
-    // }
 
     @safe struct Leave {
         import tagion.hibon.HiBONRecord;
@@ -2224,7 +2210,6 @@ alias check = Check!DARTException;
                 ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x12, 0xef];        
 
                 auto branches = dart_A.branches(rim_path);
-                writefln("XXX %s", numberOfArchives(branches, dart_A));
                 assert(numberOfArchives(branches, dart_A) == 2, "Should contain two archives after remove");
 
             }
