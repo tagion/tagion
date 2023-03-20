@@ -501,31 +501,15 @@ alias check = Check!DARTException;
             return true;
         }
 
+
+        
         /**
      * Merkle root of the branches
      * Returns: fingerprint
      */
         private immutable(Buffer) fingerprint(
-            DARTFile dartfile,
-            scope bool[uint] index_used = null) {
+            DARTFile dartfile) {
             if (merkleroot is null) {
-                foreach (key, index; _indices) {
-                    if ((index !is INDEX_NULL) && (_fingerprints[key] is null)) {
-                        
-                            .check((index in index_used) is null,
-                                format("The DART contains a recursive tree @ index %d", index));
-                        index_used[index] = true;
-                        immutable data = dartfile.blockfile.load(index);
-                        const doc = Document(data);
-                        if (doc.hasMember(indicesName)) {
-                            auto subbranch = Branches(doc);
-                            _fingerprints[key] = subbranch.fingerprint(dartfile, index_used);
-                        }
-                        else {
-                            _fingerprints[key] = cast(Buffer) dartfile.manufactor.net.calcHash(doc);
-                        }
-                    }
-                }
                 merkleroot = sparsed_merkletree(dartfile.manufactor.net, _fingerprints);
             }
             return merkleroot;
