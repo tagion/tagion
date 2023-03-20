@@ -34,7 +34,8 @@ jobs:
           dmd --version
           which go
           go version
-          sudo add-apt-repository ppa:longsleep/golang-backports
-          sudo apt update
-          sudo snap refresh go
+          sudo rm -rf /usr/bin/go
+          sudo mkdir -p /usr/bin/go
+          sudo wget https://go.dev/dl/go1.20.2.linux-amd64.tar.gz
+          sudo tar xf go1.20.2.linux-amd64.tar.gz
           go version
