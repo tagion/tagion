@@ -2213,13 +2213,13 @@ alias check = Check!DARTException;
                 }
                 auto fingerprints = recorder[].map!(r => r.fingerprint).array;
                 dart_A.modify(recorder);
-                dart_A.dump();
+                // dart_A.dump();
                 
                 auto remove_recorder = dart_A.recorder();
                 remove_recorder.remove(fingerprints[$-1]);
 
                 dart_A.modify(remove_recorder);        
-                dart_A.dump();
+                // dart_A.dump();
 
                 ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x12, 0xef];        
 
@@ -2264,13 +2264,13 @@ alias check = Check!DARTException;
                 }
                 auto fingerprints = recorder[].map!(r => r.fingerprint).array;
                 dart_A.modify(recorder);
-                dart_A.dump();
+                // dart_A.dump();
                 
                 auto remove_recorder = dart_A.recorder();
                 remove_recorder.remove(fingerprints[4]);
 
                 dart_A.modify(remove_recorder);        
-                dart_A.dump();
+                // dart_A.dump();
 
                 ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x12, 0xef];        
 
