@@ -1077,6 +1077,9 @@ class BlockFile {
     }
 
     immutable(Buffer) cacheLoad(const uint index) nothrow {
+        if (index == 0) {
+            return Buffer.init;
+        }
         auto allocated_range =  allocated_chains.filter!(a => a.begin_index == index);
         if (!allocated_range.empty) {
             return allocated_range.front.data;
