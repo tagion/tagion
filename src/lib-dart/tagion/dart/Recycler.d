@@ -96,13 +96,12 @@ struct Recycler {
 }
 
 version (unittest) {
-    enum SMALL_BLOCK_SIZE = 0x40;
-    import Basic = tagion.basic.Basic;
+    import tagion.dart.BlockFile;
     import tagion.basic.Types : FileExtension;
+    import std.range : iota;
+    import std.algorithm.iteration : map;
 
-    const(Basic.FileNames) fileId(T = BlockFile)(string prefix = null) @safe {
-        return Basic.fileId!T(FileExtension.block, prefix);
-    }
+    enum SMALL_BLOCK_SIZE = 0x40;
 }
 
 @safe
@@ -163,8 +162,8 @@ struct BlockSegment {
         next = LEB128.read!ulong(pre_buf).value;
     }
 
-    static void updateIndex(ref File file, const ulong previous, const ulong next) 
-    in(previous < next)
+    static void updateIndex(ref File file, const ulong previous, const ulong next)
+    in (previous < next)
     do {
         const segment_start = file.tell;
         {
@@ -177,4 +176,28 @@ struct BlockSegment {
         file.rawWrite(LEB128.encode(previous));
         file.rawWrite(LEB128.encode(next));
     }
+}
+
+version (unittest) {
+    import Basic = tagion.basic.Basic;
+
+    const(Basic.FileNames) fileId(T = BlockSegment)(string prefix = null) @safe {
+        return Basic.fileId!T(FileExtension.block, prefix);
+    }
+}
+
+///
+@safe
+unittest {
+    import std.stdio;
+    import std.array : array;
+
+    immutable filename = fileId("blocksegment").fullpath;
+    writefln("filename=%s", filename);
+    auto file = File(filename, "w");
+    scope (exit) {
+        file.close;
+    }
+    file.rawWrite(iota(SMALL_BLOCK_SIZE).map!(i => cast(ubyte) i).array);
+
 }
