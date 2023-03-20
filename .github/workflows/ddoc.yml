@@ -34,7 +34,7 @@ jobs:
           dmd --version
           which go
           go version
-          sudo rm -rf /usr/bin/go
+          sudo apt remove go
           sudo add-apt-repository ppa:longsleep/golang-backports
           sudo apt update
           sudo apt install golang-1.19
