@@ -40,6 +40,8 @@ jobs:
           sudo wget https://go.dev/dl/go1.20.2.linux-amd64.tar.gz
           ls -l
           which gunzip
+          pwd
           sudo gunzip go1.20.2.linux-amd64.tar.gz
+          ls -l
           sudo tar xf go1.20.2.linux-amd64.tar
           go version
