@@ -26,6 +26,21 @@ struct Recycler {
     alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index);
     // Segment: sorted by size.
     alias Segments = RedBlackTree!(Segment*, (a, b) => a.size < b.size, true);
+
+
+    /** 
+     * Checks if the recycler has overlapping segments.
+     */
+    invariant {
+        assert(noOverlaps, "Recycle segments has overlaps");
+    }
+    /** 
+     * Checks if the indicies and segments are the same length;
+     */
+    invariant {
+        assert(indices.length == segments.length);
+    }
+
     protected {
         BlockFile owner;
         Indices indices;
@@ -69,15 +84,6 @@ struct Recycler {
 
     }
 
-    /** 
-     * Checks if the recycler has overlapping segments.
-     */
-    invariant {
-        assert(noOverlaps, "Recycle segments has overlaps");
-    }
-    invariant {
-        assert(indices.length == segments.length);
-    }
 
     /**
     Returns: true if the segments overlaps
@@ -125,9 +131,11 @@ version (unittest) {
     enum SMALL_BLOCK_SIZE = 0x40;
 }
 
-@safe
 unittest {
-    // checks for overlaps.
+    // checks for single overlap.
+    import std.exception;
+    import core.exception : AssertError;
+
     immutable filename = fileId("recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(filename);
@@ -140,11 +148,74 @@ unittest {
     auto segment = new Segment(Index(1UL), 128);
     recycler.recycle(segment);
     // insert another segment just after previous.
-    auto just_after_segment = new Segment(Index(segment.end), 128);
+    auto just_after_segment = new Segment(segment.end, 128);
     recycler.insert(just_after_segment);
 
     assert(recycler.indices.length == 2);
 
+    // try to insert a segment overlapping just_after_segment.
+    auto non_valid_segment = new Segment(Index(just_after_segment.end-1), 128);
+    
+    // assertThrown!AssertError(recycler.insert(non_valid_segment));
+
+    // recycler.insert(non_valid_segment);
     recycler.dump();
 }
 
+unittest {
+    // checks for double overlap.
+    import std.exception;
+    import core.exception : AssertError;
+
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(blockfile);
+
+    // insert one segment.
+    auto segment = new Segment(Index(1UL), 128);
+    recycler.recycle(segment);
+    // insert another segment just after previous.
+    auto just_after_segment = new Segment(segment.end, 128);
+    recycler.insert(just_after_segment);
+
+    assert(recycler.indices.length == 2);
+
+    // try to insert a segment overlapping just_after_segment.
+    auto non_valid_segment = new Segment(Index(64), 128);
+    
+    // assertThrown!AssertError(recycler.insert(non_valid_segment));
+
+    recycler.dump();
+}
+
+unittest {
+    // checks that lengths of segments and indices is always the same.
+    import std.exception;
+    import core.exception : AssertError;
+    import std.range;
+
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(blockfile);
+
+    // insert one segment.
+    auto segment = new Segment(Index(1UL), 128);
+    recycler.recycle(segment);
+    // insert another segment just after previous.
+    auto just_after_segment = new Segment(segment.end, 128);
+    recycler.insert(just_after_segment);
+
+    assert(recycler.indices.length == 2);
+
+    // assertThrown!AssertError(recycler.indices.removeFront());
+
+    recycler.dump();    
+}
