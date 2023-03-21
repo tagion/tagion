@@ -31,10 +31,6 @@ jobs:
           export PATH="/usr/local/bin/dmd2/linux/bin64:$PATH"
           wget https://github.com/jacob-carlborg/dstep/releases/download/v1.0.0/dstep-1.0.0-linux-x86_64.tar.xz
           tar xf dstep-1.0.0-linux-x86_64.tar.xz
-          dstep --version # 1.0.0
-          ldc2 --version
-          dmd --version
-          go version
           sudo rm -rf /usr/bin/go
           cd /usr/bin/
           sudo wget https://go.dev/dl/go1.20.2.linux-amd64.tar.gz
@@ -43,5 +39,11 @@ jobs:
           sudo chmod +x /usr/bin/go/bin/*
           export PATH="/usr/bin/go/bin:$PATH"
           export GOPATH="/usr/bin/go/bin"
-          which go
+          dstep --version # 1.0.0
+          ldc2 --version
+          dmd --version
+          go version
+          npm i docsify-cli -g
+          make ddoc
+          ls -l
           
