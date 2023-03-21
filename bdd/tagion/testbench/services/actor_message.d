@@ -22,8 +22,8 @@ alias FeatureContext = Tuple!(
 );
 
 enum Gettes {
-    Some,
-    Arg
+    count,
+    some_name
 }
 
 @safe
@@ -51,14 +51,18 @@ struct MyActor {
     */
      @method void get(Gettes opt, string extra) { // reciever 
          final switch (opt) { 
-         case Gettes.Some: 
+         case Gettes.some_name: 
              sendOwner(some_name~extra); 
              break; 
-         case Gettes.Arg: 
+         case Gettes.count: 
              sendOwner(count, extra); 
              break; 
          } 
-     } 
+    } 
+
+    @method void request(MyActor field) {
+
+    }
 
     mixin TaskActor; /// Turns the struct into an Actor
 
@@ -74,49 +78,53 @@ struct MyActor {
 }
 static assert(isActor!MyActor);
 
+enum supervisor_task_name = "supervisor";
+enum child1_task_name = "child1";
+enum child2_task_name = "child2";
+
+ActorFactory!MySuperActor supervisor_factory;
+ActorHandle!MySuperActor supervisor_handle;
+alias ChildHandle = ActorHandle!MyActor;
+
+/* @safe */
+static struct MySuperActor {
+    ChildHandle niño_uno_handle;
+    ChildHandle niño_dos_handle;
+
+    @task void run() {
+        auto my_actor_factory = actor!MyActor;
+
+        niño_uno_handle = my_actor_factory(child1_task_name, 10);
+        niño_dos_handle = my_actor_factory(child2_task_name, 65);
+
+        alive;
+        while (!stop) {
+            receive;
+        }
+    }
+
+    @method void isChildRunning(string task_name) {
+        sendOwner(isRunning(task_name));
+    }
+    
+    @method void sendStatusToChild1(int status) {
+        niño_dos_handle.decrease(status);
+    }
+
+    @method void receiveStatusFromChild1(ulong _l) {
+        niño_dos_handle.get(Gettes.count, "");
+        long status = concurrency.receiveOnly!long;
+        sendOwner(status);
+    }
+
+    mixin TaskActor;
+}
+static assert(isActor!MySuperActor);
+
 @safe @Scenario("Message between supervisor and child",
         [])
 class MessageBetweenSupervisorAndChild {
 
-    enum supervisor_task_name = "supervisor";
-    enum child1_task_name = "child1";
-    enum child2_task_name = "child2";
-    ActorFactory!MySuperActor supervisor_factory;
-    ActorHandle!MySuperActor supervisor_handle;
-    alias ChildHandle = ActorHandle!MyActor;
-
-    @safe
-    static struct MySuperActor {
-        ChildHandle niño_uno_handle;
-        ChildHandle niño_dos_handle;
-
-        @task void run() {
-            auto my_actor_factory = actor!MyActor;
-
-            niño_uno_handle = my_actor_factory(child1_task_name, 10);
-            niño_dos_handle = my_actor_factory(child2_task_name, 65);
-
-            alive;
-            while (!stop) {
-                receive;
-            }
-        }
-
-        @method void isChildRunning(string task_name) {
-            sendOwner(isRunning(task_name));
-        }
-        
-        @method void sendStatusToChild1(int status) {
-            niño_dos_handle.decrease(status);
-        }
-
-        @method void receiveStatusFromChild1(ulong _l) {
-            sendOwner(niño_dos_handle.get(Gettes.count));
-        }
-
-        mixin TaskActor;
-    }
-    static assert(isActor!MySuperActor);
 
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() {
@@ -146,7 +154,7 @@ class MessageBetweenSupervisorAndChild {
     }
 
     @Then("send this message back from #child1 to #super")
-    Document fromChild1ToSuper() {
+    Document fromChild1ToSuper() @trusted {
         /* writeln(supervisor_handle.receiveStatusFromChild1(Get.Arg)); */
         check((concurrency.receiveOnly!long == 9), "The child did not reflect the message");
         supervisor_handle.receiveStatusFromChild1(1);
