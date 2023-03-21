@@ -21,15 +21,9 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
-enum Gettes {
-    Some,
-    Arg
-}
-
 @safe
 struct MyActor {
     import tagion.testbench.actor_tests;
-
 
     long count;
     string some_name;
@@ -49,16 +43,16 @@ struct MyActor {
     * Actor method send a opt to the actor and 
     * sends back an a response to the owner task
     */
-    /* @method void get(Gettes opt) { // reciever */
-    /*     final switch (opt) { */
-    /*     case Gettes.Some: */
-    /*         sendOwner(some_name); */
-    /*         break; */
-    /*     case Gettes.Arg: */
-    /*         sendOwner(count); */
-    /*         break; */
-    /*     } */
-    /* } */
+    @method void get(Gettes val) { // reciever
+        final switch (Gettes) {
+        case Gettes.count:
+            sendOwner(count);
+            break;
+        case Gettes.some_name:
+            sendOwner(some_name);
+            break;
+        }
+    }
 
     mixin TaskActor; /// Turns the struct into an Actor
 
@@ -110,9 +104,9 @@ class MessageBetweenSupervisorAndChild {
             niño_dos_handle.decrease(status);
         }
 
-        /* @method void receiveStatusFromChild1(Get get) { */
-        /*     return niño_dos_handle.get(get); */
-        /* } */
+        @method void receiveStatusFromChild1(ulong _l) {
+            sendOwner(niño_dos_handle.get(Gettes.count));
+        }
 
         mixin TaskActor;
     }
@@ -148,6 +142,8 @@ class MessageBetweenSupervisorAndChild {
     @Then("send this message back from #child1 to #super")
     Document fromChild1ToSuper() {
         /* writeln(supervisor_handle.receiveStatusFromChild1(Get.Arg)); */
+        check((concurrency.receiveOnly!long == 9), "The child did not reflect the message");
+        supervisor_handle.receiveStatusFromChild1(1);
 
         return result_ok;
     }
