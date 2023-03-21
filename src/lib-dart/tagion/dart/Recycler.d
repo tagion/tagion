@@ -12,18 +12,18 @@ import std.stdio;
 import std.traits : PointerTarget;
 
 
-
+enum Type : int {
+    NONE = 0, /// NO Recycler instruction
+    REMOVE = -1, /// Should be removed from recycler
+    ADD = 1, /// should be added to recycler
+}
 @safe
 struct Segment {
-    enum Type : int {
-        NONE = 0, /// NO Recycler instruction
-        REMOVE = -1, /// Should be removed from recycler
-        ADD = 1, /// should be added to recycler
-    }
+
 
     Index index; // Block file index
     uint size;
-    Type t = Type.NONE;
+    Type type;
 
     Index end() const pure nothrow @nogc {
         return Index(index + size);
@@ -40,7 +40,7 @@ struct Segment {
 @safe
 struct Recycler {
     // Indices: sorted by index
-    alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index, true);
+    alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index || ((a.index == b.index) && (a.size > b.size)), true);
     // Segment: sorted by size.
     alias Segments = RedBlackTree!(Segment*, (a, b) => a.size < b.size, true);
 
@@ -77,19 +77,31 @@ struct Recycler {
         segments.insert(insert_segments);
     }
 
-    /** 
-     * Takes a segment that is being used and should be added to the recycler.
-     * Params:
-     *   segment = Segment that has been removed.
-     */
+
     void recycle(R)(R recycle_segments)
         if (isInputRange!R && is(ElementType!R == Segment*)) {
         
         insert(recycle_segments);
 
-        if (indices.length == 1) {
-            return;
-        }
+        // Segment*[] new_segments;
+        // auto rs = indices[];
+        // Segment* segment_ADD = null;
+
+        // while (!rs.empty) {
+        //     if (rs.current.type == Type.REMOVE && rs.previous.index == rs.current.index) {
+        //         new_segments ~= new Segment(Index(rs.current.index+rs.current.size), rs.previous.size - rs.current.size);
+        //         rs.previous.type = Type.REMOVE;
+        //     }
+        //     // else if (rs.current.type == Type.ADD) {
+        //     //     if (segment_ADD !is null) {
+        //     //         if (segment_ADD.end == )
+        //     //     }                
+
+        //     // }
+
+
+        //     rs.popFront;
+        // }
 
 
     }
