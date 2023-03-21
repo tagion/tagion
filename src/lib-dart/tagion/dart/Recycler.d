@@ -37,7 +37,11 @@ struct Recycler {
         indices = new Indices;
         segments = new Segments;
     }
-
+    /** 
+     * Inserts the segment pointer into the RedBlackTree. 
+     * Params:
+     *   segment = Pointer to the segment.
+     */
     protected void insert(const(Segment)* segment) pure {
         indices.insert(segment);
         segments.insert(segment);
