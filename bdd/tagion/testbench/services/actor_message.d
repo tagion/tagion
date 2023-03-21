@@ -21,6 +21,7 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
+version(none)
 enum Gettes {
     Some,
     Arg
@@ -29,6 +30,7 @@ enum Gettes {
 @safe
 struct MyActor {
     import tagion.testbench.actor_tests;
+    import tagion.basic.Types : Gettes;
 
 
     long count;
@@ -49,16 +51,16 @@ struct MyActor {
     * Actor method send a opt to the actor and 
     * sends back an a response to the owner task
     */
-    /* @method void get(Gettes opt) { // reciever */
-    /*     final switch (opt) { */
-    /*     case Gettes.Some: */
-    /*         sendOwner(some_name); */
-    /*         break; */
-    /*     case Gettes.Arg: */
-    /*         sendOwner(count); */
-    /*         break; */
-    /*     } */
-    /* } */
+     @method void get(Gettes opt, string extra) { // reciever 
+         final switch (opt) { 
+         case Gettes.Some: 
+             sendOwner(some_name~extra); 
+             break; 
+         case Gettes.Arg: 
+             sendOwner(count, extra); 
+             break; 
+         } 
+     } 
 
     mixin TaskActor; /// Turns the struct into an Actor
 

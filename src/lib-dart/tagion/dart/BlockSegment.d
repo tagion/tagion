@@ -1,6 +1,10 @@
 module tagion.dart.BlockSegment;
 
-import LEB128=tagion.utils.LEB128;
+import std.stdio : File;
+
+import LEB128 = tagion.utils.LEB128;
+import std.typecons : Typedef;
+import tagion.hibon.Document;
 
 /// BlockFile file position index
 alias Index = Typedef!(ulong, ulong.init, "BINDEX");
@@ -71,10 +75,13 @@ struct BlockSegment {
 
 version (unittest) {
     import Basic = tagion.basic.Basic;
+    import tagion.basic.Types : FileExtension;
 
     const(Basic.FileNames) fileId(T = BlockSegment)(string prefix = null) @safe {
         return Basic.fileId!T(FileExtension.block, prefix);
     }
+
+    enum SMALL_BLOCK_SIZE = 0x40;
 }
 
 ///
@@ -82,6 +89,8 @@ version (unittest) {
 unittest {
     import std.stdio;
     import std.array : array;
+    import std.range : iota;
+    import std.algorithm.iteration : map;
 
     immutable filename = fileId("blocksegment").fullpath;
     writefln("filename=%s", filename);
