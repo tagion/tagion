@@ -11,20 +11,27 @@ import std.typecons : tuple;
 import std.stdio;
 import std.traits : PointerTarget;
 
+
+enum Type : int {
+    NONE = 0, /// NO Recycler instruction
+    REMOVE = -1, /// Should be removed from recycler
+    ADD = 1, /// should be added to recycler
+}
 @safe
 struct Segment {
+
+
     Index index; // Block file index
     uint size;
-    bool joined;
-
-    invariant {
-        assert(size > 0);
-    }
+    Type type;
 
     Index end() const pure nothrow @nogc {
         return Index(index + size);
     }
 
+    invariant {
+        assert(size > 0);
+    }
     invariant {
         assert(index != Index(0), "Segment cannot be inserted at index 0");
     }
@@ -33,7 +40,7 @@ struct Segment {
 @safe
 struct Recycler {
     // Indices: sorted by index
-    alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index);
+    alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index || ((a.index == b.index) && (a.size > b.size)), true);
     // Segment: sorted by size.
     alias Segments = RedBlackTree!(Segment*, (a, b) => a.size < b.size, true);
 
@@ -70,48 +77,71 @@ struct Recycler {
         segments.insert(insert_segments);
     }
 
-    /** 
-     * Takes a segment that is being used and should be added to the recycler.
-     * Params:
-     *   segment = Segment that has been removed.
-     */
+
     void recycle(R)(R recycle_segments)
         if (isInputRange!R && is(ElementType!R == Segment*)) {
         
         insert(recycle_segments);
 
-        Segment*[] segments_to_add;
-        pragma(msg, "RBRange ", indices.Range);   
-        pragma(msg, "RBRange.Node ", indices.Range.Node);   
-        pragma(msg, "RBRange.Elem ", indices.Range.Elem);   
-    ///alias NullSegmentT=PointerTarget!(typeof(indices[].front));
-            ///PointerTarget
-//pragma(msg, "Null : ", NullSegmentT);
-            //auto _s = new Segment;
-            //auto s = new Indices.Range(_s, _s);
-            //auto newly_added = indices[].sequence!((a, n) => tuple(a[n-1], a[1], a[2]))(s, s);
-                    
-            //auto newly_added = indices[].recurrence!(q{tuple(a[n], a[n-1], a[n-2])})(s,s);
+        // Segment*[] new_segments;
+        // auto rs = indices[];
+        // Segment* segment_ADD = null;
 
-            foreach(seg; indices[]) {
-            writefln("test %s", *seg);
+        // while (!rs.empty) {
+        //     if (rs.current.type == Type.REMOVE && rs.previous.index == rs.current.index) {
+        //         new_segments ~= new Segment(Index(rs.current.index+rs.current.size), rs.previous.size - rs.current.size);
+        //         rs.previous.type = Type.REMOVE;
+        //     }
+        //     // else if (rs.current.type == Type.ADD) {
+        //     //     if (segment_ADD !is null) {
+        //     //         if (segment_ADD.end == )
+        //     //     }                
 
-            } 
-version(none)
-            foreach(test; newly_added.take(5)) {
-                writefln("test %s", test[0]);
-                writefln("test %s", typeof(test[0]).stringof);
-//                writefln("test %s", test[0].front);
-                writefln("test[1] %s", typeof(test[1]).stringof);
-                writefln("test[2] %s", typeof(test[2]).stringof);
-                writef("%s ", *test[0]);
-                writef("%s ", *test[1]);
-                writef("%s ", *test[2]);
-        writeln;
-            }
+        //     // }
+
+
+        //     rs.popFront;
+        // }
+
+
+    }
+    struct RecyclerRange {
+        Segment* previous;
+        Segment* current;
+
+        Indices.Range indices_range;
+        
+        this(Indices indices)
+        in (indices.length > 2) 
+        do {
+            this.indices_range = indices[];
+            popFront();
+            popFront();
+        }
+
+        void popFront() {
+            previous = current;
+            current = indices_range.front;
+            indices_range.popFront;
+        }
+
+        Segment* front() {
+            return indices_range.front;
+        }
+
+        bool empty() {
+            return indices_range.empty;
+        }
+
+        RecyclerRange save() {
+            return this;
+        }
 
     }
 
+    RecyclerRange opSlice() {
+        return RecyclerRange(indices);
+    }
     /**
     Returns: true if the segments overlaps
     */
@@ -323,39 +353,3 @@ unittest {
 
 // }
 
-// auto lower_range = indices.lowerBound(segment);
-// auto upper_range = indices.upperBound(segment);
-// Segment lower_elem;
-// Segment upper_elem;
-
-// if (!lower_range.empty) {
-//     lower_elem = lower_range.back;
-// } else {
-//     lower_elem = Segment.init;
-// }
-
-// if (!upper_range.empty) {
-//     upper_elem = upper_range.front;
-// } else {
-//     upper_elem = Segment.init;
-// }
-
-// if (lower_elem.end == segment.index) {
-//     if (upper_elem.index == segment.end) {
-//         remove(&upper_elem);
-//         remove(&lower_elem);
-//         Segment middle_segment = new Segment(lower_elem.index, lower_elem.size + segment.size + upper_elem.size);
-//         insert(middle_segment);
-//         return;
-//     }
-//     remove(&lower_elem);
-//     Segment connect_right_segment = new Segment(lower_elem.index, lower_elem.size + segment.size);
-//     insert(connect_right_segment);
-//     return;
-// }
-// if (upper_elem.index == segment.end) {
-//     remove(&upper_elem);
-//     Segment connect_left_segment = new Segment(segment.index, segment.size + upper_elem.size);
-//     insert(connect_left_segment);
-//     return;
-// }
