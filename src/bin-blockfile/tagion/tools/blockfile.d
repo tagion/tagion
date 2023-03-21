@@ -40,7 +40,7 @@ struct BlockFileAnalyzer {
         return recycle_block ? "Recycle" : "Data";
     }
 
-    void display_block(const uint index, const(BlockFile.Block) b) {
+    void display_block(const Index index, const(BlockFile.Block) b) {
         if (b) {
             writefln("%s  [%d <- %d -> %d size %d [%s]", blockfile.getSymbol(b, index).to!char, b.previous, index, b
                     .next, b.size, blockType(blockfile.isRecyclable(index)));
@@ -49,8 +49,8 @@ struct BlockFileAnalyzer {
         writefln("Block @ %d is nil", index);
     }
 
-    bool trace(const uint index, const BlockFile.Fail f, scope const BlockFile.Block block, const bool recycle_chain) {
-        void error(string msg, const uint i = index) {
+    bool trace(const Index index, const BlockFile.Fail f, scope const BlockFile.Block block, const bool recycle_chain) {
+        void error(string msg, const Index i = index) {
             const is_recycle_block = blockfile.isRecyclable(index);
             writefln("Error %s: %s @ %d in %s %s", f, msg, i, blockType(is_recycle_block), (
                     is_recycle_block is recycle_chain) ? "" : "[Bad Type]");

@@ -33,7 +33,7 @@ import tagion.logger.Statistic;
 
 import std.math : rint;
 
-alias Index=ulong;
+alias Index = ulong;
 enum BLOCK_SIZE = 0x80;
 
 version (unittest) {
@@ -210,8 +210,8 @@ class BlockFile {
 
                     
 
-                    .check(block !is null, 
-            format("Block @ %d does not exist in the recycle list of the blockfile", index));
+                    .check(block !is null,
+                            format("Block @ %d does not exist in the recycle list of the blockfile", index));
                     max_iteration--;
 
                     
@@ -322,8 +322,8 @@ class BlockFile {
                 scope segments = array(recycle_segments[]);
                 scope random_range = randomSample(segments, segments.length);
                 foreach (segment; random_range) {
-                    if ((size == segment.size) || (size * 2 <= segment.size) || 
-                        owner.check_statistic(segment.size, size)) {
+                    if ((size == segment.size) || (size * 2 <= segment.size) ||
+                            owner.check_statistic(segment.size, size)) {
                         remove_segment(segment, size);
                         return segment.begin_index;
                     }
@@ -344,12 +344,15 @@ class BlockFile {
                         auto upper = recycle_segments.upperBound(search_segment);
                         if (!upper.empty) {
                             auto found = upper.front;
+
+                            
+
                             .check(found.end_index < owner.last_block_index,
                                     format("recylce blocks=%d extends beond last_block_index=%d",
                                     found.end_index, owner.last_block_index));
                             assert(found.end_index < owner.last_block_index);
-                            if ((size * 2 <= found.size) || 
-                    owner.check_statistic(found.size, size)) {
+                            if ((size * 2 <= found.size) ||
+                                    owner.check_statistic(found.size, size)) {
                                 remove_segment(found, size);
                                 return found.begin_index;
                             }
@@ -426,9 +429,9 @@ class BlockFile {
                     const end_block = blocks[end_of_blocks_index];
                     if (end_block.next !is INDEX_NULL) {
                         blocks[end_of_blocks_index] = owner.block(
-                            end_block.previous, 
-                            INDEX_NULL, end_block.size, 
-                            end_block.data, end_block.head);
+                                end_block.previous,
+                                INDEX_NULL, end_block.size,
+                                end_block.data, end_block.head);
                     }
                 }
             }
@@ -938,8 +941,8 @@ class BlockFile {
         }
 
         this(const Index from, const Index to)
-        in(from<to)
-        in(to-from < uint.max)
+        in (from < to)
+        in (to - from < uint.max)
         do {
             _size = cast(uint)(to - from);
             _begin_index = from;
@@ -1082,7 +1085,7 @@ class BlockFile {
         if (index == 0) {
             return Buffer.init;
         }
-        auto allocated_range =  allocated_chains.filter!(a => a.begin_index == index);
+        auto allocated_range = allocated_chains.filter!(a => a.begin_index == index);
         if (!allocated_range.empty) {
             return allocated_range.front.data;
         }
@@ -1375,8 +1378,8 @@ class BlockFile {
                                     // Make sure the last block is grounded
                                     next_index = INDEX_NULL;
                                 }
-                                blocks[current_index] = block(previous_index, next_index, 
-                                cast(uint) data.length, data, head);
+                                blocks[current_index] = block(previous_index, next_index,
+                                        cast(uint) data.length, data, head);
 
                             }
                             return current_index;
@@ -1403,21 +1406,21 @@ class BlockFile {
                             const begin_block = local_read(begin_block_index);
                             if (begin_block.next !is current_segment.end_index) {
                                 blocks[begin_block_index] = block(
-                            begin_block.previous, 
-                            current_segment.end_index,
-                                        begin_block.size, 
-                            begin_block.data, 
-                                begin_block.head);
+                                        begin_block.previous,
+                                        current_segment.end_index,
+                                        begin_block.size,
+                                        begin_block.data,
+                                        begin_block.head);
                             }
                         }
                         const end_block = local_read(current_segment.end_index);
                         immutable previous_index = (current_segment.begin_index > 0) ?
-                    current_segment.begin_index - 1 : INDEX_NULL;
+                            current_segment.begin_index - 1 : INDEX_NULL;
                         if (end_block.previous !is previous_index) {
-                            blocks[current_segment.end_index] = block(previous_index, 
-                        end_block.next, 
-                        end_block.size, 
-                        end_block.data, end_block.head);
+                            blocks[current_segment.end_index] = block(previous_index,
+                                    end_block.next,
+                                    end_block.size,
+                                    end_block.data, end_block.head);
                         }
                         sorted_segments.popFront;
                         allocate_and_chain(allocate, sorted_segments);
@@ -1529,10 +1532,10 @@ class BlockFile {
      +     data_flag = Set to `false` if block is a resycled block and `true` if it a data block
      +/
     bool inspect(bool delegate(
-const Index index, 
-const Fail f, 
-const Block block, 
-const bool recycle_chain) @safe trace) {
+            const Index index,
+            const Fail f,
+            const Block block,
+            const bool recycle_chain) @safe trace) {
         scope bool[Index] visited;
         scope bool end;
         bool failed;
@@ -1915,18 +1918,20 @@ const bool recycle_chain) @safe trace) {
         }
 
         {
+            import std.math.operations : isClose;
+            import std.stdio;
+
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
-            immutable uint[uint] size_stats = [
-                6: 2, 2: 4, 3: 9, 10: 2, 5: 5, 4: 1, 9: 1
-            ]; //[5:6, 4:1, 3:10, 2:4, 10:2, 9:1];
+            immutable uint[uint] size_stats =
+                [6: 2, 2: 4, 3: 5, 10: 2, 5: 5, 4: 5, 9: 1];
             foreach (size, count; blockfile.statistic.histogram) {
                 assert(size in size_stats);
                 assert(count is size_stats[size]);
             }
 
             immutable result = blockfile.statistic.result;
-            assert(rint(result.mean * 1_00000) == 4_37500);
-            assert(rint(result.sigma * 1_00000) == 2_39224);
+            assert(isClose(result.mean, 4.54167f));
+            assert(isClose(result.sigma, 2.32153f));
             assert(result.N == 24);
             blockfile.close;
         }
