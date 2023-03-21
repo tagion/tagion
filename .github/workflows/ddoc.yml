@@ -43,5 +43,5 @@ jobs:
           pwd
           sudo gunzip go1.20.2.linux-amd64.tar.gz
           ls -l
-          sudo tar -xvf go1.20.2.linux-amd64.tar
-          go version
+          sudo tar -xf go1.20.2.linux-amd64.tar
+          ls -l
