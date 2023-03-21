@@ -5,6 +5,11 @@ on:
     branches: 
       - current
       - ddoc-github-pages
+      
+permissions:
+  contents: read
+  pages: write
+  id-token: write      
 
 jobs:
   ddoc_build:
@@ -17,9 +22,6 @@ jobs:
         uses: actions/checkout@v3
       - name: install packages 
         run: |
-          pwd
-          ls -l
-          whoami
           sudo wget https://netcologne.dl.sourceforge.net/project/d-apt/files/d-apt.list -O /etc/apt/sources.list.d/d-apt.list
           sudo apt-get update --allow-insecure-repositories
           sudo apt-get -y --allow-unauthenticated install --reinstall d-apt-keyring
