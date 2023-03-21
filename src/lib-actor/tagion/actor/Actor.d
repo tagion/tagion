@@ -289,14 +289,17 @@ protected static string generateAllMethods(alias This)() {
     import std.array : join;
     import std.algorithm.iteration : uniq;
     import std.algorithm.sorting : sort;
+    import std.range : chain;
     import std.traits;
-    string[] result;
     string[][string] imports;
-    void appendImports() {
+    string[] appendImports() {
+        string[] result;
         foreach(mod, imp; imports) {
-            results ~= format("import %s : %(%s, %)", mod, imp); 
+            result ~= format("import %s : %-(%s, %);", mod, imp.sort.uniq); 
         }
+            return result;
     }
+    string[] result;
     static foreach (m; __traits(allMembers, This)) {
         {
             static if (isMethod!(This, m)) {
@@ -346,7 +349,7 @@ protected static string generateAllMethods(alias This)() {
             }
         }
     }
-    return result.join("\n");
+    return chain(appendImports, result).join("\n");
 }
 
 enum isActor(A) = allMemberFilter!(A, isTask).length is 1;
