@@ -459,15 +459,15 @@ class BlockFile {
             string filename,
             immutable uint SIZE,
             const bool read_only = false) {
-        File file;
+        File _file;
 
         if (read_only) {
-            file.open(filename, "r");
+            _file.open(filename, "r");
         }
         else {
-            file.open(filename, "r+");
+            _file.open(filename, "r+");
         }
-        this(file, SIZE);
+        this(_file, SIZE);
     }
 
     protected this(
@@ -504,13 +504,13 @@ class BlockFile {
         }
 
         try_it({
-            File file;
-            file.open(filename, "r");
-            BlockFile.HeaderBlock headerblock;
-            file.seek(0);
-            headerblock.read(file, DEFAULT_BLOCK_SIZE);
-            result = new BlockFile(headerblock.block_size);
-            result.file = file;
+            File _file;
+            _file.open(filename, "r");
+            BlockFile.HeaderBlock _headerblock;
+            _file.seek(0);
+            _headerblock.read(_file, DEFAULT_BLOCK_SIZE);
+            result = new BlockFile(_headerblock.block_size);
+            result.file = _file;
         });
         if (result.file.size == 0) {
             report(format("BlockFile %s size is 0", filename));
@@ -1716,7 +1716,6 @@ class BlockFile {
         {
             immutable filename = fileId("create").fullpath;
             BlockFile.create(filename, "create.unittest", SMALL_BLOCK_SIZE);
-            writefln("BlockFile %s", filename);
             auto blockfile_load = BlockFile(filename);
             scope (exit) {
                 blockfile_load.close;

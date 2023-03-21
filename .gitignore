@@ -1,28 +1,6 @@
 # Ignore all
 *
 
-# Remove this when the test should be written
-bdd/tagion/testbench/backlog/Add_global_variables.d
-bdd/tagion/testbench/backlog/Add_the_genesis_block.d
-bdd/tagion/testbench/backlog/Add_the_recorder_chain_backup.d
-bdd/tagion/testbench/backlog/Implement_epoch_bullseye_consensus_protocol.d
-bdd/tagion/testbench/backlog/Implement_epoch_closure.d
-bdd/tagion/testbench/backlog/Implement_secure_key_generation_at_network_startup.d
-bdd/tagion/testbench/backlog/Implement_the_epoch_block_chain.d
-bdd/tagion/testbench/backlog/Implementing_Name_Records.d
-bdd/tagion/testbench/backlog/MonitorLogger.d
-bdd/tagion/testbench/backlog/Network_discovery_via_the_Name_Records.d
-bdd/tagion/testbench/backlog/Smart_contract_validation.d
-bdd/tagion/testbench/backlog/package.d
-bdd/tagion/testbench/communication/HiRPC_format_check.d
-bdd/tagion/testbench/communication/package.d
-bdd/tagion/testbench/services/Collector_service.d
-bdd/tagion/testbench/services/Logger_subscription_service.d
-bdd/tagion/testbench/services/Logger_subscription_service_with_parameter.d
-bdd/tagion/testbench/services/Recorder_chain_service.d
-bdd/tagion/testbench/services/Transaction_service.d
-bdd/tagion/testbench/services/Transcript_service.d
-
 # Unignore all with extensions
 !*.*
 
@@ -35,6 +13,9 @@ bdd/tagion/testbench/services/Transcript_service.d
 *~
 *#
 .#*
+
+# Vim
+Session.vim
 
 # Local setup file
 local.*
@@ -85,3 +66,15 @@ src/lib-network/tagion/network/wolfssl/c/openssl/*.d
 
 # Auto-generated .pem files
 pem_files
+
+
+# Remove this when the test should be written
+bdd/tagion/testbench/backlog
+bdd/tagion/testbench/communication
+bdd/tagion/testbench/services/Collector_service.d
+bdd/tagion/testbench/services/ContractInterface_service.d
+bdd/tagion/testbench/services/Logger_subscription_service.d
+bdd/tagion/testbench/services/Logger_subscription_service_with_parameter.d
+bdd/tagion/testbench/services/Recorder_chain_service.d
+bdd/tagion/testbench/services/Transcript_service.d
+tagionwave.json

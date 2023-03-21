@@ -1,9 +1,11 @@
-PLATFORMS+=MOBILE
-platform-mobile: DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
+PLATFORMS+=mobile
+
+ifeq ($(PLATFORM), mobile)
+DINC?=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 # Betterc source files
 # DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-betterc/*" -a -not -path "*/tests/*" -a -not -path "*/unitdata/*"}
-platform-mobile: DFILES?=${shell fd -e d . src/lib-mobile}
-platform-mobile: MTRIPLE=aarch64-android-linux
+DFILES?=${shell fd -e d . src/lib-mobile}
+MTRIPLE=aarch64-android-linux
 
 # We need the hosts precompiled runtime libraries and linker from android
 # LDCHOSTPATH?=/home/lucas/wrk/dondroid/ldc2-1.29.0-android-aarch64/
@@ -18,11 +20,11 @@ platform-mobile: MTRIPLE=aarch64-android-linux
 # DFLAGS+=-linker=$(NDKPATH)/toolchains/llvm/prebuilt/linux-x86_64/bin/ld.lld
 
 # HACK: not define the arch flags -m32
-platform-mobile: CROSS_OS=mobile
+CROSS_OS=mobile
 
 platform-mobile: DFLAGS+=-mtriple=$(MTRIPLE) 
 
 platform-mobile:
-	$(DC)  $(DFLAGS) ${addprefix -I,$(DINC)} --shared -of=libtagionmobile.so ${sort $(DFILES)}
+	$(DC)  $(DFLAGS) -i ${addprefix -I,$(DINC)} --shared -of=$(DBUILD)/libtagionmobile.so ${sort $(DFILES)}
 
-.PHONY: platform
+endif

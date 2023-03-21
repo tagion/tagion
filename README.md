@@ -6,10 +6,7 @@
 
 This repository is a home for all core units, also containing scripts for cross-compilation, testing and docs generation.
 
-<a href="/docs/ActorException.html">ActorException</a>
-
-[Actor documentation](ddoc://tagion.actor.Actor.html)  
-[Actor source](src://lib-actor/tagion/actor/Actor.d)  
+[Documentation](https://docs.tagion.org)
 
 ## Installation
 *Installation tested on ubuntu 20.04*

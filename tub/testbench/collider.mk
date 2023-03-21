@@ -8,7 +8,7 @@ ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
 
 BDD_MD_FILES=${shell find $(BDD) -name "*.md" -a -not -name "*.gen.md"}
 
-bddtest: | bddtagion bddfiles bddinit bddenv bddrun bddreport
+bddtest: | bddtagion bddfiles bddinit bddrun bddreport
 
 
 .PHONY: bddtest bddfiles bddtagion
@@ -31,7 +31,7 @@ bddrun: $(BDDTESTS)
 
 .PHONY: bddrun
 
-run-%: bddfiles bddinit bddenv
+run-%: bddfiles bddinit 
 	$(PRECMD)
 	${call log.header, $* :: run bdd}
 	$(DBIN)/$* $(RUNFLAGS)
@@ -59,7 +59,7 @@ startreporter.sh:
 	$(PRECMD)
 	$(SCRIPTS)/genreporter.sh $@
 
-bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way
+bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way bddenv
 	$(PRECMD)
 	$(TESTPROGRAM) -f
 

@@ -78,6 +78,7 @@ $(UNITTEST_BIN): $(COVWAY) $$(DFILES)
 	$(PRECMD)
 	echo deps $?
 	echo LIBS=$(LIBS)
+	echo DFLAGS=$(DFLAGS)
 	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFALGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} $(LIBS) $(OUTPUT)$@
 
 unittest: revision

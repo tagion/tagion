@@ -113,6 +113,7 @@ struct LogSubscribersInfo {
 }
 
 unittest {
+    log.silent = true;
     enum task1 = "task1";
     enum task2 = "task2";
     enum task3 = "task3";

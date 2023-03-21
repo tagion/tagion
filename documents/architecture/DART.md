@@ -113,7 +113,5 @@ sequenceDiagram
     DART -->> Collector: Recorder(read)
 ```
 
-
-
-
+The Recorder protocol can be found in [Recorder](documents/protocols/dart/Recorder.md)
 

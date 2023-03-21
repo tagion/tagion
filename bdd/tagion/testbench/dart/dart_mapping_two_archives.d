@@ -18,7 +18,6 @@ import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 import tagion.dart.DARTcrud : dartRead, dartRim;
 
 import tagion.testbench.tools.Environment;
-import tagion.actor.TaskWrapper;
 import tagion.utils.Miscellaneous : toHexString;
 import tagion.testbench.dart.dartinfo;
 
@@ -76,7 +75,6 @@ class AddOneArchive {
 
     @Given("I add one archive1 in sector A.")
     Document a() {
-
         auto recorder = db.recorder();
         const doc = DARTFakeNet.fake_doc(info.table[0]);
         recorder.add(doc);
@@ -92,7 +90,6 @@ class AddOneArchive {
         db.close();
         return result_ok;
     }
-
 }
 
 @safe @Scenario("Add another archive.",
@@ -218,6 +215,7 @@ class RemoveArchive {
         const read_doc = getRead(rim_fingerprints, info.hirpc, db);
         const recorder = db.recorder(read_doc);
 
+        check(recorder[].walkLength == 1, "fingerprint not removed");
         auto data = recorder[].front;
         const(ulong) archive = data.filed[info.FAKE].get!ulong;
         check(archive == info.table[1], "Data is not correct");

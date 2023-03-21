@@ -28,17 +28,18 @@ int main(string[] args) {
     foreach(i, file; md_files) {
         writeln(file);
         writeln(REPOROOT);
-        relative_paths ~= relativePath(file, BDD);
+        relative_paths ~= relativePath(file, REPOROOT);
     }
 
     auto fout = File(FILE, "w");
-
+    scope(exit) {
+        fout.close;
+    }
 
     foreach(i, path; relative_paths) {
         fout.writefln("[%s](%s)", path.baseName, path);
         fout.writeln("");
     }
-    fout.close();
 
 
     return 0;

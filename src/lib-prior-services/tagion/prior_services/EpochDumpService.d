@@ -12,7 +12,7 @@ import tagion.crypto.Types : Fingerprint;
 import tagion.basic.Types : Control, Buffer;
 import tagion.basic.Basic : TrustedConcurrency;
 import tagion.hibon.Document;
-import tagion.actor.TaskWrapper;
+import tagion.taskwrapper.TaskWrapper;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.prior_services.Options : Options, setDefaultOption;
 
@@ -68,7 +68,7 @@ unittest {
     import core.thread;
     import std.typecons : Typedef;
     import tagion.prior_services.EpochDumpService : EpochDumpTask;
-    import tagion.actor.TaskWrapper : Task;
+    import tagion.taskwapper.TaskWrapper : Task;
     import tagion.prior_services.Options : Options, getOptions, setOptions;
     import tagion.hibon.HiBON;
     import tagion.crypto.Types : Fingerprint;

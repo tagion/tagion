@@ -12,7 +12,7 @@ import tagion.logger.Logger : log;
 import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.recorderchain.RecorderChain;
 import tagion.prior_services.Options : Options;
-import tagion.actor.TaskWrapper;
+import tagion.taskwrapper.TaskWrapper;
 import tagion.utils.Miscellaneous : cutHex;
 
 mixin TrustedConcurrency;
@@ -33,7 +33,7 @@ mixin TrustedConcurrency;
      *      @param recorder - recorder for new block
      *      @param bullseye - bullseye of the database
      */
-    @TaskMethod void receiveRecorder(immutable(RecordFactory.Recorder) recorder, const 
+    @TaskMethod void receiveRecorder(immutable(RecordFactory.Recorder) recorder, const
             Fingerprint bullseye) {
         auto last_block = recorder_chain.getLastBlock;
         auto block = new RecorderChainBlock(
@@ -68,9 +68,10 @@ mixin TrustedConcurrency;
 
 /// RecorderService_add_many_blocks
 unittest {
+    log.silent = true;
     import tagion.basic.Basic : tempfile;
     import tagion.prior_services.Options : setDefaultOption;
-import tagion.crypto.Types : Fingerprint;
+    import tagion.crypto.Types : Fingerprint;
 
     const temp_folder = tempfile ~ "/";
 
