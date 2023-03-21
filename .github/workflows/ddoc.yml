@@ -38,4 +38,6 @@ jobs:
           sudo tar -xf go1.20.2.linux-amd64.tar
           pwd
           ls -l | grep go
+          export PATH="/usr/bin/go:$PATH"
+          export GOPATH="/usr/bin/go"
           which go
