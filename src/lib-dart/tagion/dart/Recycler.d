@@ -148,6 +148,9 @@ version(none)
         }
     }
 
+    bool isRecyclable(const Index index) const pure nothrow {
+        return false;
+    }
 }
 
 version (unittest) {
