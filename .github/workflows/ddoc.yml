@@ -7,7 +7,11 @@ on:
       - ddoc-github-pages
 
 jobs:
-  build:
+  ddoc_build:
+    deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -47,4 +51,16 @@ jobs:
           npm i docsify-cli -g
           make ddoc
           ls -l build/
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: './build/ddoc'
+      - name: Deploy to GitHub Pages
+        id: ddoc_deployment
+        uses: actions/deploy-pages@v1
+          
+          
+          
           
