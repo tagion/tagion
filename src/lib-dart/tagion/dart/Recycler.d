@@ -9,6 +9,7 @@ import tagion.dart.BlockSegment : Index, NullIndex;
 import std.range;
 import std.typecons : tuple;
 import std.stdio;
+import std.traits : PointerTarget;
 
 @safe
 struct Segment {
@@ -80,19 +81,34 @@ struct Recycler {
         insert(recycle_segments);
 
         Segment*[] segments_to_add;
-        version(none) {
-            auto s = new Segment();
-            auto newly_added = indices[].sequence!((a, n) => tuple(a[0], a[1], a[2]))(s, s);
+        pragma(msg, "RBRange ", indices.Range);   
+        pragma(msg, "RBRange.Node ", indices.Range.Node);   
+        pragma(msg, "RBRange.Elem ", indices.Range.Elem);   
+    ///alias NullSegmentT=PointerTarget!(typeof(indices[].front));
+            ///PointerTarget
+//pragma(msg, "Null : ", NullSegmentT);
+            //auto _s = new Segment;
+            //auto s = new Indices.Range(_s, _s);
+            //auto newly_added = indices[].sequence!((a, n) => tuple(a[n-1], a[1], a[2]))(s, s);
+                    
+            //auto newly_added = indices[].recurrence!(q{tuple(a[n], a[n-1], a[n-2])})(s,s);
 
-            foreach(test; newly_added.take(5)) {
-                if (test[0] is test[0].init) {
-                    writefln("null");
-                } else {
-                    writefln("%s", *test[0]);
-                }
+            foreach(seg; indices[]) {
+            writefln("test %s", *seg);
 
             } 
-        }
+version(none)
+            foreach(test; newly_added.take(5)) {
+                writefln("test %s", test[0]);
+                writefln("test %s", typeof(test[0]).stringof);
+//                writefln("test %s", test[0].front);
+                writefln("test[1] %s", typeof(test[1]).stringof);
+                writefln("test[2] %s", typeof(test[2]).stringof);
+                writef("%s ", *test[0]);
+                writef("%s ", *test[1]);
+                writef("%s ", *test[2]);
+        writeln;
+            }
 
     }
 
@@ -155,7 +171,11 @@ unittest {
     }
     auto recycler = Recycler(blockfile);
     
-    Segment*[] segments = [new Segment(Index(1UL), 5), new Segment(Index(10UL), 5)];
+    Segment*[] segments = [
+    new Segment(Index(1UL), 5), 
+    new Segment(Index(10UL), 5),
+    new Segment(Index(17UL), 5),
+    ];
 
     recycler.recycle(segments);
 
