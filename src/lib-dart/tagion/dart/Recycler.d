@@ -7,6 +7,8 @@ import tagion.dart.BlockFile : BlockFile;
 
 import tagion.dart.BlockSegment : Index, NullIndex;
 
+import std.stdio;
+
 @safe
 struct Segment {
     Index index; // Block file index
@@ -161,8 +163,31 @@ version (unittest) {
 }
 
 import std.exception;
-import core.exception : AssertError;
 
+
+unittest {
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(blockfile);
+
+    // insert one segment.
+    auto segment = new Segment(Index(32UL), 128);
+    recycler.recycle(segment);
+
+    auto after_segment = new Segment(segment.end, 128);
+
+    assert(recycler.previousIndex(after_segment) == segment.index);
+    assert(recycler.nextIndex(after_segment) == NullIndex);
+
+    auto before_segment = new Segment(Index(1), 122);
+    assert(recycler.previousIndex(before_segment) == NullIndex);
+    assert(recycler.nextIndex(before_segment) == segment.index);
+
+}
 
 unittest {
     // checks for single overlap.
@@ -186,7 +211,7 @@ unittest {
     // try to insert a segment overlapping just_after_segment.
     auto non_valid_segment = new Segment(Index(just_after_segment.end-1), 128);
     
-    // assertThrown!AssertError(recycler.insert(non_valid_segment));
+    // assertThrown!Throwable(recycler.insert(non_valid_segment));
 
     // recycler.insert(non_valid_segment);
     recycler.dump();
