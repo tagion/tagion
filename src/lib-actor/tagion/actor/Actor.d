@@ -287,7 +287,18 @@ bool isRunning(string task_name) @trusted {
 
 protected static string generateAllMethods(alias This)() {
     import std.array : join;
-
+    import std.algorithm.iteration : uniq;
+    import std.algorithm.sorting : sort;
+    import std.range : chain;
+    import std.traits;
+    string[][string] imports;
+    string[] appendImports() {
+        string[] result;
+        foreach(mod, imp; imports) {
+            result ~= format("import %s : %-(%s, %);", mod, imp.sort.uniq); 
+        }
+            return result;
+    }
     string[] result;
     static foreach (m; __traits(allMembers, This)) {
         {
@@ -295,8 +306,14 @@ protected static string generateAllMethods(alias This)() {
                 static if (!isLocal!(This, m)) {
                     alias Overload = __traits(getOverloads, This, m);
                     static assert(Overload.length is 1,
-                            format("Multiple methods of %s for Actor %s not allowed", m, This.stringof));
+                            format("Multiple methods of %s for Actor %s not allowed", 
+                        m, This.stringof));
                     alias Func = FunctionTypeOf!(Overload[0]);
+                    static foreach(Param; Parameters!Func) {
+                        static if (__traits(compiles, __traits(parent, Param))) {
+                            imports[moduleName!Param] ~= Param.stringof;
+                        }
+                    }
                     static if (is(ReturnType!Func == void)) {
                         enum method_code = format(q{
                         alias FuncParams_%1$s=AliasSeq!%2$s;
@@ -327,7 +344,7 @@ protected static string generateAllMethods(alias This)() {
             }
         }
     }
-    return result.join("\n");
+    return chain(appendImports, result).join("\n");
 }
 
 enum isActor(A) = allMemberFilter!(A, isTask).length is 1;
@@ -348,6 +365,7 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
     import concurrency = std.concurrency;
 
     static struct Factory {
+    //import tagion.basic.Types : Gettes;
         static if (Args.length) {
             private static shared Args init_args;
         }
@@ -408,6 +426,7 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
                 }
 
                 enum members_code = generateAllMethods!(Actor);
+                //pragma(msg, "members_code ", members_code);
                 mixin(members_code);
             }
             /* 
