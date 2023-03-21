@@ -22,7 +22,9 @@ struct Segment {
 
 @safe
 struct Recycler {
+    // Indices: sorted by index
     alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index);
+    // Segment: sorted by size.
     alias Segments = RedBlackTree!(Segment*, (a, b) => a.size < b.size, true);
     protected {
         BlockFile owner;
@@ -42,16 +44,23 @@ struct Recycler {
      * Params:
      *   segment = Pointer to the segment.
      */
-    protected void insert(const(Segment)* segment) pure {
+    protected void insert(Segment* segment) pure {
         indices.insert(segment);
         segments.insert(segment);
     }
-
-    void recycle(const(Segment)* segment) {
+    /** 
+     * Takes a segment that is being used and should be added to the recycler.
+     * Params:
+     *   segment = Segment that has been removed.
+     */
+    void recycle(Segment* segment) {
+        // if the recycler is empty we add the segment as is.
         if (indices.empty) {
             insert(segment);
             return;
         }
+
+        // this part is not working but needs redoing anyway
         auto previous_range = indices.lowerBound(segment);
         if (previous_range.empty) {
             insert(segment);
@@ -60,13 +69,16 @@ struct Recycler {
 
     }
 
+    /** 
+     * Checks if the recycler has overlapping segments.
+     */
     invariant {
         assert(noOverlaps, "Recycle segments has overlaps");
     }
 
     /**
     Returns: true if the segments overlaps
-*/
+    */
     private bool noOverlaps() const pure nothrow @nogc {
         import std.range : slide;
         import std.algorithm.searching : any;
@@ -88,6 +100,17 @@ struct Recycler {
             .map!(slice => overlaps(slice))
             .any;
     }
+    /** 
+     * Dumps the segments in the recycler.
+     */
+    void dump() {
+        import std.stdio;
+        foreach(segment; indices) {
+            writefln("INDEX: %s", segment.index);
+            writefln("END: %s", segment.end);
+        }
+    }
+
 }
 
 version (unittest) {
@@ -101,6 +124,7 @@ version (unittest) {
 
 @safe
 unittest {
+    // checks for overlaps.
     immutable filename = fileId("recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(filename);
@@ -109,5 +133,15 @@ unittest {
     }
     auto recycler = Recycler(blockfile);
 
+    // insert one segment.
+    auto segment = new Segment(Index(1UL), 128);
+    recycler.recycle(segment);
+    // insert another segment just after previous.
+    auto just_after_segment = new Segment(Index(segment.end), 128);
+    recycler.insert(just_after_segment);
+
+    assert(recycler.indices.length == 2);
+    
+    recycler.dump();
 }
 
