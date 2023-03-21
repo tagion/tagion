@@ -11,20 +11,27 @@ import std.typecons : tuple;
 import std.stdio;
 import std.traits : PointerTarget;
 
+
+
 @safe
 struct Segment {
+    enum Type : int {
+        NONE = 0, /// NO Recycler instruction
+        REMOVE = -1, /// Should be removed from recycler
+        ADD = 1, /// should be added to recycler
+    }
+
     Index index; // Block file index
     uint size;
-    bool joined;
-
-    invariant {
-        assert(size > 0);
-    }
+    Type t = Type.NONE;
 
     Index end() const pure nothrow @nogc {
         return Index(index + size);
     }
 
+    invariant {
+        assert(size > 0);
+    }
     invariant {
         assert(index != Index(0), "Segment cannot be inserted at index 0");
     }
