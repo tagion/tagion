@@ -287,31 +287,42 @@ bool isRunning(string task_name) @trusted {
 
 protected static string generateAllMethods(alias This)() {
     import std.array : join;
-
+    import std.algorithm.iteration : uniq;
+    import std.algorithm.sorting : sort;
     import std.traits;
     string[] result;
+    string[][string] imports;
+    void appendImports() {
+        foreach(mod, imp; imports) {
+            results ~= format("import %s : %(%s, %)", mod, imp); 
+        }
+    }
     static foreach (m; __traits(allMembers, This)) {
         {
             static if (isMethod!(This, m)) {
                 static if (!isLocal!(This, m)) {
                     alias Overload = __traits(getOverloads, This, m);
                     static assert(Overload.length is 1,
-                            format("Multiple methods of %s for Actor %s not allowed", m, This.stringof));
+                            format("Multiple methods of %s for Actor %s not allowed", 
+                        m, This.stringof));
                     alias Func = FunctionTypeOf!(Overload[0]);
-                    static foreach(P; Parameters!Func) {
-                        pragma(msg, "P ", fullyQualifiedName!P);
+                    static foreach(Param; Parameters!Func) {
+                        pragma(msg, "Param ", fullyQualifiedName!Param);
+                        static if (__traits(compiles, __traits(parent, Param))) {
+                        // 
+                        result~="// "~Param.stringof;
+                        result~="// "~moduleName!Param;
+                            imports[moduleName!Param] ~= Param.stringof;
+                            
+                        }
                     }
                     static if (is(ReturnType!Func == void)) {
-                        
                         enum method_code = format(q{
-                        // %3$s
                         alias FuncParams_%1$s=AliasSeq!%2$s;
-                
                         void %1$s(FuncParams_%1$s args) @trusted {
                             concurrency.send(tid, args);
                         }
-                        }, m, fullyQualifiedName!(Parameters!(Func)[0]), 
-                        Parameters!(Func).stringof);
+                        }, m, Parameters!(Func).stringof);
                     }
                     else { // Request method
                         // Request
