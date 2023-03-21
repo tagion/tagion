@@ -31,7 +31,6 @@ struct Recycler {
     // Segment: sorted by size.
     alias Segments = RedBlackTree!(Segment*, (a, b) => a.size < b.size, true);
 
-
     /** 
      * Checks if the recycler has overlapping segments.
      */
@@ -164,9 +163,9 @@ version (unittest) {
 import std.exception;
 import core.exception : AssertError;
 
+
 unittest {
     // checks for single overlap.
-
     immutable filename = fileId("recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(filename);
