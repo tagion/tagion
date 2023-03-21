@@ -16,16 +16,16 @@ auto get_md_paths(string pathname)
         .array;
 }
 
-int main(string[] args) {
+int main() {
 
     const BDD = environment["BDD"];
     const REPOROOT = environment["REPOROOT"];
     const FILE = buildPath(BDD, "BDDS.md");
 
-    auto md_files = get_md_paths(BDD);
+    auto md_files = get_md_paths(BDD).sort;
 
     string[] relative_paths;
-    foreach(i, file; md_files) {
+    foreach(file; md_files) {
         writeln(file);
         writeln(REPOROOT);
         relative_paths ~= relativePath(file, REPOROOT);
@@ -36,12 +36,10 @@ int main(string[] args) {
         fout.close;
     }
 
-    foreach(i, path; relative_paths) {
+    foreach(path; relative_paths) {
         fout.writefln("[%s](%s)", path.baseName, path);
         fout.writeln("");
     }
 
-
     return 0;
-
 }
