@@ -88,6 +88,32 @@ struct Recycler {
 
     }
 
+    /** 
+    * Gets the previous index
+    * Params:
+    *   segment = segment to check the previous segment from this.
+    * Returns: The previous segment
+    */
+    Index previousIndex(Segment* segment) pure @safe const {  
+        auto lower_range = indices.lowerBound(segment);
+        if (lower_range.empty) {
+            return NullIndex;
+        }
+        return lower_range.back.index;
+    }
+    /** 
+     * Gets the next index
+     * Params:
+     *   segment = segment to check the next segment from this.
+     * Returns: Next index
+     */
+    Index nextIndex(Segment* segment) pure @safe const {
+        auto upper_range = indices.upperBound(segment);
+        if (upper_range.empty) {
+            return NullIndex;
+        }
+        return upper_range.front.index;
+    }
 
     /**
     Returns: true if the segments overlaps
