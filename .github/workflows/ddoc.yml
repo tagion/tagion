@@ -12,9 +12,6 @@ jobs:
     steps:
       - name: install packages 
         run: |
-          ls -l
-          pwd
-          id
           sudo wget https://netcologne.dl.sourceforge.net/project/d-apt/files/d-apt.list -O /etc/apt/sources.list.d/d-apt.list
           sudo apt-get update --allow-insecure-repositories
           sudo apt-get -y --allow-unauthenticated install --reinstall d-apt-keyring
@@ -38,10 +35,8 @@ jobs:
           sudo mkdir -p /usr/bin/go
           cd /usr/bin/go
           sudo wget https://go.dev/dl/go1.20.2.linux-amd64.tar.gz
-          ls -l
           which gunzip
-          pwd
           sudo gunzip go1.20.2.linux-amd64.tar.gz
-          ls -l
           sudo tar -xf go1.20.2.linux-amd64.tar
           ls -l
+          which go
