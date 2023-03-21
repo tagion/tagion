@@ -41,5 +41,5 @@ jobs:
           ls -l
           which gunzip
           sudo gunzip go1.20.2.linux-amd64.tar.gz
-          sudo tar –xvf go1.20.2.linux-amd64.tar
+          sudo tar xf go1.20.2.linux-amd64.tar
           go version
