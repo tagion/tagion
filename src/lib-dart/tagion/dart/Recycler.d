@@ -75,6 +75,9 @@ struct Recycler {
     invariant {
         assert(noOverlaps, "Recycle segments has overlaps");
     }
+    invariant {
+        assert(indices.length == segments.length);
+    }
 
     /**
     Returns: true if the segments overlaps
@@ -141,7 +144,7 @@ unittest {
     recycler.insert(just_after_segment);
 
     assert(recycler.indices.length == 2);
-    
+
     recycler.dump();
 }
 
