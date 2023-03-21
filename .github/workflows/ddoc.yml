@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: install packages 
         run: |
+          pwd
+          ls -l
           sudo wget https://netcologne.dl.sourceforge.net/project/d-apt/files/d-apt.list -O /etc/apt/sources.list.d/d-apt.list
           sudo apt-get update --allow-insecure-repositories
           sudo apt-get -y --allow-unauthenticated install --reinstall d-apt-keyring
@@ -29,17 +31,14 @@ jobs:
           dstep --version # 1.0.0
           ldc2 --version
           dmd --version
-          which go
           go version
           sudo rm -rf /usr/bin/go
           cd /usr/bin/
           sudo wget https://go.dev/dl/go1.20.2.linux-amd64.tar.gz
           sudo gunzip go1.20.2.linux-amd64.tar.gz
           sudo tar -xf go1.20.2.linux-amd64.tar
-          pwd
-          ls -l | grep go
-          ls -l /usr/bin/go/bin
           sudo chmod +x /usr/bin/go/bin/*
           export PATH="/usr/bin/go/bin:$PATH"
           export GOPATH="/usr/bin/go/bin"
           which go
+          
