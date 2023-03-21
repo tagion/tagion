@@ -6,13 +6,16 @@ import tagion.basic.Types : Buffer;
 import tagion.dart.BlockFile : BlockFile;
 
 import tagion.dart.BlockSegment : Index, NullIndex;
-
+import std.range;
+import std.typecons : tuple;
 import std.stdio;
 
 @safe
 struct Segment {
     Index index; // Block file index
     uint size;
+    bool joined;
+
     invariant {
         assert(size > 0);
     }
@@ -59,61 +62,38 @@ struct Recycler {
         indices = new Indices;
         segments = new Segments;
     }
-    /** 
-     * Inserts the segment pointer into the RedBlackTree. 
-     * Params:
-     *   segment = Pointer to the segment.
-     */
-    protected void insert(Segment* segment) pure {
-        indices.insert(segment);
-        segments.insert(segment);
+
+    protected void insert(R)(R insert_segments)
+        if (isInputRange!R && is(ElementType!R == Segment*)) {
+        indices.insert(insert_segments);
+        segments.insert(insert_segments);
     }
+
     /** 
      * Takes a segment that is being used and should be added to the recycler.
      * Params:
      *   segment = Segment that has been removed.
      */
-    void recycle(Segment* segment) {
-        // if the recycler is empty we add the segment as is.
-        if (indices.empty) {
-            insert(segment);
-            return;
+    void recycle(R)(R recycle_segments)
+        if (isInputRange!R && is(ElementType!R == Segment*)) {
+        
+        insert(recycle_segments);
+
+        Segment*[] segments_to_add;
+        version(none) {
+            auto s = new Segment();
+            auto newly_added = indices[].sequence!((a, n) => tuple(a[0], a[1], a[2]))(s, s);
+
+            foreach(test; newly_added.take(5)) {
+                if (test[0] is test[0].init) {
+                    writefln("null");
+                } else {
+                    writefln("%s", *test[0]);
+                }
+
+            } 
         }
 
-        // this part is not working but needs redoing anyway
-        auto previous_range = indices.lowerBound(segment);
-        if (previous_range.empty) {
-            insert(segment);
-            return;
-        }
-
-    }
-
-    /** 
-    * Gets the previous index
-    * Params:
-    *   segment = segment to check the previous segment from this.
-    * Returns: The previous segment
-    */
-    Index previousIndex(Segment* segment) pure @safe const {  
-        auto lower_range = indices.lowerBound(segment);
-        if (lower_range.empty) {
-            return NullIndex;
-        }
-        return lower_range.back.index;
-    }
-    /** 
-     * Gets the next index
-     * Params:
-     *   segment = segment to check the next segment from this.
-     * Returns: Next index
-     */
-    Index nextIndex(Segment* segment) pure @safe const {
-        auto upper_range = indices.upperBound(segment);
-        if (upper_range.empty) {
-            return NullIndex;
-        }
-        return upper_range.front.index;
     }
 
     /**
@@ -145,7 +125,8 @@ struct Recycler {
      */
     void dump() {
         import std.stdio;
-        foreach(segment; indices) {
+
+        foreach (segment; indices) {
             writefln("INDEX: %s", segment.index);
             writefln("END: %s", segment.end);
         }
@@ -164,7 +145,7 @@ version (unittest) {
 
 import std.exception;
 
-
+@safe
 unittest {
     immutable filename = fileId("recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
@@ -173,128 +154,185 @@ unittest {
         blockfile.close;
     }
     auto recycler = Recycler(blockfile);
-
-    // insert one segment.
-    auto segment = new Segment(Index(32UL), 128);
-    recycler.recycle(segment);
-
-    auto after_segment = new Segment(segment.end, 128);
-
-    assert(recycler.previousIndex(after_segment) == segment.index);
-    assert(recycler.nextIndex(after_segment) == NullIndex);
-
-    auto before_segment = new Segment(Index(1), 122);
-    assert(recycler.previousIndex(before_segment) == NullIndex);
-    assert(recycler.nextIndex(before_segment) == segment.index);
-
-}
-
-unittest {
-    // checks for single overlap.
-    immutable filename = fileId("recycle").fullpath;
-    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
-    auto blockfile = BlockFile(filename);
-    scope (exit) {
-        blockfile.close;
-    }
-    auto recycler = Recycler(blockfile);
-
-    // insert one segment.
-    auto segment = new Segment(Index(1UL), 128);
-    recycler.recycle(segment);
-    // insert another segment just after previous.
-    auto just_after_segment = new Segment(segment.end, 128);
-    recycler.insert(just_after_segment);
-
-    assert(recycler.indices.length == 2);
-
-    // try to insert a segment overlapping just_after_segment.
-    auto non_valid_segment = new Segment(Index(just_after_segment.end-1), 128);
     
-    // assertThrown!Throwable(recycler.insert(non_valid_segment));
+    Segment*[] segments = [new Segment(Index(1UL), 5), new Segment(Index(10UL), 5)];
 
-    // recycler.insert(non_valid_segment);
-    recycler.dump();
-}
+    recycler.recycle(segments);
 
-unittest {
-    // checks for double overlap.
-    immutable filename = fileId("recycle").fullpath;
-    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
-    auto blockfile = BlockFile(filename);
-    scope (exit) {
-        blockfile.close;
-    }
-    auto recycler = Recycler(blockfile);
-
-    // insert one segment.
-    auto segment = new Segment(Index(1UL), 128);
-    recycler.recycle(segment);
-    // insert another segment just after previous.
-    auto just_after_segment = new Segment(segment.end, 128);
-    recycler.insert(just_after_segment);
-
-    assert(recycler.indices.length == 2);
-
-    // try to insert a segment overlapping just_after_segment.
-    auto non_valid_segment = new Segment(Index(64), 128);
     
-    // assertThrown!AssertError(recycler.insert(non_valid_segment));
-
-    recycler.dump();
 }
 
-unittest {
-    // checks that lengths of segments and indices is always the same.
-    import std.exception;
-    import core.exception : AssertError;
-    import std.range;
 
-    immutable filename = fileId("recycle").fullpath;
-    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
-    auto blockfile = BlockFile(filename);
-    scope (exit) {
-        blockfile.close;
-    }
-    auto recycler = Recycler(blockfile);
+// unittest {
+//     immutable filename = fileId("recycle").fullpath;
+//     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+//     auto blockfile = BlockFile(filename);
+//     scope (exit) {
+//         blockfile.close;
+//     }
+//     auto recycler = Recycler(blockfile);
 
-    // insert one segment.
-    auto segment = new Segment(Index(1UL), 128);
-    recycler.recycle(segment);
-    // insert another segment just after previous.
-    auto just_after_segment = new Segment(segment.end, 128);
-    recycler.insert(just_after_segment);
+//     // insert one segment.
+//     auto segment = new Segment(Index(32UL), 128);
+//     recycler.recycle(segment);
 
-    assert(recycler.indices.length == 2);
+//     auto after_segment = new Segment(segment.end, 128);
 
-    // assertThrown!AssertError(recycler.indices.removeFront());
+//     assert(recycler.previousIndex(after_segment) == segment.index);
+//     assert(recycler.nextIndex(after_segment) == NullIndex);
 
-    recycler.dump();    
-}
+//     auto before_segment = new Segment(Index(1), 122);
+//     assert(recycler.previousIndex(before_segment) == NullIndex);
+//     assert(recycler.nextIndex(before_segment) == segment.index);
 
-unittest {
-    // check that archive cannot be inserted at index=0.
+//     auto inside_segment = new Segment(Index(35UL), 122);
+//     recycler.dump();
 
-    // assertThrown!AssertError(new Segment(Index(0), 128));
-}
+// }
 
-unittest {
-    // recycler with only one segment in beginning. Insert segment after and see that the segments are put together.
-    immutable filename = fileId("recycle").fullpath;
-    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
-    auto blockfile = BlockFile(filename);
-    scope (exit) {
-        blockfile.close;
-    }
-    auto recycler = Recycler(blockfile);
+// unittest {
+//     // checks for single overlap.
+//     immutable filename = fileId("recycle").fullpath;
+//     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+//     auto blockfile = BlockFile(filename);
+//     scope (exit) {
+//         blockfile.close;
+//     }
+//     auto recycler = Recycler(blockfile);
 
-    // insert one segment.
-    auto segment = new Segment(Index(1UL), 128);
-    recycler.recycle(segment);
+//     // insert one segment.
+//     auto segment = new Segment(Index(1UL), 128);
+//     recycler.recycle(segment);
+//     // insert another segment just after previous.
+//     auto just_after_segment = new Segment(segment.end, 128);
+//     recycler.insert(just_after_segment);
 
-    assert(recycler.indices.length == 1);
+//     assert(recycler.indices.length == 2);
 
-    auto just_after_segment = new Segment(segment.end, 128);
-    // assert(recycler.indices.length == 1, "The segments should be merged");
-  
-}
+//     // try to insert a segment overlapping just_after_segment.
+//     auto non_valid_segment = new Segment(Index(just_after_segment.end-1), 128);
+
+//     // assertThrown!Throwable(recycler.insert(non_valid_segment));
+
+//     // recycler.insert(non_valid_segment);
+//     // recycler.dump();
+// }
+
+// unittest {
+//     // checks for double overlap.
+//     immutable filename = fileId("recycle").fullpath;
+//     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+//     auto blockfile = BlockFile(filename);
+//     scope (exit) {
+//         blockfile.close;
+//     }
+//     auto recycler = Recycler(blockfile);
+
+//     // insert one segment.
+//     auto segment = new Segment(Index(1UL), 128);
+//     recycler.recycle(segment);
+//     // insert another segment just after previous.
+//     auto just_after_segment = new Segment(segment.end, 128);
+//     recycler.insert(just_after_segment);
+
+//     assert(recycler.indices.length == 2);
+
+//     // try to insert a segment overlapping just_after_segment.
+//     auto non_valid_segment = new Segment(Index(64), 128);
+
+//     // assertThrown!AssertError(recycler.insert(non_valid_segment));
+
+//     // recycler.dump();
+// }
+
+// unittest {
+//     // checks that lengths of segments and indices is always the same.
+//     import std.exception;
+//     import core.exception : AssertError;
+//     import std.range;
+
+//     immutable filename = fileId("recycle").fullpath;
+//     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+//     auto blockfile = BlockFile(filename);
+//     scope (exit) {
+//         blockfile.close;
+//     }
+//     auto recycler = Recycler(blockfile);
+
+//     // insert one segment.
+//     auto segment = new Segment(Index(1UL), 128);
+//     recycler.recycle(segment);
+//     // insert another segment just after previous.
+//     auto just_after_segment = new Segment(segment.end, 128);
+//     recycler.insert(just_after_segment);
+
+//     assert(recycler.indices.length == 2);
+
+//     // assertThrown!AssertError(recycler.indices.removeFront());
+
+//     // recycler.dump();    
+// }
+
+// unittest {
+//     // check that archive cannot be inserted at index=0.
+
+//     // assertThrown!AssertError(new Segment(Index(0), 128));
+// }
+
+// unittest {
+//     // recycler with only one segment in beginning. Insert segment after and see that the segments are put together.
+//     immutable filename = fileId("recycle").fullpath;
+//     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+//     auto blockfile = BlockFile(filename);
+//     scope (exit) {
+//         blockfile.close;
+//     }
+//     auto recycler = Recycler(blockfile);
+
+//     // insert one segment.
+//     auto segment = new Segment(Index(1UL), 128);
+//     recycler.recycle(segment);
+
+//     assert(recycler.indices.length == 1);
+
+//     auto just_after_segment = new Segment(segment.end, 128);
+//     // assert(recycler.indices.length == 1, "The segments should be merged");
+
+// }
+
+// auto lower_range = indices.lowerBound(segment);
+// auto upper_range = indices.upperBound(segment);
+// Segment lower_elem;
+// Segment upper_elem;
+
+// if (!lower_range.empty) {
+//     lower_elem = lower_range.back;
+// } else {
+//     lower_elem = Segment.init;
+// }
+
+// if (!upper_range.empty) {
+//     upper_elem = upper_range.front;
+// } else {
+//     upper_elem = Segment.init;
+// }
+
+// if (lower_elem.end == segment.index) {
+//     if (upper_elem.index == segment.end) {
+//         remove(&upper_elem);
+//         remove(&lower_elem);
+//         Segment middle_segment = new Segment(lower_elem.index, lower_elem.size + segment.size + upper_elem.size);
+//         insert(middle_segment);
+//         return;
+//     }
+//     remove(&lower_elem);
+//     Segment connect_right_segment = new Segment(lower_elem.index, lower_elem.size + segment.size);
+//     insert(connect_right_segment);
+//     return;
+// }
+// if (upper_elem.index == segment.end) {
+//     remove(&upper_elem);
+//     Segment connect_left_segment = new Segment(segment.index, segment.size + upper_elem.size);
+//     insert(connect_left_segment);
+//     return;
+// }
