@@ -18,6 +18,10 @@ struct Segment {
     Index end() const pure nothrow @nogc {
         return Index(index + size);
     }
+
+    invariant {
+        assert(index != Index(0), "Segment cannot be inserted at index 0");
+    }
 }
 
 @safe
@@ -131,10 +135,11 @@ version (unittest) {
     enum SMALL_BLOCK_SIZE = 0x40;
 }
 
+import std.exception;
+import core.exception : AssertError;
+
 unittest {
     // checks for single overlap.
-    import std.exception;
-    import core.exception : AssertError;
 
     immutable filename = fileId("recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
@@ -164,9 +169,6 @@ unittest {
 
 unittest {
     // checks for double overlap.
-    import std.exception;
-    import core.exception : AssertError;
-
     immutable filename = fileId("recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(filename);
@@ -218,4 +220,31 @@ unittest {
     // assertThrown!AssertError(recycler.indices.removeFront());
 
     recycler.dump();    
+}
+
+unittest {
+    // check that archive cannot be inserted at index=0.
+
+    // assertThrown!AssertError(new Segment(Index(0), 128));
+}
+
+unittest {
+    // recycler with only one segment in beginning. Insert segment after and see that the segments are put together.
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(blockfile);
+
+    // insert one segment.
+    auto segment = new Segment(Index(1UL), 128);
+    recycler.recycle(segment);
+
+    assert(recycler.indices.length == 1);
+
+    auto just_after_segment = new Segment(segment.end, 128);
+    // assert(recycler.indices.length == 1, "The segments should be merged");
+  
 }
