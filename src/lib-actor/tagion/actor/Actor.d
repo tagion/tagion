@@ -310,13 +310,8 @@ protected static string generateAllMethods(alias This)() {
                         m, This.stringof));
                     alias Func = FunctionTypeOf!(Overload[0]);
                     static foreach(Param; Parameters!Func) {
-                        pragma(msg, "Param ", fullyQualifiedName!Param);
                         static if (__traits(compiles, __traits(parent, Param))) {
-                        // 
-                        result~="// "~Param.stringof;
-                        result~="// "~moduleName!Param;
                             imports[moduleName!Param] ~= Param.stringof;
-                            
                         }
                     }
                     static if (is(ReturnType!Func == void)) {
@@ -431,7 +426,7 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
                 }
 
                 enum members_code = generateAllMethods!(Actor);
-                pragma(msg, "members_code ", members_code);
+                //pragma(msg, "members_code ", members_code);
                 mixin(members_code);
             }
             /* 

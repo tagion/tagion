@@ -21,7 +21,6 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
-version(none)
 enum Gettes {
     Some,
     Arg
@@ -30,7 +29,6 @@ enum Gettes {
 @safe
 struct MyActor {
     import tagion.testbench.actor_tests;
-    import tagion.basic.Types : Gettes;
 
 
     long count;

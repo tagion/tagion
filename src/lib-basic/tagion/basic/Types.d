@@ -16,11 +16,6 @@ enum BillType {
     TAGIONS,
     CONTRACTS
 }
-enum Gettes {
-    Some,
-    Arg
-}
-
 
 alias Buffer = immutable(ubyte)[]; /// General buffer
 /+
