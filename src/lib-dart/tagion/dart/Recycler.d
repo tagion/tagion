@@ -22,8 +22,8 @@ struct Segment {
 
 @safe
 struct Recycler {
-    alias Indices = RedBlackTree!(const(Segment)*, (a, b) => a.index < b.index);
-    alias Segments = RedBlackTree!(const(Segment)*, (a, b) => a.size < b.size, true);
+    alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index);
+    alias Segments = RedBlackTree!(Segment*, (a, b) => a.size < b.size, true);
     protected {
         BlockFile owner;
         Indices indices;
