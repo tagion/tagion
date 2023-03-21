@@ -32,13 +32,9 @@ jobs:
           which go
           go version
           sudo rm -rf /usr/bin/go
-          sudo mkdir -p /usr/bin/go
-          cd /usr/bin/go
+          cd /usr/bin/
           sudo wget https://go.dev/dl/go1.20.2.linux-amd64.tar.gz
-          which gunzip
           sudo gunzip go1.20.2.linux-amd64.tar.gz
           sudo tar -xf go1.20.2.linux-amd64.tar
-          echo $PATH
-          export PATH="/usr/bin:$PATH"
           ls -l
           which go
