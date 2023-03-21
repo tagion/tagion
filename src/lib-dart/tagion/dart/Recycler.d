@@ -1,14 +1,11 @@
 module tagion.dart.Recycler;
 
-import std.typecons : Typedef;
 import std.container.rbtree : RedBlackTree;
 
 import tagion.basic.Types : Buffer;
-import tagion.hibon.Document;
 import tagion.dart.BlockFile : BlockFile;
 
 import tagion.dart.BlockSegment : Index, NullIndex;
-
 
 @safe
 struct Segment {
