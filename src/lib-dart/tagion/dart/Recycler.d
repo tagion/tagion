@@ -235,9 +235,10 @@ unittest {
     Segment*[] remove_segments = [
         new Segment(Index(1UL), 2, Type.REMOVE),
     ];
-
-   
     recycler.recycle(remove_segments);
+
+    assert(recycler.indices.front.index == Index(3UL));
+    assert(recycler.indices.front.end == 6);
 
     recycler.dump();
 }
