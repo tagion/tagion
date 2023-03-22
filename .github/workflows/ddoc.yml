@@ -54,5 +54,6 @@ jobs:
           git clone https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git
           cd ddoc
           ls -l
+          pwd
 
       
