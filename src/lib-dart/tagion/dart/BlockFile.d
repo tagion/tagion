@@ -40,40 +40,48 @@ alias Index = Typedef!(ulong, ulong.init, "BlockIndex");
 enum INDEX_NULL = Index.init;
 enum BLOCK_SIZE = 0x80;
 
-version (unittest) {
+version (unittest)
+{
     import Basic = tagion.basic.Basic;
 
     enum random = false;
 
-    const(Basic.FileNames) fileId(T = BlockFile)(string prefix = null) @safe {
+    const(Basic.FileNames) fileId(T = BlockFile)(string prefix = null) @safe
+    {
         return Basic.fileId!T(FileExtension.dart, prefix);
     }
 }
-else {
+else
+{
     enum random = true;
 }
 
-version (none) {
+version (none)
+{
     /// Dummy code Should be removed when the in the new recycler
     @safe
-    RecycleIndices.Segments update_segments(ref Recycler recycler, bool segments_needs_saving = false) {
+    RecycleIndices.Segments update_segments(ref Recycler recycler, bool segments_needs_saving = false)
+    {
         // Find continues segments of blocks
         return new RecycleIndices.Segments;
     }
 
     @safe
-    void trim_last_block_index(ref Recycler recycler, ref scope BlockFile.Block[Index] blocks) {
+    void trim_last_block_index(ref Recycler recycler, ref scope BlockFile.Block[Index] blocks)
+    {
         ///void trim_last_block_index);
     }
 }
 
-extern (C) {
+extern (C)
+{
     int ftruncate(int fd, long length);
 }
 
 // File object does not support yet truncate so the generic C function is used
 @trusted
-void truncate(ref File file, long length) {
+void truncate(ref File file, long length)
+{
     ftruncate(file.fileno, length);
 }
 
@@ -81,85 +89,101 @@ alias check = Check!BlockFileException;
 
 /// Block file operation
 @safe
-class BlockFile {
+class BlockFile
+{
     enum FILE_LABEL = "DART:0.0";
     enum DEFAULT_BLOCK_SIZE = 0x40;
     immutable uint BLOCK_SIZE;
     immutable uint DATA_SIZE;
     alias BlockFileStatistic = Statistic!(uint, Yes.histogram);
     static bool do_not_write;
-    package {
+    package
+    {
         File file;
         Index _last_block_index;
     }
-    protected {
-        RecycleIndices recycler;
+    protected
+    {
+        Recycler recycler;
         MasterBlock masterblock;
         HeaderBlock headerblock;
         bool hasheader;
         BlockFileStatistic _statistic;
     }
 
-    Index last_block_index() const pure nothrow @nogc {
+    Index last_block_index() const pure nothrow @nogc
+    {
         return _last_block_index;
     }
 
-    const(BlockFileStatistic) statistic() const pure nothrow @nogc {
+    const(BlockFileStatistic) statistic() const pure nothrow @nogc
+    {
         return _statistic;
     }
 
-    bool isRecyclable(const Index index) const pure nothrow {
+    bool isRecyclable(const Index index) const pure nothrow
+    {
         return recycler.isRecyclable(index);
     }
 
-    void recycleDump() {
+    void recycleDump()
+    {
         recycler.dump;
     }
 
     protected this(
-            string filename,
-            immutable uint SIZE,
-            const bool read_only = false) {
+        string filename,
+        immutable uint SIZE,
+        const bool read_only = false)
+    {
         File _file;
 
-        if (read_only) {
+        if (read_only)
+        {
             _file.open(filename, "r");
         }
-        else {
+        else
+        {
             _file.open(filename, "r+");
         }
         this(_file, SIZE);
     }
 
     protected this(
-            File file,
-            immutable uint SIZE) {
+        File file,
+        immutable uint SIZE)
+    {
         this.BLOCK_SIZE = SIZE;
         DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
         this.file = file;
-        recycler = RecycleIndices(this);
+        recycler = Recycler(this);
         readInitial;
     }
 
     /**
        Used by the Inspect
     */
-    protected this(immutable uint SIZE) pure nothrow {
+    protected this(immutable uint SIZE) pure nothrow
+    {
         this.BLOCK_SIZE = SIZE;
         DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
-        recycler = RecycleIndices(this);
+        recycler = Recycler(this);
     }
 
     static BlockFile Inspect(
-            string filename,
-            void delegate(string msg) @safe report,
-            const uint max_iteration = uint.max) {
+        string filename,
+        void delegate(string msg) @safe report,
+        const uint max_iteration = uint.max)
+    {
         BlockFile result;
-        void try_it(void delegate() @safe dg) {
-            try {
+        void try_it(void delegate() @safe dg)
+        {
+            try
+            {
                 dg();
             }
-            catch (BlockFileException e) {
+            catch (BlockFileException e)
+            {
                 report(e.msg);
             }
         }
@@ -173,15 +197,17 @@ class BlockFile {
             result = new BlockFile(_headerblock.block_size);
             result.file = _file;
         });
-        if (result.file.size == 0) {
+        if (result.file.size == 0)
+        {
             report(format("BlockFile %s size is 0", filename));
         }
-        if (result) {
+        if (result)
+        {
             try_it(&result.readHeaderBlock);
             result._last_block_index--;
             try_it(&result.readMasterBlock);
             try_it(&result.readStatistic);
-            result.recycler = RecycleIndices(result);
+            result.recycler = Recycler(result);
             //result.recycle_indices.max_iteration = max_iteration;
             //try_it(&result.recycle_indices.read);
         }
@@ -197,18 +223,21 @@ class BlockFile {
      $(LREF BLOCK_SIZE)  = Set the block size of the underlining BlockFile
 
      +/
-    static void create(string filename, string description, immutable uint BLOCK_SIZE) {
+    static void create(string filename, string description, immutable uint BLOCK_SIZE)
+    {
         File file;
         file.open(filename, "w+");
         auto blockfile = new BlockFile(file, BLOCK_SIZE);
         blockfile.createHeader(description);
         blockfile.writeMasterBlock;
-        scope (exit) {
+        scope (exit)
+        {
             blockfile.close;
         }
     }
 
-    static BlockFile reset(string filename) {
+    static BlockFile reset(string filename)
+    {
         immutable old_filename = filename.setExtension("old");
         filename.rename(old_filename);
         auto old_blockfile = BlockFile(old_filename);
@@ -233,7 +262,8 @@ class BlockFile {
      +     filename  = Name of the blockfile
      +     read_only = If `true` the file is opened as read-only
      +/
-    static BlockFile opCall(string filename, const bool read_only = false) {
+    static BlockFile opCall(string filename, const bool read_only = false)
+    {
         auto temp_file = new BlockFile(filename, DEFAULT_BLOCK_SIZE, read_only);
         immutable SIZE = temp_file.headerblock.block_size;
         temp_file.close;
@@ -242,15 +272,18 @@ class BlockFile {
 
     /++
      +/
-    void close() {
+    void close()
+    {
         file.close;
     }
 
-    ~this() {
+    ~this()
+    {
         file.close;
     }
 
-    protected void createHeader(string name) {
+    protected void createHeader(string name)
+    {
         check(!hasheader, "Header is already created");
         check(file.size == 0, "Header can not be created the file is not empty");
         check(name.length < headerblock.id.length, format("Id is limited to a length of %d but is %d", headerblock
@@ -269,12 +302,15 @@ class BlockFile {
      + Returns:
      +     `true` of the file blockfile has a header
      +/
-    bool hasHeader() const pure nothrow {
+    bool hasHeader() const pure nothrow
+    {
         return hasheader;
     }
 
-    protected void readInitial() {
-        if (file.size > 0) {
+    protected void readInitial()
+    {
+        if (file.size > 0)
+        {
             readHeaderBlock;
             _last_block_index--;
             readMasterBlock;
@@ -285,25 +321,33 @@ class BlockFile {
     }
 
     pragma(msg, "fixme(cbr): The Statistic here should use tagion.utils.Statistic");
-    enum Limits : double {
+    enum Limits : double
+    {
         MEAN = 10,
         SUM = 100
     }
 
-    protected bool check_statistic(const uint total_blocks, const uint blocks) pure const {
-        if (blocks > total_blocks) {
+    protected bool check_statistic(const uint total_blocks, const uint blocks) pure const
+    {
+        if (blocks > total_blocks)
+        {
             return false;
         }
-        else if (_statistic.contains(blocks) || (total_blocks >= 2 * blocks)) {
+        else if (_statistic.contains(blocks) || (total_blocks >= 2 * blocks))
+        {
             return true;
         }
-        else {
+        else
+        {
             auto r = _statistic.result;
-            if (r.mean > Limits.MEAN) {
+            if (r.mean > Limits.MEAN)
+            {
                 immutable limit = (r.mean - r.sigma);
-                if (blocks > limit) {
+                if (blocks > limit)
+                {
                     immutable remain_blocks = total_blocks - blocks;
-                    if (_statistic.contains(remain_blocks) || (remain_blocks > r.mean)) {
+                    if (_statistic.contains(remain_blocks) || (remain_blocks > r.mean))
+                    {
                         return true;
                     }
                 }
@@ -316,7 +360,8 @@ class BlockFile {
      + The HeaderBlock is the first block in the BlockFile
      +/
     @safe
-    struct HeaderBlock {
+    struct HeaderBlock
+    {
         enum ID_SIZE = 32;
         enum LABEL_SIZE = 16;
         char[LABEL_SIZE] label; /// Label to set the BlockFile type
@@ -325,19 +370,24 @@ class BlockFile {
         char[ID_SIZE] id; /// Short description string
 
         void write(ref File file) const @trusted
-        in {
+        in
+        {
             assert(block_size >= HeaderBlock.sizeof);
         }
-        do {
+        do
+        {
             auto buffer = new ubyte[block_size];
             size_t pos;
-            foreach (i, m; this.tupleof) {
+            foreach (i, m; this.tupleof)
+            {
                 alias type = typeof(m);
-                static if (isStaticArray!type) {
+                static if (isStaticArray!type)
+                {
                     buffer[pos .. pos + type.sizeof] = (cast(ubyte*) id.ptr)[0 .. type.sizeof];
                     pos += type.sizeof;
                 }
-                else {
+                else
+                {
                     buffer.binwrite(m, &pos);
                 }
             }
@@ -346,26 +396,32 @@ class BlockFile {
         }
 
         void read(ref File file, immutable uint BLOCK_SIZE) @trusted
-        in {
+        in
+        {
             assert(BLOCK_SIZE >= HeaderBlock.sizeof);
         }
-        do {
+        do
+        {
 
             auto buffer = new ubyte[BLOCK_SIZE];
             auto buf = file.rawRead(buffer);
-            foreach (i, ref m; this.tupleof) {
+            foreach (i, ref m; this.tupleof)
+            {
                 alias type = typeof(m);
-                static if (isStaticArray!type && is(type : U[], U)) {
+                static if (isStaticArray!type && is(type : U[], U))
+                {
                     m = (cast(U*) buf.ptr)[0 .. m.sizeof];
                     buf = buf[m.sizeof .. $];
                 }
-                else {
+                else
+                {
                     m = buf.binread!type;
                 }
             }
         }
 
-        string toString() const {
+        string toString() const
+        {
             return [
                 "Header Block",
                 format("Label      : %s", label[].until(char(ubyte.max))),
@@ -377,11 +433,13 @@ class BlockFile {
 
     }
 
-    final Index lastBlockIndex() const pure nothrow {
+    final Index lastBlockIndex() const pure nothrow
+    {
         return _last_block_index;
     }
 
-    final package void seek(const Index index) {
+    final package void seek(const Index index)
+    {
         file.seek(index_to_seek(index));
     }
 
@@ -391,17 +449,20 @@ class BlockFile {
      +/
 
     @safe
-    static struct MasterBlock {
+    static struct MasterBlock
+    {
         Index recycle_header_index; /// Points to the root of recycle block list
         Index first_index; /// Points to the first block of data
         Index root_index; /// Point the root of the database
         Index statistic_index; /// Points to the statistic data
         final void write(
-                ref File file,
-                immutable uint BLOCK_SIZE) const @trusted {
+            ref File file,
+            immutable uint BLOCK_SIZE) const @trusted
+        {
             auto buffer = new ubyte[BLOCK_SIZE];
             size_t pos;
-            foreach (i, m; this.tupleof) {
+            foreach (i, m; this.tupleof)
+            {
                 alias type = TypedefType!(typeof(m));
                 buffer.binwrite(cast(type) m, &pos);
             }
@@ -413,16 +474,19 @@ class BlockFile {
             file.sync;
         }
 
-        final void read(ref File file, immutable uint BLOCK_SIZE) {
+        final void read(ref File file, immutable uint BLOCK_SIZE)
+        {
             auto buffer = new ubyte[BLOCK_SIZE];
             auto buf = file.rawRead(buffer);
-            foreach (i, ref m; this.tupleof) {
+            foreach (i, ref m; this.tupleof)
+            {
                 alias type = TypedefType!(typeof(m));
                 m = buf.binread!type;
             }
         }
 
-        string toString() const pure nothrow {
+        string toString() const pure nothrow
+        {
             return assumeWontThrow([
                 "Master Block",
                 format("Root       @ %d", root_index),
@@ -441,14 +505,17 @@ class BlockFile {
      +     index = Root of the database
      +/
     void root_index(const Index index)
-    in {
+    in
+    {
         assert(index > 0 && index < _last_block_index);
     }
-    do {
+    do
+    {
         masterblock.root_index = Index(index);
     }
 
-    Index root_index() const pure nothrow {
+    Index root_index() const pure nothrow
+    {
         return masterblock.root_index;
     }
 
@@ -459,7 +526,8 @@ class BlockFile {
      + Returns:
      +     The number of blocks used to allocate size bytes
      +/
-    uint number_of_blocks(const size_t size) const pure nothrow {
+    uint number_of_blocks(const size_t size) const pure nothrow
+    {
         return cast(uint)((size / DATA_SIZE) + ((size % DATA_SIZE == 0) ? 0 : 1));
     }
 
@@ -470,7 +538,8 @@ class BlockFile {
      + Returns:
      +      the file pointer in byte counts
      +/
-    ulong index_to_seek(const Index index) const pure nothrow {
+    ulong index_to_seek(const Index index) const pure nothrow
+    {
         return BLOCK_SIZE * cast(ulong) index;
     }
 
@@ -478,7 +547,8 @@ class BlockFile {
      + Block handler
      +/
     @safe
-    static class Block {
+    static class Block
+    {
         immutable Index previous; /// Points to the previous block
         immutable Index next; /// Points to the next block
         immutable uint size; /// size of the data in this block
@@ -486,21 +556,27 @@ class BlockFile {
         enum uint HEAD_MASK = 1 << (uint.sizeof * 8 - 1);
         enum HEADER_SIZE = cast(uint)(previous.sizeof + next.sizeof + size.sizeof);
         immutable(Buffer) data;
-        void write(ref File file, immutable uint BLOCK_SIZE) const @trusted {
+        void write(ref File file, immutable uint BLOCK_SIZE) const @trusted
+        {
             scope buffer = new ubyte[BLOCK_SIZE];
             size_t pos;
-            foreach (i, m; this.tupleof) {
+            foreach (i, m; this.tupleof)
+            {
                 alias type = TypedefType!(typeof(m));
                 enum name = this.tupleof[i].stringof;
-                static if (is(type : Buffer)) {
+                static if (is(type : Buffer))
+                {
                     buffer[pos .. pos + m.length] = m;
                     pos += m.length;
                 }
-                else static if (name != this.head.stringof) {
-                    static if (name == this.size.stringof) {
+                else static if (name != this.head.stringof)
+                {
+                    static if (name == this.size.stringof)
+                    {
                         buffer.binwrite(cast(type) m | (head ? HEAD_MASK : 0), &pos);
                     }
-                    else {
+                    else
+                    {
                         buffer.binwrite(cast(type) m, &pos);
                     }
                 }
@@ -512,23 +588,29 @@ class BlockFile {
         }
 
         private this(ref File file, immutable uint BLOCK_SIZE)
-        in {
+        in
+        {
             assert(HEADER_SIZE < BLOCK_SIZE);
         }
-        do {
+        do
+        {
 
             scope buffer = new ubyte[BLOCK_SIZE];
             scope buf = file.rawRead(buffer);
-            foreach (i, m; this.tupleof) {
+            foreach (i, m; this.tupleof)
+            {
                 alias type = TypedefType!(typeof(m));
                 enum name = this.tupleof[i].stringof;
-                static if (name != this.data.stringof) {
-                    static if (name == this.size.stringof) {
+                static if (name != this.data.stringof)
+                {
+                    static if (name == this.size.stringof)
+                    {
                         immutable _size = buf.binread!type;
                         size = _size & (~HEAD_MASK);
                         head = (_size & HEAD_MASK) != 0;
                     }
-                    else static if (name != this.head.stringof) {
+                    else static if (name != this.head.stringof)
+                    {
                         this.tupleof[i] = buf.binread!type;
                     }
                 }
@@ -538,11 +620,12 @@ class BlockFile {
         }
 
         private this(
-                const Index previous,
-                const Index next,
-                const uint size,
-                immutable(Buffer) buf,
-                const bool head) pure nothrow {
+            const Index previous,
+            const Index next,
+            const uint size,
+            immutable(Buffer) buf,
+            const bool head) pure nothrow
+        {
             this.previous = previous;
             this.next = next;
             this.size = size;
@@ -553,30 +636,35 @@ class BlockFile {
     }
 
     protected final Block block(
-            immutable Index previous,
-            immutable Index next,
-            immutable uint size,
-            immutable(Buffer) buf,
-            const bool head)
-    in {
+        immutable Index previous,
+        immutable Index next,
+        immutable uint size,
+        immutable(Buffer) buf,
+        const bool head)
+    in
+    {
         assert(buf.length <= DATA_SIZE);
     }
-    do {
+    do
+    {
         return new Block(previous, next, size, buf, head);
     }
 
     /++
      + Read's a block at the current index
      +/
-    protected final Block block(ref File file) {
+    protected final Block block(ref File file)
+    {
         return new Block(file, BLOCK_SIZE);
     }
 
     /++
      + Write a block to the current index
      +/
-    protected final write(ref const Block block, ref File file) {
-        with (block) {
+    protected final write(ref const Block block, ref File file)
+    {
+        with (block)
+        {
             block.write(file, BLOCK_SIZE);
         }
     }
@@ -585,42 +673,51 @@ class BlockFile {
      + Returns:
      +     information text of the block
      +/
-    string toInfo(const Block block) const {
-        with (block) {
+    string toInfo(const Block block) const
+    {
+        with (block)
+        {
             return format("<-[%04d] ->[%04d] blocks=%d size=%d head=%s", previous, next, number_of_blocks(
                     size), size, head);
         }
     }
 
     @safe
-    static struct Segment {
+    static struct Segment
+    {
         protected Index _begin_index;
         protected uint _size;
-        invariant {
+        invariant
+        {
             assert(_size > 0);
         }
 
         this(const Index from, const Index to)
         in (from < to)
         in (to - from < uint.max)
-        do {
+        do
+        {
             _size = cast(uint)(to - from);
             _begin_index = from;
         }
 
-        uint size() pure const nothrow {
+        uint size() pure const nothrow
+        {
             return _size;
         }
 
-        Index begin_index() pure const nothrow {
+        Index begin_index() pure const nothrow
+        {
             return _begin_index;
         }
 
-        Index end_index() pure const nothrow {
+        Index end_index() pure const nothrow
+        {
             return Index(_begin_index + _size);
         }
 
-        string toInfo() const {
+        string toInfo() const
+        {
             return format("[%d..%d]:%d", begin_index, end_index, size);
         }
 
@@ -632,49 +729,58 @@ class BlockFile {
      +     index = Block index poiter where to write in the block file
      +     block = The block to be written
      +/
-    protected void write(scope const Index index, const(Block) block) {
+    protected void write(scope const Index index, const(Block) block)
+    {
         seek(index);
         block.write(file, BLOCK_SIZE);
     }
 
-    protected void writeStatistic() {
+    protected void writeStatistic()
+    {
         // Allocate block for statistical data
         immutable old_statistic_index = masterblock.statistic_index;
 
         auto statistical_allocate = save(_statistic.toDoc.serialize, random);
         masterblock.statistic_index = statistical_allocate.begin_index;
-        if (old_statistic_index !is INDEX_NULL) {
+        if (old_statistic_index !is INDEX_NULL)
+        {
             // The old statistic block is erased
             erase(old_statistic_index);
         }
     }
 
-    ref const(MasterBlock) masterBlock() pure const nothrow {
+    ref const(MasterBlock) masterBlock() pure const nothrow
+    {
         return masterblock;
     }
 
-    ref const(HeaderBlock) headerBlock() pure const nothrow {
+    ref const(HeaderBlock) headerBlock() pure const nothrow
+    {
         return headerblock;
     }
 
     // Write the master block to the filesystem and truncate the file
-    protected void writeMasterBlock() {
+    protected void writeMasterBlock()
+    {
         seek(_last_block_index);
         masterblock.write(file, BLOCK_SIZE);
     }
 
-    Block read(const Index index) {
+    Block read(const Index index)
+    {
         Block result;
-        if (index < _last_block_index) {
+        if (index < _last_block_index)
+        {
             seek(index);
             result = block(file);
         }
         return result;
     }
 
-    private void readHeaderBlock() {
+    private void readHeaderBlock()
+    {
         check(file.size % BLOCK_SIZE == 0,
-                format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
+            format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
                 .size));
         _last_block_index = cast(Index)(file.size / BLOCK_SIZE);
         check(_last_block_index > 1, format("The BlockFile should at least have a size of two block of %d but is %d", BLOCK_SIZE, file
@@ -685,14 +791,17 @@ class BlockFile {
         hasheader = true;
     }
 
-    private void readMasterBlock() {
+    private void readMasterBlock()
+    {
         // The masterblock is locate as the lastblock in the file
         seek(_last_block_index);
         masterblock.read(file, BLOCK_SIZE);
     }
 
-    private void readStatistic() @safe {
-        if (masterblock.statistic_index !is INDEX_NULL) {
+    private void readStatistic() @safe
+    {
+        if (masterblock.statistic_index !is INDEX_NULL)
+        {
             immutable buffer = load(masterblock.statistic_index);
             _statistic = BlockFileStatistic(Document(buffer));
         }
@@ -713,15 +822,18 @@ class BlockFile {
      +     BlockFileException if this not first block in a chain or
      +     some because of some other failures in the blockfile system
      +/
-    immutable(Buffer) load(const Index index, const bool check_format = true) {
+    immutable(Buffer) load(const Index index, const bool check_format = true)
+    {
         auto first_block = read(index);
         // Check if this is the first block is the start of a block sequency
         check(check_format || first_block.head, format(
                 "Block @ %d is not the head of block sequency", index));
-        Buffer build_sequency(Block block) @safe {
+        Buffer build_sequency(Block block) @safe
+        {
             scope buffer = new ubyte[first_block.size];
             auto cache = buffer;
-            while (block.size > DATA_SIZE) {
+            while (block.size > DATA_SIZE)
+            {
                 cache[0 .. DATA_SIZE] = block.data;
                 auto next_block = read(block.next);
                 check(next_block !is null, format("Fatal error in the blockfile @ %d", block.next));
@@ -741,12 +853,15 @@ class BlockFile {
         return build_sequency(first_block);
     }
 
-    immutable(Buffer) cacheLoad(const Index index) nothrow {
-        if (index == 0) {
+    immutable(Buffer) cacheLoad(const Index index) nothrow
+    {
+        if (index == 0)
+        {
             return Buffer.init;
         }
         auto allocated_range = allocated_chains.filter!(a => a.begin_index == index);
-        if (!allocated_range.empty) {
+        if (!allocated_range.empty)
+        {
             return allocated_range.front.data;
         }
 
@@ -769,10 +884,13 @@ class BlockFile {
      +     BlockFileException
      +
      +/
-    Index erase(const Index index) {
-        version (none) {
+    Index erase(const Index index)
+    {
+        version (none)
+        {
             console.writef("%d [ ", index);
-            scope (exit) {
+            scope (exit)
+            {
                 console.writeln("]");
                 console.writefln("recycle_indices = %s", recycle_indices[]);
                 console.writefln("recycled_to_save= %s", recycle_indices
@@ -780,47 +898,58 @@ class BlockFile {
             }
 
             auto block_range = range(index);
-            if (!block_range.empty) {
+            if (!block_range.empty)
+            {
                 check(block_range.front.head, format("Block @ %d is not pointing to the begin of a block sequency", index));
             }
 
         }
-        @safe Index remove_sequency(bool first = false)(const Index index) {
+        @safe Index remove_sequency(bool first = false)(const Index index)
+        {
             auto block = read(index);
             check(!recycler.isRecyclable(index),
-                    format("Block %d has already been delete", index));
+                format("Block %d has already been delete", index));
 
-            static if (first) {
+            static if (first)
+            {
                 // Check if this is the first block in a block sequency
                 check(block.head, "Load index is not pointing to the begin of a block sequency");
             }
             version (blockfile_recycle)
                 recycle_indices = index;
-            if (block.size > DATA_SIZE) {
+            if (block.size > DATA_SIZE)
+            {
                 return remove_sequency(block.next);
             }
-            if (index >= masterblock.first_index) {
+            if (index >= masterblock.first_index)
+            {
                 masterblock.first_index = index + 1;
             }
             return block.next;
         }
 
-        if (index !is INDEX_NULL) {
+        if (index !is INDEX_NULL)
+        {
             return remove_sequency!true(index);
         }
         return INDEX_NULL;
     }
 
-    Index end_index(const Index index) {
-        @safe Index search(const Index index) {
-            if (index !is INDEX_NULL) {
+    Index end_index(const Index index)
+    {
+        @safe Index search(const Index index)
+        {
+            if (index !is INDEX_NULL)
+            {
                 const block = read(index);
                 check(block.size > 0,
-                        format("Bad data block @ %d the size is zero", index));
-                if (block.size > DATA_SIZE) {
+                    format("Bad data block @ %d the size is zero", index));
+                if (block.size > DATA_SIZE)
+                {
                     return search(block.next);
                 }
-                else {
+                else
+                {
                     return block.next;
                 }
             }
@@ -835,66 +964,81 @@ class BlockFile {
      + By splitting the data buffer into a chain of blocks
      + If possible it recycling old deleted blocks
      +/
-    class AllocatedChain {
-        @recordType("ACHAIN") struct Chain {
+    class AllocatedChain
+    {
+        @recordType("ACHAIN") struct Chain
+        {
             Buffer data;
             Index begin_index;
             mixin HiBONRecord;
         }
 
         protected Chain chain;
-        this(const Document doc) {
+        this(const Document doc)
+        {
             chain = Chain(doc);
         }
 
-        inout(HiBON) toHiBON() inout {
+        inout(HiBON) toHiBON() inout
+        {
             return chain.toHiBON;
         }
 
-        final immutable(Buffer) data() const pure nothrow {
+        final immutable(Buffer) data() const pure nothrow
+        {
             return chain.data;
         }
         // This function reserves blocks and recycles blocks if possible
         protected void reserve(bool random_block)()
-        in {
+        in
+        {
             assert(chain.begin_index == 0, "Block is already reserved");
         }
-        do {
+        do
+        {
             immutable size = number_of_blocks(chain.data.length);
             chain.begin_index = Index(recycler.reserve_segment!random_block(size));
             _statistic(size);
         }
 
         this(immutable(Buffer) buffer, immutable bool random_block = random)
-        in {
+        in
+        {
             assert(buffer.length > 0, "Buffer size can not be zero");
         }
-        do {
+        do
+        {
             chain.data = buffer;
-            if (random_block) {
+            if (random_block)
+            {
                 reserve!true;
             }
-            else {
+            else
+            {
                 reserve!false;
             }
         }
 
-        string toInfo() const {
+        string toInfo() const
+        {
             return format("[%d..%d] blocks=%s size=%5d", chain.begin_index, end_index, number_of_blocks(
                     size), size);
         }
 
     final:
 
-        Index begin_index() pure const nothrow {
+        Index begin_index() pure const nothrow
+        {
             return chain.begin_index;
         }
 
-        Index end_index() pure const nothrow {
+        Index end_index() pure const nothrow
+        {
             return Index(chain.begin_index + number_of_blocks(chain.data.length));
         }
 
-        uint size() pure const nothrow {
+        uint size() pure const nothrow
+        {
             import LEB128 = tagion.utils.LEB128;
 
             const leb128_size = LEB128.decode!ulong(chain.data);
@@ -912,27 +1056,32 @@ class BlockFile {
      + Params:
      +     data = Data buffer to be reserved and allocated
      +/
-    const(AllocatedChain) save(immutable(Buffer) data, bool random_block = random) {
+    const(AllocatedChain) save(immutable(Buffer) data, bool random_block = random)
+    {
         auto result = new AllocatedChain(data, random_block);
         allocated_chains ~= result;
         return result;
     }
 
-    HiBON toHiBON() const {
+    HiBON toHiBON() const
+    {
         auto result = new HiBON;
-        foreach (i, a; allocated_chains) {
+        foreach (i, a; allocated_chains)
+        {
             result[i] = a.toHiBON;
         }
         return result;
     }
 
-    version (none) protected void fromDoc(const(Document) doc) {
+    version (none) protected void fromDoc(const(Document) doc)
+    {
         allocated_chains = null;
 
         
 
         .check(doc.isArray, "Document should be an array");
-        foreach (a; doc[]) {
+        foreach (a; doc[])
+        {
             const sub_doc = a.get!Document;
             allocated_chains ~= new AllocatedChain(sub_doc);
         }
@@ -945,12 +1094,17 @@ class BlockFile {
      + If this function throws an Exception the Blockfile has not been updated
      +
      +/
-    void store() {
-        debug scope (exit) {
-            bool failsafe(const Index index, const Fail f, const Block block, const bool recycle_block) @safe {
-                if (f != Fail.NON) {
+    void store()
+    {
+        debug scope (exit)
+        {
+            bool failsafe(const Index index, const Fail f, const Block block, const bool recycle_block) @safe
+            {
+                if (f != Fail.NON)
+                {
                     console.writefln("Data check fails on block @ [%d <- %d -> %d]: Fail:%s in %s",
-                            block.previous, index, block.next, f, recycle_block ? "recycle block" : "data block");
+                        block.previous, index, block.next, f, recycle_block ? "recycle block"
+                            : "data block");
                 }
                 return false;
             }
@@ -958,9 +1112,11 @@ class BlockFile {
             assert(!inspect(&failsafe), "Should not fail here");
         }
         Block[Index] blocks;
-        scope (success) {
+        scope (success)
+        {
             allocated_chains = null;
-            version(none) recycler.write;
+            version (none)
+                recycler.write;
 
             { //write_blocks_in_sorted_order
                 auto sorted_indices = blocks.keys.dup.sort;
@@ -973,38 +1129,51 @@ class BlockFile {
 
         {
             do_not_write = true;
-            scope (exit) {
+            scope (exit)
+            {
                 do_not_write = false;
             }
 
             writeStatistic;
             // Sortes the blocks in order
-            const(Block) local_read(const Index index) {
-                if (index in blocks) {
+            const(Block) local_read(const Index index)
+            {
+                if (index in blocks)
+                {
                     return blocks[index];
                 }
-                else {
+                else
+                {
                     return read(index);
                 }
             }
 
             void allocate_and_chain(
-                    const(AllocatedChain[]) allocate) @safe {
-                if (allocate.length > 0) {
+                const(AllocatedChain[]) allocate) @safe
+            {
+                if (allocate.length > 0)
+                {
                     Index chain(
-                            immutable(ubyte[]) data,
+                        immutable(ubyte[]) data,
                     const Index current_index,
                     const Index previous_index,
-                    const bool head) @trusted {
-                        scope (success) {
-                            version(none) recycler.reclaim(current_index);
+                    const bool head) @trusted
+                    {
+                        scope (success)
+                        {
+                            version (none)
+                                recycler.reclaim(current_index);
                         }
-                        if (data !is null) {
+                        if (data !is null)
+                        {
                             // update_first_index(current_index);
-                            if (data.length > DATA_SIZE) {
-                                void update_first_index(Index current_index) {
+                            if (data.length > DATA_SIZE)
+                            {
+                                void update_first_index(Index current_index)
+                                {
                                     if ((masterblock.first_index > current_index) || (
-                                            masterblock.first_index is INDEX_NULL)) {
+                                            masterblock.first_index is INDEX_NULL))
+                                    {
                                         masterblock.first_index = current_index;
                                     }
                                 }
@@ -1013,50 +1182,55 @@ class BlockFile {
                                 Index current = current_index;
                                 bool h = head;
                                 size_t from = 0;
-                                while (from + DATA_SIZE < data.length) {
+                                while (from + DATA_SIZE < data.length)
+                                {
                                     auto to = from + DATA_SIZE;
                                     auto slice_data = data[from .. to];
                                     const next_index = Index(current + 1);
                                     const size = cast(uint)(data.length - from);
                                     assert(size !is 0, "Block size should not be zero");
                                     blocks[current] = block(
-                                            previous,
-                                            next_index,
-                                            size, slice_data,
-                                            h);
+                                        previous,
+                                        next_index,
+                                        size, slice_data,
+                                        h);
                                     update_first_index(current);
                                     previous = current;
                                     current = Index(next_index);
                                     h = false;
                                     from += DATA_SIZE;
                                 }
-                                if (from + DATA_SIZE >= data.length) {
+                                if (from + DATA_SIZE >= data.length)
+                                {
                                     assert(data[from .. $].length !is 0, "Tail data block is zero size");
                                     immutable next_index = chain(
-                                            data[from .. $],
-                                            current,
-                                            Index(current - 1),
-                                            false);
+                                        data[from .. $],
+                                        current,
+                                        Index(current - 1),
+                                        false);
                                 }
 
                             }
-                            else {
+                            else
+                            {
                                 auto next_index = chain(
-                                        null,
-                                        Index(current_index + 1),
-                                        current_index, false);
-                                if (next_index == _last_block_index) {
+                                    null,
+                                    Index(current_index + 1),
+                                    current_index, false);
+                                if (next_index == _last_block_index)
+                                {
                                     // Make sure the last block is grounded
                                     next_index = INDEX_NULL;
                                 }
                                 blocks[current_index] = block(previous_index, next_index,
-                                        cast(uint) data.length, data, head);
+                                    cast(uint) data.length, data, head);
 
                             }
                             return current_index;
                         }
                         Index end_index = current_index;
-                        if (end_index < _last_block_index) {
+                        if (end_index < _last_block_index)
+                        {
                             return end_index;
                         }
                         return INDEX_NULL;
@@ -1083,7 +1257,8 @@ class BlockFile {
      + Returns:
      +     General block iterator
      +/
-    BlockRange range(const Index index) {
+    BlockRange range(const Index index)
+    {
         return BlockRange(this, index);
     }
 
@@ -1091,7 +1266,8 @@ class BlockFile {
      + Returns:
      +     A range which can iterate through the recyclable blocks in the BlockFile
      +/
-    BlockRange recycleRange() {
+    BlockRange recycleRange()
+    {
         return range(masterblock.recycle_header_index);
     }
 
@@ -1099,7 +1275,8 @@ class BlockFile {
      + Returns:
      +     A range which can iterate through the used blocks in the BlockFile
      +/
-    BlockRange blockRange() {
+    BlockRange blockRange()
+    {
         return range(masterblock.first_index);
     }
 
@@ -1107,8 +1284,10 @@ class BlockFile {
      + Returns:
      +     A range while iterate through all the data-block in the BlockFile
      +/
-    ChainRange chainRange(Index index = INDEX_NULL) {
-        if (index is INDEX_NULL) {
+    ChainRange chainRange(Index index = INDEX_NULL)
+    {
+        if (index is INDEX_NULL)
+        {
             index = masterblock.first_index;
         }
         return ChainRange(this, index);
@@ -1117,7 +1296,8 @@ class BlockFile {
     /++
      + Fail type for the inspect function
      +/
-    enum Fail {
+    enum Fail
+    {
         NON = 0, /// No error detected in this Block
         RECURSIVE, /// Block links is recursive
         INCREASING, /// The next pointer should be greater than the block index
@@ -1149,59 +1329,76 @@ class BlockFile {
             const Index index,
             const Fail f,
             const Block block,
-            const bool recycle_chain) @safe trace) {
+            const bool recycle_chain) @safe trace)
+    {
         scope bool[Index] visited;
         scope bool end;
         bool failed;
         @safe
-        void check_data(bool check_recycle_mode)(ref BlockRange r) {
+        void check_data(bool check_recycle_mode)(ref BlockRange r)
+        {
             Block previous;
-            while (!r.empty && !end) {
+            while (!r.empty && !end)
+            {
                 auto current = r.front;
-                if ((r.index in visited) && (r.index !is INDEX_NULL)) {
+                if ((r.index in visited) && (r.index !is INDEX_NULL))
+                {
                     failed = true;
                     end |= trace(r.index, Fail.RECURSIVE, current, check_recycle_mode);
                 }
                 visited[r.index] = true;
-                static if (!check_recycle_mode) {
-                    if (current.size == 0) {
+                static if (!check_recycle_mode)
+                {
+                    if (current.size == 0)
+                    {
                         failed = true;
                         end |= trace(r.index, Fail.ZERO_SIZE, current, check_recycle_mode);
                     }
                 }
-                if (previous) {
-                    if (current.previous >= r.index) {
+                if (previous)
+                {
+                    if (current.previous >= r.index)
+                    {
                         failed = true;
                         end |= trace(r.index, Fail.INCREASING, current, check_recycle_mode);
                     }
-                    static if (check_recycle_mode) {
-                        if (current.head) {
+                    static if (check_recycle_mode)
+                    {
+                        if (current.head)
+                        {
                             failed = true;
                             end |= trace(r.index, Fail.RECYCLE_HEADER, current, check_recycle_mode);
                         }
-                        if (current.size != 0) {
+                        if (current.size != 0)
+                        {
                             failed = true;
                             end |= trace(r.index, Fail.RECYCLE_NON_ZERO, current, check_recycle_mode);
                         }
                     }
-                    else {
-                        if (!current.head) {
-                            if (previous.size != current.size + DATA_SIZE) {
+                    else
+                    {
+                        if (!current.head)
+                        {
+                            if (previous.size != current.size + DATA_SIZE)
+                            {
                                 failed = true;
                                 end |= trace(r.index, Fail.SEQUENCY, current, check_recycle_mode);
                             }
                         }
-                        else if (previous.size > DATA_SIZE) {
+                        else if (previous.size > DATA_SIZE)
+                        {
                             end |= trace(current.previous, Fail.BAD_SIZE, previous, check_recycle_mode);
                         }
                     }
-                    if (r.index != previous.next) {
+                    if (r.index != previous.next)
+                    {
                         failed = true;
                         end |= trace(r.index, Fail.LINK, current, check_recycle_mode);
                     }
 
                 }
-                if (!failed) {
+                if (!failed)
+                {
                     end |= trace(r.index, Fail.NON, current, check_recycle_mode);
                 }
                 previous = r.front;
@@ -1217,30 +1414,38 @@ class BlockFile {
     /++
      + Range of Block's
      +/
-    struct BlockRange {
+    struct BlockRange
+    {
         private BlockFile owner;
         private Index _index;
         private Block current;
-        this(BlockFile owner, const Index index) {
+        this(BlockFile owner, const Index index)
+        {
             this.owner = owner;
-            if (index !is INDEX_NULL) {
+            if (index !is INDEX_NULL)
+            {
                 _index = index;
                 current = owner.read(_index);
             }
         }
 
-        bool empty() pure const nothrow {
+        bool empty() pure const nothrow
+        {
             return current is null;
         }
 
-        Index index() pure const nothrow {
+        Index index() pure const nothrow
+        {
             return _index;
         }
 
-        void popFront() {
-            if (!empty) {
+        void popFront()
+        {
+            if (!empty)
+            {
                 _index = Index(current.next);
-                if (index != INDEX_NULL) {
+                if (index != INDEX_NULL)
+                {
                     current = owner.read(_index);
                     return;
                 }
@@ -1249,13 +1454,17 @@ class BlockFile {
             current = null;
         }
 
-        Block front() {
+        Block front()
+        {
             return current;
         }
 
-        int opApply(scope int delegate(const Index index, const(Block) block) @safe dg) {
-            for (; !empty; popFront) {
-                if (dg(index, front)) {
+        int opApply(scope int delegate(const Index index, const(Block) block) @safe dg)
+        {
+            for (; !empty; popFront)
+            {
+                if (dg(index, front))
+                {
                     return -1;
                 }
             }
@@ -1266,33 +1475,40 @@ class BlockFile {
     /++
      + Range of data-buffer's
      +/
-    struct ChainRange {
+    struct ChainRange
+    {
         private BlockFile owner;
         private Buffer buffer;
         private Index _index;
-        this(BlockFile owner, const Index index) {
+        this(BlockFile owner, const Index index)
+        {
             this.owner = owner;
             _index = index;
             popFront;
         }
 
-        bool empty() const pure nothrow {
+        bool empty() const pure nothrow
+        {
             return _index is INDEX_NULL;
         }
 
-        Buffer front() const pure nothrow {
+        Buffer front() const pure nothrow
+        {
             return buffer;
         }
 
-        void popFront() {
-            if (!empty) {
+        void popFront()
+        {
+            if (!empty)
+            {
                 buffer = owner.load(_index);
                 _index = owner.end_index(_index);
             }
         }
     }
 
-    enum BlockSymbol {
+    enum BlockSymbol
+    {
         file_header = 'H',
         header = 'h',
         empty = '_',
@@ -1302,25 +1518,33 @@ class BlockFile {
 
     }
 
-    BlockSymbol getSymbol(const scope Block block, const Index index) const pure nothrow {
-        if (block) {
-            if (index == 0) {
+    BlockSymbol getSymbol(const scope Block block, const Index index) const pure nothrow
+    {
+        if (block)
+        {
+            if (index == 0)
+            {
                 return BlockSymbol.file_header;
             }
-            else if (block.head) {
+            else if (block.head)
+            {
                 return BlockSymbol.header;
             }
-            else if (recycler.isRecyclable(index)) {
+            else if (recycler.isRecyclable(index))
+            {
                 return BlockSymbol.recycle;
             }
-            else if (block.size == 0) {
+            else if (block.size == 0)
+            {
                 return BlockSymbol.empty;
             }
-            else {
+            else
+            {
                 return BlockSymbol.data;
             }
         }
-        else {
+        else
+        {
             return BlockSymbol.none_existing;
         }
 
@@ -1328,19 +1552,23 @@ class BlockFile {
     /++
      + Used for debuging only to dump the Block's
      +/
-    void dump(const uint block_per_line = 16) {
+    void dump(const uint block_per_line = 16)
+    {
         auto line = new char[block_per_line];
         foreach (index; 0 .. ((_last_block_index / block_per_line) + (
-                (_last_block_index % block_per_line == 0) ? 0 : 1)) * block_per_line) {
+                (_last_block_index % block_per_line == 0) ? 0 : 1)) * block_per_line)
+        {
             immutable pos = index % block_per_line;
-            if ((index % block_per_line) == 0) {
+            if ((index % block_per_line) == 0)
+            {
                 line[] = 0;
             }
 
             scope block = read(Index(index));
             line[pos] = getSymbol(block, Index(index));
 
-            if (pos + 1 == block_per_line) {
+            if (pos + 1 == block_per_line)
+            {
                 writefln("%04X] %s", index - pos, line);
             }
         }
@@ -1348,7 +1576,8 @@ class BlockFile {
 
     // Block index 0 is means null
     // The first block is use as BlockFile header
-    unittest {
+    unittest
+    {
         enum SMALL_BLOCK_SIZE = 0x40;
         import std.format;
 
@@ -1357,16 +1586,19 @@ class BlockFile {
             immutable filename = fileId("create").fullpath;
             BlockFile.create(filename, "create.unittest", SMALL_BLOCK_SIZE);
             auto blockfile_load = BlockFile(filename);
-            scope (exit) {
+            scope (exit)
+            {
                 blockfile_load.close;
             }
         }
 
         alias B = Tuple!(string, "label", uint, "blocks");
-        Buffer generate_block(const BlockFile blockfile, const B b) {
+        Buffer generate_block(const BlockFile blockfile, const B b)
+        {
             enum filler = " !---- ;-) -----! ";
             string text = b.label;
-            while ((text.length / blockfile.DATA_SIZE) < b.blocks) {
+            while ((text.length / blockfile.DATA_SIZE) < b.blocks)
+            {
                 text ~= filler;
             }
             return cast(Buffer) text;
@@ -1391,7 +1623,8 @@ class BlockFile {
             blockfile.close;
         }
 
-        bool failsafe(const Index index, const Fail f, const Block block, const bool recycle_block) @safe {
+        bool failsafe(const Index index, const Fail f, const Block block, const bool recycle_block) @safe
+        {
             assert(f == Fail.NON, format("Data check fails on block @ %d: Fail:%s in %s",
                     index, f, recycle_block ? "recycle block" : "data block"));
             return false;
@@ -1427,7 +1660,8 @@ class BlockFile {
 
                 ];
 
-                foreach (b; allocators) {
+                foreach (b; allocators)
+                {
                     blockfile.save(generate_block(blockfile, b));
                 }
 
@@ -1445,14 +1679,19 @@ class BlockFile {
 
         }
 
-        void erase(BlockFile blockfile, immutable(Index[]) erase_list) {
-            void local_erase(const Index index, immutable(Index[]) erase_list, immutable uint no = 0) {
-                if ((index !is INDEX_NULL) && (erase_list.length > 0)) {
-                    if (no == erase_list[0]) {
+        void erase(BlockFile blockfile, immutable(Index[]) erase_list)
+        {
+            void local_erase(const Index index, immutable(Index[]) erase_list, immutable uint no = 0)
+            {
+                if ((index !is INDEX_NULL) && (erase_list.length > 0))
+                {
+                    if (no == erase_list[0])
+                    {
                         immutable end_index = blockfile.erase(index);
                         local_erase(end_index, erase_list[1 .. $], no + 1);
                     }
-                else {
+                else
+                    {
                         immutable end_index = blockfile.end_index(index);
                         local_erase(end_index, erase_list, no + 1);
                     }
@@ -1473,7 +1712,8 @@ class BlockFile {
             blockfile.close;
         }
 
-        version (none) { // Check the recycle list
+        version (none)
+        { // Check the recycle list
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
 
             assert(equal(blockfile.recycle_indices[], [
@@ -1507,7 +1747,8 @@ class BlockFile {
                 B("++++Block 23", 4) // 23
             ];
 
-            foreach (b; allocators) {
+            foreach (b; allocators)
+            {
                 blockfile.save(generate_block(blockfile, b));
             }
 
@@ -1532,7 +1773,8 @@ class BlockFile {
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
             immutable uint[uint] size_stats =
                 [6: 2, 2: 4, 3: 5, 10: 2, 5: 5, 4: 5, 9: 1];
-            foreach (size, count; blockfile.statistic.histogram) {
+            foreach (size, count; blockfile.statistic.histogram)
+            {
                 assert(size in size_stats);
                 assert(count is size_stats[size]);
             }
@@ -1547,7 +1789,8 @@ class BlockFile {
 }
 
 @safe
-struct RecycleIndices {
+struct RecycleIndices
+{
     uint max_iteration = uint.max;
     alias Indices = RedBlackTree!(Index, (a, b) => a < b);
     alias Segments = RedBlackTree!(BlockFile.Segment, (a, b) => a.size < b.size, true);
@@ -1558,37 +1801,45 @@ struct RecycleIndices {
 
     alias Range = Indices.Range;
     @disable this();
-    this(BlockFile owner) pure nothrow {
+    this(BlockFile owner) pure nothrow
+    {
         this.owner = owner;
         indices = new Indices;
         recycle_segments = new Segments;
     }
 
-    const(Segments) segments() const {
+    const(Segments) segments() const
+    {
         return recycle_segments;
     }
 
-    private Range opSlice() {
+    private Range opSlice()
+    {
         return indices[];
     }
 
-    Index next(const Index index) const {
+    Index next(const Index index) const
+    {
         auto next_range = indices.lowerBound(index);
-        if (next_range.empty) {
+        if (next_range.empty)
+        {
             return INDEX_NULL;
         }
         return next_range.back;
     }
 
-    Index previous(const Index index) const {
+    Index previous(const Index index) const
+    {
         auto previous_range = indices.upperBound(index);
-        if (previous_range.empty) {
+        if (previous_range.empty)
+        {
             return INDEX_NULL;
         }
         return previous_range.front;
     }
 
-    void add(const Index index) {
+    void add(const Index index)
+    {
         indices.insert(index);
         recycled_blocks_which_needs_to_be_saved[index] = true;
         do_save(index);
@@ -1596,44 +1847,56 @@ struct RecycleIndices {
 
     alias opAssign = add;
 
-    protected void do_save(const Index index) {
+    protected void do_save(const Index index)
+    {
         immutable next_index = next(index);
-        if ((next_index !is INDEX_NULL) && (index + 1 != next_index)) {
+        if ((next_index !is INDEX_NULL) && (index + 1 != next_index))
+        {
             recycled_blocks_which_needs_to_be_saved[next_index] = true;
         }
         immutable previous_index = previous(index);
-        if ((previous_index !is INDEX_NULL) && (previous_index + 1 != index)) {
+        if ((previous_index !is INDEX_NULL) && (previous_index + 1 != index))
+        {
             recycled_blocks_which_needs_to_be_saved[previous_index] = true;
         }
     }
 
-    bool needs_saving(const Index index) pure const nothrow {
+    bool needs_saving(const Index index) pure const nothrow
+    {
         return (index in recycled_blocks_which_needs_to_be_saved) !is null;
     }
 
-    bool isRecyclable(const Index index) const pure nothrow @nogc {
+    bool isRecyclable(const Index index) const pure nothrow @nogc
+    {
         return index in indices;
     }
 
-    void reclaim(const Index index) {
-        if (index in indices) {
+    void reclaim(const Index index)
+    {
+        if (index in indices)
+        {
             do_save(index);
             recycled_blocks_which_needs_to_be_saved.remove(index);
             indices.removeKey(index);
         }
     }
 
-    void write() {
+    void write()
+    {
         Index order_blocks(
-                ref Range range,
-                const Index previous_index = INDEX_NULL) {
-            if (!range.empty) {
+            ref Range range,
+            const Index previous_index = INDEX_NULL)
+        {
+            if (!range.empty)
+            {
                 immutable index = range.front;
-                if (index < owner._last_block_index) {
+                if (index < owner._last_block_index)
+                {
                     range.popFront;
                     const next_index = order_blocks(range, index);
                     const block = owner.block(previous_index, next_index, 0, null, false);
-                    if (index in recycled_blocks_which_needs_to_be_saved) {
+                    if (index in recycled_blocks_which_needs_to_be_saved)
+                    {
                         owner.write(index, block);
                     }
                     return index;
@@ -1643,36 +1906,42 @@ struct RecycleIndices {
         }
 
         auto range = indices[];
-        scope (exit) {
+        scope (exit)
+        {
             recycled_blocks_which_needs_to_be_saved = null;
         }
-        if (range.empty) {
+        if (range.empty)
+        {
             owner.masterblock.recycle_header_index = INDEX_NULL;
         }
-        else {
+        else
+        {
             owner.masterblock.recycle_header_index = range.front;
             order_blocks(range);
         }
 
     }
 
-    void read() {
+    void read()
+    {
         indices.clear;
-        void read_recycle_list(const Index start_index) {
+        void read_recycle_list(const Index start_index)
+        {
             Index index = start_index;
-            while (index !is INDEX_NULL) {
+            while (index !is INDEX_NULL)
+            {
                 const block = owner.read(index);
 
                 
 
                 .check(block !is null,
-                        format("BlockFile.Block @ %d does not exist in the recycle list of the blockfile", index));
+                    format("BlockFile.Block @ %d does not exist in the recycle list of the blockfile", index));
                 max_iteration--;
 
                 
 
                 .check(max_iteration > 0,
-                        format(
+                    format(
                         "BlockFile.Block @ %d max iteration exceeds when reading of the recycle list of the blockfile", index));
                 indices.insert(index);
                 index = Index(block.next);
@@ -1683,9 +1952,11 @@ struct RecycleIndices {
         build_segments;
     }
 
-    void dump() @trusted {
+    void dump() @trusted
+    {
         auto s = recycle_segments[];
-        if (!s.empty) {
+        if (!s.empty)
+        {
             writefln("segments %-(%s %)", s.map!(a => a.toInfo));
             writefln("indices =%s", indices[]);
             writefln("s.back.end_index=%d _last_block_index=%d s.end_index=%d back=%s", s.back.end_index, owner
@@ -1696,60 +1967,76 @@ struct RecycleIndices {
     }
 
     void build_segments()
-    out {
+    out
+    {
         assert(check);
     }
-    do {
+    do
+    {
         recycle_segments = update_segments;
     }
 
-    protected Segments update_segments(bool segments_needs_saving = false)() {
+    protected Segments update_segments(bool segments_needs_saving = false)()
+    {
         // Find continues segments of blocks
         auto segments = new Segments;
         void find_segments(bool first = false, R)(
-                ref R range,
-                const Index previous_index = INDEX_NULL,
-                const Index begin_index = INDEX_NULL) {
-            if (!range.empty) {
+            ref R range,
+            const Index previous_index = INDEX_NULL,
+            const Index begin_index = INDEX_NULL)
+        {
+            if (!range.empty)
+            {
                 immutable index = range.front;
                 range.popFront;
-                static if (first) {
+                static if (first)
+                {
                     find_segments(range, index, index);
                 }
-                else {
-                    if (previous_index + 1 != index) {
+                else
+                {
+                    if (previous_index + 1 != index)
+                    {
                         find_segments(range, index, index);
                         auto new_segment = BlockFile.Segment(begin_index, Index(previous_index + 1));
-                        if (new_segment.end_index < owner._last_block_index) {
+                        if (new_segment.end_index < owner._last_block_index)
+                        {
                             segments.insert(new_segment);
                         }
                     }
-                    else {
+                    else
+                    {
                         find_segments(range, index, begin_index);
                     }
                 }
             }
-            else if (begin_index !is INDEX_NULL) {
+            else if (begin_index !is INDEX_NULL)
+            {
                 auto new_segment = BlockFile.Segment(begin_index, Index(previous_index + 1));
-                if (new_segment.end_index < owner._last_block_index) {
+                if (new_segment.end_index < owner._last_block_index)
+                {
                     segments.insert(BlockFile.Segment(begin_index, Index(previous_index + 1)));
                 }
             }
         }
 
         auto range = indices[];
-        static if (segments_needs_saving) {
+        static if (segments_needs_saving)
+        {
             auto range_needs_saving = range.filter!(a => needs_saving(a));
             find_segments!true(range_needs_saving);
         }
-        else {
+        else
+        {
             find_segments!true(range);
         }
         return segments;
     }
 
-    const(Index) reserve_segment(bool random_block = random_)(const uint size) {
-       scope (success) {
+    const(Index) reserve_segment(bool random_block = random_)(const uint size)
+    {
+        scope (success)
+        {
             owner._last_block_index += size;
         }
         return owner._last_block_index;
@@ -1763,11 +2050,15 @@ struct RecycleIndices {
          +     If the value is INDEX_NULL then this block chain is the first block chain
          +     in the blockfile
          +/
-    Index next_begin_index(const Index end_index) {
-        Index search(R)(ref R range, const Index previous_index) {
-            if (!range.empty) {
+    Index next_begin_index(const Index end_index)
+    {
+        Index search(R)(ref R range, const Index previous_index)
+        {
+            if (!range.empty)
+            {
                 immutable current_index = range.front;
-                if (previous_index + 1 == current_index) {
+                if (previous_index + 1 == current_index)
+                {
                     range.popFront;
                     return search(range, current_index);
                 }
@@ -1787,11 +2078,15 @@ struct RecycleIndices {
          +    If the value is INDEX_NULL then this block chain is the last block chain
          +    in the blockfile
          +/
-    Index previous_end_index(const Index begin_index) const {
-        Index search(R)(ref R range, const Index next_index) {
-            if (!range.empty) {
+    Index previous_end_index(const Index begin_index) const
+    {
+        Index search(R)(ref R range, const Index next_index)
+        {
+            if (!range.empty)
+            {
                 immutable current_index = range.back;
-                if (current_index + 1 == next_index) {
+                if (current_index + 1 == next_index)
+                {
                     range.popBack;
                     return search(range, current_index);
                 }
@@ -1803,45 +2098,56 @@ struct RecycleIndices {
         return Index(search(previous_range, begin_index) - 1);
     }
 
-    void trim_last_block_index(ref scope BlockFile.Block[Index] blocks) {
-        if (!indices.empty) {
+    void trim_last_block_index(ref scope BlockFile.Block[Index] blocks)
+    {
+        if (!indices.empty)
+        {
             immutable current_index = indices.back;
-            if (current_index + 1 == owner._last_block_index) {
+            if (current_index + 1 == owner._last_block_index)
+            {
                 owner._last_block_index = Index(current_index);
                 indices.removeBack;
                 trim_last_block_index(blocks);
             }
         }
-        if (owner._last_block_index > 1) {
+        if (owner._last_block_index > 1)
+        {
             immutable end_of_blocks_index = Index(owner._last_block_index - 1);
-            if (end_of_blocks_index in blocks) {
+            if (end_of_blocks_index in blocks)
+            {
                 const end_block = blocks[end_of_blocks_index];
-                if (end_block.next !is INDEX_NULL) {
+                if (end_block.next !is INDEX_NULL)
+                {
                     blocks[end_of_blocks_index] = owner.block(
-                            end_block.previous,
-                            INDEX_NULL, end_block.size,
-                            end_block.data, end_block.head);
+                        end_block.previous,
+                        INDEX_NULL, end_block.size,
+                        end_block.data, end_block.head);
                 }
             }
         }
     }
 
-    bool check() pure const {
+    bool check() pure const
+    {
         scope indices_range = indices[];
         scope recycle_sorted_tree = redBlackTree!("a.begin_index < b.begin_index")(
-                recycle_segments[]);
+            recycle_segments[]);
         scope recycle_range = recycle_sorted_tree[];
-        while (!indices_range.empty) {
+        while (!indices_range.empty)
+        {
             immutable index = indices_range.front;
             indices_range.popFront;
-            if (recycle_range.empty) {
+            if (recycle_range.empty)
+            {
                 return false;
             }
             immutable segment = recycle_range.front;
-            if (index < segment.begin_index) {
+            if (index < segment.begin_index)
+            {
                 return false;
             }
-            else if (index + 1 == segment.end_index) {
+            else if (index + 1 == segment.end_index)
+            {
                 recycle_range.popFront;
             }
         }
