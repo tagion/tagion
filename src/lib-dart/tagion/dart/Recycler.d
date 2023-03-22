@@ -175,6 +175,15 @@ struct Recycler {
     bool isRecyclable(const Index index) const pure nothrow {
         return false;
     }
+
+    void write(const Index index) const nothrow {
+        /// The recycler to the blockfile
+    }
+    /// Dummy code Should be removed when the in the new recycler
+         Segments update_segments(bool segments_needs_saving = false)() {
+            // Find continues segments of blocks
+            auto segments = new Segments;
+ 
 }
 
 version (unittest) {

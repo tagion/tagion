@@ -28,8 +28,9 @@ import tagion.basic.TagionExceptions : Check;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
-import tagion.dart.DARTException : BlockFileException;
 import tagion.logger.Statistic;
+import tagion.dart.DARTException : BlockFileException;
+import tagion.dart.Recycler : Recycler;
 
 import std.math : rint;
 
@@ -75,7 +76,7 @@ class BlockFile {
         File file;
     }
     protected {
-        RecycleIndices recycle_indices;
+        Recycler recycler;
         Index last_block_index;
         MasterBlock masterblock;
         HeaderBlock headerblock;
@@ -87,14 +88,15 @@ class BlockFile {
         return _statistic;
     }
 
-    bool isRecyclable(const Index index) const pure nothrow @nogc {
-        return recycle_indices.isRecyclable(index);
+    bool isRecyclable(const Index index) const pure nothrow  {
+        return recycler.isRecyclable(index);
     }
 
     void recycleDump() {
-        recycle_indices.dump;
+        recycler.dump;
     }
-
+    
+    version(none)
     struct RecycleIndices {
         uint max_iteration = uint.max;
         alias Indices = RedBlackTree!(Index, (a, b) => a < b);
@@ -483,7 +485,7 @@ class BlockFile {
         this.BLOCK_SIZE = SIZE;
         DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
         this.file = file;
-        recycle_indices = RecycleIndices(this);
+        recycler = Recycler(this);
         readInitial;
     }
 
@@ -493,7 +495,7 @@ class BlockFile {
     protected this(immutable uint SIZE) pure nothrow {
         this.BLOCK_SIZE = SIZE;
         DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
-        recycle_indices = RecycleIndices(this);
+        recycler = Recycler(this);
     }
 
     static BlockFile Inspect(
@@ -527,9 +529,9 @@ class BlockFile {
             result.last_block_index--;
             try_it(&result.readMasterBlock);
             try_it(&result.readStatistic);
-            result.recycle_indices = RecycleIndices(result);
-            result.recycle_indices.max_iteration = max_iteration;
-            try_it(&result.recycle_indices.read);
+            result.recycler = Recycler(result);
+            //result.recycle_indices.max_iteration = max_iteration;
+            //try_it(&result.recycle_indices.read);
         }
         return result;
     }
@@ -1133,7 +1135,8 @@ const bool head)
         }
         @safe Index remove_sequency(bool first = false)(const Index index) {
             auto block = read(index);
-            check(!recycle_indices.isRecyclable(index), format("Block %d has already been delete", index));
+            check(!recycler.isRecyclable(index), 
+            format("Block %d has already been delete", index));
 
             static if (first) {
                 // Check if this is the first block in a block sequency
@@ -1206,7 +1209,7 @@ const bool head)
         }
         do {
             immutable size = number_of_blocks(chain.data.length);
-            chain.begin_index = Index(recycle_indices.reserve_segment!random_block(size));
+          //  chain.begin_index = Index(recycler_indices.reserve_segment!random_block(size));
             _statistic(size);
         }
 
@@ -1305,7 +1308,7 @@ const bool head)
         Block[Index] blocks;
         scope (success) {
             allocated_chains = null;
-            recycle_indices.write;
+            recycler.write(Index.init);
 
             { //write_blocks_in_sorted_order
                 auto sorted_indices = blocks.keys.dup.sort;
@@ -1313,7 +1316,7 @@ const bool head)
             }
 
             writeMasterBlock;
-            recycle_indices.build_segments;
+            //recycle_indices.build_segments;
         }
 
         {
@@ -1458,8 +1461,8 @@ const bool head)
             }
             // Puts data into block and chain the blocks
             sort!(q{a.begin_index < b.begin_index}, SwapStrategy.unstable)(allocated_chains);
-            scope segments_needs_saving = array(recycle_indices.update_segments[]).sort!(
-                    q{a.end_index < b.begin_index});
+            scope segments_needs_saving = array(recycler.update_segments[])
+        .sort!(q{a.end_index < b.begin_index});
             if (!segments_needs_saving.empty && (
                     segments_needs_saving[$ - 1].end_index >= last_block_index)) {
                 last_block_index = segments_needs_saving[$ - 1].begin_index;
