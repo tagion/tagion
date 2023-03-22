@@ -50,7 +50,7 @@ jobs:
           make ddoc
           ls -l build/ddoc
           pwd
-          git clone git@github.com:tagion/ddoc.git
+          git clone https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git
           echo "clonned"
 
       
