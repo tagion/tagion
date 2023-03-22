@@ -277,7 +277,7 @@ unittest {
     ];
 
     recycler.recycle(add_segments);
-    recycler.dump();
+    // recycler.dump();
 
     Segment*[] remove_segments = [
         new Segment(Index(1UL), 2, Type.REMOVE),
