@@ -100,8 +100,8 @@ struct Recycler {
             return;
         }
         Indices new_segments = new Indices(recycle_segments);
-        
-        foreach(segment; new_segments[]) {
+
+        foreach (segment; new_segments[]) {
             if (segment.type == Type.REMOVE) {
                 auto equal_range = indices.equalRange(segment);
                 assert(!equal_range.empty, "Cannot call remove with segment where index in recycler does not exist");
@@ -118,30 +118,34 @@ struct Recycler {
 
                 if (lower_range.empty) {
                     // A ###
-                    assert(!upper_range.empty, "there must be something in the upper range.");
+                    assert(!upper_range.empty, "there must be something in the upper range if the lower range is empty.");
                     if (segment.end == upper_range.front.index) {
-                        Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment.size);
+                        Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment
+                                .size);
                         remove(upper_range.front);
                         insert(add_segment);
                         continue;
-                    } else {
+                    }
+                    else {
                         insert(segment);
                         continue;
                     }
                 }
                 if (upper_range.empty) {
                     // ### A empty forever
-                    assert(!lower_range.empty, "there must be something in the lower range.");
+                    assert(!lower_range.empty, "there must be something in the lower range if the upper range is empty.");
                     if (lower_range.back.end == segment.index) {
-                        Segment* add_segment = new Segment(lower_range.back.index, segment.size + lower_range.back.size);
+                        Segment* add_segment = new Segment(lower_range.back.index, segment.size + lower_range
+                                .back.size);
                         remove(lower_range.back);
                         insert(add_segment);
                         continue;
-                    } else {
+                    }
+                    else {
                         insert(segment);
                         continue;
-                    }   
-                }   
+                    }
+                }
                 if (lower_range.back.end == segment.index) {
                     //  ###
                     //  ###A 
@@ -276,9 +280,10 @@ unittest {
     assert(recycler.indices.front.end == 6);
     // recycler.dump();
 }
+
 @safe
 unittest {
-    // add extra time test
+    // add extra test
     immutable filename = fileId("recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(filename);
@@ -294,7 +299,7 @@ unittest {
     ];
 
     recycler.recycle(add_segments);
-    recycler.dump();
+    // recycler.dump();
 
     writefln("####");
     Segment*[] extra_segments = [
@@ -303,12 +308,12 @@ unittest {
         new Segment(Index(22UL), 3, Type.ADD),
     ];
     recycler.recycle(extra_segments);
-    recycler.dump();
+    // recycler.dump();
 
     Segment*[] expected_segments = [
         new Segment(Index(1UL), 8, Type.NONE),
         new Segment(Index(10UL), 5, Type.NONE),
-        new Segment(Index(17UL), 31-17, Type.NONE),
+        new Segment(Index(17UL), 31 - 17, Type.NONE),
     ];
     Indices expected_indices = new Indices(expected_segments);
 
@@ -317,7 +322,110 @@ unittest {
         assert(expected_indices.opEquals(recycler.indices), "elements should be the same");
     }());
 }
+@safe
+unittest {
+    // middle add segment
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(blockfile);
 
+    Segment*[] add_segments = [
+        new Segment(Index(1UL), 5, Type.ADD),
+        new Segment(Index(10UL), 5, Type.ADD),
+    ];
+
+    recycler.recycle(add_segments);
+    // recycler.dump();
+
+    Segment*[] remove_segment = [
+        new Segment(Index(6UL), 4, Type.ADD),
+    ];
+    recycler.recycle(remove_segment);
+    // recycler.dump();
+    
+    assert(recycler.indices.length == 1, "should only be one segment after middle insertion");
+    assert(recycler.indices.front.index == Index(1UL) && recycler.indices.front.end == Index(15UL), "Middle insertion not valid");
+}
+
+unittest {
+    // remove illegal element
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(blockfile);
+
+    Segment*[] add_segments = [
+        new Segment(Index(1UL), 5, Type.ADD),
+        new Segment(Index(10UL), 5, Type.ADD),
+    ];
+
+    recycler.recycle(add_segments);
+    // recycler.dump;
+
+    assertThrown!Throwable(recycler.recycle([new Segment(Index(20UL), 4, Type.REMOVE)]));
+    assertThrown!Throwable(recycler.recycle([new Segment(Index(3UL), 5, Type.REMOVE)]));
+    assertThrown!Throwable(recycler.recycle([new Segment(Index(6UL), 4, Type.REMOVE)]));
+}
+
+unittest {
+    // empty lowerrange connecting
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(blockfile);
+
+    recycler.recycle([new Segment(Index(10UL), 5, Type.ADD)]);
+    // recycler.dump;
+    recycler.recycle([new Segment(Index(2UL), 8, Type.ADD)]);
+
+    assert(recycler.indices.length == 1, "should have merged segments");
+    assert(recycler.indices.front.index == Index(2UL), "Index not correct");
+    assert(recycler.indices.front.end == Index(15UL));
+
+    // upperrange empty connecting
+    recycler.recycle([new Segment(Index(15UL), 5, Type.ADD)]);
+    assert(recycler.indices.length == 1, "should have merged segments");
+    assert(recycler.indices.front.index == Index(2UL));
+    assert(recycler.indices.front.end == Index(20UL));
+    // recycler.dump;    
+}
+
+unittest {
+    // empty lowerrange NOT connecting
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(blockfile);
+
+    recycler.recycle([new Segment(Index(10UL), 5, Type.ADD)]);
+    // recycler.dump;
+    recycler.recycle([new Segment(Index(2UL), 5, Type.ADD)]);
+
+    assert(recycler.indices.length == 2, "should NOT have merged types");
+    assert(recycler.indices.front.index == Index(2UL), "Index not correct");
+    // recycler.dump
+
+    // upper range NOT connecting
+    recycler.recycle([new Segment(Index(25UL), 5, Type.ADD)]);
+    assert(recycler.indices.length == 3, "Should not have merged");
+    assert(recycler.indices.back.index == Index(25UL), "Should not have merged");
+
+}
+
+// upper range not connecting
 
 // unittest {
 //     // checks for single overlap.
