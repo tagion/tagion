@@ -1077,18 +1077,6 @@ class BlockFile {
 
             // Write new allocated blocks to the file
         }
-
-        version (none) {
-            recycle_indices.write;
-
-            { //write_blocks_in_sorted_order
-                auto sorted_indices = blocks.keys.dup.sort;
-                sorted_indices.each!(index => write(index, blocks[index]));
-            }
-
-            writeMasterBlock;
-            recycle_indices.build_segments;
-        }
     }
 
     /++
