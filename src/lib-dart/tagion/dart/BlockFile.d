@@ -1775,6 +1775,7 @@ struct RecycleIndices {
         }
 
         static if (random_block) {
+            version(none) {
             import std.random;
 
             scope segments = array(recycle_segments[]);
@@ -1786,6 +1787,7 @@ struct RecycleIndices {
                     return segment.begin_index;
                 }
             }
+        }
         }
         else {
             version(none)
