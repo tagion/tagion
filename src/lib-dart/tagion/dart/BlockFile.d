@@ -1876,7 +1876,7 @@ const bool head)
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
             blockfile.inspect(&failsafe);
             // Erase chain of block
-            erase(blockfile, [0, 2, 6, 13, 16].map!(index => Index(index)).array);
+            erase(blockfile, [0, 2, 6, 13, 16].map!(index => Index(index)).array.idup);
             blockfile.store;
 
             blockfile.close;
