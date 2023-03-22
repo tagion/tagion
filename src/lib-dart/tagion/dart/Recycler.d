@@ -437,9 +437,9 @@ unittest {
     auto recycler = Recycler(blockfile);
 
     recycler.recycle([new Segment(Index(10UL), 5, Type.ADD), new Segment(Index(1UL), 1)]);
-    recycler.dump;
+    // recycler.dump;
     recycler.recycle([new Segment(Index(5UL), 5, Type.ADD)]);
-    recycler.dump;
+    // recycler.dump;
     assert(recycler.indices.length == 2, "should have merged segments");
 
     // upperrange not empty connecting
