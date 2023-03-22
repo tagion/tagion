@@ -997,7 +997,7 @@ class BlockFile {
                     const Index previous_index,
                     const bool head) @trusted {
                         scope (success) {
-                            recycler.reclaim(current_index);
+                            version(none) recycler.reclaim(current_index);
                         }
                         if (data !is null) {
                             // update_first_index(current_index);
@@ -1211,10 +1211,6 @@ class BlockFile {
 
         BlockRange r = blockRange;
         check_data!false(r);
-        version(none) {
-        r = recycleRange;
-        check_data!true(r);
-    }
         return failed;
     }
 
