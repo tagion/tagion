@@ -105,7 +105,7 @@ struct Recycler {
                     .filter!(s => s.type == Type.REMOVE)
                     .take(2)
                     .walkLength == 0, "Cannot contain removes when indices is empty");
-                    
+
             insert(recycle_segments);
             return;
         }
@@ -127,7 +127,6 @@ struct Recycler {
                 auto upper_range = indices.upperBound(segment);
 
                 if (lower_range.empty) {
-                    // A ###
                     assert(!upper_range.empty, "there must be something in the upper range if the lower range is empty.");
                     if (segment.end == upper_range.front.index) {
                         Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment
@@ -228,11 +227,11 @@ struct Recycler {
      */
     void dump() {
         import std.stdio;
-
+        writeln();
         foreach (segment; indices) {
-            writefln("INDEX: %s", segment.index);
-            writefln("END: %s", segment.end);
+            writef("| INDEX: %s, SIZE: %s, END: %s ", segment.index, segment.size, segment.end);
         }
+        writeln();
     }
 
     bool isRecyclable(const Index index) const pure nothrow {
@@ -278,9 +277,8 @@ unittest {
     ];
 
     recycler.recycle(add_segments);
-    // recycler.dump();
+    recycler.dump();
 
-    // writefln("####");
     Segment*[] remove_segments = [
         new Segment(Index(1UL), 2, Type.REMOVE),
     ];
@@ -311,7 +309,6 @@ unittest {
     recycler.recycle(add_segments);
     // recycler.dump();
 
-    writefln("####");
     Segment*[] extra_segments = [
         new Segment(Index(6UL), 2, Type.ADD),
         new Segment(Index(25UL), 6, Type.ADD),
