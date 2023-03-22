@@ -1064,7 +1064,7 @@ class BlockFile {
                     }
 
                     auto ablock = allocate[0];
-                        version(none) {
+                    version (none) {
                         const current_segment = sorted_segments.front;
                         if (current_segment.begin_index > 1) {
                             // Block before the segments need to be rewired
@@ -1091,16 +1091,17 @@ class BlockFile {
                         sorted_segments.popFront;
                         allocate_and_chain(allocate, sorted_segments);
                     }
+                    version (none) {
+
                         if (!sorted_segments.empty && (
                                 sorted_segments.front.end_index is ablock.begin_index)) {
                             chain(ablock.data, ablock.begin_index, sorted_segments.front.begin_index, true);
                         }
-                        else {
-                            immutable previous_index = (ablock.begin_index > 1) ?
-                                Index(ablock.begin_index - 1) : INDEX_NULL;
-                            chain(ablock.data, ablock.begin_index, previous_index, true);
-                        }
-                        allocate_and_chain(allocate[1 .. $], sorted_segments);
+                    }
+                    immutable previous_index = (ablock.begin_index > 1) ?
+                        Index(ablock.begin_index - 1) : INDEX_NULL;
+                    chain(ablock.data, ablock.begin_index, previous_index, true);
+                    allocate_and_chain(allocate[1 .. $], sorted_segments);
                 }
             }
             // Puts data into block and chain the blocks
