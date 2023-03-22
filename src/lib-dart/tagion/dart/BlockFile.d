@@ -960,7 +960,7 @@ class BlockFile {
         Block[Index] blocks;
         scope (success) {
             allocated_chains = null;
-            recycler.write;
+            version(none) recycler.write;
 
             { //write_blocks_in_sorted_order
                 auto sorted_indices = blocks.keys.dup.sort;
@@ -1071,8 +1071,6 @@ class BlockFile {
             }
             // Puts data into block and chain the blocks
             sort!(q{a.begin_index < b.begin_index}, SwapStrategy.unstable)(allocated_chains);
-            scope segments_needs_saving = array(recycler.update_segments[])
-                .sort!(q{a.end_index < b.begin_index});
 
             allocate_and_chain(allocated_chains);
             recycler.trim_last_block_index(blocks);
