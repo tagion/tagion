@@ -52,15 +52,17 @@ jobs:
           npm i docsify-cli -g
           make ddoc
           ls -l build/
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+      - name: Push directory to another repository
+        uses: cpina/github-action-push-to-another-repository@v1.6
         with:
-          path: './build/ddoc'
-      - name: Deploy to GitHub Pages
-        id: ddoc_deployment
-        uses: actions/deploy-pages@v1
+          source-directory: './build/ddoc'
+          #destination-github-username: 
+          destination-repository-name: tagion/ddoc
+          #user-email: 
+          #destination-repository-username: # optional, default is 
+          #target-branch: # optional, default is main
+          #target-directory: # optional, default is   
+      
           
           
           
