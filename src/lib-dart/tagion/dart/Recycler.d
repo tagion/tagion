@@ -102,10 +102,7 @@ struct Recycler {
         }
         Indices new_segments = new Indices(recycle_segments);
         
-        foreach(i, segment; new_segments[].enumerate) {
-            auto lower_range = indices.lowerBound(segment);
-            auto upper_range = indices.upperBound(segment);
-
+        foreach(segment; new_segments[]) {
             if (segment.type == Type.REMOVE) {
                 auto equal_range = indices.equalRange(segment);
                 assert(!equal_range.empty, "Cannot call remove with segment where index in recycler does not exist");
@@ -120,6 +117,9 @@ struct Recycler {
             }
 
             if (segment.type == Type.ADD) {
+                auto lower_range = indices.lowerBound(segment);
+                auto upper_range = indices.upperBound(segment);
+
                 if (lower_range.empty) {
                     // A ###
                     assert(!upper_range.empty, "there must be something in the upper range.");
