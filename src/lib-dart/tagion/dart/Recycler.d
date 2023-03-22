@@ -76,8 +76,7 @@ struct Recycler {
         segments = new Segments;
     }
 
-    protected void insert(R)(R insert_segments)
-        if (isInputRange!R && is(ElementType!R == Segment*)) {
+    protected void insert(R)(R insert_segments) if (isInputRange!R && is(ElementType!R == Segment*)) {
         indices.insert(insert_segments);
         segments.insert(insert_segments);
     }
@@ -92,8 +91,7 @@ struct Recycler {
         segments.removeKey(segment);
     }
 
-    void recycle(R)(R recycle_segments)
-        if (isInputRange!R && is(ElementType!R == Segment*)) {
+    void recycle(R)(R recycle_segments) if (isInputRange!R && is(ElementType!R == Segment*)) {
 
         if (indices.empty) {
             insert(recycle_segments);
@@ -229,7 +227,7 @@ struct Recycler {
         return false;
     }
 
-    void write(const Index index) const nothrow {
+    void write() const nothrow {
         /// The recycler to the blockfile
     }
 
@@ -237,6 +235,16 @@ struct Recycler {
         /// Should implemented    
     }
 
+    private uint extension_block_index;
+    Index reserve_segment(const uint size) {
+        extension_block_index += size;
+        return Index(owner.last_block_index + extension_block_index);
+
+    }
+
+    Index last_block_index() {
+        return Index(owner.last_block_index + extension_block_index);
+    }
 }
 
 version (unittest) {
@@ -318,10 +326,9 @@ unittest {
     Indices expected_indices = new Indices(expected_segments);
 
     assert(expected_indices.length == recycler.indices.length, "Got other indices than expected");
-    (() @trusted {
-        assert(expected_indices.opEquals(recycler.indices), "elements should be the same");
-    }());
+    (() @trusted { assert(expected_indices.opEquals(recycler.indices), "elements should be the same"); }());
 }
+
 @safe
 unittest {
     // middle add segment
@@ -346,7 +353,7 @@ unittest {
     ];
     recycler.recycle(remove_segment);
     // recycler.dump();
-    
+
     assert(recycler.indices.length == 1, "should only be one segment after middle insertion");
     assert(recycler.indices.front.index == Index(1UL) && recycler.indices.front.end == Index(15UL), "Middle insertion not valid");
 }

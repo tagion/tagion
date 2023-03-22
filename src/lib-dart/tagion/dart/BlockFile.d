@@ -93,11 +93,15 @@ class BlockFile {
     }
     protected {
         RecycleIndices recycler;
-        Index last_block_index;
+        Index _last_block_index;
         MasterBlock masterblock;
         HeaderBlock headerblock;
         bool hasheader;
         BlockFileStatistic _statistic;
+    }
+
+    Index last_block_index() const pure nothrow @nogc {
+        return _last_block_index;
     }
 
     const(BlockFileStatistic) statistic() const pure nothrow @nogc {
@@ -174,7 +178,7 @@ class BlockFile {
         }
         if (result) {
             try_it(&result.readHeaderBlock);
-            result.last_block_index--;
+            result._last_block_index--;
             try_it(&result.readMasterBlock);
             try_it(&result.readStatistic);
             result.recycler = RecycleIndices(result);
@@ -216,7 +220,7 @@ class BlockFile {
         blockfile.headerblock = old_blockfile.headerblock;
         blockfile._statistic = old_blockfile._statistic;
         blockfile.headerblock.write(file);
-        blockfile.last_block_index = 1;
+        blockfile._last_block_index = 1;
         blockfile.masterblock.write(file, blockfile.BLOCK_SIZE);
         blockfile.hasheader = true;
         blockfile.store;
@@ -256,7 +260,7 @@ class BlockFile {
         headerblock.id[0 .. name.length] = name;
         headerblock.create_time = Clock.currTime.toUnixTime!long;
         headerblock.write(file);
-        last_block_index = 1;
+        _last_block_index = 1;
         masterblock.write(file, BLOCK_SIZE);
         hasheader = true;
     }
@@ -272,7 +276,7 @@ class BlockFile {
     protected void readInitial() {
         if (file.size > 0) {
             readHeaderBlock;
-            last_block_index--;
+            _last_block_index--;
             readMasterBlock;
             readStatistic;
             version (blockfile_recycle)
@@ -374,7 +378,7 @@ class BlockFile {
     }
 
     final Index lastBlockIndex() const pure nothrow {
-        return last_block_index;
+        return _last_block_index;
     }
 
     final package void seek(const Index index) {
@@ -438,7 +442,7 @@ class BlockFile {
      +/
     void root_index(const Index index)
     in {
-        assert(index > 0 && index < last_block_index);
+        assert(index > 0 && index < _last_block_index);
     }
     do {
         masterblock.root_index = Index(index);
@@ -655,13 +659,13 @@ class BlockFile {
 
     // Write the master block to the filesystem and truncate the file
     protected void writeMasterBlock() {
-        seek(last_block_index);
+        seek(_last_block_index);
         masterblock.write(file, BLOCK_SIZE);
     }
 
     Block read(const Index index) {
         Block result;
-        if (index < last_block_index) {
+        if (index < _last_block_index) {
             seek(index);
             result = block(file);
         }
@@ -672,8 +676,8 @@ class BlockFile {
         check(file.size % BLOCK_SIZE == 0,
                 format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
                 .size));
-        last_block_index = cast(Index)(file.size / BLOCK_SIZE);
-        check(last_block_index > 1, format("The BlockFile should at least have a size of two block of %d but is %d", BLOCK_SIZE, file
+        _last_block_index = cast(Index)(file.size / BLOCK_SIZE);
+        check(_last_block_index > 1, format("The BlockFile should at least have a size of two block of %d but is %d", BLOCK_SIZE, file
                 .size));
         // The headerblock is locate in the start of the file
         seek(INDEX_NULL);
@@ -683,7 +687,7 @@ class BlockFile {
 
     private void readMasterBlock() {
         // The masterblock is locate as the lastblock in the file
-        seek(last_block_index);
+        seek(_last_block_index);
         masterblock.read(file, BLOCK_SIZE);
     }
 
@@ -922,7 +926,7 @@ class BlockFile {
         return result;
     }
 
-    protected void fromDoc(const(Document) doc) {
+    version (none) protected void fromDoc(const(Document) doc) {
         allocated_chains = null;
 
         
@@ -1041,7 +1045,7 @@ class BlockFile {
                                         null,
                                         Index(current_index + 1),
                                         current_index, false);
-                                if (next_index == last_block_index) {
+                                if (next_index == _last_block_index) {
                                     // Make sure the last block is grounded
                                     next_index = INDEX_NULL;
                                 }
@@ -1052,7 +1056,7 @@ class BlockFile {
                             return current_index;
                         }
                         Index end_index = current_index;
-                        if (end_index < last_block_index) {
+                        if (end_index < _last_block_index) {
                             return end_index;
                         }
                         return INDEX_NULL;
@@ -1342,8 +1346,8 @@ class BlockFile {
      +/
     void dump(const uint block_per_line = 16) {
         auto line = new char[block_per_line];
-        foreach (index; 0 .. ((last_block_index / block_per_line) + (
-                (last_block_index % block_per_line == 0) ? 0 : 1)) * block_per_line) {
+        foreach (index; 0 .. ((_last_block_index / block_per_line) + (
+                (_last_block_index % block_per_line == 0) ? 0 : 1)) * block_per_line) {
             immutable pos = index % block_per_line;
             if ((index % block_per_line) == 0) {
                 line[] = 0;
@@ -1641,7 +1645,7 @@ struct RecycleIndices {
                 const Index previous_index = INDEX_NULL) {
             if (!range.empty) {
                 immutable index = range.front;
-                if (index < owner.last_block_index) {
+                if (index < owner._last_block_index) {
                     range.popFront;
                     const next_index = order_blocks(range, index);
                     const block = owner.block(previous_index, next_index, 0, null, false);
@@ -1700,8 +1704,8 @@ struct RecycleIndices {
         if (!s.empty) {
             writefln("segments %-(%s %)", s.map!(a => a.toInfo));
             writefln("indices =%s", indices[]);
-            writefln("s.back.end_index=%d last_block_index=%d s.end_index=%d back=%s", s.back.end_index, owner
-                    .last_block_index, s.front.end_index, s.back.toInfo);
+            writefln("s.back.end_index=%d _last_block_index=%d s.end_index=%d back=%s", s.back.end_index, owner
+                    ._last_block_index, s.front.end_index, s.back.toInfo);
 
         }
 
@@ -1732,7 +1736,7 @@ struct RecycleIndices {
                     if (previous_index + 1 != index) {
                         find_segments(range, index, index);
                         auto new_segment = BlockFile.Segment(begin_index, Index(previous_index + 1));
-                        if (new_segment.end_index < owner.last_block_index) {
+                        if (new_segment.end_index < owner._last_block_index) {
                             segments.insert(new_segment);
                         }
                     }
@@ -1743,7 +1747,7 @@ struct RecycleIndices {
             }
             else if (begin_index !is INDEX_NULL) {
                 auto new_segment = BlockFile.Segment(begin_index, Index(previous_index + 1));
-                if (new_segment.end_index < owner.last_block_index) {
+                if (new_segment.end_index < owner._last_block_index) {
                     segments.insert(BlockFile.Segment(begin_index, Index(previous_index + 1)));
                 }
             }
@@ -1817,10 +1821,10 @@ struct RecycleIndices {
 
                         
 
-                        .check(found.end_index < owner.last_block_index,
-                                format("recylce blocks=%d extends beond last_block_index=%d",
-                                found.end_index, owner.last_block_index));
-                        assert(found.end_index < owner.last_block_index);
+                        .check(found.end_index < owner._last_block_index,
+                                format("recylce blocks=%d extends beond _last_block_index=%d",
+                                found.end_index, owner._last_block_index));
+                        assert(found.end_index < owner._last_block_index);
                         if ((size * 2 <= found.size) ||
                                 owner.check_statistic(found.size, size)) {
                             remove_segment(found, size);
@@ -1831,9 +1835,9 @@ struct RecycleIndices {
             }
         }
         scope (success) {
-            owner.last_block_index += size;
+            owner._last_block_index += size;
         }
-        return owner.last_block_index;
+        return owner._last_block_index;
     }
 
     /++
@@ -1887,14 +1891,14 @@ struct RecycleIndices {
     void trim_last_block_index(ref scope BlockFile.Block[Index] blocks) {
         if (!indices.empty) {
             immutable current_index = indices.back;
-            if (current_index + 1 == owner.last_block_index) {
-                owner.last_block_index = Index(current_index);
+            if (current_index + 1 == owner._last_block_index) {
+                owner._last_block_index = Index(current_index);
                 indices.removeBack;
                 trim_last_block_index(blocks);
             }
         }
-        if (owner.last_block_index > 1) {
-            immutable end_of_blocks_index = Index(owner.last_block_index - 1);
+        if (owner._last_block_index > 1) {
+            immutable end_of_blocks_index = Index(owner._last_block_index - 1);
             if (end_of_blocks_index in blocks) {
                 const end_block = blocks[end_of_blocks_index];
                 if (end_block.next !is INDEX_NULL) {
