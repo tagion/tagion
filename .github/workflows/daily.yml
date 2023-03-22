@@ -27,7 +27,7 @@ jobs:
       - name: Create build dir
         run: |
             mkdir -p ./build/${{ env.TARGET_BUILD }}
-      - uses: actions/cache@v3
+      - uses: actions/cache/restore@v3
         id: cache-restore
         with:
           path: |
@@ -91,7 +91,7 @@ jobs:
           force_push_tag: true
 
 
-      - uses: actions/cache@v3
+      - uses: actions/cache/save@v3
         if: steps.cache-restore.outputs.cache-hit != 'true'
         with:
           path: |
