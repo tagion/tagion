@@ -1051,7 +1051,8 @@ class BlockFile {
                             return current_index;
                         }
                         Index end_index = current_index;
-                        if (!sorted_segments.empty && (
+                        version(none)    
+                    if (!sorted_segments.empty && (
                                 current_index is sorted_segments
                                 .front.begin_index)) {
                             end_index = sorted_segments.front.end_index;
