@@ -1064,8 +1064,6 @@ class BlockFile {
                     }
 
                     auto ablock = allocate[0];
-                    if (!sorted_segments.empty && (
-                            sorted_segments.front.end_index < ablock.begin_index)) {
                         version(none) {
                         const current_segment = sorted_segments.front;
                         if (current_segment.begin_index > 1) {
@@ -1093,8 +1091,6 @@ class BlockFile {
                         sorted_segments.popFront;
                         allocate_and_chain(allocate, sorted_segments);
                     }
-                    }
-                    else {
                         if (!sorted_segments.empty && (
                                 sorted_segments.front.end_index is ablock.begin_index)) {
                             chain(ablock.data, ablock.begin_index, sorted_segments.front.begin_index, true);
@@ -1105,7 +1101,6 @@ class BlockFile {
                             chain(ablock.data, ablock.begin_index, previous_index, true);
                         }
                         allocate_and_chain(allocate[1 .. $], sorted_segments);
-                    }
                 }
             }
             // Puts data into block and chain the blocks
