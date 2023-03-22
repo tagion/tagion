@@ -70,8 +70,10 @@ class BlockFile {
     immutable uint DATA_SIZE;
     alias BlockFileStatistic = Statistic!(uint, Yes.histogram);
     static bool do_not_write;
-    protected {
+    package {
         File file;
+    }
+    protected {
         RecycleIndices recycle_indices;
         Index last_block_index;
         MasterBlock masterblock;
@@ -726,7 +728,7 @@ class BlockFile {
         return last_block_index;
     }
 
-    final protected void seek(const Index index) {
+    final package void seek(const Index index) {
         file.seek(index_to_seek(index));
     }
 

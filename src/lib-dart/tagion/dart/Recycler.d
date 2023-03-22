@@ -7,8 +7,7 @@ import std.stdio;
 import std.traits : PointerTarget;
 
 import tagion.basic.Types : Buffer;
-import tagion.dart.BlockFile : BlockFile;
-import tagion.dart.BlockSegment : Index, NullIndex;
+import tagion.dart.BlockFile : BlockFile, Index;
 import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType;
 
 enum Type : int {
@@ -16,6 +15,7 @@ enum Type : int {
     REMOVE = -1, /// Should be removed from recycler
     ADD = 1, /// should be added to recycler
 }
+
 @safe @recordType("RecycleSegment") 
 struct Segment {
     Index index; // Block file index
