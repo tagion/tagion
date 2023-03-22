@@ -1068,12 +1068,6 @@ class BlockFile {
             scope segments_needs_saving = array(recycler.update_segments[])
                 .sort!(q{a.end_index < b.begin_index});
 
-            version (none) {
-                if (!segments_needs_saving.empty && (
-                        segments_needs_saving[$ - 1].end_index >= last_block_index)) {
-                    last_block_index = segments_needs_saving[$ - 1].begin_index;
-                }
-            }
             allocate_and_chain(allocated_chains);
             recycler.trim_last_block_index(blocks);
 
