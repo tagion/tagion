@@ -95,9 +95,17 @@ struct Recycler {
     void recycle(R)(R recycle_segments)
         if (isInputRange!R && is(ElementType!R == Segment*)) {
 
+        assert(recycle_segments
+                .filter!(s => s.type == Type.NONE)
+                .take(2)
+                .walkLength == 0, "Cannot recycle NONE element");
+    
         if (indices.empty) {
-            assert(recycle_segments.filter!(s => s.type != Type.ADD).take(2)
+            assert(recycle_segments
+                    .filter!(s => s.type == Type.REMOVE)
+                    .take(2)
                     .walkLength == 0, "Cannot contain removes when indices is empty");
+                    
             insert(recycle_segments);
             return;
         }
