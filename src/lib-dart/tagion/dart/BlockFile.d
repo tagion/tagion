@@ -51,18 +51,18 @@ else {
     enum random = true;
 }
 
-version(none) {
-/// Dummy code Should be removed when the in the new recycler
-@safe
-RecycleIndices.Segments update_segments(ref Recycler recycler, bool segments_needs_saving = false) {
-    // Find continues segments of blocks
-    return new RecycleIndices.Segments;
-}
+version (none) {
+    /// Dummy code Should be removed when the in the new recycler
+    @safe
+    RecycleIndices.Segments update_segments(ref Recycler recycler, bool segments_needs_saving = false) {
+        // Find continues segments of blocks
+        return new RecycleIndices.Segments;
+    }
 
-@safe
-void trim_last_block_index(ref Recycler recycler, ref scope BlockFile.Block[Index] blocks) {
-    ///void trim_last_block_index);
-}
+    @safe
+    void trim_last_block_index(ref Recycler recycler, ref scope BlockFile.Block[Index] blocks) {
+        ///void trim_last_block_index);
+    }
 }
 
 extern (C) {
@@ -984,7 +984,7 @@ class BlockFile {
 
             void allocate_and_chain(SortedSegments)(
                     const(AllocatedChain[]) allocate,
-            ref scope SortedSegments sorted_segments) @safe {
+            ref scope SortedSegments _sorted_segments) @safe {
                 if (allocate.length > 0) {
                     Index chain(
                             immutable(ubyte[]) data,
@@ -1051,72 +1051,30 @@ class BlockFile {
                             return current_index;
                         }
                         Index end_index = current_index;
-                        version(none)    
-                    if (!sorted_segments.empty && (
-                                current_index is sorted_segments
-                                .front.begin_index)) {
-                            end_index = sorted_segments.front.end_index;
-                        }
-                        if (end_index < last_block_index) {
+                       if (end_index < last_block_index) {
                             return end_index;
                         }
                         return INDEX_NULL;
                     }
 
                     auto ablock = allocate[0];
-                    if (!sorted_segments.empty && (
-                            sorted_segments.front.end_index < ablock.begin_index)) {
-                        const current_segment = sorted_segments.front;
-                        if (current_segment.begin_index > 1) {
-                            // Block before the segments need to be rewired
-                            const begin_block_index = Index(current_segment.begin_index - 1);
-                            const begin_block = local_read(begin_block_index);
-                            if (begin_block.next !is current_segment.end_index) {
-                                blocks[begin_block_index] = block(
-                                        begin_block.previous,
-                                        current_segment.end_index,
-                                        begin_block.size,
-                                        begin_block.data,
-                                        begin_block.head);
-                            }
-                        }
-                        const end_block = local_read(current_segment.end_index);
-                        const previous_index = (current_segment.begin_index > 0) ?
-                            Index(current_segment.begin_index - 1) : INDEX_NULL;
-                        if (end_block.previous !is previous_index) {
-                            blocks[current_segment.end_index] = block(previous_index,
-                                    end_block.next,
-                                    end_block.size,
-                                    end_block.data, end_block.head);
-                        }
-                        sorted_segments.popFront;
-                        allocate_and_chain(allocate, sorted_segments);
-                    }
-                    else {
-                        if (!sorted_segments.empty && (
-                                sorted_segments.front.end_index is ablock.begin_index)) {
-                            chain(ablock.data, ablock.begin_index, sorted_segments.front.begin_index, true);
-                        }
-                        else {
-                            immutable previous_index = (ablock.begin_index > 1) ?
-                                Index(ablock.begin_index - 1) : INDEX_NULL;
-                            chain(ablock.data, ablock.begin_index, previous_index, true);
-                        }
-                        allocate_and_chain(allocate[1 .. $], sorted_segments);
-                    }
+                  immutable previous_index = (ablock.begin_index > 1) ?
+                        Index(ablock.begin_index - 1) : INDEX_NULL;
+                    chain(ablock.data, ablock.begin_index, previous_index, true);
+                    allocate_and_chain(allocate[1 .. $], _sorted_segments);
                 }
             }
             // Puts data into block and chain the blocks
             sort!(q{a.begin_index < b.begin_index}, SwapStrategy.unstable)(allocated_chains);
-        scope segments_needs_saving = array(recycler.update_segments[])
+            scope segments_needs_saving = array(recycler.update_segments[])
                 .sort!(q{a.end_index < b.begin_index});
-         
-        version(none) {   
-            if (!segments_needs_saving.empty && (
-                    segments_needs_saving[$ - 1].end_index >= last_block_index)) {
-                last_block_index = segments_needs_saving[$ - 1].begin_index;
+
+            version (none) {
+                if (!segments_needs_saving.empty && (
+                        segments_needs_saving[$ - 1].end_index >= last_block_index)) {
+                    last_block_index = segments_needs_saving[$ - 1].begin_index;
+                }
             }
-        } 
             allocate_and_chain(allocated_chains, segments_needs_saving);
             recycler.trim_last_block_index(blocks);
 
@@ -1556,9 +1514,6 @@ class BlockFile {
         { // Write block again
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
             // The statistic block is erased before writing
-            // Erase to stat block so it will be recycled
-            immutable old_statistic_index = blockfile.masterblock.statistic_index;
-
             B[] allocators = [
                 B("++++Block 17", 9), // 17
                 B("++++Block 18", 4), // 18
@@ -1734,7 +1689,8 @@ struct RecycleIndices {
                 
 
                 .check(max_iteration > 0,
-                        format("BlockFile.Block @ %d max iteration exceeds when reading of the recycle list of the blockfile", index));
+                        format(
+                        "BlockFile.Block @ %d max iteration exceeds when reading of the recycle list of the blockfile", index));
                 indices.insert(index);
                 index = Index(block.next);
             }
