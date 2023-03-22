@@ -32,6 +32,8 @@ import tagion.logger.Statistic;
 import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;
 
+//import tagion.dart.BlockSegmentAllocator;
+
 import std.math : rint;
 
 alias Index = Typedef!(ulong, ulong.init, "BlockIndex");
@@ -1050,14 +1052,14 @@ class BlockFile {
                             return current_index;
                         }
                         Index end_index = current_index;
-                       if (end_index < last_block_index) {
+                        if (end_index < last_block_index) {
                             return end_index;
                         }
                         return INDEX_NULL;
                     }
 
                     auto ablock = allocate[0];
-                  immutable previous_index = (ablock.begin_index > 1) ?
+                    immutable previous_index = (ablock.begin_index > 1) ?
                         Index(ablock.begin_index - 1) : INDEX_NULL;
                     chain(ablock.data, ablock.begin_index, previous_index, true);
                     allocate_and_chain(allocate[1 .. $]);
