@@ -237,6 +237,16 @@ struct Recycler {
         /// Should implemented    
     }
 
+    const(Index) reserve_segment(bool random_block = random_)(const uint size)
+    {
+        scope (success)
+        {
+            owner._last_block_index += size;
+        }
+        return owner._last_block_index;
+    }
+
+
 }
 
 version (unittest) {

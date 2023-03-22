@@ -90,10 +90,10 @@ class BlockFile {
     static bool do_not_write;
     package {
         File file;
+        Index _last_block_index;
     }
     protected {
         RecycleIndices recycler;
-        Index _last_block_index;
         MasterBlock masterblock;
         HeaderBlock headerblock;
         bool hasheader;
@@ -1749,80 +1749,7 @@ struct RecycleIndices {
     }
 
     const(Index) reserve_segment(bool random_block = random_)(const uint size) {
-    version(none)
-        void remove_segment(const(BlockFile.Segment) segment_to_be_removed, const uint size)
-        in {
-            assert(segment_to_be_removed.size >= size);
-        }
-        do {
-            recycle_segments.removeKey(segment_to_be_removed);
-            version (unittest) {
-                foreach (index; segment_to_be_removed.begin_index .. Index(segment_to_be_removed.begin_index + size)) {
-                    scope block = owner.read(index);
-                    assert(block);
-                    assert(!block.head, format("Header marker detected in recycle block @ index=%d", index));
-                    assert(block.size == 0, format("Recycle block @ index %d shoud have zero size", index));
-                }
-            }
-            foreach (index; segment_to_be_removed.begin_index .. Index(segment_to_be_removed.begin_index + size)) {
-                indices.removeKey(index);
-            }
-            if (size < segment_to_be_removed.size) {
-                recycle_segments.insert(
-                        BlockFile.Segment(Index(segment_to_be_removed.begin_index + size),
-                        segment_to_be_removed.end_index));
-            }
-
-        }
-
-        static if (random_block) {
-            version(none) {
-            import std.random;
-
-            scope segments = array(recycle_segments[]);
-            scope random_range = randomSample(segments, segments.length);
-            foreach (segment; random_range) {
-                if ((size == segment.size) || (size * 2 <= segment.size) ||
-                        owner.check_statistic(segment.size, size)) {
-                    remove_segment(segment, size);
-                    return segment.begin_index;
-                }
-            }
-        }
-        }
-        else {
-            version(none)
-            if (!recycle_segments.empty) {
-                enum dummy_begin_index = Index(1);
-                const search_segment = BlockFile.Segment(dummy_begin_index, Index(dummy_begin_index + size));
-                auto equal = recycle_segments.equalRange(search_segment);
-                if (!equal.empty) {
-                    auto found = equal.front;
-                    assert(found.size == size);
-                    remove_segment(found, size);
-                    return found.begin_index;
-                }
-                else {
-                    auto upper = recycle_segments.upperBound(search_segment);
-                    if (!upper.empty) {
-                        auto found = upper.front;
-
-                        
-
-                        .check(found.end_index < owner._last_block_index,
-                                format("recylce blocks=%d extends beond _last_block_index=%d",
-                                found.end_index, owner._last_block_index));
-                        assert(found.end_index < owner._last_block_index);
-                        if ((size * 2 <= found.size) ||
-                                owner.check_statistic(found.size, size)) {
-                            remove_segment(found, size);
-                            return found.begin_index;
-                        }
-                    }
-                }
-            }
-        }
-        scope (success) {
+       scope (success) {
             owner._last_block_index += size;
         }
         return owner._last_block_index;
