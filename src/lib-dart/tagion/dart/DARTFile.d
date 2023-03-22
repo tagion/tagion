@@ -530,7 +530,10 @@ alias check = Check!DARTException;
             }
 
         }
-
+        /** 
+         * 
+         * Returns: true if there is only one fingerprint left else false
+         */
         bool isSingle() pure const nothrow @nogc {
             import std.range : take, walkLength;
 
@@ -929,9 +932,6 @@ alias check = Check!DARTException;
      * The function returns the bullseye of the dart
      */
     Buffer modify(const(RecordFactory.Recorder) modify_records, GetType get_type = null, bool PRINT = false) {
-        import std.stdio : writefln, writeln;
-        import tagion.hibon.HiBONJSON : toPretty;
-        import tagion.utils.Miscellaneous : toHexString;
 
         if (get_type is null) {
             get_type = (a) => a.type;
