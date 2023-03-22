@@ -1073,7 +1073,7 @@ class BlockFile {
             sort!(q{a.begin_index < b.begin_index}, SwapStrategy.unstable)(allocated_chains);
 
             allocate_and_chain(allocated_chains);
-            recycler.trim_last_block_index(blocks);
+            //recycler.trim_last_block_index(blocks);
 
             // Write new allocated blocks to the file
         }
