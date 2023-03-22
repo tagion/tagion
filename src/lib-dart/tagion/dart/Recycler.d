@@ -85,78 +85,57 @@ struct Recycler {
     void recycle(R)(R recycle_segments)
         if (isInputRange!R && is(ElementType!R == Segment*)) {
         
-        insert(recycle_segments);
-
-        Segment*[] new_segments;
-        auto rs = opSlice();
-
-        Segment* segment_ADD = null;
-
-        // foreach(seg; indices[]) {
-        //     writefln("%s", seg);
-        // }
-        while (!rs.empty) {
-
-            auto current = rs.current;
-            auto previous = rs.previous;
-            auto next = rs.front;
-
-            if (current.type == Type.REMOVE && previous.index == current.index) {
-                new_segments ~= new Segment(Index(current.index+current.size), previous.size - current.size);
-                previous.type = Type.REMOVE;
-            }
-            // else if (rs.current.type == Type.ADD) {
-            //     if (segment_ADD !is null) {
-            //         if (segment_ADD.end == )
-            //     }                
-
-            // }
-
-
-            rs.popFront;
+        if (indices.empty) {
+            insert(recycle_segments);
+            return;
         }
-        foreach(new_segment; new_segments) {
-            writefln("%s", new_segment);
+        // insert(recycle_segments);
+        while(!recycle_segments.empty) {
+            auto segment = recycle_segments.front;
+            auto lower_range = indices.lowerBound(segment);
+            auto upper_range  = indices.upperBound(segment);
+            
         }
-
-    }
-    struct RecyclerRange {
-        Segment* previous;
-        Segment* current;
-
-        Indices.Range indices_range;
         
-        this(Indices indices)
-        in (indices.length > 2) 
-        do {
-            this.indices_range = indices[];
-            popFront();
-            popFront();
-        }
-
-        void popFront() {
-            previous = current;
-            current = indices_range.front;
-            indices_range.popFront;
-        }
-
-        Segment* front() {
-            return indices_range.front;
-        }
-
-        bool empty() {
-            return indices_range.empty;
-        }
-
-        RecyclerRange save() {
-            return this;
-        }
 
     }
+    // struct RecyclerRange {
+    //     Segment* previous;
+    //     Segment* current;
 
-    RecyclerRange opSlice() {
-        return RecyclerRange(indices);
-    }
+    //     Indices.Range indices_range;
+        
+    //     this(Indices indices)
+    //     in (indices.length > 2) 
+    //     do {
+    //         this.indices_range = indices[];
+    //         popFront();
+    //         popFront();
+    //     }
+
+    //     void popFront() {
+    //         previous = current;
+    //         current = indices_range.front;
+    //         indices_range.popFront;
+    //     }
+
+    //     Segment* front() {
+    //         return indices_range.front;
+    //     }
+
+    //     bool empty() {
+    //         return indices_range.empty;
+    //     }
+
+    //     RecyclerRange save() {
+    //         return this;
+    //     }
+
+    // }
+
+    // RecyclerRange opSlice() {
+    //     return RecyclerRange(indices);
+    // }
     /**
     Returns: true if the segments overlaps
     */
