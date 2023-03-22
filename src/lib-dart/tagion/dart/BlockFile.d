@@ -1788,6 +1788,7 @@ struct RecycleIndices {
             }
         }
         else {
+            version(none)
             if (!recycle_segments.empty) {
                 enum dummy_begin_index = Index(1);
                 const search_segment = BlockFile.Segment(dummy_begin_index, Index(dummy_begin_index + size));
