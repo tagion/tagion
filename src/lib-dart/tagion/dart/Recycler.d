@@ -100,14 +100,11 @@ struct Recycler {
             insert(recycle_segments);
             return;
         }
-        
-
         Indices new_segments = new Indices(recycle_segments);
         
         foreach(i, segment; new_segments[].enumerate) {
             auto lower_range = indices.lowerBound(segment);
             auto upper_range = indices.upperBound(segment);
-
 
             if (segment.type == Type.REMOVE) {
                 auto equal_range = indices.equalRange(segment);
@@ -118,32 +115,38 @@ struct Recycler {
                             .front.size - segment.size);
                     remove(equal_range.front);
                     insert(add_segment);
+                    continue;
                 }
             }
-            else if (segment.type == Type.ADD) {
-                 if (lower_range.empty) {
+
+            if (segment.type == Type.ADD) {
+                if (lower_range.empty) {
                     // A ###
                     assert(!upper_range.empty, "there must be something in the upper range.");
                     if (segment.end == upper_range.front.index) {
                         Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment.size);
                         remove(upper_range.front);
                         insert(add_segment);
+                        continue;
                     } else {
                         insert(segment);
+                        continue;
                     }
                 }
-                else if (upper_range.empty) {
+                if (upper_range.empty) {
                     // ### A empty forever
                     assert(!lower_range.empty, "there must be something in the lower range.");
                     if (lower_range.back.end == segment.index) {
                         Segment* add_segment = new Segment(lower_range.back.index, segment.size + lower_range.back.size);
                         remove(lower_range.back);
                         insert(add_segment);
+                        continue;
                     } else {
                         insert(segment);
+                        continue;
                     }   
                 }   
-                else if (lower_range.back.end == segment.index) {
+                if (lower_range.back.end == segment.index) {
                     //  ###
                     //  ###A 
                     if (upper_range.front.index == segment.end) {
@@ -154,6 +157,7 @@ struct Recycler {
                         remove(lower_range.front);
                         remove(upper_range.front);
                         insert(add_segment);
+                        continue;
                     }
                     else {
                         // ### 
@@ -162,21 +166,24 @@ struct Recycler {
                                 .size);
                         remove(lower_range.front);
                         insert(add_segment);
+                        continue;
                     }
 
                 }
-                else if (upper_range.front.index == segment.end) {
+                if (upper_range.front.index == segment.end) {
                     //  ###
                     // A###
                     Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment
                             .size);
                     remove(upper_range.front);
                     insert(add_segment);
+                    continue;
                 }
                 else {
                     // ###        ###
                     // ###    A   ###
                     insert(segment);
+                    continue;
                 }
             }
         }
@@ -304,37 +311,8 @@ unittest {
     (() @trusted {
         assert(expected_indices.opEquals(recycler.indices), "elements should be the same");
     }());
-
-    
-    
 }
 
-// unittest {
-//     immutable filename = fileId("recycle").fullpath;
-//     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
-//     auto blockfile = BlockFile(filename);
-//     scope (exit) {
-//         blockfile.close;
-//     }
-//     auto recycler = Recycler(blockfile);
-
-//     // insert one segment.
-//     auto segment = new Segment(Index(32UL), 128);
-//     recycler.recycle(segment);
-
-//     auto after_segment = new Segment(segment.end, 128);
-
-//     assert(recycler.previousIndex(after_segment) == segment.index);
-//     assert(recycler.nextIndex(after_segment) == NullIndex);
-
-//     auto before_segment = new Segment(Index(1), 122);
-//     assert(recycler.previousIndex(before_segment) == NullIndex);
-//     assert(recycler.nextIndex(before_segment) == segment.index);
-
-//     auto inside_segment = new Segment(Index(35UL), 122);
-//     recycler.dump();
-
-// }
 
 // unittest {
 //     // checks for single overlap.
