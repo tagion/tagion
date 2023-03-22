@@ -1,3 +1,4 @@
+/// Recycler for BlockFile. 
 module tagion.dart.Recycler;
 
 import std.container.rbtree : RedBlackTree;
@@ -92,9 +93,14 @@ struct Recycler {
         segments.removeKey(segment);
     }
 
+    /** 
+     * Inserts the given segments into the recycler. Does not accept Type.None. If indices are empty it doesent accept Type.Remove as well.
+     * Params:
+     *   recycle_segments = Range to insert
+     */
     void recycle(R)(R recycle_segments)
         if (isInputRange!R && is(ElementType!R == Segment*)) {
-
+        
         assert(recycle_segments
                 .filter!(s => s.type == Type.NONE)
                 .take(2)
@@ -111,7 +117,9 @@ struct Recycler {
         }
         Indices new_segments = new Indices(recycle_segments);
 
+        // Go through all the segments in the new range
         foreach (segment; new_segments[]) {
+            // If segment is Type.Remove whe check if any indices index match. Otherwise we assert since we cannot try to remove something which is not there.
             if (segment.type == Type.REMOVE) {
                 auto equal_range = indices.equalRange(segment);
                 assert(!equal_range.empty, "Cannot call remove with segment where index in recycler does not exist");
@@ -199,7 +207,7 @@ struct Recycler {
     }
 
     /**
-    Returns: true if the segments overlaps
+    Returns: true if the segments overlaps. Used as an invariant to check on returns.
     */
     private bool noOverlaps() const pure nothrow @nogc {
         import std.range : slide;
@@ -291,7 +299,7 @@ unittest {
 
 @safe
 unittest {
-    // add extra test
+    // add extra segments test
     immutable filename = fileId("recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(filename);
