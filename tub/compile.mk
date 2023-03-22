@@ -1,7 +1,7 @@
 
 ifdef COV
 DFLAGS+=$(DCOV)
-DRTFALGS+=$(COVOPT)
+DRTFLAGS+=$(COVOPT)
 COVWAY=$(DLOGCOV)/.way
 endif
 DFLAGS+=$(DIP25) $(DIP1000)
@@ -79,7 +79,8 @@ $(UNITTEST_BIN): $(COVWAY) $$(DFILES)
 	echo deps $?
 	echo LIBS=$(LIBS)
 	echo DFLAGS=$(DFLAGS)
-	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFALGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} $(LIBS) $(OUTPUT)$@
+	echo DRTFLAGS=$(DRTFLAGS)
+	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} $(LIBS) $(OUTPUT)$@
 
 unittest: revision
 

@@ -9,13 +9,16 @@
 
 .DS_Store
 
+# Bdd list
+bdd/BDDS.md
+
 # Emacs
 *~
 *#
 .#*
 
 # Vim
-Session.vim
+*.vim
 
 # Local setup file
 local.*

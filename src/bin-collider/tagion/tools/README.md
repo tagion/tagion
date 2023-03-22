@@ -34,7 +34,8 @@ Generate all the bddfiles. If you for an example have created a `.md` file this 
 ### Enviroment
 `make bddenv`
 
-Generates a environment test script in build called `bddenv.sh`. This script can be used for manually running a single bdd with environment using ex. `./bddenv.sh <target>`.
+Generates a environment test script in build called `bddenv.sh`. This script can be used for manually running a single bdd with environment using ex. `./bddenv.sh <target>`. Remember you can configure the script to run with a different stage like: 
+`make bddenv TEST_STAGE=commit`.
 
 ### Removing illegal chars from bdd .md files
 `make bddstrip`
@@ -114,19 +115,31 @@ It is possible to get an object after running a feature. This object can be impo
 In your main file give the previous feature object as a input to an constructor:
 
 ```
-auto wallet_feature = automation!(Wallet_generation)();
-// save the context
-auto wallet_context = wallet_feature.run;
+int _main(string[] args) {
 
-auto dart_feature = automation!(Boot_wallet)();
-// run the constructor
-dart_feature.GenerateDartboot(wallet_context.WalletsWillBeGenerated);
-auto dart_context = dart_feature.run;
+    if (env.stage == Stage.commit) {
+        BDDOptions bdd_options;
+        setDefaultBDDOptions(bdd_options);
+        bdd_options.scenario_name = __MODULE__;
 
-auto start_network_feature = automation!(Start_network)();
-start_network_feature.StartNetworkInModeone(
-wallet_context.SevenWalletsWillBeGenerated, dart_context.GenerateDartboot);
-auto start_network_context = start_network_feature.run;
+        const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
+        const string dartfilename = buildPath(module_path, "dart_mapping_two_archives".setExtension(FileExtension.dart));
+        const SecureNet net = new DARTFakeNet("very_secret");
+        const hirpc = HiRPC(net);
+
+        DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
+
+        auto dart_mapping_two_archives_feature = automation!(dart_mapping_two_archives)();
+
+        dart_mapping_two_archives_feature.AddOneArchive(dart_info);
+        dart_mapping_two_archives_feature.AddAnotherArchive(dart_info);
+        dart_mapping_two_archives_feature.RemoveArchive(dart_info);
+        
+        auto dart_mapping_two_archives_context = dart_mapping_two_archives_feature.run();
+    }
+    return 0;
+}
+
 ```
 
 

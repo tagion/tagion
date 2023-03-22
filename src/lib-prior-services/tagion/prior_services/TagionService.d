@@ -77,6 +77,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
     try {
         /** last epoch timestamp */
         long epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
+        const startup_timestamp = Clock.currTime().stdTime;
         log.register(opts.node_name);
         setOptions(opts);
         bool stop;
@@ -327,7 +328,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             recorder_service_tid = locate(opts.recorder_chain.task_name);
         }
 
-        if (!opts.epoch_dump.disable_transaction_dumping) {
+        if (opts.epoch_dump.enabled) {
             auto task_name = opts.epoch_dump.task_name;
             Task!EpochDumpTask(task_name, opts);
             assert(receiveOnly!Control == Control.LIVE);
@@ -424,6 +425,12 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         log.trace("Before Main loop addressbook.numOfActiveNodes : %d", addressbook
                 .numOfActiveNodes);
         HiRPC empty_hirpc;
+        gossip_net.start_listening();
+
+        const startup_duration = dur!"hnsecs"(Clock.currTime().stdTime-startup_timestamp);
+        if (opts.startup_delay.msecs > startup_duration){
+            Thread.sleep(opts.startup_delay.msecs - startup_duration);
+        } 
         while (!stop && !abort) {
             immutable message_received = receiveTimeout(
                     opts.timeout.msecs,

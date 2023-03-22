@@ -66,6 +66,7 @@ DJSON ?= --Xf
 DEXPORT_DYN?=-L-export-dynamic
 DCOV=--cov
 DIMPORTFILE=-J
+DDEFAULTLIBSTATIC=-link-defaultlib-shared=false
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -95,6 +96,7 @@ NO_OBJ ?= -o-
 DJSON ?= -Xf
 DCOV ?=-cov
 DIMPORTFILE=-J
+DINCIMPORT= -i
 endif
 
 DIP25 := $(DIP)25

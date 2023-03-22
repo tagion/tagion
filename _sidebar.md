@@ -6,13 +6,24 @@
 
 - [Home](README.md)
 
-- Architecture
-	- [Network_Architecture](documents/architecture/Network_Architecture.md)
-	- [Network_Modes](documents/architecture/Network_Modes.md)
-	- [Network_bootstrap](documents/architecture/Network_bootstrap.md)
-
-- Tools
-	- [Tagion dev-tool](documents/tools/tagion_dev_tool.md)
+- Network
+	- [Modes](documents/architecture/Network_Modes.md)
+	- [bootstrap](documents/architecture/Network_bootstrap.md)
+	- [Architecture](documents/architecture/Network_Architecture.md)
+		- [Tagion](/documents/architecture/Tagion.md)
+		- [Tagion Factory](/documents/architecture/TagionFactory.md)
+		- [TVM](/documents/architecture/TVM.md "Tagion Virtual Machine")
+		- [DART](/documents/architecture/DART.md "Distributed Archive of Random Transactions")
+		- [Replicator](/documents/architecture/Replicator.md)
+		- [Contract Interface](/documents/architecture/ContractInterface.md)
+		- [Collector](/documents/architecture/Collector.md)
+		- [Transcript](/documents/architecture/Transcript.md)
+		- [Epoch Creator](/documents/architecture/EpochCreator.md)
+		- [Epoch Dump](/documents/architecture/EpochDump.md)
+		- [Node Interface](/documents/architecture/NodeInterface.md)
+		- [Logger](/documents/architecture/Logger.md)
+		- [Logger Subscription](/documents/architecture/LoggerSubscription.md)
+		- [Monitor](/documents/architecture/Monitor.md)
 
 - Protocols
 	- [HiBON](documents/protocols/hibon/README.md)
@@ -21,17 +32,19 @@
 		- [HiBON_JSON_format](/documents/protocols/hibon/HiBON_JSON_format.md)
 		- [HiBON_LEB128](/documents/protocols/hibon/HiBON_LEB128.md)
 		- [HiBON_Record](/documents/protocols/hibon/HiBON_Record.md)
-	- Contract format
-		- [Contract](/documents/protocols/contract/Contract.md)
+	- [Contract](/documents/protocols/contract/Contract.md)
 	- DART
-		- [Recorder](/documents/protocols/dart/Recorder.md)
--- Testing
+		- [Recorder](/documents/modules/dart/recorder.md)
+		- [Block file](/documents/modules/dart/block_file_recycler.md)
+- Testing
 	- Behaviour tests
 		- [BDD_Process](documents/behaviour/BDD_Process.md)
 		- [BDDLogger](documents/behaviour/BDDLogger.md)
 		- [BDDEnvironment](documents/behaviour/BDDEnvironment.md)
-	- List of behaviour tests
-		- [BDD tests](bdd/BDDS.md)
+		- [List of behaviour tests](bdd/BDDS.md)
+
+- Tools
+	- [Tagion dev-tool](documents/tools/tagion_dev_tool.md)
 
 - Project goals
 	- [Goals Q1-Q2 2023](documents/project/project_goals_2023_Q1_Q2.md)

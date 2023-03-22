@@ -32,7 +32,7 @@ true if T is a Buffer (immutable(ubyte))
 enum isBuffer(T) = is(T : immutable(ubyte[])) || is(TypedefType!T : immutable(ubyte[]));
 
 static unittest {
-    alias MyBuf=Typedef!(Buffer, null, "MyBuf");
+    alias MyBuf = Typedef!(Buffer, null, "MyBuf");
     static assert(isBufferType!(immutable(ubyte[])));
     static assert(isBufferType!(immutable(ubyte)[]));
     static assert(isBufferType!(const(ubyte)[]));
@@ -93,6 +93,7 @@ enum FileExtension {
     hibon = "hibon", // HiBON file format
     wasm = "wasm", // WebAssembler binary format
     wast = "wast", // WebAssembler text format
+    block = "blk", // Block file
     dart = "drt", // DART data-base
     markdown = "md", // DART data-base
     dsrc = "d", // DART data-base

@@ -47,20 +47,16 @@ int _main(string[] args) {
         dart_deep_rim_feature.RemoveArchive(dart_info);
         auto dart_deep_rim_context = dart_deep_rim_feature.run();
 
-        static if (ver.DART_SNAP_BRANCH) {
-            auto dart_sync_snap_feature = automation!(dart_sync_snap_back)();
-            dart_sync_snap_feature.SyncToAnotherDb(dart_info);
-            auto dart_sync_snap_context = dart_sync_snap_feature.run();
-        }
 
-        static if (ver.DART_SNAP_BRANCH) {
-            auto dart_middle_branch_feature = automation!(dart_middle_branch)();
-            dart_middle_branch_feature.AddOneArchiveAndSnap(dart_info);
-            auto dart_middle_branch_context = dart_middle_branch_feature.run();
-        }
-        else {
-            pragma(msg, "fixme(pr): DART snapback problem");
-        }
+        auto dart_sync_snap_feature = automation!(dart_sync_snap_back)();
+        dart_sync_snap_feature.SyncToAnotherDb(dart_info);
+        auto dart_sync_snap_context = dart_sync_snap_feature.run();
+
+
+        auto dart_middle_branch_feature = automation!(dart_middle_branch)();
+        dart_middle_branch_feature.AddOneArchiveAndSnap(dart_info);
+        auto dart_middle_branch_context = dart_middle_branch_feature.run();
+
     }
     return 0;
 }

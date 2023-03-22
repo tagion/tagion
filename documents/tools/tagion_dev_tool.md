@@ -13,7 +13,7 @@ tagiondev <config.json>
                       --ip Host gossip ip
                     --port Host gossip port 
                      --pid Write the pid to  file
--E                         Eproch time: default (5000 ms)
+-E                         Epoch time: default (5000 ms)
                      --tmp Sets temporaty work directory: default '/tmp/'
 -p      --transaction-port Sets the listener transcation port: default 10800
                   --epochs Sets the number of epochs (0 for infinite): default: 4294967295

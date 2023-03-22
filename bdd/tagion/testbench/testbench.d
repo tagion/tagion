@@ -17,6 +17,7 @@ int main(string[] args) {
     import dart_sync = tagion.testbench.dart_sync;
     import dart_partial_sync = tagion.testbench.dart_partial_sync;
     import dart_stress = tagion.testbench.dart_stress;
+    import actor_tests = tagion.testbench.actor_tests;
 
     alias alltools = AliasSeq!(
             ssl_server,
@@ -31,6 +32,7 @@ int main(string[] args) {
             dart_sync,
             dart_partial_sync,
             dart_stress,
+            actor_tests,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
