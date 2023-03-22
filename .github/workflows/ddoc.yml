@@ -56,7 +56,7 @@ jobs:
         with:
           source-directory: './build/ddoc'
           #destination-github-username: 
-          destination-repository-name: tagion/ddoc
+          destination-repository-name: 'tagion/ddoc'
           #destination-repository-username: # optional, default is 
           #target-branch: # optional, default is main
           #target-directory: # optional, default is   
