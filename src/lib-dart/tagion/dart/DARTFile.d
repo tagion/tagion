@@ -530,7 +530,10 @@ alias check = Check!DARTException;
             }
 
         }
-
+        /** 
+         * 
+         * Returns: true if there is only one fingerprint left else false
+         */
         bool isSingle() pure const nothrow @nogc {
             import std.range : take, walkLength;
 
