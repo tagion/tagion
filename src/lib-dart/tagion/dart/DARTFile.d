@@ -112,7 +112,7 @@ alias check = Check!DARTException;
 
 @safe class DARTFile {
     enum KEY_SPAN = ubyte.max + 1;
-    enum INDEX_NULL = BlockFile.INDEX_NULL;
+    import tagion.dart.BlockFile : INDEX_NULL;
     immutable(string) filename;
 
     protected RecordFactory manufactor;
@@ -471,7 +471,7 @@ alias check = Check!DARTException;
             if (_fingerprints is null) {
                 _fingerprints = new Buffer[KEY_SPAN];
             }
-            _indices[key] = leave.index;
+            _indices[key] = Index(leave.index);
             _fingerprints[key] = leave.fingerprint;
         }
 
@@ -972,7 +972,7 @@ alias check = Check!DARTException;
                             branches[rim_key] = leave;
                         }
                     }
-                    erase_block_index = branch_index;
+                    erase_block_index = Index(branch_index);
                     if (branches.empty) {
                         return Leave.init;
                     }

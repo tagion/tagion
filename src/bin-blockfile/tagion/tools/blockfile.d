@@ -122,7 +122,7 @@ struct BlockFileAnalyzer {
     /**
        number_of_seq block sequency displays
      */
-    void display_sequency(const uint index, uint number_of_sequency = 1) {
+    void display_sequency(const Index index, uint number_of_sequency = 1) {
         auto range = blockfile.range(index);
         while (!range.empty) {
             display_block(range.index, range.front);
@@ -147,7 +147,7 @@ int _main(string[] args) {
     bool dump; /// Dumps the block map
     bool inspect;
     bool ignore; /// Ignore blockfile format errors
-    uint block_number; /// Block number to read (block_number > 0)
+    ulong block_number; /// Block number to read (block_number > 0)
     bool sequency; /// Prints the sequency on the next header
     bool recycle_sequence; // Lists the recycle sequence
     string output_filename;
@@ -241,10 +241,10 @@ int _main(string[] args) {
 
     if (block_number !is 0) {
         if (sequency) {
-            analyzer.display_sequency(block_number);
+            analyzer.display_sequency(Index(block_number));
         }
         else {
-            immutable buffer = analyzer.blockfile.load(block_number, !ignore);
+            immutable buffer = analyzer.blockfile.load(Index(block_number), !ignore);
             if (output_filename) {
                 buffer.toFile(output_filename);
             }

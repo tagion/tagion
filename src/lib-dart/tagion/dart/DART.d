@@ -36,7 +36,7 @@ import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTFile;
 import tagion.dart.DARTBasic : DARTIndex;
 import CRUD = tagion.dart.DARTcrud;
-import tagion.dart.BlockFile : Index;
+import tagion.dart.BlockFile : Index, INDEX_NULL;
 
 alias hex = toHexString;
 
@@ -510,8 +510,8 @@ received = the HiRPC received package
             immutable key = params.rims[$ - 1];
             const super_branches = branches(params.rims[0 .. $ - 1]);
             if (!super_branches.empty) {
-                immutable index = super_branches.indices[key];
-                if (index !is INDEX_NULL) {
+                const index = super_branches.indices[key];
+                if (index != INDEX_NULL) {
                     // The archive is added to a recorder
                     immutable data = blockfile.load(index);
                     const doc = Document(data);
@@ -952,7 +952,7 @@ received = the HiRPC received package
         }
         // Adding and Removing archives
         void local_replay(bool remove)() @safe {
-            for (Index index = journalfile.masterBlock.root_index; index !is INDEX_NULL;
+            for (Index index = journalfile.masterBlock.root_index; index != INDEX_NULL;
 
                 ) {
                 immutable data = journalfile.load(index);
