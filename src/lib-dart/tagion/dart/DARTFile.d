@@ -2203,6 +2203,44 @@ alias check = Check!DARTException;
                 assert(numberOfArchives(branches, dart_A) == 2, "Should contain two archives after remove");
 
             }
+
+            {
+
+                DARTFile.create(filename_A);
+                auto dart_A = new DARTFile(net, filename_A);
+
+                const ulong[] deep_table = [
+                    0xABB9_13ab_11ef_0923,
+                    0xABB9_130b_11ef_1234,
+                    0xABB9_13ab_12ef_5678,
+                    0xABB9_13ab_12ef_1354,
+                    0xABB9_13ab_12ef_5656,
+                    0xABB9_13ab_12de_5678,
+                ];
+
+                auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
+                auto recorder = dart_A.recorder();
+                foreach (doc; docs) {
+                    recorder.add(doc);
+                }
+                auto fingerprints = recorder[].map!(r => r.fingerprint).array;
+                dart_A.modify(recorder);
+                // dart_A.dump();
+
+                auto remove_recorder = dart_A.recorder();
+                remove_recorder.remove(fingerprints[4]);
+                remove_recorder.remove(fingerprints[3]);
+
+                dart_A.modify(remove_recorder);
+                dart_A.dump();
+
+                ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x12];
+
+                auto branches = dart_A.branches(rim_path);
+                // writefln("XXX %s", numberOfArchives(branches, dart_A));
+                assert(numberOfArchives(branches, dart_A) == 2, "Should contain two archives after remove");
+
+            }
         }
 
     }
