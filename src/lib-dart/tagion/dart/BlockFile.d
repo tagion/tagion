@@ -769,22 +769,7 @@ class BlockFile {
      +
      +/
     Index erase(const Index index) {
-        version (none) {
-            console.writef("%d [ ", index);
-            scope (exit) {
-                console.writeln("]");
-                console.writefln("recycle_indices = %s", recycle_indices[]);
-                console.writefln("recycled_to_save= %s", recycle_indices
-                        .recycled_blocks_which_needs_to_be_saved.keys.sort);
-            }
-
-            auto block_range = range(index);
-            if (!block_range.empty) {
-                check(block_range.front.head, format("Block @ %d is not pointing to the begin of a block sequency", index));
-            }
-
-        }
-        @safe Index remove_sequency(bool first = false)(const Index index) {
+    @safe Index remove_sequency(bool first = false)(const Index index) {
             auto block = read(index);
             check(!recycler.isRecyclable(index),
                     format("Block %d has already been delete", index));
@@ -878,11 +863,6 @@ class BlockFile {
             }
         }
 
-        version (none) string toInfo() const {
-            return format("[%d..%d] blocks=%s size=%5d", chain.begin_index, end_index, number_of_blocks(
-                    size), size);
-        }
-
     final:
 
         Index begin_index() pure const nothrow {
@@ -924,18 +904,6 @@ class BlockFile {
             result[i] = a.toHiBON;
         }
         return result;
-    }
-
-    version (none) protected void fromDoc(const(Document) doc) {
-        allocated_chains = null;
-
-        
-
-        .check(doc.isArray, "Document should be an array");
-        foreach (a; doc[]) {
-            const sub_doc = a.get!Document;
-            allocated_chains ~= new AllocatedChain(sub_doc);
-        }
     }
 
     /++
