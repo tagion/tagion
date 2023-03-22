@@ -82,6 +82,7 @@ struct Recycler {
     }
 
 
+
     void recycle(R)(R recycle_segments)
         if (isInputRange!R && is(ElementType!R == Segment*)) {
         
@@ -89,13 +90,36 @@ struct Recycler {
             insert(recycle_segments);
             return;
         }
-        // insert(recycle_segments);
-        while(!recycle_segments.empty) {
-            auto segment = recycle_segments.front;
-            auto lower_range = indices.lowerBound(segment);
-            auto upper_range  = indices.upperBound(segment);
+
+        // Indices new_segments;
+        // new_segments.insert(recycle_segments);
+        
+        // // insert(recycle_segments);
+        // while(!new_segments.empty) {
+        //     auto segment = new_segments.front;
+        //     auto lower_range = indices.lowerBound(segment);
+        //     auto upper_range  = indices.upperBound(segment);
+
+        //     if (segment.type == Type.REMOVE) {
+        //         assert(!lower_range.empty, "cannot remove the following segment since the lower range is empty");
+
+        //         if (lower_range.front.index == segment.index) {
+        //             Segment add_segment = new Segment(Index(lower_range.front.index+segment.size), lower_range.front.size-segment.size);
+        //             lower_range.removeFront;
+        //             indices.insert(add_segment);
+        //         }
+        //     }
+
+        //     // else if (segment.type == Type.ADD) {
+        //     //     //  ###
+        //     //     //  ###A 
+        //     //     if (lower_range.front.end == segment.index) {
+        //     //         // ### ###
+
+        //     //     }
+        //     // }
             
-        }
+        // }
         
 
     }

@@ -942,7 +942,7 @@ alias check = Check!DARTException;
                 const Index branch_index,
                 immutable uint rim = 0,
                 bool parent_single = false,
-        ) @trusted {
+        ) @safe {
             if (!range.empty) {
                 auto archive = range.front;
                 Index erase_block_index;
