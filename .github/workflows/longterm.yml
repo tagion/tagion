@@ -6,9 +6,6 @@ on:
   push: 
     branches: 
       - as-ci-bdd
-env:
-  ## Sets environment variable
-  
 jobs:
   run_bdd_tests:
     runs-on: self-hosted
