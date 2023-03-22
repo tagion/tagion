@@ -101,11 +101,11 @@ struct Recycler {
             return;
         }
         
-        writefln("came to here ");
 
         Indices new_segments = new Indices(recycle_segments);
         
-        foreach(segment; new_segments[]) {
+        foreach(i, segment; new_segments[].enumerate) {
+            writefln("%s", i);
             auto lower_range = indices.lowerBound(segment);
             auto upper_range = indices.upperBound(segment);
 
@@ -122,7 +122,34 @@ struct Recycler {
                 }
             }
             else if (segment.type == Type.ADD) {
-                if (lower_range.front.end == segment.index) {
+                writefln("here %s", i);
+                writefln("lower_range.back.end: %s", lower_range.back.end);
+                writefln("segment.index: %s", segment.index);
+                writefln("wowo1");
+
+                if (lower_range.empty) {
+                    // A ###
+                    assert(!upper_range.empty, "there must be something in the upper range.");
+                    if (segment.end == upper_range.front.index) {
+                        Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment.size);
+                        remove(upper_range.front);
+                        insert(add_segment);
+                    } else {
+                        insert(segment);
+                    }
+                }
+                else if (upper_range.empty) {
+                    // ### A empty forever
+                    assert(!lower_range.empty, "there must be something in the lower range.");
+                    if (lower_range.back.end == segment.index) {
+                        Segment* add_segment = new Segment(lower_range.back.index, segment.size + lower_range.back.size);
+                        remove(lower_range.back);
+                        insert(add_segment);
+                    } else {
+                        insert(segment);
+                    }
+                }   
+                else if (lower_range.back.end == segment.index) {
                     //  ###
                     //  ###A 
                     if (upper_range.front.index == segment.end) {
@@ -145,6 +172,7 @@ struct Recycler {
 
                 }
                 else if (upper_range.front.index == segment.end) {
+                    writefln("wowo2");
                     //  ###
                     // A###
                     Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment
@@ -155,6 +183,7 @@ struct Recycler {
                 else {
                     // ###        ###
                     // ###    A   ###
+                    writefln("wowo");
                     insert(segment);
                 }
             }
@@ -213,7 +242,39 @@ version (unittest) {
 
 import std.exception;
 
+@safe
 unittest {
+    // remove test
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(blockfile);
+
+    Segment*[] add_segments = [
+        new Segment(Index(1UL), 5, Type.ADD),
+        new Segment(Index(10UL), 5, Type.ADD),
+        new Segment(Index(17UL), 5, Type.ADD),
+    ];
+
+    recycler.recycle(add_segments);
+    // recycler.dump();
+
+    // writefln("####");
+    Segment*[] remove_segments = [
+        new Segment(Index(1UL), 2, Type.REMOVE),
+    ];
+    recycler.recycle(remove_segments);
+
+    assert(recycler.indices.front.index == Index(3UL));
+    assert(recycler.indices.front.end == 6);
+    // recycler.dump();
+}
+@safe
+unittest {
+    // add extra time test
     immutable filename = fileId("recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(filename);
@@ -232,14 +293,15 @@ unittest {
     recycler.dump();
 
     writefln("####");
-    Segment*[] remove_segments = [
-        new Segment(Index(1UL), 2, Type.REMOVE),
+    Segment*[] extra_segments = [
+        new Segment(Index(6UL), 2, Type.ADD),
+        new Segment(Index(25UL), 6, Type.ADD),
     ];
-    recycler.recycle(remove_segments);
+    recycler.recycle(extra_segments);
 
-    assert(recycler.indices.front.index == Index(3UL));
-    assert(recycler.indices.front.end == 6);
 
+    // assert(recycler.indices.front.index == Index(3UL));
+    // assert(recycler.indices.front.end == 6);
     recycler.dump();
 }
 
