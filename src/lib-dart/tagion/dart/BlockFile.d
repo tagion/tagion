@@ -964,7 +964,7 @@ class BlockFile
      + By splitting the data buffer into a chain of blocks
      + If possible it recycling old deleted blocks
      +/
-    class AllocatedChain
+    static class AllocatedChain
     {
         @recordType("ACHAIN") struct Chain
         {
@@ -989,19 +989,19 @@ class BlockFile
             return chain.data;
         }
         // This function reserves blocks and recycles blocks if possible
-        protected void reserve(bool random_block)()
+        protected void reserve( bool random_block)(BlockFile owner)
         in
         {
             assert(chain.begin_index == 0, "Block is already reserved");
         }
         do
         {
-            immutable size = number_of_blocks(chain.data.length);
-            chain.begin_index = Index(recycler.reserve_segment(size));
-            _statistic(size);
+            immutable size = owner.number_of_blocks(chain.data.length);
+            chain.begin_index = Index(owner.recycler.reserve_segment(size));
+            owner._statistic(size);
         }
 
-        this(immutable(Buffer) buffer, immutable bool random_block = random)
+        this(BlockFile owner, immutable(Buffer) buffer, immutable bool random_block = random)
         in
         {
             assert(buffer.length > 0, "Buffer size can not be zero");
@@ -1011,14 +1011,14 @@ class BlockFile
             chain.data = buffer;
             if (random_block)
             {
-                reserve!true;
+                reserve!true(owner);
             }
             else
             {
-                reserve!false;
+                reserve!false(owner);
             }
         }
-
+        version(none)
         string toInfo() const
         {
             return format("[%d..%d] blocks=%s size=%5d", chain.begin_index, end_index, number_of_blocks(
@@ -1032,9 +1032,9 @@ class BlockFile
             return chain.begin_index;
         }
 
-        Index end_index() pure const nothrow
+        Index end_index(const BlockFile owner) pure const nothrow
         {
-            return Index(chain.begin_index + number_of_blocks(chain.data.length));
+            return Index(chain.begin_index + owner.number_of_blocks(chain.data.length));
         }
 
         uint size() pure const nothrow
@@ -1058,7 +1058,7 @@ class BlockFile
      +/
     const(AllocatedChain) save(immutable(Buffer) data, bool random_block = random)
     {
-        auto result = new AllocatedChain(data, random_block);
+        auto result = new AllocatedChain(this, data, random_block);
         allocated_chains ~= result;
         return result;
     }
