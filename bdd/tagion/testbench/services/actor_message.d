@@ -119,7 +119,7 @@ static assert(isActor!MyActor);
         niño_dos_handle.stop;
     }
 
-    @method void send(SuperMsg msg) {
+    @method void proc(SuperMsg msg) {
         final switch (msg) {
         case SuperMsg.stopTheChildren:
             this.stopTheChildren;
@@ -192,8 +192,8 @@ class MessageBetweenSupervisorAndChild {
 
     @Then("stop the #super")
     Document stopTheSuper() {
-        debug writeln("actor_message 5");
-        supervisor_handle.send(SuperMsg.stopTheChildren);
+        debug writeln("actor_message 5 ssaaaa");
+        supervisor_handle.proc(SuperMsg.stopTheChildren);
         supervisor_handle.stop;
         /* check(!isRunning(child1_task_name), "child1 is still running"); */
         /* check(!isRunning(child2_task_name), "child2 is still running"); */
