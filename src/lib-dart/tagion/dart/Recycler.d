@@ -358,18 +358,65 @@ unittest {
     ];
 
     recycler.recycle(add_segments);
-    recycler.dump;
+    // recycler.dump;
 
     assertThrown!Throwable(recycler.recycle([new Segment(Index(20UL), 4, Type.REMOVE)]));
     assertThrown!Throwable(recycler.recycle([new Segment(Index(3UL), 5, Type.REMOVE)]));
     assertThrown!Throwable(recycler.recycle([new Segment(Index(6UL), 4, Type.REMOVE)]));
 }
 
-// empty lowerrange connecting
-// empty lowerrange not connecting
+unittest {
+    // empty lowerrange connecting
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(blockfile);
 
+    recycler.recycle([new Segment(Index(10UL), 5, Type.ADD)]);
+    // recycler.dump;
+    recycler.recycle([new Segment(Index(2UL), 8, Type.ADD)]);
 
+    assert(recycler.indices.length == 1, "should have merged segments");
+    assert(recycler.indices.front.index == Index(2UL), "Index not correct");
+    assert(recycler.indices.front.end == Index(15UL));
 
+    // upperrange empty connecting
+    recycler.recycle([new Segment(Index(15UL), 5, Type.ADD)]);
+    assert(recycler.indices.length == 1, "should have merged segments");
+    assert(recycler.indices.front.index == Index(2UL));
+    assert(recycler.indices.front.end == Index(20UL));
+    // recycler.dump;    
+}
+
+unittest {
+    // empty lowerrange NOT connecting
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(blockfile);
+
+    recycler.recycle([new Segment(Index(10UL), 5, Type.ADD)]);
+    // recycler.dump;
+    recycler.recycle([new Segment(Index(2UL), 5, Type.ADD)]);
+
+    assert(recycler.indices.length == 2, "should NOT have merged types");
+    assert(recycler.indices.front.index == Index(2UL), "Index not correct");
+    // recycler.dump
+
+    // upper range NOT connecting
+    recycler.recycle([new Segment(Index(25UL), 5, Type.ADD)]);
+    assert(recycler.indices.length == 3, "Should not have merged");
+    assert(recycler.indices.back.index == Index(25UL), "Should not have merged");
+
+}
+
+// upper range not connecting
 
 // unittest {
 //     // checks for single overlap.
