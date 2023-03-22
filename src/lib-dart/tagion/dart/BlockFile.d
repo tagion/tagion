@@ -982,9 +982,8 @@ class BlockFile {
                 }
             }
 
-            void allocate_and_chain(SortedSegments)(
-                    const(AllocatedChain[]) allocate,
-            ref scope SortedSegments _sorted_segments) @safe {
+            void allocate_and_chain(
+                    const(AllocatedChain[]) allocate) @safe {
                 if (allocate.length > 0) {
                     Index chain(
                             immutable(ubyte[]) data,
@@ -1061,7 +1060,7 @@ class BlockFile {
                   immutable previous_index = (ablock.begin_index > 1) ?
                         Index(ablock.begin_index - 1) : INDEX_NULL;
                     chain(ablock.data, ablock.begin_index, previous_index, true);
-                    allocate_and_chain(allocate[1 .. $], _sorted_segments);
+                    allocate_and_chain(allocate[1 .. $]);
                 }
             }
             // Puts data into block and chain the blocks
@@ -1075,7 +1074,7 @@ class BlockFile {
                     last_block_index = segments_needs_saving[$ - 1].begin_index;
                 }
             }
-            allocate_and_chain(allocated_chains, segments_needs_saving);
+            allocate_and_chain(allocated_chains);
             recycler.trim_last_block_index(blocks);
 
             // Write new allocated blocks to the file
