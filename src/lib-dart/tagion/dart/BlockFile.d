@@ -984,7 +984,7 @@ class BlockFile {
 
             void allocate_and_chain(SortedSegments)(
                     const(AllocatedChain[]) allocate,
-            ref scope SortedSegments sorted_segments) @safe {
+            ref scope SortedSegments _sorted_segments) @safe {
                 if (allocate.length > 0) {
                     Index chain(
                             immutable(ubyte[]) data,
@@ -1101,7 +1101,7 @@ class BlockFile {
                     immutable previous_index = (ablock.begin_index > 1) ?
                         Index(ablock.begin_index - 1) : INDEX_NULL;
                     chain(ablock.data, ablock.begin_index, previous_index, true);
-                    allocate_and_chain(allocate[1 .. $], sorted_segments);
+                    allocate_and_chain(allocate[1 .. $], _sorted_segments);
                 }
             }
             // Puts data into block and chain the blocks
