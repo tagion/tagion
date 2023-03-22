@@ -42,13 +42,13 @@ struct Segment {
         assert(index != Index(0), "Segment cannot be inserted at index 0");
     }
 }
-
+// Indices: sorted by index
+alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index);
+// Segment: sorted by size.
+alias Segments = RedBlackTree!(Segment*, (a, b) => a.size < b.size, true);
 @safe
 struct Recycler {
-    // Indices: sorted by index
-    alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index);
-    // Segment: sorted by size.
-    alias Segments = RedBlackTree!(Segment*, (a, b) => a.size < b.size, true);
+
 
     /** 
      * Checks if the recycler has overlapping segments.
@@ -105,7 +105,6 @@ struct Recycler {
         Indices new_segments = new Indices(recycle_segments);
         
         foreach(i, segment; new_segments[].enumerate) {
-            writefln("%s", i);
             auto lower_range = indices.lowerBound(segment);
             auto upper_range = indices.upperBound(segment);
 
@@ -122,12 +121,7 @@ struct Recycler {
                 }
             }
             else if (segment.type == Type.ADD) {
-                writefln("here %s", i);
-                writefln("lower_range.back.end: %s", lower_range.back.end);
-                writefln("segment.index: %s", segment.index);
-                writefln("wowo1");
-
-                if (lower_range.empty) {
+                 if (lower_range.empty) {
                     // A ###
                     assert(!upper_range.empty, "there must be something in the upper range.");
                     if (segment.end == upper_range.front.index) {
@@ -147,7 +141,7 @@ struct Recycler {
                         insert(add_segment);
                     } else {
                         insert(segment);
-                    }
+                    }   
                 }   
                 else if (lower_range.back.end == segment.index) {
                     //  ###
@@ -172,7 +166,6 @@ struct Recycler {
 
                 }
                 else if (upper_range.front.index == segment.end) {
-                    writefln("wowo2");
                     //  ###
                     // A###
                     Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment
@@ -183,7 +176,6 @@ struct Recycler {
                 else {
                     // ###        ###
                     // ###    A   ###
-                    writefln("wowo");
                     insert(segment);
                 }
             }
@@ -296,13 +288,25 @@ unittest {
     Segment*[] extra_segments = [
         new Segment(Index(6UL), 2, Type.ADD),
         new Segment(Index(25UL), 6, Type.ADD),
+        new Segment(Index(22UL), 3, Type.ADD),
     ];
     recycler.recycle(extra_segments);
-
-
-    // assert(recycler.indices.front.index == Index(3UL));
-    // assert(recycler.indices.front.end == 6);
     recycler.dump();
+
+    Segment*[] expected_segments = [
+        new Segment(Index(1UL), 8, Type.NONE),
+        new Segment(Index(10UL), 5, Type.NONE),
+        new Segment(Index(17UL), 31-17, Type.NONE),
+    ];
+    Indices expected_indices = new Indices(expected_segments);
+
+    assert(expected_indices.length == recycler.indices.length, "Got other indices than expected");
+    (() @trusted {
+        assert(expected_indices.opEquals(recycler.indices), "elements should be the same");
+    }());
+
+    
+    
 }
 
 // unittest {
