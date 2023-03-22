@@ -228,6 +228,15 @@ struct Recycler {
     bool isRecyclable(const Index index) const pure nothrow {
         return false;
     }
+
+    void write(const Index index) const nothrow {
+        /// The recycler to the blockfile
+    }
+
+    void reclaim(const Index index, const uint size) {
+        /// Should implemented    
+    }
+
 }
 
 version (unittest) {

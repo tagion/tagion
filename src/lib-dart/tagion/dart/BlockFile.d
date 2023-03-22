@@ -28,8 +28,9 @@ import tagion.basic.TagionExceptions : Check;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
-import tagion.dart.DARTException : BlockFileException;
 import tagion.logger.Statistic;
+import tagion.dart.DARTException : BlockFileException;
+import tagion.dart.Recycler : Recycler;
 
 import std.math : rint;
 
@@ -48,6 +49,20 @@ version (unittest) {
 }
 else {
     enum random = true;
+}
+
+version(none) {
+/// Dummy code Should be removed when the in the new recycler
+@safe
+RecycleIndices.Segments update_segments(ref Recycler recycler, bool segments_needs_saving = false) {
+    // Find continues segments of blocks
+    return new RecycleIndices.Segments;
+}
+
+@safe
+void trim_last_block_index(ref Recycler recycler, ref scope BlockFile.Block[Index] blocks) {
+    ///void trim_last_block_index);
+}
 }
 
 extern (C) {
@@ -75,7 +90,7 @@ class BlockFile {
         File file;
     }
     protected {
-        RecycleIndices recycle_indices;
+        RecycleIndices recycler;
         Index last_block_index;
         MasterBlock masterblock;
         HeaderBlock headerblock;
@@ -87,379 +102,12 @@ class BlockFile {
         return _statistic;
     }
 
-    bool isRecyclable(const Index index) const pure nothrow @nogc {
-        return recycle_indices.isRecyclable(index);
+    bool isRecyclable(const Index index) const pure nothrow {
+        return recycler.isRecyclable(index);
     }
 
     void recycleDump() {
-        recycle_indices.dump;
-    }
-
-    struct RecycleIndices {
-        uint max_iteration = uint.max;
-        alias Indices = RedBlackTree!(Index, (a, b) => a < b);
-        alias Segments = RedBlackTree!(Segment, (a, b) => a.size < b.size, true);
-        protected Indices indices;
-        protected BlockFile owner;
-        protected bool[Index] recycled_blocks_which_needs_to_be_saved;
-        protected Segments recycle_segments;
-
-        alias Range = Indices.Range;
-        @disable this();
-        this(BlockFile owner) pure nothrow {
-            this.owner = owner;
-            indices = new Indices;
-            recycle_segments = new Segments;
-        }
-
-        const(Segments) segments() const {
-            return recycle_segments;
-        }
-
-        private Range opSlice() {
-            return indices[];
-        }
-
-        Index next(const Index index) const {
-            auto next_range = indices.lowerBound(index);
-            if (next_range.empty) {
-                return INDEX_NULL;
-            }
-            return next_range.back;
-        }
-
-        Index previous(const Index index) const {
-            auto previous_range = indices.upperBound(index);
-            if (previous_range.empty) {
-                return INDEX_NULL;
-            }
-            return previous_range.front;
-        }
-
-        void add(const Index index) {
-            indices.insert(index);
-            recycled_blocks_which_needs_to_be_saved[index] = true;
-            do_save(index);
-        }
-
-        alias opAssign = add;
-
-        protected void do_save(const Index index) {
-            immutable next_index = next(index);
-            if ((next_index !is INDEX_NULL) && (index + 1 != next_index)) {
-                recycled_blocks_which_needs_to_be_saved[next_index] = true;
-            }
-            immutable previous_index = previous(index);
-            if ((previous_index !is INDEX_NULL) && (previous_index + 1 != index)) {
-                recycled_blocks_which_needs_to_be_saved[previous_index] = true;
-            }
-        }
-
-        bool needs_saving(const Index index) pure const nothrow {
-            return (index in recycled_blocks_which_needs_to_be_saved) !is null;
-        }
-
-        bool isRecyclable(const Index index) const pure nothrow @nogc {
-            return index in indices;
-        }
-
-        void reclaim(const Index index) {
-            if (index in indices) {
-                do_save(index);
-                recycled_blocks_which_needs_to_be_saved.remove(index);
-                indices.removeKey(index);
-            }
-        }
-
-        void write() {
-            Index order_blocks(
-                    ref Range range,
-                    const Index previous_index = INDEX_NULL) {
-                if (!range.empty) {
-                    immutable index = range.front;
-                    if (index < owner.last_block_index) {
-                        range.popFront;
-                        const next_index = order_blocks(range, index);
-                        const block = owner.block(previous_index, next_index, 0, null, false);
-                        if (index in recycled_blocks_which_needs_to_be_saved) {
-                            owner.write(index, block);
-                        }
-                        return index;
-                    }
-                }
-                return INDEX_NULL;
-            }
-
-            auto range = indices[];
-            scope (exit) {
-                recycled_blocks_which_needs_to_be_saved = null;
-            }
-            if (range.empty) {
-                owner.masterblock.recycle_header_index = INDEX_NULL;
-            }
-            else {
-                owner.masterblock.recycle_header_index = range.front;
-                order_blocks(range);
-            }
-
-        }
-
-        void read() {
-            indices.clear;
-            void read_recycle_list(const Index start_index) {
-                Index index = start_index;
-                while (index !is INDEX_NULL) {
-                    const block = owner.read(index);
-                    .check(block !is null,
-                            format("Block @ %d does not exist in the recycle list of the blockfile", index));
-                    max_iteration--;
-                    .check(max_iteration > 0, 
-            format("Block @ %d max iteration exceeds when reading of the recycle list of the blockfile", index));
-                    indices.insert(index);
-                    index = Index(block.next);
-                }
-            }
-
-            read_recycle_list(owner.masterblock.recycle_header_index);
-            build_segments;
-        }
-
-        void dump() @trusted {
-            auto s = recycle_segments[];
-            if (!s.empty) {
-                writefln("segments %-(%s %)", s.map!(a => a.toInfo));
-                writefln("indices =%s", indices[]);
-                writefln("s.back.end_index=%d last_block_index=%d s.end_index=%d back=%s", s.back.end_index, owner
-                        .last_block_index, s.front.end_index, s.back.toInfo);
-
-            }
-
-        }
-
-        void build_segments()
-        out {
-            assert(check);
-        }
-        do {
-            recycle_segments = update_segments;
-        }
-
-        protected Segments update_segments(bool segments_needs_saving = false)() {
-            // Find continues segments of blocks
-            auto segments = new Segments;
-            void find_segments(bool first = false, R)(
-                    ref R range,
-                    const Index previous_index = INDEX_NULL,
-                    const Index begin_index = INDEX_NULL) {
-                if (!range.empty) {
-                    immutable index = range.front;
-                    range.popFront;
-                    static if (first) {
-                        find_segments(range, index, index);
-                    }
-                    else {
-                        if (previous_index + 1 != index) {
-                            find_segments(range, index, index);
-                            auto new_segment = Segment(begin_index, Index(previous_index + 1));
-                            if (new_segment.end_index < owner.last_block_index) {
-                                segments.insert(new_segment);
-                            }
-                        }
-                        else {
-                            find_segments(range, index, begin_index);
-                        }
-                    }
-                }
-                else if (begin_index !is INDEX_NULL) {
-                    auto new_segment = Segment(begin_index, Index(previous_index + 1));
-                    if (new_segment.end_index < owner.last_block_index) {
-                        segments.insert(Segment(begin_index, Index(previous_index + 1)));
-                    }
-                }
-            }
-
-            auto range = indices[];
-            static if (segments_needs_saving) {
-                auto range_needs_saving = range.filter!(a => needs_saving(a));
-                find_segments!true(range_needs_saving);
-            }
-            else {
-                find_segments!true(range);
-            }
-            return segments;
-        }
-
-        const(Index) reserve_segment(bool random_block = random_)(const uint size) {
-            void remove_segment(const(Segment) segment_to_be_removed, const uint size)
-            in {
-                assert(segment_to_be_removed.size >= size);
-            }
-            do {
-                recycle_segments.removeKey(segment_to_be_removed);
-                version (unittest) {
-                    foreach (index; 
-                        segment_to_be_removed.begin_index .. Index(segment_to_be_removed.begin_index + size)) {
-                        scope block = owner.read(index);
-                        assert(block);
-                        assert(!block.head, format("Header marker detected in recycle block @ index=%d", index));
-                        assert(block.size == 0, format("Recycle block @ index %d shoud have zero size", index));
-                    }
-                }
-                foreach (index; 
-        segment_to_be_removed.begin_index .. Index(segment_to_be_removed.begin_index + size)) {
-                    indices.removeKey(index);
-                }
-                if (size < segment_to_be_removed.size) {
-                    recycle_segments.insert(
-            Segment(Index(segment_to_be_removed.begin_index + size), 
-            segment_to_be_removed.end_index));
-                }
-
-            }
-
-            static if (random_block) {
-                import std.random;
-
-                scope segments = array(recycle_segments[]);
-                scope random_range = randomSample(segments, segments.length);
-                foreach (segment; random_range) {
-                    if ((size == segment.size) || (size * 2 <= segment.size) ||
-                            owner.check_statistic(segment.size, size)) {
-                        remove_segment(segment, size);
-                        return segment.begin_index;
-                    }
-                }
-            }
-            else {
-                if (!recycle_segments.empty) {
-                    enum dummy_begin_index = Index(1);
-                    const search_segment = Segment(dummy_begin_index, Index(dummy_begin_index + size));
-                    auto equal = recycle_segments.equalRange(search_segment);
-                    if (!equal.empty) {
-                        auto found = equal.front;
-                        assert(found.size == size);
-                        remove_segment(found, size);
-                        return found.begin_index;
-                    }
-                    else {
-                        auto upper = recycle_segments.upperBound(search_segment);
-                        if (!upper.empty) {
-                            auto found = upper.front;
-
-                            
-
-                            .check(found.end_index < owner.last_block_index,
-                                    format("recylce blocks=%d extends beond last_block_index=%d",
-                                    found.end_index, owner.last_block_index));
-                            assert(found.end_index < owner.last_block_index);
-                            if ((size * 2 <= found.size) ||
-                                    owner.check_statistic(found.size, size)) {
-                                remove_segment(found, size);
-                                return found.begin_index;
-                            }
-                        }
-                    }
-                }
-            }
-            scope (success) {
-                owner.last_block_index += size;
-            }
-            return owner.last_block_index;
-        }
-
-        /++
-         + Params:
-         +     end_index = Points to an existg block in the blockfile
-         + Returns:
-         +     Returns the begin_index of the next data block after end_index
-         +     If the value is INDEX_NULL then this block chain is the first block chain
-         +     in the blockfile
-         +/
-        Index next_begin_index(const Index end_index) {
-            Index search(R)(ref R range, const Index previous_index) {
-                if (!range.empty) {
-                    immutable current_index = range.front;
-                    if (previous_index + 1 == current_index) {
-                        range.popFront;
-                        return search(range, current_index);
-                    }
-                }
-                return previous_index;
-            }
-
-            auto next_range = indices.upperBound(end_index);
-            return Index(search(next_range, end_index) + 1);
-        }
-
-        /++
-         + Params:
-         +    begin_index = Points to an existg block in the blockfile
-         + Returns:
-         +    Returns the end_index of the previous data block before begin_index
-         +    If the value is INDEX_NULL then this block chain is the last block chain
-         +    in the blockfile
-         +/
-        Index previous_end_index(const Index begin_index) const {
-            Index search(R)(ref R range, const Index next_index) {
-                if (!range.empty) {
-                    immutable current_index = range.back;
-                    if (current_index + 1 == next_index) {
-                        range.popBack;
-                        return search(range, current_index);
-                    }
-                }
-                return next_index;
-            }
-
-            auto previous_range = indices.lowerBound(begin_index);
-            return Index(search(previous_range, begin_index) - 1);
-        }
-
-        void trim_last_block_index(ref scope Block[Index] blocks) {
-            if (!indices.empty) {
-                immutable current_index = indices.back;
-                if (current_index + 1 == owner.last_block_index) {
-                    owner.last_block_index = Index(current_index);
-                    indices.removeBack;
-                    trim_last_block_index(blocks);
-                }
-            }
-            if (owner.last_block_index > 1) {
-                immutable end_of_blocks_index = Index(owner.last_block_index - 1);
-                if (end_of_blocks_index in blocks) {
-                    const end_block = blocks[end_of_blocks_index];
-                    if (end_block.next !is INDEX_NULL) {
-                        blocks[end_of_blocks_index] = owner.block(
-                                end_block.previous,
-                                INDEX_NULL, end_block.size,
-                                end_block.data, end_block.head);
-                    }
-                }
-            }
-        }
-
-        bool check() pure const {
-            scope indices_range = indices[];
-            scope recycle_sorted_tree = redBlackTree!("a.begin_index < b.begin_index")(
-                    recycle_segments[]);
-            scope recycle_range = recycle_sorted_tree[];
-            while (!indices_range.empty) {
-                immutable index = indices_range.front;
-                indices_range.popFront;
-                if (recycle_range.empty) {
-                    return false;
-                }
-                immutable segment = recycle_range.front;
-                if (index < segment.begin_index) {
-                    return false;
-                }
-                else if (index + 1 == segment.end_index) {
-                    recycle_range.popFront;
-                }
-            }
-
-            return recycle_range.empty;
-        }
+        recycler.dump;
     }
 
     protected this(
@@ -483,7 +131,7 @@ class BlockFile {
         this.BLOCK_SIZE = SIZE;
         DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
         this.file = file;
-        recycle_indices = RecycleIndices(this);
+        recycler = RecycleIndices(this);
         readInitial;
     }
 
@@ -493,7 +141,7 @@ class BlockFile {
     protected this(immutable uint SIZE) pure nothrow {
         this.BLOCK_SIZE = SIZE;
         DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
-        recycle_indices = RecycleIndices(this);
+        recycler = RecycleIndices(this);
     }
 
     static BlockFile Inspect(
@@ -527,9 +175,9 @@ class BlockFile {
             result.last_block_index--;
             try_it(&result.readMasterBlock);
             try_it(&result.readStatistic);
-            result.recycle_indices = RecycleIndices(result);
-            result.recycle_indices.max_iteration = max_iteration;
-            try_it(&result.recycle_indices.read);
+            result.recycler = RecycleIndices(result);
+            //result.recycle_indices.max_iteration = max_iteration;
+            //try_it(&result.recycle_indices.read);
         }
         return result;
     }
@@ -749,7 +397,7 @@ class BlockFile {
             size_t pos;
             foreach (i, m; this.tupleof) {
                 alias type = TypedefType!(typeof(m));
-                buffer.binwrite(cast(type)m, &pos);
+                buffer.binwrite(cast(type) m, &pos);
             }
             buffer[$ - FILE_LABEL.length .. $] = cast(ubyte[]) FILE_LABEL;
             assert(!BlockFile.do_not_write, "Should not write here");
@@ -844,10 +492,10 @@ class BlockFile {
                 }
                 else static if (name != this.head.stringof) {
                     static if (name == this.size.stringof) {
-                        buffer.binwrite(cast(type)m | (head ? HEAD_MASK : 0), &pos);
+                        buffer.binwrite(cast(type) m | (head ? HEAD_MASK : 0), &pos);
                     }
                     else {
-                        buffer.binwrite(cast(type)m, &pos);
+                        buffer.binwrite(cast(type) m, &pos);
                     }
                 }
 
@@ -899,11 +547,11 @@ class BlockFile {
     }
 
     protected final Block block(
-immutable Index previous, 
-immutable Index next, 
-immutable uint size, 
-immutable(Buffer) buf, 
-const bool head)
+            immutable Index previous,
+            immutable Index next,
+            immutable uint size,
+            immutable(Buffer) buf,
+            const bool head)
     in {
         assert(buf.length <= DATA_SIZE);
     }
@@ -1133,7 +781,8 @@ const bool head)
         }
         @safe Index remove_sequency(bool first = false)(const Index index) {
             auto block = read(index);
-            check(!recycle_indices.isRecyclable(index), format("Block %d has already been delete", index));
+            check(!recycler.isRecyclable(index),
+                    format("Block %d has already been delete", index));
 
             static if (first) {
                 // Check if this is the first block in a block sequency
@@ -1206,7 +855,7 @@ const bool head)
         }
         do {
             immutable size = number_of_blocks(chain.data.length);
-            chain.begin_index = Index(recycle_indices.reserve_segment!random_block(size));
+            chain.begin_index = Index(recycler.reserve_segment!random_block(size));
             _statistic(size);
         }
 
@@ -1305,7 +954,7 @@ const bool head)
         Block[Index] blocks;
         scope (success) {
             allocated_chains = null;
-            recycle_indices.write;
+            recycler.write;
 
             { //write_blocks_in_sorted_order
                 auto sorted_indices = blocks.keys.dup.sort;
@@ -1313,7 +962,7 @@ const bool head)
             }
 
             writeMasterBlock;
-            recycle_indices.build_segments;
+            //recycle_indices.build_segments;
         }
 
         {
@@ -1343,7 +992,7 @@ const bool head)
                     const Index previous_index,
                     const bool head) @trusted {
                         scope (success) {
-                            recycle_indices.reclaim(current_index);
+                            recycler.reclaim(current_index);
                         }
                         if (data !is null) {
                             // update_first_index(current_index);
@@ -1366,10 +1015,10 @@ const bool head)
                                     const size = cast(uint)(data.length - from);
                                     assert(size !is 0, "Block size should not be zero");
                                     blocks[current] = block(
-                                        previous, 
-                                        next_index, 
-                                        size, slice_data, 
-                                        h);
+                                            previous,
+                                            next_index,
+                                            size, slice_data,
+                                            h);
                                     update_first_index(current);
                                     previous = current;
                                     current = Index(next_index);
@@ -1379,18 +1028,18 @@ const bool head)
                                 if (from + DATA_SIZE >= data.length) {
                                     assert(data[from .. $].length !is 0, "Tail data block is zero size");
                                     immutable next_index = chain(
-                                    data[from .. $], 
-                                    current, 
-                                    Index(current - 1), 
-                                    false);
+                                            data[from .. $],
+                                            current,
+                                            Index(current - 1),
+                                            false);
                                 }
 
                             }
                             else {
                                 auto next_index = chain(
-                                null, 
-                                Index(current_index + 1), 
-                                current_index, false);
+                                        null,
+                                        Index(current_index + 1),
+                                        current_index, false);
                                 if (next_index == last_block_index) {
                                     // Make sure the last block is grounded
                                     next_index = INDEX_NULL;
@@ -1448,8 +1097,8 @@ const bool head)
                             chain(ablock.data, ablock.begin_index, sorted_segments.front.begin_index, true);
                         }
                         else {
-                            immutable previous_index = (ablock.begin_index > 1) ? 
-                        Index(ablock.begin_index - 1) : INDEX_NULL;
+                            immutable previous_index = (ablock.begin_index > 1) ?
+                                Index(ablock.begin_index - 1) : INDEX_NULL;
                             chain(ablock.data, ablock.begin_index, previous_index, true);
                         }
                         allocate_and_chain(allocate[1 .. $], sorted_segments);
@@ -1458,14 +1107,17 @@ const bool head)
             }
             // Puts data into block and chain the blocks
             sort!(q{a.begin_index < b.begin_index}, SwapStrategy.unstable)(allocated_chains);
-            scope segments_needs_saving = array(recycle_indices.update_segments[]).sort!(
-                    q{a.end_index < b.begin_index});
+        scope segments_needs_saving = array(recycler.update_segments[])
+                .sort!(q{a.end_index < b.begin_index});
+         
+        version(none) {   
             if (!segments_needs_saving.empty && (
                     segments_needs_saving[$ - 1].end_index >= last_block_index)) {
                 last_block_index = segments_needs_saving[$ - 1].begin_index;
             }
+        } 
             allocate_and_chain(allocated_chains, segments_needs_saving);
-            recycle_indices.trim_last_block_index(blocks);
+            recycler.trim_last_block_index(blocks);
 
             // Write new allocated blocks to the file
         }
@@ -1716,7 +1368,7 @@ const bool head)
             else if (block.head) {
                 return BlockSymbol.header;
             }
-            else if (recycle_indices.isRecyclable(index)) {
+            else if (recycler.isRecyclable(index)) {
                 return BlockSymbol.recycle;
             }
             else if (block.size == 0) {
@@ -1952,5 +1604,377 @@ const bool head)
             assert(result.N == 24);
             blockfile.close;
         }
+    }
+}
+
+@safe
+struct RecycleIndices {
+    uint max_iteration = uint.max;
+    alias Indices = RedBlackTree!(Index, (a, b) => a < b);
+    alias Segments = RedBlackTree!(BlockFile.Segment, (a, b) => a.size < b.size, true);
+    protected Indices indices;
+    protected BlockFile owner;
+    protected bool[Index] recycled_blocks_which_needs_to_be_saved;
+    protected Segments recycle_segments;
+
+    alias Range = Indices.Range;
+    @disable this();
+    this(BlockFile owner) pure nothrow {
+        this.owner = owner;
+        indices = new Indices;
+        recycle_segments = new Segments;
+    }
+
+    const(Segments) segments() const {
+        return recycle_segments;
+    }
+
+    private Range opSlice() {
+        return indices[];
+    }
+
+    Index next(const Index index) const {
+        auto next_range = indices.lowerBound(index);
+        if (next_range.empty) {
+            return INDEX_NULL;
+        }
+        return next_range.back;
+    }
+
+    Index previous(const Index index) const {
+        auto previous_range = indices.upperBound(index);
+        if (previous_range.empty) {
+            return INDEX_NULL;
+        }
+        return previous_range.front;
+    }
+
+    void add(const Index index) {
+        indices.insert(index);
+        recycled_blocks_which_needs_to_be_saved[index] = true;
+        do_save(index);
+    }
+
+    alias opAssign = add;
+
+    protected void do_save(const Index index) {
+        immutable next_index = next(index);
+        if ((next_index !is INDEX_NULL) && (index + 1 != next_index)) {
+            recycled_blocks_which_needs_to_be_saved[next_index] = true;
+        }
+        immutable previous_index = previous(index);
+        if ((previous_index !is INDEX_NULL) && (previous_index + 1 != index)) {
+            recycled_blocks_which_needs_to_be_saved[previous_index] = true;
+        }
+    }
+
+    bool needs_saving(const Index index) pure const nothrow {
+        return (index in recycled_blocks_which_needs_to_be_saved) !is null;
+    }
+
+    bool isRecyclable(const Index index) const pure nothrow @nogc {
+        return index in indices;
+    }
+
+    void reclaim(const Index index) {
+        if (index in indices) {
+            do_save(index);
+            recycled_blocks_which_needs_to_be_saved.remove(index);
+            indices.removeKey(index);
+        }
+    }
+
+    void write() {
+        Index order_blocks(
+                ref Range range,
+                const Index previous_index = INDEX_NULL) {
+            if (!range.empty) {
+                immutable index = range.front;
+                if (index < owner.last_block_index) {
+                    range.popFront;
+                    const next_index = order_blocks(range, index);
+                    const block = owner.block(previous_index, next_index, 0, null, false);
+                    if (index in recycled_blocks_which_needs_to_be_saved) {
+                        owner.write(index, block);
+                    }
+                    return index;
+                }
+            }
+            return INDEX_NULL;
+        }
+
+        auto range = indices[];
+        scope (exit) {
+            recycled_blocks_which_needs_to_be_saved = null;
+        }
+        if (range.empty) {
+            owner.masterblock.recycle_header_index = INDEX_NULL;
+        }
+        else {
+            owner.masterblock.recycle_header_index = range.front;
+            order_blocks(range);
+        }
+
+    }
+
+    void read() {
+        indices.clear;
+        void read_recycle_list(const Index start_index) {
+            Index index = start_index;
+            while (index !is INDEX_NULL) {
+                const block = owner.read(index);
+
+                
+
+                .check(block !is null,
+                        format("BlockFile.Block @ %d does not exist in the recycle list of the blockfile", index));
+                max_iteration--;
+
+                
+
+                .check(max_iteration > 0,
+                        format("BlockFile.Block @ %d max iteration exceeds when reading of the recycle list of the blockfile", index));
+                indices.insert(index);
+                index = Index(block.next);
+            }
+        }
+
+        read_recycle_list(owner.masterblock.recycle_header_index);
+        build_segments;
+    }
+
+    void dump() @trusted {
+        auto s = recycle_segments[];
+        if (!s.empty) {
+            writefln("segments %-(%s %)", s.map!(a => a.toInfo));
+            writefln("indices =%s", indices[]);
+            writefln("s.back.end_index=%d last_block_index=%d s.end_index=%d back=%s", s.back.end_index, owner
+                    .last_block_index, s.front.end_index, s.back.toInfo);
+
+        }
+
+    }
+
+    void build_segments()
+    out {
+        assert(check);
+    }
+    do {
+        recycle_segments = update_segments;
+    }
+
+    protected Segments update_segments(bool segments_needs_saving = false)() {
+        // Find continues segments of blocks
+        auto segments = new Segments;
+        void find_segments(bool first = false, R)(
+                ref R range,
+                const Index previous_index = INDEX_NULL,
+                const Index begin_index = INDEX_NULL) {
+            if (!range.empty) {
+                immutable index = range.front;
+                range.popFront;
+                static if (first) {
+                    find_segments(range, index, index);
+                }
+                else {
+                    if (previous_index + 1 != index) {
+                        find_segments(range, index, index);
+                        auto new_segment = BlockFile.Segment(begin_index, Index(previous_index + 1));
+                        if (new_segment.end_index < owner.last_block_index) {
+                            segments.insert(new_segment);
+                        }
+                    }
+                    else {
+                        find_segments(range, index, begin_index);
+                    }
+                }
+            }
+            else if (begin_index !is INDEX_NULL) {
+                auto new_segment = BlockFile.Segment(begin_index, Index(previous_index + 1));
+                if (new_segment.end_index < owner.last_block_index) {
+                    segments.insert(BlockFile.Segment(begin_index, Index(previous_index + 1)));
+                }
+            }
+        }
+
+        auto range = indices[];
+        static if (segments_needs_saving) {
+            auto range_needs_saving = range.filter!(a => needs_saving(a));
+            find_segments!true(range_needs_saving);
+        }
+        else {
+            find_segments!true(range);
+        }
+        return segments;
+    }
+
+    const(Index) reserve_segment(bool random_block = random_)(const uint size) {
+        void remove_segment(const(BlockFile.Segment) segment_to_be_removed, const uint size)
+        in {
+            assert(segment_to_be_removed.size >= size);
+        }
+        do {
+            recycle_segments.removeKey(segment_to_be_removed);
+            version (unittest) {
+                foreach (index; segment_to_be_removed.begin_index .. Index(segment_to_be_removed.begin_index + size)) {
+                    scope block = owner.read(index);
+                    assert(block);
+                    assert(!block.head, format("Header marker detected in recycle block @ index=%d", index));
+                    assert(block.size == 0, format("Recycle block @ index %d shoud have zero size", index));
+                }
+            }
+            foreach (index; segment_to_be_removed.begin_index .. Index(segment_to_be_removed.begin_index + size)) {
+                indices.removeKey(index);
+            }
+            if (size < segment_to_be_removed.size) {
+                recycle_segments.insert(
+                        BlockFile.Segment(Index(segment_to_be_removed.begin_index + size),
+                        segment_to_be_removed.end_index));
+            }
+
+        }
+
+        static if (random_block) {
+            import std.random;
+
+            scope segments = array(recycle_segments[]);
+            scope random_range = randomSample(segments, segments.length);
+            foreach (segment; random_range) {
+                if ((size == segment.size) || (size * 2 <= segment.size) ||
+                        owner.check_statistic(segment.size, size)) {
+                    remove_segment(segment, size);
+                    return segment.begin_index;
+                }
+            }
+        }
+        else {
+            if (!recycle_segments.empty) {
+                enum dummy_begin_index = Index(1);
+                const search_segment = BlockFile.Segment(dummy_begin_index, Index(dummy_begin_index + size));
+                auto equal = recycle_segments.equalRange(search_segment);
+                if (!equal.empty) {
+                    auto found = equal.front;
+                    assert(found.size == size);
+                    remove_segment(found, size);
+                    return found.begin_index;
+                }
+                else {
+                    auto upper = recycle_segments.upperBound(search_segment);
+                    if (!upper.empty) {
+                        auto found = upper.front;
+
+                        
+
+                        .check(found.end_index < owner.last_block_index,
+                                format("recylce blocks=%d extends beond last_block_index=%d",
+                                found.end_index, owner.last_block_index));
+                        assert(found.end_index < owner.last_block_index);
+                        if ((size * 2 <= found.size) ||
+                                owner.check_statistic(found.size, size)) {
+                            remove_segment(found, size);
+                            return found.begin_index;
+                        }
+                    }
+                }
+            }
+        }
+        scope (success) {
+            owner.last_block_index += size;
+        }
+        return owner.last_block_index;
+    }
+
+    /++
+         + Params:
+         +     end_index = Points to an existg block in the blockfile
+         + Returns:
+         +     Returns the begin_index of the next data block after end_index
+         +     If the value is INDEX_NULL then this block chain is the first block chain
+         +     in the blockfile
+         +/
+    Index next_begin_index(const Index end_index) {
+        Index search(R)(ref R range, const Index previous_index) {
+            if (!range.empty) {
+                immutable current_index = range.front;
+                if (previous_index + 1 == current_index) {
+                    range.popFront;
+                    return search(range, current_index);
+                }
+            }
+            return previous_index;
+        }
+
+        auto next_range = indices.upperBound(end_index);
+        return Index(search(next_range, end_index) + 1);
+    }
+
+    /++
+         + Params:
+         +    begin_index = Points to an existg block in the blockfile
+         + Returns:
+         +    Returns the end_index of the previous data block before begin_index
+         +    If the value is INDEX_NULL then this block chain is the last block chain
+         +    in the blockfile
+         +/
+    Index previous_end_index(const Index begin_index) const {
+        Index search(R)(ref R range, const Index next_index) {
+            if (!range.empty) {
+                immutable current_index = range.back;
+                if (current_index + 1 == next_index) {
+                    range.popBack;
+                    return search(range, current_index);
+                }
+            }
+            return next_index;
+        }
+
+        auto previous_range = indices.lowerBound(begin_index);
+        return Index(search(previous_range, begin_index) - 1);
+    }
+
+    void trim_last_block_index(ref scope BlockFile.Block[Index] blocks) {
+        if (!indices.empty) {
+            immutable current_index = indices.back;
+            if (current_index + 1 == owner.last_block_index) {
+                owner.last_block_index = Index(current_index);
+                indices.removeBack;
+                trim_last_block_index(blocks);
+            }
+        }
+        if (owner.last_block_index > 1) {
+            immutable end_of_blocks_index = Index(owner.last_block_index - 1);
+            if (end_of_blocks_index in blocks) {
+                const end_block = blocks[end_of_blocks_index];
+                if (end_block.next !is INDEX_NULL) {
+                    blocks[end_of_blocks_index] = owner.block(
+                            end_block.previous,
+                            INDEX_NULL, end_block.size,
+                            end_block.data, end_block.head);
+                }
+            }
+        }
+    }
+
+    bool check() pure const {
+        scope indices_range = indices[];
+        scope recycle_sorted_tree = redBlackTree!("a.begin_index < b.begin_index")(
+                recycle_segments[]);
+        scope recycle_range = recycle_sorted_tree[];
+        while (!indices_range.empty) {
+            immutable index = indices_range.front;
+            indices_range.popFront;
+            if (recycle_range.empty) {
+                return false;
+            }
+            immutable segment = recycle_range.front;
+            if (index < segment.begin_index) {
+                return false;
+            }
+            else if (index + 1 == segment.end_index) {
+                recycle_range.popFront;
+            }
+        }
+
+        return recycle_range.empty;
     }
 }
