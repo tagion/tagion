@@ -5,72 +5,40 @@ import std.stdio : File;
 import LEB128 = tagion.utils.LEB128;
 import std.typecons : Typedef;
 import tagion.hibon.Document;
+import tagion.dart.BlockFile;
 
 /// BlockFile file position index
-alias Index = Typedef!(ulong, ulong.init, "BINDEX");
+//alias Index = Typedef!(ulong, ulong.init, "BINDEX");
 
-enum NullIndex = Index.init;
+//enum NullIndex = Index.init;
 
 @safe
 struct BlockSegment {
-    ulong previous; /** Block index of the previous block-segment
-                    * If this is 0 then this is the first segment    
-                    */
-    ulong next; /** Block index of the next block 
-                 * If this is 0 then this is the last segment
-                 */
+    Index index; /// Block index where the document is stored or should be stored
     Document doc; /// Document stored in the segment
-    invariant {
-        assert(((previous == 0) && (next == 0)) || (previous < next));
-    }
-
-    ulong totalSize() const pure nothrow @nogc {
-        return LEB128.calc_size(previous) + LEB128.calc_size(next) + doc.full_size;
-    }
 
     version (none) uint blocks(const uint block_size) const pure nothrow @nogc {
         const total_size = totalSize;
         return total_size / block_size + (total_size % block_size == 0) ? 0 : 1;
     }
 
-    void write(ref File file) const {
-        file.rawWrite(doc.serialize);
-        file.rawWrite(LEB128.encode(previous));
-        file.rawWrite(LEB128.encode(next));
+    void write(BlockFile blockfile) const {
+        blockfile.seek(index);
+        blockfile.file.rawWrite(doc.serialize);
     }
 
     @disable this();
-    this(const Document doc, const ulong previousi = 0, const ulong next = 0) {
-        this.previous = previous;
-        this.next = next;
+    this(const Document doc, const Index index) pure nothrow @nogc {
+        this.index = index;
         this.doc = doc;
     }
 
-    this(ref File file) {
+    this(BlockFile blockfile, const Index index) {
         import tagion.hibon.HiBONRecord : fread;
-
-        doc = file.fread;
-        ubyte[LEB128.DataSize!ulong] _pre_buf;
-        ubyte[] pre_buf = _pre_buf;
-        file.rawRead(pre_buf);
-        previous = LEB128.read!ulong(pre_buf).value;
-        next = LEB128.read!ulong(pre_buf).value;
+        blockfile.seek(index);
+        doc = blockfile.file.fread;
     }
 
-    static void updateIndex(ref File file, const ulong previous, const ulong next)
-    in (previous < next)
-    do {
-        const segment_start = file.tell;
-        {
-            ubyte[LEB128.DataSize!ulong] _buf;
-            ubyte[] buf = _buf;
-            file.rawRead(buf);
-            const doc_size = LEB128.read!ulong(buf);
-            file.seek(segment_start + doc_size.size + doc_size.value);
-        }
-        file.rawWrite(LEB128.encode(previous));
-        file.rawWrite(LEB128.encode(next));
-    }
 }
 
 version (unittest) {
