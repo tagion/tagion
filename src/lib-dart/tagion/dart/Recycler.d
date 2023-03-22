@@ -85,67 +85,57 @@ struct Recycler {
     void recycle(R)(R recycle_segments)
         if (isInputRange!R && is(ElementType!R == Segment*)) {
         
-        insert(recycle_segments);
-
-        // Segment*[] new_segments;
-        // auto rs = indices[];
-        // Segment* segment_ADD = null;
-
-        // while (!rs.empty) {
-        //     if (rs.current.type == Type.REMOVE && rs.previous.index == rs.current.index) {
-        //         new_segments ~= new Segment(Index(rs.current.index+rs.current.size), rs.previous.size - rs.current.size);
-        //         rs.previous.type = Type.REMOVE;
-        //     }
-        //     // else if (rs.current.type == Type.ADD) {
-        //     //     if (segment_ADD !is null) {
-        //     //         if (segment_ADD.end == )
-        //     //     }                
-
-        //     // }
-
-
-        //     rs.popFront;
-        // }
-
-
-    }
-    struct RecyclerRange {
-        Segment* previous;
-        Segment* current;
-
-        Indices.Range indices_range;
+        if (indices.empty) {
+            insert(recycle_segments);
+            return;
+        }
+        // insert(recycle_segments);
+        while(!recycle_segments.empty) {
+            auto segment = recycle_segments.front;
+            auto lower_range = indices.lowerBound(segment);
+            auto upper_range  = indices.upperBound(segment);
+            
+        }
         
-        this(Indices indices)
-        in (indices.length > 2) 
-        do {
-            this.indices_range = indices[];
-            popFront();
-            popFront();
-        }
-
-        void popFront() {
-            previous = current;
-            current = indices_range.front;
-            indices_range.popFront;
-        }
-
-        Segment* front() {
-            return indices_range.front;
-        }
-
-        bool empty() {
-            return indices_range.empty;
-        }
-
-        RecyclerRange save() {
-            return this;
-        }
 
     }
+    // struct RecyclerRange {
+    //     Segment* previous;
+    //     Segment* current;
 
-    RecyclerRange opSlice() {
-        return RecyclerRange(indices);
-    }
+    //     Indices.Range indices_range;
+        
+    //     this(Indices indices)
+    //     in (indices.length > 2) 
+    //     do {
+    //         this.indices_range = indices[];
+    //         popFront();
+    //         popFront();
+    //     }
+
+    //     void popFront() {
+    //         previous = current;
+    //         current = indices_range.front;
+    //         indices_range.popFront;
+    //     }
+
+    //     Segment* front() {
+    //         return indices_range.front;
+    //     }
+
+    //     bool empty() {
+    //         return indices_range.empty;
+    //     }
+
+    //     RecyclerRange save() {
+    //         return this;
+    //     }
+
+    // }
+
+    // RecyclerRange opSlice() {
+    //     return RecyclerRange(indices);
+    // }
     /**
     Returns: true if the segments overlaps
     */
@@ -209,9 +199,9 @@ unittest {
     auto recycler = Recycler(blockfile);
     
     Segment*[] segments = [
-    new Segment(Index(1UL), 5), 
-    new Segment(Index(10UL), 5),
-    new Segment(Index(17UL), 5),
+    new Segment(Index(1UL), 5, Type.ADD), 
+    new Segment(Index(10UL), 5, Type.ADD),
+    new Segment(Index(17UL), 5, Type.ADD),
     ];
 
     recycler.recycle(segments);

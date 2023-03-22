@@ -46,8 +46,7 @@ alias FeatureContext = Tuple!(
 
 @safe @Scenario("Add pseudo random data.",
     [])
-class AddPseudoRandomData
-{
+class AddPseudoRandomData {
     DART db1;
 
     DartInfo info;
@@ -56,9 +55,8 @@ class AddPseudoRandomData
     ulong[][] data;
     BDDOptions bdd_options;
 
-    this(DartInfo info, const ulong samples, const ulong number_of_records)
-    {
-        check(samples % number_of_records == 0, 
+    this(DartInfo info, const ulong samples, const ulong number_of_records) {
+        check(samples % number_of_records == 0,
             format("Number of samples %s and records %s each time does not match.", samples, number_of_records));
         this.info = info;
         this.samples = samples;
@@ -66,8 +64,7 @@ class AddPseudoRandomData
     }
 
     @Given("I have one dartfile.")
-    Document dartfile()
-    {
+    Document dartfile() {
         mkdirRecurse(info.module_path);
         // create the dartfile
         DART.create(info.dartfilename);
@@ -80,15 +77,13 @@ class AddPseudoRandomData
     }
 
     @Given("I have a pseudo random sequence of data stored in a table with a seed.")
-    Document seed()
-    {
+    Document seed() {
         check(!info.fixed_states.empty, "Pseudo random sequence not generated");
         return result_ok;
     }
 
     @When("I increasingly add more data in each recorder and time it.")
-    Document it()
-    {
+    Document it() {
 
         auto insert_watch = StopWatch(AutoStart.no);
         auto read_watch = StopWatch(AutoStart.no);
@@ -96,8 +91,7 @@ class AddPseudoRandomData
 
         RecordFactory.Recorder[] recorders;
 
-        foreach (i; 0 .. samples / number_of_records)
-        {
+        foreach (i; 0 .. samples / number_of_records) {
             writefln("running %s", i);
 
             auto docs = info.fixed_states.take(number_of_records)
@@ -131,8 +125,7 @@ class AddPseudoRandomData
         }
         import tagion.dart.Recorder : Remove;
 
-        foreach (i, recorder; recorders.enumerate)
-        {
+        foreach (i, recorder; recorders.enumerate) {
             remove_watch.start();
             db1.modify(recorder, Remove);
             remove_watch.stop();
@@ -156,19 +149,16 @@ class AddPseudoRandomData
     }
 
     @Then("the data should be read and checked.")
-    Document checked()
-    {
+    Document checked() {
 
         auto fout = File(format("%s", buildPath(info.module_path, "dart_stress_test.csv")), "w");
 
-        scope (exit)
-        {
+        scope (exit) {
             fout.close();
         }
 
         fout.writeln("INSERT,READ,REMOVE");
-        foreach (single_time; data)
-        {
+        foreach (single_time; data) {
             fout.writefln("%(%s, %)", single_time);
         }
 
