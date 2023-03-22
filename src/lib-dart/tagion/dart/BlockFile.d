@@ -1051,54 +1051,14 @@ class BlockFile {
                             return current_index;
                         }
                         Index end_index = current_index;
-                        version (none)
-                            if (!sorted_segments.empty && (
-                                    current_index is sorted_segments
-                                    .front.begin_index)) {
-                                end_index = sorted_segments.front.end_index;
-                            }
-                        if (end_index < last_block_index) {
+                       if (end_index < last_block_index) {
                             return end_index;
                         }
                         return INDEX_NULL;
                     }
 
                     auto ablock = allocate[0];
-                    version (none) {
-                        const current_segment = sorted_segments.front;
-                        if (current_segment.begin_index > 1) {
-                            // Block before the segments need to be rewired
-                            const begin_block_index = Index(current_segment.begin_index - 1);
-                            const begin_block = local_read(begin_block_index);
-                            if (begin_block.next !is current_segment.end_index) {
-                                blocks[begin_block_index] = block(
-                                        begin_block.previous,
-                                        current_segment.end_index,
-                                        begin_block.size,
-                                        begin_block.data,
-                                        begin_block.head);
-                            }
-                        }
-                        const end_block = local_read(current_segment.end_index);
-                        const previous_index = (current_segment.begin_index > 0) ?
-                            Index(current_segment.begin_index - 1) : INDEX_NULL;
-                        if (end_block.previous !is previous_index) {
-                            blocks[current_segment.end_index] = block(previous_index,
-                                    end_block.next,
-                                    end_block.size,
-                                    end_block.data, end_block.head);
-                        }
-                        sorted_segments.popFront;
-                        allocate_and_chain(allocate, sorted_segments);
-                    }
-                    version (none) {
-
-                        if (!sorted_segments.empty && (
-                                sorted_segments.front.end_index is ablock.begin_index)) {
-                            chain(ablock.data, ablock.begin_index, sorted_segments.front.begin_index, true);
-                        }
-                    }
-                    immutable previous_index = (ablock.begin_index > 1) ?
+                  immutable previous_index = (ablock.begin_index > 1) ?
                         Index(ablock.begin_index - 1) : INDEX_NULL;
                     chain(ablock.data, ablock.begin_index, previous_index, true);
                     allocate_and_chain(allocate[1 .. $], _sorted_segments);
