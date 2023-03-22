@@ -106,14 +106,11 @@ struct Recycler {
             if (segment.type == Type.REMOVE) {
                 auto equal_range = indices.equalRange(segment);
                 assert(!equal_range.empty, "Cannot call remove with segment where index in recycler does not exist");
-
-                if (equal_range.front.index == segment.index) {
-                    Segment* add_segment = new Segment(Index(equal_range.front.index + segment.size), equal_range
-                            .front.size - segment.size);
-                    remove(equal_range.front);
-                    insert(add_segment);
-                    continue;
-                }
+                Segment* add_segment = new Segment(Index(equal_range.front.index + segment.size), equal_range
+                        .front.size - segment.size);
+                remove(equal_range.front);
+                insert(add_segment);
+                continue;
             }
 
             if (segment.type == Type.ADD) {
