@@ -16,7 +16,7 @@ import tagion.dart.BlockFile;
 struct BlockSegment {
     Index index; /// Block index where the document is stored or should be stored
     Document doc; /// Document stored in the segment
-
+    alias begin_index=index;
     version (none) uint blocks(const uint block_size) const pure nothrow @nogc {
         const total_size = totalSize;
         return total_size / block_size + (total_size % block_size == 0) ? 0 : 1;

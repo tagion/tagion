@@ -726,7 +726,7 @@ received = the HiRPC received package
             if (!recorder.empty) {
                 const journal = const(Journal)(recorder, index);
                 const allocated = journalfile.save(journal.toDoc.serialize);
-                index = allocated.begin_index;
+                index = Index(allocated.begin_index);
                 journalfile.root_index = index;
                 scope (exit) {
                     journalfile.store;
