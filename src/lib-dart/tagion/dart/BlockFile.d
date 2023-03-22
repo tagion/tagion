@@ -51,18 +51,18 @@ else {
     enum random = true;
 }
 
-version(none) {
-/// Dummy code Should be removed when the in the new recycler
-@safe
-RecycleIndices.Segments update_segments(ref Recycler recycler, bool segments_needs_saving = false) {
-    // Find continues segments of blocks
-    return new RecycleIndices.Segments;
-}
+version (none) {
+    /// Dummy code Should be removed when the in the new recycler
+    @safe
+    RecycleIndices.Segments update_segments(ref Recycler recycler, bool segments_needs_saving = false) {
+        // Find continues segments of blocks
+        return new RecycleIndices.Segments;
+    }
 
-@safe
-void trim_last_block_index(ref Recycler recycler, ref scope BlockFile.Block[Index] blocks) {
-    ///void trim_last_block_index);
-}
+    @safe
+    void trim_last_block_index(ref Recycler recycler, ref scope BlockFile.Block[Index] blocks) {
+        ///void trim_last_block_index);
+    }
 }
 
 extern (C) {
@@ -1051,12 +1051,12 @@ class BlockFile {
                             return current_index;
                         }
                         Index end_index = current_index;
-                        version(none)    
-                    if (!sorted_segments.empty && (
-                                current_index is sorted_segments
-                                .front.begin_index)) {
-                            end_index = sorted_segments.front.end_index;
-                        }
+                        version (none)
+                            if (!sorted_segments.empty && (
+                                    current_index is sorted_segments
+                                    .front.begin_index)) {
+                                end_index = sorted_segments.front.end_index;
+                            }
                         if (end_index < last_block_index) {
                             return end_index;
                         }
@@ -1066,6 +1066,7 @@ class BlockFile {
                     auto ablock = allocate[0];
                     if (!sorted_segments.empty && (
                             sorted_segments.front.end_index < ablock.begin_index)) {
+                        version(none) {
                         const current_segment = sorted_segments.front;
                         if (current_segment.begin_index > 1) {
                             // Block before the segments need to be rewired
@@ -1092,6 +1093,7 @@ class BlockFile {
                         sorted_segments.popFront;
                         allocate_and_chain(allocate, sorted_segments);
                     }
+                    }
                     else {
                         if (!sorted_segments.empty && (
                                 sorted_segments.front.end_index is ablock.begin_index)) {
@@ -1108,15 +1110,15 @@ class BlockFile {
             }
             // Puts data into block and chain the blocks
             sort!(q{a.begin_index < b.begin_index}, SwapStrategy.unstable)(allocated_chains);
-        scope segments_needs_saving = array(recycler.update_segments[])
+            scope segments_needs_saving = array(recycler.update_segments[])
                 .sort!(q{a.end_index < b.begin_index});
-         
-        version(none) {   
-            if (!segments_needs_saving.empty && (
-                    segments_needs_saving[$ - 1].end_index >= last_block_index)) {
-                last_block_index = segments_needs_saving[$ - 1].begin_index;
+
+            version (none) {
+                if (!segments_needs_saving.empty && (
+                        segments_needs_saving[$ - 1].end_index >= last_block_index)) {
+                    last_block_index = segments_needs_saving[$ - 1].begin_index;
+                }
             }
-        } 
             allocate_and_chain(allocated_chains, segments_needs_saving);
             recycler.trim_last_block_index(blocks);
 
@@ -1556,9 +1558,6 @@ class BlockFile {
         { // Write block again
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
             // The statistic block is erased before writing
-            // Erase to stat block so it will be recycled
-            immutable old_statistic_index = blockfile.masterblock.statistic_index;
-
             B[] allocators = [
                 B("++++Block 17", 9), // 17
                 B("++++Block 18", 4), // 18
@@ -1734,7 +1733,8 @@ struct RecycleIndices {
                 
 
                 .check(max_iteration > 0,
-                        format("BlockFile.Block @ %d max iteration exceeds when reading of the recycle list of the blockfile", index));
+                        format(
+                        "BlockFile.Block @ %d max iteration exceeds when reading of the recycle list of the blockfile", index));
                 indices.insert(index);
                 index = Index(block.next);
             }
