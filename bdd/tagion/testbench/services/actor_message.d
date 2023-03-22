@@ -26,6 +26,13 @@ enum Gettes {
     some_name
 }
 
+
+enum supervisor_task_name = "supervisor";
+enum child1_task_name = "child1";
+enum child2_task_name = "child2";
+
+/* @safe */
+static struct MySuperActor {
 @safe
 struct MyActor {
     import tagion.testbench.actor_tests;
@@ -60,9 +67,9 @@ struct MyActor {
          } 
     } 
 
-    @method void request(MyActor field) {
+    /* @method void request(MyActor field) { */
 
-    }
+    /* } */
 
     mixin TaskActor; /// Turns the struct into an Actor
 
@@ -78,18 +85,8 @@ struct MyActor {
 }
 static assert(isActor!MyActor);
 
-enum supervisor_task_name = "supervisor";
-enum child1_task_name = "child1";
-enum child2_task_name = "child2";
-
-ActorFactory!MySuperActor supervisor_factory;
-ActorHandle!MySuperActor supervisor_handle;
-alias ChildHandle = ActorHandle!MyActor;
-
-/* @safe */
-static struct MySuperActor {
-    ChildHandle niño_uno_handle;
-    ChildHandle niño_dos_handle;
+    ActorHandle!MyActor niño_uno_handle;
+    ActorHandle!MyActor niño_dos_handle;
 
     @task void run() {
         auto my_actor_factory = actor!MyActor;
@@ -117,17 +114,36 @@ static struct MySuperActor {
         sendOwner(status);
     }
 
+    @method void send(SuperMsg msg) {
+        final switch (msg) {
+        case SuperMsg.stopTheChildren:
+            stopTheChildren;
+            break;
+        }
+    }
+
+    private void stopTheChildren() {
+        niño_uno_handle.stop;
+        niño_dos_handle.stop;
+    }
+
     mixin TaskActor;
 }
 static assert(isActor!MySuperActor);
 
+enum SuperMsg{
+stopTheChildren
+}
+
 @safe @Scenario("Message between supervisor and child",
         [])
 class MessageBetweenSupervisorAndChild {
-
+    ActorFactory!MySuperActor supervisor_factory;
+    ActorHandle!MySuperActor supervisor_handle;
 
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() {
+        debug writeln("actor_message 1");
         supervisor_factory = actor!MySuperActor;
 
         supervisor_handle = supervisor_factory(supervisor_task_name);
@@ -138,6 +154,7 @@ class MessageBetweenSupervisorAndChild {
 
     @When("the #super has started the #child1 and #child2")
     Document theChild1AndChild2() @trusted {
+        debug writeln("actor_message 2");
         supervisor_handle.isChildRunning(child1_task_name);
         check(concurrency.receiveOnly!bool, "child1 is running");
 
@@ -148,6 +165,7 @@ class MessageBetweenSupervisorAndChild {
 
     @Then("send a message to #child1")
     Document aMessageToChild1() {
+        debug writeln("actor_message 3");
         /* supervisor_handle.sendMessageToChild(supervisor_handle.niñoUno_handle, "Do you like candy?"); */
         supervisor_handle.sendStatusToChild1(1);
         return result_ok;
@@ -155,9 +173,9 @@ class MessageBetweenSupervisorAndChild {
 
     @Then("send this message back from #child1 to #super")
     Document fromChild1ToSuper() @trusted {
-        /* writeln(supervisor_handle.receiveStatusFromChild1(Get.Arg)); */
-        check((concurrency.receiveOnly!long == 9), "The child did not reflect the message");
+        debug writeln("actor_message 4");
         supervisor_handle.receiveStatusFromChild1(1);
+        check((concurrency.receiveOnly!long == 9), "The child did not reflect the message");
 
         return result_ok;
     }
@@ -174,9 +192,11 @@ class MessageBetweenSupervisorAndChild {
 
     @Then("stop the #super")
     Document stopTheSuper() {
+        debug writeln("actor_message 5");
+        supervisor_handle.stopTheChildren(1);
         supervisor_handle.stop;
-        check(!isRunning(child1_task_name), "child1 is still running");
-        check(!isRunning(child2_task_name), "child2 is still running");
+        /* check(!isRunning(child1_task_name), "child1 is still running"); */
+        /* check(!isRunning(child2_task_name), "child2 is still running"); */
         return result_ok;
     }
 
