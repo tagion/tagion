@@ -1749,6 +1749,7 @@ struct RecycleIndices {
     }
 
     const(Index) reserve_segment(bool random_block = random_)(const uint size) {
+    version(none)
         void remove_segment(const(BlockFile.Segment) segment_to_be_removed, const uint size)
         in {
             assert(segment_to_be_removed.size >= size);
