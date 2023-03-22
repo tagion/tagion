@@ -13,9 +13,6 @@ permissions:
 
 jobs:
   ddoc_build:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -63,7 +60,3 @@ jobs:
           #target-branch: # optional, default is main
           #target-directory: # optional, default is   
       
-          
-          
-          
-          
