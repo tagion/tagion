@@ -48,15 +48,9 @@ jobs:
           cd /home/runner/work/tagion/tagion
           npm i docsify-cli -g
           make ddoc
-          ls -l build/
-      - name: Push directory to another repository
-        uses: cpina/github-action-push-to-another-repository@v1.6
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
-        with:
-          source-directory: './build/ddoc' 
-          destination-repository-name: ddoc
-          #destination-repository-username: # optional, default is 
-          target-branch: master
-          target-directory: ddoc   
+          ls -l build/ddoc
+          pwd
+          git clone git@github.com:tagion/ddoc.git
+          echo "clonned"
+
       
