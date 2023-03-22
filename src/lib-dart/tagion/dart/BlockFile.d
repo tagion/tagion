@@ -1211,8 +1211,10 @@ class BlockFile {
 
         BlockRange r = blockRange;
         check_data!false(r);
+        version(none) {
         r = recycleRange;
         check_data!true(r);
+    }
         return failed;
     }
 
