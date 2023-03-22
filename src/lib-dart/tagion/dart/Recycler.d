@@ -96,6 +96,8 @@ struct Recycler {
         if (isInputRange!R && is(ElementType!R == Segment*)) {
 
         if (indices.empty) {
+            assert(recycle_segments.filter!(s => s.type != Type.ADD).take(2)
+                    .walkLength == 0, "Cannot contain removes when indices is empty");
             insert(recycle_segments);
             return;
         }
@@ -322,6 +324,7 @@ unittest {
         assert(expected_indices.opEquals(recycler.indices), "elements should be the same");
     }());
 }
+
 @safe
 unittest {
     // middle add segment
@@ -346,7 +349,7 @@ unittest {
     ];
     recycler.recycle(remove_segment);
     // recycler.dump();
-    
+
     assert(recycler.indices.length == 1, "should only be one segment after middle insertion");
     assert(recycler.indices.front.index == Index(1UL) && recycler.indices.front.end == Index(15UL), "Middle insertion not valid");
 }
@@ -369,9 +372,15 @@ unittest {
     recycler.recycle(add_segments);
     // recycler.dump;
 
-    assertThrown!Throwable(recycler.recycle([new Segment(Index(20UL), 4, Type.REMOVE)]));
-    assertThrown!Throwable(recycler.recycle([new Segment(Index(3UL), 5, Type.REMOVE)]));
-    assertThrown!Throwable(recycler.recycle([new Segment(Index(6UL), 4, Type.REMOVE)]));
+    assertThrown!Throwable(recycler.recycle([
+        new Segment(Index(20UL), 4, Type.REMOVE)
+    ]));
+    assertThrown!Throwable(recycler.recycle([
+        new Segment(Index(3UL), 5, Type.REMOVE)
+    ]));
+    assertThrown!Throwable(recycler.recycle([
+        new Segment(Index(6UL), 4, Type.REMOVE)
+    ]));
 }
 
 unittest {
@@ -436,7 +445,9 @@ unittest {
     }
     auto recycler = Recycler(blockfile);
 
-    recycler.recycle([new Segment(Index(10UL), 5, Type.ADD), new Segment(Index(1UL), 1)]);
+    recycler.recycle([
+        new Segment(Index(10UL), 5, Type.ADD), new Segment(Index(1UL), 1, Type.ADD)
+    ]);
     // recycler.dump;
     recycler.recycle([new Segment(Index(5UL), 5, Type.ADD)]);
     // recycler.dump;
@@ -446,6 +457,31 @@ unittest {
     recycler.recycle([new Segment(Index(25UL), 5, Type.ADD)]);
     recycler.recycle([new Segment(Index(17UL), 2, Type.ADD)]);
     assert(recycler.indices.length == 4);
+}
+
+unittest {
+    // indices empty putting in remove or none
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(blockfile);
+
+    assertThrown!Throwable(
+        recycler.recycle([
+        new Segment(Index(10UL), 5, Type.REMOVE),
+        new Segment(Index(1UL), 1, Type.ADD)
+    ])
+    );
+    assertThrown!Throwable(
+        recycler.recycle([
+        new Segment(Index(10UL), 5, Type.REMOVE),
+        new Segment(Index(1UL), 1, Type.NONE)
+    ])
+    );
+
 }
 
 // upper range not connecting
