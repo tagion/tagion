@@ -51,6 +51,8 @@ jobs:
           ls -l build/
       - name: Push directory to another repository
         uses: cpina/github-action-push-to-another-repository@v1.6
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
           source-directory: './build/ddoc'
           #destination-github-username: 
