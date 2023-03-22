@@ -274,7 +274,7 @@ unittest {
 
 @safe
 unittest {
-    // add extra time test
+    // add extra test
     immutable filename = fileId("recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(filename);
@@ -290,7 +290,7 @@ unittest {
     ];
 
     recycler.recycle(add_segments);
-    recycler.dump();
+    // recycler.dump();
 
     writefln("####");
     Segment*[] extra_segments = [
@@ -299,7 +299,7 @@ unittest {
         new Segment(Index(22UL), 3, Type.ADD),
     ];
     recycler.recycle(extra_segments);
-    recycler.dump();
+    // recycler.dump();
 
     Segment*[] expected_segments = [
         new Segment(Index(1UL), 8, Type.NONE),
@@ -313,6 +313,63 @@ unittest {
         assert(expected_indices.opEquals(recycler.indices), "elements should be the same");
     }());
 }
+@safe
+unittest {
+    // middle add segment
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(blockfile);
+
+    Segment*[] add_segments = [
+        new Segment(Index(1UL), 5, Type.ADD),
+        new Segment(Index(10UL), 5, Type.ADD),
+    ];
+
+    recycler.recycle(add_segments);
+    // recycler.dump();
+
+    Segment*[] remove_segment = [
+        new Segment(Index(6UL), 4, Type.ADD),
+    ];
+    recycler.recycle(remove_segment);
+    // recycler.dump();
+    
+    assert(recycler.indices.length == 1, "should only be one segment after middle insertion");
+    assert(recycler.indices.front.index == Index(1UL) && recycler.indices.front.end == Index(15UL), "Middle insertion not valid");
+}
+
+unittest {
+    // remove illegal element
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(blockfile);
+
+    Segment*[] add_segments = [
+        new Segment(Index(1UL), 5, Type.ADD),
+        new Segment(Index(10UL), 5, Type.ADD),
+    ];
+
+    recycler.recycle(add_segments);
+    recycler.dump;
+
+    assertThrown!Throwable(recycler.recycle([new Segment(Index(20UL), 4, Type.REMOVE)]));
+    assertThrown!Throwable(recycler.recycle([new Segment(Index(3UL), 5, Type.REMOVE)]));
+    assertThrown!Throwable(recycler.recycle([new Segment(Index(6UL), 4, Type.REMOVE)]));
+}
+
+// empty lowerrange connecting
+// empty lowerrange not connecting
+
+
+
 
 // unittest {
 //     // checks for single overlap.
