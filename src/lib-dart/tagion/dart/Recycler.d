@@ -9,6 +9,7 @@ import std.traits : PointerTarget;
 import tagion.basic.Types : Buffer;
 import tagion.dart.BlockFile : BlockFile, Index;
 import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType;
+import std.algorithm;
 
 enum Type : int {
     NONE = 0, /// NO Recycler instruction
@@ -16,7 +17,7 @@ enum Type : int {
     ADD = 1, /// should be added to recycler
 }
 
-@safe @recordType("RecycleSegment") 
+@safe @recordType("RecycleSegment")
 struct Segment {
     Index index; // Block file index
     uint size;
@@ -36,6 +37,7 @@ struct Segment {
     invariant {
         assert(size > 0);
     }
+
     invariant {
         assert(index != Index(0), "Segment cannot be inserted at index 0");
     }
@@ -44,7 +46,7 @@ struct Segment {
 @safe
 struct Recycler {
     // Indices: sorted by index
-    alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index || ((a.index == b.index) && (a.size > b.size)), true);
+    alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index);
     // Segment: sorted by size.
     alias Segments = RedBlackTree!(Segment*, (a, b) => a.size < b.size, true);
 
@@ -80,6 +82,7 @@ struct Recycler {
         indices.insert(insert_segments);
         segments.insert(insert_segments);
     }
+
     protected void insert(Segment* segment) {
         indices.insert(segment);
         segments.insert(segment);
@@ -90,60 +93,62 @@ struct Recycler {
         segments.removeKey(segment);
     }
 
-
-
     void recycle(R)(R recycle_segments)
         if (isInputRange!R && is(ElementType!R == Segment*)) {
-        
+
         if (indices.empty) {
             insert(recycle_segments);
             return;
         }
-
-        Indices new_segments;
-        new_segments.insert(recycle_segments);
         
-        // insert(recycle_segments);
-        while(!new_segments.empty) {
-            auto segment = new_segments.front;
+        writefln("came to here ");
+
+        Indices new_segments = new Indices(recycle_segments);
+        
+        foreach(segment; new_segments[]) {
             auto lower_range = indices.lowerBound(segment);
-            auto upper_range  = indices.upperBound(segment);
+            auto upper_range = indices.upperBound(segment);
+
 
             if (segment.type == Type.REMOVE) {
-                assert(!lower_range.empty, "cannot remove the following segment since the lower range is empty");
+                auto equal_range = indices.equalRange(segment);
+                assert(!equal_range.empty, "Cannot call remove with segment where index in recycler does not exist");
 
-                if (lower_range.front.index == segment.index) {
-                    Segment* add_segment = new Segment(Index(lower_range.front.index+segment.size), lower_range.front.size-segment.size);
-                    remove(lower_range.front);
+                if (equal_range.front.index == segment.index) {
+                    Segment* add_segment = new Segment(Index(equal_range.front.index + segment.size), equal_range
+                            .front.size - segment.size);
+                    remove(equal_range.front);
                     insert(add_segment);
                 }
             }
             else if (segment.type == Type.ADD) {
-
                 if (lower_range.front.end == segment.index) {
                     //  ###
                     //  ###A 
                     if (upper_range.front.index == segment.end) {
                         // ### ###
                         // ###A###
-                        Segment* add_segment = new Segment(lower_range.front.index, lower_range.front.size + segment.size + upper_range.front.size);
+                        Segment* add_segment = new Segment(lower_range.front.index, lower_range.front.size + segment
+                                .size + upper_range.front.size);
                         remove(lower_range.front);
                         remove(upper_range.front);
                         insert(add_segment);
-                    } 
+                    }
                     else {
                         // ### 
                         // ###A
-                        Segment* add_segment = new Segment(lower_range.front.index, lower_range.front.size + segment.size);
+                        Segment* add_segment = new Segment(lower_range.front.index, lower_range.front.size + segment
+                                .size);
                         remove(lower_range.front);
                         insert(add_segment);
                     }
- 
+
                 }
                 else if (upper_range.front.index == segment.end) {
                     //  ###
                     // A###
-                    Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment.size);
+                    Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment
+                            .size);
                     remove(upper_range.front);
                     insert(add_segment);
                 }
@@ -154,7 +159,6 @@ struct Recycler {
                 }
             }
         }
-        new_segments.removeFront;
     }
 
     /**
@@ -209,7 +213,6 @@ version (unittest) {
 
 import std.exception;
 
-@safe
 unittest {
     immutable filename = fileId("recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
@@ -218,18 +221,26 @@ unittest {
         blockfile.close;
     }
     auto recycler = Recycler(blockfile);
-    
-    Segment*[] segments = [
-    new Segment(Index(1UL), 5, Type.ADD), 
-    new Segment(Index(10UL), 5, Type.ADD),
-    new Segment(Index(17UL), 5, Type.ADD),
+
+    Segment*[] add_segments = [
+        new Segment(Index(1UL), 5, Type.ADD),
+        new Segment(Index(10UL), 5, Type.ADD),
+        new Segment(Index(17UL), 5, Type.ADD),
     ];
 
-    recycler.recycle(segments);
+    recycler.recycle(add_segments);
+    recycler.dump();
 
-    
+    writefln("####");
+    Segment*[] remove_segments = [
+        new Segment(Index(1UL), 2, Type.REMOVE),
+    ];
+
+   
+    recycler.recycle(remove_segments);
+
+    recycler.dump();
 }
-
 
 // unittest {
 //     immutable filename = fileId("recycle").fullpath;
@@ -367,4 +378,3 @@ unittest {
 //     // assert(recycler.indices.length == 1, "The segments should be merged");
 
 // }
-
