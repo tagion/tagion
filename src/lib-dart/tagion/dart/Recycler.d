@@ -1,34 +1,38 @@
 module tagion.dart.Recycler;
 
 import std.container.rbtree : RedBlackTree;
-
-import tagion.basic.Types : Buffer;
-import tagion.dart.BlockFile : BlockFile;
-
-import tagion.dart.BlockSegment : Index, NullIndex;
 import std.range;
 import std.typecons : tuple;
 import std.stdio;
 import std.traits : PointerTarget;
 
+import tagion.basic.Types : Buffer;
+import tagion.dart.BlockFile : BlockFile;
+import tagion.dart.BlockSegment : Index, NullIndex;
+import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType;
 
 enum Type : int {
     NONE = 0, /// NO Recycler instruction
     REMOVE = -1, /// Should be removed from recycler
     ADD = 1, /// should be added to recycler
 }
-@safe
+@safe @recordType("RecycleSegment") 
 struct Segment {
-
-
     Index index; // Block file index
     uint size;
-    Type type;
+    @label("") Type type;
 
     Index end() const pure nothrow @nogc {
         return Index(index + size);
     }
 
+    mixin HiBONRecord!(q{
+        this(const Index index, const uint size, const Type type=Type.NONE) {
+            this.index = index;
+            this.size = size;
+            this.type = type;
+        }
+    });
     invariant {
         assert(size > 0);
     }
