@@ -49,7 +49,6 @@ alias Segments = RedBlackTree!(Segment*, (a, b) => a.size < b.size, true);
 @safe
 struct Recycler {
 
-
     /** 
      * Checks if the recycler has overlapping segments.
      */
@@ -101,8 +100,8 @@ struct Recycler {
             return;
         }
         Indices new_segments = new Indices(recycle_segments);
-        
-        foreach(segment; new_segments[]) {
+
+        foreach (segment; new_segments[]) {
             if (segment.type == Type.REMOVE) {
                 auto equal_range = indices.equalRange(segment);
                 assert(!equal_range.empty, "Cannot call remove with segment where index in recycler does not exist");
@@ -119,30 +118,34 @@ struct Recycler {
 
                 if (lower_range.empty) {
                     // A ###
-                    assert(!upper_range.empty, "there must be something in the upper range.");
+                    assert(!upper_range.empty, "there must be something in the upper range if the lower range is empty.");
                     if (segment.end == upper_range.front.index) {
-                        Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment.size);
+                        Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment
+                                .size);
                         remove(upper_range.front);
                         insert(add_segment);
                         continue;
-                    } else {
+                    }
+                    else {
                         insert(segment);
                         continue;
                     }
                 }
                 if (upper_range.empty) {
                     // ### A empty forever
-                    assert(!lower_range.empty, "there must be something in the lower range.");
+                    assert(!lower_range.empty, "there must be something in the lower range if the upper range is empty.");
                     if (lower_range.back.end == segment.index) {
-                        Segment* add_segment = new Segment(lower_range.back.index, segment.size + lower_range.back.size);
+                        Segment* add_segment = new Segment(lower_range.back.index, segment.size + lower_range
+                                .back.size);
                         remove(lower_range.back);
                         insert(add_segment);
                         continue;
-                    } else {
+                    }
+                    else {
                         insert(segment);
                         continue;
-                    }   
-                }   
+                    }
+                }
                 if (lower_range.back.end == segment.index) {
                     //  ###
                     //  ###A 
@@ -268,6 +271,7 @@ unittest {
     assert(recycler.indices.front.end == 6);
     // recycler.dump();
 }
+
 @safe
 unittest {
     // add extra time test
@@ -300,7 +304,7 @@ unittest {
     Segment*[] expected_segments = [
         new Segment(Index(1UL), 8, Type.NONE),
         new Segment(Index(10UL), 5, Type.NONE),
-        new Segment(Index(17UL), 31-17, Type.NONE),
+        new Segment(Index(17UL), 31 - 17, Type.NONE),
     ];
     Indices expected_indices = new Indices(expected_segments);
 
@@ -309,7 +313,6 @@ unittest {
         assert(expected_indices.opEquals(recycler.indices), "elements should be the same");
     }());
 }
-
 
 // unittest {
 //     // checks for single overlap.
