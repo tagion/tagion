@@ -54,10 +54,9 @@ jobs:
         env:
           API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
-          source-directory: './build/ddoc'
-          #destination-github-username: 
-          destination-repository-name: 'tagion/ddoc'
+          source-directory: './build/ddoc' 
+          destination-repository-name: ddoc
           #destination-repository-username: # optional, default is 
-          #target-branch: # optional, default is main
-          #target-directory: # optional, default is   
+          target-branch: master
+          target-directory: ddoc   
       
