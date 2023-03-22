@@ -87,26 +87,37 @@ struct Recycler {
         
         insert(recycle_segments);
 
-        // Segment*[] new_segments;
-        // auto rs = indices[];
-        // Segment* segment_ADD = null;
+        Segment*[] new_segments;
+        auto rs = opSlice();
 
-        // while (!rs.empty) {
-        //     if (rs.current.type == Type.REMOVE && rs.previous.index == rs.current.index) {
-        //         new_segments ~= new Segment(Index(rs.current.index+rs.current.size), rs.previous.size - rs.current.size);
-        //         rs.previous.type = Type.REMOVE;
-        //     }
-        //     // else if (rs.current.type == Type.ADD) {
-        //     //     if (segment_ADD !is null) {
-        //     //         if (segment_ADD.end == )
-        //     //     }                
+        Segment* segment_ADD = null;
 
-        //     // }
-
-
-        //     rs.popFront;
+        // foreach(seg; indices[]) {
+        //     writefln("%s", seg);
         // }
+        while (!rs.empty) {
 
+            auto current = rs.current;
+            auto previous = rs.previous;
+            auto next = rs.front;
+
+            if (current.type == Type.REMOVE && previous.index == current.index) {
+                new_segments ~= new Segment(Index(current.index+current.size), previous.size - current.size);
+                previous.type = Type.REMOVE;
+            }
+            // else if (rs.current.type == Type.ADD) {
+            //     if (segment_ADD !is null) {
+            //         if (segment_ADD.end == )
+            //     }                
+
+            // }
+
+
+            rs.popFront;
+        }
+        foreach(new_segment; new_segments) {
+            writefln("%s", new_segment);
+        }
 
     }
     struct RecyclerRange {
@@ -209,9 +220,9 @@ unittest {
     auto recycler = Recycler(blockfile);
     
     Segment*[] segments = [
-    new Segment(Index(1UL), 5), 
-    new Segment(Index(10UL), 5),
-    new Segment(Index(17UL), 5),
+    new Segment(Index(1UL), 5, Type.ADD), 
+    new Segment(Index(10UL), 5, Type.ADD),
+    new Segment(Index(17UL), 5, Type.ADD),
     ];
 
     recycler.recycle(segments);
