@@ -942,7 +942,7 @@ alias check = Check!DARTException;
                 const Index branch_index,
                 immutable uint rim = 0,
                 bool parent_single = false,
-        ) @trusted {
+        ) @safe {
             if (!range.empty) {
                 auto archive = range.front;
                 Index erase_block_index;
@@ -2232,7 +2232,7 @@ alias check = Check!DARTException;
                 remove_recorder.remove(fingerprints[3]);
 
                 dart_A.modify(remove_recorder);
-                dart_A.dump();
+                // dart_A.dump();
 
                 ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x12];
 
