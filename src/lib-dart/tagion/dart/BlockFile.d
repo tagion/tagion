@@ -1788,6 +1788,7 @@ class BlockFile
     }
 }
 
+version(none)
 @safe
 struct RecycleIndices
 {
