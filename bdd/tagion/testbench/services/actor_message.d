@@ -33,10 +33,6 @@ enum Children {
     child2,
 }
 
-enum SuperMsg{
-stopTheChildren
-}
-
 enum supervisor_task_name = "supervisor";
 enum child1_task_name = "child1";
 enum child2_task_name = "child2";
@@ -77,10 +73,6 @@ struct MyActor {
             break;
          }
     }
-
-    /* @method void request(MyActor field) { */
-
-    /* } */
 
     mixin TaskActor; /// Turns the struct into an Actor
 
@@ -135,38 +127,6 @@ static struct MySuperActor {
         sendOwner(echo);
     }
 
-    /* @method void receiveStatusFromChild(ulong _l, Children child) { */
-    /*     niño_uno_handle.get(Gettes.count, ""); */
-    /*     long status = concurrency.receiveOnly!long; */
-    /*     sendOwner(status); */
-
-        /* final switch (child) { */
-        /* case Children.child1: */
-        /*     niño_uno_handle.get(Gettes.count, ""); */
-        /*     break; */
-        /* case Children.child2: */
-        /*     niño_dos_handle.get(Gettes.count, ""); */
-        /*     break; */
-        /* } */
-
-        /* long status = concurrency.receiveOnly!long; */
-        /* Thread.sleep(sleep_time); */
-        /* sendOwner(status); */
-    /* } */
-
-    /* private void stopTheChildren() { */
-    /*     niño_uno_handle.stop; */
-    /*     niño_dos_handle.stop; */
-    /* } */
-
-    /* @method void proc(SuperMsg msg) { */
-    /*     final switch (msg) { */
-    /*     case SuperMsg.stopTheChildren: */
-    /*         this.stopTheChildren; */
-    /*         break; */
-    /*     } */
-    /* } */
-
     mixin TaskActor;
 }
 static assert(isActor!MySuperActor);
@@ -209,7 +169,6 @@ class MessageBetweenSupervisorAndChild {
     @Then("send this message back from #child1 to #super")
     Document fromChild1ToSuper() @trusted {
         debug writeln("actor_message 4");
-        /* supervisor_handle.receiveStatusFromChild(1, Children.child1); */
         long received = concurrency.receiveOnly!long;
         check(received == 9, format("The child did not reflect the message, got %s", received));
 
@@ -226,12 +185,8 @@ class MessageBetweenSupervisorAndChild {
     @Then("send thus message back from #child2 to #super")
     Document fromChild2ToSuper() @trusted {
         debug writeln("actor_message 6");
-
         long received = concurrency.receiveOnly!long;
         check(received == 64, format("The child did not reflect the message, got %s", received));
-        /* supervisor_handle.receiveStatusFromChild(1, Children.child2); */
-        /* long received = concurrency.receiveOnly!long; */
-        /* check(received == 9, format("The child did not reflect the message, got %s", received)); */
         return result_ok;
     }
 
