@@ -74,6 +74,7 @@ jobs:
           export TB_TESTDIR=$(date "+socktest.%y%m%d%H%M")
           export TB_LOGDIR=logs/${{ env.TARGET_BUILD }}/socktest
           export TB_ARTIFACT=build/${{ env.TARGET_BUILD }}/bin/tagion
+          mkdir -p $TB_LOGDIR
           chmod 755 bdd/extras/sockets/socktest.sh
           bdd/extras/sockets/socktest.sh > logs/${{ env.TARGET_BUILD }}/socktest/$TB_TESTDIR.test.log 
 
