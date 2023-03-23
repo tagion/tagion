@@ -31,7 +31,6 @@ jobs:
           export REPOROOT=$PWD
           export TEST_STAGE=commit
           PATH=$DBIN:$PATH
-          make bddtest TEST_STAGE=acceptance | tail -n 3 | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' > bddconsole.log
           while read -r line
           do
             setup_env () {
@@ -42,15 +41,15 @@ jobs:
             scenario=$(echo $line  | head -n1 | cut -d " " -f1)
             setup_env commit
             echo "run commit env $scenario"
-            bddenv.sh testbench $scenario
+            testbench $scenario
 
             setup_env acceptance
             echo "run acceptance env $scenario"
-            bddenv.sh testbench $scenario
+            testbench $scenario
 
             setup_env performance
             echo "run performance env $scenario"
-            bddenv.sh testbench $scenario
+            testbench $scenario
           done <<< $(bddenv.sh testbench -f)
      
       - name: Process result
