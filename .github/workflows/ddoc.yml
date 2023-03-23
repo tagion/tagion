@@ -48,14 +48,10 @@ jobs:
           cd /home/runner/work/tagion/tagion
           npm i docsify-cli -g
           make ddoc
-          cd build/ddoc
-          ls -l | wc -l
-          pwd
-          git clone https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git
-          cd ddoc
           ls -l
           pwd
-          cp -R * ddoc/
+          git clone https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git
+          cp -R build/ddoc/* ddoc/
           cd ddoc
           ls -l | wc -l
 
