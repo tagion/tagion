@@ -478,12 +478,12 @@ class BlockFile {
      +/
     @safe
     static class Block {
-        immutable Index previous; /// Points to the previous block
+        //immutable Index previous; /// Points to the previous block
         immutable Index next; /// Points to the next block
         immutable uint size; /// size of the data in this block
         immutable bool head; /// Set to `true` this block starts a chain of blocks
         enum uint HEAD_MASK = 1 << (uint.sizeof * 8 - 1);
-        enum HEADER_SIZE = cast(uint)(previous.sizeof + next.sizeof + size.sizeof);
+        enum HEADER_SIZE = cast(uint)(next.sizeof + size.sizeof);
         immutable(Buffer) data;
         void write(ref File file, immutable uint BLOCK_SIZE) const @trusted {
             scope buffer = new ubyte[BLOCK_SIZE];
@@ -537,12 +537,10 @@ class BlockFile {
         }
 
         private this(
-                const Index previous,
                 const Index next,
                 const uint size,
                 immutable(Buffer) buf,
                 const bool head) pure nothrow {
-            this.previous = previous;
             this.next = next;
             this.size = size;
             this.head = head;
@@ -552,7 +550,6 @@ class BlockFile {
     }
 
     protected final Block block(
-            immutable Index previous,
             immutable Index next,
             immutable uint size,
             immutable(Buffer) buf,
@@ -561,7 +558,7 @@ class BlockFile {
         assert(buf.length <= DATA_SIZE);
     }
     do {
-        return new Block(previous, next, size, buf, head);
+        return new Block(next, size, buf, head);
     }
 
     /++
@@ -586,7 +583,7 @@ class BlockFile {
      +/
     string toInfo(const Block block) const {
         with (block) {
-            return format("<-[%04d] ->[%04d] blocks=%d size=%d head=%s", previous, next, number_of_blocks(
+            return format("<-[%04d] ->[%04d] blocks=%d size=%d head=%s", next, number_of_blocks(
                     size), size, head);
         }
     }
@@ -769,31 +766,8 @@ class BlockFile {
      +
      +/
     Index erase(const Index index) {
-    version(none)
-    @safe Index remove_sequency(bool first = false)(const Index index) {
-            auto block = read(index);
-            check(!recycler.isRecyclable(index),
-                    format("Block %d has already been delete", index));
-
-            static if (first) {
-                // Check if this is the first block in a block sequency
-                check(block.head, "Load index is not pointing to the begin of a block sequency");
-            }
-            version (blockfile_recycle)
-                recycle_indices = index;
-            if (block.size > DATA_SIZE) {
-                return remove_sequency(block.next);
-            }
-            if (index >= masterblock.first_index) {
-                masterblock.first_index = index + 1;
-            }
-            return block.next;
-        }
-    version(none)
-        if (index !is INDEX_NULL) {
-            return remove_sequency!true(index);
-        }
-        return INDEX_NULL;
+       // Should be implement with new recycler
+       return INDEX_NULL;
     }
 
     Index end_index(const Index index) {
@@ -918,8 +892,8 @@ class BlockFile {
         debug scope (exit) {
             bool failsafe(const Index index, const Fail f, const Block block, const bool recycle_block) @safe {
                 if (f != Fail.NON) {
-                    console.writefln("Data check fails on block @ [%d <- %d -> %d]: Fail:%s in %s",
-                            block.previous, index, block.next, f, recycle_block ? "recycle block" : "data block");
+                    console.writefln("Data check fails on block @ [%d -> %d]: Fail:%s in %s",
+                            index, block.next, f, recycle_block ? "recycle block" : "data block");
                 }
                 return false;
             }
@@ -991,7 +965,6 @@ class BlockFile {
                                     const size = cast(uint)(data.length - from);
                                     assert(size !is 0, "Block size should not be zero");
                                     blocks[current] = block(
-                                            previous,
                                             next_index,
                                             size, slice_data,
                                             h);
@@ -1020,7 +993,7 @@ class BlockFile {
                                     // Make sure the last block is grounded
                                     next_index = INDEX_NULL;
                                 }
-                                blocks[current_index] = block(previous_index, next_index,
+                                blocks[current_index] = block(next_index,
                                         cast(uint) data.length, data, head);
 
                             }
@@ -1140,6 +1113,7 @@ class BlockFile {
                         end |= trace(r.index, Fail.ZERO_SIZE, current, check_recycle_mode);
                     }
                 }
+                version(none)
                 if (previous) {
                     if (current.previous >= r.index) {
                         failed = true;
@@ -1496,6 +1470,7 @@ class BlockFile {
             blockfile.close;
         }
 
+        version(none) // Removed because previous index has been removed from block
         {
             import std.math.operations : isClose;
             import std.stdio;
