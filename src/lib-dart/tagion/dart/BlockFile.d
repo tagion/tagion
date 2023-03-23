@@ -769,6 +769,7 @@ class BlockFile {
      +
      +/
     Index erase(const Index index) {
+    version(none)
     @safe Index remove_sequency(bool first = false)(const Index index) {
             auto block = read(index);
             check(!recycler.isRecyclable(index),
@@ -788,7 +789,7 @@ class BlockFile {
             }
             return block.next;
         }
-
+    version(none)
         if (index !is INDEX_NULL) {
             return remove_sequency!true(index);
         }
