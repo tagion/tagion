@@ -28,8 +28,10 @@ jobs:
           source ~/.bashrc
           ls
           ls bins-logs
+          
           sudo chmod +x ./bins-logs/*
           sudo chmod 777 ./bins-logs/**
+          ./bins-logs/tagion -f
           mkdir logs
           mkdir -p $PWD/logs/bdd/commit/results/
           mkdir -p $PWD/logs/bdd/acceptance/results/
