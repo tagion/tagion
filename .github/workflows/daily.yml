@@ -102,7 +102,8 @@ jobs:
         run: |
             mkdir -p ./upload/bdd
             cp -rf ./build/${{ env.TARGET_BUILD }}/bin/tagion ./upload/
-            cp -rf ./build/${{ env.TARGET_BUILD }}/bin/testbench ./upload/
+            cp -rf ./build/${{ env.TARGET_BUILD }}/bin/testbench ./upload/            
+            cp -rf ./build/${{ env.TARGET_BUILD }}/bin/collider ./upload/
             cp -rf ./logs/${{ env.TARGET_BUILD }}/bdd/* ./upload/bdd/
             cp -rf ./logs/${{ env.TARGET_BUILD }}/unittest.log ./upload/
             cp -rf ./fundamental ./upload/
