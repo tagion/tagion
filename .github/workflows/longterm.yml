@@ -34,7 +34,7 @@ jobs:
           make bddtest TEST_STAGE=acceptance | tail -n 3 | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' > bddconsole.log
           while read -r line
           do
-            greeting () {
+            setup_env () {
               export TEST_STAGE=$1
               export BDD_LOG=$PWD/logs/bdd/$1/
               export BDD_RESULTS=$PWD/logs/bdd/$1/results/
