@@ -49,7 +49,7 @@ version (none) struct DummyActor {
         }
     }
 
-    mixin TaskActor;
+    mixin TaskActor; /// Turns the struct into an Actor
 }
 version(none) static assert(isActor!MyActor);
 

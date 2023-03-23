@@ -5,6 +5,9 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
+import core.time;
+import tagion.actor.Actor;
+
 enum feature = Feature(
             "Actor supervisor test",
             ["This feature should check the supervisor fail and restart"]);
@@ -13,6 +16,30 @@ alias FeatureContext = Tuple!(
         SupervisorWithFailingChild, "SupervisorWithFailingChild",
         FeatureGroup*, "result"
 );
+
+/// Child Actor
+struct SetUpForFailure {
+    @task void run() {
+        alive; // Actor is now alive
+        while (!stop) {
+            receiveTimeout(100.msecs);
+        }
+    }
+    mixin TaskActor; /// Turns the struct into an Actor
+}
+static assert(isActor!SetUpForFailure);
+
+/// Supervisor Actor
+struct SetUpForDissapointment {
+    @task void run() {
+        alive; // Actor is now alive
+        while (!stop) {
+            receiveTimeout(100.msecs);
+        }
+    }
+    mixin TaskActor; /// Turns the struct into an Actor
+}
+static assert(isActor!SetUpForDissapointment);
 
 @safe @Scenario("Supervisor with failing child",
         [])
