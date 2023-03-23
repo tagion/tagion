@@ -1,7 +1,6 @@
 module tagion.testbench.actor_tests;
 
 import tagion.behaviour.Behaviour;
-import tagion.testbench.functional;
 import tagion.tools.Basic;
 import std.traits : moduleName;
 
@@ -24,6 +23,4 @@ int _main(string[] args) {
     }
 
     return 0;
-
-
 }
