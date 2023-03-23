@@ -66,11 +66,8 @@ jobs:
             echo "run performance env $scenario"
             testbench $scenario
           done <<< $(testbench -f)
-     
-      - name: Process result
-        run: |
           report () {
-            bddenv.sh collider -cv ./logs/bdd/$1/results/ > ./logs/bdd/$1/results/output.log
+            collider -cv ./logs/bdd/$1/results/ > ./logs/bdd/$1/results/output.log
             cat ./logs/bdd/$1/results/output.log  >> $GITHUB_STEP_SUMMARY
           }
           report commit
