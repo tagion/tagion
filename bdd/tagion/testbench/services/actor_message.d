@@ -11,6 +11,7 @@ import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
 import concurrency = std.concurrency;
+import core.thread;
 
 enum feature = Feature(
             "Actor messaging",
@@ -39,6 +40,7 @@ stopTheChildren
 enum supervisor_task_name = "supervisor";
 enum child1_task_name = "child1";
 enum child2_task_name = "child2";
+enum sleep_time = 100.msecs;
 
 struct MyActor {
     import tagion.testbench.actor_tests;
@@ -55,6 +57,8 @@ struct MyActor {
     /// Decrease the count value `by`
     @method void decrease(int by) {
         count -= by;
+        debug writefln("sending back %s from child", count);
+        sendOwner(count);
     }
 
     /**
@@ -64,13 +68,15 @@ struct MyActor {
     @method void get(Gettes opt, string extra) { // reciever 
          final switch (opt) {
          case Gettes.some_name:
-             sendOwner(some_name~extra);
-             break;
+            Thread.sleep(sleep_time);
+            sendOwner(some_name~extra);
+            break;
          case Gettes.count:
-             sendOwner(count);
-             break; 
-         } 
-    } 
+            Thread.sleep(sleep_time);
+            sendOwner(count);
+            break;
+         }
+    }
 
     /* @method void request(MyActor field) { */
 
@@ -90,12 +96,13 @@ struct MyActor {
 }
 static assert(isActor!MyActor);
 
+alias ChildHandle = ActorHandle!MyActor;
 /* @safe */
 static struct MySuperActor {
 @safe
 
-    ActorHandle!MyActor niño_uno_handle;
-    ActorHandle!MyActor niño_dos_handle;
+    ChildHandle niño_uno_handle;
+    ChildHandle niño_dos_handle;
 
     @task void run() {
         auto my_actor_factory = actor!MyActor;
@@ -110,6 +117,7 @@ static struct MySuperActor {
     }
 
     @method void isChildRunning(string task_name) {
+        Thread.sleep(sleep_time);
         sendOwner(isRunning(task_name));
     }
     
@@ -119,41 +127,45 @@ static struct MySuperActor {
             niño_uno_handle.decrease(status);
             break;
         case Children.child2:
-            niño_uno_handle.decrease(status);
+            niño_dos_handle.decrease(status);
             break;
         }
+
+        long echo = concurrency.receiveOnly!long;
+        sendOwner(echo);
     }
 
-    @method void receiveStatusFromChild(ulong _l, Children child) {
-        /* niño_uno_handle.get(Gettes.count, ""); */
+    /* @method void receiveStatusFromChild(ulong _l, Children child) { */
+    /*     niño_uno_handle.get(Gettes.count, ""); */
+    /*     long status = concurrency.receiveOnly!long; */
+    /*     sendOwner(status); */
+
+        /* final switch (child) { */
+        /* case Children.child1: */
+        /*     niño_uno_handle.get(Gettes.count, ""); */
+        /*     break; */
+        /* case Children.child2: */
+        /*     niño_dos_handle.get(Gettes.count, ""); */
+        /*     break; */
+        /* } */
+
         /* long status = concurrency.receiveOnly!long; */
+        /* Thread.sleep(sleep_time); */
         /* sendOwner(status); */
+    /* } */
 
-        final switch (child) {
-        case Children.child1:
-            niño_uno_handle.get(Gettes.count, "");
-            break;
-        case Children.child2:
-            niño_dos_handle.get(Gettes.count, "");
-            break;
-        }
+    /* private void stopTheChildren() { */
+    /*     niño_uno_handle.stop; */
+    /*     niño_dos_handle.stop; */
+    /* } */
 
-        long status = concurrency.receiveOnly!long;
-        sendOwner(status);
-    }
-
-    private void stopTheChildren() {
-        niño_uno_handle.stop;
-        niño_dos_handle.stop;
-    }
-
-    @method void proc(SuperMsg msg) {
-        final switch (msg) {
-        case SuperMsg.stopTheChildren:
-            this.stopTheChildren;
-            break;
-        }
-    }
+    /* @method void proc(SuperMsg msg) { */
+    /*     final switch (msg) { */
+    /*     case SuperMsg.stopTheChildren: */
+    /*         this.stopTheChildren; */
+    /*         break; */
+    /*     } */
+    /* } */
 
     mixin TaskActor;
 }
@@ -197,7 +209,7 @@ class MessageBetweenSupervisorAndChild {
     @Then("send this message back from #child1 to #super")
     Document fromChild1ToSuper() @trusted {
         debug writeln("actor_message 4");
-        supervisor_handle.receiveStatusFromChild(1, Children.child1);
+        /* supervisor_handle.receiveStatusFromChild(1, Children.child1); */
         long received = concurrency.receiveOnly!long;
         check(received == 9, format("The child did not reflect the message, got %s", received));
 
@@ -208,16 +220,19 @@ class MessageBetweenSupervisorAndChild {
     Document aMessageToChild2() {
         debug writeln("actor_message 5");
         supervisor_handle.sendStatusToChild(1, Children.child2);
-        return Document();
+        return result_ok;
     }
 
     @Then("send thus message back from #child2 to #super")
     Document fromChild2ToSuper() @trusted {
-        supervisor_handle.receiveStatusFromChild(1, Children.child2);
-        long received = concurrency.receiveOnly!long;
-        check(received == 9, format("The child did not reflect the message, got %s", received));
         debug writeln("actor_message 6");
-        return Document();
+
+        long received = concurrency.receiveOnly!long;
+        check(received == 64, format("The child did not reflect the message, got %s", received));
+        /* supervisor_handle.receiveStatusFromChild(1, Children.child2); */
+        /* long received = concurrency.receiveOnly!long; */
+        /* check(received == 9, format("The child did not reflect the message, got %s", received)); */
+        return result_ok;
     }
 
     @Then("stop the #super")
