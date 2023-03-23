@@ -11,14 +11,23 @@ jobs:
     runs-on: self-hosted
     steps:
       
+      - name: Cleanup
+        run: |
+          sudo rm -rf *
+          sudo rm -rf .git
+          sudo rm -rf .github
+          sudo rm -rf .vscode
       - name: Download bins
         uses: dawidd6/action-download-artifact@v2
         with:
           name: bins-logs
           workflow: daily.yml
+          path: bins-logs
       - name: Run Bdd tests
         run: |
           source ~/.bashrc
+          ls
+          ls bins-logs
           mkdir logs
           mkdir -p $PWD/logs/bdd/commit/results/
           mkdir -p $PWD/logs/bdd/acceptance/results/
@@ -50,7 +59,7 @@ jobs:
             setup_env performance
             echo "run performance env $scenario"
             testbench $scenario
-          done <<< $(bddenv.sh testbench -f)
+          done <<< $(testbench -f)
      
       - name: Process result
         run: |
