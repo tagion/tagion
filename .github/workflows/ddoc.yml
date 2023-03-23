@@ -53,6 +53,8 @@ jobs:
           git clone https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git
           cp -R build/ddoc/* ddoc/
           cd ddoc
-          ls -l | wc -l
+          git add .
+          git commit -m "ddocs updated"
+          git clone https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git
 
       
