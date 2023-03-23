@@ -479,11 +479,11 @@ class BlockFile {
     @safe
     static class Block {
         //immutable Index previous; /// Points to the previous block
-        immutable Index next; /// Points to the next block
+        //immutable Index next; /// Points to the next block
         immutable uint size; /// size of the data in this block
         immutable bool head; /// Set to `true` this block starts a chain of blocks
         enum uint HEAD_MASK = 1 << (uint.sizeof * 8 - 1);
-        enum HEADER_SIZE = cast(uint)(next.sizeof + size.sizeof);
+        enum HEADER_SIZE = cast(uint)(size.sizeof);
         immutable(Buffer) data;
         void write(ref File file, immutable uint BLOCK_SIZE) const @trusted {
             scope buffer = new ubyte[BLOCK_SIZE];
@@ -537,11 +537,9 @@ class BlockFile {
         }
 
         private this(
-                const Index next,
                 const uint size,
                 immutable(Buffer) buf,
                 const bool head) pure nothrow {
-            this.next = next;
             this.size = size;
             this.head = head;
             data = buf;
@@ -558,7 +556,7 @@ class BlockFile {
         assert(buf.length <= DATA_SIZE);
     }
     do {
-        return new Block(next, size, buf, head);
+        return new Block(size, buf, head);
     }
 
     /++
@@ -583,7 +581,7 @@ class BlockFile {
      +/
     string toInfo(const Block block) const {
         with (block) {
-            return format("<-[%04d] ->[%04d] blocks=%d size=%d head=%s", next, number_of_blocks(
+            return format("[%04d] blocks=%d size=%d head=%s", number_of_blocks(
                     size), size, head);
         }
     }
@@ -717,14 +715,16 @@ class BlockFile {
         Buffer build_sequency(Block block) @safe {
             scope buffer = new ubyte[first_block.size];
             auto cache = buffer;
+            Index current_index = Index(index + 1);
             while (block.size > DATA_SIZE) {
                 cache[0 .. DATA_SIZE] = block.data;
-                auto next_block = read(block.next);
-                check(next_block !is null, format("Fatal error in the blockfile @ %d", block.next));
+                auto next_block = read(current_index);
+                check(next_block !is null, format("Fatal error in the blockfile @ %s", current_index));
                 check(check_format || !next_block.head, format(
                         "Block @ %d is marked as head of block sequency but it should not be", index));
                 block = next_block;
                 cache = cache[DATA_SIZE .. $];
+                current_index++;
             }
 
             {
@@ -735,6 +735,7 @@ class BlockFile {
         }
 
         return build_sequency(first_block);
+
     }
 
     immutable(Buffer) cacheLoad(const Index index) nothrow {
@@ -766,11 +767,11 @@ class BlockFile {
      +
      +/
     Index erase(const Index index) {
-       // Should be implement with new recycler
-       return INDEX_NULL;
+        // Should be implement with new recycler
+        return INDEX_NULL;
     }
 
-    Index end_index(const Index index) {
+    version (none) Index end_index(const Index index) {
         @safe Index search(const Index index) {
             if (index !is INDEX_NULL) {
                 const block = read(index);
@@ -893,7 +894,7 @@ class BlockFile {
             bool failsafe(const Index index, const Fail f, const Block block, const bool recycle_block) @safe {
                 if (f != Fail.NON) {
                     console.writefln("Data check fails on block @ [%d -> %d]: Fail:%s in %s",
-                            index, block.next, f, recycle_block ? "recycle block" : "data block");
+                            index, index + 1, f, recycle_block ? "recycle block" : "data block");
                 }
                 return false;
             }
@@ -1027,7 +1028,7 @@ class BlockFile {
      + Returns:
      +     General block iterator
      +/
-    BlockRange range(const Index index) {
+    version (none) BlockRange range(const Index index) {
         return BlockRange(this, index);
     }
 
@@ -1035,7 +1036,7 @@ class BlockFile {
      + Returns:
      +     A range which can iterate through the recyclable blocks in the BlockFile
      +/
-    BlockRange recycleRange() {
+    version (none) BlockRange recycleRange() {
         return range(masterblock.recycle_header_index);
     }
 
@@ -1043,7 +1044,7 @@ class BlockFile {
      + Returns:
      +     A range which can iterate through the used blocks in the BlockFile
      +/
-    BlockRange blockRange() {
+    version (none) BlockRange blockRange() {
         return range(masterblock.first_index);
     }
 
@@ -1051,7 +1052,7 @@ class BlockFile {
      + Returns:
      +     A range while iterate through all the data-block in the BlockFile
      +/
-    ChainRange chainRange(Index index = INDEX_NULL) {
+    version (none) ChainRange chainRange(Index index = INDEX_NULL) {
         if (index is INDEX_NULL) {
             index = masterblock.first_index;
         }
@@ -1113,39 +1114,39 @@ class BlockFile {
                         end |= trace(r.index, Fail.ZERO_SIZE, current, check_recycle_mode);
                     }
                 }
-                version(none)
-                if (previous) {
-                    if (current.previous >= r.index) {
-                        failed = true;
-                        end |= trace(r.index, Fail.INCREASING, current, check_recycle_mode);
-                    }
-                    static if (check_recycle_mode) {
-                        if (current.head) {
+                version (none)
+                    if (previous) {
+                        if (current.previous >= r.index) {
                             failed = true;
-                            end |= trace(r.index, Fail.RECYCLE_HEADER, current, check_recycle_mode);
+                            end |= trace(r.index, Fail.INCREASING, current, check_recycle_mode);
                         }
-                        if (current.size != 0) {
-                            failed = true;
-                            end |= trace(r.index, Fail.RECYCLE_NON_ZERO, current, check_recycle_mode);
-                        }
-                    }
-                    else {
-                        if (!current.head) {
-                            if (previous.size != current.size + DATA_SIZE) {
+                        static if (check_recycle_mode) {
+                            if (current.head) {
                                 failed = true;
-                                end |= trace(r.index, Fail.SEQUENCY, current, check_recycle_mode);
+                                end |= trace(r.index, Fail.RECYCLE_HEADER, current, check_recycle_mode);
+                            }
+                            if (current.size != 0) {
+                                failed = true;
+                                end |= trace(r.index, Fail.RECYCLE_NON_ZERO, current, check_recycle_mode);
                             }
                         }
-                        else if (previous.size > DATA_SIZE) {
-                            end |= trace(current.previous, Fail.BAD_SIZE, previous, check_recycle_mode);
+                        else {
+                            if (!current.head) {
+                                if (previous.size != current.size + DATA_SIZE) {
+                                    failed = true;
+                                    end |= trace(r.index, Fail.SEQUENCY, current, check_recycle_mode);
+                                }
+                            }
+                            else if (previous.size > DATA_SIZE) {
+                                end |= trace(current.previous, Fail.BAD_SIZE, previous, check_recycle_mode);
+                            }
                         }
-                    }
-                    if (r.index != previous.next) {
-                        failed = true;
-                        end |= trace(r.index, Fail.LINK, current, check_recycle_mode);
-                    }
+                        if (r.index != previous.next) {
+                            failed = true;
+                            end |= trace(r.index, Fail.LINK, current, check_recycle_mode);
+                        }
 
-                }
+                    }
                 if (!failed) {
                     end |= trace(r.index, Fail.NON, current, check_recycle_mode);
                 }
@@ -1154,15 +1155,17 @@ class BlockFile {
             }
         }
 
-        BlockRange r = blockRange;
-        check_data!false(r);
+        version (none) {
+            BlockRange r = blockRange;
+            check_data!false(r);
+        }
         return failed;
     }
 
     /++
      + Range of Block's
      +/
-    struct BlockRange {
+    version (none) struct BlockRange {
         private BlockFile owner;
         private Index _index;
         private Block current;
@@ -1211,7 +1214,7 @@ class BlockFile {
     /++
      + Range of data-buffer's
      +/
-    struct ChainRange {
+    version (none) struct ChainRange {
         private BlockFile owner;
         private Buffer buffer;
         private Index _index;
@@ -1390,7 +1393,7 @@ class BlockFile {
 
         }
 
-        void erase(BlockFile blockfile, immutable(Index[]) erase_list) {
+        version (none) void erase(BlockFile blockfile, immutable(Index[]) erase_list) {
             void local_erase(const Index index, immutable(Index[]) erase_list, immutable uint no = 0) {
                 if ((index !is INDEX_NULL) && (erase_list.length > 0)) {
                     if (no == erase_list[0]) {
@@ -1408,6 +1411,7 @@ class BlockFile {
             local_erase(blockfile.masterblock.first_index, erase_list);
         }
 
+        version (none) /// Removed becase next index has been removed from Block
         { // Remove block
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
             blockfile.inspect(&failsafe);
@@ -1470,7 +1474,7 @@ class BlockFile {
             blockfile.close;
         }
 
-        version(none) // Removed because previous index has been removed from block
+        version (none) // Removed because previous index has been removed from block
         {
             import std.math.operations : isClose;
             import std.stdio;
