@@ -105,8 +105,8 @@ jobs:
             cp -rf ./build/${{ env.TARGET_BUILD }}/bin/testbench ./upload/
             cp -rf ./logs/${{ env.TARGET_BUILD }}/bdd/* ./upload/bdd/
             cp -rf ./logs/${{ env.TARGET_BUILD }}/unittest.log ./upload/
-            # cp -rf ./fundamental ./upload/
-            # cp -rf ./bdd ./upload/
+            cp -rf ./fundamental ./upload/
+            cp -rf ./bdd ./upload/
       - name: Upload all
         uses: actions/upload-artifact@v3
         with:
