@@ -67,6 +67,26 @@ jobs:
           name: core-bins
           path: build/${{ env.TARGET_BUILD }}/bin/tagion
           retention-days: ${{ env.RETENTION_DAYS_BINS }}
+      
+      - name: Socket test
+        run: |
+          export TB_TESTROOT=build/${{ env.TARGET_BUILD }}/test
+          export TB_TESTDIR=$(date "+socktest.%y%m%d%H%M")
+          export TB_LOGDIR=logs/${{ env.TARGET_BUILD }}/socktest
+          export TB_ARTIFACT=build/${{ env.TARGET_BUILD }}/bin/tagion
+          chmod 755 bdd/extras/sockets/socktest.sh
+          bdd/extras/sockets/socktest.sh > logs/${{ env.TARGET_BUILD }}/socktest/$TB_TESTDIR.test.log 
+
+      - name: Upload socket test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: core-socktest-logs
+          path: logs/${{ env.TARGET_BUILD }}/socktest
+
+      - name: Report socket test results
+        run: |
+          tail -n 5 logs/${{ env.TARGET_BUILD }}/socktest/$TB_TESTDIR.test.log >> $GITHUB_STEP_SUMMARY
+
       - name: Set current date as env variable
         run: echo "NOW=$(date +%s)" >> $GITHUB_ENV
       - id: commit
