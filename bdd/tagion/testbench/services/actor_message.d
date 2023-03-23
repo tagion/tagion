@@ -27,6 +27,11 @@ enum Gettes {
     some_name
 }
 
+enum Children {
+    child1,
+    child2,
+}
+
 enum SuperMsg{
 stopTheChildren
 }
@@ -108,12 +113,31 @@ static struct MySuperActor {
         sendOwner(isRunning(task_name));
     }
     
-    @method void sendStatusToChild1(int status) {
-        niño_uno_handle.decrease(status);
+    @method void sendStatusToChild(int status, Children child) {
+        final switch (child) {
+        case Children.child1:
+            niño_uno_handle.decrease(status);
+            break;
+        case Children.child2:
+            niño_uno_handle.decrease(status);
+            break;
+        }
     }
 
-    @method void receiveStatusFromChild1(ulong _l) {
-        niño_uno_handle.get(Gettes.count, "");
+    @method void receiveStatusFromChild(ulong _l, Children child) {
+        /* niño_uno_handle.get(Gettes.count, ""); */
+        /* long status = concurrency.receiveOnly!long; */
+        /* sendOwner(status); */
+
+        final switch (child) {
+        case Children.child1:
+            niño_uno_handle.get(Gettes.count, "");
+            break;
+        case Children.child2:
+            niño_dos_handle.get(Gettes.count, "");
+            break;
+        }
+
         long status = concurrency.receiveOnly!long;
         sendOwner(status);
     }
@@ -166,14 +190,14 @@ class MessageBetweenSupervisorAndChild {
     @Then("send a message to #child1")
     Document aMessageToChild1() {
         debug writeln("actor_message 3");
-        supervisor_handle.sendStatusToChild1(1);
+        supervisor_handle.sendStatusToChild(1, Children.child1);
         return result_ok;
     }
 
     @Then("send this message back from #child1 to #super")
     Document fromChild1ToSuper() @trusted {
         debug writeln("actor_message 4");
-        supervisor_handle.receiveStatusFromChild1(1);
+        supervisor_handle.receiveStatusFromChild(1, Children.child1);
         long received = concurrency.receiveOnly!long;
         check(received == 9, format("The child did not reflect the message, got %s", received));
 
@@ -182,21 +206,27 @@ class MessageBetweenSupervisorAndChild {
 
     @Then("send a message to #child2")
     Document aMessageToChild2() {
+        debug writeln("actor_message 5");
+        supervisor_handle.sendStatusToChild(1, Children.child2);
         return Document();
     }
 
     @Then("send thus message back from #child2 to #super")
-    Document fromChild2ToSuper() {
+    Document fromChild2ToSuper() @trusted {
+        supervisor_handle.receiveStatusFromChild(1, Children.child2);
+        long received = concurrency.receiveOnly!long;
+        check(received == 9, format("The child did not reflect the message, got %s", received));
+        debug writeln("actor_message 6");
         return Document();
     }
 
     @Then("stop the #super")
     Document stopTheSuper() {
-        debug writeln("actor_message 5");
-        /* supervisor_handle.proc(SuperMsg.stopTheChildren); */
+        debug writeln("actor_message 7");
         supervisor_handle.stop;
         check(!isRunning(child1_task_name), "child1 is still running");
         check(!isRunning(child2_task_name), "child2 is still running");
+        check(!isRunning(supervisor_task_name), "supervisor is still running");
         return result_ok;
     }
 
