@@ -55,5 +55,8 @@ jobs:
           cd ddoc
           ls -l
           pwd
+          cp -R * ddoc/
+          cd ddoc
+          ls -l | wc -l
 
       
