@@ -31,6 +31,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.logger.Statistic;
 import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;
+import tagion.dart.BlockSegment;
 
 //import tagion.dart.BlockSegmentAllocator;
 
@@ -473,9 +474,11 @@ class BlockFile {
         return BLOCK_SIZE * cast(ulong) index;
     }
 
+  //  alias Block=BlockSegment;
     /++
      + Block handler
      +/
+//version(none)
     @safe
     static class Block {
         //immutable Index previous; /// Points to the previous block
@@ -552,10 +555,7 @@ class BlockFile {
             immutable uint size,
             immutable(Buffer) buf,
             const bool head)
-    in {
-        assert(buf.length <= DATA_SIZE);
-    }
-    do {
+    {
         return new Block(size, buf, head);
     }
 
@@ -874,15 +874,7 @@ class BlockFile {
 
     }
 
-    HiBON toHiBON() const {
-        auto result = new HiBON;
-        foreach (i, a; allocated_chains) {
-            result[i] = a.toHiBON;
-        }
-        return result;
-    }
-
-    /++
+     /++
      +
      + This function will erase, write, update the BlockFile and update the recyle bin
      + Stores the list of AllocatedChain to the disk
@@ -1025,41 +1017,6 @@ class BlockFile {
     }
 
     /++
-     + Returns:
-     +     General block iterator
-     +/
-    version (none) BlockRange range(const Index index) {
-        return BlockRange(this, index);
-    }
-
-    /++
-     + Returns:
-     +     A range which can iterate through the recyclable blocks in the BlockFile
-     +/
-    version (none) BlockRange recycleRange() {
-        return range(masterblock.recycle_header_index);
-    }
-
-    /++
-     + Returns:
-     +     A range which can iterate through the used blocks in the BlockFile
-     +/
-    version (none) BlockRange blockRange() {
-        return range(masterblock.first_index);
-    }
-
-    /++
-     + Returns:
-     +     A range while iterate through all the data-block in the BlockFile
-     +/
-    version (none) ChainRange chainRange(Index index = INDEX_NULL) {
-        if (index is INDEX_NULL) {
-            index = masterblock.first_index;
-        }
-        return ChainRange(this, index);
-    }
-
-    /++
      + Fail type for the inspect function
      +/
     enum Fail {
@@ -1160,55 +1117,6 @@ class BlockFile {
             check_data!false(r);
         }
         return failed;
-    }
-
-    /++
-     + Range of Block's
-     +/
-    version (none) struct BlockRange {
-        private BlockFile owner;
-        private Index _index;
-        private Block current;
-        this(BlockFile owner, const Index index) {
-            this.owner = owner;
-            if (index !is INDEX_NULL) {
-                _index = index;
-                current = owner.read(_index);
-            }
-        }
-
-        bool empty() pure const nothrow {
-            return current is null;
-        }
-
-        Index index() pure const nothrow {
-            return _index;
-        }
-
-        void popFront() {
-            if (!empty) {
-                _index = Index(current.next);
-                if (index != INDEX_NULL) {
-                    current = owner.read(_index);
-                    return;
-                }
-            }
-            _index = INDEX_NULL;
-            current = null;
-        }
-
-        Block front() {
-            return current;
-        }
-
-        int opApply(scope int delegate(const Index index, const(Block) block) @safe dg) {
-            for (; !empty; popFront) {
-                if (dg(index, front)) {
-                    return -1;
-                }
-            }
-            return 0;
-        }
     }
 
     /++

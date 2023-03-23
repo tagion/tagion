@@ -6,7 +6,7 @@ import LEB128 = tagion.utils.LEB128;
 import std.typecons : Typedef;
 import tagion.hibon.Document;
 import tagion.dart.BlockFile;
-
+import tagion.basic.Types : Buffer;
 /// BlockFile file position index
 //alias Index = Typedef!(ulong, ulong.init, "BINDEX");
 
@@ -16,6 +16,7 @@ import tagion.dart.BlockFile;
 struct BlockSegment {
     Index index; /// Block index where the document is stored or should be stored
     Document doc; /// Document stored in the segment
+        immutable bool head; /// Set to `true` this block starts a chain of blocks
     alias begin_index=index;
     version (none) uint blocks(const uint block_size) const pure nothrow @nogc {
         const total_size = totalSize;
@@ -39,6 +40,14 @@ struct BlockSegment {
         doc = blockfile.file.fread;
     }
 
+    uint size() const pure nothrow @nogc {
+        return cast(uint)doc.full_size;
+    }
+        enum HEADER_SIZE = cast(uint)(uint.sizeof);
+    
+    Buffer data() {
+        return doc.data;
+    }
 }
 
 version (unittest) {
