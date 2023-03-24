@@ -43,7 +43,7 @@ class GenerateNWallets
     {
         mkdirRecurse(module_path);
 
-        for (int i = 0; i < number_of_wallets; i++)
+        foreach (i; 0..number_of_wallets)
         {
             immutable wallet_path = module_path.buildPath(format("wallet_%s", i));
             mkdirRecurse(wallet_path);

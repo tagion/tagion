@@ -3,7 +3,8 @@ module tagion.testbench.services.actor_message;
 import tagion.actor.Actor;
 import core.time;
 import std.stdio;
-import std.format: format;
+import std.format : format;
+
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
@@ -11,6 +12,7 @@ import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
 import concurrency = std.concurrency;
+import core.thread;
 
 enum feature = Feature(
             "Actor messaging",
@@ -22,59 +24,55 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
-enum Gettes {
-    count,
-    some_name
-}
-
 enum Children {
     child1,
     child2,
 }
 
-enum SuperMsg{
-stopTheChildren
-}
-
 enum supervisor_task_name = "supervisor";
 enum child1_task_name = "child1";
 enum child2_task_name = "child2";
+enum sleep_time = 100.msecs;
+
+version (none) struct DummyActor {
+    string some_name;
+
+    @method void setName(string str) {
+        some_name = str;
+        sendOwner(some_name);
+    }
+
+    @task void run() {
+        alive; // Actor is now alive
+        while (!stop) {
+            receiveTimeout(100.msecs);
+        }
+    }
+
+    mixin TaskActor; /// Turns the struct into an Actor
+}
+version(none) static assert(isActor!MyActor);
 
 struct MyActor {
-    import tagion.testbench.actor_tests;
-
     long count;
     string some_name;
     /**
     Actor method which sets the str
     */
-    @method void some(string str) {
+    @method void setName(string str) {
         some_name = str;
+        sendOwner(some_name);
+    }
+
+    version (none) @method void relay(string str, ActorHandle!DummyActor relayTo) {
+        relayTo.setName(str);
     }
 
     /// Decrease the count value `by`
     @method void decrease(int by) {
         count -= by;
+        sendOwner(count);
     }
-
-    /**
-    * Actor method send a opt to the actor and 
-    * sends back an a response to the owner task
-    */
-    @method void get(Gettes opt, string extra) { // reciever 
-         final switch (opt) {
-         case Gettes.some_name:
-             sendOwner(some_name~extra);
-             break;
-         case Gettes.count:
-             sendOwner(count);
-             break; 
-         } 
-    } 
-
-    /* @method void request(MyActor field) { */
-
-    /* } */
 
     mixin TaskActor; /// Turns the struct into an Actor
 
@@ -88,14 +86,16 @@ struct MyActor {
         }
     }
 }
+
 static assert(isActor!MyActor);
 
-/* @safe */
+alias ChildHandle = ActorHandle!MyActor;
+
 static struct MySuperActor {
 @safe
 
-    ActorHandle!MyActor niño_uno_handle;
-    ActorHandle!MyActor niño_dos_handle;
+    ChildHandle niño_uno_handle;
+    ChildHandle niño_dos_handle;
 
     @task void run() {
         auto my_actor_factory = actor!MyActor;
@@ -110,53 +110,31 @@ static struct MySuperActor {
     }
 
     @method void isChildRunning(string task_name) {
+        Thread.sleep(sleep_time);
         sendOwner(isRunning(task_name));
     }
-    
+
     @method void sendStatusToChild(int status, Children child) {
         final switch (child) {
         case Children.child1:
             niño_uno_handle.decrease(status);
             break;
         case Children.child2:
-            niño_uno_handle.decrease(status);
-            break;
-        }
-    }
-
-    @method void receiveStatusFromChild(ulong _l, Children child) {
-        /* niño_uno_handle.get(Gettes.count, ""); */
-        /* long status = concurrency.receiveOnly!long; */
-        /* sendOwner(status); */
-
-        final switch (child) {
-        case Children.child1:
-            niño_uno_handle.get(Gettes.count, "");
-            break;
-        case Children.child2:
-            niño_dos_handle.get(Gettes.count, "");
+            niño_dos_handle.decrease(status);
             break;
         }
 
-        long status = concurrency.receiveOnly!long;
-        sendOwner(status);
+        long echo = concurrency.receiveOnly!long;
+        sendOwner(echo);
     }
 
-    private void stopTheChildren() {
-        niño_uno_handle.stop;
-        niño_dos_handle.stop;
-    }
-
-    @method void proc(SuperMsg msg) {
-        final switch (msg) {
-        case SuperMsg.stopTheChildren:
-            this.stopTheChildren;
-            break;
-        }
+    version (none) @method void roundtrip(Children child) {
+        niño_uno_handle.relay("hi mom", niño_dos_handle);
     }
 
     mixin TaskActor;
 }
+
 static assert(isActor!MySuperActor);
 
 @safe @Scenario("Message between supervisor and child",
@@ -197,7 +175,6 @@ class MessageBetweenSupervisorAndChild {
     @Then("send this message back from #child1 to #super")
     Document fromChild1ToSuper() @trusted {
         debug writeln("actor_message 4");
-        supervisor_handle.receiveStatusFromChild(1, Children.child1);
         long received = concurrency.receiveOnly!long;
         check(received == 9, format("The child did not reflect the message, got %s", received));
 
@@ -208,16 +185,15 @@ class MessageBetweenSupervisorAndChild {
     Document aMessageToChild2() {
         debug writeln("actor_message 5");
         supervisor_handle.sendStatusToChild(1, Children.child2);
-        return Document();
+        return result_ok;
     }
 
     @Then("send thus message back from #child2 to #super")
     Document fromChild2ToSuper() @trusted {
-        supervisor_handle.receiveStatusFromChild(1, Children.child2);
-        long received = concurrency.receiveOnly!long;
-        check(received == 9, format("The child did not reflect the message, got %s", received));
         debug writeln("actor_message 6");
-        return Document();
+        long received = concurrency.receiveOnly!long;
+        check(received == 64, format("The child did not reflect the message, got %s", received));
+        return result_ok;
     }
 
     @Then("stop the #super")
@@ -236,24 +212,42 @@ class MessageBetweenSupervisorAndChild {
         [])
 class SendMessageBetweenTwoChildren {
 
+    ActorFactory!MySuperActor supervisor_factory;
+    ActorHandle!MySuperActor supervisor_handle;
+
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() {
-        return Document();
+        debug writeln("actor_message 2.1");
+        supervisor_factory = actor!MySuperActor;
+
+        supervisor_handle = supervisor_factory(supervisor_task_name);
+        check(isRunning(supervisor_task_name), "Supervisor is not running");
+        return result_ok;
     }
 
     @When("the #super has started the #child1 and #child2")
-    Document theChild1AndChild2() {
-        return Document();
+    Document theChild1AndChild2() @trusted {
+        debug writeln("actor_message 2.2");
+        supervisor_handle.isChildRunning(child1_task_name);
+        check(concurrency.receiveOnly!bool, "child1 is running");
+        supervisor_handle.isChildRunning(child2_task_name);
+        check(concurrency.receiveOnly!bool, "child2 is running");
+        return result_ok;
     }
 
     @When("send a message from #super to #child1 and from #child1 to #child2 and back to the #super")
     Document backToTheSuper() {
+        /* supervisor_handle.roundtrip(Children.child2); */
         return Document();
     }
 
     @Then("stop the #super")
     Document stopTheSuper() {
-        return Document();
+        supervisor_handle.stop;
+        check(!isRunning(child1_task_name), "child1 is still running");
+        check(!isRunning(child2_task_name), "child2 is still running");
+        check(!isRunning(supervisor_task_name), "supervisor is still running");
+        return result_ok;
     }
 
 }
