@@ -725,7 +725,7 @@ received = the HiRPC received package
         void record(const RecordFactory.Recorder recorder) @safe {
             if (!recorder.empty) {
                 const journal = const(Journal)(recorder, index);
-                const allocated = journalfile.save(journal.toDoc.serialize);
+                const allocated = journalfile.save(journal.toDoc);
                 index = Index(allocated.index);
                 journalfile.root_index = index;
                 scope (exit) {

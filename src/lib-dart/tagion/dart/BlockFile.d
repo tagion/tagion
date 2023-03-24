@@ -633,7 +633,7 @@ class BlockFile {
         // Allocate block for statistical data
         immutable old_statistic_index = masterblock.statistic_index;
 
-        auto statistical_allocate = save(_statistic.toDoc.serialize, random);
+        auto statistical_allocate = save(_statistic.toDoc, random);
         masterblock.statistic_index = statistical_allocate.index;
         if (old_statistic_index !is INDEX_NULL) {
             // The old statistic block is erased
@@ -865,8 +865,8 @@ class BlockFile {
      + Params:
      +     data = Data buffer to be reserved and allocated
      +/
-    const(AllocatedChain) save(immutable(Buffer) data, bool random_block = random) {
-        auto result = new AllocatedChain(this, data, random_block);
+    const(AllocatedChain) save(const(Document) doc, bool random_block = random) {
+        auto result = new AllocatedChain(this, doc.serialize, random_block);
 
         allocated_chains ~= result;
         return result;
@@ -1219,9 +1219,11 @@ class BlockFile {
         }
 
         alias B = Tuple!(string, "label", uint, "blocks");
-        Buffer generate_block(const BlockFile blockfile, const B b) {
+        version(none)
+        Document generate_block(const BlockFile blockfile, const B b) {
             enum filler = " !---- ;-) -----! ";
             string text = b.label;
+            HiBON h=new HiBON; 
             while ((text.length / blockfile.DATA_SIZE) < b.blocks) {
                 text ~= filler;
             }
@@ -1254,6 +1256,7 @@ class BlockFile {
         }
 
         {
+            version(none)
             {
                 auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
                 blockfile.inspect(&failsafe);
@@ -1351,6 +1354,7 @@ class BlockFile {
             blockfile.close;
         }
 
+        version(none)
         { // Write block again
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
             // The statistic block is erased before writing

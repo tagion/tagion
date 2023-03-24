@@ -977,7 +977,7 @@ alias check = Check!DARTException;
                     if (branches.empty) {
                         return Leave.init;
                     }
-                    return Leave(blockfile.save(branches.toHiBON.serialize)
+                    return Leave(blockfile.save(branches.toDoc)
                             .index, branches.fingerprint(this));
                 }
                 else static if (is(R == RimKeyRange)) {
@@ -1051,7 +1051,7 @@ alias check = Check!DARTException;
                                             return Leave.init;
                                         }
                                         pragma(msg, "fixme(pr): This scenario is never called. Why is it here?");
-                                        return Leave(blockfile.save(one_archive.store.serialize)
+                                        return Leave(blockfile.save(one_archive.store)
                                                 .index,
                                                 one_archive.fingerprint);
 
@@ -1120,12 +1120,13 @@ alias check = Check!DARTException;
                                 if (rim is RIMS_IN_SECTOR) {
                                     // Return a branch with as single leave when the leave is on the on
                                     // the edge between the sector
-                                    branches[lonely_rim_key] = Leave(blockfile.save(one_archive.store.serialize)
+                                    branches[lonely_rim_key] = Leave(
+                                    blockfile.save(one_archive.store)
                                             .index, one_archive.fingerprint);
-                                    return Leave(blockfile.save(branches.toHiBON.serialize)
+                                    return Leave(blockfile.save(branches.toDoc)
                                             .index, branches.fingerprint(this));
                                 }
-                                return Leave(blockfile.save(one_archive.store.serialize)
+                                return Leave(blockfile.save(one_archive.store)
                                         .index, one_archive.fingerprint);
 
                             }
@@ -1143,7 +1144,7 @@ alias check = Check!DARTException;
                         }
                     }
 
-                    return Leave(blockfile.save(branches.toHiBON.serialize)
+                    return Leave(blockfile.save(branches.toDoc)
                             .index, branches.fingerprint(this));
 
                 }
