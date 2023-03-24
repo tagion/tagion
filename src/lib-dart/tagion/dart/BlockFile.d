@@ -975,15 +975,17 @@ class BlockFile {
 
                             }
                             else {
-                                auto next_index = chain(
+                                //auto next_index = 
+                                chain(
                                         null,
                                         Index(current_index + 1),//current_index,
                                         false);
-                                if (next_index == _last_block_index) {
+                                version(none)
+                            if (next_index == _last_block_index) {
                                     // Make sure the last block is grounded
                                     next_index = INDEX_NULL;
                                 }
-                                blocks[current_index] = block(next_index,
+                                blocks[current_index] = block(INDEX_NULL,
                                         cast(uint) data.length, data, head);
 
                             }
@@ -998,8 +1000,8 @@ class BlockFile {
 
                     foreach (ablock; allocate) {
                         //auto ablock = allocate[0];
-                        immutable previous_index = (ablock.index > 1) ?
-                            Index(ablock.index - 1) : INDEX_NULL;
+                     //   immutable previous_index = (ablock.index > 1) ?
+                       //     Index(ablock.index - 1) : INDEX_NULL;
                         chain(ablock.data, ablock.index, true);
                         //allocate_and_chain(allocate[1 .. $]);
                     }
