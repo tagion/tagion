@@ -1,11 +1,8 @@
 name: Nightly build
 on:
-  # workflow_dispatch:
-  # schedule:
-  #   - cron: '0 21 * * *'
-  push: 
-    branches: 
-      - as-ci-bdd
+  workflow_dispatch:
+  schedule:
+    - cron: '0 21 * * *'
 jobs:
   run_bdd_tests:
     runs-on: self-hosted
@@ -68,11 +65,13 @@ jobs:
           done <<< $(testbench -f)
           report () {
             collider -cv ./logs/bdd/$1/results/ > ./logs/bdd/$1/results/output.log
-            cat ./logs/bdd/$1/results/output.log  >> $GITHUB_STEP_SUMMARY
+            echo "## ${1^} STAGE" >> $GITHUB_STEP_SUMMARY
+            cat ./logs/bdd/$1/results/output.log | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' >> $GITHUB_STEP_SUMMARY
           }
           report commit
           report acceptance
           report performance
+     
 
       - name: Upload Bdd result
         uses: actions/upload-artifact@v3

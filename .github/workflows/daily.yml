@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push: 
     branches: 
-      - as-ci-bdd
+      - current
 env:
   ## Sets environment variable
   TARGET_BUILD: x86_64-linux
