@@ -555,7 +555,7 @@ alias check = Check!DARTException;
         if ((key < KEY_SPAN) && (b.indices)) {
             immutable index = b.indices[key];
             if (index !is INDEX_NULL) {
-                return blockfile.load(index);
+                return blockfile.load(index).serialize;
             }
         }
         return null;
@@ -607,7 +607,7 @@ alias check = Check!DARTException;
                     immutable Index index,
                     immutable uint rim = 0) @safe {
                 if (index !is INDEX_NULL) {
-                    data = this.outer.blockfile.load(index);
+                    data = this.outer.blockfile.load(index).serialize;
                     const doc = Document(data);
                     if (rim < rim_paths.length) {
                         if (Branches.isRecord(doc)) {
@@ -1282,7 +1282,7 @@ alias check = Check!DARTException;
         protected final void run() {
             void local_iterator(const(ubyte[]) rim_path, const Index index, const uint rim = 0) {
                 if (index !is INDEX_NULL) {
-                    data = blockfile.load(index);
+                    data = blockfile.load(index).serialize;
                     const doc = Document(data);
                     if (Branches.isRecord(doc)) {
                         Branches branches = Branches(doc);

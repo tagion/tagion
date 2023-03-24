@@ -705,7 +705,7 @@ class BlockFile {
      +     BlockFileException if this not first block in a chain or
      +     some because of some other failures in the blockfile system
      +/
-    immutable(Buffer) load(const Index index, const bool check_format = true) {
+    const(Document) load(const Index index, const bool check_format = true) {
         auto first_block = read(index);
         // Check if this is the first block is the start of a block sequency
         check(check_format || first_block.head, format(
@@ -732,17 +732,17 @@ class BlockFile {
             return buffer.idup;
         }
 
-        return build_sequency(first_block);
+        return Document(build_sequency(first_block));
 
     }
 
-    immutable(Buffer) cacheLoad(const Index index) nothrow {
+    Document cacheLoad(const Index index) nothrow {
         if (index == 0) {
-            return Buffer.init;
+            return Document.init;
         }
         auto allocated_range = allocated_chains.filter!(a => a.index == index);
         if (!allocated_range.empty) {
-            return allocated_range.front.data;
+            return Document(allocated_range.front.data);
         }
 
         return assumeWontThrow(load(index));
