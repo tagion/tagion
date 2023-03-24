@@ -969,14 +969,7 @@ class BlockFile {
                             }
                             else {
                                 //auto next_index = 
-                                chain(
-                                        null,
-                                        Index(current_index + 1));
-                                version (none)
-                                    if (next_index == _last_block_index) {
-                                        // Make sure the last block is grounded
-                                        next_index = INDEX_NULL;
-                                    }
+                                chain(null, Index(current_index + 1));
                                 blocks[current_index] = block(
                                         cast(uint) data.length, data);
 
