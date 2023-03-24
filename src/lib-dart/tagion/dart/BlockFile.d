@@ -890,6 +890,7 @@ class BlockFile {
             assert(!inspect(&failsafe), "Should not fail here");
         }
         Block[Index] blocks;
+            writeStatistic;
         scope (success) {
             allocated_chains = null;
             version (none)
@@ -910,7 +911,6 @@ class BlockFile {
                 do_not_write = false;
             }
 
-            writeStatistic;
             // Sortes the blocks in order
             const(Block) local_read(const Index index) {
                 if (index in blocks) {
