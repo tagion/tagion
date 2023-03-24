@@ -1256,6 +1256,7 @@ alias check = Check!DARTException;
      * Returns: 
      *  the rim-range at rim_path
      */
+    version(none)
     RimRange iterator(const(ubyte[]) rim_path) @trusted {
         auto range = new RimRange(rim_path);
         range.call;
@@ -1265,6 +1266,7 @@ alias check = Check!DARTException;
     /** 
      * Rim range 
      */
+version(none)
     @safe class RimRange : Fiber {
         protected {
             const(ubyte[]) rim_path;
