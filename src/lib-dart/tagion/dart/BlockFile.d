@@ -950,7 +950,7 @@ class BlockFile {
                             // update_first_index(current_index);
                             if (data.length > DATA_SIZE) {
                                 Index current = current_index;
-                                bool h = head;
+                                //bool h = head;
                                 size_t from = 0;
                                 while (from + DATA_SIZE < data.length) {
                                     auto to = from + DATA_SIZE;
@@ -961,11 +961,11 @@ class BlockFile {
                                     blocks[current] = block(
                                             //next_index,
                                             size, slice_data,
-                                            h);
+                                            false);
                                     //update_first_index(current);
                                     //previous = current;
                                     current = Index(next_index);
-                                    h = false;
+                                    //h = false;
                                     from += DATA_SIZE;
                                 }
                                 if (from + DATA_SIZE >= data.length) {
