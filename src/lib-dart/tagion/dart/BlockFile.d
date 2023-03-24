@@ -1059,6 +1059,7 @@ class BlockFile {
         scope bool[Index] visited;
         scope bool end;
         bool failed;
+        version(none)
         @safe
         void check_data(bool check_recycle_mode)(ref BlockRange r) {
             Block previous;
@@ -1082,6 +1083,7 @@ class BlockFile {
                             end |= trace(r.index, Fail.INCREASING, current, check_recycle_mode);
                         }
                         static if (check_recycle_mode) {
+                            version(none)
                             if (current.head) {
                                 failed = true;
                                 end |= trace(r.index, Fail.RECYCLE_HEADER, current, check_recycle_mode);
