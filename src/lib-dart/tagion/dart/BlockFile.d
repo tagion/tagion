@@ -806,7 +806,7 @@ class BlockFile {
         this(const Document doc) {
             chain = Chain(doc);
         }
-
+        version(none)
         inout(HiBON) toHiBON() inout {
             return chain.toHiBON;
         }
@@ -1005,12 +1005,13 @@ version(none)
                         }
                         return INDEX_NULL;
                     }
-
-                    auto ablock = allocate[0];
+ foreach(ablock; allocate) {
+                    //auto ablock = allocate[0];
                     immutable previous_index = (ablock.index > 1) ?
                         Index(ablock.index - 1) : INDEX_NULL;
                     chain(ablock.data, ablock.index, previous_index, true);
-                    allocate_and_chain(allocate[1 .. $]);
+                    //allocate_and_chain(allocate[1 .. $]);
+                }
                 }
             }
             // Puts data into block and chain the blocks
