@@ -534,8 +534,7 @@ class BlockFile {
 
         private this(
                 const uint size,
-                immutable(Buffer) buf,
-                const bool head) pure nothrow {
+                immutable(Buffer) buf) pure nothrow {
             this.size = size;
             //this.head = head;
             data = buf;
@@ -548,7 +547,7 @@ class BlockFile {
             immutable uint size,
             immutable(Buffer) buf,
             const bool head) {
-        return new Block(size, buf, head);
+        return new Block(size, buf);
     }
 
     /++
