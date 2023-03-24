@@ -482,7 +482,7 @@ class BlockFile {
     @safe
     static class Block {
         immutable uint size; /// size of the data in this block
-        immutable bool head; /// Set to `true` this block starts a chain of blocks
+        //immutable bool head; /// Set to `true` this block starts a chain of blocks
         enum uint HEAD_MASK = 1 << (uint.sizeof * 8 - 1);
         enum HEADER_SIZE = cast(uint)(size.sizeof);
         immutable(Buffer) data;
@@ -496,13 +496,8 @@ class BlockFile {
                     buffer[pos .. pos + m.length] = m;
                     pos += m.length;
                 }
-                else static if (name != this.head.stringof) {
-                    static if (name == this.size.stringof) {
-                        buffer.binwrite(cast(type) m | (head ? HEAD_MASK : 0), &pos);
-                    }
-                    else {
+                else { //static if (name != this.head.stringof) {
                         buffer.binwrite(cast(type) m, &pos);
-                    }
                 }
 
             }
@@ -526,7 +521,7 @@ class BlockFile {
                     static if (name == this.size.stringof) {
                         immutable _size = buf.binread!type;
                         size = _size & (~HEAD_MASK);
-                        head = (_size & HEAD_MASK) != 0;
+                        //head = (_size & HEAD_MASK) != 0;
                     }
                     else static if (name != this.head.stringof) {
                         this.tupleof[i] = buf.binread!type;
@@ -542,7 +537,7 @@ class BlockFile {
                 immutable(Buffer) buf,
                 const bool head) pure nothrow {
             this.size = size;
-            this.head = head;
+            //this.head = head;
             data = buf;
         }
 
