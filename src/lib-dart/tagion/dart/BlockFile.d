@@ -707,8 +707,9 @@ class BlockFile {
     const(Document) load(const Index index, const bool check_format = true) {
         auto first_block = read(index);
         // Check if this is the first block is the start of a block sequency
-        check(check_format || first_block.head, format(
-                "Block @ %d is not the head of block sequency", index));
+        version (none)
+            check(check_format || first_block.head, format(
+                    "Block @ %d is not the head of block sequency", index));
         Buffer build_sequency(Block block) @safe {
             scope buffer = new ubyte[first_block.size];
             auto cache = buffer;
@@ -717,8 +718,9 @@ class BlockFile {
                 cache[0 .. DATA_SIZE] = block.data;
                 auto next_block = read(current_index);
                 check(next_block !is null, format("Fatal error in the blockfile @ %s", current_index));
-                check(check_format || !next_block.head, format(
-                        "Block @ %d is marked as head of block sequency but it should not be", index));
+                version (none)
+                    check(check_format || !next_block.head, format(
+                            "Block @ %d is marked as head of block sequency but it should not be", index));
                 block = next_block;
                 cache = cache[DATA_SIZE .. $];
                 current_index++;
