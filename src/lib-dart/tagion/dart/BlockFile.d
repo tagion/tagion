@@ -481,8 +481,6 @@ class BlockFile {
     //version(none)
     @safe
     static class Block {
-        //immutable Index previous; /// Points to the previous block
-        //immutable Index next; /// Points to the next block
         immutable uint size; /// size of the data in this block
         immutable bool head; /// Set to `true` this block starts a chain of blocks
         enum uint HEAD_MASK = 1 << (uint.sizeof * 8 - 1);
@@ -585,6 +583,7 @@ class BlockFile {
         }
     }
 
+    version(none)
     @safe
     static struct Segment {
         protected Index _begin_index;
