@@ -64,8 +64,13 @@ struct MyActor {
         sendOwner(some_name);
     }
 
-    version (none) @method void relay(string str, ActorHandle!DummyActor relayTo) {
-        relayTo.setName(str);
+    @method void relay(string str, string task_name) {
+        // Request the handle for the other child;
+        debug writefln("requesting handler %s", task_name);
+        alias ChildActor = actor!MyActor;
+        ChildHandle otherChild = ChildActor.handler(task_name);
+        debug writefln("received handler %s", otherChild);
+        otherChild.setName(str);
     }
 
     /// Decrease the count value `by`
@@ -128,8 +133,8 @@ static struct MySuperActor {
         sendOwner(echo);
     }
 
-    version (none) @method void roundtrip(Children child) {
-        niño_uno_handle.relay("hi mom", niño_dos_handle);
+    @method void roundtrip(Children __notUsed) {
+        niño_uno_handle.relay("hi mom", child2_task_name);
     }
 
     mixin TaskActor;
@@ -236,13 +241,18 @@ class SendMessageBetweenTwoChildren {
     }
 
     @When("send a message from #super to #child1 and from #child1 to #child2 and back to the #super")
-    Document backToTheSuper() {
-        /* supervisor_handle.roundtrip(Children.child2); */
-        return Document();
+    Document backToTheSuper() @trusted {
+        debug writeln("actor_message 2.3");
+        supervisor_handle.roundtrip(Children.child2);
+        concurrency.receiveOnly!bool;
+        string receive = concurrency.receiveOnly!string;
+        check(receive == "hi mom", format("did not receive the right message, got %s", receive));
+        return result_ok;
     }
 
     @Then("stop the #super")
     Document stopTheSuper() {
+        debug writeln("actor_message 2.4");
         supervisor_handle.stop;
         check(!isRunning(child1_task_name), "child1 is still running");
         check(!isRunning(child2_task_name), "child2 is still running");
