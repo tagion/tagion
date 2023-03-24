@@ -576,15 +576,14 @@ class BlockFile {
      + Returns:
      +     information text of the block
      +/
-    string toInfo(const Block block) const {
+    version (none) string toInfo(const Block block) const {
         with (block) {
             return format("[%04d] blocks=%d size=%d head=%s", number_of_blocks(
                     size), size, head);
         }
     }
 
-    version(none)
-    @safe
+    version (none) @safe
     static struct Segment {
         protected Index _begin_index;
         protected uint _size;
@@ -873,7 +872,7 @@ class BlockFile {
 
     }
     /// Dito
-    const(AlloctedChain) save(T)(const T rec) if(isHiBONRecord!T) {
+    const(AllocatedChain) save(T)(const T rec) if (isHiBONRecord!T) {
         return save(rec.toDoc);
     }
     /++
@@ -1222,11 +1221,9 @@ class BlockFile {
         }
 
         alias B = Tuple!(string, "label", uint, "blocks");
-        version(none)
-        Document generate_block(const BlockFile blockfile, const B b) {
+        version (none) Document generate_block(const BlockFile blockfile, const B b) {
             enum filler = " !---- ;-) -----! ";
             string text = b.label;
-            HiBON h=new HiBON; 
             while ((text.length / blockfile.DATA_SIZE) < b.blocks) {
                 text ~= filler;
             }
@@ -1259,8 +1256,7 @@ class BlockFile {
         }
 
         {
-            version(none)
-            {
+            version (none) {
                 auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
                 blockfile.inspect(&failsafe);
 
@@ -1357,8 +1353,7 @@ class BlockFile {
             blockfile.close;
         }
 
-        version(none)
-        { // Write block again
+        version (none) { // Write block again
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
             // The statistic block is erased before writing
             B[] allocators = [

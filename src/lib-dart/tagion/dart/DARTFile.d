@@ -113,6 +113,7 @@ alias check = Check!DARTException;
 @safe class DARTFile {
     enum KEY_SPAN = ubyte.max + 1;
     import tagion.dart.BlockFile : INDEX_NULL;
+
     immutable(string) filename;
 
     protected RecordFactory manufactor;
@@ -967,8 +968,8 @@ alias check = Check!DARTException;
                         auto sub_range = RimKeyRange(range, rim);
                         immutable rim_key = sub_range.front.fingerprint.rim_key(rim);
                         if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-                            const leave = traverse_dart(sub_range, 
-                            branches.index(rim_key), rim + 1);
+                            const leave = traverse_dart(sub_range,
+                                    branches.index(rim_key), rim + 1);
 
                             branches[rim_key] = leave;
                         }
@@ -977,7 +978,7 @@ alias check = Check!DARTException;
                     if (branches.empty) {
                         return Leave.init;
                     }
-                    return Leave(blockfile.save(branches.toDoc)
+                    return Leave(blockfile.save(branches)
                             .index, branches.fingerprint(this));
                 }
                 else static if (is(R == RimKeyRange)) {
@@ -1121,9 +1122,9 @@ alias check = Check!DARTException;
                                     // Return a branch with as single leave when the leave is on the on
                                     // the edge between the sector
                                     branches[lonely_rim_key] = Leave(
-                                    blockfile.save(one_archive.store)
+                                            blockfile.save(one_archive.store)
                                             .index, one_archive.fingerprint);
-                                    return Leave(blockfile.save(branches.toDoc)
+                                    return Leave(blockfile.save(branches)
                                             .index, branches.fingerprint(this));
                                 }
                                 return Leave(blockfile.save(one_archive.store)
@@ -1144,7 +1145,7 @@ alias check = Check!DARTException;
                         }
                     }
 
-                    return Leave(blockfile.save(branches.toDoc)
+                    return Leave(blockfile.save(branches)
                             .index, branches.fingerprint(this));
 
                 }
