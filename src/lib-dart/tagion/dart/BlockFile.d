@@ -545,8 +545,7 @@ class BlockFile {
     protected final Block block(
             //immutable Index next,
             immutable uint size,
-            immutable(Buffer) buf,
-            const bool head) {
+            immutable(Buffer) buf) {
         return new Block(size, buf);
     }
 
@@ -934,8 +933,7 @@ class BlockFile {
                 if (allocate.length > 0) {
                     Index chain(
                             immutable(ubyte[]) data,
-                    const Index current_index, //const Index previous_index,
-                        const bool head) @trusted {
+                    const Index current_index) @trusted { //const Index previous_index,
                         scope (success) {
                             version (none)
                                 recycler.reclaim(current_index);
@@ -954,8 +952,7 @@ class BlockFile {
                                     assert(size !is 0, "Block size should not be zero");
                                     blocks[current] = block(
                                             //next_index,
-                                            size, slice_data,
-                                            false);
+                                            size, slice_data);
                                     //update_first_index(current);
                                     //previous = current;
                                     current = Index(next_index);
@@ -966,8 +963,7 @@ class BlockFile {
                                     assert(data[from .. $].length !is 0, "Tail data block is zero size");
                                     immutable next_index = chain(
                                             data[from .. $],
-                                            current, //Index(current - 1),
-                                            false);
+                                            current);
                                 }
 
                             }
@@ -975,15 +971,14 @@ class BlockFile {
                                 //auto next_index = 
                                 chain(
                                         null,
-                                        Index(current_index + 1), //current_index,
-                                        false);
+                                        Index(current_index + 1));
                                 version (none)
                                     if (next_index == _last_block_index) {
                                         // Make sure the last block is grounded
                                         next_index = INDEX_NULL;
                                     }
                                 blocks[current_index] = block(
-                                        cast(uint) data.length, data, head);
+                                        cast(uint) data.length, data);
 
                             }
                             return current_index;
@@ -999,7 +994,7 @@ class BlockFile {
                         //auto ablock = allocate[0];
                         //   immutable previous_index = (ablock.index > 1) ?
                         //     Index(ablock.index - 1) : INDEX_NULL;
-                        chain(ablock.data, ablock.index, true);
+                        chain(ablock.data, ablock.index);
                         //allocate_and_chain(allocate[1 .. $]);
                     }
                 }
