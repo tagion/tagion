@@ -84,6 +84,28 @@ jobs:
           name: core-bdd-logs
           path: ./logs/bdd/
           retention-days: ${{ env.RETENTION_DAYS_BINS }}
+      
+      - name: Socket test
+        run: |
+          export TB_TESTROOT=build/${{ env.TARGET_BUILD }}/test
+          export TB_TESTDIR=$(date "+socktest.%y%m%d%H%M")
+          export TB_LOGDIR=logs/${{ env.TARGET_BUILD }}/socktest
+          export TB_ARTIFACT=build/${{ env.TARGET_BUILD }}/bin/tagion
+          mkdir -p $TB_LOGDIR
+          chmod 755 bdd/extras/sockets/socktest.sh
+          bdd/extras/sockets/socktest.sh > logs/${{ env.TARGET_BUILD }}/socktest/$TB_TESTDIR.test.log 2>/dev/null 
+      - name: Upload socket test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: core-socktest-logs
+          path: logs/${{ env.TARGET_BUILD }}/socktest
+
+      - name: Report socket test results
+        if: always()
+        run: |
+          tail -n 5 logs/${{ env.TARGET_BUILD }}/socktest/$TB_TESTDIR.test.log >> $GITHUB_STEP_SUMMARY
+
       # - name: Report Bdd result
       #   run: |
       #     cat ./bddconsole.log | tail -n 3 >> $GITHUB_STEP_SUMMARY
