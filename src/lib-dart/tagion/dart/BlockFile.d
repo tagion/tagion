@@ -872,7 +872,10 @@ class BlockFile {
         return result;
 
     }
-
+    /// Dito
+    const(AlloctedChain) save(T)(const T rec) if(isHiBONRecord!T) {
+        return save(rec.toDoc);
+    }
     /++
      +
      + This function will erase, write, update the BlockFile and update the recyle bin
