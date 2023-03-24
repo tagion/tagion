@@ -3,6 +3,11 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 21 * * *'
+
+env:
+  ## Sets environment variable
+  RETENTION_DAYS_BINS: 3
+  ## TODO: add ldc2/dmd switch & version
 jobs:
   run_bdd_tests:
     runs-on: self-hosted
@@ -78,6 +83,7 @@ jobs:
         with:
           name: core-bdd-logs
           path: ./logs/bdd/
+          retention-days: ${{ env.RETENTION_DAYS_BINS }}
       # - name: Report Bdd result
       #   run: |
       #     cat ./bddconsole.log | tail -n 3 >> $GITHUB_STEP_SUMMARY
