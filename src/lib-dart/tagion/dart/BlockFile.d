@@ -393,7 +393,7 @@ class BlockFile {
     @safe
     static struct MasterBlock {
         Index recycle_header_index; /// Points to the root of recycle block list
-        Index first_index; /// Points to the first block of data
+        //Index first_index; /// Points to the first block of data
         Index root_index; /// Point the root of the database
         Index statistic_index; /// Points to the statistic data
         final void write(
@@ -426,7 +426,7 @@ class BlockFile {
             return assumeWontThrow([
                 "Master Block",
                 format("Root       @ %d", root_index),
-                format("First      @ %d", first_index),
+         //       format("First      @ %d", first_index),
                 format("Recycle    @ %d", recycle_header_index),
                 format("Statistic  @ %d", statistic_index),
             ].join("\n"));
@@ -947,10 +947,11 @@ version(none)
                         if (data !is null) {
                             // update_first_index(current_index);
                             if (data.length > DATA_SIZE) {
+                            version(none)
                                 void update_first_index(Index current_index) {
                                     if ((masterblock.first_index > current_index) || (
                                             masterblock.first_index is INDEX_NULL)) {
-                                        masterblock.first_index = current_index;
+                                        //masterblock.first_index = current_index;
                                     }
                                 }
 
@@ -968,7 +969,7 @@ version(none)
                                             next_index,
                                             size, slice_data,
                                             h);
-                                    update_first_index(current);
+                                    //update_first_index(current);
                                     previous = current;
                                     current = Index(next_index);
                                     h = false;
