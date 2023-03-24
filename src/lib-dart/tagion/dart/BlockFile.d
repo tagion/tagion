@@ -426,7 +426,7 @@ class BlockFile {
             return assumeWontThrow([
                 "Master Block",
                 format("Root       @ %d", root_index),
-         //       format("First      @ %d", first_index),
+                //       format("First      @ %d", first_index),
                 format("Recycle    @ %d", recycle_header_index),
                 format("Statistic  @ %d", statistic_index),
             ].join("\n"));
@@ -474,11 +474,11 @@ class BlockFile {
         return BLOCK_SIZE * cast(ulong) index;
     }
 
-  //  alias Block=BlockSegment;
+    //  alias Block=BlockSegment;
     /++
      + Block handler
      +/
-//version(none)
+    //version(none)
     @safe
     static class Block {
         //immutable Index previous; /// Points to the previous block
@@ -554,8 +554,7 @@ class BlockFile {
             immutable Index next,
             immutable uint size,
             immutable(Buffer) buf,
-            const bool head)
-    {
+            const bool head) {
         return new Block(size, buf, head);
     }
 
@@ -742,7 +741,7 @@ class BlockFile {
         if (index == 0) {
             return Buffer.init;
         }
-        auto allocated_range = allocated_chains.filter!(a => a.index== index);
+        auto allocated_range = allocated_chains.filter!(a => a.index == index);
         if (!allocated_range.empty) {
             return allocated_range.front.data;
         }
@@ -806,8 +805,8 @@ class BlockFile {
         this(const Document doc) {
             chain = Chain(doc);
         }
-        version(none)
-        inout(HiBON) toHiBON() inout {
+
+        version (none) inout(HiBON) toHiBON() inout {
             return chain.toHiBON;
         }
 
@@ -838,13 +837,14 @@ class BlockFile {
                 reserve!false(owner);
             }
         }
+
     final:
 
         Index index() pure const nothrow {
             return chain.index;
         }
-version(none)
-        Index end_index(const BlockFile owner) pure const nothrow {
+
+        version (none) Index end_index(const BlockFile owner) pure const nothrow {
             return Index(chain.begin_index + owner.number_of_blocks(chain.data.length));
         }
 
@@ -868,13 +868,13 @@ version(none)
      +/
     const(AllocatedChain) save(immutable(Buffer) data, bool random_block = random) {
         auto result = new AllocatedChain(this, data, random_block);
-        
+
         allocated_chains ~= result;
         return result;
 
     }
 
-     /++
+    /++
      +
      + This function will erase, write, update the BlockFile and update the recyle bin
      + Stores the list of AllocatedChain to the disk
@@ -927,7 +927,7 @@ version(none)
 
             void allocate_and_chain(
                     const(AllocatedChain[]) allocate) @safe {
-            /*    
+                /*    
             foreach(a; allocate) {
                     seek(a.index);
                     file.rawWrite(a.data);
@@ -937,8 +937,7 @@ version(none)
                 if (allocate.length > 0) {
                     Index chain(
                             immutable(ubyte[]) data,
-                    const Index current_index,
-                    const Index previous_index,
+                    const Index current_index,//const Index previous_index,
                     const bool head) @trusted {
                         scope (success) {
                             version (none)
@@ -947,15 +946,6 @@ version(none)
                         if (data !is null) {
                             // update_first_index(current_index);
                             if (data.length > DATA_SIZE) {
-                            version(none)
-                                void update_first_index(Index current_index) {
-                                    if ((masterblock.first_index > current_index) || (
-                                            masterblock.first_index is INDEX_NULL)) {
-                                        //masterblock.first_index = current_index;
-                                    }
-                                }
-
-                                Index previous = previous_index;
                                 Index current = current_index;
                                 bool h = head;
                                 size_t from = 0;
@@ -970,7 +960,7 @@ version(none)
                                             size, slice_data,
                                             h);
                                     //update_first_index(current);
-                                    previous = current;
+                                    //previous = current;
                                     current = Index(next_index);
                                     h = false;
                                     from += DATA_SIZE;
@@ -979,8 +969,7 @@ version(none)
                                     assert(data[from .. $].length !is 0, "Tail data block is zero size");
                                     immutable next_index = chain(
                                             data[from .. $],
-                                            current,
-                                            Index(current - 1),
+                                            current,//Index(current - 1),
                                             false);
                                 }
 
@@ -988,8 +977,8 @@ version(none)
                             else {
                                 auto next_index = chain(
                                         null,
-                                        Index(current_index + 1),
-                                        current_index, false);
+                                        Index(current_index + 1),//current_index,
+                                        false);
                                 if (next_index == _last_block_index) {
                                     // Make sure the last block is grounded
                                     next_index = INDEX_NULL;
@@ -1006,13 +995,14 @@ version(none)
                         }
                         return INDEX_NULL;
                     }
- foreach(ablock; allocate) {
-                    //auto ablock = allocate[0];
-                    immutable previous_index = (ablock.index > 1) ?
-                        Index(ablock.index - 1) : INDEX_NULL;
-                    chain(ablock.data, ablock.index, previous_index, true);
-                    //allocate_and_chain(allocate[1 .. $]);
-                }
+
+                    foreach (ablock; allocate) {
+                        //auto ablock = allocate[0];
+                        immutable previous_index = (ablock.index > 1) ?
+                            Index(ablock.index - 1) : INDEX_NULL;
+                        chain(ablock.data, ablock.index, true);
+                        //allocate_and_chain(allocate[1 .. $]);
+                    }
                 }
             }
             // Puts data into block and chain the blocks
