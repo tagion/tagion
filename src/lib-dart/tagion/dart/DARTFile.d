@@ -1298,8 +1298,7 @@ alias check = Check!DARTException;
 
             Index search(const(ubyte[]) rim_path, const Index index, const uint rim = 0) @safe {
                 if (index !is INDEX_NULL) {
-                    immutable local_data = this.outer.blockfile.load(index);
-                    const doc = Document(local_data);
+                    const doc = this.outer.blockfile.load(index);
                     if (Branches.isRecord(doc)) {
                         Branches branches = Branches(doc);
                         if (rim < rim_path.length) {
