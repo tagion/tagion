@@ -1169,9 +1169,11 @@ class BlockFile {
             if (index == 0) {
                 return BlockSymbol.file_header;
             }
+            /+
             else if (block.head) {
                 return BlockSymbol.header;
             }
+            +/
             else if (recycler.isRecyclable(index)) {
                 return BlockSymbol.recycle;
             }
