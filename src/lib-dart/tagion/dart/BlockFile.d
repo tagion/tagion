@@ -636,7 +636,7 @@ class BlockFile {
         immutable old_statistic_index = masterblock.statistic_index;
 
         auto statistical_allocate = save(_statistic.toDoc.serialize, random);
-        masterblock.statistic_index = statistical_allocate.begin_index;
+        masterblock.statistic_index = statistical_allocate.index;
         if (old_statistic_index !is INDEX_NULL) {
             // The old statistic block is erased
             erase(old_statistic_index);
@@ -742,7 +742,7 @@ class BlockFile {
         if (index == 0) {
             return Buffer.init;
         }
-        auto allocated_range = allocated_chains.filter!(a => a.begin_index == index);
+        auto allocated_range = allocated_chains.filter!(a => a.index== index);
         if (!allocated_range.empty) {
             return allocated_range.front.data;
         }
@@ -798,7 +798,7 @@ class BlockFile {
     static class AllocatedChain {
         @recordType("ACHAIN") struct Chain {
             Buffer data;
-            Index begin_index;
+            Index index;
             mixin HiBONRecord;
         }
 
@@ -817,11 +817,11 @@ class BlockFile {
         // This function reserves blocks and recycles blocks if possible
         protected void reserve(bool random_block)(BlockFile owner)
         in {
-            assert(chain.begin_index == 0, "Block is already reserved");
+            assert(chain.index == 0, "Block is already reserved");
         }
         do {
             immutable size = owner.number_of_blocks(chain.data.length);
-            chain.begin_index = Index(owner.recycler.reserve_segment(size));
+            chain.index = Index(owner.recycler.reserve_segment(size));
             owner._statistic(size);
         }
 
@@ -838,13 +838,12 @@ class BlockFile {
                 reserve!false(owner);
             }
         }
-
     final:
 
-        Index begin_index() pure const nothrow {
-            return chain.begin_index;
+        Index index() pure const nothrow {
+            return chain.index;
         }
-
+version(none)
         Index end_index(const BlockFile owner) pure const nothrow {
             return Index(chain.begin_index + owner.number_of_blocks(chain.data.length));
         }
@@ -869,6 +868,7 @@ class BlockFile {
      +/
     const(AllocatedChain) save(immutable(Buffer) data, bool random_block = random) {
         auto result = new AllocatedChain(this, data, random_block);
+        
         allocated_chains ~= result;
         return result;
 
@@ -927,6 +927,13 @@ class BlockFile {
 
             void allocate_and_chain(
                     const(AllocatedChain[]) allocate) @safe {
+            /*    
+            foreach(a; allocate) {
+                    seek(a.index);
+                    file.rawWrite(a.data);
+                }
+                version(none)
+*/
                 if (allocate.length > 0) {
                     Index chain(
                             immutable(ubyte[]) data,
@@ -1000,14 +1007,14 @@ class BlockFile {
                     }
 
                     auto ablock = allocate[0];
-                    immutable previous_index = (ablock.begin_index > 1) ?
-                        Index(ablock.begin_index - 1) : INDEX_NULL;
-                    chain(ablock.data, ablock.begin_index, previous_index, true);
+                    immutable previous_index = (ablock.index > 1) ?
+                        Index(ablock.index - 1) : INDEX_NULL;
+                    chain(ablock.data, ablock.index, previous_index, true);
                     allocate_and_chain(allocate[1 .. $]);
                 }
             }
             // Puts data into block and chain the blocks
-            sort!(q{a.begin_index < b.begin_index}, SwapStrategy.unstable)(allocated_chains);
+            sort!(q{a.index < b.index}, SwapStrategy.unstable)(allocated_chains);
 
             allocate_and_chain(allocated_chains);
             //recycler.trim_last_block_index(blocks);

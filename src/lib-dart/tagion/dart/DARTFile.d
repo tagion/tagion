@@ -967,7 +967,8 @@ alias check = Check!DARTException;
                         auto sub_range = RimKeyRange(range, rim);
                         immutable rim_key = sub_range.front.fingerprint.rim_key(rim);
                         if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-                            const leave = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
+                            const leave = traverse_dart(sub_range, 
+                            branches.index(rim_key), rim + 1);
 
                             branches[rim_key] = leave;
                         }
@@ -977,7 +978,7 @@ alias check = Check!DARTException;
                         return Leave.init;
                     }
                     return Leave(blockfile.save(branches.toHiBON.serialize)
-                            .begin_index, branches.fingerprint(this));
+                            .index, branches.fingerprint(this));
                 }
                 else static if (is(R == RimKeyRange)) {
                     uint lonely_rim_key;
@@ -1051,7 +1052,7 @@ alias check = Check!DARTException;
                                         }
                                         pragma(msg, "fixme(pr): This scenario is never called. Why is it here?");
                                         return Leave(blockfile.save(one_archive.store.serialize)
-                                                .begin_index,
+                                                .index,
                                                 one_archive.fingerprint);
 
                                     }
@@ -1120,12 +1121,12 @@ alias check = Check!DARTException;
                                     // Return a branch with as single leave when the leave is on the on
                                     // the edge between the sector
                                     branches[lonely_rim_key] = Leave(blockfile.save(one_archive.store.serialize)
-                                            .begin_index, one_archive.fingerprint);
+                                            .index, one_archive.fingerprint);
                                     return Leave(blockfile.save(branches.toHiBON.serialize)
-                                            .begin_index, branches.fingerprint(this));
+                                            .index, branches.fingerprint(this));
                                 }
                                 return Leave(blockfile.save(one_archive.store.serialize)
-                                        .begin_index, one_archive.fingerprint);
+                                        .index, one_archive.fingerprint);
 
                             }
                         }
@@ -1143,7 +1144,7 @@ alias check = Check!DARTException;
                     }
 
                     return Leave(blockfile.save(branches.toHiBON.serialize)
-                            .begin_index, branches.fingerprint(this));
+                            .index, branches.fingerprint(this));
 
                 }
                 else {
