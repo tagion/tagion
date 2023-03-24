@@ -113,7 +113,6 @@ alias check = Check!DARTException;
 @safe class DARTFile {
     enum KEY_SPAN = ubyte.max + 1;
     import tagion.dart.BlockFile : INDEX_NULL;
-
     immutable(string) filename;
 
     protected RecordFactory manufactor;
@@ -552,20 +551,20 @@ alias check = Check!DARTException;
     *    key = key in the branch to read from 
     * Returns: the data a key
     */
-    Buffer load(ref const(Branches) b, const uint key) {
+    Document load(ref const(Branches) b, const uint key) {
         if ((key < KEY_SPAN) && (b.indices)) {
             immutable index = b.indices[key];
             if (index !is INDEX_NULL) {
-                return blockfile.load(index).serialize;
+                return blockfile.load(index);
             }
         }
-        return null;
+        return Document.init;
     }
 
     @safe
     class RimWalkerFiber : Fiber {
         immutable(Buffer) rim_paths;
-        protected Buffer data;
+        protected Document doc;
         protected bool _finished;
         /** 
          * Sector for the walker
@@ -608,8 +607,9 @@ alias check = Check!DARTException;
                     immutable Index index,
                     immutable uint rim = 0) @safe {
                 if (index !is INDEX_NULL) {
-                    data = this.outer.blockfile.load(index).serialize;
-                    const doc = Document(data);
+                    doc =this.outer.blockfile.load(index);
+                    assert(!doc.empty, "Loaded document should not be empty");        
+            //const doc = Document(data);
                     if (rim < rim_paths.length) {
                         if (Branches.isRecord(doc)) {
                             const branches = Branches(doc);
@@ -657,8 +657,8 @@ alias check = Check!DARTException;
      * Front for the range
      * Returns: the data at the range position
      */
-        final immutable(Buffer) front() const pure nothrow {
-            return data;
+        final const(Document) front() const pure nothrow {
+            return doc;
         }
     }
 
@@ -968,8 +968,8 @@ alias check = Check!DARTException;
                         auto sub_range = RimKeyRange(range, rim);
                         immutable rim_key = sub_range.front.fingerprint.rim_key(rim);
                         if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-                            const leave = traverse_dart(sub_range,
-                                    branches.index(rim_key), rim + 1);
+                            const leave = traverse_dart(sub_range, 
+                            branches.index(rim_key), rim + 1);
 
                             branches[rim_key] = leave;
                         }
@@ -1122,7 +1122,7 @@ alias check = Check!DARTException;
                                     // Return a branch with as single leave when the leave is on the on
                                     // the edge between the sector
                                     branches[lonely_rim_key] = Leave(
-                                            blockfile.save(one_archive.store)
+                                    blockfile.save(one_archive.store)
                                             .index, one_archive.fingerprint);
                                     return Leave(blockfile.save(branches)
                                             .index, branches.fingerprint(this));

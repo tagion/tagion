@@ -744,7 +744,7 @@ received = the HiRPC received package
             auto recorder_worker = owner.recorder;
             foreach (archive_data; rim_walker) {
                 const archive_doc = Document(archive_data);
-
+                assert(!archive_doc.empty, "archive should not be empty");
                 recorder_worker.remove(archive_doc);
                 count++;
                 if (count > chunck_size) {
