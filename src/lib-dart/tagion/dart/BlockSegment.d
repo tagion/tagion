@@ -7,16 +7,11 @@ import std.typecons : Typedef;
 import tagion.hibon.Document;
 import tagion.dart.BlockFile;
 import tagion.basic.Types : Buffer;
-/// BlockFile file position index
-//alias Index = Typedef!(ulong, ulong.init, "BINDEX");
-
-//enum NullIndex = Index.init;
 
 @safe
 struct BlockSegment {
     Index index; /// Block index where the document is stored or should be stored
     Document doc; /// Document stored in the segment
-        immutable bool head; /// Set to `true` this block starts a chain of blocks
 
     void write(BlockFile blockfile) const {
         blockfile.seek(index);
@@ -34,17 +29,6 @@ struct BlockSegment {
         blockfile.seek(index);
         doc = blockfile.file.fread;
         this.index=index;
-    }
-
-    version(none)
-    uint size() const pure nothrow @nogc {
-        return cast(uint)doc.full_size;
-    }
-//        enum HEADER_SIZE = cast(uint)(uint.sizeof);
-   
-version(none)
-    Buffer data() {
-        return doc.data;
     }
 }
 

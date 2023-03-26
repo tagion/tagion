@@ -44,27 +44,8 @@ enum BLOCK_SIZE = 0x80;
 version (unittest) {
     import Basic = tagion.basic.Basic;
 
-    enum random = false;
-
     const(Basic.FileNames) fileId(T = BlockFile)(string prefix = null) @safe {
         return Basic.fileId!T(FileExtension.dart, prefix);
-    }
-}
-else {
-    enum random = true;
-}
-
-version (none) {
-    /// Dummy code Should be removed when the in the new recycler
-    @safe
-    RecycleIndices.Segments update_segments(ref Recycler recycler, bool segments_needs_saving = false) {
-        // Find continues segments of blocks
-        return new RecycleIndices.Segments;
-    }
-
-    @safe
-    void trim_last_block_index(ref Recycler recycler, ref scope BlockFile.Block[Index] blocks) {
-        ///void trim_last_block_index);
     }
 }
 
@@ -394,7 +375,7 @@ class BlockFile {
         //Index first_index; /// Points to the first block of data
         Index root_index; /// Point the root of the database
         Index statistic_index; /// Points to the statistic data
-        final void write(
+        void write(
                 ref File file,
                 immutable uint BLOCK_SIZE) const @trusted {
             auto buffer = new ubyte[BLOCK_SIZE];
@@ -411,7 +392,7 @@ class BlockFile {
             file.sync;
         }
 
-        final void read(ref File file, immutable uint BLOCK_SIZE) {
+        void read(ref File file, immutable uint BLOCK_SIZE) {
             auto buffer = new ubyte[BLOCK_SIZE];
             auto buf = file.rawRead(buffer);
             foreach (i, ref m; this.tupleof) {
@@ -476,7 +457,7 @@ class BlockFile {
         // Allocate block for statistical data
         immutable old_statistic_index = masterblock.statistic_index;
 
-        auto statistical_allocate = save(_statistic.toDoc, random);
+        auto statistical_allocate = save(_statistic.toDoc);
         masterblock.statistic_index = Index(statistical_allocate.index);
         if (old_statistic_index !is INDEX_NULL) {
             // The old statistic block is erased
@@ -540,35 +521,6 @@ class BlockFile {
      +     some because of some other failures in the blockfile system
      +/
     const(Document) load(const Index index, const bool check_format = true) {
-        //auto first_block = read(index);
-        // Check if this is the first block is the start of a block sequency
-        version (none)
-            check(check_format || first_block.head, format(
-                    "Block @ %d is not the head of block sequency", index));
-        version (none) Buffer build_sequency(Block block) @safe {
-            scope buffer = new ubyte[first_block.size];
-            auto cache = buffer;
-            Index current_index = Index(index + 1);
-            while (block.size > DATA_SIZE) {
-                cache[0 .. DATA_SIZE] = block.data;
-                auto next_block = read(current_index);
-                check(next_block !is null, format("Fatal error in the blockfile @ %s", current_index));
-                version (none)
-                    check(check_format || !next_block.head, format(
-                            "Block @ %d is marked as head of block sequency but it should not be", index));
-                block = next_block;
-                cache = cache[DATA_SIZE .. $];
-                current_index++;
-            }
-
-            {
-                check(check_format || block.size !is 0, format("Block @ %d has the size zero", index));
-                cache[0 .. block.size] = block.data[0 .. block.size];
-            }
-            return buffer.idup;
-        }
-
-        //return Document(build_sequency(first_block));
         return BlockSegment(this, index).doc;
     }
 
@@ -578,6 +530,13 @@ class BlockFile {
         return T(doc);
     }
 
+    /**
+     * Works the same as load except that it also reads data from cache which hasn't been stored yet
+     * Params:
+     *   index = Block index 
+     * Returns: 
+     *   Document load at index
+     */
     Document cacheLoad(const Index index) nothrow {
         if (index == 0) {
             return Document.init;
@@ -590,7 +549,15 @@ class BlockFile {
         return assumeWontThrow(load(index));
     }
 
-    T cacheLoad(T)(const T rec, const Index index) if (isHiBONRecord!T) {
+    /**
+     * Ditto
+     * Params:
+     *   T = HiBON record type
+     *   index = block index
+     * Returns: 
+     *   T load at index
+     */
+    T cacheLoad(T)(const Index index) if (isHiBONRecord!T) {
         const doc = cacheLoad(index);
         check(isRecord!T(doc), format("The loaded document is not a %s record", T.stringof));
         return T(doc);
@@ -616,48 +583,37 @@ class BlockFile {
         return INDEX_NULL;
     }
 
-    version (none) Index end_index(const Index index) {
-        @safe Index search(const Index index) {
-            if (index !is INDEX_NULL) {
-                const block = read(index);
-                check(block.size > 0,
-                        format("Bad data block @ %d the size is zero", index));
-                if (block.size > DATA_SIZE) {
-                    return search(block.next);
-                }
-                else {
-                    return block.next;
-                }
-            }
-            return INDEX_NULL;
-        }
-
-        return search(index);
-    }
-
+    /**
+     * Internale function used to reserve a size bytes in the blockfile
+     * Params:
+     *   size = size in bytes
+     * Returns: 
+     *   block index position of the reserved bytes
+     */
     protected Index reserve(const size_t size) nothrow {
         const nblocks = number_of_blocks(size);
         _statistic(nblocks);
         return Index(recycler.reserve_segment(nblocks));
     }
 
+    /// Cache to be stored
     protected const(BlockSegment)*[] allocated_chains;
 
     /++
-     + Allocates new data block
+     + Allocates new document
      + Does not acctually update the BlockFile just reserves new block's
      +
      + Params:
-     +     data = Data buffer to be reserved and allocated
+     +     doc = Document to be reserved and allocated
      +/
-    const(BlockSegment*) save(const(Document) doc, bool random_block = random) {
+    const(BlockSegment*) save(const(Document) doc) {
         auto result = new const(BlockSegment)(doc, reserve(doc.full_size));
 
         allocated_chains ~= result;
         return result;
 
     }
-    /// Dito
+    /// Ditto
     const(BlockSegment*) save(T)(const T rec) if (isHiBONRecord!T) {
         return save(rec.toDoc);
     }
@@ -737,40 +693,6 @@ class BlockFile {
                         end |= trace(r.index, Fail.ZERO_SIZE, current, check_recycle_mode);
                     }
                 }
-                version (none)
-                    if (previous) {
-                        if (current.previous >= r.index) {
-                            failed = true;
-                            end |= trace(r.index, Fail.INCREASING, current, check_recycle_mode);
-                        }
-                        static if (check_recycle_mode) {
-                            version (none)
-                                if (current.head) {
-                                    failed = true;
-                                    end |= trace(r.index, Fail.RECYCLE_HEADER, current, check_recycle_mode);
-                                }
-                            if (current.size != 0) {
-                                failed = true;
-                                end |= trace(r.index, Fail.RECYCLE_NON_ZERO, current, check_recycle_mode);
-                            }
-                        }
-                        else {
-                            if (!current.head) {
-                                if (previous.size != current.size + DATA_SIZE) {
-                                    failed = true;
-                                    end |= trace(r.index, Fail.SEQUENCY, current, check_recycle_mode);
-                                }
-                            }
-                            else if (previous.size > DATA_SIZE) {
-                                end |= trace(current.previous, Fail.BAD_SIZE, previous, check_recycle_mode);
-                            }
-                        }
-                        if (r.index != previous.next) {
-                            failed = true;
-                            end |= trace(r.index, Fail.LINK, current, check_recycle_mode);
-                        }
-
-                    }
                 if (!failed) {
                     end |= trace(r.index, Fail.NON, current, check_recycle_mode);
                 }
@@ -779,10 +701,6 @@ class BlockFile {
             }
         }
 
-        version (none) {
-            BlockRange r = blockRange;
-            check_data!false(r);
-        }
         return failed;
     }
 
@@ -863,103 +781,7 @@ class BlockFile {
             blockfile.close;
         }
 
-        version (none) bool failsafe(const Index index, const Fail f, const Block block, const bool recycle_block) @safe {
-            assert(f == Fail.NON, format("Data check fails on block @ %d: Fail:%s in %s",
-                    index, f, recycle_block ? "recycle block" : "data block"));
-            return false;
-        }
-
-        {
-            version (none) {
-                auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
-                blockfile.inspect(&failsafe);
-
-                B[] allocators = [
-                    B("++++Block 0", 5), // 0
-
-                    B("++++Block 1", 2), // 1
-
-                    B("++++Block 2", 1), // 2
-                    B("++++Block 3", 3), // 3
-
-                    B("++++Block 4", 2), // 4
-                    B("++++Block 5", 1), // 5
-                    B("++++Block 6", 2), // 6
-                    B("++++Block 7", 4), // 7
-                    B("++++Block 8", 4), // 8
-                    B("++++Block 9", 9), // 9
-
-                    B("++++Block 10", 8), // 10
-                    B("++++Block 11", 4), // 11
-                    B("++++Block 12", 1), // 12
-                    B("++++Block 13", 3), // 13
-                    B("++++Block 14", 2), // 14
-                    B("++++Block 15", 3), // 15
-                    B("++++Block 16", 5) // 16 Last data block
-
-                ];
-
-                foreach (b; allocators) {
-                    blockfile.save(generate_block(blockfile, b));
-                }
-
-                // Note the state block is written after the last block
-                blockfile.store;
-
-                blockfile.close;
-            }
-
-            version (none) { /// Check the blockfile
-                auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
-                blockfile.inspect(&failsafe);
-                blockfile.close;
-            }
-
-        }
-
-        version (none) void erase(BlockFile blockfile, immutable(Index[]) erase_list) {
-            void local_erase(const Index index, immutable(Index[]) erase_list, immutable uint no = 0) {
-                if ((index !is INDEX_NULL) && (erase_list.length > 0)) {
-                    if (no == erase_list[0]) {
-                        immutable end_index = blockfile.erase(index);
-                        local_erase(end_index, erase_list[1 .. $], no + 1);
-                    }
-                else {
-                        immutable end_index = blockfile.end_index(index);
-                        local_erase(end_index, erase_list, no + 1);
-                    }
-                }
-
-            }
-
-            local_erase(blockfile.masterblock.first_index, erase_list);
-        }
-
-        version (none) /// Removed becase next index has been removed from Block
-        { // Remove block
-            auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
-            blockfile.inspect(&failsafe);
-            // Erase chain of block
-            erase(blockfile, [0, 2, 6, 13, 16].map!(index => Index(index)).array.idup);
-            blockfile.store;
-
-            blockfile.close;
-        }
-
-        version (none) { // Check the recycle list
-            auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
-
-            assert(equal(blockfile.recycle_indices[], [
-                1, 2, 3, 4, 5, 6,
-                10, 11,
-                21, 22, 23,
-                60, 61, 62,
-                69, 70, 71, 72, 73, 74, 75, 76, 77
-            ]));
-            blockfile.close;
-        }
-
-        {
+       {
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
 
             blockfile.erase(blockfile.masterblock.statistic_index);
@@ -967,55 +789,5 @@ class BlockFile {
             blockfile.close;
         }
 
-        version (none) { // Write block again
-            auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
-            // The statistic block is erased before writing
-            B[] allocators = [
-                B("++++Block 17", 9), // 17
-                B("++++Block 18", 4), // 18
-                B("++++Block 19", 2), // 19
-                B("++++Block 20", 1), // 20
-                B("++++Block 21", 3), // 21
-                B("++++Block 22", 3), // 22
-                B("++++Block 23", 4) // 23
-            ];
-
-            foreach (b; allocators) {
-                blockfile.save(generate_block(blockfile, b));
-            }
-
-            blockfile.store;
-
-            blockfile.close;
-
-        }
-
-        version (none) { // Check that all block are written
-            auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
-
-            blockfile.inspect(&failsafe);
-
-            blockfile.close;
-        }
-
-        version (none) // Removed because previous index has been removed from block
-        {
-            import std.math.operations : isClose;
-            import std.stdio;
-
-            auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
-            immutable uint[uint] size_stats =
-                [6: 2, 2: 4, 3: 5, 10: 2, 5: 5, 4: 5, 9: 1];
-            foreach (size, count; blockfile.statistic.histogram) {
-                assert(size in size_stats);
-                assert(count is size_stats[size]);
-            }
-
-            immutable result = blockfile.statistic.result;
-            assert(isClose(result.mean, 4.54167f));
-            assert(isClose(result.sigma, 2.32153f));
-            assert(result.N == 24);
-            blockfile.close;
-        }
-    }
+   }
 }
