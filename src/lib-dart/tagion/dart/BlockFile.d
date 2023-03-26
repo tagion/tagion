@@ -215,9 +215,8 @@ class BlockFile {
         auto old_blockfile = BlockFile(old_filename);
         old_blockfile.readStatistic;
 
-        File file;
-        file.open(filename, "w+");
-        auto blockfile = new BlockFile(file, old_blockfile.headerblock.block_size);
+        auto _file=File(filename, "w+");
+        auto blockfile = new BlockFile(_file, old_blockfile.headerblock.block_size);
         blockfile.headerblock = old_blockfile.headerblock;
         blockfile._statistic = old_blockfile._statistic;
         blockfile.headerblock.write(file);
