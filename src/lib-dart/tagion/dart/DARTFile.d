@@ -302,9 +302,6 @@ alias check = Check!DARTException;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
-
-            
-
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if (doc.hasMember(indicesName)) {
                 _indices = new Index[KEY_SPAN];
@@ -954,12 +951,8 @@ alias check = Check!DARTException;
                 Branches branches;
                 if (rim < RIMS_IN_SECTOR) {
                     if (branch_index !is INDEX_NULL) {
-                        immutable data = blockfile.load(branch_index);
-                        const doc = Document(data);
-                        branches = Branches(doc);
-
-                        
-
+                        branches = blockfile.load!Branches(branch_index);
+                        //branches = Branches(doc);
                         .check(branches.hasIndices,
                                 "DART failure within the sector rims the DART should contain a branch");
                     }
@@ -984,11 +977,7 @@ alias check = Check!DARTException;
                 else static if (is(R == RimKeyRange)) {
                     uint lonely_rim_key;
                     if (branch_index !is INDEX_NULL) {
-                        immutable data = blockfile.load(branch_index);
-                        const doc = Document(data);
-
-                        
-
+                        const doc= blockfile.load(branch_index);
                         .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
                         if (Branches.isRecord(doc)) {
                             branches = Branches(doc);

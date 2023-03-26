@@ -727,7 +727,13 @@ class BlockFile {
         }
 
         return Document(build_sequency(first_block));
+    //return BlockSegment(this, index).doc;
+    }
 
+    T load(T)( const Index index) if (isHiBONRecord!T) {
+        const doc=load(index);
+        check(isRecord!T(doc), format("The loaded document is not a %s record", T.stringof));
+        return T(doc);
     }
 
     Document cacheLoad(const Index index) nothrow {
@@ -742,6 +748,11 @@ class BlockFile {
         return assumeWontThrow(load(index));
     }
 
+    T cacheLoad(T)(const T rec, const Index index) if (isHiBONRecord!T) {
+        const doc=cacheLoad(index);
+        check(isRecord!T(doc), format("The loaded document is not a %s record", T.stringof));
+        return T(doc);
+    }
     /++
      + Marks a chain for blocks as erased
      + This function does actually erease the block before the store method is called
@@ -988,6 +999,7 @@ class BlockFile {
                         //   immutable previous_index = (ablock.index > 1) ?
                         //     Index(ablock.index - 1) : INDEX_NULL;
                         chain(ablock.data, ablock.index);
+                        //BlockSegment( Document(ablock.data), ablock.index).write(this);
                         //allocate_and_chain(allocate[1 .. $]);
                     }
                 }
