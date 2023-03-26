@@ -929,12 +929,13 @@ alias check = Check!DARTException;
      * If the function executes succesfully then the DART is update or else it does not affect the DART
      * The function returns the bullseye of the dart
      */
-    Buffer modify(const(RecordFactory.Recorder) modify_records, GetType get_type = null, bool PRINT = false) {
+    Buffer modify(const(RecordFactory.Recorder) modify_records, 
+GetType get_type = null, 
+bool PRINT = false) {
 
         if (get_type is null) {
             get_type = (a) => a.type;
         }
-        bool __dummy;
         Leave traverse_dart(R)(
                 ref R range,
                 const Index branch_index,
@@ -1213,8 +1214,7 @@ alias check = Check!DARTException;
      */
     Branches branches(const(ubyte[]) rim_path) {
         Branches search(const(ubyte[]) rim_path, const Index index, const uint rim = 0) {
-            immutable data = blockfile.load(index);
-            const doc = Document(data);
+            const doc = blockfile.load(index);
             if (Branches.isRecord(doc)) {
                 Branches branches = Branches(doc);
                 if (rim < rim_path.length) {
