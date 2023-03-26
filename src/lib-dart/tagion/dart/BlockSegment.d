@@ -17,11 +17,6 @@ struct BlockSegment {
     Index index; /// Block index where the document is stored or should be stored
     Document doc; /// Document stored in the segment
         immutable bool head; /// Set to `true` this block starts a chain of blocks
-    alias begin_index=index;
-    version (none) uint blocks(const uint block_size) const pure nothrow @nogc {
-        const total_size = totalSize;
-        return total_size / block_size + (total_size % block_size == 0) ? 0 : 1;
-    }
 
     void write(BlockFile blockfile) const {
         blockfile.seek(index);
@@ -38,13 +33,16 @@ struct BlockSegment {
         import tagion.hibon.HiBONRecord : fread;
         blockfile.seek(index);
         doc = blockfile.file.fread;
+        this.index=index;
     }
 
+    version(none)
     uint size() const pure nothrow @nogc {
         return cast(uint)doc.full_size;
     }
-        enum HEADER_SIZE = cast(uint)(uint.sizeof);
-    
+//        enum HEADER_SIZE = cast(uint)(uint.sizeof);
+   
+version(none)
     Buffer data() {
         return doc.data;
     }

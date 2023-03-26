@@ -930,8 +930,7 @@ alias check = Check!DARTException;
      * The function returns the bullseye of the dart
      */
     Buffer modify(const(RecordFactory.Recorder) modify_records, 
-GetType get_type = null, 
-bool PRINT = false) {
+GetType get_type = null) { 
 
         if (get_type is null) {
             get_type = (a) => a.type;
@@ -951,7 +950,6 @@ bool PRINT = false) {
                 if (rim < RIMS_IN_SECTOR) {
                     if (branch_index !is INDEX_NULL) {
                         branches = blockfile.load!Branches(branch_index);
-                        //branches = Branches(doc);
                         .check(branches.hasIndices,
                                 "DART failure within the sector rims the DART should contain a branch");
                     }
