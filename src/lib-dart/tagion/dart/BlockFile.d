@@ -472,152 +472,6 @@ class BlockFile {
         return BLOCK_SIZE * cast(ulong) index;
     }
 
-    //  alias Block=BlockSegment;
-    /++
-     + Block handler
-     +/
-    version (none) @safe
-    static class Block {
-        immutable uint size; /// size of the data in this block
-        //immutable bool head; /// Set to `true` this block starts a chain of blocks
-        enum uint HEAD_MASK = 1 << (uint.sizeof * 8 - 1);
-        enum HEADER_SIZE = cast(uint)(size.sizeof);
-        immutable(Buffer) data;
-        void write(ref File file, immutable uint BLOCK_SIZE) const @trusted {
-            scope buffer = new ubyte[BLOCK_SIZE];
-            size_t pos;
-            foreach (i, m; this.tupleof) {
-                alias type = TypedefType!(typeof(m));
-                enum name = this.tupleof[i].stringof;
-                static if (is(type : Buffer)) {
-                    buffer[pos .. pos + m.length] = m;
-                    pos += m.length;
-                }
-                else { //static if (name != this.head.stringof) {
-                    buffer.binwrite(cast(type) m, &pos);
-                }
-
-            }
-            assert(!BlockFile.do_not_write, "Should not write here");
-
-            file.rawWrite(buffer[0 .. pos]);
-        }
-
-        private this(ref File file, immutable uint BLOCK_SIZE)
-        in {
-            assert(HEADER_SIZE < BLOCK_SIZE);
-        }
-        do {
-
-            scope buffer = new ubyte[BLOCK_SIZE];
-            scope buf = file.rawRead(buffer);
-            foreach (i, m; this.tupleof) {
-                alias type = TypedefType!(typeof(m));
-                enum name = this.tupleof[i].stringof;
-                static if (name != this.data.stringof) {
-                    static if (name == this.size.stringof) {
-                        immutable _size = buf.binread!type;
-                        size = _size & (~HEAD_MASK);
-                        //head = (_size & HEAD_MASK) != 0;
-                    }
-                    else static if (name != this.head.stringof) {
-                        this.tupleof[i] = buf.binread!type;
-                    }
-                }
-            }
-            immutable size_t data_size = (size <= buf.length) ? size : buf.length;
-            data = buf[0 .. data_size].idup;
-        }
-
-        private this(
-                const uint size,
-                immutable(Buffer) buf) pure nothrow {
-            this.size = size;
-            //this.head = head;
-            data = buf;
-        }
-
-    }
-
-    version (none) protected final Block block(
-            //immutable Index next,
-            immutable uint size,
-            immutable(Buffer) buf) {
-        return new Block(size, buf);
-    }
-
-    /++
-     + Read's a block at the current index
-     +/
-    version (none) protected final Block block(ref File file) {
-        return new Block(file, BLOCK_SIZE);
-    }
-
-    /++
-     + Write a block to the current index
-     +/
-    version (none) protected final write(ref const Block block, ref File file) {
-        with (block) {
-            block.write(file, BLOCK_SIZE);
-        }
-    }
-
-    /++
-     + Returns:
-     +     information text of the block
-     +/
-    version (none) string toInfo(const Block block) const {
-        with (block) {
-            return format("[%04d] blocks=%d size=%d head=%s", number_of_blocks(
-                    size), size, head);
-        }
-    }
-
-    version (none) @safe
-    static struct Segment {
-        protected Index _begin_index;
-        protected uint _size;
-        invariant {
-            assert(_size > 0);
-        }
-
-        this(const Index from, const Index to)
-        in (from < to)
-        in (to - from < uint.max)
-        do {
-            _size = cast(uint)(to - from);
-            _begin_index = from;
-        }
-
-        uint size() pure const nothrow {
-            return _size;
-        }
-
-        Index begin_index() pure const nothrow {
-            return _begin_index;
-        }
-
-        Index end_index() pure const nothrow {
-            return Index(_begin_index + _size);
-        }
-
-        string toInfo() const {
-            return format("[%d..%d]:%d", begin_index, end_index, size);
-        }
-
-    }
-
-    /++
-     + Write a block to the index
-     + Params:
-     +     index = Block index poiter where to write in the block file
-     +     block = The block to be written
-     +/
-    version (none) protected void write(scope const Index index, const(Block) block) {
-        seek(index);
-        block.write(file, BLOCK_SIZE);
-    }
-
     protected void writeStatistic() {
         // Allocate block for statistical data
         immutable old_statistic_index = masterblock.statistic_index;
@@ -642,15 +496,6 @@ class BlockFile {
     protected void writeMasterBlock() {
         seek(_last_block_index);
         masterblock.write(file, BLOCK_SIZE);
-    }
-
-    version (none) Block read(const Index index) {
-        Block result;
-        if (index < _last_block_index) {
-            seek(index);
-            result = block(file);
-        }
-        return result;
     }
 
     private void readHeaderBlock() {
@@ -824,133 +669,17 @@ class BlockFile {
      +
      +/
     void store() {
-        version (none)
-            debug scope (exit) {
-                bool failsafe(const Index index, const Fail f, const Block block, const bool recycle_block) @safe {
-                    if (f != Fail.NON) {
-                        console.writefln("Data check fails on block @ [%d -> %d]: Fail:%s in %s",
-                                index, index + 1, f, recycle_block ? "recycle block" : "data block");
-                    }
-                    return false;
-                }
-
-                assert(!inspect(&failsafe), "Should not fail here");
-            }
-        version (none) Block[Index] blocks;
-        writeStatistic;
+       writeStatistic;
         scope (success) {
             allocated_chains = null;
             version (none)
                 recycler.write;
-
-            version (none) { //write_blocks_in_sorted_order
-                auto sorted_indices = blocks.keys.dup.sort;
-                sorted_indices.each!(index => write(index, blocks[index]));
-            }
-
             writeMasterBlock;
-            //recycle_indices.build_segments;
         }
 
-        foreach (block_segment; sort!(q{a.index < b.index}, SwapStrategy.unstable)(allocated_chains)) {
+        foreach (block_segment; sort!(q{a.index < b.index}, 
+            SwapStrategy.unstable)(allocated_chains)) {
             block_segment.write(this);
-        }
-
-        version (none) {
-            do_not_write = true;
-            scope (exit) {
-                do_not_write = false;
-            }
-
-            // Sortes the blocks in order
-            const(Block) local_read(const Index index) {
-                if (index in blocks) {
-                    return blocks[index];
-                }
-                else {
-                    return read(index);
-                }
-            }
-
-            void allocate_and_chain(
-                    const(BlockSegment*[]) allocate) @safe {
-                /*    
-            foreach(a; allocate) {
-                    seek(a.index);
-                    file.rawWrite(a.data);
-                }
-                version(none)
-*/
-                if (allocate.length > 0) {
-                    Index chain(
-                            immutable(ubyte[]) data,
-                    const Index current_index) @trusted { //const Index previous_index,
-                        scope (success) {
-                            version (none)
-                                recycler.reclaim(current_index);
-                        }
-                        if (data !is null) {
-                            // update_first_index(current_index);
-                            if (data.length > DATA_SIZE) {
-                                Index current = current_index;
-                                //bool h = head;
-                                size_t from = 0;
-                                while (from + DATA_SIZE < data.length) {
-                                    auto to = from + DATA_SIZE;
-                                    auto slice_data = data[from .. to];
-                                    const next_index = Index(current + 1);
-                                    const size = cast(uint)(data.length - from);
-                                    assert(size !is 0, "Block size should not be zero");
-                                    blocks[current] = block(
-                                            //next_index,
-                                            size, slice_data);
-                                    //update_first_index(current);
-                                    //previous = current;
-                                    current = Index(next_index);
-                                    //h = false;
-                                    from += DATA_SIZE;
-                                }
-                                if (from + DATA_SIZE >= data.length) {
-                                    assert(data[from .. $].length !is 0, "Tail data block is zero size");
-                                    immutable next_index = chain(
-                                            data[from .. $],
-                                            current);
-                                }
-
-                            }
-                            else {
-                                //auto next_index = 
-                                chain(null, Index(current_index + 1));
-                                blocks[current_index] = block(
-                                        cast(uint) data.length, data);
-
-                            }
-                            return current_index;
-                        }
-                        Index end_index = current_index;
-                        if (end_index < _last_block_index) {
-                            return end_index;
-                        }
-                        return INDEX_NULL;
-                    }
-
-                    foreach (ablock; allocate) {
-                        //auto ablock = allocate[0];
-                        //   immutable previous_index = (ablock.index > 1) ?
-                        //     Index(ablock.index - 1) : INDEX_NULL;
-                        chain(ablock.doc.serialize, ablock.index);
-                        //BlockSegment( Document(ablock.data), ablock.index).write(this);
-                        //allocate_and_chain(allocate[1 .. $]);
-                    }
-                }
-            }
-            // Puts data into block and chain the blocks
-            sort!(q{a.index < b.index}, SwapStrategy.unstable)(allocated_chains);
-
-            allocate_and_chain(allocated_chains);
-            //recycler.trim_last_block_index(blocks);
-
-            // Write new allocated blocks to the file
         }
     }
 
@@ -985,10 +714,9 @@ class BlockFile {
      +     block  = is the failed block
      +     data_flag = Set to `false` if block is a resycled block and `true` if it a data block
      +/
-    version (none) bool inspect(bool delegate(
+    bool inspect(bool delegate(
             const Index index,
             const Fail f,
-            const Block block,
             const bool recycle_chain) @safe trace) {
         scope bool[Index] visited;
         scope bool end;
@@ -1058,36 +786,7 @@ class BlockFile {
         return failed;
     }
 
-    /++
-     + Range of data-buffer's
-     +/
-    version (none) struct ChainRange {
-        private BlockFile owner;
-        private Buffer buffer;
-        private Index _index;
-        this(BlockFile owner, const Index index) {
-            this.owner = owner;
-            _index = index;
-            popFront;
-        }
-
-        bool empty() const pure nothrow {
-            return _index is INDEX_NULL;
-        }
-
-        Buffer front() const pure nothrow {
-            return buffer;
-        }
-
-        void popFront() {
-            if (!empty) {
-                buffer = owner.load(_index);
-                _index = owner.end_index(_index);
-            }
-        }
-    }
-
-    enum BlockSymbol {
+   enum BlockSymbol {
         file_header = 'H',
         header = 'h',
         empty = '_',
@@ -1097,32 +796,7 @@ class BlockFile {
 
     }
 
-    version (none) BlockSymbol getSymbol(const scope Block block, const Index index) const pure nothrow {
-        if (block) {
-            if (index == 0) {
-                return BlockSymbol.file_header;
-            }
-            /+
-            else if (block.head) {
-                return BlockSymbol.header;
-            }
-            +/
-        else if (recycler.isRecyclable(index)) {
-                return BlockSymbol.recycle;
-            }
-            else if (block.size == 0) {
-                return BlockSymbol.empty;
-            }
-            else {
-                return BlockSymbol.data;
-            }
-        }
-        else {
-            return BlockSymbol.none_existing;
-        }
-
-    }
-    /++
+   /++
      + Used for debuging only to dump the Block's
      +/
     void dump(const uint block_per_line = 16) {
