@@ -624,7 +624,7 @@ class BlockFile {
         immutable old_statistic_index = masterblock.statistic_index;
 
         auto statistical_allocate = save(_statistic.toDoc, random);
-        masterblock.statistic_index = statistical_allocate.index;
+        masterblock.statistic_index = Index(statistical_allocate.index);
         if (old_statistic_index !is INDEX_NULL) {
             // The old statistic block is erased
             erase(old_statistic_index);
@@ -740,7 +740,7 @@ class BlockFile {
         }
         auto allocated_range = allocated_chains.filter!(a => a.index == index);
         if (!allocated_range.empty) {
-            return Document(allocated_range.front.data);
+            return allocated_range.front.doc;
         }
 
         return assumeWontThrow(load(index));
@@ -797,41 +797,44 @@ class BlockFile {
      + If possible it recycling old deleted blocks
      +/
     static class AllocatedChain {
+version(none)
         @recordType("ACHAIN") struct Chain {
-            Buffer data;
+           Document doc; 
             Index index;
             mixin HiBONRecord;
         }
 
+version(none)
         protected Chain chain;
+version(none)
         this(const Document doc) {
             chain = Chain(doc);
         }
 
+        Document doc;
+        Index index;
         version (none) inout(HiBON) toHiBON() inout {
             return chain.toHiBON;
         }
 
-        final immutable(Buffer) data() const pure nothrow {
+        version(none)        
+final immutable(Buffer) data() const pure nothrow {
             return chain.data;
         }
         // This function reserves blocks and recycles blocks if possible
         protected void reserve(bool random_block)(BlockFile owner)
         in {
-            assert(chain.index == 0, "Block is already reserved");
+            assert(index is INDEX_NULL, "Block is already reserved");
         }
         do {
-            immutable size = owner.number_of_blocks(chain.data.length);
-            chain.index = Index(owner.recycler.reserve_segment(size));
+            immutable size = owner.number_of_blocks(doc.full_size);
+            index = Index(owner.recycler.reserve_segment(size));
             owner._statistic(size);
         }
 
-        this(BlockFile owner, immutable(Buffer) buffer, immutable bool random_block = random)
-        in {
-            assert(buffer.length > 0, "Buffer size can not be zero");
-        }
-        do {
-            chain.data = buffer;
+        this(BlockFile owner, Document doc, immutable bool random_block = random)
+         {
+            this.doc =doc;
             if (random_block) {
                 reserve!true(owner);
             }
@@ -841,7 +844,7 @@ class BlockFile {
         }
 
     final:
-
+version(none)
         Index index() pure const nothrow {
             return chain.index;
         }
@@ -850,6 +853,7 @@ class BlockFile {
             return Index(chain.begin_index + owner.number_of_blocks(chain.data.length));
         }
 
+    version(none)
         uint size() pure const nothrow {
             import LEB128 = tagion.utils.LEB128;
 
@@ -869,7 +873,7 @@ class BlockFile {
      +     data = Data buffer to be reserved and allocated
      +/
     const(AllocatedChain) save(const(Document) doc, bool random_block = random) {
-        auto result = new AllocatedChain(this, doc.serialize, random_block);
+        auto result = new AllocatedChain(this, doc, random_block);
 
         allocated_chains ~= result;
         return result;
@@ -996,7 +1000,7 @@ class BlockFile {
                         //auto ablock = allocate[0];
                         //   immutable previous_index = (ablock.index > 1) ?
                         //     Index(ablock.index - 1) : INDEX_NULL;
-                        chain(ablock.data, ablock.index);
+                        chain(ablock.doc.serialize, ablock.index);
                         //BlockSegment( Document(ablock.data), ablock.index).write(this);
                         //allocate_and_chain(allocate[1 .. $]);
                     }
