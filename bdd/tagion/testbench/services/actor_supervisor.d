@@ -6,8 +6,13 @@ import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
 import core.time;
+import core.thread;
+import concurrency = std.concurrency;
 import std.format: format;
 import tagion.actor.Actor;
+
+
+debug import std.stdio;
 
 enum feature = Feature(
             "Actor supervisor test",
@@ -18,14 +23,20 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
+enum sleep_time = 100.msecs;
+
 /// Child Actor
 struct SetUpForFailure {
     
     @method void fail(int _i) {
+        debug writeln("child is failing");
         throw new Exception("Child: I am a failure");
     }
     @task void run() {
         alive; // Actor is now alive
+
+        /* Thread.sleep(300.msecs); */
+        /* throw new Exception("Child: I am a failure"); */
         while (!stop) {
             receiveTimeout(100.msecs);
         }
@@ -36,7 +47,17 @@ static assert(isActor!SetUpForFailure);
 
 /// Supervisor Actor
 struct SetUpForDissapointment {
+
+    ActorHandle!SetUpForFailure child_handle;
+
+    @method void isChildRunning(string task_name) {
+        Thread.sleep(sleep_time);
+        sendOwner(isRunning(task_name));
+    }
+
     @task void run() {
+        auto actor_factory = actor!SetUpForFailure;
+        child_handle = actor_factory(child_task_name);
         alive; // Actor is now alive
         while (!stop) {
             receiveTimeout(100.msecs);
@@ -68,9 +89,10 @@ class SupervisorWithFailingChild {
     }
 
     @When("the actor #super start it should start the #child.")
-    Document startTheChild() {
+    Document startTheChild() @trusted {
         check(isRunning(supervisor_task_name), "Supervisor is not running");
-        check(isRunning(child_task_name), "Child is not running");
+        supervisor_handle.isChildRunning(child_task_name);
+        check(concurrency.receiveOnly!bool, "child has started");
         return result_ok;
     }
 
@@ -85,14 +107,15 @@ class SupervisorWithFailingChild {
     }
 
     @Then("the #super actor should restart the child")
-    Document restartTheChild() {
-        return Document();
+    Document restartTheChild() @trusted {
+        supervisor_handle.isChildRunning(child_task_name);
+        check(concurrency.receiveOnly!bool, "child is running again");
+        return result_ok;
     }
 
     @Then("the #super should stop")
     Document superShouldStop() {
         supervisor_handle.stop;
-        check(!isRunning(child_task_name), "Child is still running");
         check(!isRunning(supervisor_task_name), "Supervisor is still running");
         return result_ok;
     }
