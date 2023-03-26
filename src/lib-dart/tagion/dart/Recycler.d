@@ -239,7 +239,7 @@ struct Recycler {
         /// Should implemented    
     }
 
-    const(Index) reserve_segment(const uint size) {
+    const(Index) reserve_segment(const uint size) nothrow {
         scope (success) {
             owner._last_block_index += size;
         }

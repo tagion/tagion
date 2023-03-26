@@ -791,23 +791,21 @@ class BlockFile {
         return search(index);
     }
 
+    alias AllocatedChain = BlockSegment;
     /++
      + This object handles the allocation data-buffer.
      + By splitting the data buffer into a chain of blocks
      + If possible it recycling old deleted blocks
      +/
-    static class AllocatedChain {
-version(none)
-        @recordType("ACHAIN") struct Chain {
-           Document doc; 
+    version (none) static class AllocatedChain {
+        version (none) @recordType("ACHAIN") struct Chain {
+            Document doc;
             Index index;
             mixin HiBONRecord;
         }
 
-version(none)
-        protected Chain chain;
-version(none)
-        this(const Document doc) {
+        version (none) protected Chain chain;
+        version (none) this(const Document doc) {
             chain = Chain(doc);
         }
 
@@ -817,8 +815,7 @@ version(none)
             return chain.toHiBON;
         }
 
-        version(none)        
-final immutable(Buffer) data() const pure nothrow {
+        version (none) final immutable(Buffer) data() const pure nothrow {
             return chain.data;
         }
         // This function reserves blocks and recycles blocks if possible
@@ -832,9 +829,8 @@ final immutable(Buffer) data() const pure nothrow {
             owner._statistic(size);
         }
 
-        this(BlockFile owner, Document doc, immutable bool random_block = random)
-         {
-            this.doc =doc;
+        this(BlockFile owner, Document doc, immutable bool random_block = random) {
+            this.doc = doc;
             if (random_block) {
                 reserve!true(owner);
             }
@@ -844,8 +840,7 @@ final immutable(Buffer) data() const pure nothrow {
         }
 
     final:
-version(none)
-        Index index() pure const nothrow {
+        version (none) Index index() pure const nothrow {
             return chain.index;
         }
 
@@ -853,14 +848,19 @@ version(none)
             return Index(chain.begin_index + owner.number_of_blocks(chain.data.length));
         }
 
-    version(none)
-        uint size() pure const nothrow {
+        version (none) uint size() pure const nothrow {
             import LEB128 = tagion.utils.LEB128;
 
             const leb128_size = LEB128.decode!ulong(chain.data);
             return cast(uint)(leb128_size.size);
         }
 
+    }
+
+    protected Index reserve(const size_t size) nothrow  {
+        const nblocks = number_of_blocks(size);
+        _statistic(nblocks);
+        return Index(recycler.reserve_segment(nblocks));
     }
 
     protected AllocatedChain[] allocated_chains;
@@ -873,7 +873,7 @@ version(none)
      +     data = Data buffer to be reserved and allocated
      +/
     const(AllocatedChain) save(const(Document) doc, bool random_block = random) {
-        auto result = new AllocatedChain(this, doc, random_block);
+        auto result = new AllocatedChain( doc, reserve(doc.full_size));
 
         allocated_chains ~= result;
         return result;
