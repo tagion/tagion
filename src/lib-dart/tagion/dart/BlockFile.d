@@ -199,14 +199,13 @@ class BlockFile {
 
      +/
     static void create(string filename, string description, immutable uint BLOCK_SIZE) {
-        File file;
-        file.open(filename, "w+");
-        auto blockfile = new BlockFile(file, BLOCK_SIZE);
-        blockfile.createHeader(description);
-        blockfile.writeMasterBlock;
+        auto _file = File(filename, "w+");
+        auto blockfile = new BlockFile(_file, BLOCK_SIZE);
         scope (exit) {
             blockfile.close;
         }
+        blockfile.createHeader(description);
+        blockfile.writeMasterBlock;
     }
 
     static BlockFile reset(string filename) {
@@ -215,13 +214,13 @@ class BlockFile {
         auto old_blockfile = BlockFile(old_filename);
         old_blockfile.readStatistic;
 
-        auto _file=File(filename, "w+");
+        auto _file = File(filename, "w+");
         auto blockfile = new BlockFile(_file, old_blockfile.headerblock.block_size);
         blockfile.headerblock = old_blockfile.headerblock;
         blockfile._statistic = old_blockfile._statistic;
-        blockfile.headerblock.write(file);
+        blockfile.headerblock.write(_file);
         blockfile._last_block_index = 1;
-        blockfile.masterblock.write(file, blockfile.BLOCK_SIZE);
+        blockfile.masterblock.write(_file, blockfile.BLOCK_SIZE);
         blockfile.hasheader = true;
         blockfile.store;
         return blockfile;
@@ -496,7 +495,7 @@ class BlockFile {
                     pos += m.length;
                 }
                 else { //static if (name != this.head.stringof) {
-                        buffer.binwrite(cast(type) m, &pos);
+                    buffer.binwrite(cast(type) m, &pos);
                 }
 
             }
@@ -726,11 +725,11 @@ class BlockFile {
         }
 
         return Document(build_sequency(first_block));
-    //return BlockSegment(this, index).doc;
+        //return BlockSegment(this, index).doc;
     }
 
-    T load(T)( const Index index) if (isHiBONRecord!T) {
-        const doc=load(index);
+    T load(T)(const Index index) if (isHiBONRecord!T) {
+        const doc = load(index);
         check(isRecord!T(doc), format("The loaded document is not a %s record", T.stringof));
         return T(doc);
     }
@@ -748,7 +747,7 @@ class BlockFile {
     }
 
     T cacheLoad(T)(const T rec, const Index index) if (isHiBONRecord!T) {
-        const doc=cacheLoad(index);
+        const doc = cacheLoad(index);
         check(isRecord!T(doc), format("The loaded document is not a %s record", T.stringof));
         return T(doc);
     }
@@ -900,7 +899,7 @@ class BlockFile {
             assert(!inspect(&failsafe), "Should not fail here");
         }
         Block[Index] blocks;
-            writeStatistic;
+        writeStatistic;
         scope (success) {
             allocated_chains = null;
             version (none)
@@ -1052,8 +1051,7 @@ class BlockFile {
         scope bool[Index] visited;
         scope bool end;
         bool failed;
-        version(none)
-        @safe
+        version (none) @safe
         void check_data(bool check_recycle_mode)(ref BlockRange r) {
             Block previous;
             while (!r.empty && !end) {
@@ -1076,11 +1074,11 @@ class BlockFile {
                             end |= trace(r.index, Fail.INCREASING, current, check_recycle_mode);
                         }
                         static if (check_recycle_mode) {
-                            version(none)
-                            if (current.head) {
-                                failed = true;
-                                end |= trace(r.index, Fail.RECYCLE_HEADER, current, check_recycle_mode);
-                            }
+                            version (none)
+                                if (current.head) {
+                                    failed = true;
+                                    end |= trace(r.index, Fail.RECYCLE_HEADER, current, check_recycle_mode);
+                                }
                             if (current.size != 0) {
                                 failed = true;
                                 end |= trace(r.index, Fail.RECYCLE_NON_ZERO, current, check_recycle_mode);
@@ -1167,7 +1165,7 @@ class BlockFile {
                 return BlockSymbol.header;
             }
             +/
-            else if (recycler.isRecyclable(index)) {
+        else if (recycler.isRecyclable(index)) {
                 return BlockSymbol.recycle;
             }
             else if (block.size == 0) {
