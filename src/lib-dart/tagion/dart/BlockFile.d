@@ -682,7 +682,7 @@ class BlockFile {
 
     /++
      + Loads a chain of blocks from the filesystem starting from index
-     + This function will not load data in AllocatedChain list
+     + This function will not load data in BlockSegment list
      + The allocated chain list has to be stored first
      +
      + Params:
@@ -791,79 +791,13 @@ class BlockFile {
         return search(index);
     }
 
-    alias AllocatedChain = BlockSegment;
-    /++
-     + This object handles the allocation data-buffer.
-     + By splitting the data buffer into a chain of blocks
-     + If possible it recycling old deleted blocks
-     +/
-    version (none) static class AllocatedChain {
-        version (none) @recordType("ACHAIN") struct Chain {
-            Document doc;
-            Index index;
-            mixin HiBONRecord;
-        }
-
-        version (none) protected Chain chain;
-        version (none) this(const Document doc) {
-            chain = Chain(doc);
-        }
-
-        Document doc;
-        Index index;
-        version (none) inout(HiBON) toHiBON() inout {
-            return chain.toHiBON;
-        }
-
-        version (none) final immutable(Buffer) data() const pure nothrow {
-            return chain.data;
-        }
-        // This function reserves blocks and recycles blocks if possible
-        protected void reserve(bool random_block)(BlockFile owner)
-        in {
-            assert(index is INDEX_NULL, "Block is already reserved");
-        }
-        do {
-            immutable size = owner.number_of_blocks(doc.full_size);
-            index = Index(owner.recycler.reserve_segment(size));
-            owner._statistic(size);
-        }
-
-        this(BlockFile owner, Document doc, immutable bool random_block = random) {
-            this.doc = doc;
-            if (random_block) {
-                reserve!true(owner);
-            }
-            else {
-                reserve!false(owner);
-            }
-        }
-
-    final:
-        version (none) Index index() pure const nothrow {
-            return chain.index;
-        }
-
-        version (none) Index end_index(const BlockFile owner) pure const nothrow {
-            return Index(chain.begin_index + owner.number_of_blocks(chain.data.length));
-        }
-
-        version (none) uint size() pure const nothrow {
-            import LEB128 = tagion.utils.LEB128;
-
-            const leb128_size = LEB128.decode!ulong(chain.data);
-            return cast(uint)(leb128_size.size);
-        }
-
-    }
-
     protected Index reserve(const size_t size) nothrow  {
         const nblocks = number_of_blocks(size);
         _statistic(nblocks);
         return Index(recycler.reserve_segment(nblocks));
     }
 
-    protected const(AllocatedChain)*[] allocated_chains;
+    protected const(BlockSegment)*[] allocated_chains;
 
     /++
      + Allocates new data block
@@ -872,21 +806,21 @@ class BlockFile {
      + Params:
      +     data = Data buffer to be reserved and allocated
      +/
-    const(AllocatedChain*) save(const(Document) doc, bool random_block = random) {
-        auto result = new const(AllocatedChain)( doc, reserve(doc.full_size));
+    const(BlockSegment*) save(const(Document) doc, bool random_block = random) {
+        auto result = new const(BlockSegment)( doc, reserve(doc.full_size));
 
         allocated_chains ~= result;
         return result;
 
     }
     /// Dito
-    const(AllocatedChain*) save(T)(const T rec) if (isHiBONRecord!T) {
+    const(BlockSegment*) save(T)(const T rec) if (isHiBONRecord!T) {
         return save(rec.toDoc);
     }
     /++
      +
      + This function will erase, write, update the BlockFile and update the recyle bin
-     + Stores the list of AllocatedChain to the disk
+     + Stores the list of BlockSegment to the disk
      + If this function throws an Exception the Blockfile has not been updated
      +
      +/
@@ -935,7 +869,7 @@ class BlockFile {
             }
 
             void allocate_and_chain(
-                    const(AllocatedChain*[]) allocate) @safe {
+                    const(BlockSegment*[]) allocate) @safe {
                 /*    
             foreach(a; allocate) {
                     seek(a.index);
