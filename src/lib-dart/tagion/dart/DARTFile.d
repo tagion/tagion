@@ -939,9 +939,7 @@ bool PRINT = false) {
         Leave traverse_dart(R)(
                 ref R range,
                 const Index branch_index,
-                immutable uint rim = 0,
-                bool parent_single = false,
-        ) @safe {
+                immutable uint rim = 0) @safe {
             if (!range.empty) {
                 auto archive = range.front;
                 Index erase_block_index;
