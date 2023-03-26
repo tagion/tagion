@@ -86,7 +86,7 @@ class BlockFile {
     enum FILE_LABEL = "DART:0.0";
     enum DEFAULT_BLOCK_SIZE = 0x40;
     immutable uint BLOCK_SIZE;
-    immutable uint DATA_SIZE;
+    //immutable uint DATA_SIZE;
     alias BlockFileStatistic = Statistic!(uint, Yes.histogram);
     static bool do_not_write;
     package {
@@ -136,7 +136,7 @@ class BlockFile {
             File file,
             immutable uint SIZE) {
         this.BLOCK_SIZE = SIZE;
-        DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
+        //   DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
         this.file = file;
         recycler = Recycler(this);
         readInitial;
@@ -147,7 +147,7 @@ class BlockFile {
     */
     protected this(immutable uint SIZE) pure nothrow {
         this.BLOCK_SIZE = SIZE;
-        DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
+        //  DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
         recycler = Recycler(this);
     }
 
@@ -458,7 +458,7 @@ class BlockFile {
      +     The number of blocks used to allocate size bytes
      +/
     uint number_of_blocks(const size_t size) const pure nothrow {
-        return cast(uint)((size / DATA_SIZE) + ((size % DATA_SIZE == 0) ? 0 : 1));
+        return cast(uint)((size / BLOCK_SIZE) + ((size % BLOCK_SIZE == 0) ? 0 : 1));
     }
 
     /++
@@ -476,8 +476,7 @@ class BlockFile {
     /++
      + Block handler
      +/
-    //version(none)
-    @safe
+    version (none) @safe
     static class Block {
         immutable uint size; /// size of the data in this block
         //immutable bool head; /// Set to `true` this block starts a chain of blocks
@@ -540,7 +539,7 @@ class BlockFile {
 
     }
 
-    protected final Block block(
+    version (none) protected final Block block(
             //immutable Index next,
             immutable uint size,
             immutable(Buffer) buf) {
@@ -550,14 +549,14 @@ class BlockFile {
     /++
      + Read's a block at the current index
      +/
-    protected final Block block(ref File file) {
+    version (none) protected final Block block(ref File file) {
         return new Block(file, BLOCK_SIZE);
     }
 
     /++
      + Write a block to the current index
      +/
-    protected final write(ref const Block block, ref File file) {
+    version (none) protected final write(ref const Block block, ref File file) {
         with (block) {
             block.write(file, BLOCK_SIZE);
         }
@@ -614,7 +613,7 @@ class BlockFile {
      +     index = Block index poiter where to write in the block file
      +     block = The block to be written
      +/
-    protected void write(scope const Index index, const(Block) block) {
+    version (none) protected void write(scope const Index index, const(Block) block) {
         seek(index);
         block.write(file, BLOCK_SIZE);
     }
@@ -645,7 +644,7 @@ class BlockFile {
         masterblock.write(file, BLOCK_SIZE);
     }
 
-    Block read(const Index index) {
+    version (none) Block read(const Index index) {
         Block result;
         if (index < _last_block_index) {
             seek(index);
@@ -696,12 +695,12 @@ class BlockFile {
      +     some because of some other failures in the blockfile system
      +/
     const(Document) load(const Index index, const bool check_format = true) {
-        auto first_block = read(index);
+        //auto first_block = read(index);
         // Check if this is the first block is the start of a block sequency
         version (none)
             check(check_format || first_block.head, format(
                     "Block @ %d is not the head of block sequency", index));
-        Buffer build_sequency(Block block) @safe {
+        version (none) Buffer build_sequency(Block block) @safe {
             scope buffer = new ubyte[first_block.size];
             auto cache = buffer;
             Index current_index = Index(index + 1);
@@ -724,8 +723,8 @@ class BlockFile {
             return buffer.idup;
         }
 
-        return Document(build_sequency(first_block));
-        //return BlockSegment(this, index).doc;
+        //return Document(build_sequency(first_block));
+        return BlockSegment(this, index).doc;
     }
 
     T load(T)(const Index index) if (isHiBONRecord!T) {
@@ -791,7 +790,7 @@ class BlockFile {
         return search(index);
     }
 
-    protected Index reserve(const size_t size) nothrow  {
+    protected Index reserve(const size_t size) nothrow {
         const nblocks = number_of_blocks(size);
         _statistic(nblocks);
         return Index(recycler.reserve_segment(nblocks));
@@ -807,7 +806,7 @@ class BlockFile {
      +     data = Data buffer to be reserved and allocated
      +/
     const(BlockSegment*) save(const(Document) doc, bool random_block = random) {
-        auto result = new const(BlockSegment)( doc, reserve(doc.full_size));
+        auto result = new const(BlockSegment)(doc, reserve(doc.full_size));
 
         allocated_chains ~= result;
         return result;
@@ -825,25 +824,26 @@ class BlockFile {
      +
      +/
     void store() {
-        debug scope (exit) {
-            bool failsafe(const Index index, const Fail f, const Block block, const bool recycle_block) @safe {
-                if (f != Fail.NON) {
-                    console.writefln("Data check fails on block @ [%d -> %d]: Fail:%s in %s",
-                            index, index + 1, f, recycle_block ? "recycle block" : "data block");
+        version (none)
+            debug scope (exit) {
+                bool failsafe(const Index index, const Fail f, const Block block, const bool recycle_block) @safe {
+                    if (f != Fail.NON) {
+                        console.writefln("Data check fails on block @ [%d -> %d]: Fail:%s in %s",
+                                index, index + 1, f, recycle_block ? "recycle block" : "data block");
+                    }
+                    return false;
                 }
-                return false;
-            }
 
-            assert(!inspect(&failsafe), "Should not fail here");
-        }
-        Block[Index] blocks;
+                assert(!inspect(&failsafe), "Should not fail here");
+            }
+        version (none) Block[Index] blocks;
         writeStatistic;
         scope (success) {
             allocated_chains = null;
             version (none)
                 recycler.write;
 
-            { //write_blocks_in_sorted_order
+            version (none) { //write_blocks_in_sorted_order
                 auto sorted_indices = blocks.keys.dup.sort;
                 sorted_indices.each!(index => write(index, blocks[index]));
             }
@@ -852,7 +852,11 @@ class BlockFile {
             //recycle_indices.build_segments;
         }
 
-        {
+        foreach (block_segment; sort!(q{a.index < b.index}, SwapStrategy.unstable)(allocated_chains)) {
+            block_segment.write(this);
+        }
+
+        version (none) {
             do_not_write = true;
             scope (exit) {
                 do_not_write = false;
@@ -981,7 +985,7 @@ class BlockFile {
      +     block  = is the failed block
      +     data_flag = Set to `false` if block is a resycled block and `true` if it a data block
      +/
-    bool inspect(bool delegate(
+    version (none) bool inspect(bool delegate(
             const Index index,
             const Fail f,
             const Block block,
@@ -1093,7 +1097,7 @@ class BlockFile {
 
     }
 
-    BlockSymbol getSymbol(const scope Block block, const Index index) const pure nothrow {
+    version (none) BlockSymbol getSymbol(const scope Block block, const Index index) const pure nothrow {
         if (block) {
             if (index == 0) {
                 return BlockSymbol.file_header;
@@ -1123,20 +1127,21 @@ class BlockFile {
      +/
     void dump(const uint block_per_line = 16) {
         auto line = new char[block_per_line];
-        foreach (index; 0 .. ((_last_block_index / block_per_line) + (
-                (_last_block_index % block_per_line == 0) ? 0 : 1)) * block_per_line) {
-            immutable pos = index % block_per_line;
-            if ((index % block_per_line) == 0) {
-                line[] = 0;
-            }
+        version (none)
+            foreach (index; 0 .. ((_last_block_index / block_per_line) + (
+                    (_last_block_index % block_per_line == 0) ? 0 : 1)) * block_per_line) {
+                immutable pos = index % block_per_line;
+                if ((index % block_per_line) == 0) {
+                    line[] = 0;
+                }
 
-            scope block = read(Index(index));
-            line[pos] = getSymbol(block, Index(index));
+                scope block = read(Index(index));
+                line[pos] = getSymbol(block, Index(index));
 
-            if (pos + 1 == block_per_line) {
-                writefln("%04X] %s", index - pos, line);
+                if (pos + 1 == block_per_line) {
+                    writefln("%04X] %s", index - pos, line);
+                }
             }
-        }
     }
 
     // Block index 0 is means null
@@ -1184,7 +1189,7 @@ class BlockFile {
             blockfile.close;
         }
 
-        bool failsafe(const Index index, const Fail f, const Block block, const bool recycle_block) @safe {
+        version (none) bool failsafe(const Index index, const Fail f, const Block block, const bool recycle_block) @safe {
             assert(f == Fail.NON, format("Data check fails on block @ %d: Fail:%s in %s",
                     index, f, recycle_block ? "recycle block" : "data block"));
             return false;
@@ -1230,7 +1235,7 @@ class BlockFile {
                 blockfile.close;
             }
 
-            { /// Check the blockfile
+            version (none) { /// Check the blockfile
                 auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
                 blockfile.inspect(&failsafe);
                 blockfile.close;
@@ -1311,7 +1316,7 @@ class BlockFile {
 
         }
 
-        { // Check that all block are written
+        version (none) { // Check that all block are written
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
 
             blockfile.inspect(&failsafe);
