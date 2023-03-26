@@ -988,8 +988,9 @@ bool PRINT = false) {
                                 if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                                     Leave current_leave;
 
-                                    branches[rim_key] = current_leave = traverse_dart(sub_range, branches.index(
-                                            rim_key), rim + 1, true);
+                                    branches[rim_key] = current_leave = traverse_dart(
+                                        sub_range, branches.index(rim_key), 
+                                        rim + 1);
                                     if (current_leave !is Leave.init) {
                                         last_leave = current_leave;
                                     }
