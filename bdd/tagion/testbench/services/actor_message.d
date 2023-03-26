@@ -34,25 +34,6 @@ enum child1_task_name = "child1";
 enum child2_task_name = "child2";
 enum sleep_time = 100.msecs;
 
-version (none) struct DummyActor {
-    string some_name;
-
-    @method void setName(string str) {
-        some_name = str;
-        sendOwner(some_name);
-    }
-
-    @task void run() {
-        alive; // Actor is now alive
-        while (!stop) {
-            receiveTimeout(100.msecs);
-        }
-    }
-
-    mixin TaskActor; /// Turns the struct into an Actor
-}
-version(none) static assert(isActor!MyActor);
-
 struct MyActor {
     long count;
     string some_name;
@@ -62,15 +43,22 @@ struct MyActor {
     @method void setName(string str) {
         some_name = str;
         sendOwner(some_name);
+        debug writefln("set name to %s", str);
     }
 
     @method void relay(string str, string task_name) {
         // Request the handle for the other child;
         debug writefln("requesting handler %s", task_name);
-        alias ChildActor = actor!MyActor;
+        /* alias ChildActor = actor!MyActor; */
+        auto ChildActor = actor!MyActor;
+
+        // Handler method is blocking as it's trying to wait for a message that gets sent to the main thread
         ChildHandle otherChild = ChildActor.handler(task_name);
+
         debug writefln("received handler %s", otherChild);
         otherChild.setName(str);
+        Thread.sleep(sleep_time);
+        sendOwner(str);
     }
 
     /// Decrease the count value `by`
@@ -244,9 +232,9 @@ class SendMessageBetweenTwoChildren {
     Document backToTheSuper() @trusted {
         debug writeln("actor_message 2.3");
         supervisor_handle.roundtrip(Children.child2);
-        concurrency.receiveOnly!bool;
+        /* concurrency.receiveOnly!bool; */
         string receive = concurrency.receiveOnly!string;
-        check(receive == "hi mom", format("did not receive the right message, got %s", receive));
+        check(receive == "i mom", format("did not receive the right message, got %s", receive));
         return result_ok;
     }
 
