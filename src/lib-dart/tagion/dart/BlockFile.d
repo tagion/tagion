@@ -863,7 +863,7 @@ class BlockFile {
         return Index(recycler.reserve_segment(nblocks));
     }
 
-    protected AllocatedChain[] allocated_chains;
+    protected const(AllocatedChain)*[] allocated_chains;
 
     /++
      + Allocates new data block
@@ -872,15 +872,15 @@ class BlockFile {
      + Params:
      +     data = Data buffer to be reserved and allocated
      +/
-    const(AllocatedChain) save(const(Document) doc, bool random_block = random) {
-        auto result = new AllocatedChain( doc, reserve(doc.full_size));
+    const(AllocatedChain*) save(const(Document) doc, bool random_block = random) {
+        auto result = new const(AllocatedChain)( doc, reserve(doc.full_size));
 
         allocated_chains ~= result;
         return result;
 
     }
     /// Dito
-    const(AllocatedChain) save(T)(const T rec) if (isHiBONRecord!T) {
+    const(AllocatedChain*) save(T)(const T rec) if (isHiBONRecord!T) {
         return save(rec.toDoc);
     }
     /++
@@ -935,7 +935,7 @@ class BlockFile {
             }
 
             void allocate_and_chain(
-                    const(AllocatedChain[]) allocate) @safe {
+                    const(AllocatedChain*[]) allocate) @safe {
                 /*    
             foreach(a; allocate) {
                     seek(a.index);
