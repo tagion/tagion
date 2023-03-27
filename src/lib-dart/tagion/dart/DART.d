@@ -38,8 +38,6 @@ import tagion.dart.DARTBasic : DARTIndex;
 import CRUD = tagion.dart.DARTcrud;
 import tagion.dart.BlockFile : Index, INDEX_NULL;
 
-alias hex = toHexString;
-
 /**
  * Calculates the to-angle on the angle circle 
  * Params:

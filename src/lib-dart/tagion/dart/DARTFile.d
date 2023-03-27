@@ -1183,6 +1183,7 @@ GetType get_type = null) {
         RecordFactory.Recorder rec = manufactor.recorder();
         void iterate(const Index branch_index, immutable uint rim = 0) @safe {
             if (branch_index !is INDEX_NULL) {
+                pragma(msg, "fixme(pr): Should use a DARTFile.load member for feature use");
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
                 if (Branches.isRecord(doc)) {
@@ -1287,7 +1288,6 @@ GetType get_type = null) {
 
     version (unittest) {
         import tagion.dart.DARTFakeNet;
-
         static {
 
             bool check(const(RecordFactory.Recorder) A, const(RecordFactory.Recorder) B) {
@@ -2147,6 +2147,78 @@ GetType get_type = null) {
                 assert(numberOfArchives(branches, dart_A) == 2, "Should contain two archives after remove");
 
             }
+
+            {
+
+                DARTFile.create(filename_A);
+                auto dart_A = new DARTFile(net, filename_A);
+
+                const ulong[] deep_table = [
+                    0xABB9_13ab_11ef_0923,
+                    0xABB9_130b_3456_1234,
+                    0xABB9_13ab_11ef_1234,
+                ];
+
+                auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
+                auto recorder = dart_A.recorder();
+                foreach (doc; docs) {
+                    recorder.add(doc);
+                }
+                auto fingerprints = recorder[].map!(r => r.fingerprint).array;
+                dart_A.modify(recorder);
+                // dart_A.dump();
+
+                auto remove_recorder = dart_A.recorder();
+                remove_recorder.remove(fingerprints[1]);
+                remove_recorder.remove(fingerprints[2]);
+
+                dart_A.modify(remove_recorder);
+                // dart_A.dump();
+
+                ubyte[] rim_path = [0xAB, 0xB9];
+
+                auto branches = dart_A.branches(rim_path);
+                // // writefln("XXX %s", numberOfArchives(branches, dart_A));
+                assert(numberOfArchives(branches, dart_A) == 1, "Should contain one archives after remove");
+
+            }
+
+            {
+
+                DARTFile.create(filename_A);
+                auto dart_A = new DARTFile(net, filename_A);
+
+                const ulong[] deep_table = [
+                    0xABB9_130b_11ef_0923,
+                    0xABB9_13ab_3456_1234,
+                    0xABB9_130b_11ef_1234,
+                ];
+
+                auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
+                auto recorder = dart_A.recorder();
+                foreach (doc; docs) {
+                    recorder.add(doc);
+                }
+                auto fingerprints = recorder[].map!(r => r.fingerprint).array;
+                dart_A.modify(recorder);
+                // dart_A.dump();
+
+                auto remove_recorder = dart_A.recorder();
+                remove_recorder.remove(fingerprints[0]);
+                remove_recorder.remove(fingerprints[1]);
+
+                dart_A.modify(remove_recorder);
+                // dart_A.dump();
+
+                ubyte[] rim_path = [0xAB, 0xB9];
+
+                auto branches = dart_A.branches(rim_path);
+                // // writefln("XXX %s", numberOfArchives(branches, dart_A));
+                assert(numberOfArchives(branches, dart_A) == 1, "Should contain one archives after remove");
+
+
+            }
+
         }
 
     }

@@ -92,7 +92,7 @@ class AddPseudoRandomData {
         RecordFactory.Recorder[] recorders;
 
         foreach (i; 0 .. samples / number_of_records) {
-            writefln("running %s", i);
+            // writefln("running %s", i);
 
             auto docs = info.fixed_states.take(number_of_records)
                 .map!(a => DARTFakeNet.fake_doc(a));

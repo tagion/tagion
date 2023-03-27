@@ -35,8 +35,6 @@ import tagion.dart.BlockSegment;
 
 //import tagion.dart.BlockSegmentAllocator;
 
-import std.math : rint;
-
 alias Index = Typedef!(ulong, ulong.init, "BlockIndex");
 enum INDEX_NULL = Index.init;
 enum BLOCK_SIZE = 0x80;
