@@ -358,6 +358,11 @@ class BlockFile {
         return _last_block_index;
     }
 
+    /** 
+     * Sets the pointer to the index in the blockfile.
+     * Params:
+     *   index = in blocks to set in the blockfile
+     */
     final package void seek(const Index index) {
         file.seek(index_to_seek(index));
     }
@@ -436,7 +441,7 @@ class BlockFile {
      + Returns:
      +     The number of blocks used to allocate size bytes
      +/
-    uint number_of_blocks(const size_t size) const pure nothrow {
+    uint numberOfBlocks(const size_t size) const pure nothrow {
         return cast(uint)((size / BLOCK_SIZE) + ((size % BLOCK_SIZE == 0) ? 0 : 1));
     }
 
@@ -560,6 +565,7 @@ class BlockFile {
         check(isRecord!T(doc), format("The loaded document is not a %s record", T.stringof));
         return T(doc);
     }
+
     /++
      + Marks a chain for blocks as erased
      + This function does actually erease the block before the store method is called
@@ -577,9 +583,26 @@ class BlockFile {
      +
      +/
     void dispose(const Index index) {
-        // recycler.dispose(Index, size);
-        // Should be implement with new recycler
-        // return INDEX_NULL;
+        auto allocated_range = allocated_chains.filter!(a => a.index == index);
+        assert(allocated_range.empty, "We should dispose cached blocks");
+        // version (none) {
+        //     auto allocated_range = allocated_chains.filter!(a => a.index == index);
+        //     if (!allocated_range.empty) {
+        //         recycler.dispose(index, numberOfBlocks(
+        //                 allocated_range.front.doc.full_size));
+        //         return;
+        //     }
+        // }
+        seek(index);
+
+        import LEB128 = tagion.utils.LEB128;
+
+        ubyte[LEB128.DataSize!ulong] _buf;
+        ubyte[] buf = _buf;
+        file.rawRead(buf);
+        const doc_size = LEB128.read!ulong(buf);
+
+        recycler.dispose(index, numberOfBlocks(doc_size.size + doc_size.value));
     }
 
     /**
@@ -590,7 +613,7 @@ class BlockFile {
      *   block index position of the reserved bytes
      */
     protected Index claim(const size_t size) nothrow {
-        const nblocks = number_of_blocks(size);
+        const nblocks = numberOfBlocks(size);
         _statistic(nblocks);
         return Index(recycler.claim(nblocks));
     }
