@@ -13,8 +13,8 @@ import std.algorithm;
 
 enum Type : int {
     NONE = 0, /// NO Recycler instruction
-    REMOVE = -1, /// Should be removed from recycler
-    ADD = 1, /// should be added to recycler
+    CLAIM = -1, /// Should be removed from recycler
+    DISPOSE = 1, /// should be added to recycler
 }
 
 @safe @recordType("RecycleSegment")
@@ -76,7 +76,8 @@ struct Recycler {
         segments = new Segments;
     }
 
-    protected void insert(R)(R insert_segments) if (isInputRange!R && is(ElementType!R == Segment*)) {
+    protected void insert(R)(R insert_segments)
+        if (isInputRange!R && is(ElementType!R == Segment*)) {
         indices.insert(insert_segments);
         segments.insert(insert_segments);
     }
@@ -86,12 +87,13 @@ struct Recycler {
         segments.insert(segment);
     }
 
-    protected void remove(Segment* segment) {
+    protected void claim(Segment* segment) {
         indices.removeKey(segment);
         segments.removeKey(segment);
     }
 
-    void recycle(R)(R recycle_segments) if (isInputRange!R && is(ElementType!R == Segment*)) {
+    void recycle(R)(R recycle_segments)
+        if (isInputRange!R && is(ElementType!R == Segment*)) {
 
         if (indices.empty) {
             insert(recycle_segments);
@@ -100,17 +102,17 @@ struct Recycler {
         Indices new_segments = new Indices(recycle_segments);
 
         foreach (segment; new_segments[]) {
-            if (segment.type == Type.REMOVE) {
+            if (segment.type == Type.CLAIM) {
                 auto equal_range = indices.equalRange(segment);
                 assert(!equal_range.empty, "Cannot call remove with segment where index in recycler does not exist");
                 Segment* add_segment = new Segment(Index(equal_range.front.index + segment.size), equal_range
                         .front.size - segment.size);
-                remove(equal_range.front);
+                claim(equal_range.front);
                 insert(add_segment);
                 continue;
             }
 
-            if (segment.type == Type.ADD) {
+            if (segment.type == Type.DISPOSE) {
                 auto lower_range = indices.lowerBound(segment);
                 auto upper_range = indices.upperBound(segment);
 
@@ -120,7 +122,7 @@ struct Recycler {
                     if (segment.end == upper_range.front.index) {
                         Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment
                                 .size);
-                        remove(upper_range.front);
+                        claim(upper_range.front);
                         insert(add_segment);
                         continue;
                     }
@@ -135,7 +137,7 @@ struct Recycler {
                     if (lower_range.back.end == segment.index) {
                         Segment* add_segment = new Segment(lower_range.back.index, segment.size + lower_range
                                 .back.size);
-                        remove(lower_range.back);
+                        claim(lower_range.back);
                         insert(add_segment);
                         continue;
                     }
@@ -152,8 +154,8 @@ struct Recycler {
                         // ###A###
                         Segment* add_segment = new Segment(lower_range.front.index, lower_range.front.size + segment
                                 .size + upper_range.front.size);
-                        remove(lower_range.front);
-                        remove(upper_range.front);
+                        claim(lower_range.front);
+                        claim(upper_range.front);
                         insert(add_segment);
                         continue;
                     }
@@ -162,7 +164,7 @@ struct Recycler {
                         // ###A
                         Segment* add_segment = new Segment(lower_range.front.index, lower_range.front.size + segment
                                 .size);
-                        remove(lower_range.front);
+                        claim(lower_range.front);
                         insert(add_segment);
                         continue;
                     }
@@ -173,7 +175,7 @@ struct Recycler {
                     // A###
                     Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment
                             .size);
-                    remove(upper_range.front);
+                    claim(upper_range.front);
                     insert(add_segment);
                     continue;
                 }
@@ -270,20 +272,20 @@ unittest {
     }
     auto recycler = Recycler(blockfile);
 
-    Segment*[] add_segments = [
-        new Segment(Index(1UL), 5, Type.ADD),
-        new Segment(Index(10UL), 5, Type.ADD),
-        new Segment(Index(17UL), 5, Type.ADD),
+    Segment*[] dispose_segments = [
+        new Segment(Index(1UL), 5, Type.DISPOSE),
+        new Segment(Index(10UL), 5, Type.DISPOSE),
+        new Segment(Index(17UL), 5, Type.DISPOSE),
     ];
 
-    recycler.recycle(add_segments);
+    recycler.recycle(dispose_segments);
     // recycler.dump();
 
     // writefln("####");
-    Segment*[] remove_segments = [
-        new Segment(Index(1UL), 2, Type.REMOVE),
+    Segment*[] claim_segments = [
+        new Segment(Index(1UL), 2, Type.CLAIM),
     ];
-    recycler.recycle(remove_segments);
+    recycler.recycle(claim_segments);
 
     assert(recycler.indices.front.index == Index(3UL));
     assert(recycler.indices.front.end == 6);
@@ -301,20 +303,20 @@ unittest {
     }
     auto recycler = Recycler(blockfile);
 
-    Segment*[] add_segments = [
-        new Segment(Index(1UL), 5, Type.ADD),
-        new Segment(Index(10UL), 5, Type.ADD),
-        new Segment(Index(17UL), 5, Type.ADD),
+    Segment*[] dispose_segments = [
+        new Segment(Index(1UL), 5, Type.DISPOSE),
+        new Segment(Index(10UL), 5, Type.DISPOSE),
+        new Segment(Index(17UL), 5, Type.DISPOSE),
     ];
 
-    recycler.recycle(add_segments);
+    recycler.recycle(dispose_segments);
     // recycler.dump();
 
     writefln("####");
     Segment*[] extra_segments = [
-        new Segment(Index(6UL), 2, Type.ADD),
-        new Segment(Index(25UL), 6, Type.ADD),
-        new Segment(Index(22UL), 3, Type.ADD),
+        new Segment(Index(6UL), 2, Type.DISPOSE),
+        new Segment(Index(25UL), 6, Type.DISPOSE),
+        new Segment(Index(22UL), 3, Type.DISPOSE),
     ];
     recycler.recycle(extra_segments);
     // recycler.dump();
@@ -327,7 +329,9 @@ unittest {
     Indices expected_indices = new Indices(expected_segments);
 
     assert(expected_indices.length == recycler.indices.length, "Got other indices than expected");
-    (() @trusted { assert(expected_indices.opEquals(recycler.indices), "elements should be the same"); }());
+    (() @trusted {
+        assert(expected_indices.opEquals(recycler.indices), "elements should be the same");
+    }());
 }
 
 @safe
@@ -341,16 +345,16 @@ unittest {
     }
     auto recycler = Recycler(blockfile);
 
-    Segment*[] add_segments = [
-        new Segment(Index(1UL), 5, Type.ADD),
-        new Segment(Index(10UL), 5, Type.ADD),
+    Segment*[] dispose_segments = [
+        new Segment(Index(1UL), 5, Type.DISPOSE),
+        new Segment(Index(10UL), 5, Type.DISPOSE),
     ];
 
-    recycler.recycle(add_segments);
+    recycler.recycle(dispose_segments);
     // recycler.dump();
 
     Segment*[] remove_segment = [
-        new Segment(Index(6UL), 4, Type.ADD),
+        new Segment(Index(6UL), 4, Type.DISPOSE),
     ];
     recycler.recycle(remove_segment);
     // recycler.dump();
@@ -369,17 +373,23 @@ unittest {
     }
     auto recycler = Recycler(blockfile);
 
-    Segment*[] add_segments = [
-        new Segment(Index(1UL), 5, Type.ADD),
-        new Segment(Index(10UL), 5, Type.ADD),
+    Segment*[] dispose_segments = [
+        new Segment(Index(1UL), 5, Type.DISPOSE),
+        new Segment(Index(10UL), 5, Type.DISPOSE),
     ];
 
-    recycler.recycle(add_segments);
+    recycler.recycle(dispose_segments);
     // recycler.dump;
 
-    assertThrown!Throwable(recycler.recycle([new Segment(Index(20UL), 4, Type.REMOVE)]));
-    assertThrown!Throwable(recycler.recycle([new Segment(Index(3UL), 5, Type.REMOVE)]));
-    assertThrown!Throwable(recycler.recycle([new Segment(Index(6UL), 4, Type.REMOVE)]));
+    assertThrown!Throwable(recycler.recycle([
+        new Segment(Index(20UL), 4, Type.CLAIM)
+    ]));
+    assertThrown!Throwable(recycler.recycle([
+        new Segment(Index(3UL), 5, Type.CLAIM)
+    ]));
+    assertThrown!Throwable(recycler.recycle([
+        new Segment(Index(6UL), 4, Type.CLAIM)
+    ]));
 }
 
 unittest {
@@ -392,16 +402,16 @@ unittest {
     }
     auto recycler = Recycler(blockfile);
 
-    recycler.recycle([new Segment(Index(10UL), 5, Type.ADD)]);
+    recycler.recycle([new Segment(Index(10UL), 5, Type.DISPOSE)]);
     // recycler.dump;
-    recycler.recycle([new Segment(Index(2UL), 8, Type.ADD)]);
+    recycler.recycle([new Segment(Index(2UL), 8, Type.DISPOSE)]);
 
     assert(recycler.indices.length == 1, "should have merged segments");
     assert(recycler.indices.front.index == Index(2UL), "Index not correct");
     assert(recycler.indices.front.end == Index(15UL));
 
     // upperrange empty connecting
-    recycler.recycle([new Segment(Index(15UL), 5, Type.ADD)]);
+    recycler.recycle([new Segment(Index(15UL), 5, Type.DISPOSE)]);
     assert(recycler.indices.length == 1, "should have merged segments");
     assert(recycler.indices.front.index == Index(2UL));
     assert(recycler.indices.front.end == Index(20UL));
@@ -418,16 +428,16 @@ unittest {
     }
     auto recycler = Recycler(blockfile);
 
-    recycler.recycle([new Segment(Index(10UL), 5, Type.ADD)]);
+    recycler.recycle([new Segment(Index(10UL), 5, Type.DISPOSE)]);
     // recycler.dump;
-    recycler.recycle([new Segment(Index(2UL), 5, Type.ADD)]);
+    recycler.recycle([new Segment(Index(2UL), 5, Type.DISPOSE)]);
 
     assert(recycler.indices.length == 2, "should NOT have merged types");
     assert(recycler.indices.front.index == Index(2UL), "Index not correct");
     // recycler.dump
 
     // upper range NOT connecting
-    recycler.recycle([new Segment(Index(25UL), 5, Type.ADD)]);
+    recycler.recycle([new Segment(Index(25UL), 5, Type.DISPOSE)]);
     assert(recycler.indices.length == 3, "Should not have merged");
     assert(recycler.indices.back.index == Index(25UL), "Should not have merged");
 
@@ -444,15 +454,16 @@ unittest {
     }
     auto recycler = Recycler(blockfile);
 
-    recycler.recycle([new Segment(Index(10UL), 5, Type.ADD), new Segment(Index(1UL), 1)]);
+    recycler.recycle([
+        new Segment(Index(10UL), 5, Type.DISPOSE), new Segment(Index(1UL), 1)
+    ]);
     // recycler.dump;
-    recycler.recycle([new Segment(Index(5UL), 5, Type.ADD)]);
+    recycler.recycle([new Segment(Index(5UL), 5, Type.DISPOSE)]);
     // recycler.dump;
     assert(recycler.indices.length == 2, "should have merged segments");
 
     // upperrange not empty connecting
-    recycler.recycle([new Segment(Index(25UL), 5, Type.ADD)]);
-    recycler.recycle([new Segment(Index(17UL), 2, Type.ADD)]);
+    recycler.recycle([new Segment(Index(25UL), 5, Type.DISPOSE)]);
+    recycler.recycle([new Segment(Index(17UL), 2, Type.DISPOSE)]);
     assert(recycler.indices.length == 4);
 }
-
