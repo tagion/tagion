@@ -61,6 +61,10 @@ jobs:
           git add .
           git commit -m "ddocs updated" || echo "nothing to commit"
           git push https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git || echo "repo already up to date"
+          cd /home/runner/work/tagion/tagion
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov
+          ./codecov
 
   
   #codecov:
