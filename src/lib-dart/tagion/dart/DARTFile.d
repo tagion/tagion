@@ -230,6 +230,8 @@ alias check = Check!DARTException;
  */
     static immutable(Buffer) sparsed_merkletree(const HashNet net, const(Buffer[]) table)
     in {
+        import std.stdio;
+        if (table.length != KEY_SPAN) {writefln("table_length: %s", table.length);}
         assert(table.length == KEY_SPAN);
     }
     do {
