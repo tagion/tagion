@@ -419,7 +419,7 @@ class RecordFactory {
     }
 }
 
-alias GetType = Archive.Type delegate(const(Archive)) @safe;
+alias GetType = Archive.Type delegate(const(Archive)) pure @safe;
 
 enum Add = (const(Archive) a) => Archive.Type.ADD;
 enum Remove = (const(Archive) a) => Archive.Type.REMOVE;

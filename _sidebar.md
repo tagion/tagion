@@ -36,6 +36,8 @@
 	- DART
 		- [Recorder](/documents/modules/dart/recorder.md)
 		- [Block file](/documents/modules/dart/block_file_recycler.md)
+	- Wallet
+		- [Wallet](/documents/modules/wallet/wallet.md)
 - Testing
 	- Behaviour tests
 		- [BDD_Process](documents/behaviour/BDD_Process.md)

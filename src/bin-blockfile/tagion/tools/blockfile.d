@@ -24,7 +24,7 @@ enum ExitCode {
     OPEN_FILE_FAILED, /// Unable to open file
 }
 
-@safe
+version (none) @safe
 struct BlockFileAnalyzer {
     private BlockFile blockfile;
     uint inspect_iterations = uint.max;
@@ -40,7 +40,7 @@ struct BlockFileAnalyzer {
         return recycle_block ? "Recycle" : "Data";
     }
 
-    void display_block(const uint index, const(BlockFile.Block) b) {
+    void display_block(const Index index, const(BlockFile.Block) b) {
         if (b) {
             writefln("%s  [%d <- %d -> %d size %d [%s]", blockfile.getSymbol(b, index).to!char, b.previous, index, b
                     .next, b.size, blockType(blockfile.isRecyclable(index)));
@@ -49,8 +49,8 @@ struct BlockFileAnalyzer {
         writefln("Block @ %d is nil", index);
     }
 
-    bool trace(const uint index, const BlockFile.Fail f, scope const BlockFile.Block block, const bool recycle_chain) {
-        void error(string msg, const uint i = index) {
+    bool trace(const Index index, const BlockFile.Fail f, scope const BlockFile.Block block, const bool recycle_chain) {
+        void error(string msg, const Index i = index) {
             const is_recycle_block = blockfile.isRecyclable(index);
             writefln("Error %s: %s @ %d in %s %s", f, msg, i, blockType(is_recycle_block), (
                     is_recycle_block is recycle_chain) ? "" : "[Bad Type]");
@@ -122,7 +122,7 @@ struct BlockFileAnalyzer {
     /**
        number_of_seq block sequency displays
      */
-    void display_sequency(const uint index, uint number_of_sequency = 1) {
+    void display_sequency(const Index index, uint number_of_sequency = 1) {
         auto range = blockfile.range(index);
         while (!range.empty) {
             display_block(range.index, range.front);
@@ -139,7 +139,7 @@ struct BlockFileAnalyzer {
 
 }
 
-BlockFileAnalyzer analyzer;
+version (none) BlockFileAnalyzer analyzer;
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
@@ -147,7 +147,7 @@ int _main(string[] args) {
     bool dump; /// Dumps the block map
     bool inspect;
     bool ignore; /// Ignore blockfile format errors
-    uint block_number; /// Block number to read (block_number > 0)
+    ulong block_number; /// Block number to read (block_number > 0)
     bool sequency; /// Prints the sequency on the next header
     bool recycle_sequence; // Lists the recycle sequence
     string output_filename;
@@ -164,9 +164,9 @@ int _main(string[] args) {
             "dump", "Dumps block fragmentaion pattern in the blockfile", &dump,
             "inspect|c", "Inspect the blockfile format", &inspect,
             "ignore|i", "Ignore blockfile format error", &ignore,
-            "iter", "Set the max number of iterations do by the inspect", &analyzer.inspect_iterations,
-            "max", format(
-            "Max block iteration Default : %d", analyzer.max_block_iteration), &analyzer.max_block_iteration,
+    //        "iter", "Set the max number of iterations do by the inspect", &analyzer.inspect_iterations,
+     //       "max", format(
+       //     "Max block iteration Default : %d", analyzer.max_block_iteration), &analyzer.max_block_iteration,
             "block|b", "Read from block number", &block_number,
             "seq", "Display the block sequency starting from the block-number", &sequency,
             "recycle-sequency", "Lists the recycle sequence", &recycle_sequence,
@@ -205,54 +205,55 @@ int _main(string[] args) {
     }
 
     immutable filename = args[1]; /// First argument is the blockfile name
-
-    if (inspect || ignore) {
-        if (!analyzer.blockfile) {
-            analyzer.blockfile = BlockFile.Inspect(filename, &report, analyzer.max_block_iteration);
-        }
-        if (inspect) {
-            analyzer.blockfile.inspect(&analyzer.trace);
-        }
-    }
-    else {
-        try {
-            analyzer.blockfile = BlockFile(filename);
-        }
-        catch (BlockFileException e) {
-            stderr.writefln("Error: Bad blockfile format for %s", filename);
-            stderr.writeln(e.msg);
-            stderr.writefln(
-                    "Try to use the --inspect or --ignore switch to analyze the blockfile format");
-            return ExitCode.BAD_BLOCKFILE;
-        }
-        catch (Exception e) {
-            stderr.writefln("Error: Unable to open file %s", filename);
-            stderr.writeln(e.msg);
-            return ExitCode.OPEN_FILE_FAILED;
-        }
-    }
-    if (display_meta) {
-        analyzer.display_meta;
-    }
-
-    if (dump) {
-        analyzer.dump;
-    }
-
-    if (block_number !is 0) {
-        if (sequency) {
-            analyzer.display_sequency(block_number);
-        }
-        else {
-            immutable buffer = analyzer.blockfile.load(block_number, !ignore);
-            if (output_filename) {
-                buffer.toFile(output_filename);
+    version (none) {
+        if (inspect || ignore) {
+            if (!analyzer.blockfile) {
+                analyzer.blockfile = BlockFile.Inspect(filename, &report, analyzer.max_block_iteration);
+            }
+            if (inspect) {
+                analyzer.blockfile.inspect(&analyzer.trace);
             }
         }
-    }
+        else {
+            try {
+                analyzer.blockfile = BlockFile(filename);
+            }
+            catch (BlockFileException e) {
+                stderr.writefln("Error: Bad blockfile format for %s", filename);
+                stderr.writeln(e.msg);
+                stderr.writefln(
+                        "Try to use the --inspect or --ignore switch to analyze the blockfile format");
+                return ExitCode.BAD_BLOCKFILE;
+            }
+            catch (Exception e) {
+                stderr.writefln("Error: Unable to open file %s", filename);
+                stderr.writeln(e.msg);
+                return ExitCode.OPEN_FILE_FAILED;
+            }
+        }
+        if (display_meta) {
+            analyzer.display_meta;
+        }
 
-    if (recycle_sequence) {
-        analyzer.blockfile.recycleDump;
+        if (dump) {
+            analyzer.dump;
+        }
+
+        if (block_number !is 0) {
+            if (sequency) {
+                analyzer.display_sequency(Index(block_number));
+            }
+            else {
+                immutable buffer = analyzer.blockfile.load(Index(block_number), !ignore);
+                if (output_filename) {
+                    buffer.toFile(output_filename);
+                }
+            }
+        }
+
+        if (recycle_sequence) {
+            analyzer.blockfile.recycleDump;
+        }
     }
     return ExitCode.NOERROR;
 }

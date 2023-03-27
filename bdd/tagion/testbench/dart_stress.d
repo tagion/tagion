@@ -57,6 +57,33 @@ int _main(string[] args) {
 
     } 
 
+    version(TABLE_0) {
+    if (env.stage == Stage.commit) {
+        BDDOptions bdd_options;
+        setDefaultBDDOptions(bdd_options);
+        bdd_options.scenario_name = __MODULE__;
+
+        const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
+        const string dartfilename = buildPath(module_path, "dart_stress_test".setExtension(FileExtension.dart));
+
+        const SecureNet net = new DARTFakeNet("very_secret");
+        const hirpc = HiRPC(net);
+
+        DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
+        
+        const ulong samples = 1000;
+        const ulong number_of_records = 10;
+        dart_info.fixed_states = DartInfo.generateFixedStates(samples);
+
+        auto dart_ADD_stress_feature = automation!(dart_stress_test)();
+
+        dart_ADD_stress_feature.AddPseudoRandomData(dart_info, samples, number_of_records);
+
+        auto dart_ADD_stress_context = dart_ADD_stress_feature.run();
+
+    }
+    }
+
     return 0;
 
 

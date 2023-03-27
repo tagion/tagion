@@ -3,6 +3,8 @@ module tagion.testbench.services.actor_message;
 import tagion.actor.Actor;
 import core.time;
 import std.stdio;
+import std.format : format;
+
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
@@ -10,6 +12,7 @@ import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
 import concurrency = std.concurrency;
+import core.thread;
 
 enum feature = Feature(
             "Actor messaging",
@@ -21,109 +24,132 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
+enum Children {
+    child1,
+    child2,
+}
+
+enum supervisor_task_name = "supervisor";
+enum child1_task_name = "child1";
+enum child2_task_name = "child2";
+enum sleep_time = 100.msecs;
+
+struct MyActor {
+    long count;
+    string some_name;
+    /**
+    Actor method which sets the str
+    */
+    @method void setName(string str) {
+        some_name = str;
+        sendOwner(some_name);
+        debug writefln("set name to %s", str);
+    }
+
+    @method void relay(string str, string task_name) {
+        // Request the handle for the other child;
+        debug writefln("requesting handler %s", task_name);
+        /* alias ChildActor = actor!MyActor; */
+        auto ChildActor = actor!MyActor;
+
+        // Handler method is blocking as it's trying to wait for a message that gets sent to the main thread
+        ChildHandle otherChild = ChildActor.handler(task_name);
+
+        debug writefln("received handler %s", otherChild);
+        otherChild.setName(str);
+        Thread.sleep(sleep_time);
+        sendOwner(str);
+    }
+
+    /// Decrease the count value `by`
+    @method void decrease(int by) {
+        count -= by;
+        sendOwner(count);
+    }
+
+    mixin TaskActor; /// Turns the struct into an Actor
+
+    /// UDA @task mark that this is the task for the Actor
+    @task void runningTask(long label) {
+        count = label;
+        //...
+        alive; // Actor is now alive
+        while (!stop) {
+            receiveTimeout(100.msecs);
+        }
+    }
+}
+
+static assert(isActor!MyActor);
+
+alias ChildHandle = ActorHandle!MyActor;
+
+static struct MySuperActor {
+@safe
+
+    ChildHandle niño_uno_handle;
+    ChildHandle niño_dos_handle;
+
+    @task void run() {
+        auto my_actor_factory = actor!MyActor;
+
+        niño_uno_handle = my_actor_factory(child1_task_name, 10);
+        niño_dos_handle = my_actor_factory(child2_task_name, 65);
+
+        alive;
+        while (!stop) {
+            receive;
+        }
+    }
+
+    @method void isChildRunning(string task_name) {
+        Thread.sleep(sleep_time);
+        sendOwner(isRunning(task_name));
+    }
+
+    @method void sendStatusToChild(int status, Children child) {
+        final switch (child) {
+        case Children.child1:
+            niño_uno_handle.decrease(status);
+            break;
+        case Children.child2:
+            niño_dos_handle.decrease(status);
+            break;
+        }
+
+        long echo = concurrency.receiveOnly!long;
+        sendOwner(echo);
+    }
+
+    @method void roundtrip(Children __notUsed) {
+        niño_uno_handle.relay("hi mom", child2_task_name);
+    }
+
+    mixin TaskActor;
+}
+
+static assert(isActor!MySuperActor);
+
 @safe @Scenario("Message between supervisor and child",
         [])
 class MessageBetweenSupervisorAndChild {
-
-    /* private enum Get { */
-    /*     Some, */
-    /*     Arg */
-    /* } */
-
-    @safe
-    private struct MyActor {
-        long count;
-        string some_name;
-        /**
-        Actor method which sets the str
-        */
-        @method void some(string str) {
-            some_name = str;
-        }
-
-        /// Decrease the count value `by`
-        @method void decrease(int by) {
-            count -= by;
-        }
-
-        /*/1** */ 
-        /** Actor method send a opt to the actor and */ 
-        /** sends back an a response to the owner task */
-        /**1/ */
-        /*@method void get(Get opt) { // reciever */
-        /*    final switch (opt) { */
-        /*    case Get.Some: */
-        /*        sendOwner(some_name); */
-        /*        break; */
-        /*    case Get.Arg: */
-        /*        sendOwner(count); */
-        /*        break; */
-        /*    } */
-        /*} */
-
-        mixin TaskActor; /// Thes the struct into an Actor
-
-        /// UDA @task mark that this is the task for the Actor
-        @task void runningTask(long label) {
-            count = label;
-            //...
-            alive; // Actor is now alive
-            while (!stop) {
-                receiveTimeout(100.msecs);
-            }
-        }
-    }
-    static assert(isActor!MyActor);
-
-
-    enum supervisor_task_name = "supervisor";
-    enum child1_task_name = "child1";
-    enum child2_task_name = "child2";
     ActorFactory!MySuperActor supervisor_factory;
     ActorHandle!MySuperActor supervisor_handle;
-    alias ChildHandle = ActorHandle!MyActor;
-
-    @safe
-    static struct MySuperActor {
-        ChildHandle niño_uno_handle;
-        ChildHandle niño_dos_handle;
-
-        @task void run() {
-            auto my_actor_factory = actor!MyActor;
-
-            niño_uno_handle = my_actor_factory(child1_task_name, 10);
-            niño_dos_handle = my_actor_factory(child2_task_name, 65);
-
-            alive;
-            while (!stop) {
-                receive;
-            }
-        }
-
-        @method void isChildRunning(string task_name) {
-            sendOwner(isRunning(task_name));
-        }
-        
-        @method void sendStatusToChild1(int status) {
-            niño_dos_handle.decrease(status);
-        }
-
-        mixin TaskActor;
-    }
-    static assert(isActor!MySuperActor);
 
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() {
+        debug writeln("actor_message 1");
         supervisor_factory = actor!MySuperActor;
 
         supervisor_handle = supervisor_factory(supervisor_task_name);
-        check(isRunning(supervisor_task_name), "Supervisor is running");
+        check(isRunning(supervisor_task_name), "Supervisor is not running");
 
         return result_ok;
     }
 
     @When("the #super has started the #child1 and #child2")
     Document theChild1AndChild2() @trusted {
+        debug writeln("actor_message 2");
         supervisor_handle.isChildRunning(child1_task_name);
         check(concurrency.receiveOnly!bool, "child1 is running");
 
@@ -134,31 +160,42 @@ class MessageBetweenSupervisorAndChild {
 
     @Then("send a message to #child1")
     Document aMessageToChild1() {
-        /* supervisor_handle.sendMessageToChild(supervisor_handle.niñoUno_handle, "Do you like candy?"); */
-        supervisor_handle.sendStatusToChild1(1);
+        debug writeln("actor_message 3");
+        supervisor_handle.sendStatusToChild(1, Children.child1);
         return result_ok;
     }
 
     @Then("send this message back from #child1 to #super")
-    Document fromChild1ToSuper() {
-        return Document();
+    Document fromChild1ToSuper() @trusted {
+        debug writeln("actor_message 4");
+        long received = concurrency.receiveOnly!long;
+        check(received == 9, format("The child did not reflect the message, got %s", received));
+
+        return result_ok;
     }
 
     @Then("send a message to #child2")
     Document aMessageToChild2() {
-        return Document();
+        debug writeln("actor_message 5");
+        supervisor_handle.sendStatusToChild(1, Children.child2);
+        return result_ok;
     }
 
     @Then("send thus message back from #child2 to #super")
-    Document fromChild2ToSuper() {
-        return Document();
+    Document fromChild2ToSuper() @trusted {
+        debug writeln("actor_message 6");
+        long received = concurrency.receiveOnly!long;
+        check(received == 64, format("The child did not reflect the message, got %s", received));
+        return result_ok;
     }
 
     @Then("stop the #super")
     Document stopTheSuper() {
+        debug writeln("actor_message 7");
         supervisor_handle.stop;
         check(!isRunning(child1_task_name), "child1 is still running");
         check(!isRunning(child2_task_name), "child2 is still running");
+        check(!isRunning(supervisor_task_name), "supervisor is still running");
         return result_ok;
     }
 
@@ -168,24 +205,47 @@ class MessageBetweenSupervisorAndChild {
         [])
 class SendMessageBetweenTwoChildren {
 
+    ActorFactory!MySuperActor supervisor_factory;
+    ActorHandle!MySuperActor supervisor_handle;
+
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() {
-        return Document();
+        debug writeln("actor_message 2.1");
+        supervisor_factory = actor!MySuperActor;
+
+        supervisor_handle = supervisor_factory(supervisor_task_name);
+        check(isRunning(supervisor_task_name), "Supervisor is not running");
+        return result_ok;
     }
 
     @When("the #super has started the #child1 and #child2")
-    Document theChild1AndChild2() {
-        return Document();
+    Document theChild1AndChild2() @trusted {
+        debug writeln("actor_message 2.2");
+        supervisor_handle.isChildRunning(child1_task_name);
+        check(concurrency.receiveOnly!bool, "child1 is running");
+        supervisor_handle.isChildRunning(child2_task_name);
+        check(concurrency.receiveOnly!bool, "child2 is running");
+        return result_ok;
     }
 
     @When("send a message from #super to #child1 and from #child1 to #child2 and back to the #super")
-    Document backToTheSuper() {
-        return Document();
+    Document backToTheSuper() @trusted {
+        debug writeln("actor_message 2.3");
+        supervisor_handle.roundtrip(Children.child2);
+        /* concurrency.receiveOnly!bool; */
+        string receive = concurrency.receiveOnly!string;
+        check(receive == "i mom", format("did not receive the right message, got %s", receive));
+        return result_ok;
     }
 
     @Then("stop the #super")
     Document stopTheSuper() {
-        return Document();
+        debug writeln("actor_message 2.4");
+        supervisor_handle.stop;
+        check(!isRunning(child1_task_name), "child1 is still running");
+        check(!isRunning(child2_task_name), "child2 is still running");
+        check(!isRunning(supervisor_task_name), "supervisor is still running");
+        return result_ok;
     }
 
 }

@@ -5,6 +5,7 @@ import tagion.hibon.Document;
 
 import std.typecons : Tuple;
 import std.stdio;
+import std.format: format;
 import std.process;
 import std.path;
 import std.string;
@@ -87,6 +88,10 @@ class GenerateDart
     @When("I add genesis invoice to N wallet")
     Document wallet() @trusted
     {
+        check(genesis.length <= wallets.length,
+            format("There are more genesis invoices than there are wallets: %s > %s", 
+            genesis.length, wallets.length));
+
         foreach (i, genesis_invoice; genesis)
         {
             if (genesis_invoice.amount == 0) {
@@ -114,7 +119,7 @@ class GenerateDart
 
         genesis_path = buildPath(module_path, "genesis.hibon");
 
-        foreach (i, invoice; invoices)
+        foreach (invoice; invoices)
         {
 
             immutable boot_command = [

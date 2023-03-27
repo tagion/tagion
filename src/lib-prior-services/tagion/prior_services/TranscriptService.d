@@ -28,6 +28,8 @@ import tagion.dart.DARTBasic;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.dart.DARTcrud : dartRead, dartBullseye;
 
+import tagion.utils.Miscellaneous : toHexString;
+
 // This function performs Smart contract executions
 void transcriptServiceTask(string task_name, string dart_task_name, string recorder_task_name, string epoch_dumper_task_name) nothrow {
     try {
@@ -113,7 +115,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
         }
 
         Fingerprint last_bullseye = requestBullseye();
-        log("Start with bullseye: %s", last_bullseye.hex);
+        log("Start with bullseye: %s", last_bullseye.toHexString);
         bool to_smart_script(ref const(SignedContract) signed_contract, ref uint index) nothrow {
             try {
                 version (OLD_TRANSACTION) {
