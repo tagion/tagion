@@ -7,7 +7,7 @@ on:
       - ddoc-github-pages
       - codecov
 env:
-  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN= }}
+  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       
 permissions:
   contents: read
