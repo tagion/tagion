@@ -235,6 +235,9 @@ alias check = Check!DARTException;
         assert(table.length == KEY_SPAN);
     }
     do {
+        // if (table.length == 0) {
+        //     return null;
+        // }
         immutable(Buffer) merkletree(
                 const(Buffer[]) left,
         const(Buffer[]) right) {
