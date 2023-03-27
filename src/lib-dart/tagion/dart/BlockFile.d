@@ -97,9 +97,9 @@ class BlockFile {
     }
 
     protected this(
-            string filename,
-            immutable uint SIZE,
-            const bool read_only = false) {
+        string filename,
+        immutable uint SIZE,
+        const bool read_only = false) {
         File _file;
 
         if (read_only) {
@@ -112,8 +112,8 @@ class BlockFile {
     }
 
     protected this(
-            File file,
-            immutable uint SIZE) {
+        File file,
+        immutable uint SIZE) {
         this.BLOCK_SIZE = SIZE;
         //   DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
         this.file = file;
@@ -131,9 +131,9 @@ class BlockFile {
     }
 
     static BlockFile Inspect(
-            string filename,
-            void delegate(string msg) @safe report,
-            const uint max_iteration = uint.max) {
+        string filename,
+        void delegate(string msg) @safe report,
+        const uint max_iteration = uint.max) {
         BlockFile result;
         void try_it(void delegate() @safe dg) {
             try {
@@ -374,8 +374,8 @@ class BlockFile {
         Index root_index; /// Point the root of the database
         Index statistic_index; /// Points to the statistic data
         void write(
-                ref File file,
-                immutable uint BLOCK_SIZE) const @trusted {
+            ref File file,
+            immutable uint BLOCK_SIZE) const @trusted {
             auto buffer = new ubyte[BLOCK_SIZE];
             size_t pos;
             foreach (i, m; this.tupleof) {
@@ -459,7 +459,7 @@ class BlockFile {
         masterblock.statistic_index = Index(statistical_allocate.index);
         if (old_statistic_index !is INDEX_NULL) {
             // The old statistic block is erased
-            erase(old_statistic_index);
+            dispose(old_statistic_index);
         }
     }
 
@@ -479,7 +479,7 @@ class BlockFile {
 
     private void readHeaderBlock() {
         check(file.size % BLOCK_SIZE == 0,
-                format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
+            format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
                 .size));
         _last_block_index = cast(Index)(file.size / BLOCK_SIZE);
         check(_last_block_index > 1, format("The BlockFile should at least have a size of two block of %d but is %d", BLOCK_SIZE, file
@@ -576,22 +576,23 @@ class BlockFile {
      +     BlockFileException
      +
      +/
-    Index erase(const Index index) {
+    void dispose(const Index index) {
+        // recycler.dispose(Index, size);
         // Should be implement with new recycler
-        return INDEX_NULL;
+        // return INDEX_NULL;
     }
 
     /**
-     * Internale function used to reserve a size bytes in the blockfile
+     * Internal function used to reserve a size bytes in the blockfile
      * Params:
      *   size = size in bytes
      * Returns: 
      *   block index position of the reserved bytes
      */
-    protected Index reserve(const size_t size) nothrow {
+    protected Index claim(const size_t size) nothrow {
         const nblocks = number_of_blocks(size);
         _statistic(nblocks);
-        return Index(recycler.reserve_segment(nblocks));
+        return Index(recycler.claim(nblocks));
     }
 
     /// Cache to be stored
@@ -605,7 +606,7 @@ class BlockFile {
      +     doc = Document to be reserved and allocated
      +/
     const(BlockSegment*) save(const(Document) doc) {
-        auto result = new const(BlockSegment)(doc, reserve(doc.full_size));
+        auto result = new const(BlockSegment)(doc, claim(doc.full_size));
 
         allocated_chains ~= result;
         return result;
@@ -623,7 +624,7 @@ class BlockFile {
      +
      +/
     void store() {
-       writeStatistic;
+        writeStatistic;
         scope (success) {
             allocated_chains = null;
             version (none)
@@ -631,8 +632,8 @@ class BlockFile {
             writeMasterBlock;
         }
 
-        foreach (block_segment; sort!(q{a.index < b.index}, 
-            SwapStrategy.unstable)(allocated_chains)) {
+        foreach (block_segment; sort!(q{a.index < b.index},
+                SwapStrategy.unstable)(allocated_chains)) {
             block_segment.write(this);
         }
     }
@@ -702,7 +703,7 @@ class BlockFile {
         return failed;
     }
 
-   enum BlockSymbol {
+    enum BlockSymbol {
         file_header = 'H',
         header = 'h',
         empty = '_',
@@ -712,7 +713,7 @@ class BlockFile {
 
     }
 
-   /++
+    /++
      + Used for debuging only to dump the Block's
      +/
     void dump(const uint block_per_line = 16) {
@@ -779,13 +780,13 @@ class BlockFile {
             blockfile.close;
         }
 
-       {
+        {
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
 
-            blockfile.erase(blockfile.masterblock.statistic_index);
+            blockfile.dispose(blockfile.masterblock.statistic_index);
 
             blockfile.close;
         }
 
-   }
+    }
 }
