@@ -5,6 +5,7 @@ on:
     branches: 
       - current
       - ddoc-github-pages
+      - codecov
       
 permissions:
   contents: read
@@ -58,5 +59,6 @@ jobs:
           git add .
           git commit -m "ddocs updated" || echo "nothing to commit"
           git push https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git || echo "repo already up to date"
-
       
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
