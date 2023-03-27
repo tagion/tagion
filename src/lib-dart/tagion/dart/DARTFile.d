@@ -1136,7 +1136,9 @@ GetType get_type = null) {
                             while (!range.empty);
                         }
                     }
-
+                    if (branches.empty) {
+                        return Leave.init;
+                    }                  
                     return Leave(blockfile.save(branches)
                             .index, branches.fingerprint(this));
 
