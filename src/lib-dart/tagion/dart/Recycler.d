@@ -241,6 +241,13 @@ struct Recycler {
         /// Should implemented    
     }
 
+    /**
+     * 
+     * Params:
+     *   size = in number of blocks
+     * Returns: 
+     *   Index pointer a free segment
+     */
     const(Index) reserve_segment(const uint size) nothrow {
         scope (success) {
             owner._last_block_index += size;
