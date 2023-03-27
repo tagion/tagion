@@ -63,7 +63,7 @@ jobs:
           git push https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git || echo "repo already up to date"
           cd /home/runner/work/tagion/tagion
           pwd
-          dub test -b unittest-cov --compiler=${DC}
+          dub test -b unittest-cov
           bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }}
   
   #codecov:
