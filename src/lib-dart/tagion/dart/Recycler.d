@@ -662,8 +662,7 @@ unittest {
         add_indices[]);
     add_indices = new Indices(
         [
-        new Segment(Index(17UL), 2, Type
-            .ADD)
+        new Segment(Index(17UL), 2, Type.ADD)
     ]);
     recycler.recycle(
         add_indices[]);
