@@ -669,3 +669,33 @@ unittest {
     assert(
         recycler.indices.length == 4);
 }
+
+unittest {
+    immutable filename = fileId(
+        "recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(
+        filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(
+        blockfile);
+
+    Indices add_indices = new Indices(
+        [
+        new Segment(Index(10UL), 5, Type.ADD),
+    ]
+    );
+    recycler.recycle(add_indices[]);
+
+    Indices remove_indices = new Indices(
+        [
+        new Segment(Index(10UL), 5, Type.REMOVE),
+    ]
+    );
+
+    recycler.recycle(remove_indices[]);
+
+    assert(recycler.indices.length == 0);
+}
