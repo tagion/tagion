@@ -48,9 +48,9 @@ struct MyActor {
         sendSupervisor(some_name);
     }
 
-    /* @method void dumdum(immutable(ActorID) actorID) { */
+    /* @method void dumdum(immutable(actorid) actorid) { */
     /*     import std.stdio; */
-    /*     writeln(actorID); */
+    /*     writeln(actorid); */
     /* } */
 
     @method void relay(string str, string task_name) {
@@ -94,7 +94,7 @@ static assert(isActor!MyActor);
 alias ChildHandle = ActorHandle!MyActor;
 
 static struct MySuperActor {
-@safe
+    @safe
 
     ChildHandle niño_uno_handle;
     ChildHandle niño_dos_handle;

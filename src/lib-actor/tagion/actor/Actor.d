@@ -142,7 +142,7 @@ template allMemberFilter(This, alias pred) {
             static if (pred!(This, members[0])) {
                 enum Filter = [members[0]];
             }
-            else {
+        else {
                 enum Filter = [];
             }
         }
@@ -165,7 +165,7 @@ mixin template TaskActor() {
     import core.time : Duration;
     import std.format;
     import tagion.actor.Actor;
-    import tagion.actor.Actor : isMethod;
+    import tagion.actor.Actor : ActorID;
     import tagion.basic.Types : Control;
     import core.demangle : mangle;
     import std.concurrency : Tid;
@@ -194,13 +194,14 @@ mixin template TaskActor() {
         concurrency.prioritySend(concurrency.ownerTid, e);
     }
 
-    @method void isValidActor(immutable(ActorID) actorID, immutable(Tid) return_tid) @trusted {
-        auto tid = concurrency.locate(actorID.task_name);
-        auto _return_tid = cast (Tid) return_tid;
-    
+    @method @local void isValidActor(immutable(ActorID*) actorid, immutable(Tid) return_tid) @trusted {
+        auto tid = concurrency.locate(actorid.task_name);
+        auto _return_tid = cast(Tid) return_tid;
+
         import std.stdio;
-        writefln("ASTORID: %s", actorID);
-        if (tid !is Tid.init && actorID.mangle_name == mangle_name) {
+
+        writefln("ASTORID: %s", *actorid);
+        if (tid !is Tid.init && actorid.mangle_name == mangle_name) {
             concurrency.send(_return_tid, ActorFlag.yes);
             return;
         }
@@ -330,8 +331,8 @@ protected static string generateAllMethods(alias This)() {
                     alias Func = FunctionTypeOf!(Overload[0]);
                     static foreach (Param; Parameters!Func) {
                         static if (__traits(compiles, __traits(parent, Param))) {
-                            /* imports[moduleName!Param] ~= Unqual!(Param).stringof; */
-                            imports[moduleName!Param] ~= (Param).stringof;
+                            imports[moduleName!Param] ~= Unqual!(Param).stringof;
+                            //imports[moduleName!Param] ~= (Param).stringof;
                         }
                     }
                     static if (is(ReturnType!Func == void)) {
@@ -385,7 +386,6 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
     import concurrency = std.concurrency;
 
     static struct Factory {
-        //import tagion.basic.Types : Gettes;
         static if (Args.length) {
             private static shared Args init_args;
         }
@@ -446,7 +446,7 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
                 }
 
                 enum members_code = generateAllMethods!(Actor);
-                pragma(msg, "members_code ", members_code);
+                //pragma(msg, "members_code ", members_code);
                 mixin(members_code);
             }
             /* 
@@ -487,12 +487,11 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
          * Returns: 
          *   Returns the handle if it runs or else it return ActorHandle.init 
          */
-            static ActorHandle handler(string task_name, immutable(Tid) return_tid) @trusted {
+            static ActorHandle handler(string task_name) @trusted {
                 auto tid = concurrency.locate(task_name);
                 debug writefln("Got tid and task: %s %s", tid, task_name);
                 if (tid !is Tid.init) {
-                    concurrency.send(tid, actorID!Actor(task_name), return_tid);
-                    debug writefln("is a valid actor?", actorID!Actor(task_name));
+                    concurrency.send(tid, actorID!Actor(task_name));
                     if (concurrency.receiveOnly!(ActorFlag) == ActorFlag.yes) {
                         debug writefln("Returning actor handle");
                         return ActorHandle(tid);

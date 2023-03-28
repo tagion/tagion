@@ -187,8 +187,8 @@ struct WalletInterface {
             if (!processed) {
                 writefln("                                 available %s", secure_wallet
                         .account.available);
-                writefln("                                    active %s", secure_wallet
-                        .account.active);
+                writefln("                                    locked %s", secure_wallet
+                        .account.locked);
             }
             (processed ? GREEN : RED).write;
             writefln("                                     total %s", secure_wallet.account.total);
@@ -293,7 +293,7 @@ struct WalletInterface {
                     readln(old_pincode);
                     old_pincode.word_strip;
                     //            secure_wallet.login(old_pincode);
-                    if (secure_wallet.check_pincode(old_pincode)) {
+                    if (secure_wallet.checkPincode(old_pincode)) {
                         writefln("%1$sCorrect pin%2$s", GREEN, RESET);
                         bool ok;
                         do {
@@ -305,7 +305,7 @@ struct WalletInterface {
                             new_pincode2.word_strip;
                             ok = (new_pincode1.length >= 4);
                             if (ok && (ok = (new_pincode1 == new_pincode2)) is true) {
-                                secure_wallet.change_pincode(old_pincode, new_pincode1);
+                                secure_wallet.changePincode(old_pincode, new_pincode1);
                                 secure_wallet.login(new_pincode1);
                                 options.devicefile.fwrite(secure_wallet.pin);
                                 return;
@@ -896,13 +896,13 @@ int _main(string[] args) {
         writeln("Invoice file " ~ payfile ~ " not found");
     }
     if (unlock_bills) {
-        wallet_interface.secure_wallet.deactivate_bills;
+        wallet_interface.secure_wallet.unlockBills;
         options.accountfile.fwrite(wallet_interface.secure_wallet.account);
     }
     if (update_wallet) {
 
         // writefln("looking for %s", (cast(Buffer)pkey).toHexString);
-        auto to_send = wallet_interface.secure_wallet.get_request_update_wallet();
+        auto to_send = wallet_interface.secure_wallet.getRequestUpdateWallet();
         // writeln("Sending::", to_send.toDoc.toJSON);
         auto client = socket(AddressFamily.INET);
         scope (exit) {
@@ -943,7 +943,7 @@ int _main(string[] args) {
             // //    writefln("data: %s", received.method.params.toJSON);
             //    writefln("data: %s", received.response.result.toJSON);
 
-            auto updated = wallet_interface.secure_wallet.set_response_update_wallet(received);
+            auto updated = wallet_interface.secure_wallet.setResponseUpdateWallet(received);
             options.accountfile.fwrite(wallet_interface.secure_wallet.account);
             Thread.sleep(1000.msecs);
             writeln("Wallet updated ", updated);
@@ -959,7 +959,7 @@ int _main(string[] args) {
     else {
         if (print_amount) {
             writefln("Total: %s\n Available: %s\n Locked: %s", wallet_interface.secure_wallet.total_balance, wallet_interface
-                    .secure_wallet.available_balance, wallet_interface.secure_wallet.active_balance);
+                    .secure_wallet.available_balance, wallet_interface.secure_wallet.locked_balance);
         }
         if (create_invoice_command.length) {
             scope invoice_args = create_invoice_command.splitter(":");
