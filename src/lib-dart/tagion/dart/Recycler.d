@@ -81,8 +81,7 @@ struct Recycler {
 
     protected void insert(Indices.Range segment_range) {
         indices.stableInsert(segment_range);
-        segments.stableInsert(
-            segment_range);
+        segments.stableInsert(segment_range);
     }
 
     protected void insert(Segment* segment) {
@@ -92,8 +91,7 @@ struct Recycler {
 
     protected void remove(Segment* segment) {
         indices.removeKey(segment);
-        segments.removeKey(
-            segment);
+        segments.removeKey(segment);
     }
 
     void recycle(Indices.Range recycle_segments) {
@@ -128,35 +126,23 @@ struct Recycler {
                 continue;
             }
 
-            if (segment.type == Type
-                .ADD) {
-                auto lower_range = indices.lowerBound(
-                    segment);
-                auto upper_range = indices.upperBound(
-                    segment);
+            if (segment.type == Type.ADD) {
+                auto lower_range = indices.lowerBound(segment);
+                auto upper_range = indices.upperBound(segment);
 
                 if (
-                    lower_range
-                    .empty) {
+                    lower_range.empty) {
                     // A ###
                     assert(!upper_range.empty, "there must be something in the upper range if the lower range is empty.");
-                    if (segment.end == upper_range
-                        .front
-                        .index) {
-                        Segment* add_segment = new Segment(
-                            segment.index, upper_range
-                                .front.size + segment
+                    if (segment.end == upper_range.front.index) {
+                        Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment
                                 .size);
-                        remove(
-                            upper_range
-                                .front);
-                        insert(
-                            add_segment);
+                        remove(upper_range.front);
+                        insert(add_segment);
                         continue;
                     }
                     else {
-                        insert(
-                            segment);
+                        insert(segment);
                         continue;
                     }
                 }
@@ -166,14 +152,9 @@ struct Recycler {
                     if (lower_range.back.end == segment
                         .index) {
                         Segment* add_segment = new Segment(
-                            lower_range.back.index, segment.size + lower_range
-                                .back
-                                .size);
-                        remove(
-                            lower_range
-                                .back);
-                        insert(
-                            add_segment);
+                            lower_range.back.index, segment.size + lower_range.back.size);
+                        remove(lower_range.back);
+                        insert(add_segment);
                         continue;
                     }
                     else {
@@ -182,57 +163,38 @@ struct Recycler {
                     }
                 }
                 if (
-                    lower_range.back.end == segment
-                    .index) {
+                    lower_range.back.end == segment.index) {
                     //  ###
                     //  ###A 
-                    if (upper_range.front.index == segment
-                        .end) {
+                    if (upper_range.front.index == segment.end) {
                         // ### ###
                         // ###A###
                         Segment* add_segment = new Segment(
-                            lower_range.front.index, lower_range.front.size + segment
-                                .size + upper_range.front
-                                .size);
-                        remove(
-                            lower_range
-                                .front);
-                        remove(
-                            upper_range
-                                .front);
-                        insert(
-                            add_segment);
+                            lower_range.front.index, lower_range.front.size + segment.size + upper_range
+                                .front.size);
+                        remove(lower_range.front);
+                        remove(upper_range.front);
+                        insert(add_segment);
                         continue;
                     }
                     else {
                         // ### 
                         // ###A
-                        Segment* add_segment = new Segment(
-                            lower_range.front.index, lower_range.front.size + segment
+                        Segment* add_segment = new Segment(lower_range.front.index, lower_range.front.size + segment
                                 .size);
-                        remove(
-                            lower_range
-                                .front);
-                        insert(
-                            add_segment);
+                        remove(lower_range.front);
+                        insert(add_segment);
                         continue;
                     }
 
                 }
-                if (
-                    upper_range.front.index == segment
-                    .end) {
+                if (upper_range.front.index == segment.end) {
                     //  ###
                     // A###
-                    Segment* add_segment = new Segment(
-                        segment.index, upper_range.front
-                            .size + segment
+                    Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment
                             .size);
-                    remove(
-                        upper_range
-                            .front);
-                    insert(
-                        add_segment);
+                    remove(upper_range.front);
+                    insert(add_segment);
                     continue;
                 }
                 else {
@@ -335,10 +297,8 @@ struct Recycler {
 
         // Either adds or removes from the recycler. 
         assumeWontThrow(to_be_recycled.insert(
-                new Segment(owner._last_block_index, segment_size, Type
-                .ADD)));
-        return owner
-            ._last_block_index;
+                new Segment(owner._last_block_index, segment_size, Type.ADD)));
+        return owner._last_block_index;
 
     }
     /** 
@@ -353,9 +313,7 @@ struct Recycler {
         if (index == 0) {
             return;
         }
-        assumeWontThrow(to_be_recycled.insert(
-                new Segment(index, segment_size, Type
-                .ADD)));
+        assumeWontThrow(to_be_recycled.insert(new Segment(index, segment_size, Type.ADD)));
     }
 
 }
