@@ -7,8 +7,8 @@ import std.stdio;
 import std.traits : PointerTarget;
 
 import tagion.basic.Types : Buffer;
-import tagion.dart.BlockFile : BlockFile, Index;
-import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType, fwrite;
+import tagion.dart.BlockFile : BlockFile, Index, check;
+import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType, fwrite, fread;
 import std.algorithm;
 
 enum Type : int {
@@ -20,19 +20,20 @@ enum Type : int {
 
 @safe @recordType("RecycleSegment")
 struct Segment {
-    Index index; // Block file index
+    Index next;
     uint size;
-    Index next = Index.init;
+    @label("") Index index;
     @label("") Type type;
     Index end() const pure nothrow @nogc {
         return Index(index + size);
     }
 
     mixin HiBONRecord!(q{
-        this(const Index index, const uint size, const Type type=Type.NONE) {
+        this(const Index index, const uint size, const Type type=Type.NONE, Index next = Index.init) {
             this.index = index;
             this.size = size;
             this.type = type;
+            this.next = next;
         }
     });
     invariant {
@@ -251,8 +252,17 @@ struct Recycler {
         return false;
     }
 
-    void read(const Index index) {
-        /// Reads the recycler at index
+    void read(Index index) {
+        indices = new Indices;
+
+        while (index != Index.init) {
+            owner.seek(index);
+            const doc = owner.file.fread();
+            check(Segment.isRecord(doc), "The loaded segment was not of type segment doc");
+            auto add_segment = new Segment(doc);
+            indices.stableInsert(add_segment);
+            index = add_segment.index;
+        }
     }
 
     /** 
@@ -260,22 +270,30 @@ struct Recycler {
      * Params:
      *   index = Index of the blockfile???
      */
-    void write() nothrow {
+    const(Index) write() nothrow {
         assumeWontThrow(recycle(to_be_recycled[]));
         to_be_recycled.clear;
-        assumeWontThrow(writeln("###"));
-        assumeWontThrow(dump());
+
+        if (!indices.empty) {
+            return Index.init;
+        }
 
         foreach (segment; indices) {
             auto upper_range = indices.upperBound(segment);
-
+            bool update;
             if (!upper_range.empty) {
                 if (segment.next != upper_range.front.index) {
                     segment.next = upper_range.front.index;
+                    update = true;
                 }
             }
+
+            if (update) {
+                assumeWontThrow(owner.file.fwrite(*segment));
+            }
+
         }
-        assumeWontThrow(writeln("@@@"));
+        return indices[].front.index;
     }
 
     /// The recycler to the blockfile
