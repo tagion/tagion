@@ -31,9 +31,12 @@ enum Children {
 
 enum supervisor_task_name = "supervisor";
 enum child1_task_name = "child1";
+enum child1_init = 10; // meaningless value
 enum child2_task_name = "child2";
+enum child2_init = 65; // meaningless value
 enum sleep_time = 100.msecs;
 
+// Child actors
 struct MyActor {
     long count;
     string some_name;
@@ -42,7 +45,7 @@ struct MyActor {
     */
     @method void setName(string str) {
         some_name = str;
-        sendOwner(some_name);
+        sendSupervisor(some_name);
         debug writefln("set name to %s", str);
     }
 
@@ -58,16 +61,14 @@ struct MyActor {
         debug writefln("received handler %s", otherChild);
         otherChild.setName(str);
         Thread.sleep(sleep_time);
-        sendOwner(str);
+        sendSupervisor(str);
     }
 
     /// Decrease the count value `by`
     @method void decrease(int by) {
         count -= by;
-        sendOwner(count);
+        sendSupervisor(count);
     }
-
-    mixin TaskActor; /// Turns the struct into an Actor
 
     /// UDA @task mark that this is the task for the Actor
     @task void runningTask(long label) {
@@ -78,6 +79,8 @@ struct MyActor {
             receiveTimeout(100.msecs);
         }
     }
+
+    mixin TaskActor; /// Turns the struct into an Actor
 }
 
 static assert(isActor!MyActor);
@@ -93,8 +96,8 @@ static struct MySuperActor {
     @task void run() {
         auto my_actor_factory = actor!MyActor;
 
-        niño_uno_handle = my_actor_factory(child1_task_name, 10);
-        niño_dos_handle = my_actor_factory(child2_task_name, 65);
+        niño_uno_handle = my_actor_factory(child1_task_name, child1_init);
+        niño_dos_handle = my_actor_factory(child2_task_name, child2_init);
 
         alive;
         while (!stop) {
@@ -104,7 +107,7 @@ static struct MySuperActor {
 
     @method void isChildRunning(string task_name) {
         Thread.sleep(sleep_time);
-        sendOwner(isRunning(task_name));
+        sendSupervisor(isRunning(task_name));
     }
 
     @method void sendStatusToChild(int status, Children child) {
@@ -118,7 +121,7 @@ static struct MySuperActor {
         }
 
         long echo = concurrency.receiveOnly!long;
-        sendOwner(echo);
+        sendSupervisor(echo);
     }
 
     @method void roundtrip(Children __notUsed) {
@@ -169,7 +172,7 @@ class MessageBetweenSupervisorAndChild {
     Document fromChild1ToSuper() @trusted {
         debug writeln("actor_message 4");
         long received = concurrency.receiveOnly!long;
-        check(received == 9, format("The child did not reflect the message, got %s", received));
+        check(received == child1_init - 1, format("The child did not reflect the message, got %s", received));
 
         return result_ok;
     }
@@ -185,7 +188,7 @@ class MessageBetweenSupervisorAndChild {
     Document fromChild2ToSuper() @trusted {
         debug writeln("actor_message 6");
         long received = concurrency.receiveOnly!long;
-        check(received == 64, format("The child did not reflect the message, got %s", received));
+        check(received == child2_init - 1, format("The child did not reflect the message, got %s", received));
         return result_ok;
     }
 
@@ -193,6 +196,7 @@ class MessageBetweenSupervisorAndChild {
     Document stopTheSuper() {
         debug writeln("actor_message 7");
         supervisor_handle.stop;
+        // Need do discuss if it should be possible to check the status of a task from any task
         check(!isRunning(child1_task_name), "child1 is still running");
         check(!isRunning(child2_task_name), "child2 is still running");
         check(!isRunning(supervisor_task_name), "supervisor is still running");
@@ -234,7 +238,7 @@ class SendMessageBetweenTwoChildren {
         supervisor_handle.roundtrip(Children.child2);
         /* concurrency.receiveOnly!bool; */
         string receive = concurrency.receiveOnly!string;
-        check(receive == "i mom", format("did not receive the right message, got %s", receive));
+        check(receive == "hi mom", format("did not receive the right message, got %s", receive));
         return result_ok;
     }
 
@@ -242,6 +246,7 @@ class SendMessageBetweenTwoChildren {
     Document stopTheSuper() {
         debug writeln("actor_message 2.4");
         supervisor_handle.stop;
+        // Need do discuss if it should be possible to check the status of a task from any task
         check(!isRunning(child1_task_name), "child1 is still running");
         check(!isRunning(child2_task_name), "child2 is still running");
         check(!isRunning(supervisor_task_name), "supervisor is still running");
