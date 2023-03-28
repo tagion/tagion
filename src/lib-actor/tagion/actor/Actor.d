@@ -16,6 +16,8 @@ import tagion.basic.TagionExceptions : fatal; //, Check, TagionException;
 import tagion.logger.Logger;
 import tagion.actor.ActorException;
 
+debug import std.stdio;
+
 /// method define receiver method for the task actor
 enum method;
 
@@ -168,6 +170,8 @@ mixin template TaskActor() {
     import core.demangle : mangle;
     import std.concurrency : Tid;
 
+    enum mangle_name = mangle!This("");
+
     private Tid[] channel_tids; /// Contains all the channel connections for this actor
     bool stop;
     /** 
@@ -188,6 +192,19 @@ mixin template TaskActor() {
     @method @local void fail(immutable(Exception) e) @trusted {
         stop = true;
         concurrency.prioritySend(concurrency.ownerTid, e);
+    }
+
+    @method void isValidActor(immutable(ActorID) actorID, immutable(Tid) return_tid) @trusted {
+        auto tid = concurrency.locate(actorID.task_name);
+        auto _return_tid = cast (Tid) return_tid;
+    
+        import std.stdio;
+        writefln("ASTORID: %s", actorID);
+        if (tid !is Tid.init && actorID.mangle_name == mangle_name) {
+            concurrency.send(_return_tid, ActorFlag.yes);
+            return;
+        }
+        concurrency.send(_return_tid, ActorFlag.no);
     }
 
     /** 
@@ -313,7 +330,8 @@ protected static string generateAllMethods(alias This)() {
                     alias Func = FunctionTypeOf!(Overload[0]);
                     static foreach (Param; Parameters!Func) {
                         static if (__traits(compiles, __traits(parent, Param))) {
-                            imports[moduleName!Param] ~= Param.stringof;
+                            /* imports[moduleName!Param] ~= Unqual!(Param).stringof; */
+                            imports[moduleName!Param] ~= (Param).stringof;
                         }
                     }
                     static if (is(ReturnType!Func == void)) {
@@ -428,7 +446,7 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
                 }
 
                 enum members_code = generateAllMethods!(Actor);
-                //pragma(msg, "members_code ", members_code);
+                pragma(msg, "members_code ", members_code);
                 mixin(members_code);
             }
             /* 
@@ -469,11 +487,14 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
          * Returns: 
          *   Returns the handle if it runs or else it return ActorHandle.init 
          */
-            static ActorHandle handler(string task_name) @trusted {
+            static ActorHandle handler(string task_name, immutable(Tid) return_tid) @trusted {
                 auto tid = concurrency.locate(task_name);
+                debug writefln("Got tid and task: %s %s", tid, task_name);
                 if (tid !is Tid.init) {
-                    concurrency.send(tid, actorID!Actor(task_name));
+                    concurrency.send(tid, actorID!Actor(task_name), return_tid);
+                    debug writefln("is a valid actor?", actorID!Actor(task_name));
                     if (concurrency.receiveOnly!(ActorFlag) == ActorFlag.yes) {
+                        debug writefln("Returning actor handle");
                         return ActorHandle(tid);
                     }
                 }
