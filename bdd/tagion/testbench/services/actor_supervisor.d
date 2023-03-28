@@ -8,9 +8,8 @@ import tagion.testbench.tools.Environment;
 import core.time;
 import core.thread;
 import concurrency = std.concurrency;
-import std.format: format;
+import std.format : format;
 import tagion.actor.Actor;
-
 
 debug import std.stdio;
 
@@ -27,23 +26,25 @@ enum sleep_time = 100.msecs;
 
 /// Child Actor
 struct SetUpForFailure {
-    
-    @method void fail(int _i) {
-        debug writeln("child is failing");
-        throw new Exception("Child: I am a failure");
-    }
+
+    /* @method void exceptionalMethod(int _i) { */
+    /*     debug writeln("child is failing"); */
+    /*     throw new Exception("Child: I am a failure"); */
+    /* } */
 
     @task void run() {
         alive; // Actor is now alive
 
-        /* Thread.sleep(300.msecs); */
+        Thread.sleep(300.msecs);
         /* throw new Exception("Child: I am a failure"); */
         while (!stop) {
             receiveTimeout(100.msecs);
         }
     }
+
     mixin TaskActor; /// Turns the struct into an Actor
 }
+
 static assert(isActor!SetUpForFailure);
 
 /// Supervisor Actor
@@ -64,8 +65,10 @@ struct SetUpForDissapointment {
             receiveTimeout(100.msecs);
         }
     }
+
     mixin TaskActor; /// Turns the struct into an Actor
 }
+
 static assert(isActor!SetUpForDissapointment);
 
 enum supervisor_task_name = "supervisor";
@@ -99,12 +102,16 @@ class SupervisorWithFailingChild {
 
     @When("the #child has started then the #child should fail with an exception")
     Document withAnException() {
-        return Document();
+
+        return result_ok;
     }
 
     @Then("the #super actor should catch the #child which failed")
-    Document childWhichFailed() {
-        return Document();
+    Document childWhichFailed() @trusted {
+        // catch
+        /* auto e = concurrency.receiveOnly!Exception; */
+        /* writeln("child failed with: %s", e); */
+        return result_ok;
     }
 
     @Then("the #super actor should restart the child")

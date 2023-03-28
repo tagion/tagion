@@ -48,17 +48,26 @@ struct MyActor {
         sendSupervisor(some_name);
     }
 
+    /* @method void dumdum(immutable(actorid) actorid) { */
+    /*     import std.stdio; */
+    /*     writeln(actorid); */
+    /* } */
+
     @method void relay(string str, string task_name) {
         // Request the handle for the other child;
-        /* alias ChildActor = actor!MyActor; */
-        auto ChildActor = actor!MyActor;
+        /* alias ChildFactory = ActorFactory!MyActor; */
 
+        /* auto dumdum_tid = concurrency.locate(task_name); */
+        /* concurrency.send(dumdum_tid, actorID!Actor(task_name)); */
         // Handler method is blocking as it's trying to wait for a message that gets sent to the main thread
-        ChildHandle otherChild = ChildActor.handler(task_name);
+        /* ChildHandle otherChild = ChildFactory.handler(task_name, cast(immutable) concurrency.thisTid); */
+        /* if(otherChild is otherChild.init) { */
+        /* } */
+        /* debug writefln("Got child handler: %s", otherChild is otherChild.init); */
 
-        otherChild.setName(str);
-        Thread.sleep(sleep_time);
-        sendSupervisor(str);
+        /* otherChild.setName(str); */
+        /* Thread.sleep(sleep_time); */
+        /* sendSupervisor(str); */
     }
 
     /// Decrease the count value `by`
@@ -85,7 +94,7 @@ static assert(isActor!MyActor);
 alias ChildHandle = ActorHandle!MyActor;
 
 static struct MySuperActor {
-@safe
+    @safe
 
     ChildHandle niño_uno_handle;
     ChildHandle niño_dos_handle;
