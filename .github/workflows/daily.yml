@@ -13,7 +13,7 @@ env:
   ## TODO: add ldc2/dmd switch & version
 jobs:
   build_and_unittest:
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     steps:
       - name: Cleanup
         run: |
