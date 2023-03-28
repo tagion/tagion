@@ -8,13 +8,14 @@ import std.traits : PointerTarget;
 
 import tagion.basic.Types : Buffer;
 import tagion.dart.BlockFile : BlockFile, Index;
-import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType;
+import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType, fwrite;
 import std.algorithm;
 
 enum Type : int {
     NONE = 0, /// NO Recycler instruction
     REMOVE = -1, /// Should be removed from recycler
     ADD = 1, /// should be added to recycler
+    UPDATE = 2,
 }
 
 @safe @recordType("RecycleSegment")
@@ -27,6 +28,17 @@ struct Segment {
         return Index(index + size);
     }
 
+    static struct SegmentChain {
+        Index next;
+        uint size;
+        mixin HiBONRecord!(q{
+            this(Segment segment) {
+                next = segment.end;
+                size = segment.size;
+            }
+        });
+    }
+
     mixin HiBONRecord!(q{
         this(const Index index, const uint size, const Type type=Type.NONE) {
             this.index = index;
@@ -34,6 +46,12 @@ struct Segment {
             this.type = type;
         }
     });
+
+    void write(BlockFile owner) {
+        owner.seek(index);
+        owner.file.fwrite(SegmentChain(this));
+    }
+
     invariant {
         assert(size > 0);
     }
@@ -97,16 +115,27 @@ struct Recycler {
     void recycle(Indices.Range recycle_segments) {
 
         if (indices.empty) {
+            assert(recycle_segments.filter!(s => s.type != Type.ADD).take(2)
+                    .walkLength == 0, "cannot remove segments from empty indices");
             insert(recycle_segments);
             return;
         }
+        assert(recycle_segments.filter!(s => s.type == Type.NONE).take(2)
+                .walkLength == 0, "cannot insert type.NONE element");
 
         foreach (segment; recycle_segments) {
             if (segment.type == Type.REMOVE) {
                 auto equal_range = indices.equalRange(segment);
                 assert(!equal_range.empty, "Cannot call remove with segment where index in recycler does not exist");
+
+                if (equal_range.front.size == segment.size) {
+                    remove(equal_range.front);
+                    continue;
+                }
+
                 Segment* add_segment = new Segment(Index(equal_range.front.index + segment.size), equal_range
                         .front.size - segment.size);
+
                 remove(equal_range.front);
                 insert(add_segment);
                 continue;
@@ -242,6 +271,11 @@ struct Recycler {
         assumeWontThrow(recycle(to_be_recycled[]));
         to_be_recycled.clear;
 
+        foreach (segment; indices) {
+            // update their chain;
+
+        }
+
         /// The recycler to the blockfile
     }
 
@@ -259,7 +293,7 @@ struct Recycler {
             owner._last_block_index += segment_size;
         }
 
-        // This operation depends on what is going on. Do we take a segment that was already in the db or not? So either remove or add. 
+        // Either adds or removes from the recycler. 
         assumeWontThrow(to_be_recycled.insert(new Segment(owner._last_block_index, segment_size, Type
                 .ADD)));
 
