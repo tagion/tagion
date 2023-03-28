@@ -140,7 +140,7 @@ template allMemberFilter(This, alias pred) {
             static if (pred!(This, members[0])) {
                 enum Filter = [members[0]];
             }
-        else {
+            else {
                 enum Filter = [];
             }
         }
@@ -217,11 +217,11 @@ mixin template TaskActor() {
     }
 
     /* 
- * Send to the owner
- * Params:
- *   args = arguments send to the owner
- */
-    void sendOwner(Args...)(Args args) @trusted {
+     * Send to the supervisor
+     * Params:
+     *   args = arguments send to the supervisor
+     */
+    void sendSupervisor(Args...)(Args args) @trusted {
         concurrency.send(concurrency.ownerTid, args);
     }
 
@@ -291,14 +291,16 @@ protected static string generateAllMethods(alias This)() {
     import std.algorithm.sorting : sort;
     import std.range : chain;
     import std.traits;
+
     string[][string] imports;
     string[] appendImports() {
         string[] result;
-        foreach(mod, imp; imports) {
-            result ~= format("import %s : %-(%s, %);", mod, imp.sort.uniq); 
+        foreach (mod, imp; imports) {
+            result ~= format("import %s : %-(%s, %);", mod, imp.sort.uniq);
         }
-            return result;
+        return result;
     }
+
     string[] result;
     static foreach (m; __traits(allMembers, This)) {
         {
@@ -306,10 +308,10 @@ protected static string generateAllMethods(alias This)() {
                 static if (!isLocal!(This, m)) {
                     alias Overload = __traits(getOverloads, This, m);
                     static assert(Overload.length is 1,
-                            format("Multiple methods of %s for Actor %s not allowed", 
-                        m, This.stringof));
+                            format("Multiple methods of %s for Actor %s not allowed",
+                            m, This.stringof));
                     alias Func = FunctionTypeOf!(Overload[0]);
-                    static foreach(Param; Parameters!Func) {
+                    static foreach (Param; Parameters!Func) {
                         static if (__traits(compiles, __traits(parent, Param))) {
                             imports[moduleName!Param] ~= Param.stringof;
                         }
@@ -365,7 +367,7 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
     import concurrency = std.concurrency;
 
     static struct Factory {
-    //import tagion.basic.Types : Gettes;
+        //import tagion.basic.Types : Gettes;
         static if (Args.length) {
             private static shared Args init_args;
         }
@@ -538,10 +540,10 @@ version (unittest) {
         @method void get(Get opt) { // reciever
             final switch (opt) {
             case Get.Some:
-                sendOwner(some_name);
+                sendSupervisor(some_name);
                 break;
             case Get.Arg:
-                sendOwner(count);
+                sendSupervisor(count);
                 break;
             }
         }
@@ -611,7 +613,7 @@ version (unittest) {
         @method void get(Get opt) { // reciever
             final switch (opt) {
             case Get.Some:
-                sendOwner(common_text);
+                sendSupervisor(common_text);
                 break;
             case Get.Arg:
                 assert(0);
@@ -674,10 +676,10 @@ version (unittest) {
         @method void get(Get opt) { // reciever
             final switch (opt) {
             case Get.Some:
-                sendOwner(some_name);
+                sendSupervisor(some_name);
                 break;
             case Get.Arg:
-                sendOwner(count);
+                sendSupervisor(count);
                 break;
             }
         }

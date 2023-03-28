@@ -26,6 +26,9 @@ import tagion.basic.Basic : isOneOf;
 @safe
 ScenarioGroup run(T)(T scenario) if (isScenario!T) {
     ScenarioGroup scenario_group = getScenarioGroup!T;
+    debug import std.stdio;
+    debug writefln("Feature: %s", scenario_group.info.property.description);
+
     try {
         // Mixin code to produce the action Given, When, Then, But
         alias memberCode = format!(q{
@@ -34,6 +37,8 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
             // Info index (i)      %3$d
             // Test scenario       %4$s
             // Test member         %5$s
+            //            $ Given: some scenario scenario descriotion
+            debug writeln("%2$s: ", %1$s.%2$s.infos[%3$d].property.description);
             try {
                 // Example.
                 // scenario_group.when.info[i].result = scenario.member_function;

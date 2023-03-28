@@ -32,6 +32,7 @@ struct SetUpForFailure {
         debug writeln("child is failing");
         throw new Exception("Child: I am a failure");
     }
+
     @task void run() {
         alive; // Actor is now alive
 
@@ -52,7 +53,7 @@ struct SetUpForDissapointment {
 
     @method void isChildRunning(string task_name) {
         Thread.sleep(sleep_time);
-        sendOwner(isRunning(task_name));
+        sendSupervisor(isRunning(task_name));
     }
 
     @task void run() {
