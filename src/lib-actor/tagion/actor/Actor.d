@@ -491,10 +491,15 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
                 auto tid = concurrency.locate(task_name);
                 debug writefln("Got tid and task: %s %s", tid, task_name);
                 if (tid !is Tid.init) {
+                    version(lr) {
+                        debug writefln("Returning actor handle");
+                        return ActorHandle(tid);
+                    } else {
                     concurrency.send(tid, actorID!Actor(task_name));
                     if (concurrency.receiveOnly!(ActorFlag) == ActorFlag.yes) {
                         debug writefln("Returning actor handle");
                         return ActorHandle(tid);
+                    }
                     }
                 }
                 return ActorHandle.init;
