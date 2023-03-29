@@ -71,9 +71,10 @@ class BlockFile {
     package {
         File file;
         Index _last_block_index;
-    }
-    protected {
         Recycler recycler;
+    }
+
+    protected {
         MasterBlock masterblock;
         HeaderBlock headerblock;
         bool hasheader;
@@ -650,6 +651,8 @@ class BlockFile {
         writeStatistic;
         scope (success) {
             allocated_chains = null;
+            // writeln("###");
+            // recycler.dump;
             masterblock.recycle_header_index = recycler.write;
             writeMasterBlock;
         }
