@@ -257,7 +257,7 @@ struct Recycler {
 
     void read(Index index) {
         indices = new Indices;
-
+        writefln("INDEX RECYCLER HEADER BLOCK: %s", index);
         if (index == Index(0)) {
             return;
         }
