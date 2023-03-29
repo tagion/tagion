@@ -101,9 +101,8 @@ struct Recycler {
             assert(recycle_segments.filter!(s => s.type != Type.ADD)
                     .take(2)
                     .walkLength == 0, "cannot remove segments from empty indices");
-            insert(recycle_segments);
-            return;
         }
+
         assert(recycle_segments.filter!(s => s.type == Type.NONE)
                 .take(2)
                 .walkLength == 0, "cannot insert type.NONE element");
@@ -131,11 +130,10 @@ struct Recycler {
                 auto lower_range = indices.lowerBound(segment);
                 auto upper_range = indices.upperBound(segment);
 
-                if (
-                    lower_range.empty) {
+                if (lower_range.empty) {
                     // A ###
-                    assert(!upper_range.empty, "there must be something in the upper range if the lower range is empty.");
-                    if (segment.end == upper_range.front.index) {
+                    // assert(!upper_range.empty, "there must be something in the upper range if the lower range is empty.");
+                    if (!upper_range.empty && segment.end == upper_range.front.index) {
                         Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment
                                 .size);
                         remove(upper_range.front);
@@ -413,9 +411,7 @@ unittest {
     recycler.recycle(
         dispose_indices[]);
     recycler.write();
-    recycler.dump();
 
-    writefln("###########");
     Segment*[] extra_segments = [
         new Segment(Index(6UL), 2, Type.ADD),
         new Segment(Index(25UL), 6, Type.ADD),
@@ -426,8 +422,7 @@ unittest {
     recycler.recycle(
         extra_indices[]);
     recycler.write();
-    recycler.dump();
-    writefln("#########");
+
     Segment*[] expected_segments = [
         new Segment(Index(1UL), 8, Type.NONE),
         new Segment(Index(10UL), 5, Type.NONE),
@@ -716,4 +711,23 @@ unittest {
     recycler.recycle(remove_indices[]);
 
     assert(recycler.indices.length == 0);
+}
+
+unittest {
+    // test the full recycler flow.
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    auto recycler = Recycler(blockfile);
+
+    // add some segments
+    recycler.dispose(Index(1UL), 5);
+    recycler.dispose(Index(6UL), 5);
+    recycler.dispose(Index(25UL), 10);
+    assert(recycler.to_be_recycled.length == 3, "all elements not added to recycler");
+    const(Index) begin = recycler.write;
+    writefln("BEGIN INDEX: %s", begin);
+    recycler.dump();
+    assert(recycler.to_be_recycled.empty, "should be empty after being recycled");
+
 }
