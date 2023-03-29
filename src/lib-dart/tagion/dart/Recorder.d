@@ -145,7 +145,7 @@ class RecordFactory {
     class Recorder {
         /// This will order REMOVE before add
         alias Archives = RedBlackTree!(Archive, (a, b) @safe => (a.fingerprint < b.fingerprint) || (
-                a.fingerprint == b.fingerprint) && (a._type < a._type));
+                a.fingerprint == b.fingerprint) && (a._type < b._type));
         package Archives archives;
 
         import tagion.hibon.HiBONJSON : JSONString;
@@ -173,7 +173,8 @@ class RecordFactory {
             this.archives = archives;
         }
 
-        private this(R)(R range, const Archive.Type type = Archive.Type.NONE) if (isInputRange!R) {
+        private this(R)(R range, const Archive.Type type = Archive.Type.NONE)
+            if (isInputRange!R) {
             archives = new Archives;
             insert(range, type);
         }
@@ -311,7 +312,7 @@ class RecordFactory {
         }
 
         const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE)
-                if ((isHiBONRecord!T) && !is(T : const(Recorder))) {
+            if ((isHiBONRecord!T) && !is(T : const(Recorder))) {
             return insert(pack.toDoc, type);
         }
 
@@ -333,8 +334,8 @@ class RecordFactory {
         }
 
         @trusted void insert(R)(R range, const Archive.Type type = Archive.Type.NONE)
-                if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONRecord!(
-                    ElementType!R))) {
+            if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONRecord!(
+                ElementType!R))) {
             alias FiledType = ElementType!R;
             static if (isHiBONRecord!FiledType) {
                 archives.insert(range.map!(a => new Archive(net, a.toDoc, type)));
@@ -371,7 +372,7 @@ class RecordFactory {
         void remove(const(DARTIndex) fingerprint)
         in {
             assert(fingerprint.length is net.hashSize,
-                    format("Length of the fingerprint must be %d but is %d", net.hashSize, fingerprint
+                format("Length of the fingerprint must be %d but is %d", net.hashSize, fingerprint
                     .length));
         }
         do {
@@ -386,7 +387,7 @@ class RecordFactory {
         void stub(const(DARTIndex) fingerprint)
         in {
             assert(fingerprint.length is net.hashSize,
-                    format("Length of the fingerprint must be %d but is %d", net.hashSize, fingerprint
+                format("Length of the fingerprint must be %d but is %d", net.hashSize, fingerprint
                     .length));
         }
         do {
@@ -740,7 +741,7 @@ unittest { /// RecordFactory.Recorder.insert range
     static struct Filed {
         int x;
         mixin HiBONRecord!(
-                q{
+            q{
                 this(int x) {
                     this.x = x;
                 }

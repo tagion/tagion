@@ -27,11 +27,9 @@ import std.range;
 import tagion.utils.Random;
 import std.random : randomShuffle, MinstdRand0, randomSample;
 
-
 import tagion.hibon.HiBONRecord;
 
 import tagion.testbench.dart.dart_helper_functions;
-
 
 enum feature = Feature(
         "Dart pseudo random test",
@@ -88,12 +86,9 @@ class AddPseudoRandomData {
         // writefln("%s", typeof(info.states));
 
         db1_fingerprints = randomAdd(info.states, MinstdRand0(40), db1);
-
         db2_fingerprints = randomAdd(info.states, MinstdRand0(42), db2);
 
-
-        return result_ok;        
-
+        return result_ok;
 
     }
 
@@ -116,10 +111,11 @@ class RemovePseudoRandomData {
     DART db2;
     DartInfo info;
     DARTIndex[] remove_fingerprints;
-    
+
     this(DartInfo info) {
         this.info = info;
     }
+
     @Given("two pseudo random darts and fingerprints")
     Document fingerprints() {
         Exception dart_exception;
@@ -129,12 +125,14 @@ class RemovePseudoRandomData {
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
 
         // since the fingerprints of db1 and db2 should be the same, we can take the sample from db1.
-        remove_fingerprints = db1_fingerprints.randomSample(db1_fingerprints.length/2, MinstdRand0(40)).array;
+        remove_fingerprints = db1_fingerprints.randomSample(db1_fingerprints.length / 2, MinstdRand0(
+                40)).array;
         return result_ok;
     }
 
     @When("i randomly go through n fingerprints and remove them from both darts.")
     Document darts() {
+
         randomRemove(remove_fingerprints, MinstdRand0(100), db1);
         randomRemove(remove_fingerprints, MinstdRand0(32), db2);
 
@@ -144,7 +142,6 @@ class RemovePseudoRandomData {
     @Then("the bullseyes of the two darts should be the same.")
     Document same() {
         check(db1.bullseye == db2.bullseye, "Bullseyes not the same");
-
 
         db1.close();
         db2.close();

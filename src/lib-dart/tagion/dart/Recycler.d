@@ -42,7 +42,7 @@ struct Segment {
         {
             blockfile.seek(_index);
             const doc = blockfile.file.fread();
-            writeln(doc.toPretty);
+            // writeln(doc.toPretty);
             check(Segment.isRecord(doc), "The loaded segment was not of type segment doc");
             next = doc[GetLabel!(next).name].get!Index;
             size = doc[GetLabel!(size).name].get!uint;
@@ -342,8 +342,7 @@ struct Recycler {
      * Returns: 
      *   Index pointer a free segment
      */
-    const(Index) claim(
-        const uint segment_size) nothrow {
+    const(Index) claim(const uint segment_size) nothrow {
         scope (success) {
             owner._last_block_index += segment_size;
         }
@@ -780,21 +779,6 @@ unittest {
 }
 
 unittest {
-    import tagion.hibon.HiBONJSON : toPretty;
-
-    Recycler.print = true;
-    scope (exit) {
-        Recycler.print = false;
-    }
-    // try to read / load indices.
-    immutable filename = fileId("recycle").fullpath;
-    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
-    auto blockfile = BlockFile(filename);
-    // auto recycler = Recycler(blockfile);
-    // scope (exit) {
-    //     blockfile.close;
-    // }
-    // add some segments
     static struct Data {
         string text;
 
@@ -805,36 +789,51 @@ unittest {
         });
     }
 
-    Data[] datas = [
-        Data("abc"),
-        Data("1234"),
-        Data("wowo"),
-        Data("hugo"),
-    ];
+    {
+        scope (exit) {
+            Recycler.print = false;
+        }
+        // try to read / load indices.
+        immutable filename = fileId("recycle").fullpath;
+        BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+        auto blockfile = BlockFile(filename);
+        // auto recycler = Recycler(blockfile);
+        scope (exit) {
+            blockfile.close;
+        }
+        // add some segments
 
-    foreach (data; datas) {
-        const index = blockfile.save(data).index;
-        writefln("block index = %s", index);
+        Data[] datas = [
+            Data("abc"),
+            Data("1234"),
+            Data("wowo"),
+            Data("hugo"),
+        ];
+
+        foreach (data; datas) {
+            const index = blockfile.save(data).index;
+            writefln("block index = %s", index);
+        }
+        blockfile.store();
+        assert(blockfile.recycler.indices.length == 0, "since we only added blocks to empty recycler nothing should be in recycler");
+        assert(blockfile.recycler.to_be_recycled.length == 0, "to be recycled should be empty");
+        const doc = blockfile.load(Index(2));
+        // writefln("document: %s", doc["text"].get!string);
+        assert(doc["text"].get!string == "1234");
+
+        blockfile.dispose(Index(2));
+        blockfile.dispose(Index(3));
+
+        blockfile.recycler.dump;
+        blockfile.store();
+        assert(blockfile.recycler.to_be_recycled.length == 0);
+        assert(blockfile.recycler.indices.length == 2, "should contain one segment for middle blocks and one for statistic");
+
+        blockfile.close();
+        blockfile = BlockFile(filename);
+        assert(blockfile.recycler.indices.length == 2, "should be the same after loading");
+
+        // close and open blockfile again.
     }
-    blockfile.store();
-    assert(blockfile.recycler.indices.length == 0, "since we only added blocks to empty recycler nothing should be in recycler");
-    assert(blockfile.recycler.to_be_recycled.length == 0, "to be recycled should be empty");
-    const doc = blockfile.load(Index(2));
-    // writefln("document: %s", doc["text"].get!string);
-    assert(doc["text"].get!string == "1234");
 
-    blockfile.dispose(Index(2));
-    blockfile.dispose(Index(3));
-
-    blockfile.recycler.dump;
-    blockfile.store();
-    assert(blockfile.recycler.to_be_recycled.length == 0);
-    assert(blockfile.recycler.indices.length == 2, "should contain one segment for middle blocks and one for statistic");
-
-    blockfile.close();
-    blockfile = BlockFile(filename);
-    assert(blockfile.recycler.indices.length == 2, "should be the same after loading");
-
-    writefln("blockfile number of indices: %s", blockfile.recycler.indices.length);
-    // close and open blockfile again.
 }
