@@ -276,6 +276,8 @@ struct Recycler {
             return Index.init;
         }
 
+        assumeWontThrow(writeln("INDICES BEFORE"));
+        assumeWontThrow(dump());
         foreach (segment; indices) {
             auto upper_range = indices.upperBound(segment);
             bool update;
@@ -291,6 +293,10 @@ struct Recycler {
             }
 
         }
+
+        assumeWontThrow(writeln("INDICES AFTER"));
+        assumeWontThrow(dump());
+
         return indices[].front.index;
     }
 
@@ -725,7 +731,8 @@ unittest {
     recycler.dispose(Index(6UL), 5);
     recycler.dispose(Index(25UL), 10);
     assert(recycler.to_be_recycled.length == 3, "all elements not added to recycler");
-    const(Index) begin = recycler.write;
+    recycler.dump();
+    const(Index) begin = recycler.write();
     writefln("BEGIN INDEX: %s", begin);
     recycler.dump();
     assert(recycler.to_be_recycled.empty, "should be empty after being recycled");
