@@ -237,6 +237,11 @@ struct Recycler {
     void dump() {
         import std.stdio;
 
+        if (indices.empty) {
+            writefln("indices empty");
+            return;
+        }
+
         foreach (segment; indices) {
             writefln("INDEX: %s", segment
                     .index);
@@ -253,14 +258,24 @@ struct Recycler {
     void read(Index index) {
         indices = new Indices;
 
+        if (index == Index(0)) {
+            return;
+        }
         while (index != Index.init) {
             owner.seek(index);
             const doc = owner.file.fread();
+            import tagion.hibon.HiBONJSON : toPretty;
+
+            writefln("%s", doc.toPretty);
             check(Segment.isRecord(doc), "The loaded segment was not of type segment doc");
             auto add_segment = new Segment(doc);
             indices.stableInsert(add_segment);
-            index = add_segment.index;
+            index = add_segment.next;
         }
+    }
+
+    void load(Index index) {
+        return;
     }
 
     /** 
@@ -268,16 +283,16 @@ struct Recycler {
      * Params:
      *   index = Index of the blockfile???
      */
-    const(Index) write() nothrow {
+    Index write() nothrow {
         assumeWontThrow(recycle(to_be_recycled[]));
         to_be_recycled.clear;
 
-        if (!indices.empty) {
+        if (indices.empty) {
             return Index.init;
         }
 
-        assumeWontThrow(writeln("INDICES BEFORE"));
-        assumeWontThrow(dump());
+        // assumeWontThrow(writeln("INDICES BEFORE"));
+        // assumeWontThrow(dump());
         foreach (segment; indices) {
             auto upper_range = indices.upperBound(segment);
             bool update;
@@ -294,8 +309,8 @@ struct Recycler {
 
         }
 
-        assumeWontThrow(writeln("INDICES AFTER"));
-        assumeWontThrow(dump());
+        // assumeWontThrow(writeln("INDICES AFTER"));
+        // assumeWontThrow(dump());
 
         return indices[].front.index;
     }
@@ -318,8 +333,8 @@ struct Recycler {
         }
 
         // Either adds or removes from the recycler. 
-        assumeWontThrow(to_be_recycled.insert(
-                new Segment(owner._last_block_index, segment_size, Type.ADD)));
+        // assumeWontThrow(to_be_recycled.insert(
+        //         new Segment(owner._last_block_index, segment_size, Type.ADD)));
         return owner._last_block_index;
 
     }
@@ -332,6 +347,7 @@ struct Recycler {
     void dispose(const(Index) index, const uint segment_size) nothrow {
         // If the index is 0 then it is because we have returned a Leave.init. 
         // This should be ignored.
+        // assumeWontThrow(writefln("calling dispose with: Index= %s, segment_size = %s", index, segment_size));
         if (index == 0) {
             return;
         }
@@ -423,10 +439,8 @@ unittest {
         new Segment(Index(25UL), 6, Type.ADD),
         new Segment(Index(22UL), 3, Type.ADD),
     ];
-    Indices extra_indices = new Indices(
-        extra_segments);
-    recycler.recycle(
-        extra_indices[]);
+    Indices extra_indices = new Indices(extra_segments);
+    recycler.recycle(extra_indices[]);
     recycler.write();
 
     Segment*[] expected_segments = [
@@ -435,8 +449,7 @@ unittest {
         new Segment(Index(17UL), 31 - 17, Type
                 .NONE),
     ];
-    Indices expected_indices = new Indices(
-        expected_segments);
+    Indices expected_indices = new Indices(expected_segments);
 
     assert(expected_indices.length == recycler.indices.length, "Got other indices than expected");
     (() @trusted {
@@ -725,16 +738,88 @@ unittest {
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(filename);
     auto recycler = Recycler(blockfile);
-
+    scope (exit) {
+        blockfile.close;
+    }
     // add some segments
     recycler.dispose(Index(1UL), 5);
     recycler.dispose(Index(6UL), 5);
     recycler.dispose(Index(25UL), 10);
     assert(recycler.to_be_recycled.length == 3, "all elements not added to recycler");
-    recycler.dump();
+
     const(Index) begin = recycler.write();
     writefln("BEGIN INDEX: %s", begin);
-    recycler.dump();
+    // recycler.dump();
     assert(recycler.to_be_recycled.empty, "should be empty after being recycled");
+    assert(begin == Index(1UL), "should be 1UL");
+
+    Segment*[] expected_segments = [
+        new Segment(Index(1UL), 11, Type.NONE, Index(25UL)),
+        new Segment(Index(25UL), 10, Type.NONE, Index.init),
+    ];
+    Indices expected_indices = new Indices(expected_segments);
+    assert(expected_indices == recycler.indices);
+
+}
+
+unittest {
+    import tagion.hibon.HiBONJSON : toPretty;
+
+    // try to read / load indices.
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    auto recycler = Recycler(blockfile);
+    // scope (exit) {
+    //     blockfile.close;
+    // }
+    // add some segments
+    static struct Data {
+        string text;
+
+        mixin HiBONRecord!(q{
+            this(string text) {
+                this.text = text;
+            }
+        });
+    }
+
+    Data[] datas = [
+        Data("abc"),
+        Data("1234"),
+        Data("wowo"),
+        Data("hugo"),
+    ];
+
+    foreach (data; datas) {
+        const index = blockfile.save(data).index;
+        writefln("block index = %s", index);
+    }
+    blockfile.store();
+
+    const doc = blockfile.load(Index(2));
+    // writefln("document: %s", doc["text"].get!string);
+    assert(doc["text"].get!string == "1234");
+
+    blockfile.dispose(Index(2));
+    blockfile.dispose(Index(3));
+
+    assert(recycler.to_be_recycled.length == 2, "should contain two elements");
+    blockfile.store();
+
+    //recycler.dispose(Index(1UL), 5);
+    // recycler.dispose(Index(6UL), 5);
+    // recycler.dispose(Index(17UL), 3);
+    // recycler.dispose(Index(25UL), 10);
+    // assert(recycler.to_be_recycled.length == 4, "all elements not added to recycler");
+    // const(Index) begin = recycler.write();
+    // blockfile.close;
+
+    // auto new_blockfile = BlockFile(filename);
+    // auto new_recycler = Recycler(new_blockfile);
+
+    // new_recycler.load(begin);
+
+    // recycler.load(begin);
 
 }

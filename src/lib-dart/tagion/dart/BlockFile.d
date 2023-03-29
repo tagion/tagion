@@ -650,8 +650,7 @@ class BlockFile {
         writeStatistic;
         scope (success) {
             allocated_chains = null;
-            version (none)
-                recycler.write;
+            masterblock.recycle_header_index = recycler.write;
             writeMasterBlock;
         }
 
