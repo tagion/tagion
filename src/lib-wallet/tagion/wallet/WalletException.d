@@ -15,4 +15,14 @@ class WalletException : TagionException {
     }
 }
 
-alias check = Check!(WalletException);
+/*+
+ * Exception type used by for key-recovery module
+ */
+@safe
+class KeyRecoverException : WalletException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
+        super(msg, file, line);
+    }
+}
+
+

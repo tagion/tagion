@@ -20,20 +20,11 @@ import std.algorithm.mutation : copy;
 import std.algorithm.iteration : map, filter;
 import std.array : array;
 
-import tagion.basic.TagionExceptions : Check, TagionException;
 import tagion.wallet.WalletRecords : RecoverGenerator;
+import tagion.wallet.WalletException : KeyRecoverException;
+import tagion.basic.TagionExceptions : Check;
 
-/++
- + Exception type used by for key-recovery module
- +/
-@safe
-class KeyRecorverException : TagionException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
-        super(msg, file, line);
-    }
-}
-
-alias check = Check!KeyRecorverException;
+alias check = Check!KeyRecoverException;
 
 /**
  * Key-pair recovery generator
@@ -60,6 +51,7 @@ struct KeyRecover {
      * Params:
      *   net = hash used by the recovery 
      *   doc = document of the recovery generator 
+
      */
     this(const HashNet net, Document doc) {
         this.net = net;
