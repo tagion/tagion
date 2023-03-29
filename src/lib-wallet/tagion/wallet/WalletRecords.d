@@ -9,7 +9,7 @@ import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
 import tagion.script.TagionCurrency;
 import tagion.script.StandardRecords : StandardBill, OwnerKey;
-
+import tagion.hibon.Document : Document;
 /// Contains the quiz question
 @safe
 @recordType("Quiz")
@@ -120,4 +120,14 @@ struct AccountDetails {
         }
     }
     mixin HiBONRecord;
+}
+
+@safe
+@recordType("Invoice")
+struct Invoice {
+    string name;
+    TagionCurrency amount;
+    @label(OwnerKey) Pubkey pkey;
+    @label("*", true) Document info;
+    mixin HiBONRecord!();
 }
