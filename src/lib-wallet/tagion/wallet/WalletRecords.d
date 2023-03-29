@@ -1,4 +1,6 @@
-/// Wallet records to store the wallet information
+/**
+* Wallet records to store the wallet information
+*/
 module tagion.wallet.WalletRecords;
 
 import tagion.hibon.HiBONRecord;

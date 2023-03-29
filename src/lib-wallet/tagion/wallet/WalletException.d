@@ -1,3 +1,6 @@
+/** 
+* Exception used in teh wallet
+*/
 module tagion.wallet.WalletException;
 
 import tagion.basic.TagionExceptions : TagionException, Check;
@@ -12,5 +15,4 @@ class WalletException : TagionException {
     }
 }
 
-/// check function used in the Script package
 alias check = Check!(WalletException);
