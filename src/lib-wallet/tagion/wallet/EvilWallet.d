@@ -33,7 +33,7 @@ import tagion.script.TagionCurrency;
 import tagion.communication.HiRPC;
 import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
-import tagion.wallet.WalletException : check;
+import tagion.wallet.SecureWallet : check;
 
 @safe struct EvilWallet(Net) {
     static assert(is(Net : SecureNet));

@@ -1,3 +1,6 @@
+/** 
+* Exception used in teh wallet
+*/
 module tagion.wallet.WalletException;
 
 import tagion.basic.TagionExceptions : TagionException, Check;
@@ -12,5 +15,14 @@ class WalletException : TagionException {
     }
 }
 
-/// check function used in the Script package
-alias check = Check!(WalletException);
+/*+
+ * Exception type used by for key-recovery module
+ */
+@safe
+class KeyRecoverException : WalletException {
+    this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
+        super(msg, file, line);
+    }
+}
+
+

@@ -15,7 +15,7 @@ import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
 import std.stdio;
 import tagion.hibon.HiBONJSON;
-import tagion.basic.Types :  Buffer;
+import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
 import tagion.crypto.aes.AESCrypto;
 import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
@@ -235,7 +235,7 @@ export ulong get_balance_locked(const uint32_t wallet_doc_id) {
     auto secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN.init,
             RecoverGenerator.init, AccountDetails(wallet_doc));
 
-    const balance = secure_wallet.active_balance();
+    const balance = secure_wallet.locked_balance();
     return cast(ulong) balance.tagions;
 }
 
@@ -278,19 +278,19 @@ export bool remove_bill(const uint32_t wallet_doc_id, const uint8_t* data_ptr, c
     return result;
 }
 
-export uint get_request_update_wallet(const uint32_t doc_id) {
+export uint getRequestUpdateWallet(const uint32_t doc_id) {
 
     const account_doc = recyclerDoc(doc_id);
 
     auto secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN.init,
             RecoverGenerator.init, AccountDetails(account_doc));
 
-    const request = secure_wallet.get_request_update_wallet();
+    const request = secure_wallet.getRequestUpdateWallet();
     const request_doc_id = recyclerDoc.create(request.toDoc);
     return request_doc_id;
 }
 
-export uint set_response_update_wallet(const uint32_t doc_id,
+export uint setResponseUpdateWallet(const uint32_t doc_id,
         const uint32_t dev_pin_doc_id, const uint32_t response_doc_id,
         const uint8_t* pincodePtr, const uint32_t pincodeLen, const uint32_t aes_doc_id) {
 
@@ -318,7 +318,7 @@ export uint set_response_update_wallet(const uint32_t doc_id,
 
         auto receiver = hirpc.receive(response_doc);
 
-        const result = secure_wallet.set_response_update_wallet(receiver);
+        const result = secure_wallet.setResponseUpdateWallet(receiver);
         return cast(uint) result;
     }
 

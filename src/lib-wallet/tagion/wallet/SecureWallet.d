@@ -1,3 +1,6 @@
+/**
+* Handles management of key-pair, account-details device-pin
+*/
 module tagion.wallet.SecureWallet;
 
 import std.format;
@@ -19,7 +22,7 @@ import tagion.dart.DARTBasic;
 
 import tagion.basic.Basic : basename;
 import tagion.basic.Types : Buffer;
-import tagion.crypto.Types :  Pubkey;
+import tagion.crypto.Types : Pubkey;
 import tagion.script.StandardRecords;
 import tagion.crypto.SecureNet : scramble;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -32,72 +35,116 @@ import tagion.script.TagionCurrency;
 import tagion.communication.HiRPC;
 import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
-import tagion.wallet.WalletException : check;
+import tagion.wallet.WalletException : WalletException;
+import tagion.basic.TagionExceptions :  Check;
 
-//alias StdSecureWallet = SecureWallet!StdSecureNet;
+alias check = Check!(WalletException);
 
-@safe struct SecureWallet(Net) {
-    static assert(is(Net : SecureNet));
-    protected RecoverGenerator _wallet;
-    protected DevicePIN _pin;
+/// Function and data to recover, sign transaction and hold the account information
+@safe struct SecureWallet(Net : SecureNet)
+{
+    protected RecoverGenerator _wallet; /// Information to recover the seed-generator
+    protected DevicePIN _pin; /// Information to check the Pin code
 
-    AccountDetails account;
+    AccountDetails account; /// Account-details holding the bills and generator
     protected SecureNet net;
 
-    this(DevicePIN pin, RecoverGenerator wallet = RecoverGenerator.init, AccountDetails account = AccountDetails
-            .init) { //nothrow {
+    /**
+     * 
+     * Params:
+     *   pin = Devices pin code information
+     *   wallet = Infomation to recover the pin-code
+     *   account =  Acount to hold bills and derivers
+     */
+    this(DevicePIN pin,
+        RecoverGenerator wallet = RecoverGenerator.init,
+        AccountDetails account = AccountDetails.init) nothrow
+    {
         _wallet = wallet;
         _pin = pin;
         this.account = account;
     }
 
-    this(const Document wallet_doc, const Document pin_doc = Document.init) {
+    this(const Document wallet_doc,
+        const Document pin_doc = Document.init)
+    {
         auto __wallet = RecoverGenerator(wallet_doc);
         DevicePIN __pin;
-        if (!pin_doc.empty) {
+        if (!pin_doc.empty)
+        {
             __pin = DevicePIN(pin_doc);
         }
         this(__pin, __wallet);
     }
 
-    @nogc const(RecoverGenerator) wallet() pure const nothrow {
+    /**
+     * 
+     * Returns: Wallet recovery information
+     */
+    @nogc const(RecoverGenerator) wallet() pure const nothrow
+    {
         return _wallet;
     }
 
-    @nogc const(DevicePIN) pin() pure const nothrow {
+    /**
+     * Retreive the device-pin generation
+     * Returns: Device PIN infomation
+     */
+    @nogc const(DevicePIN) pin() pure const nothrow
+    {
         return _pin;
     }
 
-    @nogc uint confidence() pure const nothrow {
+    /**
+     * 
+     * Returns: The confidence of the answers
+     */
+    @nogc uint confidence() pure const nothrow
+    {
         return _wallet.confidence;
     }
 
+    /**
+     * Creates a wallet from a list for questions and answers
+     * Params:
+     *   questions = List of question
+     *   answers = List of answers
+     *   confidence = Cofindence of the answers
+     *   pincode = Devices pin code
+     *   seed = Supplied seed
+     * Returns: 
+     *   Create an new wallet accouring with the input
+     */
     static SecureWallet createWallet(
-            scope const(string[]) questions,
+        scope const(string[]) questions,
     scope const(char[][]) answers,
     uint confidence,
-    const(char[]) pincode)
-    in {
+    const(char[]) pincode,
+    scope const(ubyte[]) seed = null)
+    in
+    {
         assert(questions.length > 3, "Minimal amount of answers is 4");
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
     }
-    do {
+    do
+    {
         auto net = new Net;
         //        auto hashnet = new StdHashNet;
         auto recover = KeyRecover(net);
 
-        if (confidence == questions.length) {
+        if (confidence == questions.length)
+        {
             pragma(msg, "fixme(cbr): Due to some bug in KeyRecover");
             // Due to some bug in KeyRecover
             confidence--;
         }
 
-        recover.createKey(questions, answers, confidence);
-        //        StdSecureNet net;
+        recover.createKey(questions, answers, confidence, seed);
         SecureWallet result;
         {
             auto R = new ubyte[net.hashSize];
-            scope (exit) {
+            scope (exit)
+            {
                 scramble(R);
             }
             recover.findSecret(R, questions, answers);
@@ -111,10 +158,11 @@ import tagion.wallet.WalletException : check;
     }
 
     protected void set_pincode(
-            const KeyRecover recover,
-            scope const(ubyte[]) R,
+        const KeyRecover recover,
+        scope const(ubyte[]) R,
     scope const(char[]) pincode,
-    Net _net = null) {
+    Net _net = null)
+    {
         const hash_size = ((net) ? net : _net).hashSize;
         auto seed = new ubyte[hash_size];
         scramble(seed);
@@ -124,28 +172,49 @@ import tagion.wallet.WalletException : check;
         _pin.S = recover.checkHash(R);
     }
 
+    /**
+     * Checks that the answers to the question is correct
+     * Params:
+     *   questions = List of questions
+     *   answers = List of answers
+     * Returns:
+     *   True of N=confidence number of answers is correct
+     */
     bool correct(const(string[]) questions, const(char[][]) answers)
-    in {
+    in
+    {
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
     }
-    do {
+    do
+    {
         net = new Net;
         auto recover = KeyRecover(net, _wallet);
         scope R = new ubyte[net.hashSize];
         return recover.findSecret(R, questions, answers);
     }
 
+    /**
+     * Recover the key-pair from the quiz or the device-pincode
+     * Params:
+     *   questions = List of question
+     *   answers = List of answers
+     *   pincode = Devices pin code
+     * Returns:
+     *   True if the key-pair has been recovered for the quiz or the pincode
+     */
     bool recover(const(string[]) questions, const(char[][]) answers, const(char[]) pincode)
-    in {
+    in
+    {
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
     }
-    do {
+    do
+    {
         net = new Net;
         auto recover = KeyRecover(net, _wallet);
         auto R = new ubyte[net.hashSize];
         const result = recover.findSecret(R, questions, answers);
-        if (result) {
-            // auto pinhash = recover.checkHash(pincode.representation, _pin.U);
+        if (result)
+        {
             set_pincode(recover, R, pincode);
             net.createKeyPair(R);
             return true;
@@ -154,24 +223,42 @@ import tagion.wallet.WalletException : check;
         return false;
     }
 
-    @nogc bool isLoggedin() pure const nothrow {
+    /**
+     * Checks if the wallet contains a key-pair
+     * Returns: true if the wallet is loggin
+     */
+    @nogc bool isLoggedin() pure const nothrow
+    {
         pragma(msg, "fixme(cbr): Jam the net");
         return net !is null;
     }
 
-    protected void checkLogin() pure const {
+    /**
+     * Throws a WalletExceptions if the wallet is not logged in 
+     */
+    protected void checkLogin() pure const
+    {
         check(isLoggedin(), "Need login first");
     }
 
-    bool login(const(char[]) pincode) {
-        if (_pin.D) {
+    /**
+     * Generates the key-pair from the pin code
+     * Params:
+     *   pincode = device pincode
+     * Returns: true of the pin-code 
+     */
+    bool login(const(char[]) pincode)
+    {
+        if (_pin.D)
+        {
             logout;
             auto hashnet = new Net;
             auto recover = KeyRecover(hashnet);
             auto pinhash = recover.checkHash(pincode.representation, _pin.U);
             auto R = new ubyte[hashnet.hashSize];
             _pin.recover(R, pinhash);
-            if (_pin.S == recover.checkHash(R)) {
+            if (_pin.S == recover.checkHash(R))
+            {
                 net = new Net;
                 net.createKeyPair(R);
                 return true;
@@ -180,11 +267,22 @@ import tagion.wallet.WalletException : check;
         return false;
     }
 
-    void logout() pure nothrow {
+    /**
+     * Removes the key-pair 
+     */
+    void logout() pure nothrow
+    {
         net = null;
     }
 
-    bool check_pincode(const(char[]) pincode) {
+    /**
+     * Checks if the pincode is correct
+     * Params:
+     *   pincode = device pincode
+     * Returns: true if the pincode is correct
+     */
+    bool checkPincode(const(char[]) pincode)
+    {
         const hashnet = new Net;
         auto recover = KeyRecover(hashnet);
         const pinhash = recover.checkHash(pincode.representation, _pin.U);
@@ -193,14 +291,23 @@ import tagion.wallet.WalletException : check;
         return _pin.S == recover.checkHash(R);
     }
 
-    bool change_pincode(const(char[]) pincode, const(char[]) new_pincode) {
+    /**
+     * Check the pincode 
+     * Params:
+     *   pincode = current device pincode
+     *   new_pincode = new device pincode
+     * Returns: true of the pincode has been change succesfully
+     */
+    bool changePincode(const(char[]) pincode, const(char[]) new_pincode)
+    {
         const hashnet = new Net;
         auto recover = KeyRecover(hashnet);
         const pinhash = recover.checkHash(pincode.representation, _pin.U);
         auto R = new ubyte[hashnet.hashSize];
         // xor(R, _pin.D, pinhash);
         _pin.recover(R, pinhash);
-        if (_pin.S == recover.checkHash(R)) {
+        if (_pin.S == recover.checkHash(R))
+        {
             // const new_pinhash = recover.checkHash(new_pincode.representation, _pin.U);
             set_pincode(recover, R, new_pincode);
             logout;
@@ -209,24 +316,35 @@ import tagion.wallet.WalletException : check;
         return false;
     }
 
-    void registerInvoice(ref Invoice invoice) {
+    /**
+     * Register an invoice to the wallet
+     * Params:
+     *   invoice = invoice to be registered
+     */
+    void registerInvoice(ref Invoice invoice)
+    {
         checkLogin;
         string current_time = MonoTime.currTime.toString;
         scope seed = new ubyte[net.hashSize];
         scramble(seed);
         account.derive_state = net.rawCalcHash(
-                seed ~ account.derive_state ~ current_time.representation);
+            seed ~ account.derive_state ~ current_time.representation);
         scramble(seed);
         auto pkey = net.derivePubkey(account.derive_state);
         invoice.pkey = pkey;
         account.derives[pkey] = account.derive_state;
     }
 
-    // void registerInvoices(ref Invoice[] invoices) {
-    //     invoices.each!((ref invoice) => registerInvoice(invoice));
-    // }
-
-    static Invoice createInvoice(string label, TagionCurrency amount, Document info = Document.init) {
+    /**
+     * Create a new invoice which can be send to a payee 
+     * Params:
+     *   label = Name of the invoice
+     *   amount = Amount 
+     *   info = Invoce information
+     * Returns: The created invoice
+     */
+    static Invoice createInvoice(string label, TagionCurrency amount, Document info = Document.init)
+    {
         Invoice new_invoice;
         new_invoice.name = label;
         new_invoice.amount = amount;
@@ -234,28 +352,42 @@ import tagion.wallet.WalletException : check;
         return new_invoice;
     }
 
-    bool payment(const(Invoice[]) orders, ref SignedContract result) {
+    /**
+     * Create a payment to a list of Invoices and produces a signed-contract
+     * Collect the bill need and sign them in the contract
+     * Params:
+     *   orders = List of invoices
+     *   result = Signed payment
+     * Returns: 
+     */
+    bool payment(const(Invoice[]) orders, ref SignedContract result)
+    {
         checkLogin;
         const topay = orders.map!(b => b.amount).sum;
 
-        if (topay > 0) {
+        if (topay > 0)
+        {
             pragma(msg, "fixme(cbr): Storage fee needs to be estimated");
             const fees = globals.fees();
             const amount = topay + fees;
             StandardBill[] contract_bills;
             const enough = collect_bills(amount, contract_bills);
-            if (enough) {
+            if (enough)
+            {
                 const total = contract_bills.map!(b => b.value).sum;
 
                 result.contract.inputs = contract_bills.map!(b => net.dartIndex(b.toDoc)).array;
                 const rest = total - amount;
-                if (rest > 0) {
+                if (rest > 0)
+                {
                     Invoice money_back;
                     money_back.amount = rest;
                     registerInvoice(money_back);
                     result.contract.output[money_back.pkey] = rest.toDoc;
                 }
-                orders.each!((o) { result.contract.output[o.pkey] = o.amount.toDoc; });
+                orders.each!((o) {
+                    result.contract.output[o.pkey] = o.amount.toDoc;
+                });
                 result.contract.script = Script("pay");
 
                 immutable message = net.calcHash(result.contract.toDoc);
@@ -279,60 +411,95 @@ import tagion.wallet.WalletException : check;
         return false;
     }
 
-    TagionCurrency available_balance() const pure {
+    /**
+     * Calculates the amount which can be activate
+     * Returns: the amount of available amount
+     */
+    TagionCurrency available_balance() const pure
+    {
         return account.available;
     }
 
-    TagionCurrency active_balance() const pure {
-        return account.active;
+    /**
+     * Calcutales the locked amount in the network
+     * Returns: the locked amount
+     */
+    TagionCurrency locked_balance() const pure
+    {
+        return account.locked;
     }
 
-    TagionCurrency total_balance() const pure {
+    /**
+     * Calcutales the total amount
+     * Returns: total amount
+     */
+    TagionCurrency total_balance() const pure
+    {
         return account.total;
     }
 
+    /**
+     * Clear the locked bills
+     */
     @trusted
-    void deactivate_bills() {
+    void unlockBills()
+    {
         account.activated.clear;
     }
 
-    const(HiRPC.Sender) get_request_update_wallet() const {
+    /**
+     * Creates HiRPC to request an wallet update
+     * Returns: The command to the the update
+     */
+    const(HiRPC.Sender) getRequestUpdateWallet() const
+    {
         HiRPC hirpc;
         auto h = new HiBON;
         h = account.derives.byKey.map!(p => cast(Buffer) p);
         return hirpc.search(h);
     }
 
-    bool collect_bills(const TagionCurrency amount, out StandardBill[] active_bills) {
+    /**
+     * Collects the bills for the amount
+     * Params:
+     *   amount = the amount to be collected
+     *   locked_bills = the list of bills
+     * Returns: true if wallet has enough to pay the amount
+     */
+    bool collect_bills(const TagionCurrency amount, out StandardBill[] locked_bills)
+    {
         import std.algorithm.sorting : isSorted, sort;
         import std.algorithm.iteration : cumulativeFold;
         import std.range : takeOne, tee;
 
-        if (!account.bills.isSorted!"a.value > b.value") {
-            account.bills.sort!"a.value > b.value";
+        if (!account.bills.isSorted!q{a.value > b.value})
+        {
+            account.bills.sort!q{a.value > b.value};
         }
 
         // Select all bills not in use
-        auto none_active = account.bills.filter!(b => !(b.owner in account.activated));
+        auto none_locked = account.bills.filter!(b => !(b.owner in account.activated));
 
         // Check if we have enough money
-        const enough = !none_active.map!(b => b.value)
+        const enough = !none_locked.map!(b => b.value)
             .cumulativeFold!((a, b) => a + b)
             .filter!(a => a >= amount)
             .takeOne
             .empty;
-        if (enough) {
+        if (enough)
+        {
             TagionCurrency rest = amount;
-            active_bills = none_active.filter!(b => b.value <= rest)
+            locked_bills = none_locked.filter!(b => b.value <= rest)
                 .until!(b => rest <= 0)
                 .tee!((b) { rest -= b.value; account.activated[b.owner] = true; })
                 .array;
-            if (rest > 0) {
+            if (rest > 0)
+            {
                 // Take an extra larger bill if not enough
                 StandardBill extra_bill;
-                none_active.each!(b => extra_bill = b);
+                none_locked.each!(b => extra_bill = b);
                 account.activated[extra_bill.owner] = true;
-                active_bills ~= extra_bill;
+                locked_bills ~= extra_bill;
             }
             assert(rest > 0);
             return true;
@@ -340,15 +507,25 @@ import tagion.wallet.WalletException : check;
         return false;
     }
 
+    /**
+     * Update the the wallet for a request update
+     * Params:
+     *   receiver = response to the wallet
+     * Returns: ture if the wallet was updated
+     */
     @trusted
-    bool set_response_update_wallet(const(HiRPC.Receiver) receiver) nothrow {
-        if (receiver.isResponse) {
-            try {
+    bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) nothrow
+    {
+        if (receiver.isResponse)
+        {
+            try
+            {
                 account.bills = receiver.response.result[].map!(e => StandardBill(e.get!Document))
                     .array;
                 return true;
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 import std.stdio;
                 import std.exception : assumeWontThrow;
 
@@ -359,11 +536,19 @@ import tagion.wallet.WalletException : check;
         return false;
     }
 
-    static TagionCurrency calcTotal(const(StandardBill[]) bills) pure {
+    /**
+     * Calculates the amount in a list of bills
+     * Params:
+     *   bills = list of bills 
+     * Returns: total amount
+     */
+    static TagionCurrency calcTotal(const(StandardBill[]) bills) pure
+    {
         return bills.map!(b => b.value).sum;
     }
 
-    unittest {
+    unittest
+    {
         import std.stdio;
         import tagion.hibon.HiBONJSON;
         import std.range : iota;
@@ -372,33 +557,34 @@ import tagion.wallet.WalletException : check;
         const pin_code = "1234";
 
         // Create a new Wallet
-        enum {
+        enum
+        {
             num_of_questions = 5,
             confidence = 3
         }
         const dummey_questions = num_of_questions.iota.map!(i => format("What %s", i)).array;
         const dummey_amswers = num_of_questions.iota.map!(i => format("A %s", i)).array;
         const wallet_doc = SecureWallet.createWallet(dummey_questions,
-                dummey_amswers, confidence, pin_code).wallet.toDoc;
+            dummey_amswers, confidence, pin_code).wallet.toDoc;
 
         const pin_doc = SecureWallet.createWallet(
-                dummey_questions,
-                dummey_amswers,
-                confidence,
-                pin_code).pin.toDoc;
+            dummey_questions,
+            dummey_amswers,
+            confidence,
+            pin_code).pin.toDoc;
 
         auto secure_wallet = SecureWallet(wallet_doc, pin_doc);
         const pin_code_2 = "3434";
         { // Login test
             assert(!secure_wallet.isLoggedin);
             secure_wallet.login(pin_code);
-            assert(secure_wallet.check_pincode(pin_code));
+            assert(secure_wallet.checkPincode(pin_code));
             assert(secure_wallet.isLoggedin);
             secure_wallet.logout;
-            assert(secure_wallet.check_pincode(pin_code));
+            assert(secure_wallet.checkPincode(pin_code));
             assert(!secure_wallet.isLoggedin);
             secure_wallet.login(pin_code_2);
-            assert(secure_wallet.check_pincode(pin_code));
+            assert(secure_wallet.checkPincode(pin_code));
             assert(!secure_wallet.isLoggedin);
         }
 
@@ -425,7 +611,7 @@ import tagion.wallet.WalletException : check;
 
         { // Re-login
             secure_wallet.logout;
-            assert(secure_wallet.check_pincode(pin_code_2));
+            assert(secure_wallet.checkPincode(pin_code_2));
             assert(!secure_wallet.isLoggedin);
             secure_wallet.login(pin_code_2);
             assert(secure_wallet.isLoggedin);
@@ -433,23 +619,23 @@ import tagion.wallet.WalletException : check;
 
         const new_pincode = "7851";
         { // Fail to change pin-code
-            const result = secure_wallet.change_pincode(new_pincode, pin_code_2);
+            const result = secure_wallet.changePincode(new_pincode, pin_code_2);
             assert(!result);
             assert(secure_wallet.isLoggedin);
         }
 
         { // Change pincode
-            const result = secure_wallet.change_pincode(pin_code_2, new_pincode);
+            const result = secure_wallet.changePincode(pin_code_2, new_pincode);
             assert(result);
             assert(!secure_wallet.isLoggedin);
             secure_wallet.login(new_pincode);
             assert(secure_wallet.isLoggedin);
         }
 
-        writeln("END unittest");
     }
 
-    unittest { // Test for account
+    unittest
+    { // Test for account
         import std.stdio;
         import std.range : zip;
 
@@ -474,14 +660,15 @@ import tagion.wallet.WalletException : check;
             import tagion.utils.Miscellaneous : hex;
 
             // Add the bulls to the account with the derive keys
-            with (sender_wallet.account) {
+            with (sender_wallet.account)
+            {
                 bills = zip(bill_amounts, derives.byKey).map!(bill_derive => StandardBill(bill_derive[0],
                 epoch, bill_derive[1], gene)).array;
             }
 
             assert(sender_wallet.available_balance == bill_amounts.sum);
             assert(sender_wallet.total_balance == bill_amounts.sum);
-            assert(sender_wallet.active_balance == 0.TGN);
+            assert(sender_wallet.locked_balance == 0.TGN);
         }
 
         auto receiver_wallet = SecureWallet(DevicePIN.init, RecoverGenerator.init);
@@ -493,7 +680,7 @@ import tagion.wallet.WalletException : check;
         }
 
         pragma(msg,
-                "fixme(cbr): The following test is not finished, Need to transfer to money to receiver");
+            "fixme(cbr): The following test is not finished, Need to transfer to money to receiver");
         SignedContract contract_1;
         { // The receiver_wallet creates an invoice to the sender_wallet
             auto invoice = SecureWallet.createInvoice("To sender 1", 13.TGN);
@@ -516,7 +703,8 @@ import tagion.wallet.WalletException : check;
     }
 }
 
-unittest {
+unittest
+{
     import tagion.crypto.SecureNet;
 
     alias StdSecureWallet = SecureWallet!StdSecureNet;
