@@ -61,3 +61,10 @@ sequenceDiagram
 ### Create Wallet (method 1+2)
 
 
+## Payment
+
+The wallet is used both to send and receiver money. The exchange to information between the wallet is done via an [Invoice]()
+
+## Transfer to an invoice
+
+The make a payment from on
