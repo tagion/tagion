@@ -1,5 +1,5 @@
 /** 
-* Exception used in teh wallet
+* Exception used in the wallet
 */
 module tagion.wallet.WalletException;
 
@@ -15,7 +15,7 @@ class WalletException : TagionException {
     }
 }
 
-/*+
+/**
  * Exception type used by for key-recovery module
  */
 @safe
