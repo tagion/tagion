@@ -47,16 +47,6 @@ void warning() {
 }
 
 /**
- * \struct Invoices
- * Struct invoices array
- */
-struct Invoices {
-    /** internal array */
-    Invoice[] list;
-    mixin HiBONRecord;
-}
-
-/**
  * \struct WalletOptions
  * Struct wallet options files and network status storage models
  */

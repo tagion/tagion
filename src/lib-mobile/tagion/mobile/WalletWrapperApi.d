@@ -22,8 +22,7 @@ import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
 import tagion.crypto.SecureNet;
 import tagion.wallet.KeyRecover;
 
-// import tagion.crypto.SecureNet :  StdHashNet;
-import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
+import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, AccountDetails;
 
 /// Used for describing the d-runtime status
 enum drtStatus {

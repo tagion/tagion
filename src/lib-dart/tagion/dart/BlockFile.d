@@ -97,9 +97,9 @@ class BlockFile {
     }
 
     protected this(
-        string filename,
-        immutable uint SIZE,
-        const bool read_only = false) {
+            string filename,
+            immutable uint SIZE,
+            const bool read_only = false) {
         File _file;
 
         if (read_only) {
@@ -112,8 +112,8 @@ class BlockFile {
     }
 
     protected this(
-        File file,
-        immutable uint SIZE) {
+            File file,
+            immutable uint SIZE) {
         this.BLOCK_SIZE = SIZE;
         //   DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
         this.file = file;
@@ -131,9 +131,9 @@ class BlockFile {
     }
 
     static BlockFile Inspect(
-        string filename,
-        void delegate(string msg) @safe report,
-        const uint max_iteration = uint.max) {
+            string filename,
+            void delegate(string msg) @safe report,
+            const uint max_iteration = uint.max) {
         BlockFile result;
         void try_it(void delegate() @safe dg) {
             try {
@@ -379,8 +379,8 @@ class BlockFile {
         Index root_index; /// Point the root of the database
         Index statistic_index; /// Points to the statistic data
         void write(
-            ref File file,
-            immutable uint BLOCK_SIZE) const @trusted {
+                ref File file,
+                immutable uint BLOCK_SIZE) const @trusted {
             auto buffer = new ubyte[BLOCK_SIZE];
             size_t pos;
             foreach (i, m; this.tupleof) {
@@ -484,7 +484,7 @@ class BlockFile {
 
     private void readHeaderBlock() {
         check(file.size % BLOCK_SIZE == 0,
-            format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
+                format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
                 .size));
         _last_block_index = cast(Index)(file.size / BLOCK_SIZE);
         check(_last_block_index > 1, format("The BlockFile should at least have a size of two block of %d but is %d", BLOCK_SIZE, file
@@ -788,12 +788,13 @@ class BlockFile {
         {
             // Delete test blockfile
             // Create new blockfile
-            File file = File(fileId.fullpath, "w");
-            auto blockfile = new BlockFile(file, SMALL_BLOCK_SIZE);
+            File _file = File(fileId.fullpath, "w");
+            auto blockfile = new BlockFile(_file, SMALL_BLOCK_SIZE);
+
             assert(!blockfile.hasHeader);
             blockfile.createHeader("This is a Blockfile unittest");
             assert(blockfile.hasHeader);
-            file.close;
+            _file.close;
         }
 
         {
