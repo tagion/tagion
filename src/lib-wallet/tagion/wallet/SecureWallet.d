@@ -37,8 +37,8 @@ import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 import tagion.wallet.WalletException : check;
 
+/// Function and data to recover, sign transaction and hold the account information
 @safe struct SecureWallet(Net : SecureNet) {
-    static assert(is(Net : SecureNet));
     protected RecoverGenerator _wallet; /// Information to recover the seed-generator
     protected DevicePIN _pin; /// Information to check the Pin code
 
@@ -79,7 +79,7 @@ import tagion.wallet.WalletException : check;
     }
 
     /**
-     * 
+     * Retreive the device-pin generation
      * Returns: Device PIN infomation
      */
     @nogc const(DevicePIN) pin() pure const nothrow {

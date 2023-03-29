@@ -1,3 +1,6 @@
+/** 
+* Key-pair recovery generator
+*/
 module tagion.wallet.KeyRecover;
 
 import tagion.crypto.SecureInterfaceNet : HashNet;
@@ -32,6 +35,9 @@ class KeyRecorverException : TagionException {
 
 alias check = Check!KeyRecorverException;
 
+/**
+ * Key-pair recovery generator
+ */
 @safe
 struct KeyRecover {
     enum MAX_QUESTION = 10;
@@ -143,7 +149,8 @@ struct KeyRecover {
     }
 
     static void iterateSeeds(
-            const uint M, const uint N,
+            const uint M,
+            const uint N,
             scope void delegate(scope const(uint[]) indices) @safe dg) {
         scope include = new uint[N];
         iota(N).copy(include);
@@ -203,10 +210,17 @@ struct KeyRecover {
         quizSeed(R, A, confidence);
     }
 
-    /++
-     Generates the quiz seed values from the privat key R and the quiz list
-     +/
-    void quizSeed(scope ref const(ubyte[]) R, scope Buffer[] A, const uint confidence) {
+    /**
+     * Generates the quiz seed values from the privat key R and the quiz list
+     * 
+     * Params:
+     *   R = generated private-key
+     *   A = List of hashes
+     *   confidence = number of minimum correct answern
+     */
+    void quizSeed(scope ref const(ubyte[]) R,
+    scope Buffer[] A,
+    const uint confidence) {
         scope (success) {
             generator.confidence = confidence;
             generator.S = checkHash(R);
@@ -241,19 +255,32 @@ struct KeyRecover {
         iterateSeeds(number_of_questions, confidence, &calculate_this_seeds);
     }
 
-    bool findSecret(scope ref ubyte[] R, scope const(string[]) questions, scope const(char[][]) answers) const {
+    /**
+     * Generate the private-key from quiz (correct answers)
+     * Params:
+     *   R = generated private-key
+     *   questions = list of questions
+     *   answers = list of answers
+     * Returns: true if it was successfully
+     */
+    bool findSecret(
+            scope ref ubyte[] R,
+            scope const(string[]) questions,
+    scope const(char[][]) answers) const {
         return findSecret(R, quiz(questions, answers));
     }
 
+    /** 
+     * Recover the private-key from the hash-list A
+     * The hash-list is usually the question+answers hash 
+     * Params:
+     *   R = Private-key
+     *   A = List of hashes 
+     * Returns: true if it was successfully
+     */
     bool findSecret(scope ref ubyte[] R, Buffer[] A) const {
-
-        
-
-            .check(A.length > 1, message("Number of questions must be more than one"));
-
-        
-
-        .check(generator.confidence <= A.length,
+        check(A.length > 1, message("Number of questions must be more than one"));
+        check(generator.confidence <= A.length,
                 message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
                 A.length, generator.confidence));
         const number_of_questions = cast(uint) A.length;
@@ -281,6 +308,13 @@ struct KeyRecover {
     }
 }
 
+/**
+ * Strip down question and answer
+ * Converts the string to lower-case and takes only letters and numbers
+ * Params:
+ *   text = 
+ * Returns: stripped text
+ */
 char[] strip_down(const(char[]) text) pure @safe
 out (result) {
     assert(result.length > 0);
@@ -311,6 +345,7 @@ shared static this() {
     ];
 }
 
+///
 unittest {
     import tagion.crypto.SecureNet : StdHashNet;
     import std.array : join;
