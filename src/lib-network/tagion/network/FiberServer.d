@@ -63,6 +63,8 @@ interface FiberRelay {
     Buffer response(); /// Response from the service
     bool available(); /// True if send buffer is available
     void remove(); /// Remove send buffer
+    void requestResponse();
+    bool waitingForResponse() const pure nothrow;
     @property uint id();
     @property void id(const uint _id);
     immutable(ubyte[]) receive(); /// Recives from the service socket
@@ -190,14 +192,10 @@ class FiberServer {
                         fiber.reset;
                     }
                 }
-                else if (fiber.available) {
-                    // Response receiver from the service
+                else if(fiber.waitingForResponse && fiber.available && fiber.locked) {
                     fiber.call;
                 }
-                else if (fiber.locked) {
-                    fiber.call;
-                }
-                else if (socket_set.isSet(fiber.client)) {
+                else if (!fiber.waitingForResponse && socket_set.isSet(fiber.client)) {
                     fiber.call;
                 }
                 if (fiber.state is Fiber.State.TERM) {
@@ -240,6 +238,7 @@ class FiberServer {
             bool _lock;
             FiberRelay.Time start_timestamp; //   uint fiber_id;
             uint _id;
+            bool _waitforresponse;
         }
         immutable FiberId fiber_id;
         @property final uint id() const pure nothrow {
@@ -260,6 +259,14 @@ class FiberServer {
 
         final void unlock() nothrow {
             _lock = false;
+        }
+
+        void requestResponse() nothrow {
+            _waitforresponse = true;
+        }
+
+        bool waitingForResponse() const pure nothrow {
+            return _waitforresponse;
         }
 
         /++
@@ -298,6 +305,7 @@ class FiberServer {
          the service response
          +/
         Buffer response() {
+            _waitforresponse = false;
             return handler.get(id);
         }
 
@@ -425,7 +433,8 @@ class FiberServer {
          +/
         package void shutdown() nothrow {
             import std.socket : SocketShutdown;
-
+            
+            _waitforresponse = false;
             if (client) {
                 client.shutdown(SocketShutdown.BOTH);
                 client = null;
@@ -493,6 +502,7 @@ class FiberServer {
             void serviceResponse(Buffer data) {
                 const doc = Document(data);
                 const hirpc_received = hirpc.receive(doc);
+                log("received for service: %d",hirpc_received.response.id);
                 handler.set(hirpc_received.response.id, data);
             }
 

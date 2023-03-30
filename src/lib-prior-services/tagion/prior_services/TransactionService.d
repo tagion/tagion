@@ -161,8 +161,10 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         log("Method name: %s", method_name);
                         switch (method_name) {
                         case "search":
+                            ssl_relay.requestResponse();
                             search(params, ssl_relay.id);
                             if(!ssl_relay.available) {
+                                log.warning("connection closed to no response");
                                 return true;
                             }
                             const response = ssl_relay.response;
@@ -171,8 +173,10 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         case "healthcheck":
 
                             log("sending healthcheck request");
+                            ssl_relay.requestResponse();
                             areWeInGraph(ssl_relay.id);
                             if(!ssl_relay.available) {
+                                log.warning("connection closed to no response");
                                 return true;
                             }
                             const response = ssl_relay.response;
@@ -192,8 +196,10 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                                     //
 
                                     auto inputs = signed_contract.contract.inputs;
+                                    ssl_relay.requestResponse();
                                     requestInputs(inputs, ssl_relay.id);
                                     if(!ssl_relay.available) {
+                                        log.warning("connection closed to no response");
                                         return true;
                                     }
                                     //() @trusted => Fiber.yield; // Expect an Recorder resonse for the DART service
