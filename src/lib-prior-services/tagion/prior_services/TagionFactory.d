@@ -99,11 +99,12 @@ void tagionFactoryService(Options opts) nothrow {
                     service_options.transcript.task_name = new_task_name(opts.transcript.task_name);
                     service_options.transaction.task_name = new_task_name(
                             opts.transaction.task_name);
-                    service_options.transaction.task_name = new_task_name(
-                            opts.transaction.task_name);
                     service_options.transaction.service.server.server_task_name
                         = new_task_name(
                                 opts.transaction.service.server.server_task_name);
+                    service_options.transaction.service.server.response_task_name
+                        = new_task_name(
+                                opts.transaction.service.server.response_task_name);
                     service_options.collector.task_name = new_task_name(opts.collector.task_name);
                     service_options.dart.task_name = new_task_name(opts.dart.task_name);
                     service_options.dart.sync.task_name = new_task_name(opts.dart.sync.task_name);

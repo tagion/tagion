@@ -449,6 +449,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                 auto response = empty_hirpc.result(receiver, respond);
                 log("Healthcheck: %s", response.toDoc.toJSON);
                 locate(respond_task_name).send(response.toDoc.serialize);
+                log("Sent back to %s", respond_task_name);
             }
             );
             log("ROUNDS: %d AreWeInGraph: %s Active %d", hashgraph.rounds.length, hashgraph.areWeInGraph, addressbook
