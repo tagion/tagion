@@ -1,12 +1,11 @@
 # Requirement for the Actor base multitasking
+An actor is a task that is able to send and receive messages from other tasks.
+The actors have a hierarchical structure where the owner of an actor is called a supervisor and the actor owned by the supervisor is called a child.
 
-And actor is a task which are able to send and receive messages from other tasks.
-The actors has a hierarchical structure where the owner of an actor is call a supervisor and the actor owned by the supervisor is call a child.
+When an actor fails the error should be sent to the supervisor and the supervisor should decide what should be done.
 
-When an actor fails the error should be send to the supervisor and the supervisor should decide what should be done.
-The error send to the should have highest priority.
+A supervisor should able to stop one or all children and if the actor requested to be stopped then it should safely stop all children owned by this actor.
 
-A supervisor should able to stop one or all children and if the actor requested to be stopped then it should safe stop all children owned by this actor.
 
 And actor can have in 4 stages
 
@@ -17,14 +16,14 @@ And actor can have in 4 stages
 | 3. |ERROR   | Error (Exception) is send to the supervisor |
 | 4. |STOP    | When the actor stops a END signal is send to the supervisor |
 
-A child is stop when a supervisor send a STOP signal to the child and the child sends an END when it stops if an error occurs in the child the error (Exception) should be send to the supervisor.
+child stops when a supervisor sends a STOP signal to the child and the child sends an END when it stops if an error occurs in the child the error (Exception) should be sent to the supervisor.
 
 
-An actor has a set of receives methods and this set of methods should never change as long as the actor is alive.
+An actor has a set of received methods and this set of methods should never change as long as the actor is alive.
 
 ## Start and Stop of Actor hierarchy 
 
-This diagram show an example the startup sequence of the supervisor hierarchy.
+This diagram shows an example of the startup sequence of the supervisor hierarchy
 ```mermaid
 sequenceDiagram
     participant Main 
@@ -39,7 +38,7 @@ sequenceDiagram
 	Actor1->>Main: Control.LIVE
 ```
 
-This diagram show the stop sequence.
+This diagram shows the stop sequence.
 ```mermaid
 sequenceDiagram
     participant Main 
@@ -53,9 +52,3 @@ sequenceDiagram
 	Actor2->>Actor1: Control.END
 	Actor1->>Main: Control.END
 ```
-
-
-
-
-
-
