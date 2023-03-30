@@ -273,6 +273,23 @@ struct Recycler {
         }
     }
 
+    void dumpToBeRecycled() {
+        import std.stdio;
+
+        if (to_be_recycled.empty) {
+            writefln("indices empty");
+            return;
+        }
+
+        foreach (segment; to_be_recycled) {
+            writef("INDEX: %s |", segment
+                    .index);
+            writef("END: %s |", segment
+                    .end);
+            writefln("NEXT: %s ", segment.next);
+        }
+    }
+
     bool isRecyclable(const Index index) const pure nothrow {
         return false;
     }
@@ -307,6 +324,8 @@ struct Recycler {
         if (indices.empty) {
             return Index.init;
         }
+        // assumeWontThrow(writefln("indices to be written"));
+        // assumeWontThrow(dump);
 
         // assumeWontThrow(writeln("INDICES BEFORE"));
         // assumeWontThrow(dump());
@@ -314,17 +333,15 @@ struct Recycler {
         Index next;
         bool first = true;
         foreach_reverse (segment; indices) {
-
             if (segment.next != next || first) {
                 segment.next = next;
                 assumeWontThrow(owner.seek(segment.index));
                 assumeWontThrow(owner.file.fwrite(*segment));
                 first = false;
             }
-
             next = segment.index;
-
         }
+        // assumeWontThrow(writefln("wrote recycler with %s segments", indices.length));
 
         // assumeWontThrow(writeln("INDICES AFTER"));
         // assumeWontThrow(dump());

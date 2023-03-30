@@ -460,12 +460,11 @@ class BlockFile {
     protected void writeStatistic() {
         // Allocate block for statistical data
         immutable old_statistic_index = masterblock.statistic_index;
-
         auto statistical_allocate = save(_statistic.toDoc);
         masterblock.statistic_index = Index(statistical_allocate.index);
-        if (old_statistic_index !is INDEX_NULL) {
+        if (old_statistic_index !is Index.init) {
             // The old statistic block is erased
-            dispose(old_statistic_index);
+            dispose(old_statistic_index, true);
         }
     }
 
@@ -583,7 +582,10 @@ class BlockFile {
      +     BlockFileException
      +
      +/
-    void dispose(const Index index) {
+    void dispose(const Index index, const bool stat = false) {
+        // if (stat) {
+        //     writefln("disposing statistic Index(%s)", index);
+        // }
         auto allocated_range = allocated_chains.filter!(a => a.index == index);
         assert(allocated_range.empty, "We should dispose cached blocks");
         // version (none) {
@@ -602,6 +604,10 @@ class BlockFile {
         ubyte[] buf = _buf;
         file.rawRead(buf);
         const doc_size = LEB128.read!ulong(buf);
+
+        // if (stat) {
+        //     writefln("stat doc size: %s", numberOfBlocks(doc_size.size + doc_size.value));
+        // }
 
         recycler.dispose(index, numberOfBlocks(doc_size.size + doc_size.value));
     }
@@ -648,17 +654,25 @@ class BlockFile {
      +
      +/
     void store() {
-        writeStatistic;
+
+        immutable old_statistic_index = masterblock.statistic_index;
+        auto statistical_allocate = save(_statistic.toDoc);
+        masterblock.statistic_index = Index(statistical_allocate.index);
+        if (old_statistic_index !is Index.init) {
+            // The old statistic block is erased
+            dispose(old_statistic_index, true);
+        }
+
         scope (success) {
             allocated_chains = null;
             // writeln("###");
             // recycler.dump;
+
             masterblock.recycle_header_index = recycler.write;
+
             writeMasterBlock;
         }
-
-        foreach (block_segment; sort!(q{a.index < b.index},
-                SwapStrategy.unstable)(allocated_chains)) {
+        foreach (block_segment; sort!(q{a.index < b.index}, SwapStrategy.unstable)(allocated_chains)) {
             block_segment.write(this);
         }
     }
