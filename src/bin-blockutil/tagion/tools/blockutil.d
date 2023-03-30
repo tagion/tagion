@@ -41,6 +41,11 @@ struct BlockFileAnalyzer {
         blockfile.dump();
     }
 
+    void recycleDump() {
+        writeln("Recycler map");
+        blockfile.recycleDump;
+    }
+
     // static string blockType(const bool recycle_block) {
     //     return recycle_block ? "Recycle" : "Data";
     // }
@@ -154,7 +159,7 @@ int _main(string[] args) {
     bool ignore; /// Ignore blockfile format errors
     ulong block_number; /// Block number to read (block_number > 0)
     bool sequency; /// Prints the sequency on the next header
-    bool recycle_sequence; // Lists the recycle sequence
+    bool dump_recycler;
     string output_filename;
     enum logo = import("logo.txt");
     void report(string msg) {
@@ -166,14 +171,14 @@ int _main(string[] args) {
         std.getopt.config.bundling,
         "version", "Display the version", &version_switch,
         "info", "Display blockfile metadata", &display_meta,
-        "dump", "Dumps block fragmentaion pattern in the blockfile", &dump,
+        "dump", "Dumps the entire blockfile", &dump,
+        "dumprecycler", "Dumps the recycler", &dump_recycler,
         "inspect|c", "Inspect the blockfile format", &inspect,
         "ignore|i", "Ignore blockfile format error", &ignore, //        "iter", "Set the max number of iterations do by the inspect", &analyzer.inspect_iterations,
         //       "max", format(
         //     "Max block iteration Default : %d", analyzer.max_block_iteration), &analyzer.max_block_iteration,
         "block|b", "Read from block number", &block_number,
         "seq", "Display the block sequency starting from the block-number", &sequency,
-        "recycle-sequency", "Lists the recycle sequence", &recycle_sequence,
         "o", "Output filename", &output_filename,
     );
 
@@ -234,13 +239,13 @@ int _main(string[] args) {
         stderr.writeln(e.msg);
         return ExitCode.OPEN_FILE_FAILED;
     }
-    // }
-    // if (display_meta) {
-    //     analyzer.display_meta;
-    // }
 
     if (dump) {
         analyzer.dump;
+    }
+
+    if (dump_recycler) {
+        analyzer.recycleDump;
     }
 
     // if (block_number !is 0) {
