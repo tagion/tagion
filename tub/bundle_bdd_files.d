@@ -8,8 +8,7 @@ import std.process;
 import std.conv : to;
 import std.string;
 
-auto get_md_paths(string pathname)
-{    
+auto get_md_paths(string pathname) {
     return dirEntries(buildPath(pathname, "tagion"), SpanMode.depth)
         .filter!(f => f.name.endsWith(".md"))
         .filter!(f => !f.name.endsWith(".gen.md"))
@@ -25,18 +24,16 @@ int main() {
     auto md_files = get_md_paths(BDD).sort;
 
     string[] relative_paths;
-    foreach(file; md_files) {
-        writeln(file);
-        writeln(REPOROOT);
+    foreach (file; md_files) {
         relative_paths ~= relativePath(file, REPOROOT);
     }
 
     auto fout = File(FILE, "w");
-    scope(exit) {
+    scope (exit) {
         fout.close;
     }
 
-    foreach(path; relative_paths) {
+    foreach (path; relative_paths) {
         fout.writefln("[%s](%s)", path.baseName, path);
         fout.writeln("");
     }

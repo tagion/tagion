@@ -38,6 +38,9 @@
 		- [Block file](/documents/modules/dart/block_file_recycler.md)
 	- Wallet
 		- [Wallet](/documents/modules/wallet/wallet.md)
+	- Actors
+		- [Actor](/documents/modules/actor/actor_requirement.md)
+
 - Testing
 	- Behaviour tests
 		- [BDD_Process](documents/behaviour/BDD_Process.md)

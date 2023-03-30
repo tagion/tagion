@@ -27,7 +27,7 @@ import tagion.script.StandardRecords;
 import tagion.script.TagionCurrency;
 import tagion.crypto.SecureNet : StdSecureNet, StdHashNet, scramble;
 import tagion.wallet.KeyRecover;
-import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, Quiz;
+import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, Quiz, AccountDetails;
 import tagion.wallet.SecureWallet;
 import tagion.utils.Term;
 import tagion.basic.Message;
@@ -626,9 +626,6 @@ int _main(string[] args) {
     string answers_str;
     bool wallet_ui;
     bool update_wallet;
-    uint number_of_bills;
-    string passphrase = "verysecret";
-    ulong value = 1000_000_000;
     bool generate_wallet;
     string item;
     string pincode;
