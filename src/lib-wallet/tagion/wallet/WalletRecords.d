@@ -122,12 +122,22 @@ struct AccountDetails {
     mixin HiBONRecord;
 }
 
+
+
 @safe
 @recordType("Invoice")
 struct Invoice {
-    string name;
-    TagionCurrency amount;
-    @label(OwnerKey) Pubkey pkey;
-    @label("*", true) Document info;
+    string name; /// Name of the invoice
+    TagionCurrency amount; /// Amount to be payed
+    @label(OwnerKey) Pubkey pkey; /// Key to the payee
+    @label("*", true) Document info; /// Information about the invoice
     mixin HiBONRecord!();
 }
+
+@safe
+struct Invoices {
+    Invoice[] list; /// List of invoice (store in the wallet)
+    mixin HiBONRecord;
+}
+
+

@@ -45,29 +45,18 @@ struct MyActor {
     */
     @method void setName(string str) {
         some_name = str;
-        sendSupervisor(some_name);
+        debug writeln("sending back to super visor: ", some_name);
+        sendSupervisor(some_name, some_name);
     }
 
-    /* @method void dumdum(immutable(actorid) actorid) { */
-    /*     import std.stdio; */
-    /*     writeln(actorid); */
-    /* } */
-
     @method void relay(string str, string task_name) {
+        alias ChildFactory = ActorFactory!MyActor;
+
         // Request the handle for the other child;
-        /* alias ChildFactory = ActorFactory!MyActor; */
+        ChildHandle otherChild = ChildFactory.handler(task_name);
+        debug writefln("Got child handler:%s, %s", otherChild.tid, otherChild is otherChild.init);
 
-        /* auto dumdum_tid = concurrency.locate(task_name); */
-        /* concurrency.send(dumdum_tid, actorID!Actor(task_name)); */
-        // Handler method is blocking as it's trying to wait for a message that gets sent to the main thread
-        /* ChildHandle otherChild = ChildFactory.handler(task_name, cast(immutable) concurrency.thisTid); */
-        /* if(otherChild is otherChild.init) { */
-        /* } */
-        /* debug writefln("Got child handler: %s", otherChild is otherChild.init); */
-
-        /* otherChild.setName(str); */
-        /* Thread.sleep(sleep_time); */
-        /* sendSupervisor(str); */
+        otherChild.setName(str);
     }
 
     /// Decrease the count value `by`
@@ -114,6 +103,10 @@ static struct MySuperActor {
     @method void isChildRunning(string task_name) {
         Thread.sleep(sleep_time);
         sendSupervisor(isRunning(task_name));
+    }
+
+    @method void echo(string str, string str2) {
+        sendSupervisor(str, str2);
     }
 
     @method void sendStatusToChild(int status, Children child) {
@@ -232,9 +225,9 @@ class SendMessageBetweenTwoChildren {
     @When("send a message from #super to #child1 and from #child1 to #child2 and back to the #super")
     Document backToTheSuper() @trusted {
         supervisor_handle.roundtrip(Children.child2);
-        /* concurrency.receiveOnly!bool; */
-        string receive = concurrency.receiveOnly!string;
-        check(receive == "hi mom", format("did not receive the right message, got %s", receive));
+
+        auto receive = concurrency.receiveOnly!(Tuple!(string, string));
+        check(receive[0] == "hi mom", format("did not receive the right message, got %s", receive));
         return result_ok;
     }
 

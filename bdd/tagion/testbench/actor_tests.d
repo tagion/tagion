@@ -29,6 +29,9 @@ int _main(string[] args) {
         auto actor_supervisor_feature = automation!(actor_supervisor)();
         auto actor_supervisor_context = actor_supervisor_feature.run();
         }
+
+        auto actor_handler_feature = automation!(actor_handler)();
+        auto actor_handler_context = actor_handler_feature.run();
     }
 
     return 0;
