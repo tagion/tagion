@@ -98,9 +98,9 @@ class BlockFile {
     }
 
     protected this(
-            string filename,
-            immutable uint SIZE,
-            const bool read_only = false) {
+        string filename,
+        immutable uint SIZE,
+        const bool read_only = false) {
         File _file;
 
         if (read_only) {
@@ -113,8 +113,8 @@ class BlockFile {
     }
 
     protected this(
-            File file,
-            immutable uint SIZE) {
+        File file,
+        immutable uint SIZE) {
         this.BLOCK_SIZE = SIZE;
         //   DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
         this.file = file;
@@ -132,9 +132,9 @@ class BlockFile {
     }
 
     static BlockFile Inspect(
-            string filename,
-            void delegate(string msg) @safe report,
-            const uint max_iteration = uint.max) {
+        string filename,
+        void delegate(string msg) @safe report,
+        const uint max_iteration = uint.max) {
         BlockFile result;
         void try_it(void delegate() @safe dg) {
             try {
@@ -380,8 +380,8 @@ class BlockFile {
         Index root_index; /// Point the root of the database
         Index statistic_index; /// Points to the statistic data
         void write(
-                ref File file,
-                immutable uint BLOCK_SIZE) const @trusted {
+            ref File file,
+            immutable uint BLOCK_SIZE) const @trusted {
             auto buffer = new ubyte[BLOCK_SIZE];
             size_t pos;
             foreach (i, m; this.tupleof) {
@@ -485,7 +485,7 @@ class BlockFile {
 
     private void readHeaderBlock() {
         check(file.size % BLOCK_SIZE == 0,
-                format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
+            format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
                 .size));
         _last_block_index = cast(Index)(file.size / BLOCK_SIZE);
         check(_last_block_index > 1, format("The BlockFile should at least have a size of two block of %d but is %d", BLOCK_SIZE, file
@@ -663,6 +663,22 @@ class BlockFile {
         }
     }
 
+    struct BlockSegmentRange {
+        BlockFile owner;
+
+        Index index = Index(1UL);
+
+        this(BlockFile owner) {
+            this.owner = owner;
+        }
+
+        auto front() {
+            const doc = owner.load(index);
+
+        }
+
+    }
+
     /++
      + Fail type for the inspect function
      +/
@@ -741,23 +757,25 @@ class BlockFile {
     /++
      + Used for debuging only to dump the Block's
      +/
-    void dump(const uint block_per_line = 16) {
+    void dump(const uint segments_per_line = 16) {
+
         auto line = new char[block_per_line];
-        version (none)
-            foreach (index; 0 .. ((_last_block_index / block_per_line) + (
-                    (_last_block_index % block_per_line == 0) ? 0 : 1)) * block_per_line) {
-                immutable pos = index % block_per_line;
-                if ((index % block_per_line) == 0) {
-                    line[] = 0;
-                }
 
-                scope block = read(Index(index));
-                line[pos] = getSymbol(block, Index(index));
+        // version (none)
+        //     foreach (index; 0 .. ((_last_block_index / block_per_line) + (
+        //             (_last_block_index % block_per_line == 0) ? 0 : 1)) * block_per_line) {
+        //         immutable pos = index % block_per_line;
+        //         if ((index % block_per_line) == 0) {
+        //             line[] = 0;
+        //         }
 
-                if (pos + 1 == block_per_line) {
-                    writefln("%04X] %s", index - pos, line);
-                }
-            }
+        //         scope block = read(Index(index));
+        //         line[pos] = getSymbol(block, Index(index));
+
+        //         if (pos + 1 == block_per_line) {
+        //             writefln("%04X] %s", index - pos, line);
+        //         }
+        //     }
     }
 
     // Block index 0 is means null
