@@ -44,6 +44,7 @@ jobs:
           sudo chmod +x /usr/bin/go/bin/*
           export PATH="/usr/bin/go/bin:$PATH"
           export GOPATH="/usr/bin/go/bin"
+          export GODEBUG=cgocheck=0
           dstep --version # 1.0.0
           ldc2 --version
           dmd --version
