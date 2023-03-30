@@ -42,7 +42,14 @@ bool isRecord(T)(const Document doc) nothrow pure {
     return false;
 }
 
-string getType(const Document doc) nothrow pure @nogc {
+/** 
+ * Gets the doc[TYPENAME] from the document.
+ * Params:
+ *   doc = Document containing typename
+ * Returns: TYPENAME or string.init
+ */
+@safe
+string getType(const Document doc) pure {
     if (doc.hasMember(TYPENAME)) {
         return doc[TYPENAME].get!string;
     }

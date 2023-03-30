@@ -668,15 +668,43 @@ class BlockFile {
 
         Index index = Index(1UL);
 
-        this(BlockFile owner) {
+        this(BlockFile owner) pure nothrow @nogc {
             this.owner = owner;
         }
 
-        auto front() {
-            const doc = owner.load(index);
+        alias BlockSegmentInfo = Tuple!(Index, "index", string, "type", uint, "size", Document, "doc");
 
+        BlockSegmentInfo front() {
+            const doc = owner.load(index);
+            // if (!doc.isValid) {
+            //     // step up
+            //     return (,)
+            // }
+            const type = getType(doc);
+            const size = owner.numberOfBlocks(doc.full_size);
+            return BlockSegmentInfo(index, type, size, doc);
         }
 
+        void popFront() {
+            const current_seg = front;
+            index = Index(current_seg.index + current_seg.size);
+        }
+
+        bool empty() {
+            const current_seg = front;
+            const last_index = owner.numberOfBlocks(owner.file.size);
+
+            return Index(current_seg.index + current_seg.size) >= last_index;
+        }
+
+        BlockSegmentRange save() {
+            return this;
+        }
+
+    }
+
+    BlockSegmentRange opSlice() pure nothrow @nogc {
+        return BlockSegmentRange(this);
     }
 
     /++
@@ -759,7 +787,7 @@ class BlockFile {
      +/
     void dump(const uint segments_per_line = 16) {
 
-        auto line = new char[block_per_line];
+        // auto line = new char[block_per_line];
 
         // version (none)
         //     foreach (index; 0 .. ((_last_block_index / block_per_line) + (
