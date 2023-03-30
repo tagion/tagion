@@ -144,8 +144,15 @@ class RecordFactory {
     @recordType("Recorder")
     class Recorder {
         /// This will order REMOVE before add
-        alias Archives = RedBlackTree!(Archive, (a, b) @safe => (a.fingerprint < b.fingerprint) || (
-                a.fingerprint == b.fingerprint) && (a._type < b._type));
+        version (SYNC_BLOCKFILE_WORKING) {
+            alias Archives = RedBlackTree!(Archive, (a, b) @safe => (a.fingerprint < b.fingerprint) || (
+                    a.fingerprint == b.fingerprint) && (a._type < a._type));
+        }
+        else {
+            alias Archives = RedBlackTree!(Archive, (a, b) @safe => (a.fingerprint < b.fingerprint) || (
+                    a.fingerprint == b.fingerprint) && (a._type < b._type));
+        }
+
         package Archives archives;
 
         import tagion.hibon.HiBONJSON : JSONString;

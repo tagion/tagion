@@ -126,7 +126,7 @@ class AddPseudoRandomData {
         import tagion.dart.Recorder : Remove;
 
         foreach (i, recorder; recorders.enumerate) {
-            writefln("remove %i", i);
+            writefln("remove %s", i);
             remove_watch.start();
             db1.modify(recorder, Remove);
             remove_watch.stop();

@@ -124,9 +124,7 @@ class RemovePseudoRandomData {
         db2 = new DART(info.net, info.dartfilename2, dart_exception);
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
 
-        // since the fingerprints of db1 and db2 should be the same, we can take the sample from db1.
-        remove_fingerprints = db1_fingerprints.randomSample(db1_fingerprints.length / 2, MinstdRand0(
-                40)).array;
+        // since the finger
         return result_ok;
     }
 
