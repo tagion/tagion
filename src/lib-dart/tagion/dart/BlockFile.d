@@ -792,12 +792,12 @@ class BlockFile {
         uint pos = segments_per_line;
         foreach (seg; seg_range) {
             if (pos == segments_per_line) {
+                writef("|");
                 writeln;
                 pos = 0;
             }
-            writef("|(%s) ", seg.type);
-            writef("%s ", seg.index);
-            writef("%s ", seg.size);
+            writef("|(%s) Index(%s) Size(%s)", seg.type, seg.index, seg.size);
+
             pos++;
         }
         writeln;
