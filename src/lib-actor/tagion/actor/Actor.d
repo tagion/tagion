@@ -194,25 +194,13 @@ mixin template TaskActor() {
         concurrency.prioritySend(concurrency.ownerTid, e);
     }
 
-    @method void isValidActor(immutable(ActorID*) actorid, immutable(Tid) return_tid) @trusted {
-        auto tid = concurrency.locate(actorid.task_name);
-        auto _return_tid = cast(Tid) return_tid;
-
-        import std.stdio;
-
-        writefln("ASTORID: %s", *actorid);
-        if (tid !is Tid.init && actorid.mangle_name == mangle_name) {
-            concurrency.send(_return_tid, ActorFlag.yes);
-            return;
-        }
-        concurrency.send(_return_tid, ActorFlag.no);
-    }
-
     /**
     * This function will stop all the actors which are owned my this actor
     */
-    void stopAll() @trusted {
-        foreach (ref tid; child_actor_tids.byValue) {
+    void stopAll() 
+@trusted {
+        foreach 
+(ref tid; child_actor_tids.byValue) {
             concurrency.send(tid, Control.STOP);
             assert(concurrency.receiveOnly!Control is Control.END,
                     format("Failed when stopping all child actors for Actor %s", This.stringof));
@@ -223,7 +211,9 @@ mixin template TaskActor() {
      * This should be call when the @task function is ready
      * and it send a Control live back to the owner task
      */
-    void alive() @trusted {
+    void 
+alive() @trusted 
+{
         concurrency.send(concurrency.ownerTid, Control.LIVE);
     }
 
@@ -480,31 +470,18 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
                 return ActorHandle(tid);
             }
 
-            /* 
-         * Get the handler from actor named task_name 
-         * Params:
-         *   task_name = task name of the actor 
-         * Returns: 
-         *   Returns the handle if it runs or else it return ActorHandle.init 
-         */
+            /**
+            * Get the handler from actor named task_name 
+            * Params:
+            *   task_name = task name of the actor 
+            * Returns:
+            *   Returns the handle if it runs or else it return ActorHandle.init 
+            */
             static ActorHandle handler(string task_name) @trusted {
                 auto tid = concurrency.locate(task_name);
                 debug writefln("Got tid and task: %s %s", tid, task_name);
                 if (tid !is Tid.init) {
-                    version (lr) {
-                        debug writefln("Returning actor handle");
-                        return ActorHandle(tid);
-                    }
-                    else {
-                        // Does this check even make sense, 
-                        /// since if it the thread is not implemented as an actor then it would never implement this interface anyway
-                        // Trying to send to isValidactor.
-                        concurrency.send(tid, actorID!Actor(task_name), concurrency.thisTid);
-                        if (concurrency.receiveOnly!(ActorFlag) == ActorFlag.yes) {
-                            debug writefln("Returning actor handle");
-                            return ActorHandle(tid);
-                        }
-                    }
+                    return ActorHandle(tid);
                 }
                 return ActorHandle.init;
             }
@@ -562,9 +539,9 @@ version (unittest) {
             count -= by;
         }
 
-        /** 
-* Actor method send a opt to the actor and 
-* sends back an a response to the owner task
+        /**
+        * Actor method send a opt to the actor and 
+        * sends back an a response to the owner task
         */
         @method void get(Get opt) { // reciever
             final switch (opt) {
