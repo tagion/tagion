@@ -43,8 +43,8 @@ class Reporter : BehaviourReporter {
     const(Exception) before(scope const(FeatureGroup*) feature_group) nothrow {
         Exception result;
         try {
-            immutable report_file_name = buildPath(env.bdd_results, 
-		feature_group.info.name ~ alternative(feature_group))
+            immutable report_file_name = buildPath(env.bdd_results,
+                feature_group.info.name ~ alternative(feature_group))
                 ~ DOT ~ FileExtension.hibon;
             report_file_name.fwrite(*feature_group);
         }
@@ -59,12 +59,12 @@ class Reporter : BehaviourReporter {
     }
 }
 
-
-enum Stage{
+enum Stage {
     commit,
     acceptance,
     performance,
 }
+
 struct Environment {
     string dbin;
     string dlog;
@@ -75,25 +75,24 @@ struct Environment {
     string fund;
     string test_stage;
 
-
     Stage stage() const pure {
-        switch ( test_stage ) {
-        
-        static foreach ( E; EnumMembers!Stage ) {
-            case E.stringof: 
-                return E; 
-        }
+        switch (test_stage) {
+
+            static foreach (E; EnumMembers!Stage) {
+        case E.stringof:
+                return E;
+            }
 
         default:
             //empty
         }
 
-        switch ( test_stage.to!uint ) {
-        
-        static foreach(i; 0..EnumMembers!Stage.length) {
-            case i:
+        switch (test_stage.to!uint) {
+
+            static foreach (i; 0 .. EnumMembers!Stage.length) {
+        case i:
                 return cast(Stage) i;
-        }
+            }
         default:
             //empty
         }
@@ -110,6 +109,7 @@ struct Tools {
     string hibonutil;
     string dartutil;
     string tagionboot;
+    string blockutil;
 }
 
 immutable Tools tools;

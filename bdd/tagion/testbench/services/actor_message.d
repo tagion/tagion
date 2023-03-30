@@ -45,20 +45,18 @@ struct MyActor {
     */
     @method void setName(string str) {
         some_name = str;
-        sendSupervisor(some_name);
+        debug writeln("sending back to super visor: ", some_name);
+        sendSupervisor(some_name, some_name);
     }
 
     @method void relay(string str, string task_name) {
-        // Request the handle for the other child;
-        /* alias ChildActor = actor!MyActor; */
-        auto ChildActor = actor!MyActor;
+        alias ChildFactory = ActorFactory!MyActor;
 
-        // Handler method is blocking as it's trying to wait for a message that gets sent to the main thread
-        ChildHandle otherChild = ChildActor.handler(task_name);
+        // Request the handle for the other child;
+        ChildHandle otherChild = ChildFactory.handler(task_name);
+        debug writefln("Got child handler:%s, %s", otherChild.tid, otherChild is otherChild.init);
 
         otherChild.setName(str);
-        Thread.sleep(sleep_time);
-        sendSupervisor(str);
     }
 
     /// Decrease the count value `by`
@@ -85,7 +83,7 @@ static assert(isActor!MyActor);
 alias ChildHandle = ActorHandle!MyActor;
 
 static struct MySuperActor {
-@safe
+    @safe
 
     ChildHandle niño_uno_handle;
     ChildHandle niño_dos_handle;
@@ -105,6 +103,10 @@ static struct MySuperActor {
     @method void isChildRunning(string task_name) {
         Thread.sleep(sleep_time);
         sendSupervisor(isRunning(task_name));
+    }
+
+    @method void echo(string str, string str2) {
+        sendSupervisor(str, str2);
     }
 
     @method void sendStatusToChild(int status, Children child) {
@@ -223,9 +225,9 @@ class SendMessageBetweenTwoChildren {
     @When("send a message from #super to #child1 and from #child1 to #child2 and back to the #super")
     Document backToTheSuper() @trusted {
         supervisor_handle.roundtrip(Children.child2);
-        /* concurrency.receiveOnly!bool; */
-        string receive = concurrency.receiveOnly!string;
-        check(receive == "hi mom", format("did not receive the right message, got %s", receive));
+
+        auto receive = concurrency.receiveOnly!(Tuple!(string, string));
+        check(receive[0] == "hi mom", format("did not receive the right message, got %s", receive));
         return result_ok;
     }
 

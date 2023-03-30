@@ -11,7 +11,7 @@ The HiPRC is inspired by JSON-RPC just that it is base on the HiBON format and i
 | `$pkey` | BINARY | Pubkey | Permission public key | No |
 | `$msg`  | DOCUMENT | [Document]() | RPC function call | Yes |
 
-See [HiRPC](tagion.communication.HiRPC.HiRPC)
+See [HiRPC](ddoc://tagion.communication.HiRPC.HiRPC)
 
 HiRPC `$msg` comes in 3 types. [Method](#Method), [Response](#Response) and [Error](#Error).
 
@@ -22,7 +22,7 @@ HiRPC `$msg` comes in 3 types. [Method](#Method), [Response](#Response) and [Err
 | `id`     | UINT32 | uint | Message id number | No |
 | `params` | DOCUMENT | [Document]() | parameter argument as a Document | No |
 
-See [Method](tagion.communication.HiRPC.HiRPC.Method)
+See [Method](ddoc://tagion.communication.HiRPC.HiRPC.Method)
 
 ### Response 
 | Name | Type | D-Type | Description | Required |
@@ -30,7 +30,7 @@ See [Method](tagion.communication.HiRPC.HiRPC.Method)
 | `id ` | UINT32 | uint |Message id number | No |
 | `result` | DOCUMENT | [Document]() | Result for the RPC as a Document | Yes |
 
-See [Response](tagion.communication.HiRPC.HiRPC.Response)
+See [Response](ddoc://tagion.communication.HiRPC.HiRPC.Response)
 
 ### Error
 
@@ -41,7 +41,7 @@ See [Response](tagion.communication.HiRPC.HiRPC.Response)
 | `$msg` | STRING | string | Error message as text | No |
 | `$code` | INT32 | int |Error code | Yes |
 
-See [Error](tagion.communication.HiRPC.HiRPC.Error)
+See [Error](ddoc://tagion.communication.HiRPC.HiRPC.Error)
 
 ## HiRPC Receiver and Sender
 
@@ -51,11 +51,11 @@ The HiRPC is divided into two classifiers a sender and a receiver
 If a HiPRC needs permission then the sender will sign the message and add the signature `$sign`.
 The case the receiver does not know how is the owner, then owner-public-key `$pkey` should be added also.
 
-See [Sender](tagion.communication.HiRPC.HiRPC.Post)
+See [Sender](ddoc://tagion.communication.HiRPC.HiRPC.Post)
 
 ### Receiver
 In case of where the permission is need the receiver will check that the signature has been signed.
 
-See [Receiver](tagion.communication.HiRPC.HiRPC.Post)
+See [Receiver](ddoc://tagion.communication.HiRPC.HiRPC.Post)
 
 

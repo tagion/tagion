@@ -6,7 +6,7 @@ import std.format;
 
 import tagion.hibon.HiBONRecord;
 
-@safe
+@safe @recordType("Statistic")
 struct Statistic(T, Flag!"histogram" flag = No.histogram) {
     protected {
         double sum2 = 0.0;
@@ -30,9 +30,9 @@ struct Statistic(T, Flag!"histogram" flag = No.histogram) {
         N++;
         static if (flag) {
             _histogram.update(
-                    value,
-                    () => 1,
-                    (ref uint a) => a += 1);
+                value,
+                () => 1,
+                (ref uint a) => a += 1);
         }
     }
 

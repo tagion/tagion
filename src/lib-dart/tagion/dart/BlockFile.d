@@ -71,9 +71,10 @@ class BlockFile {
     package {
         File file;
         Index _last_block_index;
-    }
-    protected {
         Recycler recycler;
+    }
+
+    protected {
         MasterBlock masterblock;
         HeaderBlock headerblock;
         bool hasheader;
@@ -650,8 +651,9 @@ class BlockFile {
         writeStatistic;
         scope (success) {
             allocated_chains = null;
-            version (none)
-                recycler.write;
+            // writeln("###");
+            // recycler.dump;
+            masterblock.recycle_header_index = recycler.write;
             writeMasterBlock;
         }
 
@@ -659,6 +661,50 @@ class BlockFile {
                 SwapStrategy.unstable)(allocated_chains)) {
             block_segment.write(this);
         }
+    }
+
+    struct BlockSegmentRange {
+        BlockFile owner;
+
+        Index index = Index(1UL);
+
+        this(BlockFile owner) pure nothrow @nogc {
+            this.owner = owner;
+        }
+
+        alias BlockSegmentInfo = Tuple!(Index, "index", string, "type", uint, "size", Document, "doc");
+
+        BlockSegmentInfo front() {
+            const doc = owner.load(index);
+            // if (!doc.isValid) {
+            //     // step up
+            //     return (,)
+            // }
+            const type = getType(doc);
+            const size = owner.numberOfBlocks(doc.full_size);
+            return BlockSegmentInfo(index, type, size, doc);
+        }
+
+        void popFront() {
+            const current_seg = front;
+            index = Index(current_seg.index + current_seg.size);
+        }
+
+        bool empty() {
+            const current_seg = front;
+            const last_index = owner.numberOfBlocks(owner.file.size);
+
+            return Index(current_seg.index + current_seg.size) >= last_index;
+        }
+
+        BlockSegmentRange save() {
+            return this;
+        }
+
+    }
+
+    BlockSegmentRange opSlice() pure nothrow @nogc {
+        return BlockSegmentRange(this);
     }
 
     /++
@@ -739,23 +785,40 @@ class BlockFile {
     /++
      + Used for debuging only to dump the Block's
      +/
-    void dump(const uint block_per_line = 16) {
-        auto line = new char[block_per_line];
-        version (none)
-            foreach (index; 0 .. ((_last_block_index / block_per_line) + (
-                    (_last_block_index % block_per_line == 0) ? 0 : 1)) * block_per_line) {
-                immutable pos = index % block_per_line;
-                if ((index % block_per_line) == 0) {
-                    line[] = 0;
-                }
+    void dump(const uint segments_per_line = 6) {
 
-                scope block = read(Index(index));
-                line[pos] = getSymbol(block, Index(index));
+        BlockSegmentRange seg_range = opSlice();
 
-                if (pos + 1 == block_per_line) {
-                    writefln("%04X] %s", index - pos, line);
-                }
+        uint pos = 0;
+        foreach (seg; seg_range) {
+            if (pos == segments_per_line) {
+                writef("|");
+                writeln;
+                pos = 0;
             }
+            writef("|(%s) I: %s S: %s", seg.type, seg.index, seg.size);
+            pos++;
+
+        }
+        writeln;
+
+        // auto line = new char[block_per_line];
+
+        // version (none)
+        //     foreach (index; 0 .. ((_last_block_index / block_per_line) + (
+        //             (_last_block_index % block_per_line == 0) ? 0 : 1)) * block_per_line) {
+        //         immutable pos = index % block_per_line;
+        //         if ((index % block_per_line) == 0) {
+        //             line[] = 0;
+        //         }
+
+        //         scope block = read(Index(index));
+        //         line[pos] = getSymbol(block, Index(index));
+
+        //         if (pos + 1 == block_per_line) {
+        //             writefln("%04X] %s", index - pos, line);
+        //         }
+        //     }
     }
 
     // Block index 0 is means null
@@ -788,12 +851,13 @@ class BlockFile {
         {
             // Delete test blockfile
             // Create new blockfile
-            File file = File(fileId.fullpath, "w");
-            auto blockfile = new BlockFile(file, SMALL_BLOCK_SIZE);
+            File _file = File(fileId.fullpath, "w");
+            auto blockfile = new BlockFile(_file, SMALL_BLOCK_SIZE);
+
             assert(!blockfile.hasHeader);
             blockfile.createHeader("This is a Blockfile unittest");
             assert(blockfile.hasHeader);
-            file.close;
+            _file.close;
         }
 
         {

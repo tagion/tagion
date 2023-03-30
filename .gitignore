@@ -20,6 +20,8 @@ bdd/BDDS.md
 # Vim
 *.vim
 
+# .lst files for code coverage
+*.lst
 # Local setup file
 local.*
 # Auto generated files

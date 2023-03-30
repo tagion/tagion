@@ -3,7 +3,7 @@ module tagion.script.StandardRecords;
 import std.meta : AliasSeq;
 
 import tagion.basic.Types : Buffer;
-import tagion.crypto.Types :  Pubkey, Signature, Fingerprint;
+import tagion.crypto.Types : Pubkey, Signature, Fingerprint;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
@@ -139,7 +139,7 @@ enum OwnerKey = "$Y";
         enum State {
             PROSPECT,
             STANDBY,
-            ACTIVE,
+            locked,
             STERILE
         }
 
@@ -153,7 +153,7 @@ enum OwnerKey = "$Y";
         mixin HiBONRecord;
     }
 
-    @recordType("active0") struct ActiveNode {
+    @recordType("locked0") struct lockedNode {
         @label("$node") Buffer node; /// Pointer to the NNC
         @label("$drive") Buffer drive; /// The tweak of the used key
         @label("$sign") Buffer signed; /// Signed bulleye of the DART
@@ -166,7 +166,7 @@ enum OwnerKey = "$Y";
         @label("$prev") Buffer previous; /// Hashpoint to the previous epoch block
         @label("$recorder") Buffer recoder; /// Fingerprint of the recorder
         @label("$global") Buffer global; /// Gloal nerwork paremeters
-        @label("$actives") ActiveNode[] actives; /// List of active nodes Sorted by the $node
+        @label("$lockeds") lockedNode[] lockeds; /// List of locked nodes Sorted by the $node
         mixin HiBONRecord;
     }
 
@@ -292,90 +292,6 @@ enum OwnerKey = "$Y";
             SignedContract
     );
 
-    @recordType("Invoice") struct Invoice {
-        string name;
-        TagionCurrency amount;
-        @label(OwnerKey) Pubkey pkey;
-        @label("*", true) Document info;
-        mixin HiBONRecord;
-    }
-
-    struct AccountDetails {
-        @label("$derives") Buffer[Pubkey] derives;
-        @label("$bills") StandardBill[] bills;
-        @label("$state") Buffer derive_state;
-        @label("$active") bool[Pubkey] activated; /// Actived bills
-        import std.algorithm : map, sum, filter, any, each;
-
-        bool remove_bill(Pubkey pk) {
-            import std.algorithm : remove, countUntil;
-
-            const index = countUntil!"a.owner == b"(bills, pk);
-            if (index > 0) {
-                bills = bills.remove(index);
-                return true;
-            }
-            return false;
-        }
-
-        void add_bill(StandardBill bill) {
-            bills ~= bill;
-        }
-
-        /++
-         Clear up the Account
-         Remove used bills
-         +/
-        void clearup() pure {
-            bills
-                .filter!(b => b.owner in derives)
-                .each!(b => derives.remove(b.owner));
-            bills
-                .filter!(b => b.owner in activated)
-                .each!(b => activated.remove(b.owner));
-        }
-
-        const pure {
-            /++
-         Returns:
-         true if the all transaction has been registered as processed
-         +/
-            bool processed() nothrow {
-                return bills
-                    .any!(b => (b.owner in activated));
-            }
-            /++
-         Returns:
-         The available balance
-         +/
-            TagionCurrency available() {
-                return bills
-                    .filter!(b => !(b.owner in activated))
-                    .map!(b => b.value)
-                    .sum;
-            }
-            /++
-         Returns:
-         The total active amount
-         +/
-            TagionCurrency active() {
-                return bills
-                    .filter!(b => b.owner in activated)
-                    .map!(b => b.value)
-                    .sum;
-            }
-            /++
-         Returns:
-         The total balance including the active bills
-         +/
-            TagionCurrency total() {
-                return bills
-                    .map!(b => b.value)
-                    .sum;
-            }
-        }
-        mixin HiBONRecord;
-    }
 }
 
 static Globals globals;
@@ -383,4 +299,14 @@ static Globals globals;
 static this() {
     globals.fixed_fees = 1.TGN / 10; // Fixed fee
     globals.storage_fee = 1.TGN / 200; // Fee per stored byte
+}
+
+@safe
+@recordType("Invoice")
+struct Invoice {
+    string name;
+    TagionCurrency amount;
+    @label(OwnerKey) Pubkey pkey;
+    @label("*", true) Document info;
+    mixin HiBONRecord;
 }
