@@ -785,20 +785,20 @@ class BlockFile {
     /++
      + Used for debuging only to dump the Block's
      +/
-    void dump(const uint segments_per_line = 16) {
+    void dump(const uint segments_per_line = 6) {
 
         BlockSegmentRange seg_range = opSlice();
 
-        uint pos = segments_per_line;
+        uint pos = 0;
         foreach (seg; seg_range) {
             if (pos == segments_per_line) {
                 writef("|");
                 writeln;
                 pos = 0;
             }
-            writef("|(%s) Index(%s) Size(%s)", seg.type, seg.index, seg.size);
-
+            writef("|(%s) I: %s S: %s", seg.type, seg.index, seg.size);
             pos++;
+
         }
         writeln;
 

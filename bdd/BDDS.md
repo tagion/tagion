@@ -80,6 +80,8 @@
 
 [SSL_server.md](bdd/tagion/testbench/network/SSL_server.md)
 
+[actor_handler.md](bdd/tagion/testbench/services/actor_handler.md)
+
 [actor_message.md](bdd/tagion/testbench/services/actor_message.md)
 
 [actor_supervisor.md](bdd/tagion/testbench/services/actor_supervisor.md)

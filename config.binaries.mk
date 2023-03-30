@@ -41,9 +41,9 @@ ${call DO_BIN,dartutil,tagion}
 # DART utility
 #
 # FIXME(CBR) should be remove when ddeps works correctly
-target-blockfile: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-blockfile: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-blockfile/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,blockfile,tagion}
+target-blockutil: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-blockutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-blockutil/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
+${call DO_BIN,blockutil,tagion}
 
 #
 # WASM utility
@@ -98,7 +98,7 @@ target-tagion: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 target-tagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-wave/tagion -name "*.d"  $(NO_WOLFSSL) }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-dartutil/tagion -name "*.d"  $(NO_WOLFSSL) }
-target-tagion: DFILES+=${shell find $(DSRC)/bin-blockfile/tagion -name "*.d"  $(NO_WOLFSSL) }
+target-tagion: DFILES+=${shell find $(DSRC)/bin-blockutil/tagion -name "*.d"  $(NO_WOLFSSL) }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-hibonutil/tagion -name "*.d"  $(NO_WOLFSSL) }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-wallet/tagion -name "*.d"  $(NO_WOLFSSL) }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-tools/tagion -name "*.d"  $(NO_WOLFSSL) }
