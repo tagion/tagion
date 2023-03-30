@@ -17,11 +17,10 @@ import tagion.utils.Random;
 import tagion.dart.DARTFakeNet;
 import std.algorithm : each;
 import tagion.basic.Basic : tempfile;
-
+import tagion.utils.Miscellaneous : toHexString;
 import std.stdio : writefln, writeln;
 import std.format;
 import tagion.dart.BlockFile : BlockFile;
-
 
 /** 
  * Takes a Rim and returns the document.
@@ -126,9 +125,9 @@ DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @
     return fingerprints;
 }
 
-DARTIndex[] randomAdd(T)(T ranges, MinstdRand0 rnd, DART db) @safe 
-if (isRandomAccessRange!T && isInputRange!(ElementType!T) && is(ElementType!(ElementType!T): const(ulong)))
-{
+DARTIndex[] randomAdd(T)(T ranges, MinstdRand0 rnd, DART db) @safe
+    if (isRandomAccessRange!T && isInputRange!(ElementType!T) && is(
+        ElementType!(ElementType!T) : const(ulong))) {
     DARTIndex[] fingerprints;
     foreach (range; ranges.randomShuffle(rnd)) {
         auto recorder = db.recorder();
@@ -142,7 +141,6 @@ if (isRandomAccessRange!T && isInputRange!(ElementType!T) && is(ElementType!(Ele
     return fingerprints;
 }
 
-
 /** 
  * Removes archive in a random order.
  * Params:
@@ -153,13 +151,14 @@ if (isRandomAccessRange!T && isInputRange!(ElementType!T) && is(ElementType!(Ele
 void randomRemove(const DARTIndex[] fingerprints, MinstdRand0 rnd, DART db) @safe {
     auto recorder = db.recorder();
 
-    foreach (fingerprint; fingerprints.dup.randomShuffle(rnd)) {
+    const random_order_fingerprints = fingerprints.dup.randomShuffle(rnd);
+    foreach (fingerprint; random_order_fingerprints) {
+        writefln("removing %s", fingerprint.toHexString);
         recorder.remove(fingerprint);
     }
-
+    writefln("WOWOWO");
     db.modify(recorder);
 }
-
 
 /** 
  * Changes the sector in which the archive is created in. This is for testing only an angle of the database. 
@@ -170,16 +169,15 @@ void randomRemove(const DARTIndex[] fingerprints, MinstdRand0 rnd, DART db) @saf
  * Returns: new ulong where the sector has been changed.
  */
 ulong putInSector(ulong archive, const ushort angle, const ushort size) @safe {
-    
-    enum size_none_sector = (ulong.sizeof - ushort.sizeof)*8;
+
+    enum size_none_sector = (ulong.sizeof - ushort.sizeof) * 8;
     const ulong sector = ((archive >> size_none_sector - angle) % size + angle) << size_none_sector;
 
-    const(ulong) new_archive = archive & ~(ulong(ushort.max) << size_none_sector) | ulong(sector) << size_none_sector;
-
+    const(ulong) new_archive = archive & ~(
+        ulong(ushort.max) << size_none_sector) | ulong(sector) << size_none_sector;
 
     return new_archive;
 }
-
 
 // same as in unittests.
 static class TestSynchronizer : DART.StdSynchronizer {
@@ -232,7 +230,7 @@ void syncDarts(DART db1, DART db2, const ushort from, const ushort to) @safe {
 
     enum TEST_BLOCK_SIZE = 0x80;
     string[] journal_filenames;
-    
+
     foreach (sector; DART.SectorRange(from, to)) {
         immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
         journal_filenames ~= journal_filename;
@@ -248,5 +246,5 @@ void syncDarts(DART db1, DART db2, const ushort from, const ushort to) @safe {
     foreach (journal_filename; journal_filenames) {
         db2.replay(journal_filename);
     }
-        
+
 }
