@@ -11,7 +11,7 @@ import concurrency = std.concurrency;
 import std.format : format;
 import tagion.actor.Actor;
 
-debug import std.stdio;
+import std.stdio;
 
 alias thisInfo = concurrency.ThreadInfo.thisInfo;
 import core.time;
