@@ -778,8 +778,11 @@ unittest {
 
 }
 
+@safe
 unittest {
+    @recordType("DataSegment")
     static struct Data {
+
         string text;
 
         mixin HiBONRecord!(q{
@@ -833,6 +836,7 @@ unittest {
         blockfile = BlockFile(filename);
         assert(blockfile.recycler.indices.length == 2, "should be the same after loading");
 
+        blockfile.dump;
         // close and open blockfile again.
     }
 

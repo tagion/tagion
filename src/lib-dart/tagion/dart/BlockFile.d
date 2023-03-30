@@ -787,6 +787,21 @@ class BlockFile {
      +/
     void dump(const uint segments_per_line = 16) {
 
+        BlockSegmentRange seg_range = opSlice();
+
+        uint pos = segments_per_line;
+        foreach (seg; seg_range) {
+            if (pos == segments_per_line) {
+                writeln;
+                pos = 0;
+            }
+            writef("|(%s) ", seg.type);
+            writef("%s ", seg.index);
+            writef("%s ", seg.size);
+            pos++;
+        }
+        writeln;
+
         // auto line = new char[block_per_line];
 
         // version (none)
