@@ -197,10 +197,8 @@ mixin template TaskActor() {
     /**
     * This function will stop all the actors which are owned my this actor
     */
-    void stopAll() 
-@trusted {
-        foreach 
-(ref tid; child_actor_tids.byValue) {
+    void stopAll() @trusted {
+        foreach (ref tid; child_actor_tids.byValue) {
             concurrency.send(tid, Control.STOP);
             assert(concurrency.receiveOnly!Control is Control.END,
                     format("Failed when stopping all child actors for Actor %s", This.stringof));
@@ -211,9 +209,7 @@ mixin template TaskActor() {
      * This should be call when the @task function is ready
      * and it send a Control live back to the owner task
      */
-    void 
-alive() @trusted 
-{
+    void alive() @trusted {
         concurrency.send(concurrency.ownerTid, Control.LIVE);
     }
 
