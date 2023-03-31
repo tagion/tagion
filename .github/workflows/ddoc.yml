@@ -5,7 +5,6 @@ on:
     branches: 
       - current
       - ddoc-github-pages
-      - codecov
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       
