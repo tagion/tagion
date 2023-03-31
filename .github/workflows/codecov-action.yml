@@ -15,7 +15,7 @@ permissions:
   id-token: write      
 
 jobs:
-  ddoc_build:
+  codecov:
     runs-on: ubuntu-20.04
     steps:
       - name: codecov report
@@ -47,7 +47,7 @@ jobs:
           ldc2 --version
           dmd --version
           go version
-          git clone --recurse-submodules -j8 https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/tagion.git
-          make unittest COV=1
+          sudo git clone --recurse-submodules -j8 https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/tagion.git
+          sudo make unittest COV=1
           bash <(curl -s https://codecov.io/bash) -t 80252d60-5311-4a63-8ffe-823decc0cb79
           
