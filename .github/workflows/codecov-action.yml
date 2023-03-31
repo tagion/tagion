@@ -20,7 +20,8 @@ jobs:
       - name: codecov report
         run: |
           pwd
-          git clone git@github.com:tagion/tagion.git
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
           cd tagion
+          git pull 
           make unittest COV=1
           bash <(curl -s https://codecov.io/bash) -t 80252d60-5311-4a63-8ffe-823decc0cb79
