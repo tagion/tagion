@@ -23,7 +23,7 @@ jobs:
           mkdir -p ./codecov
           cd codecov
           pwd
-          sudo git clone --recurse-submodules -j8 https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/tagion.git
+          git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git
           ls -l
-          sudo make unittest COV=1
+          make unittest COV=1
           bash <(curl -s https://codecov.io/bash) -t 80252d60-5311-4a63-8ffe-823decc0cb79
