@@ -93,7 +93,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
         @trusted void areWeInGraph(uint id) {
             auto sender = internal_hirpc.healthcheck(new HiBON(), id);
             auto tosend = sender.toDoc.serialize;
-            send(node_tid, opts.transaction.service.server.response_task_name, tosend);
+            prioritySend(node_tid, opts.transaction.service.server.response_task_name, tosend);
             yield;
         }
 
