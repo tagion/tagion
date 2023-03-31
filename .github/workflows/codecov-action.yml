@@ -20,9 +20,6 @@ jobs:
       - name: codecov report
         run: |
           pwd
-          ls -l
-          cd tagion
-          pwd
           git pull tagion
           ls -l
           make unittest COV=1
