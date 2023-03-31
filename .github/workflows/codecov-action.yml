@@ -4,7 +4,6 @@ on:
   push: 
     branches: 
       - current
-      - ddoc-github-pages
       - codecov
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -20,10 +19,11 @@ jobs:
     steps:
       - name: codecov report
         run: |
-          mkdir -p ./codecov
-          cd codecov
           pwd
-          git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git
+          ls -l
+          cd tagion
+          pwd
+          git pull tagion
           ls -l
           make unittest COV=1
           bash <(curl -s https://codecov.io/bash) -t 80252d60-5311-4a63-8ffe-823decc0cb79
