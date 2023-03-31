@@ -17,10 +17,10 @@ jobs:
   codecov:
     runs-on: self-hosted
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        
       - name: codecov report
         run: |
+          pwd
+          git branch
+          git status
           make unittest COV=1
           bash <(curl -s https://codecov.io/bash) -t 80252d60-5311-4a63-8ffe-823decc0cb79
