@@ -20,9 +20,10 @@ jobs:
       - name: codecov report
         run: |
           pwd
-          rm -rf tagion
-          git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git || echo "repo already exists"
+          #rm -rf tagion
+          #git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git || echo "repo already exists"
           cd tagion
-          git pull 
+          git pull
+          pwd
           make unittest COV=1
           bash <(curl -s https://codecov.io/bash) -t 80252d60-5311-4a63-8ffe-823decc0cb79
