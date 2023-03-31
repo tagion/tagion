@@ -33,6 +33,9 @@ import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;
 import tagion.dart.BlockSegment;
 
+import tagion.basic.Debug : __write;
+import tagion.hibon.HiBONJSON : toPretty;
+
 //import tagion.dart.BlockSegmentAllocator;
 
 alias Index = Typedef!(ulong, ulong.init, "BlockIndex");
@@ -96,7 +99,7 @@ class BlockFile {
     void recycleDump() {
         import tagion.dart.Recycler : Segment;
 
-        writefln("recycle dump from blockfile");
+        // writefln("recycle dump from blockfile");
 
         Index index = masterblock.recycle_header_index;
 
@@ -109,16 +112,6 @@ class BlockFile {
                     .size, add_segment.next);
             index = add_segment.next;
         }
-
-        // while (next != Index.init) {
-        //     const block_segment = BlockSegment(this, next);
-        //     next = block_segment.next(this);
-
-        //     const type = getType(block_segment.doc);
-        //     // writefln("next: <%s>", next);
-        //     writefln("Type(%s), Index(%s), size(%s), next(%s)", type, block_segment.index, block_segment.size(this), next);
-
-        // }
     }
 
     protected this(
@@ -699,34 +692,57 @@ class BlockFile {
         BlockFile owner;
 
         Index index = Index(1UL);
+        BlockSegmentInfo current_segment;
 
-        this(BlockFile owner) pure nothrow @nogc {
+        this(BlockFile owner) {
             this.owner = owner;
+            initFront;
         }
 
         alias BlockSegmentInfo = Tuple!(Index, "index", string, "type", uint, "size", Document, "doc");
 
-        BlockSegmentInfo front() {
+        private void initFront() {
+            import tagion.dart.Recycler : Segment;
+
+            __write("BlockSegmentInfo index: <%s>", index);
+
+            if (index == Index.init) {
+                current_segment = BlockSegmentInfo.init;
+            }
             const doc = owner.load(index);
-            // if (!doc.isValid) {
-            //     // step up
-            //     return (,)
-            // }
+            uint size;
+
+            if (Segment.isRecord(doc)) {
+                __write("Segment.isRecord: %s, index: %s", doc.toPretty, index);
+                const segment = Segment(doc, index);
+                size = segment.size;
+            }
+            else {
+                size = owner.numberOfBlocks(doc.full_size);
+            }
+
             const type = getType(doc);
-            const size = owner.numberOfBlocks(doc.full_size);
-            return BlockSegmentInfo(index, type, size, doc);
+            current_segment = BlockSegmentInfo(index, type, size, doc);
+        }
+
+        BlockSegmentInfo front() const pure nothrow @nogc {
+            return current_segment;
         }
 
         void popFront() {
-            const current_seg = front;
-            index = Index(current_seg.index + current_seg.size);
+            index = Index(current_segment.index + current_segment.size);
+            initFront;
         }
 
         bool empty() {
-            const current_seg = front;
+
+            if (index == Index.init || current_segment == BlockSegmentInfo.init) {
+                return true;
+            }
+
             const last_index = owner.numberOfBlocks(owner.file.size);
 
-            return Index(current_seg.index + current_seg.size) >= last_index;
+            return Index(current_segment.index + current_segment.size) >= last_index;
         }
 
         BlockSegmentRange save() {
@@ -735,7 +751,7 @@ class BlockFile {
 
     }
 
-    BlockSegmentRange opSlice() pure nothrow @nogc {
+    BlockSegmentRange opSlice() {
         return BlockSegmentRange(this);
     }
 

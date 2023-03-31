@@ -30,6 +30,7 @@ struct Segment {
     }
 
     mixin HiBONRecord!(q{
+        @disable this();
         this(const Index index, const uint size, const Type type=Type.NONE, Index next = Index.init) {
             this.index = index;
             this.size = size;
@@ -49,13 +50,24 @@ struct Segment {
             index = _index;
           
         }
+        this(const(Document) doc, const(Index) _index) 
+        in (_index != Index.init)
+        do
+        {
+            writefln("CTOR: index: %s", _index);
+            writefln("CTOR: %s", doc.toPretty);
+            index = Index(_index);
+
+            this(doc);
+            writefln("CTOR after index %s", index);
+        }
     });
     invariant {
         assert(size > 0);
     }
 
     invariant {
-        assert(index != Index(0), "Segment cannot be inserted at index 0");
+        assert(index != Index.init, "Segment cannot be inserted at index 0");
     }
 }
 // Indices: sorted by index
@@ -66,7 +78,7 @@ struct Recycler {
 
     static bool print;
 
-    void __write(Args...)(string fmt, Args args) nothrow {
+    void __write(Args...)(string fmt, Args args) nothrow @trusted {
         if (print) {
             assumeWontThrow(writefln(fmt, args));
         }
@@ -302,6 +314,7 @@ struct Recycler {
         while (index != Index.init) {
 
             auto add_segment = new Segment(owner, index);
+            __write("read size: %s, index: %s", add_segment.size, add_segment.index);
             insert(add_segment);
             index = add_segment.next;
         }

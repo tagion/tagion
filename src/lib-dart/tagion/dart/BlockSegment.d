@@ -24,9 +24,9 @@ struct BlockSegment {
         this.doc = doc;
     }
 
-    this(BlockFile blockfile, const Index index) {
-        import tagion.hibon.HiBONRecord : fread;
+    import tagion.hibon.HiBONRecord : fread;
 
+    this(BlockFile blockfile, const Index index) {
         blockfile.seek(index);
         doc = blockfile.file.fread;
         this.index = index;
