@@ -54,12 +54,9 @@ struct Segment {
         in (_index != Index.init)
         do
         {
-            writefln("CTOR: index: %s", _index);
-            writefln("CTOR: %s", doc.toPretty);
             index = Index(_index);
 
             this(doc);
-            writefln("CTOR after index %s", index);
         }
     });
     invariant {

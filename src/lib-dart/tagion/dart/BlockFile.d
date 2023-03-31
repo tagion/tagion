@@ -704,8 +704,6 @@ class BlockFile {
         private void initFront() {
             import tagion.dart.Recycler : Segment;
 
-            __write("BlockSegmentInfo index: <%s>", index);
-
             if (index == Index.init) {
                 current_segment = BlockSegmentInfo.init;
             }
@@ -713,7 +711,6 @@ class BlockFile {
             uint size;
 
             if (Segment.isRecord(doc)) {
-                __write("Segment.isRecord: %s, index: %s", doc.toPretty, index);
                 const segment = Segment(doc, index);
                 size = segment.size;
             }
