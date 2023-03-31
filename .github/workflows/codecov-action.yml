@@ -18,8 +18,6 @@ jobs:
   ddoc_build:
     runs-on: ubuntu-20.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
       - name: codecov report
         run: |
           sudo wget https://netcologne.dl.sourceforge.net/project/d-apt/files/d-apt.list -O /etc/apt/sources.list.d/d-apt.list
@@ -49,7 +47,7 @@ jobs:
           ldc2 --version
           dmd --version
           go version
-          cd /home/runner/work/tagion/tagion
+          git clone --recurse-submodules -j8 https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/tagion.git
           make unittest COV=1
           bash <(curl -s https://codecov.io/bash) -t 80252d60-5311-4a63-8ffe-823decc0cb79
           
