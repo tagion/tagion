@@ -1,4 +1,4 @@
-name: ddoc
+name: codecov
 on:
   workflow_dispatch:
   push: 
