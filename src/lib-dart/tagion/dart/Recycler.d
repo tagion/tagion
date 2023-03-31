@@ -19,7 +19,7 @@ enum Type : int {
     UPDATE = 2,
 }
 
-@safe @recordType("RecycleSegment")
+@safe @recordType("R")
 struct Segment {
     Index next;
     uint size;
@@ -66,9 +66,9 @@ struct Recycler {
 
     static bool print;
 
-    void __write(Args...)(string fmt, Args args) {
+    void __write(Args...)(string fmt, Args args) nothrow {
         if (print) {
-            writefln(fmt, args);
+            assumeWontThrow(writefln(fmt, args));
         }
     }
     /** 
@@ -182,8 +182,7 @@ struct Recycler {
                         continue;
                     }
                 }
-                if (
-                    lower_range.back.end == segment.index) {
+                if (lower_range.back.end == segment.index) {
                     //  ###
                     //  ###A 
                     if (upper_range.front.index == segment.end) {
@@ -296,11 +295,12 @@ struct Recycler {
 
     void read(Index index) {
         indices = new Indices;
-        __write("INDEX RECYCLER HEADER BLOCK: %s", index);
+        segments = new Segments;
         if (index == Index(0)) {
             return;
         }
         while (index != Index.init) {
+
             auto add_segment = new Segment(owner, index);
             insert(add_segment);
             index = add_segment.next;
@@ -324,28 +324,49 @@ struct Recycler {
         if (indices.empty) {
             return Index.init;
         }
-        // assumeWontThrow(writefln("indices to be written"));
-        // assumeWontThrow(dump);
 
-        // assumeWontThrow(writeln("INDICES BEFORE"));
-        // assumeWontThrow(dump());
+        // __write("indices to be written");
+        // if (print) {
+        //     assumeWontThrow(dump);
+
+        // }
 
         Index next;
         bool first = true;
         foreach_reverse (segment; indices) {
             if (segment.next != next || first) {
+                if (first) {
+                    __write("first time");
+                }
                 segment.next = next;
+                __write("segment index <%s>, size <%s>", segment.index, segment.size);
+                __write("next: %s", next);
                 assumeWontThrow(owner.seek(segment.index));
                 assumeWontThrow(owner.file.fwrite(*segment));
                 first = false;
             }
             next = segment.index;
         }
+        // if (print) {
+        //     assumeWontThrow(recycler.dump);
+        // }
+        // assumeWontThrow(read(indices[].front.index));
+        // __write("after read");
+        // if (print) {
+        //     assumeWontThrow(dump);
+        // }
+        // Index index = indices[].front.index;
+        // while (index != Index.init) {
+        //     __write("index: %s", index);
+        //     assumeWontThrow(owner.seek(index));
+        //     const doc = assumeWontThrow(owner.file.fread);
+        //     __write("Document: %s", assumeWontThrow(doc.toPretty));
+        //     index = Index(index + doc.full_size);
+        // }
+
         // assumeWontThrow(writefln("wrote recycler with %s segments", indices.length));
-
-        // assumeWontThrow(writeln("INDICES AFTER"));
         // assumeWontThrow(dump());
-
+        // assumeWontThrow(writeln);
         return indices[].front.index;
     }
 
@@ -798,7 +819,7 @@ unittest {
 
 @safe
 unittest {
-    @recordType("DataSegment")
+    @recordType("D")
     static struct Data {
 
         string text;
@@ -811,6 +832,7 @@ unittest {
     }
 
     {
+        Recycler.print = true;
         scope (exit) {
             Recycler.print = false;
         }
@@ -842,11 +864,17 @@ unittest {
         // writefln("document: %s", doc["text"].get!string);
         assert(doc["text"].get!string == "1234");
 
-        blockfile.dispose(Index(2));
-        blockfile.dispose(Index(3));
+        blockfile.dispose(Index(2), true);
+        blockfile.dispose(Index(3), true);
 
-        blockfile.recycler.dump;
+        writefln("before recycleDump");
+        blockfile.recycleDump;
         blockfile.store();
+        writefln("after recycleDump");
+        blockfile.recycleDump;
+        writefln("entire blockfile dump");
+        blockfile.dump;
+
         assert(blockfile.recycler.to_be_recycled.length == 0);
         assert(blockfile.recycler.indices.length == 2, "should contain one segment for middle blocks and one for statistic");
 
@@ -854,7 +882,9 @@ unittest {
         blockfile = BlockFile(filename);
         assert(blockfile.recycler.indices.length == 2, "should be the same after loading");
 
-        blockfile.dump;
+        // writeln("recycle dump");
+        // blockfile.recycler.dump;
+
         // close and open blockfile again.
     }
 

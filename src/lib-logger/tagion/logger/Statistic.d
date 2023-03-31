@@ -6,7 +6,7 @@ import std.format;
 
 import tagion.hibon.HiBONRecord;
 
-@safe @recordType("Statistic")
+@safe @recordType("S")
 struct Statistic(T, Flag!"histogram" flag = No.histogram) {
     protected {
         double sum2 = 0.0;

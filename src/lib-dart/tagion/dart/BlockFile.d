@@ -94,7 +94,31 @@ class BlockFile {
     }
 
     void recycleDump() {
-        recycler.dump;
+        import tagion.dart.Recycler : Segment;
+
+        writefln("recycle dump from blockfile");
+
+        Index index = masterblock.recycle_header_index;
+
+        if (index == Index(0)) {
+            return;
+        }
+        while (index != Index.init) {
+            auto add_segment = new Segment(this, index);
+            writefln("Index(%s), size(%s), next(%s)", add_segment.index, add_segment
+                    .size, add_segment.next);
+            index = add_segment.next;
+        }
+
+        // while (next != Index.init) {
+        //     const block_segment = BlockSegment(this, next);
+        //     next = block_segment.next(this);
+
+        //     const type = getType(block_segment.doc);
+        //     // writefln("next: <%s>", next);
+        //     writefln("Type(%s), Index(%s), size(%s), next(%s)", type, block_segment.index, block_segment.size(this), next);
+
+        // }
     }
 
     protected this(
@@ -442,7 +466,7 @@ class BlockFile {
      + Returns:
      +     The number of blocks used to allocate size bytes
      +/
-    uint numberOfBlocks(const size_t size) const pure nothrow {
+    uint numberOfBlocks(const size_t size) const pure nothrow @nogc {
         return cast(uint)((size / BLOCK_SIZE) + ((size % BLOCK_SIZE == 0) ? 0 : 1));
     }
 
@@ -458,14 +482,15 @@ class BlockFile {
     }
 
     protected void writeStatistic() {
-        // Allocate block for statistical data
         immutable old_statistic_index = masterblock.statistic_index;
+
+        if (old_statistic_index !is Index.init) {
+            dispose(old_statistic_index);
+
+        }
         auto statistical_allocate = save(_statistic.toDoc);
         masterblock.statistic_index = Index(statistical_allocate.index);
-        if (old_statistic_index !is Index.init) {
-            // The old statistic block is erased
-            dispose(old_statistic_index, true);
-        }
+
     }
 
     ref const(MasterBlock) masterBlock() pure const nothrow {
@@ -487,7 +512,8 @@ class BlockFile {
             format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
                 .size));
         _last_block_index = cast(Index)(file.size / BLOCK_SIZE);
-        check(_last_block_index > 1, format("The BlockFile should at least have a size of two block of %d but is %d", BLOCK_SIZE, file
+        check(_last_block_index > 1, format(
+                "The BlockFile should at least have a size of two block of %d but is %d", BLOCK_SIZE, file
                 .size));
         // The headerblock is locate in the start of the file
         seek(INDEX_NULL);
@@ -583,9 +609,7 @@ class BlockFile {
      +
      +/
     void dispose(const Index index, const bool stat = false) {
-        // if (stat) {
-        //     writefln("disposing statistic Index(%s)", index);
-        // }
+
         auto allocated_range = allocated_chains.filter!(a => a.index == index);
         assert(allocated_range.empty, "We should dispose cached blocks");
         // version (none) {
@@ -604,7 +628,9 @@ class BlockFile {
         ubyte[] buf = _buf;
         file.rawRead(buf);
         const doc_size = LEB128.read!ulong(buf);
-
+        if (stat) {
+            writefln("disposing statistic");
+        }
         // if (stat) {
         //     writefln("stat doc size: %s", numberOfBlocks(doc_size.size + doc_size.value));
         // }
@@ -654,25 +680,17 @@ class BlockFile {
      +
      +/
     void store() {
-
-        immutable old_statistic_index = masterblock.statistic_index;
-        auto statistical_allocate = save(_statistic.toDoc);
-        masterblock.statistic_index = Index(statistical_allocate.index);
-        if (old_statistic_index !is Index.init) {
-            // The old statistic block is erased
-            dispose(old_statistic_index, true);
-        }
+        writeStatistic;
 
         scope (success) {
             allocated_chains = null;
             // writeln("###");
             // recycler.dump;
-
-            masterblock.recycle_header_index = recycler.write;
-
+            masterblock.recycle_header_index = recycler.write();
             writeMasterBlock;
         }
-        foreach (block_segment; sort!(q{a.index < b.index}, SwapStrategy.unstable)(allocated_chains)) {
+        foreach (block_segment; sort!(q{a.index < b.index}, SwapStrategy.unstable)(
+                allocated_chains)) {
             block_segment.write(this);
         }
     }
@@ -810,10 +828,11 @@ class BlockFile {
                 writeln;
                 pos = 0;
             }
-            writef("|(%s) I: %s S: %s", seg.type, seg.index, seg.size);
+            writef("|%s index(%s) size(%s)", seg.type, seg.index, seg.size);
             pos++;
 
         }
+        writef("|");
         writeln;
 
         // auto line = new char[block_per_line];
