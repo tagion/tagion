@@ -133,17 +133,17 @@ struct Recycler {
     //     segments.remove(seg);
     // }
 
-    protected void newRemove(Segment* segment) {
+    protected void remove(Segment* segment) {
         auto r = indices.equalRange(segment).take(1);
         auto s = segments.equalRange(segment).take(1);
         indices.remove(r);
         segments.remove(s);
     }
 
-    protected void remove(Segment* segment) {
-        indices.removeKey(segment);
-        segments.removeKey(segment);
-    }
+    // protected void remove(Segment* segment) {
+    //     indices.removeKey(segment);
+    //     segments.removeKey(segment);
+    // }
 
     // protected void remove(Segment* segment) {
     //     indices.removeKey(segment);
@@ -1049,15 +1049,24 @@ unittest {
     writefln("WOWOWOWOWOWWO");
     auto remove_segment = new Segment(Index(17UL), 5);
 
-    recycler.newRemove(remove_segment);
+    recycler.remove(remove_segment);
 
     assert(recycler.indices.length == 3);
     assert(recycler.segments.length == 3);
 
-    Segment*[] expected_segments = [
+    Segment*[] segs = [
         new Segment(Index(1UL), 5, Type.NONE),
         new Segment(Index(10UL), 5, Type.NONE),
         // new Segment(Index(17UL), 5, Type.NONE), // This is the one that should be removed
         new Segment(Index(25UL), 5, Type.NONE),
     ];
+
+    Segments expected_segments = new Segments(segs);
+    Indices expected_indices = new Indices(segs);
+
+    (() @trusted {
+        assert(opEquals(expected_segments, recycler.segments));
+        assert(opEquals(expected_indices, recycler.indices));
+    }());
+
 }
