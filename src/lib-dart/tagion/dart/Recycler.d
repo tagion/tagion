@@ -128,13 +128,6 @@ struct Recycler {
         segments ~= segment;
     }
 
-    // protected void _remove(Segment* segment) {
-    //     __write("before indices removekey");
-    //     indices.removeKey(segment);
-    //     __write("Going to remove segment");
-    //     auto seg = segments.equalRange(segment).take(1);
-    //     segments.remove(seg);
-    // }
 
     protected void remove(Segment* segment) {
         auto remove_segment = indices.equalRange(segment).front;
@@ -143,17 +136,6 @@ struct Recycler {
         segments = segments.remove(segments.countUntil(remove_segment));
     }
 
-    // protected void remove(Segment* segment) {
-    //     indices.removeKey(segment);
-    //     segments.removeKey(segment);
-    // }
-
-    // protected void remove(Segment* segment) {
-    //     indices.removeKey(segment);
-    //     Segment*[] remove_seg = [segment];
-    //     Segments remove_segments = new Segments(remove_seg);
-    //     segments.remove(remove_segments[].take(1));
-    // }
 
     void recycle(Indices.Range recycle_segments) {
 
