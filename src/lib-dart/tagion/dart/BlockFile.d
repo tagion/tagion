@@ -717,6 +717,7 @@ class BlockFile {
             }
 
             const type = getType(doc);
+
             current_segment = BlockSegmentInfo(index, type, size, doc);
         }
 
