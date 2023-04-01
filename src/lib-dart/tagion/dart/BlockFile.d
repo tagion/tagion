@@ -765,7 +765,7 @@ class BlockFile {
 
             const last_index = owner.numberOfBlocks(owner.file.size);
 
-            return Index(current_segment.index + current_segment.size) >= last_index;
+            return Index(current_segment.index + current_segment.size) > last_index;
         }
 
         BlockSegmentRange save() {
