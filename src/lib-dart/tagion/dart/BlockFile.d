@@ -114,6 +114,12 @@ class BlockFile {
         }
     }
 
+    protected this() {
+        BLOCK_SIZE = DEFAULT_BLOCK_SIZE;
+        recycler = Recycler(this);
+        //empty
+    }
+
     protected this(
         string filename,
         immutable uint SIZE,
@@ -129,9 +135,7 @@ class BlockFile {
         this(_file, SIZE);
     }
 
-    protected this(
-        File file,
-        immutable uint SIZE) {
+    protected this(File file, immutable uint SIZE) {
         this.BLOCK_SIZE = SIZE;
         //   DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
         this.file = file;
@@ -230,9 +234,12 @@ class BlockFile {
      +     read_only = If `true` the file is opened as read-only
      +/
     static BlockFile opCall(string filename, const bool read_only = false) {
-        auto temp_file = new BlockFile(filename, DEFAULT_BLOCK_SIZE, read_only);
+        auto temp_file = new BlockFile();
+        temp_file.file = File(filename, "r");
+        temp_file.readHeaderBlock;
+        temp_file.file.close;
+
         immutable SIZE = temp_file.headerblock.block_size;
-        temp_file.close;
         return new BlockFile(filename, SIZE, read_only);
     }
 
@@ -390,23 +397,36 @@ class BlockFile {
      + This block maintains the indices to of other block
      +/
 
-    @safe
+    @safe @recordType("M")
     static struct MasterBlock {
         Index recycle_header_index; /// Points to the root of recycle block list
         //Index first_index; /// Points to the first block of data
         Index root_index; /// Point the root of the database
         Index statistic_index; /// Points to the statistic data
+
+        mixin HiBONRecord;
+
         void write(
             ref File file,
             immutable uint BLOCK_SIZE) const @trusted {
+            
             auto buffer = new ubyte[BLOCK_SIZE];
-            size_t pos;
-            foreach (i, m; this.tupleof) {
-                alias type = TypedefType!(typeof(m));
-                buffer.binwrite(cast(type) m, &pos);
-            }
-            buffer[$ - FILE_LABEL.length .. $] = cast(ubyte[]) FILE_LABEL;
-            assert(!BlockFile.do_not_write, "Should not write here");
+
+            const doc = this.toDoc;
+            buffer[0..doc.full_size] = doc.serialize;
+
+            // size_t pos;
+
+            // version(none) {
+            // buffer[0..16] = cast(ubyte[]) "masterblock_iden";
+            // pos += 16; }
+            // foreach (i, m; this.tupleof) {
+            //     alias type = TypedefType!(typeof(m));
+            //     buffer.binwrite(cast(type) m, &pos);
+            // }
+            // buffer[$ - FILE_LABEL.length .. $] = cast(ubyte[]) FILE_LABEL;
+            // assert(!BlockFile.do_not_write, "Should not write here");
+            
             file.rawWrite(buffer);
             // Truncate the file after the master block
             file.truncate(file.size);
@@ -414,12 +434,20 @@ class BlockFile {
         }
 
         void read(ref File file, immutable uint BLOCK_SIZE) {
-            auto buffer = new ubyte[BLOCK_SIZE];
-            auto buf = file.rawRead(buffer);
-            foreach (i, ref m; this.tupleof) {
-                alias type = TypedefType!(typeof(m));
-                m = buf.binread!type;
-            }
+            // auto buffer = new ubyte[BLOCK_SIZE];
+            const doc = file.fread();
+            check(MasterBlock.isRecord(doc), "not a masterblock");
+            this = MasterBlock(doc);
+            
+
+            // version(none) {
+            // writefln("buf master: %s", cast(char[]) buf[0..16]);
+            // buf = buf[16..$];
+            // }
+            // foreach (i, ref m; this.tupleof) {
+            //     alias type = TypedefType!(typeof(m));
+            //     m = buf.binread!type;
+            // }
         }
 
         string toString() const pure nothrow {
@@ -702,13 +730,12 @@ class BlockFile {
         private void initFront() {
             import tagion.dart.Recycler : Segment;
 
-            if (index == Index.init) {
-                current_segment = BlockSegmentInfo.init;
-            }
+
             const doc = owner.load(index);
             uint size;
 
-            if (Segment.isRecord(doc)) {
+            
+            if (isRecord!Segment(doc)) {
                 const segment = Segment(doc, index);
                 size = segment.size;
             }
