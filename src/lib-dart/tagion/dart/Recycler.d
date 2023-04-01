@@ -1038,19 +1038,26 @@ unittest {
         new Segment(Index(1UL), 5, Type.NONE),
         new Segment(Index(10UL), 5, Type.NONE),
         new Segment(Index(17UL), 5, Type.NONE),
+        new Segment(Index(25UL), 5, Type.NONE),
     ];
 
     auto insert_indices = new Indices(dispose_segments);
     recycler.insert(insert_indices[]);
-    assert(recycler.indices.length == 3);
-    assert(recycler.segments.length == 3);
+    assert(recycler.indices.length == 4);
+    assert(recycler.segments.length == 4);
 
     writefln("WOWOWOWOWOWWO");
     auto remove_segment = new Segment(Index(17UL), 5);
 
     recycler.newRemove(remove_segment);
 
-    assert(recycler.indices.length == 2);
-    assert(recycler.segments.length == 2);
+    assert(recycler.indices.length == 3);
+    assert(recycler.segments.length == 3);
 
+    Segment*[] expected_segments = [
+        new Segment(Index(1UL), 5, Type.NONE),
+        new Segment(Index(10UL), 5, Type.NONE),
+        // new Segment(Index(17UL), 5, Type.NONE), // This is the one that should be removed
+        new Segment(Index(25UL), 5, Type.NONE),
+    ];
 }

@@ -1466,6 +1466,7 @@ received = the HiRPC received package
             version (SYNC_BLOCKFILE_PROBLEM) {
                 { // Synchronization of a DART A where DART A of DART B has common data
                     // writefln("Test 5");
+                    writefln("RUNINIG THIS MOTHERFUCKET");
                     DARTFile.create(filename_A);
                     DARTFile.create(filename_B);
                     RecordFactory.Recorder recorder_A;
