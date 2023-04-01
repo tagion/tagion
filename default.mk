@@ -8,7 +8,7 @@ export TEST_STAGE?=commit
 
 DFLAGS+=$(DVERSION)=REDBLACKTREE_SAFE_PROBLEM
 DFLAGS+=$(DVERSION)=SYNC_BLOCKFILE_WORKING #this is the version for debugging the recycler segments has overlaps. recorder: a < a
-# DFLAGS+=$(DVERSION)=SYNC_BLOCKFILE_PROBLEM #this is with the sync tests enabled and the recorder chain sorted in the new way a < b
+# DFLAGS+=$(DVERSION)=SYNC_BLOCKFILE_PROBLEM #disabled unittests
 DFLAGS+=$(DVERSION)=TABLE_0
 
 
