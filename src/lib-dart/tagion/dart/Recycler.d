@@ -19,6 +19,11 @@ enum Type : int {
     UPDATE = 2,
 }
 
+version (none) static this() {
+    Recycler.CLAIM_FUNCTION = true;
+
+}
+
 @safe @recordType("R")
 struct Segment {
     Index next;
@@ -55,8 +60,8 @@ struct Segment {
         do
         {
             index = Index(_index);
-
             this(doc);
+
         }
     });
     invariant {
@@ -72,7 +77,7 @@ alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index); // Segment
 alias Segments = RedBlackTree!(Segment*, (a, b) => a.size < b.size, true);
 @safe
 struct Recycler {
-
+    static bool CLAIM_FUNCTION;
     static bool print;
 
     void __write(Args...)(string fmt, Args args) nothrow @trusted {
@@ -120,10 +125,32 @@ struct Recycler {
         segments.insert(segment);
     }
 
+    // protected void _remove(Segment* segment) {
+    //     __write("before indices removekey");
+    //     indices.removeKey(segment);
+    //     __write("Going to remove segment");
+    //     auto seg = segments.equalRange(segment).take(1);
+    //     segments.remove(seg);
+    // }
+
+    protected void newRemove(Segment* segment) {
+        auto r = indices.equalRange(segment).take(1);
+        auto s = segments.equalRange(segment).take(1);
+        indices.remove(r);
+        segments.remove(s);
+    }
+
     protected void remove(Segment* segment) {
         indices.removeKey(segment);
         segments.removeKey(segment);
     }
+
+    // protected void remove(Segment* segment) {
+    //     indices.removeKey(segment);
+    //     Segment*[] remove_seg = [segment];
+    //     Segments remove_segments = new Segments(remove_seg);
+    //     segments.remove(remove_segments[].take(1));
+    // }
 
     void recycle(Indices.Range recycle_segments) {
 
@@ -138,22 +165,25 @@ struct Recycler {
                 .walkLength == 0, "cannot insert type.NONE element");
 
         foreach (segment; recycle_segments) {
-            if (segment.type == Type.REMOVE) {
-                auto equal_range = indices.equalRange(segment);
-                assert(!equal_range.empty, "Cannot call remove with segment where index in recycler does not exist");
 
-                if (equal_range.front.size == segment.size) {
+            if (!CLAIM_FUNCTION) {
+                if (segment.type == Type.REMOVE) {
+                    auto equal_range = indices.equalRange(segment);
+                    assert(!equal_range.empty, "Cannot call remove with segment where index in recycler does not exist");
+
+                    if (equal_range.front.size == segment.size) {
+                        remove(equal_range.front);
+                        continue;
+                    }
+
+                    Segment* add_segment = new Segment(
+                        Index(equal_range.front.index + segment.size), equal_range
+                            .front.size - segment.size);
+
                     remove(equal_range.front);
+                    insert(add_segment);
                     continue;
                 }
-
-                Segment* add_segment = new Segment(
-                    Index(equal_range.front.index + segment.size), equal_range
-                        .front.size - segment.size);
-
-                remove(equal_range.front);
-                insert(add_segment);
-                continue;
             }
 
             if (segment.type == Type.ADD) {
@@ -391,14 +421,65 @@ struct Recycler {
      * Returns: 
      *   Index pointer a free segment
      */
-    const(Index) claim(const uint segment_size) nothrow {
+    const(Index) claim(const uint segment_size) nothrow
+    in (segment_size > 0)
+
+    out (result) {
+        assert(result != Index.init);
+    }
+    do {
+        __write("claiming size: %s", segment_size);
+
+        // if (segment.type == Type.REMOVE) {
+        //     auto equal_range = indices.equalRange(segment);
+        //     assert(!equal_range.empty, "Cannot call remove with segment where index in recycler does not exist");
+
+        //     if (equal_range.front.size == segment.size) {
+        //         remove(equal_range.front);
+        //         continue;
+        //     }
+
+        //     Segment* add_segment = new Segment(
+        //         Index(equal_range.front.index + segment.size), equal_range
+        //             .front.size - segment.size);
+
+        //     remove(equal_range.front);
+        //     insert(add_segment);
+        //     continue;
+        // }
+
+        try {
+
+            if (CLAIM_FUNCTION) {
+                auto search_segment = new Segment(Index.max, segment_size);
+                auto equal_range = segments.equalRange(search_segment);
+                if (!equal_range.empty) {
+                    // there is a element equal.
+                    const index = equal_range.front.index;
+                    remove(equal_range.front);
+                    return index;
+                }
+
+                auto upper_range = segments.upperBound(search_segment);
+                if (!upper_range.empty) {
+                    const index = upper_range.front.index;
+                    auto add_segment = new Segment(
+                        Index(index + segment_size), upper_range.front.size - segment_size);
+                    __write("upper range index: %s, size %s", upper_range.front.index, upper_range
+                            .front.size);
+                    remove(upper_range.front);
+                    insert(add_segment);
+                    return index;
+                }
+            }
+        }
+        catch (Exception e) {
+            assert(0, e.msg);
+        }
+
         scope (success) {
             owner._last_block_index += segment_size;
         }
-
-        // Either adds or removes from the recycler. 
-        // assumeWontThrow(to_be_recycled.insert(
-        //         new Segment(owner._last_block_index, segment_size, Type.ADD)));
         return owner._last_block_index;
 
     }
@@ -559,8 +640,9 @@ unittest {
     // recycler.dump();
 
     assert(recycler.indices.length == 1, "should only be one segment after middle insertion");
-    assert(recycler.indices.front.index == Index(1UL) && recycler.indices.front.end == Index(
-            15UL), "Middle insertion not valid");
+    assert(recycler.indices.front.index == Index(1UL) && recycler.indices.front
+            .end == Index(
+                15UL), "Middle insertion not valid");
 }
 
 unittest {
@@ -827,9 +909,8 @@ unittest {
 
 }
 
-@safe
-unittest {
-    @recordType("D")
+version (unittest) {
+    @safe @recordType("D")
     static struct Data {
 
         string text;
@@ -840,9 +921,11 @@ unittest {
             }
         });
     }
-
+}
+@safe
+unittest {
     {
-        Recycler.print = true;
+        Recycler.print = false;
         scope (exit) {
             Recycler.print = false;
         }
@@ -865,7 +948,7 @@ unittest {
 
         foreach (data; datas) {
             const index = blockfile.save(data).index;
-            writefln("block index = %s", index);
+            // writefln("block index = %s", index);
         }
         blockfile.store();
         assert(blockfile.recycler.indices.length == 0, "since we only added blocks to empty recycler nothing should be in recycler");
@@ -874,16 +957,16 @@ unittest {
         // writefln("document: %s", doc["text"].get!string);
         assert(doc["text"].get!string == "1234");
 
-        blockfile.dispose(Index(2), true);
-        blockfile.dispose(Index(3), true);
+        blockfile.dispose(Index(2));
+        blockfile.dispose(Index(3));
 
-        writefln("before recycleDump");
-        blockfile.recycleDump;
+        // writefln("before recycleDump");
+        // blockfile.recycleDump;
         blockfile.store();
-        writefln("after recycleDump");
-        blockfile.recycleDump;
-        writefln("entire blockfile dump");
-        blockfile.dump;
+        // writefln("after recycleDump");
+        // blockfile.recycleDump;
+        // writefln("entire blockfile dump");
+        // blockfile.dump;
 
         assert(blockfile.recycler.to_be_recycled.length == 0);
         assert(blockfile.recycler.indices.length == 2, "should contain one segment for middle blocks and one for statistic");
@@ -897,5 +980,77 @@ unittest {
 
         // close and open blockfile again.
     }
+
+}
+
+@safe
+unittest {
+    writefln("UHA VI LAVER RECLAIM");
+    // saving to empty blockfile therfore claiming.
+    Recycler.CLAIM_FUNCTION = true;
+    Recycler.print = true;
+
+    scope (exit) {
+        Recycler.print = false;
+        Recycler.CLAIM_FUNCTION = false;
+    }
+    // try to read / load indices.
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    // auto recycler = Recycler(blockfile);
+    scope (exit) {
+        blockfile.close;
+    }
+
+    Data[] datas = [
+        Data("abc"),
+        Data("1234"),
+        Data("wowo"),
+        Data("hugo"),
+    ];
+
+    foreach (data; datas) {
+        const index = blockfile.save(data).index;
+        writefln("index: %s", index);
+    }
+
+    blockfile.store();
+
+}
+
+@safe
+unittest {
+    Recycler.print = true;
+    scope (exit) {
+        Recycler.print = false;
+    }
+
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+    auto recycler = Recycler(blockfile);
+
+    Segment*[] dispose_segments = [
+        new Segment(Index(1UL), 5, Type.NONE),
+        new Segment(Index(10UL), 5, Type.NONE),
+        new Segment(Index(17UL), 5, Type.NONE),
+    ];
+
+    auto insert_indices = new Indices(dispose_segments);
+    recycler.insert(insert_indices[]);
+    assert(recycler.indices.length == 3);
+    assert(recycler.segments.length == 3);
+
+    writefln("WOWOWOWOWOWWO");
+    auto remove_segment = new Segment(Index(17UL), 5);
+
+    recycler.newRemove(remove_segment);
+
+    assert(recycler.indices.length == 2);
+    assert(recycler.segments.length == 2);
 
 }

@@ -601,7 +601,7 @@ class BlockFile {
      +     BlockFileException
      +
      +/
-    void dispose(const Index index, const bool stat = false) {
+    void dispose(const Index index) {
 
         auto allocated_range = allocated_chains.filter!(a => a.index == index);
         assert(allocated_range.empty, "We should dispose cached blocks");
@@ -621,9 +621,7 @@ class BlockFile {
         ubyte[] buf = _buf;
         file.rawRead(buf);
         const doc_size = LEB128.read!ulong(buf);
-        if (stat) {
-            writefln("disposing statistic");
-        }
+
         // if (stat) {
         //     writefln("stat doc size: %s", numberOfBlocks(doc_size.size + doc_size.value));
         // }
