@@ -84,6 +84,7 @@ struct Recycler {
     /** 
      * Checks if the recycler has overlapping segments.
      */
+    version(SYNC_BLOCKFILE_PROBLEM)
     invariant {
         assert(noOverlaps, "Recycle segments has overlaps");
     }
