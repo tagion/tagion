@@ -77,8 +77,10 @@ static struct Logger {
             setThreadName(task_name);
             import std.stdio : stderr;
 
-            stderr.writefln("Register: %s logger\n", _task_name);
-            log("Register: %s logger", _task_name);
+            static if (ver.not_unittest) {
+                stderr.writefln("Register: %s logger\n", _task_name);
+                log("Register: %s logger", _task_name);
+            }
         }
         catch (Exception e) {
             log.error("%s logger not register", _task_name);
@@ -156,6 +158,8 @@ Returns: the current mask
 */
     @trusted
     void report(const LogLevel level, lazy scope string text) const nothrow {
+        version (unittest)
+            return;
         if ((masks.length > 0) && (level & masks[$ - 1]) && !silent) {
             import std.exception : assumeWontThrow;
             import std.conv : to;
@@ -183,10 +187,7 @@ Returns: the current mask
                 catch (Exception e) {
                     import std.stdio;
 
-                    assumeWontThrow({ 
-                        stderr.writefln("\t%s:%s: %s", task_name, level, text); 
-                        stderr.writefln("%s", e); 
-                    }());
+                    assumeWontThrow({ stderr.writefln("\t%s:%s: %s", task_name, level, text); stderr.writefln("%s", e); }());
                 }
             }
         }
@@ -195,6 +196,8 @@ Returns: the current mask
     /// This function should be rewritte it' for the event logging
     @trusted
     void report(T)(string symbol_name, T h) const nothrow if (isHiBONRecord!T) {
+        version (unittest)
+            return;
         import std.exception : assumeWontThrow;
 
         if (isLoggerServiceRegistered) {
@@ -206,10 +209,7 @@ Returns: the current mask
             catch (Exception e) {
                 import std.stdio;
 
-                assumeWontThrow({ 
-                stderr.writefln("%s", e.msg); 
-                stderr.writefln("\t%s:%s env", task_name, symbol_name); 
-            }());
+                assumeWontThrow({ stderr.writefln("%s", e.msg); stderr.writefln("\t%s:%s env", task_name, symbol_name); }());
 
             }
         }
