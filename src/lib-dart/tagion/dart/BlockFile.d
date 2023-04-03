@@ -554,6 +554,7 @@ class BlockFile {
 
     T load(T)(const Index index) if (isHiBONRecord!T) {
         const doc = load(index);
+
         check(isRecord!T(doc), format("The loaded document is not a %s record", T.stringof));
         return T(doc);
     }
@@ -690,22 +691,28 @@ class BlockFile {
 
         alias BlockSegmentInfo = Tuple!(Index, "index", string, "type", uint, "size", Document, "doc");
 
-        private void initFront() {
+        private void initFront() @trusted {
+            import std.format;
+            import core.exception : ArraySliceError;
             import tagion.dart.Recycler : Segment;
-
+            import tagion.utils.Term;
 
             const doc = owner.load(index);
             uint size;
-
             
-            if (isRecord!Segment(doc)) {
-                const segment = Segment(doc, index);
-                size = segment.size;
+            try {
+            
+                if (isRecord!Segment(doc)) {
+                    const segment = Segment(doc, index);
+                    size = segment.size;
+                }
+                else {
+                    size = owner.numberOfBlocks(doc.full_size);
+                }
+            } catch (ArraySliceError e) {
+                current_segment = BlockSegmentInfo(index, format("%sERROR%s", RED, RESET), 1, Document());
+                return;
             }
-            else {
-                size = owner.numberOfBlocks(doc.full_size);
-            }
-
             const type = getType(doc);
 
             current_segment = BlockSegmentInfo(index, type, size, doc);

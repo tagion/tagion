@@ -39,6 +39,9 @@ private {
     //import tagion.basic.Basic;
     import tagion.basic.TagionExceptions : Check;
     import tagion.utils.Miscellaneous : toHex = toHexString;
+
+    import std.stdio : writefln;
+    import tagion.hibon.HiBONRecord;
 }
 
 /// Hash null definition (all zero values)
@@ -98,6 +101,10 @@ import std.algorithm;
 
 alias check = Check!DARTException;
 
+string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothrow {
+    return assumeWontThrow(format("%s:%s", return_pos, line));
+}
+
 /++
  + DART File system
  + Distribute Achive of Random Transction
@@ -109,7 +116,6 @@ alias check = Check!DARTException;
  + Doens't branche out it contais a Leave which contains a Archive
  +
  +/
-
 @safe class DARTFile {
     enum KEY_SPAN = ubyte.max + 1;
     import tagion.dart.BlockFile : INDEX_NULL;
@@ -277,22 +283,23 @@ alias check = Check!DARTException;
 
         Index index;
         Buffer fingerprint;
+        string return_pos;
 
         bool empty() pure const nothrow {
             return (index is INDEX_NULL) && (fingerprint is null);
         }
 
         mixin HiBONRecord!(q{ 
-            this(const Index index, Buffer fingerprint) {
+            this(const Index index, Buffer fingerprint, string return_pos = null) {
                 this.index = index;
                 this.fingerprint = fingerprint;
-
+                this.return_pos = return_pos;
             }
 
-            this(const Index index, DARTIndex hash_pointer) {
+            this(const Index index, DARTIndex hash_pointer, string return_pos = null) {
                 this.index = index;
                 this.fingerprint = cast(Buffer) hash_pointer;
-
+                this.return_pos = return_pos;
             }
         });
     }
@@ -962,6 +969,12 @@ alias check = Check!DARTException;
                 Branches branches;
                 if (rim < RIMS_IN_SECTOR) {
                     if (branch_index !is INDEX_NULL) {
+                        const doc = blockfile.load(branch_index);
+                        if (!Branches.isRecord(doc)) {
+                            import std.stdio;
+                            import tagion.hibon.HiBONJSON;
+                            writefln("Error at index %s rim %s. Document: %s", branch_index, rim, doc.toPretty);
+                        }
                         branches = blockfile.load!Branches(branch_index);
 
                         
@@ -976,16 +989,32 @@ alias check = Check!DARTException;
                         if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                             const leave = traverse_dart(sub_range,
                                 branches.index(rim_key), rim + 1);
+                                if (rim == 1 && leave.return_pos !is null) {
+                                    writefln("UPPER rim %s, index: %s, returnPos: <%s>", rim, leave.index, leave.return_pos);
 
+                                }
+                            if (rim == 0) {
+                                const doc = cacheLoad(leave.index);
+                                .check(Branches.isRecord(doc), "sikke noget pis");
+                            }
                             branches[rim_key] = leave;
                         }
                     }
                     erase_block_index = Index(branch_index);
+
                     if (branches.empty) {
                         return Leave.init;
                     }
-                    return Leave(blockfile.save(branches)
-                            .index, branches.fingerprint(this));
+                    auto return_leave = Leave(blockfile.save(branches).index, branches.fingerprint(this));
+                    if (return_leave.return_pos !is null) {
+                        
+                        writefln("rim %s, index: %s, returnPos: <%s>", rim, return_leave.index, return_leave.return_pos);
+                    }
+
+                    const doc = cacheLoad(return_leave.index);
+                    .check(isRecord!Branches(doc), "sikke noget skidt");
+
+                    return return_leave;
                 }
                 else static if (is(R == RimKeyRange)) {
                     uint lonely_rim_key;
@@ -1060,7 +1089,7 @@ alias check = Check!DARTException;
                                         pragma(msg, "fixme(pr): This scenario is never called. Why is it here?");
                                         return Leave(blockfile.save(one_archive.store)
                                                 .index,
-                                            one_archive.fingerprint);
+                                            one_archive.fingerprint, dumpPos("range oneleft"));
 
                                     }
                                     // multiple archives left in the database
@@ -1124,17 +1153,16 @@ alias check = Check!DARTException;
 
                                 one_archive.doit;
                                 lonely_rim_key = one_archive.fingerprint.rim_key(rim);
-                                if (rim is RIMS_IN_SECTOR) {
+                                if (rim == RIMS_IN_SECTOR) {
                                     // Return a branch with as single leave when the leave is on the on
                                     // the edge between the sector
-                                    branches[lonely_rim_key] = Leave(
-                                        blockfile.save(one_archive.store)
-                                            .index, one_archive.fingerprint);
-                                    return Leave(blockfile.save(branches)
-                                            .index, branches.fingerprint(this));
+                                    branches[lonely_rim_key] = Leave(blockfile.save(one_archive.store).index, 
+                                        one_archive.fingerprint);
+                                    return Leave(blockfile.save(branches).index, 
+                                        branches.fingerprint(this), dumpPos("rim is sector"));
                                 }
-                                return Leave(blockfile.save(one_archive.store)
-                                        .index, one_archive.fingerprint);
+                                return Leave(blockfile.save(one_archive.store).index, 
+                                    one_archive.fingerprint, dumpPos("rim !sector"));
 
                             }
                         }
@@ -1154,7 +1182,7 @@ alias check = Check!DARTException;
                         return Leave.init;
                     }
                     return Leave(blockfile.save(branches)
-                            .index, branches.fingerprint(this));
+                            .index, branches.fingerprint(this), dumpPos("outsider"));
 
                 }
                 else {
