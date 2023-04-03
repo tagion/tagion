@@ -33,6 +33,9 @@ import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;
 import tagion.dart.BlockSegment;
 
+import tagion.basic.Debug : __write;
+import tagion.hibon.HiBONJSON : toPretty;
+
 //import tagion.dart.BlockSegmentAllocator;
 
 alias Index = Typedef!(ulong, ulong.init, "BlockIndex");
@@ -71,9 +74,10 @@ class BlockFile {
     package {
         File file;
         Index _last_block_index;
-    }
-    protected {
         Recycler recycler;
+    }
+
+    protected {
         MasterBlock masterblock;
         HeaderBlock headerblock;
         bool hasheader;
@@ -93,13 +97,33 @@ class BlockFile {
     }
 
     void recycleDump() {
-        recycler.dump;
+        import tagion.dart.Recycler : Segment;
+
+        // writefln("recycle dump from blockfile");
+
+        Index index = masterblock.recycle_header_index;
+
+        if (index == Index(0)) {
+            return;
+        }
+        while (index != Index.init) {
+            auto add_segment = new Segment(this, index);
+            writefln("Index(%s), size(%s), next(%s)", add_segment.index, add_segment
+                    .size, add_segment.next);
+            index = add_segment.next;
+        }
+    }
+
+    protected this() {
+        BLOCK_SIZE = DEFAULT_BLOCK_SIZE;
+        recycler = Recycler(this);
+        //empty
     }
 
     protected this(
-            string filename,
-            immutable uint SIZE,
-            const bool read_only = false) {
+        string filename,
+        immutable uint SIZE,
+        const bool read_only = false) {
         File _file;
 
         if (read_only) {
@@ -111,9 +135,7 @@ class BlockFile {
         this(_file, SIZE);
     }
 
-    protected this(
-            File file,
-            immutable uint SIZE) {
+    protected this(File file, immutable uint SIZE) {
         this.BLOCK_SIZE = SIZE;
         //   DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
         this.file = file;
@@ -131,9 +153,9 @@ class BlockFile {
     }
 
     static BlockFile Inspect(
-            string filename,
-            void delegate(string msg) @safe report,
-            const uint max_iteration = uint.max) {
+        string filename,
+        void delegate(string msg) @safe report,
+        const uint max_iteration = uint.max) {
         BlockFile result;
         void try_it(void delegate() @safe dg) {
             try {
@@ -212,9 +234,12 @@ class BlockFile {
      +     read_only = If `true` the file is opened as read-only
      +/
     static BlockFile opCall(string filename, const bool read_only = false) {
-        auto temp_file = new BlockFile(filename, DEFAULT_BLOCK_SIZE, read_only);
+        auto temp_file = new BlockFile();
+        temp_file.file = File(filename, "r");
+        temp_file.readHeaderBlock;
+        temp_file.file.close;
+
         immutable SIZE = temp_file.headerblock.block_size;
-        temp_file.close;
         return new BlockFile(filename, SIZE, read_only);
     }
 
@@ -358,6 +383,11 @@ class BlockFile {
         return _last_block_index;
     }
 
+    /** 
+     * Sets the pointer to the index in the blockfile.
+     * Params:
+     *   index = in blocks to set in the blockfile
+     */
     final package void seek(const Index index) {
         file.seek(index_to_seek(index));
     }
@@ -367,23 +397,36 @@ class BlockFile {
      + This block maintains the indices to of other block
      +/
 
-    @safe
+    @safe @recordType("M")
     static struct MasterBlock {
         Index recycle_header_index; /// Points to the root of recycle block list
         //Index first_index; /// Points to the first block of data
         Index root_index; /// Point the root of the database
         Index statistic_index; /// Points to the statistic data
+
+        mixin HiBONRecord;
+
         void write(
-                ref File file,
-                immutable uint BLOCK_SIZE) const @trusted {
+            ref File file,
+            immutable uint BLOCK_SIZE) const @trusted {
+            
             auto buffer = new ubyte[BLOCK_SIZE];
-            size_t pos;
-            foreach (i, m; this.tupleof) {
-                alias type = TypedefType!(typeof(m));
-                buffer.binwrite(cast(type) m, &pos);
-            }
-            buffer[$ - FILE_LABEL.length .. $] = cast(ubyte[]) FILE_LABEL;
-            assert(!BlockFile.do_not_write, "Should not write here");
+
+            const doc = this.toDoc;
+            buffer[0..doc.full_size] = doc.serialize;
+
+            // size_t pos;
+
+            // version(none) {
+            // buffer[0..16] = cast(ubyte[]) "masterblock_iden";
+            // pos += 16; }
+            // foreach (i, m; this.tupleof) {
+            //     alias type = TypedefType!(typeof(m));
+            //     buffer.binwrite(cast(type) m, &pos);
+            // }
+            // buffer[$ - FILE_LABEL.length .. $] = cast(ubyte[]) FILE_LABEL;
+            // assert(!BlockFile.do_not_write, "Should not write here");
+            
             file.rawWrite(buffer);
             // Truncate the file after the master block
             file.truncate(file.size);
@@ -391,12 +434,20 @@ class BlockFile {
         }
 
         void read(ref File file, immutable uint BLOCK_SIZE) {
-            auto buffer = new ubyte[BLOCK_SIZE];
-            auto buf = file.rawRead(buffer);
-            foreach (i, ref m; this.tupleof) {
-                alias type = TypedefType!(typeof(m));
-                m = buf.binread!type;
-            }
+            // auto buffer = new ubyte[BLOCK_SIZE];
+            const doc = file.fread();
+            check(MasterBlock.isRecord(doc), "not a masterblock");
+            this = MasterBlock(doc);
+            
+
+            // version(none) {
+            // writefln("buf master: %s", cast(char[]) buf[0..16]);
+            // buf = buf[16..$];
+            // }
+            // foreach (i, ref m; this.tupleof) {
+            //     alias type = TypedefType!(typeof(m));
+            //     m = buf.binread!type;
+            // }
         }
 
         string toString() const pure nothrow {
@@ -436,7 +487,7 @@ class BlockFile {
      + Returns:
      +     The number of blocks used to allocate size bytes
      +/
-    uint number_of_blocks(const size_t size) const pure nothrow {
+    uint numberOfBlocks(const size_t size) const pure nothrow @nogc {
         return cast(uint)((size / BLOCK_SIZE) + ((size % BLOCK_SIZE == 0) ? 0 : 1));
     }
 
@@ -452,15 +503,15 @@ class BlockFile {
     }
 
     protected void writeStatistic() {
-        // Allocate block for statistical data
         immutable old_statistic_index = masterblock.statistic_index;
 
+        if (old_statistic_index !is Index.init) {
+            dispose(old_statistic_index);
+
+        }
         auto statistical_allocate = save(_statistic.toDoc);
         masterblock.statistic_index = Index(statistical_allocate.index);
-        if (old_statistic_index !is INDEX_NULL) {
-            // The old statistic block is erased
-            erase(old_statistic_index);
-        }
+
     }
 
     ref const(MasterBlock) masterBlock() pure const nothrow {
@@ -479,10 +530,11 @@ class BlockFile {
 
     private void readHeaderBlock() {
         check(file.size % BLOCK_SIZE == 0,
-                format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
+            format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
                 .size));
         _last_block_index = cast(Index)(file.size / BLOCK_SIZE);
-        check(_last_block_index > 1, format("The BlockFile should at least have a size of two block of %d but is %d", BLOCK_SIZE, file
+        check(_last_block_index > 1, format(
+                "The BlockFile should at least have a size of two block of %d but is %d", BLOCK_SIZE, file
                 .size));
         // The headerblock is locate in the start of the file
         seek(INDEX_NULL);
@@ -560,6 +612,7 @@ class BlockFile {
         check(isRecord!T(doc), format("The loaded document is not a %s record", T.stringof));
         return T(doc);
     }
+
     /++
      + Marks a chain for blocks as erased
      + This function does actually erease the block before the store method is called
@@ -576,22 +629,45 @@ class BlockFile {
      +     BlockFileException
      +
      +/
-    Index erase(const Index index) {
-        // Should be implement with new recycler
-        return INDEX_NULL;
+    void dispose(const Index index) {
+
+        auto allocated_range = allocated_chains.filter!(a => a.index == index);
+        assert(allocated_range.empty, "We should dispose cached blocks");
+        // version (none) {
+        //     auto allocated_range = allocated_chains.filter!(a => a.index == index);
+        //     if (!allocated_range.empty) {
+        //         recycler.dispose(index, numberOfBlocks(
+        //                 allocated_range.front.doc.full_size));
+        //         return;
+        //     }
+        // }
+        seek(index);
+
+        import LEB128 = tagion.utils.LEB128;
+
+        ubyte[LEB128.DataSize!ulong] _buf;
+        ubyte[] buf = _buf;
+        file.rawRead(buf);
+        const doc_size = LEB128.read!ulong(buf);
+
+        // if (stat) {
+        //     writefln("stat doc size: %s", numberOfBlocks(doc_size.size + doc_size.value));
+        // }
+
+        recycler.dispose(index, numberOfBlocks(doc_size.size + doc_size.value));
     }
 
     /**
-     * Internale function used to reserve a size bytes in the blockfile
+     * Internal function used to reserve a size bytes in the blockfile
      * Params:
      *   size = size in bytes
      * Returns: 
      *   block index position of the reserved bytes
      */
-    protected Index reserve(const size_t size) nothrow {
-        const nblocks = number_of_blocks(size);
+    protected Index claim(const size_t size) nothrow {
+        const nblocks = numberOfBlocks(size);
         _statistic(nblocks);
-        return Index(recycler.reserve_segment(nblocks));
+        return Index(recycler.claim(nblocks));
     }
 
     /// Cache to be stored
@@ -605,7 +681,7 @@ class BlockFile {
      +     doc = Document to be reserved and allocated
      +/
     const(BlockSegment*) save(const(Document) doc) {
-        auto result = new const(BlockSegment)(doc, reserve(doc.full_size));
+        auto result = new const(BlockSegment)(doc, claim(doc.full_size));
 
         allocated_chains ~= result;
         return result;
@@ -623,18 +699,83 @@ class BlockFile {
      +
      +/
     void store() {
-       writeStatistic;
+        writeStatistic;
+
         scope (success) {
             allocated_chains = null;
-            version (none)
-                recycler.write;
+            // writeln("###");
+            // recycler.dump;
+            masterblock.recycle_header_index = recycler.write();
             writeMasterBlock;
         }
-
-        foreach (block_segment; sort!(q{a.index < b.index}, 
-            SwapStrategy.unstable)(allocated_chains)) {
+        foreach (block_segment; sort!(q{a.index < b.index}, SwapStrategy.unstable)(
+                allocated_chains)) {
             block_segment.write(this);
         }
+    }
+
+    struct BlockSegmentRange {
+        BlockFile owner;
+
+        Index index = Index(1UL);
+        BlockSegmentInfo current_segment;
+
+        this(BlockFile owner) {
+            this.owner = owner;
+            initFront;
+        }
+
+        alias BlockSegmentInfo = Tuple!(Index, "index", string, "type", uint, "size", Document, "doc");
+
+        private void initFront() {
+            import tagion.dart.Recycler : Segment;
+
+
+            const doc = owner.load(index);
+            uint size;
+
+            
+            if (isRecord!Segment(doc)) {
+                const segment = Segment(doc, index);
+                size = segment.size;
+            }
+            else {
+                size = owner.numberOfBlocks(doc.full_size);
+            }
+
+            const type = getType(doc);
+
+            current_segment = BlockSegmentInfo(index, type, size, doc);
+        }
+
+        BlockSegmentInfo front() const pure nothrow @nogc {
+            return current_segment;
+        }
+
+        void popFront() {
+            index = Index(current_segment.index + current_segment.size);
+            initFront;
+        }
+
+        bool empty() {
+
+            if (index == Index.init || current_segment == BlockSegmentInfo.init) {
+                return true;
+            }
+
+            const last_index = owner.numberOfBlocks(owner.file.size);
+
+            return Index(current_segment.index + current_segment.size) > last_index;
+        }
+
+        BlockSegmentRange save() {
+            return this;
+        }
+
+    }
+
+    BlockSegmentRange opSlice() {
+        return BlockSegmentRange(this);
     }
 
     /++
@@ -702,7 +843,7 @@ class BlockFile {
         return failed;
     }
 
-   enum BlockSymbol {
+    enum BlockSymbol {
         file_header = 'H',
         header = 'h',
         empty = '_',
@@ -712,26 +853,44 @@ class BlockFile {
 
     }
 
-   /++
+    /++
      + Used for debuging only to dump the Block's
      +/
-    void dump(const uint block_per_line = 16) {
-        auto line = new char[block_per_line];
-        version (none)
-            foreach (index; 0 .. ((_last_block_index / block_per_line) + (
-                    (_last_block_index % block_per_line == 0) ? 0 : 1)) * block_per_line) {
-                immutable pos = index % block_per_line;
-                if ((index % block_per_line) == 0) {
-                    line[] = 0;
-                }
+    void dump(const uint segments_per_line = 6) {
 
-                scope block = read(Index(index));
-                line[pos] = getSymbol(block, Index(index));
+        BlockSegmentRange seg_range = opSlice();
 
-                if (pos + 1 == block_per_line) {
-                    writefln("%04X] %s", index - pos, line);
-                }
+        uint pos = 0;
+        foreach (seg; seg_range) {
+            if (pos == segments_per_line) {
+                writef("|");
+                writeln;
+                pos = 0;
             }
+            writef("|%s index(%s) size(%s)", seg.type, seg.index, seg.size);
+            pos++;
+
+        }
+        writef("|");
+        writeln;
+
+        // auto line = new char[block_per_line];
+
+        // version (none)
+        //     foreach (index; 0 .. ((_last_block_index / block_per_line) + (
+        //             (_last_block_index % block_per_line == 0) ? 0 : 1)) * block_per_line) {
+        //         immutable pos = index % block_per_line;
+        //         if ((index % block_per_line) == 0) {
+        //             line[] = 0;
+        //         }
+
+        //         scope block = read(Index(index));
+        //         line[pos] = getSymbol(block, Index(index));
+
+        //         if (pos + 1 == block_per_line) {
+        //             writefln("%04X] %s", index - pos, line);
+        //         }
+        //     }
     }
 
     // Block index 0 is means null
@@ -764,12 +923,13 @@ class BlockFile {
         {
             // Delete test blockfile
             // Create new blockfile
-            File file = File(fileId.fullpath, "w");
-            auto blockfile = new BlockFile(file, SMALL_BLOCK_SIZE);
+            File _file = File(fileId.fullpath, "w");
+            auto blockfile = new BlockFile(_file, SMALL_BLOCK_SIZE);
+
             assert(!blockfile.hasHeader);
             blockfile.createHeader("This is a Blockfile unittest");
             assert(blockfile.hasHeader);
-            file.close;
+            _file.close;
         }
 
         {
@@ -779,13 +939,13 @@ class BlockFile {
             blockfile.close;
         }
 
-       {
+        {
             auto blockfile = new BlockFile(fileId.fullpath, SMALL_BLOCK_SIZE);
 
-            blockfile.erase(blockfile.masterblock.statistic_index);
+            blockfile.dispose(blockfile.masterblock.statistic_index);
 
             blockfile.close;
         }
 
-   }
+    }
 }

@@ -8,11 +8,55 @@ import tagion.testbench.tools.Environment;
 import core.time;
 import core.thread;
 import concurrency = std.concurrency;
-import std.format: format;
+import std.format : format;
 import tagion.actor.Actor;
 
+import std.stdio;
 
-debug import std.stdio;
+alias thisInfo = concurrency.ThreadInfo.thisInfo;
+import core.time;
+
+receiveOnlyRet!(T) receiveOnlyTimeout(Duration timeout, T...)()
+in {
+    assert(thisInfo.ident.mbox !is null,
+            "Cannot receive a message until a thread was spawned or thisTid was passed to a running thread.");
+}
+do {
+    import std.format : format;
+    import std.meta : allSatisfy;
+    import std.typecons : Tuple;
+
+    Tuple!(T) ret;
+
+    thisInfo.ident.mbox.get(timeout, (T val) {
+        static if (T.length) {
+            static if (allSatisfy!(isAssignable, T)) {
+                ret.field = val;
+            }
+            else {
+                import core.lifetime : emplace;
+
+                emplace(&ret, val);
+            }
+        }
+    },
+            (LinkTerminated e) { throw e; },
+            (OwnerTerminated e) { throw e; },
+            (Variant val) {
+        static if (T.length > 1)
+            string exp = T.stringof;
+        else
+            string exp = T[0].stringof;
+
+        throw new MessageMismatch(
+            format("Unexpected message type: expected '%s', got '%s'", exp, val.type.toString()));
+    });
+    check(ret !is Tuple!(T).init, format("Timed out before receiving message of type %s", T));
+    static if (T.length == 1)
+        return ret[0];
+    else
+        return ret;
+}
 
 enum feature = Feature(
             "Actor supervisor test",
@@ -27,22 +71,26 @@ enum sleep_time = 100.msecs;
 
 /// Child Actor
 struct SetUpForFailure {
-    
-    @method void fail(int _i) {
+
+    @method void exceptionalMethod(int _i) {
         debug writeln("child is failing");
-        throw new Exception("Child: I am a failure");
+        fail(new Exception("Child: I am a failure"));
     }
+
     @task void run() {
         alive; // Actor is now alive
 
         /* Thread.sleep(300.msecs); */
+        /* fail(Exception("Child: i am a failure")); */
         /* throw new Exception("Child: I am a failure"); */
         while (!stop) {
             receiveTimeout(100.msecs);
         }
     }
+
     mixin TaskActor; /// Turns the struct into an Actor
 }
+
 static assert(isActor!SetUpForFailure);
 
 /// Supervisor Actor
@@ -52,7 +100,7 @@ struct SetUpForDissapointment {
 
     @method void isChildRunning(string task_name) {
         Thread.sleep(sleep_time);
-        sendOwner(isRunning(task_name));
+        sendSupervisor(isRunning(task_name));
     }
 
     @task void run() {
@@ -63,8 +111,10 @@ struct SetUpForDissapointment {
             receiveTimeout(100.msecs);
         }
     }
+
     mixin TaskActor; /// Turns the struct into an Actor
 }
+
 static assert(isActor!SetUpForDissapointment);
 
 enum supervisor_task_name = "supervisor";
@@ -98,17 +148,27 @@ class SupervisorWithFailingChild {
 
     @When("the #child has started then the #child should fail with an exception")
     Document withAnException() {
-        return Document();
+        alias DissapointmentFactory = ActorFactory!SetUpForFailure;
+        auto child_handler = DissapointmentFactory.handler(child_task_name);
+        check(child_handler !is child_handler.init, "The child handler failed to initialise");
+
+        child_handler.exceptionalMethod(42);
+
+        return result_ok;
     }
 
     @Then("the #super actor should catch the #child which failed")
-    Document childWhichFailed() {
-        return Document();
+    Document childWhichFailed() @trusted {
+        concurrency.receiveTimeout(
+                1.seconds,
+                (immutable(Exception) e) { writefln("%s", e); });
+        return result_ok;
     }
 
     @Then("the #super actor should restart the child")
     Document restartTheChild() @trusted {
-        supervisor_handle.isChildRunning(child_task_name);
+        supervisor_handle.isChildRunning(
+                child_task_name);
         check(concurrency.receiveOnly!bool, "child is running again");
         return result_ok;
     }

@@ -16,6 +16,8 @@ import tagion.basic.TagionExceptions : fatal; //, Check, TagionException;
 import tagion.logger.Logger;
 import tagion.actor.ActorException;
 
+debug import std.stdio;
+
 /// method define receiver method for the task actor
 enum method;
 
@@ -29,9 +31,9 @@ enum task;
 @safe
 struct emulate(Actor);
 
-/** 
- * Defines a unique actor ID
- */
+/**
+* Defines a unique actor ID
+*/
 @safe
 struct ActorID {
     string task_name; /// task_name
@@ -40,13 +42,13 @@ struct ActorID {
 
 alias ActorFlag = Flag!"action"; /// Used as bool result flag for the response
 
-/* 
-     * 
-     * Params:
-     *   Actor = is the actor object
-     *   task_name = The name of the of the actor type task
-     * Returns: The unique actor ID of the actor 
-     */
+/**
+*
+* Params:
+*   Actor = is the actor object
+*   task_name = The name of the of the actor type task
+* Returns: The unique actor ID of the actor 
+*/
 immutable(ActorID*) actorID(Actor)(string task_name) nothrow pure {
     return new immutable(ActorID)(task_name, mangle!Actor(""));
 }
@@ -55,11 +57,11 @@ immutable(ActorID*) actorID(Actor)(string task_name) nothrow pure {
 enum isTrue(alias eval) = __traits(compiles, eval) && eval;
 
 /**
-    * Params:
-    * This  = is the actor
-    * member_name = the a member of the actor
-    * Returns: true of member the UDA
-    */
+* Params:
+* This  = is the actor
+* member_name = the a member of the actor
+* Returns: true of member the UDA
+*/
 template isUDA(This, string member_name, UDA) {
     alias Overload = __traits(getOverloads, This, member_name);
     static if (Overload.length is 1) {
@@ -71,23 +73,23 @@ template isUDA(This, string member_name, UDA) {
 }
 
 /**
-    * Returns: true if member_name is task method of the actor 
-     */
+* Returns: true if member_name is task method of the actor 
+*/
 enum isTask(This, string member_name) = isUDA!(This, member_name, task);
 
 /**
-    * Returns: true if the member name is a method of the task This 
-    */
+* Returns: true if the member name is a method of the task This 
+*/
 enum isMethod(This, string method_name) = isUDA!(This, method_name, method);
 
 enum isLocal(This, string method_name) = isUDA!(This, method_name, local);
 
-/** 
- * Params:
- *   This = Actor type
- *   method_name = name of the method to be check
+/**
+* Params:
+*   This = Actor type
+*   method_name = name of the method to be check
 * Returns: true if method is callable and return a none void
- */
+*/
 template isRequest(This, string method_name) {
     alias member = __traits(getMember, This, method_name);
     enum isRequest = isMethod!(This, method_name) && isCallable!member && !is(ReturnType!member == void);
@@ -117,20 +119,20 @@ static unittest {
 }
 
 /**
-     * 
-     * Params:
-     *   This = is the actor
-     * Returns: true if the member is a constructor or a destructor
-     */
+*
+* Params:
+*   This = is the actor
+* Returns: true if the member is a constructor or a destructor
+*/
 enum isCtorDtor(This, string name) = ["__ctor", "__dtor"].any!(a => a == name);
 
 /**
-     * 
-     * Params:
-     *   This = is a actor task
-     *   pred = condition template to select a method
-     * Returns: a alias-sequnecy of all the member name which fullfills pred
-     */
+*
+* Params:
+*   This = is a actor task
+*   pred = condition template to select a method
+* Returns: a alias-sequnecy of all the member name which fullfills pred
+*/
 template allMemberFilter(This, alias pred) {
     template Filter(string[] members) {
         static if (members.length is 0) {
@@ -140,7 +142,7 @@ template allMemberFilter(This, alias pred) {
             static if (pred!(This, members[0])) {
                 enum Filter = [members[0]];
             }
-        else {
+            else {
                 enum Filter = [];
             }
         }
@@ -156,43 +158,45 @@ template allMemberFilter(This, alias pred) {
 static Tid[string] child_actor_tids; /// List of channels by task names. 
 
 /**
-        Mixin to turn a struct or class into an Actor task
-    */
+* Mixin to turn a struct or class into an Actor task
+*/
 mixin template TaskActor() {
     import concurrency = std.concurrency;
     import core.time : Duration;
     import std.format;
     import tagion.actor.Actor;
-    import tagion.actor.Actor : isMethod;
+    import tagion.actor.Actor : ActorID;
     import tagion.basic.Types : Control;
     import core.demangle : mangle;
     import std.concurrency : Tid;
 
+    enum mangle_name = mangle!This("");
+
     private Tid[] channel_tids; /// Contains all the channel connections for this actor
     bool stop;
-    /** 
-         * Default control and it just reacts to a STOP
-         * Params:
-         *   ctrl = received control signal
-         */
+    /**
+    * Default control and it just reacts to a STOP
+    * Params:
+    *   ctrl = received control signal
+    */
     @method void control(Control ctrl) {
         stop = (ctrl is Control.STOP);
         check(stop, format("Uexpected control signal %s", ctrl));
     }
 
-    /** 
-         * This function is call when an exceptions occures in the actor task
-         * Params:
-         *   e = Exception caught in the actor
-         */
+    /**
+    * This function is call when an exceptions occures in the actor task
+    * Params:
+    *   e = Exception caught in the actor
+    */
     @method @local void fail(immutable(Exception) e) @trusted {
         stop = true;
         concurrency.prioritySend(concurrency.ownerTid, e);
     }
 
-    /** 
-         * This function will stop all the actors which are owned my this actor
-         */
+    /**
+    * This function will stop all the actors which are owned my this actor
+    */
     void stopAll() @trusted {
         foreach (ref tid; child_actor_tids.byValue) {
             concurrency.send(tid, Control.STOP);
@@ -216,20 +220,20 @@ mixin template TaskActor() {
         concurrency.send(concurrency.ownerTid, Control.END);
     }
 
-    /* 
- * Send to the owner
- * Params:
- *   args = arguments send to the owner
- */
-    void sendOwner(Args...)(Args args) @trusted {
+    /**
+     * Send to the supervisor
+     * Params:
+     *   args = arguments send to the supervisor
+     */
+    void sendSupervisor(Args...)(Args args) @trusted {
         concurrency.send(concurrency.ownerTid, args);
     }
 
     alias This = typeof(this);
 
     /**
- * Inset all receiver method of an actor
-*/
+    * Inset all receiver method of an actor
+    */
     void receive() @trusted {
         enum actor_methods = allMemberFilter!(This, isMethod);
         enum code = format(q{concurrency.receive(%-(&%s, %));}, actor_methods);
@@ -237,8 +241,8 @@ mixin template TaskActor() {
     }
 
     /**
-Same as receiver but with a timeout
-*/
+    * Same as receiver but with a timeout
+    */
     bool receiveTimeout(Duration duration) @trusted {
         enum actor_methods = allMemberFilter!(This, isMethod);
         enum code = format(q{return concurrency.receiveTimeout(duration, %-(&%s, %));}, actor_methods);
@@ -291,14 +295,16 @@ protected static string generateAllMethods(alias This)() {
     import std.algorithm.sorting : sort;
     import std.range : chain;
     import std.traits;
+
     string[][string] imports;
     string[] appendImports() {
         string[] result;
-        foreach(mod, imp; imports) {
-            result ~= format("import %s : %-(%s, %);", mod, imp.sort.uniq); 
+        foreach (mod, imp; imports) {
+            result ~= format("import %s : %-(%s, %);", mod, imp.sort.uniq);
         }
-            return result;
+        return result;
     }
+
     string[] result;
     static foreach (m; __traits(allMembers, This)) {
         {
@@ -306,12 +312,13 @@ protected static string generateAllMethods(alias This)() {
                 static if (!isLocal!(This, m)) {
                     alias Overload = __traits(getOverloads, This, m);
                     static assert(Overload.length is 1,
-                            format("Multiple methods of %s for Actor %s not allowed", 
-                        m, This.stringof));
+                            format("Multiple methods of %s for Actor %s not allowed",
+                            m, This.stringof));
                     alias Func = FunctionTypeOf!(Overload[0]);
-                    static foreach(Param; Parameters!Func) {
+                    static foreach (Param; Parameters!Func) {
                         static if (__traits(compiles, __traits(parent, Param))) {
-                            imports[moduleName!Param] ~= Param.stringof;
+                            imports[moduleName!Param] ~= Unqual!(Param).stringof;
+                            //imports[moduleName!Param] ~= (Param).stringof;
                         }
                     }
                     static if (is(ReturnType!Func == void)) {
@@ -365,7 +372,6 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
     import concurrency = std.concurrency;
 
     static struct Factory {
-    //import tagion.basic.Types : Gettes;
         static if (Args.length) {
             private static shared Args init_args;
         }
@@ -430,13 +436,13 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
                 mixin(members_code);
             }
             /* 
-     * Start an actor task
-     * Params:
-     *   task_name = task name of actor to be started
-     *   args = arguments for the @task function
-     * Returns: 
-     *   an actor handler
-     */
+             * Start an actor task
+             * Params:
+             *   task_name = task name of actor to be started
+             *   args = arguments for the @task function
+             * Returns: 
+             *   an actor handler
+             */
             ActorHandle opCall(Args...)(string task_name, Args args) @trusted
             in (!task_name.empty)
             do {
@@ -460,20 +466,18 @@ auto actor(Actor, Args...)(Args args) if ((is(Actor == class) || is(Actor == str
                 return ActorHandle(tid);
             }
 
-            /* 
-         * Get the handler form actor named task_name 
-         * Params:
-         *   task_name = task name of the actor 
-         * Returns: 
-         *   Returns the handle if it runs or else it return ActorHandle.init 
-         */
+            /**
+            * Get the handler from actor named task_name 
+            * Params:
+            *   task_name = task name of the actor 
+            * Returns:
+            *   Returns the handle if it runs or else it return ActorHandle.init 
+            */
             static ActorHandle handler(string task_name) @trusted {
                 auto tid = concurrency.locate(task_name);
+                debug writefln("Got tid and task: %s %s", tid, task_name);
                 if (tid !is Tid.init) {
-                    concurrency.send(tid, actorID!Actor(task_name));
-                    if (concurrency.receiveOnly!(ActorFlag) == ActorFlag.yes) {
-                        return ActorHandle(tid);
-                    }
+                    return ActorHandle(tid);
                 }
                 return ActorHandle.init;
             }
@@ -495,8 +499,8 @@ version (unittest) {
     import core.time;
 
     /** Send function used in the unittest
-    Wraps the concurrency send into a @trusted function
-*/
+    * Wraps the concurrency send into a @trusted function
+    */
     void send(Args...)(Tid tid, Args args) @trusted {
         concurrency.send(tid, args);
     }
@@ -531,17 +535,17 @@ version (unittest) {
             count -= by;
         }
 
-        /** 
-* Actor method send a opt to the actor and 
-* sends back an a response to the owner task
+        /**
+        * Actor method send a opt to the actor and 
+        * sends back an a response to the owner task
         */
         @method void get(Get opt) { // reciever
             final switch (opt) {
             case Get.Some:
-                sendOwner(some_name);
+                sendSupervisor(some_name);
                 break;
             case Get.Arg:
-                sendOwner(count);
+                sendSupervisor(count);
                 break;
             }
         }
@@ -611,7 +615,7 @@ version (unittest) {
         @method void get(Get opt) { // reciever
             final switch (opt) {
             case Get.Some:
-                sendOwner(common_text);
+                sendSupervisor(common_text);
                 break;
             case Get.Arg:
                 assert(0);
@@ -674,10 +678,10 @@ version (unittest) {
         @method void get(Get opt) { // reciever
             final switch (opt) {
             case Get.Some:
-                sendOwner(some_name);
+                sendSupervisor(some_name);
                 break;
             case Get.Arg:
-                sendOwner(count);
+                sendSupervisor(count);
                 break;
             }
         }

@@ -16,7 +16,7 @@ Output:
  The service does the following:
 
   - Does contract format validation on the Contract-C.
-  - Collects the contract input data, DART archieves, from the DART as specified.
+  - Collects the contract input data, DART archives, from the DART as specified.
   - Ensures all input data is valid and signed correctly.
   - If input is a Contract-NC it sends a Contract-S and archives to the TVM.
   - If input is a Contract-C it sends a Contract-SC and archives to the TVM.

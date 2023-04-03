@@ -120,6 +120,11 @@ include $(DTUB)/compile.mk
 -include $(REPOROOT)/config.*.mk
 -include $(REPOROOT)/config.mk
 
+#
+# Profile setting
+#
+include $(TARGETS)/profile.mk
+
 include $(TARGETS)/ldc-build-runtime.mk
 
 #

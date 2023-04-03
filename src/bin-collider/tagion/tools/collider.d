@@ -65,7 +65,7 @@ struct BehaviourOptions {
     string[] iconv_flags;
 
     string importfile; /// Import file which are included into the generated skeleton
-
+    bool verbose_switch;
     bool enable_package; /// This produce the package 
     /** 
      * Used to set default options if config file not provided
@@ -175,11 +175,14 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
             }
 
             if (opts.enable_package && feature.info.name) {
-                list_of_modules ~= ModuleInfo(feature.info.name, file.setExtension(FileExtension.dsrc));
+                list_of_modules ~= ModuleInfo(feature.info.name, file.setExtension(
+                        FileExtension.dsrc));
             }
             { // Generate d-source file
                 auto fout = File(dsource, "w");
-                writefln("dsource file %s", dsource);
+                if (opts.verbose_switch) {
+                    writefln("dsource file %s", dsource);
+                }
                 auto dlang = Dlang(fout);
                 dlang.issue(feature);
                 fout.close;
@@ -236,7 +239,7 @@ void generate_packages(const(ModuleInfo[]) list_of_modules) {
         const count_without_module_mame = module_split.walkLength - 1;
 
         fout.writefln(q{module %-(%s.%);},
-                module_split.take(count_without_module_mame));
+            module_split.take(count_without_module_mame));
 
         fout.writeln;
 
@@ -329,7 +332,7 @@ int check_reports(string[] paths, const bool verbose) {
             else {
                 writef("%s%s%s: ", BLUE, text, RESET);
                 show_report(test_code, " passed %2$s/%1$s, failed %3$s/%1$s, started %4$s/%1$s",
-                        total, passed, errors, started);
+                    total, passed, errors, started);
             }
         }
 
@@ -340,7 +343,7 @@ int check_reports(string[] paths, const bool verbose) {
     int result;
     foreach (path; paths) {
         foreach (string report_file; dirEntries(path, "*.hibon", SpanMode.breadth)
-                .filter!(f => f.isFile)) {
+            .filter!(f => f.isFile)) {
             try {
                 const feature_group = report_file.fread!FeatureGroup;
                 const feature_test_code = testCode(feature_group);
@@ -389,7 +392,6 @@ int main(string[] args) {
     bool overwrite_switch; /** falg for to enable report checks */
     bool Check_reports_switch;
     bool check_reports_switch; /** verbose switch */
-    bool verbose_switch;
     try {
         if (config_file.exists) {
             options.load(config_file);
@@ -398,18 +400,18 @@ int main(string[] args) {
             options.setDefault;
         }
         auto main_args = getopt(args, std.getopt.config.caseSensitive,
-                "version", "display the version", &version_switch,
-                "I", "Include directory", &options.paths, std.getopt.config.bundling,
-                "O", format("Write configure file %s", config_file), &overwrite_switch,
-                "r|regex_inc", format(`Include regex Default:"%s"`, options.regex_inc), &options.regex_inc,
-                "x|regex_exc", format(`Exclude regex Default:"%s"`, options.regex_exc), &options.regex_exc,
-                "i|import", format(`Set include file Default:"%s"`, options.importfile), &options
+            "version", "display the version", &version_switch,
+            "I", "Include directory", &options.paths, std.getopt.config.bundling,
+            "O", format("Write configure file %s", config_file), &overwrite_switch,
+            "r|regex_inc", format(`Include regex Default:"%s"`, options.regex_inc), &options.regex_inc,
+            "x|regex_exc", format(`Exclude regex Default:"%s"`, options.regex_exc), &options.regex_exc,
+            "i|import", format(`Set include file Default:"%s"`, options.importfile), &options
                 .importfile,
-                "p|package", "Generates D package to the source files", &options
+            "p|package", "Generates D package to the source files", &options
                 .enable_package,
-                "c|check", "Check the bdd reports in give list of directories", &check_reports_switch,
-                "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch,
-                "v|verbose", "Enable verbose print-out", &verbose_switch,
+            "c|check", "Check the bdd reports in give list of directories", &check_reports_switch,
+            "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch,
+            "v|verbose", "Enable verbose print-out", &options.verbose_switch,
         );
         if (version_switch) {
             revision_text.writeln;
@@ -439,7 +441,7 @@ int main(string[] args) {
         }
         check_reports_switch = Check_reports_switch || check_reports_switch;
         if (check_reports_switch) {
-            const ret = check_reports(args[1 .. $], verbose_switch);
+            const ret = check_reports(args[1 .. $], options.verbose_switch);
             if (ret) {
                 writeln("Test result failed!");
             }

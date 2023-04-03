@@ -24,12 +24,30 @@ struct BlockSegment {
         this.doc = doc;
     }
 
+    import tagion.hibon.HiBONRecord : fread;
+
     this(BlockFile blockfile, const Index index) {
-        import tagion.hibon.HiBONRecord : fread;
         blockfile.seek(index);
         doc = blockfile.file.fread;
-        this.index=index;
+        this.index = index;
     }
+
+    uint size(BlockFile blockfile) const pure nothrow @nogc {
+        return blockfile.numberOfBlocks(doc.full_size);
+    }
+
+    Index next(BlockFile blockfile) const {
+        import std.stdio;
+
+        const _size = size(blockfile);
+
+        if (index >= blockfile.numberOfBlocks(blockfile.file.size)) {
+            return Index.init;
+        }
+
+        return Index(_size + index);
+    }
+
 }
 
 version (unittest) {

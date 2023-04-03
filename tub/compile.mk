@@ -82,7 +82,7 @@ $(UNITTEST_BIN): $(COVWAY) $$(DFILES)
 	echo DRTFLAGS=$(DRTFLAGS)
 	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} $(LIBS) $(OUTPUT)$@
 
-unittest: revision
+unittest: revision $(REPOROOT)/default.mk
 
 unitmain: DFLAGS+=$(DVERSION)=unitmain
 unitmain: UNITTEST_FLAGS:=$(DDEBUG) $(DDBUG_SYMBOLS)

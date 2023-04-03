@@ -1,3 +1,6 @@
+/** 
+* Key-pair recovery generator
+*/
 module tagion.wallet.KeyRecover;
 
 import tagion.crypto.SecureInterfaceNet : HashNet;
@@ -17,21 +20,15 @@ import std.algorithm.mutation : copy;
 import std.algorithm.iteration : map, filter;
 import std.array : array;
 
-import tagion.basic.TagionExceptions : Check, TagionException;
 import tagion.wallet.WalletRecords : RecoverGenerator;
+import tagion.wallet.WalletException : KeyRecoverException;
+import tagion.basic.TagionExceptions : Check;
 
-/++
- + Exception type used by for key-recovery module
- +/
-@safe
-class KeyRecorverException : TagionException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
-        super(msg, file, line);
-    }
-}
+alias check = Check!KeyRecoverException;
 
-alias check = Check!KeyRecorverException;
-
+/**
+ * Key-pair recovery generator
+ */
 @safe
 struct KeyRecover {
     enum MAX_QUESTION = 10;
@@ -39,32 +36,55 @@ struct KeyRecover {
     const HashNet net;
     protected RecoverGenerator generator;
 
+    /**
+     * 
+     * Params:
+     *   net = hash used by the recovery
+     */
     @nogc
     this(const HashNet net) pure nothrow {
         this.net = net;
     }
 
+    /**
+     * 
+     * Params:
+     *   net = hash used by the recovery 
+     *   doc = document of the recovery generator 
+
+     */
     this(const HashNet net, Document doc) {
         this.net = net;
         generator = RecoverGenerator(doc);
     }
 
+    /**
+     * 
+     * Params:
+     *   net = hash used by the recovery
+     *   generator = the recover generator  
+     */
     this(const HashNet net, RecoverGenerator generator) {
         this.net = net;
         this.generator = generator;
     }
 
-    inout(HiBON) toHiBON() inout {
-        return generator.toHiBON;
-    }
-
+    /**
+     * 
+     * Returns: the document of the generator
+     */
     const(Document) toDoc() const {
         return generator.toDoc;
     }
 
-    /++
-     Generates the quiz hash of the from a list of questions and answers
-     +/
+    /**
+     * Generates the quiz hash of the from a list of questions and answers
+     * 
+     * Params:
+     *   questions = List of questions 
+     *   answers = List for answers
+     * Returns: List of common hashs of question and answers
+     */
     Buffer[] quiz(scope const(string[]) questions, scope const(char[][]) answers) const @trusted
     in {
         assert(questions.length is answers.length);
@@ -87,6 +107,13 @@ struct KeyRecover {
         return results;
     }
 
+    /**
+     * Total number of combination of possible seed value
+     * Params:
+     *   M = number of question 
+     *   N = confidence
+     * Returns: totol number of combinations
+     */
     @nogc
     static uint numberOfSeeds(const uint M, const uint N) pure nothrow
     in {
@@ -102,12 +129,20 @@ struct KeyRecover {
         assert(numberOfSeeds(10, 5) is 26);
     }
 
+    /**
+     * Calculates the check-sum hash
+     * Params:
+     *   value = value to be checked
+     *   salt = optional salt value
+     * Returns: the double hash
+     */
     Buffer checkHash(scope const(ubyte[]) value, scope const(ubyte[]) salt = null) const {
         return net.rawCalcHash(net.rawCalcHash(value) ~ salt);
     }
 
     static void iterateSeeds(
-            const uint M, const uint N,
+            const uint M,
+            const uint N,
             scope void delegate(scope const(uint[]) indices) @safe dg) {
         scope include = new uint[N];
         iota(N).copy(include);
@@ -129,11 +164,36 @@ struct KeyRecover {
         local_search(cast(int) include.length - 1, M - 1);
     }
 
-    void createKey(scope const(string[]) questions, scope const(char[][]) answers, const uint confidence) {
-        createKey(quiz(questions, answers), confidence);
+    /**
+     * Creates the key-pair
+     * Params:
+     *   questions = List of question 
+     *   answers = List of answers
+     *   confidence = Confidence of the answers
+     *   seed = optional seed value of the key-pair
+     */
+    void createKey(
+            scope const(string[]) questions,
+    scope const(char[][]) answers,
+    const uint confidence,
+    scope const(ubyte[]) seed = null) {
+        createKey(quiz(questions, answers), confidence, seed);
     }
 
-    void createKey(Buffer[] A, const uint confidence) {
+    /**
+     * Ditto except is uses a list of hashes
+     * This can be used of something else than quiz is used
+     * Params:
+     *   A = List of hashes
+     *   confidence = confidence
+     *   seed = option
+     */
+    void createKey(
+            Buffer[] A,
+            const uint confidence,
+            scope const(ubyte[]) seed)
+    in (seed.length <= net.hashSize)
+    do {
         scope R = new ubyte[net.hashSize];
         scramble(R);
         scope (exit) {
@@ -142,10 +202,17 @@ struct KeyRecover {
         quizSeed(R, A, confidence);
     }
 
-    /++
-     Generates the quiz seed values from the privat key R and the quiz list
-     +/
-    void quizSeed(scope ref const(ubyte[]) R, scope Buffer[] A, const uint confidence) {
+    /**
+     * Generates the quiz seed values from the privat key R and the quiz list
+     * 
+     * Params:
+     *   R = generated private-key
+     *   A = List of hashes
+     *   confidence = number of minimum correct answern
+     */
+    void quizSeed(scope ref const(ubyte[]) R,
+    scope Buffer[] A,
+    const uint confidence) {
         scope (success) {
             generator.confidence = confidence;
             generator.S = checkHash(R);
@@ -155,26 +222,15 @@ struct KeyRecover {
             generator.S = null;
             generator.confidence = 0;
         }
-
-        
-
-        .check(A.length > 1, message("Number of questions must be more than one"));
-
-        
-
-        .check(confidence <= A.length, message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
+        check(A.length > 1, message("Number of questions must be more than one"));
+        check(confidence <= A.length, message(
+                "Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
                 A.length, confidence));
-
-        
-
-        .check(A.length <= MAX_QUESTION, message("Mumber of question is %d but it should not exceed %d",
+        check(A.length <= MAX_QUESTION, message("Mumber of question is %d but it should not exceed %d",
                 A.length, MAX_QUESTION));
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, confidence);
-
-        
-
-        .check(seeds <= MAX_SEEDS, message("Number quiz-seeds is %d which exceed that max value of %d",
+        check(seeds <= MAX_SEEDS, message("Number quiz-seeds is %d which exceed that max value of %d",
                 seeds, MAX_SEEDS));
         generator.Y = new Buffer[seeds];
         uint count;
@@ -191,19 +247,32 @@ struct KeyRecover {
         iterateSeeds(number_of_questions, confidence, &calculate_this_seeds);
     }
 
-    bool findSecret(scope ref ubyte[] R, scope const(string[]) questions, scope const(char[][]) answers) const {
+    /**
+     * Generate the private-key from quiz (correct answers)
+     * Params:
+     *   R = generated private-key
+     *   questions = list of questions
+     *   answers = list of answers
+     * Returns: true if it was successfully
+     */
+    bool findSecret(
+            scope ref ubyte[] R,
+            scope const(string[]) questions,
+    scope const(char[][]) answers) const {
         return findSecret(R, quiz(questions, answers));
     }
 
+    /** 
+     * Recover the private-key from the hash-list A
+     * The hash-list is usually the question+answers hash 
+     * Params:
+     *   R = Private-key
+     *   A = List of hashes 
+     * Returns: true if it was successfully
+     */
     bool findSecret(scope ref ubyte[] R, Buffer[] A) const {
-
-        
-
-            .check(A.length > 1, message("Number of questions must be more than one"));
-
-        
-
-        .check(generator.confidence <= A.length,
+        check(A.length > 1, message("Number of questions must be more than one"));
+        check(generator.confidence <= A.length,
                 message("Number qustions must be lower than or equal to the confidence level (M=%d and N=%d)",
                 A.length, generator.confidence));
         const number_of_questions = cast(uint) A.length;
@@ -231,6 +300,13 @@ struct KeyRecover {
     }
 }
 
+/**
+ * Strip down question and answer
+ * Converts the string to lower-case and takes only letters and numbers
+ * Params:
+ *   text = 
+ * Returns: stripped text
+ */
 char[] strip_down(const(char[]) text) pure @safe
 out (result) {
     assert(result.length > 0);
@@ -261,6 +337,7 @@ shared static this() {
     ];
 }
 
+///
 unittest {
     import tagion.crypto.SecureNet : StdHashNet;
     import std.array : join;
@@ -275,7 +352,7 @@ unittest {
     ];
     const net = new StdHashNet;
     auto recover = KeyRecover(net);
-    recover.createKey(selected_questions, answers, 3);
+    recover.createKey(selected_questions, answers, 3, null);
 
     auto R = new ubyte[net.hashSize];
 

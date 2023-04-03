@@ -3,7 +3,7 @@
 When
 
 ## Signed contract(SSC)
-[SignedContract](tagion.funnel.StandardContract.SignedContract)
+[SignedContract](ddoc://tagion.funnel.StandardContract.SignedContract)
 
 | Name        | D-Type     | Description            |  Required |
 | ----------- | -------- | ---------------------- | --------- |
@@ -11,7 +11,7 @@ When
 | `$contract` | [Contract]() | The contract body               |    Yes    |
 
 ### Body of the contract(SMC) 
-[Contract](tagion.funnel.StandardContract.Contract)
+[Contract](ddoc://tagion.funnel.StandardContract.Contract)
 
 | Name        | D-Type        | Description            |  Required |
 | ----------- | ----------- | ---------------------- | --------- |
