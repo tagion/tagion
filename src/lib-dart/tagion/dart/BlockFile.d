@@ -13,6 +13,7 @@ import std.algorithm.searching : until;
 import std.algorithm.mutation : SwapStrategy;
 import std.algorithm.iteration : filter, each, map;
 
+import std.range : isForwardRange, isInputRange;
 import std.array : array, join;
 import std.datetime;
 import std.format;
@@ -92,9 +93,9 @@ class BlockFile {
         return _statistic;
     }
 
-    bool isRecyclable(const Index index) const pure nothrow {
-        return recycler.isRecyclable(index);
-    }
+    // bool isRecyclable(const Index index) const pure nothrow {
+    //     return recycler.isRecyclable(index);
+    // }
 
     void recycleDump() {
         import tagion.dart.Recycler : Segment;
@@ -107,7 +108,7 @@ class BlockFile {
             return;
         }
         while (index != Index.init) {
-            auto add_segment = new Segment(this, index);
+            auto add_segment = Segment(this, index);
             writefln("Index(%s), size(%s), next(%s)", add_segment.index, add_segment
                     .size, add_segment.next);
             index = add_segment.next;
@@ -414,18 +415,6 @@ class BlockFile {
 
             const doc = this.toDoc;
             buffer[0..doc.full_size] = doc.serialize;
-
-            // size_t pos;
-
-            // version(none) {
-            // buffer[0..16] = cast(ubyte[]) "masterblock_iden";
-            // pos += 16; }
-            // foreach (i, m; this.tupleof) {
-            //     alias type = TypedefType!(typeof(m));
-            //     buffer.binwrite(cast(type) m, &pos);
-            // }
-            // buffer[$ - FILE_LABEL.length .. $] = cast(ubyte[]) FILE_LABEL;
-            // assert(!BlockFile.do_not_write, "Should not write here");
             
             file.rawWrite(buffer);
             // Truncate the file after the master block
@@ -434,20 +423,9 @@ class BlockFile {
         }
 
         void read(ref File file, immutable uint BLOCK_SIZE) {
-            // auto buffer = new ubyte[BLOCK_SIZE];
             const doc = file.fread();
             check(MasterBlock.isRecord(doc), "not a masterblock");
-            this = MasterBlock(doc);
-            
-
-            // version(none) {
-            // writefln("buf master: %s", cast(char[]) buf[0..16]);
-            // buf = buf[16..$];
-            // }
-            // foreach (i, ref m; this.tupleof) {
-            //     alias type = TypedefType!(typeof(m));
-            //     m = buf.binread!type;
-            // }
+            this = MasterBlock(doc);        
         }
 
         string toString() const pure nothrow {
@@ -532,7 +510,7 @@ class BlockFile {
         check(file.size % BLOCK_SIZE == 0,
             format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
                 .size));
-        _last_block_index = cast(Index)(file.size / BLOCK_SIZE);
+        _last_block_index = Index(file.size / BLOCK_SIZE);
         check(_last_block_index > 1, format(
                 "The BlockFile should at least have a size of two block of %d but is %d", BLOCK_SIZE, file
                 .size));
@@ -630,29 +608,15 @@ class BlockFile {
      +
      +/
     void dispose(const Index index) {
+        import LEB128 = tagion.utils.LEB128;
 
         auto allocated_range = allocated_chains.filter!(a => a.index == index);
         assert(allocated_range.empty, "We should dispose cached blocks");
-        // version (none) {
-        //     auto allocated_range = allocated_chains.filter!(a => a.index == index);
-        //     if (!allocated_range.empty) {
-        //         recycler.dispose(index, numberOfBlocks(
-        //                 allocated_range.front.doc.full_size));
-        //         return;
-        //     }
-        // }
         seek(index);
-
-        import LEB128 = tagion.utils.LEB128;
-
         ubyte[LEB128.DataSize!ulong] _buf;
         ubyte[] buf = _buf;
         file.rawRead(buf);
         const doc_size = LEB128.read!ulong(buf);
-
-        // if (stat) {
-        //     writefln("stat doc size: %s", numberOfBlocks(doc_size.size + doc_size.value));
-        // }
 
         recycler.dispose(index, numberOfBlocks(doc_size.size + doc_size.value));
     }
@@ -703,8 +667,7 @@ class BlockFile {
 
         scope (success) {
             allocated_chains = null;
-            // writeln("###");
-            // recycler.dump;
+
             masterblock.recycle_header_index = recycler.write();
             writeMasterBlock;
         }
@@ -773,7 +736,8 @@ class BlockFile {
         }
 
     }
-
+    static assert(isInputRange!BlockSegmentRange);
+    static assert(isForwardRange!BlockSegmentRange);
     BlockSegmentRange opSlice() {
         return BlockSegmentRange(this);
     }
@@ -873,24 +837,6 @@ class BlockFile {
         }
         writef("|");
         writeln;
-
-        // auto line = new char[block_per_line];
-
-        // version (none)
-        //     foreach (index; 0 .. ((_last_block_index / block_per_line) + (
-        //             (_last_block_index % block_per_line == 0) ? 0 : 1)) * block_per_line) {
-        //         immutable pos = index % block_per_line;
-        //         if ((index % block_per_line) == 0) {
-        //             line[] = 0;
-        //         }
-
-        //         scope block = read(Index(index));
-        //         line[pos] = getSymbol(block, Index(index));
-
-        //         if (pos + 1 == block_per_line) {
-        //             writefln("%04X] %s", index - pos, line);
-        //         }
-        //     }
     }
 
     // Block index 0 is means null

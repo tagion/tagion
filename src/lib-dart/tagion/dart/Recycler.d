@@ -218,15 +218,14 @@ struct Recycler {
                         insert(add_segment);
                         continue;
                     }
-                    else {
-                        // ### 
-                        // ###A
-                        Segment* add_segment = new Segment(lower_range.front.index, lower_range.front.size + segment
-                                .size);
-                        remove(lower_range.front);
-                        insert(add_segment);
-                        continue;
-                    }
+
+                    // ### 
+                    // ###A
+                    Segment* add_segment = new Segment(lower_range.front.index, lower_range.front.size + segment
+                            .size);
+                    remove(lower_range.front);
+                    insert(add_segment);
+                    continue;
 
                 }
                 if (upper_range.front.index == segment.end) {
@@ -311,9 +310,9 @@ struct Recycler {
         }
     }
 
-    bool isRecyclable(const Index index) const pure nothrow {
-        return false;
-    }
+    // bool isRecyclable(const Index index) const pure nothrow {
+    //     return false;
+    // }
 
     void read(Index index) {
         indices = new Indices;
@@ -330,9 +329,9 @@ struct Recycler {
         }
     }
 
-    void load(Index index) {
-        return;
-    }
+    // void load(Index index) {
+    //     return;
+    // }
 
     /** 
      * Writes the data to the file. First it calls recycler with the to_be_recycled. Afterwards it goes through and updated the pointer chain.
@@ -347,12 +346,6 @@ struct Recycler {
         if (indices.empty) {
             return Index.init;
         }
-
-        // __write("indices to be written");
-        // if (print) {
-        //     assumeWontThrow(dump);
-
-        // }
 
         Index next;
         bool first = true;
@@ -370,26 +363,7 @@ struct Recycler {
             }
             next = segment.index;
         }
-        // if (print) {
-        //     assumeWontThrow(recycler.dump);
-        // }
-        // assumeWontThrow(read(indices[].front.index));
-        // __write("after read");
-        // if (print) {
-        //     assumeWontThrow(dump);
-        // }
-        // Index index = indices[].front.index;
-        // while (index != Index.init) {
-        //     __write("index: %s", index);
-        //     assumeWontThrow(owner.seek(index));
-        //     const doc = assumeWontThrow(owner.file.fread);
-        //     __write("Document: %s", assumeWontThrow(doc.toPretty));
-        //     index = Index(index + doc.full_size);
-        // }
 
-        // assumeWontThrow(writefln("wrote recycler with %s segments", indices.length));
-        // assumeWontThrow(dump());
-        // assumeWontThrow(writeln);
         return indices[].front.index;
     }
 
@@ -454,8 +428,6 @@ struct Recycler {
     void dispose(const(Index) index, const uint segment_size) nothrow {
         assumeWontThrow(__write("disposing segment: index=%s, size=%s", index, segment_size));
         // If the index is 0 then it is because we have returned a Leave.init. 
-        // This should be ignored.
-        // assumeWontThrow(writefln("calling dispose with: Index= %s, segment_size = %s", index, segment_size));
         if (index == 0) {
             return;
         }
