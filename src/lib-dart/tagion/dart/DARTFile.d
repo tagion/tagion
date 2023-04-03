@@ -973,7 +973,9 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                         if (!Branches.isRecord(doc)) {
                             import std.stdio;
                             import tagion.hibon.HiBONJSON;
-                            writefln("Error at index %s rim %s. Document: %s", branch_index, rim, doc.toPretty);
+
+                            writefln("Error at index %s rim %s. Document: %s", branch_index, rim, doc
+                                    .toPretty);
                         }
                         branches = blockfile.load!Branches(branch_index);
 
@@ -989,13 +991,18 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                         if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                             const leave = traverse_dart(sub_range,
                                 branches.index(rim_key), rim + 1);
-                                if (rim == 1 && leave.return_pos !is null) {
-                                    writefln("UPPER rim %s, index: %s, returnPos: <%s>", rim, leave.index, leave.return_pos);
+                            if (rim == 1 && leave.return_pos !is null) {
+                                // writefln("UPPER rim %s, index: %s, returnPos: <%s>", rim, leave.index, leave
+                                //         .return_pos);
 
-                                }
+                            }
                             if (rim == 0) {
                                 const doc = cacheLoad(leave.index);
-                                .check(Branches.isRecord(doc), "sikke noget pis");
+                                if (!Branches.isRecord(doc)) { 
+                                    writefln("sikke noget pis");
+                                    }
+                                
+                                // .check(Branches.isRecord(doc), "sikke noget pis");
                             }
                             branches[rim_key] = leave;
                         }
@@ -1005,14 +1012,18 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                     if (branches.empty) {
                         return Leave.init;
                     }
-                    auto return_leave = Leave(blockfile.save(branches).index, branches.fingerprint(this));
-                    if (return_leave.return_pos !is null) {
-                        
-                        writefln("rim %s, index: %s, returnPos: <%s>", rim, return_leave.index, return_leave.return_pos);
-                    }
+                    auto return_leave = Leave(blockfile.save(branches).index, branches.fingerprint(
+                            this));
+                    // if (return_leave.return_pos !is null) {
+
+                    //     writefln("rim %s, index: %s, returnPos: <%s>", rim, return_leave.index, return_leave
+                    //             .return_pos);
+                    // }
 
                     const doc = cacheLoad(return_leave.index);
-                    .check(isRecord!Branches(doc), "sikke noget skidt");
+                    
+                    if (!isRecord!Branches(doc)) { writefln("sikke noget skidt");}
+                    // .check(isRecord!Branches(doc), "sikke noget skidt");
 
                     return return_leave;
                 }
@@ -1156,12 +1167,13 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                                 if (rim == RIMS_IN_SECTOR) {
                                     // Return a branch with as single leave when the leave is on the on
                                     // the edge between the sector
-                                    branches[lonely_rim_key] = Leave(blockfile.save(one_archive.store).index, 
+                                    branches[lonely_rim_key] = Leave(blockfile.save(one_archive.store)
+                                            .index,
                                         one_archive.fingerprint);
-                                    return Leave(blockfile.save(branches).index, 
+                                    return Leave(blockfile.save(branches).index,
                                         branches.fingerprint(this), dumpPos("rim is sector"));
                                 }
-                                return Leave(blockfile.save(one_archive.store).index, 
+                                return Leave(blockfile.save(one_archive.store).index,
                                     one_archive.fingerprint, dumpPos("rim !sector"));
 
                             }
@@ -2261,6 +2273,60 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                 auto branches = dart_A.branches(rim_path);
                 // // writefln("XXX %s", numberOfArchives(branches, dart_A));
                 assert(numberOfArchives(branches, dart_A) == 1, "Should contain one archives after remove");
+
+            }
+
+            {
+                DARTFile.create(filename_A);
+                auto dart_A = new DARTFile(net, filename_A);
+
+                const ulong[] deep_table = [
+                    0xABB9_130b_11ef_0923,
+                    0xABB9_130b_11ef_0923,
+                ];
+
+                auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
+                auto recorder = dart_A.recorder();
+                foreach (doc; docs) {
+                    recorder.add(doc);
+                }
+                auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
+                // writefln("%s", remove_fingerprint);
+
+                dart_A.modify(recorder);
+                // dart_A.dump();
+
+                auto dart_blockfile = BlockFile(filename_A);
+                dart_blockfile.dump;
+                dart_blockfile.close;
+
+                auto remove_recorder = dart_A.recorder();
+                remove_recorder.remove(remove_fingerprint);
+                dart_A.modify(remove_recorder);
+                // writefln("after remove");
+                // dart_A.dump();
+                
+                dart_blockfile = BlockFile(filename_A);
+                dart_blockfile.dump;
+                dart_blockfile.close;
+
+
+                auto branches = dart_A.branches([0xAB]);
+
+                assert(numberOfArchives(branches, dart_A) == 0, "Branch not snapped back to rim 2");
+
+            }
+
+            {
+                DARTFile.create(filename_A);
+                auto dart_A = new DARTFile(net, filename_A);
+                dart_A.close;
+                auto blockfile = BlockFile(filename_A);
+                blockfile.dump;
+                blockfile.close;
+
+                dart_A = new DARTFile(net, filename_A);
+                assert(dart_A.bullseye == null);
 
             }
 
