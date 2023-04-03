@@ -1006,8 +1006,8 @@ unittest {
         data_indexes ~= blockfile.save(data).index;
     }
     blockfile.store;
-    writefln("dump before");
-    blockfile.dump;
+    // writefln("dump before");
+    // blockfile.dump;
     // foreach(idx; data_indexes) {
     //     const doc = blockfile.load(idx);
     //     writefln("doc string %s", doc["text"].get!string);
@@ -1021,8 +1021,8 @@ unittest {
 
     blockfile.store;
 
-    writefln("dump after");
-    blockfile.dump;
+    // writefln("dump after");
+    // blockfile.dump;
 
 
 
