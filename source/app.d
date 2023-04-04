@@ -1,5 +1,9 @@
 import actor.common;
 
+import std.concurrency;
+import std.stdio;
+import std.format;
+
 struct M(int name) {}
 
 import std.typecons;
@@ -20,7 +24,8 @@ struct Logger {
             try {
                 receive(
                 /* &msgDelegate, */
-                (M!0, string str) { writeln("Info: ", str); },
+                (M!0, string str) { 
+                writeln("Info: ", str); },
                 (M!1, string str) { writeln("Fatal: ", str); },
                 /* &exceptionHandler, */
 
@@ -55,6 +60,13 @@ struct Logger {
     }
 }
 
+class Hello {
+    this() {
+        writeln("stometgi");
+        while(true) {
+        }
+    }
+}
 
 void main() {
     auto logger_proto = Logger();
@@ -71,4 +83,6 @@ void main() {
     assert(checkCtrl(Control.END));
 
     logger.send(M!1(), "momma");
+
+    spawnChildren([&logger_task]);
 }

@@ -2,7 +2,7 @@ module actor.common;
 
 import std.concurrency;
 import std.stdio;
-import std.format: format;
+import std.format : format;
 import std.typecons;
 
 // State messages send to the supervisor
@@ -18,6 +18,7 @@ enum Control {
 alias CtrlMsg = Tuple!(Tid, Control);
 
 bool checkCtrl(Control msg) {
+    // Never use receiveOnly
     CtrlMsg r = receiveOnly!(CtrlMsg);
     debug writeln(r);
     return r[1] is msg;
@@ -36,7 +37,7 @@ Nullable!Tid maybeOwnerTid() {
         // Tid is asigned
         tid = ownerTid;
     }
-    catch(TidMissingException) {
+    catch (TidMissingException) {
     }
     return tid;
 }
@@ -65,21 +66,31 @@ void setState(Control ctrl) {
     }
 }
 
-version(none)
-struct ActorHandle {
+version (none) struct ActorHandle {
     Tid tid;
     string taskName;
     // Tid Owner?
 }
 
-/// Just spawn a single actor and make sure it doesn't fail for some duration
-void restartIffailed(F, T...)(F fn, T args)
-if (isSpawnable!(F, T))
+import std.algorithm.iteration;
+
+Tid[] spawnChildren(F)(F[] fns)
+/* if ( */
+/*     fn.each(isSpawnable(f)); } */
+/*     ) { */
 {
-    static assert(!hasLocalAliasing!(T), "Aliases to mutable thread-local data not allowed.");
-    Tid childtid = _spawn(false, fn, args);
-    checkCtrl(Control.STARTING);
-    checkCtrl(Control.ALIVE);
+    Tid[] tids;
+    foreach(f; fns) {
+        // Starting and checking the children sequentially :(
+        tids ~= spawn(f);
+        assert(checkCtrl(Control.STARTING));
+        assert(checkCtrl(Control.ALIVE));
+    }
+    return tids;
+}
+
+/// Just spawn a single actor and make sure it doesn't fail for some duration
+void control(CtrlMsg msg) {
 }
 
 // Signals send from the supervisor to the direct children
