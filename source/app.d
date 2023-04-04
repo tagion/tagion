@@ -25,8 +25,11 @@ struct Logger {
                 receive(
                 /* &msgDelegate, */
                 (M!0, string str) { 
-                writeln("Info: ", str); },
-                (M!1, string str) { writeln("Fatal: ", str); },
+                writeln("Info: ", str); 
+                },
+                (M!1, string str) { 
+                    writeln("Fatal: ", str); 
+                },
                 /* &exceptionHandler, */
 
                 (Signal s) {
@@ -60,7 +63,32 @@ struct Logger {
     }
 }
 
+static class Logger2 : Actor {
+
+    void task() {
+        stop = false;
+
+        while(!stop) {
+            receive(
+                (M!0, string str) { 
+                    writeln("Info: ", str); 
+                },
+                (M!1, string str) { 
+                    writeln("Fatal: ", str); 
+                },
+
+                &signal,
+                &control,
+                &ownerTerminated,
+                &unknown,
+            );
+        }
+    }
+
+}
+
 void main() {
+    version(none) {
     auto logger_proto = Logger();
     alias logger_task = logger_proto.task;
     Tid logger = spawn(&logger_task);
@@ -75,6 +103,19 @@ void main() {
     assert(checkCtrl(Control.END));
 
     logger.send(M!1(), "momma");
+    }
 
-    /* spawnChildren([&logger_task]); */
+    alias logger2_task = Logger.task;
+    Tid logger = spawn(&logger2_task);
+    register("logger2", logger);
+
+    assert(checkCtrl(Control.STARTING));
+    assert(checkCtrl(Control.ALIVE));
+
+    logger.send(M!0(), "hello");
+    logger.send(M!0(), "momma");
+    logger.send(Signal.STOP);
+    assert(checkCtrl(Control.END));
+
+    logger.send(M!1(), "momma");
 }
