@@ -13,65 +13,70 @@ void exceptionHandler(Exception e) {
     writeln(e);
 }
 
-// proto messages for actors
+// State messages send to the supervisor
 enum Control {
-    LIVE, /// Send to the ownerTid when the task has been started
-    STOP, /// Send when the child task to stop task
+    STARTING, // The actors is lively
+    ALIVE, /// Send to the ownerTid when the task has been started
     FAIL, /// This if a something failed other than an exception
     END, /// Send for the child to the ownerTid when the task ends
 }
 
-// base implementationm for actor messages.
-void controlFlow(Control msg) {
-    final switch(msg) {
-        case Control.LIVE:
-            assert(0, not_impl);
-        case Control.STOP:
-            assert(0, not_impl);
-        case Control.FAIL:
-            assert(0, not_impl);
-        case Control.END :
-            assert(0, not_impl);
-    }
+// Signal send from the supervisor
+enum Signal {
+    Stop,
 }
+
+/* // base implementationm for actor messages. */
+/* void controlFlow(Control msg) { */
+/*     final switch(msg) { */
+/*         case Control.LIVE: */
+/*             assert(0, not_impl); */
+/*         case Control.STOP: */
+/*             assert(0, not_impl); */
+/*         case Control.FAIL: */
+/*             assert(0, not_impl); */
+/*         case Control.END : */
+/*             assert(0, not_impl); */
+/*     } */
+/* } */
 
 struct M(int name) {}
 
 import std.typecons;
 struct Logger {
-	enum Msg{
-		info = 0,
-		fatal,
-	}
-
-    void msgDelegate(V)(Msg msg, V v) {
-        with(Msg) final switch(msg) {
-            case info:
-                writeln("info: ", v);
-                break;
-            case fatal:
-                /* writeln("fatal: ", args); */
-                break;
-        }
+    enum Msg{
+        info = 0,
+        fatal,
     }
+
+    /* void msgDelegate(V)(Msg msg, V v) { */
+    /*     with(Msg) final switch(msg) { */
+    /*         case info: */
+    /*             writeln("info: ", v); */
+    /*             break; */
+    /*         case fatal: */
+    /*             writeln("fatal: ", v); */
+    /*             break; */
+    /*     } */
+    /* } */
 
     void task() {
         bool stop = false;
 
-        ownerTid.send(Control.LIVE); // Tell the owner that you have started.
+        ownerTid.send(Control.STARTING); // Tell the owner that you have started.
         scope(exit) ownerTid.send(Control.END); // Tell the owner that you have finished.
 
-        while(!stop) {
+        do {
             try {
                 receive(
                 /* &msgDelegate, */
-				(M!0, string str) { writeln("Info: ", str); },
-				(M!1, string str) { writeln("Fatal: ", str); },
-				&exceptionHandler,
+                (M!0, string str) { writeln("Info: ", str); },
+                (M!1, string str) { writeln("Fatal: ", str); },
+                &exceptionHandler,
 
                 // Default
                 (Variant message) {
-                        // For unkown messages we assert, 
+                        // For unkown messages we assert,
                         // so we don't accidentally fill up our messagebox with garbage
                         assert(0, "No delegate to deal with message: %s".format(message));
                     }
@@ -87,26 +92,9 @@ struct Logger {
                 stop = true;
             }
         }
+        while(!stop);
     }
 }
-
-struct MyActor {
-    enum Msg {
-        DosomeTask,
-    }
-
-    void task() {
-        receive((Msg msg) {
-            final switch(msg) {
-                case Msg.DosomeTask:
-                    assert(0, not_impl);
-            }
-        },
-        &controlFlow,
-        );
-    }
-}
-// assert to check that this is implemented properly
 
 struct Supervisor {
 
@@ -128,10 +116,10 @@ struct Supervisor {
     void task() {
         bool stop = false;
 
-        ownerTid.send(Control.LIVE); // Tell the owner that you have started.
+        ownerTid.send(Control.STARTING); // Tell the owner that you have started.
         scope(exit) ownerTid.send(Control.END); // Tell the owner that you have finished.
 
-        while(!stop) {
+        do {
             try {
                 receive(
                     &msgDelegate,
@@ -139,7 +127,7 @@ struct Supervisor {
 
                     // Default
                     (Variant other) {
-                        // For unkown messages we assert, 
+                        // For unkown messages we assert,
                         // basically so we don't accidentally fill up our messagebox with garbage
                         assert(0, "No delegate to deal with message: %s".format(other));
                     }
@@ -155,6 +143,7 @@ struct Supervisor {
                 stop = true;
             }
         }
+        while(!stop);
     }
 }
 
@@ -163,9 +152,8 @@ void main() {
     alias logger_task = logger_proto.task;
     Tid logger = spawn(&logger_task);
 
-	M!0 info = M!0();
     logger.send(M!0(), "hello");
-    logger.send(M!1(), "momma");
+    logger.send(M!0(), "momma");
     logger.send(M!1(), "momma");
 
     /* auto my_super = Supervisor(); */
