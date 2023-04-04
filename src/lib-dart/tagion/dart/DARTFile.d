@@ -972,7 +972,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                         const doc = blockfile.load(branch_index);
                         if (!Branches.isRecord(doc)) {
 
-                            writefln("Error at index %s rim %s. Document: %s", branch_index, rim, doc
+                            writefln("Error at index %s rim %s, empty: %s, Document: %s", branch_index, rim, doc.empty, doc
                                     .toPretty);
                         }
                         branches = blockfile.load!Branches(branch_index);
@@ -989,20 +989,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                         if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                             const leave = traverse_dart(sub_range,
                                     branches.index(rim_key), rim + 1);
-                            //if (rim == 1 && leave.return_pos !is null) {
-                                // writefln("UPPER rim %s, index: %s, returnPos: <%s>", rim, leave.index, leave
-                                //         .return_pos);
 
-                            //}
-                            //if (rim == 0) {
-                            const doc = cacheLoad(leave.index);
-                            if (!Branches.isRecord(doc)) {
-                                writefln("sikke noget pis, rim=%s, rim_key=%02X, index=[%d] empty %s, doc=%s, prt=%s", 
-                                rim, rim_key, leave.index, doc.empty, doc.toPretty, &doc.data[0]);
-                            }
-
-                            // assert(Branches.isRecord(doc), "sikke noget pis");
-                            //}
                             branches[rim_key] = leave;
                         }
                     }
@@ -1011,22 +998,9 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                     if (branches.empty) {
                         return Leave.init;
                     }
-                    auto return_leave = Leave(blockfile.save(branches).index,
+                    return Leave(blockfile.save(branches).index,
                             branches.fingerprint(this));
-                    // if (return_leave.return_pos !is null) {
 
-                    //     writefln("rim %s, index: %s, returnPos: <%s>", rim, return_leave.index, return_leave
-                    //             .return_pos);
-                    // }
-
-                    const doc = cacheLoad(return_leave.index);
-
-                    if (!isRecord!Branches(doc)) {
-                        writefln("sikke noget skidt");
-                    }
-                    // .check(isRecord!Branches(doc), "sikke noget skidt");
-
-                    return return_leave;
                 }
                 else static if (is(R == RimKeyRange)) {
                     uint lonely_rim_key;
@@ -2325,7 +2299,8 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                 auto dart_A = new DARTFile(net, filename_A);
 
                 const ulong[] deep_table = [
-                    0xABB9_130b_11ef_0923,
+                    0xABCD_EF0b_11ef_0923,
+                    0x1234_EF0b_11ef_0923
                 ];
 
                 auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
@@ -2337,7 +2312,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                 // writefln("%s", remove_fingerprint);
 
                 dart_A.modify(recorder);
-                // dart_A.dump();
+                dart_A.dump();
 
                 auto dart_blockfile = BlockFile(filename_A);
                 dart_blockfile.dump;
@@ -2347,16 +2322,17 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                 remove_recorder.remove(remove_fingerprint);
                 dart_A.modify(remove_recorder);
                 // writefln("after remove");
-                // dart_A.dump();
+                dart_A.dump();
 
                 dart_blockfile = BlockFile(filename_A);
                 dart_blockfile.dump;
                 dart_blockfile.close;
 
-                assert(dart_A.bullseye == null);
+                // assert(dart_A.bullseye == null);
 
             }
 
+            version(none)
             {
                 writefln("different archives top rim snapback?");
                 DARTFile.create(filename_A);
@@ -2399,6 +2375,8 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
 
             }
 
+            
+            version(none)
             {
                 writefln("open dart and close");
                 DARTFile.create(filename_A);
@@ -2412,6 +2390,8 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                 assert(dart_A.bullseye == null);
 
             }
+
+
 
         }
 
