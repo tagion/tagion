@@ -5,10 +5,11 @@ import std.stdio;
 import std.format : format;
 import std.typecons;
 
+/// Message type temlate
 struct Msg(string name) {}
 
 // State messages send to the supervisor
-enum Control {
+enum Ctrl {
     STARTING, // The actors is lively
     ALIVE, /// Send to the ownerTid when the task has been started
     FAIL, /// This if a something failed other than an exception
@@ -16,16 +17,21 @@ enum Control {
 }
 
 // Signals send from the supervisor to the direct children
-enum Signal {
+enum Sig {
     STOP,
 }
 
+debug
+enum DebugSig {
+    /* STARTING = Msg!"STARTING", */
+    FAIL, // Artificially make the actor fail
+}
 
 /// Control message sent to a supervisor 
 /// contains the Tid of the actor which send it and the state
-alias CtrlMsg = Tuple!(Tid, Control);
+alias CtrlMsg = Tuple!(Tid, Ctrl);
 
-bool checkCtrl(Control msg) {
+bool checkCtrl(Ctrl msg) {
     // Never use receiveOnly
     CtrlMsg r = receiveOnly!(CtrlMsg);
     debug writeln(r);
@@ -64,7 +70,7 @@ void sendOwner(T...)(T vals) {
 }
 
 /// send your state to your owner
-void setState(Control ctrl) {
+void setState(Ctrl ctrl) {
     if (!maybeOwnerTid.isNull) {
         prioritySend(maybeOwnerTid.get, thisTid, ctrl);
     }
@@ -89,8 +95,8 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */
     foreach (f; fns) {
         // Starting and checking the children sequentially :(
         tids ~= spawn(f);
-        assert(checkCtrl(Control.STARTING));
-        assert(checkCtrl(Control.ALIVE));
+        assert(checkCtrl(Ctrl.STARTING));
+        assert(checkCtrl(Ctrl.ALIVE));
     }
     return tids;
 }
@@ -101,8 +107,8 @@ static class Actor {
     /// Static ActorHandle[] children;
     static bool stop;
 
-    static void signal(Signal s) {
-        with (Signal) final switch (s) {
+    static void signal(Sig s) {
+        with (Sig) final switch (s) {
         case STOP:
             stop = true;
             break;
@@ -120,7 +126,7 @@ static class Actor {
     static void unknown(Variant message) {
         // For unkown messages we assert, and send a fail message to the owner
         // so we don't accidentally fill up our messagebox with garbage
-        setState(Control.FAIL);
+        setState(Ctrl.FAIL);
         assert(0, "No delegate to deal with message: %s".format(message));
     }
 
