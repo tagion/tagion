@@ -671,6 +671,7 @@ class BlockFile {
 
             masterblock.recycle_header_index = recycler.write();
             writeMasterBlock;
+            recycler.used_indexes = null;
         }
         foreach (block_segment; sort!(q{a.index < b.index}, SwapStrategy.unstable)(
                 allocated_chains)) {

@@ -369,6 +369,7 @@ struct Recycler {
 
     /// The recycler to the blockfile
 
+    bool[Index] used_indexes;
     /**
      * Claims a free segment. Priority is first to use segments already in the recycler. 
      * Therefore removing a segment from the recycler. 
@@ -383,6 +384,13 @@ struct Recycler {
 
     out (result) {
         assert(result != Index.init);
+        if (result in used_indexes) {
+            writefln("WOWOWOWOWOWOWOWOW %s", result);
+        } 
+        else {
+            used_indexes[result] = true;
+        }
+
     }
     do {
         __write("claiming size: %s", segment_size);
