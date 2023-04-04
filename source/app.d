@@ -3,6 +3,27 @@ import std.stdio;
 import std.format: format;
 import std.typecons;
 
+// State messages send to the supervisor
+enum Control {
+    STARTING, // The actors is lively
+    ALIVE, /// Send to the ownerTid when the task has been started
+    FAIL, /// This if a something failed other than an exception
+    END, /// Send for the child to the ownerTid when the task ends
+}
+
+alias CtrlMsg = Tuple!(Tid, Control);
+
+bool checkCtrl(Control msg) {
+    CtrlMsg r = receiveOnly!(CtrlMsg);
+    debug writeln(r);
+    return r[1] is msg;
+}
+
+// Signal send from the supervisor
+enum Signal {
+    STOP,
+}
+
 static string not_impl() {
     return format("Not implemeted %s(%s)", __FILE__, __LINE__);
 }
@@ -49,18 +70,6 @@ void setState(Control ctrl) {
     }
 }
 
-// State messages send to the supervisor
-enum Control {
-    STARTING, // The actors is lively
-    ALIVE, /// Send to the ownerTid when the task has been started
-    FAIL, /// This if a something failed other than an exception
-    END, /// Send for the child to the ownerTid when the task ends
-}
-
-// Signal send from the supervisor
-enum Signal {
-    Stop,
-}
 
 struct M(int name) {}
 
@@ -86,23 +95,25 @@ struct Logger {
                 (M!1, string str) { writeln("Fatal: ", str); },
                 /* &exceptionHandler, */
 
+                (Signal s) {
+                    with(Signal) final switch(s) {
+                        case STOP:
+                        stop = true;
+                        break;
+                    }
+                },
                 (OwnerTerminated _e) {
                     writefln("%s, Owner stopped... nothing to life for... stoping self", thisTid);
                     stop = true;
                 },
-
                 // Default
                 (Variant message) {
-                        // For unkown messages we assert,
+                        // For unkown messages we assert, and send a fail message to the owner
                         // so we don't accidentally fill up our messagebox with garbage
                         setState(Control.FAIL);
                         assert(0, "No delegate to deal with message: %s".format(message));
                     }
                 );
-            }
-            catch (OwnerTerminated e) {
-                writefln("%s, Owner stopped... nothing to life for... stoping self", thisTid);
-                stop = true;
             }
             // If we catch an exception we send it back to owner for them to deal with it.
             catch (shared(Exception) e) {
@@ -122,7 +133,13 @@ void main() {
     Tid logger = spawn(&logger_task);
     register("logger", logger);
 
+    assert(checkCtrl(Control.STARTING));
+    assert(checkCtrl(Control.ALIVE));
+
     logger.send(M!0(), "hello");
     logger.send(M!0(), "momma");
+    logger.send(Signal.STOP);
+    assert(checkCtrl(Control.END));
+
     logger.send(M!1(), "momma");
 }
