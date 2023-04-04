@@ -5,6 +5,8 @@ import std.stdio;
 import std.format : format;
 import std.typecons;
 
+struct Msg(string name) {}
+
 // State messages send to the supervisor
 enum Control {
     STARTING, // The actors is lively
@@ -17,6 +19,7 @@ enum Control {
 enum Signal {
     STOP,
 }
+
 
 /// Control message sent to a supervisor 
 /// contains the Tid of the actor which send it and the state

@@ -4,8 +4,6 @@ import std.concurrency;
 import std.stdio;
 import std.format;
 
-struct Msg(string name) {}
-
 static class Logger : Actor {
 
     void task() {
