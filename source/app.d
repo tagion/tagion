@@ -35,23 +35,23 @@ void controlFlow(Control msg) {
     }
 }
 
+struct M(int name) {}
+
 import std.typecons;
 struct Logger {
-    enum Msg {
-        info,
-        fatal,
-    }
+	enum Msg{
+		info = 0,
+		fatal,
+	}
 
-    void msgDelegate(Msg msg) {
-        final switch(msg) {
-            with(Msg) {
+    void msgDelegate(V)(Msg msg, V v) {
+        with(Msg) final switch(msg) {
             case info:
-                writeln("info: ", args);
+                writeln("info: ", v);
                 break;
             case fatal:
-                writeln("fatal: ", args);
+                /* writeln("fatal: ", args); */
                 break;
-            }
         }
     }
 
@@ -64,13 +64,15 @@ struct Logger {
         while(!stop) {
             try {
                 receive(
-                &msgDelegate,
-                &exceptionHandler,
+                /* &msgDelegate, */
+				(M!0, string str) { writeln("Info: ", str); },
+				(M!1, string str) { writeln("Fatal: ", str); },
+				&exceptionHandler,
 
                 // Default
                 (Variant message) {
                         // For unkown messages we assert, 
-                        // basically so we don't accidentally fill up our messagebox with garbage
+                        // so we don't accidentally fill up our messagebox with garbage
                         assert(0, "No delegate to deal with message: %s".format(message));
                     }
                 );
@@ -134,18 +136,17 @@ struct Supervisor {
                 receive(
                     &msgDelegate,
                     &exceptionHandler,
-                    /* &controlFlow, */
 
                     // Default
-                    (Variant message) {
+                    (Variant other) {
                         // For unkown messages we assert, 
                         // basically so we don't accidentally fill up our messagebox with garbage
-                        assert(0, "No delegate to deal with message: %s".format(message));
+                        assert(0, "No delegate to deal with message: %s".format(other));
                     }
                 );
             }
             catch (OwnerTerminated e) {
-                writeln("Owner stopped... nothing to life for... stoping self");
+                writeln("Owner stopped... nothing to life for... stopping self");
                 stop = true;
             }
             // If we catch an exception we send it back to supervisor for them to deal with it.
@@ -162,9 +163,10 @@ void main() {
     alias logger_task = logger_proto.task;
     Tid logger = spawn(&logger_task);
 
-    logger.send(Logger.Msg.info, "hello", "hello");
-    logger.send(Logger.Msg.info, "momma");
-    logger.send(Logger.Msg.fatal, "momma");
+	M!0 info = M!0();
+    logger.send(M!0(), "hello");
+    logger.send(M!1(), "momma");
+    logger.send(M!1(), "momma");
 
     /* auto my_super = Supervisor(); */
     /* alias my_super_fac = my_super.task; */
