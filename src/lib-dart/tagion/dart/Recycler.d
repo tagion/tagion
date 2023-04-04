@@ -70,7 +70,6 @@ struct Segment {
     }
 }
 
-static bool[Index] used_indexes;
 
 // Indices: sorted by index
 alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index); // Segment: sorted by size.
@@ -87,7 +86,7 @@ struct Recycler {
     /** 
      * Checks if the recycler has overlapping segments.
      */
-    version(SYNC_BLOCKFILE_PROBLEM)
+    // version(SYNC_BLOCKFILE_PROBLEM)
     invariant {
         assert(noOverlaps, "Recycle segments has overlaps");
     }
@@ -370,7 +369,21 @@ struct Recycler {
         return indices[].front.index;
     }
 
-    /// The recycler to the blockfile
+    bool[Index] used_indexes;
+
+    const(Index) checkIndexes(const(Index) index) nothrow {
+        
+        bool in_recycler = assumeWontThrow(!to_be_recycled.equalRange(new Segment(index, 1)).empty);
+        if (in_recycler) {
+            assumeWontThrow(writefln("in the dispose list of the recycler already"));
+        }
+        if (index in used_indexes) {
+            assumeWontThrow(writefln("WOWOWOWOWOWWOWOWOWOWOW: %s", index));
+            return index;
+        }
+        used_indexes[index] = true;
+        return index;
+    }
 
     /**
      * Claims a free segment. Priority is first to use segments already in the recycler. 
@@ -386,17 +399,15 @@ struct Recycler {
 
     out (result) {
         assert(result != Index.init);
-        if (result in used_indexes) {
-            assumeWontThrow(writefln("WOWOWOWOWOWOWOWOW %s", result));
-        } 
-        else {
-            assumeWontThrow({used_indexes[result] = true;}());
-        }
+
     }
     do {
         __write("claiming size: %s", segment_size);
 
         try {
+
+
+
             auto sorted_segments = sortedSegments();
             auto search_segment = new Segment(Index.max, segment_size);
             
@@ -406,7 +417,7 @@ struct Recycler {
                 // there is a element equal.
                 const index = equal_range.front.index;
                 remove(equal_range.front);
-                return index;
+                return checkIndexes(index);
             }
 
             auto upper_range = sorted_segments.upperBound(search_segment);
@@ -415,7 +426,7 @@ struct Recycler {
                 auto add_segment = new Segment(Index(index + segment_size), upper_range.front.size - segment_size);
                 remove(upper_range.front);
                 insert(add_segment);
-                return index;
+                return checkIndexes(index);
             }
         }
         catch (Exception e) {
@@ -425,7 +436,7 @@ struct Recycler {
         scope (success) {
             owner._last_block_index += segment_size;
         }
-        return owner._last_block_index;
+        return checkIndexes(owner._last_block_index);
 
     }
     /** 
@@ -435,7 +446,7 @@ struct Recycler {
      *   segment_size = in number of blocks.
      */
     void dispose(const(Index) index, const uint segment_size) nothrow {
-        assumeWontThrow(__write("disposing segment: index=%s, size=%s", index, segment_size));
+        // assumeWontThrow(writefln("disposing segment: index=%s, size=%s", index, segment_size));
         // If the index is 0 then it is because we have returned a Leave.init. 
         if (index == 0) {
             return;
@@ -887,7 +898,7 @@ unittest {
     ];
 
     foreach (data; datas) {
-        const index = blockfile.save(data).index;
+        blockfile.save(data);
     }
 
     blockfile.store();
@@ -977,7 +988,10 @@ unittest {
     blockfile.dispose(Index(1UL));
     blockfile.dispose(Index(1UL));
     blockfile.store();
-}
+    assert(blockfile.recycler.indices.length == 1, "should contain the one recycled element");
+    
+
+}  
 
 @safe 
 unittest {
@@ -994,15 +1008,12 @@ unittest {
         blockfile.close;
     }    
 
-    // Data[] datas = [
-    //     Data(repeat('x', 200).array)
-    //     ];
-
     import std.random;
 
     auto rnd = Random(1234);
     const number_of_elems = 100;
     const to_be_removed = 90;
+    bool[Index] used;
 
     Data[] datas;
     foreach(i; 0..number_of_elems) {
@@ -1012,15 +1023,14 @@ unittest {
     
     Index[] data_indexes;
     foreach (data; datas) {
-        data_indexes ~= blockfile.save(data).index;
+        const data_idx = blockfile.save(data).index;
+        assert(!(data_idx in used), "segment already recycled");
+        used[data_idx] = true;
+        data_indexes ~= data_idx;
+        
     }
+    writefln("%s", used);
     blockfile.store;
-    // writefln("dump before");
-    // blockfile.dump;
-    // foreach(idx; data_indexes) {
-    //     const doc = blockfile.load(idx);
-    //     writefln("doc string %s", doc["text"].get!string);
-    // }
 
     auto sample = randomSample(data_indexes[], to_be_removed).array;
     

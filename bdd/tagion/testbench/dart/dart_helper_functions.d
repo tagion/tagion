@@ -156,7 +156,6 @@ void randomRemove(const DARTIndex[] fingerprints, MinstdRand0 rnd, DART db) @saf
         writefln("removing %s", fingerprint.toHexString);
         recorder.remove(fingerprint);
     }
-    writefln("WOWOWO");
     db.modify(recorder);
 }
 
