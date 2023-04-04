@@ -13,51 +13,6 @@ import tagion.actor.Actor;
 
 import std.stdio;
 
-alias thisInfo = concurrency.ThreadInfo.thisInfo;
-import core.time;
-
-receiveOnlyRet!(T) receiveOnlyTimeout(Duration timeout, T...)()
-in {
-    assert(thisInfo.ident.mbox !is null,
-            "Cannot receive a message until a thread was spawned or thisTid was passed to a running thread.");
-}
-do {
-    import std.format : format;
-    import std.meta : allSatisfy;
-    import std.typecons : Tuple;
-
-    Tuple!(T) ret;
-
-    thisInfo.ident.mbox.get(timeout, (T val) {
-        static if (T.length) {
-            static if (allSatisfy!(isAssignable, T)) {
-                ret.field = val;
-            }
-            else {
-                import core.lifetime : emplace;
-
-                emplace(&ret, val);
-            }
-        }
-    },
-            (LinkTerminated e) { throw e; },
-            (OwnerTerminated e) { throw e; },
-            (Variant val) {
-        static if (T.length > 1)
-            string exp = T.stringof;
-        else
-            string exp = T[0].stringof;
-
-        throw new MessageMismatch(
-            format("Unexpected message type: expected '%s', got '%s'", exp, val.type.toString()));
-    });
-    check(ret !is Tuple!(T).init, format("Timed out before receiving message of type %s", T));
-    static if (T.length == 1)
-        return ret[0];
-    else
-        return ret;
-}
-
 enum feature = Feature(
             "Actor supervisor test",
             ["This feature should check the supervisor fail and restart"]);

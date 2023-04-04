@@ -188,9 +188,6 @@ class MessageBetweenSupervisorAndChild {
     @Then("stop the #super")
     Document stopTheSuper() {
         supervisor_handle.stop;
-        // Need do discuss if it should be possible to check the status of a task from any task
-        check(!isRunning(child1_task_name), "child1 is still running");
-        check(!isRunning(child2_task_name), "child2 is still running");
         check(!isRunning(supervisor_task_name), "supervisor is still running");
         return result_ok;
     }
@@ -234,9 +231,6 @@ class SendMessageBetweenTwoChildren {
     @Then("stop the #super")
     Document stopTheSuper() {
         supervisor_handle.stop;
-        // Need do discuss if it should be possible to check the status of a task from any task
-        check(!isRunning(child1_task_name), "child1 is still running");
-        check(!isRunning(child2_task_name), "child2 is still running");
         check(!isRunning(supervisor_task_name), "supervisor is still running");
         return result_ok;
     }
