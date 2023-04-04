@@ -60,14 +60,6 @@ struct Logger {
     }
 }
 
-class Hello {
-    this() {
-        writeln("stometgi");
-        while(true) {
-        }
-    }
-}
-
 void main() {
     auto logger_proto = Logger();
     alias logger_task = logger_proto.task;
@@ -84,5 +76,5 @@ void main() {
 
     logger.send(M!1(), "momma");
 
-    spawnChildren([&logger_task]);
+    /* spawnChildren([&logger_task]); */
 }
