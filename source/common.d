@@ -110,6 +110,7 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */
 static class Actor {
     static Tid[] children;
     static Tid[Tid] failChildren;
+    static Tid[Tid] startChildren;
     static string task_name;
     /// Static ActorHandle[] children;
     static bool stop;
@@ -126,18 +127,29 @@ static class Actor {
     static void control(CtrlMsg msg) {
         with (Ctrl) final switch(Ctrl) {
         case STARTING:
-            writeln(msg);
+            debug writeln(msg);
+            startChildren[msg.tid] = msg.tid;
             break;
         case ALIVE:
-            writeln(msg);
+            debug writeln(msg);
+            if (msg.tid in failChildren) {
+                startChildren.remove(msg.tid);
+            }
+            else {
+                throw new Exception("%s: never started".format(msg.tid));
+            }
+
+            if (msg.tid in failChildren) {
+                failChildren.remove(msg.tid);
+            }
             break;
         case FAIL:
-            writeln(msg);
+            debug writeln(msg);
             /// Add the failing child to the AA of children to restart
             failChildren[msg.tid] = msg.tid;
             break;
         case END:
-            writeln(msg);
+            debug writeln(msg);
             if (msg.tid in failChildren) {
                 Thread.sleep(100.msecs);
                 writeln("Respawning actor");
