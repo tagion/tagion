@@ -69,6 +69,9 @@ struct Segment {
         assert(index != Index.init, "Segment cannot be inserted at index 0");
     }
 }
+
+static bool[Index] used_indexes;
+
 // Indices: sorted by index
 alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index); // Segment: sorted by size.
 // alias Segments = RedBlackTree!(Segment*, (a, b) => a.size < b.size, true);
@@ -369,7 +372,6 @@ struct Recycler {
 
     /// The recycler to the blockfile
 
-    bool[Index] used_indexes;
     /**
      * Claims a free segment. Priority is first to use segments already in the recycler. 
      * Therefore removing a segment from the recycler. 
@@ -385,12 +387,11 @@ struct Recycler {
     out (result) {
         assert(result != Index.init);
         if (result in used_indexes) {
-            writefln("WOWOWOWOWOWOWOWOW %s", result);
+            assumeWontThrow(writefln("WOWOWOWOWOWOWOWOW %s", result));
         } 
         else {
-            used_indexes[result] = true;
+            assumeWontThrow({used_indexes[result] = true;}());
         }
-
     }
     do {
         __write("claiming size: %s", segment_size);
