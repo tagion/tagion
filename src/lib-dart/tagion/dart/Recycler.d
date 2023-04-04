@@ -14,7 +14,6 @@ import tagion.hibon.HiBONJSON : toPretty;
 
 import std.format;
 
-
 enum Type : int {
     NONE = 0, /// NO Recycler instruction
     REMOVE = -1, /// Should be removed from recycler
@@ -71,7 +70,6 @@ struct Segment {
     }
 }
 
-
 // Indices: sorted by index
 alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index); // Segment: sorted by size.
 // alias Segments = RedBlackTree!(Segment*, (a, b) => a.size < b.size, true);
@@ -87,8 +85,7 @@ struct Recycler {
     /** 
      * Checks if the recycler has overlapping segments.
      */
-    version(SYNC_BLOCKFILE_PROBLEM)
-    invariant {
+    version (SYNC_BLOCKFILE_PROBLEM) invariant {
         assert(noOverlaps, "Recycle segments has overlaps");
     }
     /** 
@@ -115,13 +112,14 @@ struct Recycler {
     }
 
     protected auto sortedSegments() {
-        if (!segments.isSorted!((a,b) => a.size < b.size)) {
-            segments.sort!((a,b) => a.size < b.size);
-        } 
+        if (!segments.isSorted!((a, b) => a.size < b.size)) {
+            segments.sort!((a, b) => a.size < b.size);
+        }
         return assumeSorted!((a, b) => a.size < b.size)(segments);
     }
 
-    protected void insert(R)(R segment_range) if (isInputRange!R && isImplicitlyConvertible!(ElementType!R, Segment*)) {
+    protected void insert(R)(R segment_range)
+        if (isInputRange!R && isImplicitlyConvertible!(ElementType!R, Segment*)) {
         indices.stableInsert(segment_range);
         segments ~= segment_range;
     }
@@ -134,14 +132,12 @@ struct Recycler {
         segments ~= segment;
     }
 
-
     protected void remove(Segment* segment) {
         auto remove_segment = indices.equalRange(segment).front;
 
         indices.removeKey(remove_segment);
         segments = segments.remove(segments.countUntil(remove_segment));
     }
-
 
     void recycle(Indices.Range recycle_segments) {
 
@@ -155,26 +151,26 @@ struct Recycler {
                 .take(2)
                 .walkLength == 0, "cannot insert type.NONE element");
 
-        foreach (segment; recycle_segments) {
-            version(none)
-            if (segment.type == Type.REMOVE) {
-                auto equal_range = indices.equalRange(segment);
-                assert(!equal_range.empty, "Cannot call remove with segment where index in recycler does not exist");
 
-                if (equal_range.front.size == segment.size) {
-                    remove(equal_range.front);
-                    continue;
-                }
-
-                Segment* add_segment = new Segment(
-                    Index(equal_range.front.index + segment.size), equal_range
-                        .front.size - segment.size);
-
-                remove(equal_range.front);
-                insert(add_segment);
-                continue;
+        foreach (insert_segment; recycle_segments) {
+            
+            auto lower_range = indices.lowerBound(insert_segment);
+            if (!lower_range.empty && lower_range.back.end == insert_segment.index) {
+                insert_segment.index = lower_range.back.index;
+                insert_segment.size = lower_range.back.size + insert_segment.size;
+                remove(lower_range.back);
+            }
+            auto upper_range = indices.upperBound(insert_segment);
+            if (!upper_range.empty && upper_range.front.index == insert_segment.end) {
+                insert_segment.size = upper_range.front.size + insert_segment.size;
+                remove(upper_range.front);
             }
 
+            insert(insert_segment);
+
+
+
+            version(none)
             if (segment.type == Type.ADD) {
                 auto lower_range = indices.lowerBound(segment);
                 auto upper_range = indices.upperBound(segment);
@@ -355,6 +351,9 @@ struct Recycler {
 
             auto add_segment = new Segment(owner, index);
             __write("read size: %s, index: %s", add_segment.size, add_segment.index);
+            if (add_segment.index == Index(144)) {
+                writefln("READ 144");
+            }
             insert(add_segment);
             index = add_segment.next;
         }
@@ -398,9 +397,8 @@ struct Recycler {
         return indices[].front.index;
     }
 
-
     const(Index) checkIndexes(const(Index) index, string where) nothrow {
-        
+
         bool in_recycler = assumeWontThrow(!indices.equalRange(new Segment(index, 1)).empty);
         if (in_recycler) {
             assumeWontThrow(writefln("in the dispose list of the recycler already"));
@@ -409,7 +407,6 @@ struct Recycler {
         if (index == Index(144)) {
             assumeWontThrow(writefln("returnining index 144 at %s", where));
         }
-
 
         return index;
     }
@@ -432,52 +429,56 @@ struct Recycler {
     }
     do {
         __write("claiming size: %s", segment_size);
-        try {
+        
+            try {
 
-            auto sorted_segments = sortedSegments();
-            auto search_segment = new Segment(Index.max, segment_size);
-            
-            auto equal_range = sorted_segments.equalRange(search_segment);
+                auto sorted_segments = sortedSegments();
+                auto search_segment = new Segment(Index.max, segment_size);
 
-            if (!equal_range.empty) {
-                // there is a element equal.
-                const index = equal_range.front.index;
-                remove(equal_range.front);
-                return checkIndexes(index, "!equal_range empty");
-            }
+                auto equal_range = sorted_segments.equalRange(search_segment);
 
-            auto upper_range = sorted_segments.upperBound(search_segment);
-            if (!upper_range.empty) {
-                const index = upper_range.front.index;
-                auto add_segment = new Segment(Index(index + segment_size), upper_range.front.size - segment_size);
-
-                if (index == Index(144UL)) {
-                    dump;
-                    writefln("Claiming index: %s, segment size: %s", index, segment_size);
-                    writefln("!upper_range before: index %s, segmentsize: %s", upper_range.front.index, upper_range.front.size);
-                    writefln("!upper_range after: index %s, segmentsize: %s", add_segment.index, add_segment.size);
+                if (!equal_range.empty) {
+                    // there is a element equal.
+                    const index = equal_range.front.index;
+                    remove(equal_range.front);
+                    return checkIndexes(index, "!equal_range empty");
                 }
 
-                remove(upper_range.front);
+                auto upper_range = sorted_segments.upperBound(search_segment);
+                if (!upper_range.empty) {
+                    const index = upper_range.front.index;
+                    auto add_segment = new Segment(Index(index + segment_size), upper_range.front.size - segment_size);
 
-                if (add_segment.index == Index(144)) {
-                    writefln("claimed index %s adding 144", index);
-                } 
+                    if (index == Index(144UL)) {
+                        dump;
+                        writefln("Claiming index: %s, segment size: %s", index, segment_size);
+                        writefln("!upper_range before: index %s, segmentsize: %s", upper_range.front.index, upper_range
+                                .front.size);
+                        writefln("!upper_range after: index %s, segmentsize: %s", add_segment.index, add_segment
+                                .size);
+                    }
 
-                insert(add_segment);
-                return checkIndexes(index, "!upper_range empty");
+                    remove(upper_range.front);
+
+                    if (add_segment.index == Index(144)) {
+                        writefln("claimed index %s adding 144", index);
+                    }
+
+                    insert(add_segment);
+                    return checkIndexes(index, "!upper_range empty");
+                }
             }
-        }
-        catch (Exception e) {
-            assert(0, e.msg);
-        }
+            catch (Exception e) {
+                assert(0, e.msg);
+            }
+        
 
         scope (success) {
             owner._last_block_index = Index(owner._last_block_index + segment_size);
         }
 
         assumeWontThrow(writefln("Claiming but not removing: index %s, segment size %s", owner._last_block_index, segment_size));
-        
+
         return checkIndexes(owner._last_block_index, "last block index");
 
     }
@@ -494,10 +495,14 @@ struct Recycler {
             return;
         }
 
-        assumeWontThrow(writefln("disposing segment: index %s size %s", index, segment_size));
+        if (index == Index(144)) {
+            assumeWontThrow(writefln("disposing segment: index %s size %s", index, segment_size));
+
+        }
 
         auto seg = new Segment(index, segment_size, Type.ADD);
-        assert(!(seg in to_be_recycled), assumeWontThrow(format("segment already in dispose list index: %s", index)));
+        assert(!(seg in to_be_recycled), assumeWontThrow(
+                format("segment already in dispose list index: %s", index)));
         assumeWontThrow(to_be_recycled.insert(seg));
     }
 
@@ -973,7 +978,6 @@ unittest {
         new Segment(Index(25UL), 5, Type.NONE),
     ];
 
-    
     recycler.insert(dispose_segments[]);
     assert(recycler.indices.length == 4);
     assert(recycler.segments.length == 4);
@@ -1035,7 +1039,6 @@ unittest {
 //     blockfile.dispose(Index(1UL));
 //     blockfile.store();
 //     assert(blockfile.recycler.indices.length == 1, "should contain the one recycled element");
-    
 
 // }  
 @safe
@@ -1064,12 +1067,10 @@ unittest {
     blockfile.save(data);
     blockfile.store();
     blockfile.dump;
-    
 
-}  
+}
 
-
-@safe 
+@safe
 unittest {
     // pseudo random add remove blocks.
     writefln("pseudo random add");
@@ -1083,7 +1084,7 @@ unittest {
     auto blockfile = BlockFile(filename);
     scope (exit) {
         blockfile.close;
-    }    
+    }
 
     import std.random;
 
@@ -1093,34 +1094,31 @@ unittest {
     bool[Index] used;
 
     Data[] datas;
-    foreach(i; 0..number_of_elems) {
-        const number_of_chars = uniform(2,1000, rnd);
+    foreach (i; 0 .. number_of_elems) {
+        const number_of_chars = uniform(2, 1000, rnd);
         datas ~= Data(repeat('x', number_of_chars).array);
     }
-    
+
     Index[] data_indexes;
     foreach (data; datas) {
         const data_idx = blockfile.save(data).index;
         assert(!(data_idx in used), "segment already recycled");
         used[data_idx] = true;
         data_indexes ~= data_idx;
-        
+
     }
     blockfile.store;
 
     auto sample = randomSample(data_indexes[], to_be_removed).array;
-    
+
     foreach (remove_index; sample) {
         blockfile.dispose(remove_index);
     }
 
     blockfile.store;
-    
+
     blockfile.close;
     // writefln("dump after");
     // blockfile.dump;
-
-
-
 
 }
