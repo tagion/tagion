@@ -1,4 +1,9 @@
 version(none)
+static string not_impl() {
+    return format("Not implemeted %s(%s)", __FILE__, __LINE__);
+}
+
+version(none)
 struct Supervisor {
 
     // The primary off messages that an Supervisor takes in extension of the control messages

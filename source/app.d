@@ -11,6 +11,8 @@ enum Control {
     END, /// Send for the child to the ownerTid when the task ends
 }
 
+/// Control message sent to a supervisor 
+/// contains the Tid of the actor which send it and the state
 alias CtrlMsg = Tuple!(Tid, Control);
 
 bool checkCtrl(Control msg) {
@@ -19,13 +21,26 @@ bool checkCtrl(Control msg) {
     return r[1] is msg;
 }
 
-// Signal send from the supervisor
-enum Signal {
-    STOP,
+version(none)
+struct ActorHandle {
+    Tid tid;
+    string taskName;
+    // Tid Owner?
 }
 
-static string not_impl() {
-    return format("Not implemeted %s(%s)", __FILE__, __LINE__);
+/// Just spawn a single actor and make sure it doesn't fail for some duration
+void restartIffailed(F, T...)(F fn, T args)
+if (isSpawnable!(F, T))
+{
+    static assert(!hasLocalAliasing!(T), "Aliases to mutable thread-local data not allowed.");
+    Tid childtid = _spawn(false, fn, args);
+    checkCtrl(Control.STARTING);
+    checkCtrl(Control.ALIVE);
+}
+
+// Signals send from the supervisor to the direct children
+enum Signal {
+    STOP,
 }
 
 // Delegate for dealing with exceptions sent from children
