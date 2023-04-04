@@ -994,10 +994,6 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                 
                 
             do {
-
-            
-
-
             if (!range.empty) {
                 auto archive = range.front;
                 Index erase_block_index;

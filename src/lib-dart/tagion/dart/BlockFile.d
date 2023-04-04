@@ -664,6 +664,7 @@ class BlockFile {
      +
      +/
     void store() {
+        writefln("STORING");
         writeStatistic;
 
         scope (success) {
@@ -671,7 +672,6 @@ class BlockFile {
 
             masterblock.recycle_header_index = recycler.write();
             writeMasterBlock;
-            recycler.used_indexes = null;
             
         }
         foreach (block_segment; sort!(q{a.index < b.index}, SwapStrategy.unstable)(
