@@ -1,0 +1,9 @@
+{
+	"authors": [
+		"lucas"
+	],
+	"copyright": "Copyright © 2023, lucas",
+	"description": "A minimal D application.",
+	"license": "proprietary",
+	"name": "actor"
+}
