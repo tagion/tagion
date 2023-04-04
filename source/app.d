@@ -13,6 +13,32 @@ void exceptionHandler(Exception e) {
     writeln(e);
 }
 
+Nullable!Tid maybeOwnerTid() {
+	// Tid is null
+	Nullable!Tid tid;
+	try {
+		// Tid is asigned
+		tid = ownerTid;
+	}
+	catch(TidMissingException) {
+	}
+	return tid;
+	/* return Nullable!(ThreadInfo(thisTid).owner); */
+}
+
+/// Send to the owner if there is one
+void sendOwner(T...)(T vals) {
+	if (!maybeOwnerTid.isNull) {
+		send(maybeOwnerTid.get, vals);
+	}
+	// Otherwise writr a message to the logger instead,
+	// Otherwise just write it to stdout;
+	else {
+		write("No owner, writing message to stdout instead: ");
+		writeln(vals);
+	}
+}
+
 // State messages send to the supervisor
 enum Control {
     STARTING, // The actors is lively
@@ -63,16 +89,22 @@ struct Logger {
     void task() {
         bool stop = false;
 
-        ownerTid.send(Control.STARTING); // Tell the owner that you have started.
-        scope(exit) ownerTid.send(Control.END); // Tell the owner that you have finished.
+        sendOwner(Control.STARTING); // Tell the owner that you are starting.
+        sendOwner(Control.ALIVE); // Tell the owner that you running
+        scope(exit) sendOwner(Control.END); // Tell the owner that you have finished.
 
-        do {
+        while(!stop) {
             try {
                 receive(
                 /* &msgDelegate, */
                 (M!0, string str) { writeln("Info: ", str); },
                 (M!1, string str) { writeln("Fatal: ", str); },
-                &exceptionHandler,
+                /* &exceptionHandler, */
+
+				(OwnerTerminated _e) {
+					writefln("%s, Owner stopped... nothing to life for... stoping self", thisTid);
+					stop = true;
+				},
 
                 // Default
                 (Variant message) {
@@ -83,7 +115,7 @@ struct Logger {
                 );
             }
             catch (OwnerTerminated e) {
-                writeln("Owner stopped... nothing to life for... stoping self");
+                writefln("%s, Owner stopped... nothing to life for... stoping self", thisTid);
                 stop = true;
             }
             // If we catch an exception we send it back to supervisor for them to deal with it.
@@ -92,60 +124,63 @@ struct Logger {
                 stop = true;
             }
         }
-        while(!stop);
     }
 }
 
-struct Supervisor {
-
-    // The primary off messages that an Supervisor takes in extension of the control messages
-    enum Msg {
-        HEALTH,
-        NONE,
-    }
-
-    void msgDelegate(Msg msg) {
-        final switch(msg) {
-        case Msg.HEALTH:
-            assert(0, not_impl);
-        case Msg.NONE:
-            assert(0, not_impl);
-        }
-    }
-
-    void task() {
-        bool stop = false;
-
-        ownerTid.send(Control.STARTING); // Tell the owner that you have started.
-        scope(exit) ownerTid.send(Control.END); // Tell the owner that you have finished.
-
-        do {
-            try {
-                receive(
-                    &msgDelegate,
-                    &exceptionHandler,
-
-                    // Default
-                    (Variant other) {
-                        // For unkown messages we assert,
-                        // basically so we don't accidentally fill up our messagebox with garbage
-                        assert(0, "No delegate to deal with message: %s".format(other));
-                    }
-                );
-            }
-            catch (OwnerTerminated e) {
-                writeln("Owner stopped... nothing to life for... stopping self");
-                stop = true;
-            }
-            // If we catch an exception we send it back to supervisor for them to deal with it.
-            catch (shared(Exception) e) {
-                ownerTid.send(e);
-                stop = true;
-            }
-        }
-        while(!stop);
-    }
-}
+/// --- version(none)
+/// --- struct Supervisor {
+/// --- 
+/// ---     // The primary off messages that an Supervisor takes in extension of the control messages
+/// ---     enum Msg {
+/// ---         HEALTH,
+/// ---         NONE,
+/// ---     }
+/// --- 
+/// ---     void msgDelegate(Msg msg) {
+/// ---         final switch(msg) {
+/// ---         case Msg.HEALTH:
+/// ---             assert(0, not_impl);
+/// ---         case Msg.NONE:
+/// ---             assert(0, not_impl);
+/// ---         }
+/// ---     }
+/// --- 
+/// ---     void task() {
+/// ---         bool stop = false;
+/// --- 
+/// ---         sendOwner(Control.STARTING); // Tell the owner that you have started.
+/// ---         scope(exit) sendOwner(Control.END); // Tell the owner that you have finished.
+/// --- 
+/// ---         while(!stop) {
+/// ---             try {
+/// ---                 receive(
+/// ---                     &msgDelegate,
+/// ---                     /* &exceptionHandler, */
+/// --- 
+/// ---                     /* (OwnerTerminated _e) { */
+/// ---                     /*     writeln("Owner stopped... nothing to life for... stopping self"); */
+/// ---                     /*     stop = true; */
+/// ---                     /* }, */
+/// ---                     // Default
+/// ---                     (Variant other) {
+/// ---                         // For unkown messages we assert,
+/// ---                         // basically so we don't accidentally fill up our messagebox with garbage
+/// ---                         assert(0, "No delegate to deal with message: %s".format(other));
+/// ---                     }
+/// ---                 );
+/// ---             }
+/// ---             catch (OwnerTerminated _e) {
+/// ---                         writeln("Owner stopped... nothing to life for... stopping self");
+/// ---                         stop = true;
+/// ---             }
+/// ---             // If we catch an exception we send it back to supervisor for them to deal with it.
+/// ---             catch (shared(Exception) e) {
+/// ---                 sendOwner(e);
+/// ---                 stop = true;
+/// ---             }
+/// ---         }
+/// ---     }
+/// --- }
 
 void main() {
     auto logger_proto = Logger();
