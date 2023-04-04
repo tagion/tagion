@@ -837,37 +837,7 @@ unittest {
 
 }
 
-// @safe
-// unittest {
-//     // try to add the remove segment twice
-//     Recycler.print = false;
-//     scope (exit) {
-//         Recycler.print = false;
-//     }
-
-//     immutable filename = fileId("recycle").fullpath;
-//     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
-//     auto blockfile = BlockFile(filename);
-//     scope (exit) {
-//         blockfile.close;
-//     }
-
-//     Data[] datas = [
-//         Data("abc"),
-//     ];
-//     foreach (data; datas) {
-//         const index = blockfile.save(data).index;
-//     }
-
-//     blockfile.store();
-//     assert(blockfile.recycler.indices.length == 0, "Should be empty");
-
-//     blockfile.dispose(Index(1UL));
-//     blockfile.dispose(Index(1UL));
-//     blockfile.store();
-//     assert(blockfile.recycler.indices.length == 1, "should contain the one recycled element");
-
-// }  
+  
 @safe
 unittest {
     // save claim save on same segment.
