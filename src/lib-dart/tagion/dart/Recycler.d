@@ -355,11 +355,6 @@ struct Recycler {
             return;
         }
 
-        if (index == Index(144)) {
-            assumeWontThrow(writefln("disposing segment: index %s size %s", index, segment_size));
-
-        }
-
         auto seg = new Segment(index, segment_size, Type.ADD);
         assert(!(seg in to_be_recycled), assumeWontThrow(
                 format("segment already in dispose list index: %s", index)));
