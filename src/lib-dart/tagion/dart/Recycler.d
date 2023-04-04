@@ -12,6 +12,7 @@ import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType, fwrite, fread;
 import std.algorithm;
 import tagion.hibon.HiBONJSON : toPretty;
 
+
 import std.format;
 
 enum Type : int {
@@ -126,9 +127,6 @@ struct Recycler {
     }
 
     protected void insert(Segment* segment) {
-        if (segment.index == Index(144UL)) {
-            writefln("inserting 144");
-        }
         indices.insert(segment);
         segments ~= segment;
     }
@@ -168,109 +166,6 @@ struct Recycler {
             }
 
             insert(insert_segment);
-
-
-
-            version(none)
-            if (segment.type == Type.ADD) {
-                auto lower_range = indices.lowerBound(segment);
-                auto upper_range = indices.upperBound(segment);
-
-                if (lower_range.empty) {
-                    // A ###
-                    // assert(!upper_range.empty, "there must be something in the upper range if the lower range is empty.");
-                    if (!upper_range.empty && segment.end == upper_range.front.index) {
-                        Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment
-                                .size);
-                        remove(upper_range.front);
-                        if (add_segment.index == Index(144)) {
-                            writefln("insert lowerrange 144");
-                        }
-                        insert(add_segment);
-                        continue;
-                    }
-                    else {
-                        if (segment.index == Index(144)) {
-                            writefln("!lowerrange 144");
-                        }
-                        insert(segment);
-                        continue;
-                    }
-                }
-                if (upper_range.empty) {
-                    // ### A empty forever
-                    assert(!lower_range.empty, "there must be something in the lower range if the upper range is empty.");
-                    if (lower_range.back.end == segment
-                        .index) {
-                        Segment* add_segment = new Segment(
-                            lower_range.back.index, segment.size + lower_range.back.size);
-                        remove(lower_range.back);
-                        if (add_segment.index == Index(144)) {
-                            writefln("upper range empty and lower range back connecting 144");
-                        }
-                        insert(add_segment);
-                        continue;
-                    }
-                    else {
-                        if (segment.index == Index(144)) {
-                            writefln("not connecting lowerrange 144");
-                        }
-                        insert(segment);
-                        continue;
-                    }
-                }
-                if (lower_range.back.end == segment.index) {
-                    //  ###
-                    //  ###A 
-                    if (upper_range.front.index == segment.end) {
-                        // ### ###
-                        // ###A###
-                        Segment* add_segment = new Segment(
-                            lower_range.front.index, lower_range.front.size + segment.size + upper_range
-                                .front.size);
-                        remove(lower_range.front);
-                        remove(upper_range.front);
-                        if (add_segment.index == Index(144)) {
-                            writefln("big segment both connecting 144");
-                        }
-                        insert(add_segment);
-                        continue;
-                    }
-
-                    // ### 
-                    // ###A
-                    Segment* add_segment = new Segment(lower_range.front.index, lower_range.front.size + segment
-                            .size);
-                    remove(lower_range.front);
-                    if (add_segment.index == Index(144)) {
-                        writefln("lower connecting 144");
-                    }
-                    insert(add_segment);
-                    continue;
-
-                }
-                if (upper_range.front.index == segment.end) {
-                    //  ###
-                    // A###
-                    Segment* add_segment = new Segment(segment.index, upper_range.front.size + segment
-                            .size);
-                    remove(upper_range.front);
-                    if (add_segment.index == Index(144)) {
-                        writefln("upper connecting 144");
-                    }
-                    insert(add_segment);
-                    continue;
-                }
-                else {
-                    // ###        ###
-                    // ###    A   ###
-                    if (segment.index == Index(144)) {
-                        writefln("no match 144");
-                    }
-                    insert(segment);
-                    continue;
-                }
-            }
 
         }
     }
@@ -342,7 +237,6 @@ struct Recycler {
     // }
 
     void read(Index index) {
-        writefln("reading recycler");
         indices = new Indices;
         segments = null;
         if (index == Index(0)) {
@@ -351,10 +245,6 @@ struct Recycler {
         while (index != Index.init) {
 
             auto add_segment = new Segment(owner, index);
-            __write("read size: %s, index: %s", add_segment.size, add_segment.index);
-            if (add_segment.index == Index(144)) {
-                writefln("READ 144");
-            }
             insert(add_segment);
             index = add_segment.next;
         }
@@ -382,12 +272,7 @@ struct Recycler {
         bool first = true;
         foreach_reverse (segment; indices) {
             if (segment.next != next || first) {
-                if (first) {
-                    __write("first time");
-                }
                 segment.next = next;
-                __write("segment index <%s>, size <%s>", segment.index, segment.size);
-                __write("next: %s", next);
                 assumeWontThrow(owner.seek(segment.index));
                 assumeWontThrow(owner.file.fwrite(*segment));
                 first = false;
@@ -398,19 +283,6 @@ struct Recycler {
         return indices[].front.index;
     }
 
-    const(Index) checkIndexes(const(Index) index, string where) nothrow {
-
-        bool in_recycler = assumeWontThrow(!indices.equalRange(new Segment(index, 1)).empty);
-        if (in_recycler) {
-            assumeWontThrow(writefln("in the dispose list of the recycler already"));
-        }
-
-        if (index == Index(144)) {
-            assumeWontThrow(writefln("returnining index 144 at %s", where));
-        }
-
-        return index;
-    }
 
     /**
      * Claims a free segment. Priority is first to use segments already in the recycler. 
@@ -442,7 +314,7 @@ struct Recycler {
                     // there is a element equal.
                     const index = equal_range.front.index;
                     remove(equal_range.front);
-                    return checkIndexes(index, "!equal_range empty");
+                    return index;
                 }
 
                 auto upper_range = sorted_segments.upperBound(search_segment);
@@ -450,23 +322,11 @@ struct Recycler {
                     const index = upper_range.front.index;
                     auto add_segment = new Segment(Index(index + segment_size), upper_range.front.size - segment_size);
 
-                    if (index == Index(144UL)) {
-                        dump;
-                        writefln("Claiming index: %s, segment size: %s", index, segment_size);
-                        writefln("!upper_range before: index %s, segmentsize: %s", upper_range.front.index, upper_range
-                                .front.size);
-                        writefln("!upper_range after: index %s, segmentsize: %s", add_segment.index, add_segment
-                                .size);
-                    }
 
                     remove(upper_range.front);
 
-                    if (add_segment.index == Index(144)) {
-                        writefln("claimed index %s adding 144", index);
-                    }
-
                     insert(add_segment);
-                    return checkIndexes(index, "!upper_range empty");
+                    return index;
                 }
             }
             catch (Exception e) {
@@ -478,9 +338,8 @@ struct Recycler {
             owner._last_block_index = Index(owner._last_block_index + segment_size);
         }
 
-        assumeWontThrow(writefln("Claiming but not removing: index %s, segment size %s", owner._last_block_index, segment_size));
 
-        return checkIndexes(owner._last_block_index, "last block index");
+        return owner._last_block_index;
 
     }
     /** 
