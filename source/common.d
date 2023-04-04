@@ -121,6 +121,17 @@ static class Actor {
         assert(0, "No delegate to deal with message: %s".format(message));
     }
 
+    /// General actor receivers
+    void actorReceive(T...)(T ops) {
+        receive(
+                ops,
+                &signal,
+                &control,
+                &ownerTerminated,
+                &unknown,
+        );
+    }
+
     // We need to be certain that anything the task inherits from outside scope
     // is maintained as a copy and not a reference.
     void task(A...)(A args);
@@ -134,3 +145,4 @@ static class Actor {
         ))
     */
 }
+

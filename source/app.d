@@ -15,16 +15,11 @@ static class Logger : Actor {
         setState(Control.ALIVE); // Tell the owner that you running
         scope (exit) setState(Control.END); // Tell the owner that you have finished.
 
-        /* while (!stop) { */
+        while (!stop) {
             try {
-                receive(
+                actorReceive(
                         (Msg!"info", string str) { writeln("Info: ", str); },
                         (Msg!"fatal", string str) { writeln("Fatal: ", str); },
-
-                        &signal,
-                        &control,
-                        &ownerTerminated,
-                        &unknown,
                 );
             }
             // If we catch an exception we send it back to owner for them to deal with it.
@@ -34,7 +29,7 @@ static class Logger : Actor {
                 setState(Control.FAIL);
                 stop = true;
             }
-        /* } */
+        }
     }
 
 }
@@ -47,10 +42,10 @@ void main() {
     assert(checkCtrl(Control.STARTING));
     assert(checkCtrl(Control.ALIVE));
 
-    logger.send(Msg!"info"(), "hello");
-    logger.send(Msg!"info"(), "momma");
+    logger.send(Msg!"info"(), "plana");
+    logger.send(Msg!"fatal"(), "submarina");
+    logger.send(Msg!"info"(), "tuna");
     logger.send(Signal.STOP);
-    logger.send(Msg!"fatal"(), "momma");
     assert(checkCtrl(Control.END));
 
 }
