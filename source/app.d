@@ -4,7 +4,7 @@ import std.concurrency;
 import std.stdio;
 import std.format;
 
-struct M(int name) {}
+struct Msg(string name) {}
 
 static class Logger : Actor {
 
@@ -18,8 +18,8 @@ static class Logger : Actor {
         /* while (!stop) { */
             try {
                 receive(
-                        (M!0, string str) { writeln("Info: ", str); },
-                        (M!1, string str) { writeln("Fatal: ", str); },
+                        (Msg!"info", string str) { writeln("Info: ", str); },
+                        (Msg!"fatal", string str) { writeln("Fatal: ", str); },
 
                         &signal,
                         &control,
@@ -47,10 +47,10 @@ void main() {
     assert(checkCtrl(Control.STARTING));
     assert(checkCtrl(Control.ALIVE));
 
-    logger.send(M!0(), "hello");
-    logger.send(M!0(), "momma");
+    logger.send(Msg!"info"(), "hello");
+    logger.send(Msg!"info"(), "momma");
     logger.send(Signal.STOP);
+    logger.send(Msg!"fatal"(), "momma");
     assert(checkCtrl(Control.END));
 
-    logger.send(M!1(), "momma");
 }
