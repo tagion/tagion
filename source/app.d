@@ -14,7 +14,7 @@ void exceptionHandler(Exception e) {
 }
 
 Nullable!Tid maybeOwnerTid() {
-	// Tid is null
+	// tid is "null"
 	Nullable!Tid tid;
 	try {
 		// Tid is asigned
@@ -23,7 +23,6 @@ Nullable!Tid maybeOwnerTid() {
 	catch(TidMissingException) {
 	}
 	return tid;
-	/* return Nullable!(ThreadInfo(thisTid).owner); */
 }
 
 /// Send to the owner if there is one
@@ -63,20 +62,6 @@ enum Signal {
     Stop,
 }
 
-/* // base implementationm for actor messages. */
-/* void controlFlow(Control msg) { */
-/*     final switch(msg) { */
-/*         case Control.LIVE: */
-/*             assert(0, not_impl); */
-/*         case Control.STOP: */
-/*             assert(0, not_impl); */
-/*         case Control.FAIL: */
-/*             assert(0, not_impl); */
-/*         case Control.END : */
-/*             assert(0, not_impl); */
-/*     } */
-/* } */
-
 struct M(int name) {}
 
 import std.typecons;
@@ -85,17 +70,6 @@ struct Logger {
         info = 0,
         fatal,
     }
-
-    /* void msgDelegate(V)(Msg msg, V v) { */
-    /*     with(Msg) final switch(msg) { */
-    /*         case info: */
-    /*             writeln("info: ", v); */
-    /*             break; */
-    /*         case fatal: */
-    /*             writeln("fatal: ", v); */
-    /*             break; */
-    /*     } */
-    /* } */
 
     void task() {
         bool stop = false;
@@ -151,8 +125,4 @@ void main() {
     logger.send(M!0(), "hello");
     logger.send(M!0(), "momma");
     logger.send(M!1(), "momma");
-
-    /* auto my_super = Supervisor(); */
-    /* alias my_super_fac = my_super.task; */
-    /* spawn(&my_super_fac); */
 }
