@@ -5,6 +5,10 @@ import std.stdio;
 import std.format : format;
 import std.typecons;
 
+static string not_impl() {
+    return format("Not implemeted %s(%s)", __FILE__, __LINE__);
+}
+
 /// Message type temlate
 struct Msg(string name) {}
 
@@ -114,8 +118,23 @@ static class Actor {
             break;
         }
     }
+
     /// Controls message sent from the children.
     void control(CtrlMsg msg) {
+        with (Ctrl) final switch(Ctrl) {
+        case STARTING:
+            assert(0, not_impl);
+            break;
+        case ALIVE:
+            assert(0, not_impl);
+            break;
+        case FAIL:
+            assert(0, not_impl);
+            break;
+        case END:
+            assert(0, not_impl);
+            break;
+        }
     }
 
     static void ownerTerminated(OwnerTerminated _e) {

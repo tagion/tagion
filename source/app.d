@@ -4,14 +4,37 @@ import std.concurrency;
 import std.stdio;
 import std.format;
 
+static class SuperVisor : Actor {
+    void task() {
+        stop = false;
+
+        setState(Ctrl.STARTING); // Tell the owner that you are starting.
+        scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
+
+        setState(Ctrl.ALIVE); // Tell the owner that you running
+        while (!stop) {
+            try {
+                actorReceive();
+            }
+            // If we catch an exception we send it back to owner for them to deal with it.
+            catch (shared(Exception) e) {
+                // Preferable FAIL would be able to carry the exception with it
+                ownerTid.prioritySend(e);
+                setState(Ctrl.FAIL);
+                stop = true;
+            }
+        }
+    }
+}
+
 static class Logger : Actor {
 
     void task() {
         stop = false;
 
-        setState(Control.STARTING); // Tell the owner that you are starting.
-        setState(Control.ALIVE); // Tell the owner that you running
-        scope (exit) setState(Control.END); // Tell the owner that you have finished.
+        setState(Ctrl.STARTING); // Tell the owner that you are starting.
+        setState(Ctrl.ALIVE); // Tell the owner that you running
+        scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
 
         while (!stop) {
             try {
@@ -24,7 +47,7 @@ static class Logger : Actor {
             catch (shared(Exception) e) {
                 // Preferable FAIL would be able to carry the exception with it
                 ownerTid.prioritySend(e);
-                setState(Control.FAIL);
+                setState(Ctrl.FAIL);
                 stop = true;
             }
         }
@@ -37,13 +60,13 @@ void main() {
     Tid logger = spawn(&logger_task);
     register("logger", logger);
 
-    assert(checkCtrl(Control.STARTING));
-    assert(checkCtrl(Control.ALIVE));
+    assert(checkCtrl(Ctrl.STARTING));
+    assert(checkCtrl(Ctrl.ALIVE));
 
     logger.send(Msg!"info"(), "plana");
     logger.send(Msg!"fatal"(), "submarina");
     logger.send(Msg!"info"(), "tuna");
-    logger.send(Signal.STOP);
-    assert(checkCtrl(Control.END));
+    logger.send(Sig.STOP);
+    assert(checkCtrl(Ctrl.END));
 
 }
