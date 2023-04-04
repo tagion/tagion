@@ -664,7 +664,6 @@ class BlockFile {
      +
      +/
     void store() {
-        writefln("STORING");
         writeStatistic;
 
         scope (success) {

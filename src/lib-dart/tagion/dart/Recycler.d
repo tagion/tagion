@@ -27,17 +27,15 @@ struct Segment {
     Index next;
     uint size;
     @label("") Index index;
-    @label("") Type type;
     Index end() const pure nothrow @nogc {
         return Index(index + size);
     }
 
     mixin HiBONRecord!(q{
         @disable this();
-        this(const Index index, const uint size, const Type type=Type.NONE, Index next = Index.init) pure nothrow {
+        this(const Index index, const uint size, Index next = Index.init) pure nothrow {
             this.index = index;
             this.size = size;
-            this.type = type;
             this.next = next;
         }
         this(BlockFile blockfile, const Index _index) 
@@ -86,7 +84,6 @@ struct Recycler {
     /** 
      * Checks if the recycler has overlapping segments.
      */
-    // version (SYNC_BLOCKFILE_PROBLEM) 
     invariant {
         assert(noOverlaps, "Recycle segments has overlaps");
     }
@@ -139,17 +136,6 @@ struct Recycler {
     }
 
     void recycle(Indices.Range recycle_segments) {
-
-        if (indices.empty) {
-            assert(recycle_segments.filter!(s => s.type != Type.ADD)
-                    .take(2)
-                    .walkLength == 0, "cannot remove segments from empty indices");
-        }
-
-        assert(recycle_segments.filter!(s => s.type == Type.NONE)
-                .take(2)
-                .walkLength == 0, "cannot insert type.NONE element");
-
 
         foreach (insert_segment; recycle_segments) {
             
@@ -355,7 +341,7 @@ struct Recycler {
             return;
         }
 
-        auto seg = new Segment(index, segment_size, Type.ADD);
+        auto seg = new Segment(index, segment_size);
         assert(!(seg in to_be_recycled), assumeWontThrow(
                 format("segment already in dispose list index: %s", index)));
         assumeWontThrow(to_be_recycled.insert(seg));
@@ -386,9 +372,9 @@ unittest {
     auto recycler = Recycler(blockfile);
 
     Segment*[] dispose_segments = [
-        new Segment(Index(1UL), 5, Type.ADD),
-        new Segment(Index(6UL), 5, Type.ADD),
-        new Segment(Index(17UL), 5, Type.ADD),
+        new Segment(Index(1UL), 5),
+        new Segment(Index(6UL), 5),
+        new Segment(Index(17UL), 5),
     ];
 
     Indices dispose_indices = new Indices(dispose_segments);
@@ -424,9 +410,9 @@ unittest {
         blockfile);
 
     Segment*[] dispose_segments = [
-        new Segment(Index(1UL), 5, Type.ADD),
-        new Segment(Index(10UL), 5, Type.ADD),
-        new Segment(Index(17UL), 5, Type.ADD),
+        new Segment(Index(1UL), 5),
+        new Segment(Index(10UL), 5),
+        new Segment(Index(17UL), 5),
     ];
     Indices dispose_indices = new Indices(
         dispose_segments);
@@ -435,19 +421,18 @@ unittest {
     recycler.write();
 
     Segment*[] extra_segments = [
-        new Segment(Index(6UL), 2, Type.ADD),
-        new Segment(Index(25UL), 6, Type.ADD),
-        new Segment(Index(22UL), 3, Type.ADD),
+        new Segment(Index(6UL), 2),
+        new Segment(Index(25UL), 6),
+        new Segment(Index(22UL), 3),
     ];
     Indices extra_indices = new Indices(extra_segments);
     recycler.recycle(extra_indices[]);
     recycler.write();
 
     Segment*[] expected_segments = [
-        new Segment(Index(1UL), 8, Type.NONE),
-        new Segment(Index(10UL), 5, Type.NONE),
-        new Segment(Index(17UL), 31 - 17, Type
-                .NONE),
+        new Segment(Index(1UL), 8),
+        new Segment(Index(10UL), 5),
+        new Segment(Index(17UL), 31 - 17),
     ];
     Indices expected_indices = new Indices(expected_segments);
 
@@ -473,9 +458,8 @@ unittest {
         blockfile);
 
     Segment*[] dispose_segments = [
-        new Segment(Index(1UL), 5, Type.ADD),
-        new Segment(Index(10UL), 5, Type
-                .ADD),
+        new Segment(Index(1UL), 5),
+        new Segment(Index(10UL), 5),
     ];
     Indices dispose_indices = new Indices(
         dispose_segments);
@@ -484,8 +468,7 @@ unittest {
     // recycler.dump();
 
     Segment*[] remove_segments = [
-        new Segment(Index(6UL), 4, Type
-                .ADD),
+        new Segment(Index(6UL), 4),
     ];
     Indices remove_indices = new Indices(
         remove_segments);
@@ -514,16 +497,14 @@ unittest {
     Indices add_indices;
     add_indices = new Indices(
         [
-        new Segment(Index(10UL), 5, Type
-            .ADD)
+        new Segment(Index(10UL), 5)
     ]);
     recycler.recycle(
         add_indices[]);
     // recycler.dump;
     add_indices = new Indices(
         [
-        new Segment(Index(2UL), 8, Type
-            .ADD)
+        new Segment(Index(2UL), 8)
     ]);
     recycler.recycle(
         add_indices[]);
@@ -538,8 +519,7 @@ unittest {
     // upperrange empty connecting
     add_indices = new Indices(
         [
-        new Segment(Index(15UL), 5, Type
-            .ADD)
+        new Segment(Index(15UL), 5)
     ]);
     recycler.recycle(
         add_indices[]);
@@ -567,16 +547,14 @@ unittest {
     Indices add_indices;
     add_indices = new Indices(
         [
-        new Segment(Index(10UL), 5, Type
-            .ADD)
+        new Segment(Index(10UL), 5)
     ]);
     recycler.recycle(
         add_indices[]);
     // recycler.dump;
     add_indices = new Indices(
         [
-        new Segment(Index(2UL), 5, Type
-            .ADD)
+        new Segment(Index(2UL), 5)
     ]);
     recycler.recycle(
         add_indices[]);
@@ -589,8 +567,7 @@ unittest {
     // upper range NOT connecting
     add_indices = new Indices(
         [
-        new Segment(Index(25UL), 5, Type
-            .ADD)
+        new Segment(Index(25UL), 5)
     ]);
     recycler.recycle(
         add_indices[]);
@@ -616,17 +593,15 @@ unittest {
 
     Indices add_indices = new Indices(
         [
-        new Segment(Index(10UL), 5, Type.ADD),
-        new Segment(Index(1UL), 1, Type
-            .ADD)
+        new Segment(Index(10UL), 5),
+        new Segment(Index(1UL), 1)
     ]);
     recycler.recycle(
         add_indices[]);
     // recycler.dump;
     add_indices = new Indices(
         [
-        new Segment(Index(5UL), 5, Type
-            .ADD)
+        new Segment(Index(5UL), 5)
     ]);
     recycler.recycle(
         add_indices[]);
@@ -636,14 +611,13 @@ unittest {
     // upperrange not empty connecting
     add_indices = new Indices(
         [
-        new Segment(Index(25UL), 5, Type
-            .ADD)
+        new Segment(Index(25UL), 5)
     ]);
     recycler.recycle(
         add_indices[]);
     add_indices = new Indices(
         [
-        new Segment(Index(17UL), 2, Type.ADD)
+        new Segment(Index(17UL), 2)
     ]);
     recycler.recycle(
         add_indices[]);
@@ -665,7 +639,7 @@ unittest {
 
     Indices add_indices = new Indices(
         [
-        new Segment(Index(10UL), 5, Type.ADD),
+        new Segment(Index(10UL), 5),
     ]
     );
     recycler.recycle(add_indices[]);
@@ -696,8 +670,8 @@ unittest {
     assert(begin == Index(1UL), "should be 1UL");
 
     Segment*[] expected_segments = [
-        new Segment(Index(1UL), 11, Type.NONE, Index(25UL)),
-        new Segment(Index(25UL), 10, Type.NONE, Index.init),
+        new Segment(Index(1UL), 11, Index(25UL)),
+        new Segment(Index(25UL), 10, Index.init),
     ];
     Indices expected_indices = new Indices(expected_segments);
     assert(expected_indices == recycler.indices);
@@ -827,10 +801,10 @@ unittest {
     auto recycler = Recycler(blockfile);
 
     Segment*[] dispose_segments = [
-        new Segment(Index(1UL), 5, Type.NONE),
-        new Segment(Index(10UL), 5, Type.NONE),
-        new Segment(Index(17UL), 5, Type.NONE),
-        new Segment(Index(25UL), 5, Type.NONE),
+        new Segment(Index(1UL), 5),
+        new Segment(Index(10UL), 5),
+        new Segment(Index(17UL), 5),
+        new Segment(Index(25UL), 5),
     ];
 
     recycler.insert(dispose_segments[]);
@@ -845,13 +819,11 @@ unittest {
     assert(recycler.segments.length == 3);
 
     Segment*[] segs = [
-        new Segment(Index(1UL), 5, Type.NONE),
-        new Segment(Index(10UL), 5, Type.NONE),
+        new Segment(Index(1UL), 5),
+        new Segment(Index(10UL), 5),
         // new Segment(Index(17UL), 5, Type.NONE), // This is the one that should be removed
-        new Segment(Index(25UL), 5, Type.NONE),
+        new Segment(Index(25UL), 5),
     ];
-
-    Indices expected_indices = new Indices(segs);
 
     recycler.indices[].array
         .sort!((a, b) => a < b)
