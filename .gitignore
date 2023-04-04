@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/actor
+actor.so
+actor.dylib
+actor.dll
+actor.a
+actor.lib
+actor-test-*
+*.exe
+*.o
+*.obj
+*.lst
