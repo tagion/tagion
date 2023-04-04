@@ -30,7 +30,7 @@ mixin Main!(_main);
 
 int _main(string[] args) {
     pragma(msg, "fixme(pr): add switch for running the test in commit stage with ex 10. and acceptance with ex 100.");
-    version(SYNC_BLOCKFILE_PROBLEM)
+    // version(SYNC_BLOCKFILE_PROBLEM)
     if (env.stage == Stage.commit) {
         BDDOptions bdd_options;
         setDefaultBDDOptions(bdd_options);
@@ -45,6 +45,7 @@ int _main(string[] args) {
 
         DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc, dartfilename2);
         dart_info.states = dart_info.generateStates(1, 10).take(100).array;
+        // dart_info.states = dart_info.generateStates(1, 10).take(10).array;
 
         auto dart_pseudo_random_feature = automation!(dart_pseudo_random)();
 
