@@ -42,6 +42,7 @@ private {
 
     import std.stdio : writefln;
     import tagion.hibon.HiBONRecord;
+    import tagion.hibon.HiBONJSON : toPretty;
 }
 
 /// Hash null definition (all zero values)
@@ -130,9 +131,9 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
     }
 
     protected enum _params = [
-        "fingerprints",
-        "bullseye",
-    ];
+            "fingerprints",
+            "bullseye",
+        ];
 
     mixin(EnumText!("Params", _params));
 
@@ -140,7 +141,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
     static create(string filename, const uint block_size = MIN_BLOCK_SIZE)
     in {
         assert(block_size >= MIN_BLOCK_SIZE,
-            format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
+                format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
     }
     do {
         BlockFile.create(filename, DARTFile.stringof, block_size);
@@ -249,7 +250,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
         //     return null;
         // }
         immutable(Buffer) merkletree(
-            const(Buffer[]) left,
+                const(Buffer[]) left,
         const(Buffer[]) right) {
             Buffer _left_fingerprint;
             Buffer _right_fingerprint;
@@ -526,7 +527,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
      * Returns: fingerprint
      */
         private immutable(Buffer) fingerprint(
-            DARTFile dartfile) {
+                DARTFile dartfile) {
             if (merkleroot is null) {
                 merkleroot = sparsed_merkletree(dartfile.manufactor.net, _fingerprints);
             }
@@ -620,8 +621,8 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
 
         final private void run() {
             void traverse(
-                immutable Index index,
-                immutable uint rim = 0) @safe {
+                    immutable Index index,
+                    immutable uint rim = 0) @safe {
                 if (index !is INDEX_NULL) {
                     doc = this.outer.blockfile.load(index);
                     assert(!doc.empty, "Loaded document should not be empty");
@@ -713,9 +714,9 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
     HiBON loadAll(Archive.Type type = Archive.Type.ADD) {
         auto recorder = manufactor.recorder;
         void local_load(
-            const Index branch_index,
-            const ubyte rim_key = 0,
-            const uint rim = 0) @safe {
+                const Index branch_index,
+                const ubyte rim_key = 0,
+                const uint rim = 0) @safe {
             if (branch_index !is INDEX_NULL) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
@@ -756,17 +757,16 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
 *   recorder of the read archives
  */
     RecordFactory.Recorder loads(Range)(
-        Range fingerprints,
-        Archive.Type type = Archive.Type.REMOVE)
-        if (isInputRange!Range && is(ElementType!Range : Buffer)) {
+            Range fingerprints,
+            Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : Buffer)) {
 
         import std.algorithm.comparison : min;
 
         auto result = recorder;
         void traverse_dart(
-            const Index branch_index,
-            Buffer[] ordered_fingerprints,
-            immutable uint rim = 0) @safe {
+                const Index branch_index,
+                Buffer[] ordered_fingerprints,
+                immutable uint rim = 0) @safe {
             if ((ordered_fingerprints) && (branch_index !is INDEX_NULL)) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
@@ -776,7 +776,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                     foreach (rim_key, index; branches._indices) {
                         uint pos;
                         while ((pos < selected_fingerprints.length) &&
-                            (rim_key is selected_fingerprints[pos].rim_key(rim))) {
+                                (rim_key is selected_fingerprints[pos].rim_key(rim))) {
                             pos++;
                         }
                         if (pos > 0) {
@@ -788,7 +788,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                 else {
                     // Loads the Archives into the archives
                         .check(ordered_fingerprints.length == 1,
-                            format("Data base is broken at rim=%d fingerprint=%s",
+                                format("Data base is broken at rim=%d fingerprint=%s",
                                 rim, ordered_fingerprints[0].toHex));
                     // The archive is set in erase mode so it can be easily be erased later
                     auto archive = new Archive(manufactor.net, doc, type);
@@ -950,15 +950,15 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
      * The function returns the bullseye of the dart
      */
     Buffer modify(const(RecordFactory.Recorder) modify_records,
-        GetType get_type = null) {
+            GetType get_type = null) {
 
         if (get_type is null) {
             get_type = (a) => a.type;
         }
         Leave traverse_dart(R)(
-            ref R range,
-            const Index branch_index,
-            immutable uint rim = 0) @safe {
+                ref R range,
+                const Index branch_index,
+                immutable uint rim = 0) @safe {
             if (!range.empty) {
                 auto archive = range.front;
                 Index erase_block_index;
@@ -971,8 +971,6 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                     if (branch_index !is INDEX_NULL) {
                         const doc = blockfile.load(branch_index);
                         if (!Branches.isRecord(doc)) {
-                            import std.stdio;
-                            import tagion.hibon.HiBONJSON;
 
                             writefln("Error at index %s rim %s. Document: %s", branch_index, rim, doc
                                     .toPretty);
@@ -982,7 +980,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                         
 
                         .check(branches.hasIndices,
-                            "DART failure within the sector rims the DART should contain a branch");
+                                "DART failure within the sector rims the DART should contain a branch");
                     }
 
                     while (!range.empty) {
@@ -990,20 +988,21 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                         immutable rim_key = sub_range.front.fingerprint.rim_key(rim);
                         if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                             const leave = traverse_dart(sub_range,
-                                branches.index(rim_key), rim + 1);
-                            if (rim == 1 && leave.return_pos !is null) {
+                                    branches.index(rim_key), rim + 1);
+                            //if (rim == 1 && leave.return_pos !is null) {
                                 // writefln("UPPER rim %s, index: %s, returnPos: <%s>", rim, leave.index, leave
                                 //         .return_pos);
 
+                            //}
+                            //if (rim == 0) {
+                            const doc = cacheLoad(leave.index);
+                            if (!Branches.isRecord(doc)) {
+                                writefln("sikke noget pis, rim=%s, rim_key=%02X, index=[%d] empty %s, doc=%s, prt=%s", 
+                                rim, rim_key, leave.index, doc.empty, doc.toPretty, &doc.data[0]);
                             }
-                            if (rim == 0) {
-                                const doc = cacheLoad(leave.index);
-                                if (!Branches.isRecord(doc)) { 
-                                    writefln("sikke noget pis");
-                                    }
-                                
-                                // assert(Branches.isRecord(doc), "sikke noget pis");
-                            }
+
+                            // assert(Branches.isRecord(doc), "sikke noget pis");
+                            //}
                             branches[rim_key] = leave;
                         }
                     }
@@ -1012,8 +1011,8 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                     if (branches.empty) {
                         return Leave.init;
                     }
-                    auto return_leave = Leave(blockfile.save(branches).index, branches.fingerprint(
-                            this));
+                    auto return_leave = Leave(blockfile.save(branches).index,
+                            branches.fingerprint(this));
                     // if (return_leave.return_pos !is null) {
 
                     //     writefln("rim %s, index: %s, returnPos: <%s>", rim, return_leave.index, return_leave
@@ -1021,8 +1020,10 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                     // }
 
                     const doc = cacheLoad(return_leave.index);
-                    
-                    if (!isRecord!Branches(doc)) { writefln("sikke noget skidt");}
+
+                    if (!isRecord!Branches(doc)) {
+                        writefln("sikke noget skidt");
+                    }
                     // .check(isRecord!Branches(doc), "sikke noget skidt");
 
                     return return_leave;
@@ -1046,8 +1047,8 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                                     Leave current_leave;
 
                                     branches[rim_key] = current_leave = traverse_dart(
-                                        sub_range, branches.index(rim_key),
-                                        rim + 1);
+                                            sub_range, branches.index(rim_key),
+                                            rim + 1);
                                     if (current_leave !is Leave.init) {
                                         last_leave = current_leave;
                                     }
@@ -1100,7 +1101,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                                         pragma(msg, "fixme(pr): This scenario is never called. Why is it here?");
                                         return Leave(blockfile.save(one_archive.store)
                                                 .index,
-                                            one_archive.fingerprint, dumpPos("range oneleft"));
+                                                one_archive.fingerprint, dumpPos("range oneleft"));
 
                                     }
                                     // multiple archives left in the database
@@ -1112,7 +1113,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                                         auto sub_range = RimKeyRange(archives_range, rim);
                                         const sub_archive = sub_range.front;
                                         immutable rim_key = sub_archive.fingerprint.rim_key(
-                                            rim);
+                                                rim);
 
                                         if (!branches[rim_key].empty || !sub_range.onlyRemove(
                                                 get_type)) {
@@ -1169,12 +1170,12 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                                     // the edge between the sector
                                     branches[lonely_rim_key] = Leave(blockfile.save(one_archive.store)
                                             .index,
-                                        one_archive.fingerprint);
+                                            one_archive.fingerprint);
                                     return Leave(blockfile.save(branches).index,
-                                        branches.fingerprint(this), dumpPos("rim is sector"));
+                                            branches.fingerprint(this), dumpPos("rim is sector"));
                                 }
                                 return Leave(blockfile.save(one_archive.store).index,
-                                    one_archive.fingerprint, dumpPos("rim !sector"));
+                                        one_archive.fingerprint, dumpPos("rim !sector"));
 
                             }
                         }
@@ -1308,9 +1309,9 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
 
         writeln("EYE: ", _fingerprint.hex);
         void local_dump(const Index branch_index,
-            const ubyte rim_key = 0,
-            const uint rim = 0,
-            string indent = null) @safe {
+                const ubyte rim_key = 0,
+                const uint rim = 0,
+                string indent = null) @safe {
             if (branch_index !is INDEX_NULL) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
@@ -1788,7 +1789,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                                     recorder.remove(doc);
                                     removed_archives[index] = true;
                                 }
-                                else {
+        else {
                                     recorder.add(doc);
                                     added_archives[index] = true;
                                 }
@@ -2308,11 +2309,10 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                 dart_A.modify(remove_recorder);
                 // writefln("after remove");
                 // dart_A.dump();
-                
+
                 dart_blockfile = BlockFile(filename_A);
                 dart_blockfile.dump;
                 dart_blockfile.close;
-
 
                 assert(dart_A.bullseye == null);
 
@@ -2348,16 +2348,14 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                 dart_A.modify(remove_recorder);
                 // writefln("after remove");
                 // dart_A.dump();
-                
+
                 dart_blockfile = BlockFile(filename_A);
                 dart_blockfile.dump;
                 dart_blockfile.close;
 
-
                 assert(dart_A.bullseye == null);
 
             }
-
 
             {
                 writefln("different archives top rim snapback?");
@@ -2389,7 +2387,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                 dart_A.modify(remove_recorder);
                 // writefln("after remove");
                 // dart_A.dump();
-                
+
                 dart_blockfile = BlockFile(filename_A);
                 dart_blockfile.dump;
                 dart_blockfile.close;
@@ -2399,7 +2397,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                 auto branches = dart_A.branches(rim_path);
                 assert(numberOfArchives(branches, dart_A) == 1, "Should contain one archives after remove");
 
-            }            
+            }
 
             {
                 writefln("open dart and close");
