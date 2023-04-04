@@ -4,12 +4,13 @@ import std.concurrency;
 import std.stdio;
 import std.format : format;
 import std.typecons;
+import core.thread;
 
 static string not_impl() {
     return format("Not implemeted %s(%s)", __FILE__, __LINE__);
 }
 
-/// Message type temlate
+/// Message type template
 struct Msg(string name) {}
 
 // State messages send to the supervisor
@@ -31,9 +32,9 @@ enum DebugSig {
     FAIL, // Artificially make the actor fail
 }
 
-/// Control message sent to a supervisor 
+/// Control message sent to a supervisor
 /// contains the Tid of the actor which send it and the state
-alias CtrlMsg = Tuple!(Tid, Ctrl);
+alias CtrlMsg = Tuple!(Tid, "tid", Ctrl, "ctrl");
 
 bool checkCtrl(Ctrl msg) {
     // Never use receiveOnly
@@ -98,6 +99,7 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */
     Tid[] tids;
     foreach (f; fns) {
         // Starting and checking the children sequentially :(
+        // Also bootstrapping
         tids ~= spawn(f);
         assert(checkCtrl(Ctrl.STARTING));
         assert(checkCtrl(Ctrl.ALIVE));
@@ -107,6 +109,7 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */
 
 static class Actor {
     static Tid[] children;
+    static Tid[Tid] failChildren;
     static string task_name;
     /// Static ActorHandle[] children;
     static bool stop;
@@ -120,19 +123,26 @@ static class Actor {
     }
 
     /// Controls message sent from the children.
-    void control(CtrlMsg msg) {
+    static void control(CtrlMsg msg) {
         with (Ctrl) final switch(Ctrl) {
         case STARTING:
-            assert(0, not_impl);
+            writeln(msg);
             break;
         case ALIVE:
-            assert(0, not_impl);
+            writeln(msg);
             break;
         case FAIL:
-            assert(0, not_impl);
+            writeln(msg);
+            /// Add the failing child to the AA of children to restart
+            failChildren[msg.tid] = msg.tid;
             break;
         case END:
-            assert(0, not_impl);
+            writeln(msg);
+            if (msg.tid in failChildren) {
+                Thread.sleep(100.msecs);
+                writeln("Respawning actor");
+                // Uh respawn the actor, would be easier if we had a proper actor handle instead of a tid
+            }
             break;
         }
     }
@@ -141,6 +151,7 @@ static class Actor {
         writefln("%s, Owner stopped... nothing to life for... stoping self", thisTid);
         stop = true;
     }
+
     // Default
     static void unknown(Variant message) {
         // For unkown messages we assert, and send a fail message to the owner
