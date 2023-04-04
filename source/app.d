@@ -6,50 +6,25 @@ import std.format;
 
 struct M(int name) {}
 
-import std.typecons;
-struct Logger {
-    enum Msg{
-        info = 0,
-        fatal,
-    }
+static class Logger : Actor {
 
     void task() {
-        bool stop = false;
+        stop = false;
 
         setState(Control.STARTING); // Tell the owner that you are starting.
         setState(Control.ALIVE); // Tell the owner that you running
-        scope(exit) setState(Control.END); // Tell the owner that you have finished.
+        scope (exit) setState(Control.END); // Tell the owner that you have finished.
 
-        while(!stop) {
+        /* while (!stop) { */
             try {
                 receive(
-                /* &msgDelegate, */
-                (M!0, string str) { 
-                writeln("Info: ", str); 
-                },
-                (M!1, string str) { 
-                    writeln("Fatal: ", str); 
-                },
-                /* &exceptionHandler, */
+                        (M!0, string str) { writeln("Info: ", str); },
+                        (M!1, string str) { writeln("Fatal: ", str); },
 
-                (Signal s) {
-                    with(Signal) final switch(s) {
-                        case STOP:
-                        stop = true;
-                        break;
-                    }
-                },
-                (OwnerTerminated _e) {
-                    writefln("%s, Owner stopped... nothing to life for... stoping self", thisTid);
-                    stop = true;
-                },
-                // Default
-                (Variant message) {
-                        // For unkown messages we assert, and send a fail message to the owner
-                        // so we don't accidentally fill up our messagebox with garbage
-                        setState(Control.FAIL);
-                        assert(0, "No delegate to deal with message: %s".format(message));
-                    }
+                        &signal,
+                        &control,
+                        &ownerTerminated,
+                        &unknown,
                 );
             }
             // If we catch an exception we send it back to owner for them to deal with it.
@@ -59,55 +34,15 @@ struct Logger {
                 setState(Control.FAIL);
                 stop = true;
             }
-        }
-    }
-}
-
-static class Logger2 : Actor {
-
-    void task() {
-        stop = false;
-
-        while(!stop) {
-            receive(
-                (M!0, string str) { 
-                    writeln("Info: ", str); 
-                },
-                (M!1, string str) { 
-                    writeln("Fatal: ", str); 
-                },
-
-                &signal,
-                &control,
-                &ownerTerminated,
-                &unknown,
-            );
-        }
+        /* } */
     }
 
 }
 
 void main() {
-    version(none) {
-    auto logger_proto = Logger();
-    alias logger_task = logger_proto.task;
+    alias logger_task = Logger.task;
     Tid logger = spawn(&logger_task);
     register("logger", logger);
-
-    assert(checkCtrl(Control.STARTING));
-    assert(checkCtrl(Control.ALIVE));
-
-    logger.send(M!0(), "hello");
-    logger.send(M!0(), "momma");
-    logger.send(Signal.STOP);
-    assert(checkCtrl(Control.END));
-
-    logger.send(M!1(), "momma");
-    }
-
-    alias logger2_task = Logger.task;
-    Tid logger = spawn(&logger2_task);
-    register("logger2", logger);
 
     assert(checkCtrl(Control.STARTING));
     assert(checkCtrl(Control.ALIVE));
