@@ -14,7 +14,7 @@ static class SuperVisor : Actor {
         setState(Ctrl.ALIVE); // Tell the owner that you running
         while (!stop) {
             try {
-                actorReceive();
+                actorTask();
             }
 
             // If we catch an exception we send it back to owner for them to deal with it.
@@ -31,33 +31,15 @@ static class SuperVisor : Actor {
 static class Logger : Actor {
 
     void task() {
-        stop = false;
-
-        setState(Ctrl.STARTING); // Tell the owner that you are starting.
-        scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
-
-        setState(Ctrl.ALIVE); // Tell the owner that you running
-        while (!stop) {
-            try {
-                actorReceive(
-                        (Msg!"info", string str) {
-                            writeln("Info: ", str); 
-                            /// something else
-                        },
-                        (Msg!"fatal", string str) {
-                            writeln("Fatal: ", str);
-                        },
-                );
-            }
-            // If we catch an exception we send it back to owner for them to deal with it.
-            // Do not send shared
-            catch (shared(Exception) e) {
-                // Preferable FAIL would be able to carry the exception with it
-                ownerTid.prioritySend(e);
-                setState(Ctrl.FAIL);
-                stop = true;
-            }
-        }
+        actorTask(
+                (Msg!"info", string str) {
+                    writeln("Info: ", str); 
+                    /// something else
+                },
+                (Msg!"fatal", string str) {
+                    writeln("Fatal: ", str);
+            },
+        );
     }
 
 }

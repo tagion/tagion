@@ -6,10 +6,6 @@ import std.format : format;
 import std.typecons;
 import core.thread;
 
-static string not_impl() {
-    return format("Not implemeted %s(%s)", __FILE__, __LINE__);
-}
-
 /// Message type template
 struct Msg(string name) {}
 
@@ -26,8 +22,7 @@ enum Sig {
     STOP,
 }
 
-debug
-enum DebugSig {
+debug enum DebugSig {
     /* STARTING = Msg!"STARTING", */
     FAIL, // Artificially make the actor fail
 }
@@ -52,6 +47,12 @@ struct ActorHandle(Actor actor)  {
     void send(T...)(T vals) {
         concurrency.send(tid, vals);
     }
+
+    /// generate methods
+    void opDispatch(string method, Args...)(Args args) {
+        send(actor.Msg!method, args);
+    }
+
 }
 
 ActorHandle actorHandle(A)(Actor actor, string taskName) {
@@ -187,15 +188,33 @@ static class Actor {
         assert(0, "No delegate to deal with message: %s".format(message));
     }
 
-    /// General actor receivers
-    void actorReceive(T...)(T ops) {
-        receive(
-                ops,
-                &signal,
-                &control,
-                &ownerTerminated,
-                &unknown,
-        );
+    /// General actor task
+    void actorTask(T...)(T receivers) {
+        stop = false;
+
+        setState(Ctrl.STARTING); // Tell the owner that you are starting.
+        scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
+
+        setState(Ctrl.ALIVE); // Tell the owner that you running
+        while (!stop) {
+            try {
+                receive(
+                        receivers,
+                        &signal,
+                        &control,
+                        &ownerTerminated,
+                        &unknown,
+                );
+            }
+            // If we catch an exception we send it back to owner for them to deal with it.
+            // Do not send shared
+            catch (shared(Exception) e) {
+                // Preferable FAIL would be able to carry the exception with it
+                ownerTid.prioritySend(e);
+                setState(Ctrl.FAIL);
+                stop = true;
+            }
+        }
     }
 
     // We need to be certain that anything the task inherits from outside scope
