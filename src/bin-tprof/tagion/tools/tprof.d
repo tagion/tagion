@@ -1,72 +1,19 @@
-module tagion.tools.tagionboot;
+module tagion.tools.tprof;
 
 import std.getopt;
 import std.stdio;
 import std.file : exists;
 import std.format;
 
-import tagion.gossip.AddressBook;
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.basic.Types : Buffer;
-import tagion.crypto.Types :  Pubkey;
-import tagion.dart.DARTBasic : DARTIndex;
-import tagion.basic.basic : basename;
-import tagion.script.StandardRecords;
-import tagion.crypto.SecureNet;
-import tagion.crypto.SecureInterfaceNet;
-import tagion.script.StandardRecords : Invoice;
-import tagion.script.TagionCurrency;
-import tagion.wallet.SecureWallet;
-
-//import tagion.dart.DARTFile;
-import tagion.dart.Recorder;
-import tagion.hibon.HiBONRecord : fread, fwrite;
-import tagion.dart.DARTBasic;
-
-//import tagion.revision;
-import std.array : join;
-
-Invoice[] invoices;
-
 enum REVNO = 0;
 enum HASH = "xxx";
 
 import tagion.tools.Basic;
 
-pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
-void createNetworkNameCard(const HashNet net, string name, RecordFactory.Recorder recorder)
-in {
-    assert(recorder);
-}
-do {
-    NetworkNameCard nnc;
-    nnc.name = name;
-    // TODO: set also time?
-
-    NetworkNameRecord nrc;
-    nrc.name = DARTIndex(net.dartIndex(nnc));
-
-    NodeAddress na;
-    // TODO: init NodeAddress
-
-    // Bind hashes
-    nrc.node = DARTIndex(net.dartIndex(na));
-    nnc.record = DARTIndex(net.dartIndex(nrc));
-
-    auto hr = HashLock(net, nnc);
-
-    recorder.add(nnc);
-    recorder.add(nrc);
-    recorder.add(hr);
-    recorder.add(na);
-}
-
-mixin Main!(_main, "boot");
+mixin Main!(_main);
 
 int _main(string[] args) {
     immutable program = args[0];
-    writefln("BOOT ", program);
     const net = new StdHashNet;
     Buffer init_gene() {
         auto rnd = Random!uint(stdrnd.unpredictableSeed);
