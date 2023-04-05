@@ -63,17 +63,16 @@ ActorHandle!A actorHandle(A)(A actor, string taskName) {
     return ActorHandle(tid, taskName);
 }
 
-ActorHandle!A spawnActor(A)(string taskName) {
+ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) {
     alias task = A.task;
-    Tid tid = spawn(&task);
+    Tid tid = spawn(&task, args);
     register(taskName, tid);
 
     return ActorHandle!A(tid, taskName);
 }
 
 // Delegate for dealing with exceptions sent from children
-version(none)
-void exceptionHandler(Exception e) {
+version (none) void exceptionHandler(Exception e) {
     // logger.fatal(e);
     writeln(e);
 }
@@ -144,12 +143,15 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */
     return tids;
 }
 
-@nogc nothrow
+/*
+ * Base class for actor
+ * Shouldn't be instantiated, neither should descendants
+ */
+nothrow
 static class Actor {
     static Tid[] children;
     static Tid[Tid] failChildren;
     static Tid[Tid] startChildren;
-    static string task_name;
     /// Static ActorHandle[] children;
     static bool stop;
 
@@ -200,21 +202,29 @@ static class Actor {
         }
     }
 
-    static void ownerTerminated(OwnerTerminated _e) {
+    /// Stops the actor if the supervisor stops
+    static void ownerTerminated(OwnerTerminated) {
         writefln("%s, Owner stopped... nothing to life for... stoping self", thisTid);
         stop = true;
     }
 
-    // Default
+    /**
+     * The default message handler, if it's an unknown messages it will send a FAIL to the owner.
+     * Params:
+     *   message = literally any message
+     */
     static void unknown(Variant message) {
-        // For unkown messages we assert, and send a fail message to the owner
-        // so we don't accidentally fill up our messagebox with garbage
         setState(Ctrl.FAIL);
         assert(0, "No delegate to deal with message: %s".format(message));
     }
 
-    /// General actor task
-    nothrow void actorTask(T...)(T receivers) {
+    /**
+     * A General actor task
+     *
+     * Params:
+     *   opts = A list of message handlers similar to @std.concurrency.receive()
+     */
+    nothrow void actorTask(T...)(T opts) {
         try {
             stop = false;
 
@@ -225,7 +235,7 @@ static class Actor {
             setState(Ctrl.ALIVE); // Tell the owner that you running
             while (!stop) {
                 receive(
-                        receivers,
+                        opts,
                         &signal,
                         &control,
                         &ownerTerminated,
@@ -234,7 +244,6 @@ static class Actor {
             }
         }
         // If we catch an exception we send it back to owner for them to deal with it.
-        // Do not send shared
         catch (Exception e) {
             // FAIL message should be able to carry the exception with it
             // Use tagion taskexception when it part of the tree
