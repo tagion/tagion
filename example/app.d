@@ -1,4 +1,4 @@
-import actor.common;
+import tagion.actor.actor;
 
 import std.concurrency;
 import std.stdio;
