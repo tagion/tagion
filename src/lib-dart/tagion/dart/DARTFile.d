@@ -936,10 +936,6 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                         .empty, doc.toPretty);
             }
         }
-        if (result.index == Index(144UL)) {
-            writefln("INDEX 144, index: %s, rim: %s, empty: %s, Document: %s", result.index, rim, doc.empty, doc.toPretty);
-
-        }
 
         return result;
 
