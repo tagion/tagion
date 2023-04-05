@@ -3,7 +3,7 @@ module tagion.basic.Message;
 import std.format;
 import std.json;
 import tagion.basic.Version;
-import tagion.basic.Basic : EnumText;
+import tagion.basic.basic : EnumText;
 import tagion.basic.Types : FileExtension;
 
 enum name_list = [

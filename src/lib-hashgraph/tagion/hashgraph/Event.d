@@ -26,7 +26,7 @@ import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
 
 import tagion.basic.Types :  Buffer;
-import tagion.basic.Basic : this_dot, basename, EnumText, buf_idup;
+import tagion.basic.basic : this_dot, basename, EnumText, buf_idup;
 import tagion.crypto.Types : Pubkey;
 import tagion.Keywords : Keywords;
 

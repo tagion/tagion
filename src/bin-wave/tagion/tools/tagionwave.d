@@ -12,7 +12,7 @@ import std.array : join;
 import std.json : JSONException;
 
 import tagion.basic.Types : Control;
-import tagion.basic.Basic : TrustedConcurrency;
+import tagion.basic.basic : TrustedConcurrency;
 import tagion.logger.Logger;
 import tagion.prior_services.Options;
 import tagion.options.CommonOptions : setCommonOptions;

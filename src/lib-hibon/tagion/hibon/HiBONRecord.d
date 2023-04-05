@@ -8,7 +8,7 @@ import std.exception : assumeUnique, assumeWontThrow;
 import std.typecons : Tuple;
 import std.traits;
 
-import tagion.basic.Basic : basename, EnumContinuousSequency;
+import tagion.basic.basic : basename, EnumContinuousSequency;
 import tagion.hibon.HiBONBase : ValueT;
 
 import tagion.hibon.HiBON : HiBON;
@@ -246,11 +246,11 @@ mixin template HiBONRecord(string CTOR = "") {
     import std.meta : staticMap, AliasSeq;
     import std.array : join, array, assocArray;
 
-    import tagion.basic.Basic : basename, EnumContinuousSequency;
+    import tagion.basic.basic : basename, EnumContinuousSequency;
 
     //    import tagion.hibon.HiBONException : check;
     import tagion.basic.Message : message;
-    import tagion.basic.Basic : basename, CastTo;
+    import tagion.basic.basic : basename, CastTo;
     import tagion.basic.TagionExceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,

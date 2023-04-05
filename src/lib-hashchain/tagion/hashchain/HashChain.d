@@ -208,7 +208,7 @@ unittest {
     import std.path : extension, stripExtension;
     import std.range.primitives : back;
 
-    import tagion.basic.Basic : tempfile;
+    import tagion.basic.basic : tempfile;
     import tagion.basic.Types : Buffer, FileExtension, withDot;
     import tagion.communication.HiRPC : HiRPC;
     import tagion.crypto.SecureNet : StdHashNet;

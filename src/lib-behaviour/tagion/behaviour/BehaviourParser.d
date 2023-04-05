@@ -243,7 +243,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
 
 /// Examples: How to parse a markdown file
 unittest { /// Convert ProtoDBBTestComments to Feature
-    import tagion.basic.Basic : fileId;
+    import tagion.basic.basic : fileId;
     import std.traits : FunctionTypeOf;
 
     enum bddfile_proto = "ProtoBDDTestComments".unitfile;
@@ -287,7 +287,7 @@ unittest { /// Convert ProtoDBBTestComments to Feature
 version (unittest) {
     import io = std.stdio;
     import tagion.hibon.HiBONJSON;
-    import tagion.basic.Basic : unitfile;
+    import tagion.basic.basic : unitfile;
     import tagion.basic.Types : FileExtension;
     import std.stdio : File;
     import std.path;

@@ -15,7 +15,7 @@ import std.range : isInputRange, ElementType;
 import std.algorithm.iteration : filter, map;
 
 import tagion.basic.Debug : __format;
-import tagion.basic.Basic : FUNCTION_NAME;
+import tagion.basic.basic : FUNCTION_NAME;
 import tagion.basic.Types : Buffer;
 import tagion.Keywords;
 import tagion.hibon.HiBON : HiBON;
@@ -25,7 +25,7 @@ import tagion.hibon.HiBONJSON;
 
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.communication.HiRPC : HiRPC, HiRPCMethod, Callers;
-import tagion.basic.Basic : EnumText;
+import tagion.basic.basic : EnumText;
 
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.Keywords : isValid;
@@ -1029,7 +1029,7 @@ received = the HiRPC received package
     unittest {
         import tagion.utils.Random;
         import tagion.dart.BlockFile;
-        import tagion.basic.Basic : tempfile, assumeTrusted;
+        import tagion.basic.basic : tempfile, assumeTrusted;
         import tagion.dart.DARTFakeNet : DARTFakeNet;
 
         enum TEST_BLOCK_SIZE = 0x80;

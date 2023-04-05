@@ -5,7 +5,7 @@ import std.socket : InternetAddress, AddressFamily, SocketOSException;
 import std.stdio : writeln, writefln, stderr;
 import core.thread : Thread, seconds;
 
-import tagion.basic.Basic : TrustedConcurrency;
+import tagion.basic.basic : TrustedConcurrency;
 import tagion.basic.Types : Control, Buffer;
 import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.Document : Document;

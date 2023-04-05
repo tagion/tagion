@@ -9,7 +9,7 @@ import std.meta : AliasSeq, Filter, aliasSeqOf, ApplyLeft, ApplyRight, allSatisf
 import std.format;
 import std.typecons;
 import tagion.basic.traits : hasOneMemberUDA;
-import tagion.basic.Basic : isOneOf, staticSearchIndexOf;
+import tagion.basic.basic : isOneOf, staticSearchIndexOf;
 
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;

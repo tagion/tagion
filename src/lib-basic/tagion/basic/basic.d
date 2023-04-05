@@ -1,5 +1,5 @@
 /// Basic functions used in the tagion project
-module tagion.basic.Basic;
+module tagion.basic.basic;
 
 private import std.string : format, join, strip;
 private import std.traits;
@@ -62,7 +62,7 @@ enum NameOf(alias nameType) = __traits(identifier, nameType);
 +/
 mixin template FUNCTION_NAME()
 {
-    import tagion.basic.Basic : basename;
+    import tagion.basic.basic : basename;
 
     enum __FUNCTION_NAME__ = basename!(__FUNCTION__)[0 .. $ - 1];
 }

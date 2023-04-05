@@ -296,7 +296,7 @@ version (unittest) {
     import std.path;
     import std.outbuffer;
 
-    import tagion.basic.Basic : mangleFunc, unitfile;
+    import tagion.basic.basic : mangleFunc, unitfile;
     import tagion.basic.Types : FileExtension;
     import tagion.behaviour.BehaviourUnittest;
     import tagion.behaviour.Behaviour;

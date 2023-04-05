@@ -14,7 +14,7 @@ import tagion.hashgraphview.EventMonitorCallbacks:  EventMonitorCallbacks;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 
 import tagion.basic.Types :  FileExtension;
-import tagion.basic.Basic : basename, EnumText;
+import tagion.basic.basic : basename, EnumText;
 import tagion.basic.Message;
 
 import tagion.crypto.Types : Pubkey;

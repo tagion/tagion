@@ -16,7 +16,7 @@ import tagion.behaviour.BehaviourResult;
 import tagion.behaviour.BehaviourReporter;
 import tagion.basic.Types : FileExtension;
 import tagion.hibon.HiBONRecord;
-import tagion.basic.Basic : isOneOf;
+import tagion.basic.basic : isOneOf;
 
 /**
    Runs the scenario in Given, When, Then, But order
@@ -175,7 +175,7 @@ FeatureGroup getFeature(alias M)() if (isFeature!M) {
 @safe
 unittest { //
     import tagion.hibon.HiBONRecord;
-    import tagion.basic.Basic : unitfile;
+    import tagion.basic.basic : unitfile;
     import core.demangle : mangle;
 
     import Module = tagion.behaviour.BehaviourUnittest;

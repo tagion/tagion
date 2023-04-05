@@ -20,7 +20,7 @@ import tagion.hibon.HiBONException : HiBONRecordException;
 
 import tagion.dart.DARTBasic;
 
-import tagion.basic.Basic : basename;
+import tagion.basic.basic : basename;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
 import tagion.script.StandardRecords : SignedContract, StandardBill, Invoice, globals, Script;

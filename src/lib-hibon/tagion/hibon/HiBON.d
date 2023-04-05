@@ -30,7 +30,7 @@ import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, isHiBONTypeArray;
 
 import tagion.basic.Message : message;
 import tagion.basic.Types : Buffer, isTypedef;
-import tagion.basic.Basic : CastTo;
+import tagion.basic.basic : CastTo;
 import LEB128 = tagion.utils.LEB128;
 
 //import std.stdio;

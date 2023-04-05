@@ -16,7 +16,7 @@ import std.random : randomShuffle, MinstdRand0;
 import tagion.utils.Random;
 import tagion.dart.DARTFakeNet;
 import std.algorithm : each;
-import tagion.basic.Basic : tempfile;
+import tagion.basic.basic : tempfile;
 import tagion.utils.Miscellaneous : toHexString;
 import std.stdio : writefln, writeln;
 import std.format;
