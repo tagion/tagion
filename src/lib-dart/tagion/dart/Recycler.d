@@ -217,9 +217,6 @@ struct Recycler {
         }
     }
 
-    // bool isRecyclable(const Index index) const pure nothrow {
-    //     return false;
-    // }
 
     void read(Index index) {
         indices = new Indices;
@@ -235,9 +232,6 @@ struct Recycler {
         }
     }
 
-    // void load(Index index) {
-    //     return;
-    // }
 
     /** 
      * Writes the data to the file. First it calls recycler with the to_be_recycled. Afterwards it goes through and updated the pointer chain.
@@ -268,7 +262,6 @@ struct Recycler {
         return indices[].front.index;
     }
 
-
     /**
      * Claims a free segment. Priority is first to use segments already in the recycler. 
      * Therefore removing a segment from the recycler. 
@@ -289,8 +282,15 @@ struct Recycler {
         import tagion.basic.range : doEatFront;       
             try {
 
-                // auto seg_in_to_be_recycled = to_be_recycled.filter!(seg => seg.size == segment_size).doEatFront;
-                // if (seg_in_to_be_recycled !is )
+
+                auto seg_index = to_be_recycled.countUntil!(seg => seg.size == segment_size);
+                // version(none)
+                if (seg_index >= 0 ) {
+                    scope (exit) {
+                        to_be_recycled = to_be_recycled.remove(seg_index);
+                    }
+                    return to_be_recycled[seg_index].index;
+                }
 
                 auto sorted_segments = sortedSegments();
                 auto search_segment = new Segment(Index.max, segment_size);
