@@ -25,11 +25,8 @@ static class Logger : Actor {
 }
 
 void main() {
-    /* auto logge = spawnActor!Logger("logger_task"); */
-    alias logger_task = Logger.task;
-    Tid logger = spawn(&logger_task);
-    register("logger", logger);
-    auto loghandle = ActorHandle!(Logger)(logger, "logger");
+    alias LoggerHandle = ActorHandle!Logger;
+    LoggerHandle logger = spawnActor!Logger("logger_task");
 
     assert(checkCtrl(Ctrl.STARTING));
     assert(checkCtrl(Ctrl.ALIVE));
