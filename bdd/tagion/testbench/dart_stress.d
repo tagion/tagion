@@ -57,7 +57,7 @@ int _main(string[] args) {
 
     } 
 
-    version(TABLE_0) {
+ 
     if (env.stage == Stage.commit) {
         BDDOptions bdd_options;
         setDefaultBDDOptions(bdd_options);
@@ -81,7 +81,6 @@ int _main(string[] args) {
 
         auto dart_ADD_stress_context = dart_ADD_stress_feature.run();
 
-    }
     }
 
     return 0;
