@@ -41,6 +41,13 @@ bool checkCtrl(Ctrl msg) {
     return r[1] is msg;
 }
 
+/** 
+ * A "reference" to an actor that may or may not be spawned, we will never know
+ * Params: 
+ *  Actor = an actor type
+ *  Tid = the tid of the spawned task
+ *  taskName = the name of the possibly running task
+ */
 struct ActorHandle(Actor) {
     import concurrency = std.concurrency;
 
@@ -58,11 +65,27 @@ struct ActorHandle(Actor) {
 
 }
 
+/** 
+ * Create an actorHandle
+ * Params:
+ *   actor = The type of actor you want to create a handle for
+ *   taskName = the task name to search for
+ * Returns: Actorhandler with type A
+ * Examples: actorHandle!MyActor("my_task_name");
+ */
 ActorHandle!A actorHandle(A)(A actor, string taskName) {
     Tid tid = locate(taskName);
     return ActorHandle(tid, taskName);
 }
 
+/** 
+ * Params:
+ *   actor = The type of actor you want to create a handle for
+ *   taskName = the name it should be started as
+ *   args = list of arguments to pass to the task function
+ * Returns: An actorHandle with type A
+ * Examples: spawnActor!MyActor("my_task_name", 42);
+ */
 ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) {
     alias task = A.task;
     Tid tid = spawn(&task, args);
@@ -86,7 +109,7 @@ nothrow Nullable!Tid tidOwner() {
         tid = ownerTid;
     }
     catch (TidMissingException) {
-        // Tid is just "null"
+        // Tid is "just null"
     }
     catch (Exception e) {
         // logger.fatal(e);
