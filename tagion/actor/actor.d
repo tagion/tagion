@@ -41,9 +41,9 @@ bool checkCtrl(Ctrl msg) {
     return r[1] is msg;
 }
 
-/** 
+/**
  * A "reference" to an actor that may or may not be spawned, we will never know
- * Params: 
+ * Params:
  *  Actor = an actor type
  *  Tid = the tid of the spawned task
  *  taskName = the name of the possibly running task
@@ -65,7 +65,7 @@ struct ActorHandle(Actor) {
 
 }
 
-/** 
+/**
  * Create an actorHandle
  * Params:
  *   actor = The type of actor you want to create a handle for
@@ -78,7 +78,7 @@ ActorHandle!A actorHandle(A)(A actor, string taskName) {
     return ActorHandle(tid, taskName);
 }
 
-/** 
+/**
  * Params:
  *   actor = The type of actor you want to create a handle for
  *   taskName = the name it should be started as
