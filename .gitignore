@@ -13,3 +13,4 @@ actor-test-*
 *.o
 *.obj
 *.lst
+*.vim
