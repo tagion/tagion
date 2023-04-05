@@ -62,8 +62,8 @@ ActorHandle!A actorHandle(A)(A actor, string taskName) {
     return ActorHandle(tid, taskName);
 }
 
-ActorHandle!A spawnActor(A)(A actor, string taskName) {
-    alias task = actor.task;
+ActorHandle!A spawnActor(A)(string taskName) {
+    alias task = A.task;
     Tid tid = spawn(&task);
     register(taskName, tid);
 
@@ -103,6 +103,7 @@ void sendOwner(T...)(T vals) {
     else {
         write("No owner, writing message to stdout instead: ");
         writeln(vals);
+        // Log
     }
 }
 
