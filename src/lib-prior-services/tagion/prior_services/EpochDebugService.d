@@ -2,7 +2,7 @@ module tagion.prior_services.EpochDebugService;
 
 import std.concurrency;
 import tagion.basic.Types : Control;
-import tagion.basic.TagionExceptions : fatal;
+import tagion.basic.tagionexceptions : fatal;
 import tagion.hibon.Document : Document;
 
 void epochDebugServiceTask(string task_name) nothrow {

@@ -11,7 +11,7 @@ import std.socket : SocketType, AddressFamily;
 
 import tagion.basic.basic : TrustedConcurrency;
 import tagion.basic.Types : Control;
-import tagion.basic.TagionExceptions : fatal, taskfailure;
+import tagion.basic.tagionexceptions : fatal, taskfailure;
 import tagion.communication.HiRPC : HiRPC;
 import tagion.logger.Logger : log, LogLevel;
 import tagion.logger.LogRecords;

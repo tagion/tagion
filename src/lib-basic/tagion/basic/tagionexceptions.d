@@ -1,4 +1,4 @@
-module tagion.basic.TagionExceptions;
+module tagion.basic.tagionexceptions;
 
 import std.exception;
 

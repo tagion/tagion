@@ -26,7 +26,7 @@ import tagion.basic.Message;
 import tagion.dart.DARTException : DARTRecorderException;
 import tagion.dart.DARTBasic;
 
-import tagion.basic.TagionExceptions : Check;
+import tagion.basic.tagionexceptions : Check;
 
 import tagion.utils.Miscellaneous : toHexString;
 

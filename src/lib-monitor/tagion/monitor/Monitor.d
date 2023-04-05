@@ -22,7 +22,7 @@ import tagion.crypto.Types : Pubkey;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
-import tagion.basic.TagionExceptions : TagionException;
+import tagion.basic.tagionexceptions : TagionException;
 import tagion.utils.BitMask;
 import tagion.logger.Logger;
 

@@ -1,6 +1,6 @@
 module tagion.new_services.ServiceException;
 
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 
 /++
  Exception type used by tagion.hibon.HiBON module

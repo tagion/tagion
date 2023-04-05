@@ -30,7 +30,7 @@ import tagion.basic.basic : EnumText;
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.Keywords : isValid;
 
-import tagion.basic.TagionExceptions : Check;
+import tagion.basic.tagionexceptions : Check;
 import tagion.dart.BlockFile : BlockFile;
 import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTFile;

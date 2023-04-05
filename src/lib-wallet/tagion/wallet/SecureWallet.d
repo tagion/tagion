@@ -36,7 +36,7 @@ import tagion.communication.HiRPC;
 import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, AccountDetails;
 import tagion.wallet.WalletException : WalletException;
-import tagion.basic.TagionExceptions : Check;
+import tagion.basic.tagionexceptions : Check;
 
 alias check = Check!(WalletException);
 

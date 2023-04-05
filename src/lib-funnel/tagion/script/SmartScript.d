@@ -8,7 +8,7 @@ import std.algorithm.searching : all;
 
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCode, Check;
-import tagion.basic.TagionExceptions : TagionException;
+import tagion.basic.tagionexceptions : TagionException;
 import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey, Contract, Script, Globals, globals;
 import tagion.basic.Types :  Buffer;
 import tagion.crypto.Types : Pubkey,  Signature, Fingerprint;

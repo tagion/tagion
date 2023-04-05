@@ -26,7 +26,7 @@ import tagion.script.StandardRecords : Contract, SignedContract, PayContract;
 import tagion.script.SmartScript;
 import tagion.crypto.SecureNet : StdSecureNet;
 
-import tagion.basic.TagionExceptions : fatal, taskfailure, TagionException;
+import tagion.basic.tagionexceptions : fatal, taskfailure, TagionException;
 
 //import tagion.dart.DARTFile;
 import tagion.dart.DART;

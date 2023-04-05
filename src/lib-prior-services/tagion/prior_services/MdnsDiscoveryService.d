@@ -12,7 +12,7 @@ import tagion.logger.Logger;
 import tagion.basic.Types : Buffer, Control;
 import tagion.crypto.Types :   Pubkey;
 import tagion.gossip.AddressBook : NodeAddress, addressbook;
-import tagion.basic.TagionExceptions : fatal;
+import tagion.basic.tagionexceptions : fatal;
 import tagion.prior_services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;
 
 void mdnsDiscoveryService(

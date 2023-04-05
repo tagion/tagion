@@ -24,7 +24,7 @@ import tagion.basic.Message : message;
 // import tagion.utils.JSONOutStream;
 // import tagion.utils.JSONInStream : JSONType;
 
-import tagion.basic.TagionExceptions : Check;
+import tagion.basic.tagionexceptions : Check;
 import tagion.utils.StdTime;
 
 /**

@@ -213,7 +213,7 @@ static assert(uint.sizeof == 4);
     Element.ErrorCode valid(ErrorCallback error_callback = null) const nothrow {
         Element.ErrorCode inner_valid(const Document sub_doc,
                 ErrorCallback error_callback = null) const nothrow {
-            import tagion.basic.TagionExceptions : TagionException;
+            import tagion.basic.tagionexceptions : TagionException;
 
             auto previous = sub_doc[];
             bool not_first;
