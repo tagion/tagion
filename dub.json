@@ -3,7 +3,17 @@
 		"lucas"
 	],
 	"copyright": "Copyright © 2023, lucas",
-	"description": "A minimal D application.",
+	"description": "Structured actor library in dlang",
 	"license": "proprietary",
-	"name": "actor"
+	"name": "tagion-actor",
+
+    "sourcePaths": ["tagion/"],
+
+    "configurations" : [
+        {
+            "name": "example",
+            "targetType": "executable",
+            "mainSourceFile" : "example/app.d"
+        }
+    ]
 }
