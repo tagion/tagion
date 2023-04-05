@@ -63,26 +63,9 @@ static class MyActor : Actor {
     // Define messages
 
     void task() {
-        stop = false;
-
-        setState(Ctrl.STARTING); // Tell the owner that you are starting.
-        scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
-
-        setState(Ctrl.ALIVE); // Tell the owner that you running
-        while (!stop) {
-            try {
-                actorReceive(
-                // Implement messages
-                );
-            }
-            // If we catch an exception we send it back to owner for them to deal with it.
-            catch (shared(Exception) e) {
-                // Preferable FAIL would be able to carry the exception with it
-                ownerTid.prioritySend(e);
-                setState(Ctrl.FAIL);
-                stop = true;
-            }
-        }
+        actorTask(
+        // Implement messages
+        );
     }
 }
 ```
