@@ -1,3 +1,4 @@
+/// Recycler for the blockfile.
 module tagion.dart.Recycler;
 
 import std.container.rbtree : RedBlackTree;
@@ -5,6 +6,7 @@ import std.range;
 import std.typecons : tuple;
 import std.stdio;
 import std.traits : PointerTarget, isImplicitlyConvertible;
+import std.format;
 
 import tagion.basic.Types : Buffer;
 import tagion.dart.BlockFile : BlockFile, Index, check;
@@ -13,15 +15,12 @@ import std.algorithm;
 import tagion.hibon.HiBONJSON : toPretty;
 
 
-import std.format;
 
-enum Type : int {
-    NONE = 0, /// NO Recycler instruction
-    REMOVE = -1, /// Should be removed from recycler
-    ADD = 1, /// should be added to recycler
-    UPDATE = 2,
-}
-
+/** 
+ * The segments used for the recycler.
+ * They contain a next pointer that points to the next recycler segment index. 
+ * As well as a index for where it is located.
+ */
 @safe @recordType("R")
 struct Segment {
     Index next;
@@ -60,18 +59,19 @@ struct Segment {
 
         }
     });
+    
+    /// We never want to create a segment with a size smaller than zero.
     invariant {
         assert(size > 0);
     }
-
+    /// We never want to create a index at Index.init.
     invariant {
         assert(index != Index.init, "Segment cannot be inserted at index 0");
     }
 }
 
-// Indices: sorted by index
+/// Indices in the recycler: sorted by index
 alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index); // Segment: sorted by size.
-// alias Segments = RedBlackTree!(Segment*, (a, b) => a.size < b.size, true);
 @safe
 struct Recycler {
     static bool print;
@@ -95,10 +95,10 @@ struct Recycler {
     }
 
     protected {
-        BlockFile owner;
-        Indices indices;
-        Segment*[] segments;
-        Segment*[] to_be_recycled;
+        BlockFile owner; /// The blockfile owner
+        Indices indices; /// Indices that are stored in the blockfile.
+        Segment*[] segments; /// The other way to sort. Sorted by segment size therefore allowing overlaps.
+        Segment*[] to_be_recycled; /// Segments that are disposed and need to be added to the recycler.
     }
     @disable this();
     this(BlockFile owner) pure nothrow
@@ -108,32 +108,55 @@ struct Recycler {
         this.owner = owner;
         indices = new Indices;
     }
-
+    /** 
+     * Function to sort the segments by their size. It returns a assumeSorted of the segments.
+     */
     protected auto sortedSegments() {
+        // check if the segments are already sorted. If not then sort.
         if (!segments.isSorted!((a, b) => a.size < b.size)) {
             segments.sort!((a, b) => a.size < b.size);
         }
         return assumeSorted!((a, b) => a.size < b.size)(segments);
     }
-
+    /** 
+     * Inserts a range of segments into the recycler.
+     * Params:
+     *   segment_range = Range of segments. Must be ElementType = Segment*
+     */
     protected void insert(R)(R segment_range)
         if (isInputRange!R && isImplicitlyConvertible!(ElementType!R, Segment*)) {
         indices.stableInsert(segment_range);
         segments ~= segment_range;
     }
-
+    /** 
+     * Insert a single segment into the recycler.
+     * Params:
+     *   segment = segment to be inserted.
+     */
     protected void insert(Segment* segment) {
         indices.insert(segment);
         segments ~= segment;
     }
-
+    /** 
+     * Removes a segment from the recycler.
+     * Params:
+     *   segment = segment to be removed
+     */
     protected void remove(Segment* segment) {
         auto remove_segment = indices.equalRange(segment).front;
 
         indices.removeKey(remove_segment);
         segments = segments.remove(segments.countUntil(remove_segment));
     }
-
+    /** 
+     * Recycles the segments. Goes over the list of recycle_segments. 
+     * First it takes the lowerbound. If there is a element in the 
+     * lowerbound, the index of the current segment is changed to the one
+     * of the lowerbound.back and the lowerbound.back is removed.
+     * The same step is used for the upperbound using the front of the elements.
+     * Params:
+     *   recycle_segments = newly disposed segments
+     */
     void recycle(Segment*[] recycle_segments) {
 
         foreach (insert_segment; recycle_segments) {
@@ -156,7 +179,7 @@ struct Recycler {
     }
 
     /**
-    Returns: true if the segments overlaps
+    Returns: true if the segments overlaps in the indices
     */
     private bool noOverlaps() const pure nothrow @nogc {
         import std.range : slide;
@@ -199,7 +222,9 @@ struct Recycler {
             writefln("NEXT: %s ", segment.next);
         }
     }
-
+    /** 
+     * Dumps the segments in the to_be_recycled array.
+     */
     void dumpToBeRecycled() {
         import std.stdio;
 
@@ -217,15 +242,22 @@ struct Recycler {
         }
     }
 
-
+    /** 
+     * Reads an element from the blockfile. 
+     * Params:
+     *   index = 
+     */
     void read(Index index) {
+        // First we reset the indices and segments
         indices = new Indices;
         segments = null;
+        // If the index is Index(0) we return. 
         if (index == Index(0)) {
             return;
         }
+        // The last element points to a Index.init. 
+        // Therefore we continue until we reach this.
         while (index != Index.init) {
-
             auto add_segment = new Segment(owner, index);
             insert(add_segment);
             index = add_segment.next;
@@ -234,13 +266,12 @@ struct Recycler {
 
 
     /** 
-     * Writes the data to the file. First it calls recycler with the to_be_recycled. Afterwards it goes through and updated the pointer chain.
-     * Params:
-     *   index = Index of the blockfile???
-     */
+    * Writes the data to the file. First it calls recycler with the to_be_recycled. 
+    * Afterwards it goes through and updates the pointer chain.
+    * Returns: the index of the first recycler index.
+    */
     Index write() nothrow {
         assumeWontThrow(recycle(to_be_recycled[]));
-        // assumeWontThrow(__write("write to_be_recycled length = %s", to_be_recycled.length));
         to_be_recycled = null;
 
         if (indices.empty) {
@@ -263,13 +294,15 @@ struct Recycler {
     }
 
     /**
-     * Claims a free segment. Priority is first to use segments already in the recycler. 
+     * Claims a free segment. Priority is first to use segments already in the disposed list 
+     * from to_be_recycled. Next is to use a element in the recycler indices. 
      * Therefore removing a segment from the recycler. 
-     * Secondly if no available segments then it appends a new segment to the blockfile.
+     * Secondly if no available segments then it appends a new segment to the blockfile and changes
+     * the owners last block index.
      * Params:
      *   segment_size = in number of blocks.
      * Returns: 
-     *   Index pointer a free segment
+     *   Index pointer of a free segment
      */
     const(Index) claim(const uint segment_size) nothrow
     in (segment_size > 0)
@@ -281,10 +314,8 @@ struct Recycler {
     do {
         import tagion.basic.range : doEatFront;       
             try {
-
-
+                // First we check the to_be_recycled. 
                 auto seg_index = to_be_recycled.countUntil!(seg => seg.size == segment_size);
-                // version(none)
                 if (seg_index >= 0 ) {
                     scope (exit) {
                         to_be_recycled = to_be_recycled.remove(seg_index);
@@ -336,13 +367,14 @@ struct Recycler {
      *   segment_size = in number of blocks.
      */
     void dispose(const(Index) index, const uint segment_size) nothrow {
-        // assumeWontThrow(writefln("disposing segment: index=%s, size=%s", index, segment_size));
         // If the index is 0 then it is because we have returned a Leave.init. 
+        // This should not be added to the recycler.
         if (index == 0) {
             return;
         }
 
         auto seg = new Segment(index, segment_size);
+        // The segment should not already be in the list of the to_be_recycled.
         assert(!(to_be_recycled.canFind(seg)), assumeWontThrow(
                 format("segment already in dispose list index: %s", index)));
         to_be_recycled ~= seg;
