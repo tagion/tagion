@@ -14,8 +14,6 @@ import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType, fwrite, fread;
 import std.algorithm;
 import tagion.hibon.HiBONJSON : toPretty;
 
-
-
 /** 
  * The segments used for the recycler.
  * They contain a next pointer that points to the next recycler segment index. 
@@ -59,7 +57,7 @@ struct Segment {
 
         }
     });
-    
+
     /// We never want to create a segment with a size smaller than zero.
     invariant {
         assert(size > 0);
@@ -167,7 +165,7 @@ struct Recycler {
     void recycle(Segment*[] recycle_segments) {
 
         foreach (insert_segment; recycle_segments) {
-            
+
             auto lower_range = indices.lowerBound(insert_segment);
             if (!lower_range.empty && lower_range.back.end == insert_segment.index) {
                 insert_segment.index = lower_range.back.index;
@@ -271,7 +269,6 @@ struct Recycler {
         }
     }
 
-
     /** 
     * Writes the data to the file. First it calls recycler with the to_be_recycled. 
     * Afterwards it goes through and updates the pointer chain.
@@ -319,50 +316,48 @@ struct Recycler {
 
     }
     do {
-        import tagion.basic.range : doEatFront;       
-            try {
-                // First we check the to_be_recycled. 
-                auto seg_index = to_be_recycled.countUntil!(seg => seg.size == segment_size);
-                if (seg_index >= 0 ) {
-                    scope (exit) {
-                        to_be_recycled = to_be_recycled.remove(seg_index);
-                    }
-                    return to_be_recycled[seg_index].index;
+        import tagion.basic.range : doEatFront;
+
+        try {
+            // First we check the to_be_recycled. 
+            auto seg_index = to_be_recycled.countUntil!(seg => seg.size == segment_size);
+            if (seg_index >= 0) {
+                scope (exit) {
+                    to_be_recycled = to_be_recycled.remove(seg_index);
                 }
-
-                auto sorted_segments = sortedSegments();
-                auto search_segment = new Segment(Index.max, segment_size);
-
-                auto equal_range = sorted_segments.equalRange(search_segment);
-
-                if (!equal_range.empty) {
-                    // there is a element equal.
-                    const index = equal_range.front.index;
-                    remove(equal_range.front);
-                    return index;
-                }
-
-                auto upper_range = sorted_segments.upperBound(search_segment);
-                if (!upper_range.empty) {
-                    const index = upper_range.front.index;
-                    auto add_segment = new Segment(Index(index + segment_size), upper_range.front.size - segment_size);
-
-
-                    remove(upper_range.front);
-
-                    insert(add_segment);
-                    return index;
-                }
+                return to_be_recycled[seg_index].index;
             }
-            catch (Exception e) {
-                assert(0, e.msg);
+
+            auto sorted_segments = sortedSegments();
+            auto search_segment = new Segment(Index.max, segment_size);
+
+            auto equal_range = sorted_segments.equalRange(search_segment);
+
+            if (!equal_range.empty) {
+                // there is a element equal.
+                const index = equal_range.front.index;
+                remove(equal_range.front);
+                return index;
             }
-        
+
+            auto upper_range = sorted_segments.upperBound(search_segment);
+            if (!upper_range.empty) {
+                const index = upper_range.front.index;
+                auto add_segment = new Segment(Index(index + segment_size), upper_range.front.size - segment_size);
+
+                remove(upper_range.front);
+
+                insert(add_segment);
+                return index;
+            }
+        }
+        catch (Exception e) {
+            assert(0, e.msg);
+        }
 
         scope (success) {
             owner._last_block_index = Index(owner._last_block_index + segment_size);
         }
-
 
         return owner._last_block_index;
 
@@ -462,7 +457,7 @@ unittest {
         new Segment(Index(25UL), 6),
         new Segment(Index(22UL), 3),
     ];
-    
+
     recycler.recycle(extra_segments);
     recycler.write();
 
@@ -530,13 +525,13 @@ unittest {
     Segment*[] add_indices;
     add_indices =
         [
-        new Segment(Index(10UL), 5)
+            new Segment(Index(10UL), 5)
     ];
     recycler.recycle(add_indices);
     // recycler.dump;
     add_indices =
         [
-        new Segment(Index(2UL), 8)
+            new Segment(Index(2UL), 8)
     ];
     recycler.recycle(add_indices);
 
@@ -545,9 +540,9 @@ unittest {
     assert(recycler.indices.front.end == Index(15UL));
 
     // upperrange empty connecting
-    add_indices = 
+    add_indices =
         [
-        new Segment(Index(15UL), 5)
+            new Segment(Index(15UL), 5)
     ];
     recycler.recycle(add_indices);
     assert(recycler.indices.length == 1, "should have merged segments");
@@ -574,13 +569,13 @@ unittest {
     Segment*[] add_indices;
     add_indices =
         [
-        new Segment(Index(10UL), 5)
+            new Segment(Index(10UL), 5)
     ];
     recycler.recycle(add_indices);
     // recycler.dump;
     add_indices =
         [
-        new Segment(Index(2UL), 5)
+            new Segment(Index(2UL), 5)
     ];
     recycler.recycle(
         add_indices);
@@ -593,7 +588,7 @@ unittest {
     // upper range NOT connecting
     add_indices =
         [
-        new Segment(Index(25UL), 5)
+            new Segment(Index(25UL), 5)
     ];
     recycler.recycle(
         add_indices[]);
@@ -617,30 +612,30 @@ unittest {
     auto recycler = Recycler(
         blockfile);
 
-    Segment*[] add_indices = 
+    Segment*[] add_indices =
         [
-        new Segment(Index(10UL), 5),
-        new Segment(Index(1UL), 1)
+            new Segment(Index(10UL), 5),
+            new Segment(Index(1UL), 1)
     ];
     recycler.recycle(add_indices);
     // recycler.dump;
     add_indices =
         [
-        new Segment(Index(5UL), 5)
+            new Segment(Index(5UL), 5)
     ];
     recycler.recycle(add_indices);
     // recycler.dump;
     assert(recycler.indices.length == 2, "should have merged segments");
 
     // upperrange not empty connecting
-    add_indices = 
+    add_indices =
         [
-        new Segment(Index(25UL), 5)
+            new Segment(Index(25UL), 5)
     ];
     recycler.recycle(add_indices);
-    add_indices = 
+    add_indices =
         [
-        new Segment(Index(17UL), 2)
+            new Segment(Index(17UL), 2)
     ];
     recycler.recycle(
         add_indices);
@@ -660,9 +655,9 @@ unittest {
     auto recycler = Recycler(
         blockfile);
 
-    Segment*[] add_indices = 
+    Segment*[] add_indices =
         [
-        new Segment(Index(10UL), 5),
+            new Segment(Index(10UL), 5),
     ];
     recycler.recycle(add_indices);
 
@@ -861,7 +856,6 @@ unittest {
 
 }
 
-  
 @safe
 unittest {
     // save claim save on same segment.
@@ -976,11 +970,7 @@ unittest {
 //     // remove the last segment and check that the recycler is snapped back.
 //     blockfile.dispose(data_indexes[$-1]);
 //     blockfile.store();
-    
+
 //     assert(blockfile.recycler.indices.length == 0, format("should be 0 but was %s", blockfile.recycler.indices.length));
-    
-
-
-
 
 // }
