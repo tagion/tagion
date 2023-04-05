@@ -7,7 +7,8 @@ import std.typecons;
 import core.thread;
 
 /// Message type template
-struct Msg(string name) {}
+struct Msg(string name) {
+}
 
 // State messages send to the supervisor
 enum Ctrl {
@@ -39,8 +40,9 @@ bool checkCtrl(Ctrl msg) {
     return r[1] is msg;
 }
 
-struct ActorHandle(Actor actor)  {
+struct ActorHandle(Actor actor) {
     import concurrency = std.concurrency;
+
     Tid tid;
     string taskName;
 
@@ -136,7 +138,7 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */
     return tids;
 }
 
-@nogc nothrow 
+@nogc nothrow
 static class Actor {
     static Tid[] children;
     static Tid[Tid] failChildren;
@@ -155,7 +157,7 @@ static class Actor {
 
     /// Controls message sent from the children.
     static void control(CtrlMsg msg) {
-        with (Ctrl) final switch(msg.ctrl) {
+        with (Ctrl) final switch (msg.ctrl) {
         case STARTING:
             debug writeln(msg);
             startChildren[msg.tid] = msg.tid;
@@ -208,19 +210,20 @@ static class Actor {
             stop = false;
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
-            scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
+            scope (exit)
+                setState(Ctrl.END); // Tell the owner that you have finished.
 
             setState(Ctrl.ALIVE); // Tell the owner that you running
             while (!stop) {
-                    receive(
-                            receivers,
-                            &signal,
-                            &control,
-                            &ownerTerminated,
-                            &unknown,
-                    );
-                }
+                receive(
+                        receivers,
+                        &signal,
+                        &control,
+                        &ownerTerminated,
+                        &unknown,
+                );
             }
+        }
         // If we catch an exception we send it back to owner for them to deal with it.
         // Do not send shared
         catch (shared(Exception) e) {
@@ -235,4 +238,3 @@ static class Actor {
     // is maintained as a copy and not a reference.
     nothrow void task(A...)(A args);
 }
-

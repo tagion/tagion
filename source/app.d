@@ -14,13 +14,11 @@ static class Logger : Actor {
 
     nothrow void task() {
         actorTask(
-                (Msg!"info", string str) {
-                    writeln("Info: ", str); 
-                    /// something else
-                },
-                (Msg!"fatal", string str) {
-                    writeln("Fatal: ", str);
+            (Msg!"info", string str) {
+                writeln("Info: ", str);
+                /// something else
             },
+            (Msg!"fatal", string str) { writeln("Fatal: ", str); },
         );
     }
 
