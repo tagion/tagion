@@ -31,10 +31,10 @@ debug enum DebugSig {
 /// contains the Tid of the actor which send it and the state
 alias CtrlMsg = Tuple!(Tid, "tid", Ctrl, "ctrl");
 
-/// dep
+/// Don't use this
 bool checkCtrl(Ctrl msg) {
     // Never use receiveOnly
-    CtrlMsg r = receiveOnly!(CtrlMsg);
+    auto r = receiveOnly!(CtrlMsg);
     debug writeln(r);
     return r[1] is msg;
 }
@@ -105,7 +105,7 @@ void sendOwner(T...)(T vals) {
 nothrow void setState(Ctrl ctrl) {
     try {
         if (!maybeOwnerTid.isNull) {
-            maybeOwnerTid.get.prioritySend(thisTid, ctrl);
+            maybeOwnerTid.get.prioritySend(CtrlMsg(thisTid, ctrl));
         }
         else {
             /* write("No owner, writing message to stdout instead: "); */
