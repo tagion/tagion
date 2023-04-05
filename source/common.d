@@ -62,23 +62,28 @@ ActorHandle actorHandle(A)(Actor actor, string taskName) {
 
 ActorHandle spawnActor(A)(Actor actor, string taskName) {
     alias task = actor.task;
-    spawn(&task);
+    Tid tid = spawn(&task);
+    register(taskName, tid);
 }
 
 // Delegate for dealing with exceptions sent from children
 void exceptionHandler(Exception e) {
-    // logger.send(fatal, e);
+    // logger.fatal(e);
     writeln(e);
 }
 
-Nullable!Tid maybeOwnerTid() {
+nothrow Nullable!Tid maybeOwnerTid() {
     // tid is "null"
     Nullable!Tid tid;
     try {
-        // Tid is asigned
+        // Tid is assigned
         tid = ownerTid;
     }
     catch (TidMissingException) {
+        // Tid is just "null"
+    }
+    catch (Exception e) {
+        // logger.fatal(e);
     }
     return tid;
 }
@@ -97,13 +102,21 @@ void sendOwner(T...)(T vals) {
 }
 
 /// send your state to your owner
-void setState(Ctrl ctrl) {
-    if (!maybeOwnerTid.isNull) {
-        prioritySend(maybeOwnerTid.get, thisTid, ctrl);
+nothrow void setState(Ctrl ctrl) {
+    try {
+        if (!maybeOwnerTid.isNull) {
+            maybeOwnerTid.get.prioritySend(thisTid, ctrl);
+        }
+        else {
+            /* write("No owner, writing message to stdout instead: "); */
+            /* writeln(ctrl); */
+        }
     }
-    else {
-        write("No owner, writing message to stdout instead: ");
-        writeln(ctrl);
+    catch (PriorityMessageException e) {
+        /* logger.fatal(e); */
+    }
+    catch (Exception e) {
+        /* logger.fatal(e); */
     }
 }
 
@@ -123,6 +136,7 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */
     return tids;
 }
 
+@nogc nothrow 
 static class Actor {
     static Tid[] children;
     static Tid[Tid] failChildren;
@@ -141,7 +155,7 @@ static class Actor {
 
     /// Controls message sent from the children.
     static void control(CtrlMsg msg) {
-        with (Ctrl) final switch(Ctrl) {
+        with (Ctrl) final switch(msg.ctrl) {
         case STARTING:
             debug writeln(msg);
             startChildren[msg.tid] = msg.tid;
@@ -189,45 +203,36 @@ static class Actor {
     }
 
     /// General actor task
-    void actorTask(T...)(T receivers) {
-        stop = false;
+    nothrow void actorTask(T...)(T receivers) {
+        try {
+            stop = false;
 
-        setState(Ctrl.STARTING); // Tell the owner that you are starting.
-        scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
+            setState(Ctrl.STARTING); // Tell the owner that you are starting.
+            scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
 
-        setState(Ctrl.ALIVE); // Tell the owner that you running
-        while (!stop) {
-            try {
-                receive(
-                        receivers,
-                        &signal,
-                        &control,
-                        &ownerTerminated,
-                        &unknown,
-                );
+            setState(Ctrl.ALIVE); // Tell the owner that you running
+            while (!stop) {
+                    receive(
+                            receivers,
+                            &signal,
+                            &control,
+                            &ownerTerminated,
+                            &unknown,
+                    );
+                }
             }
-            // If we catch an exception we send it back to owner for them to deal with it.
-            // Do not send shared
-            catch (shared(Exception) e) {
-                // Preferable FAIL would be able to carry the exception with it
-                ownerTid.prioritySend(e);
-                setState(Ctrl.FAIL);
-                stop = true;
-            }
+        // If we catch an exception we send it back to owner for them to deal with it.
+        // Do not send shared
+        catch (shared(Exception) e) {
+            // Preferable FAIL would be able to carry the exception with it
+            /* ownerTid.prioritySend(e); */
+            setState(Ctrl.FAIL);
+            stop = true;
         }
     }
 
     // We need to be certain that anything the task inherits from outside scope
     // is maintained as a copy and not a reference.
-    void task(A...)(A args);
-    /// Structure
-    /* while(!stop)
-        receive(
-            Msgs...
-            &signal,
-            &control,
-            &unkown,
-        ))
-    */
+    nothrow void task(A...)(A args);
 }
 
