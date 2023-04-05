@@ -5,7 +5,7 @@
 	"copyright": "Copyright © 2023, lucas",
 	"description": "Structured actor library in dlang",
 	"license": "proprietary",
-	"name": "tagion-actor",
+	"name": "actor",
 
     "sourcePaths": ["tagion/"],
 
