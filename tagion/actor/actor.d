@@ -40,7 +40,7 @@ bool checkCtrl(Ctrl msg) {
     return r[1] is msg;
 }
 
-struct ActorHandle(Actor actor) {
+struct ActorHandle(Actor) {
     import concurrency = std.concurrency;
 
     Tid tid;
@@ -57,18 +57,21 @@ struct ActorHandle(Actor actor) {
 
 }
 
-ActorHandle actorHandle(A)(Actor actor, string taskName) {
-    Tid tid = locate(task_name);
-    return ActorHandle!A(tid, taskName);
+ActorHandle!A actorHandle(A)(A actor, string taskName) {
+    Tid tid = locate(taskName);
+    return ActorHandle(tid, taskName);
 }
 
-ActorHandle spawnActor(A)(Actor actor, string taskName) {
+ActorHandle!A spawnActor(A)(A actor, string taskName) {
     alias task = actor.task;
     Tid tid = spawn(&task);
     register(taskName, tid);
+
+    return ActorHandle!A(tid, taskName);
 }
 
 // Delegate for dealing with exceptions sent from children
+version(none)
 void exceptionHandler(Exception e) {
     // logger.fatal(e);
     writeln(e);
@@ -162,6 +165,7 @@ static class Actor {
             debug writeln(msg);
             startChildren[msg.tid] = msg.tid;
             break;
+
         case ALIVE:
             debug writeln(msg);
             if (msg.tid in failChildren) {
@@ -175,11 +179,13 @@ static class Actor {
                 failChildren.remove(msg.tid);
             }
             break;
+
         case FAIL:
             debug writeln(msg);
             /// Add the failing child to the AA of children to restart
             failChildren[msg.tid] = msg.tid;
             break;
+
         case END:
             debug writeln(msg);
             if (msg.tid in failChildren) {
