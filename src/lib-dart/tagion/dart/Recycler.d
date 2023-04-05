@@ -98,7 +98,7 @@ struct Recycler {
         BlockFile owner;
         Indices indices;
         Segment*[] segments;
-        Indices to_be_recycled;
+        Segment*[] to_be_recycled;
     }
     @disable this();
     this(BlockFile owner) pure nothrow
@@ -107,7 +107,6 @@ struct Recycler {
     do {
         this.owner = owner;
         indices = new Indices;
-        to_be_recycled = new Indices;
     }
 
     protected auto sortedSegments() {
@@ -135,7 +134,7 @@ struct Recycler {
         segments = segments.remove(segments.countUntil(remove_segment));
     }
 
-    void recycle(Indices.Range recycle_segments) {
+    void recycle(Segment*[] recycle_segments) {
 
         foreach (insert_segment; recycle_segments) {
             
@@ -248,7 +247,7 @@ struct Recycler {
     Index write() nothrow {
         assumeWontThrow(recycle(to_be_recycled[]));
         // assumeWontThrow(__write("write to_be_recycled length = %s", to_be_recycled.length));
-        to_be_recycled.clear;
+        to_be_recycled = null;
 
         if (indices.empty) {
             return Index.init;
@@ -286,12 +285,12 @@ struct Recycler {
         assert(result != Index.init);
 
     }
-    do {       
+    do {
+        import tagion.basic.range : doEatFront;       
             try {
-                // auto recycle_seg = to_be_recycled.filter!(seg => seg.size == segment_size).doFront;
-                // if (recycle_seg != Segment.init) {
-                //     return recycle
-                // }
+
+                // auto seg_in_to_be_recycled = to_be_recycled.filter!(seg => seg.size == segment_size).doEatFront;
+                // if (seg_in_to_be_recycled !is )
 
                 auto sorted_segments = sortedSegments();
                 auto search_segment = new Segment(Index.max, segment_size);
@@ -344,9 +343,9 @@ struct Recycler {
         }
 
         auto seg = new Segment(index, segment_size);
-        assert(!(seg in to_be_recycled), assumeWontThrow(
+        assert(!(to_be_recycled.canFind(seg)), assumeWontThrow(
                 format("segment already in dispose list index: %s", index)));
-        assumeWontThrow(to_be_recycled.insert(seg));
+        to_be_recycled ~= seg;
     }
 
 }
@@ -379,9 +378,8 @@ unittest {
         new Segment(Index(17UL), 5),
     ];
 
-    Indices dispose_indices = new Indices(dispose_segments);
     // add the segments with the recycler function.
-    recycler.recycle(dispose_indices[]);
+    recycler.recycle(dispose_segments);
     // recycler.dump();
 
     // writefln("####");
@@ -416,10 +414,8 @@ unittest {
         new Segment(Index(10UL), 5),
         new Segment(Index(17UL), 5),
     ];
-    Indices dispose_indices = new Indices(
-        dispose_segments);
-    recycler.recycle(
-        dispose_indices[]);
+
+    recycler.recycle(dispose_segments);
     recycler.write();
 
     Segment*[] extra_segments = [
@@ -427,8 +423,8 @@ unittest {
         new Segment(Index(25UL), 6),
         new Segment(Index(22UL), 3),
     ];
-    Indices extra_indices = new Indices(extra_segments);
-    recycler.recycle(extra_indices[]);
+    
+    recycler.recycle(extra_segments);
     recycler.write();
 
     Segment*[] expected_segments = [
@@ -463,19 +459,15 @@ unittest {
         new Segment(Index(1UL), 5),
         new Segment(Index(10UL), 5),
     ];
-    Indices dispose_indices = new Indices(
-        dispose_segments);
-    recycler.recycle(
-        dispose_indices[]);
+
+    recycler.recycle(dispose_segments);
     // recycler.dump();
 
     Segment*[] remove_segments = [
         new Segment(Index(6UL), 4),
     ];
-    Indices remove_indices = new Indices(
-        remove_segments);
-    recycler.recycle(
-        remove_indices[]);
+
+    recycler.recycle(remove_segments);
     // recycler.dump();
 
     assert(recycler.indices.length == 1, "should only be one segment after middle insertion");
@@ -496,35 +488,29 @@ unittest {
     auto recycler = Recycler(
         blockfile);
 
-    Indices add_indices;
-    add_indices = new Indices(
+    Segment*[] add_indices;
+    add_indices =
         [
         new Segment(Index(10UL), 5)
-    ]);
-    recycler.recycle(
-        add_indices[]);
+    ];
+    recycler.recycle(add_indices);
     // recycler.dump;
-    add_indices = new Indices(
+    add_indices =
         [
         new Segment(Index(2UL), 8)
-    ]);
-    recycler.recycle(
-        add_indices[]);
+    ];
+    recycler.recycle(add_indices);
 
     assert(recycler.indices.length == 1, "should have merged segments");
-    assert(recycler.indices.front.index == Index(
-            2UL), "Index not correct");
-    assert(
-        recycler.indices.front.end == Index(
-            15UL));
+    assert(recycler.indices.front.index == Index(2UL), "Index not correct");
+    assert(recycler.indices.front.end == Index(15UL));
 
     // upperrange empty connecting
-    add_indices = new Indices(
+    add_indices = 
         [
         new Segment(Index(15UL), 5)
-    ]);
-    recycler.recycle(
-        add_indices[]);
+    ];
+    recycler.recycle(add_indices);
     assert(recycler.indices.length == 1, "should have merged segments");
     assert(recycler.indices.front.index == Index(
             2UL));
@@ -546,20 +532,19 @@ unittest {
     }
     auto recycler = Recycler(
         blockfile);
-    Indices add_indices;
-    add_indices = new Indices(
+    Segment*[] add_indices;
+    add_indices =
         [
         new Segment(Index(10UL), 5)
-    ]);
-    recycler.recycle(
-        add_indices[]);
+    ];
+    recycler.recycle(add_indices);
     // recycler.dump;
-    add_indices = new Indices(
+    add_indices =
         [
         new Segment(Index(2UL), 5)
-    ]);
+    ];
     recycler.recycle(
-        add_indices[]);
+        add_indices);
 
     assert(recycler.indices.length == 2, "should NOT have merged types");
     assert(recycler.indices.front.index == Index(
@@ -567,10 +552,10 @@ unittest {
     // recycler.dump
 
     // upper range NOT connecting
-    add_indices = new Indices(
+    add_indices =
         [
         new Segment(Index(25UL), 5)
-    ]);
+    ];
     recycler.recycle(
         add_indices[]);
     assert(recycler.indices.length == 3, "Should not have merged");
@@ -593,36 +578,33 @@ unittest {
     auto recycler = Recycler(
         blockfile);
 
-    Indices add_indices = new Indices(
+    Segment*[] add_indices = 
         [
         new Segment(Index(10UL), 5),
         new Segment(Index(1UL), 1)
-    ]);
-    recycler.recycle(
-        add_indices[]);
+    ];
+    recycler.recycle(add_indices);
     // recycler.dump;
-    add_indices = new Indices(
+    add_indices =
         [
         new Segment(Index(5UL), 5)
-    ]);
-    recycler.recycle(
-        add_indices[]);
+    ];
+    recycler.recycle(add_indices);
     // recycler.dump;
     assert(recycler.indices.length == 2, "should have merged segments");
 
     // upperrange not empty connecting
-    add_indices = new Indices(
+    add_indices = 
         [
         new Segment(Index(25UL), 5)
-    ]);
-    recycler.recycle(
-        add_indices[]);
-    add_indices = new Indices(
+    ];
+    recycler.recycle(add_indices);
+    add_indices = 
         [
         new Segment(Index(17UL), 2)
-    ]);
+    ];
     recycler.recycle(
-        add_indices[]);
+        add_indices);
     assert(
         recycler.indices.length == 4);
 }
@@ -639,12 +621,11 @@ unittest {
     auto recycler = Recycler(
         blockfile);
 
-    Indices add_indices = new Indices(
+    Segment*[] add_indices = 
         [
         new Segment(Index(10UL), 5),
-    ]
-    );
-    recycler.recycle(add_indices[]);
+    ];
+    recycler.recycle(add_indices);
 
     recycler.claim(5);
     assert(recycler.indices.length == 0);
