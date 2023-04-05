@@ -16,6 +16,7 @@ static class SuperVisor : Actor {
             try {
                 actorReceive();
             }
+
             // If we catch an exception we send it back to owner for them to deal with it.
             catch (shared(Exception) e) {
                 // Preferable FAIL would be able to carry the exception with it
@@ -33,17 +34,23 @@ static class Logger : Actor {
         stop = false;
 
         setState(Ctrl.STARTING); // Tell the owner that you are starting.
-        setState(Ctrl.ALIVE); // Tell the owner that you running
         scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
 
+        setState(Ctrl.ALIVE); // Tell the owner that you running
         while (!stop) {
             try {
                 actorReceive(
-                        (Msg!"info", string str) { writeln("Info: ", str); },
-                        (Msg!"fatal", string str) { writeln("Fatal: ", str); },
+                        (Msg!"info", string str) {
+                            writeln("Info: ", str); 
+                            /// something else
+                        },
+                        (Msg!"fatal", string str) {
+                            writeln("Fatal: ", str);
+                        },
                 );
             }
             // If we catch an exception we send it back to owner for them to deal with it.
+            // Do not send shared
             catch (shared(Exception) e) {
                 // Preferable FAIL would be able to carry the exception with it
                 ownerTid.prioritySend(e);
