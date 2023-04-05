@@ -497,14 +497,20 @@ class BlockFile {
         return masterblock;
     }
 
-    ref const(HeaderBlock) headerBlock() pure const nothrow {
-        return headerblock;
-    }
-
     // Write the master block to the filesystem and truncate the file
     protected void writeMasterBlock() {
         seek(_last_block_index);
         masterblock.write(file, BLOCK_SIZE);
+    }
+
+    private void readMasterBlock() {
+        // The masterblock is locate as the lastblock in the file
+        seek(_last_block_index);
+        masterblock.read(file, BLOCK_SIZE);
+    }
+
+    ref const(HeaderBlock) headerBlock() pure const nothrow {
+        return headerblock;
     }
 
     private void readHeaderBlock() {
@@ -521,11 +527,6 @@ class BlockFile {
         hasheader = true;
     }
 
-    private void readMasterBlock() {
-        // The masterblock is locate as the lastblock in the file
-        seek(_last_block_index);
-        masterblock.read(file, BLOCK_SIZE);
-    }
 
     private void readStatistic() @safe {
         if (masterblock.statistic_index !is INDEX_NULL) {

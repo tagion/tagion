@@ -14,7 +14,7 @@ template doFront(Range) if (isInputRange!Range) {
     import std.range;
 
     T doFront(Range r) @safe {
-        if (r.empty) {
+        if (r.empty || r is Range.init) {
             return T.init;
         }
         return r.front;
@@ -32,6 +32,12 @@ unittest {
     {
         const a = [1, 2, 3];
         assert(a.doFront is a[0]);
+    }
+
+    {
+        int[] a;
+        a = null;
+        a[].doFront;
     }
 }
 
