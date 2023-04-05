@@ -286,10 +286,12 @@ struct Recycler {
         assert(result != Index.init);
 
     }
-    do {
-        __write("claiming size: %s", segment_size);
-        
+    do {       
             try {
+                // auto recycle_seg = to_be_recycled.filter!(seg => seg.size == segment_size).doFront;
+                // if (recycle_seg != Segment.init) {
+                //     return recycle
+                // }
 
                 auto sorted_segments = sortedSegments();
                 auto search_segment = new Segment(Index.max, segment_size);
