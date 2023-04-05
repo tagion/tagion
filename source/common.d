@@ -36,11 +36,32 @@ enum DebugSig {
 /// contains the Tid of the actor which send it and the state
 alias CtrlMsg = Tuple!(Tid, "tid", Ctrl, "ctrl");
 
+/// dep
 bool checkCtrl(Ctrl msg) {
     // Never use receiveOnly
     CtrlMsg r = receiveOnly!(CtrlMsg);
     debug writeln(r);
     return r[1] is msg;
+}
+
+struct ActorHandle(Actor actor)  {
+    import concurrency = std.concurrency;
+    Tid tid;
+    string taskName;
+
+    void send(T...)(T vals) {
+        concurrency.send(tid, vals);
+    }
+}
+
+ActorHandle actorHandle(A)(Actor actor, string taskName) {
+    Tid tid = locate(task_name);
+    return ActorHandle!A(tid, taskName);
+}
+
+ActorHandle spawnActor(A)(Actor actor, string taskName) {
+    alias task = actor.task;
+    spawn(&task);
 }
 
 // Delegate for dealing with exceptions sent from children
@@ -83,12 +104,6 @@ void setState(Ctrl ctrl) {
         write("No owner, writing message to stdout instead: ");
         writeln(ctrl);
     }
-}
-
-version (none) struct ActorHandle {
-    Tid tid;
-    string taskName;
-    // Tid Owner?
 }
 
 import std.algorithm.iteration;
