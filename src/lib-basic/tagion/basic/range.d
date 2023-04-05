@@ -1,4 +1,7 @@
 module tagion.basic.range;
+import std.range.primitives : isInputRange;
+import std.traits : ForeachType;
+
 /**
 * Tries to do a front but it is empty it return T.init 
 * Returns:
@@ -56,5 +59,3 @@ unittest {
     assert(eatOne(a) == 2);
     assert(eatOne(a) == 3);
 }
-
-
