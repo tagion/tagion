@@ -285,15 +285,6 @@ struct Recycler {
             return Index.init;
         }
 
-        // // check if the last segment in the indices is equal to the last index in
-        // // the blockfile. If this is the case we remove it.
-        // __write("indices.length %s", indices.length);
-        // __write("owner last block index %s, indices last block index %s", owner._last_block_index, indices.back.index);
-        // if (indices.back.index == owner._last_block_index) {
-        //     assumeWontThrow(remove(indices.back));
-        // }
-        // __write("indices.length after %s", indices.length);
-
         Index next;
         bool first = true;
         foreach_reverse (segment; indices) {
@@ -953,7 +944,7 @@ unittest {
 
 }
 
-
+// future for snap back of recycler.
 // @safe 
 // unittest {
 //     Recycler.print = true;
