@@ -408,7 +408,7 @@ class BlockFile {
         mixin HiBONRecord;
 
         void write(
-            ref File file,
+            ref File file, 
             immutable uint BLOCK_SIZE) const @trusted {
             
             auto buffer = new ubyte[BLOCK_SIZE];
@@ -427,6 +427,7 @@ class BlockFile {
             check(MasterBlock.isRecord(doc), "not a masterblock");
             this = MasterBlock(doc);        
         }
+
 
         string toString() const pure nothrow {
             return assumeWontThrow([

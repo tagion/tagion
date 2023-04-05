@@ -285,6 +285,15 @@ struct Recycler {
             return Index.init;
         }
 
+        // // check if the last segment in the indices is equal to the last index in
+        // // the blockfile. If this is the case we remove it.
+        // __write("indices.length %s", indices.length);
+        // __write("owner last block index %s, indices last block index %s", owner._last_block_index, indices.back.index);
+        // if (indices.back.index == owner._last_block_index) {
+        //     assumeWontThrow(remove(indices.back));
+        // }
+        // __write("indices.length after %s", indices.length);
+
         Index next;
         bool first = true;
         foreach_reverse (segment; indices) {
@@ -943,3 +952,44 @@ unittest {
     // blockfile.dump;
 
 }
+
+
+// @safe 
+// unittest {
+//     Recycler.print = true;
+//     scope (exit) {
+//         Recycler.print = false;
+//     }
+
+//     immutable filename = fileId("recycle").fullpath;
+//     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+//     auto blockfile = BlockFile(filename);
+//     scope (exit) {
+//         blockfile.close;
+//     }
+
+//     Data[] datas = [
+//         Data("abc"),
+//         Data("1234"),
+//         Data("wowo"),
+//         Data("hugo"),
+//     ];
+
+//     Index[] data_indexes;
+//     foreach (data; datas) {
+//         data_indexes ~= blockfile.save(data).index;
+//     }
+
+//     blockfile.store();
+
+//     // remove the last segment and check that the recycler is snapped back.
+//     blockfile.dispose(data_indexes[$-1]);
+//     blockfile.store();
+    
+//     assert(blockfile.recycler.indices.length == 0, format("should be 0 but was %s", blockfile.recycler.indices.length));
+    
+
+
+
+
+// }
