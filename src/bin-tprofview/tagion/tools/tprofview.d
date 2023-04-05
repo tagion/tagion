@@ -1,4 +1,4 @@
-module tagion.tools.tprof;
+module tagion.tools.tprofview;
 
 import std.getopt;
 import std.stdio;
