@@ -72,6 +72,13 @@ struct Segment {
 
 /// Indices in the recycler: sorted by index
 alias Indices = RedBlackTree!(Segment*, (a, b) => a.index < b.index); // Segment: sorted by size.
+
+/** 
+ * Used for disposing and claiming segments from the blockfile. 
+ * Therefore responsible for keeping track of unused segments.
+ * and making sure these are used so the file does not continue.
+ * growing.
+ */
 @safe
 struct Recycler {
     static bool print;
@@ -770,7 +777,7 @@ unittest {
 
 @safe
 unittest {
-    // saving to empty blockfile therfore claiming.
+    /// saving to empty an empty blockfile.
     Recycler.print = false;
 
     scope (exit) {
@@ -797,6 +804,8 @@ unittest {
     }
 
     blockfile.store();
+    /// No elements should have been added to the recycler.
+    assert(blockfile.recycler.indices.length == 0);
 
 }
 
