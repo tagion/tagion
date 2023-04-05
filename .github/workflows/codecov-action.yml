@@ -1,0 +1,30 @@
+name: codecov
+on:
+  workflow_dispatch:
+  push: 
+    branches: 
+      - current
+      - codecov
+env:
+  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      
+permissions:
+  contents: read
+  pages: write
+  id-token: write      
+
+jobs:
+  codecov:
+    runs-on: self-hosted
+    steps:
+      - name: codecov report
+        run: |
+          pwd
+          mkdir -p codecov || echo "codecov dir already exists"
+          cd codecov
+          git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git || echo "repo already exists"
+          cd tagion
+          git pull 
+          make unittest COV=1
+          bash <(curl -s https://codecov.io/bash) -t 80252d60-5311-4a63-8ffe-823decc0cb79
+          
