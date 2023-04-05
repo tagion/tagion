@@ -5,6 +5,7 @@ import std.stdio;
 import std.format : format;
 import std.typecons;
 import core.thread;
+import std.exception;
 
 /// Message type template
 struct Msg(string name) {
@@ -77,7 +78,8 @@ void exceptionHandler(Exception e) {
     writeln(e);
 }
 
-nothrow Nullable!Tid maybeOwnerTid() {
+/// Nullable and nothrow wrapper around ownerTid
+nothrow Nullable!Tid tidOwner() {
     // tid is "null"
     Nullable!Tid tid;
     try {
@@ -95,8 +97,8 @@ nothrow Nullable!Tid maybeOwnerTid() {
 
 /// Send to the owner if there is one
 void sendOwner(T...)(T vals) {
-    if (!maybeOwnerTid.isNull) {
-        send(maybeOwnerTid.get, vals);
+    if (!tidOwner.isNull) {
+        send(tidOwner.get, vals);
     }
     // Otherwise writr a message to the logger instead,
     // Otherwise just write it to stdout;
@@ -110,8 +112,8 @@ void sendOwner(T...)(T vals) {
 /// send your state to your owner
 nothrow void setState(Ctrl ctrl) {
     try {
-        if (!maybeOwnerTid.isNull) {
-            maybeOwnerTid.get.prioritySend(CtrlMsg(thisTid, ctrl));
+        if (!tidOwner.isNull) {
+            tidOwner.get.prioritySend(CtrlMsg(thisTid, ctrl));
         }
         else {
             /* write("No owner, writing message to stdout instead: "); */
@@ -233,9 +235,11 @@ static class Actor {
         }
         // If we catch an exception we send it back to owner for them to deal with it.
         // Do not send shared
-        catch (shared(Exception) e) {
-            // Preferable FAIL would be able to carry the exception with it
-            /* ownerTid.prioritySend(e); */
+        catch (Exception e) {
+            // FAIL message should be able to carry the exception with it
+            // Use tagion taskexception when it part of the tree
+            immutable exception = cast(immutable) e;
+            assumeWontThrow(ownerTid.prioritySend(exception));
             setState(Ctrl.FAIL);
             stop = true;
         }
