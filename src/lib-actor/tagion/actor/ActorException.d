@@ -1,6 +1,6 @@
 module tagion.actor.ActorException;
 
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 
 /++
  Exception type used by tagion.actor package

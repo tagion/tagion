@@ -2,7 +2,7 @@ module tagion.utils.Miscellaneous;
 
 import tagion.basic.Types : Buffer, isBufferType;
 import std.exception;
-import tagion.basic.TagionExceptions : TagionException;
+import tagion.basic.tagionexceptions : TagionException;
 import std.range.primitives : isInputRange;
 import std.algorithm : map;
 import std.array;

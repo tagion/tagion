@@ -12,7 +12,7 @@ import std.file : copy, exists;
 import std.array;
 import std.format;
 
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 import tagion.basic.Types : FileExtension, withDot;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;

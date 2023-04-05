@@ -12,7 +12,7 @@ import tagion.basic.basic : TrustedConcurrency;
 import tagion.basic.traits : hasOneMemberUDA;
 import tagion.logger.Logger;
 import tagion.logger.LogRecords : LogFilter, LogFilterArray, LogFiltersAction, LogInfo;
-import tagion.basic.TagionExceptions : fatal, TaskFailure;
+import tagion.basic.tagionexceptions : fatal, TaskFailure;
 import tagion.prior_services.LoggerService;
 import tagion.dart.Recorder;
 import tagion.hibon.Document : Document;

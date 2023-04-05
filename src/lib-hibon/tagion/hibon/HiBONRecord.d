@@ -251,7 +251,7 @@ mixin template HiBONRecord(string CTOR = "") {
     //    import tagion.hibon.HiBONException : check;
     import tagion.basic.Message : message;
     import tagion.basic.basic : basename, CastTo;
-    import tagion.basic.TagionExceptions : Check;
+    import tagion.basic.tagionexceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,
         label, GetLabel, filter, fixed, inspect, VOID;

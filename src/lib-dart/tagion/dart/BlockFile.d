@@ -24,7 +24,7 @@ import std.container.rbtree : RedBlackTree, redBlackTree;
 
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.basic.basic : basename, log2, assumeTrusted;
-import tagion.basic.TagionExceptions : Check;
+import tagion.basic.tagionexceptions : Check;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;

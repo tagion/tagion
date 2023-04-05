@@ -22,7 +22,7 @@ import std.array : array;
 
 import tagion.wallet.WalletRecords : RecoverGenerator;
 import tagion.wallet.WalletException : KeyRecoverException;
-import tagion.basic.TagionExceptions : Check;
+import tagion.basic.tagionexceptions : Check;
 
 alias check = Check!KeyRecoverException;
 

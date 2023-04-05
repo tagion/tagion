@@ -22,7 +22,7 @@ import tagion.gossip.AddressBook : addressbook;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.options.ServiceNames : get_node_name;
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 import p2plib = p2p.node;
 import tagion.prior_services.DARTService;
 import tagion.prior_services.DARTSynchronizeService;

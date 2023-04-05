@@ -7,7 +7,7 @@ import std.string;
 import std.format;
 
 import tagion.basic.Types : Control;
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document : Document;

@@ -37,7 +37,7 @@ private {
     import tagion.crypto.SecureInterfaceNet : HashNet;
 
     //import tagion.basic.basic;
-    import tagion.basic.TagionExceptions : Check;
+    import tagion.basic.tagionexceptions : Check;
     import tagion.utils.Miscellaneous : toHex = toHexString;
 
     import std.stdio : writefln;

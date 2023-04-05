@@ -13,7 +13,7 @@ import core.thread : Thread;
 import std.format;
 import std.random;
 
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 
 @safe class AddressBookException : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure {

@@ -14,7 +14,7 @@ import std.conv : to;
 
 import tagion.basic.basic : TrustedConcurrency, assumeTrusted;
 import tagion.basic.Types : Control;
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 import tagion.GlobalSignals : abort;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;

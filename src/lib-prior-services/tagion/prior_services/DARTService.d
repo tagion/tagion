@@ -15,7 +15,7 @@ import std.array;
 
 import tagion.logger.Logger;
 import tagion.basic.Types : Buffer, Control;
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.dart.DARTFile;

@@ -11,7 +11,7 @@ import std.string : strip;
 
 import tagion.basic.Types : FileExtension;
 import tagion.basic.basic : basename;
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 import tagion.logger.Logger : LogLevel;
 import tagion.utils.JSONCommon;
 

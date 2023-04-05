@@ -23,7 +23,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
 
 import tagion.basic.Types : Buffer;
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 import tagion.script.StandardRecords;
 import tagion.script.TagionCurrency;
 import tagion.crypto.SecureNet : StdSecureNet, StdHashNet, scramble;

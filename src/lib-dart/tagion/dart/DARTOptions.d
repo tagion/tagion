@@ -2,7 +2,7 @@
 module tagion.dart.DARTOptions;
 
 import tagion.basic.basic : basename;
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 
 /**
  * Options for DART

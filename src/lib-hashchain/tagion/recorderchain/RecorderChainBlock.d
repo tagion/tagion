@@ -72,7 +72,7 @@ import tagion.hibon.Document;
 }
 
 unittest {
-    import tagion.basic.TagionExceptions : TagionException;
+    import tagion.basic.tagionexceptions : TagionException;
     import tagion.crypto.SecureNet : StdHashNet;
     import tagion.hibon.HiBON : HiBON;
 
