@@ -149,9 +149,9 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */
  */
 nothrow
 static class Actor {
-    static Tid[] children;
-    static Tid[Tid] failChildren;
-    static Tid[Tid] startChildren;
+    static Tid[] children; // A list of children that the actor supervises
+    static Tid[Tid] failChildren; // An associative array of children that have recently send a fail message
+    static Tid[Tid] startChildren; // An associative array of children that should be start
     /// Static ActorHandle[] children;
     static bool stop;
 
