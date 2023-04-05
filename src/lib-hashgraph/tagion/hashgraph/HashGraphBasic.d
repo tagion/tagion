@@ -7,7 +7,7 @@ import std.typecons : TypedefType;
 import std.exception : assumeWontThrow;
 
 import tagion.basic.Types : Buffer;
-import tagion.basic.Basic : EnumText;
+import tagion.basic.basic : EnumText;
 import tagion.crypto.Types :  Signature, Pubkey, Fingerprint;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph : HashGraph;

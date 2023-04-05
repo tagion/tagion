@@ -311,6 +311,6 @@ version (unittest) {
     import std.file : fwrite = write;
     import tagion.hibon.HiBONJSON;
     import tagion.hibon.HiBONRecord : fwrite, fread;
-    import tagion.basic.Basic : unitfile;
+    import tagion.basic.basic : unitfile;
     import tagion.behaviour.BehaviourParser;
 }

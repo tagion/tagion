@@ -21,7 +21,7 @@ private {
     import std.range.primitives : isInputRange, ElementType;
 
     import tagion.basic.Types : Buffer, isBufferType, isTypedef;
-    import tagion.basic.Basic : EnumText, assumeTrusted;
+    import tagion.basic.basic : EnumText, assumeTrusted;
     import tagion.Keywords;
 
     import tagion.hibon.HiBON : HiBON;
@@ -36,7 +36,7 @@ private {
     import tagion.dart.DARTBasic;
     import tagion.crypto.SecureInterfaceNet : HashNet;
 
-    //import tagion.basic.Basic;
+    //import tagion.basic.basic;
     import tagion.basic.TagionExceptions : Check;
     import tagion.utils.Miscellaneous : toHex = toHexString;
 
@@ -1415,7 +1415,7 @@ version (unittest) {
 unittest {
     import std.algorithm.sorting : sort;
 
-    import std.stdio : writefln; //    import tagion.basic.Basic;
+    import std.stdio : writefln; //    import tagion.basic.basic;
     import std.typecons;
     import tagion.utils.Random;
     import std.bitmanip : BitArray;

@@ -1,6 +1,6 @@
 module tagion.hibon.HiBONBase;
 
-import tagion.basic.Basic : isOneOf;
+import tagion.basic.basic : isOneOf;
 
 import tagion.utils.StdTime;
 

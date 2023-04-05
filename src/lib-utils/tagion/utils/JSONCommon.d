@@ -23,7 +23,7 @@ mixin template JSONCommon() {
     import tagion.utils.JSONCommon : OptionException;
 
     alias check = Check!OptionException;
-    import tagion.basic.Basic : basename, isOneOf, assumeTrusted;
+    import tagion.basic.basic : basename, isOneOf, assumeTrusted;
     import JSON = std.json;
     import std.traits;
     import std.format;
@@ -218,12 +218,12 @@ mixin template JSONConfig() {
 
 version (unittest) {
     import tagion.basic.Types : FileExtension;
-    import Basic = tagion.basic.Basic;
+    import basic = tagion.basic.basic;
     import std.exception : assertThrown;
     import std.json : JSONException;
 
-    const(Basic.FileNames) fileId(T)(string prefix = null) @safe {
-        return Basic.fileId!T(FileExtension.json, prefix);
+    const(basic.FileNames) fileId(T)(string prefix = null) @safe {
+        return basic.fileId!T(FileExtension.json, prefix);
     }
 
     private enum Color {

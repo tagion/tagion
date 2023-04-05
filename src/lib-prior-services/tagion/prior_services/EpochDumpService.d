@@ -10,7 +10,7 @@ import tagion.epochain.EpochChainBlock;
 import tagion.epochain.EpochChain;
 import tagion.crypto.Types : Fingerprint; 
 import tagion.basic.Types : Control, Buffer;
-import tagion.basic.Basic : TrustedConcurrency;
+import tagion.basic.basic : TrustedConcurrency;
 import tagion.hibon.Document;
 import tagion.taskwrapper.TaskWrapper;
 import tagion.crypto.SecureNet : StdHashNet;

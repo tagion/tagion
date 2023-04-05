@@ -23,7 +23,7 @@ import std.exception : assumeUnique, assumeWontThrow;
 import std.container.rbtree : RedBlackTree, redBlackTree;
 
 import tagion.basic.Types : Buffer, FileExtension;
-import tagion.basic.Basic : basename, log2, assumeTrusted;
+import tagion.basic.basic : basename, log2, assumeTrusted;
 import tagion.basic.TagionExceptions : Check;
 
 import tagion.hibon.HiBON : HiBON;
@@ -44,10 +44,10 @@ enum INDEX_NULL = Index.init;
 enum BLOCK_SIZE = 0x80;
 
 version (unittest) {
-    import Basic = tagion.basic.Basic;
+    import basic = tagion.basic.basic;
 
-    const(Basic.FileNames) fileId(T = BlockFile)(string prefix = null) @safe {
-        return Basic.fileId!T(FileExtension.dart, prefix);
+    const(basic.FileNames) fileId(T = BlockFile)(string prefix = null) @safe {
+        return basic.fileId!T(FileExtension.dart, prefix);
     }
 }
 

@@ -12,7 +12,7 @@ import std.algorithm.searching : canFind;
 import std.datetime.systime : Clock;
 import std.conv : to;
 
-import tagion.basic.Basic : TrustedConcurrency, assumeTrusted;
+import tagion.basic.basic : TrustedConcurrency, assumeTrusted;
 import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions;
 import tagion.GlobalSignals : abort;

@@ -9,7 +9,7 @@ import std.stdio : writeln;
 import core.thread : msecs;
 import std.socket : SocketType, AddressFamily;
 
-import tagion.basic.Basic : TrustedConcurrency;
+import tagion.basic.basic : TrustedConcurrency;
 import tagion.basic.Types : Control;
 import tagion.basic.TagionExceptions : fatal, taskfailure;
 import tagion.communication.HiRPC : HiRPC;

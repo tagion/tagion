@@ -23,7 +23,7 @@ unittest {
     import std.path;
     import std.range : empty;
 
-    import tagion.basic.Basic : tempfile, fileId;
+    import tagion.basic.basic : tempfile, fileId;
     import tagion.basic.Types : FileExtension;
     import tagion.crypto.SecureNet : StdSecureNet;
     import tagion.crypto.SecureInterfaceNet : SecureNet;

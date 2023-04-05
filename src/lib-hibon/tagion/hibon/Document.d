@@ -20,7 +20,7 @@ import core.exception : RangeError;
 //import std.stdio;
 
 import tagion.utils.StdTime;
-import tagion.basic.Basic : isOneOf, EnumContinuousSequency;
+import tagion.basic.basic : isOneOf, EnumContinuousSequency;
 import tagion.basic.Message : message;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;

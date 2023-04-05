@@ -18,7 +18,7 @@ import tagion.hibon.Document : Document;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types :  Pubkey;
 import tagion.dart.DARTBasic : DARTIndex;
-import tagion.basic.Basic : basename;
+import tagion.basic.basic : basename;
 import tagion.script.StandardRecords;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;

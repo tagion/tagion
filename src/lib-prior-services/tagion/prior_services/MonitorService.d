@@ -11,7 +11,7 @@ import tagion.logger.Logger;
 import tagion.prior_services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
 import tagion.basic.Types : Control;
-import tagion.basic.Basic : basename;
+import tagion.basic.basic : basename;
 import tagion.basic.TagionExceptions : TagionException;
 import tagion.crypto.Types :  Pubkey;
 

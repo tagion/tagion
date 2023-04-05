@@ -10,7 +10,7 @@ import std.array : join;
 import std.string : strip;
 
 import tagion.basic.Types : FileExtension;
-import tagion.basic.Basic : basename;
+import tagion.basic.basic : basename;
 import tagion.basic.TagionExceptions;
 import tagion.logger.Logger : LogLevel;
 import tagion.utils.JSONCommon;

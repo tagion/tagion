@@ -51,11 +51,11 @@ struct BlockSegment {
 }
 
 version (unittest) {
-    import Basic = tagion.basic.Basic;
+    import basic = tagion.basic.basic;
     import tagion.basic.Types : FileExtension;
 
-    const(Basic.FileNames) fileId(T = BlockSegment)(string prefix = null) @safe {
-        return Basic.fileId!T(FileExtension.block, prefix);
+    const(basic.FileNames) fileId(T = BlockSegment)(string prefix = null) @safe {
+        return basic.fileId!T(FileExtension.block, prefix);
     }
 
     enum SMALL_BLOCK_SIZE = 0x40;

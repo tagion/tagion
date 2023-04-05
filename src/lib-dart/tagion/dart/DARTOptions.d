@@ -1,7 +1,7 @@
 /// Options for the DART
 module tagion.dart.DARTOptions;
 
-import tagion.basic.Basic : basename;
+import tagion.basic.basic : basename;
 import tagion.basic.TagionExceptions;
 
 /**
