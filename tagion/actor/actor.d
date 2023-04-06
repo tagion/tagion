@@ -53,7 +53,7 @@ struct ActorTask {
  *  Tid = the tid of the spawned task
  *  taskName = the name of the possibly running task
  */
-struct ActorHandle(A) if(isActor!A) {
+struct ActorHandle(A) if (isActor!A) {
     import concurrency = std.concurrency;
 
     Tid tid;
@@ -176,15 +176,24 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */
  * All members should be static
  * task should be nothrow
  */
-interface Actor {
-    static:
-      Tid[] children; // A list of children that the actor supervises
-      Tid[Tid] failChildren; // An associative array of children that have recently send a fail message
-    static Tid[Tid] startChildren; // An associative array of children that should be start
-    /// Static ActorHandle[] children;
-    static bool stop;
+abstract class Actor {
+    // We need to be certain that anything the task inherits from outside scope
+    // is maintained as a copy and not a reference.
+    /** 
+     * The running task function your actor should implement
+     */
+    // Isn't the compiler supposed to warn you if you don't implement an interface function?
+    // It doesn't seem to be the case in D.
+    nothrow void task(A...)(A args);
 
-    static void signal(Sig s) {
+static:
+    Tid[] children; // A list of children that the actor supervises
+    Tid[Tid] failChildren; // An associative array of children that have recently send a fail message
+    Tid[Tid] startChildren; // An associative array of children that should be start
+    /// Static ActorHandle[] children;
+    bool stop;
+
+    void signal(Sig s) {
         with (Sig) final switch (s) {
         case STOP:
             stop = true;
@@ -193,7 +202,7 @@ interface Actor {
     }
 
     /// Controls message sent from the children.
-    static void control(CtrlMsg msg) {
+    void control(CtrlMsg msg) {
         with (Ctrl) final switch (msg.ctrl) {
         case STARTING:
             debug writeln(msg);
@@ -232,7 +241,7 @@ interface Actor {
     }
 
     /// Stops the actor if the supervisor stops
-    static void ownerTerminated(OwnerTerminated) {
+    void ownerTerminated(OwnerTerminated) {
         writefln("%s, Owner stopped... nothing to life for... stoping self", thisTid);
         stop = true;
     }
@@ -242,7 +251,7 @@ interface Actor {
      * Params:
      *   message = literally any message
      */
-    static void unknown(Variant message) {
+    void unknown(Variant message) {
         setState(Ctrl.FAIL);
         assert(0, "No delegate to deal with message: %s".format(message));
     }
@@ -253,7 +262,7 @@ interface Actor {
      * Params:
      *   opts = A list of message handlers similar to @std.concurrency.receive()
      */
-    static nothrow void actorTask(T...)(T opts) {
+    nothrow void actorTask(T...)(T opts) {
         try {
             stop = false;
 
@@ -282,23 +291,15 @@ interface Actor {
             stop = true;
         }
     }
-
-    // We need to be certain that anything the task inherits from outside scope
-    // is maintained as a copy and not a reference.
-    /** 
-     * The running task function your actor should implement
-     */
-    nothrow void task(A...)(A args);
 }
 
-
 import std.traits;
+
 /// Checks if the actor is implemented correctly
 private template isActor(A) {
     /* static assert(hasMember!(A, "task"), "Actor does not implement a task function"); */
     /* static foreach(F; Fields!A) { */
     /* } */
-    
+
     enum isActor = true;
 }
-
