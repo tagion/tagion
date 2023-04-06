@@ -410,12 +410,12 @@ class BlockFile {
         void write(
             ref File file,
             immutable uint BLOCK_SIZE) const @trusted {
-            
+
             auto buffer = new ubyte[BLOCK_SIZE];
 
             const doc = this.toDoc;
-            buffer[0..doc.full_size] = doc.serialize;
-            
+            buffer[0 .. doc.full_size] = doc.serialize;
+
             file.rawWrite(buffer);
             // Truncate the file after the master block
             file.truncate(file.size);
@@ -425,7 +425,7 @@ class BlockFile {
         void read(ref File file, immutable uint BLOCK_SIZE) {
             const doc = file.fread();
             check(MasterBlock.isRecord(doc), "not a masterblock");
-            this = MasterBlock(doc);        
+            this = MasterBlock(doc);
         }
 
         string toString() const pure nothrow {
@@ -496,14 +496,20 @@ class BlockFile {
         return masterblock;
     }
 
-    ref const(HeaderBlock) headerBlock() pure const nothrow {
-        return headerblock;
-    }
-
     // Write the master block to the filesystem and truncate the file
     protected void writeMasterBlock() {
         seek(_last_block_index);
         masterblock.write(file, BLOCK_SIZE);
+    }
+
+    private void readMasterBlock() {
+        // The masterblock is locate as the lastblock in the file
+        seek(_last_block_index);
+        masterblock.read(file, BLOCK_SIZE);
+    }
+
+    ref const(HeaderBlock) headerBlock() pure const nothrow {
+        return headerblock;
     }
 
     private void readHeaderBlock() {
@@ -518,12 +524,6 @@ class BlockFile {
         seek(INDEX_NULL);
         headerblock.read(file, BLOCK_SIZE);
         hasheader = true;
-    }
-
-    private void readMasterBlock() {
-        // The masterblock is locate as the lastblock in the file
-        seek(_last_block_index);
-        masterblock.read(file, BLOCK_SIZE);
     }
 
     private void readStatistic() @safe {
@@ -671,7 +671,7 @@ class BlockFile {
 
             masterblock.recycle_header_index = recycler.write();
             writeMasterBlock;
-            
+
         }
         foreach (block_segment; sort!(q{a.index < b.index}, SwapStrategy.unstable)(
                 allocated_chains)) {
@@ -700,9 +700,9 @@ class BlockFile {
 
             const doc = owner.load(index);
             uint size;
-            
+
             try {
-            
+
                 if (isRecord!Segment(doc)) {
                     const segment = Segment(doc, index);
                     size = segment.size;
@@ -710,7 +710,8 @@ class BlockFile {
                 else {
                     size = owner.numberOfBlocks(doc.full_size);
                 }
-            } catch (ArraySliceError e) {
+            }
+            catch (ArraySliceError e) {
                 current_segment = BlockSegmentInfo(index, format("%sERROR%s", RED, RESET), 1, Document());
                 return;
             }
@@ -744,6 +745,7 @@ class BlockFile {
         }
 
     }
+
     static assert(isInputRange!BlockSegmentRange);
     static assert(isForwardRange!BlockSegmentRange);
     BlockSegmentRange opSlice() {

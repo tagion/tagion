@@ -102,9 +102,6 @@ import std.algorithm;
 
 alias check = Check!DARTException;
 
-string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothrow {
-    return assumeWontThrow(format("%s:%s", return_pos, line));
-}
 
 /++
  + DART File system
@@ -925,29 +922,6 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
 
     }
 
-    import tagion.dart.BlockSegment;
-
-    const(BlockSegment*) _save(const(Document) doc, const uint rim) {
-
-        const result = blockfile.save(doc);
-        if (rim == 1) {
-            if (!Branches.isRecord(doc)) {
-                writefln("Document was not of type Branch, index: %s, rim: %s, empty: %s, Document: %s", result.index, rim, doc
-                        .empty, doc.toPretty);
-            }
-        }
-        if (result.index == Index(144UL)) {
-            writefln("INDEX 144, index: %s, rim: %s, empty: %s, Document: %s", result.index, rim, doc.empty, doc.toPretty);
-
-        }
-
-        return result;
-
-    }
-    /// Ditto
-    const(BlockSegment*) _save(T)(const T rec, const uint rim) if (isHiBONRecord!T) {
-        return _save(rec.toDoc, rim);
-    }
 
     enum RIMS_IN_SECTOR = 2;
     /**
@@ -1005,12 +979,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                 Branches branches;
                 if (rim < RIMS_IN_SECTOR) {
                     if (branch_index !is INDEX_NULL) {
-                        const doc = blockfile.load(branch_index);
-                        if (!Branches.isRecord(doc)) {
-
-                            writefln("Error at index %s rim %s, empty: %s, Document: %s", branch_index, rim, doc.empty, doc
-                                    .toPretty);
-                        }
+                        
                         branches = blockfile.load!Branches(branch_index);
 
                         
@@ -1035,7 +1004,7 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                         return Leave.init;
                     }
 
-                    return Leave(_save(branches, rim).index,
+                    return Leave(blockfile.save(branches).index,
                             branches.fingerprint(this));
 
                 }
@@ -1110,9 +1079,9 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                                             return Leave.init;
                                         }
                                         pragma(msg, "fixme(pr): This scenario is never called. Why is it here?");
-                                        return Leave(_save(one_archive.store, rim)
+                                        return Leave(blockfile.save(one_archive.store)
                                                 .index,
-                                                one_archive.fingerprint, dumpPos("range oneleft"));
+                                                one_archive.fingerprint);
 
                                     }
                                     // multiple archives left in the database
@@ -1179,14 +1148,14 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                                 if (rim == RIMS_IN_SECTOR) {
                                     // Return a branch with as single leave when the leave is on the on
                                     // the edge between the sector
-                                    branches[lonely_rim_key] = Leave(_save(one_archive.store, rim)
+                                    branches[lonely_rim_key] = Leave(blockfile.save(one_archive.store)
                                             .index,
                                             one_archive.fingerprint);
-                                    return Leave(_save(branches, rim).index,
-                                            branches.fingerprint(this), dumpPos("rim is sector"));
+                                    return Leave(blockfile.save(branches).index,
+                                            branches.fingerprint(this));
                                 }
-                                return Leave(_save(one_archive.store, rim).index,
-                                        one_archive.fingerprint, dumpPos("rim !sector"));
+                                return Leave(blockfile.save(one_archive.store).index,
+                                        one_archive.fingerprint);
 
                             }
                         }
@@ -1205,8 +1174,8 @@ string dumpPos(string return_pos, const size_t line = __LINE__) pure @safe nothr
                     if (branches.empty) {
                         return Leave.init;
                     }
-                    return Leave(_save(branches, rim)
-                            .index, branches.fingerprint(this), dumpPos("outsider"));
+                    return Leave(blockfile.save(branches)
+                            .index, branches.fingerprint(this));
 
                 }
                 else {

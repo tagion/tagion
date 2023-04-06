@@ -46,7 +46,7 @@ int _main(string[] args) {
        
 
         const ulong samples = 10_000_000;
-        const ulong number_of_records = 10_000;
+        const ulong number_of_records = 20_000;
         dart_info.fixed_states = DartInfo.generateFixedStates(samples);
 
         auto dart_ADD_stress_feature = automation!(dart_stress_test)();
@@ -57,7 +57,7 @@ int _main(string[] args) {
 
     } 
 
-    version(TABLE_0) {
+ 
     if (env.stage == Stage.commit) {
         BDDOptions bdd_options;
         setDefaultBDDOptions(bdd_options);
@@ -81,7 +81,6 @@ int _main(string[] args) {
 
         auto dart_ADD_stress_context = dart_ADD_stress_feature.run();
 
-    }
     }
 
     return 0;
