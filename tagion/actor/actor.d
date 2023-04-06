@@ -53,9 +53,7 @@ struct ActorTask {
  *  Tid = the tid of the spawned task
  *  taskName = the name of the possibly running task
  */
-struct ActorHandle(A : Actor) 
-if(isActor!A)
-{
+struct ActorHandle(A : Actor) if (isActor!A) {
     import concurrency = std.concurrency;
 
     Tid tid;
@@ -93,7 +91,7 @@ ActorHandle!A actorHandle(A : Actor)(string taskName) {
  * Returns: An actorHandle with type A
  * Examples: spawnActor!MyActor("my_task_name", 42);
  */
-ActorHandle!A spawnActor(A : Actor, Args...)(string taskName, Args args) {
+ActorHandle!A spawnActor(A : Actor, Args...)(string taskName, Args args) if (isActor!A) {
     alias task = A.task;
     Tid tid = spawn(&task, args);
     register(taskName, tid);
@@ -159,9 +157,7 @@ nothrow void setState(Ctrl ctrl) {
 
 import std.algorithm.iteration;
 
-Tid[] spawnChildren(F)(F[] fns) /* if ( */
-/*     fn.each(isSpawnable(f)); } */
-/*     ) { */ {
+Tid[] spawnChildren(F)(F[] fns) /* if ( */ {
     Tid[] tids;
     foreach (f; fns) {
         // Starting and checking the children sequentially :(
@@ -181,7 +177,7 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */
 abstract class Actor {
     // We need to be certain that anything the task inherits from outside scope
     // is maintained as a copy and not a reference.
-    /** 
+    /**
      * The running task function your actor should implement
      */
     // Isn't the compiler supposed to warn you if you don't implement an interface function?
@@ -299,18 +295,15 @@ import std.traits;
 
 /// Checks if the actor is implemented correctly
 private template isActor(A) {
-    /* static assert(hasMember!(A, "task"), "Actor does not implement a task function"); */
-    /* static foreach(F; Ftields!A) { */
+    /* template areMembersStatic(A) { */
+    /*     static foreach(F; Fields!A) { */
+    /*     } */
     /* } */
-    template areMembersStatic(A) {
-        static foreach(F; Fields!A) {
-        }
-    }
 
     template isTaskNothrow(A) {
         alias task = __traits(getMember, A, "task");
-        enum isTaskNothrow = 
-            (functionAttributes!(task) & FunctionAttribute.nothrow_);
+        enum isTaskNothrow =
+            (functionAttributes!task & FunctionAttribute.nothrow_);
     }
 
     enum isActor = isTaskNothrow!A;
