@@ -62,6 +62,7 @@ void truncate(ref File file, long length) {
 }
 
 alias check = Check!BlockFileException;
+alias BlockChain = RedBlackTree!(const(BlockSegment*), (a, b) => a.index < b.index); 
 
 /// Block file operation
 @safe
@@ -76,6 +77,7 @@ class BlockFile {
         File file;
         Index _last_block_index;
         Recycler recycler;
+        BlockChain block_chains = new BlockChain; // the cache
     }
 
     protected {
@@ -570,9 +572,9 @@ class BlockFile {
         if (index == 0) {
             return Document.init;
         }
-        auto allocated_range = allocated_chains.filter!(a => a.index == index);
-        if (!allocated_range.empty) {
-            return allocated_range.front.doc;
+        auto equal_chain = block_chains.equalRange(new const(BlockSegment)(Document.init, index));
+        if (!equal_chain.empty) {
+            return equal_chain.front.doc;
         }
 
         return assumeWontThrow(load(index));
@@ -611,8 +613,8 @@ class BlockFile {
     void dispose(const Index index) {
         import LEB128 = tagion.utils.LEB128;
 
-        auto allocated_range = allocated_chains.filter!(a => a.index == index);
-        assert(allocated_range.empty, "We should dispose cached blocks");
+        auto equal_chain = block_chains.equalRange(new const(BlockSegment)(Document.init, index));
+        assert(equal_chain.empty, "We should dispose cached blocks");
         seek(index);
         ubyte[LEB128.DataSize!ulong] _buf;
         ubyte[] buf = _buf;
@@ -635,9 +637,6 @@ class BlockFile {
         return Index(recycler.claim(nblocks));
     }
 
-    /// Cache to be stored
-    protected const(BlockSegment)*[] allocated_chains;
-
     /++
      + Allocates new document
      + Does not acctually update the BlockFile just reserves new block's
@@ -648,7 +647,7 @@ class BlockFile {
     const(BlockSegment*) save(const(Document) doc) {
         auto result = new const(BlockSegment)(doc, claim(doc.full_size));
 
-        allocated_chains ~= result;
+        block_chains.stableInsert(result);
         return result;
 
     }
@@ -667,14 +666,14 @@ class BlockFile {
         writeStatistic;
 
         scope (success) {
-            allocated_chains = null;
+            block_chains.clear;
 
             masterblock.recycle_header_index = recycler.write();
             writeMasterBlock;
 
         }
-        foreach (block_segment; sort!(q{a.index < b.index}, SwapStrategy.unstable)(
-                allocated_chains)) {
+
+        foreach(block_segment; block_chains) {
             block_segment.write(this);
         }
     }
