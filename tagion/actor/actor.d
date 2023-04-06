@@ -53,7 +53,9 @@ struct ActorTask {
  *  Tid = the tid of the spawned task
  *  taskName = the name of the possibly running task
  */
-struct ActorHandle(A : Actor) {
+struct ActorHandle(A : Actor) 
+if(isActor!A)
+{
     import concurrency = std.concurrency;
 
     Tid tid;
@@ -184,7 +186,7 @@ abstract class Actor {
      */
     // Isn't the compiler supposed to warn you if you don't implement an interface function?
     // It doesn't seem to be the case in D.
-    nothrow void task(A...)(A args);
+    /* nothrow void task(A...)(A args); */
 
 static:
     Tid[] children; // A list of children that the actor supervises
@@ -298,8 +300,18 @@ import std.traits;
 /// Checks if the actor is implemented correctly
 private template isActor(A) {
     /* static assert(hasMember!(A, "task"), "Actor does not implement a task function"); */
-    /* static foreach(F; Fields!A) { */
+    /* static foreach(F; Ftields!A) { */
     /* } */
+    template areMembersStatic(A) {
+        static foreach(F; Fields!A) {
+        }
+    }
 
-    enum isActor = true;
+    template isTaskNothrow(A) {
+        alias task = __traits(getMember, A, "task");
+        enum isTaskNothrow = 
+            (functionAttributes!(task) & FunctionAttribute.nothrow_);
+    }
+
+    enum isActor = isTaskNothrow!A;
 }
