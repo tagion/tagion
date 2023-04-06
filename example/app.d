@@ -1,3 +1,8 @@
+/**
+ * Examples for the actor based concurrency
+ */
+
+
 module tagion.actor.example;
 
 import tagion.actor.actor;

@@ -7,7 +7,16 @@ import std.typecons;
 import core.thread;
 import std.exception;
 
-/// Message "Atomic" type
+/** 
+ * Message "Atomic" type
+ * Examples: 
+ * ---
+ * // As a type
+ * Msg!"hi";
+ * // As a value
+ * Msg!"hi"();
+ * ---
+ */
 struct Msg(string name) {
 }
 
@@ -76,8 +85,11 @@ struct ActorHandle(A : Actor) if (isActor!A) {
  * Params:
  *   actor = The type of actor you want to create a handle for
  *   taskName = the task name to search for
- * Returns: Actorhandler with type A
- * Examples: actorHandle!MyActor("my_task_name");
+ * Returns: Actorhandle with type A
+ * Examples: 
+ * ---
+ * actorHandle!MyActor("my_task_name");
+ * ---
  */
 ActorHandle!A actorHandle(A : Actor)(string taskName) {
     Tid tid = locate(taskName);
@@ -90,7 +102,10 @@ ActorHandle!A actorHandle(A : Actor)(string taskName) {
  *   taskName = the name it should be started as
  *   args = list of arguments to pass to the task function
  * Returns: An actorHandle with type A
- * Examples: spawnActor!MyActor("my_task_name", 42);
+ * Examples: 
+ * ---
+ * spawnActor!MyActor("my_task_name", 42);
+ * ---
  */
 ActorHandle!A spawnActor(A : Actor, Args...)(string taskName, Args args) if (isActor!A) {
     alias task = A.task;
