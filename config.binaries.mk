@@ -93,6 +93,14 @@ target-tagionboot: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 target-tagionboot: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-boot/*" -a -not -path "*/unitdata/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
 ${call DO_BIN,tagionboot,tagion}
 
+#
+# Profile view
+#
+# fixme(cbr): When ddeps.mk work those libs are not needed
+target-tprofview: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-tprofview: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-tprofview/*" -a -not -path "*/unitdata/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
+
+
 target-tagion: DFLAGS+=$(DVERSION)=ONETOOL
 target-tagion: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 target-tagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
@@ -103,6 +111,7 @@ target-tagion: DFILES+=${shell find $(DSRC)/bin-hibonutil/tagion -name "*.d"  $(
 target-tagion: DFILES+=${shell find $(DSRC)/bin-wallet/tagion -name "*.d"  $(NO_WOLFSSL) }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-tools/tagion -name "*.d"  $(NO_WOLFSSL) }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-boot/tagion -name "*.d"  $(NO_WOLFSSL) }
+target-tagion: DFILES+=${shell find $(DSRC)/bin-tprofview/tagion -name "*.d"  $(NO_WOLFSSL) }
 
 target-tagion:
 ${call DO_BIN,tagion,}
