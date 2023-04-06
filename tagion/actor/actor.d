@@ -7,7 +7,7 @@ import std.typecons;
 import core.thread;
 import std.exception;
 
-/// Message type template
+/// Message "Atomic" type
 struct Msg(string name) {
 }
 
@@ -41,6 +41,7 @@ bool checkCtrl(Ctrl msg) {
     return r[1] is msg;
 }
 
+/// Used by supervisor to represent a running task
 struct ActorTask {
     Tid tid;
     string taskName;
@@ -63,7 +64,7 @@ struct ActorHandle(A : Actor) if (isActor!A) {
         concurrency.send(tid, vals);
     }
 
-    /// generate methods
+    /// use 
     void opDispatch(string method, Args...)(Args args) {
         send(actor.Msg!method, args);
     }
@@ -169,10 +170,11 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */ {
     return tids;
 }
 
-/*
+/**
  * Base class for actor
  * All members should be static
- * task should be nothrow
+ * Descendants should implement task and it should be nothrow
+ * Examples: See [Actor examples]($(DOC_ROOT_OBJECTS)tagion.actor.example$(DOC_EXTENSION)))
  */
 abstract class Actor {
     // We need to be certain that anything the task inherits from outside scope
@@ -182,7 +184,7 @@ abstract class Actor {
      */
     // Isn't the compiler supposed to warn you if you don't implement an interface function?
     // It doesn't seem to be the case in D.
-    /* nothrow void task(A...)(A args); */
+    void task(A...)(A args) nothrow;
 
 static:
     Tid[] children; // A list of children that the actor supervises

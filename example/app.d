@@ -1,3 +1,5 @@
+module tagion.actor.example;
+
 import tagion.actor.actor;
 
 import std.concurrency;
@@ -13,6 +15,10 @@ static:
 
 alias SuperVisorHandle = ActorHandle!SuperVisor;
 
+/** 
+ * An actor that keeps counter
+ * Which can be modifyed by sending it an increase or decrease message
+ */
 class Counter : Actor {
 static:
     alias decrease = Msg!"decrease";
@@ -38,8 +44,12 @@ static:
     }
 }
 
+/// The handler type to our Counter
 alias CounterHandle = ActorHandle!Counter;
 
+/** 
+ * An actor which we can send log levels message too
+ */
 class Logger : Actor {
 static:
     alias hell = Msg!"hell";
@@ -68,8 +78,10 @@ static:
 
 }
 
+/// The handler type to our Logger
 alias LoggerHandle = ActorHandle!Logger;
 
+/// Running through flow of top-level actors
 void main() {
 
     LoggerHandle logger = spawnActor!Logger("logger_task");
