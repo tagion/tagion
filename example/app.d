@@ -6,9 +6,9 @@ import std.format;
 
 class SuperVisor : Actor {
 static:
-    /* void task() { */
-    /*     actorTask; */
-    /* } */
+    void task() nothrow {
+        actorTask;
+    }
 }
 
 alias SuperVisorHandle = ActorHandle!SuperVisor;
@@ -18,7 +18,7 @@ static:
     alias decrease = Msg!"decrease";
     alias increase = Msg!"increase";
 
-    nothrow void task() {
+    void task() nothrow {
         actorTask(
                 &_decrease,
                 &_increase,
@@ -40,20 +40,21 @@ static:
 
 alias CounterHandle = ActorHandle!Counter;
 
-static class Logger : Actor {
+class Logger : Actor {
+static:
     alias hell = Msg!"hell";
     alias info = Msg!"info";
     alias fatal = Msg!"fatal";
 
-    static void _hell(hell, string str) {
+    void _hell(hell, string str) {
         writeln("Hell: ", str); /// something else
     }
 
-    static void _info(info, string str) {
+    void _info(info, string str) {
         writeln("Info: ", str); /// something else
     }
 
-    static void _fatal(fatal, string str) {
+    void _fatal(fatal, string str) {
         writeln("Fatal: ", str);
     }
 
@@ -91,5 +92,4 @@ void main() {
 
     assert(checkCtrl(Ctrl.END));
     assert(checkCtrl(Ctrl.END));
-
 }
