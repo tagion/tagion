@@ -1,13 +1,13 @@
 Resources:  
 Short introduction the principles behind actor based concurrency (4:32 min) [Actor Model Explained](https://www.youtube.com/watch?v=ELwEdb_pD0k)  
 Programming in D (Chapter 85: Message passing concurrency)  
-A talk about the design and principles of erlang By Joe Armstrong, 
+A talk about the design and principles of erlang By Joe Armstrong,
 it also makes clear the nuance between implementing actors as a language feature (erlang/BEAM) versus implementing it as a library (this/std.concurrency)
 (1 hour) [Erlang - software for a concurrent world](https://www.infoq.com/presentations/erlang-software-for-a-concurrent-world/)  
 
-The controlflow is described here https://docs.tagion.org/#/documents/modules/actor/actor_requirement  
+The controlflow is described here (Actor requirement)[https://docs.tagion.org/#/documents/modules/actor/actor_requirement]  
 
-In general the flow of the actor will look something like this
+In general the flow of an actor will look something like this
 
 ```d
     // State messages send to the supervisor from the children
@@ -20,8 +20,8 @@ In general the flow of the actor will look something like this
 
     enum Msg {
         // define the type of message your actor should be able to receive..
-
     }
+
     void someSpawnableTask() {
         stop = false; // To begin, the should be running.
 
@@ -44,7 +44,7 @@ In general the flow of the actor will look something like this
 
                     // If the owner terminates
                     (ownerTerminated) {
-                        // Stop itsef
+                        // Stop itself
                     }
 
                     // If it's an unknown message
@@ -55,18 +55,21 @@ In general the flow of the actor will look something like this
             }
 
             // If we catch an exception we send it back to owner for them to deal with it.
-            catch (shared(Exception) e) {
+            catch (Exception e) {
                 // Send the fail state along with the exception to the supervisour
                 setState(Ctrl.FAIL, e);
             }
         }
     }
+
+    Tid taskTid = spawn(&someSpawnableTask)
+    register(taskTid, "some_task_name");
 ```
 
 As a rule the actors themselves should never use the `receiveOnly!T` function.
 Then you might aswell be using async/await except kindof worse.
 
-We have created an actor class that handles most of the control flow so you actor should look somewhat likes
+We have created an actor class that handles most of the control flow so you actor should look somewhat like this
 ```d
 static class MyActor : Actor {
     // Define messages
@@ -77,4 +80,6 @@ static class MyActor : Actor {
         );
     }
 }
+
+spawnActor(MyActor, "some_task_name");
 ```
