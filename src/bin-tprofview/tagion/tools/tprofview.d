@@ -23,7 +23,7 @@ struct ProfLine {
     string func_name;
     string toString() const {
         return format("%8d   %8d   %8d   %8.3f    %s", num_calls, tree_time, func_time,
-                double(func_time) / double(num_calls),
+                double(tree_time) / double(num_calls),
                 func_name);
     }
 
