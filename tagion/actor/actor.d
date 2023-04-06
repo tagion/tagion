@@ -53,7 +53,7 @@ struct ActorTask {
  *  Tid = the tid of the spawned task
  *  taskName = the name of the possibly running task
  */
-struct ActorHandle(A) if (isActor!A) {
+struct ActorHandle(A : Actor) {
     import concurrency = std.concurrency;
 
     Tid tid;
@@ -78,7 +78,7 @@ struct ActorHandle(A) if (isActor!A) {
  * Returns: Actorhandler with type A
  * Examples: actorHandle!MyActor("my_task_name");
  */
-ActorHandle!A actorHandle(A)(string taskName) {
+ActorHandle!A actorHandle(A : Actor)(string taskName) {
     Tid tid = locate(taskName);
     return ActorHandle!A(tid, taskName);
 }
@@ -91,7 +91,7 @@ ActorHandle!A actorHandle(A)(string taskName) {
  * Returns: An actorHandle with type A
  * Examples: spawnActor!MyActor("my_task_name", 42);
  */
-ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) {
+ActorHandle!A spawnActor(A : Actor, Args...)(string taskName, Args args) {
     alias task = A.task;
     Tid tid = spawn(&task, args);
     register(taskName, tid);
